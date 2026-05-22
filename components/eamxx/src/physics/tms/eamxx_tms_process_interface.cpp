@@ -28,7 +28,6 @@ void TurbulentMountainStress::create_requests()
   // Define some useful units. The units of mixing ratio
   // Q are technically non-dimensional. Nevertheless,
   // for output reasons, we like to see 'kg/kg'.
-  const auto nondim = Units::nondimensional();
   const auto m2 = pow(m,2);
 
   // Initialize grid from grids manager
@@ -44,16 +43,16 @@ void TurbulentMountainStress::create_requests()
   // Add required/computed fields
   auto scalar2d     = m_grid->get_2d_scalar_layout();
   auto vector2d     = m_grid->get_2d_vector_layout(2);
-  auto scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  auto vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  auto scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  auto vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);
 
   constexpr int ps = Pack::n;
-  add_field<Required>("horiz_winds",    vector3d_mid, m/s,    grid_name,            ps);
-  add_field<Required>("T_mid",          scalar3d_mid, K,      grid_name,            ps);
-  add_field<Required>("p_mid",          scalar3d_mid, Pa,     grid_name,            ps);
-  add_field<Required>("pseudo_density", scalar3d_mid, Pa,     grid_name,            ps);
-  add_field<Required>("sgh30",          scalar2d    , m,      grid_name);
-  add_field<Required>("landfrac",       scalar2d    , nondim, grid_name);
+  add_field<Required>("horiz_winds",    vector3d_mid, m/s,  grid_name,            ps);
+  add_field<Required>("T_mid",          scalar3d_mid, K,    grid_name,            ps);
+  add_field<Required>("p_mid",          scalar3d_mid, Pa,   grid_name,            ps);
+  add_field<Required>("pseudo_density", scalar3d_mid, Pa,   grid_name,            ps);
+  add_field<Required>("sgh30",          scalar2d    , m,    grid_name);
+  add_field<Required>("landfrac",       scalar2d    , none, grid_name);
   add_tracer<Required>("qv", m_grid, kg/kg, ps);
 
   add_field<Computed>("surf_drag_coeff_tms", scalar2d, kg/(m2*s), grid_name);

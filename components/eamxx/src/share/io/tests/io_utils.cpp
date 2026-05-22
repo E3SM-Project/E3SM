@@ -145,3 +145,82 @@ TEST_CASE ("io_control") {
     REQUIRE (not control.is_write_step(t3));
   }
 }
+
+TEST_CASE ("parse_cf_time_units") {
+  using namespace scream;
+
+  // Reference timestamp to use in comparisons
+  util::TimeStamp ts_date_only ({2010,1,1},{0,0,0});
+  util::TimeStamp ts_with_hms  ({2010,1,1},{12,30,45});
+  util::TimeStamp ts_eamxx_fmt ({2010,1,1},{0,0,0}); // YYYY-MM-DD-SSSSS format
+
+  std::string filename = "foo";
+
+  SECTION ("seconds") {
+    auto [ts, mult] = parse_cf_time_units("seconds since 2010-01-01",filename);
+    REQUIRE (ts == ts_date_only);
+    REQUIRE (mult == 1);
+  }
+
+  SECTION ("second") {
+    auto [ts, mult] = parse_cf_time_units("second since 2010-01-01",filename);
+    REQUIRE (ts == ts_date_only);
+    REQUIRE (mult == 1);
+  }
+
+  SECTION ("minutes") {
+    auto [ts, mult] = parse_cf_time_units("minutes since 2010-01-01",filename);
+    REQUIRE (ts == ts_date_only);
+    REQUIRE (mult == 60);
+  }
+
+  SECTION ("hours") {
+    auto [ts, mult] = parse_cf_time_units("hours since 2010-01-01",filename);
+    REQUIRE (ts == ts_date_only);
+    REQUIRE (mult == 3600);
+  }
+
+  SECTION ("days") {
+    auto [ts, mult] = parse_cf_time_units("days since 2010-01-01",filename);
+    REQUIRE (ts == ts_date_only);
+    REQUIRE (mult == 86400);
+  }
+
+  SECTION ("date with time HH:MM:SS") {
+    auto [ts, mult] = parse_cf_time_units("days since 2010-01-01 12:30:45",filename);
+    REQUIRE (ts == ts_with_hms);
+    REQUIRE (mult == 86400);
+  }
+
+  SECTION ("date with T separator") {
+    auto [ts, mult] = parse_cf_time_units("hours since 2010-01-01T12:30:45",filename);
+    REQUIRE (ts == ts_with_hms);
+    REQUIRE (mult == 3600);
+  }
+
+  SECTION ("date with time HH:MM only") {
+    util::TimeStamp ts_hm ({2010,1,1},{12,30,0});
+    auto [ts, mult] = parse_cf_time_units("days since 2010-01-01 12:30",filename);
+    REQUIRE (ts == ts_hm);
+    REQUIRE (mult == 86400);
+  }
+
+  SECTION ("eamxx internal format YYYY-MM-DD-SSSSS") {
+    // 2010-01-01-00000 is EAMxx's internal format
+    auto [ts, mult] = parse_cf_time_units("days since 2010-01-01-00000",filename);
+    REQUIRE (ts == ts_eamxx_fmt);
+    REQUIRE (mult == 86400);
+  }
+
+  SECTION ("error: missing 'since' separator") {
+    REQUIRE_THROWS (parse_cf_time_units("days 2010-01-01",filename));
+  }
+
+  SECTION ("error: unsupported unit") {
+    REQUIRE_THROWS (parse_cf_time_units("weeks since 2010-01-01",filename));
+  }
+
+  SECTION ("error: invalid date") {
+    REQUIRE_THROWS (parse_cf_time_units("days since not-a-date",filename));
+  }
+}

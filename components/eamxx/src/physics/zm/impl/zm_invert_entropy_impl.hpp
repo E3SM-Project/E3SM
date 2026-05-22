@@ -42,8 +42,6 @@ void Functions<S,D>::invert_entropy(
   c = b;
   fc = fb;
 
-  static constexpr Real half = 0.5;
-
   //----------------------------------------------------------------------------
   //
   for (int i = 0; i <= ZMC::LOOPMAX; ++i) {
@@ -64,8 +62,8 @@ void Functions<S,D>::invert_entropy(
       fc = fa;
     }
 
-    Real tolerance = 2*ZMC::tol_eps*std::abs(b) + half*ZMC::tol_coeff;
-    xm = half*(c-b);
+    Real tolerance = 2*ZMC::tol_eps*std::abs(b) + ZMC::half*ZMC::tol_coeff;
+    xm = ZMC::half*(c-b);
 
     converged = (std::abs(xm) <= tolerance || fb == 0);
     if (converged) break;
@@ -86,7 +84,7 @@ void Functions<S,D>::invert_entropy(
       if (pbr > 0) qbr=-qbr;
 
       pbr=std::abs(pbr);
-      if (2*pbr < ekat::impl::min(3*xm*qbr-std::abs(tolerance*qbr), std::abs(ebr*qbr))) {
+      if (2*pbr < Kokkos::min(3*xm*qbr-std::abs(tolerance*qbr), std::abs(ebr*qbr))) {
         ebr = d;
         d = pbr/qbr;
       }

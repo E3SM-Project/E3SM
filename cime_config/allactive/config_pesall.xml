@@ -301,7 +301,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%.+_oi%oEC60to30v3">
-    <mach name="anvil|bebop">
+    <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> A_WCYCL*/ne30_oECv3 on 29 nodes pure-MPI, sypd=2.88 </comment>
         <ntasks>
@@ -1040,6 +1040,21 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="bebop">
+      <pes compset="any" pesize="any">
+        <comment>bebop: any compset on ne30np4 grid</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_cpl>-8</ntasks_cpl>
+          <ntasks_glc>-8</ntasks_glc>
+          <ntasks_wav>-8</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%oEC60to30v3">
     <mach name="compy">
@@ -1192,6 +1207,24 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="bebop">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="any">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 25 nodes pure-MPI</comment>
+        <ntasks>
+          <ntasks_atm>-19</ntasks_atm>
+          <ntasks_lnd>-9</ntasks_lnd>
+          <ntasks_rof>-9</ntasks_rof>
+          <ntasks_ice>-10</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_cpl>-19</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_lnd>-10</rootpe_lnd>
+          <rootpe_rof>-10</rootpe_rof>
+          <rootpe_ocn>-19</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="S">
         <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 25 nodes pure-MPI, ~2.9 sypd </comment>
@@ -1248,6 +1281,53 @@
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>2700</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+    <mach name="crux">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="PS">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 15 nodes pure-MPI, ~7 sypd </comment>
+        <ntasks>
+          <ntasks_atm>-11</ntasks_atm>
+          <ntasks_lnd>-5</ntasks_lnd>
+          <ntasks_rof>-5</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_cpl>-11</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ice>-5</rootpe_ice>
+          <rootpe_ocn>-11</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="PM">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 30 nodes pure-MPI, ~13 sypd </comment>
+        <ntasks>
+          <ntasks_atm>-22</ntasks_atm>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ice>-14</ntasks_ice>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_cpl>-22</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ice>-8</rootpe_ice>
+          <rootpe_ocn>-22</rootpe_ocn>
+        </rootpe>
+      </pes>
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+_SESP$" pesize="PL">
+        <comment> --compset WCYCL* --res ne30pg2_r05_IcoswISC30E3r5 on 58 nodes pure-MPI, ~20 sypd </comment>
+        <ntasks>
+          <ntasks_atm>-43</ntasks_atm>
+          <ntasks_lnd>-11</ntasks_lnd>
+          <ntasks_rof>-11</ntasks_rof>
+          <ntasks_ice>-32</ntasks_ice>
+          <ntasks_ocn>-15</ntasks_ocn>
+          <ntasks_cpl>-43</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ice>-11</rootpe_ice>
+          <rootpe_ocn>-43</rootpe_ocn>
         </rootpe>
       </pes>
     </mach>
@@ -1861,9 +1941,9 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="improv|crux">
+    <mach name="improv|bebop|crux">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV.+" pesize="S">
-        <comment>improv|crux+allactive: RRM-WCYCL on 6 nodes</comment>
+        <comment>improv|bebop|crux+allactive: RRM-WCYCL on 6 nodes</comment>
         <ntasks>
           <ntasks_atm>-6</ntasks_atm>
           <ntasks_lnd>-6</ntasks_lnd>

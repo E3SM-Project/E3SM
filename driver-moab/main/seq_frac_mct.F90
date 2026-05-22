@@ -164,10 +164,6 @@ module seq_frac_mct
 
   use seq_comm_mct, only : mbaxid  !           iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
-#ifdef MOABDEBUG
-  use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
-  use seq_comm_mct, only : mbox2id !           iMOAB id for ocn mesh instanced from MCT on coupler pes
-#endif
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
   use seq_comm_mct, only : mbofxid !           iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
@@ -333,10 +329,6 @@ contains
     integer id_join ! used for example for atm%cplcompid
     integer :: mpicom ! we are on coupler PES here
     integer :: my_task !
-#ifdef MOABDEBUG
-    integer :: mbix2id ! just for debugging to expose ice mct to compare with ocn mct
-    ! are they the same or not?
-#endif
     character(30)            :: outfile, wopts
 
 
@@ -374,8 +366,7 @@ contains
     ! Initialize fractions on atm grid/decomp (initialize ice fraction to zero)
 
     if (atm_present) then
-       lSize = mct_aVect_lSize(dom_a%data)
-       call mct_aVect_init(fractions_a,rList=fraclist_a,lsize=lsize)
+       call mct_aVect_init(fractions_a,rList=fraclist_a,lsize=0)
        call mct_aVect_zero(fractions_a)
 
        ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
@@ -419,20 +410,15 @@ contains
 
     ! MOABTODO: add capabiility for MOAB
     if (glc_present) then
-       lSize = mct_aVect_lSize(dom_g%data)
-       call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=lsize)
+       call mct_aVect_init(fractions_g,rList=fraclist_g,lsize=0)
        call mct_aVect_zero(fractions_g)
 
-       kg = mct_aVect_indexRA(fractions_g,"gfrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_g%data ,"frac" ,perrWith=subName)
-       fractions_g%rAttr(kg,:) = dom_g%data%rAttr(kf,:)
     end if
 
     ! Initialize fractions on land grid decomp, just an initial "guess", updated later
 
     if (lnd_present) then
-       lSize = mct_aVect_lSize(dom_l%data)
-       call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
+       call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=0)
        call mct_aVect_zero(fractions_l)
        if (mblxid .ge. 0  ) then
          arrSize = mbGetnCells(mblxid)
@@ -452,19 +438,8 @@ contains
 
          deallocate(tagValues)
        endif
-#ifdef MOABDEBUG
-       ! mblx2id is the id for moab app exposing land cpl 
-       if(mblxid > 0) then
-           call expose_mct_grid_moab(lnd, mblx2id)
-       endif
-       if (mbixid > 0 ) then
-           call expose_mct_grid_moab(ice, mbix2id)
-       endif
-#endif
+
       ! set lfrin to the domain frac
-       kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
-       fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
        if (mblxid .ge. 0  ) then
          allocate(tagValues(arrSize))
          call mbGetCellTagVals(mblxid, 'frac',tagValues,arrSize)
@@ -485,13 +460,9 @@ contains
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
     if (rof_present) then
-       lSize = mct_aVect_lSize(dom_r%data)
-       call mct_aVect_init(fractions_r,rList=fraclist_r,lsize=lsize)
+       call mct_aVect_init(fractions_r,rList=fraclist_r,lsize=0)
        call mct_aVect_zero(fractions_r)
 
-       kr = mct_aVect_indexRa(fractions_r,"rfrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_r%data ,"frac" ,perrWith=subName)
-       fractions_r%rAttr(kr,:) = dom_r%data%rAttr(kf,:)
        ! fractions needs to be set on river grid (that has a mask ?)
        ! copy from land code; we have on coupler the river instance that comes from river-ocean map
        if (mbrxid .ge. 0  ) then ! //
@@ -525,8 +496,7 @@ contains
     ! Initialize fractions on wav grid decomp, just an initial "guess", updated later
     !MOABTODO: implement for moab
     if (wav_present) then
-       lSize = mct_aVect_lSize(dom_w%data)
-       call mct_aVect_init(fractions_w,rList=fraclist_w,lsize=lsize)
+       call mct_aVect_init(fractions_w,rList=fraclist_w,lsize=0)
        call mct_aVect_zero(fractions_w)
        fractions_w%rAttr(:,:) = 1.0_r8
     end if
@@ -543,13 +513,8 @@ contains
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
     if (ice_present) then
-       lSize = mct_aVect_lSize(dom_i%data)
-       call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=lsize)
+       call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=0)
        call mct_aVect_zero(fractions_i)
-
-       ko = mct_aVect_indexRa(fractions_i,"ofrac",perrWith=subName)
-       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
-       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:)
 
        if (mbixid .ge. 0  ) then ! //
          tagname = trim(fraclist_i)//C_NULL_CHAR ! 'afrac:ifrac:ofrac'
@@ -609,13 +574,9 @@ contains
     ! These are initialized the same as for ice
 
     if (ocn_present) then
-       lSize = mct_aVect_lSize(dom_o%data)
-       call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
+       call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=0)
        call mct_aVect_zero(fractions_o)
-#ifdef MOABDEBUG
-       ! initialize ocn imoab app on mct grid
-       call expose_mct_grid_moab(ocn, mbox2id) ! will use then to set the data on it , for debugging
-#endif
+
        if (mboxid .ge. 0  ) then ! //
          tagname = trim(fraclist_o)//C_NULL_CHAR ! 'afrac:ifrac:ofrac:ifrad:ofrad'
          tagtype = 1  ! dense, double
@@ -654,9 +615,6 @@ contains
           deallocate(tagValues)
 
        else ! ocn_present but stub sea ice
-          ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
-          kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
-          fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
           ! so the frac var from dom is copied into ofrac field
           !  frac is on ocean mesh, ofrac is on ocean mesh too;
 
@@ -799,16 +757,15 @@ contains
     end if
 
 
-! TODO convert these to use MOAB
-    if (lnd_present) call seq_frac_check(fractions_l,'lnd init')
-    if (glc_present) call seq_frac_check(fractions_g,'glc init')
-    if (rof_present) call seq_frac_check(fractions_r,'rof init')
-    if (wav_present) call seq_frac_check(fractions_w,'wav init')
-    if (iac_present) call seq_frac_check(fractions_z,'iac init')
-    if (ice_present) call seq_frac_check(fractions_i,'ice init')
-    if (ocn_present) call seq_frac_check(fractions_o,'ocn init')
+    if (lnd_present) call seq_frac_check(fractions_l,mblxid,'lnd init')
+    if (glc_present) call seq_frac_check(fractions_g,-1,'glc init')
+    if (rof_present) call seq_frac_check(fractions_r,mbrxid,'rof init')
+    if (wav_present) call seq_frac_check(fractions_w,-1,'wav init')
+    if (iac_present) call seq_frac_check(fractions_z,-1,'iac init')
+    if (ice_present) call seq_frac_check(fractions_i,mbixid,'ice init')
+    if (ocn_present) call seq_frac_check(fractions_o,mboxid,'ocn init')
     if (atm_present .and. (lnd_present.or.ice_present.or.ocn_present)) &
-         call seq_frac_check(fractions_a,'atm init')
+         call seq_frac_check(fractions_a,mbaxid,'atm init')
     seq_frac_debug = debug_old
 #ifdef MOABDEBUG
     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
@@ -946,17 +903,6 @@ contains
 
     ! entire update depends on if ice present.
     if (ice_present) then
-       ! MCT
-       !copy Si_ifrac to ifrac
-       call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")
-
-       ki = mct_aVect_indexRA(fractions_i,"ifrac")
-       ko = mct_aVect_indexRA(fractions_i,"ofrac")
-       kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
-       fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
-       fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
-
-       call seq_frac_check(fractions_i,'ice set')
 
        ! MOAB
        if (first_time) then
@@ -972,13 +918,13 @@ contains
        ! update ifrac and ofrac
        call mbGetCellTagVals(mbixid, 'frac',tagValues2,arrSize_i)
 
-       !fractions_i%rAttr(ki,:) = fractions_i%rAttr(ki,:) * dom_i%data%rAttr(kf,:)
        tagValues(:) = tagValues(:)*tagValues2(:)
        call mbSetCellTagVals(mbixid, 'ifrac',tagValues,arrSize_i)
 
-       !fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:) - fractions_i%rAttr(ki,:)
        tagValues3(:) = tagValues2(:) - tagValues(:)
        call mbSetCellTagVals(mbixid, 'ofrac',tagValues3,arrSize_i)
+
+       call seq_frac_check(fractions_i,mbixid,'ice set')
 
 #ifdef MOABDEBUG
          write(lnum,"(I0.2)")num_moab_exports
@@ -994,7 +940,7 @@ contains
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
                fldlist='ofrac:ifrac',norm=.false.)
-          call seq_frac_check(fractions_o, 'ocn set')
+          call seq_frac_check(fractions_o,mboxid,'ocn set')
 
           ! set the ofrac on mbofxid instance, because it is needed for prep_aoxflux
           call mbGetCellTagVals(mboxid, 'ofrac',tagValues4,arrSize_o)
@@ -1036,7 +982,7 @@ contains
              deallocate(fcorr)
           endif
 
-          call seq_frac_check(fractions_a,'atm set')
+          call seq_frac_check(fractions_a,mbaxid,'atm set')
        endif  ! end of if atm_present
     end if  ! end of if ice_present
 
@@ -1047,19 +993,47 @@ contains
   ! !IROUTINE: seq_frac_check
   !
   ! !DESCRIPTION:
-  !    Check surface fractions
+  !    Validates surface fractions stored in the given fractions bundle and
+  !    optionally prints min/max diagnostics for each fraction field to logunit.
+  !
+  !    Output is produced under two conditions:
+  !
+  !    1. seq_frac_debug > 1 (module-level integer, default 1):
+  !       When raised above 1, min/max values for all fraction fields present
+  !       in the bundle are always printed regardless of validity.  This is
+  !       done temporarily during initialisation (seq_frac_set) so that the
+  !       initial fraction state is always logged, and then restored to its
+  !       previous value afterwards.
+  !
+  !    2. error = .true. (a validity failure is detected):
+  !       An error is flagged when:
+  !         a) Any individual fraction field (afrac, lfrac, ifrac, ofrac,
+  !            gfrac, rfrac, wfrac, zfrac, lfrin) lies outside the range
+  !            [0 - eps_fracval, 1 + eps_fracval]  (eps_fracval = 1.0e-2).
+  !         b) The point-wise sum ofrac + lfrac + ifrac deviates from 1.0
+  !            by more than eps_fracsum (eps_fracsum = 1.0e-2) for one or
+  !            more grid cells.
+  !       On an error the same min/max diagnostics are printed.  The run then
+  !       aborts via shr_sys_abort unless seq_frac_abort is .false. or
+  !       seq_frac_dead is .true., in which case a non-fatal warning is
+  !       written instead.
+  !
+  !    At the default debug level (seq_frac_debug == 1) with no errors, no
+  !    output is produced.
   !
   ! !REVISION HISTORY:
   !    2008-jun-11 - T. Craig - initial version
+  !    2026-mar-11 - R. Jacob - convert to MOAB.  Add documentation.
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_frac_check(fractions,string)
+  subroutine seq_frac_check(fractions, moab_app_id, string)
 
     ! !INPUT/OUTPUT PARAMETERS:
 
-    type(mct_aVect) , intent(in) :: fractions   ! Fractions datatype
-    character(len=*), intent(in), optional :: string      ! character string
+    type(mct_aVect) , intent(in) :: fractions        ! Fractions datatype
+    integer         , intent(in) :: moab_app_id      ! MOAB app id (< 0 if not using MOAB)
+    character(len=*), intent(in), optional :: string  ! character string
 
     !EOP
 
@@ -1084,6 +1058,8 @@ contains
     integer  :: ka,kl,ki,ko,kg,kk,kr,kw,kz
     character(len=128) :: lstring
     logical :: error
+    real(r8), allocatable :: tagVals(:)
+    real(r8), allocatable :: ofrac_mb(:), lfrac_mb(:), ifrac_mb(:)
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_check) '
@@ -1144,58 +1120,97 @@ contains
     kz = mct_aVect_indexRA(fractions,"zfrac",perrWith='quiet')
     kk = mct_aVect_indexRA(fractions,"lfrin",perrWith='quiet')
 
-    if (ka > 0) then
-       aminval = minval(fractions%rAttr(ka,:))
-       amaxval = maxval(fractions%rAttr(ka,:))
-    endif
-    if (kl > 0) then
-       lminval = minval(fractions%rAttr(kl,:))
-       lmaxval = maxval(fractions%rAttr(kl,:))
-    endif
-    if (ko > 0) then
-       ominval = minval(fractions%rAttr(ko,:))
-       omaxval = maxval(fractions%rAttr(ko,:))
-    endif
-    if (ki > 0) then
-       iminval = minval(fractions%rAttr(ki,:))
-       imaxval = maxval(fractions%rAttr(ki,:))
-    endif
-    if (kg > 0) then
-       gminval = minval(fractions%rAttr(kg,:))
-       gmaxval = maxval(fractions%rAttr(kg,:))
-    endif
-    if (kr > 0) then
-       rminval = minval(fractions%rAttr(kr,:))
-       rmaxval = maxval(fractions%rAttr(kr,:))
-    endif
-    if (kw > 0) then
-       wminval = minval(fractions%rAttr(kw,:))
-       wmaxval = maxval(fractions%rAttr(kw,:))
-    endif
-    if (kz > 0) then
-       zminval = minval(fractions%rAttr(kz,:))
-       zmaxval = maxval(fractions%rAttr(kz,:))
-    endif
-    if (kk > 0) then
-       kminval = minval(fractions%rAttr(kk,:))
-       kmaxval = maxval(fractions%rAttr(kk,:))
+    if (moab_app_id >= 0) then
+       lsize = mbGetnCells(moab_app_id)
+       if (ka > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'afrac', tagVals, lsize)
+          aminval = minval(tagVals)
+          amaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (kl > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'lfrac', tagVals, lsize)
+          lminval = minval(tagVals)
+          lmaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (ko > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'ofrac', tagVals, lsize)
+          ominval = minval(tagVals)
+          omaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (ki > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'ifrac', tagVals, lsize)
+          iminval = minval(tagVals)
+          imaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (kg > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'gfrac', tagVals, lsize)
+          gminval = minval(tagVals)
+          gmaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (kr > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'rfrac', tagVals, lsize)
+          rminval = minval(tagVals)
+          rmaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (kw > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'wfrac', tagVals, lsize)
+          wminval = minval(tagVals)
+          wmaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (kz > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'zfrac', tagVals, lsize)
+          zminval = minval(tagVals)
+          zmaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
+       if (kk > 0) then
+          allocate(tagVals(lsize))
+          call mbGetCellTagVals(moab_app_id, 'lfrin', tagVals, lsize)
+          kminval = minval(tagVals)
+          kmaxval = maxval(tagVals)
+          deallocate(tagVals)
+       endif
     endif
 
     ncnt = 0
     maxerr = 0.0_r8
     if (kl > 0 .and. ko > 0 .and. ki > 0) then
-       do n = 1,lsize
-          sum = fractions%rAttr(ko,n) + fractions%rAttr(kl,n) + fractions%rAttr(ki,n)
-          sminval = min(sum,sminval)
-          smaxval = max(sum,smaxval)
-          diff = abs(1.0_r8 - sum)
-          if (diff > eps_fracsum) then
-             ncnt = ncnt + 1
-             maxerr = max(maxerr, diff)
-             !tcx debug  write(logunit,*) trim(lstring),' err# ',ncnt, n, lsize, &
-             !fractions%rAttr(ko,n),fractions%rAttr(kl,n),fractions%rAttr(ki,n),sum
-          endif
-       enddo
+       if (moab_app_id >= 0) then
+          allocate(ofrac_mb(lsize))
+          allocate(lfrac_mb(lsize))
+          allocate(ifrac_mb(lsize))
+          call mbGetCellTagVals(moab_app_id, 'ofrac', ofrac_mb, lsize)
+          call mbGetCellTagVals(moab_app_id, 'lfrac', lfrac_mb, lsize)
+          call mbGetCellTagVals(moab_app_id, 'ifrac', ifrac_mb, lsize)
+          do n = 1,lsize
+             sum = ofrac_mb(n) + lfrac_mb(n) + ifrac_mb(n)
+             sminval = min(sum,sminval)
+             smaxval = max(sum,smaxval)
+             diff = abs(1.0_r8 - sum)
+             if (diff > eps_fracsum) then
+                ncnt = ncnt + 1
+                maxerr = max(maxerr, diff)
+             endif
+          enddo
+          deallocate(ofrac_mb)
+          deallocate(lfrac_mb)
+          deallocate(ifrac_mb)
+       endif
     endif
 
     error = .false.

@@ -200,7 +200,6 @@
     </submit_args>
     <directives>
       <directive> -N {{ job_id }}</directive>
-      <directive> -l select={{ num_nodes }} </directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive> -j oe </directive>
     </directives>
@@ -386,9 +385,9 @@
 
     <batch_system MACH="anvil" type="slurm" >
       <queues>
-	<queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
-	<queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
-	<queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
+        <queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
+        <queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
+        <queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
       </queues>
     </batch_system>
 
@@ -397,27 +396,28 @@
         <directive> --switches=$SHELL{echo "(`./xmlquery --value NUM_NODES` + 19) / 20" |bc}</directive>
       </directives>
       <queues>
-	<queue walltimemax="48:00:00" strict="true" nodemin="1" nodemax="492">compute</queue>
-	<queue walltimemax="04:00:00" strict="true" nodemin="1" nodemax="20" default="true">debug</queue>
+        <queue walltimemax="48:00:00" strict="true" nodemin="1" nodemax="492">compute</queue>
+        <queue walltimemax="04:00:00" strict="true" nodemin="1" nodemax="20" default="true">debug</queue>
       </queues>
     </batch_system>
 
-    <batch_system MACH="bebop" type="slurm" >
-      <queues>
-	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
-        <queue walltimemax="01:00:00" nodemax="608" default="true">bdw</queue>
-        <queue walltimemax="01:00:00" nodemax="512">knl</queue>
-      </queues>
-    </batch_system>
+  <batch_system MACH="bebop" type="pbspro">
+    <directives>
+      <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="03:00:00" nodemin="1" nodemax="672" strict="true" default="true">bdwall</queue>
+    </queues>
+  </batch_system>
 
   <batch_system MACH="improv" type="pbspro">
     <directives>
       <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="01:00:00" nodemin="1" nodemax="8"   strict="true" default="true">debug</queue>
-      <queue walltimemax="72:00:00" nodemin="9" nodemax="805" strict="true">compute</queue>
-      <queue walltimemax="72:00:00" nodemin="1" nodemax="12"  strict="true">bigmem</queue>
+      <queue walltimemax="01:00:00" nodemin="1" nodemax="2"  default="true">debug</queue>
+      <queue walltimemax="72:00:00" nodemin="3" nodemax="805">compute</queue>
+      <queue walltimemax="72:00:00" nodemin="1" nodemax="12" >bigmem</queue>
     </queues>
   </batch_system>
 
@@ -583,6 +583,7 @@
       <batch_submit>/lus/flare/projects/E3SMinput/tools/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.aurora-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:flare </directive>
       </directives>
       <queues>
@@ -594,11 +595,12 @@
         <queue walltimemax="24:00:00"  nodemin="1920" nodemax="10624" strict="true">prod</queue>
       </queues>
     </batch_system>
-    
+
     <batch_system MACH="polaris" type="pbspro">
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <jobid_pattern>(\d+)\.polaris-pbs</jobid_pattern>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
@@ -613,6 +615,7 @@
     <batch_system MACH="crux" type="pbspro">
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <directives>
+        <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
@@ -623,13 +626,13 @@
 
     <batch_system MACH="cascade" type="slurm">
       <directives>
-	<directive>--output=slurm.out</directive>
-	<directive>--error=slurm.err</directive>
+        <directive>--output=slurm.out</directive>
+        <directive>--error=slurm.err</directive>
       </directives>
       <queues>
-	<queue walltimemax="00:59:00" nodemin="1"  nodemax="15"  >small</queue>
-	<queue walltimemax="00:59:00" nodemin="16" nodemax="127" >medium</queue>
-	<queue walltimemax="00:59:00" nodemin="128" default="true" >large</queue>
+        <queue walltimemax="00:59:00" nodemin="1"  nodemax="15"  >small</queue>
+        <queue walltimemax="00:59:00" nodemin="16" nodemax="127" >medium</queue>
+        <queue walltimemax="00:59:00" nodemin="128" default="true" >large</queue>
       </queues>
     </batch_system>
 
@@ -749,7 +752,7 @@
    <batch_system MACH="oic5" type="pbs" >
          <directives>
                  <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-		 <directive>-q esd13q</directive>
+                 <directive>-q esd13q</directive>
          </directives>
          <queues>
            <queue default="true">esd13q</queue>

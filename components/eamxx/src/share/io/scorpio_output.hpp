@@ -1,7 +1,7 @@
 #ifndef SCREAM_SCORPIO_OUTPUT_HPP
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
@@ -125,7 +125,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
-  using diag_ptr_type = std::shared_ptr<AtmosphereDiagnostic>;
+  using diag_ptr_type = std::shared_ptr<AbstractDiagnostic>;
 
   ~AtmosphereOutput();
 
@@ -145,7 +145,7 @@ public:
                          const scorpio::FileMode mode);
 
   void init_timestep(const util::TimeStamp &start_of_step);
-  void run(const std::string &filename, const bool output_step, const bool checkpoint_step,
+  void run(const std::string &filename, const util::TimeStamp& ts, const bool output_step, const bool checkpoint_step,
            const int nsteps_since_last_output, const bool allow_invalid_fields = false);
 
   long long res_dep_memory_footprint() const;
@@ -154,6 +154,12 @@ public:
   get_io_grid() const
   {
     return m_io_grid;
+  }
+
+  const std::vector<std::string>&
+  get_intermediate_aliases() const
+  {
+    return m_intermediate_aliases;
   }
 
   void set_logger(const std::shared_ptr<ekat::logger::LoggerBase> &atm_logger);
@@ -167,7 +173,7 @@ protected:
   void register_variables(const std::string &filename, const std::string &fp_precision,
                           const scorpio::FileMode mode);
   void set_decompositions(const std::string &filename);
-  void compute_diagnostics(const bool allow_invalid_fields);
+  void computes(const util::TimeStamp& ts, const bool allow_invalid_fields);
   void process_requested_fields();
   strvec_t get_var_dimnames(const FieldLayout &layout) const;
 
@@ -220,6 +226,11 @@ protected:
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
   strvec_t m_fields_names;
+  // Intermediate-only aliases declared in the 'aliases' YAML section.
+  // Each entry has the form "alias:=original". These fields are created and
+  // registered in the field manager so that other diagnostics can depend on
+  // them, but they are NOT written to the NC output file.
+  strvec_t m_intermediate_aliases;
   strmap_t<Field> m_field_to_avg_count;
   std::vector<Field> m_avg_counts;
   strmap_t<std::string> m_field_to_avg_cnt_suffix;

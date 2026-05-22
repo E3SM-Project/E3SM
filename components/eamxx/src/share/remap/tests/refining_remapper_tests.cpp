@@ -11,23 +11,23 @@ namespace scream {
 
 Field create_field (const std::string& name, const LayoutType lt, const AbstractGrid& grid)
 {
-  const auto u = ekat::units::Units::nondimensional();
+  using namespace ShortFieldTagsNames;
   const auto& gn = grid.name();
   const auto  ndims = 2;
   Field f;
   switch (lt) {
     case LayoutType::Scalar1D:
-      f = Field(FieldIdentifier(name,grid.get_vertical_layout(true),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_vertical_layout(LEV),ekat::units::none,gn));  break;
     case LayoutType::Scalar2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_scalar_layout(),ekat::units::none,gn));  break;
     case LayoutType::Vector2D:
-      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),u,gn));  break;
+      f = Field(FieldIdentifier(name,grid.get_2d_vector_layout(ndims),ekat::units::none,gn));  break;
     case LayoutType::Scalar3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(true),u,gn));  break;
-      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      f = Field(FieldIdentifier(name,grid.get_3d_scalar_layout(LEV),ekat::units::none,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);  break;
     case LayoutType::Vector3D:
-      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(false,ndims),u,gn));  break;
-      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
+      f = Field(FieldIdentifier(name,grid.get_3d_vector_layout(ILEV,ndims),ekat::units::none,gn));
+      f.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);  break;
     default:
       EKAT_ERROR_MSG ("Invalid layout type for this unit test.\n");
   }
@@ -168,9 +168,14 @@ TEST_CASE ("refining_remapper") {
   auto filename = "rr_tests_map.np" + std::to_string(comm.size()) + ".nc";
   write_map_file(filename,ngdofs_src);
 
-  // Create target grid. Ensure gids are numbered like in map file
+  // Create source/target grid. For src grid, gids are fine. For tgt, create_point_grid
+  // will partition gids, so that rank0 owns [0,n0), rank2 [n0,n0+n1),... But in the test
+  // phase, we assume each rank owns a contiguous portion of the "1d segment", so we need
+  // to modify the list of gids owned
+  // Also, create tgt_grid 0-based to make modular arithmetic easier, then add 1 when fixing dofs
   const int nlevs = std::max(SCREAM_PACK_SIZE,16);
-  auto tgt_grid = create_point_grid("tgt",ngdofs_tgt,nlevs,comm);
+  auto src_grid = create_point_grid("src",ngdofs_src,nlevs,comm,1);
+  auto tgt_grid = create_point_grid("tgt",ngdofs_tgt,nlevs,comm,0);
   auto dofs_h = tgt_grid->get_dofs_gids().get_view<gid_type*,Host>();
   for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
     int q = dofs_h[i] / 2;
@@ -182,21 +187,33 @@ TEST_CASE ("refining_remapper") {
   }
   tgt_grid->get_dofs_gids().sync_to_dev();
 
-  // Test bad registrations separately, since they corrupt the remapper state for later
+  // Test bad usage, since they corrupt the remapper state for later
   {
-    auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
+    // Incompatible nlevs
+    auto bad_src_grid1 = src_grid->clone("bad_src",true);
+    bad_src_grid1->reset_vertical_configuration(nlevs+1,bad_src_grid1->get_vkind());
+    CHECK_THROWS (std::make_shared<HorizontalRemapper>(bad_src_grid1,tgt_grid,filename));
+
+    // src incompatible with map file
+    auto bad_src_grid2 = create_point_grid("src",ngdofs_src+1,nlevs,comm);
+    CHECK_THROWS (std::make_shared<HorizontalRemapper>(bad_src_grid2,tgt_grid,filename));
+
+    // tgt incompatible with map file
+    auto bad_tgt_grid1 = create_point_grid("tgt",ngdofs_tgt+1,nlevs,comm);
+    CHECK_THROWS (std::make_shared<HorizontalRemapper>(src_grid,bad_tgt_grid1,filename));
+
+    auto r = std::make_shared<HorizontalRemapper>(src_grid,tgt_grid,filename);
     auto src_grid = r->get_src_grid();
     Field bad_src(FieldIdentifier("",src_grid->get_2d_scalar_layout(),ekat::units::m,src_grid->name(),DataType::IntType));
     Field bad_tgt(FieldIdentifier("",tgt_grid->get_2d_scalar_layout(),ekat::units::m,tgt_grid->name(),DataType::IntType));
-    CHECK_THROWS (r->register_field(bad_src,bad_tgt)); // not allocated
+    // Fields don't need to be allocated prior to registration
+    r->register_field(bad_src,bad_tgt);
     bad_src.allocate_view();
     bad_tgt.allocate_view();
-    r->register_field(bad_src,bad_tgt);
     CHECK_THROWS (r->registration_ends()); // bad data type (must be real)
   }
 
-  auto r = std::make_shared<HorizontalRemapper>(tgt_grid,filename);
-  auto src_grid = r->get_src_grid();
+  auto r = std::make_shared<HorizontalRemapper>(src_grid,tgt_grid,filename);
 
   auto bundle_src = create_field("bundle3d_src",LayoutType::Vector3D,*src_grid,seed);
   auto s1d_src   = create_field("s1d_src",LayoutType::Scalar1D,*src_grid,seed++);

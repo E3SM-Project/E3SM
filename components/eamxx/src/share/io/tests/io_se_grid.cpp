@@ -119,8 +119,8 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid,
 
   FieldIdentifier fid1("field_1",grid->get_2d_scalar_layout(),kg,gn);
   FieldIdentifier fid2("field_2",FL{{LEV},{nlevs}},kg,gn);
-  FieldIdentifier fid3("field_3",grid->get_3d_scalar_layout(true),kg/m,gn);
-  FieldIdentifier fid4("field_packed",grid->get_3d_scalar_layout(true),kg/m,gn);
+  FieldIdentifier fid3("field_3",grid->get_3d_scalar_layout(LEV),kg/m,gn);
+  FieldIdentifier fid4("field_packed",grid->get_3d_scalar_layout(LEV),kg/m,gn);
 
   // Register fields with fm
   fm->register_field(FR{fid1});

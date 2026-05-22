@@ -286,7 +286,7 @@ TEST_CASE("bfb_pow", "test taylor appx of pow function") {
   }
 
   SECTION ("real_pow") {
-    auto cmvdc = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::HostMirror {
+    auto cmvdc = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::host_mirror_type {
       auto xh = Kokkos::create_mirror_view(xd);
       Kokkos::deep_copy(xh,xd);
       return xh;
@@ -332,13 +332,13 @@ TEST_CASE("bfb_pow", "test taylor appx of pow function") {
 
   SECTION ("check_worst_pow") {
 
-    auto hd = [](ExecViewManaged<Scalar>::HostMirror h,ExecViewManaged<Scalar> d) {
+    auto hd = [](ExecViewManaged<Scalar>::host_mirror_type h,ExecViewManaged<Scalar> d) {
       Kokkos::deep_copy(d,h);
     };
-    auto dh = [](ExecViewManaged<Scalar> d,ExecViewManaged<Scalar>::HostMirror h) {
+    auto dh = [](ExecViewManaged<Scalar> d,ExecViewManaged<Scalar>::host_mirror_type h) {
       Kokkos::deep_copy(h,d);
     };
-    auto cmv = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::HostMirror {
+    auto cmv = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::host_mirror_type {
       auto xh = Kokkos::create_mirror_view(xd);
       return xh;
     };

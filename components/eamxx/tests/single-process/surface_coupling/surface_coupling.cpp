@@ -62,7 +62,6 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_grids();
   // Create a fields manager on the fly with the appropriate fields and grid.
-  using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   const auto grid = gm->get_grid("physics");
   const int nlcols = grid->get_num_local_dofs();
@@ -70,7 +69,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   std::vector<std::string> fnames = {"lwdn"};
   FieldLayout layout({COL},{nlcols});
   auto fm = std::make_shared<FieldManager>(grid,RepoState::Closed);
-  auto nondim = Units::nondimensional();
+  auto nondim = ekat::units::none;
   for (auto name : fnames) {
     FieldIdentifier fid(name,layout,nondim,grid->name());
     Field f(fid);

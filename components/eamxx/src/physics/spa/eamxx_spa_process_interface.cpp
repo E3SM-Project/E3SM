@@ -21,8 +21,8 @@ SPA::SPA (const ekat::Comm& comm, const ekat::ParameterList& params)
 void SPA::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
-  constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
   m_model_grid = m_grids_manager->get_grid("physics");
@@ -38,27 +38,28 @@ void SPA::create_requests()
       "  - num lw bands: " + std::to_string(nlwbands) + "\n");
 
   // Define the different field layouts that will be used for this process
-  auto scalar3d_mid    = m_model_grid->get_3d_scalar_layout(true);
+  auto scalar3d_mid    = m_model_grid->get_3d_scalar_layout(LEV);
   auto scalar2d        = m_model_grid->get_2d_scalar_layout();
-  auto scalar1d_mid    = m_model_grid->get_vertical_layout(true);
-  auto scalar3d_swband = m_model_grid->get_3d_vector_layout(true,nswbands,"swband");
-  auto scalar3d_lwband = m_model_grid->get_3d_vector_layout(true,nlwbands,"lwband");
+  auto scalar1d_mid    = m_model_grid->get_vertical_layout(LEV);
+  auto scalar3d_swband = m_model_grid->get_3d_vector_layout(LEV,nswbands,"swband");
+  auto scalar3d_lwband = m_model_grid->get_3d_vector_layout(LEV,nlwbands,"lwband");
 
   // Set of fields used strictly as input
   add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);
 
   // Set of fields used strictly as output
-  add_field<Computed>("nccn",        scalar3d_mid,    1/kg,   grid_name, ps);
-  add_field<Computed>("aero_g_sw",   scalar3d_swband, nondim, grid_name, ps);
-  add_field<Computed>("aero_ssa_sw", scalar3d_swband, nondim, grid_name, ps);
-  add_field<Computed>("aero_tau_sw", scalar3d_swband, nondim, grid_name, ps);
-  add_field<Computed>("aero_tau_lw", scalar3d_lwband, nondim, grid_name, ps);
+  add_field<Computed>("nccn",        scalar3d_mid,    1/kg, grid_name, ps);
+  add_field<Computed>("aero_g_sw",   scalar3d_swband, none, grid_name, ps);
+  add_field<Computed>("aero_ssa_sw", scalar3d_swband, none, grid_name, ps);
+  add_field<Computed>("aero_tau_sw", scalar3d_swband, none, grid_name, ps);
+  add_field<Computed>("aero_tau_lw", scalar3d_lwband, none, grid_name, ps);
 }
 
 // =========================================================================================
 void SPA::initialize_impl (const RunType /* run_type */)
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   // NOTE: SPA does not have an internal persistent state, so run_type is irrelevant
 
@@ -71,6 +72,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   };
   auto spa_data_file = m_params.get<std::string>("spa_data_file");
   auto spa_map_file  = m_params.get<std::string>("spa_remap_file","");
+  auto time_interpolation_method = m_params.get<std::string>("time_interpolation_method","yearly_periodic");
 
   // SPA doesn't really *need* pint, but DataInterpolation does. It's important to stress that
   // NO FIELD VALUES from p_int are accessed in the DataInterpolation we build, since we
@@ -80,13 +82,26 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // properties compatible with SCREAM_PACK_SIZE.
   // NOTE: we could just add p_int as a required field, but that would be misleading in the DAG
   auto pmid = get_field_in("p_mid");
-  Field pint(FieldIdentifier("p_int",m_model_grid->get_vertical_layout(false),Pa,m_model_grid->name()));
+  Field pint(FieldIdentifier("p_int",m_model_grid->get_vertical_layout(ILEV),Pa,m_model_grid->name()));
   pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   pint.allocate_view();
 
-  util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  util::TimeLine timeline;
+  util::TimeStamp ref_ts;
+  if (time_interpolation_method=="yearly_periodic") {
+    timeline = util::TimeLine::YearlyPeriodic;
+    ref_ts = util::TimeStamp(1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  } else if (time_interpolation_method=="linear") {
+    timeline = util::TimeLine::Linear;
+    // For linear interpolation we read reference timestamp from the input file's time var units
+  } else {
+    EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " +
+                   time_interpolation_method +
+                   ". Valid options are: yearly_periodic, linear.\n");
+  }
+
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
-  m_data_interpolation->setup_time_database ({spa_data_file},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts);
+  m_data_interpolation->setup_time_database ({spa_data_file},timeline, DataInterpolation::Linear, ref_ts);
 
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper

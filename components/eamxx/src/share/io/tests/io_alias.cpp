@@ -27,12 +27,12 @@ namespace scream {
 
 Field col_iota (const std::shared_ptr<const AbstractGrid> &grid)
 {
-  const auto nondim = ekat::units::Units::nondimensional();
-  const auto layout = grid->get_vertical_layout(true);
+  using namespace ShortFieldTagsNames;
+  const auto layout = grid->get_vertical_layout(LEV);
   const int nlevs = grid->get_num_vertical_levels();
 
   // A helper field to set values depending on lev
-  FieldIdentifier fid1("col", layout, nondim, grid->name());
+  FieldIdentifier fid1("col", layout, ekat::units::none, grid->name());
   Field col(fid1);
   col.allocate_view();
   auto col_h = col.get_view<Real*,Host>();
@@ -63,9 +63,10 @@ create_test_field_manager(const std::shared_ptr<const AbstractGrid> &grid,
 {
 
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   const auto layout2d = grid->get_2d_scalar_layout();
-  const auto layout3d = grid->get_3d_scalar_layout(true);
+  const auto layout3d = grid->get_3d_scalar_layout(LEV);
   auto fm = std::make_shared<FieldManager>(grid);
 
   // Create some test fields with realistic EAMxx names

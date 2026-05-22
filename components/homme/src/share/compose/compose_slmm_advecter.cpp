@@ -20,7 +20,7 @@ void Advecter<MT>
 ::init_meta_data (const Int nelem_global, const Int* lid2facenum) {
   const auto nelemd = local_mesh_h_.extent_int(0);
   lid2facenum_ = Ints<DES>("Advecter::lid2facenum", nelemd);
-  lid2facenum_h_ = ko::create_mirror_view(lid2facenum_);
+  lid2facenum_h_ = Ints<HES>("lid2facenum_h", nelemd);
   std::copy(lid2facenum, lid2facenum + nelemd, lid2facenum_h_.data());
   ko::deep_copy(lid2facenum_, lid2facenum_h_);
   s2r_.init(geometry_, cubed_sphere_map_, nelem_global, lid2facenum_, plane_);
@@ -60,7 +60,7 @@ void Advecter<MT>::check_ref2sphere (const Int ie, const Real* p_homme) {
 template <typename MT>
 ko::EnableIfDiffSpace<MT>
 deep_copy (typename Advecter<MT>::LocalMeshesD& d,
-           typename Advecter<MT>::LocalMeshesD::HostMirror& m,
+           typename Advecter<MT>::LocalMeshesD::host_mirror_type& m,
            const typename Advecter<MT>::LocalMeshesH& s) {
   const Int nlm = s.extent_int(0);
   d = typename Advecter<MT>::LocalMeshesD("LocalMeshes", nlm);
@@ -73,7 +73,7 @@ deep_copy (typename Advecter<MT>::LocalMeshesD& d,
 template <typename MT>
 ko::EnableIfSameSpace<MT>
 deep_copy (typename Advecter<MT>::LocalMeshesD& d,
-           typename Advecter<MT>::LocalMeshesD::HostMirror& m,
+           typename Advecter<MT>::LocalMeshesD::host_mirror_type& m,
            const typename Advecter<MT>::LocalMeshesH& s) {
   d = s;
 }

@@ -204,12 +204,16 @@ int pio_iotype (IOType iotype) {
   int iotype_int = {};
   auto& s = ScorpioSession::instance();
   switch(iotype){
-    case IOType::DefaultIOType: iotype_int = s.pio_type_default;                    break;
-    case IOType::NetCDF:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);   break;
-    case IOType::PnetCDF:       iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);  break;
-    case IOType::Adios:         iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);    break;
-    case IOType::Adiosc:        iotype_int = static_cast<int>(PIO_IOTYPE_ADIOSC);   break;
-    case IOType::Hdf5:          iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);     break;
+    case IOType::DefaultIOType:   iotype_int = s.pio_type_default;                           break;
+    case IOType::PnetCDF:         iotype_int = static_cast<int>(PIO_IOTYPE_PNETCDF);         break;
+    case IOType::NetCDF:          iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF);          break;
+    case IOType::NetCDF4C:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF4C);        break;
+    case IOType::NetCDF4P:        iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF4P);        break;
+    case IOType::NetCDF4P_NCZARR: iotype_int = static_cast<int>(PIO_IOTYPE_NETCDF4P_NCZARR); break;
+    case IOType::Adios:           iotype_int = static_cast<int>(PIO_IOTYPE_ADIOS);           break;
+    case IOType::Adiosc:          iotype_int = static_cast<int>(PIO_IOTYPE_ADIOSC);          break;
+    case IOType::Hdf5:            iotype_int = static_cast<int>(PIO_IOTYPE_HDF5);            break;
+    case IOType::Hdf5C:           iotype_int = static_cast<int>(PIO_IOTYPE_HDF5C);           break;
     default:
       EKAT_ERROR_MSG ("Unrecognized/unsupported iotype.\n");
   }

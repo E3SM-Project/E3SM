@@ -7,55 +7,64 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   BuildCprnc()
 
   ## Test io utils
-  CreateUnitTest(io_utils "io_utils.cpp"
+  CreateUnitTest(io_utils
+    SOURCES io_utils.cpp
     LIBS eamxx_io LABELS io
     PROPERTIES RESOURCE_LOCK rpointer_file
   )
 
   ## Test field aliasing functionality
-  CreateUnitTest(io_alias "io_alias.cpp"
+  CreateUnitTest(io_alias
+    SOURCES io_alias.cpp
     LIBS eamxx_io eamxx_diagnostics
     LABELS io
   )
 
   # Test creation of diagnostic from diag_field_name
-  CreateUnitTest(create_diag "create_diag.cpp"
+  CreateUnitTest(create_diag
+    SOURCES create_diag.cpp
     LIBS eamxx_io eamxx_diagnostics
     LABELS io diagnostics
   )
 
   ## Test basic output (no packs, no diags, all avg types, all freq units)
-  CreateUnitTest(io_basic "io_basic.cpp"
+  CreateUnitTest(io_basic
+    SOURCES io_basic.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test output where we write one file per month
-  CreateUnitTest(io_monthly "io_monthly.cpp"
+  CreateUnitTest(io_monthly
+    SOURCES io_monthly.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test basic output (no packs, no diags, all avg types, all freq units)
-  CreateUnitTest(io_filled "io_filled.cpp"
+  CreateUnitTest(io_filled
+    SOURCES io_filled.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test packed I/O
-  CreateUnitTest(io_packed "io_packed.cpp"
+  CreateUnitTest(io_packed
+    SOURCES io_packed.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test diagnostic output
-  CreateUnitTest(io_diags "io_diags.cpp"
+  CreateUnitTest(io_diags
+    SOURCES io_diags.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test transposed output (all averaging types)
-  CreateUnitTest(io_transpose "io_transpose.cpp"
+  CreateUnitTest(io_transpose
+    SOURCES io_transpose.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     FIXTURES_SETUP_INDIVIDUAL io_transpose_output
@@ -90,14 +99,16 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   endforeach()
 
   # Test output on SE grid
-  CreateUnitTest(io_se_grid "io_se_grid.cpp"
+  CreateUnitTest(io_se_grid
+    SOURCES io_se_grid.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test output restart
   # NOTE: These tests cannot run in parallel due to contention of the rpointer file
-  CreateUnitTest(output_restart "output_restart.cpp"
+  CreateUnitTest(output_restart
+    SOURCES output_restart.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     FIXTURES_SETUP_INDIVIDUAL restart_check_setup
@@ -119,20 +130,23 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   endforeach()
 
   ## Test remap output
-  CreateUnitTest(io_remap_test "io_remap_test.cpp"
+  CreateUnitTest(io_remap_test
+    SOURCES io_remap_test.cpp
     LIBS eamxx_io eamxx_diagnostics
     LABELS io remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test remap output when map file is sub-sampling (ARM-style)
-  CreateUnitTest(io_horiz_sampling "io_horiz_sampling.cpp"
+  CreateUnitTest(io_horiz_sampling
+    SOURCES io_horiz_sampling.cpp
     LIBS eamxx_io LABELS io remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
   ## Test single-column reader
-  CreateUnitTest(io_scm_reader "io_scm_reader.cpp"
+  CreateUnitTest(io_scm_reader
+    SOURCES io_scm_reader.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
@@ -142,7 +156,8 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   set(MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${MAP_FILE})
 
   GetInputFile ("scream/maps/${MAP_FILE}")
-  CreateUnitTest(io_latlon_write "io_latlon.cpp"
+  CreateUnitTest(io_latlon_write
+    SOURCES io_latlon.cpp
     LIBS eamxx_io LABELS io
     MPI_RANKS ${SCREAM_TEST_MAX_RANKS}
     EXE_ARGS --args --map-file=${MAP_FILE_FULL}

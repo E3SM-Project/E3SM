@@ -103,7 +103,6 @@ TEST_CASE("field_utils") {
     using namespace ShortFieldTagsNames;
     using IPDF = std::uniform_int_distribution<int>;
 
-    auto nondim = Units::nondimensional();
     int seed = get_random_test_seed();
     std::mt19937_64 engine(seed);
 
@@ -112,17 +111,17 @@ TEST_CASE("field_utils") {
     const int nlevs = IPDF(3,9)(engine); // between 3-9 levels
 
     // Create 1d, 2d, 3d fields with a level dimension, and set all to 1
-    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               nondim, "");
-    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        nondim, "");
-    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        nondim, "");
-    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), nondim, "");
+    FieldIdentifier fid1 ("f_1d",   FieldLayout({LEV},           {nlevs}),               none, "");
+    FieldIdentifier fid2a("f_2d_a", FieldLayout({CMP, LEV},      {ncmps, nlevs}),        none, "");
+    FieldIdentifier fid2b("f_2d_b", FieldLayout({COL, LEV},      {ncols, nlevs}),        none, "");
+    FieldIdentifier fid3 ("f_3d",   FieldLayout({COL, CMP, LEV}, {ncols, ncmps, nlevs}), none, "");
     Field f1(fid1), f2a(fid2a), f2b(fid2b), f3(fid3);
     f1.allocate_view(), f2a.allocate_view(), f2b.allocate_view(), f3.allocate_view();
     f1.deep_copy(1), f2a.deep_copy(1), f2b.deep_copy(1), f3.deep_copy(1);
 
     // We need GIDs for fields with COL component. This test is not over
     // multiple ranks, so just set as [0, ncols-1].
-    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), Units::nondimensional(), "", DataType::IntType));
+    Field gids(FieldIdentifier("gids", FieldLayout({COL}, {ncols}), none, "", DataType::IntType));
     gids.allocate_view();
     auto gids_data = gids.get_internal_view_data<int,Host>();
     std::iota(gids_data, gids_data+ncols, 0);
@@ -130,7 +129,7 @@ TEST_CASE("field_utils") {
 
     // Create masks s.t. only last 3 levels are perturbed. For variety,
     // 1d and 2d fields will use lambda mask and 3 field will use a view.
-    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),nondim,"",DataType::IntType);
+    FieldIdentifier pmask_fid("pmask",fid1.get_layout(),none,"",DataType::IntType);
     Field pmask(pmask_fid,true);
     auto pmask_h = pmask.get_view<int*,Host>();
     for (int i=0; i<nlevs; ++i) {

@@ -314,7 +314,7 @@ contains
     if (pkgColumnTracerPondsActive) then
        if (config_use_level_meltponds) then
           call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'levelIceArea')
-       else
+       else ! topo and sea-level ponds
           call add_tracer_to_tracer_linked_list(tracersHead, 'pondArea',             'iceAreaCategory')
        endif
        call add_tracer_to_tracer_linked_list(tracersHead, 'pondDepth',            'pondArea')

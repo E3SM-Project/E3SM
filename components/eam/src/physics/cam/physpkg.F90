@@ -68,6 +68,7 @@ module physpkg
   integer ::  cldiceini_idx      = 0 
   integer ::  static_ener_ac_idx = 0
   integer ::  water_vap_ac_idx   = 0
+  integer ::  total_water_ac_idx = 0
 
   integer ::  prec_str_idx       = 0
   integer ::  snow_str_idx       = 0
@@ -228,6 +229,7 @@ subroutine phys_register
     call pbuf_add_field('CLDICEINI', 'physpkg', dtype_r8, (/pcols,pver/), cldiceini_idx)
     call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
     call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
+    call pbuf_add_field('total_water_ac', 'global', dtype_r8, (/pcols/), total_water_ac_idx)
 
 
     ! check energy package
@@ -1023,7 +1025,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Initialize Transformed Eularian Mean (TEM) diagnostics
     call phys_grid_ctem_init()
 
-    
+
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
     if(pergro_test_active)call add_fld_default_calls()
 
@@ -1337,12 +1339,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     use metdata,        only: get_met_srf2
 #endif
     use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
-                              is_first_restart_step, is_last_step
+                              is_first_restart_step, is_last_step, is_start_curr_month
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
     use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
                               co2_diags_store_fields, co2_diags_read_fields
     use co2_cycle,      only: co2_transport
+    use phys_control,     only: phys_getopts
     !
     ! Input arguments
     !
@@ -1376,6 +1379,14 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     integer(i8) :: sysclock_max                  ! system clock max value
     real(r8)    :: chunk_cost                    ! measured cost per chunk
     type(physics_buffer_desc),pointer, dimension(:)     :: phys_buffer_chunk
+
+   ! Numerical schemes for process coupling
+    integer :: cflx_cpl_opt  ! When to apply surface tracer fluxes  (not including water vapor).
+                             ! The default for aerosols is to do this 
+                             ! after tphysac:clubb_surface and before aerosol dry removal.
+                             ! For chemical gases, different versions of EAM 
+                             ! might use different process ordering.
+
     !
     ! If exit condition just return
     !
@@ -1483,6 +1494,18 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
           if ( is_end_curr_month() ) then
              phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
+          ! upon restart with cflx_cpl_opt=2, these need to be re-zeroed
+          ! because get_carbon_sfc_fluxes has not been called yet,
+          ! and co2_diags_read_fields has been called to fill them with old values
+          ! there may still be an issue with the timestep-level values, but don't
+          ! zero them yet so that they can be diagnosed
+          call phys_getopts( cflx_cpl_opt_out = cflx_cpl_opt)
+          if ( is_first_restart_step() .and. is_start_curr_month() .and. cflx_cpl_opt == 2) then
+             phys_state(c)%c_mflx_sfc(:ncol) = 0._r8
+             phys_state(c)%c_mflx_ocn(:ncol) = 0._r8
+             phys_state(c)%c_mflx_sff(:ncol) = 0._r8
+             phys_state(c)%c_mflx_lnd(:ncol) = 0._r8
+         end if
        end do
        call co2_diags_store_fields(phys_state, pbuf2d)
     end if
@@ -1653,6 +1676,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: ftem      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8), pointer, dimension(:) :: total_water_ac_2d ! Vertically integrated total water
+    integer :: ixcldliq_ac, ixcldice_ac, ixrainqm_ac     ! constituent indices for total water
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1890,7 +1915,9 @@ end if ! l_tracer_aero
 
        if (cflx_cpl_opt==1) then
           call cflx_tend( state, cam_in, ztodt, ptend)       
-       call physics_update(state, ptend, ztodt, tend)
+         call physics_update(state, ptend, ztodt, tend)
+         !!!! todo: delete !!!
+         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysac after clubb_surface'
        end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )
@@ -1904,23 +1931,29 @@ end if ! l_tracer_aero
             cam_in%ocnfrac  , cam_in%landfrac ,        &
             sgh30    ,pbuf )
 
-    !------------------------------------------
-    ! Call major diffusion for extended model
-    !------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       call mspd_intr (ztodt    ,state    ,ptend)
-    endif
+      !------------------------------------------
+      ! Call major diffusion for extended model
+      !------------------------------------------
+      if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
+         call mspd_intr (ztodt    ,state    ,ptend)
+      endif
 
        call physics_update(state, ptend, ztodt, tend)
        call t_stopf ('vertical_diffusion_tend')
        call cnd_diag_checkpoint( diag, 'VDIFF', state, pbuf, cam_in, cam_out )
     
+      ! for examining surface cflx update timing - aldivi
+       if (masterproc) write(iulog,*) 'cflx-log: surface fluxes applied via vertical diffusion tendencies in tphysac'
+
     end if ! l_vdiff
     endif
 
-    ! collect surface carbon fluxes
-    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
-
+    ! collect surface carbon fluxes, but only if they have been updated by cflx_tend above, (cflx_cpl_opt==1)
+    !    or by vertical_diffusion_tend above (l_vdiff==.true.) or if they are not being updated in tphysbc (cflx_cpl_opt /= 2)
+    ! otherwise, this function is called by tphysbc after cflx_tend() and update_physics()
+    if (cflx_cpl_opt /= 2) then
+       call get_carbon_sfc_fluxes(state, cam_in, ztodt)
+    endif
 
 if (l_rayleigh) then
     !===================================================
@@ -2079,6 +2112,8 @@ end if ! l_ac_energy_chk
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
     water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
     call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
+    total_water_ac_idx = pbuf_get_index('total_water_ac')
+    call pbuf_get_field(pbuf, total_water_ac_idx, total_water_ac_2d )
 
     !Integrate column static energy
     ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -2093,6 +2128,20 @@ end if ! l_ac_energy_chk
        ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
     end do
     water_vap_ac_2d(:ncol) = ftem(:ncol,1)
+
+    !Integrate total water (Q + CLDLIQ + CLDICE + RAINQM)
+    call cnst_get_ind('CLDLIQ', ixcldliq_ac)
+    call cnst_get_ind('CLDICE', ixcldice_ac)
+    call cnst_get_ind('RAINQM', ixrainqm_ac, abrtf=.false.)
+    ftem(:ncol,:) = (state%q(:ncol,:,1) + state%q(:ncol,:,ixcldliq_ac) &
+                   + state%q(:ncol,:,ixcldice_ac)) * state%pdel(:ncol,:)*rga
+    if (ixrainqm_ac > 0) then
+       ftem(:ncol,:) = ftem(:ncol,:) + state%q(:ncol,:,ixrainqm_ac)*state%pdel(:ncol,:)*rga
+    end if
+    do k=2,pver
+       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+    end do
+    total_water_ac_2d(:ncol) = ftem(:ncol,1)
 
     call check_tracers_fini(tracerint)
     call cnd_diag_checkpoint( diag, 'PACEND', state, pbuf, cam_in, cam_out )
@@ -2268,6 +2317,7 @@ subroutine tphysbc (ztodt,               &
     use debug_info,      only: get_debug_chunk, get_debug_macmiciter
     use lnd_infodata,    only: precip_downscaling_method
     use cflx,            only: cflx_tend
+    use co2_diagnostics, only: get_carbon_sfc_fluxes
 
     implicit none
 
@@ -2414,7 +2464,9 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: ftem(pcols,pver)         ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+    real(r8), pointer, dimension(:) :: total_water_ac_2d  ! Vertically integrated total water
     real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
+    integer :: ixcldliq_bc, ixcldice_bc, ixrainqm_bc  ! constituent indices for total water
 
     !HuiWan (2014/15): added for a short-term time step convergence test ++ 
     logical :: l_bc_energy_fix
@@ -2480,6 +2532,8 @@ subroutine tphysbc (ztodt,               &
     call pbuf_get_field(pbuf, static_ener_ac_idx, static_ener_ac_2d )
     water_vap_ac_idx   = pbuf_get_index('water_vap_ac')
     call pbuf_get_field(pbuf, water_vap_ac_idx, water_vap_ac_2d )
+    total_water_ac_idx = pbuf_get_index('total_water_ac')
+    call pbuf_get_field(pbuf, total_water_ac_idx, total_water_ac_2d )
 
     ! Integrate and compute the difference
     ! CIDiff = difference of column integrated values
@@ -2487,6 +2541,7 @@ subroutine tphysbc (ztodt,               &
        CIDiff(:ncol) = 0.0_r8
        call outfld('DTENDTH', CIDiff, pcols, lchnk )
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+       call outfld('DTENDTTW',CIDiff, pcols, lchnk )
     else
        ! MSE first
        ftem(:ncol,:) = (state%s(:ncol,:) + latvap*state%q(:ncol,:,1)) * state%pdel(:ncol,:)*rga
@@ -2504,6 +2559,22 @@ subroutine tphysbc (ztodt,               &
        CIDiff(:ncol) = (ftem(:ncol,1) - water_vap_ac_2d(:ncol))*rtdt
 
        call outfld('DTENDTQ', CIDiff, pcols, lchnk )
+
+       ! Total water (Q + CLDLIQ + CLDICE + RAINQM) tendency
+       call cnst_get_ind('CLDLIQ', ixcldliq_bc)
+       call cnst_get_ind('CLDICE', ixcldice_bc)
+       call cnst_get_ind('RAINQM', ixrainqm_bc, abrtf=.false.)
+       ftem(:ncol,:) = (state%q(:ncol,:,1) + state%q(:ncol,:,ixcldliq_bc) &
+                      + state%q(:ncol,:,ixcldice_bc)) * state%pdel(:ncol,:)*rga
+       if (ixrainqm_bc > 0) then
+          ftem(:ncol,:) = ftem(:ncol,:) + state%q(:ncol,:,ixrainqm_bc)*state%pdel(:ncol,:)*rga
+       end if
+       do k=2,pver
+          ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       end do
+       CIDiff(:ncol) = (ftem(:ncol,1) - total_water_ac_2d(:ncol))*rtdt
+
+       call outfld('DTENDTTW', CIDiff, pcols, lchnk )
     end if
 
     ! Associate pointers with physics buffer fields
@@ -2799,6 +2870,9 @@ end if
        if ( cflx_cpl_opt==2 ) then
           call cflx_tend( state, cam_in, ztodt, ptend)
           call physics_update(state, ptend, ztodt, tend)
+          call get_carbon_sfc_fluxes(state, cam_in, ztodt)
+         ! for examining surface cflx update timing - aldivi
+         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysbc.'
        end if
 
        !========================================================================================

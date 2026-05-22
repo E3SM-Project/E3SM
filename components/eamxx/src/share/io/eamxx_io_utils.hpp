@@ -3,7 +3,7 @@
 
 #include "eamxx_io_control.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 #include <ekat_string_utils.hpp>
@@ -11,6 +11,7 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 namespace scream
 {
@@ -83,9 +84,18 @@ util::TimeStamp read_timestamp (const std::string& filename,
                                 const std::string& ts_name,
                                 const bool read_nsteps = false);
 
+// Parse a CF-compliant time units string of the form "<unit> since <date> [<time>]"
+// and return the reference TimeStamp and multiplier (in seconds) for the given unit.
+// Supported units: seconds, minutes, hours, days.
+// Supported date formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, YYYY-MM-DD-SSSSS
+// NOTE: the filename is only used to give context if throwing an exception
+std::pair<util::TimeStamp,int>
+parse_cf_time_units (const std::string& units_str,
+                     const std::string& filename);
+
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.
-std::shared_ptr<AtmosphereDiagnostic>
+std::shared_ptr<AbstractDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
 

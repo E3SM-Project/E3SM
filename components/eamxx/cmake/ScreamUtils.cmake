@@ -84,10 +84,10 @@ set(SCREAM_CUT_TEST_MV_ARGS ${CUT_TEST_MV_ARGS})
 list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS USER_DEFINED_TEST_SESSION)
 
 ###############################################################################
-function(CreateUnitTestExec exec_name test_srcs)
+function(CreateUnitTestExec exec_name)
 ###############################################################################
   # Call Ekat function, with a couple of extra params
-  EkatCreateUnitTestExec("${exec_name}" "${test_srcs}" ${ARGN}
+  EkatCreateUnitTestExec("${exec_name}" ${ARGN}
     USER_DEFINED_TEST_SESSION LIBS eamxx_test_support)
 endfunction(CreateUnitTestExec)
 
@@ -149,7 +149,7 @@ function(CreateUnitTestFromExec test_name test_exec)
 endfunction(CreateUnitTestFromExec)
 
 ###############################################################################
-function(CreateUnitTest test_name test_srcs)
+function(CreateUnitTest test_name)
 ###############################################################################
   set(options ${SCREAM_CUT_EXEC_OPTIONS} ${SCREAM_CUT_TEST_OPTIONS})
   set(oneValueArgs ${SCREAM_CUT_EXEC_1V_ARGS} ${SCREAM_CUT_TEST_1V_ARGS})
@@ -164,7 +164,7 @@ function(CreateUnitTest test_name test_srcs)
   #------------------------------#
 
   separate_cut_arguments(cut "${SCREAM_CUT_EXEC_OPTIONS}" "${SCREAM_CUT_EXEC_1V_ARGS}" "${SCREAM_CUT_EXEC_MV_ARGS}" options_ExecPhase)
-  CreateUnitTestExec("${test_name}" "${test_srcs}" ${options_ExecPhase})
+  CreateUnitTestExec("${test_name}" ${options_ExecPhase})
 
   #------------------------------#
   #      Create Tests Phase      #

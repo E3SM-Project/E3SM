@@ -2097,7 +2097,11 @@ module li_advection
 
             do k = 1, nVertLevels
                do nt = 1, nTracers
-                  tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell))
+                  if (layerThickness(k, iCell) > 0.0_RKIND) then
+                     tracers(nt,k,iCell) = hTsum(nt,k) / (layerThickness(k, iCell))
+                  else
+                     tracers(nt,k,iCell) = 0.0_RKIND
+                  endif
                enddo         ! nt
             enddo            ! k
 

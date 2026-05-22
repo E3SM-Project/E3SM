@@ -23,6 +23,7 @@ SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::Parameter
 void SHOCMacrophysics::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
@@ -39,11 +40,11 @@ void SHOCMacrophysics::create_requests()
   FieldLayout vector2d = m_grid->get_2d_vector_layout(2);
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(false);
+  FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);
 
   // Layout for horiz_wind field
-  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);
 
   // Define fields needed in SHOC.
   // Note: shoc_main is organized by a set of 5 structures, variables below are organized
@@ -51,7 +52,6 @@ void SHOCMacrophysics::create_requests()
 
   constexpr int ps = Pack::n;
 
-  const auto nondim = Units::nondimensional();
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
 
@@ -76,21 +76,21 @@ void SHOCMacrophysics::create_requests()
   add_field<Required>("phis",           scalar2d    , m2/s2, grid_name);
 
   // Input/Output variables
-  add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,     grid_name, ps);
+  add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,   grid_name, ps);
   add_field<Updated>("sgs_buoy_flux", scalar3d_mid, K*(m/s), grid_name, ps);
   add_field<Updated>("eddy_diff_mom", scalar3d_mid, m2/s,    grid_name, ps);
-  add_field<Updated>("cldfrac_liq",   scalar3d_mid, nondim,  grid_name, ps);
+  add_field<Updated>("cldfrac_liq",   scalar3d_mid, none,    grid_name, ps);
   add_tracer<Updated>("tke", m_grid, m2/s2, ps);
   add_tracer<Updated>("qc",  m_grid, kg/kg, ps);
 
   // Output variables
-  add_field<Computed>("pbl_height",    scalar2d    , m,            grid_name);
-  add_field<Computed>("inv_qc_relvar", scalar3d_mid, pow(kg/kg,2), grid_name, ps);
-  add_field<Computed>("eddy_diff_heat",   scalar3d_mid, m2/s,        grid_name, ps);
-  add_field<Computed>("w_variance",       scalar3d_mid, m2/s2,       grid_name, ps);
-  add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,      grid_name, ps);
-  add_field<Computed>("ustar",            scalar2d,     m/s,         grid_name, ps);
-  add_field<Computed>("obklen",           scalar2d,     m,           grid_name, ps);
+  add_field<Computed>("pbl_height",       scalar2d    , m,            grid_name);
+  add_field<Computed>("inv_qc_relvar",    scalar3d_mid, pow(kg/kg,2), grid_name, ps);
+  add_field<Computed>("eddy_diff_heat",   scalar3d_mid, m2/s,         grid_name, ps);
+  add_field<Computed>("w_variance",       scalar3d_mid, m2/s2,        grid_name, ps);
+  add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, none,         grid_name, ps);
+  add_field<Computed>("ustar",            scalar2d,     m/s,          grid_name, ps);
+  add_field<Computed>("obklen",           scalar2d,     m,            grid_name, ps);
 
   // thl_sec is needed for ZM deep convection
   add_field<Computed>("thl_sec", scalar3d_int, pow(K,2), grid_name, ps);

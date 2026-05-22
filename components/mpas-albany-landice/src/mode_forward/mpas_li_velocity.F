@@ -222,7 +222,7 @@ contains
 !>  This routine calls velocity solvers.
 !
 !-----------------------------------------------------------------------
-   subroutine li_velocity_solve(domain, solveVelo, err)
+   subroutine li_velocity_solve(domain, solveVelo, updateMask, err)
 
       use mpas_vector_reconstruction
       use li_mask
@@ -236,6 +236,8 @@ contains
       !< velocity should be solved, or if an existing solution should be
       !< used to calculate the diagnostic fields related to velocty
       !< (e.g. on a restart)
+      logical, intent(in) :: updateMask !< Input: update mask before
+      !< velocity solve only if outside of RK loop.
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -326,14 +328,15 @@ contains
       call mpas_dmpar_field_halo_exch(domain, 'thickness')
       call mpas_timer_stop("halo updates")
 
-      ! Update mask just to be safe (might be redundant)
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         ! Only update mask outside of RK loop
+         if ( updateMask ) then
+             call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         endif
          call li_update_geometry(geometryPool)
 
          block => block % next
@@ -659,7 +662,7 @@ contains
          ! ---
          ! --- Calculate strain rates on cell centers
          ! ---
-         call calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err)
+         call calculate_strain_rates_and_stresses(meshPool, geometryPool, thermalPool, scratchPool, velocityPool, err_tmp)
          err = ior(err, err_tmp)
 
          block => block % next

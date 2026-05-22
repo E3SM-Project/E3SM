@@ -21,15 +21,15 @@ SPC::SPC (const ekat::Comm& comm, const ekat::ParameterList& params)
 void SPC::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
-  constexpr auto nondim = Units::nondimensional();
   constexpr int ps = SCREAM_PACK_SIZE;
 
   m_model_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_model_grid->name();
   
   // Define the different field layouts that will be used for this process
-  auto scalar3d_mid = m_model_grid->get_3d_scalar_layout(true);
+  auto scalar3d_mid = m_model_grid->get_3d_scalar_layout(LEV);
 
   // Set of fields used strictly as input
   add_field<Required>("p_mid"      , scalar3d_mid, Pa,     grid_name, ps);
@@ -50,12 +50,26 @@ void SPC::initialize_impl (const RunType /* run_type */)
   };
   auto spc_data_file = m_params.get<std::string>("spc_data_file");
   auto spc_map_file  = m_params.get<std::string>("spc_remap_file","");
+  auto time_interpolation_method = m_params.get<std::string>("time_interpolation_method","yearly_periodic");
 
   auto pmid = get_field_in("p_mid");
+  
+  auto timeline = util::TimeLine::Linear;
+  util::TimeStamp ref_ts;
+  if (time_interpolation_method=="yearly_periodic") {
+    timeline = util::TimeLine::YearlyPeriodic;
+    ref_ts = util::TimeStamp(1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+  } else if (time_interpolation_method=="linear") {
+    timeline = util::TimeLine::Linear;
+    // For linear interpolation we read reference timestamp from the input file's time var units
+  } else {
+    EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " + 
+                   time_interpolation_method + 
+                   ". Valid options are: yearly_periodic, linear.\n");
+  }
 
-  util::TimeStamp ref_ts (1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
-  m_data_interpolation->setup_time_database ({spc_data_file},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts);
+  m_data_interpolation->setup_time_database ({spc_data_file},timeline, DataInterpolation::Linear, ref_ts);
 
   if (m_iop_data_manager!=nullptr) {
     // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper

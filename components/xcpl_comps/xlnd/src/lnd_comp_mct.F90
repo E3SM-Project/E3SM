@@ -16,6 +16,12 @@ module lnd_comp_mct
   use dead_mct_mod    , only: dead_init_mct, dead_run_mct, dead_final_mct
   use seq_flds_mod    , only: seq_flds_l2x_fields, seq_flds_x2l_fields
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct, only : mlnid !            iMOAB app id for lnd
+  use iso_c_binding
+  use iMOAB           , only: iMOAB_RegisterApplication
+  use dead_mct_mod   , only: dead_init_moab
+#endif
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -50,7 +56,9 @@ CONTAINS
   subroutine lnd_init_mct( EClock, cdata, x2d, d2x, NLFilename )
 
     ! !DESCRIPTION: initialize dead lnd model
-
+#ifdef HAVE_MOAB
+    use shr_stream_mod, only: shr_stream_getDomainInfo, shr_stream_getFile
+#endif
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
     type(seq_cdata)             , intent(inout) :: cdata
@@ -69,6 +77,7 @@ CONTAINS
     integer(IN)                      :: ierr           ! error code
     logical                          :: lnd_present    ! if true, component is present
     logical                          :: lnd_prognostic ! if true, component is prognostic
+    character(*), parameter :: subName = "(lnd_init_mct) "
     !-------------------------------------------------------------------------------
 
     ! Set cdata pointers to derived types (in coupler)
@@ -111,10 +120,18 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize xlnd
     !----------------------------------------------------------------------------
+#ifdef HAVE_MOAB
+    ierr = iMOAB_RegisterApplication(trim("XLND")//C_NULL_CHAR, mpicom, compid, mlnid)
+    if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in registering XLND comp'
+      call shr_sys_abort(subname//' ERROR in registering XLND comp')
+    endif
+#endif
+
     call dead_init_mct('lnd', Eclock, x2d, d2x, &
          seq_flds_x2l_fields, seq_flds_l2x_fields, &
          gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, &
-         inst_index, inst_suffix, inst_name, logunit, nxg, nyg)
+         inst_index, inst_suffix, inst_name, logunit, nxg, nyg )
 
     if (nxg == 0 .and. nyg == 0) then
        lnd_present = .false.
@@ -123,6 +140,12 @@ CONTAINS
        lnd_present = .true.
        lnd_prognostic = .true.
     end if
+
+#ifdef HAVE_MOAB
+    if (lnd_present) then
+       call dead_init_moab( mlnid, 'lnd', gsMap, gbuf, x2d, d2x, mpicom, compid, logunit, nxg, nyg )
+    end if
+#endif
 
     call seq_infodata_PutData( infodata, dead_comps=.true., &
          lnd_present=lnd_present, &
@@ -170,8 +193,17 @@ CONTAINS
          dom=ggrid, &
          infodata=infodata)
 
+#ifdef HAVE_MOAB
+
+    call dead_run_mct('lnd', EClock, x2d, d2x, &
+       gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit, mlnid )
+
+#else
+
     call dead_run_mct('lnd', EClock, x2d, d2x, &
        gsmap, ggrid, gbuf, mpicom, compid, my_task, master_task, logunit)
+
+#endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)

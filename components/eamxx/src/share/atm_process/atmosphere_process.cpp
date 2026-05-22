@@ -122,23 +122,15 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
     start_timer (m_timer_prefix + this->name() + "::init");
   }
 
-  // Avoid logging and flushing if ap type is diag ...
-  // ... because we could have 100+ of those in production runs
-  if (this->type()!=AtmosphereProcessType::Diagnostic) {
-    log (LogLevel::info,"  Initializing " + name() + "...");
-    m_atm_logger->flush(); // During init, flush often (to help debug crashes)
-  }
+  log (LogLevel::info,"  Initializing " + name() + "...");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   set_fields_and_groups_pointers();
   m_start_of_step_ts = m_end_of_step_ts = t0;
   initialize_impl(run_type);
 
-  // Avoid logging and flushing if ap type is diag ...
-  // ... because we could have 100+ of those in production runs
-  if (this->type()!=AtmosphereProcessType::Diagnostic) {
-    log (LogLevel::info,"  Initializing " + name() + "... done!");
-    m_atm_logger->flush(); // During init, flush often (to help debug crashes)
-  }
+  log (LogLevel::info,"  Initializing " + name() + "... done!");
+  m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
   m_is_initialized = true;
 
@@ -265,16 +257,22 @@ void AtmosphereProcess::setup_step_tendencies (const std::string& default_grid) 
     auto fn = tokens.first;
     auto gn = tokens.second;
 
-    auto f = get_field_out(fn,gn);
+    const auto& f = get_field_out(fn,gn);
+    const auto& fap = f.get_header().get_alloc_properties();
 
     const auto& tname = this->name() + "_" + fn + "_tend";
+    const auto& fid = f.get_header().get_identifier();
+    auto tfid = fid.clone(tname).reset_units (fid.get_units() / ekat::units::s);
 
     const auto fn_gn = fn + "@" + f.get_header().get_identifier().get_grid_name();
 
     // Create tend and start-of-step fields
-    auto& tend = m_proc_tendencies[fn_gn] = f.clone(tname);
-    m_start_of_step_fields[fn_gn] = f.clone();
+    auto& tend = m_proc_tendencies[fn_gn] = Field(tfid);
+    auto& tfap = tend.get_header().get_alloc_properties();
+    tfap.request_allocation(fap);
+    tend.allocate_view();
     add_internal_field(tend,{"ACCUMULATED","DIVIDE_BY_DT"});
+    m_start_of_step_fields[fn_gn] = f.clone();
   }
 }
 

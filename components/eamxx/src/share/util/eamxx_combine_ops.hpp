@@ -39,8 +39,6 @@ enum class CombineMode {
   Min         // out = min(beta*out,alpha*in)
 };
 
-namespace impl {
-
 // Small helper functions to combine a new value with an old one.
 // The template argument help reducing the number of operations
 // performed (the if is resolved at compile time). In the most
@@ -80,26 +78,17 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
   }
 }
 
-} // namespace impl
-
-// This is the function that user will call, which uses the one above internally
-// If fill-aware=true, we only perform the combine operation if either
-//   a) CM is Replace
-//   b) the new value is NOT fill_value
-// In other words, with fill_aware=true we IGNORE new values that are equal to fill_value,
-// unless we are replacing the content.
-// NOTE: the default 'void' for the scalar types is obviously never used, since the
-//       type is deduced from the inputs. The reason for the default is to allow to
-//       give a default to fill_aware.
-template<CombineMode CM, bool fill_aware = false, typename ScalarIn = void, typename ScalarOut = void,
+// This is similar to the above one, but only does something if newVal is NOT equal to fill_value.
+// The only exception is the case CM=Replace, in which case we ALWAYS perform the copy
+template<CombineMode CM, typename ScalarIn, typename ScalarOut,
          typename CoeffType = typename ekat::ScalarTraits<ScalarIn>::scalar_type>
 KOKKOS_FORCEINLINE_FUNCTION
-void combine (const ScalarIn& newVal, ScalarOut& result,
-              const CoeffType alpha, const CoeffType beta)
+void combine_fill_aware (const ScalarIn& newVal, ScalarOut& result,
+                         const CoeffType alpha, const CoeffType beta)
 {
-  // If not fill-aware, or if CM==Replace, we don't need to check newValue
-  if constexpr (not fill_aware or CM==CombineMode::Replace) {
-    return impl::combine<CM>(newVal,result,alpha,beta);
+  // If CM==Replace, we don't check for FV. We ALWAYS replace
+  if constexpr (CM==CombineMode::Replace) {
+    return combine<CM>(newVal,result,alpha,beta);
   }
 
   // For the non-simd type case, we can avoid ekat::where, and simply check newVal against fill_value
@@ -109,12 +98,12 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
     auto where = ekat::where(newVal!=fill_val,result);
     if (where.any()) {
       auto tmp = result;
-      impl::combine<CM>(newVal,tmp,alpha,beta);
+      combine<CM>(newVal,tmp,alpha,beta);
       where = tmp;
     }
   } else {
     if (newVal!=constants::fill_value<ScalarIn>) {
-      impl::combine<CM>(newVal,result,alpha,beta);
+      combine<CM>(newVal,result,alpha,beta);
     }
   }
 }

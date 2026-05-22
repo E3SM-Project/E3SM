@@ -75,6 +75,8 @@ public:
 
   std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
 
+  void set_name (const std::string& name) { m_name = name; }
+
 protected:
 
   void shift_data_interval ();
@@ -107,7 +109,10 @@ protected:
   std::shared_ptr<AtmosphereInput> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
-  std::shared_ptr<AbstractGrid>       m_grid_after_hremap; // nonconst b/c we may need to set some geo data
+
+  // The following are nonconst, since we may need to modify a few things
+  std::shared_ptr<AbstractGrid>       m_data_grid;
+  std::shared_ptr<AbstractGrid>       m_grid_after_hremap;
 
   std::vector<Field>                  m_fields;
 
@@ -141,6 +146,8 @@ protected:
   bool                  m_fields_have_col_dim = false;
   bool                  m_fields_have_lev_dim = false;
   bool                  m_fields_have_ilev_dim = false;
+
+  std::string           m_name = "DataInterp";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };

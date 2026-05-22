@@ -28,6 +28,7 @@ list(APPEND RAW_SOURCES
   core_seaice/icepack/columnphysics/icepack_mechred.F90
   core_seaice/icepack/columnphysics/icepack_meltpond_lvl.F90
   core_seaice/icepack/columnphysics/icepack_meltpond_topo.F90
+  core_seaice/icepack/columnphysics/icepack_meltpond_sealvl.F90
   core_seaice/icepack/columnphysics/icepack_mushy_physics.F90
   core_seaice/icepack/columnphysics/icepack_ocean.F90
   core_seaice/icepack/columnphysics/icepack_orbital.F90

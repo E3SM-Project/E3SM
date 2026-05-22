@@ -309,6 +309,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx-Aerosol-Microphysics -->
     <mam4_aero_microphys inherit="mam4_atm_proc_base">
       <!--Aerosol Microphysics processes on/off switches -->
+      <mam4_do_gas_phase_chemistry type="logical" doc="Switch to enable gas phase chemistry">true</mam4_do_gas_phase_chemistry>
+      <mam4_do_aqueous_phase_chemistry type="logical" doc="Switch to enable aqueous chemistry (setsox)">true</mam4_do_aqueous_phase_chemistry>
       <extra_mam4_aero_microphys_diags type="logical" doc="Extra MAM4xx aerosol microphysics diagnostics">false</extra_mam4_aero_microphys_diags>
       <mam4_do_cond   type="logical" doc="Switch to enable aerosol microphysics condensation process">true</mam4_do_cond>
       <mam4_do_newnuc type="logical" doc="Switch to enable aerosol microphysics nucleation process">true</mam4_do_newnuc>
@@ -487,6 +489,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30pg2_20240111.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_20220428.nc</spa_data_file>
       <spa_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4pg2_20231222.nc</spa_data_file>
+
+      <time_interpolation_method type="string" doc="Method for interpolating SPA data in time">yearly_periodic</time_interpolation_method>
     </spa>
 
     <!-- Simple Prescribed Chemistry (SPC) -->
@@ -503,6 +507,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
       <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
       <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
+
+      <time_interpolation_method type="string" doc="Method for interpolating SPC data in time">yearly_periodic</time_interpolation_method>
     </spc>
 
     <!-- Radiation -->
@@ -874,6 +880,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne0np4_CAx32v1">1.0e4</nu_top>
     <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
+    <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">0.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
@@ -904,19 +911,19 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>
     <se_topology COMPSET=".*DP-EAMxx">plane</se_topology>
-    <se_tstep type="real">UNSET</se_tstep>
-    <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
-    <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
-    <se_tstep hgrid="ne32np4" constraints="gt 0">300</se_tstep>
-    <se_tstep hgrid="ne64np4" constraints="gt 0">150</se_tstep>
-    <se_tstep hgrid="ne128np4" constraints="gt 0">75</se_tstep>
-    <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
-    <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
-    <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
-    <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
-    <se_tstep hgrid="ne0np4_CAx32v1" constraints="gt 0">8.3333333333333</se_tstep>
-    <se_tstep COMPSET=".*DP-EAMxx" constraints="gt 0">8.3333333333333</se_tstep>
-    <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
+    <se_tstep type="real" constraints="gt 0">UNSET</se_tstep>
+    <se_tstep hgrid="ne4np4">600</se_tstep>
+    <se_tstep hgrid="ne30np4">300</se_tstep>
+    <se_tstep hgrid="ne32np4">300</se_tstep>
+    <se_tstep hgrid="ne64np4">150</se_tstep>
+    <se_tstep hgrid="ne128np4">75</se_tstep>
+    <se_tstep hgrid="ne120np4">75</se_tstep>
+    <se_tstep hgrid="ne256np4">33.33333333333</se_tstep>
+    <se_tstep hgrid="ne512np4">16.6666666666666</se_tstep>
+    <se_tstep hgrid="ne1024np4">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CAx32v1">8.3333333333333</se_tstep>
+    <se_tstep COMPSET=".*DP-EAMxx">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_conus_x4v1_lowcon">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
     <theta_hydrostatic_mode>false</theta_hydrostatic_mode>
@@ -930,7 +937,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- pg2 settings -->
     <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
-    <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
+    <dt_tracer_factor hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
     <transport_alg hgrid=".*pg2" doc="0 (Eulerian) or 12 (semi-Lagrangian) tracer transport">12</transport_alg>
     <semi_lagrange_trajectory_nsubstep doc="Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.">0</semi_lagrange_trajectory_nsubstep>

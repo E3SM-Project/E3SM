@@ -89,22 +89,22 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
 
   HostViewManaged<Real*[NUM_TIME_LEVELS][NP][NP]> field_2d_f90("", num_elements);
   ExecViewManaged<Real*[NUM_TIME_LEVELS][NP][NP]> field_2d_cxx("", num_elements);
-  ExecViewManaged<Real*[NUM_TIME_LEVELS][NP][NP]>::HostMirror field_2d_cxx_host;
+  ExecViewManaged<Real*[NUM_TIME_LEVELS][NP][NP]>::host_mirror_type field_2d_cxx_host;
   field_2d_cxx_host = Kokkos::create_mirror_view(field_2d_cxx);
 
   HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][NP][NP]> field_3d_f90("", num_elements);
   ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV]> field_3d_cxx ("", num_elements);
-  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV]>::HostMirror field_3d_cxx_host;
+  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV]>::host_mirror_type field_3d_cxx_host;
   field_3d_cxx_host = Kokkos::create_mirror_view(field_3d_cxx);
 
   HostViewManaged<Real*[NUM_TIME_LEVELS][DIM][NUM_PHYSICAL_LEV][NP][NP]> field_4d_f90 ("", num_elements);
   ExecViewManaged<Scalar*[NUM_TIME_LEVELS][DIM][NP][NP][NUM_LEV]> field_4d_cxx ("", num_elements);
-  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][DIM][NP][NP][NUM_LEV]>::HostMirror field_4d_cxx_host;
+  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][DIM][NP][NP][NUM_LEV]>::host_mirror_type field_4d_cxx_host;
   field_4d_cxx_host = Kokkos::create_mirror_view(field_4d_cxx);
 
   HostViewManaged<Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]> field_3d_int_f90("", num_elements);
   ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]> field_3d_int_cxx ("", num_elements);
-  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::HostMirror field_3d_int_cxx_host;
+  ExecViewManaged<Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::host_mirror_type field_3d_int_cxx_host;
   field_3d_int_cxx_host = Kokkos::create_mirror_view(field_3d_int_cxx);
 
   // Get the buffers manager

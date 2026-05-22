@@ -97,6 +97,16 @@ class Generic(Machine):
         cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
 
 ###############################################################################
+class CopilotTesting(Machine):
+###############################################################################
+    concrete = True
+
+    @classmethod
+    def setup(cls):
+        super().setup_base("copilot-testing")
+        cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
+
+###############################################################################
 class CrayMachine(Machine):
 ###############################################################################
     @classmethod
@@ -205,7 +215,7 @@ class Mappy(Machine):
         super().setup_base("mappy")
 
         cls.env_setup = ["module purge",
-                          "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
+                          "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/13.2.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
                           "export GATOR_INITIAL_MB=4000MB",
                          ]
         cls.baselines_dir = "/sems-data-store/ACME/baselines/scream/master-baselines"
@@ -282,15 +292,6 @@ class GHCISNLCuda(Machine):
         cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cuda"
         cls.gpu_arch = "cuda"
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
-
-###############################################################################
-class GHCIOCI(Machine):
-###############################################################################
-    concrete = True
-    @classmethod
-    def setup(cls):
-        super().setup_base(name="ghci-oci")
-        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
 
 ###############################################################################
 class Lassen(Machine):

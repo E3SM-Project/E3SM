@@ -373,6 +373,14 @@ Valid values: any real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_calving_strainrate_scaling_source" type="char*1024"
+	category="calving" group="calving">
+Source of strain-rate multiplier for iceberg calving. Only currently supported for the crevasse-depth calving law.
+
+Valid values: 'data' (read from input file), 'scalar' (specified by config_calving_strainrate_scaling)
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_grounded_von_Mises_threshold_stress" type="real"
 	category="calving" group="calving">
 Threshold von Mises stress value required for calving velocity to exceed ice velocity on grounded ice. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier.
@@ -489,13 +497,21 @@ Default: Defined in namelist_defaults.xml
 	category="calving" group="calving">
 Source of water depth in crevasses for use with crevasse-depth calving law.
 
-Valid values: 'data' (read from input file), 'scalar' (specified by config_crevasse_water_depth)
+Valid values: 'data' (read from input file), 'scalar' (specified by config_crevasse_water_depth), or 'scaled_smb' (a specific fraction of negative SMB)
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_crevasse_water_depth" type="real"
 	category="calving" group="calving">
 Water depth in crevasses for Nick et al. (2010) crevasse depth calving law.
+
+Valid values: any non-negative real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_smb_fraction_to_water_depth" type="real"
+	category="calving" group="calving">
+Fraction of surface mass balance to convert to retain as water depth in crevasses for Nick et al. (2010) crevasse depth calving law.
 
 Valid values: any non-negative real value
 Default: Defined in namelist_defaults.xml
@@ -1360,6 +1376,22 @@ Valid values: 'cavity', 'overburden'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_SGH_transition_flow" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+Whether to use the transition flow law for distributed flow from Hill et al. (2024) (https://doi.org/10.1017/jog.2023.103).  If true, config_SGH_beta is ignored and a value of 1.5 is used for the turbulent flow regime and 2 is used for laminar flow regime in the transition law.  Also, if true, a value of 3 is used for config_SGH_alpha in the laminar regime, while the specified value for config_SGH_alpha is used for the turbulent regime.  These choices follow Hill et al. (Sec. 2.2.1).
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_flow_transition_param" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+laminar-turbulent transition parameter used when config_SGH_transition_flow=.true., defined as one over the Reynolds number controlling the transition between laminar and turbulent flow.  Default value of 0.0005 corresponds to Reynolds number of 2000, which is a standard transition value.
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_SGH_alpha" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
 power of alpha parameter in subglacial water flux formula
@@ -1378,7 +1410,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_conduc_coeff" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-conductivity coefficient for subglacial water flux
+conductivity coefficient for subglacial water flux.  Units are Pa s^(-1) when using the transition flow law.
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -1450,9 +1482,25 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_use_iceThicknessHydro" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
-Option to use an altered ice thickness field called iceThicknessHydro that replaces local maxima/minima in upperSurface with a mean of the cells neighbors. This option has no significant effect on the behavior of the model but makes it more stable.
+Option to use an altered ice thickness field called iceThicknessHydro that replaces local maxima/minima in upperSurface with a mean of the cells neighbors. This option has no significant effect on the behavior of the model but makes it more stable.  NOTE: Current implementation causes unrealistic bumps in thickness near the grounding line in many places, which prevents realistic outflow.  Enable this option with care.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_flowA_source" type="char*1024"
+	category="subglacial_hydro" group="subglacial_hydro">
+Source of flow parameter A for subglacial hydrology model.  'constant' is a spatially uniform value taken from option config_SGH_flowA_value.  'data' is the value read into the field 'flowAHydro', 'flowParamA' takes the basal value from the 'flowParamA' variable used in the ice dynamics in MALI.
+
+Valid values: 'constant', 'data', 'flowParamA'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_flowA_value" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+Flow parameter A value used by subglacial hydrology model when config_SGH_flowA_source is set to 'constant'. Defaults to the SI representation of 1.0e-16 yr^-1 Pa^-3.
+
+Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1512,6 +1560,14 @@ Valid values: positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_SGH_chnl_area_shutoff" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+channel area above which channel melting is disabled for stability reasons.
+
+Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_SGH_include_pressure_melt" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
 whether to include the pressure melt term in the rate of channel opening
@@ -1541,6 +1597,14 @@ Default: Defined in namelist_defaults.xml
 number of iterations to smooth waterPressure over when calculating waterPressureSlopeNormal. Used only to keep channelPressureFreeze stable and will not affect other aspects of the model that rely on waterPressure.
 
 Valid values: positive integer or zero
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_allow_terrestrial_outflow" type="logical"
+	category="subglacial_hydro" group="subglacial_hydro">
+whether to allow discharge out at terrestrial margins
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

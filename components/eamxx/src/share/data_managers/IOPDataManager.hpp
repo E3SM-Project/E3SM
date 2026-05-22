@@ -28,7 +28,7 @@ class IOPDataManager
   template<typename ScalarT>
   using view_3d = KT::template view_3d<ScalarT>;
   template<typename ScalarT>
-  using view_1d_host = typename view_1d<ScalarT>::HostMirror;
+  using view_1d_host = typename view_1d<ScalarT>::host_mirror_type;
 
 public:
 

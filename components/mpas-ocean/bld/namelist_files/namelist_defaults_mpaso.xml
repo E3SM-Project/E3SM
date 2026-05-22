@@ -60,6 +60,9 @@
 <config_time_integrator>'split_explicit_ab2'</config_time_integrator>
 <config_number_of_time_levels>2</config_number_of_time_levels>
 
+<!-- lateral_walls -->
+<config_wall_slip_factor>1.0</config_wall_slip_factor>
+
 <!-- hmix -->
 <config_hmix_scaleWithMesh ocn_grid="oQU480">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
@@ -307,7 +310,9 @@
 <config_use_cvmix>.true.</config_use_cvmix>
 <config_cvmix_prandtl_number>1.0</config_cvmix_prandtl_number>
 <config_cvmix_background_scheme>'constant'</config_cvmix_background_scheme>
+<config_cvmix_background_scheme ocn_grid="SOwISC12to30E3r3">'latitude-dependent'</config_cvmix_background_scheme>
 <config_cvmix_background_diffusion>0.0</config_cvmix_background_diffusion>
+<config_cvmix_background_diffusion ocn_grid="SOwISC12to30E3r3">3.0e-5</config_cvmix_background_diffusion>
 <config_cvmix_background_diffusion_max_latitude>-50.0</config_cvmix_background_diffusion_max_latitude>
 <config_cvmix_background_diffusion_passive>0.0</config_cvmix_background_diffusion_passive>
 <config_cvmix_background_diffusion_passive_enable>.false.</config_cvmix_background_diffusion_passive_enable>
@@ -349,10 +354,13 @@
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_use_theory_wave ocn_grid="RRSwISC6to18E3r5">.true.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_use_theory_wave ocn_grid="SOwISC12to30E3r3">.true.</config_cvmix_kpp_use_theory_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_mixing_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_mixing_opt>
+<config_cvmix_kpp_langmuir_mixing_opt ocn_grid="SOwISC12to30E3r3">'LWF16'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt ocn_grid="RRSwISC6to18E3r5">'LWF16'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_langmuir_entrainment_opt ocn_grid="SOwISC12to30E3r3">'LWF16'</config_cvmix_kpp_langmuir_entrainment_opt>
 <config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
 <!-- wave_coupling -->
@@ -797,11 +805,13 @@
 <config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
 <config_use_ecosys_frazil_tendencies>.false.</config_use_ecosys_frazil_tendencies>
 <config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
+<config_use_ecosysTracers_atm_dust_from_coupler>.false.</config_use_ecosysTracers_atm_dust_from_coupler>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
 <config_ecosysTracers_diagnostic_fields_level3>.false.</config_ecosysTracers_diagnostic_fields_level3>
 <config_ecosysTracers_diagnostic_fields_level4>.false.</config_ecosysTracers_diagnostic_fields_level4>
 <config_ecosysTracers_diagnostic_fields_level5>.false.</config_ecosysTracers_diagnostic_fields_level5>
+<config_use_ecosysTracers_iron_solubility_file>.false.</config_use_ecosysTracers_iron_solubility_file>
 
 <!-- tracer_forcing_freshwaterTracers -->
 <config_use_freshwaterTracers>.false.</config_use_freshwaterTracers>

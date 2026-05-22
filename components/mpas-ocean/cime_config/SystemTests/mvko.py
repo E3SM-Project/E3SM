@@ -12,8 +12,6 @@ import logging
 import shutil
 import xml.etree.ElementTree as ET
 
-from distutils import dir_util
-
 import numpy as np
 import netCDF4 as nc
 
@@ -42,10 +40,22 @@ OCN_TEST_VARS = [
     "velocityZonal",
     "velocityMeridional",
     "activeTracers",
+    "latCell",
+    "lonCell",
 ]
 
 # daysSinceStartOfSim, icePresent, iceAreaCell, and iceVolumeCell are on by default
-ICE_TEST_VARS = ["uVelocityGeo", "vVelocityGeo", "icePressure", "divergence", "shear"]
+ICE_TEST_VARS = [
+    "uVelocityGeo",
+    "vVelocityGeo",
+    "icePressure",
+    "divergence",
+    "shear",
+    "latCell",
+    "lonCell",
+    "latVertex",
+    "lonVertex",
+]
 
 
 def perturb_init(infile, field_name, outfile, seed=None):
@@ -77,7 +87,6 @@ def perturb_init(infile, field_name, outfile, seed=None):
 
     shutil.copy(infile, outfile)
     with nc.Dataset(outfile, "a") as out_f:
-
         field_out = out_f.variables[field_name]
         field_out[:] = field
 
@@ -125,7 +134,6 @@ def modify_stream(
         # Only re-write the stream if changes were made
         streams.write(stream_file)
 
-
 class MVKO(SystemTestsCommon):
     """MVK-Ocean SystemTest class."""
 
@@ -163,7 +171,9 @@ class MVKO(SystemTestsCommon):
                 self._case.set_value(f"NTHRDS_{comp}", 1)
 
                 ntasks = self._case.get_value(f"NTASKS_{comp}")
-
+                logging.warning(
+                    f"ORIGINAL TASKS FOR {comp} = {ntasks} NEW = {ntasks * NINST}"
+                )
                 self._case.set_value(f"NTASKS_{comp}", ntasks * NINST)
                 if comp != "CPL":
                     self._case.set_value(f"NINST_{comp}", NINST)
@@ -206,7 +216,6 @@ class MVKO(SystemTestsCommon):
             with open(
                 f"user_nl_{self.ocn_component}_{iinst:04d}", "w", encoding="utf-8"
             ) as nl_ocn_file:
-
                 for _config in tss_climatology_config:
                     nl_ocn_file.write(_config)
 
@@ -324,75 +333,94 @@ class MVKO(SystemTestsCommon):
             )
 
             test_name = str(case_name.split(".")[-1])
-            evv_config = {
-                test_name: {
-                    "module": os.path.join(evv_lib_dir, "extensions", "kso.py"),
-                    "test-case": "Test",
-                    "test-dir": run_dir,
-                    "ref-case": "Baseline",
-                    "ref-dir": base_dir,
-                    "var-set": "default",
-                    "ninst": NINST,
-                    "critical": 0,
-                    "component": self.ocn_component,
-                    "alpha": 0.05,
-                    "hist-name": "hist.am.timeSeriesStatsClimatology",
-                }
+            evv_pass = {
+                component: False
+                for component in [self.ocn_component, self.ice_component]
             }
+            evv_out_dirs = {}
 
-            json_file = os.path.join(run_dir, ".".join([case_name, "json"]))
-            with open(json_file, "w", encoding="utf-8") as config_file:
-                json.dump(evv_config, config_file, indent=4)
+            comments = {}
+            for component in [self.ocn_component, self.ice_component]:
+                if component == self.ice_component:
+                    _varset = "seaice"
+                else:
+                    _varset = "default"
 
-            evv_out_dir = os.path.join(run_dir, ".".join([case_name, "evv"]))
-            evv(["-e", json_file, "-o", evv_out_dir])
+                evv_config = {
+                    test_name: {
+                        "module": os.path.join(evv_lib_dir, "extensions", "kso.py"),
+                        "test-case": "Test",
+                        "test-dir": run_dir,
+                        "ref-case": "Baseline",
+                        "ref-dir": base_dir,
+                        "var-set": _varset,
+                        "ninst": NINST,
+                        "critical": 0,
+                        "component": component,
+                        "alpha": 0.05,
+                        "hist-name": "hist.am.timeSeriesStatsClimatology",
+                    }
+                }
+                out_name = f"{case_name}_{component}"
+                json_file = os.path.join(run_dir, ".".join([out_name, "json"]))
+                with open(json_file, "w", encoding="utf-8") as config_file:
+                    json.dump(evv_config, config_file, indent=4)
 
-            with open(
-                os.path.join(evv_out_dir, "index.json"), encoding="utf-8"
-            ) as evv_f:
-                evv_status = json.load(evv_f)
+                evv_out_dir = os.path.join(run_dir, ".".join([out_name, "evv"]))
+                evv(["-e", json_file, "-o", evv_out_dir])
+                evv_out_dirs[component] = evv_out_dir
 
-            comments = ""
-            for evv_ele in evv_status["Page"]["elements"]:
-                if "Table" in evv_ele:
-                    comments = "; ".join(
-                        f"{key}: {val[0]}"
-                        for key, val in evv_ele["Table"]["data"].items()
-                    )
-                    if evv_ele["Table"]["data"]["Test status"][0].lower() == "pass":
-                        self._test_status.set_status(
-                            CIME.test_status.BASELINE_PHASE,
-                            CIME.test_status.TEST_PASS_STATUS,
+                with open(
+                    os.path.join(evv_out_dir, "index.json"), encoding="utf-8"
+                ) as evv_f:
+                    evv_status = json.load(evv_f)
+
+                for evv_ele in evv_status["Page"]["elements"]:
+                    if "Table" in evv_ele:
+                        comments[component] = "; ".join(
+                            f"{key}: {val[0]}"
+                            for key, val in evv_ele["Table"]["data"].items()
                         )
-                    break
+                        if evv_ele["Table"]["data"]["Test status"][0].lower() == "pass":
+                            evv_pass[component] = True
+                        break
+
+            if evv_pass[self.ice_component] and evv_pass[self.ocn_component]:
+                self._test_status.set_status(
+                    CIME.test_status.BASELINE_PHASE,
+                    CIME.test_status.TEST_PASS_STATUS,
+                )
 
             status = self._test_status.get_status(CIME.test_status.BASELINE_PHASE)
             mach_name = self._case.get_value("MACH")
             mach_obj = Machines(machine=mach_name)
             htmlroot = CIME.utils.get_htmlroot(mach_obj)
             urlroot = CIME.utils.get_urlroot(mach_obj)
-            if htmlroot is not None:
-                with CIME.utils.SharedArea():
-                    dir_util.copy_tree(
-                        evv_out_dir,
-                        os.path.join(htmlroot, "evv", case_name),
-                        preserve_mode=False,
-                    )
-                if urlroot is None:
-                    urlroot = f"[{mach_name.capitalize()}_URL]"
-                viewing = f"{urlroot}/evv/{case_name}/index.html"
-            else:
-                viewing = (
-                    f"{evv_out_dir}\n"
-                    "    EVV viewing instructions can be found at: "
-                    "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/"
-                    "climate_reproducibility/README.md#test-passfail-and-extended-output"
-                )
-            comments = (
-                f"{CIME.test_status.BASELINE_PHASE} {status} for test '{test_name}'.\n"
-                f"    {comments}\n"
-                "    EVV results can be viewed at:\n"
-                f"        {viewing}"
-            )
 
-            append_testlog(comments, self._orig_caseroot)
+            for component, evv_out_dir in evv_out_dirs.items():
+                if htmlroot is not None:
+                    with CIME.utils.SharedArea():
+                        shutil.copytree(
+                            evv_out_dir,
+                            os.path.join(htmlroot, "evv", f"{case_name}_{component}"),
+                            copy_function=shutil.copy,
+                            dirs_exist_ok=True,
+                        )
+                    if urlroot is None:
+                        urlroot = f"[{mach_name.capitalize()}_URL]"
+                    viewing = f"{urlroot}/evv/{case_name}_{component}/index.html\n"
+                else:
+                    viewing = (
+                        f"{evv_out_dir}\n"
+                        "    EVV viewing instructions can be found at: "
+                        "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/"
+                        "climate_reproducibility/README.md#test-passfail-and-extended-output\n"
+                    )
+                log_comments = (
+                    f"{CIME.test_status.BASELINE_PHASE} {status} for test '{test_name}': {component}.\n"
+                    f"    {comments[component]}\n"
+                    "    EVV results can be viewed at:\n"
+                    f"        {viewing}"
+                )
+
+                append_testlog(log_comments, self._orig_caseroot)

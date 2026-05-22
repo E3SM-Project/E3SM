@@ -40,20 +40,30 @@ void randomize_discrete (const Field& f, int seed,
 //   - level_mask:    A 1d int field (size of the level dimension of f) where f(i0,...,k) is
 //                    perturbed if level_mask(k)=1
 //   - dof_gids:      Field containing global DoF IDs for columns of f (if applicable)
-void perturb (Field& f,
+void perturb (const Field& f,
               const ScalarWrapper perturb_level,
               const int base_seed,
               const Field& level_mask,
               const Field& dof_gids = Field());
 
-// Vertical/horizontal contractions of field (possibly averaging)
-void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight, bool AVG = false);
-void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight, bool AVG = true,
-                       const ekat::Comm* comm = nullptr, const Field& f_tmp = Field());
+// Vertical/horizontal contractions of field.
+// Computes a weighted sum of f_in along the contracted dimension:
+//   f_out[j] = sum_i( weight[i] * f_in[i,j])
+// or
+//   f_out[j] = sum_i( weight[i] * f_in[i,j] * mask[i,j] )
+// where mask = f_in.get_valid_mask() (IntType, 0=invalid) if present.
+// Here, the weight is ASSUMED to be:
+//  - a 1d (ncol) field for horiz_contraction
+//  - either a 1d (nlev) or 2d (ncol,nlev) field for vert_contraction
+// For horiz, the overload with comm also performs an all_reduce across ranks
+void vert_contraction (const Field& f_out, const Field& f_in, const Field& weight);
+void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight);
+void horiz_contraction(const Field& f_out, const Field& f_in, const Field& weight, const ekat::Comm& comm);
 
 // Reduce field to a single scalar, and return an opaque type, to allow hiding impl in cpp file.
 // NOTE: all calculations are done serially HOST
 ScalarWrapper frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr);
+ScalarWrapper inf_norm(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_sum(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_max(const Field& f, const ekat::Comm* comm = nullptr);
 ScalarWrapper field_min(const Field& f, const ekat::Comm* comm = nullptr);
@@ -68,11 +78,12 @@ void print_field_hyperslab (const Field& f,
                             std::ostream& out = std::cout);
 
 // Compute where input field comparese correctly to given value
-void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, Field& mask);
+void compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP, const Field& mask);
 Field compute_mask (const Field& x, const ScalarWrapper value, Comparison CMP);
+void compute_mask (const Field& lhs, const Field& rhs, Comparison CMP, const Field& mask);
 
 // Transpose a field layout
-void transpose (const Field& src, Field& tgt);
+void transpose (const Field& src, const Field& tgt);
 Field transpose (const Field& src);
 
 } // namespace scream
