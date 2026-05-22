@@ -69,6 +69,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_hydro_solver
    use elm_varctl        , only : fates_radiation_model
    use elm_varctl        , only : fates_electron_transport_model
+   use elm_varctl        , only : fates_lu_transition_logic
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -585,6 +586,7 @@ contains
 
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
+        call set_fates_ctrlparms('fates_lu_transition_logic',ival=fates_lu_transition_logic)
 
         if ( use_fates_potentialveg ) then
            pass_use_potentialveg = 1
@@ -1803,9 +1805,6 @@ contains
       ! I think that is it...
       ! ---------------------------------------------------------------------------------
 
-      ! Set the FATES global time and date variables
-      call GetAndSetTime
-
       if(.not.initialized) then
 
          initialized=.true.
@@ -1937,6 +1936,14 @@ contains
       ! ---------------------------------------------------------------------------------
 
       if(flag=='read')then
+
+         ! pass time to FATES internal variables
+         ! since this routine is called on 'define','write','read'
+         ! and the first two can be called whenever, calling this outside 'read'
+         ! will change the time that has been previously set in dynamics_driver
+         ! Set the FATES global time and date variables
+         call GetAndSetTime
+
 
          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s)
          do nc = 1, nclumps
@@ -3922,7 +3929,7 @@ end subroutine wrap_update_hifrq_hist
 
    ! Land use name arrays
    character(len=10), parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
-                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range'] !need to move 'frac_surf' to a different variable
+                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_range','frac_pastr'] !need to move 'frac_surf' to a different variable
 
    character(len=*), parameter :: subname = 'GetLandusePFTData'
 

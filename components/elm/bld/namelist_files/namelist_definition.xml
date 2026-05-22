@@ -519,6 +519,14 @@ which processes the raw land use data from the THEMIS tool data sets
 (https://doi.org/10.5065/29s7-7b41)
 </entry>
 
+<entry id="fates_lu_transition_logic" type="integer" category="physics"
+        group="elm_inparm" valid_values="1,2,3,4,5,6,7,8,9">
+Select the logic for land use class transitions.
+Allowed values are 1-9. See the Land Use subsection of the Namelist Options section
+of the FATES user guide for an explanation of the options.
+(Only relevant if FATES with land use is on)
+</entry>
+
 <entry id="use_hydrstress" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on if Kennedy et al plant hydraulics model is used.
