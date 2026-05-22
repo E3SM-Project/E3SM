@@ -27,7 +27,7 @@ namespace OMEGA {
 /// messages are emitted for each type of error found.
 ///
 /// The following fields are validated:
-///   - LayerThickness      : [1e-10, 1000]  (from OceanState)
+///   - PseudoThickness     : [1e-10, 1000]  (from OceanState)
 ///   - KineticEnergyCell   : [0, 10]
 ///                           (from AuxiliaryState::KineticAux)
 ///   - Temperature tracer  : [-10, 50]      (from Tracers)
@@ -47,7 +47,7 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
 /// Only active ocean cells (where CellMask > 0) are checked.
 ///
 /// The following fields are validated:
-///   - LayerThickness      : [1e-10, 1000]  (from OceanState)
+///   - PseudoThickness     : [1e-10, 1000]  (from OceanState)
 ///   - KineticEnergyCell   : [0, 10]
 ///                           (from AuxiliaryState::KineticAux)
 ///   - Temperature tracer  : [-10, 50]      (from Tracers)

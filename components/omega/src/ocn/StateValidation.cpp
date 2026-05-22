@@ -134,24 +134,25 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
    const Array2DReal &CellMask = VCoord->CellMask;
 
    // -------------------------------------------------------------------------
-   // LayerThickness: valid range [1e-10, 1000]
+   // PseudoThickness: valid range [1e-10, 1000]
    // -------------------------------------------------------------------------
    {
-      Array2DReal LayerThick = State->getLayerThickness(TimeLevel);
+      Array2DReal PseudoThick = State->getPseudoThickness(TimeLevel);
       auto [NaNs, OOB] =
-          checkArray2D(LayerThick, State->NCellsOwned, State->NVertLayers,
+          checkArray2D(PseudoThick, State->NCellsOwned, State->NVertLayers,
                        static_cast<Real>(1e-10), static_cast<Real>(1000.0),
                        /*CheckMin=*/true, CellMask);
 
       if (NaNs > 0) {
          LOG_CRITICAL(
-             "StateValidation: LayerThickness contains {} NaN value(s)", NaNs);
+             "StateValidation: PseudoThickness contains {} NaN value(s)", NaNs);
          TotalErrors += NaNs;
       }
       if (OOB > 0) {
-         LOG_CRITICAL("StateValidation: LayerThickness has {} value(s) outside "
-                      "valid range [1e-10, 1000]",
-                      OOB);
+         LOG_CRITICAL(
+             "StateValidation: PseudoThickness has {} value(s) outside "
+             "valid range [1e-10, 1000]",
+             OOB);
          TotalErrors += OOB;
       }
    }

@@ -7,7 +7,7 @@
 /// Tests both the positive path (valid state passes) and the negative paths
 /// (NaN and out-of-bounds values in each checked field are detected) of
 /// validateOceanState / checkOceanState. Checked fields are:
-///   - LayerThickness, KineticEnergyCell, Temperature, Salinity.
+///   - PseudoThickness, KineticEnergyCell, Temperature, Salinity.
 //
 //===-----------------------------------------------------------------------===/
 
@@ -17,6 +17,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Halo.h"
@@ -71,6 +72,7 @@ int initStateValidationTest(const std::string &MeshFile) {
    HorzMesh::init();
    VertCoord::init();
    Tracers::init();
+   Eos::init();
 
    int StateErr = OceanState::init();
    if (StateErr != 0) {
@@ -94,11 +96,11 @@ static int fillValidState() {
    const int NVert  = State->NVertLayers;
    const int NEdges = State->NEdgesAll;
 
-   // LayerThickness: fill with 100 m (valid range [1e-10, 1000])
-   Array2DReal LayerThick = State->getLayerThickness(0);
+   // PseudoThickness: fill with 100 m (valid range [1e-10, 1000])
+   Array2DReal PseudoThick = State->getPseudoThickness(0);
    parallelFor(
-       "FillLayerThick", {NCells, NVert},
-       KOKKOS_LAMBDA(int ICell, int K) { LayerThick(ICell, K) = 100.0; });
+       "FillPseudoThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int ICell, int K) { PseudoThick(ICell, K) = 100.0; });
 
    // NormalVelocity: fill with 0 (not checked, but needed for AuxState)
    Array2DReal NormalVel = State->getNormalVelocity(0);
@@ -134,7 +136,8 @@ static int fillValidState() {
 static void restoreValidState(OceanState *State, AuxiliaryState *AuxState) {
    fillValidState();
    Array3DReal AllTracers = Tracers::getAll(0);
-   AuxState->computeAll(State, AllTracers, 0);
+   TimeInterval Interval(1., TimeUnits::Seconds);
+   AuxState->computeAll(State, AllTracers, 0, Interval);
 }
 
 //------------------------------------------------------------------------------
@@ -167,46 +170,47 @@ static int expectErrors(const char *TestName, OceanState *State,
    return 0;
 }
 
-// --- LayerThickness ---
+// --- PseudoThickness ---
 
-static int testNaNLayerThickness(OceanState *State, AuxiliaryState *AuxState,
-                                 VertCoord *VCoord) {
+static int testNaNPseudoThickness(OceanState *State, AuxiliaryState *AuxState,
+                                  VertCoord *VCoord) {
    restoreValidState(State, AuxState);
    const Real NaN   = std::numeric_limits<Real>::quiet_NaN();
-   Array2DReal LT   = State->getLayerThickness(0);
+   Array2DReal PT   = State->getPseudoThickness(0);
    const int NCells = State->NCellsAll;
    const int NVert  = State->NVertLayers;
    parallelFor(
-       "InjectNaNLayerThick", {NCells, NVert},
-       KOKKOS_LAMBDA(int I, int K) { LT(I, K) = NaN; });
-   return expectErrors("NaN in LayerThickness", State, AuxState, VCoord);
+       "InjectNaNPseudoThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { PT(I, K) = NaN; });
+   return expectErrors("NaN in PseudoThickness", State, AuxState, VCoord);
 }
 
-static int testOOBHighLayerThickness(OceanState *State,
-                                     AuxiliaryState *AuxState,
-                                     VertCoord *VCoord) {
+static int testOOBHighPseudoThickness(OceanState *State,
+                                      AuxiliaryState *AuxState,
+                                      VertCoord *VCoord) {
    restoreValidState(State, AuxState);
-   Array2DReal LT   = State->getLayerThickness(0);
+   Array2DReal PT   = State->getPseudoThickness(0);
    const int NCells = State->NCellsAll;
    const int NVert  = State->NVertLayers;
    // 2000 m is above the valid max of 1000 m
    parallelFor(
-       "InjectOOBHighLayerThick", {NCells, NVert},
-       KOKKOS_LAMBDA(int I, int K) { LT(I, K) = 2000.0; });
-   return expectErrors("OOB-high in LayerThickness", State, AuxState, VCoord);
+       "InjectOOBHighPseudoThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { PT(I, K) = 2000.0; });
+   return expectErrors("OOB-high in PseudoThickness", State, AuxState, VCoord);
 }
 
-static int testOOBLowLayerThickness(OceanState *State, AuxiliaryState *AuxState,
-                                    VertCoord *VCoord) {
+static int testOOBLowPseudoThickness(OceanState *State,
+                                     AuxiliaryState *AuxState,
+                                     VertCoord *VCoord) {
    restoreValidState(State, AuxState);
-   Array2DReal LT   = State->getLayerThickness(0);
+   Array2DReal PT   = State->getPseudoThickness(0);
    const int NCells = State->NCellsAll;
    const int NVert  = State->NVertLayers;
    // -1.0 m is below the valid min of 1e-10 m
    parallelFor(
-       "InjectOOBLowLayerThick", {NCells, NVert},
-       KOKKOS_LAMBDA(int I, int K) { LT(I, K) = -1.0; });
-   return expectErrors("OOB-low in LayerThickness", State, AuxState, VCoord);
+       "InjectOOBLowPseudoThick", {NCells, NVert},
+       KOKKOS_LAMBDA(int I, int K) { PT(I, K) = -1.0; });
+   return expectErrors("OOB-low in PseudoThickness", State, AuxState, VCoord);
 }
 
 // --- KineticEnergyCell ---
@@ -330,7 +334,8 @@ int testStateValidation() {
    fillValidState();
    {
       Array3DReal AllTracers = Tracers::getAll(0);
-      DefAuxState->computeAll(DefState, AllTracers, 0);
+      TimeInterval Interval(1., TimeUnits::Seconds);
+      DefAuxState->computeAll(DefState, AllTracers, 0, Interval);
    }
 
    // ---- Positive test ----
@@ -338,10 +343,10 @@ int testStateValidation() {
 
    // ---- Negative tests: each injects a bad value and verifies detection ----
 
-   // LayerThickness
-   Err += testNaNLayerThickness(DefState, DefAuxState, VCoord);
-   Err += testOOBHighLayerThickness(DefState, DefAuxState, VCoord);
-   Err += testOOBLowLayerThickness(DefState, DefAuxState, VCoord);
+   // PseudoThickness
+   Err += testNaNPseudoThickness(DefState, DefAuxState, VCoord);
+   Err += testOOBHighPseudoThickness(DefState, DefAuxState, VCoord);
+   Err += testOOBLowPseudoThickness(DefState, DefAuxState, VCoord);
 
    // KineticEnergyCell
    Err += testNaNKineticEnergy(DefState, DefAuxState, VCoord);
@@ -364,6 +369,7 @@ int testStateValidation() {
 
 void finalizeStateValidationTest() {
    Tracers::clear();
+   Eos::destroyInstance();
    OceanState::clear();
    VertAdv::clear();
    VertCoord::clear();

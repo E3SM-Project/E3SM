@@ -32,9 +32,9 @@ element of each validated field lies within a physically plausible range.
 Values outside these ranges indicate catastrophic model failure and should
 halt the simulation before corrupted output is written to disk.
 
-### 2.3 Requirement: Validate LayerThickness
+### 2.3 Requirement: Validate PseudoThickness
 
-`LayerThickness` must be validated for each owned cell over all vertical
+`PseudoThickness` must be validated for each owned cell over all vertical
 layers. The valid range is $[10^{-10},\, 1000]$ m.
 Negative or near-zero layer thicknesses indicate numerical collapse of the
 column and must be caught immediately.
@@ -142,7 +142,7 @@ implementation:
 
 | Field                | MinVal    | MaxVal |
 |----------------------|-----------|--------|
-| `LayerThickness`     | 1×10⁻¹⁰  | 1000   |
+| `PseudoThickness`    | 1×10⁻¹⁰   | 1000   |
 | `KineticEnergyCell`  | 0         | 10     |
 | `Temperature`        | −10       | 50     |
 | `Salinity`           | −2        | 60     |
@@ -234,7 +234,7 @@ HorzMesh, VertCoord, Tracers, OceanState, AuxiliaryState) using the standard
 test mesh `OmegaMesh.nc`.  All state arrays are filled with physically
 plausible values:
 
-- `LayerThickness` = 100 m (valid range [1×10⁻¹⁰, 1000])
+- `PseudoThickness` = 100 m (valid range [1×10⁻¹⁰, 1000])
 - `NormalVelocity` = 0 m s⁻¹ (not directly validated but required for
   `KineticEnergyCell` to be zero)
 - `Temperature` = 10 °C (valid range [−10, 50])
@@ -260,9 +260,9 @@ The following sub-tests are implemented:
 
 | Sub-test                      | Injected value         | Field              |
 |-------------------------------|------------------------|--------------------|
-| `testNaNLayerThickness`       | NaN                    | LayerThickness     |
-| `testOOBHighLayerThickness`   | 2000 m (> max 1000 m)  | LayerThickness     |
-| `testOOBLowLayerThickness`    | −1 m (< min 1×10⁻¹⁰)  | LayerThickness     |
+| `testNaNPseudoThickness`      | NaN                    | PseudoThickness    |
+| `testOOBHighPseudoThickness`  | 2000 m (> max 1000 m)  | PseudoThickness    |
+| `testOOBLowPseudoThickness`   | −1 m (< min 1×10⁻¹⁰)   | PseudoThickness    |
 | `testNaNKineticEnergy`        | NaN                    | KineticEnergyCell  |
 | `testOOBKineticEnergy`        | 9999 J kg⁻¹ (> max 10) | KineticEnergyCell  |
 | `testNaNTemperature`          | NaN                    | Temperature        |
