@@ -880,6 +880,7 @@ void HommeDynamics::init_homme_views () {
   msg << "   nu_div: " << params.nu_div << "\n";
   msg << "   hypervis_order: " << params.hypervis_order << "\n";
   msg << "   hypervis_subcycle: " << params.hypervis_subcycle << "\n";
+  msg << "   hypervis_subcycle_sgs: " << params.hypervis_subcycle_sgs << "\n";
   msg << "   hypervis_subcycle_tom: " << params.hypervis_subcycle_tom << "\n";
   msg << "   hypervis_scaling: " << params.hypervis_scaling << "\n";
   msg << "   nu_ratio1: " << params.nu_ratio1 << "\n";

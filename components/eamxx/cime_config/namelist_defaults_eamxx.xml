@@ -863,6 +863,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
+    <hypervis_subcycle_sgs>-1</hypervis_subcycle_sgs>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
     <nu>3.4e-08</nu>
