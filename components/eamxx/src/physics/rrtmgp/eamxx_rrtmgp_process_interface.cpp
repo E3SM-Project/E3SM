@@ -614,8 +614,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
   auto d_sunlit = get_field_out("sunlit_mask").get_view<int*>();
 
-  Kokkos::deep_copy(d_dtau067,0.0);
-  Kokkos::deep_copy(d_dtau105,0.0);
   // Outputs for AeroCom cloud-top diagnostics
   auto d_T_mid_at_cldtop = get_field_out("T_mid_at_cldtop").get_view<Real *>();
   auto d_p_mid_at_cldtop = get_field_out("p_mid_at_cldtop").get_view<Real *>();
