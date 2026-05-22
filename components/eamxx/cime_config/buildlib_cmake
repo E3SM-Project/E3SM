@@ -32,6 +32,13 @@ def buildlib(bldroot, installpath, case):
     for item in it:
         cmake_args_dict[item] = next(it)
 
+    # When EXTRA_DEBUG is set, enable FPE and pack size 1 for thorough debugging.
+    # These override any values already present in SCREAM_CMAKE_OPTIONS.
+    if case.get_value("EXTRA_DEBUG"):
+        expect(case.get_value("DEBUG"), "EXTRA_DEBUG is On but DEBUG is Off? Makes no sense.")
+        cmake_args_dict["SCREAM_FPE"] = "True"
+        cmake_args_dict["SCREAM_PACK_SIZE"] = "1"
+
     cmake_args = ""
     for k,v in cmake_args_dict.items():
         cmake_args += f" -D{k}={v}"

@@ -135,7 +135,7 @@ def buildlib(bldroot, installpath, case):
     if debug:
         ekat_cmake_options += " -DCMAKE_BUILD_TYPE=Debug"
         # Kokkos bounds checking is too expensive to always turn on
-        if "E3SM_ENABLE_KOKKOS_BOUNDS_CHECKING" in os.environ:
+        if case.get_value("EXTRA_DEBUG"):
             ekat_cmake_options += " -DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=On"
 
     gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
