@@ -2755,6 +2755,9 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lcrc/soft/climate/sz/2.1.12.5/gcc-11.2.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lcrc/soft/climate/zfp/1.0.1/gcc-11.2.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
+    <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel-oneapi-compilers-2025.2.0-develop; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="blues">
