@@ -1493,6 +1493,7 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/sz/2.1.12.5/craygnu; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/zfp/1.0.1/craygnu; else echo "$ZFP_ROOT"; fi}</env>
       <env name="H5Z_ZFP_ROOT">$SHELL{if [ -z "$H5Z_ZFP_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/h5z-zfp/1.1.1/craygnu; else echo "$H5Z_ZFP_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /ccs/proj/cli115/software/frontier/3rdparty/moab/master; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="craycray.*" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/ccs/proj/cli115/software/frontier/3rdparty/protobuf/21.6/craycray/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
