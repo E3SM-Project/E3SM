@@ -3,8 +3,7 @@ module seq_nlmap_mod
   !-----------------------------------------------------------------------------
   !
   ! Purpose: Apply a high-order linear map followed by a property restoring
-  ! nonlinear global fixer. This module adds to the capabilities of seq_map_mod
-  ! and extends its seq_map_avNormArr subroutine. The objective is to improve
+  ! nonlinear global fixer.  The objective is to improve
   ! coarse-to-fine, conservative, monotone maps. Area-averaged (aave) maps
   ! produce grid imprint on the target fine grid because each coarse source cell
   ! has a constant field. This module applies a high-order linear map that
@@ -20,19 +19,20 @@ module seq_nlmap_mod
   !   In practice, SRC2TGT_TMAPFILE should be an area-averaged map ('aave', aka
   ! 'mono'). This map provides the reference global mass on the target grid and
   ! the non-0 target cells. SRC2TGT_TMAPFILE_NONLINEAR can be anything, but its
-  ! non-0 pattern must be a superset of SRC2TGT_TMAPFILE's. An initialization-
-  ! time check of this requirement is performed; if it is not satisfied, the run
-  ! exits. This requirement assures that SRC2TGT_TMAPFILE_NONLINEAR provides
+  ! This requirement assures that SRC2TGT_TMAPFILE_NONLINEAR provides
   ! data in any target cell that SRC2TGT_TMAPFILE does. In the opposite
   ! direction, at runtime, any target cell that SRC2TGT_TMAPFILE does not affect
   ! is zeroed after SRC2TGT_TMAPFILE_NONLINEAR is applied.
-  !   Optionally, this module provides an algorithm variant to obtains exact
+  !
+  ! Optionally, there is an algorithm variant to obtains exact
   ! mass conservation for atmosphere-to-surface flux maps in the case of
   ! overlapping surface grids with a nontrivial common refinement. (A unified
   ! surface grid permits conservation without the variant.) This variant is
   ! controlled by the boolean option NLMAPS_ATM2SRF_CONSERVE in the coupler
   ! options. If this option is true, both the atm2lnd and atm2ocn maps must be
-  ! nonlinear; if they aren't, the module calls abort.
+  ! nonlinear; if they aren't, the module calls abort.  NOT YET IMPLMENTED IN MOAB
+  !
+  ! Algorithm is now implementd inside MOAB in src/Remapping/TempestOnlineMap.cpp
   !
   ! Following is a description of the algorithm and its properties,
   ! specializations of Alg. 3.1 of the following reference for this use case:
@@ -121,7 +121,7 @@ module seq_nlmap_mod
   !   0 <= (dM / (t g)'w) <= 1,
   ! permitting the final line to hold.
   !
-  ! nlmas_atm2srf_conserve variant.
+  ! Conservative variant:  NOT YET IMPLEMENTED IN MOAB
   !   Some modifications are made for this case.
   !   f, the vector of area fractions, is not used. That is because it is atm
   ! fractions, which are uniformly and globally 1.
@@ -140,6 +140,7 @@ module seq_nlmap_mod
   !
   ! Author: A.M. Bradley, Mar,Apr-2023
   ! Update: A.M. Bradley, Mar-2025. a2s_cons feature.
+  ! Update: MOAB Team, May 2026. MOAB version modifed from MCT original
   !
   !-----------------------------------------------------------------------------
   
