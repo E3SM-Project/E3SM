@@ -1199,6 +1199,70 @@ These are hard-won lessons. Read before modifying FME code.
     - `AODVIS` (legacy) is still nighttime-masked (fill at idxnite) —
       we did NOT break backward compatibility.
 
+44. **MPAS FME remap streams: PIO "invalid IO type" abort at month
+    rollover (RESOLVED 2026-05-24).** A continued (warm-restart) leg died
+    exactly at the 1940-01 -> 1940-02 boundary with
+    `PIO: FATAL ERROR ... invalid IO type (scorpio/.../pio_lists.c:120)`
+    on a handful of OCN ranks, then thousands of `srun: ... Killed` lines.
+    The kills are just MPI_ABORT teardown — not the cause. The tell is the
+    new-month file: `fmeDerivedFields.1940-02.remapped.nc` left at **0
+    bytes** (created, died in define mode) while its January file and the
+    sibling `fmeDepthCoarsening`/`fmeSeaiceDerivedFields` Feb files were
+    fine. `pio_lists.c:120` is `pio_get_file()` asserting
+    `iotype_is_valid(cfile->iotype)`; since `pioc_support.c` always stores
+    a valid iotype on a successful create, the assert means the looked-up
+    ncid resolved to a **stale/orphaned** entry in `pio_file_list`.
+
+    Both hand-rolled remap modules (`mpas_ocn_fme_horiz_remap.F` and
+    `mpas_seaice_fme_horiz_remap.F` — these open/close/rotate PIO files
+    directly instead of via the stream manager) had three defects:
+
+    **A. Define-mode leak (load-bearing).** `open_file`'s define-error
+    path `return`ed WITHOUT `pio_closefile` and without setting
+    `file_is_open`, orphaning the just-created ncid; the next rotation
+    overwrote `self%pio_file` with a fresh create, permanently leaking the
+    old id. Once PIO recycled that id, the linear lookup returned the
+    stale struct -> invalid iotype. Fix: close + `pio_file%fh = -1` +
+    `file_is_open = .false.` on that path.
+
+    **B. Close didn't reset the handle (defensive).** `close_file` now
+    also zeroes `pio_file%fh` and the `dim_*_id` ids so a leftover handle
+    can't alias a recycled ncid. Only matters once (A) has happened, but
+    cheap insurance.
+
+    **C. `is_restart_run` latched run-global (load-bearing).** It is set
+    once at init from `config_do_restart` and never cleared, so EVERY
+    mid-run month rotation took the append-reopen branch whenever the
+    target file already existed — including a 0-byte orphan left by a
+    prior crash, which `pio_openfile` then mishandles. Fix: a per-instance
+    fire-once `restart_reopen_pending` latch (one for the primary stream,
+    one for each `_5D` companion on the sea-ice side). Only the leg-start
+    month appends; every genuinely-new month clobber-creates; and a failed
+    reopen now falls through to clobber instead of aborting. This PRESERVES
+    the leg-2-reopens-leg-1-leftover intent of gotcha #29 (the first open
+    after restart still appends) — it just stops that privilege from
+    leaking to later months.
+
+    Edits land at both open/close sites per file (sea-ice has parallel
+    primary + `_5D` state, gotcha #42), so six logical fixes total. Files:
+    `components/mpas-ocean/src/shared/mpas_ocn_fme_horiz_remap.F`,
+    `components/mpas-seaice/src/shared/mpas_seaice_fme_horiz_remap.F`.
+
+    **Verification.** Syntax-only compile of each file by replaying the
+    case's `flags.make` (`mpif90 -syntax-only -free -module <tmp>` with the
+    `-D`/`-I` flags from
+    `build/cmake-bld/mpas-framework/src/CMakeFiles/{ocn,ice}.dir/`) — both
+    exit 0. Then a live restart run cleared the 1940-01 -> 02 rollover and
+    reached 1940-02-05 with zero `invalid IO type`/`MPI_ABORT`; all six Feb
+    `.remapped.nc` files (3 monthly + 3 `_5D`) populate with headers, incl.
+    the `fmeDerivedFields.1940-02` that was 0 bytes before.
+
+    **Smoke-test for the next rollover-crossing run**: confirm every
+    `*.1940-MM.remapped.nc` is non-zero on the FIRST day of a new month,
+    and that a restart leg whose start month already has a leftover file
+    logs `clobber-creating instead` (the (C) fallback) rather than
+    aborting.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:

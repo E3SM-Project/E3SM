@@ -181,6 +181,14 @@ module ocn_fme_horiz_remap
       ! already populated and var_descs are looked up via pio_inq_varid
       ! instead of being defined.
       logical :: existing_file_reopened = .false.
+      ! Fire-once latch for restart append mode. Only the leg-start month's
+      ! file (the one leg-1 was mid-write at restart) should be reopened in
+      ! append mode; every NEW month rotated to during the leg must
+      ! clobber-create. is_restart_run stays true for the whole run, so this
+      ! per-instance latch is what limits append to the first open. Default
+      ! .true. is safe on cold starts because the append path is also gated
+      ! on is_restart_run (which is .false. there).
+      logical :: restart_reopen_pending = .true.
    contains
       procedure :: open_file    => remap_file_open
       procedure :: def_var      => remap_file_def_var
@@ -741,7 +749,7 @@ contains
 
       integer :: nlat, nlon, ierr, i, count_le_now
       integer(PIO_OFFSET_KIND) :: time_len
-      logical :: file_exists
+      logical :: file_exists, may_append
       type(MPAS_Time_Type) :: now_time
       character(len=StrKIND) :: now_str
       real(r8) :: now_days
@@ -761,18 +769,30 @@ contains
 
       inquire(file=trim(filename), exist=file_exists)
 
-      ! Append-mode reopen ONLY on warm restart. On cold start always
-      ! clobber-create — protects against stale `.remapped.nc` files
-      ! left behind in the run dir by a prior CIME compare-copy or
-      ! aborted run.
-      if (file_exists .and. is_restart_run) then
+      ! Append-mode reopen ONLY for the leg-start month's file on a warm
+      ! restart (the file leg-1 was mid-write when it stopped). Gated on a
+      ! fire-once per-instance latch: is_restart_run stays true for the
+      ! whole run, so without the latch every NEW month rotated to during
+      ! the leg would also try to reopen-append. A genuinely new month — or
+      ! a stale/partial `.remapped.nc` left by a prior aborted run — must
+      ! clobber-create instead, otherwise reopening a 0-byte/corrupt file
+      ! trips PIO's "invalid IO type" assert (see git history / AGENTS.md).
+      ! The latch is consumed on the first open regardless of branch taken.
+      may_append = file_exists .and. is_restart_run .and. self%restart_reopen_pending
+      self%restart_reopen_pending = .false.
+      if (may_append) then
          ! --- Append mode: reopen existing file and continue writing -------
          ierr = pio_openfile(pio_sys, self%pio_file, PIO_IOTYPE_PNETCDF, &
               trim(filename), PIO_WRITE)
          if (ierr /= PIO_NOERR) then
+            ! Reopen failed (e.g. stale/corrupt file): don't abort — fall
+            ! through to a clean clobber-create below. Drop the dead handle
+            ! so the create's pio_createfile starts from a clean file_desc.
             call mpas_log_write('ocn_fme_remap_file: failed to reopen ' &
-                 // trim(filename), messageType=MPAS_LOG_ERR)
-            err = ierr; return
+                 // trim(filename) // '; clobber-creating instead', &
+                 messageType=MPAS_LOG_WARN)
+            self%pio_file%fh = -1
+            go to 100
          end if
 
          err = 0
@@ -845,6 +865,7 @@ contains
       end if
 
       ! --- Fresh create -------------------------------------------------
+100   continue
       ierr = pio_createfile(pio_sys, self%pio_file, PIO_IOTYPE_PNETCDF, &
            trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then
@@ -928,6 +949,14 @@ contains
       if (err /= 0) then
          call mpas_log_write('ocn_fme_remap_file: define-mode error opening ' &
               // trim(filename), messageType=MPAS_LOG_ERR)
+         ! The file was created (it is in PIO's open-file list) but define
+         ! failed — close it so its ncid is not orphaned. A leaked ncid
+         ! stays in pio_file_list and, once PIO recycles that id for a later
+         ! create, the linear lookup in pio_get_file() can return the stale
+         ! struct and trip the "invalid IO type" assert (pio_lists.c).
+         call pio_closefile(self%pio_file)
+         self%pio_file%fh = -1
+         self%file_is_open = .false.
          return
       end if
 
@@ -1205,6 +1234,14 @@ contains
          self%time_record = 0
          self%current_filename = ''
          self%existing_file_reopened = .false.
+         ! Drop the now-dead ncid and stale dim ids so a leftover handle
+         ! can't alias a recycled ncid on the next open (see open_file's
+         ! "invalid IO type" note).
+         self%pio_file%fh = -1
+         self%dim_lon_id  = 0
+         self%dim_lat_id  = 0
+         self%dim_time_id = 0
+         self%dim_nbnd_id = 0
       end if
    end subroutine remap_file_close!}}}
 
