@@ -1063,6 +1063,142 @@ These are hard-won lessons. Read before modifying FME code.
     block in `remap_1level` / `remap_1field`, gated on a flag that
     defaults to `.false.`).
 
+43. **Atmosphere aerosol/cloud/CCN additions + day+night AOD companions +
+    CO2 scalar metadata (ADDED 2026-05-24).** Four loosely coupled
+    additions to the EAM side of the FME tape:
+
+    **A. `AODVISall` / `AODUVall` / `AODNIRall` — day+night unmasked AODs.**
+    `modal_aer_opt.F90:modal_aero_sw` already accumulates AODVIS/AODUV/AODNIR
+    for every column (`do i = 1, ncol` at lines 998-1017). The trailing
+    `do i = 1, nnite ; aodvis(idxnite(i)) = fillvalue` loops at lines
+    1239-1247 (visible) and 1283-1287 (UV/NIR) are *purely cosmetic*
+    masking — the optics computation itself is solar-zenith-independent.
+    The new `*all` variants snapshot the unmasked arrays via `outfld`
+    BEFORE those fill loops run. AODVIS itself is unchanged; downstream
+    consumers that depend on the nighttime-masked semantics keep
+    working. The day+night fields land in fincl1 as
+    `AODVISall:A`, `AODUVall:A`, `AODNIRall:A`. Gated on
+    `list_idx == 0` (climate diagnostic list only — no `_1`/`_2` diag
+    list variants).
+
+    Why this matters for ACE/Samudra: every-column AOD lets the training
+    pipeline treat aerosol forcing as a continuous field instead of a
+    half-sky-fill mask. Time-averaging with `:A` is the right choice
+    because optics is only recomputed on radiation timesteps (typically
+    every 1 hr) — averaging over multiple radiation calls collapses to
+    the same value, but `:A` also folds in the diurnal cycle of aerosol
+    water uptake on radiation cadence.
+
+    **B. `do_aerocom_ind3=.true.` enables AEROCOM cloud diagnostics.**
+    Off by default in EAM (`phys_control.F90:137`). Turning it on in
+    the testmod (`user_nl_eam`) lights up the `output_aerocom_aie`
+    register/init path and unlocks: `aerindex` (Angstrom × AOD),
+    `angstrm` (Angstrom coefficient), `aod400`/`aod700`, `cdnc` (cloud
+    droplet number at cloud top, #/m³), `lwp`/`iwp` (water paths,
+    kg/m²), `cod` (cloud optical depth), `clt`/`lcc`/`icc` (cloud
+    cover fractions), `cdnumbf`/`icnumbf` (column droplet/ice number
+    before microphysics), and `colccn.1`/`colccn.3`/`ccn.1bl`/`ccn.3bl`
+    (CCN at S=0.1%/0.3%, column and 1 km AGL).
+
+    Selected for the FME tape: `aerindex:A`, `angstrm:A`, `cdnc:A`,
+    `lwp:A`, `ccn.3bl:A`. The other 15+ aerocom fields are addfld'd
+    but not requested in fincl1; expand later if the SamudrACE team
+    wants more.
+
+    **RRTMG vs RRTMGP caveat for `aerindex` / `angstrm` / `aod400` /
+    `aod700`.** These four are outfld'd only from
+    `components/eam/src/physics/rrtmg/radiation.F90:1322-1352`,
+    NOT from the RRTMGP path. WCYCL1850 / WCYCL1850NS resolve to
+    `eamv3_phys_defaults` which does NOT set `-rad`, so the
+    `configure` default `$rad_pkg = 'rrtmg'` (line 1081) wins —
+    confirmed via `components/eam/cime_config/config_component.xml`
+    (no `-rad` override on `_EAM%CMIP6.*` compsets). If a future user
+    switches to `-rad rrtmgp` (e.g., SCREAM or MMF compsets), these
+    four fields will be silently absent. `cdnc`, `lwp`, `cod`, and
+    the `ccn.*` family come from microphysics / `output_aerocom_aie`
+    routines that run regardless of radiation package, so those are
+    fine either way.
+
+    Also: the legacy `aerindex` and `angstrm` are nighttime-masked
+    at `radiation.F90:1341-1346` (same cosmetic-fill pattern as
+    AODVIS). The underlying `aer_tau` IS computed for all `1:ncol`
+    inside `modal_aero_sw` (it's pure aerosol optics — no solar-zenith
+    dependence), so the values at idxnite columns are physically
+    valid before the mask. New day+night companions `aerindexall` and
+    `angstrmall` snapshot those values BEFORE the fill loop, parallel
+    to the `AOD*all` pattern (added 2026-05-24; addfld in
+    `output_aerocom_aie.F90:137-141`, outfld in
+    `radiation.F90:1341-1348`). Both are gated on the same
+    `do_aerocom_ind3=.true.` and `if(icall.eq.0)` (climatology run)
+    conditions as the masked siblings, so all four fields appear
+    together in eam.h0.
+
+    **C. `cdnc` semantics.** From `output_aerocom_aie.F90`, `cdnc` is
+    "Cloud droplet number concentration at cloud top" (#/m³), NOT a
+    column or 3D field. It is populated inside `cloud_top_aerocom`
+    (the AEROCOM cloud-top sampling routine) and is the canonical
+    aerosol-cloud-interaction diagnostic for AEROCOM intercomparisons.
+    For 3D droplet number on every level, use `AWNC` (P3 microphysics,
+    in-cloud average) instead; for column-integrated, use `CDNUMC` (P3)
+    or `cdnum` / `cdnumbf` (aerocom). The fincl1 entry intentionally
+    uses the cloud-top `cdnc`.
+
+    **D. CO2 (and friends) are already per-record in `eam.h0` —
+    no FME-side code needed.** `cam_history.F90:4948-4953` writes
+    `co2vmr(time)`, `ch4vmr(time)`, `n2ovmr(time)`, `f11vmr(time)`,
+    `f12vmr(time)`, and `sol_tsi(time)` per record on every output
+    interval, sourced from `chem_surfvals_co2_rad(vmr_in=.true.)` /
+    `chem_surfvals_get('CH4VMR')` etc. These are 1D time-only doubles
+    sitting in the file's coord vars (alongside `time`, `date`,
+    `datesec`, etc.); xarray exposes them as `ds.co2vmr.values` of
+    shape `(time,)`. Verified empirically in
+    `v3.LR.piControl.aigo.eam.h0.0401-01.nc`: 123 records, all
+    `2.84317e-4 mol/mol` for piControl 1850.
+
+    **Why this matters**: for transient compsets (CMIP6 historical,
+    scenario runs, 1pctCO2, 4xCO2), `flbc_inti` updates `co2vmr` as
+    simulation time advances. The cam_history per-record write
+    captures that drift automatically — every output record has the
+    current CO2 forcing. No special FME plumbing needed.
+
+    **Don't add `add_hist_scalar('co2vmr', ...)`** — an earlier
+    revision of this branch tried that in `eam_vcoarsen_register`
+    and would have produced a name collision with the existing
+    `tape(t)%co2vmrid` (or silently emitted a constant frozen at
+    `t=0`). Removed 2026-05-24 after auditing
+    `cam_history.F90:4942-4953` and confirming `co2vmr(time)` is
+    already in every h0 file we've ever written. The
+    `add_hist_scalar` machinery added in gotcha #41 stays the right
+    tool for *genuinely constant* per-file metadata (ak/bk, idepth)
+    where one value per file is desirable; it's the wrong tool for
+    time-varying scalars.
+
+    **Files touched (5)**: `components/eam/src/physics/cam/modal_aer_opt.F90`
+    (addfld + outfld for the 3 AOD*all variants),
+    `components/eam/src/physics/cam/output_aerocom_aie.F90` (addfld
+    for `aerindexall` / `angstrmall`),
+    `components/eam/src/physics/rrtmg/radiation.F90` (outfld for
+    `aerindexall` / `angstrmall` before the fill loop),
+    `cime_config/testmods_dirs/allactive/fme_output/shell_commands`
+    (`do_aerocom_ind3=.true.`, fincl1 extension, three more non-FME
+    MPAS-O AMs disabled), this AGENTS.md entry.
+
+    **Smoke-test checklist for the next live run**:
+    - `AODVISall` shows non-fill values at nighttime grid cells
+      (sanity-check global min/max excludes 1e36 outside polar night).
+    - `aerindex` / `angstrm` shows up only on RRTMG compsets (will be
+      absent on `-rad rrtmgp`).
+    - `cdnc.values.mean()` is in the O(1e7-1e8) #/m³ range over ocean
+      stratus regions, ~0 over deserts.
+    - `lwp.values.mean()` is ~O(0.1) kg/m² over ITCZ, ~0 over deserts.
+    - `ccn.3bl` is O(1e7-1e9) #/m³ in polluted continental BL,
+      O(1e6-1e7) over remote ocean.
+    - `ds.co2vmr.values` is per-record (shape `(time,)`) and matches
+      ~2.847e-4 for WCYCL1850 piControl 1850 (already in h0 files
+      from cam_history.F90:4948 — not FME work).
+    - `AODVIS` (legacy) is still nighttime-masked (fill at idxnite) —
+      we did NOT break backward compatibility.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:

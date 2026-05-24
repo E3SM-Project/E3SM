@@ -134,10 +134,10 @@ else
   readonly PELAYOUT=${PELAYOUT:-L}
   readonly WALLTIME=${WALLTIME:-34:00:00}
   readonly STOP_OPTION="nyears"
-  readonly STOP_N="5"
+  readonly STOP_N="20"
   readonly REST_OPTION="nyears"
   readonly REST_N="5"
-  readonly RESUBMIT="19"
+  readonly RESUBMIT="4"
   readonly DO_SHORT_TERM_ARCHIVING=false
 fi
 
