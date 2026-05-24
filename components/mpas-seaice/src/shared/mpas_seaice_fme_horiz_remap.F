@@ -110,6 +110,12 @@ module seaice_fme_horiz_remap
    ! True when the open file was reopened from disk (append after restart)
    ! rather than freshly created. Mirrors the ocean module's flag.
    logical :: existing_file_reopened = .false.
+   ! Fire-once latch limiting restart append mode to the leg-start month's
+   ! file. is_restart_run stays true for the whole run, so without this
+   ! latch every NEW month rotated to during the leg would also try to
+   ! reopen-append; reopening a stale/0-byte file trips PIO's "invalid IO
+   ! type" assert. Mirrors the ocean module fix.
+   logical :: restart_reopen_pending = .true.
 
    integer, parameter :: max_pio_vars = 512
    integer :: n_pio_vars = 0
@@ -151,6 +157,8 @@ module seaice_fme_horiz_remap
    integer            :: dim_nbnd_id_5D = 0
    integer            :: time_record_5D = 0
    logical            :: existing_file_reopened_5D = .false.
+   ! Fire-once restart-append latch for the 5D companion (see primary).
+   logical            :: restart_reopen_pending_5D = .true.
    integer            :: n_pio_vars_5D = 0
    character(len=64)  :: pio_var_names_5D(max_pio_vars)
    type(var_desc_t)   :: pio_var_descs_5D(max_pio_vars)
@@ -576,7 +584,7 @@ contains
       integer, intent(out) :: err
       integer :: ierr, i, count_le_now
       integer(PIO_OFFSET_KIND) :: time_len
-      logical :: file_exists
+      logical :: file_exists, may_append
       type(MPAS_Time_Type) :: now_time
       character(len=StrKIND) :: now_str
       real(r8) :: now_days
@@ -591,15 +599,23 @@ contains
       end if
 
       inquire(file=trim(filename), exist=file_exists)
-      ! Append-mode reopen ONLY on warm restart. Cold start always
-      ! clobber-creates, defending against stale leftover files.
-      if (file_exists .and. is_restart_run) then
+      ! Append-mode reopen ONLY for the leg-start month's file on a warm
+      ! restart, gated on a fire-once latch (is_restart_run stays true for
+      ! the whole run). A new month, or a stale/0-byte leftover, must
+      ! clobber-create instead. See the ocean module for full rationale.
+      may_append = file_exists .and. is_restart_run .and. restart_reopen_pending
+      restart_reopen_pending = .false.
+      if (may_append) then
          ierr = pio_openfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, &
               trim(filename), PIO_WRITE)
          if (ierr /= PIO_NOERR) then
+            ! Reopen failed (stale/corrupt file): fall through to a clean
+            ! clobber-create rather than aborting the run.
             call mpas_log_write('seaice_fme_horiz_remap: failed to reopen ' &
-                 // trim(filename), messageType=MPAS_LOG_ERR)
-            err = ierr; return
+                 // trim(filename) // '; clobber-creating instead', &
+                 messageType=MPAS_LOG_WARN)
+            pio_file%fh = -1
+            go to 200
          end if
 
          call check_pio_si('inq_dimid lon', &
@@ -662,6 +678,7 @@ contains
          return
       end if
 
+200   continue
       ierr = pio_createfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then; err = ierr; return; end if
 
@@ -729,6 +746,11 @@ contains
       if (err /= 0) then
          call mpas_log_write('seaice_fme_horiz_remap: define-mode error opening ' &
               // trim(filename), messageType=MPAS_LOG_ERR)
+         ! Close the just-created file so its ncid is not orphaned in
+         ! pio_file_list (a recycled orphan id later trips "invalid IO type").
+         call pio_closefile(pio_file)
+         pio_file%fh = -1
+         file_is_open = .false.
          return
       end if
 
@@ -882,6 +904,15 @@ contains
          file_is_open = .false.
          current_filename = ''
          existing_file_reopened = .false.
+         ! Drop the dead ncid and stale dim ids so a leftover handle can't
+         ! alias a recycled ncid on the next open.
+         pio_file%fh  = -1
+         dim_lon_id   = 0
+         dim_lat_id   = 0
+         dim_time_id  = 0
+         dim_nbnd_id  = 0
+         n_pio_vars   = 0
+         time_record  = 0
       end if
    end subroutine seaice_fme_horiz_remap_close_file!}}}
 
@@ -1279,7 +1310,7 @@ contains
       integer, intent(out) :: err
       integer :: ierr, i, count_le_now
       integer(PIO_OFFSET_KIND) :: time_len
-      logical :: file_exists
+      logical :: file_exists, may_append
       type(MPAS_Time_Type) :: now_time
       character(len=StrKIND) :: now_str
       real(r8) :: now_days
@@ -1293,13 +1324,19 @@ contains
       end if
 
       inquire(file=trim(filename), exist=file_exists)
-      if (file_exists .and. is_restart_run) then
+      ! Fire-once restart-append latch (see primary open_file rationale).
+      may_append = file_exists .and. is_restart_run .and. restart_reopen_pending_5D
+      restart_reopen_pending_5D = .false.
+      if (may_append) then
          ierr = pio_openfile(pio_sys, pio_file_5D, PIO_IOTYPE_PNETCDF, &
               trim(filename), PIO_WRITE)
          if (ierr /= PIO_NOERR) then
+            ! Reopen failed (stale/corrupt file): fall through to clobber.
             call mpas_log_write('seaice_fme_horiz_remap_5D: failed to reopen ' &
-                 // trim(filename), messageType=MPAS_LOG_ERR)
-            err = ierr; return
+                 // trim(filename) // '; clobber-creating instead', &
+                 messageType=MPAS_LOG_WARN)
+            pio_file_5D%fh = -1
+            go to 300
          end if
 
          call check_pio_si('5D inq_dimid lon', &
@@ -1348,6 +1385,7 @@ contains
          return
       end if
 
+300   continue
       ierr = pio_createfile(pio_sys, pio_file_5D, PIO_IOTYPE_PNETCDF, &
            trim(filename), PIO_CLOBBER)
       if (ierr /= PIO_NOERR) then; err = ierr; return; end if
@@ -1416,6 +1454,10 @@ contains
       if (err /= 0) then
          call mpas_log_write('seaice_fme_horiz_remap_5D: define-mode error opening ' &
               // trim(filename), messageType=MPAS_LOG_ERR)
+         ! Close the just-created file so its ncid is not orphaned.
+         call pio_closefile(pio_file_5D)
+         pio_file_5D%fh = -1
+         file_is_open_5D = .false.
          return
       end if
 
@@ -1538,6 +1580,14 @@ contains
          file_is_open_5D = .false.
          current_filename_5D = ''
          existing_file_reopened_5D = .false.
+         ! Drop dead ncid / stale dim ids (see primary close).
+         pio_file_5D%fh = -1
+         dim_lon_id_5D  = 0
+         dim_lat_id_5D  = 0
+         dim_time_id_5D = 0
+         dim_nbnd_id_5D = 0
+         n_pio_vars_5D  = 0
+         time_record_5D = 0
       end if
    end subroutine seaice_fme_horiz_remap_close_file_5D!}}}
 
