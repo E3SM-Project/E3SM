@@ -103,9 +103,9 @@ OCN_GRID=$(./xmlquery --value OCN_GRID)
 # Rule: strip npN. (e.g. np4.) from the middle of the name.
 ATM_GRID_NORM=$(echo "$ATM_GRID" | sed 's/np[0-9]*\.//')
 
-# use trfv2 maps
-EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_180by360_shifted_trfv2.nc"
-OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_180by360_shifted_trfv2.nc"
+# use trintbilin maps
+EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_180by360_shifted_trintbilin.nc"
+OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_180by360_shifted_trintbilin.nc"
 
 echo "FME map detection:"
 echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
@@ -155,6 +155,11 @@ mfilt  = ${FME_EAM_MFILT}
 ! Calendar-aligned file rotation (EAMxx-style; one_month = files named %y-%m.nc).
 hist_file_storage_type = '${FME_EAM_STORAGE}'
 
+! Enable AEROCOM aerosol-cloud-interaction diagnostics. Required for
+! aerindex/angstrm/cdnc/lwp/ccn.3bl in fincl1 below. See AGENTS.md
+! gotcha #43.
+do_aerocom_ind3 = .true.
+
 ! Derived fields (computed at full resolution before vcoarsen).
 ! STW -> specific_total_water in ACE naming.
 !
@@ -199,7 +204,10 @@ fincl1 = 'SOLIN:A', 'PHIS',
           'LHFLX:A','SHFLX:A',
           'TAUX:A', 'TAUY:A',
           'PRECT:A', 'PRECST:A',
-          'DTENDTTW:A'
+          'DTENDTTW:A',
+          'AODVISall', 'aerindexall', 'ccn.3bl', 'colccn.3',
+          'cdnc', 'lwp', 'lcc'
+
 
 EOF
 
@@ -296,14 +304,18 @@ config_AM_fmeVerticalReduce_enable = .false.
 
 ! Disable non-FME analysis members. The SamudrACE training tape only
 ! consumes the fmeDepthCoarsening + fmeDerivedFields remapped files;
-! globalStats and the timeSeriesStats* AMs are pure storage overhead
-! for this configuration. Disabling them also keeps the ERS restart
-! comparison clean (timeSeriesStatsDaily isn't BFB across restart in
-! this branch — separate issue, not blocking FME).
+! globalStats, timeSeriesStats*, highFrequencyOutput,
+! meridionalHeatTransport, and oceanHeatContent are pure storage
+! overhead for this configuration. Disabling them also keeps the ERS
+! restart comparison clean (timeSeriesStatsDaily isn't BFB across
+! restart in this branch — separate issue, not blocking FME).
 config_AM_globalStats_enable               = .false.
 config_AM_timeSeriesStatsMonthly_enable    = .false.
 config_AM_timeSeriesStatsMonthlyMin_enable = .false.
 config_AM_timeSeriesStatsMonthlyMax_enable = .false.
+config_AM_highFrequencyOutput_enable       = .false.
+config_AM_meridionalHeatTransport_enable   = .false.
+config_AM_oceanHeatContent_enable          = .false.
 EOF
 
 cat >> user_nl_mpaso << EOF
