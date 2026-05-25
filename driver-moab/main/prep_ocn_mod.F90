@@ -406,9 +406,10 @@ contains
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fa2o'
+             write(logunit,F00) 'Initializing a2o mappers'
           end if
           call seq_map_mapinit(mapper_Fa2o, mpicom_CPLID)
+          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
           if (samegrid_ao) then
              mapper_Fa2o%rearrange_only = .true.
              mapper_Fa2o%strategy = "rearrange"
@@ -560,11 +561,14 @@ contains
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need to read areas
-                  call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
+                  call moab_map_init_rcfile(mapper_Fa2o, type1, &
                         'seq_maps.rc', 'atm2ocn_fmapname:', 'atm2ocn_fmaptype:',samegrid_ao, &
                         arearead, wgtIdFa2o, 'mapper_Fa2o moab initialization', esmf_map_flag)
 
-                  call moab_map_init_rcfile(mbaxid, mboxid, mbintxao, type1, &
+                  mapper_Sa2o%src_mbid = mbaxid
+                  mapper_Sa2o%tgt_mbid = mboxid
+                  mapper_Sa2o%intx_mbid = mbintxao
+                  call moab_map_init_rcfile(mapper_Sa2o, type1, &
                         'seq_maps.rc', 'atm2ocn_smapname:', 'atm2ocn_smaptype:',samegrid_ao, &
                         arearead, wgtIdSa2o, 'mapper_Sa2o moab initialization', esmf_map_flag)
                endif
@@ -606,7 +610,6 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2o'
           end if
-          call seq_map_mapinit(mapper_Sa2o, mpicom_CPLID)
           if (samegrid_ao) then
              mapper_Sa2o%rearrange_only = .true.
              mapper_Sa2o%strategy = "rearrange"
@@ -648,7 +651,10 @@ contains
             if (.not. compute_maps_online_a2o .and. .not. samegrid_ao ) then
                type1 = 3 ! this is type of grid
                arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbaxid, mboxid, mbintxao, type1, &
+               mapper_Va2o%src_mbid = mbaxid
+               mapper_Va2o%tgt_mbid = mboxid
+               mapper_Va2o%intx_mbid = mbintxao
+               call moab_map_init_rcfile( mapper_Va2o, type1, &
                      'seq_maps.rc', 'atm2ocn_vmapname:', 'atm2ocn_vmaptype:', samegrid_ao, &
                      arearead, wgtIdVa2o, 'mapper_Va2o MOAB initialization', esmf_map_flag)
 
@@ -776,7 +782,10 @@ contains
           if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
             type_grid = 3 ! this is type of grid
             arearead = 1 ! read area_a for river model
-            call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+            mapper_Rr2o_liq%src_mbid = mbrxid
+            mapper_Rr2o_liq%tgt_mbid = mboxid
+            mapper_Rr2o_liq%intx_mbid = mbintxro
+            call moab_map_init_rcfile( mapper_Rr2o_liq, type_grid, &
                   'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:', samegrid_ro, &
                   arearead, wgtIdFr2ol, 'mapper_Rr2o_liq MOAB initialization', esmf_map_flag )
           end if
@@ -857,16 +866,16 @@ contains
          end if
 
          ! If loading map from disk, then load the R2O_ice map
-         if (.not. compute_maps_online_r2o  .and. .not. samegrid_ro) then
-            type_grid = 3 ! this is type of grid
-            arearead = 0 ! no need for areas
-            call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
-                  'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
-                  arearead, wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
-         end if
          mapper_Rr2o_ice%src_mbid = mbrxid
          mapper_Rr2o_ice%tgt_mbid = mboxid
          mapper_Rr2o_ice%intx_mbid = mbintxro
+         if (.not. compute_maps_online_r2o  .and. .not. samegrid_ro) then
+            type_grid = 3 ! this is type of grid
+            arearead = 0 ! no need for areas
+            call moab_map_init_rcfile( mapper_Rr2o_ice, type_grid, &
+                  'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:', samegrid_ro, &
+                  arearead, wgtIdFr2oi, 'mapper_Rr2o_ice moab initialization', esmf_map_flag, wgtIdFr2ol )
+         end if
          mapper_Rr2o_ice%src_context = rof(1)%cplcompid
          mapper_Rr2o_ice%intx_context = rmapid ! read map is the same context as intersection now
          mapper_Rr2o_ice%weight_identifier = wgtIdFr2oi
@@ -891,7 +900,10 @@ contains
             if (.not. compute_maps_online_r2o .and. .not. samegrid_ro) then
                type_grid = 3 ! this is type of grid
                arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mbrxid, mboxid, mbintxro, type_grid, &
+               mapper_Fr2o%src_mbid = mbrxid
+               mapper_Fr2o%tgt_mbid = mboxid
+               mapper_Fr2o%intx_mbid = mbintxro
+               call moab_map_init_rcfile( mapper_Fr2o, type_grid, &
                      'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:', samegrid_ro, &
                      arearead, wgtIdFr2o, 'mapper_Fr2o MOAB initialization', esmf_map_flag, wgtIdFr2ol )
             end if

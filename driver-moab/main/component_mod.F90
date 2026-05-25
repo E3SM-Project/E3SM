@@ -478,7 +478,7 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(ocn(1))   !dom_ox
           ! project now aream from atm to ocean.  This is a rearrange since samegrid_ao is true
-          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Fa2o, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.)
        endif
     endif
 
@@ -487,7 +487,7 @@ contains
        dom_d  => component_get_dom_cx(ice(1))   !dom_ix
 
        ! copy aream from ocean to ice.  This is always a copy since ice and ocean have same mesh
-       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+       call seq_map_map(mapper_SFo2i, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.)
     endif
 
     if (rof_c2_ocn) then
@@ -503,7 +503,7 @@ contains
           dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(lnd(1))   !dom_lx
           ! it should work for FV and spectral too
-          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream') 
+          call seq_map_map(mapper_Sa2l, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.) 
        endif
     end if
 
@@ -512,7 +512,7 @@ contains
           dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
           dom_d  => component_get_dom_cx(glc(1))   !dom_gx
 
-          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sl2g, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream', omit_nonlinear=.true.)
        endif
     endif
 #ifdef MOABDEBUG
