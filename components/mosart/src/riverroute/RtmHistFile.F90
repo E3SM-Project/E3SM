@@ -1402,12 +1402,14 @@ contains
     !================================================
 
        call ncd_inqdlen(ncid,dimid,ntapes,   name='ntapes')
-       call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
-       call ncd_io('locfnhr', locrest(1:ntapes), 'read', ncid )
-       do t = 1,ntapes
-          call strip_null(locrest(t))
-          call strip_null(locfnh(t))
-       end do
+       if (ntapes > 0) then
+          call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
+          call ncd_io('locfnhr', locrest(1:ntapes), 'read', ncid )
+          do t = 1,ntapes
+            call strip_null(locrest(t))
+            call strip_null(locfnh(t))
+          end do    
+       end if
 
        ! Determine necessary indices - the following is needed if model decomposition 
        ! is different on restart
