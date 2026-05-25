@@ -32,7 +32,7 @@ module RtmMod
                                rtmhist_avgflag_pertape, rtmhist_avgflag_pertape, & 
                                rtmhist_fincl1, rtmhist_fincl2, rtmhist_fincl3,   &
                                rtmhist_fexcl1, rtmhist_fexcl2, rtmhist_fexcl3,   &
-                               rtmhist_empty_htapes,                              &
+                               rtmhist_empty_htapes,                             &
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
