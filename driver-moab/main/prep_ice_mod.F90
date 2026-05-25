@@ -317,17 +317,17 @@ contains
               call shr_sys_abort(subname//' ERROR in registering ROF-ICE intersection')
             endif
 
+            mapper_Rr2i%src_mbid = mbrxid
+            mapper_Rr2i%tgt_mbid = mbixid
+            mapper_Rr2i%intx_mbid = mbintxri
             ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_r2i) then
                type1 = 3 ! this is type of grid
                arearead = 0
-               call moab_map_init_rcfile( mbrxid, mbixid, mbintxri, type1, &
+               call moab_map_init_rcfile( mapper_Rr2i, type1, &
                      'seq_maps.rc', 'rof2ice_rmapname:', 'rof2ice_rmaptype:', samegrid_ro, &
                      arearead, wgtIdSr2i, 'mapper_Rr2i MOAB initialization', esmf_map_flag )
             end if
-            mapper_Rr2i%src_mbid = mbrxid
-            mapper_Rr2i%tgt_mbid = mbixid
-            mapper_Rr2i%intx_mbid = mbintxri
             mapper_Rr2i%src_context = rof(1)%cplcompid
             mapper_Rr2i%intx_context = idintx
             mapper_Rr2i%weight_identifier = wgtIdSr2i

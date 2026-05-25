@@ -376,7 +376,7 @@ contains
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! do not read area_a and area_b from scalar map file
                   ! set up the scalar map for OCN to ATM
-                  call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
+                  call moab_map_init_rcfile( mapper_So2a, type1, &
                         'seq_maps.rc', 'ocn2atm_smapname:', 'ocn2atm_smaptype:',samegrid_ao, &
                         arearead, wgtIdSo2a, 'mapper_So2a MOAB init', esmf_map_flag)
 
@@ -437,12 +437,15 @@ contains
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing MOAB mapper_Fo2a with copy of mapper_So2a'
             endif
+            mapper_Fo2a%src_mbid = mboxid
+            mapper_Fo2a%tgt_mbid = mbaxid
+            mapper_Fo2a%intx_mbid = mbintxoa
 
             ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_o2a .and. .not. samegrid_ao) then
                type1 = 3 ! this is type of grid
                arearead = 3 ! read area_a and area_b from flux map file
-               call moab_map_init_rcfile( mboxid, mbaxid, mbintxoa, type1, &
+               call moab_map_init_rcfile( mapper_Fo2a, type1, &
                      'seq_maps.rc', 'ocn2atm_fmapname:', 'ocn2atm_fmaptype:', samegrid_ao, &
                      arearead, wgtIdFo2a, 'mapper_Fo2a MOAB init', esmf_map_flag )
 
@@ -469,9 +472,6 @@ contains
 
             end if
             ! now take care of the mapper
-            mapper_Fo2a%src_mbid = mboxid
-            mapper_Fo2a%tgt_mbid = mbaxid
-            mapper_Fo2a%intx_mbid = mbintxoa
             mapper_Fo2a%src_context = mapper_So2a%src_context ! ocn(1)%cplcompid
             mapper_Fo2a%intx_context = mapper_So2a%intx_context ! it could be different, based on samegrid_ao
             mapper_Fo2a%weight_identifier = wgtIdFo2a
@@ -693,7 +693,7 @@ contains
                if (.not. samegrid_ao) then
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! do not read area, we do not need it
-                  call moab_map_init_rcfile(mbixid, mbaxid, mbintxia, type1, &
+                  call moab_map_init_rcfile(mapper_Si2a, type1, &
                         'seq_maps.rc', 'ice2atm_smapname:', 'ice2atm_smaptype:', samegrid_ao, &
                         arearead, wgtIdSi2a, 'mapper_Si2a MOAB init', esmf_map_flag)
                endif
@@ -730,7 +730,10 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!
             type1 = 3 ! this is type of grid
             arearead = 0 ! no need for areas
-            call moab_map_init_rcfile( mbixid, mbaxid, mbintxia, type1, &
+            mapper_Fi2a%src_mbid = mbixid
+            mapper_Fi2a%tgt_mbid = mbaxid
+            mapper_Fi2a%intx_mbid = mbintxia
+            call moab_map_init_rcfile( mapper_Fi2a, type1, &
                   'seq_maps.rc', 'ice2atm_fmapname:', 'ice2atm_fmaptype:', samegrid_ao, &
                   arearead, wgtIdFi2a, 'mapper_Fi2a MOAB init', esmf_map_flag )
 
@@ -802,12 +805,16 @@ contains
 
          if (iamroot_CPLID) then
             write(logunit,*) ' '
-            write(logunit,F00) 'Initializing mapper_Fl2a'
+            write(logunit,F00) 'Initializing l2a mappers'
          endif
          call seq_map_mapinit(mapper_Fl2a, mpicom_CPLID)
+         call seq_map_mapinit(mapper_Sl2a, mpicom_CPLID)
+
          if (samegrid_al) then
             mapper_Fl2a%rearrange_only = .true.
             mapper_Fl2a%strategy = "rearrange"
+            mapper_Sl2a%rearrange_only = .true.
+            mapper_Sl2a%strategy = "rearrange"
          endif
 
          ! important change: do not compute intx at all between atm and land when we have samegrid_al
@@ -911,12 +918,15 @@ contains
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! do not read areas, we do not need it
-                  call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
+                  call moab_map_init_rcfile( mapper_Fl2a, type1, &
                         'seq_maps.rc', 'lnd2atm_fmapname:', 'lnd2atm_fmaptype:', samegrid_al, &
                         arearead, wgtIdFl2a, 'mapper_Fl2a MOAB initialization', esmf_map_flag)
 
                   ! If loading map from disk, then load the scalar map as well for the tri grid case
-                  call moab_map_init_rcfile( mblxid, mbaxid, mbintxla, type1, &
+                  mapper_Sl2a%src_mbid = mblxid
+                  mapper_Sl2a%tgt_mbid = mbaxid
+                  mapper_Sl2a%intx_mbid = mbintxla
+                  call moab_map_init_rcfile( mapper_Sl2a, type1, &
                         'seq_maps.rc', 'lnd2atm_smapname:', 'lnd2atm_smaptype:', samegrid_al, &
                         arearead, wgtIdSl2a, 'mapper_Sl2a MOAB initialization', esmf_map_flag, wgtIdFl2a )
 
@@ -971,7 +981,6 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sl2a'
          endif
-         call seq_map_mapinit(mapper_Sl2a, mpicom_CPLID)
          if (samegrid_al) then
             mapper_Sl2a%rearrange_only = .true.
             mapper_Sl2a%strategy = "rearrange"
