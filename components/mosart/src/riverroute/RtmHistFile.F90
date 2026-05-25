@@ -49,6 +49,8 @@ module RtmHistFile
   character(len=1), public :: &
        rtmhist_avgflag_pertape(max_tapes) = (/(' ',ni=1,max_tapes)/)   ! namelist: per tape averaging flag
 
+  logical, public :: rtmhist_empty_htapes = .false.   ! namelist: flag indicates no default history fields
+
   ! list of fields to add
   character(len=max_namlen+2), public :: rtmhist_fincl1(max_flds) = ' '       
   character(len=max_namlen+2), public :: rtmhist_fincl2(max_flds) = ' '
@@ -368,7 +370,7 @@ contains
              ! will not be called for field
              avgflag = getflag (fincl(ff,t))
              call htape_addfld (t, f, avgflag)
-          else 
+          else if (.not. rtmhist_empty_htapes) then
              ! find index of field in exclude list
              call list_index (fexcl(1,t), mastername, ff)
 

@@ -32,6 +32,7 @@ module RtmMod
                                rtmhist_avgflag_pertape, rtmhist_avgflag_pertape, & 
                                rtmhist_fincl1, rtmhist_fincl2, rtmhist_fincl3,   &
                                rtmhist_fexcl1, rtmhist_fexcl2, rtmhist_fexcl3,   &
+                               rtmhist_empty_htapes,                              &
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
@@ -281,7 +282,7 @@ contains
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
-         rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
+         rtmhist_avgflag_pertape, rtmhist_empty_htapes, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
          inundflag, smat_option, delt_mosart, barrier_timers, do_budget, &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag,redirect_negative_qgwl
 
@@ -412,6 +413,7 @@ contains
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_mfilt , size(rtmhist_mfilt) , MPI_INTEGER,   0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_ndens , size(rtmhist_ndens) , MPI_INTEGER,   0, mpicom_rof, ier)
+    call mpi_bcast (rtmhist_empty_htapes, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_fexcl1, (max_namlen+2)*size(rtmhist_fexcl1), MPI_CHARACTER, 0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_fexcl2, (max_namlen+2)*size(rtmhist_fexcl2), MPI_CHARACTER, 0, mpicom_rof, ier)
