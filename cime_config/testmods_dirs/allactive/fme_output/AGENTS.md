@@ -1076,18 +1076,23 @@ These are hard-won lessons. Read before modifying FME code.
     The new `*all` variants snapshot the unmasked arrays via `outfld`
     BEFORE those fill loops run. AODVIS itself is unchanged; downstream
     consumers that depend on the nighttime-masked semantics keep
-    working. The day+night fields land in fincl1 as
-    `AODVISall:A`, `AODUVall:A`, `AODNIRall:A`. Gated on
-    `list_idx == 0` (climate diagnostic list only — no `_1`/`_2` diag
-    list variants).
+    working. All three `*all` variants are addfld'd, but only
+    `AODVISall` is selected in fincl1 for the production tape
+    (`AODUVall` / `AODNIRall` are registered and available — add them
+    to fincl1 later if the SamudrACE team wants UV/NIR). The fincl1
+    entry carries NO explicit averaging flag, so it inherits the
+    per-tape default `avgflag_pertape` (production: `'I'`,
+    instantaneous). All three are gated on `list_idx == 0` (climate
+    diagnostic list only — no `_1`/`_2` diag list variants).
 
     Why this matters for ACE/Samudra: every-column AOD lets the training
     pipeline treat aerosol forcing as a continuous field instead of a
-    half-sky-fill mask. Time-averaging with `:A` is the right choice
-    because optics is only recomputed on radiation timesteps (typically
-    every 1 hr) — averaging over multiple radiation calls collapses to
-    the same value, but `:A` also folds in the diurnal cycle of aerosol
-    water uptake on radiation cadence.
+    half-sky-fill mask. Production currently emits it at the tape
+    default (instantaneous on the radiation-snapshot value); switch the
+    fincl1 entry to `'AODVISall:A'` if a time-averaged AOD is wanted
+    instead (optics is only recomputed on radiation timesteps, so an
+    average folds in the diurnal cycle of aerosol water uptake on
+    radiation cadence).
 
     **B. `do_aerocom_ind3=.true.` enables AEROCOM cloud diagnostics.**
     Off by default in EAM (`phys_control.F90:137`). Turning it on in
@@ -1100,10 +1105,15 @@ These are hard-won lessons. Read before modifying FME code.
     before microphysics), and `colccn.1`/`colccn.3`/`ccn.1bl`/`ccn.3bl`
     (CCN at S=0.1%/0.3%, column and 1 km AGL).
 
-    Selected for the FME tape: `aerindex:A`, `angstrm:A`, `cdnc:A`,
-    `lwp:A`, `ccn.3bl:A`. The other 15+ aerocom fields are addfld'd
-    but not requested in fincl1; expand later if the SamudrACE team
-    wants more.
+    Selected for the FME tape (fincl1): `aerindexall`, `cdnc`, `lwp`,
+    `ccn.3bl`, `colccn.3`, `lcc`. Note `aerindexall` (the day+night
+    companion, section A pattern) is used rather than the
+    nighttime-masked `aerindex`; `angstrm`/`angstrmall` are addfld'd
+    but NOT selected for the production tape. None of these carry an
+    explicit `:A` — they inherit the per-tape `avgflag_pertape`
+    (production: `'I'`, instantaneous). The other 15+ aerocom fields
+    are addfld'd but not requested in fincl1; expand later if the
+    SamudrACE team wants more.
 
     **RRTMG vs RRTMGP caveat for `aerindex` / `angstrm` / `aod400` /
     `aod700`.** These four are outfld'd only from
@@ -1114,10 +1124,13 @@ These are hard-won lessons. Read before modifying FME code.
     confirmed via `components/eam/cime_config/config_component.xml`
     (no `-rad` override on `_EAM%CMIP6.*` compsets). If a future user
     switches to `-rad rrtmgp` (e.g., SCREAM or MMF compsets), these
-    four fields will be silently absent. `cdnc`, `lwp`, `cod`, and
-    the `ccn.*` family come from microphysics / `output_aerocom_aie`
-    routines that run regardless of radiation package, so those are
-    fine either way.
+    four fields — AND the day+night `aerindexall`/`angstrmall`
+    companions, which also outfld from `radiation.F90` — will be
+    silently absent. Since `aerindexall` IS in the production fincl1
+    (section B), losing the RRTMG path would drop it from the tape.
+    `cdnc`, `lwp`, `lcc`, `colccn.3`, and the `ccn.*` family come from
+    microphysics / `output_aerocom_aie` routines that run regardless of
+    radiation package, so those are fine either way.
 
     Also: the legacy `aerindex` and `angstrm` are nighttime-masked
     at `radiation.F90:1341-1346` (same cosmetic-fill pattern as
@@ -1186,11 +1199,13 @@ These are hard-won lessons. Read before modifying FME code.
     **Smoke-test checklist for the next live run**:
     - `AODVISall` shows non-fill values at nighttime grid cells
       (sanity-check global min/max excludes 1e36 outside polar night).
-    - `aerindex` / `angstrm` shows up only on RRTMG compsets (will be
-      absent on `-rad rrtmgp`).
+    - `aerindexall` (the fincl1-selected one) shows up only on RRTMG
+      compsets (will be absent on `-rad rrtmgp`).
     - `cdnc.values.mean()` is in the O(1e7-1e8) #/m³ range over ocean
       stratus regions, ~0 over deserts.
     - `lwp.values.mean()` is ~O(0.1) kg/m² over ITCZ, ~0 over deserts.
+    - `lcc` (liquid cloud cover fraction) is in [0,1]; `colccn.3` is
+      a column CCN burden at S=0.3%.
     - `ccn.3bl` is O(1e7-1e9) #/m³ in polluted continental BL,
       O(1e6-1e7) over remote ocean.
     - `ds.co2vmr.values` is per-record (shape `(time,)`) and matches
