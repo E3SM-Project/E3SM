@@ -191,7 +191,6 @@ contains
                            dcEdgeInv*sqrt3fact)**2.0 + &
                            leithDivScaler2 * &
                            abs((div(k,cell2)  - div(k,cell1))*dcEdgeInv)**2.0 )
-            !visc2 = min(visc2, viscMaxLeith)
             visc2 = min(visc2, visc2MaxLeith)
 
             tend(k,iEdge) = tend(k,iEdge) + &
