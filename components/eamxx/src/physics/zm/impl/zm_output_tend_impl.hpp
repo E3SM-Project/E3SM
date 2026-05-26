@@ -17,8 +17,6 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
   // ***********************************************************************
   // TEMPORARY
   // ***********************************************************************
-  auto nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
-  auto nlev_int_packs = ekat::npack<Pack>(nlev_int);
   if (DirT == ekat::TransposeDirection::f2c) {
     // copy back to device
     Kokkos::deep_copy(f_tend_t,   h_tend_t);
@@ -59,54 +57,36 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
 
     //----------------------------------------------------------------------
     // mid-point level variables
-    Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
-      const int icol = i/nlev_mid_packs;
-      const int klev = i%nlev_mid_packs;
-      loc_tend_t   (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_t   (icol,klev);
-      loc_tend_qv  (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_qv  (icol,klev);
-      loc_tend_u   (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_u   (icol,klev);
-      loc_tend_v   (icol,klev/Pack::n)[klev%Pack::n] = loc_f_tend_v   (icol,klev);
-      loc_rain_prod(icol,klev/Pack::n)[klev%Pack::n] = loc_f_rain_prod(icol,klev);
-      loc_snow_prod(icol,klev/Pack::n)[klev%Pack::n] = loc_f_snow_prod(icol,klev);
+    Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid), KOKKOS_LAMBDA (const int i) {
+      const int icol = i/nlev_mid;
+      const int klev = i%nlev_mid;
+      loc_tend_t   (icol,klev) = loc_f_tend_t   (icol,klev);
+      loc_tend_qv  (icol,klev) = loc_f_tend_qv  (icol,klev);
+      loc_tend_u   (icol,klev) = loc_f_tend_u   (icol,klev);
+      loc_tend_v   (icol,klev) = loc_f_tend_v   (icol,klev);
+      loc_rain_prod(icol,klev) = loc_f_rain_prod(icol,klev);
+      loc_snow_prod(icol,klev) = loc_f_snow_prod(icol,klev);
     });
 
     // interface level variables
-    Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
-      const int icol = i/nlev_int_packs;
-      const int klev = i%nlev_int_packs;
-      loc_prec_flux(icol,klev/Pack::n)[klev%Pack::n] = loc_f_prec_flux(icol,klev);
-      loc_snow_flux(icol,klev/Pack::n)[klev%Pack::n] = loc_f_snow_flux(icol,klev);
-      loc_mass_flux(icol,klev/Pack::n)[klev%Pack::n] = loc_f_mass_flux(icol,klev);
+    Kokkos::parallel_for("zm_output_tx_int",KT::RangePolicy(0, ncol*nlev_int), KOKKOS_LAMBDA (const int i) {
+      const int icol = i/nlev_int;
+      const int klev = i%nlev_int;
+      loc_prec_flux(icol,klev) = loc_f_prec_flux(icol,klev);
+      loc_snow_flux(icol,klev) = loc_f_snow_flux(icol,klev);
+      loc_mass_flux(icol,klev) = loc_f_mass_flux(icol,klev);
     });
   }
   // ***********************************************************************
   // TEMPORARY
   // ***********************************************************************
 
-  // if (DirT == ekat::TransposeDirection::f2c) {
-  //   ekat::host_to_device({h_prec.data()},     ncol,           std::vector<uview_1d<Scalar>>{prec});
-  //   ekat::host_to_device({h_activity.data()}, ncol,           std::vector<uview_1d<Int>>   {activity});
-  //   ekat::host_to_device({h_prec.data()},     ncol,           std::vector<uview_1d<Scalar>>{prec});
-  //   ekat::host_to_device({h_snow.data()},     ncol,           std::vector<uview_1d<Scalar>>{snow});
-  //   ekat::host_to_device({h_cape.data()},     ncol,           std::vector<uview_1d<Scalar>>{cape});
-  //   ekat::host_to_device({h_tend_t.data()},   ncol, nlev_mid, std::vector<uview_2d<Pack>> {tend_t},    true);
-  //   ekat::host_to_device({h_tend_qv.data()},  ncol, nlev_mid, std::vector<uview_2d<Pack>> {tend_qv},   true);
-  //   ekat::host_to_device({h_tend_u.data()},   ncol, nlev_mid, std::vector<uview_2d<Pack>> {tend_u},    true);
-  //   ekat::host_to_device({h_tend_v.data()},   ncol, nlev_mid, std::vector<uview_2d<Pack>> {tend_v},    true);
-  //   ekat::host_to_device({h_rain_prod.data()},ncol, nlev_mid, std::vector<uview_2d<Pack>> {rain_prod}, true);
-  //   ekat::host_to_device({h_snow_prod.data()},ncol, nlev_mid, std::vector<uview_2d<Pack>> {snow_prod}, true);
-  //   ekat::host_to_device({h_prec_flux.data()},ncol, nlev_int, std::vector<uview_2d<Pack>> {prec_flux}, true);
-  //   ekat::host_to_device({h_snow_flux.data()},ncol, nlev_int, std::vector<uview_2d<Pack>> {snow_flux}, true);
-  //   ekat::host_to_device({h_mass_flux.data()},ncol, nlev_int, std::vector<uview_2d<Pack>> {mass_flux}, true);
-  // }
 }
 
 template<typename S, typename D>
 void Functions<S,D>::ZmOutputTend::init(int ncol, int nlev_mid)
 {
   auto nlev_int = nlev_mid+1;
-  auto nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
-  auto nlev_int_packs = ekat::npack<Pack>(nlev_int);
   Real init_fill_value = 0;
   // create temporaries to avoid "Implicit capture" warning
   auto loc_prec       = prec;
@@ -132,9 +112,9 @@ void Functions<S,D>::ZmOutputTend::init(int ncol, int nlev_mid)
   });
 
   // mid-point level variables
-  Kokkos::parallel_for("zm_output_init_m",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
-    const int icol = i/nlev_mid_packs;
-    const int klev = i%nlev_mid_packs;
+  Kokkos::parallel_for("zm_output_init_m",KT::RangePolicy(0, ncol*nlev_mid), KOKKOS_LAMBDA (const int i) {
+    const int icol = i/nlev_mid;
+    const int klev = i%nlev_mid;
     loc_tend_t   (icol,klev) = init_fill_value;
     loc_tend_qv  (icol,klev) = init_fill_value;
     loc_tend_u   (icol,klev) = init_fill_value;
@@ -144,9 +124,9 @@ void Functions<S,D>::ZmOutputTend::init(int ncol, int nlev_mid)
   });
 
   // interface level variables
-  Kokkos::parallel_for("zm_output_init_i",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
-    const int icol = i/nlev_int_packs;
-    const int klev = i%nlev_int_packs;
+  Kokkos::parallel_for("zm_output_init_i",KT::RangePolicy(0, ncol*nlev_int), KOKKOS_LAMBDA (const int i) {
+    const int icol = i/nlev_int;
+    const int klev = i%nlev_int;
     loc_prec_flux(icol,klev) = init_fill_value;
     loc_snow_flux(icol,klev) = init_fill_value;
     loc_mass_flux(icol,klev) = init_fill_value;
