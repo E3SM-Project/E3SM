@@ -238,9 +238,6 @@ struct Functions {
   struct ZmInputState {
     ZmInputState() = default;
     // -------------------------------------------------------------------------
-    // Real dtime;                     // model phsyics time step [s]
-    // bool is_first_step;             // flag for first call
-
     // variable counters for device-side only
     static constexpr int num_1d_intgr = 0;  // number of 1D integer views
     static constexpr int num_1d_scalr = 1;  // number of 1D scalar views
