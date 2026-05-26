@@ -219,9 +219,14 @@ subroutine diag_init()
    call addfld ('Z500',horiz_only,    'A','m','Geopotential Z at 500 mbar pressure surface')
    call addfld ('Z400',horiz_only,    'A','m','Geopotential Z at 400 mbar pressure surface')
    call addfld ('Z300',horiz_only,    'A','m','Geopotential Z at 300 mbar pressure surface')
+   call addfld ('Z250',horiz_only,    'A','m','Geopotential Z at 250 mbar pressure surface')
    call addfld ('Z200',horiz_only,    'A','m','Geopotential Z at 200 mbar pressure surface')
+   call addfld ('Z150',horiz_only,    'A','m','Geopotential Z at 150 mbar pressure surface')
    call addfld ('Z100',horiz_only,    'A','m','Geopotential Z at 100 mbar pressure surface')
    call addfld ('Z050',horiz_only,    'A','m','Geopotential Z at 50 mbar pressure surface')
+   call addfld ('Z030',horiz_only,    'A','m','Geopotential Z at 30 mbar pressure surface')
+   call addfld ('Z025',horiz_only,    'A','m','Geopotential Z at 25 mbar pressure surface')
+   call addfld ('Z020',horiz_only,    'A','m','Geopotential Z at 20 mbar pressure surface')
    call addfld ('Z010',horiz_only,    'A','m','Geopotential Z at 10 mbar pressure surface')
 
    call addfld ('ZZ',(/ 'lev' /), 'A','m2','Eddy height variance' )
@@ -397,7 +402,6 @@ subroutine diag_init()
    call addfld ('V250',horiz_only,    'A','m/s','Meridional wind at 250 mbar pressure surface')
    call addfld ('V200',horiz_only,    'A','m/s','Meridional wind at 200 mbar pressure surface')
    call addfld ('V100',horiz_only,    'A','m/s','Meridional wind at 100 mbar pressure surface')
-   call addfld ('V050',horiz_only,    'A','m/s','Meridional wind at  50 mbar pressure surface')
    call addfld ('V010',horiz_only,    'A','m/s','Meridional wind at  10 mbar pressure surface')
 
    call addfld ('TT',(/ 'lev' /), 'A','K2','Eddy temperature variance' )
@@ -452,18 +456,32 @@ subroutine diag_init()
    call addfld ('T250',horiz_only,   'A', 'K',   'Temperature at 250 mbar pressure surface')
    call addfld ('T150',horiz_only,   'A', 'K',   'Temperature at 150 mbar pressure surface')
    call addfld ('T050',horiz_only,   'A', 'K',   'Temperature at 50 mbar pressure surface')
+   call addfld ('T030',horiz_only,   'A', 'K',   'Temperature at 30 mbar pressure surface')
    call addfld ('T025',horiz_only,   'A', 'K',   'Temperature at 25 mbar pressure surface')
+   call addfld ('T020',horiz_only,   'A', 'K',   'Temperature at 20 mbar pressure surface')
    call addfld ('T005',horiz_only,   'A', 'K',   'Temperature at 5 mbar pressure surface')
    call addfld ('T002',horiz_only,   'A', 'K',   'Temperature at 2 mbar pressure surface')
    call addfld ('T001',horiz_only,   'A', 'K',   'Temperature at 1 mbar pressure surface')
    call addfld ('TTOP',horiz_only,   'A', 'K',   'Highest model level temperature')
    call addfld ('U150',horiz_only,   'A', 'm/s', 'Zonal wind at 150 mbar pressure surface')
    call addfld ('U050',horiz_only,   'A', 'm/s', 'Zonal wind at 50 mbar pressure surface')
+   call addfld ('U030',horiz_only,   'A', 'm/s', 'Zonal wind at 30 mbar pressure surface')
    call addfld ('U025',horiz_only,   'A', 'm/s', 'Zonal wind at 25 mbar pressure surface')
+   call addfld ('U020',horiz_only,   'A', 'm/s', 'Zonal wind at 20 mbar pressure surface')
    call addfld ('U005',horiz_only,   'A', 'm/s', 'Zonal wind at 5 mbar pressure surface')
    call addfld ('U002',horiz_only,   'A', 'm/s', 'Zonal wind at 2 mbar pressure surface')
    call addfld ('U001',horiz_only,   'A', 'm/s', 'Zonal wind at 1 mbar pressure surface')
    call addfld ('UTOP',horiz_only,   'A', 'm/s', 'Highest model level zonal wind')
+   ! Also add V at levels consistent with T and U 
+   call addfld ('V150',horiz_only,   'A', 'm/s', 'Meridional wind at 150 mbar pressure surface')
+   call addfld ('V050',horiz_only,   'A', 'm/s', 'Meridional wind at  50 mbar pressure surface')
+   call addfld ('V030',horiz_only,   'A', 'm/s', 'Meridional wind at  30 mbar pressure surface')
+   call addfld ('V025',horiz_only,   'A', 'm/s', 'Meridional wind at  25 mbar pressure surface')
+   call addfld ('V020',horiz_only,   'A', 'm/s', 'Meridional wind at  20 mbar pressure surface')
+   call addfld ('V005',horiz_only,   'A', 'm/s', 'Meridional wind at   5 mbar pressure surface')
+   call addfld ('V002',horiz_only,   'A', 'm/s', 'Meridional wind at   2 mbar pressure surface')
+   call addfld ('V001',horiz_only,   'A', 'm/s', 'Meridional wind at   1 mbar pressure surface')
+   call addfld ('VTOP',horiz_only,   'A', 'm/s', 'Highest model level meridional wind')
 
    call addfld ('U90M',horiz_only,    'A','m/s','Zonal wind at turbine hub height (90m above surface)')
    call addfld ('V90M',horiz_only,    'A','m/s','Meridional wind at turbine hub height (90m above surface)')
@@ -1153,9 +1171,17 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, z3, p_surf)
        call outfld('Z300    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z250')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, z3, p_surf)
+       call outfld('Z250    ', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('Z200')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, z3, p_surf)
        call outfld('Z200    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, z3, p_surf)
+       call outfld('Z150    ', p_surf, pcols, lchnk)
     end if
     if (hist_fld_active('Z100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, z3, p_surf)
@@ -1164,6 +1190,18 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('Z050')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, z3, p_surf)
        call outfld('Z050    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  3000._r8, z3, p_surf)
+       call outfld('Z030    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z025')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2500._r8, z3, p_surf)
+       call outfld('Z025    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2000._r8, z3, p_surf)
+       call outfld('Z020    ', p_surf, pcols, lchnk)
     end if
     if (hist_fld_active('Z010')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, z3, p_surf)
@@ -1811,10 +1849,6 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%u, p_surf)
        call outfld('U100    ', p_surf, pcols, lchnk )
     end if
-    if (hist_fld_active('U050')) then
-       call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
-       call outfld('U050    ', p_surf, pcols, lchnk )
-    end if
     if (hist_fld_active('U010')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, state%u, p_surf)
        call outfld('U010    ', p_surf, pcols, lchnk )
@@ -1875,17 +1909,9 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%v, p_surf)
        call outfld('V200    ', p_surf, pcols, lchnk )
     end if
-    if (hist_fld_active('V150')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%v, p_surf)
-       call outfld('V150    ', p_surf, pcols, lchnk )
-    end if
     if (hist_fld_active('V100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
        call outfld('V100    ', p_surf, pcols, lchnk )
-    end if
-    if (hist_fld_active('V050')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%v, p_surf)
-       call outfld('V050    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('V010')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%v, p_surf)
@@ -2065,9 +2091,17 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%t, p_surf)
        call outfld('T050           ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('T030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, state%t, p_surf)
+       call outfld('T030           ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('T025')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 2500._r8, state%t, p_surf)
        call outfld('T025           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 2000._r8, state%t, p_surf)
+       call outfld('T020           ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('T010')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
@@ -2094,9 +2128,17 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
        call outfld('U050    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('U030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  3000._r8, state%u, p_surf)
+       call outfld('U030    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('U025')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  2500._r8, state%u, p_surf)
        call outfld('U025    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2000._r8, state%u, p_surf)
+       call outfld('U020    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('U005')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  500._r8, state%u, p_surf)
@@ -2111,7 +2153,6 @@ end subroutine diag_conv_tend_ini
        call outfld('U001    ', p_surf, pcols, lchnk )
     end if
     call outfld ('UTOP    ', state%u(:,1)  ,  pcols, lchnk)
-
     ! Extra levels for Meridional Wind 
     if (hist_fld_active('V150')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  15000._r8, state%v, p_surf)
@@ -2121,9 +2162,17 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%v, p_surf)
        call outfld('V050    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('V030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  3000._r8, state%v, p_surf)
+       call outfld('V030    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('V025')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  2500._r8, state%v, p_surf)
        call outfld('V025    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2000._r8, state%v, p_surf)
+       call outfld('V020    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('V005')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  500._r8, state%v, p_surf)
@@ -2137,6 +2186,7 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid,  100._r8, state%v, p_surf)
        call outfld('V001    ', p_surf, pcols, lchnk )
     end if
+    call outfld ('VTOP    ', state%v(:,1)  ,  pcols, lchnk)
 
   !---------------------------------------------------------
   ! WACCM tidal diagnostics 
