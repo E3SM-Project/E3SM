@@ -640,7 +640,7 @@ module cime_comp_mod
   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
   logical  :: iamin_CPLALLIACID     ! pe associated with CPLALLIACID
 
-  integer  :: atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
+  integer  :: cpl_rootpe,atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
               glc_rootpe,rof_rootpe,wav_rootpe,iac_rootpe
 
   !----------------------------------------------------------------------------
@@ -816,6 +816,7 @@ contains
     comp_iamin(it) = seq_comm_iamin(comp_id(it))
     comp_name(it)  = seq_comm_name(comp_id(it))
 
+    cpl_rootpe = seq_comm_gloroot(CPLID)
     atm_rootpe = seq_comm_gloroot(ALLATMID)
     lnd_rootpe = seq_comm_gloroot(ALLLNDID)
     ice_rootpe = seq_comm_gloroot(ALLICEID)
@@ -2682,10 +2683,10 @@ contains
        mrssOnTask(:)  = 0
        call mpi_gather (msize, 1, mpi_real8, &
                         msizeOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
        call mpi_gather (mrss, 1, mpi_real8, &
                         mrssOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
 
        if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
           allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
@@ -3552,10 +3553,10 @@ contains
           if (info_mprof > 0) then ! memory profiling is enabled
              call mpi_gather (msize, 1, mpi_real8, &
                               msizeOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
              call mpi_gather (mrss, 1, mpi_real8, &
                               mrssOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
 
              if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
                 msizeOnNode(:) = 0
