@@ -91,3 +91,6 @@
 [submodule "components/omega/external/cpptrace"]
 	path = components/omega/external/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "components/omega/external/spdlog"]
+	path = components/omega/external/spdlog
+	url = git@github.com:gabime/spdlog.git
