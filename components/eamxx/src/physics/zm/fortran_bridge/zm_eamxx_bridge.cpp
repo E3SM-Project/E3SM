@@ -50,7 +50,7 @@ void zm_eamxx_bridge_init( Int pver ){
   zm_eamxx_bridge_init_c( pver );
 }
 
-void zm_eamxx_bridge_run( Int ncol, Int pver,
+void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,
                           ZMF::ZmInputState& zm_input,
                           ZMF::ZmOutputTend& zm_output,
                           ZMF::ZmRuntimeOpt& zm_opts
@@ -59,8 +59,8 @@ void zm_eamxx_bridge_run( Int ncol, Int pver,
   zm_input.transpose<ekat::TransposeDirection::c2f>(ncol,pver);
 
   zm_eamxx_bridge_run_c( ncol,                            // 01
-                         zm_input.dtime,                  // 02
-                         zm_input.is_first_step,          // 03
+                         dtime,                           // 02
+                         is_first_step,                   // 03
                          zm_input.h_phis        .data(),  // 04
                          zm_input.h_z_mid       .data(),  // 05
                          zm_input.h_z_int       .data(),  // 06
