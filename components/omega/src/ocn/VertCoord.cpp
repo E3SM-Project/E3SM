@@ -544,8 +544,8 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
          ABORT_ERROR("VertCoord: IO stream '{}' is not defined", StreamName);
       bool IsValidated = VCoordStream->validate();
 
-     // auto VCoordStream = IOStream::get(StreamName);
-      //bool IsValidated  = VCoordStream->validate();
+      // auto VCoordStream = IOStream::get(StreamName);
+      // bool IsValidated  = VCoordStream->validate();
 
       // Read InitialVertCoord stream
       if (IsValidated) {
