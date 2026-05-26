@@ -26,6 +26,15 @@ enum HostOrDevice {
 #endif
 };
 
+// Used to specify different behavior in the clone operation
+namespace CloneFlags {
+  constexpr int None          = 0;
+  constexpr int MatchPacking  = 1 << 0; // Preserves allocation properties
+  constexpr int CopyTimeStamp = 1 << 1; // Copies current timestamp
+  constexpr int CopyData      = 1 << 2; // Copies the data
+  constexpr int All           = MatchPacking | CopyTimeStamp | CopyData;
+}
+
 // ======================== FIELD ======================== //
 
 // A field is composed of metadata info (the header) and a pointer to a view.
@@ -109,11 +118,14 @@ public:
 
   bool is_read_only () const { return m_is_read_only; }
 
-  // Creates a deep copy version of this field.
-  // It is created with a pristine header (no providers/customers)
-  Field clone () const;
-  Field clone (const std::string& name) const;
-  Field clone (const std::string& name, const std::string& grid_name) const;
+  // Creates a new field with a pristine header (no providers/customers).
+  // Clone behavior is controlled by flags: by default (CloneFlags::None),
+  // timestamp, packing, and data are not copied.
+  // Use CopyTimeStamp/CopyData/MatchPacking to copy the current
+  // timestamp and/or packing and/or field data into the clone.
+  Field clone (const int flags = CloneFlags::None) const;
+  Field clone (const std::string& name, const int flags = CloneFlags::None) const;
+  Field clone (const std::string& name, const std::string& grid_name, const int flags = CloneFlags::None) const;
 
   Field alias (const std::string& name) const;
   Field alias (const std::string& name, const std::string& grid_name) const;

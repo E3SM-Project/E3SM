@@ -199,7 +199,7 @@ bool AbstractGrid::is_unique () const {
     // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
     // since we need to sort dofs in order to call unique, and we don't
     // want to alter the order of gids in this grid.
-    auto dofs = m_dofs_gids.clone();
+    auto dofs = m_dofs_gids.clone(CloneFlags::CopyData);
     auto dofs_h = dofs.get_view<gid_type*,Host>();
 
     std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
@@ -764,21 +764,21 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
     m_dofs_gids = src.m_dofs_gids;
     m_partitioned_dim_gids = src.m_partitioned_dim_gids;
   } else {
-    m_dofs_gids = src.m_dofs_gids.clone();
-    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone();
+    m_dofs_gids = src.m_dofs_gids.clone(CloneFlags::CopyData);
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone(CloneFlags::CopyData);
   }
 
   if (shallow) {
     m_lid_to_idx = src.m_lid_to_idx;
   } else {
-    m_lid_to_idx = src.m_lid_to_idx.clone();
+    m_lid_to_idx = src.m_lid_to_idx.clone(CloneFlags::CopyData);
   }
 
   for (const auto& name : src.get_geometry_data_names()) {
     if (shallow) {
       m_geo_fields[name] = src.m_geo_fields.at(name);
     } else {
-      m_geo_fields[name] = src.m_geo_fields.at(name).clone();
+      m_geo_fields[name] = src.m_geo_fields.at(name).clone(CloneFlags::CopyData);
     }
   }
 

@@ -67,7 +67,7 @@ TEST_CASE("field_contractions") {
     REQUIRE_THROWS(horiz_contraction(scl, scl_x, vec_x)); // incompatible weight layout
 
     SECTION ("scl_x") {
-      auto f_in = scl_x.clone();
+      auto f_in = scl_x.clone(CloneFlags::CopyData);
       auto f_out = scl.clone();
 
       horiz_contraction(f_out, f_in, w);
@@ -84,7 +84,7 @@ TEST_CASE("field_contractions") {
     }
 
     SECTION ("scl_x_masked") {
-      auto f_in = scl_x.clone();
+      auto f_in = scl_x.clone(CloneFlags::CopyData);
       auto f_out = scl.clone();
       auto mask = f_in.create_valid_mask("mask",Field::MaskInit::Valid);
       mask.sync_to_host();
@@ -112,7 +112,7 @@ TEST_CASE("field_contractions") {
     }
 
     SECTION ("vec_xz") {
-      auto f_in  = vec_xz.clone();
+      auto f_in  = vec_xz.clone(CloneFlags::CopyData);
       auto f_out = vec_z.clone();
       auto mask = f_in.create_valid_mask();
       randomize_uniform(mask,seed++);
@@ -181,7 +181,7 @@ TEST_CASE("field_contractions") {
       REQUIRE_THROWS(vert_contraction(scl, scl_z, vec_xz)); // incompatible weight layout
 
       SECTION ("scl_z") {
-        auto f_in = scl_z.clone();
+        auto f_in = scl_z.clone(CloneFlags::CopyData);
         auto f_out = scl.clone();
         auto w = scl_z.clone();
         randomize_uniform (w,seed++);
@@ -201,7 +201,7 @@ TEST_CASE("field_contractions") {
       }
 
       SECTION ("scl_z_masked") {
-        auto f_in = scl_z.clone();
+        auto f_in = scl_z.clone(CloneFlags::CopyData);
         auto f_out = scl.clone();
         auto w = scl_z.clone();
         randomize_uniform (w,seed++);
@@ -231,7 +231,7 @@ TEST_CASE("field_contractions") {
       }
 
       SECTION ("scl_xz_w_z") {
-        auto f_in = scl_xz.clone();
+        auto f_in = scl_xz.clone(CloneFlags::CopyData);
         auto f_out = scl_x.clone();
         auto w = scl_z.clone();
         randomize_uniform (w,seed++);
@@ -258,7 +258,7 @@ TEST_CASE("field_contractions") {
       }
 
       SECTION ("vec_xz_w_xz") {
-        auto f_in = vec_xz.clone();
+        auto f_in = vec_xz.clone(CloneFlags::CopyData);
         auto f_out = vec_x.clone();
         auto w = scl_xz.clone();
         randomize_uniform (w,seed++);

@@ -1,6 +1,8 @@
 #include "share/field/field.hpp"
 #include "share/util/eamxx_utils.hpp"
 
+#include <bitset>
+
 namespace scream
 {
 
@@ -138,9 +140,61 @@ Field::get_const() const {
 }
 
 Field
-Field::clone() const {
-  return clone(name());
+Field::clone(const int flags) const {
+  return clone(name(),flags);
 }
+
+Field
+Field::clone(const std::string& name, const int flags) const {
+  return clone(name, get_header().get_identifier().get_grid_name(),flags);
+}
+
+Field
+Field::clone(const std::string& name, const std::string& grid_name, const int flags) const
+{
+  const int invalid_flags = flags & ~CloneFlags::All;
+  constexpr int nbits = std::numeric_limits<unsigned int>::digits;
+  EKAT_REQUIRE_MSG(invalid_flags == 0,
+                   "[Field::clone] Error! Input flags contain unrecognized or invalid bits.\n"
+                   " - input flags provided : 0b" + std::bitset<nbits>(flags).to_string() + " (" + std::to_string(flags) + ")\n"
+                   " - invalid bits detected: 0b" + std::bitset<nbits>(invalid_flags).to_string() + "\n"
+                   " - valid individual options include:\n"
+                   "     CloneFlags::None          (0b" + std::bitset<nbits>(CloneFlags::None).to_string() + ") [Default]\n"
+                   "     CloneFlags::MatchPacking  (0b" + std::bitset<nbits>(CloneFlags::MatchPacking).to_string() + ")\n"
+                   "     CloneFlags::CopyTimeStamp (0b" + std::bitset<nbits>(CloneFlags::CopyTimeStamp).to_string() + ")\n"
+                   "     CloneFlags::CopyData      (0b" + std::bitset<nbits>(CloneFlags::CopyData).to_string() + ")\n"
+                   " - maximum combined mask: 0b" + std::bitset<nbits>(CloneFlags::All).to_string() + "\n");
+
+  // Create new field
+  const auto& my_fid = get_header().get_identifier();
+  auto fid = my_fid.clone(name).reset_grid(grid_name);
+  Field f(fid);
+
+  if (flags & CloneFlags::MatchPacking) {
+    // Ensure alloc props match
+    const auto&  ap = get_header().get_alloc_properties();
+          auto& fap = f.get_header().get_alloc_properties();
+    fap.request_allocation(ap.get_largest_pack_size());
+  }
+
+  // Allocate
+  f.allocate_view();
+
+  if (flags & CloneFlags::CopyTimeStamp) {
+    // Set correct time stamp
+    const auto& ts = get_header().get_tracking().get_time_stamp();
+    f.get_header().get_tracking().update_time_stamp(ts);
+  }
+
+  if (flags & CloneFlags::CopyData) {
+    // Deep copy
+    f.deep_copy(*this);
+    f.sync_to_host();
+  }
+
+  return f;
+}
+
 
 Field
 Field::alias (const std::string& name) const {
@@ -167,37 +221,6 @@ Field::alias (const std::string& name, const std::string& grid_name, const std::
   f.m_header = get_header().alias(name, grid_name, tag_names);
   f.m_data = m_data;
   f.m_is_read_only = m_is_read_only;
-  return f;
-}
-
-Field
-Field::clone(const std::string& name) const {
-  return clone(name, get_header().get_identifier().get_grid_name());
-}
-
-Field
-Field::clone(const std::string& name, const std::string& grid_name) const {
-  // Create new field
-  const auto& my_fid = get_header().get_identifier();
-  auto fid = my_fid.clone(name).reset_grid(grid_name);
-  Field f(fid);
-
-  // Ensure alloc props match
-  const auto&  ap = get_header().get_alloc_properties();
-        auto& fap = f.get_header().get_alloc_properties();
-  fap.request_allocation(ap.get_largest_pack_size());
-
-  // Allocate
-  f.allocate_view();
-
-  // Set correct time stamp
-  const auto& ts = get_header().get_tracking().get_time_stamp();
-  f.get_header().get_tracking().update_time_stamp(ts);
-
-  // Deep copy
-  f.deep_copy(*this);
-  f.sync_to_host();
-
   return f;
 }
 

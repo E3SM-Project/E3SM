@@ -60,13 +60,13 @@ TEST_CASE("horiz_avg") {
     auto diag_f = diag->get();
 
     auto manual = diag_f.clone("manual");
-    auto area_scaled = area.clone();
+    auto area_scaled = area.clone(CloneFlags::CopyData);
     area_scaled.scale(1/area_sum);
 
     horiz_contraction(manual,scl_x,area_scaled,comm);
 
     // Compare
-    auto diff = diag_f.clone();
+    auto diff = diag_f.clone(CloneFlags::CopyData);
     diff.update(manual,-1,1);
     auto diff_norm = inf_norm(diff,&comm).as<Real>();
     REQUIRE_THAT (diff_norm, Catch::WithinAbs(0,tol));
@@ -113,7 +113,7 @@ TEST_CASE("horiz_avg") {
     manual.scale_inv(manual_den,tgt_mask);
 
     // Compare where valid; zero out fill_value entries before norm
-    auto diff = diag_f.clone("diff");
+    auto diff = diag_f.clone("diff", CloneFlags::CopyData);
     diff.update(manual,-1,1,d_mask);
     diff.deep_copy(0,d_mask,true);
     auto diff_norm = inf_norm(diff,&comm).as<Real>();
@@ -173,7 +173,7 @@ TEST_CASE("horiz_avg") {
     manual.deep_copy(c);
 
     // Compare
-    auto diff = diag_f.clone();
+    auto diff = diag_f.clone(CloneFlags::CopyData);
     diff.update(manual,-1,1);
     auto diff_norm = inf_norm(diff,&comm).as<Real>();
     REQUIRE_THAT (diff_norm, Catch::WithinAbs(0,tol));

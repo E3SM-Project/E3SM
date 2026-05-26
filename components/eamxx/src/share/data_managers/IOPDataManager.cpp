@@ -53,8 +53,7 @@ void read_fields (const std::string& filename,
       f.sync_to_dev();
     } else {
       // Create non-padded clone
-      Field f_no_padding(f.get_header().get_identifier());
-      f_no_padding.allocate_view();
+      auto f_no_padding = f.clone();
       scorpio::read_var(filename,f.name(),f_no_padding.get_internal_view_data<Real,Host>());
       f_no_padding.sync_to_dev();
       f.deep_copy(f_no_padding);

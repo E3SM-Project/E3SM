@@ -221,7 +221,7 @@ void read (const int seed, const ekat::Comm& comm)
     }
   }
 
-  auto f0 = fm0->get_field(f_name).clone();
+  auto f0 = fm0->get_field(f_name).clone(CloneFlags::CopyData);
   auto f  = fm->get_field(f_name);
 
   // Sanity check
@@ -251,7 +251,7 @@ void read (const int seed, const ekat::Comm& comm)
     const auto t = t0+i*get_dt();
     const double dt = t-t0;
     auto d = fm->get_field("MyDiag");
-    auto d0 = f0.clone();
+    auto d0 = f0.clone(CloneFlags::CopyData);
     d0.update(one,dt,2.0);
     REQUIRE (views_are_equal(d,d0));
 
