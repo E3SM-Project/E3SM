@@ -16,6 +16,7 @@ module seq_hist_mod
 
   use shr_kind_mod,      only: R8 => SHR_KIND_R8, IN => SHR_KIND_IN
   use shr_kind_mod,      only: CL => SHR_KIND_CL, CS => SHR_KIND_CS
+  use shr_kind_mod,      only: CXX => SHR_KIND_CXX
   use shr_sys_mod,       only: shr_sys_abort, shr_sys_flush
   use shr_cal_mod,       only: shr_cal_date2ymd, shr_cal_datetod2string, shr_cal_ymdtod2string
   use mct_mod           ! adds mct_ prefix to mct lib
@@ -46,7 +47,7 @@ module seq_hist_mod
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields,seq_flds_dom_fields
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2a_fields, seq_flds_x2i_fields
   use seq_flds_mod, only: seq_flds_x2l_fields, seq_flds_x2r_fields
-  use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals
+  use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
 
   use component_type_mod
 
@@ -131,6 +132,11 @@ module seq_hist_mod
   type(mct_aVect), pointer :: xao_ox(:)
   type(mct_aVect), pointer :: xao_ax(:)
   type(mct_aVect), pointer :: o2x_ax(:)
+
+  !--- derived type for aux history accumulator buffers ---
+  type :: avg_buf_type
+     real(r8), allocatable :: data(:,:)  ! (numpts, nflds)
+  end type avg_buf_type
 
   !===============================================================================
 contains
@@ -1117,14 +1123,13 @@ contains
     ! simplify later reading by a data model.
     integer                  , optional, intent(in) :: yr_offset
 
-    ! If av_to_write is provided, then write fields from this attribute vector.
-    ! Otherwise, get the attribute vector from 'comp', based on 'flow'.
+    ! If av_to_write is provided, use it to get the list of tags to write.
+    ! The data is always written from MOAB tags, not from the attribute vector.
+    ! Otherwise, get the tag list from 'comp', based on 'flow'.
     type(mct_avect), target  , optional, intent(in) :: av_to_write
 
     !--- local ---
-    type(mct_gGrid), pointer :: dom
     type(mct_avect), pointer :: av
-    type(mct_gsMap), pointer :: gsmap
     character(CL)            :: case_name  ! case name
     integer(IN)              :: curr_ymd   ! Current date YYYYMMDD
     integer(IN)              :: curr_tod   ! Current time-of-day (s)
@@ -1138,7 +1143,8 @@ contains
     character(CL)            :: time_units ! units of time variable
     character(CL)            :: calendar   ! calendar type
     integer(IN)              :: samples_per_file
-    integer(IN)              :: lsize      ! local size of an aVect
+    integer(IN)              :: numpts     ! local size from MOAB mesh
+    integer(IN)              :: nflds      ! number of fields
     logical                  :: first_call
     integer(IN)              :: found = -10
     logical                  :: useavg
@@ -1147,19 +1153,29 @@ contains
     logical                  :: whead, wdata  ! for writing restart/history cdf files
     real(r8)                 :: tbnds(2)
     character(len=16) :: date_str
+    integer(IN)              :: mbxid      ! MOAB mesh ID for this component
+    character(CXX)           :: tag_list   ! field list for MOAB IO
+    type(mct_list)           :: temp_list  ! for parsing full tag_list
+    type(mct_list)           :: flds_list  ! for parsing flds subset
+    type(mct_string)         :: mctOStr    ! for extracting field names
+    type(mct_string)         :: mctOStr2   ! for comparing field names
+    integer(IN)              :: ii, jj     ! loop indices
+    integer(IN)              :: nflds_out  ! number of fields in flds subset
+    real(r8), dimension(:,:), allocatable, target :: matrix_data ! for writing via matrix param
+    real(r8), dimension(:,:), pointer :: p_matrix
+    real(r8), dimension(:), allocatable :: tag_data  ! temp buffer for reading one tag
 
     integer(IN), parameter   :: maxout = 20
     integer(IN)       , save :: ntout = 0
     character(CS)     , save :: tname(maxout) = 'x1y2z3'
     integer(IN)       , save :: ncnt(maxout)  = -10
     character(CL)     , save :: hist_file(maxout)       ! local path to history filename
-    type(mct_aVect)   , save :: avavg(maxout)           ! av accumulator if needed
+    integer(IN)       , save :: nflds_saved(maxout) = 0 ! number of fields per entry
+    type(avg_buf_type), save :: avavg(maxout)           ! accumulator buffers
     integer(IN)       , save :: avcnt(maxout) = 0       ! accumulator counter
     logical           , save :: fwrite(maxout) = .true. ! first write
     real(r8)          , save :: tbnds1(maxout)          ! first time_bnds
     real(r8)          , save :: tbnds2(maxout)          ! second time_bnds
-
-    type(mct_aVect)         :: avflds                  ! non-avg av for a subset of fields
 
     real(r8), parameter :: c0 = 0.0_r8 ! zero
     character(CL) :: model_doi_url
@@ -1202,6 +1218,24 @@ contains
     enddo
 
     if (iamin_CPLID) then
+       ! Determine MOAB mesh ID from component type
+       select case(trim(comp%ntype))
+         case('atm')
+           mbxid = mbaxid
+         case('lnd')
+           mbxid = mblxid
+         case('rof')
+           mbxid = mbrxid
+         case('ocn')
+           mbxid = mboxid
+         case('ice')
+           mbxid = mbixid
+         case default
+           call shr_sys_abort('seq_hist_writeaux: unsupported component type: '//trim(comp%ntype))
+       end select
+       numpts = mbGetnCells(mbxid)
+
+       ! Get tag_list: use av_to_write if provided, otherwise component aVect
        if (present(av_to_write)) then
           av => av_to_write
        else
@@ -1211,8 +1245,9 @@ contains
              av => component_get_x2c_cx(comp)
           end if
        end if
-       dom   => component_get_dom_cx(comp)
-       gsmap => component_get_gsmap_cx(comp)
+       tag_list = mct_aVect_exportRList2c(av)
+       call mct_list_init(temp_list, trim(tag_list))
+       nflds = mct_list_nitem(temp_list)
     end if
 
     if (first_call) then
@@ -1224,9 +1259,9 @@ contains
        tname(ntout) = trim(aname)
        ncnt(ntout) = -10
        if (iamin_CPLID .and. useavg) then
-          lsize = mct_aVect_lsize(av)
-          call mct_aVect_init(avavg(ntout), av, lsize)
-          call mct_aVect_zero(avavg(ntout))
+          nflds_saved(ntout) = nflds
+          allocate(avavg(ntout)%data(numpts, nflds))
+          avavg(ntout)%data(:,:) = 0.0_r8
           avcnt(ntout) = 0
        endif
        tbnds1(ntout) = prev_time
@@ -1237,14 +1272,26 @@ contains
 
        samples_per_file = nt
 
+       ! Accumulate from MOAB tags into plain real array
        if (useavg) then
+          nflds = nflds_saved(found)
+          allocate(tag_data(numpts))
           if (lwrite_now) then
              avcnt(found) = avcnt(found) + 1
-             avavg(found)%rAttr = (avavg(found)%rAttr + av%rAttr) / (avcnt(found) * 1.0_r8)
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                avavg(found)%data(:,ii) = (avavg(found)%data(:,ii) + tag_data(:)) / (avcnt(found) * 1.0_r8)
+             enddo
           else
              avcnt(found) = avcnt(found) + 1
-             avavg(found)%rAttr = avavg(found)%rAttr + av%rAttr
+             do ii = 1, nflds
+                call mct_list_get(mctOStr, ii, temp_list)
+                call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                avavg(found)%data(:,ii) = avavg(found)%data(:,ii) + tag_data(:)
+             enddo
           endif
+          deallocate(tag_data)
        endif
 
        if (lwrite_now) then
@@ -1262,6 +1309,7 @@ contains
 
           if (ncnt(found) == 1) then
              fk1 = 1
+             fwrite(found) = .true.
              call seq_infodata_GetData( infodata,  case_name=case_name)
              call shr_cal_date2ymd(curr_ymd, yy, mm, dd)
 
@@ -1304,14 +1352,6 @@ contains
                 call shr_sys_abort('seq_hist_writeaux fk illegal')
              end if
 
-             if (present(flds)) then
-                if (fk == fk1) then
-                   lsize = mct_aVect_lsize(av)
-                   call mct_aVect_init(avflds,  rList=flds,  lsize=lsize)
-                   call mct_aVect_zero(avflds)
-                end if
-             end if
-
              avg_time = 0.5_r8 * (tbnds(1) + tbnds(2))
              !------- tcx nov 2011 tbnds of same values causes problems in ferret
              if (tbnds(1) >= tbnds(2)) then
@@ -1324,40 +1364,67 @@ contains
                      nt=ncnt(found), whead=whead, wdata=wdata, tbnds=tbnds, file_ind=found)
              endif
 
+             ! Write domain on first write of each file
              if (fwrite(found)) then
-             !  call seq_io_write(hist_file(found), gsmap, dom%data, trim(dname),  &
-             !       nx=nx, ny=ny, whead=whead, wdata=wdata, fillval=c0, pre=trim(dname), file_ind=found)
+                call seq_io_write(hist_file(found), mbxid, trim(dname), &
+                     trim(seq_flds_dom_fields), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, file_ind=found)
              endif
 
+             ! Write field data
              if (useavg) then
                 if (present(flds)) then
-                   call mct_aVect_copy(aVin=avavg(found),  aVout=avflds)
-                !  call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-                !       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                !       pre=trim(aname), tavg=.true., use_float=(.not. use_double), &
-                !       file_ind=found)
+                   ! Averaged with field subset: extract matching columns from accumulator
+                   call mct_list_init(flds_list, trim(flds))
+                   nflds_out = mct_list_nitem(flds_list)
+                   allocate(matrix_data(numpts, nflds_out))
+                   do ii = 1, nflds_out
+                      call mct_list_get(mctOStr, ii, flds_list)
+                      ! Find matching column index in full tag_list
+                      do jj = 1, nflds_saved(found)
+                         call mct_list_get(mctOStr2, jj, temp_list)
+                         if (trim(mct_string_toChar(mctOStr)) == &
+                             trim(mct_string_toChar(mctOStr2))) then
+                            matrix_data(:,ii) = avavg(found)%data(:,jj)
+                            exit
+                         endif
+                      enddo
+                   enddo
+                   p_matrix => matrix_data
+                   call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                        trim(flds), whead=whead, wdata=wdata, &
+                        nx=nx, ny=ny, nt=ncnt(found), &
+                        matrix=p_matrix, file_ind=found, &
+                        use_float=(.not. use_double))
+                   deallocate(matrix_data)
+                   call mct_list_clean(flds_list)
                 else
-                !  call seq_io_write(hist_file(found),  gsmap,  avavg(found),  trim(aname),  &
-                !       nx=nx,  ny=ny,  nt=ncnt(found),  whead=whead,  wdata=wdata,  &
-                !       pre=trim(aname), tavg=.true.,  use_float=(.not. use_double), &
-                !       file_ind=found)
+                   ! Averaged, all fields
+                   allocate(matrix_data(numpts, nflds_saved(found)))
+                   matrix_data = avavg(found)%data
+                   p_matrix => matrix_data
+                   call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                        trim(tag_list), whead=whead, wdata=wdata, &
+                        nx=nx, ny=ny, nt=ncnt(found), &
+                        matrix=p_matrix, file_ind=found, &
+                        use_float=(.not. use_double))
+                   deallocate(matrix_data)
                 end if
              else if (present(flds)) then
-                call mct_aVect_copy(aVin=av,  aVout=avflds)
-              ! call seq_io_write(hist_file(found),  gsmap,  avflds,  trim(aname),  &
-              !      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-              !      use_float=(.not. use_double), file_ind=found)
+                ! Non-averaged with field subset: write from MOAB tags
+                call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                     trim(flds), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, nt=ncnt(found), &
+                     file_ind=found, &
+                     use_float=(.not. use_double))
              else
-              ! call seq_io_write(hist_file(found),  gsmap,  av,  trim(aname),  &
-              !      nx=nx, ny=ny, nt=ncnt(found), whead=whead, wdata=wdata, pre=trim(aname), &
-              !      use_float=(.not. use_double), file_ind=found)
+                ! Non-averaged, all fields: write from MOAB tags
+                call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                     trim(tag_list), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, nt=ncnt(found), &
+                     file_ind=found, &
+                     use_float=(.not. use_double))
              endif
-
-             if (present(flds)) then
-                if (fk == 2) then
-                   call mct_aVect_clean(avflds)
-                end if
-             end if
 
              if (fk == 1) then
                 call seq_io_enddef(hist_file(found), file_ind=found)
@@ -1366,7 +1433,7 @@ contains
              if (fk == 2) then
                 fwrite(found) = .false.
                 if (useavg) then
-                   call mct_aVect_zero(avavg(found))
+                   avavg(found)%data(:,:) = 0.0_r8
                    avcnt(found) = 0
                 endif
                 tbnds1(found) = curr_time
@@ -1380,6 +1447,8 @@ contains
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
        endif   ! lwrite_now
+
+       call mct_list_clean(temp_list)
 
     endif   ! iamin_CPLID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
