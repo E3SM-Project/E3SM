@@ -60,7 +60,7 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     });
 
     // interface level variables
-    Kokkos::parallel_for("zm_input_tx_mid",KT::RangePolicy(0, ncol*nlev_int), KOKKOS_LAMBDA (const int i) {
+    Kokkos::parallel_for("zm_input_tx_int",KT::RangePolicy(0, ncol*nlev_int), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_int;
       const int klev = i%nlev_int;
       loc_f_z_int   (icol,klev) = loc_z_int   (icol,klev);
