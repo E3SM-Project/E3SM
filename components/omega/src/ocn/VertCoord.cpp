@@ -163,7 +163,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    // Make host copies for device arrays not being read from file
    PressureInterfaceH     = createHostMirrorCopy(PressureInterface);
    PressureMidH           = createHostMirrorCopy(PressureMid);
-   SshCellH               = createHostMirrorCopy(SshCellH);
+   SshCellH               = createHostMirrorCopy(SshCell);
    GeomZInterfaceH        = createHostMirrorCopy(GeomZInterface);
    GeomZMidH              = createHostMirrorCopy(GeomZMid);
    GeopotentialMidH       = createHostMirrorCopy(GeopotentialMid);
@@ -540,7 +540,12 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
 
       // Validate InitalVertCoord stream
       auto VCoordStream = IOStream::get(StreamName);
-      bool IsValidated  = VCoordStream->validate();
+      if (VCoordStream == nullptr)
+         ABORT_ERROR("VertCoord: IO stream '{}' is not defined", StreamName);
+      bool IsValidated = VCoordStream->validate();
+
+     // auto VCoordStream = IOStream::get(StreamName);
+      //bool IsValidated  = VCoordStream->validate();
 
       // Read InitialVertCoord stream
       if (IsValidated) {
