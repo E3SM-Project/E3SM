@@ -25,7 +25,7 @@ struct Functions {
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  using Pack     = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using Pack    = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
   using IntPack = ekat::Pack<Int,SCREAM_PACK_SIZE>;
 
   using PF  = scream::PhysicsFunctions<DefaultDevice>;
@@ -238,8 +238,8 @@ struct Functions {
   struct ZmInputState {
     ZmInputState() = default;
     // -------------------------------------------------------------------------
-    Real dtime;                     // model phsyics time step [s]
-    bool is_first_step;             // flag for first call
+    // Real dtime;                     // model phsyics time step [s]
+    // bool is_first_step;             // flag for first call
 
     // variable counters for device-side only
     static constexpr int num_1d_intgr = 0;  // number of 1D integer views
@@ -248,25 +248,24 @@ struct Functions {
     static constexpr int num_2d_intfc = 1;  // number of 2D interface views
 
     uview_1d<     Scalar> tpert;    // PBL top temperature perturb. [K]
-    uview_2d<     Pack>  z_mid;    // mid-point level altitude     [m]
-    uview_2d<     Pack>  z_del;    // altitude thickness           [m]
-    uview_2d<     Pack>  z_int;    // interface level altitude     [m]
-
+    uview_2d<     Real>   z_mid;    // mid-point level altitude     [m]
+    uview_2d<     Real>   z_del;    // altitude thickness           [m]
+    uview_2d<     Real>   z_int;    // interface level altitude     [m]
     // variables we get from the field manager
     view_1d<const Scalar> phis;     // surface geopotential height  [m2/s]
-    view_2d<const Pack>  p_mid;    // mid-point level pressure     [Pa]
-    view_2d<const Pack>  p_int;    // interface level pressure     [Pa]
-    view_2d<const Pack>  p_del;    // pressure thickness           [Pa]
-    view_2d<      Pack>  T_mid;    // temperature                  [K]
-    view_2d<      Pack>  qv;       // water vapor mixing ratio     [kg kg-1]
-    view_2d<const Pack>  qc;       // cloud liquid water           [kg kg-1]
-    view_2d<      Pack>  uwind;    // zonal wind                   [m/s]
-    view_2d<      Pack>  vwind;    // meridional wind              [m/s]
-    view_2d<const Pack>  omega;    // vertical pressure velocity   [Pa/s]
-    view_2d<const Pack>  cldfrac;  // total cloud fraction         [frac]
     view_1d<const Scalar> pblh;     // PBL height                   [m]
     view_1d<const Scalar> landfrac; // land area fraction           [frac]
-    view_2d<const Pack>  thl_sec;  // thetal variance from SHOC    [K^2]
+    view_2d<const Real>   p_mid;    // mid-point level pressure     [Pa]
+    view_2d<const Real>   p_int;    // interface level pressure     [Pa]
+    view_2d<const Real>   p_del;    // pressure thickness           [Pa]
+    view_2d<      Real>   T_mid;    // temperature                  [K]
+    view_2d<      Real>   qv;       // water vapor mixing ratio     [kg kg-1]
+    view_2d<const Real>   qc;       // cloud liquid water           [kg kg-1]
+    view_2d<      Real>   uwind;    // zonal wind                   [m/s]
+    view_2d<      Real>   vwind;    // meridional wind              [m/s]
+    view_2d<const Real>   omega;    // vertical pressure velocity   [Pa/s]
+    view_2d<const Real>   cldfrac;  // total cloud fraction         [frac]
+    view_2d<const Real>   thl_sec;  // thetal variance from SHOC    [K^2]
 
     // *************************************************************************
     // TEMPORARY
@@ -328,15 +327,15 @@ struct Functions {
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
     uview_1d<Scalar> snow;           // surface snow                            [m/s]
     uview_1d<Scalar> cape;           // convective available potential energy   [J]
-    uview_2d<Pack>  tend_t;         // output tendency of temperature          [K/s]
-    uview_2d<Pack>  tend_qv;        // output tendency of water vapor          [kg/kg/s]
-    uview_2d<Pack>  tend_u;         // output tendency of zonal wind           [m/s/s]
-    uview_2d<Pack>  tend_v;         // output tendency of meridional wind      [m/s/s]
-    uview_2d<Pack>  rain_prod;      // rain production rate                    [?]
-    uview_2d<Pack>  snow_prod;      // snow production rate                    [?]
-    uview_2d<Pack>  prec_flux;      // output convective precipitation flux    [?]
-    uview_2d<Pack>  snow_flux;      // output convective precipitation flux    [?]
-    uview_2d<Pack>  mass_flux;      // output convective mass flux             [?]
+    uview_2d<Real>   tend_t;         // output tendency of temperature          [K/s]
+    uview_2d<Real>   tend_qv;        // output tendency of water vapor          [kg/kg/s]
+    uview_2d<Real>   tend_u;         // output tendency of zonal wind           [m/s/s]
+    uview_2d<Real>   tend_v;         // output tendency of meridional wind      [m/s/s]
+    uview_2d<Real>   rain_prod;      // rain production rate                    [?]
+    uview_2d<Real>   snow_prod;      // snow production rate                    [?]
+    uview_2d<Real>   prec_flux;      // output convective precipitation flux    [?]
+    uview_2d<Real>   snow_flux;      // output convective precipitation flux    [?]
+    uview_2d<Real>   mass_flux;      // output convective mass flux             [?]
 
     // *************************************************************************
     // TEMPORARY
@@ -385,7 +384,6 @@ struct Functions {
     ZmOutputDiag() = default;
   };
 
-
   //
   // --------- Init/Finalize Functions ---------
   //
@@ -394,8 +392,6 @@ struct Functions {
   static void zm_finalize() {
     s_common_init.estbl = view_1d<Real>();
   }
-
-  // static Int zm_main()
 
   //
   // --------- Functions ---------
