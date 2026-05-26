@@ -18,20 +18,20 @@
    struct fmt::formatter<OMEGA::ARR##DIM##TYPE>                                \
        : fmt::formatter<std::string> {                                         \
       auto format(OMEGA::ARR##DIM##TYPE my,                                    \
-                  format_context &ctx) -> decltype(ctx.out()) {                \
+                  format_context &ctx) const -> decltype(ctx.out()) {          \
          return fmt::format_to(ctx.out(), "{}({}D:{})", my.label(), my.rank(), \
                                my.size());                                     \
       }                                                                        \
    };
 #else
-#define GENERATE_FORMATTER(ARR, DIM, TYPE)                      \
-   template <>                                                  \
-   struct fmt::formatter<OMEGA::ARR##DIM##TYPE>                 \
-       : fmt::formatter<std::string> {                          \
-      auto format(OMEGA::ARR##DIM##TYPE my,                     \
-                  format_context &ctx) -> decltype(ctx.out()) { \
-         return fmt::format_to(ctx.out(), "{}", my.label());    \
-      }                                                         \
+#define GENERATE_FORMATTER(ARR, DIM, TYPE)                            \
+   template <>                                                        \
+   struct fmt::formatter<OMEGA::ARR##DIM##TYPE>                       \
+       : fmt::formatter<std::string> {                                \
+      auto format(OMEGA::ARR##DIM##TYPE my,                           \
+                  format_context &ctx) const -> decltype(ctx.out()) { \
+         return fmt::format_to(ctx.out(), "{}", my.label());          \
+      }                                                               \
    };
 #endif
 

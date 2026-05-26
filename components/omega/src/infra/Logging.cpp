@@ -21,7 +21,7 @@ namespace OMEGA {
 
 //------------------------------------------------------------------------------
 // Utility function to create a log message with prefix
-std::string
+fmt::runtime_format_string<>
 _PackLogMsg(const char *file, //[in] file from where log called (cpp __FILE__)
             int line,         //[in] src code line where called (cpp __LINE__)
             const std::string &msg //[in] message text
@@ -31,11 +31,11 @@ _PackLogMsg(const char *file, //[in] file from where log called (cpp __FILE__)
    std::string path(file);
    size_t pos = path.find_last_of("\\/");
    if (pos != std::string::npos) {
-      return "[" + path.substr(pos + 1) + ":" + std::to_string(line) + "] " +
-             msg;
+      return fmt::runtime("[" + path.substr(pos + 1) + ":" +
+                          std::to_string(line) + "] " + msg);
    }
    // add prefix of form [file:line] to message string
-   return "[" + path + ":" + std::to_string(line) + "] " + msg;
+   return fmt::runtime("[" + path + ":" + std::to_string(line) + "] " + msg);
 }
 
 //------------------------------------------------------------------------------
