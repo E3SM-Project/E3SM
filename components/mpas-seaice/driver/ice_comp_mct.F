@@ -2128,6 +2128,7 @@ contains
 
    real (kind=RKIND) :: &
       frazilMassFlux, &
+      frazilSaltMassFlux, &
       frazilMassFluxRev
 
    type (block_type), pointer :: block_ptr
@@ -3028,12 +3029,14 @@ contains
             ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last
             ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
             ! field frazilMassAdjust.
-            i2x_i(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
-            i2x_i(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
-            i2x_i(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
-            i2x_i(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
-            i2x_i(index_i2x_Fioi_taux ,n) = tauxo
-            i2x_i(index_i2x_Fioi_tauy ,n) = tauyo
+            i2x_i(index_i2x_Fioi_melth  ,n) = oceanHeatFlux(i)
+            i2x_i(index_i2x_Fioi_swpen  ,n) = oceanShortwaveFlux(i)
+            i2x_i(index_i2x_Fioi_meltw  ,n) = oceanFreshWaterFlux(i)
+            i2x_i(index_i2x_Fioi_frazil ,n) = frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_salt   ,n) = oceanSaltFlux(i) 
+            i2x_i(index_i2x_Fioi_frazils,n) = seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_taux   ,n) = tauxo
+            i2x_i(index_i2x_Fioi_tauy   ,n) = tauyo
 
             ! export biogeochemistry fields, if configured
             if (config_use_column_biogeochemistry .and. config_couple_biogeochemistry_fields) then
