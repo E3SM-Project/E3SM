@@ -24,6 +24,11 @@ if (CONFIG_ERROR_CODE)
   set (TEST_FAILS TRUE)
 else ()
   if (NOT CONFIG_ONLY)
+    # With Oneapi, we do get some strings in the output that get interpreted as compiler errors,
+    # even though make succeeds. We can set this var in this specific file to tell ctest which
+    # strings it should ignore. Here, we tell ctest to ignore EVERY string, since we still check
+    # the return code below anyways...
+    file(WRITE "${CTEST_BINARY_DIRECTORY}/CTestCustom.cmake" "list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION \".*\")")
     if (DEFINED ENV{SCREAM_BUILD_PARALLEL_LEVEL})
       ctest_build(FLAGS "-j$ENV{SCREAM_BUILD_PARALLEL_LEVEL}" RETURN_VALUE BUILD_ERROR_CODE)
     else()
