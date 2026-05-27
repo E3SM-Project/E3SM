@@ -177,6 +177,8 @@ module control_mod
                                                               !   0   apply together with hyperviscosity
                                                               !   >1  apply timesplit from hyperviscosity
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
+  integer, public :: hypervis_subcycle_q_sgs=-1               ! number of subcycles for SGS horizontal diffusion on TRACERS
+                                                              !   <0  use hypervis_subcycle_q
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
 
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity

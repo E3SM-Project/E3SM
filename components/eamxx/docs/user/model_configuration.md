@@ -110,6 +110,7 @@ $ ./atmquery --grep sub
     ctl_nl::hypervis_subcycle_sgs: 1
     ctl_nl::hypervis_subcycle_tom: 1
     ctl_nl::hypervis_subcycle_q: 6
+    ctl_nl::hypervis_subcycle_q_sgs: 6
     atmosphere_processes::number_of_subcycles: 1
     sc_import::number_of_subcycles: 1
     homme::number_of_subcycles: 1

@@ -866,6 +866,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_subcycle_sgs>-1</hypervis_subcycle_sgs>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
+    <hypervis_subcycle_q_sgs>-1</hypervis_subcycle_q_sgs>
     <nu>3.4e-08</nu>
     <nu COMPSET=".*DP-EAMxx">0.216784</nu>
     <nu_top>UNSET</nu_top>
@@ -940,6 +941,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
     <dt_tracer_factor hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
+    <hypervis_subcycle_q_sgs hgrid=".*pg2">-1</hypervis_subcycle_q_sgs>
     <transport_alg hgrid=".*pg2" doc="0 (Eulerian) or 12 (semi-Lagrangian) tracer transport">12</transport_alg>
     <semi_lagrange_trajectory_nsubstep doc="Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.">0</semi_lagrange_trajectory_nsubstep>
     <semi_lagrange_trajectory_nvelocity doc="Number of velocity slices to use in new method. 2 or less maps to 2">-1</semi_lagrange_trajectory_nvelocity>

@@ -226,6 +226,11 @@ def perform_consistency_checks(case, xml):
         if hypervis_subcycle is not None and hypervis_subcycle_sgs is not None:
             if int(hypervis_subcycle_sgs.text) < 0:
                 hypervis_subcycle_sgs.text = hypervis_subcycle.text
+        hypervis_subcycle_q = find_node(ctl_nl, "hypervis_subcycle_q")
+        hypervis_subcycle_q_sgs = find_node(ctl_nl, "hypervis_subcycle_q_sgs")
+        if hypervis_subcycle_q is not None and hypervis_subcycle_q_sgs is not None:
+            if int(hypervis_subcycle_q_sgs.text) < 0:
+                hypervis_subcycle_q_sgs.text = hypervis_subcycle_q.text
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
