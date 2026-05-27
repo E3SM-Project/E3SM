@@ -40,7 +40,7 @@ VertMix:
     BaseShearValue: 0.005
     RiCrit: 0.7
     Exponent: 3.0
-    RiSmoothLoops: 3
+    RiSmoothLoops: 2
 ```
 
 ## Class Structure
@@ -63,12 +63,12 @@ VertMix:
    - `ConvDiff`: Convective mixing coefficient (m²/s; Default: 1.0)
    - `ConvTriggerBVF`: Trigger threshold for convective mixing (Default: 0.0)
 
-3. Shear Mixing:
-   - `EnableShearMix`: Flag to enable/disable shear mixing (Default: True)
-   - `BaseShearValue`: Base values of shear for the LMD94 interior shear mixing formulation (Default: 0.005)
-   - `RiCrit`: Critical Richerson number for the LMB94 formulation (Default: 0.7)
-   - `ShearExponent`: Exponent parameter number for the LMB94 formulation (Default: 3.0)
-   - `RiSmoothLoops`: Number of 1-2-1 filter passes to apply to the gradient Richardson number smoothing (Default: 3)
+3. Shear Instability Driven Mixing:
+   - `EnableShearMix`: Flag to enable/disable shear instability driven mixing (Default: True)
+   - `BaseShearValue`: Base values of maximum viscosity and diffusivity for the LMD94 interior shear instability driven mixing formulation (Default: 0.005)
+   - `RiCrit`: Critical Richardson number for the LMD94 formulation (Default: 0.7)
+   - `ShearExponent`: Exponent parameter number for the LMD94 formulation (Default: 3.0)
+   - `RiSmoothLoops`: Number of 1-2-1 filter passes to apply to the gradient Richardson number smoothing (Default: 2)
 
 ## Core Functionality (Vertical Mixing Coefficient Calculation)
 
