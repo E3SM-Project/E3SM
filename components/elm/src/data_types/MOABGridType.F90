@@ -1,4 +1,4 @@
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
 ! Only build the module if MOAB is enabled
 module MOABGridType
 
