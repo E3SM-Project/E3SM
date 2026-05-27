@@ -46,16 +46,18 @@
 /// Macro that writes a Log message when the TRACE or higher logging level is
 /// enabled. The trace label, together with the filename and line number from
 /// which the /// macro is called is pre-pended to the msg.
-#define LOG_TRACE(msg, ...)                                                   \
-   spdlog::trace(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOG_TRACE(msg, ...)                                                 \
+   spdlog::trace(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                 ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOG_DEBUG(msg, ...)
 /// Macro that writes a Log message when the DEBUG or higher logging level is
 /// enabled. The debug label, together with the filename and line number from
 /// which the macro is called is pre-pended to the msg.
-#define LOG_DEBUG(msg, ...)                                                   \
-   spdlog::debug(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOG_DEBUG(msg, ...)                                                 \
+   spdlog::debug(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                 ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOG_INFO(msg, ...)
@@ -63,16 +65,18 @@
 /// enabled. This is typically the default logging level. Unlike the other
 /// macros, the message is written as provided with no additional prefix.
 /// This should be used for general informational messages.
-#define LOG_INFO(msg, ...)           \
-   spdlog::info(msg, ##__VA_ARGS__); \
+#define LOG_INFO(msg, ...)                                                 \
+   spdlog::info(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOG_WARN(msg, ...)
 /// Macro that writes a Log message when the WARN or higher logging level is
 /// enabled. The warn label, together with the filename and line number from
 /// which the macro is called is pre-pended to the msg.
-#define LOG_WARN(msg, ...)                                                   \
-   spdlog::warn(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOG_WARN(msg, ...)                                                 \
+   spdlog::warn(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 // original: define LOG_WARN(msg, ...)                                                   \
@@ -83,54 +87,60 @@
 /// Macro that writes a Log message when the ERROR or higher logging level is
 /// enabled. The error label, together with the filename and line number from
 /// which the macro is called is pre-pended to the msg.
-#define LOG_ERROR(msg, ...)                                                   \
-   spdlog::error(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOG_ERROR(msg, ...)                                                 \
+   spdlog::error(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                 ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOG_CRITICAL(msg, ...)
 /// Macro that writes a Log message when the CRITICAL or higher logging level is
 /// enabled. The critical label, together with the filename and line number from
 /// which the macro is called is pre-pended to the msg.
-#define LOG_CRITICAL(msg, ...)                                   \
-   spdlog::critical(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), \
-                    ##__VA_ARGS__);                              \
+#define LOG_CRITICAL(msg, ...)                                                 \
+   spdlog::critical(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                    ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOGGER_TRACE(logger, msg, ...)
 /// Macro similar to LOG_TRACE but for a custom input logger.
-#define LOGGER_TRACE(logger, msg, ...)                                        \
-   logger->trace(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOGGER_TRACE(logger, msg, ...)                                      \
+   logger->trace(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                 ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOGGER_DEBUG(logger, msg, ...)
 /// Macro similar to LOG_DEBUG but for a custom input logger.
-#define LOGGER_DEBUG(logger, msg, ...)                                        \
-   logger->debug(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOGGER_DEBUG(logger, msg, ...)                                      \
+   logger->debug(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                 ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOGGER_INFO(logger, msg, ...)
 /// Macro similar to LOG_INFO but for a custom input logger.
-#define LOGGER_INFO(logger, msg, ...)                                        \
-   logger->info(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOGGER_INFO(logger, msg, ...)                                      \
+   logger->info(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOGGER_WARN(logger, msg, ...)
 /// Macro similar to LOG_WARN but for a custom input logger.
-#define LOGGER_WARN(logger, msg, ...)                                        \
-   logger->warn(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOGGER_WARN(logger, msg, ...)                                      \
+   logger->warn(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOGGER_ERROR(logger, msg, ...)
 /// Macro similar to LOG_ERROR but for a custom input logger.
-#define LOGGER_ERROR(logger, msg, ...)                                        \
-   logger->error(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), ##__VA_ARGS__); \
+#define LOGGER_ERROR(logger, msg, ...)                                      \
+   logger->error(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                 ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def LOGGER_CRITICAL(logger, msg, ...)
 /// Macro similar to LOG_CRITICAL but for a custom input logger.
-#define LOGGER_CRITICAL(logger, msg, ...)                        \
-   logger->critical(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg), \
-                    ##__VA_ARGS__);                              \
+#define LOGGER_CRITICAL(logger, msg, ...)                                      \
+   logger->critical(fmt::runtime(OMEGA::_PackLogMsg(__FILE__, __LINE__, msg)), \
+                    ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
 /// \def OMEGA_LOG_TASKS

@@ -24,8 +24,8 @@ set_target_properties(gswteos-10 PROPERTIES
 # Add the spdlog library
 if (NOT TARGET spdlog::spdlog)
 	add_subdirectory(
-	  ${E3SM_EXTERNALS_ROOT}/ekat/extern/spdlog
-	  ${CMAKE_CURRENT_BINARY_DIR}/ekat/extern/spdlog
+	  ${OMEGA_SOURCE_DIR}/external/spdlog
+	  ${CMAKE_CURRENT_BINARY_DIR}/external/spdlog
 	)
 endif()
 
