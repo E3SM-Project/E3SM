@@ -242,7 +242,7 @@ class VelVertMixSetupOnEdge {
    /// interface pressure, and outputs tendency array
    KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, Real DT,
                                    const Array2DReal &SpecVol,
-                                   const Array2DReal &LayerThickCell,
+                                   const Array2DReal &PseudoThickCell,
                                    const Array2DReal &VertVisc,
                                    const Array2DReal &NormalVelEdge, Real &G,
                                    Real &H, Real &X) const {
@@ -260,29 +260,30 @@ class VelVertMixSetupOnEdge {
          X = 0.0_Real;
       } else {
          if (K < KMax) {
-            const Real LayerThickEdgeK = 0.5_Real * (LayerThickCell(JCell0, K) +
-                                                     LayerThickCell(JCell1, K));
-            const Real LayerThickEdgeKp1 =
+            const Real PseudoThickEdgeK =
                 0.5_Real *
-                (LayerThickCell(JCell0, K + 1) + LayerThickCell(JCell1, K + 1));
+                (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
+            const Real PseudoThickEdgeKp1 =
+                0.5_Real * (PseudoThickCell(JCell0, K + 1) +
+                            PseudoThickCell(JCell1, K + 1));
 
-            const Real LayerThickEdgeTop =
-                0.5_Real * (LayerThickEdgeK + LayerThickEdgeKp1);
+            const Real PseudoThickEdgeTop =
+                0.5_Real * (PseudoThickEdgeK + PseudoThickEdgeKp1);
 
             // Interpolation from cell center to top using
             // the two-point linear interpolation
             const Real SpecVolEdgeTop =
                 (0.5_Real * (SpecVol(JCell0, K) + SpecVol(JCell1, K)) *
-                     LayerThickEdgeKp1 +
+                     PseudoThickEdgeKp1 +
                  0.5_Real * (SpecVol(JCell0, K + 1) + SpecVol(JCell1, K + 1)) *
-                     LayerThickEdgeK) /
-                (LayerThickEdgeK + LayerThickEdgeKp1);
+                     PseudoThickEdgeK) /
+                (PseudoThickEdgeK + PseudoThickEdgeKp1);
 
             const Real ViscAlphaEdgeTop =
                 0.5_Real * (VertVisc(JCell0, K + 1) + VertVisc(JCell1, K + 1)) /
                 (LocRhoSw * SpecVolEdgeTop);
 
-            G = DT * ViscAlphaEdgeTop / (LayerThickEdgeTop * LayerThickEdgeK);
+            G = DT * ViscAlphaEdgeTop / (PseudoThickEdgeTop * PseudoThickEdgeK);
          }
          X = NormalVelEdge(IEdge, K);
       }
@@ -306,7 +307,7 @@ class TracerVertMixSetupOnCell {
 
    KOKKOS_FUNCTION void operator()(I4 L, I4 ICell, I4 K, Real DT,
                                    const Array2DReal &SpecVol,
-                                   const Array2DReal &LayerThickCell,
+                                   const Array2DReal &PseudoThickCell,
                                    const Array2DReal &VertDiff,
                                    const Array3DReal &TracersOnCell, Real &G,
                                    Real &H, Real &X) const {
@@ -321,24 +322,24 @@ class TracerVertMixSetupOnCell {
          X = 0.0_Real;
       } else {
          if (K < KMax) {
-            const Real LayerThickCellK   = LayerThickCell(ICell, K);
-            const Real LayerThickCellKp1 = LayerThickCell(ICell, K + 1);
+            const Real PseudoThickCellK   = PseudoThickCell(ICell, K);
+            const Real PseudoThickCellKp1 = PseudoThickCell(ICell, K + 1);
 
-            const Real LayerThickCellTop =
-                0.5_Real * (LayerThickCellK + LayerThickCellKp1);
+            const Real PseudoThickCellTop =
+                0.5_Real * (PseudoThickCellK + PseudoThickCellKp1);
 
             // Interpolation from cell center to top using
             // the two-point linear interpolation
             const Real SpecVolCellTop =
-                (SpecVol(ICell, K) * LayerThickCellKp1 +
-                 SpecVol(ICell, K + 1) * LayerThickCellK) /
-                (LayerThickCellK + LayerThickCellKp1);
+                (SpecVol(ICell, K) * PseudoThickCellKp1 +
+                 SpecVol(ICell, K + 1) * PseudoThickCellK) /
+                (PseudoThickCellK + PseudoThickCellKp1);
 
             const Real DiffAlphaCellTop =
                 VertDiff(ICell, K + 1) / (LocRhoSw * SpecVolCellTop);
 
             G = DT * DiffAlphaCellTop /
-                (LayerThickCellTop * LayerThickCell(ICell, K));
+                (PseudoThickCellTop * PseudoThickCell(ICell, K));
          }
          X = TracersOnCell(L, ICell, K);
       }
