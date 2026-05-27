@@ -124,9 +124,6 @@
 <dp_cut_accum_rename>  1.0D-6   </dp_cut_accum_rename>
 <dp_xferall_thresh_accum_rename>  1.0D-6  </dp_xferall_thresh_accum_rename>
 
-<!-- sim_year used for CLM datasets -->
-<sim_year>2015</sim_year>
-
 <!-- land datasets -->
 <!-- Set in components/elm/bld/namelist_files/use_cases/1950_CMIP7_control.xml -->
 
