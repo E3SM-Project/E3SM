@@ -4939,6 +4939,8 @@ subroutine init_column_waves(domain)
     real(kind=RKIND), dimension(:), pointer :: &
          freezingMeltingPotential, &
          freezingMeltingPotentialInitial, &
+         frazilEnergyAdjustment, &
+         frazilEnergyAdjustmentInitial, &
          albedoVisibleDirectCell, &
          albedoVisibleDiffuseCell, &
          albedoIRDirectCell, &
@@ -5077,6 +5079,8 @@ subroutine init_column_waves(domain)
 
        call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
        call MPAS_pool_get_array(diagnostics, "freezingMeltingPotentialInitial", freezingMeltingPotentialInitial)
+       call MPAS_pool_get_array(oceanCoupling, "frazilEnergyAdjustment", frazilEnergyAdjustment)
+       call MPAS_pool_get_array(diagnostics, "frazilEnergyAdjustmentInitial", frazilEnergyAdjustmentInitial)
 
        call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
 
@@ -5181,6 +5185,7 @@ subroutine init_column_waves(domain)
           !-------------------------------------------------------------------
 
           freezingMeltingPotentialInitial(iCell) = freezingMeltingPotential(iCell)
+          frazilEnergyAdjustmentInitial(iCell) = frazilEnergyAdjustment(iCell)
 
           !-------------------------------------------------------------------
           ! aggregate albedos

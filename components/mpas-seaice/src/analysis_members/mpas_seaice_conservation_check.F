@@ -742,6 +742,7 @@ contains
            energyConsLongwaveDown, &
            energyConsOceanHeatFlux, &
            energyConsFreezingPotential, &
+           energyConsFrazilEnergyAdjustment, &
            energyConsSnowfallHeat, &
            energyConsLatentHeat
 
@@ -755,6 +756,7 @@ contains
            longwaveDownCell, &
            oceanHeatCell, &
            freezingPotentialCell, &
+           frazilEnergyAdjustmentCell, &
            snowfallHeatCell, &
            latentHeatCell
 
@@ -786,6 +788,7 @@ contains
            evaporativeWaterFlux, &
            oceanHeatFluxArea, &
            freezingMeltingPotentialInitial, &
+           frazilEnergyAdjustmentInitial, &
            snowfallRate
 
       integer, dimension(:,:), pointer :: &
@@ -827,9 +830,9 @@ contains
 
       call MPAS_pool_get_config(domain % blocklist % configs, "config_calc_surface_temperature", config_calc_surface_temperature)
       if (config_calc_surface_temperature) then
-         nVars = 9
+         nVars = 10
       else
-         nVars = 5
+         nVars = 6
       endif
 
       call MPAS_pool_get_config(domain % configs, "config_dt", dt)
@@ -878,12 +881,16 @@ contains
          call MPAS_pool_get_array(atmosCouplingPool, "longwaveDown", longwaveDown)
          call MPAS_pool_get_array(atmosCouplingPool, "snowfallRate", snowfallRate)
          call MPAS_pool_get_array(diagnosticsPool, "freezingMeltingPotentialInitial", freezingMeltingPotentialInitial)
-         call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphere)
+         call MPAS_pool_get_array(diagnosticsPool, "frazilEnergyAdjustmentInitial", frazilEnergyAdjustmentInitial)
+         call MPAS_pool_get_array(conservationCheckAMPool, "cellInHemisphere", cellInHemisphoere)
 
          do iCell = 1, nCellsSolve
 
             oceanHeatCell         = -oceanHeatFluxArea(iCell) * areaCell(iCell)
             freezingPotentialCell = -max(0.0_RKIND, freezingMeltingPotentialInitial(iCell)) * areaCell(iCell)
+
+            ! frazilEnergyAdjustment is subtracted from the oceanHeatFlux in ice_comp_mct.F
+            frazilEnergyAdjustmentCell = frazilEnergyAdjustmentInitial(iCell) * areaCell(iCell)
             snowfallHeatCell      = -snowfallRate(iCell) * iceAreaCellInitial(iCell) * areaCell(iCell) * seaiceLatentHeatMelting
 
             do iHemisphere = 1, nHemispheres
@@ -891,7 +898,8 @@ contains
                if (cellInHemisphere(iHemisphere,iCell) == 1) then
                   sumArray(iSumPrev+1) = sumArray(iSumPrev+1) + oceanHeatCell
                   sumArray(iSumPrev+2) = sumArray(iSumPrev+2) + freezingPotentialCell
-                  sumArray(iSumPrev+3) = sumArray(iSumPrev+3) + snowfallHeatCell
+                  sumArray(iSumPrev+3) = sumArray(iSumPrev+3) + frazilEnergyAdjustmentCell
+                  sumArray(iSumPrev+4) = sumArray(iSumPrev+4) + snowfallHeatCell
                endif
             enddo ! iHemisphere
 
@@ -906,7 +914,7 @@ contains
                do iHemisphere = 1, nHemispheres
                   iSumPrev = (iHemisphere-1) * nVars
                   if (cellInHemisphere(iHemisphere,iCell) == 1) then
-                     sumArray(iSumPrev+4) = sumArray(iSumPrev+4) + latentHeatCell
+                     sumArray(iSumPrev+5) = sumArray(iSumPrev+5) + latentHeatCell
                   endif
                enddo ! iHemisphere
 
@@ -917,11 +925,11 @@ contains
             do iCell = 1, nCellsSolve
 
                latentHeatCell = evaporativeWaterFlux(iCell) * iceAreaCell(iCell) * areaCell(iCell) * seaiceLatentHeatVaporization
-
                do iHemisphere = 1, nHemispheres
                   iSumPrev = (iHemisphere-1) * nVars
-                  if (cellInHemisphere(iHemisphere,iCell) == 1) then
-                     sumArray(iSumPrev+4) = sumArray(iSumPrev+4) + latentHeatCell
+                  if (cellInHemisphere(iHemisphere,iCell) == 1) then               
+                     sumArray(iSumPrev+5) = sumArray(iSumPrev+5) + latentHeatCell
+
                   endif
                enddo ! iHemisphere
 
@@ -943,11 +951,11 @@ contains
                do iHemisphere = 1, nHemispheres
                   iSumPrev = (iHemisphere-1) * nVars
                   if (cellInHemisphere(iHemisphere,iCell) == 1) then
-                     sumArray(iSumPrev+5) = sumArray(iSumPrev+5) + absorbedShortwaveFluxCell
-                     sumArray(iSumPrev+6) = sumArray(iSumPrev+6) + oceanShortwaveFluxCell
-                     sumArray(iSumPrev+7) = sumArray(iSumPrev+7) + sensibleHeatFluxCell
-                     sumArray(iSumPrev+8) = sumArray(iSumPrev+8) + longwaveUpCell
-                     sumArray(iSumPrev+9) = sumArray(iSumPrev+9) + longwaveDownCell
+                     sumArray(iSumPrev+6) = sumArray(iSumPrev+6) + absorbedShortwaveFluxCell
+                     sumArray(iSumPrev+7) = sumArray(iSumPrev+7) + oceanShortwaveFluxCell
+                     sumArray(iSumPrev+8) = sumArray(iSumPrev+8) + sensibleHeatFluxCell
+                     sumArray(iSumPrev+9) = sumArray(iSumPrev+9) + longwaveUpCell
+                     sumArray(iSumPrev+10) = sumArray(iSumPrev+10) + longwaveDownCell
                   endif
                enddo ! iHemisphere
 
@@ -962,7 +970,7 @@ contains
                do iHemisphere = 1, nHemispheres
                   iSumPrev = (iHemisphere-1) * nVars
                   if (cellInHemisphere(iHemisphere,iCell) == 1) then
-                     sumArray(iSumPrev+5) = sumArray(iSumPrev+5) + surfaceHeatFluxCell
+                     sumArray(iSumPrev+6) = sumArray(iSumPrev+6) + surfaceHeatFluxCell
                   endif
                enddo ! iHemisphere
 
@@ -981,14 +989,16 @@ contains
 
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsOceanHeatFlux",     energyConsOceanHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsFreezingPotential", energyConsFreezingPotential)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsFrazilEnergyAdjustment", energyConsFrazilEnergyAdjustment)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsSnowfallHeat",      energyConsSnowfallHeat)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsLatentHeat",        energyConsLatentHeat)
       do iHemisphere = 1, nHemispheres
          iSumPrev = (iHemisphere-1) * nVars
          energyConsOceanHeatFlux    (iHemisphere) = energyConsOceanHeatFlux    (iHemisphere) + sumArrayOut(iSumPrev+1)
          energyConsFreezingPotential(iHemisphere) = energyConsFreezingPotential(iHemisphere) + sumArrayOut(iSumPrev+2)
-         energyConsSnowfallHeat     (iHemisphere) = energyConsSnowfallHeat     (iHemisphere) + sumArrayOut(iSumPrev+3)
-         energyConsLatentHeat       (iHemisphere) = energyConsLatentHeat       (iHemisphere) + sumArrayOut(iSumPrev+4)
+         energyConsFrazilEnergyAdjustment(iHemisphere) = energyConsFrazilEnergyAdjustment(iHemisphere) + sumArrayOut(iSumPrev+3)
+         energyConsSnowfallHeat     (iHemisphere) = energyConsSnowfallHeat     (iHemisphere) + sumArrayOut(iSumPrev+4)
+         energyConsLatentHeat       (iHemisphere) = energyConsLatentHeat       (iHemisphere) + sumArrayOut(iSumPrev+5)
       enddo ! iHemisphere
 
       if (config_calc_surface_temperature) then
@@ -999,17 +1009,17 @@ contains
          call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsLongwaveDown",          energyConsLongwaveDown)
          do iHemisphere = 1, nHemispheres
             iSumPrev = (iHemisphere-1) * nVars
-            energyConsAbsorbedShortwaveFlux(iHemisphere) = energyConsAbsorbedShortwaveFlux(iHemisphere) + sumArrayOut(iSumPrev+5)
-            energyConsOceanShortwaveFlux   (iHemisphere) = energyConsOceanShortwaveFlux   (iHemisphere) + sumArrayOut(iSumPrev+6)
-            energyConsSensibleHeatFlux     (iHemisphere) = energyConsSensibleHeatFlux     (iHemisphere) + sumArrayOut(iSumPrev+7)
-            energyConsLongwaveUp           (iHemisphere) = energyConsLongwaveUp           (iHemisphere) + sumArrayOut(iSumPrev+8)
-            energyConsLongwaveDown         (iHemisphere) = energyConsLongwaveDown         (iHemisphere) + sumArrayOut(iSumPrev+9)
+            energyConsAbsorbedShortwaveFlux(iHemisphere) = energyConsAbsorbedShortwaveFlux(iHemisphere) + sumArrayOut(iSumPrev+6)
+            energyConsOceanShortwaveFlux   (iHemisphere) = energyConsOceanShortwaveFlux   (iHemisphere) + sumArrayOut(iSumPrev+7)
+            energyConsSensibleHeatFlux     (iHemisphere) = energyConsSensibleHeatFlux     (iHemisphere) + sumArrayOut(iSumPrev+8)
+            energyConsLongwaveUp           (iHemisphere) = energyConsLongwaveUp           (iHemisphere) + sumArrayOut(iSumPrev+9)
+            energyConsLongwaveDown         (iHemisphere) = energyConsLongwaveDown         (iHemisphere) + sumArrayOut(iSumPrev+10)
          enddo ! iHemisphere
       else
          call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsSurfaceHeatFlux", energyConsSurfaceHeatFlux)
          do iHemisphere = 1, nHemispheres
             iSumPrev = (iHemisphere-1) * nVars
-            energyConsSurfaceHeatFlux(iHemisphere) = energyConsSurfaceHeatFlux(iHemisphere) + sumArrayOut(iSumPrev+5)
+            energyConsSurfaceHeatFlux(iHemisphere) = energyConsSurfaceHeatFlux(iHemisphere) + sumArrayOut(iSumPrev+6)
          enddo ! iHemisphere
       endif
 
@@ -1084,6 +1094,7 @@ contains
          energyConsLatentHeat(:)            = energyConsLatentHeat(:)            * fluxScale
          energyConsOceanHeatFlux(:)         = energyConsOceanHeatFlux(:)         * fluxScale
          energyConsFreezingPotential(:)     = energyConsFreezingPotential(:)     * fluxScale
+         energyConsFrazilEnergyAdjustment(:)= energyConsFrazilEnergyAdjustment(:)* fluxScale
          netEnergyFlux(:)                   = netEnergyFlux(:)                   * fluxScale
 
          ! relative flux error
@@ -1130,6 +1141,7 @@ contains
                call mpas_log_write(' Ocean heat flux**           (W/m2) = '//trim(hemisphere_format(energyConsOceanHeatFlux)))
                call mpas_log_write(' Freezing heat flux**        (W/m2) = '//trim(hemisphere_format(energyConsFreezingPotential)))
             endif
+            call mpas_log_write(' Frazil enthalpy residual heat flux(W/m2) = '//trim(hemisphere_format(energyConsFrazilEnergyAdjustment)))
             call mpas_log_write(' Snowfall heat flux          (W/m2) = '//trim(hemisphere_format(energyConsSnowfallHeat)))
             call mpas_log_write(' Latent heat flux            (W/m2) = '//trim(hemisphere_format(energyConsLatentHeat)))
             call mpas_log_write(' ')
@@ -3650,6 +3662,7 @@ contains
            energyConsLongwaveDown, &
            energyConsOceanHeatFlux, &
            energyConsFreezingPotential, &
+           energyConsFrazilEnergyAdjustment, &
            energyConsSnowfallHeat, &
            energyConsLatentHeat
 
@@ -3703,6 +3716,7 @@ contains
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsLongwaveDown",          energyConsLongwaveDown)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsOceanHeatFlux",         energyConsOceanHeatFlux)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsFreezingPotential",     energyConsFreezingPotential)
+      call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsFrazilEnergyAdjustment",     energyConsFrazilEnergyAdjustment)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsSnowfallHeat",          energyConsSnowfallHeat)
       call MPAS_pool_get_array(conservationCheckEnergyAMPool, "energyConsLatentHeat",            energyConsLatentHeat)
 
@@ -3714,6 +3728,7 @@ contains
       energyConsLongwaveDown(:)          = 0.0_RKIND
       energyConsOceanHeatFlux(:)         = 0.0_RKIND
       energyConsFreezingPotential(:)     = 0.0_RKIND
+      energyConsFrazilEnergyAdjustment(:)= 0.0_RKIND
       energyConsSnowfallHeat(:)          = 0.0_RKIND
       energyConsLatentHeat(:)            = 0.0_RKIND
 

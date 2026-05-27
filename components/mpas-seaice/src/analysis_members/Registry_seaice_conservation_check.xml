@@ -113,6 +113,9 @@
 		<var name="energyConsFreezingPotential" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
+		<var name="energyConsFrazilEnergyAdjustment" type="real" dimensions="nHemispheres Time" units="None"
+			description=""
+		/>
 		<var name="energyConsSnowfallHeat" type="real" dimensions="nHemispheres Time" units="None"
 			description=""
 		/>
@@ -461,6 +464,7 @@
 			<var name="energyConsLongwaveDown"/>
 			<var name="energyConsOceanHeatFlux"/>
 			<var name="energyConsFreezingPotential"/>
+			<var name="energyConsFrazilEnergyAdjustment"/>
 			<var name="energyConsSnowfallHeat"/>
 			<var name="energyConsLatentHeat"/>
 			<var name="netEnergyFlux"/>
@@ -535,6 +539,7 @@
 			<var name="energyConsLongwaveDown"/>
 			<var name="energyConsOceanHeatFlux"/>
 			<var name="energyConsFreezingPotential"/>
+			<var name="energyConsFrazilEnergyAdjustment"/>
 			<var name="energyConsSnowfallHeat"/>
 			<var name="energyConsLatentHeat"/>
 			<var name="initialMass"/>

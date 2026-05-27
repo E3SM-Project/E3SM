@@ -6559,6 +6559,11 @@
 		     dimensions="nCells Time"
 		     units="W m-2"
 		/>
+		<var name="frazilEnergyAdjustmentInitial"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="W m-2"
+		/>
 		<var name="timeAverageTestVariable"
 		     type="real"
 		     dimensions="Time"
