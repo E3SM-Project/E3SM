@@ -16,6 +16,7 @@
 #include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/physics/physics_constants.hpp"
 
 // Get all Homme's compile-time dims and constants
 #include "PhysicalConstants.hpp"
@@ -197,7 +198,8 @@ void HommeGridsManager::build_dynamics_grid () {
 }
 
 void HommeGridsManager::
-build_physics_grid (const ci_string& type, const ci_string& rebalance) {
+build_physics_grid (const ci_string& type, const ci_string& rebalance)
+{
   std::string name = "physics_" + type;
   if (rebalance != "none") {
     name += " " + rebalance;
@@ -275,16 +277,25 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,none);
     auto lev  = phys_grid->create_geometry_data("lev", layout_mid,mbar);
     auto ilev = phys_grid->create_geometry_data("ilev",layout_int,mbar);
+    auto P0   = phys_grid->create_geometry_data("P0", FieldLayout::scalar(), Pa);
+    const auto p0_val = physics::Constants<Real>::P0.value;
+    P0.deep_copy(p0_val);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
       auto f_d = get_grid("dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
       f.sync_to_host();
     }
-  
+
+    using stratts_t = std::map<std::string,std::string>;
+    auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+    ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+    lev_io_atts["positive"] = "down";
+    ilev_io_atts["positive"] = "down";
+
     // Build lev from hyam and hybm
-    const Real ps0        = 100000.0;
-  
     auto hyam_v = hyam.get_view<const Real*,Host>();
     auto hybm_v = hybm.get_view<const Real*,Host>();
     auto hyai_v = hyai.get_view<const Real*,Host>();
@@ -293,10 +304,10 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto ilev_v = ilev.get_view<Real*,Host>();
     auto num_v_levs = phys_grid->get_num_vertical_levels();
     for (int ii=0;ii<num_v_levs;ii++) {
-      lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
-      ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));
+      lev_v(ii)  = 0.01*p0_val*(hyam_v(ii)+hybm_v(ii));
+      ilev_v(ii) = 0.01*p0_val*(hyai_v(ii)+hybi_v(ii));
     }
-    ilev_v(num_v_levs) = 0.01*ps0*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
+    ilev_v(num_v_levs) = 0.01*p0_val*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
     lev.sync_to_dev();
     ilev.sync_to_dev();
   }

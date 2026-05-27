@@ -136,6 +136,9 @@ build_point_grid (const std::string& name, ekat::ParameterList& params)
 void MeshFreeGridsManager::
 add_geo_data (const nonconstgrid_ptr_type& grid) const
 {
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
   if (!m_params.isParameter("geo_data_source")) {
     return;
   }
@@ -143,9 +146,6 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
   // Load geo data fields if geo data filename is present, and file contains them
   const auto& geo_data_source = m_params.get<std::string>("geo_data_source");
   if (geo_data_source=="CREATE_EMPTY_DATA") {
-    using namespace ShortFieldTagsNames;
-    using namespace ekat::units;
-
     auto layout_mid = grid->get_vertical_layout(LEV);
     auto layout_int = grid->get_vertical_layout(ILEV);
 
@@ -161,6 +161,14 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
     auto hybi = grid->create_geometry_data("hybi" , layout_int, none);
     auto lev  = grid->create_geometry_data("lev" ,  layout_mid, mbar);
     auto ilev = grid->create_geometry_data("ilev" , layout_int, mbar);
+
+    using stratts_t = std::map<std::string,std::string>;
+    auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+    ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+    lev_io_atts["positive"] = "down";
+    ilev_io_atts["positive"] = "down";
 
     const auto invalid = ekat::invalid<Real>();
     lat.deep_copy(invalid);;
@@ -189,6 +197,12 @@ add_geo_data (const nonconstgrid_ptr_type& grid) const
       load_vertical_coordinates(grid,filename);
     }
   }
+
+  // This is to ensure output streams will save P0 among the geo data.
+  // NOTE: MeshFreeGridsManager is mostly for unit tests, so this is somewhat moot,
+  //       but it helps to have consistent treatment of geo data across GM's
+  auto P0 = grid->create_geometry_data("P0", FieldLayout::scalar(), Pa);
+  P0.deep_copy(physics::Constants<Real>::P0.value);
 }
 
 void MeshFreeGridsManager::
@@ -267,6 +281,14 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string&
   scorpio::read_var(filename,"lev", lev_v.data());
   scorpio::read_var(filename,"ilev",ilev_v.data());
   scorpio::release_file(filename);
+
+  using stratts_t = std::map<std::string,std::string>;
+  auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+  lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+  ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+  lev_io_atts["positive"] = "down";
+  ilev_io_atts["positive"] = "down";
 
   // Build lev and ilev from hyam and hybm, and ilev from hyai and hybi
   using PC       = scream::physics::Constants<Real>;
