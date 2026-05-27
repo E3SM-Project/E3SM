@@ -147,7 +147,7 @@ struct Functions {
     static inline constexpr Real micro_dcs         = 150.E-6;  // default size threshold for cloud ice to snow autoconversion
     static inline constexpr Real mcsp_t_coeff      = 0.3;      // default MCSP temperature coefficient
 
-    static inline constexpr Real upper_limit_pref = 40e2;      // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
+    // static inline constexpr Real upper_limit_pref = 40e2;      // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
 
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments.  ttrice defines the
@@ -155,9 +155,7 @@ struct Functions {
     // values.
     static inline constexpr Real tmin = 127.16;
     static inline constexpr Real tmax = 375.16;
-
     static inline constexpr Real h2otrip = 273.16;
-
     static inline constexpr Real ttrice = 20.0;  // transition range from es over H2O to es over ice
   };
 
@@ -170,6 +168,7 @@ struct Functions {
     void load_runtime_options(ekat::ParameterList& params) {
       apply_tendencies    = params.get<bool>("apply_tendencies",    false);
       use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
+      upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
       alfa                = params.get<Real>("alfa",                ZMC::alfa);
       ke                  = params.get<Real>("ke",                  ZMC::ke);
@@ -199,37 +198,38 @@ struct Functions {
       mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        0);
     }
 
-    Real tau;           // convective adjustment time scale
-    Real alfa;          // max downdraft mass flux fraction
-    Real ke;            // evaporation efficiency
-    Real dmpdz;         // fractional mass entrainment rate [1/m]
-    bool tpert_fix;     // flag to disable using applying tpert to PBL-rooted convection
-    Real tpert_fac;     // tunable temperature perturbation factor
-    Real tiedke_add;    // tunable temperature perturbation
-    Real c0_lnd;        // autoconversion coefficient over land
-    Real c0_ocn;        // autoconversion coefficient over ocean
-    int num_cin;        // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
-    int limcnv;         // upper pressure interface level to limit deep convection
-    int mx_bot_lyr_adj; // bot layer index adjustment for launch level search
-    bool trig_dcape;    // true if to using DCAPE trigger - based on CAPE generation by the dycor
-    bool trig_ull;      // true if to using the "unrestricted launch level" (ULL) mode
-    bool clos_dyn_adj;  // flag for mass flux adjustment to CAPE closure
-    bool no_deep_pbl;   // flag to eliminate deep convection within PBL
+    Real tau;               // convective adjustment time scale
+    Real alfa;              // max downdraft mass flux fraction
+    Real ke;                // evaporation efficiency
+    Real dmpdz;             // fractional mass entrainment rate [1/m]
+    bool tpert_fix;         // flag to disable using applying tpert to PBL-rooted convection
+    Real tpert_fac;         // tunable temperature perturbation factor
+    Real tiedke_add;        // tunable temperature perturbation
+    Real c0_lnd;            // autoconversion coefficient over land
+    Real c0_ocn;            // autoconversion coefficient over ocean
+    int num_cin;            // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
+    Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
+    int limcnv;             // upper pressure interface level to limit deep convection
+    int mx_bot_lyr_adj;     // bot layer index adjustment for launch level search
+    bool trig_dcape;        // true if to using DCAPE trigger - based on CAPE generation by the dycor
+    bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
+    bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
+    bool no_deep_pbl;       // flag to eliminate deep convection within PBL
     bool apply_tendencies;
     bool use_fortran_bridge;
     // ZM micro parameters
-    bool zm_microp;     // switch for convective microphysics
-    bool old_snow;      // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
-    Real auto_fac;      // ZM microphysics enhancement factor for droplet-rain autoconversion
-    Real accr_fac;      // ZM microphysics enhancement factor for droplet-rain accretion
-    Real micro_dcs;     // ZM microphysics size threshold for cloud ice to snow autoconversion [m]
+    bool zm_microp;         // switch for convective microphysics
+    bool old_snow;          // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
+    Real auto_fac;          // ZM microphysics enhancement factor for droplet-rain autoconversion
+    Real accr_fac;          // ZM microphysics enhancement factor for droplet-rain accretion
+    Real micro_dcs;         // ZM microphysics size threshold for cloud ice to snow autoconversion [m]
     // MCSP parameters
-    bool mcsp_enabled;  // flag for mesoscale coherent structure parameterization (MSCP)
-    Real mcsp_t_coeff;  // MCSP coefficient for temperature tendencies
-    Real mcsp_q_coeff;  // MCSP coefficient for specific humidity tendencies
-    Real mcsp_u_coeff;  // MCSP coefficient for zonal momentum tendencies
-    Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
-    view_1d<Real> estbl; // table values of saturation vapor pressure
+    bool mcsp_enabled;      // flag for mesoscale coherent structure parameterization (MSCP)
+    Real mcsp_t_coeff;      // MCSP coefficient for temperature tendencies
+    Real mcsp_q_coeff;      // MCSP coefficient for specific humidity tendencies
+    Real mcsp_u_coeff;      // MCSP coefficient for zonal momentum tendencies
+    Real mcsp_v_coeff;      // MCSP coefficient for meridional momentum tendencies
+    view_1d<Real> estbl;    // table values of saturation vapor pressure
 
   };
 
