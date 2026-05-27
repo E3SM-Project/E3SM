@@ -38,7 +38,7 @@ void ZMDeepConvection::create_requests ()
   m_grid = m_grids_manager->get_grid("physics");
 
   const auto& grid_name = m_grid->name();
-  const auto layout     = m_grid->get_3d_scalar_layout(LEV);
+  const auto layout = m_grid->get_3d_scalar_layout(LEV);
 
   // retrieve local grid parameters
   m_ncol = m_grid->get_num_local_dofs();
@@ -48,7 +48,7 @@ void ZMDeepConvection::create_requests ()
   const auto s2 = pow(s,2);
   const auto K2 = pow(K,2);
 
-  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // 2D variables
+  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();       // 2D variables
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);    // 3D variables at mid-levels
   FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);   // 3D variables at interfaces
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);  // horiz_wind field
@@ -85,7 +85,7 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_u_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
   add_field<Computed>("zm_v_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
 
-}
+} // ZMDeepConvection::create_requests
 
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::initialize_impl (const RunType)
@@ -98,27 +98,8 @@ void ZMDeepConvection::initialize_impl (const RunType)
   add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
 
   //----------------------------------------------------------------------------
-  // initialize run-time variables
-
-  // // Limit deep convection to regions below ZM_upper_limit_pref
-  // zm_opts.limcnv = 0 ! initialize to null value to check against below
-  // if (pref_edge(1) >= ZM_upper_limit_pref) then
-  //    zm_opts.limcnv = 1
-  // else
-  //    do k = 1,plev
-  //       if (pref_edge(k)   <  ZM_upper_limit_pref .and. &
-  //           pref_edge(k+1) >= ZM_upper_limit_pref) then
-  //          zm_opts.limcnv = k
-  //          exit
-  //       end if
-  //    end do
-  //    if ( zm_opts.limcnv == 0 ) { zm_opts.limcnv = plevp; }
-  // end if
-
-  //----------------------------------------------------------------------------
-  // allocate host mirror variables
   if (zm_opts.use_fortran_bridge) {
-
+    // allocate host mirror input variables
     zm_input.h_phis       = ZMF::view_1dh<Scalar>("zm_input.h_phis",       m_ncol);
     zm_input.h_pblh       = ZMF::view_1dh<Scalar>("zm_input.h_pblh",       m_ncol);
     zm_input.h_tpert      = ZMF::view_1dh<Scalar>("zm_input.h_tpert",      m_ncol);
@@ -134,7 +115,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
     zm_input.h_cldfrac    = ZMF::view_2dh<Real>  ("zm_input.h_cldfrac",    m_ncol, m_nlev);
     zm_input.h_z_int      = ZMF::view_2dh<Real>  ("zm_input.h_z_int",      m_ncol, m_nlev+1);
     zm_input.h_p_int      = ZMF::view_2dh<Real>  ("zm_input.h_p_int",      m_ncol, m_nlev+1);
-
+    // allocate host mirror output variables
     zm_output.h_activity  = ZMF::view_1dh<Int>   ("zm_output.h_activity",  m_ncol);
     zm_output.h_prec      = ZMF::view_1dh<Scalar>("zm_output.h_prec",      m_ncol);
     zm_output.h_snow      = ZMF::view_1dh<Scalar>("zm_output.h_snow",      m_ncol);
@@ -148,13 +129,32 @@ void ZMDeepConvection::initialize_impl (const RunType)
     zm_output.h_prec_flux = ZMF::view_2dh<Real>  ("zm_output.h_prec_flux", m_ncol, m_nlev+1);
     zm_output.h_snow_flux = ZMF::view_2dh<Real>  ("zm_output.h_snow_flux", m_ncol, m_nlev+1);
     zm_output.h_mass_flux = ZMF::view_2dh<Real>  ("zm_output.h_mass_flux", m_ncol, m_nlev+1);
-
-  }
+    // initialize variables on the fortran side
+    zm::zm_eamxx_bridge_init(m_nlev);
+  } // if zm_opts.use_fortran_bridge
   //----------------------------------------------------------------------------
-  // initialize variables on the fortran side
-  zm::zm_eamxx_bridge_init(m_nlev);
-
-}
+  if (not zm_opts.use_fortran_bridge) {
+    // Determine upper limit level index of deep convection based on the reference pressure profile
+    const auto hyai_h = m_grid->get_geometry_data("hyai").get_view<const Real*, Host>();
+    const auto hybi_h = m_grid->get_geometry_data("hybi").get_view<const Real*, Host>();
+    const auto ps0 = PC::P0.value;
+    zm_opts.limcnv = -1;
+    if (ps0*hyai_h(0) + ps0*hybi_h(0) >= zm_opts.upper_limit_pref) {
+      zm_opts.limcnv = 0;
+    } else {
+      for (int k = 0; k < m_nlev; ++k) {
+        Real pk0 = ps0*hyai_h(k)   + ps0*hybi_h(k);
+        Real pk1 = ps0*hyai_h(k+1) + ps0*hybi_h(k+1);
+        if (pk0 < zm_opts.upper_limit_pref && pk1 >= zm_opts.upper_limit_pref) {
+          zm_opts.limcnv = k;
+          break;
+        }
+      }
+      if (zm_opts.limcnv == -1) { zm_opts.limcnv = m_nlev+1; }
+    }
+  } // if not zm_opts.use_fortran_bridge
+  //----------------------------------------------------------------------------
+} // ZMDeepConvection::initialize_impl
 
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::run_impl (const double dt)
@@ -436,7 +436,7 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_v_tend    (i,k) = loc_zm_output_tend_v (i,k);
   });
 
-}
+} // ZMDeepConvection::run_impl
 
 /*------------------------------------------------------------------------------------------------*/
 void ZMDeepConvection::finalize_impl ()
