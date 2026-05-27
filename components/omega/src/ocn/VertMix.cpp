@@ -474,11 +474,10 @@ void VertMix::applyVelVertMixImplicit(
          const auto &VertVisc = VertMixInstance->VertVisc;
 
          const I4 NVertLayers = VCoord->NVertLayers;
-         TeamPolicy Policy =
-             TriDiagDiffSolver::makeTeamPolicy(Mesh->NEdgesAll, NVertLayers);
+         auto LConfig = TriDiagSolver::makeLaunchConfig(Mesh->NEdgesAll, NVertLayers);
 
-         Kokkos::parallel_for(
-             Policy, KOKKOS_LAMBDA(const TeamMember &Team) {
+         parallelForOuter(
+             LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
                 const int IStart = Team.league_rank() * VecLength;
                 const int ILen   = Kokkos::max(
                     0, Kokkos::min(VecLength, LocNEdgesAll - IStart));
@@ -486,8 +485,7 @@ void VertMix::applyVelVertMixImplicit(
                 TriDiagDiffScratch Scratch(Team, NVertLayers);
 
                 // Construct a tri-diag diffusion matrix and RHS
-                Kokkos::parallel_for(
-                    TeamThreadRange(Team, NVertLayers), [=](int K) {
+                parallelForInner(Team, NVertLayers, [=](int K) {
                        for (int IVec = 0; IVec < VecLength; ++IVec) {
                           const int IEdge = IStart + IVec;
 
@@ -573,12 +571,11 @@ void VertMix::applyTracerVertMixImplicit(
          const auto &VertDiff = VertMixInstance->VertDiff;
 
          const I4 NVertLayers = VCoord->NVertLayers;
-         TeamPolicy Policy =
-             TriDiagDiffSolver::makeTeamPolicy(Mesh->NCellsAll, NVertLayers);
+         auto LConfig = TriDiagSolver::makeLaunchConfig(Mesh->NCellsAll, NVertLayers);
 
          for (int L = 0; L < NTracers; ++L) {
-            Kokkos::parallel_for(
-                Policy, KOKKOS_LAMBDA(const TeamMember &Team) {
+            parallelForOuter(
+                LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
                    const int IStart = Team.league_rank() * VecLength;
                    const int ILen   = Kokkos::max(
                        0, Kokkos::min(VecLength, LocNCellsAll - IStart));
@@ -586,8 +583,7 @@ void VertMix::applyTracerVertMixImplicit(
                    TriDiagDiffScratch Scratch(Team, NVertLayers);
 
                    // Construct a tri-diag diffusion matrix and RHS
-                   Kokkos::parallel_for(
-                       TeamThreadRange(Team, NVertLayers), [=](int K) {
+                   parallelForInner(Team, NVertLayers, [=](int K) {
                           for (int IVec = 0; IVec < VecLength; ++IVec) {
                              const int ICell = IStart + IVec;
 
