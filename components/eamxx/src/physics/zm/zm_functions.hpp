@@ -63,100 +63,78 @@ struct Functions {
     // steam point of water originally (and most frequently) used in the
     // Goff & Gratch scheme.
     static inline constexpr Real tboil = 373.16;
-
-    static inline constexpr Real omeps = 1 - PC::ep_2.value;
-
-    static inline constexpr Real pref = 1000; // reference pressure [hPa]
-
-    static inline constexpr Real cpwv = 1.810e3; // specific heat of water vapor (J/K/kg)
-
-    static inline constexpr Int LOOPMAX = 100; // Max number of iteration loops for invert_entropy
-
-    static inline constexpr Real tol_coeff = 0.001; // tolerance coefficient
-
-    static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
-
-    static inline constexpr Real half = 0.5; // Useful for bfb with fortran
-
-    static inline constexpr Real small = 1.e-36; // a small number to avoid division by zero
-
-    static inline constexpr Real cdifr_min = 1.e-6; // minimum layer difference for geometric averaging
-
-    static inline constexpr Real maxc_factor = 1.e-12; // Small numerical regularization constant used in the maximum cloud fraction
-
-    static inline constexpr Real flux_factor = 1.e-12; // Small numerical regularization constant used in convective flux related calculations
-
-    static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
-
-    static inline constexpr Real lcl_pressure_threshold = 600.0; // if LCL pressure is lower => no convection and cape is zero
-
-    static inline constexpr Int nit_lheat = 2; // Number of iterations for condensation/freezing loop
-
-    static inline constexpr Real lwmax = 1.e-3; // maximum condensate that can be held in cloud before rainout
-
-    static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
-
-    static inline constexpr Real MCSP_storm_speed_pref = 600e2; // pressure level for winds in MCSP calculation [Pa]
-
-    static inline constexpr Real MCSP_conv_depth_min = 700e2; // pressure thickness of convective heating [Pa]
-
-    static inline constexpr Real MCSP_shear_min = 3.0;   // min shear value for MCSP to be active
-
-    static inline constexpr Real MCSP_shear_max = 200.0; // max shear value for MCSP to be active
-
-    static inline constexpr Real cape_threshold_old = 70.;     // threshold value of cape for deep convection (old value before DCAPE)
-
-    static inline constexpr Real cape_threshold_new = 0.;      // threshold value of cape for deep convection
-
-    static inline constexpr Real dcape_threshold    = 0.;      // threshold value of dcape for deep convection
-
-    static inline constexpr Real interp_diff_min    = 1.E-6;   // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
-
-    static inline constexpr Real omsm               = 0.99999; // to prevent problems due to round off error
-
-    static inline constexpr Real small_conv         = 1.e-20;  // small number to limit blowup when normalizing by mass flux
-
-    static inline constexpr Real beta               = 0;       // proportion of liquid water from layer below used in closure
-    static inline constexpr Real mu_min             = 0.02;    // minimum updraft mass flux threshold [mb/s]
-    static inline constexpr Real hu_diff_min        = -2000;   // updraft MSE undershoot threshold for cloud top determination [J/kg]
-    static inline constexpr Real lambda_limit_min   = 0;       // minimum fractional entrainment limiter [1/m]
-    static inline constexpr Real lambda_limit_max   = 0.0002;  // maximum fractional entrainment limiter [1/m]
-    static inline constexpr Real lambda_threshold   = 1.e-6;   // threshold for moving detrainment level downward
-    static inline constexpr Real pergro_rhd_threshold  = -1.e-4;  // MSE relative difference threshold for perturbation growth test
-    static inline constexpr Real pergro_perturbation   = 8.64e-11; // perturbation magnitude added to avoid div-by-zero in pergro test
-    static inline constexpr Real momcu             = 0.4;      // pressure gradient term constant for updrafts
-    static inline constexpr Real momcd             = 0.4;      // pressure gradient term constant for downdrafts
-
-    static inline constexpr Real zvir              = 0.608;    // virtual temperature factor (Rv/Rd - 1)
-    static inline constexpr Real lcl_coeff_a       = 2840;     // Bolton (1980) LCL temperature formula coefficient A
-    static inline constexpr Real lcl_coeff_b       = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
-    static inline constexpr Real lcl_coeff_c       = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
-    static inline constexpr Real pa_to_mb          = 0.01;     // Pa to mb conversion factor
-    static inline constexpr Real mb_to_pa          = 100;      // mb to Pa conversion factor
-    static inline constexpr Real mse_min_diff      = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
-    static inline constexpr Real tpert_limiter     = 2;        // upper limit on temperature perturbation in input state [K]
-
+    static inline constexpr Real pref  = 1000;     // reference pressure [hPa]
+    static inline constexpr Real cpwv  = 1.810e3;  // specific heat of water vapor (J/K/kg)
+    // iteration limits
+    static inline constexpr Int LOOPMAX   = 100; // Max number of iteration loops for invert_entropy
+    static inline constexpr Int nit_lheat = 2;   // Number of iterations for condensation/freezing loop
+    // miscellaneous tolerance values
+    static inline constexpr Real omeps           = 1 - PC::ep_2.value;
+    static inline constexpr Real omsm            = 0.99999; // to prevent problems due to round off error
+    static inline constexpr Real tol_coeff       = 0.001;   // tolerance coefficient
+    static inline constexpr Real tol_eps         = 3.e-8;   // small value for tolerance calculation
+    static inline constexpr Real half            = 0.5;     // Useful for bfb with fortran
+    static inline constexpr Real small           = 1.e-36;  // a small number to avoid division by zero
+    static inline constexpr Real cdifr_min       = 1.e-6;   // minimum layer difference for geometric averaging
+    static inline constexpr Real maxc_factor     = 1.e-12;  // Small numerical regularization constant used in the maximum cloud fraction
+    static inline constexpr Real flux_factor     = 1.e-12;  // Small numerical regularization constant used in convective flux related calculations
+    static inline constexpr Real mbsth           = 1.e-15;  // threshold below which we treat the mass fluxes as zero (in mb/s)
+    static inline constexpr Real small_conv      = 1.e-20;  // small number to limit blowup when normalizing by mass flux
+    static inline constexpr Real interp_diff_min = 1.E-6;   // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
+    // conversion factors
+    static inline constexpr Real zvir                      = 0.608;    // virtual temperature factor (Rv/Rd - 1)
+    static inline constexpr Real lcl_coeff_a               = 2840;     // Bolton (1980) LCL temperature formula coefficient A
+    static inline constexpr Real lcl_coeff_b               = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
+    static inline constexpr Real lcl_coeff_c               = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
+    static inline constexpr Real pa_to_mb                  = 0.01;     // Pa to mb conversion factor
+    static inline constexpr Real mb_to_pa                  = 100;      // mb to Pa conversion factor
+    // other ZM parameters and thresholds
+    static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
+    static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
+    static inline constexpr Real ull_upper_launch_pressure = 600.0;    // upper search limit for unrestricted launch level (ULL)
+    static inline constexpr Real cape_threshold_old        = 70.;      // threshold value of cape for deep convection (old value before DCAPE)
+    static inline constexpr Real cape_threshold_new        = 0.;       // threshold value of cape for deep convection
+    static inline constexpr Real dcape_threshold           = 0.;       // threshold value of dcape for deep convection
+    static inline constexpr Real beta                      = 0;        // proportion of liquid water from layer below used in closure
+    static inline constexpr Real mu_min                    = 0.02;     // minimum updraft mass flux threshold [mb/s]
+    static inline constexpr Real hu_diff_min               = -2000;    // updraft MSE undershoot threshold for cloud top determination [J/kg]
+    static inline constexpr Real lambda_limit_min          = 0;        // minimum fractional entrainment limiter [1/m]
+    static inline constexpr Real lambda_limit_max          = 0.0002;   // maximum fractional entrainment limiter [1/m]
+    static inline constexpr Real lambda_threshold          = 1.e-6;    // threshold for moving detrainment level downward
+    static inline constexpr Real pergro_rhd_threshold      = -1.e-4;   // MSE relative difference threshold for perturbation growth test
+    static inline constexpr Real pergro_perturbation       = 8.64e-11; // perturbation magnitude added to avoid div-by-zero in pergro test
+    static inline constexpr Real momcu                     = 0.4;      // pressure gradient term constant for updrafts
+    static inline constexpr Real momcd                     = 0.4;      // pressure gradient term constant for downdrafts
+    static inline constexpr Real mse_min_diff              = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
+    static inline constexpr Real tpert_limiter             = 2;        // upper limit on temperature perturbation in input state [K]
+    // MCSP parameters
+    static inline constexpr Real MCSP_storm_speed_pref     = 600e2;    // pressure level for winds in MCSP calculation Pa]
+    static inline constexpr Real MCSP_conv_depth_min       = 700e2;    // pressure thickness of convective heating [Pa]
+    static inline constexpr Real MCSP_shear_min            = 3.0;      // min shear value for MCSP to be active
+    static inline constexpr Real MCSP_shear_max            = 200.0;    // max shear value for MCSP to be active
+    static inline constexpr Real MCSP_t_coeff              = 0.3;      // default MCSP temperature coefficient
+    static inline constexpr Real MCSP_q_coeff              = 0.0;      // default MCSP sp. humidity coefficient
+    static inline constexpr Real MCSP_u_coeff              = 0.0;      // default MCSP U-wind coefficient
+    static inline constexpr Real MCSP_v_coeff              = 0.0;      // default MCSP V-wind coefficient
     // Default values for ZmRuntimeOpt fields
-    static inline constexpr Real alfa              = 0.14;     // default downdraft proportionality factor
-    static inline constexpr Real ke                = 2.5E-6;   // default evaporation efficiency
-    static inline constexpr Real dmpdz             = -0.7e-3;  // default convective entrainment parameter [1/m]
-    static inline constexpr Real tiedke_add        = 0.8;      // default Tiedke temperature perturbation addition [K]
-    static inline constexpr Real c0                = 0.0020;   // default autoconversion coefficient
-    static inline constexpr Real auto_fac          = 7;        // enhancement factor for droplet-rain autoconversion
-    static inline constexpr Real accr_fac          = 1.5;      // default accretion factor
-    static inline constexpr Real micro_dcs         = 150.E-6;  // default size threshold for cloud ice to snow autoconversion
-    static inline constexpr Real mcsp_t_coeff      = 0.3;      // default MCSP temperature coefficient
+    static inline constexpr Real alfa                      = 0.14;     // default downdraft proportionality factor
+    static inline constexpr Real ke                        = 2.5E-6;   // default evaporation efficiency
+    static inline constexpr Real dmpdz                     = -0.7e-3;  // default convective entrainment parameter [1/m]
+    static inline constexpr Real tiedke_add                = 0.8;      // default Tiedke temperature perturbation addition [K]
+    static inline constexpr Real c0                        = 0.0020;   // default autoconversion coefficient
+    static inline constexpr Real auto_fac                  = 7;        // enhancement factor for droplet-rain autoconversion
+    static inline constexpr Real accr_fac                  = 1.5;      // default accretion factor
+    static inline constexpr Real micro_dcs                 = 150.E-6;  // default size threshold for cloud ice to snow autoconversion
 
     // static inline constexpr Real upper_limit_pref = 40e2;      // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
 
     // Table of saturation vapor pressure values (estbl) from tmin to
-    // tmax+1 Kelvin, in one degree increments.  ttrice defines the
-    // transition region, estbl contains a combination of ice & water
-    // values.
-    static inline constexpr Real tmin = 127.16;
-    static inline constexpr Real tmax = 375.16;
+    // tmax+1 Kelvin, in one degree increments. ttrice defines the transition
+    // region, estbl contains a combination of ice & water values.
+    static inline constexpr Real tmin    = 127.16;
+    static inline constexpr Real tmax    = 375.16;
     static inline constexpr Real h2otrip = 273.16;
-    static inline constexpr Real ttrice = 20.0;  // transition range from es over H2O to es over ice
+    static inline constexpr Real ttrice  = 20.0;  // transition range from es over H2O to es over ice
   };
 
   //----------------------------------------------------------------------------
@@ -192,10 +170,10 @@ struct Functions {
       micro_dcs           = params.get<Real>("micro_dcs",           ZMC::micro_dcs);
       // MCSP parameters
       mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
-      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::mcsp_t_coeff);
-      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        0);
-      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        0);
-      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        0);
+      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff);
+      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff);
+      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        ZMC::MCSP_u_coeff);
+      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        ZMC::MCSP_v_coeff);
     }
 
     Real tau;               // convective adjustment time scale
