@@ -1045,6 +1045,7 @@ contains
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
+          call mct_string_clean(mctOStr)
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(field) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(field)
@@ -1101,6 +1102,7 @@ contains
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
+          call mct_string_clean(mctOStr)
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(field) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(field)
@@ -1165,6 +1167,7 @@ contains
 
     end if
 
+    call mct_list_clean(temp_list)
 
   end subroutine seq_io_write_moab_tags
 
@@ -1592,6 +1595,7 @@ contains
    do index_list = 1, size_list
        call mct_list_get(mctOStr,index_list,temp_list)
        field = mct_string_toChar(mctOStr)
+       call mct_string_clean(mctOStr)
        name1 = trim(lpre)//'_'//trim(field)
 
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
@@ -1686,6 +1690,10 @@ contains
 
     call pio_freedecomp(pioid, iodesc)
     call pio_closefile(pioid)
+
+    call mct_list_clean(temp_list)
+    if (allocated(indx)) deallocate(indx)
+    if (allocated(dof_reorder)) deallocate(dof_reorder)
 
   end subroutine seq_io_read_moab_tags
 

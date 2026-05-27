@@ -1254,6 +1254,8 @@ CONTAINS
    end do
 
    deallocate(varid_x2a, varid_a2x)
+   deallocate(tmp)
+   call mct_list_clean(temp_list)
 
    call pio_freedecomp(File,iodesc)
    call cam_pio_closefile(file)
