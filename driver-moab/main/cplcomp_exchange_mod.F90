@@ -236,6 +236,7 @@ subroutine  copy_aream_from_area(mbappid)
       type(mct_list)             :: temp_list
       integer                    :: nfields,nloc
       logical                    :: dead_comps
+      integer :: local_pg, global_pg
       ! real(R8), allocatable, target :: values(:)
 
 
@@ -280,6 +281,16 @@ subroutine  copy_aream_from_area(mbappid)
 
          ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
          call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
+
+         ! Propagate atm_pg_active from the atm component PEs to the coupler PEs across the joint
+         ! communicator. atm_pg_active is set by semoab_mod (homme) on atm PEs when fv_nphys > 0;
+         ! on disjoint coupler PEs it would otherwise stay at the seq_comm_mct default .false.,
+         ! which makes the comm-graph / mesh-write branches below pick the wrong (point-cloud) path
+         ! and produces a mismatched src/tgt graph for ne4pg2-style cases.
+         local_pg = 0
+         if (atm_pg_active) local_pg = 1
+         call shr_mpi_max(local_pg, global_pg, mpicom_join, all=.true.)
+         atm_pg_active = (global_pg == 1)
 
 !!!!!!!! ON ATM COMPONENT
          if (mphaid >= 0) then  ! component atm procs
