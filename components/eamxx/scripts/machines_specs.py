@@ -283,6 +283,16 @@ class GHCISNLCPU(Machine):
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
 
 ###############################################################################
+class GHCISNLOneapi(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("ghci-snl-oneapi")
+        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-oneapi"
+        cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
+
+###############################################################################
 class GHCISNLCuda(Machine):
 ###############################################################################
     concrete = True
