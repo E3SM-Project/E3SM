@@ -474,7 +474,8 @@ void VertMix::applyVelVertMixImplicit(
          const auto &VertVisc = VertMixInstance->VertVisc;
 
          const I4 NVertLayers = VCoord->NVertLayers;
-         auto LConfig = TriDiagSolver::makeLaunchConfig(Mesh->NEdgesAll, NVertLayers);
+         auto LConfig =
+             TriDiagSolver::makeLaunchConfig(Mesh->NEdgesAll, NVertLayers);
 
          parallelForOuter(
              LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
@@ -486,26 +487,25 @@ void VertMix::applyVelVertMixImplicit(
 
                 // Construct a tri-diag diffusion matrix and RHS
                 parallelForInner(Team, NVertLayers, [=](int K) {
-                       for (int IVec = 0; IVec < VecLength; ++IVec) {
-                          const int IEdge = IStart + IVec;
+                   for (int IVec = 0; IVec < VecLength; ++IVec) {
+                      const int IEdge = IStart + IVec;
 
-                          if (IEdge >= LocNEdgesAll) {
-                             Scratch.G(K, IVec) = 0._Real;
-                             Scratch.H(K, IVec) = 1._Real;
-                             Scratch.X(K, IVec) = 0._Real;
-                             continue;
-                          }
+                      if (IEdge >= LocNEdgesAll) {
+                         Scratch.G(K, IVec) = 0._Real;
+                         Scratch.H(K, IVec) = 1._Real;
+                         Scratch.X(K, IVec) = 0._Real;
+                         continue;
+                      }
 
-                          Real G, H, X;
-                          LocVelVertMixSetup(IEdge, K, DT, SpecVol,
-                                             PseudoThickCell, VertVisc,
-                                             NormalVelEdge, G, H, X);
+                      Real G, H, X;
+                      LocVelVertMixSetup(IEdge, K, DT, SpecVol, PseudoThickCell,
+                                         VertVisc, NormalVelEdge, G, H, X);
 
-                          Scratch.G(K, IVec) = G;
-                          Scratch.H(K, IVec) = H;
-                          Scratch.X(K, IVec) = X;
-                       }
-                    });
+                      Scratch.G(K, IVec) = G;
+                      Scratch.H(K, IVec) = H;
+                      Scratch.X(K, IVec) = X;
+                   }
+                });
 
                 // Solve the tri-diag diffusion system
                 Team.team_barrier();
@@ -571,7 +571,8 @@ void VertMix::applyTracerVertMixImplicit(
          const auto &VertDiff = VertMixInstance->VertDiff;
 
          const I4 NVertLayers = VCoord->NVertLayers;
-         auto LConfig = TriDiagSolver::makeLaunchConfig(Mesh->NCellsAll, NVertLayers);
+         auto LConfig =
+             TriDiagSolver::makeLaunchConfig(Mesh->NCellsAll, NVertLayers);
 
          for (int L = 0; L < NTracers; ++L) {
             parallelForOuter(
@@ -584,25 +585,25 @@ void VertMix::applyTracerVertMixImplicit(
 
                    // Construct a tri-diag diffusion matrix and RHS
                    parallelForInner(Team, NVertLayers, [=](int K) {
-                          for (int IVec = 0; IVec < VecLength; ++IVec) {
-                             const int ICell = IStart + IVec;
+                      for (int IVec = 0; IVec < VecLength; ++IVec) {
+                         const int ICell = IStart + IVec;
 
-                             if (ICell >= LocNCellsAll) {
-                                Scratch.G(K, IVec) = 0._Real;
-                                Scratch.H(K, IVec) = 1._Real;
-                                Scratch.X(K, IVec) = 0._Real;
-                                continue;
-                             }
+                         if (ICell >= LocNCellsAll) {
+                            Scratch.G(K, IVec) = 0._Real;
+                            Scratch.H(K, IVec) = 1._Real;
+                            Scratch.X(K, IVec) = 0._Real;
+                            continue;
+                         }
 
-                             Real G, H, X;
-                             LocTracerVertMixSetup(L, ICell, K, DT, SpecVol,
-                                                   PseudoThickCell, VertDiff,
-                                                   TracerArray, G, H, X);
-                             Scratch.G(K, IVec) = G;
-                             Scratch.H(K, IVec) = H;
-                             Scratch.X(K, IVec) = X;
-                          }
-                       });
+                         Real G, H, X;
+                         LocTracerVertMixSetup(L, ICell, K, DT, SpecVol,
+                                               PseudoThickCell, VertDiff,
+                                               TracerArray, G, H, X);
+                         Scratch.G(K, IVec) = G;
+                         Scratch.H(K, IVec) = H;
+                         Scratch.X(K, IVec) = X;
+                      }
+                   });
 
                    // Solve the tri-diag diffusion system
                    Team.team_barrier();
