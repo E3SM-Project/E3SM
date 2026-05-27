@@ -2385,7 +2385,8 @@ contains
 
            freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
 
-           frazilMassFlux              = x2i_i(index_x2i_Fioo_frazil, n)
+           frazilMassFlux              = x2i_i(index_x2i_Fioo_frazil, n) 
+           frazilSaltMassFlux          = x2i_i(index_x2i_Fioo_frazils, n)
 
            ! Now determine the sea ice mass associated with the frazil heat flux given when
            ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given

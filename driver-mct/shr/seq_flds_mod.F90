@@ -1602,6 +1602,15 @@ contains
     attname  = 'Fioo_frazil'
     call metadata_set(attname, longname, stdname, units)
 
+   ! Ocean frazil production
+   call seq_flds_add(o2x_fluxes,"Fioo_frazils")
+   call seq_flds_add(x2i_fluxes,"Fioo_frazils")
+   longname = 'Ocean frazil production'
+   stdname  = 'ocean_frazil_ice_production'
+   units    = 'kg m-2 s-1'
+   attname  = 'Fioo_frazils'
+   call metadata_set(attname, longname, stdname, units)
+
     ! Heat flux from melting
     call seq_flds_add(i2x_fluxes,"Fioi_melth")
     call seq_flds_add(x2o_fluxes,"Fioi_melth")
