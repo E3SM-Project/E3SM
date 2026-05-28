@@ -978,11 +978,6 @@ void HommeDynamics::init_homme_views () {
   using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
   derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
 
-  // SGS TKE shear-strain tensor components
-  auto strain_components_in = m_helper_fields.at("shear_strain3d_components_dyn").template get_view<Homme::Scalar*[6][NP][NP][NVL]>();
-  using turb_type_strain_components = std::remove_reference<decltype(derived.m_turb_shear_strain3d_components)>::type;
-  derived.m_turb_shear_strain3d_components = turb_type_strain_components(strain_components_in.data(), nelem);
-
 }
 
 void HommeDynamics::restart_homme_state () {

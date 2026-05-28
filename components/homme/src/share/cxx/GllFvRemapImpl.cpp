@@ -389,11 +389,7 @@ void GllFvRemapImpl
   const auto ps_v = m_state.m_ps_v;
   const auto phis_g = m_geometry.m_phis;
   const auto v = m_state.m_v;
-  // EAMxx rebinds the turbulence strain-components view to its helper field
-  // after GllFvRemapImpl is constructed, so fetch the current derived state here.
-  const auto current_derived = Context::singleton().get<Elements>().m_derived;
-  const auto omega_g = current_derived.m_omega_p;
-  const auto strain_components_g = current_derived.m_turb_shear_strain3d_components;
+  const auto omega_g = m_derived.m_omega_p;
   const auto q_g = m_tracers.Q;
   const auto gll_metdet = m_geometry.m_metdet;
   const auto fv_metdet = m_data.fv_metdet;
@@ -401,7 +397,7 @@ void GllFvRemapImpl
   const auto g2f_remapd = m_data.g2f_remapd;
   const auto Dinv = m_data.Dinv;
   const auto D_f = m_data.D_f;
-  const auto dp_fv = current_derived.m_divdp_proj; // store dp_fv between kernels
+  const auto dp_fv = m_derived.m_divdp_proj; // store dp_fv between kernels
   const auto hvcoord = m_hvcoord;
   
   const bool use_moisture = m_data.use_moisture;
@@ -541,10 +537,20 @@ void GllFvRemapImpl
     kv.team_barrier(); // rw1 scratch is reused below
 
     // shear-strain tensor components
+    const auto ttrg = Kokkos::TeamThreadRange(kv.team, np2);
+    const EVU<Scalar[NP][NP][NUM_LEV]> comp_g(rw2.data());
     const EVU<Scalar*[NUM_LEV]> comp_f(&r2w(0,0,0,0), nf2);
     for (int icomp = 0; icomp < 6; ++icomp) {
+      parallel_for(ttrg, [&] (const int ij) {
+        const int i = ij / NP;
+        const int j = ij % NP;
+        parallel_for(tvr, [&] (const int k) {
+          comp_g(i,j,k) = strain_components(ie,ij,icomp,k);
+        });
+      });
+      kv.team_barrier();
       remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
-             evucs_np2_nlev(&strain_components_g(ie,icomp,0,0,0)), evus_np2_nlev(rw1.data()),
+             evucs_np2_nlev(comp_g.data()), evus_np2_nlev(rw1.data()),
              evus2(comp_f.data(), nf2, nlevpk));
       kv.team_barrier();
       loop_ik(ttrf, tvr, [&] (int i, int k) { strain_components(ie,i,icomp,k) = comp_f(i,k); });
