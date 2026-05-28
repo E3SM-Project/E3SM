@@ -3414,11 +3414,15 @@ contains
 
              o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              o2x_o(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+             o2x_o(index_o2x_Fioo_frazils, n) = 4.0_RKIND
+             o2x_o(index_o2x_Fioo_frazilh, n) = 0.0_RKIND
 
           else
 
              o2x_o(index_o2x_Fioo_q, n)  = 0.0_RKIND
              o2x_o(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+             o2x_o(index_o2x_Fioo_frazils, n) = 0.0_RKIND
+             o2x_o(index_o2x_Fioo_frazilh, n) = 0.0_RKIND
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
                 o2x_o(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceEnergy(i) / ocn_cpl_dt
                 o2x_o(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
