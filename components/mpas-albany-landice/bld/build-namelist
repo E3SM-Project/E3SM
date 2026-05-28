@@ -495,7 +495,11 @@ add_default($nl, 'config_SLM_to_MALI_weights_file');
 ###########################
 
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
-    add_default($nl, 'config_calving');
+    if ($GLC_GRID eq 'mpas.gis4to40km' || $GLC_GRID eq 'mpas.gis1to10kmR2') {
+         add_default($nl, 'config_calving', 'val'=>"crevasse_depth");
+    } else {
+         add_default($nl, 'config_calving');
+    }
 } else {
     add_default($nl, 'config_calving', 'val'=>"none");
 }
