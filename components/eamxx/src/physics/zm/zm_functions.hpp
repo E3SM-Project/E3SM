@@ -296,7 +296,7 @@ struct Functions {
     // variable counters for device-side only
     static constexpr int num_1d_intgr =  5; // number of 1D integer views
     static constexpr int num_1d_scalr =  6; // number of 1D scalar views
-    static constexpr int num_2d_midlv = 20; // number of 2D mid-point views
+    static constexpr int num_2d_midlv = 26; // number of 2D mid-point views
     static constexpr int num_2d_intfc =  3; // number of 2D interface views
 
     uview_1d<Int>    activity;       // integer deep convection activity flag
@@ -312,11 +312,17 @@ struct Functions {
     uview_2d<Real>   tend_tmp_qv;    // temporary tendency of water vapor       [kg/kg/s]
     uview_2d<Real>   tend_tmp_u;     // temporary tendency of zonal wind        [m/s/s]
     uview_2d<Real>   tend_tmp_v;     // temporary tendency of meridional wind   [m/s/s]
-    uview_2d<Real>   rain_prod;      // rain production rate                    [?]
-    uview_2d<Real>   snow_prod;      // snow production rate                    [?]
-    uview_2d<Real>   prec_flux;      // output convective precipitation flux    [?]
-    uview_2d<Real>   snow_flux;      // output convective precipitation flux    [?]
-    uview_2d<Real>   mass_flux;      // output convective mass flux             [?]
+    uview_2d<Real>   tend_s_snwprd   // Heating rate of snow production         [J/kg/s]
+    uview_2d<Real>   tend_s_snwevmlt // Heating rate of snow evap/melt          [J/kg/s]
+    uview_2d<Real>   rain_prod;      // rain production rate                    [kg/kg/s]
+    uview_2d<Real>   snow_prod;      // snow production rate                    [kg/kg/s]
+    uview_2d<Real>   ntprprd;        // net precip production in layer          [kg/kg/s]
+    uview_2d<Real>   ntsnprd;        // net snow production in layer            [kg/kg/s]
+    uview_2d<Real>   flxprec;        // Convective flux of prec at interfaces   [kg/m2/s]
+    uview_2d<Real>   flxsnow;        // Convective flux of snow at interfaces   [kg/m2/s]
+    uview_2d<Real>   prec_flux;      // output convective prec flux             [kg/m2/s]
+    uview_2d<Real>   snow_flux;      // output convective snow flux             [kg/m2/s]
+    uview_2d<Real>   mass_flux;      // output convective mass flux             [mb/s]
     // variables only needed for calling the C++ version of ZM
     uview_1d<Int>    msemax_klev;    // level indices of max MSE
     uview_1d<Int>    jctop;          // top-of-deep-convection indices

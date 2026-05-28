@@ -255,45 +255,20 @@ void ZMDeepConvection::run_impl (const double dt)
   } else {
 
     ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
-                      // Inputs
-                      zm_input.T_mid,
-                      zm_input.qv,
-                      zm_input.omega,
-                      zm_input.p_mid,
-                      zm_input.p_int,
-                      zm_input.p_del,
-                      zm_input.phis,
-                      zm_input.z_mid,
-                      zm_input.z_int,
-                      zm_input.pblh,
-                      zm_input.tpert,
-                      zm_input.landfrac,
-                      zm_input.t_prev,
-                      zm_input.q_prev,
-                      // Outputs
-                      zm_output.msemax_klev,
-                      zm_output.jctop,
-                      zm_output.jcbot,
-                      zm_output.jt,
-                      zm_output.prec,
-                      zm_output.tend_out_s,
-                      zm_output.tend_out_qv,
-                      zm_output.cape,
-                      zm_output.dcape,
-                      zm_output.mass_flux,
-                      zm_output.prec_flux,
+                      zm_input.T_mid, zm_input.qv, zm_input.omega,
+                      zm_input.p_mid, zm_input.p_int, zm_input.p_del,
+                      zm_input.phis, zm_input.z_mid, zm_input.z_int,
+                      zm_input.pblh, zm_input.tpert, zm_input.landfrac,
+                      zm_input.t_prev, zm_input.q_prev,
+                      zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
+                      zm_output.prec, zm_output.tend_out_s, zm_output.tend_out_qv,
+                      zm_output.cape, zm_output.dcape,
+                      zm_output.mass_flux, zm_output.prec_flux,
                       zm_output.zdu,
-                      zm_output.mflx_up,
-                      zm_output.entr_up,
-                      zm_output.detr_up,
-                      zm_output.mflx_dn,
-                      zm_output.entr_dn,
-                      zm_output.p_del_mb,
-                      zm_output.dsubcld,
-                      zm_output.ql,
-                      zm_output.rliq,
-                      zm_output.rain_prod,
-                      zm_output.dlf );
+                      zm_output.mflx_up, zm_output.entr_up, zm_output.detr_up,
+                      zm_output.mflx_dn, zm_output.entr_dn,
+                      zm_output.p_del_mb, zm_output.dsubcld,
+                      zm_output.ql, zm_output.rliq, zm_output.rain_prod, zm_output.dlf );
 
     //--------------------------------------------------------------------------
     // MCSP modifies tendencies from zm_conv_main() prior to updating the state
@@ -311,6 +286,38 @@ void ZMDeepConvection::run_impl (const double dt)
     //                         local_tend_u, local_tend_v, &
     //                         mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
     //                         mcsp_freq, mcsp_shear, zm_depth )
+
+    // void Functions<S,D>::zm_conv_mcsp_tend(
+    //     // Inputs
+    //     const MemberType& team,
+    //     const Workspace& workspace,
+    //     const ZmRuntimeOpt& runtime_opt,
+    //     const Int& pver, // number of mid-point vertical levels
+    //     const Int& pverp, // number of interface vertical levels
+    //     const Real& ztodt, // 2x physics time step
+    //     const Int& jctop, // cloud top level indices
+    //     const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
+    //     const uview_1d<const Real>& state_pint, // physics state interface pressure
+    //     const uview_1d<const Real>& state_pdel, // physics state pressure thickness
+    //     const uview_1d<const Real>& state_s, // physics state dry energy
+    //     const uview_1d<const Real>& state_q, // physics state specific humidity
+    //     const uview_1d<const Real>& state_u, // physics state u momentum
+    //     const uview_1d<const Real>& state_v, // physics state v momentum
+    //     const uview_1d<const Real>& ptend_zm_s, // input ZM tendency for dry energy (DSE)
+    //     const uview_1d<const Real>& ptend_zm_q, // input ZM tendency for specific humidity (qv)
+    //     // Inputs/Outputs
+    //     const uview_1d<Real>& ptend_s, // output tendency of DSE
+    //     const uview_1d<Real>& ptend_q, // output tendency of qv
+    //     const uview_1d<Real>& ptend_u, // output tendency of u-wind
+    //     const uview_1d<Real>& ptend_v, // output tendency of v-wind
+    //     // Outputs
+    //     const uview_1d<Real>& mcsp_dt_out, // final MCSP tendency for DSE
+    //     const uview_1d<Real>& mcsp_dq_out, // final MCSP tendency for qv
+    //     const uview_1d<Real>& mcsp_du_out, // final MCSP tendency for u wind
+    //     const uview_1d<Real>& mcsp_dv_out, // final MCSP tendency for v wind
+    //     Real& mcsp_freq, // MSCP frequency for output
+    //     Real& mcsp_shear, // shear used to check against threshold
+    //     Real& zm_depth) // pressure depth of ZM heating
 
     // add MCSP tendencies to ZM convective tendencies
     // do i = 1,ncol
@@ -337,23 +344,37 @@ void ZMDeepConvection::run_impl (const double dt)
     // initialize intermediate output tendencies for zm_conv_evap()
     zm_output.init_tmp(m_ncol, nlev_mid);
 
-    // ! perform the convective evaporation calculations
-    // call zm_conv_evap(ncol, ncol, pver, pverp, dtime, &
-    //                   state_p_mid, state_p_del, &
-    //                   local_state_t, local_state_qv, &
-    //                   output_rain_prod, state_cldfrac, &
-    //                   local_tend_s, local_tend_q, &
-    //                   tend_s_snwprd, tend_s_snwevmlt, &
-    //                   output_prec, output_snow, ntprprd, ntsnprd, &
-    //                   output_prec_flux, output_snow_flux, microp_st)
+    // perform the convective evaporation calculations
+    Kokkos::parallel_for("zm_conv_evap", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const auto p_mid_i      = ekat::subview(zm_input.p_mid, i);
+      const auto p_del_i      = ekat::subview(zm_input.p_del, i);
+      const auto T_mid_i      = ekat::subview(zm_input.T_mid, i);
+      const auto qv_i         = ekat::subview(zm_input.qv, i);
+      const auto prec_flux_i  = ekat::subview(zm_output.prec_flux, i);
+      const auto cldfrac_i    = ekat::subview(zm_input.cldfrac, i);
+      auto tend_tmp_s_i       = ekat::subview(zm_output.tend_tmp_s, i);
+      auto tend_tmp_qv_i      = ekat::subview(zm_output.tend_tmp_qv, i);
+      auto tend_s_snwprd_i    = ekat::subview(zm_output.tend_s_snwprd, i);
+      auto tend_s_snwevmlt_i  = ekat::subview(zm_output.tend_s_snwevmlt, i);
+      auto prec_i             = ekat::subview(zm_output.prec, i);
+      auto snow_i             = ekat::subview(zm_output.snow, i);
+      auto ntprprd_i          = ekat::subview(zm_output.ntprprd, i);
+      auto ntsnprd_i          = ekat::subview(zm_output.ntsnprd, i);
+      auto flxprec_i          = ekat::subview(zm_output.flxprec, i);
+      auto flxsnow_i          = ekat::subview(zm_output.flxsnow, i);
+      zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
+                    p_mid_i, p_del_i, T_mid_i, qv_i, prec_flux_i, cldfrac_i,
+                    tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
+                    prec_i snow_i ntprprd_i, ntsnprd_i, flxprec_i, flxsnow_i )
+    });
 
-    // ! add tendencies from zm_conv_evap() to output tendencies
-    // do i = 1,ncol
-    //   do k = 1,pver
-    //     output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
-    //     output_tend_q(i,k) = output_tend_q(i,k) + local_tend_q(i,k)
-    //   end do
-    // end do
+    // add tendencies from zm_conv_evap() to output tendencies
+    Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+      const int i = idx/nlev_mid;
+      const int k = idx%nlev_mid;
+      zm_output.tend_out_s(i,k) += zm_output.tend_tmp_s(i,k)
+      zm_output.tend_out_qv(i,k) += zm_output.tend_tmp_qv(i,k)
+    });
 
     // ! apply tendencies from zm_conv_evap() to local copy of state variables
     // call zm_physics_update( ncol, dtime, &
@@ -617,8 +638,14 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.tend_tmp_qv,
                                                                   &zm_output.tend_tmp_u,
                                                                   &zm_output.tend_tmp_v,
+                                                                  &zm_output.tend_s_snwprd,
+                                                                  &zm_output.tend_s_snwevmlt,
                                                                   &zm_output.rain_prod,
                                                                   &zm_output.snow_prod,
+                                                                  &zm_output.ntprprd,
+                                                                  &zm_output.ntsnprd,
+                                                                  &zm_output.flxprec,
+                                                                  &zm_output.flxsnow,
                                                                   &zm_output.zdu,
                                                                   &zm_output.mflx_up,
                                                                   &zm_output.entr_up,
