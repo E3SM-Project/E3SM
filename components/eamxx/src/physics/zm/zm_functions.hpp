@@ -296,17 +296,22 @@ struct Functions {
     // variable counters for device-side only
     static constexpr int num_1d_intgr =  5; // number of 1D integer views
     static constexpr int num_1d_scalr =  6; // number of 1D scalar views
-    static constexpr int num_2d_midlv = 15; // number of 2D mid-point views
+    static constexpr int num_2d_midlv = 20; // number of 2D mid-point views
     static constexpr int num_2d_intfc =  3; // number of 2D interface views
 
     uview_1d<Int>    activity;       // integer deep convection activity flag
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
     uview_1d<Scalar> snow;           // surface snow                            [m/s]
     uview_1d<Scalar> cape;           // convective available potential energy   [J]
-    uview_2d<Real>   tend_t;         // output tendency of temperature          [K/s]
-    uview_2d<Real>   tend_qv;        // output tendency of water vapor          [kg/kg/s]
-    uview_2d<Real>   tend_u;         // output tendency of zonal wind           [m/s/s]
-    uview_2d<Real>   tend_v;         // output tendency of meridional wind      [m/s/s]
+    uview_2d<Real>   tend_out_t;     // output tendency of temperature          [K/s]
+    uview_2d<Real>   tend_out_s;     // output tendency of dry static energy    [J/s]
+    uview_2d<Real>   tend_out_qv;    // output tendency of water vapor          [kg/kg/s]
+    uview_2d<Real>   tend_out_u;     // output tendency of zonal wind           [m/s/s]
+    uview_2d<Real>   tend_out_v;     // output tendency of meridional wind      [m/s/s]
+    uview_2d<Real>   tend_tmp_s;     // temporary tendency of dry static energy [J/s]
+    uview_2d<Real>   tend_tmp_qv;    // temporary tendency of water vapor       [kg/kg/s]
+    uview_2d<Real>   tend_tmp_u;     // temporary tendency of zonal wind        [m/s/s]
+    uview_2d<Real>   tend_tmp_v;     // temporary tendency of meridional wind   [m/s/s]
     uview_2d<Real>   rain_prod;      // rain production rate                    [?]
     uview_2d<Real>   snow_prod;      // snow production rate                    [?]
     uview_2d<Real>   prec_flux;      // output convective precipitation flux    [?]
@@ -368,7 +373,8 @@ struct Functions {
     void transpose(int ncol, int nlev_mid);
 
     // -------------------------------------------------------------------------
-    void init(int ncol, int nlev_mid);
+    void init_all(int ncol, int nlev_mid); // initialize all variables in struct
+    void init_tmp(int ncol, int nlev_mid); // initialize temporary tendencies variables only
   };
 
   // -----------------------------------------------------------------------------------------------

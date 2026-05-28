@@ -322,7 +322,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   !-----------------------------------------------------------------------------
   ! convective momentum transport
 
-  ! initialize local output tendencies for zm_conv_evap()
+  ! initialize local output tendencies for zm_transport_momentum()
   call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, tx_wind_tend(:,:,1), tx_wind_tend(:,:,2) )
 
   do i = 1,ncol

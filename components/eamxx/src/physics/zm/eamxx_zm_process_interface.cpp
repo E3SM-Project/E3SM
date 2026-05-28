@@ -209,7 +209,7 @@ void ZMDeepConvection::run_impl (const double dt)
 
   //----------------------------------------------------------------------------
   // initialize output buffer variables
-  zm_output.init(m_ncol, nlev_mid);
+  zm_output.init_all(m_ncol, nlev_mid);
 
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
@@ -276,8 +276,8 @@ void ZMDeepConvection::run_impl (const double dt)
                       zm_output.jcbot,
                       zm_output.jt,
                       zm_output.prec,
-                      zm_output.tend_t,
-                      zm_output.tend_qv,
+                      zm_output.tend_out_s,
+                      zm_output.tend_out_qv,
                       zm_output.cape,
                       zm_output.dcape,
                       zm_output.mass_flux,
@@ -298,8 +298,8 @@ void ZMDeepConvection::run_impl (const double dt)
     //--------------------------------------------------------------------------
     // MCSP modifies tendencies from zm_conv_main() prior to updating the state
 
-    // initialize local output tendencies for MCSP
-    // zm_tend_init( ncol, pver, local_tend_s, local_tend_q, local_tend_u, local_tend_v )
+    // initialize intermediate output tendencies for MCSP
+    zm_output.init_tmp(m_ncol, nlev_mid);
 
     // perform the MCSP calculations
     // call zm_conv_mcsp_tend( ncol, ncol, pver, pverp, &
@@ -331,10 +331,42 @@ void ZMDeepConvection::run_impl (const double dt)
     //                         output_tend_s, output_tend_q)
 
     //--------------------------------------------------------------------------
+    // Compute the precipitation, rain evaporation, and snow formation/melting
+    // Note - this routine expects an updated state following zm_conv_main() (+MCSP)
+
+    // initialize intermediate output tendencies for zm_conv_evap()
+    zm_output.init_tmp(m_ncol, nlev_mid);
+
+    // ! perform the convective evaporation calculations
+    // call zm_conv_evap(ncol, ncol, pver, pverp, dtime, &
+    //                   state_p_mid, state_p_del, &
+    //                   local_state_t, local_state_qv, &
+    //                   output_rain_prod, state_cldfrac, &
+    //                   local_tend_s, local_tend_q, &
+    //                   tend_s_snwprd, tend_s_snwevmlt, &
+    //                   output_prec, output_snow, ntprprd, ntsnprd, &
+    //                   output_prec_flux, output_snow_flux, microp_st)
+
+    // ! add tendencies from zm_conv_evap() to output tendencies
+    // do i = 1,ncol
+    //   do k = 1,pver
+    //     output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
+    //     output_tend_q(i,k) = output_tend_q(i,k) + local_tend_q(i,k)
+    //   end do
+    // end do
+
+    // ! apply tendencies from zm_conv_evap() to local copy of state variables
+    // call zm_physics_update( ncol, dtime, &
+    //                         state_phis, local_state_zm, local_state_zi, &
+    //                         state_p_mid, state_p_int, state_p_del, &
+    //                         local_state_t, local_state_qv, &
+    //                         local_tend_s, local_tend_q)
+
+    //--------------------------------------------------------------------------
     // convective momentum transport
 
-    // initialize local output tendencies for zm_conv_evap()
-    // call zm_tend_init( ncol, pver, local_tend_s, local_tend_q, tx_wind_tend(:,:,1), tx_wind_tend(:,:,2) )
+    // initialize intermediate output tendencies for zm_transport_momentum()
+    zm_output.init_tmp(m_ncol, nlev_mid);
 
     // do i = 1,ncol
     //   do k = 1,pver
@@ -378,7 +410,7 @@ void ZMDeepConvection::run_impl (const double dt)
     Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
       const int i = idx/nlev_mid;
       const int k = idx%nlev_mid;
-      zm_output.tend_t(i,k) = zm_output.tend_t(i,k)/PC::CP.value;
+      zm_output.tend_out_t(i,k) = zm_output.tend_out_s(i,k)/PC::CP.value;
     });
 
   }
@@ -389,10 +421,10 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_snow     = zm_output.snow;
   const auto loc_zm_output_cape     = zm_output.cape;
   const auto loc_zm_output_activity = zm_output.activity;
-  const auto loc_zm_output_tend_t   = zm_output.tend_t;
-  const auto loc_zm_output_tend_qv  = zm_output.tend_qv;
-  const auto loc_zm_output_tend_u   = zm_output.tend_u;
-  const auto loc_zm_output_tend_v   = zm_output.tend_v;
+  const auto loc_zm_output_tend_t   = zm_output.tend_out_t;
+  const auto loc_zm_output_tend_qv  = zm_output.tend_out_qv;
+  const auto loc_zm_output_tend_u   = zm_output.tend_out_u;
+  const auto loc_zm_output_tend_v   = zm_output.tend_out_v;
 
   //----------------------------------------------------------------------------
   // update prognostic fields
@@ -576,10 +608,15 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   // device 2D views on mid-point levels
   ZMF::uview_2d<Real>* ptrs_2d_midlv[num_2d_midlv]            = { &zm_input.z_mid,
                                                                   &zm_input.z_del,
-                                                                  &zm_output.tend_t,
-                                                                  &zm_output.tend_qv,
-                                                                  &zm_output.tend_u,
-                                                                  &zm_output.tend_v,
+                                                                  &zm_output.tend_out_t,
+                                                                  &zm_output.tend_out_s,
+                                                                  &zm_output.tend_out_qv,
+                                                                  &zm_output.tend_out_u,
+                                                                  &zm_output.tend_out_v,
+                                                                  &zm_output.tend_tmp_s,
+                                                                  &zm_output.tend_tmp_qv,
+                                                                  &zm_output.tend_tmp_u,
+                                                                  &zm_output.tend_tmp_v,
                                                                   &zm_output.rain_prod,
                                                                   &zm_output.snow_prod,
                                                                   &zm_output.zdu,
