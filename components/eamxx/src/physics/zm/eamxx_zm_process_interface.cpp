@@ -74,6 +74,10 @@ void ZMDeepConvection::create_requests ()
   add_field <Updated>("precip_liq_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
   add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
 
+  // T/qv from previous time step for DCAPE
+  add_field<Computed>("zm_t_prev",            scalar3d_mid, K,     grid_name);
+  add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg, grid_name);
+
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,  grid_name);
   add_field<Computed>("zm_snow",              scalar2d,     m/s,  grid_name);
@@ -160,6 +164,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
 void ZMDeepConvection::run_impl (const double dt)
 {
   const int nlev_mid = m_nlev;
+  const int nlev_int = m_nlev+1;
 
   // calculate_z_int() contains a team-level parallel_scan, which requires a special policy
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
@@ -184,15 +189,20 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_input.qc          = get_field_in("qc")            .get_view<const Real**>();
 
   // variables updated by ZM
-  const auto& T_mid = get_field_out("T_mid")     .get_view<Real**>();
-  const auto& qv    = get_field_out("qv")        .get_view<Real**>();
-  const auto& uwind = get_field_out("horiz_winds").get_component(0).get_view<Real**>();
-  const auto& vwind = get_field_out("horiz_winds").get_component(1).get_view<Real**>();
+  const auto& T_mid    = get_field_out("T_mid")      .get_view<Real**>();
+  const auto& qv       = get_field_out("qv")         .get_view<Real**>();
+  const auto& uwind    = get_field_out("horiz_winds").get_component(0).get_view<Real**>();
+  const auto& vwind    = get_field_out("horiz_winds").get_component(1).get_view<Real**>();
+  const auto& t_prev   = get_field_out("zm_t_prev")  .get_view<Real**>();
+  const auto& q_prev   = get_field_out("zm_q_prev")  .get_view<Real**>();
 
   zm_input.T_mid = T_mid;
   zm_input.qv    = qv;
   zm_input.uwind = uwind;
   zm_input.vwind = vwind;
+
+  zm_input.t_prev = t_prev;
+  zm_input.q_prev = q_prev;
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
@@ -244,47 +254,46 @@ void ZMDeepConvection::run_impl (const double dt)
 
   } else {
 
-    // zm_conv_main( zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
-    //               // Inputs
-    //               t_mid,  // uview_2d<const Real>
-    //               q_mid_in, // uview_2d<const Real>
-    //               omega,  // uview_2d<const Real>
-    //               p_mid_in, // uview_2d<const Real>
-    //               p_int_in, // uview_2d<const Real>
-    //               p_del_in, // uview_2d<const Real>
-    //               geos, // uview_1d<const Real>
-    //               z_mid_in, // uview_2d<const Real>
-    //               z_int_in, // uview_2d<const Real>
-    //               pbl_hgt,  // uview_1d<const Real>
-    //               tpert,  // uview_1d<const Real>
-    //               landfrac, // uview_1d<const Real>
-    //               t_star, // uview_2d<const Real>
-    //               q_star, // uview_2d<const Real>
-    //               // Outputs
-    //               msemax_klev,  // uview_1d<Int
-    //               jctop,  // uview_1d<Int
-    //               jcbot,  // uview_1d<Int
-    //               jt, // uview_1d<Int
-    //               prec, // uview_1d<Real
-    //               heat, // uview_2d<Real
-    //               qtnd, // uview_2d<Real
-    //               cape, // uview_1d<Real
-    //               dcape,  // uview_1d<Real
-    //               mcon, // uview_2d<Real
-    //               pflx, // uview_2d<Real
-    //               zdu,  // uview_2d<Real
-    //               mflx_up,  // uview_2d<Real
-    //               entr_up,  // uview_2d<Real
-    //               detr_up,  // uview_2d<Real
-    //               mflx_dn,  // uview_2d<Real
-    //               entr_dn,  // uview_2d<Real
-    //               p_del,  // uview_2d<Real
-    //               dsubcld,  // uview_1d<Real
-    //               ql, // uview_2d<Real
-    //               rliq, // uview_1d<Real
-    //               rprd, // uview_2d<Real
-    //               dlf // uview_2d<Real
-    //               )
+    ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
+                      // Inputs
+                      zm_input.T_mid,
+                      zm_input.qv,
+                      zm_input.omega,
+                      zm_input.p_mid,
+                      zm_input.p_int,
+                      zm_input.p_del,
+                      zm_input.phis,
+                      zm_input.z_mid,
+                      zm_input.z_int,
+                      zm_input.pblh,
+                      zm_input.tpert,
+                      zm_input.landfrac,
+                      zm_input.t_prev,
+                      zm_input.q_prev,
+                      // Outputs
+                      zm_output.msemax_klev,
+                      zm_output.jctop,
+                      zm_output.jcbot,
+                      zm_output.jt,
+                      zm_output.prec,
+                      zm_output.tend_t,
+                      zm_output.tend_qv,
+                      zm_output.cape,
+                      zm_output.dcape,
+                      zm_output.mass_flux,
+                      zm_output.prec_flux,
+                      zm_output.zdu,
+                      zm_output.mflx_up,
+                      zm_output.entr_up,
+                      zm_output.detr_up,
+                      zm_output.mflx_dn,
+                      zm_output.entr_dn,
+                      zm_output.p_del_mb,
+                      zm_output.dsubcld,
+                      zm_output.ql,
+                      zm_output.rliq,
+                      zm_output.rain_prod,
+                      zm_output.dlf );
 
     //--------------------------------------------------------------------------
     // MCSP modifies tendencies from zm_conv_main() prior to updating the state
@@ -366,17 +375,16 @@ void ZMDeepConvection::run_impl (const double dt)
     //--------------------------------------------------------------------------
     // convert dry static energy tendency to temperature tendency
 
-    // do i = 1,ncol
-    //   do k = 1,pver
-    //     output_tend_t(i,k) = output_tend_s(i,k)/zm_const%cpair
-    //   end do
-    // end do
+    Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+      const int i = idx/nlev_mid;
+      const int k = idx%nlev_mid;
+      zm_output.tend_t(i,k) = zm_output.tend_t(i,k)/PC::CP.value;
+    });
 
   }
 
   //----------------------------------------------------------------------------
   // create temporaries of output variables to avoid "Implicit capture" warning
-
   const auto loc_zm_output_prec     = zm_output.prec;
   const auto loc_zm_output_snow     = zm_output.snow;
   const auto loc_zm_output_cape     = zm_output.cape;
@@ -404,6 +412,9 @@ void ZMDeepConvection::run_impl (const double dt)
       qv   (i,k) += loc_zm_output_tend_qv(i,k) * dt;
       uwind(i,k) += loc_zm_output_tend_u (i,k) * dt;
       vwind(i,k) += loc_zm_output_tend_v (i,k) * dt;
+      // update "previous" T/qv variabiables for DCAPE
+      t_prev(i,k) = T_mid(i,k);
+      q_prev(i,k) = qv   (i,k);
     });
   }
 
@@ -492,7 +503,12 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
   //----------------------------------------------------------------------------
   // device 1D integer variables
-  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity };
+  ZMF::uview_1d<Int>* ptrs_1d_intgr[num_1d_intgr]             = { &zm_output.activity,
+                                                                  &zm_output.msemax_klev,
+                                                                  &zm_output.jctop,
+                                                                  &zm_output.jcbot,
+                                                                  &zm_output.jt,
+                                                                };
   for (auto& v : ptrs_1d_intgr) {
     *v = ZMF::uview_1d<Int>(i_mem, m_ncol);
     i_mem += v->size();
@@ -505,6 +521,9 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.prec,
                                                                   &zm_output.snow,
                                                                   &zm_output.cape,
+                                                                  &zm_output.dcape,
+                                                                  &zm_output.dsubcld,
+                                                                  &zm_output.rliq,
                                                                 };
   for (auto& v : ptrs_1d_scalr) {
     *v = ZMF::uview_1d<Scalar>(scl_mem, m_ncol);
@@ -563,6 +582,15 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.tend_v,
                                                                   &zm_output.rain_prod,
                                                                   &zm_output.snow_prod,
+                                                                  &zm_output.zdu,
+                                                                  &zm_output.mflx_up,
+                                                                  &zm_output.entr_up,
+                                                                  &zm_output.detr_up,
+                                                                  &zm_output.mflx_dn,
+                                                                  &zm_output.entr_dn,
+                                                                  &zm_output.p_del_mb,
+                                                                  &zm_output.ql,
+                                                                  &zm_output.dlf,
                                                                 };
   for (auto& v : ptrs_2d_midlv) {
     *v = ZMF::uview_2d<Real>(r_mem, m_ncol, nlev_mid);
