@@ -48,11 +48,12 @@ void read_fields (const std::string& filename,
         " - field name: " + f.name() + "\n"
         " - parent field name: " + f.get_header().get_parent()->get_identifier().name() + "\n");
 
-    if (f.get_header().get_alloc_properties().get_padding()==0) {
+    if (f.get_header().get_alloc_properties().get_padding()==0 and
+        f.get_header().get_alloc_properties().contiguous()) {
       scorpio::read_var(filename,f.name(),f.get_internal_view_data<Real,Host>());
       f.sync_to_dev();
     } else {
-      // Create non-padded clone
+      // Create non-padded, contiguous clone
       auto f_no_padding = f.clone();
       scorpio::read_var(filename,f.name(),f_no_padding.get_internal_view_data<Real,Host>());
       f_no_padding.sync_to_dev();
