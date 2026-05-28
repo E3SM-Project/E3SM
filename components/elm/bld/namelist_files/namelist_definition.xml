@@ -843,17 +843,24 @@ with config_use_snicar_ad in mpas-seaice namelist
 
 <entry id="use_extrasnowlayers" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
-Toggle to use 16 snow layers instead of 5.  This option enables more realistic
-snowpack conditions on glaciers and ice sheets, including a semi-empirical
-firn densification model.
+Toggle to use 16 snow layers instead of 5.  This option was implemented to
+enable more realistic snowpack conditions on glaciers and ice sheets.  In
+that context, it should generally be used with use_firn_percolation_and_compaction,
+but it can also be used on its own to enable more snow layers for other applications.
+It also increases the snow water cap (h2osno_max) and affects snow initialization
+and snow-layer history/output handling. Additionally, it controls which snow-layer
+combining and dividing algorithms are used (16-layer schemes vs. 5-layer schemes).
 </entry>
 
 <entry id="use_firn_percolation_and_compaction" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 This option enables more realistic
 snowpack conditions on glaciers and ice sheets, including a semi-empirical
-firn densification model. uses the same physics as use_extrasnowlayers but
-uses the original 5 snow layer scheme
+firn densification model.  This option is typically used in conjunction with
+use_extrasnowlayers, but it can also be used on its own to enable the firn model
+with the standard 5 snow layers.
+This option also controls snow-capping and related snow-water flux handling paths.
+</entry>
 
 <entry id="use_T_rho_dependent_snowthk" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
