@@ -2246,6 +2246,7 @@
 				input_interval="none"
 				immutable="true">
 			<var name="seaSurfaceSalinity"/>
+			<var name="oceanFrazilSalinityReduction"/>
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
 			<var name="seaSurfaceTiltU"/>
@@ -2281,6 +2282,7 @@
 				immutable="true">
 		        <var name="seaSurfaceTemperature"/>
                         <var name="seaSurfaceSalinity"/>
+		        <var name="oceanFrazilSalinityReduction"/>
                         <var name="oceanMixedLayerDepth"/>
 		</stream>
 		<stream name="SOMVaryingThicknessMonthlyForcing"
@@ -2343,6 +2345,7 @@
 				immutable="true">
 			<var name="seaSurfaceTemperature"/>
 			<var name="seaSurfaceSalinity"/>
+			<var name="oceanFrazilSalinityReduction"/>
 			<var name="oceanMixedLayerDepth"/>
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
@@ -2454,6 +2457,7 @@
 			<var name="longwaveDown"/>
 			<var name="seaSurfaceTemperature"/>
 			<var name="seaSurfaceSalinity"/>
+			<var name="oceanFrazilSalinityReduction"/>
 			<var name="uOceanVelocityVertexGeo"/>
 			<var name="vOceanVelocityVertexGeo"/>
 			<var name="freezingMeltingPotential"/>
@@ -4342,6 +4346,13 @@
 		     units="1e-3"
 		     default_value="34.0"
                      description="Sea surface salinity"
+		/>
+		<var name="oceanFrazilSalinityReduction"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="1e-3"
+		     default_value="3.0"
+		     description="Bulk salinity reduction for newly formed frazil ice"
 		/>
 		<var name="seaFreezingTemperature"
 		     type="real"

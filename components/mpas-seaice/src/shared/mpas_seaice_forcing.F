@@ -2034,6 +2034,19 @@ contains
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
+    ! frazil salinity reduction
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "oceanFrazilSalinityReduction", &
+         "NCARMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanFrazilSalinityReduction", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
     ! u ocean velocity
     call MPAS_forcing_init_field(&
          domain % streamManager, &
@@ -2197,6 +2210,19 @@ contains
          "ISPOLMonthlyForcing", &
          "ocean_coupling", &
          "seaSurfaceSalinity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! frazil salinity reduction
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "oceanFrazilSalinityReduction", &
+         "ISPOLMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanFrazilSalinityReduction", &
          "linear", &
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
@@ -2532,6 +2558,19 @@ contains
          forcingReferenceTimeMonthly, &
          forcingIntervalMonthly)
 
+    ! frazil salinity reduction
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "oceanFrazilSalinityReduction", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "oceanFrazilSalinityReduction", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
     ! ocean mixed layer depth
     call MPAS_forcing_init_field(&
          domain % streamManager, &
@@ -2787,6 +2826,7 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
+         oceanFrazilSalinityReduction, &
          oceanMixedLayerDepth, &
          seaFreezingTemperature
 
@@ -2816,6 +2856,7 @@ contains
 
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+     call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
@@ -2824,6 +2865,7 @@ contains
 
           ! ensure physical realism
           seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
+          oceanFrazilSalinityReduction(iCell) = max(oceanFrazilSalinityReduction(iCell), 0.0_RKIND)
           oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
           ! sea freezing temperature
@@ -2875,6 +2917,7 @@ contains
     real(kind=RKIND), dimension(:), pointer :: &
          seaSurfaceTemperature, &
          seaSurfaceSalinity, &
+         oceanFrazilSalinityReduction, &
          oceanMixedLayerDepth, &
          seaFreezingTemperature
 
@@ -2903,6 +2946,7 @@ contains
 
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
     call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
+     call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
     call MPAS_pool_get_array(ocean_coupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
 
@@ -2911,6 +2955,7 @@ contains
 
           ! ensure physical realism
           seaSurfaceSalinity(iCell)   = max(seaSurfaceSalinity(iCell), 0.0_RKIND)
+          oceanFrazilSalinityReduction(iCell) = max(oceanFrazilSalinityReduction(iCell), 0.0_RKIND)
           oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
           ! sea freezing temperature
