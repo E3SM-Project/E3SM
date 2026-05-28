@@ -38,10 +38,10 @@ void Functions<S,D>::zm_common_init()
   s_common_init.micro_dcs       = 150.E-6;
   // MCSP parameters
   s_common_init.mcsp_enabled    = true;
-  s_common_init.mcsp_t_coeff    = ZMC::mcsp_t_coeff;
-  s_common_init.mcsp_q_coeff    = 0;
-  s_common_init.mcsp_u_coeff    = 0;
-  s_common_init.mcsp_v_coeff    = 0;
+  s_common_init.mcsp_t_coeff    = ZMC::MCSP_t_coeff;
+  s_common_init.mcsp_q_coeff    = ZMC::MCSP_q_coeff;
+  s_common_init.mcsp_u_coeff    = ZMC::MCSP_u_coeff;
+  s_common_init.mcsp_v_coeff    = ZMC::MCSP_v_coeff;
 
   //
   // set up table values of saturation vapor pressure
