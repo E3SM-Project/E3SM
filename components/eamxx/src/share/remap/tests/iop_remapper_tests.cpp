@@ -164,7 +164,7 @@ TEST_CASE("iop_remap")
     const auto& tgt = remap->get_tgt_field(i);
 
     auto col = src.subfield(COL,0).clone("col");
-    int col_size = col.get_header().get_identifier().get_layout().size();
+    int col_size = col.get_header().get_alloc_properties().get_num_scalars();
     if (comm.rank()==closest_rank) {
       col.deep_copy(src.subfield(COL,closest_lid));
     }
