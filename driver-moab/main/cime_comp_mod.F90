@@ -719,7 +719,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   ! formats
   !----------------------------------------------------------------------------
-  character(*), parameter :: subname = '(moab_driver)'
+  character(*), parameter :: subname = '(cpl7moab_driver)'
   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
@@ -1007,14 +1007,12 @@ contains
     !----------------------------------------------------------
 
     if (iamroot_CPLID) then
-#ifdef USE_ESMF_LIB
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is set'
-#else
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
-#endif
-       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
-       if (num_inst_driver > 1) &
-            write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
+       write(logunit,'(2A)') subname,' Using esmf_wrf_timemgr'
+       write(logunit,'(2A)') subname,' CPL7-MOAB interface is set'
+       if (num_inst_driver > 1) then
+            write(logunit,'(2A,I0,A)') subname,' driver-moab does not yet support multi-driver'
+            call shr_sys_abort( subname//':: Multi-driver not supported')
+       endif
     endif
 
     !----------------------------------------------------------
@@ -3880,7 +3878,7 @@ contains
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, dtime=dtime)
        simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
        write(logunit,'(//)')
-       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-'//trim(cime_model)
+       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-MOAB in '//trim(cime_model)
        write(logunit,FormatD) subname, '  at YMD,TOD = ',ymd,tod
        write(logunit,FormatR) subname, '# simulated days (this run) = ', simDays
        write(logunit,FormatR) subname, 'compute time (hrs)          = ', (Time_end-Time_begin)/3600._r8
@@ -3966,10 +3964,10 @@ contains
     ctime(6:6) = ':'
     ctime(7:8) = time(5:6)
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '  Common Infrastructure for Modeling the Earth (CIME) CPL7  '
+    write(logunit,F00) '                      CPL7-MOAB                             '
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '     (Online documentation is available on the CIME         '
-    write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
+    write(logunit,F00) '            (Online documentation is available              '
+    write(logunit,F00) '                https://docs.e3sm.org)             '
     write(logunit,F00) '     License information is available as a link from above  '
     write(logunit,F00) '------------------------------------------------------------'
     write(logunit,F00) '                     MODEL ',trim(cime_model)
