@@ -82,8 +82,8 @@ void run_tests (const std::shared_ptr<const AbstractGrid>& grid,
     f.deep_copy(1);
   }
 
-  auto model_pmid = base[2].clone("pmid");
-  auto model_pint = base[4].clone("pint");
+  auto model_pmid = base[2].clone("pmid", CloneFlags::All);
+  auto model_pint = base[4].clone("pint", CloneFlags::All);
   if (vr_type==P1D) {
     // It's complicated to test the static profile, since we'd have to really do
     // a manual interpolation. But setting all model pressure equal to the 1st col
