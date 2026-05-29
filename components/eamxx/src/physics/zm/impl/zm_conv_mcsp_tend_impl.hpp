@@ -20,7 +20,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   const ZmRuntimeOpt& runtime_opt,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
-  const Real& ztodt, // 2x physics time step
+  const Real& ztodt, // physics time step
   const Int& jctop, // cloud top level indices
   const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
   const uview_1d<const Real>& state_pint, // physics state interface pressure
