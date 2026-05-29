@@ -14,6 +14,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Field.h"
 #include "IO.h"
 #include "IOStream.h"
 #include "Logging.h"
@@ -83,17 +84,23 @@ void initEosTest(const std::string &mesh) {
    /// Initialize parallel IO
    IO::init(DefComm);
 
-   /// Initialize streams
-   IOStream::init();
-
    /// Initialize decomposition
    Decomp::init(mesh);
 
    /// Initialize Halo
    Halo::init();
 
-   /// Initialize mesh
-   HorzMesh::init();
+   /// Create dummy model clock
+   Calendar::init("No Leap");
+   TimeInstant StartTime(0, 1, 1, 0, 0, 0.0);
+   TimeInterval TimeStep(1, TimeUnits::Hours);
+   Clock ModelClockTmp(StartTime, TimeStep);
+   Clock *ModelClock = &ModelClockTmp;
+
+   /// Read horizontal mesh
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
+   HorzMesh::init(ModelClock);
 
    /// Initialize vertical coordinate
    VertCoord::init(false);

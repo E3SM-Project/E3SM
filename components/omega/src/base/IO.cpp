@@ -196,7 +196,7 @@ void openFileRead(
    int Format = InFormat; // coerce to integer for PIO calls
 
    // Open the file for read-only
-   PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(), ModeRead);
+   PIOErr = PIOc_openfile(SysID, &FileID, &Format, &Filename[0], ModeRead);
    if (PIOErr != PIO_NOERR)
       ABORT_ERROR("IO::openFile: PIO error opening file {} for read", Filename);
 
@@ -228,7 +228,7 @@ void openFileWrite(
    // If the write should be a new file and fail if the
    // file exists, we use create and fail with an error
    case IfExists::Fail:
-      PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
+      PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
                                NC_NOCLOBBER | IsCDF5 | ModeWrite);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
@@ -240,7 +240,7 @@ void openFileWrite(
    // If the write should replace any existing file
    // we use create with the CLOBBER option
    case IfExists::Replace:
-      PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
+      PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
                                NC_CLOBBER | IsCDF5 | ModeWrite);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
@@ -263,7 +263,7 @@ void openFileWrite(
       Broadcast(FileExists);
 
       if (FileExists) {
-         PIOErr = PIOc_openfile(SysID, &FileID, &Format, Filename.c_str(),
+         PIOErr = PIOc_openfile(SysID, &FileID, &Format, &Filename[0],
                                 IsCDF5 | ModeWrite);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFileWrite: PIO error opening existing file"
@@ -271,7 +271,7 @@ void openFileWrite(
                         Filename);
          NewFile = false;
       } else {
-         PIOErr = PIOc_createfile(SysID, &FileID, &Format, Filename.c_str(),
+         PIOErr = PIOc_createfile(SysID, &FileID, &Format, &Filename[0],
                                   IsCDF5 | ModeWrite);
          if (PIOErr != PIO_NOERR)
             ABORT_ERROR("IO::openFileWrite: PIO error creating new file {}"
@@ -327,7 +327,7 @@ Error getDimFromFile(int FileID, // [in] ID of the file containing dim
    DimLength = -1; // default (undefined) global length
 
    // First get the dimension ID
-   IOErr = PIOc_inq_dimid(FileID, DimName.c_str(), &DimID);
+   IOErr = PIOc_inq_dimid(FileID, &DimName[0], &DimID);
    if (IOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::getDim: PIO error reading dimension {} ", DimName);
@@ -357,7 +357,7 @@ int defineDim(int FileID,                 // [in] ID of the file containing dim
    int Err   = 0;
    int DimID = -1;
 
-   Err = PIOc_def_dim(FileID, DimName.c_str(), Length, &DimID);
+   Err = PIOc_def_dim(FileID, &DimName[0], Length, &DimID);
    if (Err != PIO_NOERR) {
       ABORT_ERROR("IO::defineDim: PIO error while defining dimension {}",
                   DimName);
@@ -384,15 +384,15 @@ void writeMeta(const std::string &MetaName, // [in] name of metadata
 
    // Check to see if metadata already exists and has the same value
    I4 TmpValue;
-   Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &TmpValue);
+   Err = PIOc_get_att(FileID, VarID, &MetaName[0], &TmpValue);
    if (Err == PIO_NOERR) { // Metadata already exists, check value is same
       if (TmpValue == MetaValue)
          return;
    }
 
    // Write the metadata
-   Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
-                      &MetaValue);
+   Err =
+       PIOc_put_att(FileID, VarID, &MetaName[0], MetaType, Length, &MetaValue);
    if (Err != PIO_NOERR)
       ABORT_ERROR("IO::writeMeta(I4): PIO error while writing metadata {}",
                   MetaName);
@@ -413,15 +413,15 @@ void writeMeta(const std::string &MetaName, // [in] name of metadata
 
    // Check to see if metadata already exists and has the same value
    I8 TmpValue;
-   Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &TmpValue);
+   Err = PIOc_get_att(FileID, VarID, &MetaName[0], &TmpValue);
    if (Err == PIO_NOERR) { // Metadata already exists, if value is same return
       if (TmpValue == MetaValue)
          return;
    }
 
    // Write the metadata
-   Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
-                      &MetaValue);
+   Err =
+       PIOc_put_att(FileID, VarID, &MetaName[0], MetaType, Length, &MetaValue);
    if (Err != PIO_NOERR)
       ABORT_ERROR("IO::writeMeta(I8): PIO error while writing metadata {}",
                   MetaName);
@@ -442,15 +442,15 @@ void writeMeta(const std::string &MetaName, // [in] name of metadata
 
    // Check to see if metadata already exists and has the same value
    R4 TmpValue;
-   Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &TmpValue);
+   Err = PIOc_get_att(FileID, VarID, &MetaName[0], &TmpValue);
    if (Err == PIO_NOERR) { // Metadata already exists, check value is same
       if (TmpValue == MetaValue)
          return;
    }
 
    // Write the metadata
-   Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
-                      &MetaValue);
+   Err =
+       PIOc_put_att(FileID, VarID, &MetaName[0], MetaType, Length, &MetaValue);
    if (Err != PIO_NOERR)
       ABORT_ERROR("IO::writeMeta(R4): PIO error while writing metadata {}",
                   MetaName);
@@ -471,15 +471,15 @@ void writeMeta(const std::string &MetaName, // [in] name of metadata
 
    // Check to see if metadata already exists and has the same value
    R8 TmpValue;
-   Err = PIOc_get_att(FileID, VarID, MetaName.c_str(), &TmpValue);
+   Err = PIOc_get_att(FileID, VarID, &MetaName[0], &TmpValue);
    if (Err == PIO_NOERR) { // Metadata already exists, check value is same
       if (TmpValue == MetaValue)
          return;
    }
 
    // Write the metadata
-   Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
-                      &MetaValue);
+   Err =
+       PIOc_put_att(FileID, VarID, &MetaName[0], MetaType, Length, &MetaValue);
    if (Err != PIO_NOERR)
       ABORT_ERROR("IO::writeMeta(R8): PIO error while writing metadata {}",
                   MetaName);
@@ -496,18 +496,17 @@ void writeMeta(const std::string &MetaName,  // [in] name of metadata
 
    int Err             = 0;
    IODataType MetaType = IOTypeChar;
-   PIO_Offset Length   = MetaValue.length() + 1; // add 1 for char terminator
+   PIO_Offset Length   = MetaValue.length();
 
    // Check to see if metadata already exists and has the same value
    // For strings, we need to get the length first to make sure the
    // string is long enough to read the value
    PIO_Offset TmpLength;
-   Err = PIOc_inq_attlen(FileID, VarID, MetaName.c_str(), &TmpLength);
+   Err = PIOc_inq_attlen(FileID, VarID, &MetaName[0], &TmpLength);
    if (Err == PIO_NOERR and TmpLength > 0) { // Metadata exists and has length
       std::string TmpValue;
       TmpValue.resize(TmpLength);
-      Err = PIOc_get_att(FileID, VarID, MetaName.c_str(),
-                         (void *)TmpValue.c_str());
+      Err = PIOc_get_att(FileID, VarID, &MetaName[0], &TmpValue[0]);
       if (Err == PIO_NOERR) {
          if (TmpValue == MetaValue)
             return;
@@ -515,8 +514,8 @@ void writeMeta(const std::string &MetaName,  // [in] name of metadata
    }
 
    // Write the metadata
-   Err = PIOc_put_att(FileID, VarID, MetaName.c_str(), MetaType, Length,
-                      (void *)MetaValue.c_str());
+   Err = PIOc_put_att(FileID, VarID, &MetaName[0], MetaType, Length,
+                      &MetaValue[0]);
    if (Err != PIO_NOERR)
       ABORT_ERROR("IO::writeMeta(str): PIO error while writing metadata {}",
                   MetaName);
@@ -539,7 +538,7 @@ Error readMeta(const std::string &MetaName, // [in] name of metadata
    Error Err;
    int PIOErr = 0;
 
-   PIOErr = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
+   PIOErr = PIOc_get_att(FileID, VarID, &MetaName[0], &MetaValue);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readMeta(I4): PIO error while reading metadata for {}",
@@ -557,7 +556,7 @@ Error readMeta(const std::string &MetaName, // [in] name of metadata
    Error Err;
    int PIOErr = 0;
 
-   PIOErr = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
+   PIOErr = PIOc_get_att(FileID, VarID, &MetaName[0], &MetaValue);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readMeta(I8): PIO error while reading metadata for {}",
@@ -575,7 +574,7 @@ Error readMeta(const std::string &MetaName, // [in] name of metadata
    Error Err;
    int PIOErr = 0;
 
-   PIOErr = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
+   PIOErr = PIOc_get_att(FileID, VarID, &MetaName[0], &MetaValue);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readMeta(R4): PIO error while reading metadata for {}",
@@ -593,7 +592,7 @@ Error readMeta(const std::string &MetaName, // [in] name of metadata
    Error Err;
    int PIOErr = 0;
 
-   PIOErr = PIOc_get_att(FileID, VarID, MetaName.c_str(), &MetaValue);
+   PIOErr = PIOc_get_att(FileID, VarID, &MetaName[0], &MetaValue);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readMeta(R8): PIO error while reading metadata for {}",
@@ -615,17 +614,17 @@ Error readMeta(const std::string &MetaName, // [in] name of metadata
    // and resize the string to make sure the allocated length is large
    // enough when passing the pointer later
    PIO_Offset Length;
-   PIOErr = PIOc_inq_attlen(FileID, VarID, MetaName.c_str(), &Length);
+   PIOErr = PIOc_inq_attlen(FileID, VarID, &MetaName[0], &Length);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readMeta(str): PIO error while finding string length");
 
-   int StrLength = Length - 1;
+   // Ensure enough space
+   int StrLength = Length;
    MetaValue.resize(StrLength);
 
    // Now read the string
-   PIOErr =
-       PIOc_get_att(FileID, VarID, MetaName.c_str(), (void *)MetaValue.c_str());
+   PIOErr = PIOc_get_att(FileID, VarID, &MetaName[0], &MetaValue[0]);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readMeta(str): PIO error while reading metadata for {}",
@@ -651,13 +650,13 @@ int defineVar(int FileID,                 // [in] ID of the file containing var
 
    // First check to see if the variable exists (if reading or if appending
    // to an existing file)
-   PIOErr = PIOc_inq_varid(FileID, VarName.c_str(), &VarID);
+   PIOErr = PIOc_inq_varid(FileID, &VarName[0], &VarID);
 
    // If the variable is not found, define the new variable
    if (PIOErr != PIO_NOERR) {
 
       PIOErr =
-          PIOc_def_var(FileID, VarName.c_str(), VarType, NDims, DimIDs, &VarID);
+          PIOc_def_var(FileID, &VarName[0], VarType, NDims, DimIDs, &VarID);
       if (PIOErr != PIO_NOERR)
          ABORT_ERROR("IO::defineVar: PIO error while defining variable {}",
                      VarName);
@@ -743,7 +742,7 @@ Error readArray(void *Array,                // [out] array to be read
    int PIOErr = 0; // internal error code for PIO calls
 
    // Find variable ID from file
-   PIOErr = PIOc_inq_varid(FileID, VarName.c_str(), &VarID);
+   PIOErr = PIOc_inq_varid(FileID, &VarName[0], &VarID);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readArray: Error finding varid for variable {}",
@@ -784,7 +783,7 @@ Error readNDVar(void *Variable,             // [out] array to be read
    int PIOErr = 0; // internal error code for PIO calls
 
    // Find variable ID from file
-   PIOErr = PIOc_inq_varid(FileID, VarName.c_str(), &VarID);
+   PIOErr = PIOc_inq_varid(FileID, &VarName[0], &VarID);
    if (PIOErr != PIO_NOERR)
       RETURN_ERROR(Err, ErrorCode::Fail,
                    "IO::readArray: Error finding varid for variable {}",

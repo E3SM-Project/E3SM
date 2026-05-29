@@ -20,11 +20,14 @@ with the call:
  Decomp::init();
 ```
 This must be called very early in the init process, just after initializing
-the MachEnv, Config and IO.  Mesh information is first read using parallel
-IO into an equally-spaced linear decomposition, then partitioned by METIS or
-ParMETIS into a more optimal decomposition. The parallel ParMETIS
-implementation should be used to reduce the memory footprint for
-high-resolution configurations. Although the algorithmic method is similar,
+the MachEnv, Config and IO.  By default, the mesh information is read from
+the filename defined in the [HorzMeshIn IOStream](#omega-user-horz-mesh).
+However, an optional filename argument to the init function above can be used
+to override the input configuration (eg for unit testing). Mesh information is
+first read using parallel IO into an equally-spaced linear decomposition, then
+partitioned by METIS or ParMETIS into a more optimal decomposition. The
+parallel ParMETIS implementation should be used to reduce the memory footprint
+for high-resolution configurations. Although the algorithmic method is similar,
 ParMETIS leads to a somewhat different partitioning than the serial METIS
 version. The serial version should give the same partition as the serial
 offline gpmetis tool used by MPAS when the same version of the METIS library

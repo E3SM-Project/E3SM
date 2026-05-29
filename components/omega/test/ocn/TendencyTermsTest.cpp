@@ -25,6 +25,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
@@ -1147,7 +1148,10 @@ void initTendTest(const std::string &MeshFile, int NVertLayers) {
    Config::Initialize();
    Config::readAll("omega.yml");
 
+   // Initialize time stepping and get model clock
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    IO::init(DefComm);
 
@@ -1158,7 +1162,9 @@ void initTendTest(const std::string &MeshFile, int NVertLayers) {
       ABORT_ERROR("TendencyTermsTest: error initializing default halo");
    }
 
-   HorzMesh::init();
+   Field::init(ModelClock);    // Fields are used in streams
+   IOStream::init(ModelClock); // initialize streams for mesh reading
+   HorzMesh::init(ModelClock);
 
    // initialize vertical coordinate, do not read stream and use local
    // NVertLayers value

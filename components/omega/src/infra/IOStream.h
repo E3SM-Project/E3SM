@@ -295,9 +295,16 @@ class IOStream {
    );
 
    //---------------------------------------------------------------------------
-   // Retrieve the filename for a given stream
+   /// Retrieves the filename for a given stream
    static std::string
    getFilename(const std::string &StreamName ///< [in] name of stream
+   );
+
+   //---------------------------------------------------------------------------
+   /// Changes the filename in a stream (typically during unit testing)
+   static void changeFilename(
+       const std::string &StreamName, ///< [in] name of stream to modify
+       const std::string &NewFilename ///< [in] new file name
    );
 
    //---------------------------------------------------------------------------

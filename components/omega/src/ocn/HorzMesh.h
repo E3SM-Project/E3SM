@@ -14,6 +14,7 @@
 #include "Decomp.h"
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
+#include "TimeMgr.h"
 
 #include <memory>
 #include <string>
@@ -29,41 +30,30 @@ namespace OMEGA {
 class HorzMesh {
 
  private:
-   void initParallelIO(Decomp *MeshDecomp);
+   /// Creates dimensions associated with mesh if not already computed
+   void createDimensions(Decomp *MeshDecomp ///< [in] decomposition for mesh
+   );
 
-   void finalizeParallelIO();
+   /// Creates metadata and allocates data for mesh variables not already
+   /// computed by Decomp
+   void defineMeshFields();
 
-   void createDimensions(Decomp *MeshDecomp);
+   /// Finishes filling arrays read from input file by filling halo regions
+   /// and creating host mirror copies
+   void completeReadArrays();
 
-   void readVertexArray(HostArray1DReal &VertexArrayH,
-                        const std::string &MPASName);
-   void readEdgeArray(HostArray1DReal &EdgeArrayH, const std::string &MPASName);
-   void readCellArray(HostArray1DReal &CellArrayH, const std::string &MPASName);
-
-   void readCoordinates();
-
-   void readMeasurements();
-
-   void readWeights();
-
-   void readCoriolis();
-
-   void copyToDevice();
-
-   // int computeMesh();
-   I4 CellDecompR8;
-   I4 EdgeDecompR8;
-   I4 VertexDecompR8;
-   I4 OnEdgeDecompR8;
-   I4 OnVertexDecompR8;
-
+   /// The horizontal mesh defined for the default decomposition. Used to
+   /// provide a shortcut to this common mesh
    static HorzMesh *DefaultHorzMesh;
 
+   /// Map containing pointers to all defined meshes so that they can be
+   /// retrieved by name
    static std::map<std::string, std::unique_ptr<HorzMesh>> AllHorzMeshes;
 
    /// Construct a new local mesh for a given decomposition
    HorzMesh(const std::string &Name, ///< [in] Name for mesh
-            Decomp *Decomp           ///< [in] Decomposition for mesh
+            Decomp *Decomp,          ///< [in] Decomposition for mesh
+            const Clock *ModelClock  ///< [in] Model clock for IO
    );
 
    // Forbid copy and move construction
@@ -73,28 +63,39 @@ class HorzMesh {
  public:
    // KOKKOS_LAMBDA does not allow to have parallel_* functions inside of a
    // private function.
+
+   /// Computes the sign of the edge normal at each edge
    void computeEdgeSign();
 
-   void setMeshScaling();
+   /// Computes the mesh scaling coefficients for any Del2 or Del4 mixing
+   /// operator
+   void computeMeshScaling();
 
    // Variables
    // Since these are used frequently, we make them public to reduce the
    // number of retrievals required.
 
-   std::string MeshName;
-   std::string MeshFileName;
-   int MeshFileID;
+   std::string MeshName;     ///< name of this mesh
+   std::string MeshFileName; ///< name (and full path) of input mesh file
+
+   // Global attributes
+   bool OnSphere;     ///< true if mesh is spherical
+   bool OnPlane;      ///< true if mesh is on a Cartesian plane
+   bool IsPeriodic;   ///< true if planar mesh is periodic
+   Real SphereRadius; ///< radius (m) of sphere that mesh covers
+   Real XPeriod;      ///< length (m) of periodicity in x direction
+   Real YPeriod;      ///< length (m) of periodicity in y direction
 
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents
    // should always use the 0:NCellsXX-1 form.
 
-   Array1DI4 NCellsHalo;      ///< num cells owned+halo for halo layer
-   HostArray1DI4 NCellsHaloH; ///< num cells owned+halo for halo layer
+   Array1DI4 NCellsHalo;      ///< num cells owned+halo for each halo layer
+   HostArray1DI4 NCellsHaloH; ///< num cells owned+halo for each halo layer
    I4 NCellsOwned;            ///< Number of cells owned by this task
-   I4 NCellsAll;  ///< Total number of local cells (owned + all halo)
-   I4 NCellsSize; ///< Array size (incl padding, bndy cell) for cell arrays
-   I4 NCellsGlobal;
+   I4 NCellsAll;    ///< Total number of local cells (owned + all halo)
+   I4 NCellsSize;   ///< Array size (incl padding, bndy cell) for cell arrays
+   I4 NCellsGlobal; ///< Total number of cells in global non-decomposed mesh
 
    Array1DI4 NEdgesHalo;      ///< num cells owned+halo for halo layer
    HostArray1DI4 NEdgesHaloH; ///< num cells owned+halo for halo layer
@@ -103,8 +104,8 @@ class HorzMesh {
    I4 NEdgesSize;     ///< Array length (incl padding, bndy) for edge dim
    I4 MaxCellsOnEdge; ///< Max number of cells sharing an edge
    I4 MaxEdges;       ///< Max number of edges around a cell
-   I4 NEdgesGlobal;
-   I4 MaxEdges2; ///< Max number of edges around a cell x2
+   I4 MaxEdges2;      ///< Max number of edges around a cell x2
+   I4 NEdgesGlobal;   ///< Total number of edges in global non-decomposed mesh
 
    Array1DI4 NVerticesHalo;      ///< num cells owned+halo for halo layer
    HostArray1DI4 NVerticesHaloH; ///< num cells owned+halo for halo layer
@@ -148,25 +149,35 @@ class HorzMesh {
    Array1DI4 CellID; ///< global cell ID for each local cell
    // Coordinates
 
-   Array1DReal XCell;      ///< X Coordinates of cell centers (m)
-   HostArray1DReal XCellH; ///< X Coordinates of cell centers (m)
+   Array1DReal XCell;   ///< X Coordinates of cell centers (m)
+   Array1DReal YCell;   ///< Y Coordinates of cell centers (m)
+   Array1DReal ZCell;   ///< Z Coordinates of cell centers (m)
+   Array1DReal LonCell; ///< Longitude location of cell centers (radians)
+   Array1DReal LatCell; ///< Latitude location of cell centers (radians)
 
-   Array1DReal YCell;      ///< Y Coordinates of cell centers (m)
-   HostArray1DReal YCellH; ///< Y Coordinates of cell centers (m)
-
+   HostArray1DReal XCellH;   ///< X Coordinates of cell centers (m)
+   HostArray1DReal YCellH;   ///< Y Coordinates of cell centers (m)
    HostArray1DReal ZCellH;   ///< Z Coordinates of cell centers (m)
    HostArray1DReal LonCellH; ///< Longitude location of cell centers (radians)
    HostArray1DReal LatCellH; ///< Latitude location of cell centers (radians)
 
-   Array1DReal XEdge;      ///< X Coordinate of edge midpoints (m)
-   HostArray1DReal XEdgeH; ///< X Coordinate of edge midpoints (m)
+   Array1DReal XEdge;   ///< X Coordinate of edge midpoints (m)
+   Array1DReal YEdge;   ///< Y Coordinate of edge midpoints (m)
+   Array1DReal ZEdge;   ///< Z Coordinate of edge midpoints (m)
+   Array1DReal LonEdge; ///< Longitude location of edge midpoints (radians)
+   Array1DReal LatEdge; ///< Latitude location of edge midpoints (radians)
 
-   Array1DReal YEdge;      ///< Y Coordinate of edge midpoints (m)
-   HostArray1DReal YEdgeH; ///< Y Coordinate of edge midpoints (m)
-
+   HostArray1DReal XEdgeH;   ///< X Coordinate of edge midpoints (m)
+   HostArray1DReal YEdgeH;   ///< Y Coordinate of edge midpoints (m)
    HostArray1DReal ZEdgeH;   ///< Z Coordinate of edge midpoints (m)
    HostArray1DReal LonEdgeH; ///< Longitude location of edge midpoints (radians)
    HostArray1DReal LatEdgeH; ///< Latitude location of edge midpoints (radians)
+
+   Array1DReal XVertex;   ///< X Coordinate of vertices (m)
+   Array1DReal YVertex;   ///< Y Coordinate of vertices (m)
+   Array1DReal ZVertex;   ///< Z Coordinate of vertices (m)
+   Array1DReal LonVertex; ///< Longitude location of vertices (radians)
+   Array1DReal LatVertex; ///< Latitude location of vertices (radians)
 
    HostArray1DReal XVertexH;   ///< X Coordinate of vertices (m)
    HostArray1DReal YVertexH;   ///< Y Coordinate of vertices (m)
@@ -190,15 +201,13 @@ class HorzMesh {
        KiteAreasOnVertexH; ///< Area of the portions of each dual cell that
                            ///  are part of each cellsOnVertex (m^2)
 
-   Array1DReal
-       DvEdge; ///< Length of each edge, computed as the distance between
-               ///  verticesOnEdge (m)
+   Array1DReal DvEdge;      ///< Length of each edge, computed as the distance
+                            ///< between verticesOnEdge (m)
    HostArray1DReal DvEdgeH; ///< Length of each edge, computed as the distance
                             ///  between verticesOnEdge (m)
 
-   Array1DReal
-       DcEdge; ///< Length of each edge, computed as the distance between
-               ///  CellsOnEdge (m)
+   Array1DReal DcEdge;      ///< Length of each edge, computed as the distance
+                            ///< between CellsOnEdge (m)
    HostArray1DReal DcEdgeH; ///< Length of each edge, computed as the distance
                             ///  between CellsOnEdge (m)
 
@@ -207,15 +216,15 @@ class HorzMesh {
    HostArray1DReal AngleEdgeH; ///< Angle the edge normal makes with local
                                ///  eastward direction (radians)
 
-   HostArray1DReal
-       MeshDensityH; ///< Value of density function used to generate a
-                     ///  particular mesh at cell centers
+   Array1DReal MeshDensity;      ///< Value of density function used to generate
+                                 ///<  mesh at cell centers
+   HostArray1DReal MeshDensityH; ///< Value of density function used to generate
+                                 ///<  mesh at cell centers
 
    // Weights
 
-   Array2DReal
-       WeightsOnEdge; ///< Reconstruction weights associated with each of
-                      ///  the edgesOnEdge
+   Array2DReal WeightsOnEdge; ///< Reconstruction weights associated with each
+                              ///< of the edgesOnEdge
    HostArray2DReal WeightsOnEdgeH; ///< Reconstruction weights associated with
                                    ///  each of the edgesOnEdge
 
@@ -225,8 +234,7 @@ class HorzMesh {
    HostArray1DReal FEdgeH; ///< Coriolis parameter at edges (radians s^-1)
 
    Array1DReal FCell; ///< Coriolis parameter at cell centers (radians s^-1)
-   HostArray1DReal
-       FCellH; ///< Coriolis parameter at cell centers (radians s^-1)
+   HostArray1DReal FCellH; ///< Coriolis parameter cell centers (radians s^-1)
 
    Array1DReal FVertex;      ///< Coriolis parameter at vertices (radians s^-1)
    HostArray1DReal FVertexH; ///< Coriolis parameter at vertices (radians s^-1)
@@ -248,13 +256,15 @@ class HorzMesh {
 
    // Methods
 
-   /// Initialize Omega local mesh
-   static void init();
+   /// Initialize Omega local mesh and create default mesh
+   static void init(const Clock *ModelClock ///< [in] Model clock for stream IO
+   );
 
    /// Creates a new mesh by calling the constructor and puts it in the
    /// AllHorzMeshes map
    static HorzMesh *create(const std::string &Name, ///< [in] Name for mesh
-                           Decomp *Decomp ///< [in] Decomposition for mesh
+                           Decomp *Decomp,          ///< [in] Mesh Decomposition
+                           const Clock *ModelClock  ///< [in] Clock for mesh IO
    );
 
    /// Destructor - deallocates all memory and deletes a HorzMesh
@@ -267,9 +277,12 @@ class HorzMesh {
    static void erase(std::string InName ///< [in] name of mesh to remove
    );
 
+   /// Retrieves pointer to default mesh
    static HorzMesh *getDefault();
 
-   static HorzMesh *get(std::string name);
+   /// Retrieves pointer to a mesh given the mesh name
+   static HorzMesh *get(std::string Name ///< [in] name of mesh to retrieve
+   );
 
 }; // end class HorzMesh
 

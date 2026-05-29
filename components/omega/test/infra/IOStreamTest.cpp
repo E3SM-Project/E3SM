@@ -94,7 +94,7 @@ void initIOStreamTest(Clock *&ModelClock // Model clock
    IOStream::init(ModelClock);
 
    // Initialize HorzMesh - this should read Mesh stream
-   HorzMesh::init();
+   HorzMesh::init(ModelClock);
    HorzMesh *DefMesh = HorzMesh::getDefault();
 
    // Initialize the vertical coordinate

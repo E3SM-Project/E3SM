@@ -25,6 +25,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanState.h"
@@ -149,9 +150,12 @@ int initTimeStepperTest(const std::string &mesh) {
 
    // Note that the default time stepper is not used in subsequent tests
    // but is initialized here because the number of time levels is needed
-   // to initialize the Tracers. If a later timestepper test uses more time
-   // levels than the default, this unit test may fail.
+   // to initialize the Tracers and a model clock is needed for stream IO.
+   // If a later timestepper test uses more time levels than the default,
+   // this unit test may fail.
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    IO::init(DefComm);
    Decomp::init(mesh);
@@ -162,7 +166,12 @@ int initTimeStepperTest(const std::string &mesh) {
       LOG_ERROR("TimeStepperTest: error initializing default halo");
    }
 
-   HorzMesh::init();
+   // Initialize IO streams
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
+
+   // Read and initialize horizontal mesh
+   HorzMesh::init(ModelClock);
 
    // initialize vertical coordinate, do not read stream and use local
    // NVertLayers value

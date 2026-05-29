@@ -114,8 +114,10 @@ void initVertAdvTest() {
    Config("Omega");
    Config::readAll("omega.yml");
 
-   // First step of time stepper initialization needed for IOstream
+   // First step of time stepper initialization needed for streams, model clock
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    // Initialize the IO system
    IO::init(DefComm);
@@ -124,15 +126,16 @@ void initVertAdvTest() {
    Decomp::init();
 
    // Initialize streams
-   IOStream::init();
+   Field::init(ModelClock);
+   IOStream::init(ModelClock);
 
    // Initialize the default halo
    Err = Halo::init();
    if (Err != 0)
       ABORT_ERROR("VertAdvTest: error initializing default halo");
 
-   // Initialize the default mesh
-   HorzMesh::init();
+   // Read and initialize the default mesh
+   HorzMesh::init(ModelClock);
 
    // Initialize the default vertical coordinate
    VertCoord::init(false);

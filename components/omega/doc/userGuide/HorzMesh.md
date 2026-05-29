@@ -16,7 +16,26 @@ additional mesh variables, which are not required for Decomp.
 
 Currently, the Mesh class reads in all variables from the MPAS mesh
 specification except those read by [Decomp](#omega-dev-decomp).
-This includes the following variables:
+These are all read using the input [IOStream](#omega-user-iostreams) HorzMeshIn
+```yaml
+  IOStreams:
+    HorzMeshIn:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - HorzMeshIn
+```
+Only the Filename should be changed by the user to point to the relevant input
+mesh file. The mesh Filename is sometimes overridden by the driver routine in
+the case of unit tests using an optional argument to the
+[decomposition](#omega-dev-decomp). The input contents are defined by the
+HorzMeshIn [FieldGroup](#omega-dev-field) that currently includes the following
+variables:
 
 | Variable Name | Description | Units |
 | ------------- | ----------- | ----- |
@@ -35,6 +54,13 @@ This includes the following variables:
 | AngleEdge | Angle the edge normal makes with local eastward direction | radians |
 | MeshDensity | Value of density function used to generate a particular mesh at cell centers | - |
 | WeightsOnEdge | Reconstruction weights associated with each of the edgesOnEdge | - |
+
+In addition, some mesh metadata are read from the file and stored as mesh
+variables. These include ``OnSphere`` (or ``on_a_sphere`` for backcompatibility),
+``IsPeriodic`` (``is_periodic``), ``SphereRadius`` (``sphere_radius``),
+``XPeriod`` (``x_period``), and ``YPeriod`` (``y_period``). The two flags
+OnSphere and IsPeriodic are stored as YES/NO strings in the metadata but as
+boolean flags in the code.
 
 In the future, the Mesh class will optionally compute the mesh variables that
 are dependent on the Cartesian mesh coordinates internally.

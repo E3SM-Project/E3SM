@@ -85,6 +85,16 @@ Omega:
       Alpha: 5.0
       Exponent: 2.0
   IOStreams:
+    HorzMeshIn:
+      UsePointerFile: false
+      Filename: OmegaMesh.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: OnStartup
+      UseStartEnd: false
+      Contents:
+        - HorzMeshIn
     InitialVertCoord:
       UsePointerFile: false
       Filename: OmegaMesh.nc

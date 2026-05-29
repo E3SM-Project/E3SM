@@ -398,7 +398,7 @@ void readMesh(const int MeshFileID, // file ID for open mesh file
 // Initialize the decomposition and create the default decomposition with
 // (currently) one partition per MPI task using selected partition method
 
-void Decomp::init(const std::string &MeshFileName) {
+void Decomp::init(const std::string &InMeshFileName) {
 
    bool TimerFlag = Pacer::start("Decomp init", 0);
    Error Err; // default successful return code
@@ -421,6 +421,26 @@ void Decomp::init(const std::string &MeshFileName) {
 
    PartMethod Method = getPartMethodFromStr(DecompMethodStr);
 
+   // If no mesh filename supplied, get the filename from the input
+   // HorzMeshIn stream configuration
+   std::string MeshFileNameTmp = InMeshFileName;
+   if (InMeshFileName == "") {
+      Config StreamConfigTmp("IOStreams");
+      Err = OmegaConfig->get(StreamConfigTmp);
+      CHECK_ERROR_ABORT(Err, "Decomp: IOStreams not found in input Config");
+
+      Config HorzMeshInTmp("HorzMeshIn"); // retrieve HorzMeshIn stream info
+      Err = StreamConfigTmp.get(HorzMeshInTmp);
+      CHECK_ERROR_ABORT(Err, "Decomp: HorzMeshIn stream not found in Config");
+
+      Err = HorzMeshInTmp.get("Filename", MeshFileNameTmp);
+      CHECK_ERROR_ABORT(Err, "Decomp: Could not get mesh filename from Config");
+      // Testing - re-retrieve a fresh copy of the stream and mesh filename
+      Err = OmegaConfig->get(StreamConfigTmp);
+      Err = StreamConfigTmp.get(HorzMeshInTmp);
+      Err = HorzMeshInTmp.get("Filename", MeshFileNameTmp);
+   }
+
    // Retrieve the default machine environment
    MachEnv *DefEnv = MachEnv::getDefault();
 
@@ -429,7 +449,7 @@ void Decomp::init(const std::string &MeshFileName) {
 
    // Create the default decomposition and set pointer to it
    Decomp::DefaultDecomp = Decomp::create("Default", DefEnv, NParts, Method,
-                                          InHaloWidth, MeshFileName);
+                                          InHaloWidth, MeshFileNameTmp);
 
    TimerFlag = Pacer::stop("Decomp init", 0) && TimerFlag;
    if (!TimerFlag)

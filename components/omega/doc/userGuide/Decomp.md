@@ -41,9 +41,10 @@ An input mesh file must be provided that contains at a minimum
     VerticesOnCell, CellsOnEdge, EdgesOnEdge, CellsOnVertex, EdgesOnVertex.
 Again, a full description of the mesh is given in the
 [Developer's Guide](#omega-dev-decomp).
-The mesh information is read via parallel IO into an initial linear domain
-decomposition and then is partitioned by METIS and rearranged into the
-final METIS parallel decomposition.
+The file name for this input file is extracted from the HorzMeshIn input
+mesh stream located in the IOStreams section of the input configuration.
+This value can be overridden by the driver routine if needed (eg for unit
+testing).
 
 Once the mesh is decomposed, all of the mesh index arrays are stored in
 a Decomp named Default which can be retrieved as described in the
