@@ -860,6 +860,46 @@ struct ZmCalcOutputTendData : public PhysicsTestData {
   }
 };
 
+struct ZmStateUpdateData : public PhysicsTestData {
+  // Inputs
+  Int pcols, ncol, pver, pverp;
+  Real dt;
+  Real *p_mid, *p_int, *p_del, *ptend_s, *ptend_q;
+
+  // Inputs/Outputs
+  Real *zm, *zi, *t, *qv;
+
+  ZmStateUpdateData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real dt_) :
+    PhysicsTestData({
+      {pcols_, pver_},
+      {pcols_, pverp_}
+    },
+    {
+      {&p_mid, &p_del, &ptend_s, &ptend_q, &zm, &t, &qv},
+      {&p_int, &zi}
+    }),
+    pcols(pcols_), ncol(ncol_), pver(pver_), pverp(pverp_), dt(dt_)
+  {}
+
+  PTD_STD_DEF(ZmStateUpdateData, 5, pcols, ncol, pver, pverp, dt);
+
+  template <typename Engine>
+  void randomize(Engine& engine)
+  {
+    PhysicsTestData::randomize(engine, {
+      {p_mid,   {10000.0, 100000.0}}, // mid-point pressure   [Pa]
+      {p_int,   {10000.0, 100000.0}}, // interface pressure   [Pa]
+      {p_del,   {2000.0,  10000.0}},  // pressure thickness   [Pa]
+      {ptend_s, {-1.0,    1.0}},      // DSE tendency         [J/kg/s]
+      {ptend_q, {-1e-5,   1e-5}},     // water vapor tendency [kg/kg/s]
+      {t,       {200.0,   300.0}},    // temperature          [K]
+      {qv,      {0.001,   0.02}},     // water vapor          [kg/kg]
+      {zm,      {0.0,     20000.0}},  // mid-point altitude   [m]
+      {zi,      {0.0,     20000.0}},  // interface altitude   [m]
+    });
+  }
+};
+
 // Glue functions for host test data. We can call either fortran or CXX with this data (_f -> fortran)
 void ientropy_f(IentropyData& d);
 void ientropy(IentropyData& d);
@@ -895,6 +935,8 @@ void zm_closure_f(ZmClosureData& d);
 void zm_closure(ZmClosureData& d);
 void zm_calc_output_tend_f(ZmCalcOutputTendData& d);
 void zm_calc_output_tend(ZmCalcOutputTendData& d);
+void zm_state_update_f(ZmStateUpdateData& d);
+void zm_state_update(ZmStateUpdateData& d);
 // End glue function decls
 
 }  // namespace zm

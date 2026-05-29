@@ -71,6 +71,8 @@ void zm_cloud_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int 
 void zm_closure_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Real cape_threshold_in, Int* lcl, Int* lel, Int* jt, Int* mx, Real* dsubcld, Real* z_mid, Real* z_int, Real* p_mid, Real* p_del, Real* t_mid, Real* s_mid, Real* q_mid, Real* qs, Real* ql, Real* s_int, Real* q_int, Real* t_pcl_lcl, Real* t_pcl, Real* q_pcl_sat, Real* s_upd, Real* q_upd, Real* mflx_net, Real* detr_up, Real* mflx_up, Real* mflx_dn, Real* q_dnd, Real* s_dnd, Real* cape, Real* cld_base_mass_flux);
 
 void zm_calc_output_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jt, Int* mx, Real* dsubcld, Real* p_del, Real* s_int, Real* q_int, Real* s_upd, Real* q_upd, Real* mflx_up, Real* detr_up, Real* mflx_dn, Real* s_dnd, Real* q_dnd, Real* ql, Real* evp, Real* cu, Real* dsdt, Real* dqdt, Real* dl);
+
+void zm_state_update_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real dt, Real* p_mid, Real* p_int, Real* p_del, Real* ptend_s, Real* ptend_q, Real* zm, Real* zi, Real* t, Real* qv);
 } // extern "C" : end _f decls
 
 // Inits and finalizes are not intended to be called outside this comp unit
@@ -1873,6 +1875,83 @@ void zm_calc_output_tend(ZmCalcOutputTendData& d)
   // Now get arrays
   std::vector<view2dr_d> vec2dr_out = {dl_d, dqdt_d, dsdt_d};
   ekat::device_to_host({d.dl, d.dqdt, d.dsdt}, d.pcols, d.pver, vec2dr_out);
+
+  zm_finalize_cxx();
+}
+
+void zm_state_update_f(ZmStateUpdateData& d)
+{
+  d.transition<ekat::TransposeDirection::c2f>();
+  zm_common_init_f();
+  zm_state_update_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.dt, d.p_mid, d.p_int, d.p_del, d.ptend_s, d.ptend_q, d.zm, d.zi, d.t, d.qv);
+  zm_common_finalize_f();
+  d.transition<ekat::TransposeDirection::f2c>();
+}
+
+void zm_state_update(ZmStateUpdateData& d)
+{
+  zm_common_init();
+
+  // create device views and copy (mixed pver / pverp vertical sizes)
+  std::vector<view2dr_d> vec2dr_in(9);
+  std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver};
+  ekat::host_to_device({d.p_mid, d.p_int, d.p_del, d.ptend_s, d.ptend_q, d.zm, d.zi, d.t, d.qv}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+
+  view2dr_d
+    p_mid_d(vec2dr_in[0]),
+    p_int_d(vec2dr_in[1]),
+    p_del_d(vec2dr_in[2]),
+    ptend_s_d(vec2dr_in[3]),
+    ptend_q_d(vec2dr_in[4]),
+    zm_d(vec2dr_in[5]),
+    zi_d(vec2dr_in[6]),
+    t_d(vec2dr_in[7]),
+    qv_d(vec2dr_in[8]);
+
+  const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
+
+  // unpack data scalars because we do not want the lambda to capture d
+  const Real dt = d.dt;
+  const Int pver = d.pver;
+  const Int pverp = d.pverp;
+
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const Int i = team.league_rank();
+
+    // Get single-column subviews of all inputs, shouldn't need any i-indexing
+    // after this.
+    const auto p_mid_c = ekat::subview(p_mid_d, i);
+    const auto p_int_c = ekat::subview(p_int_d, i);
+    const auto p_del_c = ekat::subview(p_del_d, i);
+    const auto ptend_s_c = ekat::subview(ptend_s_d, i);
+    const auto ptend_q_c = ekat::subview(ptend_q_d, i);
+    const auto zm_c = ekat::subview(zm_d, i);
+    const auto zi_c = ekat::subview(zi_d, i);
+    const auto t_c = ekat::subview(t_d, i);
+    const auto qv_c = ekat::subview(qv_d, i);
+
+    ZMF::zm_state_update(
+      team,
+      pver,
+      pverp,
+      dt,
+      p_mid_c,
+      p_int_c,
+      p_del_c,
+      ptend_s_c,
+      ptend_q_c,
+      zm_c,
+      zi_c,
+      t_c,
+      qv_c);
+  });
+
+  // Now get arrays
+  std::vector<view2dr_d> vec2dr_out = {zm_d, zi_d, t_d, qv_d};
+  std::vector<int> vec2dr_out_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols};
+  std::vector<int> vec2dr_out_1_sizes = {d.pver, d.pverp, d.pver, d.pver};
+  ekat::device_to_host({d.zm, d.zi, d.t, d.qv}, vec2dr_out_0_sizes, vec2dr_out_1_sizes, vec2dr_out);
 
   zm_finalize_cxx();
 }

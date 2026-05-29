@@ -82,6 +82,7 @@ struct UnitWrap {
     struct TestZmCloudProperties;
     struct TestZmClosure;
     struct TestZmCalcOutputTend;
+    struct TestZmStateUpdate;
   }; // UnitWrap
 };
 

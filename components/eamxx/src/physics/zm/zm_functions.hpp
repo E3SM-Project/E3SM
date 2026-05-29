@@ -312,8 +312,8 @@ struct Functions {
     uview_2d<Real>   tend_tmp_qv;    // temporary tendency of water vapor       [kg/kg/s]
     uview_2d<Real>   tend_tmp_u;     // temporary tendency of zonal wind        [m/s/s]
     uview_2d<Real>   tend_tmp_v;     // temporary tendency of meridional wind   [m/s/s]
-    uview_2d<Real>   tend_s_snwprd   // Heating rate of snow production         [J/kg/s]
-    uview_2d<Real>   tend_s_snwevmlt // Heating rate of snow evap/melt          [J/kg/s]
+    uview_2d<Real>   tend_s_snwprd;  // Heating rate of snow production         [J/kg/s]
+    uview_2d<Real>   tend_s_snwevmlt;// Heating rate of snow evap/melt          [J/kg/s]
     uview_2d<Real>   rain_prod;      // rain production rate                    [kg/kg/s]
     uview_2d<Real>   snow_prod;      // snow production rate                    [kg/kg/s]
     uview_2d<Real>   ntprprd;        // net precip production in layer          [kg/kg/s]
@@ -838,6 +838,39 @@ struct Functions {
     Real& cld_base_mass_flux); // cloud base mass flux
 
   KOKKOS_FUNCTION
+  static void zm_geopotential_t(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point levels
+    const Int& pverp, // number of interface levels
+    const uview_1d<const Real>& pint, // interface pressures                 [Pa]
+    const uview_1d<const Real>& pmid, // midpoint pressures                  [Pa]
+    const uview_1d<const Real>& pdel, // layer thickness                     [Pa]
+    const uview_1d<const Real>& t, // temperature                            [K]
+    const uview_1d<const Real>& q, // specific humidity                      [kg/kg]
+    // Inputs/Outputs
+    const uview_1d<Real>& zi, // height above surface at interfaces          [m]
+    const uview_1d<Real>& zm); // geopotential height at mid level           [m]
+
+  KOKKOS_FUNCTION
+  static void zm_state_update(
+    // Inputs
+    const MemberType& team,
+    const Int& pver, // number of mid-point levels
+    const Int& pverp, // number of interface levels
+    const Real& dt, // time step                                            [s]
+    const uview_1d<const Real>& pmid, // mid-point pressure                  [Pa]
+    const uview_1d<const Real>& pint, // interface pressure                  [Pa]
+    const uview_1d<const Real>& pdel, // pressure thickness                  [Pa]
+    const uview_1d<const Real>& ptend_s, // tendency of dry static energy    [J/kg/s]
+    const uview_1d<const Real>& ptend_q, // tendency of water vapor          [kg/kg/s]
+    // Inputs/Outputs
+    const uview_1d<Real>& zm, // altitude at mid-levels                      [m]
+    const uview_1d<Real>& zi, // altitude at interfaces                      [m]
+    const uview_1d<Real>& t, // temperature                                  [K]
+    const uview_1d<Real>& qv); // water vapor                                [kg/kg]
+
+  KOKKOS_FUNCTION
   static void zm_calc_output_tend(
     // Inputs
     const MemberType& team,
@@ -904,5 +937,7 @@ struct Functions {
 # include "impl/zm_cloud_properties_impl.hpp"
 # include "impl/zm_closure_impl.hpp"
 # include "impl/zm_calc_output_tend_impl.hpp"
+# include "impl/zm_geopotential_t_impl.hpp"
+# include "impl/zm_state_update_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
