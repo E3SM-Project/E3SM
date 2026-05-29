@@ -2418,6 +2418,9 @@ subroutine init_column_waves(domain)
          lateralIceMeltRate, &
          lateralIceMelt, &
          freezingMeltingPotential, &
+         frazilMassFlux, &
+         frazilSaltFlux, &
+         frazilEnthalpyFlux, &
          frazilFormation, &
          rainfallRate, &
          pondFreshWaterFlux, &
@@ -2539,6 +2542,9 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(atmos_coupling, "rainfallRate", rainfallRate)
 
        call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
+       call MPAS_pool_get_array(ocean_coupling, "frazilMassFlux", frazilMassFlux)
+       call MPAS_pool_get_array(ocean_coupling, "frazilSaltFlux", frazilSaltFlux)
+       call MPAS_pool_get_array(ocean_coupling, "frazilEnthalpyFlux", frazilEnthalpyFlux)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
      call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
@@ -2661,7 +2667,10 @@ subroutine init_column_waves(domain)
                d_afsd_latg=dFloeSizeLateralGrowth(:,iCell),    &
                d_afsd_newi=dFloeSizeNewIce(:,iCell),   &
                d_afsd_latm=dFloeSizeLateralMelt(:,iCell),   &
-               d_afsd_weld=dFloeSizeWeld(:,iCell))
+               d_afsd_weld=dFloeSizeWeld(:,iCell), &
+               frazilm=frazilMassFlux(iCell), &
+               frazils=frazilSaltFlux(iCell), &
+               frazilh=frazilEnthalpyFlux(iCell))
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)

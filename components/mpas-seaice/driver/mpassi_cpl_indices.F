@@ -90,8 +90,8 @@ module mpassi_cpl_indices
   integer :: index_x2i_Faxa_swvdf      ! sw: vis diffuse downward
   integer :: index_x2i_Faxa_swnet      ! sw: net
   integer :: index_x2i_Fioo_q          ! ocn freezing melting potential
-  integer :: index_x2i_Fioo_frazil     ! ocn frazil ice formation 
-  integer :: index_x2i_Fioo_frazils    ! ocn frazil salt formation
+  integer :: index_x2i_Fioo_frazil     ! ocn frazil ice mass flux
+  integer :: index_x2i_Fioo_frazils    ! ocn frazil ice salt flux
   integer :: index_x2i_Fioo_frazilh    ! ocn frazil heat flux
   integer :: index_x2i_Faxa_bcphidry   ! flux: Black Carbon hydrophilic dry deposition
   integer :: index_x2i_Faxa_bcphodry   ! flux: Black Carbon hydrophobic dry deposition

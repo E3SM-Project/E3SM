@@ -533,7 +533,7 @@ Default: Defined in namelist_defaults.xml
 	category="forcing" group="forcing">
 Type of frazil ice coupling.
 
-Valid values: 'external', 'internal', 'fresh_ice_correction'
+Valid values: 'external', 'internal', 'fresh_ice_correction', 'omega-fluxes'
 Default: Defined in namelist_defaults.xml
 </entry>
 

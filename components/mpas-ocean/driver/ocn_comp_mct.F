@@ -3414,8 +3414,9 @@ contains
 
              o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              o2x_o(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
-             o2x_o(index_o2x_Fioo_frazils, n) = 4.0_RKIND
-             o2x_o(index_o2x_Fioo_frazilh, n) = 0.0_RKIND
+             o2x_o(index_o2x_Fioo_frazils, n) = accumulatedFrazilIceMass(i)* &
+                config_frazil_sea_ice_reference_salinity / ocn_cpl_dt
+             o2x_o(index_o2x_Fioo_frazilh, n) = max(seaIceEnergy(i) / ocn_cpl_dt, 0.0_RKIND)
 
           else
 
