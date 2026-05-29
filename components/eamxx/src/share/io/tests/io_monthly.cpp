@@ -194,7 +194,7 @@ void read (const int seed, const ekat::Comm& comm)
     reader.read_variables();
 
     for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
+      auto f0 = fm0->get_field(fn).clone(CloneFlags::CopyData);
       auto f  = fm->get_field(fn);
       add(f0,n);
       REQUIRE (views_are_equal(f,f0));

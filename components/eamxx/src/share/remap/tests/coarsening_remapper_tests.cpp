@@ -295,8 +295,8 @@ TEST_CASE("coarsening_remap")
   // -------------------------------------- //
 
   Real w = 0.5;
-  auto gids_tgt = all_gather_field(tgt_grid->get_dofs_gids().clone(),comm); // Need clone to be able to extract writable
-  auto gids_src = all_gather_field(src_grid->get_dofs_gids().clone(),comm); // pointers to pass to MPI's broadcast
+  auto gids_tgt = all_gather_field(tgt_grid->get_dofs_gids().clone(CloneFlags::CopyData),comm); // Need clone to be able to extract writable
+  auto gids_src = all_gather_field(src_grid->get_dofs_gids().clone(CloneFlags::CopyData),comm); // pointers to pass to MPI's broadcast
   auto gids_src_v = gids_src.get_view<const AbstractGrid::gid_type*,Host>();
   auto gids_tgt_v = gids_tgt.get_view<const AbstractGrid::gid_type*,Host>();
 

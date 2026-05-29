@@ -93,11 +93,35 @@ TEST_CASE("field", "") {
     fap1.request_allocation(16);
     f1.allocate_view();
     f1.deep_copy(3.0);
+    auto ts = util::TimeStamp(2022,1,2,3,4,5);
+    f1.get_header().get_tracking().update_time_stamp(ts);
 
-    Field f2 = f1.clone();
+    Field f_none = f1.clone();
+    REQUIRE(f_none.is_allocated());
+    REQUIRE(f_none.get_header().get_alloc_properties().get_largest_pack_size()==1);
+    REQUIRE(!f_none.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_alloc = f1.clone(CloneFlags::MatchPacking);
+    REQUIRE(f_alloc.is_allocated());
+    REQUIRE(f_alloc.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_alloc.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_ts = f1.clone(CloneFlags::CopyTimeStamp);
+    REQUIRE(f_ts.is_allocated());
+    REQUIRE(f_ts.get_header().get_tracking().get_time_stamp()==ts);
+    REQUIRE(f_ts.get_header().get_alloc_properties().get_largest_pack_size()==1);
+
+    Field f_data = f1.clone(CloneFlags::MatchPacking | CloneFlags::CopyData);
+    REQUIRE(f_data.is_allocated());
+    REQUIRE(f_data.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_data.get_header().get_tracking().get_time_stamp().is_valid());
+    REQUIRE(views_are_equal(f1,f_data));
+
+    Field f2 = f1.clone(CloneFlags::All);
     auto& fap2 = f2.get_header().get_alloc_properties();
     REQUIRE(f2.is_allocated());
     REQUIRE(fap2.get_alloc_size()==fap1.get_alloc_size());
+    REQUIRE(f2.get_header().get_tracking().get_time_stamp()==ts);
     REQUIRE(views_are_equal(f1,f2));
 
     // Changing f2 should leave f1 unchanged

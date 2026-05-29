@@ -159,14 +159,14 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           continue;
         }
         if (use_suffix) {
-          fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname));
+          fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname, CloneFlags::All));
 
           // Adjust long/std name, as the default metadata does not recognize the names with suffix
           auto& str_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
           str_atts["long_name"] = meta.get_longname(f.name());
           str_atts["standard_name"] = meta.get_standardname(f.name());
         } else {
-          fields.push_back(f.clone(f.name(), gname));
+          fields.push_back(f.clone(f.name(), gname, CloneFlags::All));
         }
 
         // Transfer io: string attributes from original field (e.g., "bounds" attribute).

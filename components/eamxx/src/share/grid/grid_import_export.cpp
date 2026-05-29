@@ -22,8 +22,8 @@ GridImportExport (const std::shared_ptr<const AbstractGrid>& unique,
   // Note: we can't use the gids views from the grids, since we need to pass pointers
   //       to MPI bcast routines, which require pointers to nonconst data.
   //       Hence, create a clone, and grab a non-const pointer from it.
-  const auto unique_gids_f = unique->get_dofs_gids().clone();
-  const auto overlap_gids_f = overlapped->get_dofs_gids().clone();
+  const auto unique_gids_f = unique->get_dofs_gids().clone(CloneFlags::CopyData);
+  const auto overlap_gids_f = overlapped->get_dofs_gids().clone(CloneFlags::CopyData);
   const auto    gids = unique_gids_f.get_view<gid_type*,Host>();
   const auto ov_gids = overlap_gids_f.get_view<gid_type*,Host>();
 

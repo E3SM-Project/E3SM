@@ -200,7 +200,7 @@ std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
   auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
-    copy->add_field(it.second->clone());
+    copy->add_field(it.second->clone(CloneFlags::All));
   }
 
   return copy;

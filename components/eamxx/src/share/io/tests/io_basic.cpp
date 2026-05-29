@@ -244,7 +244,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   for (int n=0; n<num_writes; ++n) {
     reader.read_variables(n);
     for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
+      auto f0 = fm0->get_field(fn).clone(CloneFlags::CopyData);
       auto f  = fm->get_field(fn);
       if (avg_type=="MIN") {
         // The 1st snap in the avg window (the smallest)
