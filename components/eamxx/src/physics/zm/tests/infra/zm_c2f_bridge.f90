@@ -357,22 +357,4 @@ subroutine zm_calc_output_tend_bridge_f(pcols, ncol, pver, pverp, msg, jt, mx, d
   call zm_calc_output_tend(pcols, ncol, pver, pverp, msg, jt, mx, dsubcld, p_del, s_int, q_int, s_upd, q_upd, mflx_up, detr_up, mflx_dn, s_dnd, q_dnd, ql, evp, cu, dsdt, dqdt, dl, microp_st)
 end subroutine zm_calc_output_tend_bridge_f
 
-subroutine zm_state_update_bridge_f(pcols, ncol, pver_in, pverp_in, dt, p_mid, p_int, p_del, ptend_s, ptend_q, zm, zi, t, qv) bind(C)
-  use zm_eamxx_bridge_methods, only : zm_state_update
-  use zm_eamxx_bridge_params,  only : pver, pverp
-
-  integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver_in, pverp_in
-  real(kind=c_real) , value, intent(in) :: dt
-  real(kind=c_real) , intent(in), dimension(pcols, pver_in) :: p_mid, p_del, ptend_s, ptend_q
-  real(kind=c_real) , intent(in), dimension(pcols, pverp_in) :: p_int
-  real(kind=c_real) , intent(inout), dimension(pcols, pver_in) :: zm, t, qv
-  real(kind=c_real) , intent(inout), dimension(pcols, pverp_in) :: zi
-
-  ! zm_state_update / zm_geopotential_t read pver and pverp from the module
-  pver  = pver_in
-  pverp = pverp_in
-
-  call zm_state_update(ncol, dt, zm, zi, p_mid, p_int, p_del, t, qv, ptend_s, ptend_q)
-end subroutine zm_state_update_bridge_f
-
 end module zm_c2f_bridge

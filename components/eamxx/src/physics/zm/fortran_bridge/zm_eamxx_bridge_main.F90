@@ -81,7 +81,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   use zm_conv,                  only: zm_const, zm_param
   use zm_aero_type,             only: zm_aero_t
   use zm_microphysics_state,    only: zm_microp_st
-  use zm_eamxx_bridge_methods,  only: zm_tend_init, zm_state_update
+  use zm_eamxx_bridge_methods,  only: zm_tend_init, zm_physics_update
   use zm_conv,                  only: zm_conv_main, zm_conv_evap
   use zm_conv_mcsp,             only: zm_conv_mcsp_tend
   use zm_transport,             only: zm_transport_momentum
@@ -281,11 +281,11 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   !-----------------------------------------------------------------------------
   ! apply tendencies from zm_conv_main() & MCSP to local copy of state variables
 
-  call zm_state_update( ncol, dtime, &
-                        local_state_zm, local_state_zi, &
-                        state_p_mid, state_p_int, state_p_del, &
-                        local_state_t, local_state_qv, &
-                        output_tend_s, output_tend_q)
+  call zm_physics_update( ncol, dtime, &
+                          state_phis, local_state_zm, local_state_zi, &
+                          state_p_mid, state_p_int, state_p_del, &
+                          local_state_t, local_state_qv, &
+                          output_tend_s, output_tend_q)
 
   !-----------------------------------------------------------------------------
   ! Compute the precipitation, rain evaporation, and snow formation/melting
@@ -313,11 +313,11 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   end do
 
   ! apply tendencies from zm_conv_evap() to local copy of state variables
-  call zm_state_update( ncol, dtime, &
-                        local_state_zm, local_state_zi, &
-                        state_p_mid, state_p_int, state_p_del, &
-                        local_state_t, local_state_qv, &
-                        local_tend_s, local_tend_q)
+  call zm_physics_update( ncol, dtime, &
+                          state_phis, local_state_zm, local_state_zi, &
+                          state_p_mid, state_p_int, state_p_del, &
+                          local_state_t, local_state_qv, &
+                          local_tend_s, local_tend_q)
 
   !-----------------------------------------------------------------------------
   ! convective momentum transport

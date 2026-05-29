@@ -217,7 +217,7 @@ struct Functions {
     // variable counters for device-side only
     static constexpr int num_1d_intgr = 0;  // number of 1D integer views
     static constexpr int num_1d_scalr = 1;  // number of 1D scalar views
-    static constexpr int num_2d_midlv = 2;  // number of 2D mid-point views
+    static constexpr int num_2d_midlv = 6;  // number of 2D mid-point views
     static constexpr int num_2d_intfc = 1;  // number of 2D interface views
 
     uview_1d<     Scalar> tpert;    // PBL top temperature perturb. [K]
@@ -239,6 +239,11 @@ struct Functions {
     view_2d<const Real>   omega;    // vertical pressure velocity   [Pa/s]
     view_2d<const Real>   cldfrac;  // total cloud fraction         [frac]
     view_2d<const Real>   thl_sec;  // thetal variance from SHOC    [K^2]
+    // intermediate state variables updated with intermediate tendencies
+    uview_2d<     Real>   tmp_T_mid;// temperature                  [K]
+    uview_2d<     Real>   tmp_qv;   // water vapor mixing ratio     [kg/kg]
+    uview_2d<     Real>   tmp_uwind;// zonal wind                   [m/s]
+    uview_2d<     Real>   tmp_vwind;// meridional wind              [m/s]
     // variables only needed for calling the C++ version of ZM
     view_2d<      Real>   t_prev;   // DCAPE T from previous time step [K]
     view_2d<      Real>   q_prev;   // DCAPE q from previous time step [kg/kg]
@@ -838,39 +843,6 @@ struct Functions {
     Real& cld_base_mass_flux); // cloud base mass flux
 
   KOKKOS_FUNCTION
-  static void zm_geopotential_t(
-    // Inputs
-    const MemberType& team,
-    const Int& pver, // number of mid-point levels
-    const Int& pverp, // number of interface levels
-    const uview_1d<const Real>& pint, // interface pressures                 [Pa]
-    const uview_1d<const Real>& pmid, // midpoint pressures                  [Pa]
-    const uview_1d<const Real>& pdel, // layer thickness                     [Pa]
-    const uview_1d<const Real>& t, // temperature                            [K]
-    const uview_1d<const Real>& q, // specific humidity                      [kg/kg]
-    // Inputs/Outputs
-    const uview_1d<Real>& zi, // height above surface at interfaces          [m]
-    const uview_1d<Real>& zm); // geopotential height at mid level           [m]
-
-  KOKKOS_FUNCTION
-  static void zm_state_update(
-    // Inputs
-    const MemberType& team,
-    const Int& pver, // number of mid-point levels
-    const Int& pverp, // number of interface levels
-    const Real& dt, // time step                                            [s]
-    const uview_1d<const Real>& pmid, // mid-point pressure                  [Pa]
-    const uview_1d<const Real>& pint, // interface pressure                  [Pa]
-    const uview_1d<const Real>& pdel, // pressure thickness                  [Pa]
-    const uview_1d<const Real>& ptend_s, // tendency of dry static energy    [J/kg/s]
-    const uview_1d<const Real>& ptend_q, // tendency of water vapor          [kg/kg/s]
-    // Inputs/Outputs
-    const uview_1d<Real>& zm, // altitude at mid-levels                      [m]
-    const uview_1d<Real>& zi, // altitude at interfaces                      [m]
-    const uview_1d<Real>& t, // temperature                                  [K]
-    const uview_1d<Real>& qv); // water vapor                                [kg/kg]
-
-  KOKKOS_FUNCTION
   static void zm_calc_output_tend(
     // Inputs
     const MemberType& team,
@@ -937,7 +909,5 @@ struct Functions {
 # include "impl/zm_cloud_properties_impl.hpp"
 # include "impl/zm_closure_impl.hpp"
 # include "impl/zm_calc_output_tend_impl.hpp"
-# include "impl/zm_geopotential_t_impl.hpp"
-# include "impl/zm_state_update_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP

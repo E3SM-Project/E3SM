@@ -8,7 +8,7 @@ module zm_eamxx_bridge_methods
   ! public methods copied from EAM
   public :: cldfrc_fice
   public :: zm_tend_init
-  public :: zm_state_update
+  public :: zm_physics_update
   public :: vertinterp
 
 !===================================================================================================
@@ -111,15 +111,16 @@ end subroutine
 ! This combines functionality of:
 ! - physics_update()      [see physics_update_mod.F90]
 ! - physics_update_main() [see physics_types.F90]
-subroutine zm_state_update( ncol, dt, state_zm, state_zi, &
-                            state_p_mid, state_p_int, state_p_del, &
-                            state_t, state_qv, ptend_s, ptend_q)
+subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
+                              state_p_mid, state_p_int, state_p_del, &
+                              state_t, state_qv, ptend_s, ptend_q)
   use zm_eamxx_bridge_physconst, only: cpair
   use zm_eamxx_bridge_params, only: pverp, pver
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                        intent(in   ) :: ncol             ! number of local columns
   real(r8),                       intent(in   ) :: dt               ! time step
+  real(r8), dimension(ncol),      intent(in   ) :: state_phis       ! input state surface geopotential height
   real(r8), dimension(ncol,pver), intent(inout) :: state_zm         ! input state altitude at mid-levels
   real(r8), dimension(ncol,pverp),intent(inout) :: state_zi         ! input state altitude at interfaces
   real(r8), dimension(ncol,pver), intent(in   ) :: state_p_mid      ! input state mid-point pressure
@@ -153,7 +154,7 @@ subroutine zm_state_update( ncol, dt, state_zm, state_zi, &
   !   end do
   ! end do
 
-end subroutine zm_state_update
+end subroutine zm_physics_update
 
 !===================================================================================================
 

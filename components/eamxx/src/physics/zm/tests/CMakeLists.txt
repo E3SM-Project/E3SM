@@ -20,7 +20,6 @@ set(ZM_TESTS_SRCS
   zm_cloud_properties_tests.cpp
   zm_closure_tests.cpp
   zm_calc_output_tend_tests.cpp
-  zm_state_update_tests.cpp
 ) # ZM_TESTS_SRCS
 
 # All tests should understand the same baseline args
