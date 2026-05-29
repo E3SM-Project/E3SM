@@ -181,8 +181,8 @@ module seq_diag_mct
   integer(in),parameter :: f_salt      =48     ! salt: salinity flux from sea ice
   integer(in),parameter :: f_sfrazo    =49     ! salt: salinity flux frazil from ocean
   integer(in),parameter :: f_sfrazi    =50     ! salt: salinity flux frazil from ice
-
-  integer(in),parameter :: f_size     = f_salt        ! Total array size of all elements
+  
+  integer(in),parameter :: f_size     = f_sfrazi      ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_h        = f_hfrz        ! 1st index for heat
@@ -204,7 +204,7 @@ module seq_diag_mct
        (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
        '      hpolar','    hh2otemp','       hgsmb','      hfrazo','      hfrazi', &
-       '     wfreeze','    wfreezei','        wmelt','       wrain','       wsnow',&
+       '     wfreeze','    wfreezei','       wmelt','       wrain','       wsnow', &
        '       wpolar','      wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
@@ -306,7 +306,7 @@ module seq_diag_mct
   integer :: index_o2x_Faoo_h2otemp
   integer :: index_o2x_Fioo_frazil
   integer :: index_o2x_Fioo_frazils
-  integer :: index_o2x_Fioo_frazils
+  integer :: index_o2x_Fioo_frazilh
   integer :: index_o2x_Foxo_frazil_li
   integer :: index_o2x_Fioo_q
   integer :: index_o2x_Foxo_q_li
@@ -339,12 +339,14 @@ module seq_diag_mct
   integer :: index_x2o_Fioi_salt
   integer :: index_x2o_Fioi_frazil
   integer :: index_x2o_Fioi_frazils
+  integer :: index_x2o_Fioi_frazilh
 
   integer :: index_i2x_Fioi_melth
   integer :: index_i2x_Fioi_meltw
   integer :: index_i2x_Fioi_salt
   integer :: index_i2x_Fioi_frazil
   integer :: index_i2x_Fioi_frazils
+  integer :: index_i2x_Fioi_frazilh
   integer :: index_i2x_Faii_swnet
   integer :: index_i2x_Fioi_swpen
   integer :: index_i2x_Faii_lwup
@@ -357,6 +359,7 @@ module seq_diag_mct
   integer :: index_x2i_Faxa_snow
   integer :: index_x2i_Fioo_frazil
   integer :: index_x2i_Fioo_frazils
+  integer :: index_x2i_Fioo_frazilh
   integer :: index_x2i_Fioo_q
   integer :: index_x2i_Fixx_rofi
 
@@ -1583,9 +1586,9 @@ contains
           index_x2o_Fioi_bergw  = mct_aVect_indexRA(x2o_o,'PFioi_bergw')
           index_x2o_Foxx_swnet  = mct_aVect_indexRA(x2o_o,'Foxx_swnet')
           index_x2o_Fioi_salt   = mct_aVect_indexRA(x2o_o,'Fioi_salt')
-          index_x2o_Fioi_sfrazi = mct_aVect_indexRA(x2o_o,'Fioi_frazils')
-          index_x2o_Fioi_hfrazi = mct_aVect_indexRA(x2o_o,'Fioi_frazilh')
-          index_x2o_Fioi_wfrzi  = mct_aVect_indexRA(x2o_o,'Fioi_frazil')
+          index_x2o_Fioi_frazils = mct_aVect_indexRA(x2o_o,'Fioi_frazils')
+          index_x2o_Fioi_frazilh = mct_aVect_indexRA(x2o_o,'Fioi_frazilh')
+          index_x2o_Fioi_frazil = mct_aVect_indexRA(x2o_o,'Fioi_frazil')
           index_x2o_Faxa_lwdn   = mct_aVect_indexRA(x2o_o,'Faxa_lwdn')
           index_x2o_Faxa_rain   = mct_aVect_indexRA(x2o_o,'Faxa_rain')
           index_x2o_Faxa_snow   = mct_aVect_indexRA(x2o_o,'Faxa_snow')
