@@ -736,7 +736,8 @@ module cime_comp_mod
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
 #endif
-  real(r8) , pointer :: a2x_ox_tag_vals(:,:) ! a2x-ox tags
+  real(r8) , pointer :: a2x_ox_tag_vals(:,:)     ! a2x-ox tags (accumulated, pre-mapping)
+  real(r8) , pointer :: a2x_ox_new_tag_vals(:,:) ! a2x-ox tags (new, post-mapping)
   integer ::   a2x_ox_size
   !===============================================================================
 contains
@@ -753,7 +754,7 @@ contains
     use mpi
 #endif
     !----------------------------------------------------------
-    !| Initialize MCT and MPI communicators and IO
+    !| Initialize MOAB and MPI communicators and IO
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
@@ -798,7 +799,7 @@ contains
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
 
-    !--- Initialize communicators, layouts, MCT
+    !--- Initialize communicators, layouts
     !--- Init MOAB
     if (num_inst_driver > 1) then
        call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
@@ -2611,6 +2612,7 @@ contains
       nfields=mct_list_nitem (temp_list)
       call mct_list_clean(temp_list)
       allocate(a2x_ox_tag_vals(numpts,nfields))
+      allocate(a2x_ox_new_tag_vals(numpts,nfields))
       a2x_ox_size = nfields*numpts
     endif
 
@@ -3094,6 +3096,10 @@ contains
           ! do all a2o mappings which updates mboxid
           call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
 
+          ! save the newly mapped a2x values so we can restore them later
+          ! without a redundant re-mapping (used below after cime_run_ocn_setup_send)
+          call mbGetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_new_tag_vals,a2x_ox_size)
+
           ! move the proj of atm to ice right after calc of a2x_ox
           ! make a2x_ix using a2x_ox so its just a rearrange
           if (atm_c2_ice .and. ice_prognostic ) then
@@ -3117,7 +3123,7 @@ contains
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
-       ! map i,w to ocean, calc atmocn fluxes, do merge, accum,
+       ! map i,w to ocean, calc atmocn fluxes, do merge, accum on ocean
        !    calc ocn albedos
        !----------------------------------------------------------
        if (ocn_present) then
@@ -3128,7 +3134,7 @@ contains
 
        !----------------------------------------------------------
        !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
-       ! make ocean time average, send.
+       ! make ocean time average, send ocean forcing from coupler
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
@@ -3139,12 +3145,11 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| MAP ATM to OCN
-       !  map a 2 o again only for CESM1_MOD and CESM1_MOD_TIGHT where
-       !  the a2o map above was undone.
-       !  This will be used later in the atm/ocn flux calculation
-       !  form a2i by mapping the output of a2o to i.
-       !  This will be used later in the ice prep
+       !| MAP ATM to OCN (restore)
+       !  For CESM1_MOD and CESM1_MOD_TIGHT, restore the freshly mapped
+       !  a2x_ox values that were saved above (before cime_run_ocn_setup_send
+       !  temporarily restored the old accumulated values to mboxid).
+       !  This avoids a redundant full atm->ocn remapping.
        !----------------------------------------------------------
        if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
@@ -3153,14 +3158,8 @@ contains
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
-          ! move the proj of atm to ice right after calc of a2x_ox
-          if (atm_c2_ice .and. ice_prognostic ) then
-            ! This is special to avoid remapping atm to ocn
-            ! Note it is constrained that different prep modules cannot  use or call each other
-            a2x_ox => prep_ocn_get_a2x_ox() ! array
-            call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
-          endif
+          ! restore the previously saved post-mapping values; no re-mapping needed
+          call mbSetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_new_tag_vals,a2x_ox_size)
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
@@ -3178,7 +3177,6 @@ contains
        !----------------------------------------------------------
        !| ICE SETUP-SEND
        !  map o2i (o2x_ox to o2x_ix)
-       !  MCT ONLY:  map a2x_ox to a2x_i
        !  mrg ice, diag, send
        !----------------------------------------------------------
        if (ice_present .and. icerun_alarm) then
@@ -4418,7 +4416,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (ocn_prognostic) then
-          ! Map to ocn
+          ! Map ice to ocn
           if (ice_c2_ocn) then
             call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
 
@@ -4426,7 +4424,7 @@ contains
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
        end if
 
-       ! atm/ocn flux on either atm or ocean grid
+       ! atm/ocn flux on either atm or ocean grid (MOAB: only ocean)
        call cime_run_atmocn_fluxes(hashint)
 
        ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
