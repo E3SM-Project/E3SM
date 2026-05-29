@@ -339,7 +339,8 @@ f2g_scalar_dp (const KernelVariables& kv, const int nf2, const int np2, const in
 
 void GllFvRemapImpl
 ::run_dyn_to_fv_phys (const int timeidx, const Phys1T& ps, const Phys1T& phis, const Phys2T& Ts,
-                      const Phys2T& omegas, const Phys3T& shear_strain3d_components, const Phys3T& uvs, const Phys3T& qs,
+                      const Phys2T& omegas, const CPhys3T& shear_strain3d_components_gll,
+                      const Phys3T& shear_strain3d_components_fv, const Phys3T& uvs, const Phys3T& qs,
                       const Phys2T* dp_fv_out_ptr) {
   // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
 #ifdef MODEL_THETA_L
@@ -362,8 +363,10 @@ void GllFvRemapImpl
   assert(Ts.extent_int(0) >= nelemd && Ts.extent_int(1) >= nf2 && Ts.extent_int(2) % packn == 0);
   assert(omegas.extent_int(0) >= nelemd && omegas.extent_int(1) >= nf2 &&
          omegas.extent_int(2) % packn == 0);
-  assert(shear_strain3d_components.extent_int(0) >= nelemd && shear_strain3d_components.extent_int(1) >= nf2 &&
-         shear_strain3d_components.extent_int(2) == 6 && shear_strain3d_components.extent_int(3) % packn == 0);
+  assert(shear_strain3d_components_gll.extent_int(0) >= nelemd && shear_strain3d_components_gll.extent_int(1) >= np2 &&
+         shear_strain3d_components_gll.extent_int(2) == 6 && shear_strain3d_components_gll.extent_int(3) % packn == 0);
+  assert(shear_strain3d_components_fv.extent_int(0) >= nelemd && shear_strain3d_components_fv.extent_int(1) >= nf2 &&
+         shear_strain3d_components_fv.extent_int(2) == 6 && shear_strain3d_components_fv.extent_int(3) % packn == 0);
   assert(uvs.extent_int(0) >= nelemd && uvs.extent_int(1) >= nf2 && uvs.extent_int(2) == 2 &&
          uvs.extent_int(3) % packn == 0);
   assert(qs.extent_int(0) >= nelemd && qs.extent_int(1) >= nf2 && qs.extent_int(2) >= qsize &&
@@ -374,10 +377,14 @@ void GllFvRemapImpl
     T(real2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn),
     omega(real2pack(omegas), omegas.extent_int(0), omegas.extent_int(1),
           omegas.extent_int(2)/packn);
+  CVPhys3T
+    strain_components_gll(creal2pack(shear_strain3d_components_gll), shear_strain3d_components_gll.extent_int(0),
+                          shear_strain3d_components_gll.extent_int(1), shear_strain3d_components_gll.extent_int(2),
+                          shear_strain3d_components_gll.extent_int(3)/packn);
   VPhys3T
-    strain_components(real2pack(shear_strain3d_components), shear_strain3d_components.extent_int(0),
-                      shear_strain3d_components.extent_int(1), shear_strain3d_components.extent_int(2),
-                      shear_strain3d_components.extent_int(3)/packn),
+    strain_components_fv(real2pack(shear_strain3d_components_fv), shear_strain3d_components_fv.extent_int(0),
+                         shear_strain3d_components_fv.extent_int(1), shear_strain3d_components_fv.extent_int(2),
+                         shear_strain3d_components_fv.extent_int(3)/packn),
     uv(real2pack(uvs), uvs.extent_int(0), uvs.extent_int(1), uvs.extent_int(2),
        uvs.extent_int(3)/packn),
     q(real2pack(qs), qs.extent_int(0), qs.extent_int(1), qs.extent_int(2),
@@ -545,7 +552,7 @@ void GllFvRemapImpl
         const int i = ij / NP;
         const int j = ij % NP;
         parallel_for(tvr, [&] (const int k) {
-          comp_g(i,j,k) = strain_components(ie,ij,icomp,k);
+          comp_g(i,j,k) = strain_components_gll(ie,ij,icomp,k);
         });
       });
       kv.team_barrier();
@@ -553,7 +560,7 @@ void GllFvRemapImpl
              evucs_np2_nlev(comp_g.data()), evus_np2_nlev(rw1.data()),
              evus2(comp_f.data(), nf2, nlevpk));
       kv.team_barrier();
-      loop_ik(ttrf, tvr, [&] (int i, int k) { strain_components(ie,i,icomp,k) = comp_f(i,k); });
+      loop_ik(ttrf, tvr, [&] (int i, int k) { strain_components_fv(ie,i,icomp,k) = comp_f(i,k); });
       kv.team_barrier();
     }
 

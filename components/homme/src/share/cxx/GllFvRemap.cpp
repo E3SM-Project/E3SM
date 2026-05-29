@@ -59,9 +59,13 @@ void GllFvRemap
 
 void GllFvRemap
 ::run_dyn_to_fv_phys (const int time_idx, const Phys1T& ps, const Phys1T& phis,
-                      const Phys2T& T, const Phys2T& omega, const Phys3T& strain3d_components,
+                      const Phys2T& T, const Phys2T& omega,
+                      const CPhys3T& strain3d_components_gll,
+                      const Phys3T& strain3d_components_fv,
                       const Phys3T& uv, const Phys3T& q, const Phys2T* dp) {
-  m_impl->run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d_components, uv, q, dp);
+  m_impl->run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                             strain3d_components_gll, strain3d_components_fv,
+                             uv, q, dp);
 }
 
 void GllFvRemap

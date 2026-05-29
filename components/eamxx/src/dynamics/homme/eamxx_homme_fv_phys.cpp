@@ -186,7 +186,10 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   const auto omega = Homme::GllFvRemap::Phys2T(
     get_field_out("omega", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
-  const auto strain3d_components = Homme::GllFvRemap::Phys3T(
+  const auto strain3d_components_gll = Homme::GllFvRemap::CPhys3T(
+    m_helper_fields.at("shear_strain3d_components_dyn").get_view<const Real*****>().data(),
+    nelem, NGP*NGP, 6, nlev);
+  const auto strain3d_components_fv = Homme::GllFvRemap::Phys3T(
     get_field_out("tke_shear_strain3d_components", gn).get_view<Real***>().data(),
     nelem, npg, 6, nlev);
   const auto uv = Homme::GllFvRemap::Phys3T(
@@ -199,7 +202,9 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     get_field_out("pseudo_density", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
 
-  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d_components, uv, q, &dp);
+  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                         strain3d_components_gll, strain3d_components_fv,
+                         uv, q, &dp);
   Kokkos::fence();
 }
 
