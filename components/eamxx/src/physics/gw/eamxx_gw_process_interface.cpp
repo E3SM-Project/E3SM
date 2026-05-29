@@ -9,15 +9,6 @@
 #include <ekat_units.hpp>
 
 #include <array>
-#include <iostream>
-
-// -------------------------------------------------------------------
-// debug print macro for tracking init progress
-#define GWD_DBG(msg)                                                            \
-  do {                                                                          \
-    std::cout << "[GWDrag rank=" << this->get_comm().rank() << "] "             \
-              << msg << std::endl << std::flush;                                \
-  } while (0)
 
 namespace scream
 {
@@ -80,7 +71,6 @@ void GWDrag::create_requests() {
 
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::initialize_impl (const RunType) {
-  GWD_DBG("initialize_impl: enter");
 
   // defaults for gw_common_init()
   bool do_molec_diff_default = false; // Flag for molecular diffusion
@@ -89,21 +79,15 @@ void GWDrag::initialize_impl (const RunType) {
   Real kwv_default = 6.28e-5;         // Effective horizontal wave number (100 km wavelength)
 
   // calculate interface reference pressures (on device)
-  GWD_DBG("initialize_impl: getting hyai/hybi geometry data");
   const auto hyai = m_grid->get_geometry_data("hyai").get_view<const Real*>();
   const auto hybi = m_grid->get_geometry_data("hybi").get_view<const Real*>();
-  GWD_DBG("initialize_impl: hyai.size()=" << hyai.size() << " hybi.size()=" << hybi.size());
   GWF::view_1d<Real> pref_int("pref_int", hyai.size());
-  GWD_DBG("initialize_impl: launching pref_int parallel_for");
   Kokkos::parallel_for("calculate_pref_int",
     Kokkos::RangePolicy<KT::ExeSpace>(0, hyai.size()),
     KOKKOS_LAMBDA (const int k) {
       pref_int(k) = PC::P0.value * hyai(k) + PC::P0.value * hybi(k);
   });
-  Kokkos::fence();
-  GWD_DBG("initialize_impl: pref_int parallel_for complete (after fence)");
 
-  GWD_DBG("initialize_impl: calling gw_common_init");
   GWF::gw_common_init( m_params,
                        m_nlev,
                        pref_int,
@@ -111,82 +95,60 @@ void GWDrag::initialize_impl (const RunType) {
                        nbot_molec_default,
                        ktop_default,
                        kwv_default);
-  Kokkos::fence();
-  GWD_DBG("initialize_impl: gw_common_init returned (after fence)");
 
   std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
-  GWD_DBG("initialize_impl: scorpio::register_file '" << gw_drag_file << "'");
   scorpio::register_file(gw_drag_file,scorpio::FileMode::Read);
-  GWD_DBG("initialize_impl: scorpio::register_file complete; querying dimlens");
   const int PS_dim_size = scorpio::get_dimlen(gw_drag_file, "PS"); // Phase Speed [m/s]
   const int MW_dim_size = scorpio::get_dimlen(gw_drag_file, "MW"); // Mean Wind in Heating [m/s]
   const int HD_dim_size = scorpio::get_dimlen(gw_drag_file, "HD"); // Heating Depth [km]
-  GWD_DBG("initialize_impl: dimlens PS=" << PS_dim_size
-          << " MW=" << MW_dim_size << " HD=" << HD_dim_size);
   // scorpio reads into host memory; stage to a device view before passing to init.
   GWF::view_3d<Real> mfcc("mfcc", HD_dim_size, MW_dim_size, PS_dim_size);
   auto mfcc_h = Kokkos::create_mirror_view(mfcc);
-  GWD_DBG("initialize_impl: scorpio::read_var mfcc");
   scorpio::read_var(gw_drag_file,"mfcc",mfcc_h.data());
-  GWD_DBG("initialize_impl: scorpio::read_var complete; releasing file");
   scorpio::release_file(gw_drag_file);
-  GWD_DBG("initialize_impl: scorpio::release_file complete; deep_copy mfcc h->d");
   Kokkos::deep_copy(mfcc, mfcc_h);
-  Kokkos::fence();
-  GWD_DBG("initialize_impl: mfcc deep_copy complete (after fence)");
 
-  GWD_DBG("initialize_impl: calling gw_convect_init");
   GWF::gw_convect_init( m_params, mfcc );
-  Kokkos::fence();
-  GWD_DBG("initialize_impl: gw_convect_init returned (after fence)");
 
-  GWD_DBG("initialize_impl: calling gw_front_init");
   GWF::gw_front_init( m_params, pref_int );
-  Kokkos::fence();
-  GWD_DBG("initialize_impl: gw_front_init returned (after fence)");
 
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
   // using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
-  GWD_DBG("initialize_impl: exit");
 }
 
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::run_impl (const double dt) {
-  GWD_DBG("run_impl: enter dt=" << dt);
   using PC = scream::physics::Constants<Real>;
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const int nlev_mid = m_nlev;
   const int nlev_int = m_nlev+1;
-  const int nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
+  // const int nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
   // const int nlev_int_packs = ekat::npack<Pack>(nlev_int);
-  const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid_packs);
-  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid_packs);
-  GWD_DBG("run_impl: m_ncol=" << m_ncol << " m_nlev=" << m_nlev
-          << " nlev_mid_packs=" << nlev_mid_packs << " m_npgw=" << m_npgw);
+  const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid);
+  const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid);
   // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
   WSM wsm( (m_nlev+1)*m_npgw, 9, team_policy);
-  GWD_DBG("run_impl: WSM constructed");
   //----------------------------------------------------------------------------
   // get fields not updated by GWD
   auto m_lat_v = m_lat.get_view<const Real*>();
   const auto& phis        = get_field_in("phis")          .get_view<const Real*>();
-  const auto& p_mid       = get_field_in("p_mid")         .get_view<const Pack**>();
-  const auto& p_int       = get_field_in("p_int")         .get_view<const Pack**>();
-  const auto& p_del       = get_field_in("pseudo_density").get_view<const Pack**>();
-  const auto& omega       = get_field_in("omega")         .get_view<const Pack**>();
+  const auto& p_mid       = get_field_in("p_mid")         .get_view<const Real**>();
+  const auto& p_int       = get_field_in("p_int")         .get_view<const Real**>();
+  const auto& p_del       = get_field_in("pseudo_density").get_view<const Real**>();
+  const auto& omega       = get_field_in("omega")         .get_view<const Real**>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
   // get fields updated by GWD
-  const auto& T_mid       = get_field_out("T_mid")        .get_view<Pack**>();
-  const auto& qv          = get_field_out("qv")           .get_view<Pack**>();
-  const auto& qc          = get_field_out("qc")           .get_view<Pack**>();
-  const auto& qi          = get_field_out("qi")           .get_view<Pack**>();
+  const auto& T_mid       = get_field_out("T_mid")        .get_view<Real**>();
+  const auto& qv          = get_field_out("qv")           .get_view<Real**>();
+  const auto& qc          = get_field_out("qc")           .get_view<Real**>();
+  const auto& qi          = get_field_out("qi")           .get_view<Real**>();
   const auto& hwinds_fld  = get_field_out("horiz_winds");
-  const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Pack**>();
-  const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Pack**>();
+  const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Real**>();
+  const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Real**>();
   //----------------------------------------------------------------------------
   // create local temporaries to avoid "Implicit capture" warning
   const auto loc_phis  = phis;
@@ -232,29 +194,25 @@ void GWDrag::run_impl (const double dt) {
   auto loc_dttke       = m_buffer.dttke;
   //----------------------------------------------------------------------------
   // populate q_combined
-  GWD_DBG("run_impl: launching populate q_combined");
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
-    const auto qv_i = ekat::scalarize(ekat::subview(loc_qv, i));
-    const auto qc_i = ekat::scalarize(ekat::subview(loc_qc, i));
-    const auto qi_i = ekat::scalarize(ekat::subview(loc_qi, i));
+    const auto qv_i = ekat::subview(loc_qv, i);
+    const auto qc_i = ekat::subview(loc_qc, i);
+    const auto qi_i = ekat::subview(loc_qi, i);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
       loc_q_combined(i,k,0) = qv_i(k);
       loc_q_combined(i,k,1) = qc_i(k);
       loc_q_combined(i,k,2) = qi_i(k);
     });
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: populate q_combined complete (after fence)");
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
-  GWD_DBG("run_impl: launching z_int/z_mid scan");
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
-    const auto p_mid_i = ekat::scalarize(ekat::subview(loc_p_mid, i));
-    const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del, i));
-    const auto T_mid_i = ekat::scalarize(ekat::subview(loc_T_mid, i));
-    const auto qv_i    = ekat::scalarize(ekat::subview(loc_qv,    i));
+    const auto p_mid_i = ekat::subview(loc_p_mid, i);
+    const auto p_del_i = ekat::subview(loc_p_del, i);
+    const auto T_mid_i = ekat::subview(loc_T_mid, i);
+    const auto qv_i    = ekat::subview(loc_qv,    i);
     auto z_mid_i = ekat::subview(loc_z_mid, i);
     auto z_del_i = ekat::subview(loc_z_del, i);
     auto z_int_i = ekat::subview(loc_z_int, i);
@@ -266,16 +224,13 @@ void GWDrag::run_impl (const double dt) {
     PF::calculate_z_mid(team, m_nlev, z_int_i, z_mid_i);
     team.team_barrier();
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: z_int/z_mid scan complete (after fence)");
   //----------------------------------------------------------------------------
   // miscellaneous calculations
-  GWD_DBG("run_impl: launching misc calc (dse, p_del_rcp, p_int_log)");
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
-    const auto T_mid_i = ekat::scalarize(ekat::subview(loc_T_mid, i));
-    const auto p_del_i = ekat::scalarize(ekat::subview(loc_p_del, i));
-    const auto p_int_i = ekat::scalarize(ekat::subview(loc_p_int, i));
+    const auto T_mid_i = ekat::subview(loc_T_mid, i);
+    const auto p_del_i = ekat::subview(loc_p_del, i);
+    const auto p_int_i = ekat::subview(loc_p_int, i);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
       loc_dse(i,k) = PF::calculate_dse(T_mid_i(k),loc_z_mid(i,k),loc_phis(i));
       loc_p_del_rcp(i,k) = 1.0/p_del_i(k);
@@ -284,11 +239,8 @@ void GWDrag::run_impl (const double dt) {
       loc_p_int_log(i,k) = Kokkos::log(p_int_i(k));
     });
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: misc calc complete (after fence)");
   //----------------------------------------------------------------------------
   // initialize output tendencies
-  GWD_DBG("run_impl: zeroing tendency/buffer views via deep_copy");
   Kokkos::deep_copy(loc_gw_tend_u,0.0);
   Kokkos::deep_copy(loc_gw_tend_v,0.0);
   Kokkos::deep_copy(loc_gw_tend_t,0.0);
@@ -303,22 +255,19 @@ void GWDrag::run_impl (const double dt) {
   Kokkos::deep_copy(loc_gwut, 0.0);
   Kokkos::deep_copy(loc_qtgw, 0.0);
   Kokkos::deep_copy(loc_kvtt, 0.0);
-  Kokkos::fence();
-  GWD_DBG("run_impl: tendency/buffer zeroing complete (after fence)");
   //----------------------------------------------------------------------------
   // Compute profiles of background state
   // Capture host-side constants into local variables for device lambda capture
   constexpr Real cpair = PC::Cpair.value;
-  GWD_DBG("run_impl: launching gw_prof");
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
     // Get single-column subviews of all inputs
-    // Note: scalarize includes pack padding, so we need to slice to actual sizes
-    const auto T_mid_s   = ekat::scalarize(ekat::subview(loc_T_mid,  i));
-    const auto p_mid_s   = ekat::scalarize(ekat::subview(loc_p_mid,  i));
-    const auto p_int_s   = ekat::scalarize(ekat::subview(loc_p_int,  i));
-    const auto T_int_s   = ekat::scalarize(ekat::subview(loc_T_int,  i));
+    const auto T_mid_s   = ekat::subview(loc_T_mid,  i);
+    const auto p_mid_s   = ekat::subview(loc_p_mid,  i);
+    const auto p_int_s   = ekat::subview(loc_p_int,  i);
+    const auto T_int_s   = ekat::subview(loc_T_int,  i);
     // Slice to exclude padding: mid levels = [0, m_nlev), int levels = [0, m_nlev+1)
+    // note we might not need this after eliminating the use of packs here
     const auto T_mid_i   = Kokkos::subview(T_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
     const auto p_mid_i   = Kokkos::subview(p_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
     const auto p_int_i   = Kokkos::subview(p_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
@@ -330,8 +279,6 @@ void GWDrag::run_impl (const double dt) {
     GWF::gw_prof(team, m_nlev, cpair, T_mid_i, p_mid_i, p_int_i,
                  rho_int_i, T_int_i, N_mid_i, N_int_i);
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: gw_prof complete (after fence)");
 
   //----------------------------------------------------------------------------
   // Calculate local molecular diffusivity
@@ -350,24 +297,19 @@ void GWDrag::run_impl (const double dt) {
   const auto common_init  = GWF::s_common_init;
   const auto convect_init = GWF::s_convect_init;
   const auto front_init   = GWF::s_front_init;
-  GWD_DBG("run_impl: launching GW tendency big kernel"
-          << " use_gw_convect="   << common_init.use_gw_convect
-          << " use_gw_frontal="   << common_init.use_gw_frontal
-          << " use_gw_orographic="<< common_init.use_gw_orographic);
-  const int dbg_rank = this->get_comm().rank();
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
 
     const Real landfrac_i = loc_landfrac(i);
 
     // Get single-column subviews of all inputs
-    const auto uwind_i      = ekat::scalarize(ekat::subview(loc_uwind, i));
-    const auto vwind_i      = ekat::scalarize(ekat::subview(loc_vwind, i));
-    const auto T_mid_i      = ekat::scalarize(ekat::subview(loc_T_mid, i));
-    const auto T_int_i      = ekat::scalarize(ekat::subview(loc_T_int, i));
-    const auto p_mid_i      = ekat::scalarize(ekat::subview(loc_p_mid, i));
-    const auto p_int_i      = ekat::scalarize(ekat::subview(loc_p_int, i));
-    const auto p_del_i      = ekat::scalarize(ekat::subview(loc_p_del, i));
+    const auto uwind_i      = ekat::subview(loc_uwind, i);
+    const auto vwind_i      = ekat::subview(loc_vwind, i);
+    const auto T_mid_i      = ekat::subview(loc_T_mid, i);
+    const auto T_int_i      = ekat::subview(loc_T_int, i);
+    const auto p_mid_i      = ekat::subview(loc_p_mid, i);
+    const auto p_int_i      = ekat::subview(loc_p_int, i);
+    const auto p_del_i      = ekat::subview(loc_p_del, i);
     const auto p_del_rcp_i  = ekat::subview(loc_p_del_rcp, i);
     const auto p_int_log_i  = ekat::subview(loc_p_int_log, i);
     const auto z_mid_i      = ekat::subview(loc_z_mid, i);
@@ -481,18 +423,12 @@ void GWDrag::run_impl (const double dt) {
     // Orographic stationary gravity waves
     if (common_init.use_gw_orographic) {
 
-      const bool dbg_print = (i == 0) && (team.team_rank() == 0);
-      if (dbg_print) Kokkos::printf("[GW oro rank=%d col=%d] start\n", dbg_rank, (int)i);
-
       // Determine the orographic wave source
       GWF::gw_oro_src(team, common_init, m_nlev, common_init.pgwv,
                       uwind_i, vwind_i, T_mid_i, sgh(i),
                       p_mid_i, p_int_i, p_del_i, z_mid_i, N_mid_i,
                       src_lev, tnd_lev,
                       tau_i, ubm_i, ubi_i, xv, yv, c_i );
-      team.team_barrier();
-      if (dbg_print) Kokkos::printf("[GW oro rank=%d col=%d] after gw_oro_src src_lev=%d tnd_lev=%d\n",
-                                    dbg_rank, (int)i, (int)src_lev, (int)tnd_lev);
 
       // Solve for the drag profile with orographic sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
@@ -505,8 +441,6 @@ void GWDrag::run_impl (const double dt) {
                         c_i, kvtt_i, q_2d, dse_i, tau_i,
                         utgw_i, vtgw_i, ttgw_i, qtgw_i,
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i );
-      team.team_barrier();
-      if (dbg_print) Kokkos::printf("[GW oro rank=%d col=%d] after gw_drag_prof\n", dbg_rank, (int)i);
 
       // add tendencies to aggregate output tendencies
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
@@ -517,8 +451,6 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
         gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
       });
-      team.team_barrier();
-      if (dbg_print) Kokkos::printf("[GW oro rank=%d col=%d] after tendency accum\n", dbg_rank, (int)i);
 
       //----------------------------------------------------------------------------
       // GW energy fixer
@@ -534,15 +466,10 @@ void GWDrag::run_impl (const double dt) {
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
         gw_tend_t_i(k) += dE;
       });
-      team.team_barrier();
-      if (dbg_print) Kokkos::printf("[GW oro rank=%d col=%d] after energy fixer dE=%g\n",
-                                    dbg_rank, (int)i, (double)dE);
 
     } // use_gw_orographic
 
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: GW tendency big kernel complete (after fence)");
 
   //----------------------------------------------------------------------------
   // Convert the tendencies for the dry constituents to dry air basis
@@ -560,15 +487,14 @@ void GWDrag::run_impl (const double dt) {
   //----------------------------------------------------------------------------
   // update prognostic fields
   constexpr Real inv_cpair = 1.0 / PC::Cpair.value;
-  GWD_DBG("run_impl: launching prognostic update");
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
-    const auto uwind_i = ekat::scalarize(ekat::subview(loc_uwind, i));
-    const auto vwind_i = ekat::scalarize(ekat::subview(loc_vwind, i));
-    const auto T_mid_i = ekat::scalarize(ekat::subview(loc_T_mid, i));
-    const auto qv_i    = ekat::scalarize(ekat::subview(loc_qv, i));
-    const auto qc_i    = ekat::scalarize(ekat::subview(loc_qc, i));
-    const auto qi_i    = ekat::scalarize(ekat::subview(loc_qi, i));
+    const auto uwind_i = ekat::subview(loc_uwind, i);
+    const auto vwind_i = ekat::subview(loc_vwind, i);
+    const auto T_mid_i = ekat::subview(loc_T_mid, i);
+    const auto qv_i    = ekat::subview(loc_qv, i);
+    const auto qc_i    = ekat::subview(loc_qc, i);
+    const auto qi_i    = ekat::subview(loc_qi, i);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
       uwind_i(k) += loc_gw_tend_u(i,k) * dt;
       vwind_i(k) += loc_gw_tend_v(i,k) * dt;
@@ -578,8 +504,6 @@ void GWDrag::run_impl (const double dt) {
       qi_i(k)    += loc_gw_tend_q(i,k,2) * dt;
     });
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: prognostic update complete (after fence)");
   //----------------------------------------------------------------------------
   // Update diagnostic outputs
   const auto& gw_u_tend_out     = get_field_out("gw_u_tend")    .get_view<Pack**>();
@@ -590,13 +514,12 @@ void GWDrag::run_impl (const double dt) {
   auto loc_gw_v_tend_out     = gw_v_tend_out;
   auto loc_gw_T_mid_tend_out = gw_T_mid_tend_out;
   auto loc_gw_qv_tend_out    = gw_qv_tend_out;
-  GWD_DBG("run_impl: launching diagnostic output kernel");
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
-    const auto loc_gw_u_tend_out_i     = ekat::scalarize(ekat::subview(loc_gw_u_tend_out, i));
-    const auto loc_gw_v_tend_out_i     = ekat::scalarize(ekat::subview(loc_gw_v_tend_out, i));
-    const auto loc_gw_T_mid_tend_out_i = ekat::scalarize(ekat::subview(loc_gw_T_mid_tend_out, i));
-    const auto loc_gw_qv_tend_out_i    = ekat::scalarize(ekat::subview(loc_gw_qv_tend_out, i));
+    const auto loc_gw_u_tend_out_i     = ekat::subview(loc_gw_u_tend_out, i);
+    const auto loc_gw_v_tend_out_i     = ekat::subview(loc_gw_v_tend_out, i);
+    const auto loc_gw_T_mid_tend_out_i = ekat::subview(loc_gw_T_mid_tend_out, i);
+    const auto loc_gw_qv_tend_out_i    = ekat::subview(loc_gw_qv_tend_out, i);
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
       loc_gw_u_tend_out_i(k)     = loc_gw_tend_u(i,k);
       loc_gw_v_tend_out_i(k)     = loc_gw_tend_v(i,k);
@@ -604,9 +527,6 @@ void GWDrag::run_impl (const double dt) {
       loc_gw_qv_tend_out_i(k)    = loc_gw_tend_q(i,k,0);
     });
   });
-  Kokkos::fence();
-  GWD_DBG("run_impl: diagnostic output kernel complete (after fence)");
-  GWD_DBG("run_impl: exit");
 }
 /*------------------------------------------------------------------------------------------------*/
 size_t GWDrag::requested_buffer_size_in_bytes() const

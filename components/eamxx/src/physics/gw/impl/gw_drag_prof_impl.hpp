@@ -58,9 +58,6 @@ void Functions<S,D>::gw_drag_prof(
   const uview_1d<Real>& dttdf,
   const uview_1d<Real>& dttke)
 {
-  const bool dbg = (team.league_rank() == 0) && (team.team_rank() == 0);
-  if (dbg) Kokkos::printf("[gw_drag_prof] enter pver=%d pgwv=%d src_level=%d max_level=%d tend_level=%d\n",
-                          (int)pver, (int)pgwv, (int)src_level, (int)max_level, (int)tend_level);
   //------------------------------------------------------------------------
   // Initialize gravity wave drag tendencies to zero.
   //------------------------------------------------------------------------
@@ -88,35 +85,27 @@ void Functions<S,D>::gw_drag_prof(
     });
 
   team.team_barrier();
-  if (dbg) Kokkos::printf("[gw_drag_prof] after zero-init parallel_fors\n");
 
   //------------------------------------------------------------------------
   // Compute the stress profiles and diffusivities
   //------------------------------------------------------------------------
-  // DIAGNOSTIC: skip stress_prof entirely; just do a workspace take + release
-  // to see if the hang is in workspace handling alone, or in stress_prof's
-  // k-loop work.
-  if (dbg) Kokkos::printf("[gw_drag_prof] DIAG: skipping stress_prof; testing workspace take/release only\n");
-  {
-    uview_1d<Real> ws_a, ws_b, ws_c, ws_d;
-    workspace.template take_many_contiguous_unsafe<4>(
-      {"diag_a", "diag_b", "diag_c", "diag_d"},
-      {&ws_a, &ws_b, &ws_c, &ws_d});
-    if (dbg) Kokkos::printf("[gw_drag_prof] DIAG: workspace take ok\n");
-    workspace.template release_many_contiguous<4>({&ws_a, &ws_b, &ws_c, &ws_d});
-    if (dbg) Kokkos::printf("[gw_drag_prof] DIAG: workspace release ok\n");
-  }
-  team.team_barrier();
-  if (dbg) Kokkos::printf("[gw_drag_prof] after workspace diag test\n");
+  // NOTE: calling the _serial variant rather than the parallel
+  // gwd_compute_stress_profiles_and_diffusivities(). On the current
+  // Kokkos/CUDA stack the parallel version hangs (team threads are lost
+  // progressively over the serial outer k-loop's many team_barriers /
+  // parallel_reduce syncs); the _serial variant runs the whole k-loop
+  // serially-redundantly on every team thread and avoids the hang.
+  // See the comment block at the top of the _serial implementation for
+  // details and how to revert when the underlying stack issue is fixed.
+  gwd_compute_stress_profiles_and_diffusivities_serial(
+    team, workspace, init, pver, pgwv,
+    src_level, ubi, c, rhoi,
+    ni, kvtt, t, ti, piln, tau);
 
   // Tau projected in the four cardinal directions, for the momentum
   // conservation routine and for diagnostic output.
   if ( pgwv > 0) {
     gwd_project_tau(team, workspace, init, pver, pgwv, tend_level, tau, ubi, c, xv, yv, taucd);
-    team.team_barrier();
-    if (dbg) Kokkos::printf("[gw_drag_prof] after gwd_project_tau\n");
-  } else {
-    if (dbg) Kokkos::printf("[gw_drag_prof] skip gwd_project_tau (pgwv=0)\n");
   }
 
   //------------------------------------------------------------------------
@@ -126,8 +115,6 @@ void Functions<S,D>::gw_drag_prof(
   gwd_compute_tendencies_from_stress_divergence(
     team, workspace, init, pver, pgwv, do_taper, dt, effgw, tend_level, max_level,
     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw);
-  team.team_barrier();
-  if (dbg) Kokkos::printf("[gw_drag_prof] after gwd_compute_tendencies_from_stress_divergence\n");
 
   if (pgwv > 0) {
      // Precalculate rhoi for the following routines. We have rhoi, but
@@ -135,8 +122,6 @@ void Functions<S,D>::gw_drag_prof(
     gwd_precalc_rhoi(
       team, workspace, init, pver, pgwv, dt, tend_level, pmid, pint, t, gwut, ubm, nm, rdpm, c, q, dse,
       egwdffi, qtgw, dttdf, dttke, ttgw);
-    team.team_barrier();
-    if (dbg) Kokkos::printf("[gw_drag_prof] after gwd_precalc_rhoi\n");
   }
   else {
     const int pcnst = q.extent(1);
@@ -146,10 +131,7 @@ void Functions<S,D>::gw_drag_prof(
         const int p = k_pcnst % pcnst;
         qtgw(k, p) = 0;
       });
-    team.team_barrier();
-    if (dbg) Kokkos::printf("[gw_drag_prof] after qtgw zero-out (pgwv=0 branch)\n");
   }
-  if (dbg) Kokkos::printf("[gw_drag_prof] exit\n");
 }
 
 } // namespace gw
