@@ -223,7 +223,7 @@ contains
     ! Local Variables
     integer :: k1, k2
     integer :: eci
-    character(*), parameter :: subname = '(component_init_cc:mct)'
+    character(*), parameter :: subname = '(component_init_cc:moab)'
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 

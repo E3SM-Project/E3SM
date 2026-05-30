@@ -652,7 +652,7 @@ module cime_comp_mod
   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
   logical  :: iamin_CPLALLIACID     ! pe associated with CPLALLIACID
 
-  integer  :: atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
+  integer  :: cpl_rootpe,atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
               glc_rootpe,rof_rootpe,wav_rootpe,iac_rootpe
 
   !----------------------------------------------------------------------------
@@ -678,6 +678,37 @@ module cime_comp_mod
   integer, parameter :: comp_num_iac = 9
 
   !----------------------------------------------------------------------------
+  ! Data structures and parameters for rpointer-consistency management.
+  !----------------------------------------------------------------------------
+  ! The number of components, including the driver. This should be 1 more than
+  ! the maximum comp_num_x integer.
+  integer, parameter :: rpointer_ncomp = 10
+  ! Suffixes x for rpointer.x files.
+  character(3), parameter :: rpointer_suffixes(rpointer_ncomp) = &
+       ['atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'esp', 'iac', 'drv']
+  ! Wrapper to a clock pointer.
+  type, private :: EClockPointer_t
+     type (ESMF_Clock), pointer :: ptr
+  end type EClockPointer_t
+  ! Manager data structure.
+  type, private :: RpointerMgr_t
+     ! Number of components active.
+     integer :: npresent
+     ! Program state variable.
+     logical :: remove_prev_in_next_call
+     ! Component i is present.
+     logical :: cpresent(rpointer_ncomp)
+     ! Component i's restart alarm rang.
+     logical :: rang(rpointer_ncomp)
+     ! Component i's clock.
+     type (EClockPointer_t) :: clock(rpointer_ncomp)
+     ! Verbosity flag
+     logical :: verbose
+  end type RpointerMgr_t
+  ! Manager object.
+  type (RpointerMgr_t) :: rpointer_mgr
+
+  !----------------------------------------------------------------------------
   ! misc
   !----------------------------------------------------------------------------
 
@@ -688,7 +719,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   ! formats
   !----------------------------------------------------------------------------
-  character(*), parameter :: subname = '(moab_driver)'
+  character(*), parameter :: subname = '(cpl7moab_driver)'
   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
@@ -705,7 +736,8 @@ module cime_comp_mod
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
 #endif
-  real(r8) , pointer :: a2x_ox_tag_vals(:,:) ! a2x-ox tags
+  real(r8) , pointer :: a2x_ox_tag_vals(:,:)     ! a2x-ox tags (accumulated, pre-mapping)
+  real(r8) , pointer :: a2x_ox_new_tag_vals(:,:) ! a2x-ox tags (new, post-mapping)
   integer ::   a2x_ox_size
   !===============================================================================
 contains
@@ -722,7 +754,7 @@ contains
     use mpi
 #endif
     !----------------------------------------------------------
-    !| Initialize MCT and MPI communicators and IO
+    !| Initialize MOAB and MPI communicators and IO
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
@@ -767,7 +799,7 @@ contains
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
 
-    !--- Initialize communicators, layouts, MCT
+    !--- Initialize communicators, layouts
     !--- Init MOAB
     if (num_inst_driver > 1) then
        call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
@@ -798,6 +830,7 @@ contains
     comp_iamin(it) = seq_comm_iamin(comp_id(it))
     comp_name(it)  = seq_comm_name(comp_id(it))
 
+    cpl_rootpe = seq_comm_gloroot(CPLID)
     atm_rootpe = seq_comm_gloroot(ALLATMID)
     lnd_rootpe = seq_comm_gloroot(ALLLNDID)
     ice_rootpe = seq_comm_gloroot(ALLICEID)
@@ -975,14 +1008,12 @@ contains
     !----------------------------------------------------------
 
     if (iamroot_CPLID) then
-#ifdef USE_ESMF_LIB
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is set'
-#else
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
-#endif
-       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
-       if (num_inst_driver > 1) &
-            write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
+       write(logunit,'(2A)') subname,' Using esmf_wrf_timemgr'
+       write(logunit,'(2A)') subname,' CPL7-MOAB interface is set'
+       if (num_inst_driver > 1) then
+            write(logunit,'(2A,I0,A)') subname,' driver-moab does not yet support multi-driver'
+            call shr_sys_abort( subname//':: Multi-driver not supported')
+       endif
     endif
 
     !----------------------------------------------------------
@@ -1110,6 +1141,13 @@ contains
 
     !mt   call shr_mem_init(prt=.true.)
     call shr_mem_init(prt=iamroot_CPLID)
+
+    !----------------------------------------------------------
+    !| Prepare consistent rpointer.x files
+    !----------------------------------------------------------
+    ! This call must be made before the seq_infodata_init call below to make
+    ! rpointer.drv consistent.
+    call rpointer_prepare_restart()
 
     !----------------------------------------------------------
     !| Initialize infodata
@@ -1745,6 +1783,11 @@ contains
          wav_nx=wav_nx, wav_ny=wav_ny,          &
          iac_nx=iac_nx, iac_ny=iac_ny,          &
          atm_aero=atm_aero )
+
+    ! Initialize the rpointer manager. This is called after the restart routine
+    ! because we need to be further along in initialization to fully initialize
+    ! the manager. The restart routine doesn't need the initialized manager.
+    call rpointer_init_manager()
 
     ! derive samegrid flags
 
@@ -2569,6 +2612,7 @@ contains
       nfields=mct_list_nitem (temp_list)
       call mct_list_clean(temp_list)
       allocate(a2x_ox_tag_vals(numpts,nfields))
+      allocate(a2x_ox_new_tag_vals(numpts,nfields))
       a2x_ox_size = nfields*numpts
     endif
 
@@ -2750,10 +2794,10 @@ contains
        mrssOnTask(:)  = 0
        call mpi_gather (msize, 1, mpi_real8, &
                         msizeOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
        call mpi_gather (mrss, 1, mpi_real8, &
                         mrssOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
 
        if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
           allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
@@ -2929,6 +2973,12 @@ contains
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
+       ! Monitor each component's restart alarm. Determine when to prepare
+       ! backup copies of the rpointer files and when it's OK to remove
+       ! these. .false. on input means never to force removal of the backup
+       ! files until the monitor's state machine says they can be removed.
+       call rpointer_manage(.false.)
+
        if (glc_prognostic .or. do_hist_l2x1yrg) then
           ! Is it time to average fields to pass to glc?
           !
@@ -3046,6 +3096,10 @@ contains
           ! do all a2o mappings which updates mboxid
           call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
 
+          ! save the newly mapped a2x values so we can restore them later
+          ! without a redundant re-mapping (used below after cime_run_ocn_setup_send)
+          call mbGetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_new_tag_vals,a2x_ox_size)
+
           ! move the proj of atm to ice right after calc of a2x_ox
           ! make a2x_ix using a2x_ox so its just a rearrange
           if (atm_c2_ice .and. ice_prognostic ) then
@@ -3069,7 +3123,7 @@ contains
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
-       ! map i,w to ocean, calc atmocn fluxes, do merge, accum,
+       ! map i,w to ocean, calc atmocn fluxes, do merge, accum on ocean
        !    calc ocn albedos
        !----------------------------------------------------------
        if (ocn_present) then
@@ -3080,7 +3134,7 @@ contains
 
        !----------------------------------------------------------
        !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
-       ! make ocean time average, send.
+       ! make ocean time average, send ocean forcing from coupler
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
@@ -3091,12 +3145,11 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| MAP ATM to OCN
-       !  map a 2 o again only for CESM1_MOD and CESM1_MOD_TIGHT where
-       !  the a2o map above was undone.
-       !  This will be used later in the atm/ocn flux calculation
-       !  form a2i by mapping the output of a2o to i.
-       !  This will be used later in the ice prep
+       !| MAP ATM to OCN (restore)
+       !  For CESM1_MOD and CESM1_MOD_TIGHT, restore the freshly mapped
+       !  a2x_ox values that were saved above (before cime_run_ocn_setup_send
+       !  temporarily restored the old accumulated values to mboxid).
+       !  This avoids a redundant full atm->ocn remapping.
        !----------------------------------------------------------
        if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
@@ -3105,14 +3158,8 @@ contains
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
-          ! move the proj of atm to ice right after calc of a2x_ox
-          if (atm_c2_ice .and. ice_prognostic ) then
-            ! This is special to avoid remapping atm to ocn
-            ! Note it is constrained that different prep modules cannot  use or call each other
-            a2x_ox => prep_ocn_get_a2x_ox() ! array
-            call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
-          endif
+          ! restore the previously saved post-mapping values; no re-mapping needed
+          call mbSetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_new_tag_vals,a2x_ox_size)
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
@@ -3130,7 +3177,6 @@ contains
        !----------------------------------------------------------
        !| ICE SETUP-SEND
        !  map o2i (o2x_ox to o2x_ix)
-       !  MCT ONLY:  map a2x_ox to a2x_i
        !  mrg ice, diag, send
        !----------------------------------------------------------
        if (ice_present .and. icerun_alarm) then
@@ -3663,10 +3709,10 @@ contains
           if (info_mprof > 0) then ! memory profiling is enabled
              call mpi_gather (msize, 1, mpi_real8, &
                               msizeOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
              call mpi_gather (mrss, 1, mpi_real8, &
                               mrssOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
 
              if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
                 msizeOnNode(:) = 0
@@ -3808,6 +3854,12 @@ contains
     call component_final(EClock_l, lnd, lnd_final)
     call component_final(EClock_a, atm, atm_final)
 
+    ! Finalize the rpointer manager. The manager can't always tell the earliest
+    ! time at which it can safely remove the backup rpointer files; pass
+    ! .true. here to force their removal if they still exist, because we now are
+    ! certain they can be removed.
+    call rpointer_manage(.true.)
+
     !------------------------------------------------------------------------
     ! End the run cleanly
     !------------------------------------------------------------------------
@@ -3824,7 +3876,7 @@ contains
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, dtime=dtime)
        simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
        write(logunit,'(//)')
-       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-'//trim(cime_model)
+       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-MOAB in '//trim(cime_model)
        write(logunit,FormatD) subname, '  at YMD,TOD = ',ymd,tod
        write(logunit,FormatR) subname, '# simulated days (this run) = ', simDays
        write(logunit,FormatR) subname, 'compute time (hrs)          = ', (Time_end-Time_begin)/3600._r8
@@ -3910,10 +3962,10 @@ contains
     ctime(6:6) = ':'
     ctime(7:8) = time(5:6)
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '  Common Infrastructure for Modeling the Earth (CIME) CPL7  '
+    write(logunit,F00) '                      CPL7-MOAB                             '
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '     (Online documentation is available on the CIME         '
-    write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
+    write(logunit,F00) '            (Online documentation is available              '
+    write(logunit,F00) '                https://docs.e3sm.org)             '
     write(logunit,F00) '     License information is available as a link from above  '
     write(logunit,F00) '------------------------------------------------------------'
     write(logunit,F00) '                     MODEL ',trim(cime_model)
@@ -4364,7 +4416,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (ocn_prognostic) then
-          ! Map to ocn
+          ! Map ice to ocn
           if (ice_c2_ocn) then
             call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
 
@@ -4372,7 +4424,7 @@ contains
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
        end if
 
-       ! atm/ocn flux on either atm or ocean grid
+       ! atm/ocn flux on either atm or ocean grid (MOAB: only ocean)
        call cime_run_atmocn_fluxes(hashint)
 
        ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
@@ -5394,5 +5446,414 @@ contains
     call t_adj_detailf(-1)
 
   end subroutine cime_write_performance_checkpoint
+
+!----------------------------------------------------------------------------------
+!
+! The following subroutines improve robustness of restart writing and reading.
+!
+! It's possible for a crash that occurs during restart writing to lead to
+! inconsistent or incomplete rpointer files. While we can't salvage the restart
+! files in general, we can at least provide a consistent set of rpointer files
+! -- namely, the previous ones -- for the next restart.
+!
+! These routines provide this capability by copying all rpointer.X files to
+! rpointer.X.prev before components write restart files, then removing
+! rpointer.X.prev files when all components are done.
+!
+! If a crash occurs midway through, on restart, the consistent rpointer.X.prev
+! files will be used.
+!
+!----------------------------------------------------------------------------------
+
+  subroutine rpointer_prepare_restart()
+    ! Prepare to restart. If .prev file are present, something went wrong in the
+    ! previous run's final restart write. Use the .prev files instead of the
+    ! invalid regular ones. If there are no prev files, then this subroutine
+    ! doesn't do anything.
+    !
+    ! This routine is called independently of the ones after it; in particular,
+    ! it does not require the manager to be initialized.
+
+    integer :: i, n, idxlist(rpointer_ncomp), sleep_len, rcode, unit
+    logical :: file_exists, ok, same, complete
+
+    ! Each rank checks if .prev files exist.
+    n = 0
+    do i = 1, rpointer_ncomp
+       inquire(file='rpointer.'//rpointer_suffixes(i)//'.prev', &
+            exist=file_exists)
+       if (file_exists) then
+          n = n + 1
+          idxlist(n) = i
+       end if
+    end do
+
+    if (n == 0) return
+
+    ! .prev files exist.
+
+    ! Check that there is not an rpointer.x file with no corresponding
+    ! rpointer.x.prev file. If there is, then we assume the .prev files are
+    ! incomplete and error out. Note the presence of at least one
+    ! rpointer.x.prev file means something went wrong in the previous run, so
+    ! it's best to let the user sort things out.
+    if (iamroot_CPLID) then
+       complete = .true.
+       do i = 1, rpointer_ncomp
+          inquire(file='rpointer.'//rpointer_suffixes(i), &
+               exist=file_exists)
+          if (file_exists) then
+             inquire(file='rpointer.'//rpointer_suffixes(i)//'.prev', &
+                  exist=file_exists)
+             if (.not. file_exists) then
+                complete = .false.
+                write(logunit,'(3a)') 'rpointer> ERROR: ', rpointer_suffixes(i), &
+                     ' has an rpointer.x file with no corresponding rpointer.x.prev file'
+             end if
+          end if
+       end do
+       if (.not. complete) then
+          call shr_sys_abort('rpointer_prepare_restart: &
+               &rpointer.x.prev files exist but rpointer.y &
+               &has no corresponding rpointer.y.prev file.')
+       end if
+    end if
+
+    ! The root rank copies the .prev files to regular files.
+    if (iamroot_CPLID) then
+       do i = 1, n
+          rcode = copy_and_trim_rpointer_file( &
+               'rpointer.'//rpointer_suffixes(idxlist(i))//'.prev', &
+               'rpointer.'//rpointer_suffixes(idxlist(i)))
+          if (rcode /= 0) write(logunit,*) 'rpointer> copy x.prev->x', rcode
+       end do
+    end if
+
+    ! Read-after-write consistency generally does not hold, so each rank
+    ! waits until it does, as follows: Check if rpointer.x is the same as
+    ! rpointer.x.prev. If not, then sleep and loop to try again. The sleep
+    ! period doubles each try until 15 seconds have elapsed, at which point,
+    ! if consistency still doesn't hold, give up.
+    sleep_len = 1
+    do while (.true.)
+       ok = .true.
+       do i = 1, n
+          same = are_files_same( &
+               'rpointer.'//rpointer_suffixes(idxlist(i))//'.prev', &
+               'rpointer.'//rpointer_suffixes(idxlist(i)))
+          if (.not. same) then
+             ok = .false.
+             exit
+          end if
+       end do
+       if (ok) exit
+       call sleep(sleep_len)
+       sleep_len = 2*sleep_len
+       ! Wait for up to 8 + 4 + 2 + 1 = 15 seconds.
+       if (sleep_len > 8) exit
+    end do
+    if (.not. ok) then
+       call shr_sys_abort('rpointer_prepare_restart: &
+            &Could not copy rpointer.x.prev to rpointer.x')
+    end if
+    ! This rank is consistent. Wait for everyone else.
+    call mpi_barrier(mpicom_GLOID, rcode)
+
+    ! After the barrier exits, the root rank can delete the .prev files.
+    if (iamroot_CPLID) then
+       unit = shr_file_getUnit()
+       do i = 1, n
+          open(file='rpointer.'//rpointer_suffixes(i)//'.prev', &
+               unit=unit, iostat=rcode)
+          if (rcode == 0) close(unit=unit, status='delete', iostat=rcode)
+       end do
+       call shr_file_freeUnit(unit)
+    end if
+
+  contains
+
+    function are_files_same(afname, bfname) result(same)
+      ! Do files afname and bfname contain the same contents?
+
+      character(*), intent(in) :: afname, bfname
+
+      integer :: aunit, bunit, astat, bstat, i, line
+      character(1024) :: abuf, bbuf
+      logical :: same
+
+      same = .true.
+
+      aunit = shr_file_getUnit()
+      bunit = shr_file_getUnit()
+
+      open(aunit, file=trim(afname), action='READ', iostat=astat)
+      open(bunit, file=trim(bfname), action='READ', iostat=bstat)
+
+      if ((astat == 0) .neqv. (bstat == 0)) same = .false.
+
+      if (same .and. astat /= 0) same = .false.
+
+      if (same) then
+         astat = 0
+         bstat = 0
+         abuf(:) = ' '
+         bbuf(:) = ' '
+         line = 1
+         do while (same .and. astat == 0 .and. bstat == 0)
+            read(aunit, '(a1024)', iostat=astat) abuf
+            read(bunit, '(a1024)', iostat=bstat) bbuf
+            if ((astat == 0) .neqv. (bstat == 0)) then
+               same = .false.
+               exit
+            end if
+            if (astat /= 0) exit
+            do i = 1, 1024
+               if (abuf(i:i) /= bbuf(i:i)) then
+                  same = .false.
+                  exit
+               end if
+            end do
+            line = line + 1
+         end do
+      end if
+
+      close(aunit)
+      close(bunit)
+      call shr_file_freeUnit(aunit)
+      call shr_file_freeUnit(bunit)
+
+    end function are_files_same
+
+  end subroutine rpointer_prepare_restart
+
+  subroutine rpointer_init_manager()
+    ! Initialize a manager that is accessed through calls to rpointer_manage.
+
+    integer :: i, n
+
+    rpointer_mgr%verbose = .false.
+    rpointer_mgr%rang(:) = .false.
+
+    do i = 1, rpointer_ncomp
+       rpointer_mgr%clock(i)%ptr => null()
+    end do
+
+    rpointer_mgr%cpresent(:) = .false.
+    n = 0
+
+    if (atm_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_atm) = .true.
+       rpointer_mgr%clock(comp_num_atm)%ptr => EClock_a
+    end if
+    if (lnd_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_lnd) = .true.
+       rpointer_mgr%clock(comp_num_lnd)%ptr => EClock_l
+    end if
+    if (ice_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_ice) = .true.
+       rpointer_mgr%clock(comp_num_ice)%ptr => EClock_i
+    end if
+    if (ocn_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_ocn) = .true.
+       rpointer_mgr%clock(comp_num_ocn)%ptr => EClock_o
+    end if
+    if (glc_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_glc) = .true.
+       rpointer_mgr%clock(comp_num_glc)%ptr => EClock_g
+    end if
+    if (rof_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_rof) = .true.
+       rpointer_mgr%clock(comp_num_rof)%ptr => EClock_r
+    end if
+    if (wav_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_wav) = .true.
+       rpointer_mgr%clock(comp_num_wav)%ptr => EClock_w
+    end if
+    if (esp_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_esp) = .true.
+       rpointer_mgr%clock(comp_num_esp)%ptr => EClock_e
+    end if
+    if (iac_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_iac) = .true.
+       rpointer_mgr%clock(comp_num_iac)%ptr => EClock_z
+    end if
+    n = n + 1
+    rpointer_mgr%cpresent(rpointer_ncomp) = .true.
+    rpointer_mgr%clock(rpointer_ncomp)%ptr => EClock_d
+
+    rpointer_mgr%npresent = n
+    rpointer_mgr%remove_prev_in_next_call = .false.
+
+  end subroutine rpointer_init_manager
+
+  subroutine rpointer_manage(force_remove)
+    ! Call this routine at certain places in the driver loop. This subroutine
+    ! monitors the restart alarms of all the active components and carries out
+    ! the steps required for rpointer file consistency based on state.
+
+    logical, intent(in) :: force_remove ! force removal of .prev files in this call
+
+    integer :: i, n, rcode, unit
+    logical :: previous_rings, file_exists
+    character(32) :: buf
+
+    if (.not. iamroot_CPLID) return
+
+    if (rpointer_mgr%remove_prev_in_next_call .or. force_remove) then
+       ! Now we've been told the restart writes really are all valid. Remove the
+       ! .prev files.
+       unit = shr_file_getUnit()
+       do i = 1, size(rpointer_suffixes,1)
+          if (rpointer_mgr%cpresent(i)) then
+             buf = 'rpointer.'//rpointer_suffixes(i)//'.prev'
+             inquire(file=trim(buf), exist=file_exists)
+             if (file_exists) then
+                open(file=trim(buf), unit=unit, iostat=rcode)
+                if (rcode == 0) close(unit, status='delete', iostat=rcode)
+             end if
+          end if
+       end do
+       call shr_file_freeUnit(unit)
+       rpointer_mgr%rang(:) = .false.
+       rpointer_mgr%remove_prev_in_next_call = .false.
+       if (rpointer_mgr%verbose) write(logunit,*) 'rpointer> rm .prev files'
+       return
+    end if
+
+    previous_rings = .false.
+    do i = 1, rpointer_ncomp
+       if (rpointer_mgr%rang(i)) previous_rings = .true.
+    end do
+
+    n = 0
+    do i = 1, rpointer_ncomp
+       if (.not. rpointer_mgr%cpresent(i)) cycle
+       if (.not. rpointer_mgr%rang(i)) then
+          if (seq_timemgr_alarmIsOn(rpointer_mgr%clock(i)%ptr, &
+               seq_timemgr_alarm_restart)) then
+             rpointer_mgr%rang(i) = .true.
+          end if
+       end if
+       if (rpointer_mgr%rang(i)) n = n + 1
+    end do
+
+    if (n > 0 .and. rpointer_mgr%verbose) then
+       write (logunit,*) 'rpointer> state'
+       do i = 1, rpointer_ncomp
+          if (rpointer_mgr%cpresent(i)) then
+             write (logunit, '(a,i2,i2,i2,a4,l2)') &
+                  'rpointer>',i,n,rpointer_mgr%npresent,rpointer_suffixes(i), &
+                  rpointer_mgr%rang(i)
+          end if
+       end do
+    end if
+
+    if (previous_rings .and. n == rpointer_mgr%npresent) then
+       ! All restart timers have rung. Get ready to remove the .prev files. We
+       ! don't want to do it in this rpointer_manage call, however. Because of
+       ! things like partial steps in the atmosphere model (initiated from
+       ! cime_final rather than cime_run), we can't yet be sure all
+       ! restart-related writes at the level of history tapes are complete. Set
+       ! our state to tell us that in the next call, we can remove the files.
+       rpointer_mgr%remove_prev_in_next_call = .true.
+       if (rpointer_mgr%verbose) &
+            write(logunit,*) 'rpointer> set remove_prev_in_next_call=true'
+       return
+    else if (.not. previous_rings) then
+       if (n == 0) then
+          ! Nothing happened.
+          return
+       else
+          ! A new round of restart writes is starting. Copy previous, valid
+          ! rpointer files to .prev in case one or more of the restart writes that
+          ! are about to occur fail.
+          do i = 1, size(rpointer_suffixes,1)
+             if (rpointer_mgr%cpresent(i)) then
+                buf = 'rpointer.'//rpointer_suffixes(i)
+                inquire(file=trim(buf), exist=file_exists)
+                if (file_exists) then
+                   rcode = copy_and_trim_rpointer_file(trim(buf), &
+                        'rpointer.'//rpointer_suffixes(i)//'.prev')
+                   if (rcode /= 0 .and. rpointer_mgr%verbose) &
+                        write(logunit,*) 'rpointer> copy x->x.prev',rcode
+                   if (rpointer_mgr%verbose) then
+                      if (rcode == 0) then
+                         write(logunit,*) 'rpointer> copied: ', rpointer_suffixes(i)
+                      else
+                         write(logunit,*) 'rpointer> failed to copy: ', rpointer_suffixes(i)
+                      end if
+                   end if
+                end if
+             end if
+          end do
+          return
+       end if
+    end if
+
+    ! If we reach this point, there were previous rings and n < npresent,
+    ! meaning > 2 iterations of the driver run loop will occur before all
+    ! restart alarms have rung, now that at least one has rung. Don't do
+    ! anything more yet.
+
+  end subroutine rpointer_manage
+
+  function copy_and_trim_rpointer_file(src, dst) result(out)
+    ! Copy rpointer file src to dst, with the caveat that the lines are
+    ! trimmed. We found that shr_file_put would result in mysterious errors
+    ! preventing copying, whereas this manual approach has yet to exhibit this
+    ! problem.
+
+    character(*), intent(in) :: src, dst
+
+    character(1024) :: buf
+    character(16) :: status
+    integer :: soi, doi, stat, out
+    logical :: file_exists
+
+    soi = shr_file_getUnit()
+    out = 0
+    open(soi, file=trim(src), status='old', action='read', iostat=stat)
+    if (stat /= 0) then
+       out = -3
+       call shr_file_freeUnit(soi)
+       return
+    end if
+    inquire(file=trim(dst), exist=file_exists)
+    ! Probably not needed; always using 'replace' I think should work.
+    if (file_exists) then
+       status = 'replace'
+    else
+       status = 'new'
+    end if
+    doi = shr_file_getUnit()
+    open(doi, file=trim(dst), status=trim(status), action='write', iostat=stat)
+    if (stat /= 0) then
+       close(soi)
+       out = -2
+       call shr_file_freeUnit(soi)
+       call shr_file_freeUnit(doi)
+       return
+    end if
+    do while (.true.)
+       read(soi, '(a1024)', iostat=stat) buf
+       if (stat /= 0) exit
+       write(doi, '(a)', iostat=stat) trim(buf)
+       if (stat /= 0) out = -1
+    end do
+    close(soi)
+    close(doi)
+    call shr_file_freeUnit(soi)
+    call shr_file_freeUnit(doi)
+
+  end function copy_and_trim_rpointer_file
 
 end module cime_comp_mod

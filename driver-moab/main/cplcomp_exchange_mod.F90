@@ -280,9 +280,20 @@ subroutine  copy_aream_from_area(mbappid)
       character(CL) :: atm_mesh
       integer :: ATM_PHYS_CID
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      integer :: local_pg, global_pg
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+      ! Propagate atm_pg_active from the atm component PEs to the coupler PEs across the joint
+      ! communicator. atm_pg_active is set by semoab_mod (homme) on atm PEs when fv_nphys > 0;
+      ! on disjoint coupler PEs it would otherwise stay at the seq_comm_mct default .false.,
+      ! which makes the comm-graph / mesh-write branches below pick the wrong (point-cloud) path
+      ! and produces a mismatched src/tgt graph for ne4pg2-style cases.
+      local_pg = 0
+      if (atm_pg_active) local_pg = 1
+      call shr_mpi_max(local_pg, global_pg, mpicom_join, all=.true.)
+      atm_pg_active = (global_pg == 1)
 
       ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
       call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
@@ -722,6 +733,7 @@ subroutine  copy_aream_from_area(mbappid)
       call moab_exchange_domain_tags(comp, mlnid, mblxid, 'lat:lon:area:frac:mask', 'doml')
 
 #ifdef MOABDEBUG
+      if (mblxid >= 0) then ! coupler pes only
          outfile = 'recMeshLand.h5m'//C_NULL_CHAR
          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
    !       write out the mesh file to disk
@@ -730,6 +742,7 @@ subroutine  copy_aream_from_area(mbappid)
             write(logunit,*) subname,' error in writing land coupler mesh'
             call shr_sys_abort(subname//' ERROR in writing land coupler mesh')
          endif
+      endif
 #endif
 
   end subroutine cplcomp_moab_init_lnd
@@ -828,14 +841,16 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_exchange_domain_tags(comp, MPSIID, mbixid, 'lat:lon:area:frac:mask', 'domi')
       endif
 #ifdef MOABDEBUG
+      if (mbixid >= 0) then ! coupler pes only
 !      debug test
-      outfile = 'recMeshSeaIce.h5m'//C_NULL_CHAR
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+         outfile = 'recMeshSeaIce.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
 !      write out the mesh file to disk
-      ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-      if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing sea ice mesh on coupler '
-          call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+         ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+             call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+         endif
       endif
 #endif
 
