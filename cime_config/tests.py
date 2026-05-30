@@ -66,7 +66,7 @@ _TESTS = {
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS_Vmct.hcru_hcru.IELM.elm-multi_inst",
-            "SMS.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
+            "SMS_Vmct.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
             )
         },
 
