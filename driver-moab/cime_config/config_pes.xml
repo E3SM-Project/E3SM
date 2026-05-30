@@ -1,21 +1,6 @@
 <?xml version="1.0"?>
 <config_pes>
   <grid name="any">
-    <mach name="pm-cpu">
-      <pes pesize="any" compset="XATM">
-        <comment>driver-mct: any grid, any mach, compset XATM, pesize=threaded</comment>
-        <ntasks>
-          <ntasks_atm>64</ntasks_atm>
-          <ntasks_lnd>64</ntasks_lnd>
-          <ntasks_rof>64</ntasks_rof>
-          <ntasks_ice>64</ntasks_ice>
-          <ntasks_ocn>64</ntasks_ocn>
-          <ntasks_glc>64</ntasks_glc>
-          <ntasks_wav>64</ntasks_wav>
-          <ntasks_cpl>64</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="any">
       <pes pesize="any" compset="any">
         <comment>driver-mct: any grid, any mach, any compset, any pesize</comment>
@@ -30,6 +15,19 @@
           <ntasks_wav>-1</ntasks_wav>
           <ntasks_iac>-1</ntasks_iac>
           <ntasks_esp>-1</ntasks_esp>
+        </ntasks>
+      </pes>
+      <pes pesize="any" compset="XATM">
+        <comment>driver-mct: any grid, any mach, compset XATM, pesize=any</comment>
+        <ntasks>
+          <ntasks_atm>64</ntasks_atm>
+          <ntasks_lnd>64</ntasks_lnd>
+          <ntasks_rof>64</ntasks_rof>
+          <ntasks_ice>64</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+          <ntasks_glc>64</ntasks_glc>
+          <ntasks_wav>64</ntasks_wav>
+          <ntasks_cpl>64</ntasks_cpl>
         </ntasks>
       </pes>
       <pes compset="XATM" pesize="T">
