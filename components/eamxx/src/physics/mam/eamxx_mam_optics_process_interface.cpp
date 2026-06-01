@@ -265,6 +265,9 @@ void MAMOptics::initialize_impl(const RunType run_type) {
         AtmosphereInput refindex_aerosol(fname, grid_, refindex_fields);
         refindex_aerosol.read_variables();
         refindex_aerosol.finalize();
+        for (auto it : refindex_fields)
+          it.second.sync_to_host(); // TODO: Can we do away with using fields on host?
+
         // copy data to device
         mam_coupling::set_refindex_aerosol(
             species_id, refindex_fields,

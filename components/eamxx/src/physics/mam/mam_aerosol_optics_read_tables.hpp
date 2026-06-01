@@ -98,6 +98,9 @@ inline void read_rrtmg_table(
   rrtmg.read_variables();
   rrtmg.finalize();
 
+  for (auto& it : aerosol_optics_fields)
+    it.second.sync_to_host(); // TODO: see comment below: why not do things just on device?
+
   // copy data from host to device for mode 1
   // TODO: why can't we copy device data directly?
   int d1 = imode;
@@ -226,6 +229,8 @@ inline void read_water_refindex(const std::string &table_filename,
   AtmosphereInput refindex_water(table_filename, grid, fields, true);
   refindex_water.read_variables();
   refindex_water.finalize();
+  for (auto& f : fields)
+    f.sync_to_host(); // TODO: can we do away with host views?
 
   //  maybe make a 1D vied of Kokkos::complex<Real>
   const auto crefwlw_host = Kokkos::create_mirror_view(crefwlw);
