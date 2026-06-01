@@ -789,8 +789,8 @@
       <value compset="^20TR.+CMIP6-LULC"                        >284.317</value>
       <value compset="^20TR.+CMIP6-VOLC"                        >284.317</value>
       <value compset="^SSP.+CMIP6"                              >0.000001</value>
-      <value compset="^SSP245.+CMIP6"			                    	>0.000001</value>
-      <value compset="^SSP370.+CMIP6"				                    >0.000001</value>
+      <value compset="^SSP245.+CMIP6"                           >0.000001</value>
+      <value compset="^SSP370.+CMIP6"                           >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
@@ -798,6 +798,7 @@
       <value compset="^SSP585.*BGC%B"                           >284.317</value>  
       <value compset="^1850.*CMIP7"                             >284.297</value>
       <value compset="^1850.*CMIP7.+4xCO2"                      >1137.188</value>
+      <value compset="^1950.*CMIP7"                             >313.079</value>
       <value compset="^2010.+CMIP7"                             >388.901</value>
       <!-- Override values based on EAM (WACCM) chemistry -->
       <value compset="EAM%W"				>0.000001</value>
