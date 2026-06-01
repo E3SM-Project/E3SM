@@ -271,9 +271,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
-      <apply_tendencies   type="logical" doc="ZM flag to apply tendencies"                  >true</apply_tendencies>
       <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >true</use_fortran_bridge>
-      <mcsp_enabled       type="logical" doc="ZM flag to enable MCSP in ZM"                 >true</mcsp_enabled>
       <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
       <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>
       <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >false</clos_dyn_adj>
@@ -289,6 +287,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <c0_lnd           type="real"    doc="ZM autoconversion coefficient over land"   >0.002</c0_lnd>
       <c0_ocn           type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
       <num_cin          type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
+      <!-- MCSP -->
+      <mcsp_enabled type="logical" doc="ZM flag to enable MCSP in ZM" >true</mcsp_enabled>
+      <mcsp_t_coeff type="real" doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
+      <mcsp_q_coeff type="real" doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
+      <mcsp_u_coeff type="real" doc="MCSP U-wind coefficient"         >0.0</mcsp_u_coeff>
+      <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
     <!-- Basic options for each mam4 atm process -->
