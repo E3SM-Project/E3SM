@@ -3514,7 +3514,7 @@ sub setup_logic_fates {
     my $var = "use_fates_dbh_init";
     if ( defined($nl->get_value($var))  ) {
 	if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
-	    $log->fatal_error("$var can only be .true. use_fates_nocomp is .true." );
+	    fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
 	}
     }
     
