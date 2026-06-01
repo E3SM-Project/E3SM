@@ -314,6 +314,9 @@ class TestAllScream(object):
         # Ctest only needs config options, and doesn't need the leading 'cmake '
         result  = f"{'' if for_ctest else 'cmake '}-C {self._machine.mach_file}"
 
+        if self._machine.use_ninja and not for_ctest:
+            result  += " -G Ninja"
+
         # Netcdf should be available. But if the user is doing a testing session
         # where all netcdf-related code is disabled, he/she should be able to run
         # even if no netcdf is available
@@ -472,6 +475,9 @@ class TestAllScream(object):
         for key, value in extra_configs:
             result += f"-D{key}={value} "
 
+        if self._machine.use_ninja:
+            result += "-DUSE_NINJA=TRUE "
+
         work_dir = self._work_dir/str(test)
         result += f"-DBUILD_WORK_DIR={work_dir} "
 
@@ -526,7 +532,10 @@ class TestAllScream(object):
             print (f"WARNING: Failed to create baselines (config phase):\n{err}")
             return False
 
-        cmd = f"make -j{test.compile_res_count}"
+        if self._machine.use_ninja:
+            cmd = f"ninja -j{test.compile_res_count}"
+        else:
+            cmd = f"make -j{test.compile_res_count}"
         if self._parallel:
             resources = self.get_taskset_resources(test)
             cmd = f"taskset -c {','.join([str(r) for r in resources])} sh -c '{cmd}'"
