@@ -179,23 +179,55 @@ contains
   end function get_homme_bool_param_f90
 
   function get_homme_nsplit_f90 (atm_dt) result(nsplit_out) bind(c)
-    use control_mod, only: compute_nsplit=>timestep_make_eam_parameters_consistent
     use homme_context_mod, only: par
     !
     ! Input(s)
     !
-    integer (kind=c_int) :: atm_dt
+    real (kind=c_double), intent(in) :: atm_dt
     !
     ! Local(s)
     !
     integer (kind=c_int) :: nsplit_out
-    integer :: ierr, nstep_factor
+    integer :: dt_max_factor
+    real (kind=real_kind) :: atm_dt_rk, nsplit_real
+    real (kind=real_kind), parameter :: &
+         zero = 0.0_real_kind, &
+         eps = epsilon(1.0_real_kind), &
+         divisible_tol = 1e3_real_kind*eps
 
     nsplit_out = -1
-    ierr = compute_nsplit(par, dt_remap_factor, dt_tracer_factor, nsplit_out, nstep_factor, tstep, atm_dt)
-    if (ierr .ne. 0) then
-      call abortmp ("[get_homme_nsplit_f90] Error! Something went wrong in timestep_make_eam_parameters_consistent.")
+
+    if (tstep <= zero) then
+      call abortmp ("[get_homme_nsplit_f90] Error! Homme tstep must be > 0.")
     endif
+
+    dt_max_factor = max(dt_remap_factor, dt_tracer_factor)
+    if (dt_max_factor <= 0) then
+      call abortmp ("[get_homme_nsplit_f90] Error! Invalid dt_max_factor.")
+    endif
+
+    atm_dt_rk = real(atm_dt, kind=real_kind)
+    nsplit_real = atm_dt_rk / (real(dt_max_factor, kind=real_kind) * tstep)
+    nsplit_out = nint(nsplit_real)
+
+    if (nsplit_out <= 0) then
+      call abortmp ("[get_homme_nsplit_f90] Error! Computed nsplit <= 0.")
+    endif
+
+    if (abs(nsplit_real - real(nsplit_out, kind=real_kind)) > divisible_tol*max(abs(nsplit_real),1.0_real_kind)) then
+      if (par%masterproc) then
+        write(iulog,'(a,es22.14,a,es22.14,a,i4,a,i4,a,es22.14,a,i7,a)') &
+             '[get_homme_nsplit_f90] Computed nsplit = ', nsplit_real, &
+             ' based on atm_dt = ', atm_dt_rk, &
+             ', dt_remap_factor = ', dt_remap_factor, &
+             ', dt_tracer_factor = ', dt_tracer_factor, &
+             ', tstep = ', tstep, &
+             ', rounded nsplit = ', nsplit_out, &
+             ', which is outside the divisibility tolerance.'
+      endif
+      call abortmp ("[get_homme_nsplit_f90] Error! atm_dt is inconsistent with Homme timestep settings.")
+    endif
+
     if (nsplit_inited) then
       ! For now, do not allow atm_dt to change throughout the simulation.
       ! This might actually be safe, and a potentially useful feature,

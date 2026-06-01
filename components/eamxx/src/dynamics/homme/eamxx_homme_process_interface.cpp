@@ -495,22 +495,10 @@ void HommeDynamics::run_impl (const double dt)
     // Note: Homme's step lasts homme_dt*max(dt_remap_factor,dt_tracers_factor), and it must divide dt.
     // We neeed to compute dt/homme_dt, and subcycle homme that many times
 
-    // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
-    //       Now we can compute the actual nsplit, and need to update its value
-    //       in Hommexx's data structures.
-    //       Also, nsplit calculation requires an integer atm timestep, so we
-    //       check to ensure that's the case
-    EKAT_REQUIRE_MSG (std::abs(dt-std::round(dt))<std::numeric_limits<double>::epsilon()*10,
-        "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
-        "  - input dt : " << dt << "\n"
-        "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
-
     if (m_bfb_hash_nstep > 0 && start_of_step_ts().get_num_steps() % m_bfb_hash_nstep == 0)
       print_fast_global_state_hash("Hommexx",start_of_step_ts());
 
-    const int dt_int = static_cast<int>(std::round(dt));
-
-    const int nsplit = get_homme_nsplit_f90(dt_int);
+    const int nsplit = get_homme_nsplit_f90(dt);
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
