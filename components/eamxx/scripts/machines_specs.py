@@ -73,6 +73,7 @@ class Machine(object):
     c_compiler   = "mpicc"
     ftn_compiler = "mpifort"
     baselines_dir = ""
+    use_ninja = False
 
     @classmethod
     def setup_base(cls,name,num_bld_res=-1,num_run_res=-1):

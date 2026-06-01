@@ -17,6 +17,10 @@ set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 ctest_start(${dashboard_model} TRACK ${dashboard_track})
 
+if (USE_NINJA)
+  set (CTEST_CMAKE_GENERATOR Ninja)
+endif()
+
 separate_arguments(OPTIONS_LIST UNIX_COMMAND "${CMAKE_COMMAND}")
 ctest_configure(OPTIONS "${OPTIONS_LIST}" RETURN_VALUE CONFIG_ERROR_CODE)
 
