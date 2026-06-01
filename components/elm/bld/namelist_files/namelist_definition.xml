@@ -457,6 +457,13 @@ Toggle to turn on prescribed physiology (only relevant if FATES is being used).
 Toggle to turn on inventory initialization(only relevant if FATES is being used).
 </entry>
 
+<entry id="use_fates_dbh_init" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Initialize cohorts at coldstart with diameter at breast height instead of density
+(Applies only if use_fates_nocomp=.true.)
+(Only relevant if FATES is on).
+</entry>
+
 <entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname to the inventory initialization control file.

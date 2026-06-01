@@ -1,0 +1,10 @@
+SRCDIR=`./xmlquery SRCROOT --value`
+CASEDIR=`./xmlquery CASEROOT --value`
+FATESROOT=$SRCDIR/src/fates/
+FATESPARAMFILE=$CASEDIR/fates_params_init_dbh.json
+
+cp $FATESDIR/parameter_files/fates_params_default.json $FATESPARAMFILE
+
+$FATESDIR/tools/modify_fates_paramfile.py --overwrite --fin $FATESPARAMFILE --param fates_recruit_init_seed --values 0.01 --indices all
+
+echo "fates_paramfile = '$FATESPARAMFILE'" >> $CASEDIR/user_nl_elm

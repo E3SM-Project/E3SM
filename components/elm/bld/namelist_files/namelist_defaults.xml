@@ -2277,6 +2277,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_luh                  use_fates=".true."                                  >.false.</use_fates_luh>
 <fates_lu_transition_logic     use_fates=".true." use_fates_luh=".true." >4</fates_lu_transition_logic>
 <use_fates_inventory_init       use_fates=".true.">.false.</use_fates_inventory_init>
+<use_fates_dbh_init             use_fates=".true.">.false.</use_fates_dbh_init>
 <use_fates_nocomp               use_fates=".true." use_fates_sp=".true.">.true.</use_fates_nocomp>
 <use_fates_nocomp               use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_nocomp>
 <use_fates_nocomp               use_fates=".true."                      >.false.</use_fates_nocomp>

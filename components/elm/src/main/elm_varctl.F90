@@ -245,6 +245,7 @@ module elm_varctl
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
+  logical, public            :: use_fates_dbh_init = .false.            ! true => initialize cohorts from dbh (nocomp only)
   logical, public            :: use_fates_nocomp = .false.              ! true => no competition mode
   logical, public            :: use_fates_sp = .false.                  ! true => FATES satellite phenology mode
   logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode

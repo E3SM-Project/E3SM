@@ -53,6 +53,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_ed_st3
    use elm_varctl        , only : use_fates_ed_prescribed_phys
    use elm_varctl        , only : use_fates_inventory_init
+   use elm_varctl        , only : use_fates_dbh_init
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
@@ -444,6 +445,7 @@ contains
      integer                                        :: pass_ed_prescribed_phys
      integer                                        :: pass_planthydro
      integer                                        :: pass_inventory_init
+     integer                                        :: pass_dbh_init
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
      integer                                        :: pass_num_lu_harvest_cats
@@ -729,6 +731,8 @@ contains
 
         call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
 
+        call set_fates_ctrlparms('use_dbh_init',ival=pass_dbh_init)
+        
         ! Check through FATES parameters to see if all have been set
         call set_fates_ctrlparms('check_allset')
 

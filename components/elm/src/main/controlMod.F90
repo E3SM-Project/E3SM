@@ -82,7 +82,7 @@ module controlMod
                         nsrcontinue, nsrbranch, use_erosion, ero_ccycle, &
                         lnd_rof_coupling_nstep, create_glacier_mec_landunit, &
                         use_atm_downscaling_to_topunit, precip_downscaling_method, &
-                        fates_spitfire_mode, fates_harvest_mode, &
+                        fates_spitfire_mode, fates_harvest_mode, use_fates_dbh_init, &
                         use_fates_planthydro, use_fates_ed_st3, use_fates_cohort_age_tracking, &
                         use_fates_ed_prescribed_phys, use_fates_inventory_init, &
                         fates_inventory_ctrl_filename, use_fates_fixed_biogeog, &
@@ -306,6 +306,7 @@ contains
           use_fates_cohort_age_tracking,                &
           use_fates_ed_prescribed_phys,                 &
           use_fates_inventory_init,                     &
+          use_fates_dbh_init,                           &
           fates_inventory_ctrl_filename,                &
           use_fates_fixed_biogeog,                      &
           use_fates_nocomp,                             &
@@ -895,6 +896,7 @@ contains
     call mpi_bcast (use_fates_potentialveg, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_ed_prescribed_phys,  1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_dbh_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_daylength_factor, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_photosynth_acclimation, len(fates_photosynth_acclimation), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_stomatal_model, len(fates_stomatal_model) , MPI_CHARACTER, 0, mpicom, ier)
@@ -1347,6 +1349,7 @@ contains
        write(iulog, *) '    use_fates_ed_st3 = ',use_fates_ed_st3
        write(iulog, *) '    use_fates_ed_prescribed_phys = ',use_fates_ed_prescribed_phys
        write(iulog, *) '    use_fates_inventory_init = ',use_fates_inventory_init
+       write(iulog, *) '    use_fates_dbh_init = ',use_fates_dbh_init
        write(iulog, *) '    use_fates_fixed_biogeog = ', use_fates_fixed_biogeog
        write(iulog, *) '    use_fates_nocomp = ', use_fates_nocomp
        write(iulog, *) '    use_fates_sp = ', use_fates_sp
