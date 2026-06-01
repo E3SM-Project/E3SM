@@ -21,6 +21,7 @@ namespace scream
 
 namespace {
 
+// Project a local velocity vector (u,v,w) into one Cartesian component.
 template <typename BasisViewType>
 KOKKOS_INLINE_FUNCTION
 Real local_to_cart_component(
@@ -34,6 +35,7 @@ Real local_to_cart_component(
        + basis_sph2cart(2) * w;
 }
 
+// Project a Cartesian gradient vector back onto one local basis direction.
 template <typename BasisViewType>
 KOKKOS_INLINE_FUNCTION
 Real cart_grad_to_local_component(
@@ -83,6 +85,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   const int ncols = nelem*NGP*NGP;
   const TeamPolicy policy(ncols, Kokkos::AUTO());
 
+  // One scratch slot per GLL column. Packed views are used for ColumnOps,
+  // while scalar views make the horizontal-derivative algebra easier to read.
   Homme::ExecViewManaged<Homme::Scalar * [NUM_LEV]> w_mid_row_all("w_mid_row_all", ncols);
   Homme::ExecViewManaged<Homme::Scalar * [NUM_LEV]> w_mid_col_all("w_mid_col_all", ncols);
   Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdx_Ux_all("dsdx_Ux_all", ncols);
@@ -105,6 +109,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     // Construct the KernelVariables object needed by ColumnOps.
     KernelVariables kv(team, ie);
 
+    // Grab the scratch storage associated with this (ie,igp,jgp) column.
     const auto w_mid_row_pack = Homme::subview(w_mid_row_all, icol);
     const auto w_mid_col_pack = Homme::subview(w_mid_col_all, icol);
     const auto w_mid_row = Homme::viewAsReal(w_mid_row_pack);
@@ -116,6 +121,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     const auto dsdx_Uz = Homme::subview(dsdx_Uz_all, icol);
     const auto dsdy_Uz = Homme::subview(dsdy_Uz_all, icol);
 
+    // Accumulate reference-element derivatives in the two local horizontal directions.
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {
       dsdx_Ux(ilev) = 0;
       dsdy_Ux(ilev) = 0;
@@ -127,6 +133,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     team.team_barrier();
 
     for (int kgp = 0; kgp < NGP; ++kgp) {
+      // The horizontal stencil uses interface w, so first put the two stencil
+      // columns of vertical velocity onto midpoint levels.
       const auto w_row_i = Homme::subview(w_int_dyn, ie, n0, igp, kgp);
       const auto w_col_i = Homme::subview(w_int_dyn, ie, n0, kgp, jgp);
 
@@ -146,6 +154,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       const auto u_col_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 0, kgp, jgp));
       const auto v_col_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 1, kgp, jgp));
 
+      // Build the full Cartesian velocity on the two stencil lines and apply
+      // the derivative matrix weights along each local direction.
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {
         const Real u_row = u_row_view(ilev);
         const Real v_row = v_row_view(ilev);
@@ -167,6 +177,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       team.team_barrier();
     }
 
+    // Convert the reference-element derivatives into physical horizontal
+    // gradients using the inverse metric tensor on this curved element.
     const auto dinv_ij = Kokkos::subview(dinv, ie, Kokkos::ALL(), Kokkos::ALL(), igp, jgp);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {
       grad_Ux_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Ux(ilev) + dinv_ij(0,1) * dsdy_Ux(ilev)) * scale_factor_inv;
@@ -219,6 +231,9 @@ void HommeDynamics::compute_local_strain_components3d ()
     const auto basis1 = Kokkos::subview(vec_sph2cart, ie, 1, Kokkos::ALL(), igp, jgp);
     const auto basis2 = Kokkos::subview(vec_sph2cart, ie, 2, Kokkos::ALL(), igp, jgp);
 
+    // The stored gradients are Cartesian components differentiated along the
+    // two local horizontal directions. Project them back into the local basis
+    // so SHOC receives the six local shear-tensor components it expects.
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {
       const Real gx0 = grad_Ux_dyn(ie,0,igp,jgp,ilev);
       const Real gy0 = grad_Uy_dyn(ie,0,igp,jgp,ilev);
