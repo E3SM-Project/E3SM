@@ -705,6 +705,20 @@
       runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
   </entry>
 
+  <entry id="EXTRA_DEBUG">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies turning on extra debugging features beyond what DEBUG enables.
+      Currently enables Kokkos bounds checking (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK),
+      floating point exceptions (SCREAM_FPE), and pack size 1 (SCREAM_PACK_SIZE=1)
+      for EAMxx builds. Other components may extend what EXTRA_DEBUG will do for them.
+      Only has effect when DEBUG is also TRUE. These features are
+      too expensive for routine debug builds but useful for targeted debugging.</desc>
+  </entry>
+
   <entry id="FORCE_BUILD_SMP">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
