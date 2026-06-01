@@ -50,6 +50,20 @@
     </desc>
   </entry>
 
+  <entry id="SCREAM_ATM_PHYSICS_TSTEP">
+    <type>real</type>
+    <default_value>-1.0</default_value>
+    <group>build_component_scream</group>
+    <file>env_run.xml</file>
+    <desc>
+      Optional SCREAM-only atmosphere timestep in seconds. If set to a positive
+      value, buildnml derives the top-level EAMxx subcycle count from the
+      coupler timestep so SCREAM can run internally with this smaller timestep
+      while preserving the external coupling cadence. The requested value must
+      evenly divide the SCREAM coupling timestep.
+    </desc>
+  </entry>
+
   <entry id="SCREAM_HACK_XML">
     <type>logical</type>
     <default_value>FALSE</default_value>

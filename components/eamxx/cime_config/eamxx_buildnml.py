@@ -4,7 +4,7 @@
 Used by buildnml. See buildnml for documetation.
 """
 
-import os, sys, re, pwd, grp, stat, getpass
+import os, sys, re, pwd, grp, stat, getpass, math
 from pathlib import Path
 
 import xml.etree.ElementTree as ET
@@ -105,6 +105,78 @@ def do_cime_vars(entry, case, refine=False, extra=None):
     return entry
 
 ###############################################################################
+def get_cime_basedt(case):
+###############################################################################
+    ncpl_base_period = case.get_value("NCPL_BASE_PERIOD")
+    if ncpl_base_period == "hour":
+        return 3600.0
+    if ncpl_base_period == "day":
+        return 86400.0
+    if ncpl_base_period == "year":
+        return 31536000.0
+    if ncpl_base_period == "decade":
+        return 315360000.0
+
+    expect(False, f"Unhandled NCPL_BASE_PERIOD value '{ncpl_base_period}'")
+
+###############################################################################
+def get_eamxx_coupling_tstep(case):
+###############################################################################
+    return get_cime_basedt(case) / float(case.get_value("ATM_NCPL"))
+
+###############################################################################
+def get_eamxx_subcycles(case, xml=None):
+###############################################################################
+    if xml is None:
+        return 1
+
+    eamxx = find_node(xml, "eamxx")
+    if eamxx is None:
+        return 1
+
+    subcycles = find_node(eamxx, "number_of_subcycles")
+    return int(subcycles.text) if subcycles is not None else 1
+
+###############################################################################
+def get_eamxx_physics_tstep(case, xml=None):
+###############################################################################
+    return get_eamxx_coupling_tstep(case) / get_eamxx_subcycles(case, xml)
+
+###############################################################################
+def apply_scream_physics_tstep(case, xml):
+###############################################################################
+    requested_tstep = case.get_value("SCREAM_ATM_PHYSICS_TSTEP")
+    if requested_tstep is None:
+        return
+    requested_tstep = float(requested_tstep)
+    if requested_tstep <= 0:
+        return
+
+    coupling_tstep = get_eamxx_coupling_tstep(case)
+    expect(
+        requested_tstep <= coupling_tstep,
+        "SCREAM_ATM_PHYSICS_TSTEP must be less than or equal to the SCREAM coupling timestep.\n"
+        f"  SCREAM_ATM_PHYSICS_TSTEP: {requested_tstep}\n"
+        f"  coupling timestep: {coupling_tstep}\n",
+    )
+
+    raw_subcycles = coupling_tstep / requested_tstep
+    num_subcycles = int(round(raw_subcycles))
+    expect(
+        num_subcycles > 0 and math.isclose(raw_subcycles, num_subcycles, rel_tol=1e-12, abs_tol=1e-12),
+        "SCREAM_ATM_PHYSICS_TSTEP must evenly divide the SCREAM coupling timestep.\n"
+        f"  SCREAM_ATM_PHYSICS_TSTEP: {requested_tstep}\n"
+        f"  coupling timestep: {coupling_tstep}\n"
+        f"  implied subcycles: {raw_subcycles}\n",
+    )
+
+    eamxx = find_node(xml, "eamxx")
+    expect(eamxx is not None, "Could not find 'eamxx' node in SCREAM namelist XML")
+    subcycles = find_node(eamxx, "number_of_subcycles")
+    expect(subcycles is not None, "Could not find top-level EAMxx number_of_subcycles entry")
+    subcycles.text = str(num_subcycles)
+
+###############################################################################
 def perform_consistency_checks(case, xml):
 ###############################################################################
     """
@@ -121,48 +193,50 @@ def perform_consistency_checks(case, xml):
     ... '''
     >>> import xml.etree.ElementTree as ET
     >>> xml = ET.fromstring(xml_str)
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':24, 'REST_OPTION':'nsteps'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':24, 'REST_OPTION':'nsteps'})
     >>> perform_consistency_checks(case,xml)
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':2, 'REST_OPTION':'nsteps'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
+    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
+      rest_tstep: 7200.0
+      rad_testep: 10800.0
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':10800, 'REST_OPTION':'nseconds'})
     >>> perform_consistency_checks(case,xml)
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':7200, 'REST_OPTION':'nseconds'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':7200, 'REST_OPTION':'nseconds'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
       rest_tstep: 7200
       rad_testep: 10800.0
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':180, 'REST_OPTION':'nminutes'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':180, 'REST_OPTION':'nminutes'})
     >>> perform_consistency_checks(case,xml)
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':120, 'REST_OPTION':'nminutes'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':120, 'REST_OPTION':'nminutes'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
       rest_tstep: 7200
       rad_testep: 10800.0
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':6, 'REST_OPTION':'nhours'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':6, 'REST_OPTION':'nhours'})
     >>> perform_consistency_checks(case,xml)
-    >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':8, 'REST_OPTION':'nhours'})
+    >>> case = MockCase({'ATM_NCPL':'24', 'NCPL_BASE_PERIOD':'day', 'REST_N':8, 'REST_OPTION':'nhours'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
       rest_tstep: 28800
       rad_testep: 10800.0
-    >>> case = MockCase({'ATM_NCPL':'12', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> case = MockCase({'ATM_NCPL':'12', 'NCPL_BASE_PERIOD':'day', 'REST_N':2, 'REST_OPTION':'ndays'})
     >>> perform_consistency_checks(case,xml)
-    >>> case = MockCase({'ATM_NCPL':'10', 'REST_N':2, 'REST_OPTION':'ndays'})
+    >>> case = MockCase({'ATM_NCPL':'10', 'NCPL_BASE_PERIOD':'day', 'REST_N':2, 'REST_OPTION':'ndays'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
-     For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+     For daily (or less frequent) restart, the restart period must land on a radiation step
     """
 
     # RRTMGP can be supercycled. Restarts cannot fall in the middle
@@ -176,8 +250,8 @@ def perform_consistency_checks(case, xml):
     if rrtmgp is not None and rest_opt is not None and rest_opt not in ["never","none"]:
         rest_n = int(case.get_value("REST_N"))
         rad_freq = int(find_node(rrtmgp,"rad_frequency").text)
-        atm_ncpl = int(case.get_value("ATM_NCPL"))
-        atm_tstep = 86400 / atm_ncpl
+        coupling_tstep = get_eamxx_coupling_tstep(case)
+        atm_tstep = get_eamxx_physics_tstep(case, xml)
         rad_tstep = atm_tstep * rad_freq
 
         # Some tests (ERS) make late (run-phase) changes, so we cannot validate restart
@@ -193,10 +267,15 @@ def perform_consistency_checks(case, xml):
         if rad_freq==1 or is_test_not_yet_run:
             pass
         elif rest_opt in ["nsteps", "nstep"]:
-            expect (rest_n % rad_freq == 0,
-                    f"rrtmgp::rad_frequency ({rad_freq} steps) incompatible with "
-                    f"restart frequency ({rest_n} steps).\n"
-                    " Please, ensure restart happens on a step when rad is ON")
+            rest_tstep = coupling_tstep * rest_n
+            expect (
+                math.isclose(rest_tstep % rad_tstep, 0.0, abs_tol=1e-10)
+                or math.isclose(rest_tstep % rad_tstep, rad_tstep, abs_tol=1e-10),
+                "rrtmgp::rad_frequency incompatible with restart frequency.\n"
+                " Please, ensure restart happens on a step when rad is ON\n"
+                f"  rest_tstep: {rest_tstep}\n"
+                f"  rad_testep: {rad_tstep}",
+            )
         elif rest_opt in ["nseconds", "nsecond", "nminutes", "nminute", "nhours", "nhour"]:
             if rest_opt in ["nseconds", "nsecond"]:
                 factor = 1
@@ -206,18 +285,22 @@ def perform_consistency_checks(case, xml):
                 factor = 3600
 
             rest_tstep = factor*rest_n
-            expect (rest_tstep % rad_tstep == 0,
+            expect (
+                    math.isclose(rest_tstep % rad_tstep, 0.0, abs_tol=1e-10)
+                    or math.isclose(rest_tstep % rad_tstep, rad_tstep, abs_tol=1e-10),
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
                     f"  rest_tstep: {rest_tstep}\n"
                     f"  rad_testep: {rad_tstep}")
 
         else:
-            # for "very infrequent" restarts, we request rad_freq to divide atm_ncpl
-            expect (atm_ncpl % rad_freq ==0,
+            period_tstep = get_cime_basedt(case)
+            expect (
+                    math.isclose(period_tstep % rad_tstep, 0.0, abs_tol=1e-10)
+                    or math.isclose(period_tstep % rad_tstep, rad_tstep, abs_tol=1e-10),
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
-                    " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
+                    " For daily (or less frequent) restart, the restart period must land on a radiation step")
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
@@ -773,6 +856,9 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
         # Apply remaining atm changes
         apply_non_atm_procs_list_changes_from_buffer (case,xml)
 
+        # Optionally force a smaller SCREAM top-level timestep via extra subcycling.
+        apply_scream_physics_tstep(case, xml)
+
     except BaseException as e:
         if filepath is not None:
             dbg_xml_path = filepath.replace(".xml", ".dbg.xml")
@@ -1164,13 +1250,14 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
             dt_out = 1 if units=="nsecs" else 60 if units=="nmins" else 3600
             dt_out = dt_out*int(freq)
 
-            dt_atm = 86400 / case.get_value("ATM_NCPL")
+            dt_atm = get_eamxx_coupling_tstep(case)
             expect (dt_atm<=dt_out,
-                   "Cannot have output frequency faster than atm timestep.\n"
+                   "Cannot have output frequency faster than the SCREAM driver-call timestep.\n"
                    f"   yaml file: {fn.strip()}\n"
                    f"   frequency: {freq}\n"
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
+                   f"   SCREAM_ATM_PHYSICS_TSTEP: {case.get_value('SCREAM_ATM_PHYSICS_TSTEP')}\n"
                    f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
         
         # Check for duplicate output file signatures
