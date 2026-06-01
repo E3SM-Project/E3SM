@@ -68,7 +68,7 @@ struct MemoryTraitsMask {
 template <typename View>
 using Unmanaged =
   // Provide a full View type specification, augmented with Unmanaged.
-  Kokkos::View<typename View::traits::scalar_array_type,
+  Kokkos::View<typename View::traits::data_type,
                typename View::traits::array_layout,
                typename View::traits::device_type,
                Kokkos::MemoryTraits<
@@ -76,7 +76,7 @@ using Unmanaged =
                  MemoryTraitsMask<View>::value |
                  // ... |ed with the one we want, whether or not it's
                  // already there.
-                 Kokkos::Unmanaged> >;
+                 unsigned(Kokkos::Unmanaged)> >;
 
 template <typename View>
 using Const = typename View::const_type;

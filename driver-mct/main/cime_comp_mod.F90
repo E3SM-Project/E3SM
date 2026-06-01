@@ -640,7 +640,7 @@ module cime_comp_mod
   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
   logical  :: iamin_CPLALLIACID     ! pe associated with CPLALLIACID
 
-  integer  :: atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
+  integer  :: cpl_rootpe,atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
               glc_rootpe,rof_rootpe,wav_rootpe,iac_rootpe
 
   !----------------------------------------------------------------------------
@@ -707,7 +707,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   ! formats
   !----------------------------------------------------------------------------
-  character(*), parameter :: subname = '(seq_mct_drv)'
+  character(*), parameter :: subname = '(cpl7mct_driver)'
   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
@@ -816,6 +816,7 @@ contains
     comp_iamin(it) = seq_comm_iamin(comp_id(it))
     comp_name(it)  = seq_comm_name(comp_id(it))
 
+    cpl_rootpe = seq_comm_gloroot(CPLID)
     atm_rootpe = seq_comm_gloroot(ALLATMID)
     lnd_rootpe = seq_comm_gloroot(ALLLNDID)
     ice_rootpe = seq_comm_gloroot(ALLICEID)
@@ -993,12 +994,8 @@ contains
     !----------------------------------------------------------
 
     if (iamroot_CPLID) then
-#ifdef USE_ESMF_LIB
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is set'
-#else
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
-#endif
-       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
+       write(logunit,'(2A)') subname,' Using esmf_wrf_timemgr'
+       write(logunit,'(2A)') subname,' CPL7-MCT interface is set'
        if (num_inst_driver > 1) &
             write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
     endif
@@ -2682,10 +2679,10 @@ contains
        mrssOnTask(:)  = 0
        call mpi_gather (msize, 1, mpi_real8, &
                         msizeOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
        call mpi_gather (mrss, 1, mpi_real8, &
                         mrssOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
 
        if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
           allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
@@ -3552,10 +3549,10 @@ contains
           if (info_mprof > 0) then ! memory profiling is enabled
              call mpi_gather (msize, 1, mpi_real8, &
                               msizeOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
              call mpi_gather (mrss, 1, mpi_real8, &
                               mrssOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
 
              if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
                 msizeOnNode(:) = 0
@@ -3719,7 +3716,7 @@ contains
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, dtime=dtime)
        simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
        write(logunit,'(//)')
-       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-'//trim(cime_model)
+       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-MCT in '//trim(cime_model)
        write(logunit,FormatD) subname, '  at YMD,TOD = ',ymd,tod
        write(logunit,FormatR) subname, '# simulated days (this run) = ', simDays
        write(logunit,FormatR) subname, 'compute time (hrs)          = ', (Time_end-Time_begin)/3600._r8
@@ -3805,10 +3802,10 @@ contains
     ctime(6:6) = ':'
     ctime(7:8) = time(5:6)
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '  Common Infrastructure for Modeling the Earth (CIME) CPL7  '
+    write(logunit,F00) '                     CPL7-MCT                               '
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '     (Online documentation is available on the CIME         '
-    write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
+    write(logunit,F00) '            (Online documentation is available              '
+    write(logunit,F00) '                https://docs.e3sm.org)                      '
     write(logunit,F00) '     License information is available as a link from above  '
     write(logunit,F00) '------------------------------------------------------------'
     write(logunit,F00) '                     MODEL ',trim(cime_model)
@@ -4174,8 +4171,8 @@ contains
        ! needs to be done here to have proper restarts
        if (iac_present .and. iacrun_avg_alarm) then
 
-          write(logunit,*) '(cime_run_iac_setup_send) accum_avg',&
-                           ymd, tod
+          !write(logunit,*) '(cime_run_iac_setup_send) accum_avg',&
+          !                 ymd, tod
 
           call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
        endif

@@ -239,7 +239,7 @@ bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol)
   EKAT_REQUIRE_MSG(l0==l1,"Error! views_are_approx_equal - the two fields don't have matching layouts.");
   // Take advantage of field utils update, min and max to assess the max difference between the two fields
   // simply.
-  auto ft = f0.clone();
+  auto ft = f0.clone(CloneFlags::CopyData);
   ft.update(f1,1.0,-1.0);
   auto d_min = field_min(ft).as<Real>();
   auto d_max = field_max(ft).as<Real>();

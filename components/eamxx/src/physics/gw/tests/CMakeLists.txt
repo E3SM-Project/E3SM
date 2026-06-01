@@ -41,8 +41,10 @@ else()
   set(GW_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
-CreateUnitTest(gw_tests "${GW_TESTS_SRCS}"
+CreateUnitTest(gw_tests
+  SOURCES ${GW_TESTS_SRCS}
   LIBS gw gw_test_infra
   EXE_ARGS "--args ${BASELINE_FILE_ARG}"
   THREADS ${GW_THREADS}
-  LABELS "gw;physics;baseline_gen;baseline_cmp")
+  LABELS gw physics baseline_gen baseline_cmp
+)

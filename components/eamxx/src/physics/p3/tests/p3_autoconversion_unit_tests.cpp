@@ -152,13 +152,13 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     int num_cases;
     
     // Input host views
-    typename view_1d<Real>::HostMirror qc_host;
-    typename view_1d<Real>::HostMirror nc_host;
+    typename view_1d<Real>::host_mirror_type qc_host;
+    typename view_1d<Real>::host_mirror_type nc_host;
     
     // Output host views
-    typename view_1d<Real>::HostMirror qc2qr_host;
-    typename view_1d<Real>::HostMirror nc2nr_host;
-    typename view_1d<Real>::HostMirror ncautr_host;
+    typename view_1d<Real>::host_mirror_type qc2qr_host;
+    typename view_1d<Real>::host_mirror_type nc2nr_host;
+    typename view_1d<Real>::host_mirror_type ncautr_host;
     
     // Runtime parameters
     Real autoconversion_radius;

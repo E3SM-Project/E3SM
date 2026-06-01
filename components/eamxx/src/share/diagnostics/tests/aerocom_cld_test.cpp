@@ -3,29 +3,10 @@
 #include "share/diagnostics/aerocom_cld_util.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/data_managers/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 namespace scream {
-
-std::shared_ptr<GridsManager> create_gm(const ekat::Comm &comm, const int ncols,
-                                        const int nlevs) {
-  const int num_global_cols = ncols * comm.size();
-
-  using vos_t = std::vector<std::string>;
-  ekat::ParameterList gm_params;
-  gm_params.set("grids_names", vos_t{"point_grid"});
-  auto &pl = gm_params.sublist("point_grid");
-  pl.set<std::string>("type", "point_grid");
-  pl.set("aliases", vos_t{"physics"});
-  pl.set<int>("number_of_global_columns", num_global_cols);
-  pl.set<int>("number_of_vertical_levels", nlevs);
-
-  auto gm = create_mesh_free_grids_manager(comm, gm_params);
-  gm->build_grids();
-
-  return gm;
-}
 
 TEST_CASE("aerocom_cld") {
   using namespace ShortFieldTagsNames;
@@ -40,18 +21,17 @@ TEST_CASE("aerocom_cld") {
   const auto micron = m / 1000000;
 
   // Create a grids manager - single column for these tests
-  constexpr int nlevs = 9;
-  const int ngcols    = 1 * comm.size();
+  const int nlevs = 9;
+  const int ncols = 1;
 
   // See how many diags we are calculating
   AeroComCldDiagUtil aercom_util;
   int ndiags = aercom_util.size;
 
-  auto gm   = create_gm(comm, ngcols, nlevs);
-  auto grid = gm->get_grid("physics");
+  auto grid = create_point_grid("physics", ncols*comm.size(), nlevs, comm);
 
   // Input
-  FieldLayout scalar2d_layout{{COL, LEV}, {ngcols, nlevs}};
+  FieldLayout scalar2d_layout = grid->get_3d_scalar_layout(LEV);
 
   // Create fields
   FieldIdentifier tm_fid("T_mid", scalar2d_layout, K, grid->name());
@@ -106,17 +86,16 @@ TEST_CASE("aerocom_cld") {
   int seed = get_random_test_seed();
 
   // Construct the Diagnostics
-  std::map<std::string, std::shared_ptr<AtmosphereDiagnostic>> diags;
-  auto &diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto &diag_factory = DiagnosticFactory::instance();
   register_diagnostics();
 
   ekat::ParameterList params;
 
   REQUIRE_THROWS(
-      diag_factory.create("AeroComCld", comm, params));  // No 'aero_com_cld_kind'
+      diag_factory.create("AeroComCld", comm, params, grid));  // No 'aero_com_cld_kind'
   params.set<std::string>("aero_com_cld_kind", "Foo");
   REQUIRE_THROWS(diag_factory.create("AeroComCld", comm,
-                                     params));  // Invalid 'aero_com_cld_kind'
+                                     params, grid));  // Invalid 'aero_com_cld_kind'
 
   constexpr int ntests = 3;
   for(int itest = 0; itest < ntests; ++itest) {
@@ -135,28 +114,26 @@ TEST_CASE("aerocom_cld") {
 
     // Create and set up the diagnostic
     params.set<std::string>("aero_com_cld_kind", "Top");
-    auto diag = diag_factory.create("AeroComCld", comm, params);
+    auto diag = diag_factory.create("AeroComCld", comm, params, grid);
 
-    diag->set_grids(gm);
+    diag->set_input_field(tm);
+    diag->set_input_field(pd);
+    diag->set_input_field(pm);
+    diag->set_input_field(qv);
+    diag->set_input_field(qc);
+    diag->set_input_field(qi);
+    diag->set_input_field(ec);
+    diag->set_input_field(ei);
+    diag->set_input_field(cd);
+    diag->set_input_field(nc);
+    diag->set_input_field(ni);
 
-    diag->set_required_field(tm);
-    diag->set_required_field(pd);
-    diag->set_required_field(pm);
-    diag->set_required_field(qv);
-    diag->set_required_field(qc);
-    diag->set_required_field(qi);
-    diag->set_required_field(ec);
-    diag->set_required_field(ei);
-    diag->set_required_field(cd);
-    diag->set_required_field(nc);
-    diag->set_required_field(ni);
-
-    diag->initialize(t0, RunType::Initial);
+    diag->initialize();
 
     // Case 1: if the cloud fraction is zero, everything is zero
     cd.deep_copy(0.0);
-    diag->compute_diagnostic();
-    Field diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    Field diag_f = diag->get();
     diag_f.sync_to_host();
     auto diag_v = diag_f.get_view<Real **, Host>();
     for(int idiag = 0; idiag < ndiags; ++idiag) {
@@ -179,9 +156,9 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag->get_diagnostic().sync_to_host();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag->get().sync_to_host();
+    diag_f = diag->get();
     diag_v = diag_f.get_view<Real **, Host>();
     for(int icol = 0; icol < grid->get_num_local_dofs(); ++icol) {
       REQUIRE(diag_v(icol, 0) == Real(300.0));
@@ -205,8 +182,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(0.7));
@@ -221,8 +198,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));
@@ -235,8 +212,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));  // must be larger than the max!
@@ -251,8 +228,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
@@ -265,8 +242,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) == Real(1.0));
@@ -305,8 +282,8 @@ TEST_CASE("aerocom_cld") {
     // Change one input timestamp, to prevent early return and trigger diag recalculation
     t0 += 1;
     cd.get_header().get_tracking().update_time_stamp(t0);
-    diag->compute_diagnostic();
-    diag_f = diag->get_diagnostic();
+    diag->compute(t0);
+    diag_f = diag->get();
     diag_f.sync_to_host();
     diag_v = diag_f.get_view<Real **, Host>();
     REQUIRE(diag_v(0, 7) > Real(0.7));   // unaffected (see test case 4)

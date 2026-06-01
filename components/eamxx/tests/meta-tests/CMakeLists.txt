@@ -11,33 +11,44 @@ include(ScreamUtils)
 # the test executable).
 
 # Test to ensure that a build failure is detected by our testing scripts
-EkatCreateUnitTest(build_fail build_fail.cpp EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
-  LABELS "fail")
+EkatCreateUnitTest(build_fail
+  SOURCES build_fail.cpp
+  EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
+  LABELS fail
+)
 
 # Test to ensure that a test failure is detected by our testing scripts
-EkatCreateUnitTest(test_fail test_fail.cpp EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
-  LABELS "fail")
+EkatCreateUnitTest(test_fail
+  SOURCES test_fail.cpp
+  EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
+  LABELS fail
+)
 
 # Tests to ensure the testing infrastructure is correctly spreading
 # concurrent tests across the available resources
 if (SCREAM_TEST_MAX_TOTAL_THREADS GREATER_EQUAL 16)
-  EkatCreateUnitTestExec(resource_spread resource_spread.cpp EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION)
+  EkatCreateUnitTestExec(resource_spread
+    SOURCES resource_spread.cpp
+    EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
+  )
 
   # When scripts-tests builds this folder, they are not building Ekat (or even Kokkos).
   # So we must add openmp to the compiler/linker flags manually
   # NOTE: scripts-tests is already checking that this is an "OpenMP machine", so this is safe
   find_package(OpenMP REQUIRED COMPONENTS CXX)
-  target_link_libraries(resource_spread OpenMP::OpenMP_CXX MPI::MPI_C)
+  target_link_libraries(resource_spread PUBLIC OpenMP::OpenMP_CXX MPI::MPI_C)
 
   EkatCreateUnitTestFromExec(resource_spread_thread resource_spread
     PRINT_OMP_AFFINITY
     THREADS 1 4 1
-    MPI_RANKS 4)
+    MPI_RANKS 4
+  )
 
   EkatCreateUnitTestFromExec(resource_spread_rank resource_spread
     PRINT_OMP_AFFINITY
     THREADS 4
-    MPI_RANKS 1 4 1)
+    MPI_RANKS 1 4 1
+  )
 endif()
 
 add_subdirectory(test_level_check)

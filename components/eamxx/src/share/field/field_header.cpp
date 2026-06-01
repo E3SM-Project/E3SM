@@ -48,6 +48,27 @@ std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const s
   return fh;
 }
 
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::map<FieldTag,std::string>& tag_names) const {
+  return alias(name, m_identifier.get_grid_name(), tag_names);
+}
+
+std::shared_ptr<FieldHeader> FieldHeader::alias(const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  auto layout = get_identifier().get_layout().clone();
+  layout.rename_dims(tag_names);
+  auto fid = get_identifier().clone(name);
+  fid.reset_grid(grid_name);
+  fid.reset_layout(layout);
+  auto fh = std::make_shared<FieldHeader>(fid);
+  if (get_parent() != nullptr) {
+    // If we're aliasing, we MUST keep track of the parent
+    fh->create_parent_child_link(get_parent());
+  }
+  fh->m_tracking = m_tracking;
+  fh->m_alloc_prop = m_alloc_prop;
+  fh->m_extra_data = m_extra_data;
+  return fh;
+}
+
 bool FieldHeader::is_aliasing (const FieldHeader& rhs) const
 {
   if (this==&rhs)

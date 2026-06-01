@@ -22,7 +22,6 @@ public:
     None,
     MAM4_PSRef, // Reconstructs a reference 3d pressure from time-dep PS in input data
     MAM4_ZONAL, // For zonal-type files that are employed in LINOZ.
-    MAM4_ELEVATED_EMISSIONS,// for vertical interpolation using altitude instead of pressure.
   };
 
   VerticalRemapperMAM4 (const grid_ptr_type& src_grid,
@@ -30,9 +29,6 @@ public:
                         const VertRemapType& vremp_type);
 
   ~VerticalRemapperMAM4 () = default;
-
-  void set_target_pressure (const Field& p);
-  void set_source_pressure (const std::string& file_name);
 
 protected:
 

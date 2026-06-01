@@ -3,7 +3,7 @@
 
 namespace scream {
 
-template void Field::deep_copy_masked<false,int>(const int, const Field&);
-template void Field::deep_copy_masked<true, int>(const int, const Field&);
+template void Field::deep_copy_masked<false,int>(const int, const Field&) const;
+template void Field::deep_copy_masked<true, int>(const int, const Field&) const;
 
 } // namespace scream

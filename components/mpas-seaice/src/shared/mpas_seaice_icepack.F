@@ -593,8 +593,8 @@ subroutine init_column_waves(domain)
                               waveFreqBinWidth_TEMP)
 
       ! remove frequency 'tails' (which are only needed in WW3, not MPAS-SI)
-      waveFrequency(1:nFrequencies-2) = waveFrequency_TEMP(2:nFrequencies-1) 
-      waveFreqBinWidth(1:nFrequencies-2) = waveFreqBinWidth_TEMP(2:nFrequencies-1) 
+      waveFrequency = waveFrequency_TEMP(2:nFrequencies-1) 
+      waveFreqBinWidth = waveFreqBinWidth_TEMP(2:nFrequencies-1) 
 
       ! initialize HS and Spectra
       if (.not. config_do_restart) then
@@ -14698,7 +14698,7 @@ subroutine init_column_waves(domain)
                               = tracerObject % index_brineFraction
                tracerObject % ancestorIndices(tracerObject % index_mobileFraction+ iBioLayer - 1,2) = 0
                retentionTime(iBioLayer) = 1.0_RKIND
-               releaseTime(iBioLayer) = 1.0_RKIND
+               releaseTime(iBioLayer) = config_rapid_mobile_to_stationary_time
 
                if (BGCTracerType(iBioLayer) >=  0.0_RKIND .and. BGCTracerType(iBioLayer) < 0.5_RKIND) then
                   retentionTime(iBioLayer) = config_rapid_mobile_to_stationary_time

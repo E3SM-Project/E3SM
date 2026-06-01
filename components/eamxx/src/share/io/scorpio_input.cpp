@@ -138,11 +138,7 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr)
     } else {
       // We have padding, or the field is a subfield (or both).
       // Either way, we need a temporary.
-      // NOTE: Field::clone honors the max pack size for the allocation,
-      //       which would defy one of the reason for cloning it...
-      Field copy (f.get_header().get_identifier());
-      copy.allocate_view();
-      m_fm_for_scorpio->add_field(copy);
+      m_fm_for_scorpio->add_field(f.clone());
     }
   }
 

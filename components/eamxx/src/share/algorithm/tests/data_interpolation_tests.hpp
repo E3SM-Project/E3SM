@@ -148,7 +148,7 @@ create_fields (const std::shared_ptr<const AbstractGrid>& grid,
     v3d_i.sync_to_dev();
   }
 
-  auto p1d = s3d_m.subfield(0,0).clone("p1d");
+  auto p1d = s3d_m.subfield(0,0).clone("p1d", CloneFlags::All);
   auto comm = grid->get_comm();
   comm.broadcast(p1d.get_internal_view_data<Real,Host>(),nlevs,0);
   p1d.sync_to_dev();

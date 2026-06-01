@@ -77,27 +77,31 @@ else()
   set(SHOC_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
 endif()
 
-CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}"
+CreateUnitTest(shoc_tests
+  SOURCES ${SHOC_TESTS_SRCS}
   LIBS shoc shoc_test_infra
   THREADS ${SHOC_THREADS}
   EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-  LABELS "shoc;physics;baseline_gen;baseline_cmp"
-  )
+  LABELS shoc physics baseline_gen baseline_cmp
+)
 
 # If small kernels are ON, we don't need a separate executable to test them.
 # Also, we never want to generate baselines with this separate executable
 if (NOT SCREAM_SHOC_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
-  CreateUnitTest(shoc_sk_tests "shoc_main_tests.cpp"
+  CreateUnitTest(shoc_sk_tests
+    SOURCES shoc_main_tests.cpp
     LIBS shoc_sk shoc_test_infra
     THREADS ${SHOC_THREADS}
     EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-    LABELS "shoc;physics;baseline_cmp"
-    )
+    LABELS shoc physics baseline_cmp
+  )
 endif()
 
-CreateUnitTest(shoc_run_and_cmp "shoc_run_and_cmp.cpp"
+CreateUnitTest(shoc_run_and_cmp
+  SOURCES shoc_run_and_cmp.cpp
   LIBS shoc shoc_test_infra
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${BASELINE_FILE_ARG}"
-  LABELS "shoc;physics;baseline_gen;baseline_cmp")
+  LABELS shoc physics baseline_gen baseline_cmp
+)

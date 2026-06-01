@@ -1,6 +1,8 @@
 #include "share/field/field.hpp"
 #include "share/util/eamxx_utils.hpp"
 
+#include <bitset>
+
 namespace scream
 {
 
@@ -138,9 +140,61 @@ Field::get_const() const {
 }
 
 Field
-Field::clone() const {
-  return clone(name());
+Field::clone(const int flags) const {
+  return clone(name(),flags);
 }
+
+Field
+Field::clone(const std::string& name, const int flags) const {
+  return clone(name, get_header().get_identifier().get_grid_name(),flags);
+}
+
+Field
+Field::clone(const std::string& name, const std::string& grid_name, const int flags) const
+{
+  const int invalid_flags = flags & ~CloneFlags::All;
+  constexpr int nbits = std::numeric_limits<unsigned int>::digits;
+  EKAT_REQUIRE_MSG(invalid_flags == 0,
+                   "[Field::clone] Error! Input flags contain unrecognized or invalid bits.\n"
+                   " - input flags provided : 0b" + std::bitset<nbits>(flags).to_string() + " (" + std::to_string(flags) + ")\n"
+                   " - invalid bits detected: 0b" + std::bitset<nbits>(invalid_flags).to_string() + "\n"
+                   " - valid individual options include:\n"
+                   "     CloneFlags::None          (0b" + std::bitset<nbits>(CloneFlags::None).to_string() + ") [Default]\n"
+                   "     CloneFlags::MatchPacking  (0b" + std::bitset<nbits>(CloneFlags::MatchPacking).to_string() + ")\n"
+                   "     CloneFlags::CopyTimeStamp (0b" + std::bitset<nbits>(CloneFlags::CopyTimeStamp).to_string() + ")\n"
+                   "     CloneFlags::CopyData      (0b" + std::bitset<nbits>(CloneFlags::CopyData).to_string() + ")\n"
+                   " - maximum combined mask: 0b" + std::bitset<nbits>(CloneFlags::All).to_string() + "\n");
+
+  // Create new field
+  const auto& my_fid = get_header().get_identifier();
+  auto fid = my_fid.clone(name).reset_grid(grid_name);
+  Field f(fid);
+
+  if (flags & CloneFlags::MatchPacking) {
+    // Ensure alloc props match
+    const auto&  ap = get_header().get_alloc_properties();
+          auto& fap = f.get_header().get_alloc_properties();
+    fap.request_allocation(ap.get_largest_pack_size());
+  }
+
+  // Allocate
+  f.allocate_view();
+
+  if (flags & CloneFlags::CopyTimeStamp) {
+    // Set correct time stamp
+    const auto& ts = get_header().get_tracking().get_time_stamp();
+    f.get_header().get_tracking().update_time_stamp(ts);
+  }
+
+  if (flags & CloneFlags::CopyData) {
+    // Deep copy
+    f.deep_copy(*this);
+    f.sync_to_host();
+  }
+
+  return f;
+}
+
 
 Field
 Field::alias (const std::string& name) const {
@@ -157,33 +211,16 @@ Field::alias (const std::string& name,const std::string& grid_name) const {
 }
 
 Field
-Field::clone(const std::string& name) const {
-  return clone(name, get_header().get_identifier().get_grid_name());
+Field::alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const {
+  return alias(name, get_header().get_identifier().get_grid_name(), tag_names);
 }
 
 Field
-Field::clone(const std::string& name, const std::string& grid_name) const {
-  // Create new field
-  const auto& my_fid = get_header().get_identifier();
-  auto fid = my_fid.clone(name).reset_grid(grid_name);
-  Field f(fid);
-
-  // Ensure alloc props match
-  const auto&  ap = get_header().get_alloc_properties();
-        auto& fap = f.get_header().get_alloc_properties();
-  fap.request_allocation(ap.get_largest_pack_size());
-
-  // Allocate
-  f.allocate_view();
-
-  // Set correct time stamp
-  const auto& ts = get_header().get_tracking().get_time_stamp();
-  f.get_header().get_tracking().update_time_stamp(ts);
-
-  // Deep copy
-  f.deep_copy(*this);
-  f.sync_to_host();
-
+Field::alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  Field f;
+  f.m_header = get_header().alias(name, grid_name, tag_names);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
   return f;
 }
 
@@ -436,7 +473,7 @@ const Field& Field::get_valid_mask () const
   return m_header->get_extra_data<Field>("valid_mask");
 }
 
-void Field::deep_copy (const ScalarWrapper value)
+void Field::deep_copy (const ScalarWrapper value) const
 {
   // Check consistency of inputs
   update_checks("Field::deep_copy (scalar)",*this,*this,value,value);
@@ -457,7 +494,7 @@ void Field::deep_copy (const ScalarWrapper value)
   }
 }
 
-void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask)
+void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool negate_mask) const
 {
   update_checks("Field::deep_copy (scalar, masked)",*this,*this,value,value,0,&mask);
 
@@ -480,7 +517,7 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool 
   }
 }
 
-void Field::deep_copy (const Field& x)
+void Field::deep_copy (const Field& x) const
 {
   if (&x==this)
     return;
@@ -489,7 +526,7 @@ void Field::deep_copy (const Field& x)
   update_cm<CM>("Field::deep_copy",x,1,0,0);
 }
 
-void Field::deep_copy (const Field& x, const Field& mask)
+void Field::deep_copy (const Field& x, const Field& mask) const
 {
   if (&x==this)
     return;
@@ -498,99 +535,99 @@ void Field::deep_copy (const Field& x, const Field& mask)
   update_cm<CM>("Field::deep_copy (masked)",x,1,0,0,mask);
 }
 
-void Field::scale (const ScalarWrapper beta)
+void Field::scale (const ScalarWrapper beta) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::scale (scalar)",*this,0,beta,0);
 }
 
-void Field::scale (const ScalarWrapper beta, const Field& mask)
+void Field::scale (const ScalarWrapper beta, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::scale (scalar, masked)",*this,0,beta,0,mask);
 }
 
-void Field::scale (const Field& x)
+void Field::scale (const Field& x) const
 {
   constexpr auto CM = CombineMode::Multiply;
   update_cm<CM>("Field::scale",x,1,1,0);
 }
 
-void Field::scale (const Field& x, const Field& mask)
+void Field::scale (const Field& x, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Multiply;
   update_cm<CM>("Field::scale (masked)",x,1,1,0,mask);
 }
 
-void Field::scale_inv (const Field& x)
+void Field::scale_inv (const Field& x) const
 {
   constexpr auto CM = CombineMode::Divide;
   update_cm<CM>("Field::scale_inv",x,1,1,0);
 }
 
-void Field::scale_inv (const Field& x, const Field& mask)
+void Field::scale_inv (const Field& x, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Divide;
   update_cm<CM>("Field::scale_inv (masked)",x,1,1,0,mask);
 }
 
-void Field::max (const Field& x)
+void Field::max (const Field& x) const
 {
   constexpr auto CM = CombineMode::Max;
   update_cm<CM>("Field::max",x,1,1,0);
 }
 
-void Field::max (const Field& x, const Field& mask)
+void Field::max (const Field& x, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Max;
   update_cm<CM>("Field::max (masked)",x,1,1,0,mask);
 }
 
-void Field::min (const Field& x)
+void Field::min (const Field& x) const
 {
   constexpr auto CM = CombineMode::Min;
   update_cm<CM>("Field::min",x,1,1,0);
 }
 
-void Field::min (const Field& x, const Field& mask)
+void Field::min (const Field& x, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Min;
   update_cm<CM>("Field::min (masked)",x,1,1,0,mask);
 }
 
-void Field::add_scalar (const ScalarWrapper gamma)
+void Field::add_scalar (const ScalarWrapper gamma) const
 {
   update(*this,0,1,gamma);
 }
 
-void Field::add_scalar (const ScalarWrapper gamma, const Field& mask)
+void Field::add_scalar (const ScalarWrapper gamma, const Field& mask) const
 {
   update(*this,0,1,gamma,mask);
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::update",x,alpha,beta,gamma);
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::update (masked)",x,alpha,beta,0,mask);
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::update",x,alpha,beta,0);
 }
 
 void Field::
-update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask)
+update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const
 {
   constexpr auto CM = CombineMode::Update;
   update_cm<CM>("Field::update (masked)",x,alpha,beta,gamma,mask);
@@ -598,7 +635,7 @@ update (const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, con
 
 template<CombineMode CM>
 void Field::
-update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma)
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma) const
 {
   // Check consistency of inputs
   update_checks(caller,*this,x,alpha,beta,gamma);
@@ -631,7 +668,7 @@ update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha,
 
 template<CombineMode CM>
 void Field::
-update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask)
+update_cm (const std::string& caller, const Field& x, const ScalarWrapper alpha, const ScalarWrapper beta, const ScalarWrapper gamma, const Field& mask) const
 {
   // Check consistency of inputs
   update_checks(caller,*this,x,alpha,beta,gamma,&mask);

@@ -82,7 +82,7 @@ ComposeTransport::run_unit_tests () {
   return fails;
 }
 
-ComposeTransport::TestDepView::HostMirror ComposeTransport::
+ComposeTransport::TestDepView::host_mirror_type ComposeTransport::
 test_trajectory (Real t0, Real t1, const bool independent_time_steps) {
   assert(is_setup);
   return m_compose_impl->test_trajectory(t0, t1, independent_time_steps);

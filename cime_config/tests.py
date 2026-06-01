@@ -353,6 +353,7 @@ _TESTS = {
             "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
+            "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
             )
@@ -371,7 +372,6 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
-            "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4pg2_oQU480.F2010",
@@ -1055,6 +1055,7 @@ _TESTS = {
             "PEM_P480.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
             "PET.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
             "SMS_D_Ln3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
+            "SMS_D_Ln3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL2010-WW3",
             )
     },
 
@@ -1134,5 +1135,12 @@ _TESTS = {
         "inherit" : ("e3sm_superbfb_ocn", "e3sm_superbfb_ice",
                      "e3sm_superbfb_lnd", "e3sm_superbfb_rof",
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
+    },
+    "e3sm_gcam_developer" : {
+        "time"  : "1:00:00",
+        "tests" : (
+            "SMS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "ERS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            )
     },
 }

@@ -368,7 +368,7 @@ contains
               else ! read maps
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0
-                  call moab_map_init_rcfile( mbrxid, mblxid, mbintxrl, type1, &
+                  call moab_map_init_rcfile( mapper_Fr2l, type1, &
                         'seq_maps.rc', 'rof2lnd_fmapname:', 'rof2lnd_fmaptype:',samegrid_lr, &
                         arearead, wgtIdFr2l, 'mapper_Fr2l MOAB initialization', esmf_map_flag)
 
@@ -575,7 +575,7 @@ contains
               else ! offline maps for atm to lnd
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need for areas
-                  call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
+                  call moab_map_init_rcfile( mapper_Sa2l, type1, &
                         'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:', samegrid_al, &
                         arearead, wgtIdSa2l, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
 
@@ -584,7 +584,10 @@ contains
                   ! read as the second one the f map, this one has the aream for land correct, so it should be fine
                   ! the area_b for the bilinear map above is 0 ! which caused grief
                   arearead = 2 !  area_b for land aream
-                  call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
+                  mapper_Fa2l%src_mbid = mbaxid
+                  mapper_Fa2l%tgt_mbid = mblxid
+                  mapper_Fa2l%intx_mbid = mbintxal
+                  call moab_map_init_rcfile( mapper_Fa2l, type1, &
                         'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
                         arearead, wgtIdFa2l, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
 

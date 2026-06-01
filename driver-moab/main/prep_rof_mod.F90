@@ -439,7 +439,7 @@ contains
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need for areas
-                  call moab_map_init_rcfile( mblxid, mbrxid, mbintxlr, type1, &
+                  call moab_map_init_rcfile( mapper_Fl2r, type1, &
                         'seq_maps.rc', 'lnd2rof_fmapname:', 'lnd2rof_fmaptype:',samegrid_lr, &
                         arearead, wgtIdl2r, 'mapper_Fl2r MOAB initialization', esmf_map_flag)
 
@@ -652,7 +652,7 @@ contains
                else
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need for areas
-                  call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
+                  call moab_map_init_rcfile( mapper_Fa2r, type1, &
                         'seq_maps.rc', 'atm2rof_fmapname:', 'atm2rof_fmaptype:',samegrid_ar, &
                         arearead, wgtIdFa2r, 'mapper_Fa2r MOAB initialization', esmf_map_flag)
                end if
@@ -696,7 +696,7 @@ contains
                if (.not. compute_maps_online_a2r) then
                   type1 = 3 ! this is type of grid
                   arearead = 0 ! no need for areas
-                  call moab_map_init_rcfile( mbaxid, mbrxid, mbintxar, type1, &
+                  call moab_map_init_rcfile( mapper_Sa2r, type1, &
                         'seq_maps.rc', 'atm2rof_smapname:', 'atm2rof_smaptype:', samegrid_ar, &
                         arearead, wgtIdSa2r, 'mapper_Sa2r MOAB initialization', esmf_map_flag )
 
@@ -819,10 +819,13 @@ contains
             endif
 
             ! If loading map from disk, then load the scalar map as well
+            mapper_So2r%src_mbid = mboxid
+            mapper_So2r%tgt_mbid = mbrxid
+            mapper_So2r%intx_mbid = mbintxor
             if (.not. compute_maps_online_o2r) then
                type1 = 3 ! this is type of grid
                arearead = 0 ! no need for areas
-               call moab_map_init_rcfile( mboxid, mbrxid, mbintxor, type1, &
+               call moab_map_init_rcfile( mapper_So2r, type1, &
                      'seq_maps.rc','ocn2rof_smapname:','ocn2rof_smaptype:',samegrid_ro, &
                      arearead, wgtIdSo2r, 'mapper_So2r MOAB initialization', esmf_map_flag)
 
@@ -835,9 +838,6 @@ contains
                endif
             end if ! if (.not. compute_maps_online_o2r) then
 
-            mapper_So2r%src_mbid = mboxid
-            mapper_So2r%tgt_mbid = mbrxid
-            mapper_So2r%intx_mbid = mbintxor
             mapper_So2r%src_context = ocn(1)%cplcompid
             mapper_So2r%intx_context = idintx
             mapper_So2r%weight_identifier = wgtIdSo2r

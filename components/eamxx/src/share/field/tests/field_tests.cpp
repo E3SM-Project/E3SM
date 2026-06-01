@@ -93,11 +93,35 @@ TEST_CASE("field", "") {
     fap1.request_allocation(16);
     f1.allocate_view();
     f1.deep_copy(3.0);
+    auto ts = util::TimeStamp(2022,1,2,3,4,5);
+    f1.get_header().get_tracking().update_time_stamp(ts);
 
-    Field f2 = f1.clone();
+    Field f_none = f1.clone();
+    REQUIRE(f_none.is_allocated());
+    REQUIRE(f_none.get_header().get_alloc_properties().get_largest_pack_size()==1);
+    REQUIRE(!f_none.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_alloc = f1.clone(CloneFlags::MatchPacking);
+    REQUIRE(f_alloc.is_allocated());
+    REQUIRE(f_alloc.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_alloc.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_ts = f1.clone(CloneFlags::CopyTimeStamp);
+    REQUIRE(f_ts.is_allocated());
+    REQUIRE(f_ts.get_header().get_tracking().get_time_stamp()==ts);
+    REQUIRE(f_ts.get_header().get_alloc_properties().get_largest_pack_size()==1);
+
+    Field f_data = f1.clone(CloneFlags::MatchPacking | CloneFlags::CopyData);
+    REQUIRE(f_data.is_allocated());
+    REQUIRE(f_data.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_data.get_header().get_tracking().get_time_stamp().is_valid());
+    REQUIRE(views_are_equal(f1,f_data));
+
+    Field f2 = f1.clone(CloneFlags::All);
     auto& fap2 = f2.get_header().get_alloc_properties();
     REQUIRE(f2.is_allocated());
     REQUIRE(fap2.get_alloc_size()==fap1.get_alloc_size());
+    REQUIRE(f2.get_header().get_tracking().get_time_stamp()==ts);
     REQUIRE(views_are_equal(f1,f2));
 
     // Changing f2 should leave f1 unchanged
@@ -126,6 +150,25 @@ TEST_CASE("field", "") {
     // Check extra data is also shared
     f1.get_header().set_extra_data("foo",1);
     REQUIRE (f2.get_header().has_extra_data("foo"));
+
+    // alias with tag renaming: COL -> "ncol_d", LEV -> "lev_d"
+    std::map<FieldTag,std::string> tag_names = {{COL,"ncol_d"},{LEV,"lev_d"}};
+    Field f3 = f1.alias("renamed_alias", tag_names);
+
+    REQUIRE(f3.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f3.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f3.get_header().get_alloc_properties());
+    REQUIRE(f1.get_internal_view_data<Real>()==f3.get_internal_view_data<Real>());
+    // Tags (FieldTag enum values) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().tags()==f3.get_header().get_identifier().get_layout().tags());
+    // Dims (extents) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().dims()==f3.get_header().get_identifier().get_layout().dims());
+    // Names are renamed
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(0)=="ncol_d");
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(1)=="lev_d");
+    // Original field's names are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(0)=="ncol");
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(1)=="lev");
   }
 
   SECTION ("is_aliasing") {
@@ -270,6 +313,43 @@ TEST_CASE("field", "") {
     REQUIRE (not f.is_allocated());
     // Attempting to allocate should fail
     REQUIRE_THROWS (f.allocate_view());
+  }
+
+  SECTION ("shallow_const") {
+    // Manipulation methods should be callable on const Field objects,
+    // since Field uses a "shallow const" design (like Kokkos::View).
+    Field f(fid, true);
+
+    // Bind a const reference to the allocated field
+    const Field& cf = f;
+
+    // All manipulation methods should compile and run on a const Field
+    cf.deep_copy(1.0);
+    cf.scale(2.0);
+    cf.add_scalar(-1.0);
+    cf.update(cf, 0.0, 1.0);
+
+    // Verify effect: f started at 1.0, scale(2.0) -> 2.0,
+    // add_scalar(-1.0) -> 1.0, update(cf,0,1) -> 1.0
+    cf.sync_to_host();
+    {
+      auto v = cf.get_view<Real**,Host>();
+      for (int i=0; i<dims[0]; ++i)
+        for (int j=0; j<dims[1]; ++j)
+          REQUIRE (v(i,j)==1.0);
+    }
+
+    // A read-only field should throw on any manipulation method
+    const Field ro = f.get_const();
+    REQUIRE_THROWS (ro.deep_copy(0.0));
+    REQUIRE_THROWS (ro.deep_copy(f));
+    REQUIRE_THROWS (ro.scale(1.0));
+    REQUIRE_THROWS (ro.scale(f));
+    REQUIRE_THROWS (ro.scale_inv(f));
+    REQUIRE_THROWS (ro.update(f, 1.0, 0.0));
+    REQUIRE_THROWS (ro.add_scalar(0.0));
+    REQUIRE_THROWS (ro.max(f));
+    REQUIRE_THROWS (ro.min(f));
   }
 
   SECTION ("valid_mask") {

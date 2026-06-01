@@ -159,14 +159,14 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
           continue;
         }
         if (use_suffix) {
-          fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname));
+          fields.push_back(f.clone(f.name() + grid->m_disambiguation_suffix, gname, CloneFlags::All));
 
           // Adjust long/std name, as the default metadata does not recognize the names with suffix
           auto& str_atts = fields.back().get_header().get_extra_data<stratts_t>("io: string attributes");
           str_atts["long_name"] = meta.get_longname(f.name());
           str_atts["standard_name"] = meta.get_standardname(f.name());
         } else {
-          fields.push_back(f.clone(f.name(), gname));
+          fields.push_back(f.clone(f.name(), gname, CloneFlags::All));
         }
 
         // Transfer io: string attributes from original field (e.g., "bounds" attribute).
@@ -488,7 +488,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   for (auto& it : m_output_streams) {
     // Note: filename only matters if is_output_step || is_full_checkpoint_step=true. In that case, it will definitely point to a valid file name.
     m_atm_logger->debug("[OutputManager]: writing fields from grid " + it->get_io_grid()->name() + "...\n");
-    it->run(fields_write_filename,is_output_step,is_full_checkpoint_step,m_output_control.nsamples_since_last_write,is_t0_output);
+    it->run(fields_write_filename,timestamp,is_output_step,is_full_checkpoint_step,m_output_control.nsamples_since_last_write,is_t0_output);
   }
   stop_timer(timer_root+"::run_output_streams");
 
@@ -901,7 +901,8 @@ setup_file (      IOFileSpecs& filespecs,
   if (m_save_grid_data and not filespecs.is_restart_file() and not m_resume_output_file) {
     // Immediately run the geo data streams
     for (const auto& it : m_geo_data_streams) {
-      it->run(filename,true,false,0);
+      // Note: for geo data, timestamp is irrelevant. It is only used to eval diagnostics
+      it->run(filename,util::TimeStamp{},true,false,0);
     }
   }
 
