@@ -189,11 +189,12 @@ contains
     !
     integer (kind=c_int) :: nsplit_out
     integer :: dt_max_factor
-    real (kind=real_kind) :: atm_dt_rk, nsplit_real
+    real (kind=real_kind) :: atm_dt_rk, nsplit_real, nsplit_err, nsplit_tol
     real (kind=real_kind), parameter :: &
          zero = 0.0_real_kind, &
          eps = epsilon(1.0_real_kind), &
-         divisible_tol = 1e3_real_kind*eps
+         divisible_tol = 1e3_real_kind*eps, &
+         practical_tol = 1e-10_real_kind
 
     nsplit_out = -1
 
@@ -209,20 +210,24 @@ contains
     atm_dt_rk = real(atm_dt, kind=real_kind)
     nsplit_real = atm_dt_rk / (real(dt_max_factor, kind=real_kind) * tstep)
     nsplit_out = nint(nsplit_real)
+    nsplit_err = abs(nsplit_real - real(nsplit_out, kind=real_kind))
+    nsplit_tol = max(divisible_tol*max(abs(nsplit_real),1.0_real_kind), practical_tol)
 
     if (nsplit_out <= 0) then
       call abortmp ("[get_homme_nsplit_f90] Error! Computed nsplit <= 0.")
     endif
 
-    if (abs(nsplit_real - real(nsplit_out, kind=real_kind)) > divisible_tol*max(abs(nsplit_real),1.0_real_kind)) then
+    if (nsplit_err > nsplit_tol) then
       if (par%masterproc) then
-        write(iulog,'(a,es22.14,a,es22.14,a,i4,a,i4,a,es22.14,a,i7,a)') &
+        write(iulog,'(a,es22.14,a,es22.14,a,i4,a,i4,a,es22.14,a,i7,a,es22.14,a,es22.14,a)') &
              '[get_homme_nsplit_f90] Computed nsplit = ', nsplit_real, &
              ' based on atm_dt = ', atm_dt_rk, &
              ', dt_remap_factor = ', dt_remap_factor, &
              ', dt_tracer_factor = ', dt_tracer_factor, &
              ', tstep = ', tstep, &
              ', rounded nsplit = ', nsplit_out, &
+             ', error = ', nsplit_err, &
+             ', tolerance = ', nsplit_tol, &
              ', which is outside the divisibility tolerance.'
       endif
       call abortmp ("[get_homme_nsplit_f90] Error! atm_dt is inconsistent with Homme timestep settings.")
