@@ -166,7 +166,6 @@ void HommeDynamics::create_requests ()
   auto pg_scalar3d_mid = m_phys_grid->get_3d_scalar_layout(LEV);
   auto pg_scalar3d_int = m_phys_grid->get_3d_scalar_layout(ILEV);
   auto pg_vector3d_mid = m_phys_grid->get_3d_vector_layout(LEV,2);
-  auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
   add_field<Updated> ("horiz_winds",        pg_vector3d_mid, m/s,   pgn,N);
   add_field<Updated> ("T_mid",              pg_scalar3d_mid, K,     pgn,N);
   add_field<Computed>("pseudo_density",     pg_scalar3d_mid, Pa,    pgn,N);
@@ -180,7 +179,10 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
   add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
-  add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, nondim/s, pgn,N);
+  if (params.do_3d_turbulence) {
+    auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
+    add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, nondim/s, pgn,N);
+  }
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -217,10 +219,12 @@ void HommeDynamics::create_requests ()
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
   create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_Ux_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
-  create_helper_field("shear_strain3d_components_dyn", {EL,CMP,GP,GP,LEV}, {nelem,6,NP,NP,nlev_mid}, dgn);
+  if (params.do_3d_turbulence) {
+    create_helper_field("grad_Ux_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+    create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+    create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+    create_helper_field("shear_strain3d_components_dyn", {EL,CMP,GP,GP,LEV}, {nelem,6,NP,NP,nlev_mid}, dgn);
+  }
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
   // but only one is really needed for restart. Therefore, we create "dynamic" subfields for
@@ -363,8 +367,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // dycore has computed these diagnostic components, so start from a benign
   // value. Homme overwrites them after each dynamics step when 3D turbulence is
   // enabled.
-  m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
-  get_field_out("tke_shear_strain3d_components").deep_copy(0.0);
+  if (params.do_3d_turbulence) {
+    m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
+    get_field_out("tke_shear_strain3d_components").deep_copy(0.0);
+  }
 
   // Complete Homme prim_init1_xyz sequence
   prim_complete_init1_phase_f90 ();
@@ -444,8 +450,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
     m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
 
-    // Remap horizontal/local strain tensor components from dynamics to physics grid.
-    m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
+    if (params.do_3d_turbulence) {
+      // Remap horizontal/local strain tensor components from dynamics to physics grid.
+      m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
+    }
 
     m_p2d_remapper->registration_ends();
     m_d2p_remapper->registration_ends();
@@ -544,7 +552,7 @@ void HommeDynamics::run_impl (const double dt)
     if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
       compute_local_strain_components3d();
-    } else {
+    } else if (params.do_3d_turbulence) {
       m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
     }
 

@@ -818,7 +818,7 @@ test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode
     gfr_dyn_to_fv_phys_f90(nf, nt+1, fps.data(), fphis.data(), fT.data(), fuv.data(),
                            fomega.data(), fq.data());
 
-    gfr.run_dyn_to_fv_phys(nt, dps, dphis, dT, domega, dstrain, dstrain, duv, dq);
+    gfr.run_dyn_to_fv_phys(nt, dps, dphis, dT, domega, &dstrain, &dstrain, duv, dq);
 
     gfr.remap_tracer_dyn_to_fv_phys(nt, nq, dq1_dyn, dq1);
 

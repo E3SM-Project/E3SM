@@ -79,8 +79,8 @@ void SHOCMacrophysics::create_requests()
   if (do_3d_turb) {
     const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
     add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
+    add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
   }
-  add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
 
   // Input/Output variables
   add_field<Updated>("horiz_winds",   vector3d_mid,   m/s,   grid_name, ps);
@@ -208,6 +208,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlev_packs       = ekat::npack<Pack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Pack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Pack>(m_num_tracers);
+  m_dummy_shear_strain3d = view_2d("dummy_shear_strain3d", m_num_cols, nlev_packs);
+  Kokkos::deep_copy(m_dummy_shear_strain3d, 0);
   m_dummy_shear_strain3d_components = view_3d("dummy_shear_strain3d_components", m_num_cols, 6, nlev_packs);
   Kokkos::deep_copy(m_dummy_shear_strain3d_components, 0);
 
@@ -292,7 +294,10 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& surf_sens_flux      = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_evap           = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux       = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& shear_strain3d            = get_field_out("tke_shear_strain3d").get_view<Pack**>();
+  const auto shear_strain3d =
+    runtime_options.do_3d_turb
+      ? get_field_out("tke_shear_strain3d").get_view<Pack**>()
+      : view_2d(m_dummy_shear_strain3d);
   const auto shear_strain3d_components =
     runtime_options.do_3d_turb
       ? get_field_in("tke_shear_strain3d_components").get_view<const Pack***>()
