@@ -176,7 +176,7 @@ CONTAINS
        call shr_stream_getFile(filePath,fileName)
        ! send path of river domain to MOAB coupler.
        call seq_infodata_PutData( infodata, rof_domain=fileName)
-       write(logunit,*), ' filename: ', filename
+       write(logunit,*) ' filename: ', filename
     endif
 #endif
     !----------------------------------------------------------------------------
