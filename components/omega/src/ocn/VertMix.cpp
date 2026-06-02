@@ -512,8 +512,7 @@ void VertMix::applyVelVertMixImplicit(
                 Team.team_barrier();
 
                 // Store the solution vector X
-                Kokkos::parallel_for(
-                    TeamThreadRange(Team, NVertLayers), [=](int K) {
+                parallelForInner(Team, NVertLayers, [=](int K) {
                        for (int IVec = 0; IVec < ILen; ++IVec) {
                           const int IEdge = IStart + IVec;
 
@@ -610,8 +609,7 @@ void VertMix::applyTracerVertMixImplicit(
                    Team.team_barrier();
 
                    // Store the solution vector X
-                   Kokkos::parallel_for(
-                       TeamThreadRange(Team, NVertLayers), [=](int K) {
+                   parallelForInner(Team, NVertLayers, [=](int K) {
                           for (int IVec = 0; IVec < ILen; ++IVec) {
                              const int ICell = IStart + IVec;
 
