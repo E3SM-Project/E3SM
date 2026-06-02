@@ -128,7 +128,6 @@ void testGradRichNum() {
    OMEGA_SCOPE(DcEdge, Mesh->DcEdge);
    OMEGA_SCOPE(DvEdge, Mesh->DvEdge);
    OMEGA_SCOPE(CellsOnCell, Mesh->CellsOnCell);
-   // OMEGA_SCOPE(CellsOnEdge, Mesh->CellsOnEdge);
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 

@@ -94,7 +94,7 @@ Omega:
       BaseShearValue: 0.005
       RiCrit: 0.7
       Exponent: 3.0
-      RiSmoothLoops: 3
+      RiSmoothLoops: 2
   IOStreams:
     HorzMeshIn:
       UsePointerFile: false
