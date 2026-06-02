@@ -513,15 +513,15 @@ void VertMix::applyVelVertMixImplicit(
 
                 // Store the solution vector X
                 parallelForInner(Team, NVertLayers, [=](int K) {
-                       for (int IVec = 0; IVec < ILen; ++IVec) {
-                          const int IEdge = IStart + IVec;
+                   for (int IVec = 0; IVec < ILen; ++IVec) {
+                      const int IEdge = IStart + IVec;
 
-                          if (K >= MinLayerEdgeBot(IEdge) &&
-                              K <= MaxLayerEdgeTop(IEdge)) {
-                             NormalVelEdge(IEdge, K) = Scratch.X(K, IVec);
-                          }
-                       }
-                    });
+                      if (K >= MinLayerEdgeBot(IEdge) &&
+                          K <= MaxLayerEdgeTop(IEdge)) {
+                         NormalVelEdge(IEdge, K) = Scratch.X(K, IVec);
+                      }
+                   }
+                });
              });
       }
       Pacer::stop("Tend:velocityVertMix", 1);
@@ -610,15 +610,15 @@ void VertMix::applyTracerVertMixImplicit(
 
                    // Store the solution vector X
                    parallelForInner(Team, NVertLayers, [=](int K) {
-                          for (int IVec = 0; IVec < ILen; ++IVec) {
-                             const int ICell = IStart + IVec;
+                      for (int IVec = 0; IVec < ILen; ++IVec) {
+                         const int ICell = IStart + IVec;
 
-                             if (K >= MinLayerCell(ICell) &&
-                                 K <= MaxLayerCell(ICell)) {
-                                TracerArray(L, ICell, K) = Scratch.X(K, IVec);
-                             }
-                          }
-                       });
+                         if (K >= MinLayerCell(ICell) &&
+                             K <= MaxLayerCell(ICell)) {
+                            TracerArray(L, ICell, K) = Scratch.X(K, IVec);
+                         }
+                      }
+                   });
                 });
 
          } // for L
