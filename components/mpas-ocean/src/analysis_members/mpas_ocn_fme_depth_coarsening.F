@@ -40,7 +40,8 @@ module ocn_fme_depth_coarsening
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
-        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum
+        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum, &
+        ocn_fme_horiz_remap_set_rewind
 
    implicit none
    private
@@ -514,6 +515,7 @@ contains
       logical          :: ok
       integer          :: ierr_local
       character(len=StrKIND) :: ts_str
+      type(MPAS_Time_type)   :: now_time
 
       err = 0
       if (.not. time_avg_enabled) return
@@ -522,6 +524,8 @@ contains
            config_do_restart)
       if (.not. associated(config_do_restart)) return
       if (.not. config_do_restart) return
+
+      now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_local)
 
       if (write_inst_companion) then
          call ocn_fme_horiz_remap_read_accum('fmeDepthCoarsening', &
@@ -542,10 +546,11 @@ contains
                  'persisted avg_last_output_time="' // trim(ts_str) // &
                  '"; falling back to MPAS_NOW baseline.', &
                  messageType=MPAS_LOG_WARN)
-            avg_last_output_time = mpas_get_clock_time( &
-                 domain % clock, MPAS_NOW, ierr_local)
+            avg_last_output_time = now_time
          end if
       end if
+      call rewind_reset(avg_last_output_time, now_time, &
+           remap_accum, remap_accum_count, nAccum, ts_str)
 
       ! Restore the 5-day companion accumulator from its own sidecar.
       ! Independent of the 1D path's success: a missing 5D sidecar (e.g.,
@@ -563,11 +568,41 @@ contains
                     'persisted avg_last_output_time_5D="' // trim(ts_str) // &
                     '"; falling back to MPAS_NOW baseline.', &
                     messageType=MPAS_LOG_WARN)
-               avg_last_output_time_5D = mpas_get_clock_time( &
-                    domain % clock, MPAS_NOW, ierr_local)
+               avg_last_output_time_5D = now_time
             end if
          end if
+         call rewind_reset(avg_last_output_time_5D, now_time, &
+              remap_accum_5D, remap_accum_count_5D, nAccum_5D, ts_str)
       end if
+
+   contains
+
+      subroutine rewind_reset(last_out, now_t, accum, accum_count, nacc, label)
+         !> Branch/rewind restart handling (AGENTS.md). On a rewind to an
+         !> earlier date the sidecar-restored avg_last_output_time is in the
+         !> FUTURE relative to MPAS_NOW, so the output gate never fires and
+         !> the re-crossed months get no output; the restored accumulator
+         !> also spans the whole gap. Detect (strict '>' so an exact
+         !> same-point warm restart is BFB-unchanged), reset the schedule to
+         !> MPAS_NOW, discard the gap-spanning accumulator, and flag the
+         !> remap layer to clobber-create the re-crossed files.
+         type(MPAS_Time_type), intent(inout) :: last_out
+         type(MPAS_Time_type), intent(in)    :: now_t
+         real(r8), intent(inout) :: accum(:,:), accum_count(:,:)
+         integer,  intent(inout) :: nacc
+         character(len=*), intent(in) :: label
+         if (last_out > now_t) then
+            call mpas_log_write('fmeDepthCoarsening: rewind restart detected ' // &
+                 '(persisted ' // trim(label) // ' is later than MPAS_NOW); ' // &
+                 'resetting schedule to MPAS_NOW and discarding stale ' // &
+                 'accumulator.', messageType=MPAS_LOG_WARN)
+            last_out    = now_t
+            accum       = 0.0_r8
+            accum_count = 0.0_r8
+            nacc        = 0
+            call ocn_fme_horiz_remap_set_rewind()
+         end if
+      end subroutine rewind_reset
 
    end subroutine ocn_fme_depth_coarsening_read_restart!}}}
 
@@ -1087,12 +1122,17 @@ contains
       end subroutine compute_mask_levels_remap
 
       subroutine write_static_masks_if_needed()
-         ! Static masks are written once per file at the first record on
-         ! a freshly created file. Append-mode reopens skip this — masks
-         ! are already in the file from the original create.
+         ! Write the per-level static masks on the FIRST data record of the
+         ! file, whether freshly created OR append-reopened with no records
+         ! yet. If a prior leg created the file (defining mask_0..mask_N)
+         ! but stopped before its first flush, the masks were left
+         ! defined-but-unwritten (= all-zero) and the reopening leg must
+         ! fill them. A normal warm-restart reopen of a file that already
+         ! holds records has time_record >= 2 here, so its correct masks are
+         ! left untouched (warm-restart BFB preserved). See AGENTS.md
+         ! gotcha #45 (production fmeDepthCoarsening.0451-01 all-zero masks).
          integer :: kLvl
          character(len=128) :: maskName
-         if (remap_outfile%existing_file_reopened) return
          if (remap_outfile%time_record /= 1) return
          if (.not. allocated(mask_levels_remap)) return
          do kLvl = 0, nCoarsenLevels - 1
@@ -1105,7 +1145,6 @@ contains
       subroutine write_static_masks_5D_if_needed()
          integer :: kLvl
          character(len=128) :: maskName
-         if (remap_outfile_5D%existing_file_reopened) return
          if (remap_outfile_5D%time_record /= 1) return
          if (.not. allocated(mask_levels_remap)) return
          do kLvl = 0, nCoarsenLevels - 1

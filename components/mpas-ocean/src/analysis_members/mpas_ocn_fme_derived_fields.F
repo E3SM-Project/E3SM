@@ -44,7 +44,8 @@ module ocn_fme_derived_fields
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
-        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum
+        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum, &
+        ocn_fme_horiz_remap_set_rewind
 
    implicit none
    private
@@ -371,6 +372,7 @@ contains
       logical          :: ok
       integer          :: ierr_local
       character(len=StrKIND) :: ts_str
+      type(MPAS_Time_type)   :: now_time
 
       err = 0
       if (.not. time_avg_enabled) return
@@ -379,6 +381,8 @@ contains
            config_do_restart)
       if (.not. associated(config_do_restart)) return
       if (.not. config_do_restart) return
+
+      now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_local)
 
       call ocn_fme_horiz_remap_read_accum('fmeDerivedFields', remap_accum, &
            N_AVG_FIELDS, nAccum, ts_str, &
@@ -392,10 +396,11 @@ contains
                  'persisted avg_last_output_time="' // trim(ts_str) // &
                  '"; falling back to MPAS_NOW baseline.', &
                  messageType=MPAS_LOG_WARN)
-            avg_last_output_time = mpas_get_clock_time( &
-                 domain % clock, MPAS_NOW, ierr_local)
+            avg_last_output_time = now_time
          end if
       end if
+      call rewind_reset(avg_last_output_time, now_time, &
+           remap_accum, remap_accum_count, nAccum, ts_str)
 
       if (time_avg_5D_enabled) then
          call ocn_fme_horiz_remap_read_accum('fmeDerivedFields5D', &
@@ -409,11 +414,45 @@ contains
                     'persisted avg_last_output_time_5D="' // trim(ts_str) // &
                     '"; falling back to MPAS_NOW baseline.', &
                     messageType=MPAS_LOG_WARN)
-               avg_last_output_time_5D = mpas_get_clock_time( &
-                    domain % clock, MPAS_NOW, ierr_local)
+               avg_last_output_time_5D = now_time
             end if
          end if
+         call rewind_reset(avg_last_output_time_5D, now_time, &
+              remap_accum_5D, remap_accum_count_5D, nAccum_5D, ts_str)
       end if
+
+   contains
+
+      subroutine rewind_reset(last_out, now_t, accum, accum_count, nacc, label)
+         !> Branch/rewind restart handling (AGENTS.md). The accumulator
+         !> sidecar restores avg_last_output_time verbatim, assuming a
+         !> restart can only move time forward. On a rewind to an earlier
+         !> date the restored time is in the FUTURE relative to MPAS_NOW, so
+         !> the output gate (currTime - last_out >= interval) is negative for
+         !> the whole re-run and never fires -- the re-crossed months get no
+         !> output. Detect that here (strict '>' leaves an exact same-point
+         !> warm restart untouched, preserving warm-restart BFB), reset the
+         !> schedule to MPAS_NOW, discard the gap-spanning accumulator (it
+         !> would otherwise average the whole gap into the first record --
+         !> Bug 2), and tell the remap layer to clobber-create the
+         !> re-crossed files so their static masks/history are rewritten.
+         type(MPAS_Time_type), intent(inout) :: last_out
+         type(MPAS_Time_type), intent(in)    :: now_t
+         real(r8), intent(inout) :: accum(:,:), accum_count(:,:)
+         integer,  intent(inout) :: nacc
+         character(len=*), intent(in) :: label
+         if (last_out > now_t) then
+            call mpas_log_write('fmeDerivedFields: rewind restart detected ' // &
+                 '(persisted ' // trim(label) // ' is later than MPAS_NOW); ' // &
+                 'resetting schedule to MPAS_NOW and discarding stale ' // &
+                 'accumulator.', messageType=MPAS_LOG_WARN)
+            last_out    = now_t
+            accum       = 0.0_r8
+            accum_count = 0.0_r8
+            nacc        = 0
+            call ocn_fme_horiz_remap_set_rewind()
+         end if
+      end subroutine rewind_reset
 
    end subroutine ocn_fme_derived_fields_read_restart!}}}
 
@@ -914,17 +953,24 @@ contains
       end subroutine compute_mask_2d_remap
 
       subroutine write_static_masks_if_needed()
-         ! Static masks are written once per file at the first record on
-         ! a freshly created file. Append-mode reopens (warm restart) skip
-         ! this — the masks are already in the file from leg 1.
-         if (remap_outfile%existing_file_reopened) return
+         ! Write the static mask on the FIRST data record of the file,
+         ! whether the file was freshly created OR append-reopened with no
+         ! records yet. The latter case matters: if a prior leg created the
+         ! monthly file (defining mask_2d) but stopped before its first
+         ! flush, mask_2d was left defined-but-unwritten (= all-zero), and
+         ! the reopening leg must fill it. A normal warm-restart reopen of a
+         ! file that already holds records has time_record >= 2 here, so its
+         ! correct mask is left untouched (warm-restart BFB preserved).
+         ! mask_2d_remap is recomputed each leg from the static land mask,
+         ! so the value written on reopen is correct. (Observed in
+         ! production: fmeDerivedFields.0451-01 shipped an all-zero mask
+         ! exactly this way — see AGENTS.md gotcha #45.)
          if (remap_outfile%time_record /= 1) return
          if (.not. allocated(mask_2d_remap)) return
          call remap_outfile%write_var('mask_2d', mask_2d_remap, 1, ierr)
       end subroutine write_static_masks_if_needed
 
       subroutine write_static_masks_5D_if_needed()
-         if (remap_outfile_5D%existing_file_reopened) return
          if (remap_outfile_5D%time_record /= 1) return
          if (.not. allocated(mask_2d_remap)) return
          call remap_outfile_5D%write_var('mask_2d', mask_2d_remap, 1, ierr)

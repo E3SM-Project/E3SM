@@ -44,7 +44,8 @@ module ocn_fme_vertical_reduce
         ocn_fme_horiz_remap_field, ocn_fme_horiz_remap_active, &
         ocn_fme_horiz_remap_get_dims, ocn_fme_remap_file_t, &
         ocn_fme_remap_build_filename, &
-        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum
+        ocn_fme_horiz_remap_write_accum, ocn_fme_horiz_remap_read_accum, &
+        ocn_fme_horiz_remap_set_rewind
 
    implicit none
    private
@@ -322,6 +323,7 @@ contains
       logical          :: ok
       integer          :: ierr_local
       character(len=StrKIND) :: ts_str
+      type(MPAS_Time_type)   :: now_time
 
       err = 0
       if (.not. time_avg_enabled) return
@@ -330,6 +332,8 @@ contains
            config_do_restart)
       if (.not. associated(config_do_restart)) return
       if (.not. config_do_restart) return
+
+      now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_local)
 
       call ocn_fme_horiz_remap_read_accum('fmeVerticalReduce', remap_accum, &
            N_AVG_FIELDS, nAccum, ts_str, &
@@ -343,9 +347,27 @@ contains
                  'persisted avg_last_output_time="' // trim(ts_str) // &
                  '"; falling back to MPAS_NOW baseline.', &
                  messageType=MPAS_LOG_WARN)
-            avg_last_output_time = mpas_get_clock_time( &
-                 domain % clock, MPAS_NOW, ierr_local)
+            avg_last_output_time = now_time
          end if
+      end if
+
+      ! Branch/rewind restart handling (AGENTS.md). On a rewind to an earlier
+      ! date the sidecar-restored avg_last_output_time is in the FUTURE
+      ! relative to MPAS_NOW, so the output gate never fires and re-crossed
+      ! months get no output; the restored accumulator also spans the whole
+      ! gap. Detect (strict '>' so an exact same-point warm restart is
+      ! BFB-unchanged), reset the schedule to MPAS_NOW, discard the
+      ! gap-spanning accumulator, and flag the remap layer to clobber-create.
+      if (avg_last_output_time > now_time) then
+         call mpas_log_write('fmeVerticalReduce: rewind restart detected ' // &
+              '(persisted avg_last_output_time is later than MPAS_NOW); ' // &
+              'resetting schedule to MPAS_NOW and discarding stale ' // &
+              'accumulator.', messageType=MPAS_LOG_WARN)
+         avg_last_output_time = now_time
+         remap_accum          = 0.0_r8
+         remap_accum_count    = 0.0_r8
+         nAccum               = 0
+         call ocn_fme_horiz_remap_set_rewind()
       end if
 
    end subroutine ocn_fme_vertical_reduce_read_restart!}}}

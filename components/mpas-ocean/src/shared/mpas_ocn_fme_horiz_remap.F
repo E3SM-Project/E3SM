@@ -72,6 +72,7 @@ module ocn_fme_horiz_remap
    public :: ocn_fme_remap_build_filename
    public :: ocn_fme_horiz_remap_write_accum
    public :: ocn_fme_horiz_remap_read_accum
+   public :: ocn_fme_horiz_remap_set_rewind
 
    type(shr_horiz_remap_t) :: remap_data
 
@@ -86,6 +87,17 @@ module ocn_fme_horiz_remap
    ! older `.remapped.nc` is still in the run dir from a prior CIME
    ! compare-copy that didn't get cleared.
    logical :: is_restart_run = .false.
+
+   ! Set by an AM's *_read_restart when it detects a branch/rewind restart
+   ! (the persisted avg_last_output_time is later than MPAS_NOW, so the
+   ! run is re-simulating earlier dates). When true, remap_file_open
+   ! clobber-creates the monthly file instead of append-reopening it, so
+   ! the re-crossed months are overwritten with fresh records, static
+   ! masks, and history for the current map. Stays true for the rest of
+   ! the run; harmless on later legs once the clock catches up to the
+   ! original timeline because the leg-start month is then created fresh
+   ! anyway (its records are in the future and don't yet exist on disk).
+   logical :: rewind_restart = .false.
 
    ! CF time-coordinate epoch shared across all FME output files for
    ! this component. Auto-discovered at AM init via init_time_epoch:
@@ -778,7 +790,12 @@ contains
       ! clobber-create instead, otherwise reopening a 0-byte/corrupt file
       ! trips PIO's "invalid IO type" assert (see git history / AGENTS.md).
       ! The latch is consumed on the first open regardless of branch taken.
-      may_append = file_exists .and. is_restart_run .and. self%restart_reopen_pending
+      ! On a branch/rewind restart (rewind_restart) we must NOT append:
+      ! the re-crossed month must be overwritten with fresh records and a
+      ! fresh static mask/history for the current map, so fall through to
+      ! clobber-create even though the file exists.
+      may_append = file_exists .and. is_restart_run .and. &
+           self%restart_reopen_pending .and. .not. rewind_restart
       self%restart_reopen_pending = .false.
       if (may_append) then
          ! --- Append mode: reopen existing file and continue writing -------
@@ -1581,6 +1598,19 @@ contains
       call pio_closefile(pio_acc_file)
 
    end subroutine ocn_fme_horiz_remap_write_accum!}}}
+
+!***********************************************************************
+
+   subroutine ocn_fme_horiz_remap_set_rewind()!{{{
+   !> Flag a branch/rewind restart so remap_file_open clobber-creates the
+   !> re-crossed monthly files instead of append-reopening them. Called by
+   !> an AM's *_read_restart when the persisted schedule time is later than
+   !> MPAS_NOW. Module-scope state is shared across the ocean FME AMs (they
+   !> all rewind together), so the first caller's flag covers them all.
+      rewind_restart = .true.
+      call mpas_log_write('ocn_fme_horiz_remap: rewind restart flagged; ' // &
+           're-crossed monthly files will be clobber-created.')
+   end subroutine ocn_fme_horiz_remap_set_rewind!}}}
 
 !***********************************************************************
 
