@@ -97,6 +97,14 @@ def buildnml(case, caseroot, compname):
 
     case.flush()
 
+    # write the complete cppdefs (including BLCK values) back to CIME_cppdefs so that
+    # the cmake build system picks up the correct defines if it re-configures.
+    # The cice configure script writes CIME_cppdefs without BLCK values (because it is
+    # called with -nodecomp), so we must update the file here after appending them.
+    if os.path.isfile(os.path.join(ciceconf_dir, "CIME_cppdefs")):
+        with open(os.path.join(ciceconf_dir, "CIME_cppdefs"), "w") as fd:
+            fd.write(cppdefs + "\n")
+
     # write out cppdefs to CICE_cppdefs.new
     # this will force gmake to rebuild when $CASE.buildexe is called
 
