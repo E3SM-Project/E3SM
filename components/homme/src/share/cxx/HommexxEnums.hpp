@@ -48,15 +48,14 @@ enum class MoistDry { MOIST, DRY };
 
 enum class ForcingAlg : int {
   FORCING_OFF =-1,
-  FORCING_0   = 0,
+  FORCING_0   = 0, 
   FORCING_1   = 1, // Unsupported
   FORCING_2   = 2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };
 
 enum class AdvectionForm {
   Conservative,
-  NonConservative,
-  Split
+  NonConservative
 };
 
 enum class RemapAlg {
