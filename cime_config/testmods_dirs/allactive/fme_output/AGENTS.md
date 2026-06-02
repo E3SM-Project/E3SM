@@ -1278,6 +1278,178 @@ These are hard-won lessons. Read before modifying FME code.
     logs `clobber-creating instead` (the (C) fallback) rather than
     aborting.
 
+45. **FME output schedule not reset on a branch/rewind restart + first
+    post-gap record was a whole-gap average (FIXED 2026-05-28).** Two
+    coupled defects surfaced when a run was rewound to an earlier date
+    (e.g. `CONTINUE_RUN=FALSE` re-running from 0401 with output through
+    0411 already on disk).
+
+    **Bug 1 — schedule never re-fires.** `*_read_restart` restores
+    `avg_last_output_time` (and the `_5D` companion) verbatim from the
+    accumulator sidecar's `avg_last_output_time` global attribute
+    (`ocn_fme_horiz_remap_read_accum`). The restore assumed a restart can
+    only move time forward. On a rewind the restored value (0411-01-01)
+    is in the FUTURE relative to `MPAS_NOW` (0401-...), so the output
+    gate `currTime - avg_last_output_time >= avg_output_interval`
+    (`mpas_ocn_fme_derived_fields.F` compute) is negative for the entire
+    re-run and never fires — the re-crossed months get **no** remapped
+    output; existing files are left byte-for-byte untouched. Output
+    silently resumes only once the clock passes the stale time.
+    Secondary: when output did resume, the pre-existing monthly file was
+    append-reopened (gotcha #29/#44), and `write_static_masks_if_needed()`
+    short-circuits on reopened files, so `mask_2d`/`history` kept the OLD
+    map while the data records used the new map (the 0411-01 mixed-map
+    file).
+
+    **Bug 2 — contaminated first record.** Accumulation runs every
+    timestep; the accumulator is reset only inside the flush block. While
+    Bug 1 suppressed flushes, the restored sidecar sums kept growing
+    across legs, so the first flush after the suppression lifted divided a
+    ~10-model-year sum by its per-cell count and stamped it as a single
+    1-day (or 5-day) mean. Independent latent defect: ANY mechanism that
+    delays a flush past one interval (long stall, misconfig, rewind)
+    produces a multi-interval first record.
+
+    **Fix (both bugs, one mechanism).** In every AM `*_read_restart`,
+    after restoring the schedule time, detect rewind with the strict test
+    `avg_last_output_time > MPAS_NOW` (strict `>` leaves an exact
+    same-point warm restart untouched, preserving the gotcha #29
+    warm-restart BFB). On a hit: reset `avg_last_output_time = MPAS_NOW`,
+    zero `remap_accum` / `remap_accum_count` / `nAccum` (and the `_5D`
+    trio), and call the new `ocn_fme_horiz_remap_set_rewind()` /
+    `seaice_fme_horiz_remap_set_rewind()`. That setter latches a
+    module-scope `rewind_restart` flag that makes the file-open paths
+    (`remap_file_open`, seaice `open_file` + `open_file_5D`) **clobber-
+    create** instead of append-reopen (extra `.and. .not. rewind_restart`
+    on the `may_append` predicate), so the re-crossed files get fresh
+    records, a fresh `mask_2d`/`mask_*`, and fresh `history` for the
+    current map. The flag is run-global and harmless once the clock
+    catches up to the original timeline (the leg-start month is then in
+    the future and doesn't yet exist, so it is created fresh anyway).
+
+    **Applied to all FME AM schedules**: ocean `fmeDerivedFields`
+    (1D + 5D), `fmeDepthCoarsening` (1D + 5D), `fmeVerticalReduce` (1D),
+    and seaice `fmeSeaiceDerivedFields` (1D + 5D). The rewind detection
+    lives in a small contained `rewind_reset` helper in the AMs that have
+    a `_5D` companion (called once per schedule), inline in
+    `fmeVerticalReduce`. Files touched (6):
+    `mpas_ocn_fme_horiz_remap.F`, `mpas_seaice_fme_horiz_remap.F`,
+    `mpas_ocn_fme_derived_fields.F`, `mpas_ocn_fme_depth_coarsening.F`,
+    `mpas_ocn_fme_vertical_reduce.F`, `mpas_seaice_fme_derived_fields.F`.
+
+    **Acceptance / smoke checks.** (1) ERS_Ld4 FME BFB still PASSes
+    (strict `>` keeps same-point warm restart byte-identical). (2) A
+    branch/rewind to an earlier epoch re-emits the re-crossed months with
+    rerun mtimes, whose `mask_2d` zero-count and `history` match the
+    current map. (3) The first resumed record is a plausible single-
+    interval field — `mean|t1 - t2|` comparable to `mean|t2 - t3|`, not an
+    anomalously smooth decadal mean. Log tell on a rewind leg:
+    `rewind restart detected ... resetting schedule to MPAS_NOW` followed
+    by `rewind restart flagged; re-crossed monthly files will be
+    clobber-created`.
+
+    **Optional further hardening (NOT done — flagged for the BFB-cautious).**
+    The bug report also suggests guarding the steady-state flush path
+    (discard/skip a record whose `currTime - avg_last_output_time`
+    exceeds one interval by more than a tolerance). Skipped to avoid a
+    tolerance-based false-discard in the hot compute path; the rewind
+    reset already covers the only in-practice trigger (a stalled flush
+    schedule). Revisit if a non-rewind long-gap scenario ever appears.
+
+    **Forward-restart variant of the secondary defect — found in
+    production, ALSO fixed 2026-05-28.** Scanning the live
+    `v3.LR.piControl.aigo` run (90 yr, 1081 files/stream, forward
+    20-yr-leg restarts only — no rewind) found NO Bug-1 suppression and NO
+    Bug-2 contamination (output continuous, 0 duplicate dates; first-record
+    spatial-std ratio ~1.0 at every leg boundary across all 6 streams; SST
+    glides smoothly across each restart). BUT exactly one file —
+    `fmeDerivedFields.0451-01` and its `fmeDepthCoarsening`/`*5D` siblings —
+    shipped an **all-zero static mask** (`mask_2d`/`mask_0..18` = 64800
+    zeros vs the correct 19170) while its data records were perfectly fine.
+    Mechanism (confirmed via the per-leg `history` global attr): every
+    20-yr leg ran slightly PAST the year boundary and created the `YY-01`
+    file, then the next leg append-reopened it. At 0421/0441/0471 the
+    creating leg reached the first flush (wrote the Jan-1 record AND the
+    mask → 31 records, correct mask). At 0451 the creating leg defined the
+    file but STOPPED BEFORE its first flush, leaving `mask_2d`
+    defined-but-unwritten (= all-zero); the reopening leg then skipped the
+    mask write (the `existing_file_reopened` early-return in
+    `write_static_masks_if_needed`) → 30 records (starts Jan 2), all-zero
+    mask. This is the same secondary defect as above but on a FORWARD
+    restart, which the rewind-gated clobber does NOT cover.
+
+    Fix: drop the `existing_file_reopened` early-return in all four mask
+    writers (`write_static_masks_if_needed` + `_5D` in
+    `mpas_ocn_fme_derived_fields.F` and `mpas_ocn_fme_depth_coarsening.F`),
+    keeping the `time_record == 1` gate. A normal warm-restart reopen of a
+    file that already holds records has `time_record >= 2` there, so its
+    correct mask is left untouched (ERS warm-restart BFB preserved); only a
+    reopen of a created-but-empty file (time_record reaches 1) rewrites the
+    mask, with the correct value (`mask_*_remap` is recomputed each leg
+    from the static land mask). Self-heals both the all-zero case and the
+    bug report's stale-old-map case. **Existing 0451-01 files on disk are
+    not retroactively fixed** — patch post-hoc by copying `mask_2d` /
+    `mask_0..18` from any neighbor month (the masks are static), or the
+    SamudrACE preprocessor will treat that month as all-land and drop it.
+
+46. **Changing the remap MAP across a warm restart contaminates the
+    straddling averaged record (found in production 2026-05-28; NOT yet
+    fixed in code).** The `v3.LR.piControl.aigo` run changed the ocean
+    remap map at the 0421 restart (old map → `map_IcoswISC30E3r5_to_
+    gaussian_180by360_shifted_trintbilin.nc`; the target grid and land
+    mask are identical, only the interpolation weights differ). The
+    time-averaging accumulators (`remap_accum`, `remap_accum_5D`) live in
+    REMAP (lat-lon) space (gotcha #11), and the sidecar (gotcha #29)
+    carries them across the restart so leg-2 *continues* leg-1's partial
+    averaging window. That continuation is BFB-correct when the map is
+    unchanged (why ERS passes and the same-map restarts 0441/0451/0471 are
+    bit-clean) — but when the map changes, leg-2 adds NEW-map remapped
+    samples onto leg-1's OLD-map partial sums, so the first window that
+    straddles the restart is an old+new-map blend.
+
+    **Empirical signature (0421, all averaged streams; same-map restarts
+    bit-exact by contrast):**
+    - 1D: only the first full window computed across the restart is wrong
+      (`fmeDerivedFields.0421-01` Jan-2 record: ocean-mean SST 13.259
+      spikes off the smooth 13.190→13.197 trajectory, spatial step-RMS
+      ~1.8 vs the ~0.10 baseline). The Jan-1 straddle record is the
+      old-map record the prior leg already wrote (preserved, not
+      overwritten — see gotcha #45 mechanism), so it is pure OLD map.
+    - 5D: the first window `[Jan1,Jan6]` (dated 0421-01-06) differs from
+      `mean(1D[Jan2..Jan6])` by 8.5% (SST) / 37% (SW flux); depth-coarsen
+      temperature 8.3%; sea-ice area 27%. Every later window is bit-exact
+      (rel ~2e-8). Diagnostic: a correct 5-day mean equals the mean of its
+      five overlapping daily means to float32 roundoff — see the
+      `verify_5d` cross-check in this incident's scripts.
+
+    So at a map-change restart the boundary month holds: 0401-0420 = pure
+    OLD map; `YY-01` rec0 (the Dec31→Jan1 straddle) = OLD map; the first
+    full new-leg window (1D Jan-2; 5D Jan1-Jan6) = OLD+NEW blend; and
+    everything after = pure NEW map. The bulk of the data IS overwritten
+    with the new map — only the one straddling window per stream is
+    contaminated, plus the single old-map straddle record.
+
+    **Immediate workaround (operational, no code change):** when changing
+    the map mid-run, DELETE the `*.fme_accum_restart.nc` sidecars before
+    resuming. The averagers then start fresh on the new map; the first
+    window after the restart is a clean (if slightly short) pure-new-map
+    partial mean instead of a blend.
+
+    **Proper fix (analogous to the gotcha #45 rewind reset, not yet
+    implemented):** stamp the map-file identity (filename or n_s weight
+    count) into each sidecar as a global attr; in `*_read_restart`, if the
+    restored map identity differs from the active map, DISCARD the
+    accumulator (zero `remap_accum`/`_count`/`nAccum`, set
+    `avg_last_output_time = MPAS_NOW`) exactly like the rewind path —
+    rather than blindly continuing an accumulator that is meaningless in
+    the new remap space. This makes a deliberate mid-run map change safe.
+
+    **Note on the 5D averager itself:** it is CORRECT in general — mid-leg
+    and at all same-map restarts, every 5D record equals the mean of its
+    five overlapping daily records to float32 roundoff. The only 5D errors
+    found are the map-change straddle windows above, and they are not
+    5D-specific (the 1D straddle record is wrong the same way, same cause).
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:

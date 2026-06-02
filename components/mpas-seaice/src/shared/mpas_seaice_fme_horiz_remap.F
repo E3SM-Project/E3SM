@@ -74,6 +74,7 @@ module seaice_fme_horiz_remap
    public :: seaice_fme_horiz_remap_write_accum_5D
    public :: seaice_fme_horiz_remap_read_accum_5D
    public :: remap_stream_name_5D, file_is_open_5D
+   public :: seaice_fme_horiz_remap_set_rewind
 
    type(shr_horiz_remap_t) :: remap_data
    integer, allocatable :: send_local_cell(:)
@@ -84,6 +85,13 @@ module seaice_fme_horiz_remap
    ! warm restart; cold start always clobber-creates, defending against
    ! stale `.remapped.nc` left behind by a prior CIME compare-copy.
    logical :: is_restart_run = .false.
+
+   ! Set by the seaice AM's *_read_restart when it detects a branch/rewind
+   ! restart (persisted avg_last_output_time later than MPAS_NOW). When
+   ! true, the file-open paths clobber-create the re-crossed monthly files
+   ! instead of append-reopening, so re-simulated months get fresh records.
+   ! Stays true for the rest of the run; harmless once the clock catches up.
+   logical :: rewind_restart = .false.
 
    ! MPAS-SI fill value for input field detection (matches def_var _FillValue)
    real(r8), parameter :: MPAS_SI_FILL = SHR_FILL_VALUE
@@ -603,7 +611,10 @@ contains
       ! restart, gated on a fire-once latch (is_restart_run stays true for
       ! the whole run). A new month, or a stale/0-byte leftover, must
       ! clobber-create instead. See the ocean module for full rationale.
-      may_append = file_exists .and. is_restart_run .and. restart_reopen_pending
+      ! Branch/rewind restart must overwrite the re-crossed month, not
+      ! append to it -- fall through to clobber-create (see rewind_restart).
+      may_append = file_exists .and. is_restart_run .and. &
+           restart_reopen_pending .and. .not. rewind_restart
       restart_reopen_pending = .false.
       if (may_append) then
          ierr = pio_openfile(pio_sys, pio_file, PIO_IOTYPE_PNETCDF, &
@@ -1146,6 +1157,18 @@ contains
 
 !***********************************************************************
 
+   subroutine seaice_fme_horiz_remap_set_rewind()!{{{
+   !> Flag a branch/rewind restart so the file-open paths clobber-create
+   !> the re-crossed monthly files instead of append-reopening them. Called
+   !> by the seaice AM's *_read_restart when the persisted schedule time is
+   !> later than MPAS_NOW.
+      rewind_restart = .true.
+      call mpas_log_write('seaice_fme_horiz_remap: rewind restart flagged; ' // &
+           're-crossed monthly files will be clobber-created.')
+   end subroutine seaice_fme_horiz_remap_set_rewind!}}}
+
+!***********************************************************************
+
    subroutine seaice_fme_horiz_remap_read_accum(amName, accum_arr, &
         n_avg_fields, nAccum, avg_last_output_time_str, count_arr, success)!{{{
       character(len=*),   intent(in)    :: amName
@@ -1325,7 +1348,10 @@ contains
 
       inquire(file=trim(filename), exist=file_exists)
       ! Fire-once restart-append latch (see primary open_file rationale).
-      may_append = file_exists .and. is_restart_run .and. restart_reopen_pending_5D
+      ! Branch/rewind restart must overwrite the re-crossed month, not
+      ! append to it -- fall through to clobber-create (see rewind_restart).
+      may_append = file_exists .and. is_restart_run .and. &
+           restart_reopen_pending_5D .and. .not. rewind_restart
       restart_reopen_pending_5D = .false.
       if (may_append) then
          ierr = pio_openfile(pio_sys, pio_file_5D, PIO_IOTYPE_PNETCDF, &

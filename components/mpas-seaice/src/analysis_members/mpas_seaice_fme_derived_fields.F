@@ -36,7 +36,8 @@ module seaice_fme_derived_fields
         seaice_fme_horiz_remap_write_var_5D, seaice_fme_horiz_remap_write_time_5D, &
         seaice_fme_horiz_remap_close_file_5D, &
         seaice_fme_horiz_remap_write_accum_5D, seaice_fme_horiz_remap_read_accum_5D, &
-        remap_stream_name_5D, file_is_open_5D
+        remap_stream_name_5D, file_is_open_5D, &
+        seaice_fme_horiz_remap_set_rewind
 
    implicit none
    private
@@ -390,6 +391,7 @@ contains
       logical          :: ok
       integer          :: ierr_local
       character(len=StrKIND) :: ts_str
+      type(MPAS_Time_type)   :: now_time
 
       err = 0
       if (.not. time_avg_enabled) return
@@ -398,6 +400,8 @@ contains
            config_do_restart)
       if (.not. associated(config_do_restart)) return
       if (.not. config_do_restart) return
+
+      now_time = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr_local)
 
       call seaice_fme_horiz_remap_read_accum('fmeSeaiceDerivedFields', &
            remap_accum, N_AVG_FIELDS, nAccum, ts_str, &
@@ -411,10 +415,11 @@ contains
                  'persisted avg_last_output_time="' // trim(ts_str) // &
                  '"; falling back to MPAS_NOW baseline.', &
                  messageType=MPAS_LOG_WARN)
-            avg_last_output_time = mpas_get_clock_time( &
-                 domain % clock, MPAS_NOW, ierr_local)
+            avg_last_output_time = now_time
          end if
       end if
+      call rewind_reset(avg_last_output_time, now_time, &
+           remap_accum, remap_accum_count, nAccum, ts_str)
 
       if (time_avg_5D_enabled) then
          call seaice_fme_horiz_remap_read_accum_5D('fmeSeaiceDerivedFields5D', &
@@ -428,11 +433,41 @@ contains
                     'persisted avg_last_output_time_5D="' // trim(ts_str) // &
                     '"; falling back to MPAS_NOW baseline.', &
                     messageType=MPAS_LOG_WARN)
-               avg_last_output_time_5D = mpas_get_clock_time( &
-                    domain % clock, MPAS_NOW, ierr_local)
+               avg_last_output_time_5D = now_time
             end if
          end if
+         call rewind_reset(avg_last_output_time_5D, now_time, &
+              remap_accum_5D, remap_accum_count_5D, nAccum_5D, ts_str)
       end if
+
+   contains
+
+      subroutine rewind_reset(last_out, now_t, accum, accum_count, nacc, label)
+         !> Branch/rewind restart handling (AGENTS.md). On a rewind to an
+         !> earlier date the sidecar-restored avg_last_output_time is in the
+         !> FUTURE relative to MPAS_NOW, so the output gate never fires and
+         !> the re-crossed months get no output; the restored accumulator
+         !> also spans the whole gap. Detect (strict '>' so an exact
+         !> same-point warm restart is BFB-unchanged), reset the schedule to
+         !> MPAS_NOW, discard the gap-spanning accumulator, and flag the
+         !> remap layer to clobber-create the re-crossed files.
+         type(MPAS_Time_type), intent(inout) :: last_out
+         type(MPAS_Time_type), intent(in)    :: now_t
+         real(r8), intent(inout) :: accum(:,:), accum_count(:,:)
+         integer,  intent(inout) :: nacc
+         character(len=*), intent(in) :: label
+         if (last_out > now_t) then
+            call mpas_log_write('fmeSeaiceDerivedFields: rewind restart ' // &
+                 'detected (persisted ' // trim(label) // ' is later than ' // &
+                 'MPAS_NOW); resetting schedule to MPAS_NOW and discarding ' // &
+                 'stale accumulator.', messageType=MPAS_LOG_WARN)
+            last_out    = now_t
+            accum       = 0.0_r8
+            accum_count = 0.0_r8
+            nacc        = 0
+            call seaice_fme_horiz_remap_set_rewind()
+         end if
+      end subroutine rewind_reset
 
    end subroutine seaice_fme_derived_fields_read_restart!}}}
 
