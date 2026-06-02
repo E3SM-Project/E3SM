@@ -4,6 +4,7 @@
 #include "share/physics/physics_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/core/eamxx_types.hpp"
+#include "share/grid/abstract_grid.hpp"
 
 #include <ekat_pack_kokkos.hpp>
 #include <ekat_workspace.hpp>
@@ -62,32 +63,32 @@ struct Functions {
     // This value is slightly high, but it seems to be the value for the
     // steam point of water originally (and most frequently) used in the
     // Goff & Gratch scheme.
-    static inline constexpr Real tboil = 373.16;
-    static inline constexpr Real pref  = 1000;     // reference pressure [hPa]
-    static inline constexpr Real cpwv  = 1.810e3;  // specific heat of water vapor (J/K/kg)
+    static inline constexpr Real tboil            = 373.16;
+    static inline constexpr Real pref             = 1000;     // reference pressure [hPa]
+    static inline constexpr Real cpwv             = 1.810e3;  // specific heat of water vapor (J/K/kg)
     // iteration limits
-    static inline constexpr Int LOOPMAX   = 100; // Max number of iteration loops for invert_entropy
-    static inline constexpr Int nit_lheat = 2;   // Number of iterations for condensation/freezing loop
+    static inline constexpr Int LOOPMAX           = 100;      // Max number of iteration loops for invert_entropy
+    static inline constexpr Int nit_lheat         = 2;        // Number of iterations for condensation/freezing loop
     // miscellaneous tolerance values
-    static inline constexpr Real omeps           = 1 - PC::ep_2.value;
-    static inline constexpr Real omsm            = 0.99999; // to prevent problems due to round off error
-    static inline constexpr Real tol_coeff       = 0.001;   // tolerance coefficient
-    static inline constexpr Real tol_eps         = 3.e-8;   // small value for tolerance calculation
-    static inline constexpr Real half            = 0.5;     // Useful for bfb with fortran
-    static inline constexpr Real small           = 1.e-36;  // a small number to avoid division by zero
-    static inline constexpr Real cdifr_min       = 1.e-6;   // minimum layer difference for geometric averaging
-    static inline constexpr Real maxc_factor     = 1.e-12;  // Small numerical regularization constant used in the maximum cloud fraction
-    static inline constexpr Real flux_factor     = 1.e-12;  // Small numerical regularization constant used in convective flux related calculations
-    static inline constexpr Real mbsth           = 1.e-15;  // threshold below which we treat the mass fluxes as zero (in mb/s)
-    static inline constexpr Real small_conv      = 1.e-20;  // small number to limit blowup when normalizing by mass flux
-    static inline constexpr Real interp_diff_min = 1.E-6;   // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
+    static inline constexpr Real omeps            = 1 - PC::ep_2.value;
+    static inline constexpr Real omsm             = 0.99999;  // to prevent problems due to round off error
+    static inline constexpr Real tol_coeff        = 0.001;    // tolerance coefficient
+    static inline constexpr Real tol_eps          = 3.e-8;    // small value for tolerance calculation
+    static inline constexpr Real half             = 0.5;      // Useful for bfb with fortran
+    static inline constexpr Real small            = 1.e-36;   // a small number to avoid division by zero
+    static inline constexpr Real cdifr_min        = 1.e-6;    // minimum layer difference for geometric averaging
+    static inline constexpr Real maxc_factor      = 1.e-12;   // Small numerical regularization constant used in the maximum cloud fraction
+    static inline constexpr Real flux_factor      = 1.e-12;   // Small numerical regularization constant used in convective flux related calculations
+    static inline constexpr Real mbsth            = 1.e-15;   // threshold below which we treat the mass fluxes as zero (in mb/s)
+    static inline constexpr Real small_conv       = 1.e-20;   // small number to limit blowup when normalizing by mass flux
+    static inline constexpr Real interp_diff_min  = 1.E-6;    // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
     // conversion factors
-    static inline constexpr Real zvir                      = 0.608;    // virtual temperature factor (Rv/Rd - 1)
-    static inline constexpr Real lcl_coeff_a               = 2840;     // Bolton (1980) LCL temperature formula coefficient A
-    static inline constexpr Real lcl_coeff_b               = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
-    static inline constexpr Real lcl_coeff_c               = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
-    static inline constexpr Real pa_to_mb                  = 0.01;     // Pa to mb conversion factor
-    static inline constexpr Real mb_to_pa                  = 100;      // mb to Pa conversion factor
+    static inline constexpr Real zvir             = 0.608;    // virtual temperature factor (Rv/Rd - 1)
+    static inline constexpr Real lcl_coeff_a      = 2840;     // Bolton (1980) LCL temperature formula coefficient A
+    static inline constexpr Real lcl_coeff_b      = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
+    static inline constexpr Real lcl_coeff_c      = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
+    static inline constexpr Real pa_to_mb         = 0.01;     // Pa to mb conversion factor
+    static inline constexpr Real mb_to_pa         = 100;      // mb to Pa conversion factor
     // other ZM parameters and thresholds
     static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
     static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
@@ -142,7 +143,6 @@ struct Functions {
     ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
-      apply_tendencies    = params.get<bool>("apply_tendencies",    false);
       use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
       upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
@@ -172,6 +172,42 @@ struct Functions {
       mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff);
       mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        ZMC::MCSP_u_coeff);
       mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        ZMC::MCSP_v_coeff);
+
+      // determine SVP table size (add two to make the table slightly too big, just in case)
+      plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
+
+      estbl = view_1d<Real>("estbl",plenest);
+      Kokkos::parallel_for(Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
+        estbl(i) = svp_trans(ZMC::tmin + i);
+      });
+    }
+
+    void set_limcnv(std::shared_ptr<const AbstractGrid> grid) {
+      EKAT_REQUIRE_MSG(upper_limit_pref > 0,
+      "Error! ZmRuntimeOpt::set_limcnv: upper_limit_pref must be positive [Pa], but got "
+      << upper_limit_pref << "\n");
+      EKAT_REQUIRE_MSG(upper_limit_pref < PC::P0.value,
+      "Error! ZmRuntimeOpt::set_limcnv: upper_limit_pref must be less than the reference surface pressure, but got "
+      << upper_limit_pref << "\n");
+      // Determine upper limit level index of deep convection based on the reference pressure profile
+      const auto nlev   = grid->get_num_vertical_levels();
+      const auto hyai_h = grid->get_geometry_data("hyai").get_view<const Real*, Host>();
+      const auto hybi_h = grid->get_geometry_data("hybi").get_view<const Real*, Host>();
+      const auto ps0 = PC::P0.value;
+      limcnv = -1;
+      if (ps0*hyai_h(0) + ps0*hybi_h(0) >= upper_limit_pref) {
+        limcnv = 0;
+      } else {
+        for (int k = 0; k < nlev; ++k) {
+          Real pk0 = ps0*hyai_h(k)   + ps0*hybi_h(k);
+          Real pk1 = ps0*hyai_h(k+1) + ps0*hybi_h(k+1);
+          if (pk0 < upper_limit_pref && pk1 >= upper_limit_pref) {
+            limcnv = k;
+            break;
+          }
+        }
+        if (limcnv == -1) { limcnv = nlev+1; }
+      }
     }
 
     Real tau;               // convective adjustment time scale
@@ -191,7 +227,6 @@ struct Functions {
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
-    bool apply_tendencies;
     bool use_fortran_bridge;
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
@@ -205,7 +240,9 @@ struct Functions {
     Real mcsp_q_coeff;      // MCSP coefficient for specific humidity tendencies
     Real mcsp_u_coeff;      // MCSP coefficient for zonal momentum tendencies
     Real mcsp_v_coeff;      // MCSP coefficient for meridional momentum tendencies
-    view_1d<Real> estbl;    // table values of saturation vapor pressure
+    // saturation vapor pressure (svp) table
+    Int plenest;            // saturation vapor pressure table size
+    view_1d<Real> estbl;    // saturation vapor pressure table values
 
   };
 
@@ -217,7 +254,7 @@ struct Functions {
     // variable counters for device-side only
     static constexpr int num_1d_intgr = 0;  // number of 1D integer views
     static constexpr int num_1d_scalr = 1;  // number of 1D scalar views
-    static constexpr int num_2d_midlv = 6;  // number of 2D mid-point views
+    static constexpr int num_2d_midlv = 7;  // number of 2D mid-point views
     static constexpr int num_2d_intfc = 1;  // number of 2D interface views
 
     uview_1d<     Scalar> tpert;    // PBL top temperature perturb. [K]
@@ -240,6 +277,7 @@ struct Functions {
     view_2d<const Real>   cldfrac;  // total cloud fraction         [frac]
     view_2d<const Real>   thl_sec;  // thetal variance from SHOC    [K^2]
     // intermediate state variables updated with intermediate tendencies
+    uview_2d<     Real>   tmp_s_mid;// dry static energy            [J]
     uview_2d<     Real>   tmp_T_mid;// temperature                  [K]
     uview_2d<     Real>   tmp_qv;   // water vapor mixing ratio     [kg/kg]
     uview_2d<     Real>   tmp_uwind;// zonal wind                   [m/s]
@@ -283,6 +321,26 @@ struct Functions {
     view_2dh<Real>   h_cldfrac;
     view_2dh<Real>   h_z_int;
     view_2dh<Real>   h_p_int;
+
+    // -------------------------------------------------------------------------
+    // allocate host mirror input variables (only needed for fortran bridge)
+    void init_host_mirrors(int ncol, int nlev) {
+      h_phis     = view_1dh<Scalar>("zm_input.h_phis",     ncol);
+      h_pblh     = view_1dh<Scalar>("zm_input.h_pblh",     ncol);
+      h_tpert    = view_1dh<Scalar>("zm_input.h_tpert",    ncol);
+      h_landfrac = view_1dh<Scalar>("zm_input.h_landfrac", ncol);
+      h_z_mid    = view_2dh<Real>  ("zm_input.h_z_mid",    ncol, nlev);
+      h_p_mid    = view_2dh<Real>  ("zm_input.h_p_mid",    ncol, nlev);
+      h_p_del    = view_2dh<Real>  ("zm_input.h_p_del",    ncol, nlev);
+      h_T_mid    = view_2dh<Real>  ("zm_input.h_T_mid",    ncol, nlev);
+      h_qv       = view_2dh<Real>  ("zm_input.h_qv",       ncol, nlev);
+      h_uwind    = view_2dh<Real>  ("zm_input.h_uwind",    ncol, nlev);
+      h_vwind    = view_2dh<Real>  ("zm_input.h_vwind",    ncol, nlev);
+      h_omega    = view_2dh<Real>  ("zm_input.h_omega",    ncol, nlev);
+      h_cldfrac  = view_2dh<Real>  ("zm_input.h_cldfrac",  ncol, nlev);
+      h_z_int    = view_2dh<Real>  ("zm_input.h_z_int",    ncol, nlev+1);
+      h_p_int    = view_2dh<Real>  ("zm_input.h_p_int",    ncol, nlev+1);
+    }
 
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
@@ -345,6 +403,14 @@ struct Functions {
     uview_2d<Real>   ql;             // cloud liquid water for chem/wetdep      [?]
     uview_1d<Scalar> rliq;           // reserved liquid (not yet in cldliq) for energy integrals
     uview_2d<Real>   dlf;            // detrainment rate of cloud liquid water  [kg/kg/s]
+    // MCSP diagnostic outputs
+    view_2d<Real>    mcsp_dt_out;    // MCSP tendency for DSE
+    view_2d<Real>    mcsp_dq_out;    // MCSP tendency for qv
+    view_2d<Real>    mcsp_du_out;    // MCSP tendency for u wind
+    view_2d<Real>    mcsp_dv_out;    // MCSP tendency for v wind
+    view_1d<Real>    mcsp_freq;      // MSCP frequency for output
+    view_1d<Real>    mcsp_shear;     // MCSP shear used to check against threshold
+    view_1d<Real>    zm_depth;       // MCSP pressure depth of ZM heating
 
     // *************************************************************************
     // TEMPORARY
@@ -379,6 +445,24 @@ struct Functions {
     view_2dh<Real>   h_mass_flux;
 
     // -------------------------------------------------------------------------
+    // allocate host mirror output variables (only needed for fortran bridge)
+    void init_host_mirrors(int ncol, int nlev) {
+      h_activity  = view_1dh<Int>   ("zm_output.h_activity",  ncol);
+      h_prec      = view_1dh<Scalar>("zm_output.h_prec",      ncol);
+      h_snow      = view_1dh<Scalar>("zm_output.h_snow",      ncol);
+      h_cape      = view_1dh<Scalar>("zm_output.h_cape",      ncol);
+      h_tend_t    = view_2dh<Real>  ("zm_output.h_tend_t",    ncol, nlev);
+      h_tend_qv   = view_2dh<Real>  ("zm_output.h_tend_qv",   ncol, nlev);
+      h_tend_u    = view_2dh<Real>  ("zm_output.h_tend_u",    ncol, nlev);
+      h_tend_v    = view_2dh<Real>  ("zm_output.h_tend_v",    ncol, nlev);
+      h_rain_prod = view_2dh<Real>  ("zm_output.h_rain_prod", ncol, nlev);
+      h_snow_prod = view_2dh<Real>  ("zm_output.h_snow_prod", ncol, nlev);
+      h_prec_flux = view_2dh<Real>  ("zm_output.h_prec_flux", ncol, nlev+1);
+      h_snow_flux = view_2dh<Real>  ("zm_output.h_snow_flux", ncol, nlev+1);
+      h_mass_flux = view_2dh<Real>  ("zm_output.h_mass_flux", ncol, nlev+1);
+    }
+
+    // -------------------------------------------------------------------------
     // transpose method for fortran bridging
     template <ekat::TransposeDirection::Enum D>
     void transpose(int ncol, int nlev_mid);
@@ -400,7 +484,9 @@ struct Functions {
   static void zm_common_init();
 
   static void zm_finalize() {
+    // release Kokkos Views held by the static structs
     s_common_init.estbl = view_1d<Real>();
+    s_zm_opts.estbl     = view_1d<Real>();
   }
 
   //
@@ -876,6 +962,7 @@ struct Functions {
   // --------- Members ---------
   //
   inline static ZmRuntimeOpt s_common_init;
+  inline static ZmRuntimeOpt s_zm_opts;
 
   //
   // inline functions were moved to an impl, so include them here
@@ -888,7 +975,7 @@ struct Functions {
 } // namespace scream
 
 #if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) \
-                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
+                              && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 # include "impl/zm_input_state_impl.hpp"
 # include "impl/zm_output_tend_impl.hpp"
 # include "impl/zm_common_init_impl.hpp"

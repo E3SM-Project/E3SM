@@ -19,6 +19,7 @@ class ZMDeepConvection : public AtmosphereProcess
   using ZMF = zm::Functions<Real, DefaultDevice>;
   using PF  = scream::PhysicsFunctions<DefaultDevice>;
   using PC  = scream::physics::Constants<Real>;
+  using WSM = typename ZMF::WorkspaceManager;
 
   using Scalar              = typename ZMF::Scalar;
   using Pack                = typename ZMF::Pack;
@@ -61,11 +62,9 @@ class ZMDeepConvection : public AtmosphereProcess
     int m_ncol;
     int m_nlev;
 
-    // Structures for arguments to ZM
-    ZMF::ZmRuntimeOpt zm_opts;
+    // structs to organize ZM data
     ZMF::ZmInputState zm_input;
     ZMF::ZmOutputTend zm_output;
-    ZMF::ZmOutputDiag zm_diag;
 
 }; // class ZMDeepConvection
 
