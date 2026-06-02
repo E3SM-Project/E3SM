@@ -34,9 +34,9 @@ using WSM = typename ZMF::WorkspaceManager;
 
 extern "C" {
 
-void zm_common_init_bridge_f();
+void zm_opts_init_bridge_f();
 
-void zm_common_finalize_bridge_f();
+void zm_opts_finalize_bridge_f();
 
 void ientropy_bridge_f(Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
 
@@ -76,21 +76,21 @@ void zm_calc_output_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int 
 // Inits and finalizes are not intended to be called outside this comp unit
 namespace {
 
-void zm_common_init_f()
+void zm_opts_init_f()
 {
-  zm_common_init_bridge_f();
+  zm_opts_init_bridge_f();
 }
 
-void zm_common_finalize_f()
+void zm_opts_finalize_f()
 {
-  zm_common_finalize_bridge_f();
+  zm_opts_finalize_bridge_f();
 }
 
 
-// Wrapper around zm_common_init for cxx
-void zm_common_init()
+// Wrapper around zm_opts_init for cxx
+void zm_opts_init()
 {
-  ZMF::zm_common_init();
+  ZMF::zm_opts_init();
 }
 
 void zm_finalize_cxx()
@@ -103,15 +103,15 @@ void zm_finalize_cxx()
 void ientropy_f(IentropyData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   ientropy_bridge_f(d.s, d.p, d.qt, &d.t, &d.qst, d.tfg);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void ientropy(IentropyData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(1, 1);
@@ -149,15 +149,15 @@ void ientropy(IentropyData& d)
 void entropy_f(EntropyData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   entropy_bridge_f(d.tk, d.p, d.qtot, &d.entropy);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void entropy(EntropyData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(1, 1);
@@ -186,15 +186,15 @@ void entropy(EntropyData& d)
 void zm_transport_tracer_f(ZmTransportTracerData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_transport_tracer_bridge_f(d.pcols, d.pver, d.doconvtran, d.q, d.ncnst, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.fracis, d.dqdt, d.dpdry, d.dt);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_transport_tracer(ZmTransportTracerData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view2dr_d> vec2dr_in(7);
@@ -234,7 +234,7 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver * d.ncnst, 10, policy);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real dt = d.dt;
@@ -307,15 +307,15 @@ void zm_transport_tracer(ZmTransportTracerData& d)
 void zm_transport_momentum_f(ZmTransportMomentumData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_transport_momentum_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.wind_in, d.nwind, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.wind_tend, d.pguall, d.pgdall, d.icwu, d.icwd, d.dt, d.seten);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_transport_momentum(ZmTransportMomentumData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view2dr_d> vec2dr_in(7);
@@ -440,15 +440,15 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
 void compute_dilute_cape_f(ComputeDiluteCapeData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   compute_dilute_cape_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.sp_humidity_in, d.temperature_in, d.zmid, d.pmid, d.pint, d.pblt, d.tpert, d.parcel_temp, d.parcel_qsat, d.msemax_klev, d.lcl_temperature, d.lcl_klev, d.eql_klev, d.cape, d.calc_msemax_klev, d.prev_msemax_klev, d.use_input_tq_mx, d.q_mx, d.t_mx);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void compute_dilute_cape(ComputeDiluteCapeData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(5);
@@ -488,7 +488,7 @@ void compute_dilute_cape(ComputeDiluteCapeData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver, 11, policy);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_cin = d.num_cin;
@@ -556,15 +556,15 @@ void compute_dilute_cape(ComputeDiluteCapeData& d)
 void find_mse_max_f(FindMseMaxData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   find_mse_max_bridge_f(d.pcols, d.ncol, d.pver, d.num_msg, d.msemax_top_k, d.pergro_active, d.temperature, d.zmid, d.sp_humidity, d.msemax_klev, d.mse_max_val);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void find_mse_max(FindMseMaxData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(1);
@@ -590,7 +590,7 @@ void find_mse_max(FindMseMaxData& d)
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_msg = d.num_msg;
@@ -633,15 +633,15 @@ void find_mse_max(FindMseMaxData& d)
 void compute_dilute_parcel_f(ComputeDiluteParcelData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   compute_dilute_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.num_msg, d.klaunch, d.pmid, d.temperature, d.sp_humidity, d.tpert, d.pblt, d.parcel_temp, d.parcel_vtemp, d.parcel_qsat, d.lcl_pmid, d.lcl_temperature, d.lcl_klev);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void compute_dilute_parcel(ComputeDiluteParcelData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(3);
@@ -674,7 +674,7 @@ void compute_dilute_parcel(ComputeDiluteParcelData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver, 7, policy);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_msg = d.num_msg;
@@ -728,15 +728,15 @@ void compute_dilute_parcel(ComputeDiluteParcelData& d)
 void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   compute_cape_from_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.temperature, d.tv, d.sp_humidity, d.pint, d.msemax_klev, d.lcl_pmid, d.lcl_klev, d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.eql_klev, d.cape);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(2);
@@ -771,7 +771,7 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver, 3, policy);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int num_cin = d.num_cin;
@@ -830,15 +830,15 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
 void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_conv_mcsp_calculate_shear_bridge_f(d.pcols, d.ncol, d.pver, d.state_pmid, d.state_u, d.state_v, d.mcsp_shear);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(1);
@@ -886,15 +886,15 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
 void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_conv_mcsp_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.ztodt, d.jctop, d.state_pmid, d.state_pint, d.state_pdel, d.state_s, d.state_q, d.state_u, d.state_v, d.ptend_zm_s, d.ptend_zm_q, d.ptend_s, d.ptend_q, d.ptend_u, d.ptend_v, d.mcsp_dt_out, d.mcsp_dq_out, d.mcsp_du_out, d.mcsp_dv_out, d.mcsp_freq, d.mcsp_shear, d.zm_depth);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(3);
@@ -938,7 +938,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver, 4, policy);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real ztodt = d.ztodt;
@@ -1011,15 +1011,15 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
 void zm_conv_main_f(ZmConvMainData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_conv_main_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step, d.t_mid, d.q_mid_in, d.omega, d.p_mid_in, d.p_int_in, d.p_del_in, d.geos, d.z_mid_in, d.z_int_in, d.pbl_hgt, d.tpert, d.landfrac, d.t_star, d.q_star, &d.lengath, d.gather_index, d.msemax_klev, d.jctop, d.jcbot, d.jt, d.prec, d.heat, d.qtnd, d.cape, d.dcape, d.mcon, d.pflx, d.zdu, d.mflx_up, d.entr_up, d.detr_up, d.mflx_dn, d.entr_dn, d.p_del, d.dsubcld, d.ql, d.rliq, d.rprd, d.dlf);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 std::vector<bool> zm_conv_main(ZmConvMainData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // Upload all 2D input/output arrays [pcols, pver] or [pcols, pverp]
   std::vector<view2dr_d> vec2dr(24);
@@ -1062,7 +1062,7 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
   view1di_d jcbot_d(vec1di[0]), jctop_d(vec1di[1]), jt_d(vec1di[2]),
             msemax_klev_d(vec1di[3]);
 
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   auto active = ZMF::zm_conv_main(
     init_cp,
@@ -1119,15 +1119,15 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
 void zm_conv_evap_f(ZmConvEvapData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_conv_evap_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.time_step, d.p_mid, d.p_del, d.t_mid, d.q_mid, d.prdprec, d.cldfrc, d.tend_s, d.tend_q, d.tend_s_snwprd, d.tend_s_snwevmlt, d.prec, d.snow, d.ntprprd, d.ntsnprd, d.flxprec, d.flxsnow);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_conv_evap(ZmConvEvapData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(2);
@@ -1165,7 +1165,7 @@ void zm_conv_evap(ZmConvEvapData& d)
   const Int pver = d.pver;
   const Int pverp = d.pverp;
 
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -1226,15 +1226,15 @@ void zm_conv_evap(ZmConvEvapData& d)
 void zm_calc_fractional_entrainment_f(ZmCalcFractionalEntrainmentData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_calc_fractional_entrainment_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jb, d.jt, d.j0, d.z_mid, d.z_int, d.dz, d.h_env, d.h_env_sat, d.h_env_min, d.lambda, d.lambda_max);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(2);
@@ -1321,15 +1321,15 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
 void zm_downdraft_properties_f(ZmDowndraftPropertiesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_downdraft_properties_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jb, d.jt, d.j0, d.jd, d.z_int, d.dz, d.s_mid, d.q_mid, d.h_env, d.lambda, d.lambda_max, d.qsthat, d.hsthat, d.gamhat, d.rprd, d.mflx_up, d.mflx_dn, d.entr_dn, d.s_dnd, d.q_dnd, d.h_dnd, d.q_dnd_sat, d.evp, d.totevp);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(2);
@@ -1374,7 +1374,7 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
     jt_d(vec1di_in[3]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Int msg = d.msg;
@@ -1456,15 +1456,15 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
 void zm_cloud_properties_f(ZmCloudPropertiesData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_cloud_properties_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.limcnv, d.p_mid, d.z_mid, d.z_int, d.t_mid, d.s_mid, d.s_int, d.q_mid, d.landfrac, d.tpert_g, d.jb, d.lel, d.jt, d.jlcl, d.j0, d.jd, d.mflx_up, d.entr_up, d.detr_up, d.mflx_dn, d.entr_dn, d.mflx_net, d.s_upd, d.q_upd, d.ql, d.s_dnd, d.q_dnd, d.qst, d.cu, d.evp, d.pflx, d.rprd);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_cloud_properties(ZmCloudPropertiesData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(2);
@@ -1516,7 +1516,7 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
     lel_d(vec1di_in[5]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
   WSM wsm(d.pverp, 20, policy);
 
   // unpack data scalars because we do not want the lambda to capture d
@@ -1610,15 +1610,15 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
 void zm_closure_f(ZmClosureData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_closure_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.cape_threshold_in, d.lcl, d.lel, d.jt, d.mx, d.dsubcld, d.z_mid, d.z_int, d.p_mid, d.p_del, d.t_mid, d.s_mid, d.q_mid, d.qs, d.ql, d.s_int, d.q_int, d.t_pcl_lcl, d.t_pcl, d.q_pcl_sat, d.s_upd, d.q_upd, d.mflx_net, d.detr_up, d.mflx_up, d.mflx_dn, d.q_dnd, d.s_dnd, d.cape, d.cld_base_mass_flux);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_closure(ZmClosureData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(4);
@@ -1670,7 +1670,7 @@ void zm_closure(ZmClosureData& d)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
   WSM wsm(d.pver, 3, policy);
-  ZMF::ZmRuntimeOpt init_cp = ZMF::s_common_init;
+  ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real cape_threshold_in = d.cape_threshold_in;
@@ -1754,15 +1754,15 @@ void zm_closure(ZmClosureData& d)
 void zm_calc_output_tend_f(ZmCalcOutputTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
-  zm_common_init_f();
+  zm_opts_init_f();
   zm_calc_output_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jt, d.mx, d.dsubcld, d.p_del, d.s_int, d.q_int, d.s_upd, d.q_upd, d.mflx_up, d.detr_up, d.mflx_dn, d.s_dnd, d.q_dnd, d.ql, d.evp, d.cu, d.dsdt, d.dqdt, d.dl);
-  zm_common_finalize_f();
+  zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_calc_output_tend(ZmCalcOutputTendData& d)
 {
-  zm_common_init();
+  zm_opts_init();
 
   // create device views and copy
   std::vector<view1dr_d> vec1dr_in(1);

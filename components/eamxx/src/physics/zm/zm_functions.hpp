@@ -481,12 +481,11 @@ struct Functions {
   //
   // --------- Init/Finalize Functions ---------
   //
-  static void zm_common_init();
+  static void zm_opts_init();
 
   static void zm_finalize() {
     // release Kokkos Views held by the static structs
-    s_common_init.estbl = view_1d<Real>();
-    s_zm_opts.estbl     = view_1d<Real>();
+    s_zm_opts.estbl = view_1d<Real>();
   }
 
   //
@@ -961,7 +960,6 @@ struct Functions {
   //
   // --------- Members ---------
   //
-  inline static ZmRuntimeOpt s_common_init;
   inline static ZmRuntimeOpt s_zm_opts;
 
   //
@@ -978,7 +976,7 @@ struct Functions {
                               && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 # include "impl/zm_input_state_impl.hpp"
 # include "impl/zm_output_tend_impl.hpp"
-# include "impl/zm_common_init_impl.hpp"
+# include "impl/zm_opts_impl.hpp"
 # include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
 # include "impl/zm_transport_tracer_impl.hpp"

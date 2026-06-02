@@ -13,17 +13,17 @@ module zm_c2f_bridge
 contains
 !===================================================================================================
 
-subroutine zm_common_init_bridge_f() bind(C)
+subroutine zm_opts_init_bridge_f() bind(C)
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
 
   call wv_sat_init()
-end subroutine zm_common_init_bridge_f
+end subroutine zm_opts_init_bridge_f
 
-subroutine zm_common_finalize_bridge_f() bind(C)
+subroutine zm_opts_finalize_bridge_f() bind(C)
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_final
 
   call wv_sat_final()
-end subroutine zm_common_finalize_bridge_f
+end subroutine zm_opts_finalize_bridge_f
 
 subroutine ientropy_bridge_f(s, p, qt, t, qst, tfg) bind(C)
   use zm_conv_util, only : ientropy
