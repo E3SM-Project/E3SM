@@ -65,8 +65,8 @@ _TESTS = {
             "ERS.f19_g16.IERA56HRELM",
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
-            "ERS.hcru_hcru.IELM.elm-multi_inst",
-            "SMS.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
+            "ERS_Vmct.hcru_hcru.IELM.elm-multi_inst",
+            "SMS_Vmct.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
             )
         },
 
@@ -139,8 +139,8 @@ _TESTS = {
             "ERS_Ld5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
             "PEM_Ln5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
             "PET_Ln5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-DIS.mpaso-ocn_glcshelf",
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-SIS.mpaso-ocn_glcshelf",
+            "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-DIS.mpaso-ocn_glcshelf",
+            "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-SIS.mpaso-ocn_glcshelf",
             )
         },
 
@@ -346,11 +346,11 @@ _TESTS = {
             "ERS.ne4pg2_oQU480_rx1.A",
             "SEQ.f19_g16.X",
             "ERIO.ne4pg2_oQU480_rx1.A",
-            "NCK.ne4pg2_oQU480_rx1.A",
+            "NCK_Vmct.ne4pg2_oQU480_rx1.A",
             "SMS.ne4pg2_oQU480_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
-            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.MALISIA",
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
+            "ERS_Vmct.ne30pg2_r05_IcoswISC30E3r5_gis4to40.MALISIA",
+            "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
@@ -375,7 +375,7 @@ _TESTS = {
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4pg2_oQU480.F2010",
-            "NCK.ne4pg2_oQU480.WCYCL1850NS",
+            "NCK_Vmct.ne4pg2_oQU480.WCYCL1850NS",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.ne4pg2_oQU480_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-mach-pet",
@@ -396,7 +396,7 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "SMS_Vmct_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
         },
 
