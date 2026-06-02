@@ -70,7 +70,7 @@ void GllFvRemap
 
 void GllFvRemap
 ::run_fv_phys_to_dyn (const int time_idx, const CPhys2T& T, const CPhys3T& uv,
-                      const CPhys3T& q, const CPhys2T& Km, const CPhys2T& Kh) {
+                      const CPhys3T& q, const CPhys2T* Km, const CPhys2T* Kh) {
   m_impl->run_fv_phys_to_dyn(time_idx, T, uv, q, Km, Kh);
 }
 

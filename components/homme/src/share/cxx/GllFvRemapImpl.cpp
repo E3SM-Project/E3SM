@@ -609,7 +609,7 @@ void GllFvRemapImpl
 
 void GllFvRemapImpl::
 run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
-                    const CPhys3T& qs, const CPhys2T& Kms, const CPhys2T& Khs) {
+                    const CPhys3T& qs, const CPhys2T* Kms, const CPhys2T* Khs) {
 #ifdef MODEL_THETA_L
   using Kokkos::parallel_for;
 
@@ -619,6 +619,8 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
   const auto nf2 = m_data.nf2;
   const auto qsize = m_data.qsize;
   const auto uv_ndim = uvs.extent_int(2);
+  const bool remap_turb_diff = Kms != nullptr;
+  assert((Kms == nullptr) == (Khs == nullptr));
 
   const auto buf10 = m_data.buf1[0];
   const auto buf11 = m_data.buf1[1];
@@ -631,12 +633,18 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
          (uv_ndim == 2 || uv_ndim == 3) && uvs.extent_int(3) % packn == 0);
   assert(qs.extent_int(0) >= nelemd && qs.extent_int(1) >= nf2 && qs.extent_int(2) >= qsize &&
          qs.extent_int(3) % packn == 0);
+  if (remap_turb_diff) {
+    assert(Kms->extent_int(0) >= nelemd && Kms->extent_int(1) >= nf2 && Kms->extent_int(2) % packn == 0);
+    assert(Khs->extent_int(0) >= nelemd && Khs->extent_int(1) >= nf2 && Khs->extent_int(2) % packn == 0);
+  }
 #endif
 
-  CVPhys2T
-    T(creal2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn),
-    Km(creal2pack(Kms), Kms.extent_int(0), Kms.extent_int(1), Kms.extent_int(2)/packn),
-    Kh(creal2pack(Khs), Khs.extent_int(0), Khs.extent_int(1), Khs.extent_int(2)/packn);
+  CVPhys2T T(creal2pack(Ts), Ts.extent_int(0), Ts.extent_int(1), Ts.extent_int(2)/packn);
+  CVPhys2T Km, Kh;
+  if (remap_turb_diff) {
+    Km = CVPhys2T(creal2pack(*Kms), Kms->extent_int(0), Kms->extent_int(1), Kms->extent_int(2)/packn);
+    Kh = CVPhys2T(creal2pack(*Khs), Khs->extent_int(0), Khs->extent_int(1), Khs->extent_int(2)/packn);
+  }
   CVPhys3T
     uv(creal2pack(uvs), uvs.extent_int(0), uvs.extent_int(1), uvs.extent_int(2),
        uvs.extent_int(3)/packn),
@@ -691,7 +699,7 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
       kv.team_barrier();
     }
 
-    {
+    if (remap_turb_diff) {
       using Homme::Scalar;
 
       const evucs2 Km_f_ie(&Km(ie,0,0), nf2, nlevpk);
