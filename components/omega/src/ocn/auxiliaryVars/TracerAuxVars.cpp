@@ -21,8 +21,7 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
                                    const std::string &MeshName) const {
 
    // Create fields
-   const Real FillValue = -9.99e30;
-   int NDims            = 3;
+   int NDims = 3;
    std::vector<std::string> DimNames(NDims);
    std::string DimSuffix;
    if (MeshName == "Default") {
@@ -43,7 +42,7 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
        "",                               // CF standard name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValue,                        // scalar for undefined entries
+       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );

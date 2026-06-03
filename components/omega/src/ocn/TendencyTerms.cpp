@@ -88,9 +88,7 @@ TracerHorzAdvOnCell::TracerHorzAdvOnCell(const HorzMesh *Mesh,
                        Mesh->NEdgesAll, VCoord->NVertLayers),
       NEdgesOnCell(Mesh->NEdgesOnCell), EdgesOnCell(Mesh->EdgesOnCell),
       CellsOnEdge(Mesh->CellsOnEdge), EdgeSignOnCell(Mesh->EdgeSignOnCell),
-      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {
-   deepCopy(HighOrderFlxHorz, 0);
-}
+      DvEdge(Mesh->DvEdge), AreaCell(Mesh->AreaCell) {}
 
 TracerDiffOnCell::TracerDiffOnCell(const HorzMesh *Mesh,
                                    const VertCoord *VCoord)

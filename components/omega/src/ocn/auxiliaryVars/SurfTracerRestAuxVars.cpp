@@ -19,8 +19,7 @@ void SurfTracerRestAuxVars::registerFields(
 ) const {
 
    // Create fields
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    std::string DimSuffix;
    if (MeshName == "Default") {
@@ -39,9 +38,9 @@ void SurfTracerRestAuxVars::registerFields(
                      "",                                   // CF standard Name
                      std::numeric_limits<Real>::min(),     // min valid value
                      std::numeric_limits<Real>::max(),     // max valid value
-                     FillValue, // scalar for undefined entries
-                     NDims,     // number of dimensions
-                     DimNames); // dim names
+                     FillValueReal, // scalar for undefined entries
+                     NDims,         // number of dimensions
+                     DimNames);     // dim names
 
    // Add fields to FieldGroup
    FieldGroup::addFieldToGroup(TracersMonthlySurfClimoCell.label(),

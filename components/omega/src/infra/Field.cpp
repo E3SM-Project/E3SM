@@ -54,7 +54,7 @@ void Field::init(const Clock *ModelClock // [in] default model clock
    std::string CalName      = CalendarCFName[CalKind];
    std::vector<std::string> DimNamesTmp; // empty dim names vector
    std::shared_ptr<Field> TimeField =
-       create("time", "time", UnitString, "time", 0.0, 1.e20, -9.99e30, 0,
+       create("time", "time", UnitString, "time", 0.0, 1.e20, FillValueR8, 0,
               DimNamesTmp, true, true);
    TimeField->addMetadata("calendar", CalName);
 }

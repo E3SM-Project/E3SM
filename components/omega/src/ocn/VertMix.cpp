@@ -332,8 +332,7 @@ void VertMix::defineFields() {
    }
 
    /// Create fields for state variables
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";
@@ -347,9 +346,9 @@ void VertMix::defineFields() {
                      "vertical_diffusivity",           // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValue, // Scalar used for undefined entries
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     FillValueReal, // Scalar used for undefined entries
+                     NDims,         // Number of dimensions
+                     DimNames       // Dimension names
        );
    /// Create and register the VertVisc field
    auto VertViscField =
@@ -360,9 +359,9 @@ void VertMix::defineFields() {
                      "vertical_viscosity",             // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValue, // Scalar used for undefined entried
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     FillValueReal, // Scalar used for undefined entries
+                     NDims,         // Number of dimensions
+                     DimNames       // Dimension names
        );
    /// Create and register the GradRichNum field
    auto GradRichNumField =

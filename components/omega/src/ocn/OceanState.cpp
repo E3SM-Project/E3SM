@@ -202,9 +202,9 @@ void OceanState::defineFields() {
                      "sea_water_velocity",                // CF standard Name
                      -9.99E+10,                           // min valid value
                      9.99E+10,                            // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // number of dimensions
-                     DimNames   // dimension names
+                     FillValueReal, // scalar for undefined entries
+                     NDims,         // number of dimensions
+                     DimNames       // dimension names
        );
 
    DimNames[0] = "NCells";
@@ -215,7 +215,7 @@ void OceanState::defineFields() {
                      "cell_thickness", // CF standard Name
                      0.0,              // min valid value
                      9.99E+30,         // max valid value
-                     -9.99E+30,        // scalar used for undefined entries
+                     FillValueReal,    // scalar used for undefined entries
                      NDims,            // number of dimensions
                      DimNames          // dimension names
        );

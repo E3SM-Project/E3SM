@@ -34,8 +34,7 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
                                          const std::string &MeshName) const {
 
    // Create/define fields
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[1] = "NVertLayers";
    std::string DimSuffix;
@@ -54,7 +53,7 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
        "",                                          // CF standard Name
        std::numeric_limits<Real>::min(),            // min valid value
        std::numeric_limits<Real>::max(),            // max valid value
-       FillValue,                                   // scalar for undef entries
+       FillValueReal,                               // scalar for undef entries
        NDims,                                       // number of dimensions
        DimNames                                     // dimension names
    );
@@ -69,9 +68,9 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
                      "",          // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
-                     FillValue, // scalar used for undefined entries
-                     NDims,     // number of dimensions
-                     DimNames   // dimension names
+                     FillValueReal, // scalar used for undefined entries
+                     NDims,         // number of dimensions
+                     DimNames       // dimension names
        );
 
    // Del2 of relative vorticity on vertices
@@ -83,9 +82,9 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
        "",                                            // CF standard Name
        std::numeric_limits<Real>::min(),              // min valid value
        std::numeric_limits<Real>::max(),              // max valid value
-       FillValue, // scalar used for undefined entries
-       NDims,     // number of dimensions
-       DimNames   // dimension names
+       FillValueReal, // scalar used for undefined entries
+       NDims,         // number of dimensions
+       DimNames       // dimension names
    );
 
    // Add fields to Aux Field group

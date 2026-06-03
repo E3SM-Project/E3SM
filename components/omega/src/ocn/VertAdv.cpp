@@ -128,8 +128,7 @@ void VertAdv::defineFields() {
       LowOrderVertFluxFldName.append(Name);
    }
 
-   const Real FillValueReal = -9.99e30;
-   I4 NDims                 = 2;
+   I4 NDims = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";

@@ -247,9 +247,7 @@ void VertCoord::defineFields() {
    }
 
    // Create fields for VertCoord variables
-   const I4 FillValueI4     = -999;
-   const Real FillValueReal = -9.99e30;
-   int NDims                = 1;
+   int NDims = 1;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
 
@@ -524,15 +522,6 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    // uninitialized and will need to be initialized explicitly if needed.
    if (ReadStream) {
 
-      I4 FillValueI4     = -1;
-      Real FillValueReal = -999._Real;
-
-      deepCopy(MinLayerCell, FillValueI4);
-      deepCopy(MaxLayerCell, FillValueI4);
-      deepCopy(BottomGeomDepth, FillValueReal);
-      deepCopy(RefPseudoThickness, FillValueReal);
-      deepCopy(VertCoordMovementWeights, FillValueReal);
-
       // Fetch input stream and validate
       std::string StreamName = "InitialVertCoord";
       if (Name != "Default") {
@@ -591,7 +580,8 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                    Accum += LocBottomGeomDepth(I);
                 },
                 Sum3);
-            if (Sum3 < 0.) {
+            if (Sum3 / BottomGeomDepth.extent_int(0) >=
+                0.5_Real * FillValueReal) {
                ABORT_ERROR("VertCoord: Error reading BottomGeomDepth from {}",
                            StreamName);
             }
@@ -603,7 +593,9 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                    Accum += LocPseudoThick(I, J);
                 },
                 Sum4);
-            if (Sum4 < 0.) {
+            I4 N4 = RefPseudoThickness.extent_int(0) *
+                    RefPseudoThickness.extent_int(1);
+            if (Sum4 / N4 >= 0.5_Real * FillValueReal) {
                ABORT_ERROR("VertCoord: Error reading RefPseudoThickness "
                            "from {}",
                            StreamName);
@@ -620,12 +612,15 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
                    }
                 },
                 Sum5, NumNonZero);
-            if (Sum5 < 0.) {
+            I4 N5 = VertCoordMovementWeights.extent_int(0);
+            if (Sum5 / N5 >= 0.5_Real * FillValueReal) {
+               // Stream did not populate weights — use default
+               deepCopy(VertCoordMovementWeights, 1._Real);
+            } else if (Sum5 < 0.) {
                ABORT_ERROR("VertCoord: Error reading VertCoordMovementWeights "
                            "from {}",
                            StreamName);
-            }
-            if (NumNonZero == 0) {
+            } else if (NumNonZero == 0) {
                // TODO: ABORT_ERROR when all weights equal 0
                deepCopy(VertCoordMovementWeights, 1._Real);
             }
