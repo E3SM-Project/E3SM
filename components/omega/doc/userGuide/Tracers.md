@@ -26,16 +26,22 @@ static void defineAllTracers() {
           "sea_water_potential_temperature", ///< [in] CF standard Name
           -273.15,                           ///< [in] min valid field value
           100.0,                             ///< [in] max valid field value
-          1.e33,                             ///< [in] value for undef entries
+          FillValueReal,                     ///< [in] value for undef entries
           IndxTemp);                         ///< [out] (optional) static index
 
-   define("Salt", "Salinity", "psu", "sea_water_salinity", 0.0, 50.0, 1.e33,
-          IndxSalt);
-   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33);
-   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33);
-   define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, 1.e33);
+   define("Salt", "Salinity", "psu", "sea_water_salinity", 0.0, 50.0,
+          FillValueReal, IndxSalt);
+   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, FillValueReal);
+   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, FillValueReal);
+   define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, FillValueReal);
 }
 ```
+
+The `FillValueReal` constant is defined in `FillValues.h` and matches the
+NetCDF-C standard fill value (`NC_FILL_DOUBLE` or `NC_FILL_FLOAT` depending on
+the build precision). It is automatically in scope in `TracerDefs.inc` via
+`Field.h`. New tracers should always use `FillValueReal` (or `FillValueI4` /
+`FillValueI8` for integer fields) rather than hardcoded literals.
 
 To add a new tracer, simply call the `define` function with the appropriate
 arguments. Index argument is optional one that allows to access the tracer
