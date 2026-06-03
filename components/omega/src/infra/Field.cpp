@@ -54,8 +54,8 @@ void Field::init(const Clock *ModelClock // [in] default model clock
    std::string CalName      = CalendarCFName[CalKind];
    std::vector<std::string> DimNamesTmp; // empty dim names vector
    std::shared_ptr<Field> TimeField =
-       create("time", "time", UnitString, "time", 0.0, 1.e20, FillValueR8, 0,
-              DimNamesTmp, true, true);
+       create("time", "time", UnitString, "time", 0.0, 1.e20, 0, DimNamesTmp,
+              true, true);
    TimeField->addMetadata("calendar", CalName);
 }
 
@@ -85,8 +85,7 @@ Field::create(const std::string &FieldName,   // [in] Name of variable/field
               const std::string &StdName,     // [in] CF standard Name
               const std::any ValidMin,        // [in] min valid field value
               const std::any ValidMax,        // [in] max valid field value
-              const std::any FillValue, // [in] scalar for undefined entries
-              const int NumDims,        // [in] number of dimensions
+              const int NumDims,              // [in] number of dimensions
               const std::vector<std::string> &Dimensions, // [in] dim names
               bool TimeDependent,  // [in] flag for time dependent field
               bool RetainPrecision // [in] flag to retain full prec in IO
@@ -118,8 +117,6 @@ Field::create(const std::string &FieldName,   // [in] Name of variable/field
    ThisField->FieldMeta["valid_min"]     = ValidMin;
    ThisField->FieldMeta["ValidMax"]      = ValidMax;
    ThisField->FieldMeta["valid_max"]     = ValidMax;
-   ThisField->FieldMeta["FillValue"]     = FillValue;
-   ThisField->FieldMeta["_FillValue"]    = FillValue;
 
    // Set the time-dependent flag
    ThisField->TimeDependent = TimeDependent;

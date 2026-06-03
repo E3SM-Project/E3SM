@@ -84,23 +84,18 @@ class Field {
    /// various types and cast to the appropriate type when needed.
    std::shared_ptr<void> DataArray;
 
-   /// Fills every element of InDataArray with the field's declared fill value.
+   /// Fills every element of InDataArray with the standard fill value for the
+   /// array's element type, then records that value in the field metadata.
    /// Called automatically by attachData() so inactive entries are initialized
    /// to a well-defined sentinel before any compute routine runs.
    template <typename T> void fillWithValue(const T &InDataArray) {
-      using ValType = typename T::value_type;
-      auto AnyFill  = FieldMeta.at("FillValue");
-      ValType FillVal;
-      if constexpr (std::is_same_v<ValType, I4>)
-         FillVal = std::any_cast<I4>(AnyFill);
-      else if constexpr (std::is_same_v<ValType, I8>)
-         FillVal = std::any_cast<I8>(AnyFill);
-      else if constexpr (std::is_same_v<ValType, R4>)
-         // Fill values are stored as R8 (Real) in legacy code; cast safely
-         FillVal = static_cast<R4>(std::any_cast<R8>(AnyFill));
-      else
-         FillVal = std::any_cast<R8>(AnyFill);
-      Kokkos::deep_copy(InDataArray, FillVal);
+      using ValType             = typename T::non_const_value_type;
+      constexpr ValType FillVal = FillValue<ValType>;
+      // _FillValue is the NetCDF/CF standard attribute recognized by analysis
+      // tools (ncview, Xarray, NCO, ...); store only that, no non-standard
+      // alias
+      FieldMeta["_FillValue"] = FillVal;
+      Kokkos::deep_copy((InDataArray, FillVal);
    }
 
  public:
@@ -133,7 +128,6 @@ class Field {
           const std::string &StdName,     ///< [in] CF standard Name
           const std::any ValidMin,        ///< [in] min valid field value
           const std::any ValidMax,        ///< [in] max valid field value
-          const std::any FillValue,       ///< [in] scalar for undefined entries
           const int NumDims,              ///< [in] number of dimensions
           const std::vector<std::string> &Dimensions, ///< [in] dim names
           const bool TimeDependent   = true, ///< [in] opt flag for unlim time

@@ -1019,8 +1019,8 @@ void IOStream::writeFieldData(
       DataI4.resize(LocSize);
       DataPtr = DataI4.data();
       // get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValI4);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValI4);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       FillValPtr = &FillValI4;
 
@@ -1161,8 +1161,8 @@ void IOStream::writeFieldData(
       DataI8.resize(LocSize);
       DataPtr = DataI8.data();
       // Get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValI8);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValI8);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       FillValPtr = &FillValI8;
 
@@ -1302,8 +1302,8 @@ void IOStream::writeFieldData(
       DataR4.resize(LocSize);
       DataPtr = DataR4.data();
       // Get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValR4);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValR4);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       FillValPtr = &FillValR4;
 
@@ -1441,8 +1441,8 @@ void IOStream::writeFieldData(
    case ArrayDataType::R8:
 
       // Get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValR8);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValR8);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       DataR8.resize(LocSize);
       if (ReducePrecision and !RetainPrecision) {

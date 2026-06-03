@@ -16,14 +16,27 @@
 
 namespace OMEGA {
 
-constexpr I4 FillValueI4 = -2147483647;             ///< NC_FILL_INT
-constexpr I8 FillValueI8 = -9223372036854775806LL;  ///< NC_FILL_INT64
-constexpr R4 FillValueR4 = 9.9692099683868690e+36f; ///< NC_FILL_FLOAT
-constexpr R8 FillValueR8 = 9.9692099683868690e+36;  ///< NC_FILL_DOUBLE
+/// Type-indexed fill value. Instantiating FillValue<T> for an unsupported
+/// type T produces a link error (primary template is intentionally undefined).
+template <typename T> constexpr T FillValue;
+
+template <> inline constexpr I4 FillValue<I4> = -2147483647; ///< NC_FILL_INT
+template <>
+inline constexpr I8 FillValue<I8> = -9223372036854775806LL; ///< NC_FILL_INT64
+template <>
+inline constexpr R4 FillValue<R4> = 9.9692099683868690e+36f; ///< NC_FILL_FLOAT
+template <>
+inline constexpr R8 FillValue<R8> = 9.9692099683868690e+36; ///< NC_FILL_DOUBLE
+
+/// Named aliases for readability in comparison and test code.
+constexpr I4 FillValueI4 = FillValue<I4>;
+constexpr I8 FillValueI8 = FillValue<I8>;
+constexpr R4 FillValueR4 = FillValue<R4>;
+constexpr R8 FillValueR8 = FillValue<R8>;
 #if defined(SINGLE_PRECISION)
-constexpr Real FillValueReal = FillValueR4;
+constexpr Real FillValueReal = FillValue<R4>;
 #else
-constexpr Real FillValueReal = FillValueR8;
+constexpr Real FillValueReal = FillValue<R8>;
 #endif
 
 } // end namespace OMEGA
