@@ -370,9 +370,8 @@ void Eos::defineFields() {
                      "sea_water_specific_volume",      // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValueReal, // Scalar used for undefined entries
-                     NDims,         // Number of dimensions
-                     DimNames       // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
    /// Create and register the displaced specific volume field
    auto SpecVolDisplacedField =
@@ -383,9 +382,8 @@ void Eos::defineFields() {
                      "sea_water_specific_volume_displaced", // CF-ish Name
                      0.0,                                   // Min valid value
                      std::numeric_limits<Real>::max(),      // Max valid value
-                     FillValueReal, // Scalar used for undefined entries
-                     NDims,         // Number of dimensions
-                     DimNames       // Dimension names
+                     NDims,   // Number of dimensions
+                     DimNames // Dimension names
        );
 
    // Brunt-Vaisala frequency is located at interfaces
@@ -399,9 +397,8 @@ void Eos::defineFields() {
                      "sea_water_brunt_vaisala_frequency_squared", // CF-ish Name
                      std::numeric_limits<Real>::min(), // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValueReal, // Scalar used for undefined entries
-                     NDims,         // Number of dimensions
-                     DimNames       // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
 
    // Create a field group for the eos-specific state fields

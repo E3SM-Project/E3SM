@@ -346,9 +346,8 @@ void VertMix::defineFields() {
                      "vertical_diffusivity",           // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValueReal, // Scalar used for undefined entries
-                     NDims,         // Number of dimensions
-                     DimNames       // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
    /// Create and register the VertVisc field
    auto VertViscField =
@@ -359,9 +358,8 @@ void VertMix::defineFields() {
                      "vertical_viscosity",             // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValueReal, // Scalar used for undefined entries
-                     NDims,         // Number of dimensions
-                     DimNames       // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
    /// Create and register the GradRichNum field
    auto GradRichNumField =

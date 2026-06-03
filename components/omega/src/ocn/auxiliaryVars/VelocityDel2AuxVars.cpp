@@ -53,7 +53,6 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
        "",                                          // CF standard Name
        std::numeric_limits<Real>::min(),            // min valid value
        std::numeric_limits<Real>::max(),            // max valid value
-       FillValueReal,                               // scalar for undef entries
        NDims,                                       // number of dimensions
        DimNames                                     // dimension names
    );
@@ -68,9 +67,8 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
                      "",          // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
-                     FillValueReal, // scalar used for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames       // dimension names
+                     NDims,                            // number of dimensions
+                     DimNames                          // dimension names
        );
 
    // Del2 of relative vorticity on vertices
@@ -82,9 +80,8 @@ void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
        "",                                            // CF standard Name
        std::numeric_limits<Real>::min(),              // min valid value
        std::numeric_limits<Real>::max(),              // max valid value
-       FillValueReal, // scalar used for undefined entries
-       NDims,         // number of dimensions
-       DimNames       // dimension names
+       NDims,                                         // number of dimensions
+       DimNames                                       // dimension names
    );
 
    // Add fields to Aux Field group

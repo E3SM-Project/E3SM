@@ -42,7 +42,6 @@ void TracerAuxVars::registerFields(const std::string &AuxGroupName,
        "",                               // CF standard name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );

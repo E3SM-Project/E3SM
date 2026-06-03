@@ -38,9 +38,8 @@ void SurfTracerRestAuxVars::registerFields(
                      "",                                   // CF standard Name
                      std::numeric_limits<Real>::min(),     // min valid value
                      std::numeric_limits<Real>::max(),     // max valid value
-                     FillValueReal, // scalar for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames);     // dim names
+                     NDims,     // number of dimensions
+                     DimNames); // dim names
 
    // Add fields to FieldGroup
    FieldGroup::addFieldToGroup(TracersMonthlySurfClimoCell.label(),

@@ -177,8 +177,7 @@ void Tracers::init() {
 //---------------------------------------------------------------------------
 I4 Tracers::define(const std::string &Name, const std::string &Description,
                    const std::string &Units, const std::string &StdName,
-                   const Real ValidMin, const Real ValidMax,
-                   const Real FillValue, I4 &Index) {
+                   const Real ValidMin, const Real ValidMax, I4 &Index) {
 
    // Do nothing if this tracer is not selected
    if (TracerIndexes.find(Name) == TracerIndexes.end()) {
@@ -201,9 +200,9 @@ I4 Tracers::define(const std::string &Name, const std::string &Description,
 
    // create a tracer field
    std::string TracerFieldName = Name;
-   auto TracerField = Field::create(TracerFieldName, Description, Units,
-                                    StdName, ValidMin, ValidMax, FillValue,
-                                    TracerDimNames.size(), TracerDimNames);
+   auto TracerField =
+       Field::create(TracerFieldName, Description, Units, StdName, ValidMin,
+                     ValidMax, TracerDimNames.size(), TracerDimNames);
    if (!TracerField) {
       LOG_ERROR("Tracers: Tracer field '{}' is not created", TracerFieldName);
       return -2;

@@ -258,9 +258,8 @@ void VertCoord::defineFields() {
        "",                                          // CF standard Name
        0,                                           // min valid value
        std::numeric_limits<I4>::max(),              // max valid value
-       FillValueI4, // scalar for undefined entries
-       NDims,       // number of dimensions
-       DimNames     // dimension names
+       NDims,                                       // number of dimensions
+       DimNames                                     // dimension names
    );
 
    auto MaxLayerCellField = Field::create(
@@ -270,9 +269,8 @@ void VertCoord::defineFields() {
        "",                                         // CF standard Name
        -1,                                         // min valid value
        std::numeric_limits<I4>::max(),             // max valid value
-       FillValueI4, // scalar for undefined entries
-       NDims,       // number of dimensions
-       DimNames     // dimension names
+       NDims,                                      // number of dimensions
+       DimNames                                    // dimension names
    );
 
    auto BottomGeomDepthField = Field::create(
@@ -283,7 +281,6 @@ void VertCoord::defineFields() {
        "sea_floor_depth_below_geoid",    // CF standard Name
        0.0,                              // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -295,7 +292,6 @@ void VertCoord::defineFields() {
        "sea_surface_height",                // CF standard Name
        std::numeric_limits<Real>::min(),    // min valid value
        std::numeric_limits<Real>::max(),    // max valid value
-       FillValueReal,                       // scalar for undefined entries
        NDims,                               // number of dimensions
        DimNames                             // dimension names
    );
@@ -312,7 +308,6 @@ void VertCoord::defineFields() {
        "",                               // CF standard Name
        0.0,                              // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -329,7 +324,6 @@ void VertCoord::defineFields() {
        "",                               // CF standard Name
        0.0,                              // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -346,7 +340,6 @@ void VertCoord::defineFields() {
        "sea_water_pressure",                    // CF standard Name
        0.0,                                     // min valid value
        std::numeric_limits<Real>::max(),        // max valid value
-       FillValueReal,                           // scalar for undefined entries
        NDims,                                   // number of dimensions
        DimNames                                 // dimension names
    );
@@ -358,7 +351,6 @@ void VertCoord::defineFields() {
        "height",                               // CF standard Name
        std::numeric_limits<Real>::min(),       // min valid value
        std::numeric_limits<Real>::max(),       // max valid value
-       FillValueReal,                          // scalar for undefined entries
        NDims,                                  // number of dimensions
        DimNames                                // dimension names
    );
@@ -372,7 +364,6 @@ void VertCoord::defineFields() {
        "sea_water_pressure",                   // CF standard Name
        0.0,                                    // min valid value
        std::numeric_limits<Real>::max(),       // max valid value
-       FillValueReal,                          // scalar for undefined entries
        NDims,                                  // number of dimensions
        DimNames                                // dimension names
    );
@@ -384,7 +375,6 @@ void VertCoord::defineFields() {
        "height",                              // CF standard Name
        std::numeric_limits<Real>::min(),      // min valid value
        std::numeric_limits<Real>::max(),      // max valid value
-       FillValueReal,                         // scalar for undefined entries
        NDims,                                 // number of dimensions
        DimNames                               // dimension names
    );
@@ -396,7 +386,6 @@ void VertCoord::defineFields() {
        "geopotential",                    // CF standard Name
        std::numeric_limits<Real>::min(),  // min valid value
        std::numeric_limits<Real>::max(),  // max valid value
-       FillValueReal,                     // scalar for undefined entries
        NDims,                             // number of dimensions
        DimNames                           // dimension names
    );
@@ -409,7 +398,6 @@ void VertCoord::defineFields() {
        "",                                    // CF standard Name
        0.0,                                   // min valid value
        std::numeric_limits<Real>::max(),      // max valid value
-       FillValueReal,                         // scalar for undefined entries
        NDims,                                 // number of dimensions
        DimNames                               // dimension names
    );

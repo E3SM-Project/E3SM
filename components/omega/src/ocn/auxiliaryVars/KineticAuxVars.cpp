@@ -42,9 +42,8 @@ void KineticAuxVars::registerFields(
        "specific_kinetic_energy_of_sea_water",           // CF standard Name
        0,                                                // min valid value
        std::numeric_limits<Real>::max(),                 // max valid value
-       FillValueReal, // scalar for undefined entries
-       2,             // number of dimensions
-       DimNames       // dim names
+       2,                                                // number of dimensions
+       DimNames                                          // dim names
    );
 
    // Velocity divergence on cells
@@ -55,7 +54,6 @@ void KineticAuxVars::registerFields(
        "",                                  // CF standard Name
        std::numeric_limits<Real>::min(),    // min valid value
        std::numeric_limits<Real>::max(),    // max valid value
-       FillValueReal,                       // scalar used for undefined entries
        NDims,                               // number of dimensions
        DimNames                             // dimension names
    );

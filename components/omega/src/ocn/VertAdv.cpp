@@ -142,7 +142,6 @@ void VertAdv::defineFields() {
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -155,9 +154,8 @@ void VertAdv::defineFields() {
                      "",                      // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
-                     FillValueReal, // scalar for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames       // dimension names
+                     NDims,                            // number of dimensions
+                     DimNames                          // dimension names
        );
 
    NDims = 3;
@@ -173,7 +171,6 @@ void VertAdv::defineFields() {
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -186,7 +183,6 @@ void VertAdv::defineFields() {
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
