@@ -1025,7 +1025,7 @@ void VertCoord::computeGeomZHeight(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
                  Real DZ       = RhoSw * SpecVol(ICell, KLyr) *
-                                 PseudoThickness(ICell, KLyr);
+                           PseudoThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
                     LocZInterf(ICell, KLyr) = -LocBotGeomDepth(ICell) + Accum;
@@ -1179,6 +1179,46 @@ VertCoord *VertCoord::get(const std::string Name ///< [in] Name of VertCoord
    }
 
 } // end get VertCoord
+
+//------------------------------------------------------------------------------
+// Zero all layers in [MinLayerEdgeTop, MaxLayerEdgeBot] of an edge field.
+void VertCoord::zeroEdgeField(Array2DReal Arr, I4 NEdgesAll) const {
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KTop = LocMinLayerEdgeTop(IEdge);
+          const int KBot = Kokkos::max(0, LocMaxLayerEdgeBot(IEdge));
+          parallelForInner(
+              Team, Range{KTop, KBot},
+              INNER_LAMBDA(int K) { Arr(IEdge, K) = 0._Real; });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce 3-zone masking on an edge field after IC or restart read.
+void VertCoord::applyEdgeLayerMask(Array2DReal Arr, I4 NEdgesAll) const {
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KTop = LocMinLayerEdgeTop(IEdge);
+          const int KBot = Kokkos::max(0, LocMaxLayerEdgeBot(IEdge));
+          const int KMin = LocMinLayerEdgeBot(IEdge);
+          const int KMax = LocMaxLayerEdgeTop(IEdge);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KTop || K > KBot)
+                    Arr(IEdge, K) = FillValueReal;
+                 else if (K < KMin || K > KMax)
+                    Arr(IEdge, K) = 0._Real;
+                 // else: active layer - keep IC/restart value
+              });
+       });
+}
 
 } // end namespace OMEGA
 

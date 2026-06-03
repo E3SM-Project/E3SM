@@ -242,6 +242,19 @@ class VertCoord {
    /// Initialize computational masks
    void setMasks();
 
+   /// Zero all layers in [MinLayerEdgeTop, MaxLayerEdgeBot] of an edge field.
+   /// Call before computing a flux-type edge field so boundary edges show 0,
+   /// not FillValueReal. Layers outside the valid range retain their fill
+   /// value.
+   void zeroEdgeField(Array2DReal Arr, I4 NEdgesAll) const;
+
+   /// Enforce 3-zone masking on an edge field after IC or restart read:
+   ///   K < MinLayerEdgeTop or K > MaxLayerEdgeBot -> FillValueReal
+   ///   [MinLayerEdgeTop, MaxLayerEdgeBot] but outside
+   ///   [MinLayerEdgeBot, MaxLayerEdgeTop] -> 0
+   ///   [MinLayerEdgeBot, MaxLayerEdgeTop] -> unchanged (IC/restart values)
+   void applyEdgeLayerMask(Array2DReal Arr, I4 NEdgesAll) const;
+
    /// Sums the mass thickness times g from the top layer down, starting with
    /// the surface pressure
    void computePressure(

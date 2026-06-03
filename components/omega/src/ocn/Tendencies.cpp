@@ -517,15 +517,12 @@ void Tendencies::computeVelocityTendenciesOnly(
 
    Pacer::start("Tend:computeVelocityTendenciesOnly", 1);
 
-   parallelForOuter(
-       {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
-          const int KMin = MinLayerEdgeBot(IEdge);
-          const int KMax = MaxLayerEdgeTop(IEdge);
-
-          parallelForInner(
-              Team, Range{KMin, KMax},
-              INNER_LAMBDA(int K) { LocNormalVelocityTend(IEdge, K) = 0; });
-       });
+   // Zero NVTend over all layers where at least one neighboring cell is active:
+   // [MinLayerEdgeTop, MaxLayerEdgeBot]. This includes boundary edges adjacent
+   // to land or bathymetry steps, which have no computed tendency but should
+   // show 0, not FillValueReal. Fully inactive layers (outside this range)
+   // keep their FillValueReal from attachData().
+   VCoord->zeroEdgeField(NormalVelocityTend, Mesh->NEdgesAll);
 
    // Compute potential vorticity horizontal advection
    const Array2DReal &FluxPseudoThickEdge =
