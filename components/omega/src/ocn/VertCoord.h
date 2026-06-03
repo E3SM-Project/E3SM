@@ -165,7 +165,7 @@ class VertCoord {
 
    HostArray2DReal BoundaryVertexH; ///< Mask to determine boundary vertex
 
-   // BottomGeomDepth read from mesh file
+   // BottomGeomDepth read from initial vertical coordinate file
    Array1DReal BottomGeomDepth;
 
    HostArray1DReal BottomGeomDepthH;
