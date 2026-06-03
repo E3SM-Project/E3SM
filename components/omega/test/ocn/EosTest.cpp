@@ -794,6 +794,36 @@ void checkValueCtFreezing() {
    return;
 }
 
+/// Test that the Eos CT-from-PT helper matches GSW-C
+void checkValueGswcCtFromPt() {
+   Eos *TestEos       = Eos::getInstance();
+   TestEos->EosChoice = EosType::Teos10Eos;
+
+   Real CtExpValue = gsw_ct_from_pt(Sa, Ct);
+   Real CtTeos     = TestEos->calcCtFromPt(Sa, Ct);
+   bool Check      = isApprox(CtTeos, CtExpValue, RTol);
+   if (!Check) {
+      ABORT_ERROR("checkValueGswcCtFromPt: Ct FAIL, expected {}, got {}",
+                  CtExpValue, CtTeos);
+   }
+   return;
+}
+
+/// Test that the Eos PT-from-CT helper matches GSW-C
+void checkValueGswcPtFromCt() {
+   Eos *TestEos       = Eos::getInstance();
+   TestEos->EosChoice = EosType::Teos10Eos;
+
+   Real PtExpValue = gsw_pt_from_ct(Sa, Ct);
+   Real PtTeos     = TestEos->calcPtFromCt(Sa, Ct);
+   bool Check      = isApprox(PtTeos, PtExpValue, RTol);
+   if (!Check) {
+      ABORT_ERROR("checkValueGswcPtFromCt: Pt FAIL, expected {}, got {}",
+                  PtExpValue, PtTeos);
+   }
+   return;
+}
+
 // the main tests (all in one to have the same log):
 // Single value test:
 // --> test calls the external GSW-C library
@@ -814,6 +844,8 @@ void eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
    checkValueGswcSpecVol();
    checkValueGswcN2();
    checkValueCtFreezing();
+   checkValueGswcCtFromPt();
+   checkValueGswcPtFromCt();
 
    testEosLinear();
    testEosLinearDisplaced();

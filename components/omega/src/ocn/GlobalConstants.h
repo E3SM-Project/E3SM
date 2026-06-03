@@ -69,6 +69,8 @@ constexpr Real CpFw = pcd::pure_water_specific_heat_capacity_reference;
 constexpr Real CpSw = pcd::seawater_specific_heat_capacity_reference;
 // Specific heat capacity of seawater ~ J/(kg*K) (from Physical Constants
 // Dictionary)
+constexpr Real Cp0Sw =
+    3991.86795711963; // Specific heat capacity of seawater for TEOS-10
 constexpr Real CpIce = pcd::sea_ice_specific_heat_capacity_reference;
 // Specific heat capacity of ice ~ J/(kg*K) (from Physical Constants Dictionary)
 constexpr Real LatIce = pcd::latent_heat_of_fusion_reference;
@@ -98,7 +100,11 @@ constexpr Real Rad2Deg =
     pcd::radian; // Radians to degrees (from Physical Constants Dictionary)
 constexpr Real Deg2Rad =
     pcd::degree; // Degrees to radians (from Physical Constants Dictionary)
-constexpr Real Salt2PPt   = 1000.0;    // Salinity (kg/kg) to parts per thousand
+constexpr Real Salt2PPt = 1000.0;   // Salinity (kg/kg) to parts per thousand
+constexpr Real SS0      = 35.16504; // Standard ocean reference salinity (g/kg)
+constexpr Real Psu2Gpkg =
+    SS0 / 35.0; // Unit conversion factor for salinities (psu -> g/kg)
+constexpr Real Sfac       = 0.0248826675584615; // 1 / (40 * Psu2Gpkg)
 constexpr Real PPt2Salt   = 1.0e-3;    // Parts per thousand to salinity (kg/kg)
 constexpr Real Mass2Sv    = 1.0e-12;   // Mass flux (kg/s) to Sverdrup
 constexpr Real Heat2Pw    = 4.186e-15; // Heat flux (W) to Petawatt
