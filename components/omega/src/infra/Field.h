@@ -19,6 +19,7 @@
 #include "DataTypes.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "FillValues.h"
 #include "Logging.h"
 #include "OmegaKokkos.h"
 #include "TimeMgr.h"
@@ -26,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <type_traits>
 
 namespace OMEGA {
 
@@ -81,6 +83,25 @@ class Field {
    /// array holding the data. We use a void pointer to manage all the
    /// various types and cast to the appropriate type when needed.
    std::shared_ptr<void> DataArray;
+
+   /// Fills every element of InDataArray with the field's declared fill value.
+   /// Called automatically by attachData() so inactive entries are initialized
+   /// to a well-defined sentinel before any compute routine runs.
+   template <typename T> void fillWithValue(const T &InDataArray) {
+      using ValType = typename T::value_type;
+      auto AnyFill  = FieldMeta.at("FillValue");
+      ValType FillVal;
+      if constexpr (std::is_same_v<ValType, I4>)
+         FillVal = std::any_cast<I4>(AnyFill);
+      else if constexpr (std::is_same_v<ValType, I8>)
+         FillVal = std::any_cast<I8>(AnyFill);
+      else if constexpr (std::is_same_v<ValType, R4>)
+         // Fill values are stored as R8 (Real) in legacy code; cast safely
+         FillVal = static_cast<R4>(std::any_cast<R8>(AnyFill));
+      else
+         FillVal = std::any_cast<R8>(AnyFill);
+      Kokkos::deep_copy(InDataArray, FillVal);
+   }
 
  public:
    //---------------------------------------------------------------------------
@@ -314,6 +335,10 @@ class Field {
       // Determine type and location
       DataType = checkArrayType<T>();
       MemLoc   = findArrayMemLoc<T>();
+
+      // Initialize every element to the declared fill value so inactive
+      // entries (e.g. layers below MaxLayerCell) are well-defined in output
+      fillWithValue<T>(InDataArray);
    };
 
    //---------------------------------------------------------------------------
