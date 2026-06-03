@@ -343,9 +343,9 @@ void ZMDeepConvection::run_impl (const double dt)
       const auto mcsp_dq_out_i  = ekat::subview(loc_zm_output_mcsp_dq_out, i);
       const auto mcsp_du_out_i  = ekat::subview(loc_zm_output_mcsp_du_out, i);
       const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
-      auto mcsp_freq_i          = loc_zm_output_mcsp_freq(i);
-      auto mcsp_shear_i         = loc_zm_output_mcsp_shear(i);
-      auto zm_depth_i           = loc_zm_output_zm_depth(i);
+      auto& mcsp_freq_i         = loc_zm_output_mcsp_freq(i);
+      auto& mcsp_shear_i        = loc_zm_output_mcsp_shear(i);
+      auto& zm_depth_i          = loc_zm_output_zm_depth(i);
 
       // calculate DSE for MCSP
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
@@ -407,8 +407,8 @@ void ZMDeepConvection::run_impl (const double dt)
       const auto ntsnprd_i          = ekat::subview(loc_zm_output_ntsnprd, i);
       const auto flxprec_i          = ekat::subview(loc_zm_output_flxprec, i);
       const auto flxsnow_i          = ekat::subview(loc_zm_output_flxsnow, i);
-      auto prec_i                   = loc_zm_output_prec(i);
-      auto snow_i                   = loc_zm_output_snow(i);
+      auto& prec_i                  = loc_zm_output_prec(i);
+      auto& snow_i                  = loc_zm_output_snow(i);
 
       // call the ZM evap scheme
       ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
