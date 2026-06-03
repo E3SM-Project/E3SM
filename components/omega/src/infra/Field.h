@@ -318,7 +318,8 @@ class Field {
    /// templated based on the array data type so a template argument with
    /// the proper array data type (eg <Array2DR4>) must be supplied.
    template <typename T>
-   void attachData(const T &InDataArray ///< [in] Array with data to attach
+   void attachData(const T &InDataArray,    ///< [in] Array with data to attach
+                   bool FillOnAttach = true ///< [in] fill array with fill value
    ) {
       OMEGA_ASSERT(isKokkosArray<T>,
                    "Field::attachData requires Kokkos array as input");
@@ -331,8 +332,11 @@ class Field {
       MemLoc   = findArrayMemLoc<T>();
 
       // Initialize every element to the declared fill value so inactive
-      // entries (e.g. layers below MaxLayerCell) are well-defined in output
-      fillWithValue<T>(InDataArray);
+      // entries (e.g. layers below MaxLayerCell) are well-defined in output.
+      // Pass FillOnAttach=false when re-attaching an existing data-filled array
+      // (e.g. time-level pointer updates) to preserve the computed values.
+      if (FillOnAttach)
+         fillWithValue<T>(InDataArray);
    };
 
    //---------------------------------------------------------------------------
@@ -344,7 +348,8 @@ class Field {
    template <typename T>
    static void
    attachFieldData(const std::string &FieldName, ///< [in] Name of Field
-                   const T &InDataArray ///< [in] Array with data to attach
+                   const T &InDataArray,    ///< [in] Array with data to attach
+                   bool FillOnAttach = true ///< [in] fill array with fill value
    ) {
       OMEGA_ASSERT(isKokkosArray<T>,
                    "Field::attachFieldData requires Kokkos array as input");
@@ -354,7 +359,7 @@ class Field {
          // Retrieve the field
          auto ThisField = AllFields[FieldName];
          // Attach the data array
-         ThisField->attachData<T>(InDataArray);
+         ThisField->attachData<T>(InDataArray, FillOnAttach);
 
       } else { // field has not yet been defined
          ABORT_ERROR("Field: error attaching data to {}. Field not defined",

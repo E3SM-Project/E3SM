@@ -446,7 +446,8 @@ void Tracers::updateTimeLevels() {
 
       Array2DReal TracerSubview = Kokkos::subview(
           TracerArrays[CurTimeIndex], TracerIndex, Kokkos::ALL, Kokkos::ALL);
-      TracerField->attachData<Array2DReal>(TracerSubview);
+      // Pass false to avoid overwriting just-computed tracer values with fill.
+      TracerField->attachData<Array2DReal>(TracerSubview, false);
    }
 
    return;

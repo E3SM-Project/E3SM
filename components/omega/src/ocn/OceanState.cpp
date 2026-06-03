@@ -318,11 +318,12 @@ void OceanState::updateTimeLevels() {
    // Update current time index for pseudo-thickness and normal velocity
    CurTimeIndex = (CurTimeIndex + 1) % NTimeLevels;
 
-   // Update IOField data associations
+   // Update IOField data associations. Pass false to avoid overwriting the
+   // just-computed state with fill values; this is a pointer update only.
    Field::attachFieldData<Array2DReal>(NormalVelocityFldName,
-                                       NormalVelocity[CurTimeIndex]);
+                                       NormalVelocity[CurTimeIndex], false);
    Field::attachFieldData<Array2DReal>(PseudoThicknessFldName,
-                                       PseudoThickness[CurTimeIndex]);
+                                       PseudoThickness[CurTimeIndex], false);
 
 } // end updateTimeLevels
 
