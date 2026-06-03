@@ -481,10 +481,6 @@ struct Functions {
 
   // -----------------------------------------------------------------------------------------------
 
-  struct ZmOutputDiag {
-    ZmOutputDiag() = default;
-  };
-
   //
   // --------- Init/Finalize Functions ---------
   //
