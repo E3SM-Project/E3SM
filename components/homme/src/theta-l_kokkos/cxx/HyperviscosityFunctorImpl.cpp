@@ -12,11 +12,32 @@
 #include "ColumnOps.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
+#include "mpi/Comm.hpp"
 #include "mpi/MpiBuffersManager.hpp"
 #include "mpi/Connectivity.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 namespace Homme
 {
+
+namespace {
+
+constexpr Real get_lambda_vis ()
+{
+  switch (NP) {
+  case 2: return 12.0;
+  case 3: return 30.0;
+  case 4: return 91.6742;
+  case 5: return 190.1176;
+  case 6: return 374.7788;
+  case 7: return 652.3015;
+  default: return 0.0;
+  }
+}
+
+} // anonymous namespace
 
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const SimulationParams&     params,
@@ -259,6 +280,12 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     //won't be used
     m_data.dt_hvs_tom = -1.0;
   }
+  m_data.hypervis_subcycle_sgs_eff = compute_sgs_subcycle_count(dt);
+  if (m_data.hypervis_subcycle_sgs_eff > 0) {
+    m_data.dt_hvs_sgs = dt/m_data.hypervis_subcycle_sgs_eff;
+  } else {
+    m_data.dt_hvs_sgs = -1.0;
+  }
   m_data.eta_ave_w = eta_ave_w;
 
   // Convert vtheta_dp -> theta
@@ -304,7 +331,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   // SGS Horizontal turbulent diffusion
   if (m_data.do_3d_turbulence > 0) {
-    for (int icycle = 0; icycle < m_data.hypervis_subcycle_sgs; ++icycle) {
+    for (int icycle = 0; icycle < m_data.hypervis_subcycle_sgs_eff; ++icycle) {
       // laplace(fields) --> ttens, etc.
       Kokkos::parallel_for(m_policy_sgsturb_laplace, *this);
       Kokkos::fence();
@@ -385,6 +412,89 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     }
   } // for sponge layer
 } // run()
+
+int HyperviscosityFunctorImpl::compute_sgs_subcycle_count (const Real dt) const
+{
+  // Start from the user-requested baseline. Adaptive logic can only increase
+  // the SGS subcycling for the current step, never reduce it below this value.
+  int nsub = std::max(1, m_data.hypervis_subcycle_sgs);
+
+  if (not m_data.do_3d_turbulence) {
+    return nsub;
+  }
+
+  const Real lambda_vis = get_lambda_vis();
+  if (lambda_vis <= 0) {
+    return nsub;
+  }
+
+  const auto dinv = m_geometry.m_dinv;
+  const auto Km = m_derived.m_turb_diff_mom;
+  const auto Kh = m_derived.m_turb_diff_heat;
+  const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
+
+  // Estimate the largest explicit diffusive CFL over all local GLL points and
+  // vertical levels using the local SGS diffusivities and the local element
+  // metric. This mirrors HOMME's existing Laplacian stability estimate.
+  Real local_max_cfl = 0.0;
+  Kokkos::parallel_reduce(
+      "compute_sgs_max_cfl",
+      Kokkos::RangePolicy<ExecSpace>(0, m_num_elems * NP * NP),
+      KOKKOS_LAMBDA (const int idx, Real& thread_max) {
+        const int ie = idx / (NP * NP);
+        const int rem = idx % (NP * NP);
+        const int igp = rem / NP;
+        const int jgp = rem % NP;
+
+        const Real a = dinv(ie,0,0,igp,jgp);
+        const Real b = dinv(ie,0,1,igp,jgp);
+        const Real c = dinv(ie,1,0,igp,jgp);
+        const Real d = dinv(ie,1,1,igp,jgp);
+
+        // Recover a local 2-norm of D^{-1} from the largest eigenvalue of
+        // D^{-1} (D^{-1})^T, then convert it into the Laplacian stability
+        // factor used in HOMME's viscous CFL estimate.
+        const Real s11 = a*a + c*c;
+        const Real s22 = b*b + d*d;
+        const Real s12 = a*b + c*d;
+        const Real disc = (s11 - s22)*(s11 - s22) + 4.0*s12*s12;
+        const Real max_eig = 0.5 * (s11 + s22 + std::sqrt(disc));
+        const Real norm_dinv = std::sqrt(max_eig);
+        const Real laplace_metric = lambda_vis * (scale_factor_inv * norm_dinv) * (scale_factor_inv * norm_dinv);
+
+        // Use the largest of Km and Kh at this horizontal point as a scalar
+        // bound for the explicit SGS diffusion step.
+        Real point_max_k = 0.0;
+        for (int k = 0; k < NUM_LEV; ++k) {
+          const auto km = Km(ie,igp,jgp,k);
+          const auto kh = Kh(ie,igp,jgp,k);
+          for (int s = 0; s < VECTOR_SIZE; ++s) {
+            const int phys_lev = k * VECTOR_SIZE + s;
+            if (phys_lev < NUM_PHYSICAL_LEV) {
+              if (km[s] > point_max_k) point_max_k = km[s];
+              if (kh[s] > point_max_k) point_max_k = kh[s];
+            }
+          }
+        }
+
+        // Forward-Euler diffusion is stable for CFL <= 1 in this normalized
+        // estimate, so values above 1 imply we need more SGS substeps.
+        const Real point_cfl = 0.5 * dt * laplace_metric * point_max_k;
+        if (point_cfl > thread_max) thread_max = point_cfl;
+      },
+      Kokkos::Max<Real>(local_max_cfl));
+
+  // Promote the local maximum to a global one so every rank uses the same SGS
+  // subcycle count for this dynamics step.
+  Real global_max_cfl = local_max_cfl;
+  const auto& comm = Context::singleton().get<Comm>();
+  MPI_Allreduce(&local_max_cfl, &global_max_cfl, 1, MPI_DOUBLE, MPI_MAX, comm.mpi_comm());
+
+  // If the estimated CFL is, e.g., 2.3, take 3 SGS substeps so the effective
+  // per-substep CFL is brought back below 1.
+  nsub = std::max(nsub, static_cast<int>(std::ceil(global_max_cfl)));
+  return nsub;
+}
 
 void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
 {
@@ -703,16 +813,16 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
         Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
         [&] (const int k) {
 
-          const auto xf_m = m_data.dt_hvs * Km(k); // Momentum diffusivity
-          const auto xf_h = m_data.dt_hvs * Kh(k); // Heat diffusivity
+          const auto xf_m = m_data.dt_hvs_sgs * Km(k); // Momentum diffusivity
+          const auto xf_h = m_data.dt_hvs_sgs * Kh(k); // Heat diffusivity
           utens(k)  *= xf_m;
           vtens(k)  *= xf_m;
           ttens(k)  *= xf_h;
           dptens(k) *= xf_h;
 
           if (m_process_nh_vars) {
-            const auto xf_mi = m_data.dt_hvs * Km_i(k); // Momentum diffusivity on interface
-            const auto xf_hi = m_data.dt_hvs * Kh_i(k); // Heat diffusivity on interface
+            const auto xf_mi = m_data.dt_hvs_sgs * Km_i(k); // Momentum diffusivity on interface
+            const auto xf_hi = m_data.dt_hvs_sgs * Kh_i(k); // Heat diffusivity on interface
             wtens(k)   *= xf_mi;
             phitens(k) *= xf_hi;
           }

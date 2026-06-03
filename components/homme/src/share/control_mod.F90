@@ -171,7 +171,7 @@ module control_mod
   real (kind=real_kind), public :: tom_sponge_start=0         ! start of sponge layer, in hPa
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
-  integer, public :: hypervis_subcycle_sgs=-1                 ! number of subcycles for SGS horizontal diffusion
+  integer, public :: hypervis_subcycle_sgs=1                  ! number of subcycles for SGS horizontal diffusion
                                                               !   <0  use hypervis_subcycle
   integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
                                                               !   0   apply together with hyperviscosity
