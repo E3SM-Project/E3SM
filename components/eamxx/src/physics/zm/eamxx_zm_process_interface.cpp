@@ -388,6 +388,9 @@ void ZMDeepConvection::run_impl (const double dt)
     // perform the convective evaporation calculations
     Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
+      // skip inactive columns: zm_conv_main leaves p_del_mb (=dp) zero for them,
+      // and zm_transport_momentum divides by dp, which would produce NaNs
+      if (!loc_zm_output_activity(i)) return;
       const auto p_mid_i            = ekat::subview(loc_zm_input_p_mid, i);
       const auto p_del_i            = ekat::subview(loc_zm_input_p_del, i);
       const auto T_mid_i            = ekat::subview(loc_zm_input_T_mid, i);
@@ -435,6 +438,9 @@ void ZMDeepConvection::run_impl (const double dt)
 
     Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
+      // skip inactive columns: zm_conv_main leaves p_del_mb (=dp) zero for them,
+      // and zm_transport_momentum divides by dp, which would produce NaNs
+      if (!loc_zm_output_activity(i)) return;
       // MCSP-updated winds in (nwind, nlev) == (m,k) layout for wind_mid
       const auto wind_mid_i     = ekat::subview(loc_zm_input_tmp_winds, i);
       const auto mflx_up_i      = ekat::subview(loc_zm_output_mflx_up, i);
