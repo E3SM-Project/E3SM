@@ -112,12 +112,18 @@ compile time, where `<pattern>` represents a format in the form of `%flag`,
 similar to the strftime function. This pattern defines the layout of the log
 message.
 
-Users can control which MPI ranks generate log files using
-`-D OMEGA_LOG_TASKS=<tasks-pattern>` at compile time. The `<tasks-pattern>` is
-either all for all tasks to generate log files, or comma-separated MPI rank
-numbers, or a range of MPI ranks with a dash. For example,
-`-D OMEGA_LOG_TASKS=0,2-3` indicates that MPI ranks 0, 2, and 3 generate log
-files.
+Users can control which MPI ranks generate log files using the
+`OMEGA_LOG_TASKS` selector, which is resolved at runtime against the Omega MPI
+sub-communicator. The selector is read from the `OMEGA_LOG_TASKS` environment
+variable; when it is unset, logging defaults to the master rank only. The
+`<selector>` accepts `*` (all ranks), `m` or `master` (the sub-communicator
+master rank), a single rank number, a comma-separated list of ranks, an
+inclusive dash range, or any combination of lists and ranges. For example,
+`OMEGA_LOG_TASKS=0,2-3` makes MPI ranks 0, 2, and 3 generate log files. A
+malformed selector logs a warning on the master rank and falls back to
+master-rank-only logging; ranks outside the sub-communicator simply produce no
+log. When setting the `*` selector via the environment variable, quote it (for
+example `OMEGA_LOG_TASKS='*'`) to prevent shell glob expansion.
 
 #### 4.1.2 Class/structs/data types
 

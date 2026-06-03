@@ -143,14 +143,19 @@
                     ##__VA_ARGS__);                                            \
    _LOG_FLUSH
 
-/// \def OMEGA_LOG_TASKS
-/// A preprocessor variable that defines which tasks will be writing messages.
-/// The default is to write a single log from task 0. If other tasks (or ALL)
-/// are provided, log messages will be written to a corresponding log file with
-/// the task number appended to the log file name.
-#ifndef OMEGA_LOG_TASKS
-#define OMEGA_LOG_TASKS 0
-#endif
+/// Logging task selection
+/// Which MPI ranks write log files is controlled at runtime by the
+/// OMEGA_LOG_TASKS environment variable, resolved against the Omega MPI
+/// sub-communicator. When the variable is unset, logging defaults to the
+/// master rank only. The selector accepts:
+///   "*"            - all ranks in the sub-communicator
+///   "m" / "master" - the sub-communicator master rank only
+///   "<n>"          - a single rank
+///   "0,2,4"        - a comma-separated list of ranks
+///   "0-3"          - an inclusive range of ranks
+///   "0,2-3"        - any combination of lists and ranges
+/// An invalid selector logs a warning on the master rank and falls back to
+/// master-rank-only logging.
 
 namespace OMEGA {
 
@@ -179,6 +184,18 @@ std::string
 _PackLogMsg(const char *file, ///< [in] file where log called (cpp __FILE__)
             int line,         ///< [in] src code line where log (cpp __LINE__)
             const std::string &msg ///< [in] message text
+);
+
+/// Resolve a logging task selector string into the sorted, deduplicated list
+/// of MPI ranks (relative to the Omega sub-communicator) that should log.
+/// Accepts "*", "m"/"master", a single rank, comma lists, dash ranges, or any
+/// combination of lists and ranges. On a malformed selector, sets Valid=false
+/// and returns {MasterTask}.
+std::vector<int>
+_selectLogTasks(const std::string &Selector, ///< [in] raw selector string
+                I4 NumTasks,   ///< [in] number of tasks in the sub-communicator
+                I4 MasterTask, ///< [in] master rank of the sub-communicator
+                bool &Valid    ///< [out] false if the selector was malformed
 );
 
 } // namespace OMEGA
