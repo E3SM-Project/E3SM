@@ -535,82 +535,93 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
          Err = IOStream::read(StreamName);
          if (Err.isFail()) {
             LOG_INFO("VertCoord: Error while reading {} stream", StreamName);
-            I4 Sum1 = 0;
+            I4 NFill1 = 0;
             parallelReduce(
                 {MinLayerCell.extent_int(0)},
-                KOKKOS_LAMBDA(int I, int &Accum) {
-                   Accum += LocMinLayerCell(I);
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocMinLayerCell(I) == FillValueI4)
+                      ++Count;
                 },
-                Sum1);
-            if (Sum1 < 0) {
+                NFill1);
+            if (NFill1 > 0) {
                LOG_INFO("VertCoord: Error reading MinLayerCell from {}, "
                         "using MinLayerCell = 0",
                         StreamName);
                deepCopy(MinLayerCell, 1);
             }
-            I4 Sum2 = 0;
+            I4 NFill2 = 0;
             parallelReduce(
                 {MaxLayerCell.extent_int(0)},
-                KOKKOS_LAMBDA(int I, int &Accum) {
-                   Accum += LocMaxLayerCell(I);
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocMaxLayerCell(I) == FillValueI4)
+                      ++Count;
                 },
-                Sum2);
-            if (Sum2 < 0) {
+                NFill2);
+            if (NFill2 > 0) {
                LOG_INFO("VertCoord: Error reading MaxLayerCell from {}, "
                         "using MaxLayerCell = NVertLayers - 1",
                         StreamName);
                deepCopy(MaxLayerCell, NVertLayers);
             }
-            Real Sum3 = 0.;
+            I4 NFill3 = 0;
             parallelReduce(
                 {BottomGeomDepth.extent_int(0)},
-                KOKKOS_LAMBDA(int I, Real &Accum) {
-                   Accum += LocBottomGeomDepth(I);
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocBottomGeomDepth(I) == FillValueReal)
+                      ++Count;
                 },
-                Sum3);
-            if (Sum3 / BottomGeomDepth.extent_int(0) >=
-                0.5_Real * FillValueReal) {
+                NFill3);
+            if (NFill3 > 0) {
                ABORT_ERROR("VertCoord: Error reading BottomGeomDepth from {}",
                            StreamName);
             }
-            Real Sum4 = 0.;
+            I4 NFill4 = 0;
             parallelReduce(
                 {RefPseudoThickness.extent_int(0),
                  RefPseudoThickness.extent_int(1)},
-                KOKKOS_LAMBDA(int I, int J, Real &Accum) {
-                   Accum += LocPseudoThick(I, J);
+                KOKKOS_LAMBDA(int I, int J, I4 &Count) {
+                   if (LocPseudoThick(I, J) == FillValueReal)
+                      ++Count;
                 },
-                Sum4);
-            I4 N4 = RefPseudoThickness.extent_int(0) *
-                    RefPseudoThickness.extent_int(1);
-            if (Sum4 / N4 >= 0.5_Real * FillValueReal) {
+                NFill4);
+            if (NFill4 > 0) {
                ABORT_ERROR("VertCoord: Error reading RefPseudoThickness "
                            "from {}",
                            StreamName);
             }
-            Real Sum5     = 0.;
-            I4 NumNonZero = 0;
+            I4 NFill5 = 0;
             parallelReduce(
                 {VertCoordMovementWeights.extent_int(0)},
-                KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
-                   Real W = LocVCoordMvmtWgts(I);
-                   Accum += W;
-                   if (W != 0) {
-                      NonZeroCount += 1;
-                   }
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocVCoordMvmtWgts(I) == FillValueReal)
+                      ++Count;
                 },
-                Sum5, NumNonZero);
-            I4 N5 = VertCoordMovementWeights.extent_int(0);
-            if (Sum5 / N5 >= 0.5_Real * FillValueReal) {
+                NFill5);
+            if (NFill5 > 0) {
                // Stream did not populate weights — use default
                deepCopy(VertCoordMovementWeights, 1._Real);
-            } else if (Sum5 < 0.) {
-               ABORT_ERROR("VertCoord: Error reading VertCoordMovementWeights "
-                           "from {}",
-                           StreamName);
-            } else if (NumNonZero == 0) {
-               // TODO: ABORT_ERROR when all weights equal 0
-               deepCopy(VertCoordMovementWeights, 1._Real);
+            } else {
+               Real Sum5     = 0.;
+               I4 NumNonZero = 0;
+               parallelReduce(
+                   {VertCoordMovementWeights.extent_int(0)},
+                   KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
+                      Real W = LocVCoordMvmtWgts(I);
+                      Accum += W;
+                      if (W != 0) {
+                         NonZeroCount += 1;
+                      }
+                   },
+                   Sum5, NumNonZero);
+               if (Sum5 < 0.) {
+                  ABORT_ERROR(
+                      "VertCoord: Error reading VertCoordMovementWeights "
+                      "from {}",
+                      StreamName);
+               } else if (NumNonZero == 0) {
+                  // TODO: ABORT_ERROR when all weights equal 0
+                  deepCopy(VertCoordMovementWeights, 1._Real);
+               }
             }
          }
       } else {
@@ -1014,7 +1025,7 @@ void VertCoord::computeGeomZHeight(
               Team, KRange, INNER_LAMBDA(int K, Real &Accum, bool IsFinal) {
                  const I4 KLyr = KMax - K;
                  Real DZ       = RhoSw * SpecVol(ICell, KLyr) *
-                           PseudoThickness(ICell, KLyr);
+                                 PseudoThickness(ICell, KLyr);
                  Accum += DZ;
                  if (IsFinal) {
                     LocZInterf(ICell, KLyr) = -LocBotGeomDepth(ICell) + Accum;
