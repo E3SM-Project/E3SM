@@ -60,10 +60,6 @@ def _main_func(description):
     else:
         caseroot = os.getcwd()
 
-    # Signal to build.py that we are already inside the batch job so it does
-    # not attempt to re-submit.
-    os.environ["CIME_BATCHED_BUILD_ACTIVE"] = "TRUE"
-
     with Case(caseroot, read_only=False, record=True) as case:
         success = build.case_build(
             caseroot,
@@ -74,6 +70,7 @@ def _main_func(description):
             save_build_provenance=not args.skip_provenance_check,
             separate_builds=args.separate_builds,
             ninja=args.ninja,
+            batched_build_active=True,
         )
 
     sys.exit(0 if success else 1)
