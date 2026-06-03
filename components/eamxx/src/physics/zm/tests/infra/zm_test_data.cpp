@@ -324,8 +324,8 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
   std::vector<view3dr_d> vec3dr_in(6);
   ekat::host_to_device({d.icwd, d.icwu, d.pgdall, d.pguall, d.wind_in, d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_in);
 
-  std::vector<view1di_d> vec1di_in(3);
-  ekat::host_to_device({d.ideep, d.jt, d.mx}, d.pcols, vec1di_in);
+  std::vector<view1di_d> vec1di_in(2);
+  ekat::host_to_device({d.jt, d.mx}, d.pcols, vec1di_in);
 
   view2dr_d
     dp_d(vec2dr_in[0]),
@@ -337,26 +337,24 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
     seten_d(vec2dr_in[6]);
 
   view3dr_d
-    icwd_d(vec3dr_in[0]),
-    icwu_d(vec3dr_in[1]),
-    pgdall_d(vec3dr_in[2]),
-    pguall_d(vec3dr_in[3]),
+    // unused diagnostics - commented out but kept for easy restoration
+    // icwd_d(vec3dr_in[0]),
+    // icwu_d(vec3dr_in[1]),
+    // pgdall_d(vec3dr_in[2]),
+    // pguall_d(vec3dr_in[3]),
     wind_in_d(vec3dr_in[4]),
     wind_tend_d(vec3dr_in[5]);
 
   view1di_d
-    ideep_d(vec1di_in[0]),
-    jt_d(vec1di_in[1]),
-    mx_d(vec1di_in[2]);
+    jt_d(vec1di_in[0]),
+    mx_d(vec1di_in[1]);
 
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(d.pcols, d.pver);
 
-  WSM wsm(d.pverp * d.nwind, 12, policy);
+  WSM wsm(d.pverp * d.nwind, 11, policy);
 
   // unpack data scalars because we do not want the lambda to capture d
   const Real dt = d.dt;
-  const Int il1g = d.il1g;
-  const Int il2g = d.il2g;
   const Int nwind = d.nwind;
   const Int pver = d.pver;
   const Int pverp = d.pverp;
@@ -378,24 +376,44 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
     }
   }, Kokkos::Min<Int>(kbm));
 
+  // The C++ routine works with per-column wind arrays in (nwind, pver) layout
+  // (matching the horiz_winds field), while the host/Fortran BFB data uses the
+  // legacy (pcols, pver, nwind) layout. Transpose into (pcols, nwind, pver)
+  // arrays here, run, then transpose the results back below.
+  view3dr_d wind_mid_t_d ("wind_mid_t",  d.pcols, d.nwind, d.pver);
+  view3dr_d wind_tend_t_d("wind_tend_t", d.pcols, d.nwind, d.pver);
+  // unused diagnostics - commented out but kept for easy restoration
+  // view3dr_d pguall_t_d   ("pguall_t",    d.pcols, d.nwind, d.pver);
+  // view3dr_d pgdall_t_d   ("pgdall_t",    d.pcols, d.nwind, d.pver);
+  // view3dr_d icwu_t_d     ("icwu_t",      d.pcols, d.nwind, d.pver);
+  // view3dr_d icwd_t_d     ("icwd_t",      d.pcols, d.nwind, d.pver);
+
+  Kokkos::parallel_for("transpose_wind_in",
+    Kokkos::RangePolicy<ExeSpace>(0, d.pcols*d.pver*d.nwind), KOKKOS_LAMBDA(const int idx) {
+      const int i = idx / (pver*nwind);
+      const int k = (idx % (pver*nwind)) / nwind;
+      const int m = idx % nwind;
+      wind_mid_t_d(i,m,k) = wind_in_d(i,k,m);
+    });
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
 
     // Get single-column subviews of all inputs, shouldn't need any i-indexing
     // after this.
-    const auto wind_in_c = ekat::subview(wind_in_d, i);
+    const auto wind_mid_c = ekat::subview(wind_mid_t_d, i);
     const auto mu_c = ekat::subview(mu_d, i);
     const auto md_c = ekat::subview(md_d, i);
     const auto du_c = ekat::subview(du_d, i);
     const auto eu_c = ekat::subview(eu_d, i);
     const auto ed_c = ekat::subview(ed_d, i);
     const auto dp_c = ekat::subview(dp_d, i);
-    const auto wind_tend_c = ekat::subview(wind_tend_d, i);
-    const auto pguall_c = ekat::subview(pguall_d, i);
-    const auto pgdall_c = ekat::subview(pgdall_d, i);
-    const auto icwu_c = ekat::subview(icwu_d, i);
-    const auto icwd_c = ekat::subview(icwd_d, i);
+    const auto wind_tend_c = ekat::subview(wind_tend_t_d, i);
+    // unused diagnostics - commented out but kept for easy restoration
+    // const auto pguall_c = ekat::subview(pguall_t_d, i);
+    // const auto pgdall_c = ekat::subview(pgdall_t_d, i);
+    // const auto icwu_c = ekat::subview(icwu_t_d, i);
+    // const auto icwd_c = ekat::subview(icwd_t_d, i);
     const auto seten_c = ekat::subview(seten_d, i);
 
     ZMF::zm_transport_momentum(
@@ -403,7 +421,8 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
       wsm.get_workspace(team),
       pver,
       pverp,
-      wind_in_c,
+      dt,
+      wind_mid_c,
       nwind,
       mu_c,
       md_c,
@@ -413,26 +432,40 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
       dp_c,
       jt_d(i),
       mx_d(i),
-      ideep_d(i),
-      il1g,
-      il2g,
-      dt,
       ktm,
       kbm,
       wind_tend_c,
-      pguall_c,
-      pgdall_c,
-      icwu_c,
-      icwd_c,
+      // unused diagnostics - commented out but kept for easy restoration
+      // pguall_c,
+      // pgdall_c,
+      // icwu_c,
+      // icwd_c,
       seten_c);
   });
+
+  // Transpose the (nwind, pver) outputs back to the legacy (pver, nwind) layout
+  Kokkos::parallel_for("transpose_wind_out",
+    Kokkos::RangePolicy<ExeSpace>(0, d.pcols*d.pver*d.nwind), KOKKOS_LAMBDA(const int idx) {
+      const int i = idx / (pver*nwind);
+      const int k = (idx % (pver*nwind)) / nwind;
+      const int m = idx % nwind;
+      wind_tend_d(i,k,m) = wind_tend_t_d(i,m,k);
+      // unused diagnostics - commented out but kept for easy restoration
+      // pguall_d(i,k,m)    = pguall_t_d(i,m,k);
+      // pgdall_d(i,k,m)    = pgdall_t_d(i,m,k);
+      // icwu_d(i,k,m)      = icwu_t_d(i,m,k);
+      // icwd_d(i,k,m)      = icwd_t_d(i,m,k);
+    });
 
   // Now get arrays
   std::vector<view2dr_d> vec2dr_out = {seten_d};
   ekat::device_to_host({d.seten}, d.pcols, d.pver, vec2dr_out);
 
-  std::vector<view3dr_d> vec3dr_out = {icwd_d, icwu_d, pgdall_d, pguall_d, wind_tend_d};
-  ekat::device_to_host({d.icwd, d.icwu, d.pgdall, d.pguall, d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_out);
+  // unused diagnostics - commented out but kept for easy restoration
+  // std::vector<view3dr_d> vec3dr_out = {icwd_d, icwu_d, pgdall_d, pguall_d, wind_tend_d};
+  // ekat::device_to_host({d.icwd, d.icwu, d.pgdall, d.pguall, d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_out);
+  std::vector<view3dr_d> vec3dr_out = {wind_tend_d};
+  ekat::device_to_host({d.wind_tend}, d.pcols, d.pver, d.nwind, vec3dr_out);
 
   zm_finalize_cxx();
 }
@@ -1067,6 +1100,9 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
   // deep convection activity flag (1=active, 0=inactive) populated by zm_conv_main
   view1di_d active_d("active", d.ncol);
 
+  // domain-wide convection level bounds (outputs not part of the F90 BFB comparison)
+  Int ktm = d.pver - 1, kbm = d.pver - 1;
+
   ZMF::zm_conv_main(
     init_cp,
     d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step,
@@ -1076,7 +1112,8 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
     msemax_klev_d, jctop_d, jcbot_d, jt_d, active_d, prec_d,
     heat_d, qtnd_d, cape_d, dcape_d,
     mcon_d, pflx_d, zdu_d, mflx_up_d, entr_up_d, detr_up_d,
-    mflx_dn_d, entr_dn_d, p_del_d, dsubcld_d, ql_d, rliq_d, rprd_d, dlf_d);
+    mflx_dn_d, entr_dn_d, p_del_d, dsubcld_d, ql_d, rliq_d, rprd_d, dlf_d,
+    ktm, kbm);
 
   // Determine active columns for gather_index (matches is_conv_active logic)
   view1di_d gather_index_d("gather_index", d.pcols);

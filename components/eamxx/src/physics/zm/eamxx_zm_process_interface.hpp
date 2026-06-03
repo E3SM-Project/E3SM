@@ -21,9 +21,11 @@ class ZMDeepConvection : public AtmosphereProcess
   using PC  = scream::physics::Constants<Real>;
   using WSM = typename ZMF::WorkspaceManager;
 
-  using Scalar              = typename ZMF::Scalar;
-  using Pack                = typename ZMF::Pack;
-  using IntPack             = typename ZMF::IntPack;
+  using Scalar  = typename ZMF::Scalar;
+  using Pack    = typename ZMF::Pack;
+  using IntPack = typename ZMF::IntPack;
+
+  static constexpr int nwind = ZMF::ZMC::nwind;
 
   public:
 

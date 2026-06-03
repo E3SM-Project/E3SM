@@ -98,10 +98,10 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
   auto loc_tend_out_qv = tend_out_qv;
   auto loc_tend_out_u  = tend_out_u;
   auto loc_tend_out_v  = tend_out_v;
-  auto loc_tend_tmp_s  = tend_tmp_s;
-  auto loc_tend_tmp_qv = tend_tmp_qv;
-  auto loc_tend_tmp_u  = tend_tmp_u;
-  auto loc_tend_tmp_v  = tend_tmp_v;
+  auto loc_tend_tmp_s     = tend_tmp_s;
+  auto loc_tend_tmp_qv    = tend_tmp_qv;
+  auto loc_tend_tmp_winds = tend_tmp_winds;
+  const int nwind = loc_tend_tmp_winds.extent(1);
   auto loc_rain_prod   = rain_prod;
   auto loc_snow_prod   = snow_prod;
   auto loc_prec_flux   = prec_flux;
@@ -127,8 +127,7 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
     loc_tend_out_v   (icol,klev) = init_fill_value;
     loc_tend_tmp_s   (icol,klev) = init_fill_value;
     loc_tend_tmp_qv  (icol,klev) = init_fill_value;
-    loc_tend_tmp_u   (icol,klev) = init_fill_value;
-    loc_tend_tmp_v   (icol,klev) = init_fill_value;
+    for (int m = 0; m < nwind; ++m) loc_tend_tmp_winds(icol,m,klev) = init_fill_value;
     loc_rain_prod    (icol,klev) = init_fill_value;
     loc_snow_prod    (icol,klev) = init_fill_value;
   });
@@ -148,18 +147,18 @@ void Functions<S,D>::ZmOutputTend::init_tmp(int ncol, int nlev_mid)
 {
   Real init_fill_value = 0;
   // create temporaries to avoid "Implicit capture" warning
-  auto loc_tend_tmp_s  = tend_tmp_s;
-  auto loc_tend_tmp_qv = tend_tmp_qv;
-  auto loc_tend_tmp_u  = tend_tmp_u;
-  auto loc_tend_tmp_v  = tend_tmp_v;
-  // mid-point level variables
+  auto loc_tend_tmp_s     = tend_tmp_s;
+  auto loc_tend_tmp_qv    = tend_tmp_qv;
+  auto loc_tend_tmp_winds = tend_tmp_winds;
+  const int nwind = loc_tend_tmp_winds.extent(1);
+  // mid-point level variables (tend_tmp_winds must be zeroed here because MCSP
+  // accumulates into its wind-component subviews)
   Kokkos::parallel_for("zm_output_init_m",KT::RangePolicy(0, ncol*nlev_mid), KOKKOS_LAMBDA (const int i) {
     const int icol = i/nlev_mid;
     const int klev = i%nlev_mid;
     loc_tend_tmp_s   (icol,klev) = init_fill_value;
     loc_tend_tmp_qv  (icol,klev) = init_fill_value;
-    loc_tend_tmp_u   (icol,klev) = init_fill_value;
-    loc_tend_tmp_v   (icol,klev) = init_fill_value;
+    for (int m = 0; m < nwind; ++m) loc_tend_tmp_winds(icol,m,klev) = init_fill_value;
   });
 }
 

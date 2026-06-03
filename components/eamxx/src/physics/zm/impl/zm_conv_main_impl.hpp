@@ -65,7 +65,9 @@ void Functions<S,D>::zm_conv_main(
   const uview_2d<Real>& ql,
   const uview_1d<Real>& rliq,
   const uview_2d<Real>& rprd,
-  const uview_2d<Real>& dlf)
+  const uview_2d<Real>& dlf,
+  Int& ktm,
+  Int& kbm)
 {
   //----------------------------------------------------------------------------
   // Purpose: Main driver for Zhang-McFarlane convection scheme
@@ -483,6 +485,10 @@ void Functions<S,D>::zm_conv_main(
       if (active(i)) mn = Kokkos::min(mn, msemax_klev(i));
     }, Kokkos::Min<Int>(ktb_val));
   Kokkos::fence();
+
+  // export domain-wide convection level bounds for use in zm_transport_momentum
+  ktm = ktm_val;
+  kbm = ktb_val;
 
   //============================================================================
   // Kernel 9: Compute temperature and moisture tendencies
