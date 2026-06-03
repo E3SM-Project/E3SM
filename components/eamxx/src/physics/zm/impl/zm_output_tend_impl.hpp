@@ -25,6 +25,7 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
     Kokkos::deep_copy(f_tend_v,   h_tend_v);
     Kokkos::deep_copy(f_rain_prod,h_rain_prod);
     Kokkos::deep_copy(f_snow_prod,h_snow_prod);
+    Kokkos::deep_copy(f_dlf,      h_dlf);
     Kokkos::deep_copy(f_prec_flux,h_prec_flux);
     Kokkos::deep_copy(f_snow_flux,h_snow_flux);
     Kokkos::deep_copy(f_mass_flux,h_mass_flux);
@@ -41,6 +42,7 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
     const auto loc_tend_out_v  = tend_out_v;
     const auto loc_rain_prod   = rain_prod;
     const auto loc_snow_prod   = snow_prod;
+    const auto loc_dlf         = dlf;
     const auto loc_prec_flux   = prec_flux;
     const auto loc_snow_flux   = snow_flux;
     const auto loc_mass_flux   = mass_flux;
@@ -51,6 +53,7 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
     const auto loc_f_tend_v    = f_tend_v;
     const auto loc_f_rain_prod = f_rain_prod;
     const auto loc_f_snow_prod = f_snow_prod;
+    const auto loc_f_dlf       = f_dlf;
     const auto loc_f_prec_flux = f_prec_flux;
     const auto loc_f_snow_flux = f_snow_flux;
     const auto loc_f_mass_flux = f_mass_flux;
@@ -66,6 +69,7 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
       loc_tend_out_v (icol,klev) = loc_f_tend_v   (icol,klev);
       loc_rain_prod  (icol,klev) = loc_f_rain_prod(icol,klev);
       loc_snow_prod  (icol,klev) = loc_f_snow_prod(icol,klev);
+      loc_dlf        (icol,klev) = loc_f_dlf      (icol,klev);
     });
 
     // interface level variables
@@ -104,6 +108,7 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
   const int nwind = loc_tend_tmp_winds.extent(1);
   auto loc_rain_prod   = rain_prod;
   auto loc_snow_prod   = snow_prod;
+  auto loc_dlf         = dlf;
   auto loc_prec_flux   = prec_flux;
   auto loc_snow_flux   = snow_flux;
   auto loc_mass_flux   = mass_flux;
@@ -130,6 +135,7 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
     for (int m = 0; m < nwind; ++m) loc_tend_tmp_winds(icol,m,klev) = init_fill_value;
     loc_rain_prod    (icol,klev) = init_fill_value;
     loc_snow_prod    (icol,klev) = init_fill_value;
+    loc_dlf          (icol,klev) = init_fill_value;
   });
 
   // interface level variables

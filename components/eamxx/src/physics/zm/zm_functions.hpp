@@ -135,6 +135,9 @@ struct Functions {
     static inline constexpr Real tmax    = 375.16;
     static inline constexpr Real h2otrip = 273.16;
     static inline constexpr Real ttrice  = 20.0;  // transition range from es over H2O to es over ice
+
+    static inline constexpr Real dlf_tk1 = 268.15; // T at/above which detrained condensate (dlf) is assumed to be liquid
+    static inline constexpr Real dlf_tk2 = 238.15; // T at/below which detrained condensate (dlf) is assumed to be ice
   };
 
   //----------------------------------------------------------------------------
@@ -429,6 +432,7 @@ struct Functions {
     uview_2dl<Real>  f_tend_v;
     uview_2dl<Real>  f_rain_prod;
     uview_2dl<Real>  f_snow_prod;
+    uview_2dl<Real>  f_dlf;
     uview_2dl<Real>  f_prec_flux;
     uview_2dl<Real>  f_snow_flux;
     uview_2dl<Real>  f_mass_flux;
@@ -447,6 +451,7 @@ struct Functions {
     view_2dh<Real>   h_tend_v;
     view_2dh<Real>   h_rain_prod;
     view_2dh<Real>   h_snow_prod;
+    view_2dh<Real>   h_dlf;
     view_2dh<Real>   h_prec_flux;
     view_2dh<Real>   h_snow_flux;
     view_2dh<Real>   h_mass_flux;
@@ -464,6 +469,7 @@ struct Functions {
       h_tend_v    = view_2dh<Real>  ("zm_output.h_tend_v",    ncol, nlev);
       h_rain_prod = view_2dh<Real>  ("zm_output.h_rain_prod", ncol, nlev);
       h_snow_prod = view_2dh<Real>  ("zm_output.h_snow_prod", ncol, nlev);
+      h_dlf       = view_2dh<Real>  ("zm_output.h_dlf",       ncol, nlev);
       h_prec_flux = view_2dh<Real>  ("zm_output.h_prec_flux", ncol, nlev+1);
       h_snow_flux = view_2dh<Real>  ("zm_output.h_snow_flux", ncol, nlev+1);
       h_mass_flux = view_2dh<Real>  ("zm_output.h_mass_flux", ncol, nlev+1);

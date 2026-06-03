@@ -39,7 +39,8 @@ void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real *output_snow_prod,   // 28
                             Real *output_prec_flux,   // 29
                             Real *output_snow_flux,   // 30
-                            Real *output_mass_flux    // 31
+                            Real *output_mass_flux,   // 31
+                            Real *output_dlf          // 32
                             );
 } // extern "C" : end _c decls
 
@@ -88,7 +89,8 @@ void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,
                          zm_output.h_snow_prod  .data(),  // 28
                          zm_output.h_prec_flux  .data(),  // 29
                          zm_output.h_snow_flux  .data(),  // 30
-                         zm_output.h_mass_flux  .data()   // 31
+                         zm_output.h_mass_flux  .data(),  // 31
+                         zm_output.h_dlf        .data()   // 32
                         );
 
   zm_output.transpose<ekat::TransposeDirection::f2c>(ncol,pver);

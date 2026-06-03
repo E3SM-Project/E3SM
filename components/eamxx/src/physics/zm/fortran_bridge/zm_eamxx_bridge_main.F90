@@ -77,7 +77,8 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   output_prec, output_snow, output_cape, output_activity, &
                                   output_tend_t, output_tend_q, output_tend_u, output_tend_v, &
                                   output_rain_prod, output_snow_prod, &
-                                  output_prec_flux, output_snow_flux, output_mass_flux ) bind(C)
+                                  output_prec_flux, output_snow_flux, output_mass_flux, &
+                                  output_dlf ) bind(C)
   use zm_conv,                  only: zm_const, zm_param
   use zm_aero_type,             only: zm_aero_t
   use zm_microphysics_state,    only: zm_microp_st
@@ -120,6 +121,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_prec_flux   ! 29 output precip flux at each mid-levels   (flxprec/pflx)
   real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_snow_flux   ! 30 output precip flux at each mid-levels   (flxsnow)
   real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_mass_flux   ! 31 output convective mass flux--m sub c    (mcon)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_dlf         ! 32 detrained convective cloud water        (dlf)
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
@@ -129,7 +131,6 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! arguments for zm_conv_main - order somewhat consistent with current interface
   integer,  dimension(ncol)      :: jctop          ! output top-of-deep-convection indices
   integer,  dimension(ncol)      :: jcbot          ! output bot-of-deep-convection indices
-  real(r8), dimension(ncol,pver) :: dlf            ! detrained convective cloud water mixing ratio
   real(r8), dimension(ncol,pver) :: zdu            ! detraining mass flux
   real(r8), dimension(ncol,pver) :: mu             ! updraft cloud mass flux
   real(r8), dimension(ncol,pver) :: md             ! downdraft cloud mass flux
@@ -211,6 +212,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
       output_prec_flux(i,k) = 0
       output_snow_flux(i,k) = 0
       output_mass_flux(i,k) = 0
+      output_dlf(i,k) = 0
     end do
   end do
 
@@ -238,7 +240,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     output_prec, output_tend_s, output_tend_q, &
                     output_cape, dcape, output_mass_flux, output_prec_flux, &
                     zdu, mu, eu, du, md, ed, dp, dsubcld, &
-                    zm_qc, rliq, output_rain_prod, dlf, &
+                    zm_qc, rliq, output_rain_prod, output_dlf, &
                     aero, microp_st )
 
   !-----------------------------------------------------------------------------
