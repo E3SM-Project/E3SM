@@ -322,6 +322,33 @@ void initFieldTest() {
    Array5DR4 Data5DR4("Test5DR4", NCellsSize, NVertLayers, NTracers, NTime,
                       NStuff);
 
+   // Attach arrays before populating so the fill-on-attach does not overwrite
+   // the reference values written below. Kokkos views share backing memory, so
+   // assignments through the local handle are visible via the stored pointer.
+   Test1DI4H->attachData<HostArray1DI4>(Data1DI4H);
+   Test1DI8H->attachData<HostArray1DI8>(Data1DI8H);
+   Test1DR4H->attachData<HostArray1DR4>(Data1DR4H);
+   Test1DR8H->attachData<HostArray1DR8>(Data1DR8H);
+
+   Field::attachFieldData<HostArray2DI4>("Test2DI4H", Data2DI4H);
+   Field::attachFieldData<HostArray2DI8>("Test2DI8H", Data2DI8H);
+   Field::attachFieldData<HostArray2DR4>("Test2DR4H", Data2DR4H);
+   Field::attachFieldData<HostArray2DR8>("Test2DR8H", Data2DR8H);
+
+   Field::attachFieldData("Test1DI4", Data1DI4);
+   Field::attachFieldData("Test1DI8", Data1DI8);
+   Field::attachFieldData("Test1DR4", Data1DR4);
+   Field::attachFieldData("Test1DR8", Data1DR8);
+
+   Test2DI4->attachData(Data2DI4);
+   Test2DI8->attachData(Data2DI8);
+   Test2DR4->attachData(Data2DR4);
+   Test2DR8->attachData(Data2DR8);
+
+   Test3DI4->attachData(Data3DI4);
+   Test4DI8->attachData(Data4DI8);
+   Test5DR4->attachData(Data5DR4);
+
    // Host arrays vertical vector
    for (int K = 0; K < NVertLayers; ++K) {
       Data1DR8H(K) = RefR8 + K;
@@ -387,33 +414,6 @@ void initFieldTest() {
              Data2DR4(Vrtx, K) = RefR4 + Vrtx + K;
           }
        });
-
-   // Attach data arrays
-   // Use member function for some and name interface for others
-
-   Test1DI4H->attachData<HostArray1DI4>(Data1DI4H);
-   Test1DI8H->attachData<HostArray1DI8>(Data1DI8H);
-   Test1DR4H->attachData<HostArray1DR4>(Data1DR4H);
-   Test1DR8H->attachData<HostArray1DR8>(Data1DR8H);
-
-   Field::attachFieldData<HostArray2DI4>("Test2DI4H", Data2DI4H);
-   Field::attachFieldData<HostArray2DI8>("Test2DI8H", Data2DI8H);
-   Field::attachFieldData<HostArray2DR4>("Test2DR4H", Data2DR4H);
-   Field::attachFieldData<HostArray2DR8>("Test2DR8H", Data2DR8H);
-
-   Field::attachFieldData("Test1DI4", Data1DI4);
-   Field::attachFieldData("Test1DI8", Data1DI8);
-   Field::attachFieldData("Test1DR4", Data1DR4);
-   Field::attachFieldData("Test1DR8", Data1DR8);
-
-   Test2DI4->attachData(Data2DI4);
-   Test2DI8->attachData(Data2DI8);
-   Test2DR4->attachData(Data2DR4);
-   Test2DR8->attachData(Data2DR8);
-
-   Test3DI4->attachData(Data3DI4);
-   Test4DI8->attachData(Data4DI8);
-   Test5DR4->attachData(Data5DR4);
 
    // End of init
 

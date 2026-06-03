@@ -2482,13 +2482,15 @@ void IOStream::writeStream(
    if (Multiframe and !FileAlarm.isRinging())
       FileTime = *(FileAlarm.getRingTimePrev());
 
-   // Update the time field with elapsed time since simulation start
+   // Update the time field with elapsed time since simulation start.
+   // Attach before setting the value so the fill-on-attach does not
+   // overwrite the elapsed time (Kokkos host views share backing memory).
    TimeInterval ElapsedTime = SimTime - StartTime;
    R8 ElapsedTimeR8;
    ElapsedTime.get(ElapsedTimeR8, TimeUnits::Seconds);
    HostArray1DR8 OutTime("OutTime", 1);
-   OutTime(0) = ElapsedTimeR8;
    Field::attachFieldData("time", OutTime);
+   OutTime(0) = ElapsedTimeR8;
 
    // Reset alarms and flags
    if (OnStartup)
