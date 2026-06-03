@@ -176,10 +176,14 @@ struct Functions {
       // determine SVP table size (add two to make the table slightly too big, just in case)
       plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
 
-      estbl = view_1d<Real>("estbl",plenest);
+      // Build the table in a local view first. Referencing the data member
+      // 'estbl' directly inside the lambda would capture 'this' (a host
+      // pointer), causing an illegal device-memory access on GPU.
+      view_1d<Real> estbl_tmp("estbl",plenest);
       Kokkos::parallel_for(Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
-        estbl(i) = svp_trans(ZMC::tmin + i);
+        estbl_tmp(i) = svp_trans(ZMC::tmin + i);
       });
+      estbl = estbl_tmp;
     }
 
     void set_limcnv(std::shared_ptr<const AbstractGrid> grid) {
@@ -705,7 +709,7 @@ struct Functions {
     Real& mcsp_shear, // shear used to check against threshold
     Real& zm_depth); // pressure depth of ZM heating
 
-  static view_1d<bool> zm_conv_main(
+  static void zm_conv_main(
     // Inputs
     const ZmRuntimeOpt& runtime_opt,
     const Int& ncol, // number of columns
@@ -732,6 +736,7 @@ struct Functions {
     const uview_1d<Int>& jctop, // top-of-deep-convection index            [ncol]
     const uview_1d<Int>& jcbot, // base of cloud index                     [ncol]
     const uview_1d<Int>& jt, // top level index of convection           [ncol]
+    const uview_1d<Int>& active, // deep convection activity flag (1/0)     [ncol]
     const uview_1d<Real>& prec, // output precipitation                    [m/s]    [ncol]
     const uview_2d<Real>& heat, // dry static energy tendency              [W/kg]   [ncol,pver]
     const uview_2d<Real>& qtnd, // specific humidity tendency              [kg/kg/s][ncol,pver]

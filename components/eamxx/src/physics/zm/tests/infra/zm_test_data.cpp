@@ -1064,13 +1064,16 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
 
   ZMF::ZmRuntimeOpt init_cp = ZMF::s_zm_opts;
 
-  auto active = ZMF::zm_conv_main(
+  // deep convection activity flag (1=active, 0=inactive) populated by zm_conv_main
+  view1di_d active_d("active", d.ncol);
+
+  ZMF::zm_conv_main(
     init_cp,
     d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step,
     t_mid_d, q_mid_in_d, omega_d, p_mid_in_d, p_int_in_d, p_del_in_d,
     geos_d, z_mid_in_d, z_int_in_d, pbl_hgt_d, tpert_d, landfrac_d,
     t_star_d, q_star_d,
-    msemax_klev_d, jctop_d, jcbot_d, jt_d, prec_d,
+    msemax_klev_d, jctop_d, jcbot_d, jt_d, active_d, prec_d,
     heat_d, qtnd_d, cape_d, dcape_d,
     mcon_d, pflx_d, zdu_d, mflx_up_d, entr_up_d, detr_up_d,
     mflx_dn_d, entr_dn_d, p_del_d, dsubcld_d, ql_d, rliq_d, rprd_d, dlf_d);
@@ -1081,7 +1084,7 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
   Int num_active = 0;
   Kokkos::parallel_reduce(Kokkos::RangePolicy<ExeSpace>(0, d.ncol),
     KOKKOS_LAMBDA(const Int i, Int& cnt) {
-      const bool col_active = active(i);
+      const bool col_active = active_d(i) != 0;
       if (col_active) {
         gather_index_d(i) = i;
         cnt++;
@@ -1090,7 +1093,7 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
   d.lengath = num_active;
 
   // Copy results back to host
-  auto active_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), active);
+  auto active_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), active_d);
   std::vector<bool> active_v(active_h.data(), active_h.data() + active_h.size());
 
   std::vector<view1dr_d> vec1dr_out = {cape_d, dcape_d, dsubcld_d, prec_d, rliq_d};

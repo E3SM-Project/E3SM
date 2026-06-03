@@ -116,11 +116,11 @@ void ZMDeepConvection::initialize_impl (const RunType)
     zm_output.init_host_mirrors(m_ncol, m_nlev);
     // initialize variables on the fortran side
     zm::zm_eamxx_bridge_init(m_nlev);
-  } // if ZMF::s_zm_opts.use_fortran_bridge
+  } // if use_fortran_bridge
   //----------------------------------------------------------------------------
   if (not ZMF::s_zm_opts.use_fortran_bridge) {
     ZMF::s_zm_opts.set_limcnv(m_grid);
-  } // if not zm_opts.use_fortran_bridge
+  } // if not use_fortran_bridge
   //----------------------------------------------------------------------------
 } // ZMDeepConvection::initialize_impl
 
@@ -136,9 +136,6 @@ void ZMDeepConvection::run_impl (const double dt)
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid);
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid);
-
-  // Use one workspace with the biggest size
-  WSM wsm( nlev_int, 16, team_policy);
 
   auto zm_opts = ZMF::s_zm_opts;
   //----------------------------------------------------------------------------
@@ -212,7 +209,6 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_prec             = zm_output.prec;
   const auto loc_zm_output_snow             = zm_output.snow;
   const auto loc_zm_output_cape             = zm_output.cape;
-  const auto loc_zm_output_msemax_klev      = zm_output.msemax_klev;
   const auto loc_zm_output_jctop            = zm_output.jctop;
   const auto loc_zm_output_activity         = zm_output.activity;
   const auto loc_zm_output_tend_out_t       = zm_output.tend_out_t;
@@ -284,6 +280,9 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_eamxx_bridge_run(m_ncol, nlev_mid, dt, is_first_step, zm_input, zm_output, zm_opts);
 
   } else {
+    // Allocate the Workspace for the MCSP / evap / momentum kernels below
+    WSM wsm( nlev_int, 16, team_policy);
+
     //--------------------------------------------------------------------------
     // run the main ZM scheme
     ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
@@ -293,6 +292,7 @@ void ZMDeepConvection::run_impl (const double dt)
                       zm_input.pblh, zm_input.tpert, zm_input.landfrac,
                       zm_input.t_prev, zm_input.q_prev,
                       zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
+                      zm_output.activity,
                       zm_output.prec, zm_output.tend_out_s, zm_output.tend_out_qv,
                       zm_output.cape, zm_output.dcape,
                       zm_output.mass_flux, zm_output.prec_flux,
@@ -475,14 +475,6 @@ void ZMDeepConvection::run_impl (const double dt)
     // this is just a placeholder for where to call zm_transport_tracer(...)
 
     //--------------------------------------------------------------------------
-    // populate deep convection activity flag
-    Kokkos::parallel_for("zm_populate_activity",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
-      if (loc_zm_output_msemax_klev(i)>0) {
-        loc_zm_output_activity(i) = 1;
-      } else {
-        loc_zm_output_activity(i) = 0;
-      }
-    });
 
   }
 

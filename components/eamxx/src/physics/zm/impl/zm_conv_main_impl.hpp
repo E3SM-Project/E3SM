@@ -19,7 +19,7 @@ namespace zm {
  */
 
 template<typename S, typename D>
-typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
+void Functions<S,D>::zm_conv_main(
   // Inputs
   const ZmRuntimeOpt& runtime_opt,
   const Int& ncol,
@@ -46,6 +46,7 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
   const uview_1d<Int>& jctop,
   const uview_1d<Int>& jcbot,
   const uview_1d<Int>& jt,
+  const uview_1d<Int>& active,
   const uview_1d<Real>& prec,
   const uview_2d<Real>& heat,
   const uview_2d<Real>& qtnd,
@@ -127,7 +128,6 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
     jlcl           ("jlcl",            ncol),
     j0             ("j0",              ncol),
     jd             ("jd",              ncol);
-  view_1d<bool> active("active", ncol);
 
   // Workspace for sub-functions (max 20 arrays for zm_cloud_properties + entrainment)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ncol, pver);
@@ -288,10 +288,11 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
   int inactive_cnt = 0;
   Kokkos::parallel_reduce("zm_conv_main_active", RangePolicy(0, ncol),
                           KOKKOS_LAMBDA(const Int i, Int& local_inactive) {
-      active(i) = use_dcape_trigger
+      const bool is_active = use_dcape_trigger
         ? (cape(i) > cape_threshold_loc && dcape(i) > ZMC::dcape_threshold)
         : (cape(i) > cape_threshold_loc);
-      if (!active(i)) {
+      active(i) = is_active ? 1 : 0;
+      if (!is_active) {
         local_inactive+=1;
       }
   }, inactive_cnt);
@@ -555,8 +556,6 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
     });
   });
   Kokkos::fence();
-
-  return active;
 }
 
 } // namespace zm
