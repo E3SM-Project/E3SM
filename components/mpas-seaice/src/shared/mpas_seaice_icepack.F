@@ -2728,7 +2728,8 @@ contains
          snowDensityViaContent, &
          snowDensityViaCompaction, &
          snowMeltMassCell, &
-         levelSnowVolumeCell
+         levelSnowVolumeCell, &
+         stdIceThicknessCell
 
     real(kind=RKIND), pointer :: &
          config_dt
@@ -2781,6 +2782,7 @@ contains
        call MPAS_pool_get_array(snow, "snowDensityViaContent", snowDensityViaContent)
        call MPAS_pool_get_array(snow, "snowDensityViaCompaction", snowDensityViaCompaction)
        call MPAS_pool_get_array(snow, "levelSnowVolumeCell", levelSnowVolumeCell)
+       call MPAS_pool_get_array(snow, "stdIceThicknessCell", stdIceThicknessCell)
        call MPAS_pool_get_array(snow, "snowMeltMassCategory", snowMeltMassCategory)
        call MPAS_pool_get_array(snow, "snowMeltMassCell", snowMeltMassCell)
        call MPAS_pool_get_array(snow, "snowLossToLeads", snowLossToLeads)
@@ -2814,6 +2816,7 @@ contains
 
        ! levelSnowVolumeCell array
        allocate(levelSnowVolumeCategory(nCategories))
+       stdIceThicknessCell(:) = 0.0_RKIND
        levelSnowVolumeCell(:) = 0.0_RKIND
        levelSnowVolumeCategory(:) = 0.0_RKIND
 
@@ -2847,7 +2850,8 @@ contains
                fhocn=oceanHeatFlux(iCell), &
                fsloss=snowLossToLeads(iCell), &
                fsnow=snowfallRate(iCell), &
-               vslvln=levelSnowVolumeCategory(:))
+               vslvln=levelSnowVolumeCategory(:), &
+               ITD=stdIceThicknessCell(iCell))
 
           abortFlag = icepack_warnings_aborted()
           call seaice_icepack_write_warnings(abortFlag)

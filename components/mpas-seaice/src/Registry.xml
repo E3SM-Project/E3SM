@@ -5169,6 +5169,14 @@
 		     units="m"
                      description="Volume of snow on level ice"
 		/>
+		<var name="stdIceThicknessCell"
+		     type="real"
+		     dimensions="nCells Time"
+		     units="m"
+                     description="standard deviation of ice thickness
+				  per cell derived from level and
+				  ridge ice thicknesses"
+		/>
 		<var name="snowMeltMassCell"
 		     type="real"
 		     dimensions="nCells Time"
