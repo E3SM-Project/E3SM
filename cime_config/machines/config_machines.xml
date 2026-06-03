@@ -1856,6 +1856,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="MOAB_ROOT">/projects/e3sm/moab</env>
     </environment_variables>
   </machine>
 
