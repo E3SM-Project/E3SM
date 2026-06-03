@@ -21,6 +21,22 @@ where `DRhoDT` is the thermal expansion coefficient ($\textrm{kg}/(\textrm{m}^3 
 
 In addition to `SpecVol`, the displaced specific volume `SpecVolDisplaced` and `BruntVaisalaFreqSq` are also calculated by the EOS.
 
+## TEOS-10 Helper Conversions
+
+When using the `teos10` EOS option, helper methods are available for common
+temperature conversions used by ocean thermodynamics workflows:
+
+- `calcCtFreezing(Sa, P, SaturationFract)` computes the Conservative
+   Temperature freezing point from absolute salinity and pressure.
+- `calcPtFromCt(Sa, Ct)` converts Conservative Temperature to potential
+   temperature.
+- `calcCtFromPt(Sa, Pt)` converts potential temperature to Conservative
+   Temperature.
+
+These helper methods are available through the EOS implementation but do not
+replace the standard `computeSpecVol`, `computeSpecVolDisp`, or
+`computeBruntVaisalaFreqSq` calculations.
+
 ## Displaced Specific Volume
 
 The `Eos` class calculates the density of a parcel of fluid that is adiabatically displaced by a relative `k` levels (`k` counted positive downward), capturing the effects of pressure/depth changes. This is primarily used to calculate quantities for determining the water column stability (i.e. the stratification) and the vertical mixing coefficients (viscosity and diffusivity). Note: when using the `Linear` or `constant` EOS option, `SpecVolDisplaced` will be the same as `SpecVol` since the specific volume calculation is independent of pressure/depth.

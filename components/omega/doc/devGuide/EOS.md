@@ -70,6 +70,39 @@ volume arrays, do
 Eos.computeBruntVaisalaFreqSq(ConservTemp, AbsSalinity, Pressure, SpecVol);
 ```
 
+## Helper functions for conversion
+
+The TEOS-10 implementation includes helper functions for temperature
+conversions and freezing-point calculations.
+
+To compute conservative freezing temperature from absolute salinity and
+pressure, use
+
+```c++
+ComputeSpecVolTeos10.calcCtFreezing(Sa, P, SaturationFract);
+```
+
+This helper follows the TEOS-10 polynomial approximation used by
+`gsw_ct_freezing_poly` in the GSW toolbox.
+
+To convert Conservative Temperature to potential temperature through the EOS
+interface, use
+
+```c++
+Eos.calcPtFromCt(Sa, Ct);
+```
+
+To convert potential temperature back to Conservative Temperature through the
+EOS interface, use
+
+```c++
+Eos.calcCtFromPt(Sa, Pt);
+```
+
+For `EosType::Teos10Eos`, these wrappers dispatch to TEOS-10 helper formulas.
+For non-TEOS options (`LinearEos` and `ConstantEos`), the wrappers return the
+input temperature unchanged.
+
 ## Removal of Eos
 
 To clear the Eos instance do:
