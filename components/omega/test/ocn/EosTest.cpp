@@ -772,6 +772,28 @@ void checkValueGswcN2() {
    return;
 }
 
+/// Test that the calcCtFreezing function returns the expected value
+void checkValueCtFreezing() {
+   const Real RTol = 1e-10;
+
+   Teos10Eos TestEos(VertCoord::getDefault());
+   constexpr Real SaturationFrac = 0.0;
+   constexpr Real P              = 500.0 * Db2Pa; // Convert dbar to Pa
+   constexpr Real Sa             = 32.0;
+
+   /// Get freezing temperature from GSW-C library
+   double CtFreezGswc = gsw_ct_freezing_poly(Sa, P * Pa2Db, SaturationFrac);
+   double CtFreez     = TestEos.calcCtFreezing(Sa, P * Pa2Db, SaturationFrac);
+
+   /// Check the value against the GSW-C value
+   bool Check = isApprox(CtFreezGswc, CtFreez, RTol);
+   if (!Check) {
+      ABORT_ERROR("checkValueCtFreezing: CtFreez FAIL, expected {}, got {}",
+                  CtFreezGswc, CtFreez);
+   }
+   return;
+}
+
 // the main tests (all in one to have the same log):
 // Single value test:
 // --> test calls the external GSW-C library
@@ -791,6 +813,7 @@ void eosTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    checkValueGswcSpecVol();
    checkValueGswcN2();
+   checkValueCtFreezing();
 
    testEosLinear();
    testEosLinearDisplaced();

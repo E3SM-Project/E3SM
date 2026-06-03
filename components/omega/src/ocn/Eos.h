@@ -239,6 +239,59 @@ class Teos10Eos {
       return V0;
    }
 
+   /// Calculates freezing Conservative Temperature using TEOS-10 polynomial
+   /// (polynomial error in [-5e-4, 6e-4] K, from GSW package)
+   KOKKOS_FUNCTION Real calcCtFreezing(const Real Sa, const Real P,
+                                       const Real SaturationFract) const {
+      constexpr Real Sso = 35.16504;
+      constexpr Real C0  = 0.017947064327968736;
+      constexpr Real C1  = -6.076099099929818;
+      constexpr Real C2  = 4.883198653547851;
+      constexpr Real C3  = -11.88081601230542;
+      constexpr Real C4  = 13.34658511480257;
+      constexpr Real C5  = -8.722761043208607;
+      constexpr Real C6  = 2.082038908808201;
+      constexpr Real C7  = -7.389420998107497;
+      constexpr Real C8  = -2.110913185058476;
+      constexpr Real C9  = 0.2295491578006229;
+      constexpr Real C10 = -0.9891538123307282;
+      constexpr Real C11 = -0.08987150128406496;
+      constexpr Real C12 = 0.3831132432071728;
+      constexpr Real C13 = 1.054318231187074;
+      constexpr Real C14 = 1.065556599652796;
+      constexpr Real C15 = -0.7997496801694032;
+      constexpr Real C16 = 0.3850133554097069;
+      constexpr Real C17 = -2.078616693017569;
+      constexpr Real C18 = 0.8756340772729538;
+      constexpr Real C19 = -2.079022768390933;
+      constexpr Real C20 = 1.596435439942262;
+      constexpr Real C21 = 0.1338002171109174;
+      constexpr Real C22 = 1.242891021876471;
+
+      // Note: a = 0.502500117621 / Sso
+      constexpr Real A = 0.014289763856964;
+      constexpr Real B = 0.057000649899720;
+
+      Real Sar = Sa * 1.0e-2;
+      Real X   = Kokkos::sqrt(Sar);
+      Real Pr  = P * 1.0e-4;
+
+      Real CtFreez =
+          C0 + Sar * (C1 + X * (C2 + X * (C3 + X * (C4 + X * (C5 + C6 * X))))) +
+          Pr * (C7 + Pr * (C8 + C9 * Pr)) +
+          Sar * Pr *
+              (C10 + Pr * (C12 + Pr * (C15 + C21 * Sar)) +
+               Sar * (C13 + C17 * Pr + C19 * Sar) +
+               X * (C11 + Pr * (C14 + C18 * Pr) +
+                    Sar * (C16 + C20 * Pr + C22 * Sar)));
+
+      /* Adjust for the effects of dissolved air */
+      CtFreez = CtFreez - SaturationFract * (1e-3) * (2.4 - A * Sa) *
+                              (1.0 + B * (1.0 - Sa / Sso));
+
+      return CtFreez;
+   }
+
  private:
    Array1DI4 MinLayerCell;
    Array1DI4 MaxLayerCell;
