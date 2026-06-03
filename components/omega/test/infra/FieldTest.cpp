@@ -158,44 +158,44 @@ void initFieldTest() {
    DimNames[0] = "NCells";
    auto Test1DI4H =
        Field::create("Test1DI4H", "Test 1DI4 field on host", "Units1DI4H",
-                     "var_name_1DI4", 0, 100000, 999, 1, DimNames);
+                     "var_name_1DI4", 0, 100000, 1, DimNames);
 
    DimNames[0] = "NEdges";
    auto Test1DI8H =
        Field::create("Test1DI8H", "Test 1DI8 field on host", "Units1DI8H",
-                     "var_name_1DI8", 0, 100000, 999, 1, DimNames);
+                     "var_name_1DI8", 0, 100000, 1, DimNames);
 
    DimNames[0] = "NVertices";
    auto Test1DR4H =
        Field::create("Test1DR4H", "Test 1DR4 field on host", "Units1DR4H",
-                     "var_name_1DR4", 0.0, 100000.0, 999, 1, DimNames);
+                     "var_name_1DR4", 0.0, 100000.0, 1, DimNames);
 
    DimNames[0] = "NVertLayers";
    auto Test1DR8H =
        Field::create("Test1DR8H", "Test 1DR8 field on host", "Units1DR8H",
-                     "var_name_1DR8", 0.0, 100000.0, 999, 1, DimNames);
+                     "var_name_1DR8", 0.0, 100000.0, 1, DimNames);
 
    // 1D Fields on device
 
    DimNames[0] = "NCells";
    auto Test1DI4 =
        Field::create("Test1DI4", "Test 1DI4 field on device", "Units1DI4",
-                     "var_name_1DI4", 0, 100000, 999, 1, DimNames);
+                     "var_name_1DI4", 0, 100000, 1, DimNames);
 
    DimNames[0] = "NEdges";
    auto Test1DI8 =
        Field::create("Test1DI8", "Test 1DI8 field on device", "Units1DI8",
-                     "var_name_1DI8", 0, 100000, 999, 1, DimNames);
+                     "var_name_1DI8", 0, 100000, 1, DimNames);
 
    DimNames[0] = "NVertices";
    auto Test1DR4 =
        Field::create("Test1DR4", "Test 1DR4 field on device", "Units1DR4",
-                     "var_name_1DR4", 0.0, 100000.0, 999, 1, DimNames);
+                     "var_name_1DR4", 0.0, 100000.0, 1, DimNames);
 
    DimNames[0] = "NVertLayers";
    auto Test1DR8 =
        Field::create("Test1DR8", "Test 1DR8 field on device", "Units1DR8",
-                     "var_name_1DR8", 0.0, 100000.0, 999, 1, DimNames);
+                     "var_name_1DR8", 0.0, 100000.0, 1, DimNames);
 
    // 2D Fields on host
    DimNames.resize(2);
@@ -204,25 +204,25 @@ void initFieldTest() {
    DimNames[1] = "NVertLayers";
    auto Test2DI4H =
        Field::create("Test2DI4H", "Test 2DI4 field on host", "Units2DI4H",
-                     "var_name_2DI4", 0, 100000, 999, 2, DimNames);
+                     "var_name_2DI4", 0, 100000, 2, DimNames);
 
    DimNames[0] = "NEdges";
    DimNames[1] = "NVertLayers";
    auto Test2DI8H =
        Field::create("Test2DI8H", "Test 2DI8 field on host", "Units2DI8H",
-                     "var_name_2DI8", 0, 100000, 999, 2, DimNames);
+                     "var_name_2DI8", 0, 100000, 2, DimNames);
 
    DimNames[0] = "NVertices";
    DimNames[1] = "NVertLayers";
    auto Test2DR4H =
        Field::create("Test2DR4H", "Test 2DR4 field on host", "Units2DR4H",
-                     "var_name_2DR4", 0.0, 100000.0, 999, 2, DimNames);
+                     "var_name_2DR4", 0.0, 100000.0, 2, DimNames);
 
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayers";
    auto Test2DR8H =
        Field::create("Test2DR8H", "Test 2DR8 field on host", "Units2DR8H",
-                     "var_name_2DR8", 0.0, 100000.0, 999, 2, DimNames);
+                     "var_name_2DR8", 0.0, 100000.0, 2, DimNames);
 
    // 2D Fields on device
 
@@ -230,25 +230,25 @@ void initFieldTest() {
    DimNames[1] = "NVertLayers";
    auto Test2DI4 =
        Field::create("Test2DI4", "Test 2DI4 field on device", "Units2DI4",
-                     "var_name_2DI4", 0, 100000, 999, 2, DimNames);
+                     "var_name_2DI4", 0, 100000, 2, DimNames);
 
    DimNames[0] = "NEdges";
    DimNames[1] = "NVertLayers";
    auto Test2DI8 =
        Field::create("Test2DI8", "Test 2DI8 field on device", "Units2DI8",
-                     "var_name_2DI8", 0, 100000, 999, 2, DimNames);
+                     "var_name_2DI8", 0, 100000, 2, DimNames);
 
    DimNames[0] = "NVertices";
    DimNames[1] = "NVertLayers";
    auto Test2DR4 =
        Field::create("Test2DR4", "Test 2DR4 field on device", "Units2DR4",
-                     "var_name_2DR4", 0.0, 100000.0, 999, 2, DimNames);
+                     "var_name_2DR4", 0.0, 100000.0, 2, DimNames);
 
    DimNames[0] = "NEdges";
    DimNames[1] = "NVertLayers";
    auto Test2DR8 =
        Field::create("Test2DR8", "Test 2DR8 field on device", "Units2DR8",
-                     "var_name_2DR8", 0.0, 100000.0, 999, 2, DimNames);
+                     "var_name_2DR8", 0.0, 100000.0, 2, DimNames);
 
    // Higher dimension fields on device
 
@@ -258,7 +258,7 @@ void initFieldTest() {
    DimNames[2] = "NTracers";
    auto Test3DI4 =
        Field::create("Test3DI4", "Test 3DI4 field on device", "Units3DI4",
-                     "var_name_3DI4", 0, 100000, 999, 3, DimNames);
+                     "var_name_3DI4", 0, 100000, 3, DimNames);
 
    DimNames.resize(4);
    DimNames[0] = "NCells";
@@ -267,7 +267,7 @@ void initFieldTest() {
    DimNames[3] = "NTime";
    auto Test4DI8 =
        Field::create("Test4DI8", "Test 4DI8 field on device", "Units4DI8",
-                     "var_name_4DI8", 0, 100000, 999, 4, DimNames);
+                     "var_name_4DI8", 0, 100000, 4, DimNames);
 
    DimNames.resize(5);
    DimNames[0] = "NCells";
@@ -277,7 +277,7 @@ void initFieldTest() {
    DimNames[4] = "NStuff";
    auto Test5DR4 =
        Field::create("Test5DR4", "Test 5DR4 field on device", "Units5DR4",
-                     "var_name_5DR4", 0, 100000, 999, 5, DimNames);
+                     "var_name_5DR4", 0, 100000, 5, DimNames);
 
    /// Create two field groups for 1D and 2D fields
    auto FieldGroup1D = FieldGroup::create("FieldGroup1D");

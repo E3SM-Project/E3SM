@@ -523,6 +523,17 @@ add_omega_test(
     "-n;8"
 )
 
+##################
+# Fill Value test
+##################
+
+add_omega_test(
+    FILL_VALUE_TEST
+    testFillValue.exe
+    ocn/FillValueTest.cpp
+    "-n;8"
+)
+
 ##########################
 # Vert Mix test
 ##########################
