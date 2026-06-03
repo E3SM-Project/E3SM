@@ -327,8 +327,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
 
   do i = 1,ncol
     do k = 1,pver
-      tx_winds(i,k,1) = state_u(i,k)
-      tx_winds(i,k,2) = state_v(i,k)
+      ! zm_transport_momentum expects winds that may have been modified by MCSP,
+      ! but normally this is disabled, so U/V tendencies will be zero
+      tx_winds(i,k,1) = state_u(i,k) + output_tend_u(i,k)*dtime
+      tx_winds(i,k,2) = state_v(i,k) + output_tend_v(i,k)*dtime
     end do
   end do
 
