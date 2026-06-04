@@ -703,9 +703,9 @@ contains
     ! fill this in
 #ifdef HAVE_MOAB
     ! deallocate moab fields arrays
-      deallocate (l2x_lm)
-      if (allocated(l2x_lm_t)) deallocate (l2x_lm_t)
-      deallocate (x2l_lm)
+    if (allocated(l2x_lm)) deallocate (l2x_lm)
+    if (allocated(l2x_lm_t)) deallocate (l2x_lm_t)
+    if (allocated(x2l_lm))  deallocate (x2l_lm)
 #endif
     call final()
 
