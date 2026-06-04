@@ -11,31 +11,27 @@
 #include "Elements.hpp"
 #include "ColumnOps.hpp"
 #include "Context.hpp"
-#include "EquationOfState.hpp"
+#include "EquationOfState-caar-opt.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
-#include "LimiterFunctor.hpp"
+#include "LimiterFunctor-caar-opt.hpp"
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
-#include "SphereOperators.hpp"
+#include "SphereOperators-caar-opt.hpp"
 #include "kokkos_utils.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
 #include "utilities/SubviewUtils.hpp"
-#include "utilities/ViewUtils.hpp"
+#include "utilities/ViewUtils-caar-opt.hpp"
 
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 
-#include "Hommexx_config.h"
-
-#include <assert.h>
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
 #include <algorithm>
-#endif
+#include <assert.h>
 
 namespace Homme {
 
@@ -128,11 +124,6 @@ struct CaarFunctorImpl {
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-  // Epoch-based GPU-optimized compute path (enabled when HOMMEXX_ENABLE_CAAR_OPT is defined).
-  // Each epoch is a separate Kokkos parallel launch that processes all elements.
-  // The epoch decomposition avoids the early-return-before-barrier issue in the
-  // original single-launch path when NUM_PHYSICAL_LEV is not a multiple of WARP_SIZE.
   template <bool HYDROSTATIC, bool CONSERVATIVE> void epoch1_blockOps(const SphereOuter::Team &);
   template <bool RSPLIT_ZERO> void epoch2_scanOps(const SphereOuter::Team &);
   template <bool HYDROSTATIC, bool RSPLIT_ZERO> void epoch3_blockOps(const SphereOuter::Team &);
@@ -143,8 +134,6 @@ struct CaarFunctorImpl {
   void caar_compute();
 
   public:
-#endif // HOMMEXX_ENABLE_CAAR_OPT
-
   CaarFunctorImpl(const Elements &elements, const Tracers &/* tracers */,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
@@ -202,14 +191,35 @@ struct CaarFunctorImpl {
 
   int requested_buffer_size () const {
     // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs.
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-    // The epoch path in CaarFunctorImpl.cpp uses the element index (b.e / c.e)
-    // directly as the first buffer dimension, so we must allocate m_num_elems
-    // slots regardless of how many Kokkos teams can run simultaneously.
+    //
+    // IMPORTANT: Why we use m_num_elems instead of m_tu.get_num_ws_slots() here.
+    //
+    // The operator()(TagPreExchange) path (used when HOMMEXX_ENABLE_CAAR_OPT is
+    // NOT defined, or in the #else branch) allocates buffers sized by
+    // m_tu.get_num_ws_slots() (= nslots = number of concurrent Kokkos teams).
+    // In that path, each team processes one element and uses its team workspace
+    // slot index (kv.team_idx, which is in [0, nslots)) as the first dimension
+    // into the buffer arrays.  At most nslots teams run simultaneously, so nslots
+    // entries suffice.
+    //
+    // The epoch path in CaarFunctorImpl.cpp (the caar_compute() function, which
+    // is selected by the `#if 1` block in run()) uses a DIFFERENT indexing
+    // strategy: it iterates over ALL elements and directly uses the element index
+    // (b.e / c.e, in [0, m_num_elems)) as the first buffer dimension.  For
+    // example: buffers_pnh(b.e, b.x, b.y, b.z).
+    //
+    // On serial CPU execution, m_tu.get_num_ws_slots() returns 1 (only one team
+    // can run at a time), but m_num_elems can be much larger (e.g. 7 for a
+    // 160-element mesh distributed over 24 MPI ranks).  If we allocate only
+    // nslots=1 entries, then any access with b.e > 0 is out-of-bounds into
+    // uninitialised (or zeroed) memory, causing NaN values in the buffers and
+    // ultimately NaN in the DIRK Newton loop's dphi/phi diagnostics.
+    //
+    // The fix is to size the first buffer dimension by m_num_elems so that the
+    // epoch path's direct element-index access is always in bounds.  On GPU,
+    // nslots == m_num_elems (all elements processed concurrently), so this
+    // change has no effect there.
     const int nslots = m_num_elems;
-#else
-    const int nslots = m_tu.get_num_ws_slots();
-#endif
 
     int num_scalar_mid_buf = Buffers::num_3d_scalar_mid_buf;
     int num_scalar_int_buf = Buffers::num_3d_scalar_int_buf;
@@ -220,15 +230,12 @@ struct CaarFunctorImpl {
     // buffers that are not needed from the counters above.
     if (m_theta_hydrostatic_mode) {
       // pi=pnh, and no dpnh_dp_i/phitens
+      // NOTE: w_tens is still allocated in hydrostatic mode because epoch2_scanOps
+      // repurposes it as a scratch buffer for the omega integral scan (computing
+      // the prefix sum of div_vdp to get omega_i).  Without this buffer allocated,
+      // epoch2 and epoch3 would access an uninitialized view -> SIGSEGV.
       num_scalar_mid_buf -= 1;
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-      // Keep w_tens allocated: epoch2_scanOps repurposes it as a scratch
-      // buffer for the omega integral scan even in hydrostatic mode.
       num_scalar_int_buf -= 2;
-#else
-      // No dpnh_dp_i/phitens/wtens
-      num_scalar_int_buf -= 3;
-#endif
 
       // No grad_w_i/v_i
       num_vector_int_buf -= 2;
@@ -236,12 +243,6 @@ struct CaarFunctorImpl {
     if (m_rsplit>0) {
       // No theta_i/eta_dot_dpdn
       num_scalar_int_buf -=2;
-#ifndef HOMMEXX_ENABLE_CAAR_OPT
-      if (m_theta_hydrostatic_mode) {
-        // No dp_i (non-CAAR path skips dp_i when hydrostatic+rsplit>0)
-        num_scalar_int_buf -= 1;
-      }
-#endif
     }
 
     return num_scalar_mid_buf  *NP*NP*NUM_LEV  *VECTOR_SIZE*nslots
@@ -254,13 +255,13 @@ struct CaarFunctorImpl {
     Errors::runtime_check(fbm.allocated_size()>=requested_buffer_size(), "Error! Buffers size not sufficient.\n");
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-    // See comment in requested_buffer_size(): epoch path indexes buffers by
-    // element index directly, so allocate m_num_elems slots.
+    // Use m_num_elems (not m_tu.get_num_ws_slots()) as the first buffer
+    // dimension.  See the comment in requested_buffer_size() for the full
+    // explanation.  In short: the epoch path in CaarFunctorImpl.cpp accesses
+    // buffers with the element index (b.e / c.e) as the first dimension, so we
+    // must allocate m_num_elems slots regardless of how many Kokkos teams can
+    // run simultaneously.
     const int nslots = m_num_elems;
-#else
-    const int nslots = m_tu.get_num_ws_slots();
-#endif
 
     // Midpoints scalars
     m_buffers.pnh        = decltype(m_buffers.pnh       )(mem,nslots);
@@ -304,17 +305,9 @@ struct CaarFunctorImpl {
     mem += m_buffers.v_tens.size();
 
     // Interface scalars
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-    // Always allocate dp_i: the epoch path uses it to store pi_i regardless
-    // of hydrostatic mode or rsplit.
+    // ALWAYS allocate dp_i because we use it to store pi_i
     m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nslots);
     mem += m_buffers.dp_i.size();
-#else
-    if (!m_theta_hydrostatic_mode || m_rsplit==0) {
-      m_buffers.dp_i = decltype(m_buffers.dp_i)(mem,nslots);
-      mem += m_buffers.dp_i.size();
-    }
-#endif
 
     if (!m_theta_hydrostatic_mode) {
       m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nslots);
@@ -332,17 +325,13 @@ struct CaarFunctorImpl {
       m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nslots);
       mem += m_buffers.phi_tens.size();
     }
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-    // Always allocate w_tens: epoch2_scanOps repurposes it as scratch for
-    // the omega integral scan even in hydrostatic mode.
+    // ALWAYS allocate w_tens: in non-hydrostatic mode it stores the w-tendency;
+    // in hydrostatic mode it is repurposed by epoch2_scanOps as a scratch buffer
+    // for the omega integral scan (prefix sum of div_vdp -> omega_i).
+    // Failing to allocate it in hydrostatic mode causes epoch2 and epoch3 to
+    // access an uninitialized view, leading to SIGSEGV.
     m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
     mem += m_buffers.w_tens.size();
-#else
-    if (!m_theta_hydrostatic_mode) {
-      m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
-      mem += m_buffers.w_tens.size();
-    }
-#endif
 
     // Interface vectors
     if (!m_theta_hydrostatic_mode) {
@@ -404,19 +393,23 @@ struct CaarFunctorImpl {
     set_rk_stage_data(data);
 
     GPTLstart("caar compute");
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-    // Epoch-based GPU-optimized path: processes all elements in separate
-    // parallel launches per epoch to avoid early-return-before-barrier issues.
+
+#if 1
+
     caar_compute();
     Kokkos::fence();
+    GPTLstop("caar compute");
+
 #else
+
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
     Kokkos::fence();
+    GPTLstop("caar compute");
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
-#endif // HOMMEXX_ENABLE_CAAR_OPT
-    GPTLstop("caar compute");
+
+#endif
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
@@ -475,7 +468,7 @@ struct CaarFunctorImpl {
     compute_dp_and_theta_tens (kv);
 
     // ============= EPOCH 4 =========== //
-    // compute_v_tens reuses some buffers used by compute_dp_and_theta_tens 
+    // compute_v_tens reuses some buffers used by compute_dp_and_theta_tens
     kv.team_barrier();
     compute_v_tens (kv);
 
@@ -585,7 +578,7 @@ struct CaarFunctorImpl {
   KOKKOS_INLINE_FUNCTION
   bool compute_scan_quantities (KernelVariables &kv) const {
     bool ok = true;
-    
+
     kv.team_barrier();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -676,8 +669,18 @@ struct CaarFunctorImpl {
         if ( ! ok1) ok = false;
       }
 
-      if (m_rsplit == 0) {
-        // Compute phi at midpoints
+      // Compute phi at midpoints.
+      // IMPORTANT: The original PR #8192 optimization guards this with (m_rsplit == 0)
+      // because compute_interface_quantities (the vertical advection remap step) only
+      // consumes m_buffers.phi when rsplit==0.  However, compute_phi_vadv in
+      // compute_vertical_advection is called whenever (!m_theta_hydrostatic_mode),
+      // regardless of rsplit, and it reads m_buffers.phi.  So when rsplit>0 and
+      // !m_theta_hydrostatic_mode, m_buffers.phi is read uninitialized.
+      // TODO: revisit whether compute_phi_vadv should also be guarded by (m_rsplit==0),
+      // or whether compute_interface_quantities should re-compute phi midpoints rather
+      // than relying on this buffer.  For now, widen the guard to cover the
+      // non-hydrostatic path so the buffer is always valid when it is read.
+      if (m_rsplit == 0 || !m_theta_hydrostatic_mode) {
         ColumnOps::compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
                                               Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
       }
@@ -706,6 +709,7 @@ struct CaarFunctorImpl {
         // Compute interface horiz velocity
         auto u_i  = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
         auto v_i  = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
+
         ColumnOps::compute_interface_values(kv.team,dp,dp_i,u,u_i);
         ColumnOps::compute_interface_values(kv.team,dp,dp_i,v,v_i);
 
@@ -1202,7 +1206,6 @@ struct CaarFunctorImpl {
         ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv, w_sq, Homme::subview(m_buffers.temp,kv.team_idx,igp,jgp),0.5);
       });
       kv.team_barrier();
-
       // Compute grad(average(w^2/2)). Store in wvor.
       m_sphere_ops.gradient_sphere(kv, Homme::subview(m_buffers.temp,kv.team_idx),
                                        wvor);
