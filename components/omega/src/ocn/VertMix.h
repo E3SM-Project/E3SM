@@ -240,7 +240,7 @@ class VelVertMixSetupOnEdge {
    /// The functor takes edge index, vertical chunk index, and arrays for
    /// layer specific volume, layer thickness on edge,
    /// interface pressure, and outputs tendency array
-   KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, Real DT,
+   KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, I4 KMin, I4 KMax, Real DT,
                                    const Array2DReal &SpecVol,
                                    const Array2DReal &PseudoThickCell,
                                    const Array2DReal &VertVisc,
@@ -250,42 +250,41 @@ class VelVertMixSetupOnEdge {
       const I4 JCell0 = CellsOnEdge(IEdge, 0);
       const I4 JCell1 = CellsOnEdge(IEdge, 1);
 
-      const I4 KMin = MinLayerEdgeBot(IEdge);
-      const I4 KMax = MaxLayerEdgeTop(IEdge);
-
+      // Fill values
       G = 0.0_Real;
       H = 1.0_Real;
+      X = 0.0_Real;
 
-      if (K < KMin || K > KMax) {
-         X = 0.0_Real;
-      } else {
-         if (K < KMax) {
-            const Real PseudoThickEdgeK =
-                0.5_Real *
-                (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
-            const Real PseudoThickEdgeKp1 =
-                0.5_Real * (PseudoThickCell(JCell0, K + 1) +
-                            PseudoThickCell(JCell1, K + 1));
+      const Real PseudoThickEdgeK =
+          0.5_Real * (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
 
-            const Real PseudoThickEdgeTop =
-                0.5_Real * (PseudoThickEdgeK + PseudoThickEdgeKp1);
+      // Row-scaled conservative form.
+      // Unknown is u^{n+1}.
+      H = PseudoThickEdgeK;
+      X = PseudoThickEdgeK * NormalVelEdge(IEdge, K);
 
-            // Interpolation from cell center to top using
-            // the two-point linear interpolation
-            const Real SpecVolEdgeTop =
-                (0.5_Real * (SpecVol(JCell0, K) + SpecVol(JCell1, K)) *
-                     PseudoThickEdgeKp1 +
-                 0.5_Real * (SpecVol(JCell0, K + 1) + SpecVol(JCell1, K + 1)) *
-                     PseudoThickEdgeK) /
-                (PseudoThickEdgeK + PseudoThickEdgeKp1);
+      if (K < KMax) {
+         const Real PseudoThickEdgeKp1 =
+             0.5_Real *
+             (PseudoThickCell(JCell0, K + 1) + PseudoThickCell(JCell1, K + 1));
 
-            const Real ViscAlphaEdgeTop =
-                0.5_Real * (VertVisc(JCell0, K + 1) + VertVisc(JCell1, K + 1)) /
-                (LocRhoSw * SpecVolEdgeTop);
+         const Real PseudoThickEdgeTop =
+             0.5_Real * (PseudoThickEdgeK + PseudoThickEdgeKp1);
 
-            G = DT * ViscAlphaEdgeTop / (PseudoThickEdgeTop * PseudoThickEdgeK);
-         }
-         X = NormalVelEdge(IEdge, K);
+         // Interpolation from cell center to top using
+         // the two-point linear interpolation
+         const Real SpecVolEdgeTop =
+             (0.5_Real * (SpecVol(JCell0, K) + SpecVol(JCell1, K)) *
+                  PseudoThickEdgeKp1 +
+              0.5_Real * (SpecVol(JCell0, K + 1) + SpecVol(JCell1, K + 1)) *
+                  PseudoThickEdgeK) /
+             (PseudoThickEdgeK + PseudoThickEdgeKp1);
+
+         const Real ViscAlphaEdgeTop =
+             0.5_Real * (VertVisc(JCell0, K + 1) + VertVisc(JCell1, K + 1)) /
+             (LocRhoSw * SpecVolEdgeTop);
+
+         G = DT * ViscAlphaEdgeTop / PseudoThickEdgeTop;
       }
    }
 
@@ -305,43 +304,43 @@ class TracerVertMixSetupOnCell {
 
    TracerVertMixSetupOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
 
-   KOKKOS_FUNCTION void operator()(I4 L, I4 ICell, I4 K, Real DT,
-                                   const Array2DReal &SpecVol,
+   KOKKOS_FUNCTION void operator()(I4 L, I4 ICell, I4 K, I4 KMin, I4 KMax,
+                                   Real DT, const Array2DReal &SpecVol,
                                    const Array2DReal &PseudoThickCell,
                                    const Array2DReal &VertDiff,
                                    const Array3DReal &TracersOnCell, Real &G,
                                    Real &H, Real &X) const {
 
-      const I4 KMin = MinLayerCell(ICell);
-      const I4 KMax = MaxLayerCell(ICell);
-
+      // Fill values
       G = 0.0_Real;
       H = 1.0_Real;
+      X = 0.0_Real;
 
-      if (K < KMin || K > KMax) {
-         X = 0.0_Real;
-      } else {
-         if (K < KMax) {
-            const Real PseudoThickCellK   = PseudoThickCell(ICell, K);
-            const Real PseudoThickCellKp1 = PseudoThickCell(ICell, K + 1);
+      const Real PseudoThickCellK = PseudoThickCell(ICell, K);
 
-            const Real PseudoThickCellTop =
-                0.5_Real * (PseudoThickCellK + PseudoThickCellKp1);
+      // Row-scaled conservative form.
+      // Unknown is phi^{n+1}.
+      H = PseudoThickCellK;
+      X = PseudoThickCellK * TracersOnCell(L, ICell, K);
 
-            // Interpolation from cell center to top using
-            // the two-point linear interpolation
-            const Real SpecVolCellTop =
-                (SpecVol(ICell, K) * PseudoThickCellKp1 +
-                 SpecVol(ICell, K + 1) * PseudoThickCellK) /
-                (PseudoThickCellK + PseudoThickCellKp1);
+      if (K < KMax) {
 
-            const Real DiffAlphaCellTop =
-                VertDiff(ICell, K + 1) / (LocRhoSw * SpecVolCellTop);
+         const Real PseudoThickCellKp1 = PseudoThickCell(ICell, K + 1);
 
-            G = DT * DiffAlphaCellTop /
-                (PseudoThickCellTop * PseudoThickCell(ICell, K));
-         }
-         X = TracersOnCell(L, ICell, K);
+         const Real PseudoThickCellTop =
+             0.5_Real * (PseudoThickCellK + PseudoThickCellKp1);
+
+         // Interpolation from cell center to top using
+         // the two-point linear interpolation
+         const Real SpecVolCellTop =
+             (SpecVol(ICell, K) * PseudoThickCellKp1 +
+              SpecVol(ICell, K + 1) * PseudoThickCellK) /
+             (PseudoThickCellK + PseudoThickCellKp1);
+
+         const Real DiffAlphaCellTop =
+             VertDiff(ICell, K + 1) / (LocRhoSw * SpecVolCellTop);
+
+         G = DT * DiffAlphaCellTop / PseudoThickCellTop;
       }
    }
 

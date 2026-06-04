@@ -472,7 +472,7 @@ void VertMix::applyVelVertMixImplicit(
          const auto &SpecVol  = EosInstance->SpecVol;
          const auto &VertVisc = VertMixInstance->VertVisc;
 
-         const I4 NVertLayers = VCoord->NVertLayers;
+         const int NVertLayers = VCoord->NVertLayers;
          auto LConfig =
              TriDiagSolver::makeLaunchConfig(Mesh->NEdgesAll, NVertLayers);
 
@@ -490,6 +490,18 @@ void VertMix::applyVelVertMixImplicit(
                       const int IEdge = IStart + IVec;
 
                       if (IEdge >= LocNEdgesAll) {
+                         // Fill values
+                         Scratch.G(K, IVec) = 0._Real;
+                         Scratch.H(K, IVec) = 1._Real;
+                         Scratch.X(K, IVec) = 0._Real;
+                         continue;
+                      }
+
+                      const int KMin = MinLayerEdgeBot(IEdge);
+                      const int KMax = MaxLayerEdgeTop(IEdge);
+
+                      if (K < KMin || K > KMax) {
+                         // Fill values
                          Scratch.G(K, IVec) = 0._Real;
                          Scratch.H(K, IVec) = 1._Real;
                          Scratch.X(K, IVec) = 0._Real;
@@ -497,8 +509,9 @@ void VertMix::applyVelVertMixImplicit(
                       }
 
                       Real G, H, X;
-                      LocVelVertMixSetup(IEdge, K, DT, SpecVol, PseudoThickCell,
-                                         VertVisc, NormalVelEdge, G, H, X);
+                      LocVelVertMixSetup(IEdge, K, KMin, KMax, DT, SpecVol,
+                                         PseudoThickCell, VertVisc,
+                                         NormalVelEdge, G, H, X);
 
                       Scratch.G(K, IVec) = G;
                       Scratch.H(K, IVec) = H;
@@ -568,7 +581,7 @@ void VertMix::applyTracerVertMixImplicit(
          const auto &SpecVol  = EosInstance->SpecVol;
          const auto &VertDiff = VertMixInstance->VertDiff;
 
-         const I4 NVertLayers = VCoord->NVertLayers;
+         const int NVertLayers = VCoord->NVertLayers;
          auto LConfig =
              TriDiagSolver::makeLaunchConfig(Mesh->NCellsAll, NVertLayers);
 
@@ -587,6 +600,18 @@ void VertMix::applyTracerVertMixImplicit(
                          const int ICell = IStart + IVec;
 
                          if (ICell >= LocNCellsAll) {
+                            // Fill values
+                            Scratch.G(K, IVec) = 0._Real;
+                            Scratch.H(K, IVec) = 1._Real;
+                            Scratch.X(K, IVec) = 0._Real;
+                            continue;
+                         }
+
+                         const int KMin = MinLayerCell(ICell);
+                         const int KMax = MaxLayerCell(ICell);
+
+                         if (K < KMin || K > KMax) {
+                            // Fill values
                             Scratch.G(K, IVec) = 0._Real;
                             Scratch.H(K, IVec) = 1._Real;
                             Scratch.X(K, IVec) = 0._Real;
@@ -594,9 +619,9 @@ void VertMix::applyTracerVertMixImplicit(
                          }
 
                          Real G, H, X;
-                         LocTracerVertMixSetup(L, ICell, K, DT, SpecVol,
-                                               PseudoThickCell, VertDiff,
-                                               TracerArray, G, H, X);
+                         LocTracerVertMixSetup(L, ICell, K, KMin, KMax, DT,
+                                               SpecVol, PseudoThickCell,
+                                               VertDiff, TracerArray, G, H, X);
                          Scratch.G(K, IVec) = G;
                          Scratch.H(K, IVec) = H;
                          Scratch.X(K, IVec) = X;
@@ -652,16 +677,16 @@ void VertMix::VertMixImplicit(OceanState *State, AuxiliaryState *AuxState,
 
    // TODO: Temporary handling of computation of tangential velocity
    // Compute tangential velocity
-   OMEGA_SCOPE(MinLayerEdgeTop, VCoord->MinLayerEdgeTop);
-   OMEGA_SCOPE(MaxLayerEdgeBot, VCoord->MaxLayerEdgeBot);
+   OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
+   OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
    OMEGA_SCOPE(LocTangentialVelocity, TangentialVelocity);
 
    TangentialReconOnEdge TanReconEdge(Mesh);
 
    parallelForOuter(
        {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
-          const int KMin   = MinLayerEdgeTop(IEdge);
-          const int KMax   = MaxLayerEdgeBot(IEdge);
+          const int KMin   = MinLayerEdgeBot(IEdge);
+          const int KMax   = MaxLayerEdgeTop(IEdge);
           const int KRange = vertRangeChunked(KMin, KMax);
           parallelForInner(
               Team, KRange, INNER_LAMBDA(int KChunk) {
