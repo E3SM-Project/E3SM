@@ -271,6 +271,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
+      <apply_detr_tend    type="logical" doc="ZM flag for cld liq/ice detrainment tend"     >true</apply_detr_tend>
       <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >true</use_fortran_bridge>
       <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
       <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>

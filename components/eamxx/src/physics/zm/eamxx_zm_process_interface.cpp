@@ -63,11 +63,12 @@ void ZMDeepConvection::create_requests ()
   add_field<Required>("pbl_height",           scalar2d    , m,     grid_name);
   add_field<Required>("landfrac",             scalar2d    , none,  grid_name);
   add_field<Required>("thl_sec",              scalar3d_int, K2,    grid_name, pack_size); // thetal variance for PBL temperature perturbation
-  add_tracer<Required>("qc",                  m_grid,       kg/kg,            pack_size);
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
   add_tracer<Updated>("qv",                   m_grid,       kg/kg,             pack_size);
+  add_tracer<Updated>("qc",                   m_grid,       kg/kg,             pack_size);
+  add_tracer<Updated>("qi",                   m_grid,       kg/kg,             pack_size);
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
 
   // Output variables
@@ -149,11 +150,12 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_input.omega       = get_field_in("omega")         .get_view<const Real**>();
   zm_input.cldfrac     = get_field_in("cldfrac_tot")   .get_view<const Real**>();
   zm_input.thl_sec     = get_field_in("thl_sec")       .get_view<const Real**>();
-  zm_input.qc          = get_field_in("qc")            .get_view<const Real**>();
 
   // variables updated by ZM
   const auto& T_mid    = get_field_out("T_mid")      .get_view<Real**>();
   const auto& qv       = get_field_out("qv")         .get_view<Real**>();
+  const auto& qc       = get_field_out("qc")         .get_view<Real**>();
+  const auto& qi       = get_field_out("qi")         .get_view<Real**>();
   const auto& winds_f  = get_field_out("horiz_winds"); // (ncol, nwind, nlev)
   const auto  winds_v  = winds_f.get_view<Real***>();
   const auto& uwind    = winds_f.get_component(0).get_view<Real**>();
@@ -163,6 +165,7 @@ void ZMDeepConvection::run_impl (const double dt)
 
   zm_input.T_mid = T_mid;
   zm_input.qv    = qv;
+  zm_input.qc    = qc;
   zm_input.uwind = uwind;
   zm_input.vwind = vwind;
 
@@ -222,7 +225,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_tend_tmp_qv      = zm_output.tend_tmp_qv;
   const auto loc_zm_output_tend_tmp_winds   = zm_output.tend_tmp_winds;
 
-  const auto loc_zm_output_prec_flux        = zm_output.prec_flux;
+  const auto loc_zm_output_rain_prod        = zm_output.rain_prod;
   const auto loc_zm_output_tend_s_snwprd    = zm_output.tend_s_snwprd;
   const auto loc_zm_output_tend_s_snwevmlt  = zm_output.tend_s_snwevmlt;
   const auto loc_zm_output_ntprprd          = zm_output.ntprprd;
@@ -395,7 +398,7 @@ void ZMDeepConvection::run_impl (const double dt)
       const auto qv_i               = ekat::subview(loc_zm_input_qv, i);
       const auto tmp_T_mid_i        = ekat::subview(loc_zm_input_tmp_T_mid, i);
       const auto tmp_qv_i           = ekat::subview(loc_zm_input_tmp_qv, i);
-      const auto prec_flux_i        = ekat::subview(loc_zm_output_prec_flux, i);
+      const auto rain_prod_i        = ekat::subview(loc_zm_output_rain_prod, i);
       const auto cldfrac_i          = ekat::subview(loc_zm_input_cldfrac, i);
       const auto tend_out_s_i       = ekat::subview(loc_zm_output_tend_out_s, i);
       const auto tend_out_qv_i      = ekat::subview(loc_zm_output_tend_out_qv, i);
@@ -412,7 +415,7 @@ void ZMDeepConvection::run_impl (const double dt)
 
       // call the ZM evap scheme
       ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
-       p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, prec_flux_i, cldfrac_i,
+       p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, rain_prod_i, cldfrac_i,
        tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
        prec_i, snow_i, ntprprd_i, ntsnprd_i, flxprec_i, flxsnow_i );
 
@@ -475,12 +478,6 @@ void ZMDeepConvection::run_impl (const double dt)
     });
 
     //--------------------------------------------------------------------------
-    // convective tracer transport
-
-    // placeholder for zm_transport_tracer(...)
-
-    //--------------------------------------------------------------------------
-
   }
 
   //----------------------------------------------------------------------------
@@ -494,9 +491,19 @@ void ZMDeepConvection::run_impl (const double dt)
   });
 
   // update 3D prognostic variables
+  const auto& zm_detr_liq = ekat::scalarize(get_field_out("zm_detr_liq").get_view<Pack**>());
+  const auto& zm_detr_ice = ekat::scalarize(get_field_out("zm_detr_ice").get_view<Pack**>());
   Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
     const int k = idx%nlev_mid;
+    // partition detrained cloud water (dlf) into liquid and ice by temperature
+    Real ice_frac;
+    if      (T_mid(i,k) > ZMF::ZMC::dlf_tk1) ice_frac = 0;
+    else if (T_mid(i,k) < ZMF::ZMC::dlf_tk2) ice_frac = 1;
+    else               ice_frac = (ZMF::ZMC::dlf_tk1 - T_mid(i,k))
+                                 /(ZMF::ZMC::dlf_tk1 - ZMF::ZMC::dlf_tk2);
+    zm_detr_ice(i,k) = ice_frac       * loc_zm_output_dlf(i,k);
+    zm_detr_liq(i,k) = (1 - ice_frac) * loc_zm_output_dlf(i,k);
     // convert dry static energy tendency to temperature tendency (if not using fortran bridge)
     if (not zm_opts.use_fortran_bridge) {
       loc_zm_output_tend_out_t(i,k) = loc_zm_output_tend_out_s(i,k)/PC::CP.value;
@@ -504,6 +511,10 @@ void ZMDeepConvection::run_impl (const double dt)
     // apply tendencies (winds via the combined (ncol,nwind,nlev) field view)
     T_mid(i,k)     += loc_zm_output_tend_out_t (i,k) * dt;
     qv   (i,k)     += loc_zm_output_tend_out_qv(i,k) * dt;
+    if (zm_opts.apply_detr_tend) {
+      qc (i,k)     += zm_detr_liq(i,k) * dt;
+      qi (i,k)     += zm_detr_ice(i,k) * dt;
+    }
     winds_v(i,0,k) += loc_zm_output_tend_out_u (i,k) * dt;
     winds_v(i,1,k) += loc_zm_output_tend_out_v (i,k) * dt;
     // update "previous" T/qv variabiables for DCAPE
@@ -525,23 +536,6 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_cape    (i) = loc_zm_output_cape    (i);
     zm_activity(i) = loc_zm_output_activity(i);
   });
-
-  // 3D diagnostic output (vertically resolved)
-  const auto& zm_detr_liq = ekat::scalarize(get_field_out("zm_detr_liq").get_view<Pack**>());
-  const auto& zm_detr_ice = ekat::scalarize(get_field_out("zm_detr_ice").get_view<Pack**>());
-  Kokkos::parallel_for("zm_diag_outputs_3D", KT::RangePolicy(0, m_ncol*nlev_mid),
-    KOKKOS_LAMBDA (const int idx) {
-      const int i = idx/nlev_mid;
-      const int k = idx%nlev_mid;
-      // partition detrained cloud water (dlf) into liquid and ice by temperature
-      Real ice_frac;
-      if      (T_mid(i,k) > ZMF::ZMC::dlf_tk1) ice_frac = 0;
-      else if (T_mid(i,k) < ZMF::ZMC::dlf_tk2) ice_frac = 1;
-      else               ice_frac = (ZMF::ZMC::dlf_tk1 - T_mid(i,k))
-                                   /(ZMF::ZMC::dlf_tk1 - ZMF::ZMC::dlf_tk2);
-      zm_detr_ice(i,k) = ice_frac       * loc_zm_output_dlf(i,k);
-      zm_detr_liq(i,k) = (1 - ice_frac) * loc_zm_output_dlf(i,k);
-    });
 
 } // ZMDeepConvection::run_impl
 
