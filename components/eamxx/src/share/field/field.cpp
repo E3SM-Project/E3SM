@@ -519,7 +519,7 @@ void Field::deep_copy (const ScalarWrapper value, const Field& mask, const bool 
 
 void Field::deep_copy (const Field& x) const
 {
-  if (&x==this)
+  if (is_aliasing(x))
     return;
 
   constexpr auto CM = CombineMode::Replace;
@@ -528,7 +528,8 @@ void Field::deep_copy (const Field& x) const
 
 void Field::deep_copy (const Field& x, const Field& mask) const
 {
-  if (&x==this)
+  // If read only, we let update_cm throw the error...
+  if (is_aliasing(x))
     return;
 
   constexpr auto CM = CombineMode::Replace;

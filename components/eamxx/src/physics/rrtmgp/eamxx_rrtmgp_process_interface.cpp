@@ -271,6 +271,8 @@ void RRTMGPRadiation::create_requests() {
       scorpio::release_file(fname);
 
       bounds.sync_to_dev();
+      // Only output this geo data when the associated dim is present in the output file
+      bounds.get_header().set_extra_data("io_output_if_dim_exists", prefix + "band");
       m_grid->set_geometry_data(bounds);
     }
 
@@ -285,6 +287,8 @@ void RRTMGPRadiation::create_requests() {
         bands_h(i) = (bounds_h(i,0) + bounds_h(i,1)) / 2;
       }
       bands.sync_to_dev();
+      // Only output this geo data when the associated dim is present in the output file
+      bands.get_header().set_extra_data("io_output_if_dim_exists", prefix + "band");
       m_grid->set_geometry_data(bands);
     }
   }
