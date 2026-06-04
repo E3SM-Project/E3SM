@@ -147,6 +147,7 @@ struct Functions {
     ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
+      apply_detr_tend     = params.get<bool>("apply_detr_tend",     true);
       use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
       upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
@@ -235,6 +236,7 @@ struct Functions {
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
+    bool apply_detr_tend;
     bool use_fortran_bridge;
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
@@ -307,12 +309,13 @@ struct Functions {
     uview_2dl<Real> f_vwind;
     uview_2dl<Real> f_omega;
     uview_2dl<Real> f_cldfrac;
+    uview_2dl<Real> f_t_prev;
+    uview_2dl<Real> f_q_prev;
     uview_2dl<Real> f_z_int;
     uview_2dl<Real> f_p_int;
     // *************************************************************************
     // TEMPORARY
     // *************************************************************************
-
     // host mirror versions of ZM interface variables
     view_1dh<Scalar> h_phis;
     view_1dh<Scalar> h_pblh;
@@ -327,6 +330,8 @@ struct Functions {
     view_2dh<Real>   h_vwind;
     view_2dh<Real>   h_omega;
     view_2dh<Real>   h_cldfrac;
+    view_2dh<Real>   h_t_prev;
+    view_2dh<Real>   h_q_prev;
     view_2dh<Real>   h_z_int;
     view_2dh<Real>   h_p_int;
 
@@ -346,6 +351,8 @@ struct Functions {
       h_vwind    = view_2dh<Real>  ("zm_input.h_vwind",    ncol, nlev);
       h_omega    = view_2dh<Real>  ("zm_input.h_omega",    ncol, nlev);
       h_cldfrac  = view_2dh<Real>  ("zm_input.h_cldfrac",  ncol, nlev);
+      h_t_prev   = view_2dh<Real>  ("zm_input.h_t_prev",   ncol, nlev);
+      h_q_prev   = view_2dh<Real>  ("zm_input.h_q_prev",   ncol, nlev);
       h_z_int    = view_2dh<Real>  ("zm_input.h_z_int",    ncol, nlev+1);
       h_p_int    = view_2dh<Real>  ("zm_input.h_p_int",    ncol, nlev+1);
     }

@@ -28,6 +28,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     const auto loc_f_vwind   = f_vwind;
     const auto loc_f_omega   = f_omega;
     const auto loc_f_cldfrac = f_cldfrac;
+    const auto loc_f_t_prev  = f_t_prev;
+    const auto loc_f_q_prev  = f_q_prev;
     const auto loc_f_z_int   = f_z_int;
     const auto loc_f_p_int   = f_p_int;
 
@@ -40,6 +42,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     const auto loc_vwind     = vwind;
     const auto loc_omega     = omega;
     const auto loc_cldfrac   = cldfrac;
+    const auto loc_t_prev    = t_prev;
+    const auto loc_q_prev    = q_prev;
     const auto loc_z_int     = z_int;
     const auto loc_p_int     = p_int;
 
@@ -57,6 +61,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
       loc_f_vwind   (icol,klev) = loc_vwind   (icol,klev);
       loc_f_omega   (icol,klev) = loc_omega   (icol,klev);
       loc_f_cldfrac (icol,klev) = loc_cldfrac (icol,klev);
+      loc_f_t_prev  (icol,klev) = loc_t_prev  (icol,klev);
+      loc_f_q_prev  (icol,klev) = loc_q_prev  (icol,klev);
     });
 
     // interface level variables
@@ -82,6 +88,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     Kokkos::deep_copy(h_vwind,    f_vwind );
     Kokkos::deep_copy(h_omega,    f_omega );
     Kokkos::deep_copy(h_cldfrac,  f_cldfrac );
+    Kokkos::deep_copy(h_t_prev,   f_t_prev );
+    Kokkos::deep_copy(h_q_prev,   f_q_prev );
     Kokkos::deep_copy(h_z_int,    f_z_int );
     Kokkos::deep_copy(h_p_int,    f_p_int );
   }

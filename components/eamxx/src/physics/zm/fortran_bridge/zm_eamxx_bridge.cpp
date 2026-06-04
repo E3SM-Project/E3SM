@@ -12,35 +12,37 @@ void zm_eamxx_bridge_init_c( Int  pver_in );
 void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real dtime,               // 02
                             bool is_first_step,       // 03
-                            const Real *state_phis,         // 04
+                            const Real *state_phis,   // 04
                             Real *state_z_mid,        // 05
                             Real *state_z_int,        // 06
-                            const Real *state_p_mid,        // 07
-                            const Real *state_p_int,        // 08
-                            const Real *state_p_del,        // 09
+                            const Real *state_p_mid,  // 07
+                            const Real *state_p_int,  // 08
+                            const Real *state_p_del,  // 09
                             Real *state_t,            // 10
                             Real *state_qv,           // 11
                             Real *state_u,            // 12
                             Real *state_v,            // 13
                             Real *state_omega,        // 14
-                            const Real *state_cldfrac,      // 15
-                            const Real *state_pblh,         // 16
-                            const Real *tpert,              // 17
-                            const Real *landfrac,           // 18
-                            Real *output_prec,        // 19
-                            Real *output_snow,        // 20
-                            Real *output_cape,        // 21
-                            Int  *output_activity,    // 22
-                            Real *output_tend_t,      // 23
-                            Real *output_tend_q,      // 24
-                            Real *output_tend_u,      // 25
-                            Real *output_tend_v,      // 26
-                            Real *output_rain_prod,   // 27
-                            Real *output_snow_prod,   // 28
-                            Real *output_prec_flux,   // 29
-                            Real *output_snow_flux,   // 30
-                            Real *output_mass_flux,   // 31
-                            Real *output_dlf          // 32
+                            const Real *state_cldfrac,// 15
+                            const Real *state_pblh,   // 16
+                            const Real *tpert,        // 17
+                            const Real *landfrac,     // 18
+                            Real *t_star,             // 19 DCAPE T from time step n-1
+                            Real *q_star,             // 20 DCAPE q from time step n-1
+                            Real *output_prec,        // 21
+                            Real *output_snow,        // 22
+                            Real *output_cape,        // 23
+                            Int  *output_activity,    // 24
+                            Real *output_tend_t,      // 25
+                            Real *output_tend_q,      // 26
+                            Real *output_tend_u,      // 27
+                            Real *output_tend_v,      // 28
+                            Real *output_rain_prod,   // 29
+                            Real *output_snow_prod,   // 30
+                            Real *output_prec_flux,   // 31
+                            Real *output_snow_flux,   // 32
+                            Real *output_mass_flux,   // 33
+                            Real *output_dlf          // 34
                             );
 } // extern "C" : end _c decls
 
@@ -77,20 +79,22 @@ void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,
                          zm_input.h_pblh        .data(),  // 16
                          zm_input.h_tpert       .data(),  // 17
                          zm_input.h_landfrac    .data(),  // 18
-                         zm_output.h_prec       .data(),  // 19
-                         zm_output.h_snow       .data(),  // 20
-                         zm_output.h_cape       .data(),  // 21
-                         zm_output.h_activity   .data(),  // 22
-                         zm_output.h_tend_t     .data(),  // 23
-                         zm_output.h_tend_qv    .data(),  // 24
-                         zm_output.h_tend_u     .data(),  // 25
-                         zm_output.h_tend_v     .data(),  // 26
-                         zm_output.h_rain_prod  .data(),  // 27
-                         zm_output.h_snow_prod  .data(),  // 28
-                         zm_output.h_prec_flux  .data(),  // 29
-                         zm_output.h_snow_flux  .data(),  // 30
-                         zm_output.h_mass_flux  .data(),  // 31
-                         zm_output.h_dlf        .data()   // 32
+                         zm_input.h_t_prev      .data(),  // 19
+                         zm_input.h_q_prev      .data(),  // 20
+                         zm_output.h_prec       .data(),  // 21
+                         zm_output.h_snow       .data(),  // 22
+                         zm_output.h_cape       .data(),  // 23
+                         zm_output.h_activity   .data(),  // 24
+                         zm_output.h_tend_t     .data(),  // 25
+                         zm_output.h_tend_qv    .data(),  // 26
+                         zm_output.h_tend_u     .data(),  // 27
+                         zm_output.h_tend_v     .data(),  // 28
+                         zm_output.h_rain_prod  .data(),  // 29
+                         zm_output.h_snow_prod  .data(),  // 30
+                         zm_output.h_prec_flux  .data(),  // 31
+                         zm_output.h_snow_flux  .data(),  // 32
+                         zm_output.h_mass_flux  .data(),  // 33
+                         zm_output.h_dlf        .data()   // 34
                         );
 
   zm_output.transpose<ekat::TransposeDirection::f2c>(ncol,pver);

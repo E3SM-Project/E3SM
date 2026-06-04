@@ -172,6 +172,11 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_input.t_prev = t_prev;
   zm_input.q_prev = q_prev;
 
+  if (is_first_step) {
+    Kokkos::deep_copy(zm_input.t_prev, zm_input.T_mid);
+    Kokkos::deep_copy(zm_input.q_prev, zm_input.qv);
+  }
+
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
@@ -564,7 +569,7 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
-  int num_f_mid  = (9+7);
+  int num_f_mid  = (11+7);
   int num_f_int  = (2+3);
   zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
   zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
@@ -587,7 +592,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_midlv = ZMF::ZmInputState::num_2d_midlv + ZMF::ZmOutputTend::num_2d_midlv;
   constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
-  constexpr int num_f_mid  = (9+7);
+  constexpr int num_f_mid  = (11+7);
   constexpr int num_f_int  = (2+3);
 
   //----------------------------------------------------------------------------
@@ -637,6 +642,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_input.f_vwind,
                                                                   &zm_input.f_omega,
                                                                   &zm_input.f_cldfrac,
+                                                                  &zm_input.f_t_prev,
+                                                                  &zm_input.f_q_prev,
                                                                   &zm_output.f_tend_t,
                                                                   &zm_output.f_tend_qv,
                                                                   &zm_output.f_tend_u,
