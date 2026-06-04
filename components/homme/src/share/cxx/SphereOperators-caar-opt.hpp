@@ -41,7 +41,7 @@ class SphereOperators
 
   template<int NL>
   using vector_buf = ExecViewUnmanaged<Scalar[2][NP][NP][NL]>;
-  
+
   // std::min is constexpr only from c++14 on.
   template<int M, int N>
   struct Min {
@@ -1019,7 +1019,7 @@ public:
   KOKKOS_INLINE_FUNCTION void
   vlaplace_sphere_wk_cartesian (const KernelVariables &kv,
                                 const ExecViewUnmanaged<const Real [2][2][NP][NP]>&          tensorVisc,
-                                const ExecViewUnmanaged<const Real [3][3][NP][NP]>&          vec_sph2cart,
+                                const ExecViewUnmanaged<const Real [2][3][NP][NP]>&          vec_sph2cart,
                                 const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& vector,
                                 const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& laplace) const
   {
@@ -1187,7 +1187,7 @@ using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
 #ifndef WARP_SIZE
 
 #if defined(KOKKOS_ENABLE_HIP)
-#define WARP_SIZE 64
+#define WARP_SIZE warpSize
 #elif defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_SYCL)
 #define WARP_SIZE 32
 #else
@@ -1239,7 +1239,6 @@ using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
 
 #else
 
-// Namespace-scope compile-time guard: GPU path requires VECTOR_SIZE==1.
 static_assert(VECTOR_SIZE == 1, "VECTOR_SIZE != 1");
 
 // SPHERE_BLOCK macros for GPU (WARP_SIZE > 1).
@@ -1601,11 +1600,9 @@ struct SphereColOps: SphereCol {
 
   KOKKOS_INLINE_FUNCTION Scalar zabove(const Scalar top, const Scalar *const in) const
   {
-    // When z == NUM_LEV_P-1, `in` would point one pack past a NUM_LEV-sized
-    // midpoint view (out-of-bounds).  Return `top` immediately so we never
-    // dereference that pointer.
-    if (z == NUM_LEV_P-1) return top;
-    return *in;
+    Scalar out = *in;
+    if (z == NUM_LEV_P-1) out[NUM_PHYSICAL_LEV%VECTOR_SIZE] = top[NUM_PHYSICAL_LEV%VECTOR_SIZE];
+    return out;
   }
 
   KOKKOS_INLINE_FUNCTION Scalar zbelow(const Real bottom, const Scalar *const below, const Scalar *const here) const
