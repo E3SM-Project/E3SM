@@ -645,3 +645,4 @@ void CaarFunctorImpl::caar_compute()
 }
 
 }
+
