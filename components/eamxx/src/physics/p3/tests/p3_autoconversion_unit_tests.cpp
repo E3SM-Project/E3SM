@@ -332,7 +332,6 @@ void cloud_water_autoconversion_unit_bfb_tests() {
       for (int i = 0; i < data.n_qc; ++i) {
         int idx = j * data.n_qc + i;
         Real qc = data.qc_host(idx);
-        Real nc = data.nc_host(idx);
         Real R = data.qc2qr_host(idx);
         Real N_loss = data.nc2nr_host(idx);
         Real R_ncautr = data.ncautr_host(idx); 

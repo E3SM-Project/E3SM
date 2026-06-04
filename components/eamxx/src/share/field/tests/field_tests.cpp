@@ -342,7 +342,7 @@ TEST_CASE("field", "") {
     // A read-only field should throw on any manipulation method
     const Field ro = f.get_const();
     REQUIRE_THROWS (ro.deep_copy(0.0));
-    REQUIRE_THROWS (ro.deep_copy(f));
+    REQUIRE_THROWS (ro.deep_copy(f.clone()));
     REQUIRE_THROWS (ro.scale(1.0));
     REQUIRE_THROWS (ro.scale(f));
     REQUIRE_THROWS (ro.scale_inv(f));
@@ -350,6 +350,9 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS (ro.add_scalar(0.0));
     REQUIRE_THROWS (ro.max(f));
     REQUIRE_THROWS (ro.min(f));
+
+    // But if rhs aliases lhs, deep_copy is skipped, so it should not throw
+    REQUIRE_NOTHROW(ro.deep_copy(ro.alias("")));
   }
 
   SECTION ("valid_mask") {
