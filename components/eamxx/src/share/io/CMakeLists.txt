@@ -8,7 +8,6 @@
 
 add_library(eamxx_io
   eamxx_output_manager.cpp
-  scorpio_scm_input.cpp
   scorpio_output.cpp
   eamxx_io_utils.cpp
 )
