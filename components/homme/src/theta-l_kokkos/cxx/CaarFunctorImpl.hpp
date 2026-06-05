@@ -19,7 +19,11 @@
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
+#ifdef HOMMEXX_ENABLE_CAAR_OPT
+#include "SphereOperators-caar-opt.hpp"
+#else
 #include "SphereOperators.hpp"
+#endif
 #include "kokkos_utils.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
