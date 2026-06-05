@@ -16,11 +16,11 @@ static Real goffgratch_svp_water(
   static constexpr Real magic5 = 8.1328e-3;
   static constexpr Real magic6 = -3.49149;
   static constexpr Real magic7 = 1013.246;
-  return std::pow(10, magic1*(ZMC::tboil/t-1) +
-                  magic2*std::log10(ZMC::tboil/t) -
-                  magic3*(std::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
-                  magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
-                  std::log10(magic7))*100;
+  return Kokkos::pow(10, magic1*(ZMC::tboil/t-1) +
+                  magic2*Kokkos::log10(ZMC::tboil/t) -
+                  magic3*(Kokkos::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
+                  magic5*(Kokkos::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
+                  Kokkos::log10(magic7))*100;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -36,10 +36,10 @@ static Real goffgratch_svp_ice(
   static constexpr Real magic3 = 0.876793;
   static constexpr Real magic4 = 6.1071;
 
-  return std::pow(10, magic1*(ZMC::h2otrip/t - 1) -
-                  magic2*std::log10(ZMC::h2otrip/t) +
+  return Kokkos::pow(10, magic1*(ZMC::h2otrip/t - 1) -
+                  magic2*Kokkos::log10(ZMC::h2otrip/t) +
                   magic3*(1 - t/ZMC::h2otrip) +
-                  std::log10(magic4))*100;
+                  Kokkos::log10(magic4))*100;
 }
 
 //--------------------------------------------------------------------------------------------------
