@@ -4,10 +4,6 @@ set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch" CACHE STRING "Fortran compil
 # Set the path to SCREAM input data
 set(SCREAM_INPUT_ROOT /projects/e3sm/inputdata CACHE PATH "Path to SCREAM input data" FORCE)
 
-# Set the path to BLAS/LAPACK libraries
-set(BLAS_LIBRARIES "$ENV{BLAS_ROOT}/lib64/libblas.so" CACHE STRING "Path to BLAS library" FORCE)
-set(LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/lib64/liblapack.so" CACHE STRING "Path to LAPACK library" FORCE)
-
 # Let's catch usage of code deprecated in Kokkos 4
 option (Kokkos_ENABLE_DEPRECATED_CODE_4 "" OFF)
 
