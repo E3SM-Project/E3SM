@@ -7,7 +7,7 @@ using scream::Int;
 
 extern "C" {
 
-void zm_eamxx_bridge_init_c( Int  pver_in );
+void zm_eamxx_bridge_init_c( Int  pver_in, Int limcnv_in );
 
 void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real dtime,               // 02
@@ -49,8 +49,8 @@ void zm_eamxx_bridge_run_c( Int  ncol,                // 01
 namespace scream {
 namespace zm {
 
-void zm_eamxx_bridge_init( Int pver ){
-  zm_eamxx_bridge_init_c( pver );
+void zm_eamxx_bridge_init( Int pver, Int limcnv_in ){
+  zm_eamxx_bridge_init_c( pver, limcnv_in );
 }
 
 void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,

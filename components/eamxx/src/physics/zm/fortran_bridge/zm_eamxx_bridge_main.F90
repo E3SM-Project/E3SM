@@ -26,7 +26,7 @@ module zm_eamxx_bridge_main
 contains
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
+subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in ) bind(C)
   use mpi
   use zm_conv,       only: zm_const, zm_param
   use zm_conv_types, only: zm_const_set_for_testing, zm_param_set_for_testing
@@ -35,6 +35,7 @@ subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
   !-----------------------------------------------------------------------------
   ! Arguments
   integer(kind=c_int), value, intent(in) :: pver_in
+  integer(kind=c_int), value, intent(in) :: limcnv_in
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: mpi_rank, ierror
@@ -51,6 +52,7 @@ subroutine zm_eamxx_bridge_init_c( pver_in ) bind(C)
   ! set ZM constants and parameters
   call zm_const_set_for_testing(zm_const)
   call zm_param_set_for_testing(zm_param)
+  zm_param%limcnv = limcnv_in ! override testing value when running the fortran bridge
   call zm_param_mpi_broadcast(zm_param)
   call zm_param_print(zm_param)
   !-----------------------------------------------------------------------------
