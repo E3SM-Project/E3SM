@@ -115,7 +115,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
   //----------------------------------------------------------------------------
   if (not ZMF::s_zm_opts.use_fortran_bridge) {
     ZMF::s_zm_opts.set_limcnv(m_grid);
-    ZMF::s_zm_opts.print();
+    if (this->get_comm().am_i_root()) ZMF::s_zm_opts.print();
   } // if not use_fortran_bridge
   //----------------------------------------------------------------------------
   if (ZMF::s_zm_opts.use_fortran_bridge) {
