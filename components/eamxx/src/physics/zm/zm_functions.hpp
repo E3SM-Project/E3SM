@@ -93,6 +93,10 @@ struct Functions {
     static inline constexpr Real lcl_coeff_c      = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
     static inline constexpr Real pa_to_mb         = 0.01;     // Pa to mb conversion factor
     static inline constexpr Real mb_to_pa         = 100;      // mb to Pa conversion factor
+    static inline constexpr Real cld_liq_radius   =  8.e-6;   // assumed liq hydrometeor radius for nc tendency [m]
+    static inline constexpr Real cld_ice_radius   = 14.e-6;   // assumed ice hydrometeor radius for ni tendency [m]
+    static inline constexpr Real cld_liq_density  =  997.0;   // assumed liq hydrometeor density for nc tendency [kg/m3]
+    static inline constexpr Real cld_ice_density  =  500.0;   // assumed ice hydrometeor density for ni tendency [kg/m3]
     // other ZM parameters and thresholds
     static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
     static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
