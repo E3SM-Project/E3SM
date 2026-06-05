@@ -1,13 +1,12 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
+#include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
-#include "share/data_managers/field_manager.hpp"
 
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -36,7 +35,7 @@ void add (const Field& f, const double v) {
 }
 
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {

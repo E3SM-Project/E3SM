@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
+#include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
@@ -37,7 +37,7 @@ void add (const Field& f, const double v) {
 }
 
 int get_dt (const std::string& freq_units) {
-  int dt;
+  int dt = -1;
   if (freq_units=="nsteps") {
     dt = 1;
   } else if (freq_units=="nsecs") {
@@ -208,15 +208,13 @@ void read (const std::string& avg_type, const std::string& freq_units,
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
-  auto fm0 = get_fm(grid,t0,seed);
-  auto fm  = get_fm(grid,t0,-seed-1);
-  std::vector<std::string> fnames;
+  auto fm = get_fm(grid,t0,seed);
+  std::vector<Field> fields_in;
   for (auto it : fm->get_repo()) {
-    fnames.push_back(it.second->name());
+    fields_in.push_back(it.second->clone());
   }
 
   // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_basic";
   auto filename = casename
     + "." + avg_type
@@ -225,9 +223,11 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+
+  FieldReader reader;
+  reader.set_file_specs(filename);
+  reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
+  reader.set_fields(fields_in);
 
   // We added 1.0 to the input fields for each timestep
   // Hence, at output step N, we should get
@@ -242,10 +242,9 @@ void read (const std::string& avg_type, const std::string& freq_units,
   double delta = (freq+1)/2.0;
 
   for (int n=0; n<num_writes; ++n) {
-    reader.read_variables(n);
-    for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone(CloneFlags::CopyData);
-      auto f  = fm->get_field(fn);
+    reader.read(n);
+    for (const auto& f : fields_in) {
+      auto f0 = fm->get_field(f.name()).clone(CloneFlags::CopyData);
       if (avg_type=="MIN") {
         // The 1st snap in the avg window (the smallest)
         // is one past window_start=n*freq
@@ -265,12 +264,12 @@ void read (const std::string& avg_type, const std::string& freq_units,
   }
 
   // Check that the expected metadata was appropriately set for each variable
-  for (const auto& fn: fnames) {
-    auto att_fill = scorpio::get_attribute<float>(filename,fn,"_FillValue");
+  for (const auto& f: fields_in) {
+    auto att_fill = scorpio::get_attribute<float>(filename,f.name(),"_FillValue");
     REQUIRE(att_fill==constants::fill_value<Real>);
 
-    auto att_str = scorpio::get_attribute<std::string>(filename,fn,"test");
-    REQUIRE (att_str==fn);
+    auto att_str = scorpio::get_attribute<std::string>(filename,f.name(),"test");
+    REQUIRE (att_str==f.name());
   }
 
   // Check constants

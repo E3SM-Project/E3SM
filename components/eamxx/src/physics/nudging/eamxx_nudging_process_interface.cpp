@@ -1,7 +1,8 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 

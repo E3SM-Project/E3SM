@@ -173,6 +173,13 @@ void FieldReader::setup_internals ()
 
       auto f_dims = fl.names();
       auto f_extents = fl.dims();
+      for (int i=0; i<fl.rank(); ++i) {
+        if (f_dims[i]=="dim")
+          f_dims[i] += std::to_string(f_extents[i]);
+        if (m_tag_rename.count(f_dims[i]))
+          f_dims[i] = m_tag_rename.at(f_dims[i]);
+      }
+
       auto var_dims = var.dim_names();
 
       if (fl.has_tag(COL) and latlon_in_file) {
