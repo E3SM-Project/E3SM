@@ -4,7 +4,7 @@ common_setup()
 set(EKAT_MPI_EXTRA_ARGS "${EKAT_MPI_EXTRA_ARGS} --gpus-per-task=1" CACHE STRING "" FORCE)
 
 #option(Kokkos_ARCH_AMPERE80 "" ON)
-set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
+add_compile_definitions(THRUST_IGNORE_CUB_VERSION_CHECK)
 
 option(SCREAM_SMALL_KERNELS "Use small, non-monolothic kokkos kernels for ALL components that support them" ON)
 
