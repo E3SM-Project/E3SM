@@ -965,7 +965,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           call abortmp('hypervis_subcycle auto determine only supported for nv==4 and topology==cube')
        endif
     endif
-    if (hypervis_subcycle_sgs < 0) hypervis_subcycle_sgs = hypervis_subcycle
+    if (hypervis_subcycle_sgs == -1) hypervis_subcycle_sgs = hypervis_subcycle
     if (hypervis_subcycle_q_sgs < 0) hypervis_subcycle_q_sgs = hypervis_subcycle_q
 #endif
     ! set defautl for dynamics remap

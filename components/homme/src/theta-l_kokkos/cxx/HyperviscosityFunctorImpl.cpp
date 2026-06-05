@@ -24,6 +24,8 @@ namespace Homme
 
 namespace {
 
+constexpr int max_dynamic_sgs_subcycles = 12;
+
 constexpr Real get_lambda_vis ()
 {
   switch (NP) {
@@ -415,9 +417,15 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
 int HyperviscosityFunctorImpl::compute_sgs_subcycle_count (const Real dt) const
 {
-  // Start from the user-requested baseline. Adaptive logic can only increase
-  // the SGS subcycling for the current step, never reduce it below this value.
-  int nsub = std::max(1, m_data.hypervis_subcycle_sgs);
+  // Semantics:
+  //   -1: inherit hypervis_subcycle, with no dynamic SGS adaptation
+  //    0: dynamically choose SGS subcycling, starting from a baseline of 1
+  //   >0: fixed SGS subcycling for the full run, with no dynamic adaptation
+  if (m_data.hypervis_subcycle_sgs > 0) {
+    return m_data.hypervis_subcycle_sgs;
+  }
+
+  int nsub = 1;
 
   if (not m_data.do_3d_turbulence) {
     return nsub;
@@ -491,8 +499,18 @@ int HyperviscosityFunctorImpl::compute_sgs_subcycle_count (const Real dt) const
   MPI_Allreduce(&local_max_cfl, &global_max_cfl, 1, MPI_DOUBLE, MPI_MAX, comm.mpi_comm());
 
   // If the estimated CFL is, e.g., 2.3, take 3 SGS substeps so the effective
-  // per-substep CFL is brought back below 1.
+  // per-substep CFL is brought back below 1. Cap the adaptive path to avoid
+  // runaway cost in pathological cases.
   nsub = std::max(nsub, static_cast<int>(std::ceil(global_max_cfl)));
+  const int nsub_uncapped = nsub;
+  nsub = std::min(nsub, max_dynamic_sgs_subcycles);
+
+  if (nsub_uncapped > max_dynamic_sgs_subcycles && comm.root()) {
+    printf("Warning: dynamic SGS subcycling reached the maximum allowed value of %d "
+           "(requested %d from estimated CFL %.3f).\n",
+           max_dynamic_sgs_subcycles, nsub_uncapped, global_max_cfl);
+  }
+
   return nsub;
 }
 

@@ -224,7 +224,7 @@ def perform_consistency_checks(case, xml):
         hypervis_subcycle = find_node(ctl_nl, "hypervis_subcycle")
         hypervis_subcycle_sgs = find_node(ctl_nl, "hypervis_subcycle_sgs")
         if hypervis_subcycle is not None and hypervis_subcycle_sgs is not None:
-            if int(hypervis_subcycle_sgs.text) < 0:
+            if int(hypervis_subcycle_sgs.text) == -1:
                 hypervis_subcycle_sgs.text = hypervis_subcycle.text
         hypervis_subcycle_q = find_node(ctl_nl, "hypervis_subcycle_q")
         hypervis_subcycle_q_sgs = find_node(ctl_nl, "hypervis_subcycle_q_sgs")
