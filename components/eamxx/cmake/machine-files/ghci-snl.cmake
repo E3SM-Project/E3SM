@@ -1,6 +1,3 @@
-# Set Fortran flags
-set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch" CACHE STRING "Fortran compiler flags" FORCE)
-
 # Set the path to SCREAM input data
 set(SCREAM_INPUT_ROOT /projects/e3sm/inputdata CACHE PATH "Path to SCREAM input data" FORCE)
 
