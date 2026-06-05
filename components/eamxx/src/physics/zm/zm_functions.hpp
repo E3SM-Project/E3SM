@@ -11,6 +11,9 @@
 #include <ekat_reduction_utils.hpp>
 #include <ekat_math_utils.hpp>
 
+#include <iostream>
+#include <iomanip>
+
 namespace scream {
 namespace zm {
 
@@ -217,6 +220,47 @@ struct Functions {
         }
         if (limcnv == -1) { limcnv = nlev+1; }
       }
+    }
+
+    // -------------------------------------------------------------------------
+    // print parameter values for the log file (C++ analog of zm_param_print)
+    void print(std::ostream& os = std::cout) const {
+      const std::string indent = "  ";
+      // preserve and restore the stream's formatting flags
+      const std::ios::fmtflags saved_flags = os.flags();
+      os << std::boolalpha;
+      os << "\n";
+      os << "ZM deep convection parameter values:\n";
+      os << indent << "tau             : " << tau            << "\n";
+      os << indent << "alfa            : " << alfa           << "\n";
+      os << indent << "ke              : " << ke             << "\n";
+      os << indent << "dmpdz           : " << dmpdz          << "\n";
+      os << indent << "tpert_fix       : " << tpert_fix      << "\n";
+      os << indent << "tpert_fac       : " << tpert_fac      << "\n";
+      os << indent << "tiedke_add      : " << tiedke_add     << "\n";
+      os << indent << "c0_lnd          : " << c0_lnd         << "\n";
+      os << indent << "c0_ocn          : " << c0_ocn         << "\n";
+      os << indent << "num_cin         : " << num_cin        << "\n";
+      os << indent << "limcnv          : " << limcnv         << "\n";
+      os << indent << "mx_bot_lyr_adj  : " << mx_bot_lyr_adj << "\n";
+      os << indent << "trig_dcape      : " << trig_dcape     << "\n";
+      os << indent << "trig_ull        : " << trig_ull       << "\n";
+      os << indent << "clos_dyn_adj    : " << clos_dyn_adj   << "\n";
+      os << indent << "no_deep_pbl     : " << no_deep_pbl    << "\n";
+      // ZM micro parameters
+      os << indent << "zm_microp       : " << zm_microp      << "\n";
+      os << indent << "old_snow        : " << old_snow       << "\n";
+      os << indent << "auto_fac        : " << auto_fac       << "\n";
+      os << indent << "accr_fac        : " << accr_fac       << "\n";
+      os << indent << "micro_dcs       : " << micro_dcs      << "\n";
+      // MCSP parameters
+      os << indent << "mcsp_enabled    : " << mcsp_enabled   << "\n";
+      os << indent << "mcsp_t_coeff    : " << mcsp_t_coeff   << "\n";
+      os << indent << "mcsp_q_coeff    : " << mcsp_q_coeff   << "\n";
+      os << indent << "mcsp_u_coeff    : " << mcsp_u_coeff   << "\n";
+      os << indent << "mcsp_v_coeff    : " << mcsp_v_coeff   << "\n";
+      os << std::endl;
+      os.flags(saved_flags);
     }
 
     Real tau;               // convective adjustment time scale

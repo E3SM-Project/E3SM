@@ -109,17 +109,18 @@ void ZMDeepConvection::initialize_impl (const RunType)
   add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
 
   //----------------------------------------------------------------------------
+  if (not ZMF::s_zm_opts.use_fortran_bridge) {
+    ZMF::s_zm_opts.set_limcnv(m_grid);
+    ZMF::s_zm_opts.print();
+  } // if not use_fortran_bridge
+  //----------------------------------------------------------------------------
   if (ZMF::s_zm_opts.use_fortran_bridge) {
     // allocate host mirror variables for fortran bridging
     zm_input.init_host_mirrors (m_ncol, m_nlev);
     zm_output.init_host_mirrors(m_ncol, m_nlev);
     // initialize variables on the fortran side
-    zm::zm_eamxx_bridge_init(m_nlev);
+    zm::zm_eamxx_bridge_init(m_nlev,ZMF::s_zm_opts.limcnv);
   } // if use_fortran_bridge
-  //----------------------------------------------------------------------------
-  if (not ZMF::s_zm_opts.use_fortran_bridge) {
-    ZMF::s_zm_opts.set_limcnv(m_grid);
-  } // if not use_fortran_bridge
   //----------------------------------------------------------------------------
 } // ZMDeepConvection::initialize_impl
 
