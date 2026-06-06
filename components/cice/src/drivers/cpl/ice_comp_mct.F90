@@ -1544,7 +1544,7 @@ end function restart_filename
        call shr_sys_abort()
     endif
     if(iam == 0) then
-       write(nu_diag,*) "register MOAB app:", trim(appname), "  MPSIID=", MPSIID
+       write(nu_diag,*) "register MOAB app:", appname(1:index(appname,C_NULL_CHAR)-1), "  MPSIID=", MPSIID
     endif
 
     ! start describing the mesh to MOAB

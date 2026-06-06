@@ -181,7 +181,7 @@ CONTAINS
            call endrun('Error: cannot register moab app')
        if(par%masterproc) then
            write(iulog,*) " "
-           write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
+           write(iulog,*) "register MOAB app:", appname(1:index(appname,C_NULL_CHAR)-1), "  MHID=", MHID
            write(iulog,*) " "
        endif
        appname="HM_FINE"//C_NULL_CHAR
@@ -191,7 +191,7 @@ CONTAINS
            call endrun('Error: cannot register moab app for fine mesh')
        if(par%masterproc) then
            write(iulog,*) " "
-           write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
+           write(iulog,*) "register MOAB app:", appname(1:index(appname,C_NULL_CHAR)-1), "  MHFID=", MHFID
            write(iulog,*) " "
        endif
        if ( fv_nphys > 0 ) then
@@ -205,7 +205,7 @@ CONTAINS
              call endrun('Error: cannot register moab app for fine mesh')
          if(par%masterproc) then
              write(iulog,*) " "
-             write(iulog,*) "register MOAB app:", trim(appname), "  MHPGID=", mhpgid
+             write(iulog,*) "register MOAB app:", appname(1:index(appname,C_NULL_CHAR)-1), "  MHPGID=", mhpgid
              write(iulog,*) " "
          endif
        endif

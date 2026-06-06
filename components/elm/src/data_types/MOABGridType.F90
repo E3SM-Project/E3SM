@@ -144,7 +144,7 @@ contains
          call endrun('Error: cannot register ELM-MOAB halo application')
     if(masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "register MOAB application:", trim(appname), ", id=", mlndghostid
+       write(iulog,*) "register MOAB application:", appname(1:index(appname,C_NULL_CHAR)-1), ", id=", mlndghostid
        write(iulog,*) " "
     endif
 

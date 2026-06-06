@@ -1007,7 +1007,7 @@ contains
           call shr_sys_abort( sub//' Error: cannot register moab app')
        if(masterproc) then
           write(iulog,*) " "
-          write(iulog,*) "register MOAB ROF app:", trim(appname), "  mrofid=", mrofid, " ROFID=", ROFID
+          write(iulog,*) "register MOAB ROF app:", appname(1:index(appname,C_NULL_CHAR)-1), "  mrofid=", mrofid, " ROFID=", ROFID
           write(iulog,*) " "
        endif
 

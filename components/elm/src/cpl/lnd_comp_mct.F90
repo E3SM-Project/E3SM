@@ -890,7 +890,7 @@ contains
        call endrun('Error: cannot register moab app')
     if(masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "register MOAB app:", trim(appname), "  mlnid=", mlnid
+       write(iulog,*) "register MOAB app:", appname(1:index(appname,C_NULL_CHAR)-1), "  mlnid=", mlnid
        write(iulog,*) " "
     endif
 

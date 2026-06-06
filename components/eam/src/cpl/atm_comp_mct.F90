@@ -1477,7 +1477,7 @@ CONTAINS
        call endrun('Error: cannot register moab app for atm physics')
     if(masterproc) then
        write(iulog,*) " "
-       write(iulog,*) "register MOAB app:", trim(appname), "  mphaid=", mphaid
+       write(iulog,*) "register MOAB app:", appname(1:index(appname,C_NULL_CHAR)-1), "  mphaid=", mphaid
        write(iulog,*) " "
     endif
 

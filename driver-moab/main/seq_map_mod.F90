@@ -239,7 +239,7 @@ contains
 
     mapfile_term = trim(mapfile)//CHAR(0)
     if (seq_comm_iamroot(CPLID)) then
-        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
+        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile)
     endif
 
     ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
@@ -466,7 +466,7 @@ contains
 #ifdef MOABDEBUG
        if (seq_comm_iamroot(CPLID)) then
           write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
-                nfields,  ' fldlist_moab=', trim(fldlist_moab), ' moab step ', num_moab_exports
+                nfields,  ' fldlist_moab=', fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1), ' moab step ', num_moab_exports
           call shr_sys_flush(logunit)
        endif
 #endif
@@ -489,7 +489,7 @@ contains
        if ( valid_moab_context ) then
 #ifdef MOABDEBUG
           if (seq_comm_iamroot(CPLID)) then
-             write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', trim(fldlist_moab), &
+             write(logunit, *) subname,' iMOAB mapper rearrange or copy ', mapper%mbname, ' send/recv tags ', fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1), &
                ' mbpresent=', mbpresent, ' mbnorm=', mbnorm, ' moab step:', num_moab_exports
              call shr_sys_flush(logunit)
           endif
@@ -502,7 +502,7 @@ contains
           !***   intx_context: Context ID for the intersection/target app
           ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
           if (ierr .ne. 0) then
-             write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
+             write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1), ierr
              call shr_sys_flush(logunit)
              call shr_sys_abort(subname//' ERROR in sending tags')
           endif
@@ -514,7 +514,7 @@ contains
           !***   src_context: Context ID for the source app
           ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
           if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
+             write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1)
              call shr_sys_flush(logunit)
              call shr_sys_abort(subname//' ERROR in receiving tags')
           endif
@@ -522,7 +522,7 @@ contains
           !*** Must be called after receive completes to free memory.
           ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
           if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+             write(logunit,*) subname,' error in freeing buffers ', fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1)
              call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
           endif
        endif ! if (valid_moab_context)
@@ -568,7 +568,7 @@ contains
              !*** MOAB: iMOAB_SetDoubleTagStorage - Set tag values on mesh elements
              ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
+                 write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,'norm8wt'
                 call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
              endif
 #ifdef MOABDEBUG
@@ -586,7 +586,7 @@ contains
                 tagname = avwtsfld_s//C_NULL_CHAR
                 ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
                 if (ierr .ne. 0) then
-                   write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
+                    write(logunit,*) subname,' error getting value for mapping norm factor ', trim(avwtsfld_s)
                    call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
                 endif
 
@@ -599,7 +599,7 @@ contains
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get current field values
                 ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
                 if (ierr .ne. 0) then
-                   write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, mapper%tag_entity_type
+                    write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1), arrsize_src, mapper%tag_entity_type
                    call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
                 endif
 
@@ -637,7 +637,7 @@ contains
           !*** where projection weights will be applied.
           ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context )
           if (ierr .ne. 0) then
-             write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
+             write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1)
              call shr_sys_flush(logunit)
              call shr_sys_abort(subname//' ERROR in sending tags')
           endif
@@ -651,12 +651,12 @@ contains
 #ifdef MOABDEBUG
           if (seq_comm_iamroot(CPLID)) then
              write(logunit, *) subname,' iMOAB mapper receiving tags with intx and intx_mbid: ', &
-                mapper%mbname, trim(fldlist_moab), ' moab step:', num_moab_exports
+                mapper%mbname, fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1), ' moab step:', num_moab_exports
           endif
 #endif
           ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
           if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
+             write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1)
              call shr_sys_flush(logunit)
              call shr_sys_abort(subname//' ERROR in receiving tags')
              !valid_moab_context = .false. ! do not attempt to project
@@ -664,7 +664,7 @@ contains
           !*** MOAB: iMOAB_FreeSenderBuffers - Release MPI send buffers
           ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
           if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+             write(logunit,*) subname,' error in freeing buffers ', fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1)
              call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
           endif
        endif
@@ -676,7 +676,7 @@ contains
 
 #ifdef MOABDEBUG
           if (seq_comm_iamroot(CPLID)) then
-             write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab), &
+             write(logunit, *) subname,' iMOAB projection mapper: ',trim(mapper%mbname), ' between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, fldlist_moab(1:index(fldlist_moab,C_NULL_CHAR)-1), &
                 ' moab step:', num_moab_exports
              call shr_sys_flush(logunit)
           endif
@@ -767,7 +767,7 @@ contains
              !*** MOAB: Get mapped normalization weights on target grid
              ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize_tgt , mapper%tag_entity_type, wghts)
              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
+                 write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, 'norm8wt'
                 call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
              endif
 
