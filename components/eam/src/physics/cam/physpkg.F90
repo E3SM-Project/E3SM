@@ -1494,18 +1494,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
           if ( is_end_curr_month() ) then
              phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
-          ! upon restart with cflx_cpl_opt=2, these need to be re-zeroed
-          ! because get_carbon_sfc_fluxes has not been called yet,
-          ! and co2_diags_read_fields has been called to fill them with old values
-          ! there may still be an issue with the timestep-level values, but don't
-          ! zero them yet so that they can be diagnosed
-          call phys_getopts( cflx_cpl_opt_out = cflx_cpl_opt)
-          if ( is_first_restart_step() .and. is_start_curr_month() .and. cflx_cpl_opt == 2) then
-             phys_state(c)%c_mflx_sfc(:ncol) = 0._r8
-             phys_state(c)%c_mflx_ocn(:ncol) = 0._r8
-             phys_state(c)%c_mflx_sff(:ncol) = 0._r8
-             phys_state(c)%c_mflx_lnd(:ncol) = 0._r8
-         end if
        end do
        call co2_diags_store_fields(phys_state, pbuf2d)
     end if
