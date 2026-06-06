@@ -140,6 +140,7 @@ module prep_rof_mod
   real (kind=R8) , allocatable, private :: x2r_rm (:,:) ! result of merge
   real (kind=R8) , allocatable, private :: a2x_rm (:,:)
   real (kind=R8) , allocatable, private :: l2x_rm (:,:)
+  real (kind=R8) , allocatable, private :: o2x_rm (:,:)
 
   logical :: no_match ! used to force a new mapper
   logical :: compute_maps_online_l2r, compute_maps_online_a2r, compute_maps_online_o2r
@@ -220,6 +221,7 @@ contains
          lnd_gnam=lnd_gnam             , &
          atm_gnam=atm_gnam             , &
          rof_gnam=rof_gnam             , &
+         ocn_gnam=ocn_gnam             , &
          cpl_compute_maps_online=cpl_compute_maps_online )
 
     wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
@@ -809,13 +811,13 @@ contains
               write(logunit,*) subname,' error in registering OCN-ROF intersection'
               call shr_sys_abort(subname//' ERROR in registering OCN-ROF intersection')
             endif
-            tagname = trim(seq_flds_o2x_fluxes_to_rof)//C_NULL_CHAR
+            tagname = trim(seq_flds_o2x_fields_to_rof)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 !
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco, tagindex )
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on rof cpl'
-               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields on rof cpl')
+               write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields_to_rof on rof cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_o2x_fields_to_rof on rof cpl')
             endif
 
             ! If loading map from disk, then load the scalar map as well
@@ -1113,6 +1115,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
     ! used for indexing
     type(mct_avect) , pointer   :: l2x_r
     type(mct_avect) , pointer   :: a2x_r
+    type(mct_avect) , pointer   :: o2x_r
     type(mct_avect) , pointer    :: fractions_r
     type(mct_avect) , pointer :: x2r_r
     !
@@ -1173,6 +1176,12 @@ subroutine prep_rof_accum_ocn_moab(timer)
     integer, save :: index_l2x_coszen_str
     integer, save :: index_x2r_coszen_str
 
+    integer, save :: index_o2x_So_ssh
+    integer, save :: index_x2r_So_ssh
+
+    integer, save :: index_l2x_Flrl_inundinf
+    integer, save :: index_x2r_Flrl_inundinf
+
     integer, save :: index_frac
     real(R8)      :: frac
     character(CL) :: fracstr
@@ -1188,7 +1197,7 @@ subroutine prep_rof_accum_ocn_moab(timer)
 
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr, arrsize
-    integer, save :: naflds, nlflds ! these are saved the first time
+    integer, save :: naflds, nlflds, noflds ! these are saved the first time
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
 #endif
@@ -1218,6 +1227,12 @@ subroutine prep_rof_accum_ocn_moab(timer)
          a2x_r => a2r_rx(1)
          naflds = mct_aVect_nRattr(a2x_r)
          allocate(a2x_rm (lsize, naflds))
+      endif
+
+      if (ocn_rof_two_way) then
+         o2x_r => o2r_rx(1)
+         noflds = mct_aVect_nRattr(o2x_r)
+         allocate(o2x_rm (lsize, noflds))
       endif
 
       nlflds = mct_aVect_nRattr(l2x_r)
@@ -1357,6 +1372,18 @@ subroutine prep_rof_accum_ocn_moab(timer)
           mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
        endif
 
+       if (ocn_rof_two_way) then
+          index_o2x_So_ssh = mct_aVect_indexRA(o2x_r,'So_ssh')
+          index_x2r_So_ssh = mct_aVect_indexRA(x2r_r,'So_ssh')
+          mrgstr(index_x2r_So_ssh) = trim(mrgstr(index_x2r_So_ssh))//' = '//'o2x%So_ssh'
+       endif
+
+       if (lnd_rof_two_way) then
+          index_l2x_Flrl_inundinf = mct_aVect_indexRA(l2x_r,'Flrl_inundinf')
+          index_x2r_Flrl_inundinf = mct_aVect_indexRA(x2r_r,'Flrl_inundinf')
+          mrgstr(index_x2r_Flrl_inundinf) = trim(mrgstr(index_x2r_Flrl_inundinf))//' = '//'l2x%Flrl_inundinf'
+       endif
+
     end if
 ! fill in with data from moab tags
 
@@ -1384,6 +1411,14 @@ subroutine prep_rof_accum_ocn_moab(timer)
        ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm)
        if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting a2x_rm array ')
+       endif
+    endif
+    if (ocn_rof_two_way) then
+       tagname = trim(seq_flds_o2x_fields_to_rof)//C_NULL_CHAR
+       arrsize = noflds * lsize !        allocate (o2x_rm (lsize, noflds))
+       ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, o2x_rm)
+       if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting o2x_rm array ')
        endif
     endif
     !  l2x_rm
@@ -1419,6 +1454,10 @@ subroutine prep_rof_accum_ocn_moab(timer)
           x2r_rm(i,index_x2r_Flrl_rofi_HDO) = l2x_rm(i,index_l2x_Flrl_rofi_HDO) * frac
        end if
 
+       if (lnd_rof_two_way) then
+          x2r_rm(i,index_x2r_Flrl_inundinf) = l2x_rm(i,index_l2x_Flrl_inundinf)
+       endif
+
        if ( rof_heat ) then
           x2r_rm(i,index_x2r_Sa_tbot)    = a2x_rm(i,index_a2x_Sa_tbot)
           x2r_rm(i,index_x2r_Sa_pbot)    = a2x_rm(i,index_a2x_Sa_pbot)
@@ -1433,6 +1472,12 @@ subroutine prep_rof_accum_ocn_moab(timer)
        endif
 
     end do
+
+    if (ocn_rof_two_way) then
+       do i = 1,lsize
+          x2r_rm(i,index_x2r_So_ssh) = o2x_rm(i,index_o2x_So_ssh)
+       enddo
+    endif
     ! after we are done, set x2r_rm to the mbrxid
 
     tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
