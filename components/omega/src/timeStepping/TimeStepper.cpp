@@ -501,6 +501,10 @@ void TimeStepper::updateVelocityByTend(OceanState *State1, int TimeLevel1,
                                         CoeffSeconds * NormalVelTend(IEdge, K);
               });
        });
+   // Zero boundary layers; updateVelocityByTend only writes [KMin,KMax], so
+   // layers outside that range retain fill values that would corrupt
+   // tendencies.
+   VCoord->applyEdgeLayerMask(NormalVel1, Mesh->NEdgesAll);
 }
 
 //------------------------------------------------------------------------------
