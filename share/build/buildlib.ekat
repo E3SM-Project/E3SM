@@ -151,6 +151,59 @@ def buildlib(bldroot, installpath, case):
     if not os.path.isdir(bldroot):
         os.makedirs(bldroot)
 
+    # Workaround for NVCC 12.9 + Intel oneAPI 2025.3+ (Clang/21) incompatibility.
+    # NVCC's internal Clang (~LLVM 14) fails on Intel Clang/21 intrinsic headers
+    # (e.g., avx512bitalgintrin.h uses __builtin_elementwise_popcount) when Intel's
+    # icpx/CC is used as nvcc's ccbin. We must use g++ as ccbin instead.
+    #
+    # However, EKAT's cmake (EkatSetCompilerFlags.cmake) detects IntelLLVM as the CXX
+    # compiler and bakes Intel-specific CXX flags into cmake's flags.make files, including:
+    #   -qopenmp-simd  (Intel OpenMP SIMD; g++ equivalent is -fopenmp-simd)
+    #   -diag-disable=remark  (Intel diagnostic suppression; not recognized by g++)
+    # A thin wrapper script is created that translates/strips these flags before calling
+    # g++, making them compatible with the g++ ccbin.
+    #
+    # kokkos_launch_compiler sets NVCC_WRAPPER_DEFAULT_COMPILER to the CXX compiler
+    # (icpx/CC) ONLY if the env var is unset (bash `: ${var:=default}` semantics).
+    # By pre-setting it to our wrapper here, we ensure nvcc_wrapper uses g++ as ccbin,
+    # which keeps Intel's Clang/21 include paths out of NVCC's internal preprocessing.
+    #
+    # Note: CMAKE_CUDA_HOST_COMPILER in KOKKOS_OPTIONS does NOT fix this because
+    # it only sets a cmake cache variable and never flows into the kokkos_launch_compiler
+    # bash script where the actual ccbin is determined.
+    compiler = case.get_value("COMPILER")
+    if compiler == "intelgpu" and "NVCC_WRAPPER_DEFAULT_COMPILER" not in os.environ:
+        gcc_cxx = shutil.which("g++")
+        if gcc_cxx:
+            wrapper_path = os.path.join(bldroot, "intel_to_gcc_wrapper.sh")
+            with open(wrapper_path, "w") as wf:
+                wf.write(
+                    "#!/bin/bash\n"
+                    "# Wrapper around g++ for use as NVCC ccbin.\n"
+                    "# Translates/strips Intel-specific CXX flags that g++ does not support.\n"
+                    "# Created by buildlib.ekat: NVCC 12.9 + Intel oneAPI 2025.3+ workaround.\n"
+                    "args=()\n"
+                    "for arg in \"$@\"; do\n"
+                    "  case \"$arg\" in\n"
+                    "    -qopenmp-simd)\n"
+                    "      args+=(\"-fopenmp-simd\")  # translate Intel -> GNU OpenMP SIMD flag\n"
+                    "      ;;\n"
+                    "    -diag-disable=*)\n"
+                    "      ;;                       # drop Intel diagnostic suppression flags\n"
+                    "    -Rno-*)\n"
+                    "      ;;                       # drop Intel remark suppression flags (e.g. -Rno-debug-disables-optimization added by CMake for IntelLLVM Debug builds)\n"
+                    "    *)\n"
+                    "      args+=(\"$arg\")\n"
+                    "      ;;\n"
+                    "  esac\n"
+                    "done\n"
+                    f"exec {gcc_cxx} \"${{args[@]}}\"\n"
+                )
+            os.chmod(wrapper_path, 0o755)
+            os.environ["NVCC_WRAPPER_DEFAULT_COMPILER"] = wrapper_path
+            print(f"Setting NVCC_WRAPPER_DEFAULT_COMPILER={wrapper_path} "
+                  f"(NVCC + Intel 2025.3+ Clang/21 headers incompatibility workaround)")
+
     config_if_not_configured("EKAT", bldroot, gen_makefile_cmd, logger)
     run_bld_cmd_ensure_logging(
         "{} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot

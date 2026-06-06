@@ -443,10 +443,21 @@
       <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
+    <directives COMPSET="!.*MMF.*" compiler="intelgpu">
+      <directive> --gpus-per-node=4</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="intelgpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
     </directives>
     <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="intel">
       <directive> -G 0</directive>
     </directives>
     <queues>
@@ -488,10 +499,21 @@
       <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
     </directives>
+    <directives COMPSET="!.*MMF.*" compiler="intelgpu">
+      <directive> --gpus-per-node=4</directive>
+      <directive> --gpu-bind=none</directive>
+    </directives>
+    <directives COMPSET=".*MMF.*" compiler="intelgpu">
+      <directive> --gpus-per-task=1</directive>
+      <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
+    </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
     </directives>
     <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="intel">
       <directive> -G 0</directive>
     </directives>
     <queues>
@@ -532,11 +554,22 @@
     <directives compiler="nvidiagpu">
       <directive> --gpus-per-node=4</directive>
       <directive> --gpu-bind=none</directive>
+     </directives>
+     <directives COMPSET="!.*MMF.*" compiler="intelgpu">
+       <directive> --gpus-per-node=4</directive>
+       <directive> --gpu-bind=none</directive>
+     </directives>
+     <directives COMPSET=".*MMF.*" compiler="intelgpu">
+       <directive> --gpus-per-task=1</directive>
+       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="gnu">
       <directive> -G 0</directive>
     </directives>
     <directives compiler="nvidia">
+      <directive> -G 0</directive>
+    </directives>
+    <directives compiler="intel">
       <directive> -G 0</directive>
     </directives>
     <queues>
