@@ -28,3 +28,9 @@ endif()
 set(E3SM_LINK_WITH_FORTRAN "TRUE")
 
 set(PIO_FILESYSTEM_HINTS "lustre")
+
+# The MOAB coupler pulls in a MOAB build that is UBSan-instrumented in this
+# environment, so the final executable must link the UBSan runtime.
+if (DEFINED COMP_INTERFACE AND COMP_INTERFACE STREQUAL "moab")
+	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -lubsan -Wl,--as-needed")
+endif()
