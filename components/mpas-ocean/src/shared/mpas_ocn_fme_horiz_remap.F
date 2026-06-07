@@ -1221,11 +1221,23 @@ contains
       err = 0
       if (.not. self%file_is_open) then; err = 1; return; end if
 
-      ! Fresh-create files: leave define-mode and seed lon/lat once.
-      ! Reopened (append-mode) files are already in data mode and lon/lat
-      ! are already populated, so this whole block is skipped.
-      if (self%time_record == 0 .and. .not. self%existing_file_reopened) then
-         ierr = pio_enddef(self%pio_file)
+      ! Seed the lon/lat coordinate axes on the first record of a file.
+      ! Fresh-create files must first leave define mode (pio_enddef);
+      ! reopened (append-mode) files are already in data mode.
+      !
+      ! time_record == 0 on a REOPENED file means a prior leg created the
+      ! file's schema (def_var lon/lat/masks) but closed it before its first
+      ! flush, so lon/lat were never written -- they live only in this block.
+      ! That is the same created-but-empty-file case the static-mask
+      ! self-heal repairs (AGENTS.md gotcha #45); without re-seeding lon/lat
+      ! here the reopened file would ship fill-valued coordinate axes while
+      ! its data records are fine. A normal warm-restart reopen of a file
+      ! that already holds records seeds time_record >= 1 and skips this
+      ! block, so its coordinates are left untouched (warm-restart BFB).
+      if (self%time_record == 0) then
+         if (.not. self%existing_file_reopened) then
+            ierr = pio_enddef(self%pio_file)
+         end if
          ierr = pio_put_var(self%pio_file, self%pio_lon_var, &
               remap_data%lon(1:remap_data%nlon))
          ierr = pio_put_var(self%pio_file, self%pio_lat_var, &
