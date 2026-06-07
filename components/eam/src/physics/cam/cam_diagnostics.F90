@@ -1499,9 +1499,17 @@ end subroutine diag_conv_tend_ini
          call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%q(1,1,ixcldliq), p_surf)
          call outfld('CLDLIQ300    ', p_surf, pcols, lchnk )
       end if
+      if (hist_fld_active('CLDLIQ250')) then
+         call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%q(1,1,ixcldliq), p_surf)
+         call outfld('CLDLIQ250    ', p_surf, pcols, lchnk )
+      end if
       if (hist_fld_active('CLDLIQ200')) then
          call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%q(1,1,ixcldliq), p_surf)
          call outfld('CLDLIQ200    ', p_surf, pcols, lchnk )
+      end if
+      if (hist_fld_active('CLDLIQ150')) then
+         call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%q(1,1,ixcldliq), p_surf)
+         call outfld('CLDLIQ150    ', p_surf, pcols, lchnk )
       end if
       if (hist_fld_active('CLDLIQ100')) then
          call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%q(1,1,ixcldliq), p_surf)
