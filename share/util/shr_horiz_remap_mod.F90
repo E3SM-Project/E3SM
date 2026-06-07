@@ -94,6 +94,17 @@ module shr_horiz_remap_mod
 
     ! Persistent workspace for apply (grows as needed)
     real(r8), allocatable :: ws_recv_buf(:)
+
+    ! Map-weight sign diagnostics (set in read_mapfile). A map with any
+    ! negative interpolation weight (e.g. TempestRemap 2nd-order FV, the
+    ! "trfv2" maps) is unsafe for the masked-renormalization path: at a
+    ! partially-covered target cell the signed valid_frac can cancel to ~0
+    ! or go negative, so dividing by it amplifies the masked average far
+    ! outside the source range (negative layer thickness, 250 degC, ...).
+    ! apply_masked self-guards against this; callers should ALSO inspect
+    ! has_negative_weights at init and refuse/warn. See AGENTS.md.
+    logical  :: has_negative_weights = .false.
+    real(r8) :: min_weight = 0.0_r8
   contains
     procedure :: read_mapfile => shr_horiz_remap_read_mapfile
     procedure :: build_comm   => shr_horiz_remap_build_comm
@@ -167,6 +178,17 @@ CONTAINS
         rd%tmp_wgt(cnt)     = S_all(i)
       end if
     end do
+
+    ! Detect negative interpolation weights. Non-negative maps (first-order
+    ! conservative, bilinear) keep apply_masked a convex combination of the
+    ! valid sources; maps with negative weights (TempestRemap 2nd-order FV /
+    ! "trfv2") do not, and silently corrupt the masked path at depth and
+    ! coastlines where coverage is partial (see AGENTS.md). S_all is the full
+    ! global weight list on every rank, so this scan is global without comms.
+    rd%min_weight = 0.0_r8
+    if (n_s > 0) rd%min_weight = minval(S_all)
+    rd%has_negative_weights = (rd%min_weight < 0.0_r8)
+
     deallocate(row_all, col_all, S_all)
 
     ! Build sorted list of unique source columns needed by this rank
@@ -548,10 +570,17 @@ CONTAINS
     integer :: nlev_packed, needed, i, k, j, src_idx, jbeg, jend
     integer :: send_counts_lev(0:nprocs-1), send_displs_lev(0:nprocs-1)
     integer :: recv_counts_lev(0:nprocs-1), recv_displs_lev(0:nprocs-1)
-    real(r8) :: valid_frac
+    real(r8) :: valid_frac, valid_frac_abs, mask_recv
     ! Same threshold as the apply path so coastlines fill consistently
     ! whether the caller goes through apply or apply_masked.
     real(r8), parameter :: vfrac_eps = SHR_COVERAGE_EPS
+    ! Well-conditioning guard for negative-weight maps. The signed valid_frac
+    ! must be at least this fraction of the absolute valid weight mass for the
+    ! masked average to be trustworthy. For a non-negative map valid_frac ==
+    ! valid_frac_abs, so the test is always satisfied (BFB); for a negative-
+    ! weight map it fills cells whose weights cancel, bounding the output to
+    ! <= max|source| / WELL_COND_FRAC instead of an unbounded blow-up.
+    real(r8), parameter :: WELL_COND_FRAC = 0.5_r8
 
     ierr = 0
     nlev_packed = numlev + 1
@@ -586,7 +615,9 @@ CONTAINS
         do k = 1, numlev
           fld_out(i, k) = rd%wgt(jbeg) * rd%ws_recv_buf((src_idx-1)*nlev_packed + k)
         end do
-        valid_frac = rd%wgt(jbeg) * rd%ws_recv_buf((src_idx-1)*nlev_packed + nlev_packed)
+        mask_recv      = rd%ws_recv_buf((src_idx-1)*nlev_packed + nlev_packed)
+        valid_frac     = rd%wgt(jbeg)      * mask_recv
+        valid_frac_abs = abs(rd%wgt(jbeg)) * mask_recv
         ! Remaining contributions
         do j = jbeg+1, jend
           src_idx = rd%col_recvidx(j)
@@ -594,11 +625,18 @@ CONTAINS
             fld_out(i, k) = fld_out(i, k) + &
                  rd%wgt(j) * rd%ws_recv_buf((src_idx-1)*nlev_packed + k)
           end do
-          valid_frac = valid_frac + &
-               rd%wgt(j) * rd%ws_recv_buf((src_idx-1)*nlev_packed + nlev_packed)
+          mask_recv      = rd%ws_recv_buf((src_idx-1)*nlev_packed + nlev_packed)
+          valid_frac     = valid_frac     + rd%wgt(j)      * mask_recv
+          valid_frac_abs = valid_frac_abs + abs(rd%wgt(j)) * mask_recv
         end do
-        ! Normalize by valid_frac (the correct denominator excluding fills)
-        if (valid_frac > vfrac_eps) then
+        ! Normalize by valid_frac (the correct denominator excluding fills).
+        ! Require valid_frac to be a well-conditioned fraction of the absolute
+        ! valid weight mass: for a non-negative map valid_frac==valid_frac_abs
+        ! so this is BFB; for a negative-weight map it rejects cells where the
+        ! signed weights cancel (which is exactly where the masked path blows
+        ! up out of range) and emits FILL instead. See AGENTS.md.
+        if (valid_frac > vfrac_eps .and. &
+            valid_frac >= WELL_COND_FRAC * valid_frac_abs) then
           do k = 1, numlev
             fld_out(i, k) = fld_out(i, k) / valid_frac
           end do
