@@ -1073,8 +1073,12 @@ end subroutine diag_conv_tend_ini
     lchnk = state%lchnk
     ncol  = state%ncol
 
-    call cnst_get_ind('CLDLIQ', ixcldliq)
-    call cnst_get_ind('CLDICE', ixcldice)
+    ixcldliq = -1
+    ixcldice = -1
+    if (moist_physics) then
+       call cnst_get_ind('CLDLIQ', ixcldliq)
+       call cnst_get_ind('CLDICE', ixcldice)
+    end if
 
     ! Output NSTEP for debugging
     nstep = get_nstep()
