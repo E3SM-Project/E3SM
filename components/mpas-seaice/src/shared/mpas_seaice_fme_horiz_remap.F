@@ -891,11 +891,22 @@ contains
       err = 0
       if (.not. file_is_open) then; err = 1; return; end if
 
-      ! Fresh-create files: leave define-mode and seed lon/lat once.
-      ! Reopened (append) files are already in data mode and lon/lat are
-      ! already populated, so this whole block is skipped.
-      if (time_record == 0 .and. .not. existing_file_reopened) then
-         ierr = pio_enddef(pio_file)
+      ! Seed the lon/lat coordinate axes on the first record of a file.
+      ! Fresh-create files must first leave define mode (pio_enddef);
+      ! reopened (append) files are already in data mode.
+      !
+      ! time_record == 0 on a REOPENED file means a prior leg created the
+      ! file's schema but closed it before its first flush, so lon/lat were
+      ! never written (they live only in this block). Re-seed them so the
+      ! reopened file does not ship fill-valued coordinate axes (the same
+      ! created-but-empty-file case as the ocean static-mask self-heal --
+      ! AGENTS.md gotcha #45). A normal warm-restart reopen of a file that
+      ! already holds records seeds time_record >= 1 and skips this block,
+      ! leaving its coordinates untouched (warm-restart BFB).
+      if (time_record == 0) then
+         if (.not. existing_file_reopened) then
+            ierr = pio_enddef(pio_file)
+         end if
          ierr = pio_put_var(pio_file, pio_lon_var, remap_data%lon(1:remap_data%nlon))
          ierr = pio_put_var(pio_file, pio_lat_var, remap_data%lat(1:remap_data%nlat))
       end if
@@ -1585,8 +1596,15 @@ contains
       err = 0
       if (.not. file_is_open_5D) then; err = 1; return; end if
 
-      if (time_record_5D == 0 .and. .not. existing_file_reopened_5D) then
-         ierr = pio_enddef(pio_file_5D)
+      ! Seed lon/lat on the first record. Re-seed on a reopened file with no
+      ! records yet (prior leg created the schema but never flushed, so the
+      ! coordinate axes were left unwritten -- see write_time above and
+      ! AGENTS.md gotcha #45). A reopen of a file that already holds records
+      ! seeds time_record_5D >= 1 and skips this block (warm-restart BFB).
+      if (time_record_5D == 0) then
+         if (.not. existing_file_reopened_5D) then
+            ierr = pio_enddef(pio_file_5D)
+         end if
          ierr = pio_put_var(pio_file_5D, pio_lon_var_5D, remap_data%lon(1:remap_data%nlon))
          ierr = pio_put_var(pio_file_5D, pio_lat_var_5D, remap_data%lat(1:remap_data%nlat))
       end if
