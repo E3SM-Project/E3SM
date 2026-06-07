@@ -216,6 +216,22 @@ contains
          err = ierr; return
       end if
 
+      ! The FME remap always uses the masked-renormalization path, which is
+      ! only safe for non-negative maps. A negative-weight map (TempestRemap
+      ! 2nd-order FV / "trfv2") silently corrupts partially-covered cells.
+      ! Refuse it loudly at init rather than shipping a corrupt training tape.
+      ! Use a conservative or bilinear map instead. See AGENTS.md.
+      if (remap_data%has_negative_weights) then
+         call mpas_log_write('seaice_fme_horiz_remap_init: map file ' // trim(mapfile) &
+              // ' has NEGATIVE interpolation weights (min weight = $r). This is ' &
+              // 'UNSAFE for the masked FME remap path and corrupts ' &
+              // 'partially-covered cells (out-of-range values). Use a ' &
+              // 'non-negative map (first-order conservative or bilinear).', &
+              messageType=MPAS_LOG_CRIT, realArgs=(/ remap_data%min_weight /))
+         err = 1
+         return
+      end if
+
       ! Resolve cell ID mismatch (same issue as MPAS-O): map files from
       ! masked SCRIP meshes use contiguous 1-based ocean-only indexing.
 

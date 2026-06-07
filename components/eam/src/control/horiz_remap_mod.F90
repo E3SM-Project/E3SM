@@ -101,6 +101,23 @@ CONTAINS
       call endrun(trim(subname)//': Error reading mapping file')
     end if
 
+    ! The FME remap always uses the masked-renormalization path, which is only
+    ! safe for non-negative maps. A negative-weight map (TempestRemap 2nd-order
+    ! FV / "trfv2", patch recovery, ...) silently corrupts partially-covered
+    ! cells (out-of-range values where the signed valid_frac cancels). Refuse
+    ! it loudly here rather than shipping a corrupt tape. Use a non-negative
+    ! map (first-order conservative or bilinear). See AGENTS.md.
+    if (self%shared%has_negative_weights) then
+      if (masterproc) then
+        write(iulog,*) trim(subname), ': ERROR: mapping file ', trim(mapfile), &
+             ' has NEGATIVE interpolation weights (min weight = ', &
+             self%shared%min_weight, '). This is UNSAFE for the masked FME ', &
+             'remap path and corrupts partially-covered cells. Use a ', &
+             'non-negative map (first-order conservative or bilinear).'
+      end if
+      call endrun(trim(subname)//': negative-weight map unsafe for masked remap')
+    end if
+
     ! Validate n_a
     if (self%shared%n_a /= size(knuhcs)) then
       if (masterproc) then

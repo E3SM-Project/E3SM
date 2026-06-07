@@ -1450,6 +1450,74 @@ These are hard-won lessons. Read before modifying FME code.
     found are the map-change straddle windows above, and they are not
     5D-specific (the 1D straddle record is wrong the same way, same cause).
 
+47. **Negative-weight remap maps (TempestRemap 2nd-order FV / "trfv2")
+    silently corrupt the masked remap path (found in production
+    2026-06-02; FIXED with a self-guarding `apply_masked` + init refusal).**
+    The `v3.LR.piControl.aigo` production tape had non-physical extremes in
+    the ocean depth-coarsened fields: `temperatureCoarsened_10` up to
+    250 degC, `velocityMeridionalCoarsened` to -13 m/s, and the smoking gun,
+    `layerThicknessCoarsened` down to **-4.8e5 m** (negative thickness is
+    impossible — `accumulate_thickness` only sums `max(0,...)` overlaps).
+    ~2400 columns/file had a negative coarsened thickness, 96% of them at the
+    column's DEEPEST valid level (the rest within 1-2 levels); ~40 of those
+    blew temperature out of `[-3,40]`. Static, identical in `_inst` and
+    `avg`, so NOT a time-averaging artifact; SST / level-0 were clean.
+
+    **Root cause.** The FME remap always uses
+    `shr_horiz_remap_apply_masked`, which normalizes each target cell by
+    `valid_frac = sum_j w_j * mask_j` over only the VALID (in-coverage)
+    sources. With a NON-NEGATIVE map this is a convex combination → output
+    stays within the source range. The run's map was
+    `..._shifted_trfv2.nc`, a TempestRemap 2nd-order FV map that is
+    **52.8% negative weights** (min weight -3.28, max +4.60). At the surface
+    every source is valid so `valid_frac` = full row sum = 1.0 and the
+    negatives balance as designed (surface clean). At a column's deepest
+    valid level only a few sources remain valid; their signed weights no
+    longer sum to ~1 and can cancel to ~0 or go NEGATIVE, so
+    `numerator / valid_frac` explodes / inverts sign → negative thickness,
+    250 degC. The `SHR_COVERAGE_EPS=1e-6` floor only catches
+    `valid_frac ~ 0`, not small-positive or negative cancellation.
+
+    **Timing — it is the MAP, not the restart.** Corruption spanned
+    0401 → 0411-01 (CFS run) and 0401 → 0421-01 (a second run on
+    `$PSCRATCH/E3SMv3/...`). The 5-yr restarts WITHIN those spans
+    (0406, 0411, 0416, 0421-01) did NOT clear it — proof a restart alone
+    doesn't fix it. Each run cleared only when the operator swapped the map
+    at a restart: CFS → first-order `conservative` (44892 target cells),
+    the pscratch run → `trintbilin` (45630, same footprint), both
+    all-positive. Don't mistake the coincidence ("cleared after the
+    restart") for causation; the *map swap* (which requires a restart to
+    take effect) is what fixed it. Verified exhaustively month-by-month:
+    zero negative thickness anywhere after each run's swap. Map weight signs:
+    `conservative` and `trintbilin` have 0 negatives; `trfv2` has 53%.
+    (The `..._patch.nc` / higher-order maps also have negatives — never use
+    them on the masked path.)
+
+    **Fix (`share/util/shr_horiz_remap_mod.F90`):**
+    1. `read_mapfile` scans the global weight list and sets
+       `has_negative_weights` / `min_weight` on `shr_horiz_remap_t`.
+    2. `apply_masked` accumulates `valid_frac_abs = sum |w_j|*mask_j`
+       alongside the signed `valid_frac`, and only normalizes when
+       `valid_frac >= WELL_COND_FRAC * valid_frac_abs` (0.5), else emits
+       `SHR_FILL_VALUE`. For a non-negative map `valid_frac ==
+       valid_frac_abs` so this is **BFB** (ERS stays clean); for a
+       negative-weight map it fills the cancelling cells and bounds any
+       residual output to `<= max|source| / 0.5`.
+    3. `mpas_ocn_fme_horiz_remap.F` init checks `has_negative_weights` and
+       aborts with `MPAS_LOG_CRIT` naming the map and min weight — so a
+       trfv2-type map can never SILENTLY ship a corrupt tape again.
+    The shared-module guard protects EAM/sea-ice masked callers too; only
+    the MPAS-ocean wrapper got the loud init abort (add to the seaice/EAM
+    wrappers if they ever take a user-supplied map).
+
+    **Operational:** the corrupt legs (CFS 0401-0411-01; pscratch
+    0401-0421-01) must be masked or re-run; everything after each swap is
+    clean. The only post-swap out-of-generous-range values are real model
+    features, NOT this bug: SSS ~50-54 PSU at hypersaline basins
+    (Persian Gulf 24-25N/50.5E, Gulf of Suez 28-29N/32-33E, Shark Bay
+    26S/114.5E) and sea-ice `surfaceTemperatureMean` ~ -50 degC in polar
+    winter — both identical before and after the swap.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
