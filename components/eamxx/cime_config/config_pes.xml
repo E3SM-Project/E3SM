@@ -262,7 +262,7 @@
     </mach>
   </grid>
   <grid name="a%ne1024np4">
-    <mach name="pm-gpu|muller-gpu|alvarez-gpu|tuo">
+    <mach name="pm-gpu|muller-gpu|alvarez-gpu">
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
         <comment>pm-gpu: ne1024 eamxx F case, 512 nodes, 4x1, 16 threads for LND/ICE</comment>
         <ntasks>
@@ -272,6 +272,25 @@
           <ntasks_lnd>2048</ntasks_lnd>
           <ntasks_rof>2048</ntasks_rof>
           <ntasks_ocn>2048</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_lnd>16</nthrds_lnd>
+          <nthrds_ice>16</nthrds_ice>
+        </nthrds>
+      </pes>
+    </mach>
+    <mach name="tuo">
+      <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
+        <comment>tuo: ne1024 eamxx F case, 256 nodes, 4x1, 16 threads for LND/ICE</comment>
+        <ntasks>
+          <ntasks_atm>1024</ntasks_atm>
+          <ntasks_cpl>1024</ntasks_cpl>
+          <ntasks_ice>1024</ntasks_ice>
+          <ntasks_lnd>1024</ntasks_lnd>
+          <ntasks_rof>1024</ntasks_rof>
+          <ntasks_ocn>1024</ntasks_ocn>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
