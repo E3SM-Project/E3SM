@@ -1585,6 +1585,19 @@ is the value of that variable from the *previous* time level!
                 <var name="avgBareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1" 
                      description="time averaged negative surface mass balance applied to melting of bare ice (using appliedBareIceAblation from 'geometry' pool)"
                 />
+				<!-- fields for ISMIP reporting not included in the above -->
+				<var name="avgSfcMassBal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied surface mass balance"
+				/>
+				<var name="avgGroundedBMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied grounded basal mass balance"
+				/>
+				<var name="avgGroundingLineFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied flux across the grounding line"
+				/>
+				<var name="avgDhdt" type="real" dimensions="nCells Time" units="m s^-1"
+					 description="time averaged rate of change of ice thickness"
+				/>
         </var_struct>
 
 <!-- ================ -->

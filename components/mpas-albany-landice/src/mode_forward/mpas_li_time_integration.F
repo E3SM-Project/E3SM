@@ -175,7 +175,7 @@ module li_time_integration
       end select
       err = ior(err,err_tmp)
 
-      ! === accumulate fluxes for time averaging of fields sent to coupler
+      ! === accumulate fluxes for time averaging of fields sent to coupler or for ismip
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)

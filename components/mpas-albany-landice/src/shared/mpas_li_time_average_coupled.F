@@ -53,6 +53,8 @@ module li_time_average_coupled
 
         real (kind=RKIND), dimension(:), pointer :: avgBareIceAblationApplied, avgCalvingFlux, &
                 avgFaceMeltFlux, avgFloatingBMBFlux
+        ! fields for ISMIP reporting not included in the above
+        real (kind=RKIND), dimension(:), pointer :: avgSMBFlux, avgGroundedBMBFlux, avgGroundingLineFlux, avgDhdt
 
         integer, pointer :: nCells
 
@@ -63,16 +65,27 @@ module li_time_average_coupled
         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
         call mpas_pool_get_array(timeAveragingPool, 'timeAccumulatedCoupled', timeAccumulatedCoupled)
+        ! fields for E3SM coupling
         call mpas_pool_get_array(timeAveragingPool, 'avgBareIceAblationApplied', avgBareIceAblationApplied)
         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
         call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltFlux', avgFaceMeltFlux)
         call mpas_pool_get_array(timeAveragingPool, 'avgFloatingBMBFlux', avgFloatingBMBFlux)
+        ! fields for ISMIP reporting not included in the above
+        call mpas_pool_get_array(timeAveragingPool, 'avgSMBFlux', avgSMBFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgGroundedBMBFlux', avgGroundedBMBFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgGroundingLineFlux', avgGroundingLineFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgDhdt', avgDhdt)
 
         do iCell = 1, nCells
            avgBareIceAblationApplied(iCell) = 0.0_RKIND
            avgCalvingFlux(iCell) = 0.0_RKIND
            avgFaceMeltFlux(iCell) = 0.0_RKIND
            avgFloatingBMBFlux(iCell) = 0.0_RKIND
+           ! fields for ISMIP reporting not included in the above
+           avgSMBFlux(iCell) = 0.0_RKIND
+           avgGroundedBMBFlux(iCell) = 0.0_RKIND
+           avgGroundingLineFlux(iCell) = 0.0_RKIND
+           avgDhdt(iCell) = 0.0_RKIND
         end do
 
         timeAccumulatedCoupled = 0.0_RKIND
@@ -102,6 +115,10 @@ module li_time_average_coupled
                                                     calvingThickness, avgCalvingFlux, &
                                                     faceMeltingThickness, avgFaceMeltFlux, avgFloatingBMBFlux, &
                                                     floatingBasalMassBalApplied
+        ! fields for ISMIP reporting not included in the above
+        real (kind=RKIND), dimension(:), pointer :: avgSMBFlux, avgGroundedBMBFlux, avgGroundingLineFlux, avgDhdt
+        real (kind=RKIND), dimension(:), pointer :: sfcMassBalApplied, groundedBasalMassBalApplied, &
+                                                    fluxAcrossGroundingLineOnCells, dHdt
         integer, pointer :: nCells
 
         real (kind=RKIND), pointer :: timeAccumulatedCoupled, rhoi, deltat
@@ -120,6 +137,15 @@ module li_time_average_coupled
         call mpas_pool_get_array(timeAveragingPool, 'avgCalvingFlux', avgCalvingFlux)
         call mpas_pool_get_array(timeAveragingPool, 'avgFaceMeltFlux', avgFaceMeltFlux)
         call mpas_pool_get_array(timeAveragingPool, 'avgFloatingBMBFlux', avgFloatingBMBFlux)
+        ! fields for ISMIP reporting not included in the above
+        call mpas_pool_get_array(timeAveragingPool, 'avgSMBFlux', avgSMBFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgGroundedBMBFlux', avgGroundedBMBFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgGroundingLineFlux', avgGroundingLineFlux)
+        call mpas_pool_get_array(timeAveragingPool, 'avgDhdt', avgDhdt)
+        call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+        call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+        call mpas_pool_get_array(geometryPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
+        call mpas_pool_get_array(geometryPool, 'dHdt', dHdt)
 
         do iCell = 1, nCells
 
@@ -134,6 +160,20 @@ module li_time_average_coupled
                                         
            avgFloatingBMBFlux(iCell) = ( avgFloatingBMBFlux(iCell) * timeAccumulatedCoupled &
                                                 + floatingBasalMassBalApplied(iCell) * deltat) / ( timeAccumulatedCoupled + deltat )
+
+           ! fields for ISMIP reporting not included in the above
+           avgSMBFlux(iCell) = ( avgSMBFlux(iCell) * timeAccumulatedCoupled &
+                                                + sfcMassBalApplied(iCell) * deltat) / ( timeAccumulatedCoupled + deltat )
+
+           avgGroundedBMBFlux(iCell) = ( avgGroundedBMBFlux(iCell) * timeAccumulatedCoupled &
+                                                + groundedBasalMassBalApplied(iCell) * deltat) / ( timeAccumulatedCoupled + deltat )
+
+           avgGroundingLineFlux(iCell) = ( avgGroundingLineFlux(iCell) * timeAccumulatedCoupled &
+                                                + fluxAcrossGroundingLineOnCells(iCell) * deltat) / ( timeAccumulatedCoupled + deltat )
+
+           avgDhdt(iCell) = ( avgDhdt(iCell) * timeAccumulatedCoupled &
+                                                + dHdt(iCell) * deltat) / ( timeAccumulatedCoupled + deltat )
+
         end do
 
         timeAccumulatedCoupled = timeAccumulatedCoupled + deltat
