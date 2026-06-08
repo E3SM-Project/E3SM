@@ -140,6 +140,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     // to avoid clashes of names.
     bool use_suffix = grids.size()>1;
     for (const auto& [gname,grid] : grids) {
+      auto& geo_data = m_grid_name_to_geo_data[grid->name()];
+      geo_data.grid = grid;
       for (const auto& fn : grid->get_geometry_data_names()) {
         const auto& f = grid->get_geometry_data(fn);
 
@@ -158,7 +160,7 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
         }
 
         auto alias_name = f.name() + (use_suffix ? grid->m_disambiguation_suffix : "");
-        m_grid_to_geo_data_fields[grid].push_back(f.alias(alias_name,gname));
+        geo_data.fields.push_back(f.alias(alias_name,gname));
       }
     }
   }
@@ -874,9 +876,11 @@ setup_file (      IOFileSpecs& filespecs,
     // By this point all regular output streams have already defined their dims.
     // So if a field is conditional to a certain dim being in the output file,
     // we can immediately check whether we should output it or not.
-    // Note: m_grid_to_geo_data_field is reset to empty after this loop, so the loop runs ONCE,
+    // Note: m_grid_name_to_geo_data is reset to empty after this loop, so the loop runs ONCE,
     //       which means geo streams are lazy-inited on the first setup_file call
-    for (auto& [grid, fields] : m_grid_to_geo_data_fields) {
+    for (auto& kv : m_grid_name_to_geo_data) {
+      auto& geo_data = kv.second;
+      auto& fields = geo_data.fields;
       for (auto it=fields.begin(); it!=fields.end(); ) {
         if (it->get_header().has_extra_data("io_output_if_dim_exists")) {
           // If the required dim is not in the output file, this field is not needed
@@ -892,12 +896,12 @@ setup_file (      IOFileSpecs& filespecs,
       if (fields.size()==0)
         continue; // No grid data to save here (unlikely, but we may as well)
 
-      auto output = std::make_shared<output_type>(m_io_comm, fields, grid);
+      auto output = std::make_shared<output_type>(m_io_comm, fields, geo_data.grid);
       m_geo_data_streams.push_back(output);
     }
 
     // Ensure that the above block runs only once (the 1st time we run this function)
-    m_grid_to_geo_data_fields = {};
+    m_grid_name_to_geo_data.clear();
 
     for (auto& it : m_geo_data_streams) {
       it->setup_output_file(filename,fp_precision,mode);
