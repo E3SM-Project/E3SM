@@ -180,7 +180,12 @@ contains
   subroutine ncd_pio_openfile(file, fname, mode)
     !
     ! !DESCRIPTION:
-    ! Open a NetCDF PIO file
+    ! Open a NetCDF PIO file.  Detects HDF5/NetCDF4 files (magic bytes
+    ! \x89HDF) and opens them with PIO_IOTYPE_NETCDF4P instead of
+    ! PIO_IOTYPE_PNETCDF to avoid PIO warnings about unsupported formats.
+    !
+    ! !USES:
+    use pio, only : pio_iotype_pnetcdf, pio_iotype_netcdf4p
     !
     ! !ARGUMENTS:
     class(file_desc_t) , intent(inout) :: file   ! Output PIO file handle
@@ -188,10 +193,43 @@ contains
     integer            , intent(in)    :: mode   ! file mode
     !
     ! !LOCAL VARIABLES:
-    integer :: ierr
+    integer   :: ierr
+    integer   :: my_io_type          ! iotype selected for this open
+    integer   :: iunit               ! Fortran unit for header read
+    integer   :: ios                 ! I/O status
+    logical   :: is_hdf5             ! .true. if file has HDF5 magic bytes
+    character :: hdr(8)              ! first 8 bytes of file
+    ! HDF5 magic: 0x89 'H' 'D' 'F' 0x0D 0x0A 0x1A 0x0A
+    character, parameter :: hdf5_magic(8) = &
+         (/ char(137), 'H', 'D', 'F', char(13), char(10), char(26), char(10) /)
     !-----------------------------------------------------------------------
 
-    ierr = pio_openfile(pio_subsystem, file, io_type, fname, mode)
+    ! Detect HDF5/NetCDF4 format on the master process and broadcast result
+    is_hdf5 = .false.
+    if (masterproc) then
+       iunit = getavu()
+       open(unit=iunit, file=trim(fname), form='unformatted', access='stream', &
+            status='old', iostat=ios)
+       if (ios == 0) then
+          read(iunit, iostat=ios) hdr
+          if (ios == 0) then
+             is_hdf5 = all(hdr == hdf5_magic)
+          end if
+       end if
+       call relavu(iunit)   ! closes (if open) and frees the unit
+    end if
+    call MPI_Bcast(is_hdf5, 1, MPI_LOGICAL, 0, mpicom, ierr)
+
+    my_io_type = io_type
+    if (is_hdf5 .and. my_io_type == pio_iotype_pnetcdf) then
+       my_io_type = pio_iotype_netcdf4p
+       if (pio_iotask_rank(pio_subsystem)==0) then
+          write(iulog,*) 'ncd_pio_openfile: detected NetCDF4/HDF5 file, ', &
+               'switching from pnetcdf to netcdf4p iotype for ', trim(fname)
+       end if
+    end if
+
+    ierr = pio_openfile(pio_subsystem, file, my_io_type, fname, mode)
 
     if(ierr/= PIO_NOERR) then
        call shr_sys_abort('ncd_pio_openfile ERROR: Failed to open file')
@@ -999,10 +1037,12 @@ contains
     ! Add attributes
     !
     if (present(long_name)) then
-       call ncd_putatt(ncid, varid, 'long_name', trim(long_name))
+       if (len_trim(long_name) > 0) then
+          call ncd_putatt(ncid, varid, 'long_name', trim(long_name))
+       end if
     end if
     if (present(standard_name)) then
-       if (standard_name /= ' ') then
+       if (len_trim(standard_name) > 0) then
           call ncd_putatt(ncid, varid, 'standard_name', trim(standard_name))
        end if
     end if
@@ -1036,7 +1076,9 @@ contains
        call ncd_putatt(ncid, varid, 'comment', trim(comment))
     end if
     if (present(units)) then
-       call ncd_putatt(ncid, varid, 'units', trim(units))
+       if (len_trim(units) > 0) then
+          call ncd_putatt(ncid, varid, 'units', trim(units))
+       end if
     end if
     if (present(cell_method)) then
        str = 'time: ' // trim(cell_method)

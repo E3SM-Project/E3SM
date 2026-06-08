@@ -16,7 +16,8 @@ use ioFileMod,      only: getfil
 use cam_pio_utils,  only: cam_pio_openfile
 use pio,            only: file_desc_t, var_desc_t, pio_get_var, pio_inq_varid, &
                           pio_inq_dimlen, pio_inq_dimid , pio_nowrite, pio_closefile, &
-                          pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_NOERR
+                          pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_NOERR, &
+                          pio_inq_varndims
 
 use cam_logfile,    only: iulog
 use cam_abortutils,     only: endrun
@@ -587,7 +588,8 @@ subroutine insoluble_optics_init(phys_prop, nc_id)
    integer :: sw_ext_id, sw_ssa_id, sw_asm_id, lw_ext_id
    integer :: swbands, nbnd
    integer :: ierr ! error flag
-   integer :: start(2), count(2)
+   integer :: ndims
+   integer, allocatable :: start(:), count(:)
    !------------------------------------------------------------------------------------
 
    allocate (phys_prop%sw_nonhygro_ext(nswbands))
@@ -615,14 +617,28 @@ subroutine insoluble_optics_init(phys_prop, nc_id)
    ierr = pio_inq_varid(nc_id, 'asm_sw', sw_asm_id)
    ierr = pio_inq_varid(nc_id, 'abs_lw', lw_ext_id)
 
+   ! Query ndims from file so start/count match exactly, avoiding warnings
+   ! from SCORPIO when array size differs from variable rank. The band
+   ! dimension is always the last (or only) dimension; all leading dimensions
+   ! are singleton and get start=1, count=1.
+   ierr = pio_inq_varndims(nc_id, sw_ext_id, ndims)
+   allocate(start(ndims), count(ndims))
    start = 1
-   count=(/1,swbands/)
+   count = 1
+   count(ndims) = swbands
 
    ierr = pio_get_var(nc_id, sw_ext_id, start, count, phys_prop%sw_nonhygro_ext)
    ierr = pio_get_var(nc_id, sw_ssa_id, start, count, phys_prop%sw_nonhygro_ssa)
    ierr = pio_get_var(nc_id, sw_asm_id, start, count, phys_prop%sw_nonhygro_asm)
-   count = (/1,nbnd/)
+   deallocate(start, count)
+
+   ierr = pio_inq_varndims(nc_id, lw_ext_id, ndims)
+   allocate(start(ndims), count(ndims))
+   start = 1
+   count = 1
+   count(ndims) = nbnd
    ierr = pio_get_var(nc_id, lw_ext_id, start, count, phys_prop%lw_abs)
+   deallocate(start, count)
 
    ! read refractive index data if available
    call refindex_aer_init(phys_prop, nc_id)
