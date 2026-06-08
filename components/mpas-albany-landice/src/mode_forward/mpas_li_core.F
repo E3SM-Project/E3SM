@@ -1118,10 +1118,13 @@ module li_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       type (MPAS_TimeInterval_type) :: adaptDtForceInterval
+      type (MPAS_TimeInterval_type) :: timeAveragingInterval
+      type (MPAS_TimeInterval_type) :: zeroInterval
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, &
          config_output_interval, config_restart_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
+      character (len=StrKIND), pointer :: config_timeaveraging_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND) :: restartTimeStamp !< string to be read from file
@@ -1142,6 +1145,7 @@ module li_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(configs, 'config_adaptive_timestep_force_interval', config_adaptive_timestep_force_interval)
+      call mpas_pool_get_config(configs, 'config_timeaveraging_interval', config_timeaveraging_interval)
       call mpas_pool_get_config(configs, 'config_slm_coupling_interval', config_slm_coupling_interval)
 
 
@@ -1205,6 +1209,25 @@ module li_core
          ierr = ior(ierr, err_tmp)
       endif
       ierr = ior(ierr, err_tmp)
+
+      ! Set up the timeAveragingInterval alarm.
+      call mpas_set_timeInterval(zeroInterval, dt = 0.0_RKIND, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      ! Only set up the alarm if the interval is greater than zero (i.e., if the user specified an interval for this)
+      if (timeAveragingInterval .gt. zeroInterval) then
+
+         call mpas_add_clock_alarm(core_clock, 'timeAveragingInterval', alarmTime=startTime, &
+                 alarmTimeInterval=timeAveragingInterval, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+         if (mpas_is_alarm_ringing(core_clock, 'timeAveragingInterval', ierr=err_tmp)) then
+            ierr = ior(ierr, err_tmp)
+            call mpas_reset_clock_alarm(core_clock, 'timeAveragingInterval', ierr=err_tmp)
+            ierr = ior(ierr, err_tmp)
+         endif
+         ierr = ior(ierr, err_tmp)
+      endif
 
       ! === error check
       if (ierr /= 0) then

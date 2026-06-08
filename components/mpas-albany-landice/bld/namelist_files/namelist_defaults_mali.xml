@@ -144,6 +144,7 @@
 <config_adaptive_timestep_include_calving>.true.</config_adaptive_timestep_include_calving>
 <config_adaptive_timestep_include_face_melting>.true.</config_adaptive_timestep_include_face_melting>
 <config_adaptive_timestep_force_interval>'0000-00-01_00:00:00'</config_adaptive_timestep_force_interval>
+<config_timeaveraging_interval>'0000-00-00_00:00:00'</config_timeaveraging_interval>
 
 <!-- time_management -->
 <config_do_restart>.false.</config_do_restart>

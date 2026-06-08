@@ -660,6 +660,7 @@ add_default($nl, 'config_adaptive_timestep_include_DCFL');
 add_default($nl, 'config_adaptive_timestep_include_calving');
 add_default($nl, 'config_adaptive_timestep_include_face_melting');
 add_default($nl, 'config_adaptive_timestep_force_interval');
+add_default($nl, 'config_timeaveraging_interval');
 
 ###################################
 # Namelist group: time_management #
