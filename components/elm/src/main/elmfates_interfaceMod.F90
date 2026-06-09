@@ -137,7 +137,7 @@ module ELMFatesInterfaceMod
    use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
 
    ! Used FATES Modules
-   use FatesConstantsMod     , only : ifalse
+   use FatesConstantsMod     , only : ifalse,itrue
    use FatesConstantsMod     , only : fates_check_param_set
    use FatesInterfaceMod     , only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
@@ -445,7 +445,6 @@ contains
      integer                                        :: pass_ed_prescribed_phys
      integer                                        :: pass_planthydro
      integer                                        :: pass_inventory_init
-     integer                                        :: pass_dbh_init
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
      integer                                        :: pass_num_lu_harvest_cats
@@ -731,7 +730,7 @@ contains
 
         call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
 
-        call set_fates_ctrlparms('use_dbh_init',ival=pass_dbh_init)
+        call set_fates_ctrlparms('use_dbh_init',ival=merge(itrue,ifalse,use_fates_dbh_init))
         
         ! Check through FATES parameters to see if all have been set
         call set_fates_ctrlparms('check_allset')
