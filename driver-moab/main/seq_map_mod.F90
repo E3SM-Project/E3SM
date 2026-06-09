@@ -822,6 +822,11 @@ contains
 
           endif ! end normalization
 
+          ! Defensive: targtags_ini is allocated under `if (mbpresent)` at line 596 but the
+          ! matching deallocate at line 820 sits inside `if (mbnorm)`. If a future caller ever
+          ! sets mbpresent=.true. with mbnorm=.false., the array would leak per mapping call.
+          if (allocated(targtags_ini)) deallocate(targtags_ini)
+
        endif
 
     endif ! end of mapping type if else

@@ -1281,6 +1281,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 avavg(found)%data(:,ii) = (avavg(found)%data(:,ii) + tag_data(:)) / (avcnt(found) * 1.0_r8)
              enddo
           else
@@ -1288,6 +1289,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 avavg(found)%data(:,ii) = avavg(found)%data(:,ii) + tag_data(:)
              enddo
           endif
@@ -1386,9 +1388,12 @@ contains
                          if (trim(mct_string_toChar(mctOStr)) == &
                              trim(mct_string_toChar(mctOStr2))) then
                             matrix_data(:,ii) = avavg(found)%data(:,jj)
+                            call mct_string_clean(mctOStr2)
                             exit
                          endif
+                         call mct_string_clean(mctOStr2)
                       enddo
+                      call mct_string_clean(mctOStr)
                    enddo
                    p_matrix => matrix_data
                    call seq_io_write(hist_file(found), mbxid, trim(aname), &

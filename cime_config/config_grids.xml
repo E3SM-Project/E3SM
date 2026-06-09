@@ -1443,7 +1443,7 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne30_r05_ne30" compset="(DOCN|XOCN|SOCN|AQP1)">
