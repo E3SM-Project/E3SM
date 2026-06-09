@@ -1596,7 +1596,7 @@ is the value of that variable from the *previous* time level!
                      description="time averaged negative surface mass balance applied to melting of bare ice (using appliedBareIceAblation from 'geometry' pool)"
                 />
 				<!-- fields for ISMIP reporting not included in the above -->
-				<var name="avgSfcMassBal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+				<var name="avgSMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
 					 description="time averaged applied surface mass balance"
 				/>
 				<var name="avgGroundedBMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
