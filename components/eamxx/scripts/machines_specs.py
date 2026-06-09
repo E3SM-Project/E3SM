@@ -274,13 +274,23 @@ class Compy(Machine):
         cls.batch = "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm"
 
 ###############################################################################
-class GHCISNLCPU(Machine):
+class GHCISNLGNU(Machine):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base("ghci-snl-cpu")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cpu"
+        super().setup_base("ghci-snl-gnu")
+        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-gnu"
+        cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
+
+###############################################################################
+class GHCISNLOneAPI(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("ghci-snl-oneapi")
+        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-oneapi"
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
 
 ###############################################################################
