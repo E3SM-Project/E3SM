@@ -413,6 +413,7 @@ module li_core
       use li_setup
       use li_statistics
       use li_time_integration
+      use li_time_average_coupled, only: li_time_average_coupled_init
 
       implicit none
 
@@ -442,12 +443,14 @@ module li_core
       !-----------------------------------------------------------------
       integer, pointer :: timestepNumber
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, timeAveragingPool
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
+      character(len=StrKIND), pointer :: config_timeaveraging_interval
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
+      type (MPAS_TimeInterval_type) :: timeAveragingInterval
       character(len=StrKIND) :: timeStamp
       logical :: isRinging
       integer :: restartTimestampUnit
@@ -463,6 +466,7 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_timeaveraging_interval', config_timeaveraging_interval)
 
       call mpas_timer_start("land ice core run")
 
@@ -609,6 +613,24 @@ module li_core
          endif
          err = ior(err, err_tmp)
          call mpas_timer_stop("write streams")
+
+         ! === reset time-averaging accmulation if necessary
+         call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         if (mpas_is_alarm_ringing(domain % clock, 'timeAveragingInterval', ierr=err_tmp)) then
+            err = ior(err, err_tmp)
+            call mpas_log_write('Resetting coupled time averaging accumulation.')
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+               call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+               call li_time_average_coupled_init(meshPool, timeAveragingPool)
+               block => block % next
+            end do
+            call mpas_reset_clock_alarm(domain % clock, 'timeAveragingInterval', ierr=err_tmp)
+            err = ior(err, err_tmp)
+         endif
+         err = ior(err, err_tmp)
 
 
          ! === (end of output section) ===

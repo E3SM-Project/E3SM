@@ -106,13 +106,11 @@ module li_time_integration
       real (kind=RKIND), pointer :: daysSinceStart
       character (len=StrKIND), pointer :: simulationStartTime
       character (len=StrKIND), pointer :: config_time_integration
-      character (len=StrKIND), pointer :: config_timeaveraging_interval
       logical, pointer :: config_adaptive_timestep
       real (kind=RKIND), pointer :: deltat !< the current time step in seconds, on each block
 
       ! Other local variables
       type (MPAS_TimeInterval_type) :: timeStepInterval !< the current time step as an interval
-      type (MPAS_TimeInterval_type) :: timeAveragingInterval
       real (kind=RKIND) :: dtSeconds !< the current time step in seconds, local variable
       type (MPAS_Time_Type) :: currTime  !< current time as time type
       character(len=StrKIND) :: timeStamp !< current time as a string
@@ -125,7 +123,6 @@ module li_time_integration
 
       call mpas_pool_get_config(liConfigs, 'config_time_integration', config_time_integration)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
-      call mpas_pool_get_config(liConfigs, 'config_timeaveraging_interval', config_timeaveraging_interval)
 
       currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, err_tmp)
       call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=err_tmp)
@@ -181,29 +178,13 @@ module li_time_integration
       ! === accumulate fluxes for time averaging of fields sent to coupler or for ismip
       block => domain % blocklist
       do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool, velocityPool)
          block => block % next
       end do
-
-      ! === reset time-averaging accmulation if necessary
-      call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      if (mpas_is_alarm_ringing(domain % clock, 'timeAveragingInterval', ierr=err_tmp)) then
-         err = ior(err, err_tmp)
-         block => domain % blocklist
-         do while (associated(block))
-            call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
-            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-            call li_time_average_coupled_init(meshPool, timeAveragingPool)
-            block => block % next
-         end do
-         call mpas_reset_clock_alarm(domain % clock, 'timeAveragingInterval', ierr=err_tmp)
-         err = ior(err, err_tmp)
-      endif
-      err = ior(err, err_tmp)
 
       ! === error check
       if (err > 0) then
