@@ -103,13 +103,14 @@ module li_time_average_coupled
 !>  This routine accumulates the coupled time averaging fields
 !
 !-----------------------------------------------------------------------
-    subroutine li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
+    subroutine li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool, velocityPool)
             
         use li_setup 
 
         type (mpas_pool_type), intent(inout) :: timeAveragingPool
         type (mpas_pool_type), intent(in) :: geometryPool
         type (mpas_pool_type), intent(in) :: meshPool
+        type (mpas_pool_type), intent(in) :: velocityPool
 
         real (kind=RKIND), dimension(:), pointer :: bareIceAblationApplied, avgBareIceAblationApplied, &
                                                     calvingThickness, avgCalvingFlux, &
@@ -144,7 +145,7 @@ module li_time_average_coupled
         call mpas_pool_get_array(timeAveragingPool, 'avgDhdt', avgDhdt)
         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
-        call mpas_pool_get_array(geometryPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
+        call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
         call mpas_pool_get_array(geometryPool, 'dHdt', dHdt)
 
         do iCell = 1, nCells

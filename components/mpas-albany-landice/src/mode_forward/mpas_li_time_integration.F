@@ -101,7 +101,7 @@ module li_time_integration
       !-----------------------------------------------------------------
       ! Pools pointers
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: meshPool, timeAveragingPool, geometryPool 
+      type (mpas_pool_type), pointer :: meshPool, timeAveragingPool, geometryPool, velocityPool 
       character (len=StrKIND), pointer :: xtime
       real (kind=RKIND), pointer :: daysSinceStart
       character (len=StrKIND), pointer :: simulationStartTime
@@ -183,7 +183,8 @@ module li_time_integration
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call li_time_average_coupled_accumulate(timeAveragingPool, geometryPool, meshPool, velocityPool)
          block => block % next
       end do
 
