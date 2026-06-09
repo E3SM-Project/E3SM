@@ -36,6 +36,10 @@ TEST_CASE("field", "") {
 
     f1.allocate_view();
 
+    // Cannot get view using wrong scalar type (even if of same sizeof)
+    using same_sz_int = std::conditional_t<sizeof(Real)==8,std::int64_t,int>;
+    REQUIRE_THROWS(f1.get_view<same_sz_int**>());
+
     // Reshape should work with both dynamic and static dims
     auto v1 = f1.get_view<Real[3][24]>();
     auto v2 = f1.get_view<Real**>();
