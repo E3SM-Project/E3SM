@@ -123,6 +123,8 @@ module li_core
       type (MPAS_Alarm_type), pointer :: alarm_cursor
       character (len=StrKIND) :: actualWhen
       integer :: streamErr
+      integer (kind=I8KIND) :: nIntervals
+      type (MPAS_TimeInterval_type) :: remainder
 
       err = 0
       err_tmp = 0
@@ -154,6 +156,16 @@ module li_core
             call mpas_log_write("Restart stream output_interval is longer than config_timeaveraging_interval. " // &
                  "Enable config_enable_timeAvgRestarts=.true. to include time-averaging restart state.", MPAS_LOG_CRIT)
             err = ior(err, 1)
+         else if (restartInterval .gt. timeAveragingInterval) then
+            startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
+            err = ior(err, err_tmp)
+            call mpas_interval_division(startTime, restartInterval, timeAveragingInterval, nIntervals, remainder)
+            if ((remainder .ne. zeroInterval) .and. (.not. config_enable_timeAvgRestarts)) then
+               call mpas_log_write("Restart stream output_interval is not an even multiple of " // &
+                    "config_timeaveraging_interval. Enable config_enable_timeAvgRestarts=.true. " // &
+                    "to include time-averaging restart state.", MPAS_LOG_CRIT)
+               err = ior(err, 1)
+            endif
          endif
       endif
 
