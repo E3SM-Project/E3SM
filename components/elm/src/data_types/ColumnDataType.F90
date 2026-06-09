@@ -3274,7 +3274,8 @@ contains
     ! fraction of soil covered by residue
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%fscov(c) = 1.0 - exp( -9.52e-3_r8 * this%residuec(c) )
+       !this%fscov(c) = 1.0 - exp( -9.52e-3_r8 * this%residuec(c) )
+       this%fscov(c) = 1.0 - exp( -6.68e-3_r8 * this%residuec(c) )
     end do
 
     ! total soil organic matter carbon (TOTSOMC)

@@ -95,6 +95,8 @@ contains
          hksat            =>    soilstate_vars%hksat_col            , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
          bsw              =>    soilstate_vars%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
 
+         fscov            =>    col_cs%fscov           , & ! Input: [real(r8) (:) ] fraction of soil covered by residue
+
          h2osoi_ice       =>    col_ws%h2osoi_ice      , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
          h2osoi_liq       =>    col_ws%h2osoi_liq      , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
 
@@ -150,7 +152,11 @@ contains
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
          g = col_pp%gridcell(c)
-         fff(c) = fover(g)
+         if (use_cn) then
+            fff(c) = fover(g) * (1._r8 + 10._r8*fscov(c))
+         else
+            fff(c) = fover(g)
+         end if
          if (zengdecker_2009_with_var_soil_thick) then
             nlevbed = nlev2bed(c)
             fff(c) = 0.5_r8 * col_pp%zi(c,nlevsoi) / min(col_pp%zi(c,nlevbed), col_pp%zi(c,nlevsoi))
@@ -473,8 +479,9 @@ contains
                 else
                    pscov = 2._r8
                 end if
-                do j = 1, 3
-                   rscov(j) = min(1._r8, max(1._r8 - h2osoi_liq(c,j)/(denh2o*dz(c,j))/watsat(c,j), 0.2_r8))**(1._r8/pscov-0.5_r8)
+                do j = 1, 3, 1
+                  rscov(j) = 1._r8 - min(0.9_r8, max(0._r8, h2osoi_liq(c,j)/(denh2o*dz(c,j))/watsat(c,j)))
+                  rscov(j) = rscov(j)**(1._r8/pscov-0.5_r8)
                 end do
                 if ( use_modified_infil ) then
                   qinmax=minval(10._r8**(-e_ice*(icefrac(c,1:3)))*hksat(c,1:3)*rscov)
