@@ -1081,6 +1081,14 @@ Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_enable_timeAvgRestarts" type="logical"
+	category="time_integration" group="time_integration">
+Determines if restart files include time-averaging accumulator state. This should be enabled when the restart stream output_interval is longer than config_timeaveraging_interval.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- time_management -->
 

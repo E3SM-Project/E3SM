@@ -611,6 +611,10 @@
 		            description="Interval at which time-averaging accumulators are reset.  If set to a zero interval, then time-averaging accumulators are never reset.  When running in E3SM, the zero interval should be used, because the GLC driver resets the accumulators every coupling interval."
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
+		<nml_option name="config_enable_timeAvgRestarts" type="logical" default_value=".false." units="unitless"
+		            description="Determines if restart files include time-averaging accumulator state. This should be enabled when the restart stream output_interval is longer than config_timeaveraging_interval."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
@@ -759,6 +763,8 @@
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
                 <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
+
+		<package name="timeAvgRestarts" description="Variables needed to be included in restart files for time averaging to work correctly"/>
 	</packages>
 
 
@@ -1570,7 +1576,7 @@ is the value of that variable from the *previous* time level!
 <!-- ================ -->
 
         <!-- Variables related to time averaging of fluxes -->
-        <var_struct name="timeAveraging" time_levs="1">
+        <var_struct name="timeAveraging" time_levs="1" packages="timeAvgRestarts">
                 <var name="timeAccumulatedCoupled" type="real" dimensions="Time" units="s"
                      description="accumulated time for use in averaging of coupler fields"
                 />
