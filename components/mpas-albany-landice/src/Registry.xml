@@ -995,16 +995,7 @@
                         <var name="oceanTemperature" packages="extrapOceanData"/>
                         <var name="oceanSalinity" packages="extrapOceanData"/>
                         <!-- time averaging fields for restart -->
-                        <var name="timeAccumulatedCoupled" packages="timeAvgRestarts"/>
-                        <var name="avgCalvingFlux" packages="timeAvgRestarts"/>
-                        <var name="avgFaceMeltFlux" packages="timeAvgRestarts"/>
-                        <var name="avgFloatingBMBFlux" packages="timeAvgRestarts"/>
-                        <var name="avgBareIceAblation" packages="timeAvgRestarts"/>
-                        <var name="avgBareIceAblationApplied" packages="timeAvgRestarts"/>
-                        <var name="avgSMBFlux" packages="timeAvgRestarts"/>
-                        <var name="avgGroundedBMBFlux" packages="timeAvgRestarts"/>
-                        <var name="avgGroundingLineFlux" packages="timeAvgRestarts"/>
-                        <var name="avgDhdt" packages="timeAvgRestarts"/>
+                        <var_struct name="timeAveraging"/>
 		</stream>
 
 
