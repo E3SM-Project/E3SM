@@ -607,6 +607,14 @@
 		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval."
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
+		<nml_option name="config_timeaveraging_interval" type="character" default_value="0000-00-00_00:00:00" units="unitless"
+		            description="Interval at which time-averaging accumulators are reset.  If set to a zero interval, then time-averaging accumulators are never reset.  When running in E3SM, the zero interval should be used, because the GLC driver resets the accumulators every coupling interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<nml_option name="config_enable_timeAvgRestarts" type="logical" default_value=".false." units="unitless"
+		            description="Determines if restart files include time-averaging accumulator state. This should be enabled when the restart stream output_interval is longer than config_timeaveraging_interval."
+		            possible_values=".true. or .false."
+		/>
 	</nml_record>
 
 
@@ -755,6 +763,8 @@
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
                 <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
+
+		<package name="timeAvgRestarts" description="Variables needed to be included in restart files for time averaging to work correctly"/>
 	</packages>
 
 
@@ -984,6 +994,8 @@
                         <var name="icebergFjordMask" packages="extrapOceanData"/>
                         <var name="oceanTemperature" packages="extrapOceanData"/>
                         <var name="oceanSalinity" packages="extrapOceanData"/>
+                        <!-- time averaging fields for restart -->
+                        <var_struct name="timeAveraging"/>
 		</stream>
 
 
@@ -1585,6 +1597,19 @@ is the value of that variable from the *previous* time level!
                 <var name="avgBareIceAblationApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1" 
                      description="time averaged negative surface mass balance applied to melting of bare ice (using appliedBareIceAblation from 'geometry' pool)"
                 />
+				<!-- fields for ISMIP reporting not included in the above -->
+				<var name="avgSMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied surface mass balance"
+				/>
+				<var name="avgGroundedBMBFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied grounded basal mass balance"
+				/>
+				<var name="avgGroundingLineFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+					 description="time averaged applied flux across the grounding line"
+				/>
+				<var name="avgDhdt" type="real" dimensions="nCells Time" units="m s^-1"
+					 description="time averaged rate of change of ice thickness"
+				/>
         </var_struct>
 
 <!-- ================ -->

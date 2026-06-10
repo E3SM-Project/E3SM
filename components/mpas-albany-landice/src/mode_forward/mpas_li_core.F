@@ -109,17 +109,22 @@ module li_core
       type (MPAS_Time_Type) :: startTime
       integer :: i, err, err_tmp, globalErr
       logical, pointer :: config_do_restart
+      logical, pointer :: config_enable_timeAvgRestarts
       real (kind=RKIND), pointer :: deltat  ! variable in each block
       real (kind=RKIND) :: dtSeconds ! local variable
       type (MPAS_Pool_type), pointer :: meshPool, geometryPool, velocityPool, timeAveragingPool
-      type (MPAS_TimeInterval_type) :: timeStepInterval
+      type (MPAS_TimeInterval_type) :: timeStepInterval, timeAveragingInterval, restartInterval, zeroInterval
       character (len=StrKIND), pointer :: xtime, simulationStartTime
+      character (len=StrKIND), pointer :: config_timeaveraging_interval
       real (kind=RKIND), pointer :: daysSinceStart
       integer, dimension(:), pointer :: cellProcID
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_stream_list_type), pointer :: stream_cursor
       type (MPAS_Alarm_type), pointer :: alarm_cursor
       character (len=StrKIND) :: actualWhen
+      integer :: streamErr
+      integer (kind=I8KIND) :: nIntervals
+      type (MPAS_TimeInterval_type) :: remainder
 
       err = 0
       err_tmp = 0
@@ -127,12 +132,42 @@ module li_core
 
       call li_config_init(domain % configs)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
+      call mpas_pool_get_config(domain % configs, 'config_timeaveraging_interval', config_timeaveraging_interval)
+      call mpas_pool_get_config(domain % configs, 'config_enable_timeAvgRestarts', config_enable_timeAvgRestarts)
 
       !
       ! Initialize config option settings as needed
       !
       call li_setup_config_options( domain, err_tmp )
       err = ior(err, err_tmp)
+
+      ! Validate time-averaging cadence against the runtime restart stream interval.
+      call mpas_set_timeInterval(zeroInterval, dt = 0.0_RKIND, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+      err = ior(err, err_tmp)
+      if (timeAveragingInterval .gt. zeroInterval) then
+         restartInterval = MPAS_stream_mgr_get_stream_interval(domain % streamManager, 'restart', MPAS_STREAM_OUTPUT, streamErr)
+         err = ior(err, streamErr)
+         if (streamErr /= MPAS_STREAM_MGR_NOERR) then
+            call mpas_log_write("Unable to determine restart stream output_interval for time-averaging consistency check.", MPAS_LOG_CRIT)
+            err = ior(err, 1)
+         else if ((restartInterval .gt. timeAveragingInterval) .and. (.not. config_enable_timeAvgRestarts)) then
+            call mpas_log_write("Restart stream output_interval is longer than config_timeaveraging_interval. " // &
+                 "Enable config_enable_timeAvgRestarts=.true. to include time-averaging restart state.", MPAS_LOG_CRIT)
+            err = ior(err, 1)
+         else if (restartInterval .gt. timeAveragingInterval) then
+            startTime = mpas_get_clock_time(domain % clock, MPAS_START_TIME, err_tmp)
+            err = ior(err, err_tmp)
+            call mpas_interval_division(startTime, restartInterval, timeAveragingInterval, nIntervals, remainder)
+            if ((remainder .ne. zeroInterval) .and. (.not. config_enable_timeAvgRestarts)) then
+               call mpas_log_write("Restart stream output_interval is not an even multiple of " // &
+                    "config_timeaveraging_interval. Enable config_enable_timeAvgRestarts=.true. " // &
+                    "to include time-averaging restart state.", MPAS_LOG_CRIT)
+               err = ior(err, 1)
+            endif
+         endif
+      endif
 
       if (config_do_restart) then
          call mpas_log_write("This is a restart: read stream 'restart'.")
@@ -378,6 +413,7 @@ module li_core
       use li_setup
       use li_statistics
       use li_time_integration
+      use li_time_average_coupled, only: li_time_average_coupled_init
 
       implicit none
 
@@ -407,12 +443,14 @@ module li_core
       !-----------------------------------------------------------------
       integer, pointer :: timestepNumber
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool, meshPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, timeAveragingPool
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
+      character(len=StrKIND), pointer :: config_timeaveraging_interval
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
+      type (MPAS_TimeInterval_type) :: timeAveragingInterval
       character(len=StrKIND) :: timeStamp
       logical :: isRinging
       integer :: restartTimestampUnit
@@ -428,6 +466,7 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
+      call mpas_pool_get_config(liConfigs, 'config_timeaveraging_interval', config_timeaveraging_interval)
 
       call mpas_timer_start("land ice core run")
 
@@ -574,6 +613,24 @@ module li_core
          endif
          err = ior(err, err_tmp)
          call mpas_timer_stop("write streams")
+
+         ! === reset time-averaging accmulation if necessary
+         call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         if (mpas_is_alarm_ringing(domain % clock, 'timeAveragingInterval', ierr=err_tmp)) then
+            err = ior(err, err_tmp)
+            call mpas_log_write('Resetting coupled time averaging accumulation.')
+            block => domain % blocklist
+            do while (associated(block))
+               call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+               call mpas_pool_get_subpool(block % structs, 'timeAveraging', timeAveragingPool)
+               call li_time_average_coupled_init(meshPool, timeAveragingPool)
+               block => block % next
+            end do
+            call mpas_reset_clock_alarm(domain % clock, 'timeAveragingInterval', ierr=err_tmp)
+            err = ior(err, err_tmp)
+         endif
+         err = ior(err, err_tmp)
 
 
          ! === (end of output section) ===
@@ -1118,10 +1175,13 @@ module li_core
       type (MPAS_Time_Type) :: startTime, stopTime, alarmStartTime
       type (MPAS_TimeInterval_type) :: runDuration, timeStep, alarmTimeStep
       type (MPAS_TimeInterval_type) :: adaptDtForceInterval
+      type (MPAS_TimeInterval_type) :: timeAveragingInterval
+      type (MPAS_TimeInterval_type) :: zeroInterval
       character (len=StrKIND), pointer :: config_start_time, config_run_duration, config_stop_time, &
-         config_output_interval, config_restart_interval ! MPAS standard configs
+         config_output_interval ! MPAS standard configs
       character (len=StrKIND), pointer :: config_dt  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_adaptive_timestep_force_interval  ! MPAS LI-specific config option
+      character (len=StrKIND), pointer :: config_timeaveraging_interval  ! MPAS LI-specific config option
       character (len=StrKIND), pointer :: config_restart_timestamp_name
       integer, pointer :: config_slm_coupling_interval
       character (len=StrKIND) :: restartTimeStamp !< string to be read from file
@@ -1142,6 +1202,7 @@ module li_core
       call mpas_pool_get_config(configs, 'config_stop_time', config_stop_time)
       call mpas_pool_get_config(configs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(configs, 'config_adaptive_timestep_force_interval', config_adaptive_timestep_force_interval)
+      call mpas_pool_get_config(configs, 'config_timeaveraging_interval', config_timeaveraging_interval)
       call mpas_pool_get_config(configs, 'config_slm_coupling_interval', config_slm_coupling_interval)
 
 
@@ -1205,6 +1266,24 @@ module li_core
          ierr = ior(ierr, err_tmp)
       endif
       ierr = ior(ierr, err_tmp)
+
+      ! Set up the timeAveragingInterval alarm.
+      call mpas_set_timeInterval(zeroInterval, dt = 0.0_RKIND, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call mpas_set_timeInterval(timeAveragingInterval, timeString=config_timeaveraging_interval, ierr=err_tmp)
+      ierr = ior(ierr,err_tmp)
+      ! Only set up the alarm if the interval is greater than zero (i.e., if the user specified an interval for this)
+      if (timeAveragingInterval .gt. zeroInterval) then
+         call mpas_add_clock_alarm(core_clock, 'timeAveragingInterval', alarmTime=startTime, &
+                 alarmTimeInterval=timeAveragingInterval, ierr=err_tmp)
+         ierr = ior(ierr,err_tmp)
+         if (mpas_is_alarm_ringing(core_clock, 'timeAveragingInterval', ierr=err_tmp)) then
+            ierr = ior(ierr, err_tmp)
+            call mpas_reset_clock_alarm(core_clock, 'timeAveragingInterval', ierr=err_tmp)
+            ierr = ior(ierr, err_tmp)
+         endif
+         ierr = ior(ierr, err_tmp)
+      endif
 
       ! === error check
       if (ierr /= 0) then
