@@ -26,7 +26,9 @@ module zm_eamxx_bridge_main
 contains
 !===================================================================================================
 
-subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in ) bind(C)
+subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in, &
+                                  trig_dcape_in, trig_ull_in, &
+                                  clos_dyn_adj_in, mcsp_enabled_in ) bind(C)
   use mpi
   use zm_conv,       only: zm_const, zm_param
   use zm_conv_types, only: zm_const_set_for_testing, zm_param_set_for_testing
@@ -36,6 +38,10 @@ subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in ) bind(C)
   ! Arguments
   integer(kind=c_int), value, intent(in) :: pver_in
   integer(kind=c_int), value, intent(in) :: limcnv_in
+  logical(kind=c_bool),value, intent(in) :: trig_dcape_in
+  logical(kind=c_bool),value, intent(in) :: trig_ull_in
+  logical(kind=c_bool),value, intent(in) :: clos_dyn_adj_in
+  logical(kind=c_bool),value, intent(in) :: mcsp_enabled_in
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: mpi_rank, ierror
@@ -59,10 +65,10 @@ subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in ) bind(C)
   ! make sure we are turning off the extra stuff
   zm_param%zm_microp       = .false.
   zm_param%old_snow        = .true.
-  zm_param%trig_dcape      = .true.
-  zm_param%trig_ull        = .true.
-  zm_param%clos_dyn_adj    = .true.
-  zm_param%mcsp_enabled    = .true.
+  zm_param%trig_dcape      = trig_dcape_in
+  zm_param%trig_ull        = trig_ull_in
+  zm_param%clos_dyn_adj    = clos_dyn_adj_in
+  zm_param%mcsp_enabled    = mcsp_enabled_in
   !-----------------------------------------------------------------------------
   call wv_sat_init()
   !-----------------------------------------------------------------------------
