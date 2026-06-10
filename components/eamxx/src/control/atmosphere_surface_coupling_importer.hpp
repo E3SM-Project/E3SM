@@ -72,6 +72,9 @@ protected:
   // Keep track of field dimensions
   Int m_num_cols;
 
+  // Number of water tracers (0 = disabled)
+  Int m_tracer_count;
+
   // Number of fields in cpl data
   Int m_num_cpl_imports;
 

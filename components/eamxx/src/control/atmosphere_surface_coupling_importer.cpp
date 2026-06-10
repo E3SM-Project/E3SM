@@ -13,8 +13,10 @@ namespace scream
 // =========================================================================================
 SurfaceCouplingImporter::SurfaceCouplingImporter (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
+  , m_tracer_count(0)
 {
-
+  // Read tracer count from parameter list (default 0)
+  m_tracer_count = m_params.get<int>("tracer_count", 0);
 }
 // =========================================================================================
 void SurfaceCouplingImporter::create_requests()
@@ -34,6 +36,12 @@ void SurfaceCouplingImporter::create_requests()
   const FieldLayout scalar2d = m_grid->get_2d_scalar_layout();
   const FieldLayout vector2d = m_grid->get_2d_vector_layout(2);
   const FieldLayout vector4d = m_grid->get_2d_vector_layout(4);
+
+  // Isotope-specific surface flux layout (only if tracers are enabled)
+  FieldLayout iso_flux_layout;
+  if (m_tracer_count > 0) {
+    iso_flux_layout = m_grid->get_2d_vector_layout(m_tracer_count);
+  }
 
   add_field<Computed>("sfc_alb_dir_vis",  scalar2d, none,    grid_name);
   add_field<Computed>("sfc_alb_dir_nir",  scalar2d, none,    grid_name);
@@ -61,6 +69,13 @@ void SurfaceCouplingImporter::create_requests()
   add_field<Computed>("dstflx",           vector4d, kg/m2/s, grid_name);
   // the correction term for air sea surface water thermo fixer
   add_field<Computed>("h2otemp",          scalar2d, W/m2,    grid_name);
+
+  // Isotope-specific surface evaporation flux [kg/m^2/s]: one flux per tracer component
+  // Only registered when tracer_count > 0 to avoid perturbing existing runs
+  // Values will be provided by coupler in future work; until then field is zero-initialized
+  if (m_tracer_count > 0) {
+    add_field<Computed>("surf_evap_iso", iso_flux_layout, kg/m2/s, grid_name);
+  }
 
 }
 // =========================================================================================
@@ -142,6 +157,14 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"),m_grid,0.0,1.0,true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),m_grid,0.0,1.0,true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),m_grid,0.0,1.0,true);
+
+  // Initialize isotope-specific surface flux field if registered
+  // This field will be zero until coupler integration provides real isotope fluxes
+  if (m_tracer_count > 0) {
+    auto surf_evap_iso = get_field_out("surf_evap_iso");
+    surf_evap_iso.deep_copy(0.0);
+    surf_evap_iso.get_header().get_tracking().update_time_stamp(timestamp());
+  }
 
   // Perform initial import (if any are marked for import during initialization)
   if (any_initial_imports) do_import(true);

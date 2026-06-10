@@ -170,7 +170,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     </eamxx>
 
     <!-- Surface coupling (import and export) -->
-    <sc_import inherit="atm_proc_base"/>
+    <sc_import inherit="atm_proc_base">
+      <tracer_count type="integer" doc="Number of water tracers for isotope-specific surface fluxes (0 = disabled)" constraints="ge 0">0</tracer_count>
+    </sc_import>
     <sc_export inherit="atm_proc_base">
       <prescribed_constants>
         <fields type="array(string)"/>
