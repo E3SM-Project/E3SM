@@ -32,17 +32,18 @@ void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real *output_prec,        // 21
                             Real *output_snow,        // 22
                             Real *output_cape,        // 23
-                            Int  *output_activity,    // 24
-                            Real *output_tend_t,      // 25
-                            Real *output_tend_q,      // 26
-                            Real *output_tend_u,      // 27
-                            Real *output_tend_v,      // 28
-                            Real *output_rain_prod,   // 29
-                            Real *output_snow_prod,   // 30
-                            Real *output_prec_flux,   // 31
-                            Real *output_snow_flux,   // 32
-                            Real *output_mass_flux,   // 33
-                            Real *output_dlf          // 34
+                            Real *output_dcape,       // 24
+                            Int  *output_activity,    // 25
+                            Real *output_tend_t,      // 26
+                            Real *output_tend_q,      // 27
+                            Real *output_tend_u,      // 28
+                            Real *output_tend_v,      // 29
+                            Real *output_rain_prod,   // 30
+                            Real *output_snow_prod,   // 31
+                            Real *output_prec_flux,   // 32
+                            Real *output_snow_flux,   // 33
+                            Real *output_mass_flux,   // 34
+                            Real *output_dlf          // 35
                             );
 } // extern "C" : end _c decls
 
@@ -84,17 +85,18 @@ void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,
                          zm_output.h_prec       .data(),  // 21
                          zm_output.h_snow       .data(),  // 22
                          zm_output.h_cape       .data(),  // 23
-                         zm_output.h_activity   .data(),  // 24
-                         zm_output.h_tend_t     .data(),  // 25
-                         zm_output.h_tend_qv    .data(),  // 26
-                         zm_output.h_tend_u     .data(),  // 27
-                         zm_output.h_tend_v     .data(),  // 28
-                         zm_output.h_rain_prod  .data(),  // 29
-                         zm_output.h_snow_prod  .data(),  // 30
-                         zm_output.h_prec_flux  .data(),  // 31
-                         zm_output.h_snow_flux  .data(),  // 32
-                         zm_output.h_mass_flux  .data(),  // 33
-                         zm_output.h_dlf        .data()   // 34
+                         zm_output.h_dcape      .data(),  // 24
+                         zm_output.h_activity   .data(),  // 25
+                         zm_output.h_tend_t     .data(),  // 26
+                         zm_output.h_tend_qv    .data(),  // 27
+                         zm_output.h_tend_u     .data(),  // 28
+                         zm_output.h_tend_v     .data(),  // 29
+                         zm_output.h_rain_prod  .data(),  // 30
+                         zm_output.h_snow_prod  .data(),  // 31
+                         zm_output.h_prec_flux  .data(),  // 32
+                         zm_output.h_snow_flux  .data(),  // 33
+                         zm_output.h_mass_flux  .data(),  // 34
+                         zm_output.h_dlf        .data()   // 35
                         );
 
   zm_output.transpose<ekat::TransposeDirection::f2c>(ncol,pver);

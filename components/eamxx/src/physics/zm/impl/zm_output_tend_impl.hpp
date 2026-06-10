@@ -32,6 +32,7 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
     Kokkos::deep_copy(prec,       h_prec);
     Kokkos::deep_copy(snow,       h_snow);
     Kokkos::deep_copy(cape,       h_cape);
+    Kokkos::deep_copy(dcape,      h_dcape);
     Kokkos::deep_copy(activity,   h_activity);
 
     //----------------------------------------------------------------------
@@ -96,6 +97,7 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
   auto loc_prec        = prec;
   auto loc_snow        = snow;
   auto loc_cape        = cape;
+  auto loc_dcape       = dcape;
   auto loc_activity    = activity;
   auto loc_tend_out_t  = tend_out_t;
   auto loc_tend_out_s  = tend_out_s;
@@ -118,6 +120,7 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
     loc_prec(i)     = init_fill_value;
     loc_snow(i)     = init_fill_value;
     loc_cape(i)     = init_fill_value;
+    loc_dcape(i)    = init_fill_value;
     loc_activity(i) = -1;
   });
 

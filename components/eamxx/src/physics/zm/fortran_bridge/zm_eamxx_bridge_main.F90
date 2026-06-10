@@ -77,7 +77,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   state_t, state_qv, state_u, state_v, &
                                   state_omega, state_cldfrac, state_pblh, tpert, landfrac, &
                                   t_star_in, q_star_in, &
-                                  output_prec, output_snow, output_cape, output_activity, &
+                                  output_prec, output_snow, output_cape, output_dcape, output_activity, &
                                   output_tend_t, output_tend_q, output_tend_u, output_tend_v, &
                                   output_rain_prod, output_snow_prod, &
                                   output_prec_flux, output_snow_flux, output_mass_flux, &
@@ -116,17 +116,18 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real),  dimension(ncol),      intent(  out) :: output_prec        ! 21 output total precipitation              (prec)
   real(kind=c_real),  dimension(ncol),      intent(  out) :: output_snow        ! 22 output frozen precipitation             (snow)
   real(kind=c_real),  dimension(ncol),      intent(  out) :: output_cape        ! 23 output convective avail. pot. energy    (cape)
-  integer(kind=c_int),dimension(ncol),      intent(  out) :: output_activity    ! 24 integer deep convection activity flag   (ideep)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_t      ! 25 output tendency of temperature          (ptend_loc_s)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_q      ! 26 output tendency of water vapor          (ptend_loc_q)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_u      ! 27 output tendency of zonal wind           (ptend_loc_u)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_v      ! 28 output tendency of meridional wind      (ptend_loc_v)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_rain_prod   ! 29 rain production rate                    (rprd)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_snow_prod   ! 30 snow production rate                    (sprd)
-  real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_prec_flux   ! 31 output precip flux at each mid-levels   (flxprec/pflx)
-  real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_snow_flux   ! 32 output precip flux at each mid-levels   (flxsnow)
-  real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_mass_flux   ! 33 output convective mass flux--m sub c    (mcon)
-  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_dlf         ! 34 detrained convective cloud water        (dlf)
+  real(kind=c_real),  dimension(ncol),      intent(  out) :: output_dcape       ! 24 output dynamic cape
+  integer(kind=c_int),dimension(ncol),      intent(  out) :: output_activity    ! 25 integer deep convection activity flag   (ideep)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_t      ! 26 output tendency of temperature          (ptend_loc_s)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_q      ! 27 output tendency of water vapor          (ptend_loc_q)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_u      ! 28 output tendency of zonal wind           (ptend_loc_u)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_tend_v      ! 29 output tendency of meridional wind      (ptend_loc_v)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_rain_prod   ! 30 rain production rate                    (rprd)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_snow_prod   ! 31 snow production rate                    (sprd)
+  real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_prec_flux   ! 32 output precip flux at each mid-levels   (flxprec/pflx)
+  real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_snow_flux   ! 33 output precip flux at each mid-levels   (flxsnow)
+  real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_mass_flux   ! 34 output convective mass flux--m sub c    (mcon)
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_dlf         ! 35 detrained convective cloud water        (dlf)
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
@@ -151,7 +152,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(ncol)      :: rliq           ! reserved liquid (not yet in cldliq) for energy integrals
   real(r8), dimension(ncol,pver), target :: local_t_star ! DCAPE T from time step n-1
   real(r8), dimension(ncol,pver), target :: local_q_star ! DCAPE q from time step n-1
-  real(r8), dimension(ncol)      :: dcape          ! DCAPE cape change
+  ! real(r8), dimension(ncol)      :: dcape          ! DCAPE cape change
   type(zm_aero_t)                :: aero           ! derived type for aerosol information
   type(zm_microp_st)             :: microp_st      ! ZM microphysics data structure
 
@@ -245,7 +246,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                     tpert, landfrac, local_t_star, local_q_star, &
                     lengath, ideep, maxg, jctop, jcbot, jt, &
                     output_prec, output_tend_s, output_tend_q, &
-                    output_cape, dcape, output_mass_flux, output_prec_flux, &
+                    output_cape, output_dcape, output_mass_flux, output_prec_flux, &
                     zdu, mu, eu, du, md, ed, dp, dsubcld, &
                     zm_qc, rliq, output_rain_prod, output_dlf, &
                     aero, microp_st )

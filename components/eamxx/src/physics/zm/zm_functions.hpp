@@ -500,6 +500,7 @@ struct Functions {
     view_1dh<Scalar> h_prec;
     view_1dh<Scalar> h_snow;
     view_1dh<Scalar> h_cape;
+    view_1dh<Scalar> h_dcape;
     view_2dh<Real>   h_tend_t;
     view_2dh<Real>   h_tend_qv;
     view_2dh<Real>   h_tend_u;
@@ -518,6 +519,7 @@ struct Functions {
       h_prec      = view_1dh<Scalar>("zm_output.h_prec",      ncol);
       h_snow      = view_1dh<Scalar>("zm_output.h_snow",      ncol);
       h_cape      = view_1dh<Scalar>("zm_output.h_cape",      ncol);
+      h_dcape     = view_1dh<Scalar>("zm_output.h_dcape",     ncol);
       h_tend_t    = view_2dh<Real>  ("zm_output.h_tend_t",    ncol, nlev);
       h_tend_qv   = view_2dh<Real>  ("zm_output.h_tend_qv",   ncol, nlev);
       h_tend_u    = view_2dh<Real>  ("zm_output.h_tend_u",    ncol, nlev);
