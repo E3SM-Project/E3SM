@@ -144,9 +144,13 @@ void FieldReader::set_dim_decomp(const Field& gids, const ekat::Comm& comm)
 void FieldReader::setup_internals ()
 {
   if (m_dim_decomp_name!="" and m_reader_state & (NEW_FILE | NEW_DECOMP)) {
-    EKAT_REQUIRE_MSG ((std::is_same_v<std::int64_t,scorpio::offset_t>),
-        "[FieldReader::setup_internals] Error! scorpio::offset_t no longer compatible with int64_t.\n");
-    scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, m_dim_decomp_offsets);
+    if (std::is_same_v<std::int64_t,scorpio::offset_t>) {
+      scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, m_dim_decomp_offsets);
+    } else {
+      std::vector<scorpio::offset_t> offsets(m_dim_decomp_offsets.begin(),
+                                             m_dim_decomp_offsets.end());
+      scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, offsets);
+    }
   }
 
   if (m_reader_state & (NEW_FIELDS | NEW_FILE)) {
