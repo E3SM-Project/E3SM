@@ -275,7 +275,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >true</use_fortran_bridge>
       <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
       <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>
-      <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >false</clos_dyn_adj>
+      <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >true</clos_dyn_adj>
       <!-- ZM tuning parameters -->
       <upper_limit_pref type="real"    doc="ZM upper pressure limit for convection"    >40e2</upper_limit_pref>
       <tau              type="real"    doc="ZM convective adjustment time scale"       >3600</tau>
