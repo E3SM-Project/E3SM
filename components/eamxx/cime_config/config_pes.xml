@@ -56,7 +56,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="pm-cpu|muller-cpu|alvarez-cpu">
+    <mach name="pm-cpu|muller-cpu|alvarez-cpu|dane">
       <pes compset="any" pesize="any">
         <comment>pm-cpu: ne4 eamxx 1 node, 96x1</comment>
         <ntasks>
