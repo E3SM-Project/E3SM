@@ -90,7 +90,8 @@ contains
 
     integer :: ierr
 
-    ierr = iMOAB_LoadMesh(appid, trim(infile), trim(ropts), nghlay)
+    ! iMOAB_LoadMesh is a C API: append C_NULL_CHAR here so callers stay null-free
+    ierr = iMOAB_LoadMesh(appid, trim(infile)//C_NULL_CHAR, trim(ropts)//C_NULL_CHAR, nghlay)
     if (ierr /= 0) then
       call shr_sys_abort(trim(subctx)//' ERROR loading mesh from '//trim(infile))
     end if

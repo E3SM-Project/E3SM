@@ -1115,9 +1115,9 @@ contains
              else
                tagname = trim(field)//C_NULL_CHAR
                if (ns > 0 ) then
-                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns, ent_type, data1)
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
+                   ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns, ent_type, data1)
+                   if (ierr .ne. 0) then
+                      write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
                      call shr_sys_abort(subname//'cannot get tag data ')
                   endif
                endif
@@ -1640,13 +1640,7 @@ contains
                endif
             endif
           endif
-         !  n = 0
-         !  do n1 = 1,ni
-         !     do n2 = 1,ns
-         !        n = n + 1
-         !        avs(:n1)%rAttr(k,n2) = data(n)
-         !     enddo
-         !  enddo
+
        else
           write(logunit,*)subname, ' warning: field ',trim(field), ' name1:', trim(name1),  ' is not on restart file'
           write(logunit,*)'for backwards compatibility will set it to 0'
