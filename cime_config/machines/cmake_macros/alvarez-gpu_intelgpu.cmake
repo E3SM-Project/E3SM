@@ -5,9 +5,8 @@ if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY")
 endif()
 string(APPEND CPPDEFS " -DTHRUST_IGNORE_CUB_VERSION_CHECK")
-string(APPEND CMAKE_CUDA_FLAGS " -ccbin CC -O2 -arch sm_80 --use_fast_math --allow-unsupported-compiler")
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ARCH_AMPERE80=On -DKokkos_ENABLE_CUDA=On -DKokkos_ENABLE_CUDA_LAMBDA=On -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=Off -DKokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC=OFF")
-# Partial workaround for Intel oneAPI 2025.3+ (clang/21) + NVCC 12.9 incompatibility:
+# Workaround for Intel oneAPI 2025.3+ (clang/21) + NVCC 12.9 incompatibility:
 # Intel clang/21 headers use builtins (e.g., __builtin_elementwise_popcount) that NVCC's
 # internal Clang (~LLVM 14) does not support. This sets CMAKE_CUDA_HOST_COMPILER=g++ for
 # direct cmake-managed .cu file compilation.
@@ -17,10 +16,12 @@ string(APPEND KOKKOS_OPTIONS " -DKokkos_ARCH_AMPERE80=On -DKokkos_ENABLE_CUDA=On
 # That failure is fixed by pre-setting NVCC_WRAPPER_DEFAULT_COMPILER in share/build/buildlib.ekat.
 find_program(GCC_CXX_COMPILER "g++")
 if (GCC_CXX_COMPILER)
+  string(APPEND CMAKE_CUDA_FLAGS " -ccbin ${GCC_CXX_COMPILER}")
   string(APPEND KOKKOS_OPTIONS " -DCMAKE_CUDA_HOST_COMPILER=${GCC_CXX_COMPILER}")
 else()
   message(WARNING "g++ not found; Intel oneAPI 2025.3+ CUDA host compiler incompatibility may occur")
 endif()
+string(APPEND CMAKE_CUDA_FLAGS " -O2 -arch sm_80 --use_fast_math --allow-unsupported-compiler")
 set(CMAKE_CUDA_ARCHITECTURES "80")
 set(MPICC "cc")
 set(MPICXX "CC")
