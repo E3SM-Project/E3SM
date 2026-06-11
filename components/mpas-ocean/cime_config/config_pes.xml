@@ -29,8 +29,23 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="dane">
+      <pes compset=".+DATM.+SLND.+MPASSI.+MPASO.+DROF.+MALI.+SWAV" pesize="any">
+        <comment>mpas-ocean+dane: MPASO+MALI uses 64 tasks (graph part.64 available)</comment>
+        <ntasks>
+          <ntasks_atm>64</ntasks_atm>
+          <ntasks_lnd>64</ntasks_lnd>
+          <ntasks_rof>64</ntasks_rof>
+          <ntasks_ice>64</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+          <ntasks_glc>64</ntasks_glc>
+          <ntasks_wav>64</ntasks_wav>
+          <ntasks_cpl>64</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
     <!-- machine-specific generic defaults -->
-    <mach name="anvil|compy|bebop">
+    <mach name="anvil|compy|bebop|dane">
       <pes compset="any" pesize="any">
         <comment>mpas-ocean: default, 4 nodes x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
         <ntasks>
