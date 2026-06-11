@@ -20,14 +20,9 @@ ctest_start(${dashboard_model} TRACK ${dashboard_track})
 # Add some exception rules for ctest automatic error detection
 # These are strings in the build output that ctest mistakenly
 # interprets as errors
-string(CONCAT FILE_CONTENT
-  "list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION\n"
-  "  error_handler\n"
-  ")"
-)
-
-file(WRITE ${CTEST_BINARY_DIRECTORY}/CTestCustom.cmake
-  "${FILE_CONTENT}"
+list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
+  ".*error_handler.*"
+  ".*spdlog/fmt/bundled/format.h.*"
 )
 
 if (USE_NINJA)
