@@ -131,6 +131,8 @@ public:
   Field alias (const std::string& name, const std::string& grid_name) const;
   Field alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const;
   Field alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const;
+  Field alias (const std::string& name, const std::map<std::string,std::string>& tag_names) const;
+  Field alias (const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the

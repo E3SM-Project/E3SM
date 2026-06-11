@@ -84,6 +84,8 @@ public:
   std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name) const;
   std::shared_ptr<FieldHeader> alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const;
   std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::map<std::string,std::string>& tag_names) const;
+  std::shared_ptr<FieldHeader> alias (const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const;
 
   // Two headers alias each other if either
   //   - they are the same obj
