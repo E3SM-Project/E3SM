@@ -291,7 +291,8 @@ class GHCISNLOneAPI(Machine):
     def setup(cls):
         super().setup_base("ghci-snl-oneapi")
         cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-oneapi"
-        cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
+        cls.env_setup = ["export GATOR_INITIAL_MB=4000MB",
+                         "export OMPI_MCA_io=romio321"]
 
 ###############################################################################
 class GHCISNLCuda(Machine):
