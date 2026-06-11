@@ -81,7 +81,7 @@ void update_checks (const std::string& caller,
 
   const auto& y_l = y.get_header().get_identifier().get_layout();
   const auto& x_l = x.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG (y_l==x_l,
+  EKAT_REQUIRE_MSG (y_l.congruent(x_l),
       "[" + caller + "] Error! Incompatible fields layouts.\n"
       " - rhs name: " + x.name() + "\n"
       " - lhs name: " + y.name() + "\n"
@@ -217,6 +217,20 @@ Field::alias (const std::string& name, const std::map<FieldTag,std::string>& tag
 
 Field
 Field::alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const {
+  Field f;
+  f.m_header = get_header().alias(name, grid_name, tag_names);
+  f.m_data = m_data;
+  f.m_is_read_only = m_is_read_only;
+  return f;
+}
+
+Field
+Field::alias (const std::string& name, const std::map<std::string,std::string>& tag_names) const {
+  return alias(name, get_header().get_identifier().get_grid_name(), tag_names);
+}
+
+Field
+Field::alias (const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const {
   Field f;
   f.m_header = get_header().alias(name, grid_name, tag_names);
   f.m_data = m_data;

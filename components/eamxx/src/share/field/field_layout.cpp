@@ -259,6 +259,16 @@ FieldLayout& FieldLayout::rename_dims (const std::map<FieldTag,std::string>& new
   return *this;
 }
 
+FieldLayout& FieldLayout::rename_dims (const std::map<std::string,std::string>& new_names)
+{
+  for (int i=0; i<m_rank; ++i) {
+    if (new_names.count(m_names[i]))
+      m_names[i] = new_names.at(m_names[i]);
+  }
+
+  return *this;
+}
+
 FieldLayout& FieldLayout::reset_dim (const int idim, const int extent)
 {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");

@@ -147,6 +147,7 @@ public:
   // These overload allow to remove/rename dims *if found*. They won't throw if layout does not have them
   FieldLayout& strip_dims (const std::vector<FieldTag>& tags); // Does not throw if not found
   FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found
+  FieldLayout& rename_dims (const std::map<std::string,std::string>& new_names); // Does not throw if not found
 
   FieldLayout clone() const;
   FieldLayout transpose () const;
