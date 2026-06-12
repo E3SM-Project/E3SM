@@ -93,7 +93,7 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_detr_nc",           scalar3d_mid, 1/kg/s,grid_name, pack_size);
   add_field<Computed>("zm_detr_ni",           scalar3d_mid, 1/kg/s,grid_name, pack_size);
 
-  add_field<Computed>("mcsp_dt_out",          scalar3d_mid, K/s,    grid_name, pack_size);
+  add_field<Computed>("mcsp_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("mcsp_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("mcsp_du_out",          scalar3d_mid, m/s/s,  grid_name, pack_size);
   add_field<Computed>("mcsp_dv_out",          scalar3d_mid, m/s/s,  grid_name, pack_size);
@@ -190,7 +190,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
-  zm_output.mcsp_dt_out = get_field_out("mcsp_dt_out").get_view<Real**>();
+  zm_output.mcsp_ds_out = get_field_out("mcsp_ds_out").get_view<Real**>();
   zm_output.mcsp_dq_out = get_field_out("mcsp_dq_out").get_view<Real**>();
   zm_output.mcsp_du_out = get_field_out("mcsp_du_out").get_view<Real**>();
   zm_output.mcsp_dv_out = get_field_out("mcsp_dv_out").get_view<Real**>();
@@ -248,7 +248,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_ntsnprd          = zm_output.ntsnprd;
   const auto loc_zm_output_flxprec          = zm_output.flxprec;
   const auto loc_zm_output_flxsnow          = zm_output.flxsnow;
-  const auto loc_zm_output_mcsp_dt_out      = zm_output.mcsp_dt_out;
+  const auto loc_zm_output_mcsp_ds_out      = zm_output.mcsp_ds_out;
   const auto loc_zm_output_mcsp_dq_out      = zm_output.mcsp_dq_out;
   const auto loc_zm_output_mcsp_du_out      = zm_output.mcsp_du_out;
   const auto loc_zm_output_mcsp_dv_out      = zm_output.mcsp_dv_out;
@@ -358,7 +358,7 @@ void ZMDeepConvection::run_impl (const double dt)
       const auto tend_tmp_winds_i = ekat::subview(loc_zm_output_tend_tmp_winds, i); // (nwind, nlev)
       const auto tend_tmp_u_i   = ekat::subview(tend_tmp_winds_i, 0);               // (nlev)
       const auto tend_tmp_v_i   = ekat::subview(tend_tmp_winds_i, 1);               // (nlev)
-      const auto mcsp_dt_out_i  = ekat::subview(loc_zm_output_mcsp_dt_out, i);
+      const auto mcsp_ds_out_i  = ekat::subview(loc_zm_output_mcsp_ds_out, i);
       const auto mcsp_dq_out_i  = ekat::subview(loc_zm_output_mcsp_dq_out, i);
       const auto mcsp_du_out_i  = ekat::subview(loc_zm_output_mcsp_du_out, i);
       const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
@@ -377,7 +377,7 @@ void ZMDeepConvection::run_impl (const double dt)
         jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
         tend_out_s_i, tend_out_qv_i,
         tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
-        mcsp_dt_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
+        mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
         mcsp_freq_i, mcsp_shear_i, zm_depth_i );
 
       // add MCSP tendencies to output tendencies

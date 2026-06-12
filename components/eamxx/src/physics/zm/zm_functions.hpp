@@ -174,7 +174,7 @@ struct Functions {
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
-      old_snow            = params.get<bool>("old_snow",            false);
+      old_snow            = params.get<bool>("old_snow",            true);
       auto_fac            = params.get<Real>("auto_fac",            ZMC::auto_fac);
       accr_fac            = params.get<Real>("accr_fac",            ZMC::accr_fac);
       micro_dcs           = params.get<Real>("micro_dcs",           ZMC::micro_dcs);
@@ -469,7 +469,7 @@ struct Functions {
     uview_1d<Scalar> rliq;           // reserved liquid (not yet in cldliq) for energy integrals
     uview_2d<Real>   dlf;            // detrainment rate of cloud liquid water  [kg/kg/s]
     // MCSP diagnostic outputs
-    view_2d<Real>    mcsp_dt_out;    // MCSP tendency for DSE
+    view_2d<Real>    mcsp_ds_out;    // MCSP tendency for DSE
     view_2d<Real>    mcsp_dq_out;    // MCSP tendency for qv
     view_2d<Real>    mcsp_du_out;    // MCSP tendency for u wind
     view_2d<Real>    mcsp_dv_out;    // MCSP tendency for v wind
@@ -761,7 +761,7 @@ struct Functions {
     const uview_1d<Real>& ptend_u, // output tendency of u-wind
     const uview_1d<Real>& ptend_v, // output tendency of v-wind
     // Outputs
-    const uview_1d<Real>& mcsp_dt_out, // final MCSP tendency for DSE
+    const uview_1d<Real>& mcsp_ds_out, // final MCSP tendency for DSE
     const uview_1d<Real>& mcsp_dq_out, // final MCSP tendency for qv
     const uview_1d<Real>& mcsp_du_out, // final MCSP tendency for u wind
     const uview_1d<Real>& mcsp_dv_out, // final MCSP tendency for v wind

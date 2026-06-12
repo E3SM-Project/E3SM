@@ -60,15 +60,14 @@ subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in, &
   call zm_param_set_for_testing(zm_param)
   zm_param%limcnv = limcnv_in ! override testing value when running the fortran bridge
   call zm_param_mpi_broadcast(zm_param)
-  call zm_param_print(zm_param)
-  !-----------------------------------------------------------------------------
-  ! make sure we are turning off the extra stuff
+  ! override some settings
   zm_param%zm_microp       = .false.
   zm_param%old_snow        = .true.
   zm_param%trig_dcape      = trig_dcape_in
   zm_param%trig_ull        = trig_ull_in
   zm_param%clos_dyn_adj    = clos_dyn_adj_in
   zm_param%mcsp_enabled    = mcsp_enabled_in
+  call zm_param_print(zm_param)
   !-----------------------------------------------------------------------------
   call wv_sat_init()
   !-----------------------------------------------------------------------------
@@ -193,7 +192,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(ncol,pver,2) :: tx_icwd
 
   ! MCSP history output variables
-   real(r8), dimension(ncol,pver) :: mcsp_dt_out     ! MCSP tendency for DSE
+   real(r8), dimension(ncol,pver) :: mcsp_ds_out     ! MCSP tendency for DSE
    real(r8), dimension(ncol,pver) :: mcsp_dq_out     ! MCSP tendency for qv
    real(r8), dimension(ncol,pver) :: mcsp_du_out     ! MCSP tendency for u wind
    real(r8), dimension(ncol,pver) :: mcsp_dv_out     ! MCSP tendency for v wind
@@ -279,7 +278,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                             output_tend_s, output_tend_q, &
                             local_tend_s, local_tend_q, &
                             local_tend_u, local_tend_v, &
-                            mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+                            mcsp_ds_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
                             mcsp_freq, mcsp_shear, zm_depth )
 
     ! add MCSP tendencies to ZM convective tendencies

@@ -56,7 +56,7 @@ void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp,
 
 void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
 
-void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_dt_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
+void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_ds_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
 
 void zm_conv_main_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, bool is_first_step, Real time_step, Real* t_mid, Real* q_mid_in, Real* omega, Real* p_mid_in, Real* p_int_in, Real* p_del_in, Real* geos, Real* z_mid_in, Real* z_int_in, Real* pbl_hgt, Real* tpert, Real* landfrac, Real* t_star, Real* q_star, Int* lengath, Int* gather_index, Int* msemax_klev_g, Int* jctop, Int* jcbot, Int* jt, Real* prec, Real* heat, Real* qtnd, Real* cape, Real* dcape, Real* mcon, Real* pflx, Real* zdu, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* p_del, Real* dsubcld, Real* ql, Real* rliq, Real* rprd, Real* dlf);
 
@@ -920,7 +920,7 @@ void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   zm_opts_init_f();
-  zm_conv_mcsp_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.ztodt, d.jctop, d.state_pmid, d.state_pint, d.state_pdel, d.state_s, d.state_q, d.state_u, d.state_v, d.ptend_zm_s, d.ptend_zm_q, d.ptend_s, d.ptend_q, d.ptend_u, d.ptend_v, d.mcsp_dt_out, d.mcsp_dq_out, d.mcsp_du_out, d.mcsp_dv_out, d.mcsp_freq, d.mcsp_shear, d.zm_depth);
+  zm_conv_mcsp_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.ztodt, d.jctop, d.state_pmid, d.state_pint, d.state_pdel, d.state_s, d.state_q, d.state_u, d.state_v, d.ptend_zm_s, d.ptend_zm_q, d.ptend_s, d.ptend_q, d.ptend_u, d.ptend_v, d.mcsp_ds_out, d.mcsp_dq_out, d.mcsp_du_out, d.mcsp_dv_out, d.mcsp_freq, d.mcsp_shear, d.zm_depth);
   zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -936,7 +936,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
   std::vector<view2dr_d> vec2dr_in(17);
   std::vector<int> vec2dr_in_0_sizes = {d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols, d.pcols};
   std::vector<int> vec2dr_in_1_sizes = {d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pver, d.pverp, d.pver, d.pver, d.pver, d.pver, d.pver};
-  ekat::host_to_device({d.mcsp_dq_out, d.mcsp_dt_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v, d.ptend_zm_q, d.ptend_zm_s, d.state_pdel, d.state_pint, d.state_pmid, d.state_q, d.state_s, d.state_u, d.state_v}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
+  ekat::host_to_device({d.mcsp_dq_out, d.mcsp_ds_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v, d.ptend_zm_q, d.ptend_zm_s, d.state_pdel, d.state_pint, d.state_pmid, d.state_q, d.state_s, d.state_u, d.state_v}, vec2dr_in_0_sizes, vec2dr_in_1_sizes, vec2dr_in);
 
   std::vector<view1di_d> vec1di_in(1);
   ekat::host_to_device({d.jctop}, d.pcols, vec1di_in);
@@ -948,7 +948,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
 
   view2dr_d
     mcsp_dq_out_d(vec2dr_in[0]),
-    mcsp_dt_out_d(vec2dr_in[1]),
+    mcsp_ds_out_d(vec2dr_in[1]),
     mcsp_du_out_d(vec2dr_in[2]),
     mcsp_dv_out_d(vec2dr_in[3]),
     ptend_q_d(vec2dr_in[4]),
@@ -996,7 +996,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
     const auto ptend_q_c = ekat::subview(ptend_q_d, i);
     const auto ptend_u_c = ekat::subview(ptend_u_d, i);
     const auto ptend_v_c = ekat::subview(ptend_v_d, i);
-    const auto mcsp_dt_out_c = ekat::subview(mcsp_dt_out_d, i);
+    const auto mcsp_ds_out_c = ekat::subview(mcsp_ds_out_d, i);
     const auto mcsp_dq_out_c = ekat::subview(mcsp_dq_out_d, i);
     const auto mcsp_du_out_c = ekat::subview(mcsp_du_out_d, i);
     const auto mcsp_dv_out_c = ekat::subview(mcsp_dv_out_d, i);
@@ -1022,7 +1022,7 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
       ptend_q_c,
       ptend_u_c,
       ptend_v_c,
-      mcsp_dt_out_c,
+      mcsp_ds_out_c,
       mcsp_dq_out_c,
       mcsp_du_out_c,
       mcsp_dv_out_c,
@@ -1035,8 +1035,8 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
   std::vector<view1dr_d> vec1dr_out = {mcsp_freq_d, mcsp_shear_d, zm_depth_d};
   ekat::device_to_host({d.mcsp_freq, d.mcsp_shear, d.zm_depth}, d.pcols, vec1dr_out);
 
-  std::vector<view2dr_d> vec2dr_out = {mcsp_dq_out_d, mcsp_dt_out_d, mcsp_du_out_d, mcsp_dv_out_d, ptend_q_d, ptend_s_d, ptend_u_d, ptend_v_d};
-  ekat::device_to_host({d.mcsp_dq_out, d.mcsp_dt_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v}, d.pcols, d.pver, vec2dr_out);
+  std::vector<view2dr_d> vec2dr_out = {mcsp_dq_out_d, mcsp_ds_out_d, mcsp_du_out_d, mcsp_dv_out_d, ptend_q_d, ptend_s_d, ptend_u_d, ptend_v_d};
+  ekat::device_to_host({d.mcsp_dq_out, d.mcsp_ds_out, d.mcsp_du_out, d.mcsp_dv_out, d.ptend_q, d.ptend_s, d.ptend_u, d.ptend_v}, d.pcols, d.pver, vec2dr_out);
 
   zm_finalize_cxx();
 }
