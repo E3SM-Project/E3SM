@@ -90,7 +90,7 @@ void SHOCMacrophysics::create_requests()
   add_field<Computed>("inv_qc_relvar",    scalar3d_mid, pow(kg/kg,2), grid_name, ps);
   add_field<Computed>("eddy_diff_heat",   scalar3d_mid, m2/s,         grid_name, ps);
   add_field<Computed>("w_variance",       scalar3d_mid, m2/s2,        grid_name, ps);
-  add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, nondim,       grid_name, ps);
+  add_field<Computed>("cldfrac_liq_prev", scalar3d_mid, none,         grid_name, ps);
   add_field<Computed>("ustar",            scalar2d,     m/s,          grid_name, ps);
   add_field<Computed>("obklen",           scalar2d,     m,            grid_name, ps);
   add_field<Computed>("tau_est",          scalar2d,     Pa,           grid_name);
