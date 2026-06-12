@@ -807,7 +807,7 @@ _TESTS = {
     },
 
     "e3sm_eamxx_v1_long_crusher" : {
-        # _D builds take a long longer on crusher than ascent or pm-gpu, so
+        # _D builds take a long longer on crusher than pm-gpu, so
         # don't run the long _D test.
         "time"  : "01:00:00",
         "tests" : (

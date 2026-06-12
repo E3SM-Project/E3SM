@@ -133,8 +133,8 @@ void run_bfb_rain_sed()
   // With stored baselines, we must use a fixed seed!
   auto engine = Base::get_engine();
 
-  // F90 is quite slow on weaver, so we decrease dt to reduce
-  // the number of steps in rain_sed.
+  // F90 was quite slow on weaver (an old GPU machine),
+  // so we decrease dt to reduce the number of steps in rain_sed.
 #ifdef EAMXX_ENABLE_GPU
   constexpr Scalar dt = 5.800E+01;
 #else

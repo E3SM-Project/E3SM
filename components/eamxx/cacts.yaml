@@ -110,18 +110,6 @@ machines:
     batch: "srun --mpi=pmi2 -l -N 1 --kill-on-bad-exit --cpu_bind=cores"
     baselines_dir: "/lcrc/group/e3sm/baselines/chrys/intel/scream"
 
-  weaver:
-    env_setup:
-      - "source /etc/profile.d/modules.sh"
-      - "module purge"
-      - "module load cmake/3.25.1 git/2.39.1 python/3.10.8 py-netcdf4/1.5.8 gcc/11.3.0 cuda/11.8.0 openmpi netcdf-c netcdf-fortran parallel-netcdf netlib-lapack"
-      - "export HDF5_USE_FILE_LOCKING=FALSE"
-
-    baselines_dir: "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"
-    batch: "bsub -I -q rhel8 -n 4 -gpu num=4"
-    num_run_res: 4 # four gpus
-    gpu_arch: "cuda"
-
   compy:
     cxx_compiler: "mpiicpc"
     c_compiler  : "mpiicc"
@@ -139,18 +127,6 @@ machines:
     baselines_dir: "/projects/e3sm/baselines/scream/ghci-snl-cuda"
     gpu_arch: "cuda"
     num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
-
-  lassen:
-    baselines_dir: "/projects/e3sm/baselines/scream/master-baselines"
-    env_setup:
-      - "module --force purge"
-      - "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2"
-      - "export LLNL_USE_OMPI_VARS='y'"
-      - "export PATH=/usr/workspace/e3sm/netcdf/bin:$PATH"
-      - "export LD_LIBRARY_PATH=/usr/workspace/e3sm/netcdf/lib:$LD_LIBRARY_PATH"
-    batch: "bsub -Ip -qpdebug"
-    num_run_res: 4 # four gpus
-    gpu_arch: "cuda"
 
   ruby-intel:
     env_setup:
