@@ -148,7 +148,7 @@ struct Constants
   static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid
 
   // Perturbation magnitude for derivative used for implicit stress, in Pa (move to namelist?)
-  static constexpr Scalar tau_pert_mag = 0.1;
+  static constexpr Scalar tau_pert_mag = 0.001;
 
   static const std::map<ci_string,quantity_t>& dictionary() {
     static std::map<ci_string,quantity_t> dict;

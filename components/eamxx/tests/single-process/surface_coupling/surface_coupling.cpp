@@ -391,6 +391,7 @@ void test_exports(const FieldManager& fm,
 
     Sa_wsresp(i) = PF::calculate_wind_speed_sensitivity(surf_mom_flux_i(0), surf_mom_flux_i(1),
                                                         um_pert_diff_i(nlevs-1), vm_pert_diff_i(nlevs-1));
+    Sa_wsresp(i) = ekat::impl::min(Sa_wsresp(i), dt * PC::gravit.value / pseudo_density_i(nlevs-1));
     Sa_ugust(i) = PF::calculate_gustiness_speed(tke_i(nlevs-1));
   });
 
