@@ -565,8 +565,20 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       const auto vm_pert_diff_i = ekat::subview(vm_pert_diff, i);
       const auto s_vm_pert_diff_i = ekat::scalarize(vm_pert_diff_i);
       const auto surf_mom_flux_i = ekat::subview(surf_mom_flux, i);
+      const auto s_pseudo_density_i = ekat::scalarize(pseudo_density_i);
       Sa_wsresp(i) = PF::calculate_wind_speed_sensitivity(surf_mom_flux_i(0), surf_mom_flux_i(1),
                                                           s_um_pert_diff_i(num_levs-1), s_vm_pert_diff_i(num_levs-1));
+      // The linearization used for implicit momentum fluxes assumes that an
+      // increase in surface friction is distributed by the turbulence scheme
+      // across the boundary layer over the course of a time step. The maximum
+      // response of the wind speed to a perturbation in stress, therefore,
+      // should be the case where 100% of the incoming momentum is deposited in
+      // the lowest model level, in which case the magnitude of the velocity
+      // change would be simply tau divided by the mass of the layer, multiplied
+      // by the time step. However, due to nonlinear effects in SHOC, we can get
+      // wsresp above the expected maximum. In this case, we don't trust the
+      // output and instead set wsresp to the maximum.
+      Sa_wsresp(i) = ekat::impl::min(Sa_wsresp(i), dt * PC::gravit.value / s_pseudo_density_i(num_levs-1));
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
