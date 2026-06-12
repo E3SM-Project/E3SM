@@ -146,6 +146,7 @@ module li_advection
            thickness,             & ! ice thickness (updated in this subroutine)
            bedTopography,         & ! bed topography
            sfcMassBal,            & ! surface mass balance (potential forcing)
+           sfcMassBalGradientCorrection, & ! lapse rate correction to sfcMassBal
            sfcMassBalApplied,     & ! surface mass balance (actually applied)
            bareIceAblationApplied, & ! ablation (melting) of bare ice (actually applied)
            groundedSfcMassBalApplied,     & ! surface mass balance on grounded locations (actually applied)
@@ -283,6 +284,7 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+      call mpas_pool_get_array(geometryPool, 'sfcMassBalGradientCorrection', sfcMassBalGradientCorrection)
       call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
       call mpas_pool_get_array(geometryPool, 'bareIceAblationApplied', bareIceAblationApplied)
       call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
@@ -608,6 +610,7 @@ module li_advection
               cellMask,            &
               bedTopography,       &
               sfcMassBal,          &
+              sfcMassBalGradientCorrection, &
               sfcMassBalApplied,   &
               bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
@@ -862,6 +865,7 @@ module li_advection
               cellMask,            &
               bedTopography,       &
               sfcMassBal,          &
+              sfcMassBalGradientCorrection, &
               sfcMassBalApplied,   &
               bareIceAblationApplied,      &
               groundedSfcMassBalApplied,   &
@@ -887,6 +891,7 @@ module li_advection
       real (kind=RKIND), dimension(:), intent(in) ::  &
            bedTopography,      & !< Input: bed elevation (m)
            sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
+           sfcMassBalGradientCorrection, & !< Input: lapse rate correction to sfcMassBal (kg/m^2/s)
            basalMassBal          !< Input: basal mass balance (kg/m^2/s)
 
       real(kind=RKIND), dimension(:,:), intent(in) :: &
@@ -952,7 +957,8 @@ module li_advection
       ! If positive, then add the SMB to the top layer, conserving mass*tracer products
       ! If negative, then melt from the top down until the melting term is used up or the ice is gone
 
-      ! Initialize applied BMB field
+      ! Initialize applied SMB and BMB fields
+      sfcMassBalApplied(:) = sfcMassBal(:) + sfcMassBalGradientCorrection(:)
       basalMassBalApplied(:) = basalMassBal(:)
 
       do iCell = 1, nCells
@@ -1122,7 +1128,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:), pointer :: upperSurface
       real (kind=RKIND), dimension(:), pointer :: sfcMassBal
-      real (kind=RKIND), dimension(:), pointer :: sfcMassBalApplied
+      real (kind=RKIND), dimension(:), pointer :: sfcMassBalGradientCorrection
       real (kind=RKIND), dimension(:), pointer :: sfcMassBalLapseRate
       real (kind=RKIND), dimension(:), pointer :: surfaceElevationRef
 
@@ -1143,7 +1149,7 @@ module li_advection
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
-         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalGradientCorrection', sfcMassBalGradientCorrection)
          call mpas_pool_get_array(geometryPool, 'sfcMassBalLapseRate', sfcMassBalLapseRate)
          call mpas_pool_get_array(geometryPool, 'surfaceElevationRef', surfaceElevationRef)
 
@@ -1152,12 +1158,11 @@ module li_advection
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureLapseRate', surfaceAirTemperatureLapseRate)
 
          ! Always initialize applied fields from raw forcing fields.
-         sfcMassBalApplied(:) = sfcMassBal(:)
+         sfcMassBalGradientCorrection(:) = 0.0_RKIND
          surfaceAirTemperatureApplied(:) = surfaceAirTemperature(:)
 
          if (config_apply_smb_sat_lapse_rate) then
-            sfcMassBalApplied(:) = sfcMassBalApplied(:) + &
-                                   sfcMassBalLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
+            sfcMassBalGradientCorrection(:) = sfcMassBalLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
 
             surfaceAirTemperatureApplied(:) = surfaceAirTemperatureApplied(:) + &
                                               surfaceAirTemperatureLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))

@@ -1306,6 +1306,9 @@ is the value of that variable from the *previous* time level!
                 <var name="sfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance"
                 />
+                <var name="sfcMassBalGradientCorrection" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+                     description="correction to surface mass balance based on lapse rate and surface elevation"
+                />
                 <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance on grounded ice"
                 />
