@@ -858,7 +858,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
 
       ! Thermal variables
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-      call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperature)
+      call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
       call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
 
       ! hydro variables
