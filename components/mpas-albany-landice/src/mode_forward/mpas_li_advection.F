@@ -1127,7 +1127,6 @@ module li_advection
       logical, pointer :: config_apply_smb_sat_lapse_rate
 
       real (kind=RKIND), dimension(:), pointer :: upperSurface
-      real (kind=RKIND), dimension(:), pointer :: sfcMassBal
       real (kind=RKIND), dimension(:), pointer :: sfcMassBalGradientCorrection
       real (kind=RKIND), dimension(:), pointer :: sfcMassBalLapseRate
       real (kind=RKIND), dimension(:), pointer :: surfaceElevationRef
@@ -1148,7 +1147,6 @@ module li_advection
          call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
 
          call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'sfcMassBalGradientCorrection', sfcMassBalGradientCorrection)
          call mpas_pool_get_array(geometryPool, 'sfcMassBalLapseRate', sfcMassBalLapseRate)
          call mpas_pool_get_array(geometryPool, 'surfaceElevationRef', surfaceElevationRef)
