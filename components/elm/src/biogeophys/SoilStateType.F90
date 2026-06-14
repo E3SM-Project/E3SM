@@ -1086,7 +1086,7 @@ contains
 
 #else
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
 
   !------------------------------------------------------------------------
   subroutine PackOwnedGridLevelDataForMOAB(bounds_proc, col_itype, data_c_in, data_g_out)
