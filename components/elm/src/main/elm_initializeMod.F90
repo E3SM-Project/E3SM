@@ -229,7 +229,7 @@ contains
             'Unsupported domain_decomp_type = ' // trim(domain_decomp_type))
     end select
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     call domainlateral_init(ldomain_lateral)
 #else
     if (lateral_connectivity) then
@@ -419,7 +419,7 @@ contains
 
     call initGridCells()
     call initGhostGridCells()
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     call c2c_connections%Init(bounds_proc)
 #endif
 

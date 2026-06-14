@@ -547,7 +547,7 @@ contains
 
 #else
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
 
   !-----------------------------------------------------------------------
   ! This is a stub for the case when PETSc is unavailable
@@ -719,7 +719,7 @@ contains
 
     ! get the data from MOAB tag
     ierr = iMOAB_GetIntTagStorage(data%moab_app_id, data%tag_name, data%ngcells * data%num_comp, data%entity_type(1), data%values)
-    if (ierr > 0) call endrun('Error: setting values in MOAB tag failed.')
+    if (ierr > 0) call endrun('Error: getting values in MOAB tag failed.')
 
   end subroutine do_haloexchange_oneD_integer_data_for_moab
 
@@ -747,7 +747,7 @@ contains
 
     ! get the data from MOAB tag
     ierr = iMOAB_GetDoubleTagStorage(data%moab_app_id, data%tag_name, data%ngcells * data%num_comp, data%entity_type(1), data%values)
-    if (ierr > 0) call endrun('Error: setting values in MOAB tag failed.')
+    if (ierr > 0) call endrun('Error: getting values in MOAB tag failed.')
 
   end subroutine do_haloexchange_twoD_real_data_for_moab
 

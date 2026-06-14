@@ -29,7 +29,7 @@ module ColumnConnectionSetType
      Real(r8), pointer :: vertcos(:)           => null() ! dot product of the cell face normal vector and cell centroid vector for vertical flux, the rank for vertcos
      ! is from 1 to column size which is different from rank of lateral faces
    contains
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
    procedure, public :: Init => InitViaMOAB
 #endif
   end type col_connection_set_type
@@ -38,7 +38,7 @@ module ColumnConnectionSetType
 
 contains
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
   !------------------------------------------------------------------------
   subroutine InitViaMOAB(this, bounds_proc)
     !

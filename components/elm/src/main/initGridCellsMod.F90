@@ -718,7 +718,7 @@ contains
     call CheckGhostSubgridHierarchy()
 #endif
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     call initGhostColumnsMOAB()
 #endif
   end subroutine initGhostGridcells
@@ -1334,7 +1334,7 @@ contains
 !^ifdef USE_PETSC_LIB
 
 
-#if HAVE_MOAB
+#if MOAB_LATERAL
   !------------------------------------------------------------------------
   subroutine initGhostColumnsMOAB()
     !
