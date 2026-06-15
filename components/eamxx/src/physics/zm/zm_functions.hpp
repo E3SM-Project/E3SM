@@ -170,7 +170,7 @@ struct Functions {
       mx_bot_lyr_adj      = params.get<int>("mx_bot_lyr_adj",       1);
       trig_dcape          = params.get<bool>("trig_dcape",          true);
       trig_ull            = params.get<bool>("trig_ull",            true);
-      clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        true);
+      clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
