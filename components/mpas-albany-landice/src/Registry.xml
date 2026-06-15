@@ -139,6 +139,10 @@
                     description="Mask to zero out sfcMassBalApplied in regions where there is no ice at the timestep."
                     possible_values=".true. or .false."
         />
+		<nml_option name="config_apply_smb_sat_lapse_rate" type="logical" default_value=".false." units="unitless"
+			    description="If true, apply SMB and SAT elevation-change (lapse-rate) corrections in MALI using ISMIP6 atmospheric forcing guidance (Atmospheric forcing section): https://theghub.org/groups/ismip6/wiki/MainPage/ISMIP6ProjectionsGreenland?version=3"
+			    possible_values=".true. or .false."
+		/>
 <!-- This option to be implemented in the future.
 		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
 		            description="Determines whether ice can advance beyond its initial extent"
@@ -347,17 +351,13 @@
 		            possible_values="Any positive real value"
 		/>
 		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
-		            description="Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate."
-		            possible_values="'constant', 'file', 'lapse'"
+		            description="Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler."
+		            possible_values="'constant', 'file'"
 		/>
 		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
 		            description="Constant value of the surface air temperature."
 		            possible_values="Any positive real value"
                 />
-                <nml_option name="config_surface_air_temperature_lapse_rate" type="real" default_value="0.01" units="K m^-1"
-		            description="Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations."
-		            possible_values="Any real value"
-		/>
 		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
 		            description="Selection of the method for setting the basal heat flux."
 		            possible_values="'constant', 'file'  'constant' uses the value set by config_basal_heat_flux_value.  'file' reads the field from an input or forcing file or ESM coupler."
@@ -765,6 +765,8 @@
                 <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
 
 		<package name="timeAvgRestarts" description="Variables needed to be included in restart files for time averaging to work correctly"/>
+
+                <package name="smbSatLapseRate" description="This package includes variables needed when config_apply_smb_sat_lapse_rate is true."/>
 	</packages>
 
 
@@ -930,6 +932,7 @@
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
+			<var name="surfaceElevationRef" packages="smbSatLapseRate"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
                         <var name="regionEdgeMasks"/>
@@ -1321,8 +1324,17 @@ is the value of that variable from the *previous* time level!
                 <var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="potential surface mass balance"
                 />
+                <var name="sfcMassBalLapseRate" type="real" dimensions="nCells Time" units="kg m^-2 s^-1 m^-1" default_value="0.0"
+                     description="vertical gradient dSMBdz used for SMB elevation-change correction"
+                />
+                <var name="surfaceElevationRef" type="real" dimensions="nCells Time" units="m" default_value="0.0"
+                     description="reference surface elevation h_ref used for SMB and SAT elevation-change corrections"
+                />
                 <var name="sfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance"
+                />
+                <var name="sfcMassBalGradientCorrection" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+                     description="correction to surface mass balance based on lapse rate and surface elevation"
                 />
                 <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
                      description="applied surface mass balance on grounded ice"
@@ -1790,6 +1802,12 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
                      description="air temperature at the ice sheet surface"
+                />
+                <var name="surfaceAirTemperatureLapseRate" type="real" dimensions="nCells Time" units="K m^-1" default_value="0.0"
+                     description="vertical gradient dTdz used for SAT elevation-change correction"
+                />
+                <var name="surfaceAirTemperatureApplied" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="air temperature at the ice sheet surface after model-side lapse-rate adjustment"
                 />
                 <var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
                      description="temperature at upper ice service"

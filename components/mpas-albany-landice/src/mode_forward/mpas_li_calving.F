@@ -549,7 +549,7 @@ module li_calving
          ! get required fields from the thermal pool
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
          call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
-         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
+         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 

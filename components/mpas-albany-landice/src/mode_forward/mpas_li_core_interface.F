@@ -110,6 +110,7 @@ module li_core_interface
       logical, pointer :: config_write_albany_ascii_mesh
       logical, pointer :: config_ocean_data_extrapolation
       logical, pointer :: config_enable_timeAvgRestarts
+      logical, pointer :: config_apply_smb_sat_lapse_rate
 
       logical, pointer :: higherOrderVelocityActive
       logical, pointer :: SIAvelocityActive
@@ -120,6 +121,7 @@ module li_core_interface
       logical, pointer :: thermalActive
       logical, pointer :: extrapOceanDataActive
       logical, pointer :: timeAvgRestartsActive
+      logical, pointer :: smbSatLapseRateActive
 
       ierr = 0
 
@@ -133,6 +135,7 @@ module li_core_interface
       call mpas_pool_get_config(configPool, 'config_ocean_data_extrapolation', config_ocean_data_extrapolation)
       call mpas_pool_get_config(configPool, 'config_thermal_solver', config_thermal_solver)
       call mpas_pool_get_config(configPool, 'config_enable_timeAvgRestarts', config_enable_timeAvgRestarts)
+      call mpas_pool_get_config(configPool, 'config_apply_smb_sat_lapse_rate', config_apply_smb_sat_lapse_rate)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
@@ -143,6 +146,7 @@ module li_core_interface
       call mpas_pool_get_package(packagePool, 'thermalActive', thermalActive)
       call mpas_pool_get_package(packagePool, 'extrapOceanDataActive', extrapOceanDataActive)
       call mpas_pool_get_package(packagePool, 'timeAvgRestartsActive', timeAvgRestartsActive)
+      call mpas_pool_get_package(packagePool, 'smbSatLapseRateActive', smbSatLapseRateActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -169,6 +173,12 @@ module li_core_interface
          extrapOceanDataActive = .true.
          call mpas_log_write("The 'extrapOceanDataActive' package and assocated variables have been enabled because " // &
               "'config_ocean_data_extrapolation' is set to .true.")
+      endif
+
+      if (config_apply_smb_sat_lapse_rate) then
+         smbSatLapseRateActive = .true.
+         call mpas_log_write("The 'smbSatLapseRate' package and associated variables have been enabled because " // &
+              "'config_apply_smb_sat_lapse_rate' is set to .true.")
       endif
 
       if ( (trim(config_basal_mass_bal_float) == 'ismip6') .or. &
