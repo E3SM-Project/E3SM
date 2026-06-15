@@ -1804,6 +1804,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="BLA_VENDOR">OpenBLAS</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="OMPI_MCA_io">romio321</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{PARALLEL_NETCDF_ROOT}</env>
