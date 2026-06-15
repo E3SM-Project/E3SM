@@ -277,6 +277,11 @@
 <config_GM_EG_kappa_factor>3.0</config_GM_EG_kappa_factor>
 <config_GM_EG_Rossby_factor>2.0</config_GM_EG_Rossby_factor>
 <config_GM_EG_Rhines_factor>0.3</config_GM_EG_Rhines_factor>
+<config_GM_geometric_alpha>0.35</config_GM_geometric_alpha>
+<config_GM_geometric_eddyDiff>600.0</config_GM_geometric_eddyDiff>
+<config_GM_geometric_dissipation>90.0</config_GM_geometric_dissipation>
+<config_GM_geometric_backgroundEddyEnergy>0.01</config_GM_geometric_backgroundEddyEnergy>
+<config_GM_geometric_maximumEddyEnergy>1000.0</config_GM_geometric_maximumEddyEnergy>
 <config_GM_horizontal_taper>'ramp'</config_GM_horizontal_taper>
 <config_GM_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_GM_horizontal_taper>
 <config_GM_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_GM_horizontal_taper>
