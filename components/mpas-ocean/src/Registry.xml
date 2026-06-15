@@ -418,7 +418,7 @@
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch"
 					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
-					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'"
+					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch', 'geometric'"
 		/>
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^-1"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
@@ -467,6 +467,21 @@
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
+                <nml_option name="config_GM_geometric_alpha" type="real" default_value="0.035" units="constant"
+                                        description="Configured GEOMETRIC efficiency"
+                />
+                <nml_option name="config_GM_geometric_eddyDiff" type="real" default_value="600.0" units="m^2 s^-1"
+                                        description="Eddy diffusivity for the depth-integrated parameterized eddy energy"
+                />
+                <nml_option name="config_GM_geometric_dissipation" type="real" default_value="90.0" units="days"
+                                        description="Number of days to dissipate the depth-integrated parameterized eddy energy"
+                />
+                <nml_option name="config_GM_geometric_backgroundEddyEnergy" type="real" default_value="0.1" units="m^3 s^-2"
+                                        description="Background total depth-integrated parameterized eddy energy"
+                />
+                <nml_option name="config_GM_geometric_maximumEddyEnergy" type="real" default_value="1000.0" units="m^3 s^-2"
+                                        description="Maximum total depth-integrated parameterized eddy energy"
+                />
 		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
@@ -1851,6 +1866,7 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+                <package name="gmGeometric" description="This package is for GEOMETRIC GM parameterization variables, which are only needed at lower resolutions."/>
 		<package name="submeso" description="This package is for submesoscale eddy (MLE) variables, needed at resolutions greater than O(1km)"/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
@@ -2152,6 +2168,7 @@
 			<var name="lowFreqDivergence"/>
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
+                        <var name="totalParamEddyEnergy" packages="gmGeometric" />
 			<var name="xtime"/>
 			<var_array name="nonLocalSurfaceTracerFlux"/>
 			<var name="simulationStartTime"/>
@@ -2165,6 +2182,7 @@
 			<var name="atmosphericPressure"/>
 			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
 			<var name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
+                        <var name="totalParamEddyEnergyTendOld" packages="gmGeometric" />
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -2625,6 +2643,12 @@
 			 description="The layerThickness after the Lagrangian step, prior to remapping."
 			 packages="verticalRemapPKG"
 		/>
+                <!-- FIELDS FOR GEOMETRIC GM parameterization -->
+                <var name="totalParamEddyEnergy" type="real" dimensions="nCells Time" units="m^3 s^-2"
+                         description="The vertically integrated total parameterized eddy energy used in the GEOMETRIC GM parameterization option."
+                         missing_value="FILLVAL" missing_value_mask="cellMask"
+                         packages="gmGeometric"
+                />
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
@@ -2958,6 +2982,10 @@
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="thicknessFilter"
 		/>
+                <var name="tendTotalParamEddyEnergy" type="real" dimensions="nCells Time" units="m^3 s^-3" name_in_code="totalParamEddyEnergy"
+                         description="time tendency of the vertically integrated total parameterized eddy energy"
+                         packages="gmGeometric"
+                />
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="1">
 		<var name="xtime" type="text" dimensions="Time"
@@ -3545,6 +3573,10 @@
 			 description="Rossby Radius, computed in GM routine for some settings"
 			 packages="gm"
 		/>
+                <var name="totalParamEddyEnergyTendOld" type="real" dimensions="nCells Time" units="m^3 s^-3"
+                        description="time tendency of the vertically integrated total parameterized eddy energy in GEOMETRIC GM paramterization"
+                        packages="gmGeometric"
+                />
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>
