@@ -117,7 +117,7 @@ module li_thermal
 
       logical, pointer :: &
            config_print_thermal_info,  &
-          config_do_restart
+           config_do_restart
 
       character(len=StrKIND), pointer :: &
            config_thermal_solver,                 & ! solver option ('temperature' or 'enthalpy')
@@ -413,7 +413,7 @@ module li_thermal
                     nVertLevels,                   &
                     layerCenterSigma,              &
                     thickness(iCell),              &
-                  surfaceAirTemperature(iCell),  &
+                    surfaceAirTemperature(iCell),  &
                     temperature(:,iCell),          &
                     waterFrac(:,iCell),            &
                     surfaceTemperature(iCell),     &
@@ -658,7 +658,7 @@ module li_thermal
            nVertLevels                 ! number of vertical layers
 
       logical, pointer :: &
-          config_print_thermal_info   ! if true, print debug info
+           config_print_thermal_info   ! if true, print debug info
 
       character(len=StrKIND), pointer :: &
            config_thermal_solver       ! option for thermal solver
@@ -694,7 +694,6 @@ module li_thermal
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceTemperature,       & ! surface ice temperature (K)
            basalTemperature,         & ! basal ice temperature (K)
-           surfaceAirTemperature,    & ! raw/input surface air temperature (K)
            surfaceAirTemperatureApplied,    & ! surface air temperature used by physics (K)
            basalHeatFlux,            & ! basal heat flux into the ice (W m^{-2}, positive upward)
            basalFrictionFlux,        & ! basal frictional flux into the ice (W m^{-2})
@@ -817,7 +816,6 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'drainedInternalMeltRate', drainedInternalMeltRate)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
-         call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperatureApplied', surfaceAirTemperatureApplied)
          call mpas_pool_get_array(thermalPool, 'surfaceConductiveFlux', surfaceConductiveFlux)
          call mpas_pool_get_array(thermalPool, 'basalConductiveFlux', basalConductiveFlux)
