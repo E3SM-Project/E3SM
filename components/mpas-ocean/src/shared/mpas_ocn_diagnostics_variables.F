@@ -959,8 +959,7 @@ contains
          !$acc                   )
       end if
       if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
-         !$acc enter data create(normalVelocityTendOld, &
-         !$acc                   CoriolisTermOld,totalParamEddyEnergyTendOld)
+         !$acc enter data create(normalVelocityTendOld, CoriolisTermOld)
       end if
 
       !$acc enter data create(                                         &
@@ -1224,8 +1223,7 @@ contains
          !$acc                   )
       end if
       if ( trim(config_time_integrator) == 'split_explicit_ab2' ) then
-         !$acc exit data delete(normalVelocityTendOld, &
-         !$acc                  CoriolisTermOld,totalParamEddyEnergyTendOld)
+         !$acc exit data delete(normalVelocityTendOld, CoriolisTermOld)
       end if
 
       !$acc exit data delete(                                          &
