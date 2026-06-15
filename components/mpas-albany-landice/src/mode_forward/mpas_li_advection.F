@@ -1160,6 +1160,12 @@ module li_advection
          surfaceAirTemperatureApplied(:) = surfaceAirTemperature(:)
 
          if (config_apply_smb_sat_lapse_rate) then
+            if (minval(surfaceElevationRef(:)) < 0.0_RKIND) then
+               call mpas_log_write('surfaceElevationRef contains negative values. ' // &
+                  'All values must be >= 0.', MPAS_LOG_CRIT)
+               err = 1
+               return
+            endif
             sfcMassBalGradientCorrection(:) = sfcMassBalLapseRate(:) * (upperSurface(:) - surfaceElevationRef(:))
 
             surfaceAirTemperatureApplied(:) = surfaceAirTemperatureApplied(:) + &
