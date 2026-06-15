@@ -703,6 +703,46 @@ Valid values: small positive values less than equal to one
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_geometric_alpha" type="real"
+        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+scaling factor on the GEOMETRIC diffusivity parameterization
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_eddyDiff" type="real"
+        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+diffusion coefficient of the parameterized eddy energy
+
+Valid values: positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_dissipation" type="real"
+        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+number of days for the dissipation rate
+
+Valid values: positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_backgroundEddyEnergy" type="real"
+        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+background parameterized eddy energy
+
+Valid values: small positive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_maximumEddyEnergy" type="real"
+        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+maximum parameterized eddy energy
+
+Valid values: ositive numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_horizontal_taper" type="char*1024"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007
