@@ -131,9 +131,6 @@ struct Functions {
     static inline constexpr Real dmpdz                     = -0.7e-3;  // default convective entrainment parameter [1/m]
     static inline constexpr Real tiedke_add                = 0.8;      // default Tiedke temperature perturbation addition [K]
     static inline constexpr Real c0                        = 0.0020;   // default autoconversion coefficient
-    static inline constexpr Real auto_fac                  = 7;        // enhancement factor for droplet-rain autoconversion
-    static inline constexpr Real accr_fac                  = 1.5;      // default accretion factor
-    static inline constexpr Real micro_dcs                 = 150.E-6;  // default size threshold for cloud ice to snow autoconversion
 
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments. ttrice defines the transition
@@ -175,9 +172,6 @@ struct Functions {
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
       old_snow            = params.get<bool>("old_snow",            true);
-      auto_fac            = params.get<Real>("auto_fac",            ZMC::auto_fac);
-      accr_fac            = params.get<Real>("accr_fac",            ZMC::accr_fac);
-      micro_dcs           = params.get<Real>("micro_dcs",           ZMC::micro_dcs);
       // MCSP parameters
       mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
       mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff);
@@ -254,9 +248,6 @@ struct Functions {
       // ZM micro parameters
       os << indent << "zm_microp       : " << zm_microp      << "\n";
       os << indent << "old_snow        : " << old_snow       << "\n";
-      os << indent << "auto_fac        : " << auto_fac       << "\n";
-      os << indent << "accr_fac        : " << accr_fac       << "\n";
-      os << indent << "micro_dcs       : " << micro_dcs      << "\n";
       // MCSP parameters
       os << indent << "mcsp_enabled    : " << mcsp_enabled   << "\n";
       os << indent << "mcsp_t_coeff    : " << mcsp_t_coeff   << "\n";
@@ -289,9 +280,6 @@ struct Functions {
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
     bool old_snow;          // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
-    Real auto_fac;          // ZM microphysics enhancement factor for droplet-rain autoconversion
-    Real accr_fac;          // ZM microphysics enhancement factor for droplet-rain accretion
-    Real micro_dcs;         // ZM microphysics size threshold for cloud ice to snow autoconversion [m]
     // MCSP parameters
     bool mcsp_enabled;      // flag for mesoscale coherent structure parameterization (MSCP)
     Real mcsp_t_coeff;      // MCSP coefficient for temperature tendencies

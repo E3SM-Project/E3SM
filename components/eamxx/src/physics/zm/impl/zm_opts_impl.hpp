@@ -35,10 +35,7 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.no_deep_pbl         = false;
   // ZM micro parameters
   s_zm_opts.zm_microp           = false;
-  s_zm_opts.old_snow            = false;
-  s_zm_opts.auto_fac            = 7;
-  s_zm_opts.accr_fac            = ZMC::accr_fac;
-  s_zm_opts.micro_dcs           = 150.E-6;
+  s_zm_opts.old_snow            = true;
   // MCSP parameters
   s_zm_opts.mcsp_enabled        = true;
   s_zm_opts.mcsp_t_coeff        = ZMC::MCSP_t_coeff;
