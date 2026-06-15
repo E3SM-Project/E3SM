@@ -747,6 +747,8 @@
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
                 <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
+
+                <package name="smbSatLapseRate" description="This package includes variables needed when config_apply_smb_sat_lapse_rate is true."/>
 	</packages>
 
 
@@ -910,6 +912,7 @@
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
+			<var name="surfaceElevationRef" packages="smbSatLapseRate"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="regionCellMasks"/>
                         <var name="regionEdgeMasks"/>
