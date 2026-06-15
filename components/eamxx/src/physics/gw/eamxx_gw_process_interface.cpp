@@ -130,7 +130,7 @@ void GWDrag::run_impl (const double dt) {
   const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid);
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid);
   // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
-  WSM wsm( (m_nlev+1)*m_npgw, 9, team_policy);
+  WSM wsm( nlev_int*m_npgw, 9, team_policy);
   //----------------------------------------------------------------------------
   // get fields not updated by GWD
   auto m_lat_v = m_lat.get_view<const Real*>();
@@ -199,7 +199,7 @@ void GWDrag::run_impl (const double dt) {
     const auto qv_i = ekat::subview(loc_qv, i);
     const auto qc_i = ekat::subview(loc_qc, i);
     const auto qi_i = ekat::subview(loc_qi, i);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
       loc_q_combined(i,k,0) = qv_i(k);
       loc_q_combined(i,k,1) = qc_i(k);
       loc_q_combined(i,k,2) = qi_i(k);
@@ -207,6 +207,9 @@ void GWDrag::run_impl (const double dt) {
   });
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
+  // Kokkos::deep_copy(loc_z_mid,0.0)
+  // Kokkos::deep_copy(loc_z_del,0.0)
+  // Kokkos::deep_copy(loc_z_int,0.0)
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto p_mid_i = ekat::subview(loc_p_mid, i);
@@ -219,9 +222,9 @@ void GWDrag::run_impl (const double dt) {
     auto z_surf = 0.0; // z_mid & z_int are altitude above the surface
     PF::calculate_dz(team, p_del_i, p_mid_i, T_mid_i, qv_i, z_del_i);
     team.team_barrier();
-    PF::calculate_z_int(team, m_nlev, z_del_i, z_surf, z_int_i);
+    PF::calculate_z_int(team, nlev_mid, z_del_i, z_surf, z_int_i);
     team.team_barrier();
-    PF::calculate_z_mid(team, m_nlev, z_int_i, z_mid_i);
+    PF::calculate_z_mid(team, nlev_mid, z_int_i, z_mid_i);
     team.team_barrier();
   });
   //----------------------------------------------------------------------------
@@ -266,17 +269,17 @@ void GWDrag::run_impl (const double dt) {
     const auto p_mid_s   = ekat::subview(loc_p_mid,  i);
     const auto p_int_s   = ekat::subview(loc_p_int,  i);
     const auto T_int_s   = ekat::subview(loc_T_int,  i);
-    // Slice to exclude padding: mid levels = [0, m_nlev), int levels = [0, m_nlev+1)
+    // Slice to exclude padding: mid levels = [0, nlev_mid), int levels = [0, nlev_int)
     // note we might not need this after eliminating the use of packs here
-    const auto T_mid_i   = Kokkos::subview(T_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
-    const auto p_mid_i   = Kokkos::subview(p_mid_s,   Kokkos::pair<int, int>{0, m_nlev});
-    const auto p_int_i   = Kokkos::subview(p_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
-    const auto T_int_i   = Kokkos::subview(T_int_s,   Kokkos::pair<int, int>{0, m_nlev+1});
+    const auto T_mid_i   = Kokkos::subview(T_mid_s,   Kokkos::pair<int, int>{0, nlev_mid});
+    const auto p_mid_i   = Kokkos::subview(p_mid_s,   Kokkos::pair<int, int>{0, nlev_mid});
+    const auto p_int_i   = Kokkos::subview(p_int_s,   Kokkos::pair<int, int>{0, nlev_int});
+    const auto T_int_i   = Kokkos::subview(T_int_s,   Kokkos::pair<int, int>{0, nlev_int});
     const auto N_mid_i   = ekat::subview(loc_N_mid,  i);
     const auto N_int_i   = ekat::subview(loc_N_int,  i);
     const auto rho_int_i = ekat::subview(loc_rho_int,i);
     // compute profiles
-    GWF::gw_prof(team, m_nlev, cpair, T_mid_i, p_mid_i, p_int_i,
+    GWF::gw_prof(team, nlev_mid, cpair, T_mid_i, p_mid_i, p_int_i,
                  rho_int_i, T_int_i, N_mid_i, N_int_i);
   });
 
@@ -353,7 +356,7 @@ void GWDrag::run_impl (const double dt) {
 
       // Solve for the drag profile with convective sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
-                        m_nlev, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
+                        nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
                         common_init.do_taper, dt, m_lat_v(i),
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
@@ -364,7 +367,7 @@ void GWDrag::run_impl (const double dt) {
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
 
       // add convective tendencies to aggregate output tendencies
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k) {
         gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
         gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
         gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
@@ -374,7 +377,7 @@ void GWDrag::run_impl (const double dt) {
       });
 
       // Momentum & energy conservation for convective tendencies
-      GWF::momentum_energy_conservation(team, m_nlev, tnd_lev, dt,
+      GWF::momentum_energy_conservation(team, nlev_mid, tnd_lev, dt,
                                         taucd_i, p_int_i, p_del_i, uwind_i, vwind_i,
                                         gw_tend_u_i, gw_tend_v_i, gw_tend_t_i,
                                         utgw_i, vtgw_i, ttgw_i );
@@ -392,7 +395,7 @@ void GWDrag::run_impl (const double dt) {
 
       // Solve for the drag profile with frontal sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
-                        m_nlev, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
+                        nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
                         common_init.do_taper, dt, m_lat_v(i),
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
@@ -403,7 +406,7 @@ void GWDrag::run_impl (const double dt) {
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i);
 
       // add frontal tendencies to aggregate output tendencies
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k) {
         gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
         gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
         gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
@@ -413,7 +416,7 @@ void GWDrag::run_impl (const double dt) {
       });
 
       // Momentum & energy conservation for frontal tendencies
-      GWF::momentum_energy_conservation(team, m_nlev, tnd_lev, dt,
+      GWF::momentum_energy_conservation(team, nlev_mid, tnd_lev, dt,
                                         taucd_i, p_int_i, p_del_i, uwind_i, vwind_i,
                                         gw_tend_u_i, gw_tend_v_i, gw_tend_t_i,
                                         utgw_i, vtgw_i, ttgw_i );
@@ -424,7 +427,7 @@ void GWDrag::run_impl (const double dt) {
     if (common_init.use_gw_orographic) {
 
       // Determine the orographic wave source
-      GWF::gw_oro_src(team, common_init, m_nlev, common_init.pgwv,
+      GWF::gw_oro_src(team, common_init, nlev_mid, common_init.pgwv,
                       uwind_i, vwind_i, T_mid_i, sgh(i),
                       p_mid_i, p_int_i, p_del_i, z_mid_i, N_mid_i,
                       src_lev, tnd_lev,
@@ -432,7 +435,7 @@ void GWDrag::run_impl (const double dt) {
 
       // Solve for the drag profile with orographic sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
-                        m_nlev, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
+                        nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
                         common_init.do_taper, dt, m_lat_v(i),
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
@@ -443,7 +446,7 @@ void GWDrag::run_impl (const double dt) {
                         taucd_i, egwdffi_i, gwut_i, dttdf_i, dttke_i );
 
       // add tendencies to aggregate output tendencies
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k) {
         gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
         gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
         gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
@@ -455,15 +458,15 @@ void GWDrag::run_impl (const double dt) {
       //----------------------------------------------------------------------------
       // GW energy fixer
       Real dE = 0;
-      Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k, Real& lsum) {
+      Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k, Real& lsum) {
         lsum -= p_del_i(k) * ( gw_tend_u_i(k) * (uwind_i(k) + gw_tend_u_i(k) * GWF::GWC::half * dt)
                               +gw_tend_v_i(k) * (vwind_i(k) + gw_tend_v_i(k) * GWF::GWC::half * dt)
                               +gw_tend_t_i(k));
       }, Kokkos::Sum<Real>(dE));
 
-      dE /= (p_int_i(m_nlev) - p_int_i(0));
+      dE /= (p_int_i(nlev_mid) - p_int_i(0));
 
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, m_nlev), [&] (const int k) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k) {
         gw_tend_t_i(k) += dE;
       });
 
@@ -495,7 +498,7 @@ void GWDrag::run_impl (const double dt) {
     const auto qv_i    = ekat::subview(loc_qv, i);
     const auto qc_i    = ekat::subview(loc_qc, i);
     const auto qi_i    = ekat::subview(loc_qi, i);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
       uwind_i(k) += loc_gw_tend_u(i,k) * dt;
       vwind_i(k) += loc_gw_tend_v(i,k) * dt;
       T_mid_i(k) += loc_gw_tend_t(i,k) * inv_cpair * dt;
@@ -520,7 +523,7 @@ void GWDrag::run_impl (const double dt) {
     const auto loc_gw_v_tend_out_i     = ekat::subview(loc_gw_v_tend_out, i);
     const auto loc_gw_T_mid_tend_out_i = ekat::subview(loc_gw_T_mid_tend_out, i);
     const auto loc_gw_qv_tend_out_i    = ekat::subview(loc_gw_qv_tend_out, i);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, m_nlev), [&] (const int k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
       loc_gw_u_tend_out_i(k)     = loc_gw_tend_u(i,k);
       loc_gw_v_tend_out_i(k)     = loc_gw_tend_v(i,k);
       loc_gw_T_mid_tend_out_i(k) = loc_gw_tend_t(i,k) * inv_cpair;
