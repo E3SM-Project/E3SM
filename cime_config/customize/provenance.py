@@ -420,13 +420,11 @@ def _record_timing(case, lid):
 
 
 def _record_queue_info(mach, job_id, lid, full_timing_dir):
-    if mach in ["anvil", "chrysalis", "compy"]:
+    if mach in ["chrysalis", "compy"]:
         _record_anl_queue(job_id, lid, full_timing_dir)
 #TODO: Add Perlmutter
     elif mach in ["frontier", "crusher"]:
         _record_slurm_queue(job_id, lid, full_timing_dir)
-    elif mach == "summit":
-        _record_olcf_queue(job_id, lid, full_timing_dir)
 
 # TODO: Switch to generic Slurm routine
 def _record_nersc_queue(job_id, lid, full_timing_dir):
@@ -734,11 +732,8 @@ def _copy_performance_archive_files(
 ):
     globs_to_copy = []
     if job_id is not None:
-        if mach in ["anvil", "chrysalis", "compy"]:
+        if mach in ["chrysalis", "compy"]:
             globs_to_copy.append("run*%s*%s" % (case.get_value("CASE"), job_id))
-        elif mach == "summit":
-            globs_to_copy.append("e3sm.stderr.%s" % job_id)
-            globs_to_copy.append("e3sm.stdout.%s" % job_id)
 
     globs_to_copy.append("logs/run_environment.txt.{}".format(lid))
     globs_to_copy.append(os.path.join(rundir, "e3sm.log.{}.gz".format(lid)))
@@ -772,11 +767,9 @@ def _get_batch_job_id_for_syslog(case):
     """
     mach = case.get_value("MACH")
     try:
-        if mach in ["anvil", "chrysalis", "compy", "pm-cpu", "pm-gpu", "muller-cpu", "muller-gpu", "alvarez","frontier"]:
+        if mach in ["chrysalis", "compy", "pm-cpu", "pm-gpu", "muller-cpu", "muller-gpu", "alvarez","frontier"]:
             # Note: Besides, SLURM_JOB_ID, equivalent SLURM_JOBID is also present on some systems (Frontier).
             return os.environ["SLURM_JOB_ID"]
-        elif mach in ["summit"]:
-            return os.environ["LSB_JOBID"]
     except KeyError:
         pass
 
