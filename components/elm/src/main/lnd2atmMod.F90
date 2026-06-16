@@ -418,12 +418,6 @@ contains
           end if
        end if
 
-       ! Subtract fire CO2 from NEE so CO2_LND = biospheric NEE only
-       ! fire_closs is already included in nee; separate it for CO2_FRE tracer
-       do g = bounds%begg,bounds%endg
-          nee_grc(g) = nee_grc(g) - fire_co2_grc(g)
-       end do
-
        ! Convert from gC/m2/s to kgCO2/m2/s
        do g = bounds%begg,bounds%endg
           nee_grc(g)     = nee_grc(g)     * convertgC2kgCO2

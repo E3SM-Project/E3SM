@@ -50,7 +50,7 @@ module lnd2atmType
      real(r8), pointer :: fsr_vis_i_grc      (:)   => null() ! reflected diffuse vis solar radiation (W/m**2)
      real(r8), pointer :: fsr_nir_d_grc      (:)   => null() ! reflected direct beam nir solar radiation (W/m**2)
      real(r8), pointer :: fsr_nir_i_grc      (:)   => null() ! reflected diffuse nir solar radiation (W/m**2)
-     real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
+     real(r8), pointer :: nee_grc            (:)   => null() ! net ecosystem exchange, fire-free by convention (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: fire_co2_grc       (:)   => null() ! fire CO2 flux (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: nem_grc            (:)   => null() ! gridcell average net methane correction to CO2 flux (g C/m^2/s)
      real(r8), pointer :: ram1_grc           (:)   => null() ! aerodynamical resistance (s/m)
@@ -237,6 +237,11 @@ contains
             avgflag='A', long_name='Gridcell net adjustment to NEE passed to atm. for methane production', &
             ptr_lnd=this%nem_grc)
     end if
+
+       this%fire_co2_grc(begg:endg) = 0.0_r8
+       call hist_addfld1d (fname='FCO2_FRE', units='kgCO2/m2/s', &
+            avgflag='A', long_name='Gridcell fire CO2 flux to atmosphere', &
+            ptr_lnd=this%fire_co2_grc)
 
     if (shr_fan_to_atm) then
        this%flux_nh3_grc(begg:endg) = 0.0_r8

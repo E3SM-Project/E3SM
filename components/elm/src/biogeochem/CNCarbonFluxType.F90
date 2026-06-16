@@ -2175,14 +2175,14 @@ contains
             this%dwt_closs_col(c)  - &
             this%product_closs_col(c)
 
-       ! net ecosystem exchange of carbon, includes fire flux, landcover change flux, loss
-       ! from wood products pools, and hrv_xsmrpool flux, positive for source (NEE)
-       this%nee_col(c) =                &
-            -this%nep_col(c)           + &
-            this%fire_closs_col(c)    + &
-            this%dwt_closs_col(c)     + &
-            this%product_closs_col(c) + &
-            this%hrv_xsmrpool_to_atm_col(c)
+        ! net ecosystem exchange of carbon, excludes fire emissions by convention,
+        ! but includes landcover change, wood product loss, and hrv_xsmrpool flux,
+        ! positive for source (NEE)
+        this%nee_col(c) =                &
+           -this%nep_col(c)           + &
+           this%dwt_closs_col(c)     + &
+           this%product_closs_col(c) + &
+           this%hrv_xsmrpool_to_atm_col(c)
 
        ! land use flux and land uptake
        this%landuseflux_col(c) = &

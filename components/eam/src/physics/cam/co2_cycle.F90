@@ -8,6 +8,10 @@ module co2_cycle
 !
 ! Purpose:
 ! Provides distributions of CO2_LND, CO2_OCN, CO2_FF, CO2
+! CO2 was used in radiation calculation.
+!
+! Purpose:
+! Provides distributions of CO2_NEE, CO2_OCN, CO2_FF, CO2_FRE, CO2
 ! Read co2 flux from ocn and fossil fuel.
 ! Get  co2 flux from lnd through coupler. 
 !
@@ -72,11 +76,11 @@ character(len=cl) :: co2flux_fuel_file = 'unset' ! co2 flux from fossil fuel
 integer, parameter :: ncnst = 5                      ! number of constituents implemented
 
 character(len=7), dimension(ncnst), parameter :: & ! constituent names
-     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2_FRE', 'CO2    '/)
+   c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_NEE', 'CO2_FRE', 'CO2    '/)
 
 integer :: co2_ocn_glo_ind ! global index of 'CO2_OCN'
 integer :: co2_fff_glo_ind ! global index of 'CO2_FFF'
-integer :: co2_lnd_glo_ind ! global index of 'CO2_LND'
+integer :: co2_nee_glo_ind ! global index of 'CO2_NEE'
 integer :: co2_fre_glo_ind ! global index of 'CO2_FRE'
 integer :: co2_glo_ind     ! global index of 'CO2'
 
@@ -198,8 +202,8 @@ subroutine co2_register
         co2_ocn_glo_ind = c_i(idx)
      case ('CO2_FFF')
         co2_fff_glo_ind = c_i(idx)
-     case ('CO2_LND')
-        co2_lnd_glo_ind = c_i(idx)
+     case ('CO2_NEE')
+        co2_nee_glo_ind = c_i(idx)
      case ('CO2_FRE')
         co2_fre_glo_ind = c_i(idx)
      case ('CO2')
@@ -306,7 +310,6 @@ subroutine co2_init
     call addfld('TAF'//trim(cnst_name(c_i(4))), horiz_only, 'A', 'kg/m2/s', trim(cnst_longname(co2_glo_ind))//' column-integrated aircraft flux')
     call add_default('TAF'//trim(cnst_name(c_i(4))), 1, ' ')
 
- 
     ! Read flux data
     if (co2_readFlux_ocn) then
        call co2_data_flux_init ( co2flux_ocn_file,  'CO2_flux', data_flux_ocn )
@@ -400,7 +403,7 @@ subroutine co2_init_cnst(name, q, gcid)
       q = chem_surfvals_get('CO2MMR')
    case ('CO2_FFF')
       q = chem_surfvals_get('CO2MMR')
-   case ('CO2_LND')
+   case ('CO2_NEE')
       q = chem_surfvals_get('CO2MMR')
    case ('CO2_FRE')
       q = chem_surfvals_get('CO2MMR')
