@@ -60,8 +60,7 @@ module ocn_gm
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
    real(kind=RKIND) :: local_config_GM_constant_bclModeSpeed
    real(kind=RKIND) :: gm_minBclModeSpeed_constant, gm_minBclModeSpeed_compute_on
-   real(kind=RKIND) :: N2min, nPointSmooth, nPointSmoothHalf
-   real(kind=RKIND) :: dissipationRate
+   real(kind=RKIND) :: N2min, dissipationRate
 
 !***********************************************************************
 
@@ -1691,10 +1690,6 @@ contains
 
             ! Min. bound for BVF
             N2min = 1.0E-20_RKIND
-
-            ! The number of points for the running mean of the structure function
-            nPointSmooth = 3 ! The number of points for the
-            nPointSmoothHalf = int(real(nPointSmooth)/2.0_RKIND)
 
             ! Eddy energy dissipation rate
             dissipationRate = 1.0_RKIND / &
