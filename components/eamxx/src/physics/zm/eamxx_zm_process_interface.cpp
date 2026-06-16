@@ -597,7 +597,7 @@ void ZMDeepConvection::run_impl (const double dt)
   // 3D interface output
   const auto loc_zm_output_mass_flux = zm_output.mass_flux;
   const auto& mass_flux_int = get_field_out("zm_mass_flux_int").get_view<Real**>();
-  Kokkos::parallel_for("zm_diag_outputs_3D_mid",
+  Kokkos::parallel_for("zm_diag_outputs_3D_int",
     KT::RangePolicy(0, m_ncol*nlev_int), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_int;
     const int k = idx%nlev_int;
