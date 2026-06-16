@@ -414,6 +414,7 @@ class AnlGceUb22(Machine):
                          "module load gcc/12.1.0",
                          "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/lib:$LD_LIBRARY_PATH",
                          "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0/bin:$PATH",
+                          "export HDF5_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/hdf5/1.14.6/mpich-4.1.2/gcc-12.1.0-mt",
                          "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0",
                          "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"
                         ]
