@@ -284,8 +284,6 @@ struct CaarFunctorImpl {
     if (!m_theta_hydrostatic_mode) {
       m_buffers.phi_tens     = decltype(m_buffers.phi_tens    )(mem,nslots);
       mem += m_buffers.phi_tens.size();
-    }
-    if (!m_theta_hydrostatic_mode) {
       m_buffers.w_tens       = decltype(m_buffers.w_tens      )(mem,nslots);
       mem += m_buffers.w_tens.size();
     }
