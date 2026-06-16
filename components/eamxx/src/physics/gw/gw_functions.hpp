@@ -58,6 +58,12 @@ struct Functions
     static inline constexpr int south = 2;
     static inline constexpr int north = 3;
 
+    // defaults for gw_common_init()
+    static inline constexpr bool do_molec_diff_default = false; // Flag for molecular diffusion
+    static inline constexpr int  nbot_molec_default = 0;         // bottom level for molecular diffusion
+    static inline constexpr int  ktop_default = 0;               // Top level for gravity waves
+    static inline constexpr Real kwv_default = 6.28e-5;         // Effective horizontal wave number (100 km wavelength)
+
     static inline constexpr Real rog = C::Rair.value / C::gravit.value;
 
     static inline constexpr Real dback = 0.05;          // Background diffusivity

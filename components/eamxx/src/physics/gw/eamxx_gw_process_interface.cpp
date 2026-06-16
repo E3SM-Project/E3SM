@@ -62,21 +62,10 @@ void GWDrag::create_requests() {
   add_tracer<Updated>("qi",                   m_grid,       kg/kg,             pack_size);
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
 
-  // Diagnostic Outputs
-  add_field<Computed>("gw_T_mid_tend",        scalar3d_mid, K/s,    grid_name, pack_size);
-  add_field<Computed>("gw_qv_tend",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
-  add_field<Computed>("gw_u_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
-  add_field<Computed>("gw_v_tend",            scalar3d_mid, m/s/s,  grid_name, pack_size);
 }
 
 /*------------------------------------------------------------------------------------------------*/
 void GWDrag::initialize_impl (const RunType) {
-
-  // defaults for gw_common_init()
-  bool do_molec_diff_default = false; // Flag for molecular diffusion
-  int nbot_molec_default = 0;         // bottom level for molecular diffusion
-  int ktop_default = 0;               // Top level for gravity waves.
-  Real kwv_default = 6.28e-5;         // Effective horizontal wave number (100 km wavelength)
 
   // calculate interface reference pressures (on device)
   const auto hyai = m_grid->get_geometry_data("hyai").get_view<const Real*>();
@@ -88,14 +77,13 @@ void GWDrag::initialize_impl (const RunType) {
       pref_int(k) = PC::P0.value * hyai(k) + PC::P0.value * hybi(k);
   });
 
-  GWF::gw_common_init( m_params,
-                       m_nlev,
-                       pref_int,
-                       do_molec_diff_default,
-                       nbot_molec_default,
-                       ktop_default,
-                       kwv_default);
+  GWF::gw_common_init( m_params, m_nlev, pref_int,
+                       GWF::GWC::do_molec_diff_default,
+                       GWF::GWC::nbot_molec_default,
+                       GWF::GWC::ktop_default,
+                       GWF::GWC::kwv_default);
 
+  // Read GW lookup table data
   std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
   scorpio::register_file(gw_drag_file,scorpio::FileMode::Read);
   const int PS_dim_size = scorpio::get_dimlen(gw_drag_file, "PS"); // Phase Speed [m/s]
@@ -125,8 +113,6 @@ void GWDrag::run_impl (const double dt) {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
   const int nlev_mid = m_nlev;
   const int nlev_int = m_nlev+1;
-  // const int nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
-  // const int nlev_int_packs = ekat::npack<Pack>(nlev_int);
   const auto team_policy = TPF::get_default_team_policy(m_ncol, nlev_mid);
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid);
   // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
@@ -507,29 +493,7 @@ void GWDrag::run_impl (const double dt) {
       qi_i(k)    += loc_gw_tend_q(i,k,2) * dt;
     });
   });
-  //----------------------------------------------------------------------------
-  // Update diagnostic outputs
-  const auto& gw_u_tend_out     = get_field_out("gw_u_tend")    .get_view<Pack**>();
-  const auto& gw_v_tend_out     = get_field_out("gw_v_tend")    .get_view<Pack**>();
-  const auto& gw_T_mid_tend_out = get_field_out("gw_T_mid_tend").get_view<Pack**>();
-  const auto& gw_qv_tend_out    = get_field_out("gw_qv_tend")   .get_view<Pack**>();
-  auto loc_gw_u_tend_out     = gw_u_tend_out;
-  auto loc_gw_v_tend_out     = gw_v_tend_out;
-  auto loc_gw_T_mid_tend_out = gw_T_mid_tend_out;
-  auto loc_gw_qv_tend_out    = gw_qv_tend_out;
-  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-    const Int i = team.league_rank();
-    const auto loc_gw_u_tend_out_i     = ekat::subview(loc_gw_u_tend_out, i);
-    const auto loc_gw_v_tend_out_i     = ekat::subview(loc_gw_v_tend_out, i);
-    const auto loc_gw_T_mid_tend_out_i = ekat::subview(loc_gw_T_mid_tend_out, i);
-    const auto loc_gw_qv_tend_out_i    = ekat::subview(loc_gw_qv_tend_out, i);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
-      loc_gw_u_tend_out_i(k)     = loc_gw_tend_u(i,k);
-      loc_gw_v_tend_out_i(k)     = loc_gw_tend_v(i,k);
-      loc_gw_T_mid_tend_out_i(k) = loc_gw_tend_t(i,k) * inv_cpair;
-      loc_gw_qv_tend_out_i(k)    = loc_gw_tend_q(i,k,0);
-    });
-  });
+
 }
 /*------------------------------------------------------------------------------------------------*/
 size_t GWDrag::requested_buffer_size_in_bytes() const
