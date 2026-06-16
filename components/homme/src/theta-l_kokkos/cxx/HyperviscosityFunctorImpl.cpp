@@ -288,6 +288,18 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   } else {
     m_data.dt_hvs_sgs = -1.0;
   }
+  if (m_data.hypervis_subcycle_sgs_eff > 1 && Context::singleton().get<Comm>().root()) {
+    if (m_data.hypervis_subcycle_sgs > 0) {
+      printf("Warning: SGS horizontal diffusion is using fixed subcycling of %d for this run.\n",
+             m_data.hypervis_subcycle_sgs_eff);
+    } else if (m_data.hypervis_subcycle_sgs_eff == max_dynamic_sgs_subcycles) {
+      printf("Warning: SGS horizontal diffusion reached the maximum allowed dynamic subcycling of %d for this step.\n",
+             m_data.hypervis_subcycle_sgs_eff);
+    } else {
+      printf("Warning: SGS horizontal diffusion increased dynamic subcycling to %d for this step.\n",
+             m_data.hypervis_subcycle_sgs_eff);
+    }
+  }
   m_data.eta_ave_w = eta_ave_w;
 
   // Convert vtheta_dp -> theta
@@ -504,12 +516,6 @@ int HyperviscosityFunctorImpl::compute_sgs_subcycle_count (const Real dt) const
   nsub = std::max(nsub, static_cast<int>(std::ceil(global_max_cfl)));
   const int nsub_uncapped = nsub;
   nsub = std::min(nsub, max_dynamic_sgs_subcycles);
-
-  if (nsub_uncapped > max_dynamic_sgs_subcycles && comm.root()) {
-    printf("Warning: dynamic SGS subcycling reached the maximum allowed value of %d "
-           "(requested %d from estimated CFL %.3f).\n",
-           max_dynamic_sgs_subcycles, nsub_uncapped, global_max_cfl);
-  }
 
   return nsub;
 }
