@@ -78,20 +78,27 @@ void ZMDeepConvection::create_requests ()
   add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
 
   // T/qv from previous time step for DCAPE
-  add_field<Computed>("zm_t_prev",            scalar3d_mid, K,     grid_name);
-  add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg, grid_name);
+  add_field<Computed>("zm_t_prev",            scalar3d_mid, K,      grid_name);
+  add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg,  grid_name);
 
   // Diagnostic Outputs
-  add_field<Computed>("zm_prec",              scalar2d,     m/s,  grid_name);
-  add_field<Computed>("zm_snow",              scalar2d,     m/s,  grid_name);
-  add_field<Computed>("zm_cape",              scalar2d,     J/kg, grid_name);
-  add_field<Computed>("zm_dcape",             scalar2d,     J/kg, grid_name);
-  add_field<Computed>("zm_activity",          scalar2d,     none, grid_name);
+  add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
+  add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
+  add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
+  add_field<Computed>("zm_dcape",             scalar2d,     J/kg,   grid_name);
+  add_field<Computed>("zm_activity",          scalar2d,     none,   grid_name);
 
   add_field<Computed>("zm_detr_qc",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("zm_detr_qi",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
-  add_field<Computed>("zm_detr_nc",           scalar3d_mid, 1/kg/s,grid_name, pack_size);
-  add_field<Computed>("zm_detr_ni",           scalar3d_mid, 1/kg/s,grid_name, pack_size);
+  add_field<Computed>("zm_detr_nc",           scalar3d_mid, 1/kg/s, grid_name, pack_size);
+  add_field<Computed>("zm_detr_ni",           scalar3d_mid, 1/kg/s, grid_name, pack_size);
+
+  add_field<Computed>("zm_mass_flux_int",     scalar3d_int, kg/m2/s,grid_name, pack_size);
+  add_field<Computed>("zm_mflx_up",           scalar3d_mid, kg/m2/s,grid_name, pack_size);
+  add_field<Computed>("zm_entr_up",           scalar3d_mid, 1/s,    grid_name, pack_size);
+  add_field<Computed>("zm_detr_up",           scalar3d_mid, 1/s,    grid_name, pack_size);
+  add_field<Computed>("zm_mflx_dn",           scalar3d_mid, kg/m2/s,grid_name, pack_size);
+  add_field<Computed>("zm_entr_dn",           scalar3d_mid, 1/s,    grid_name, pack_size);
 
   add_field<Computed>("mcsp_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("mcsp_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -500,18 +507,20 @@ void ZMDeepConvection::run_impl (const double dt)
   // update prognostic fields
 
   // accumulate surface precipitation fluxes
-  Kokkos::parallel_for("zm_update_precip",KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
+  Kokkos::parallel_for("zm_update_precip",
+    KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
     auto prec_liq = loc_zm_output_prec(i) - loc_zm_output_snow(i);
     precip_liq_surf_mass(i) += Kokkos::max(0.0,prec_liq) * PC::RHO_H2O.value * dt;
     precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O.value * dt;
   });
 
   // update 3D prognostic variables
-  const auto& zm_detr_qc = ekat::scalarize(get_field_out("zm_detr_qc").get_view<Pack**>());
-  const auto& zm_detr_qi = ekat::scalarize(get_field_out("zm_detr_qi").get_view<Pack**>());
-  const auto& zm_detr_nc = ekat::scalarize(get_field_out("zm_detr_nc").get_view<Pack**>());
-  const auto& zm_detr_ni = ekat::scalarize(get_field_out("zm_detr_ni").get_view<Pack**>());
-  Kokkos::parallel_for("zm_update_prognostic",KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+  const auto& zm_detr_qc = get_field_out("zm_detr_qc").get_view<Real**>();
+  const auto& zm_detr_qi = get_field_out("zm_detr_qi").get_view<Real**>();
+  const auto& zm_detr_nc = get_field_out("zm_detr_nc").get_view<Real**>();
+  const auto& zm_detr_ni = get_field_out("zm_detr_ni").get_view<Real**>();
+  Kokkos::parallel_for("zm_update_prognostic",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
     const int k = idx%nlev_mid;
     // partition detrained cloud water (dlf) into liquid and ice by temperature
@@ -555,17 +564,44 @@ void ZMDeepConvection::run_impl (const double dt)
   // Update output fields
 
   // 2D diagnostic output (no vertical dimension)
-  const auto& zm_prec       = get_field_out("zm_prec")        .get_view<Real*>();
-  const auto& zm_snow       = get_field_out("zm_snow")        .get_view<Real*>();
-  const auto& zm_cape       = get_field_out("zm_cape")        .get_view<Real*>();
-  const auto& zm_dcape      = get_field_out("zm_dcape")       .get_view<Real*>();
-  const auto& zm_activity   = get_field_out("zm_activity")    .get_view<Real*>();
+  const auto& zm_prec       = get_field_out("zm_prec")    .get_view<Real*>();
+  const auto& zm_snow       = get_field_out("zm_snow")    .get_view<Real*>();
+  const auto& zm_cape       = get_field_out("zm_cape")    .get_view<Real*>();
+  const auto& zm_dcape      = get_field_out("zm_dcape")   .get_view<Real*>();
+  const auto& zm_activity   = get_field_out("zm_activity").get_view<Real*>();
   Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
     zm_prec    (i) = loc_zm_output_prec    (i);
     zm_snow    (i) = loc_zm_output_snow    (i);
     zm_cape    (i) = loc_zm_output_cape    (i);
     zm_dcape   (i) = loc_zm_output_dcape   (i);
     zm_activity(i) = loc_zm_output_activity(i);
+  });
+
+  // 3D mid-level output
+  const auto& mflx_up = get_field_out("zm_mflx_up").get_view<Real**>();
+  const auto& entr_up = get_field_out("zm_entr_up").get_view<Real**>();
+  const auto& detr_up = get_field_out("zm_detr_up").get_view<Real**>();
+  const auto& mflx_dn = get_field_out("zm_mflx_dn").get_view<Real**>();
+  const auto& entr_dn = get_field_out("zm_entr_dn").get_view<Real**>();
+  Kokkos::parallel_for("zm_diag_outputs_3D_mid",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    mflx_up(i,k) = loc_zm_output_mflx_up(i,k);
+    entr_up(i,k) = loc_zm_output_entr_up(i,k);
+    detr_up(i,k) = loc_zm_output_detr_up(i,k);
+    mflx_dn(i,k) = loc_zm_output_mflx_dn(i,k);
+    entr_dn(i,k) = loc_zm_output_entr_dn(i,k);
+  });
+
+  // 3D interface output
+  const auto loc_zm_output_mass_flux = zm_output.mass_flux;
+  const auto& mass_flux_int = get_field_out("zm_mass_flux_int").get_view<Real**>();
+  Kokkos::parallel_for("zm_diag_outputs_3D_mid",
+    KT::RangePolicy(0, m_ncol*nlev_int), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_int;
+    const int k = idx%nlev_int;
+    mass_flux_int(i,k) = loc_zm_output_mass_flux(i,k);
   });
 
 } // ZMDeepConvection::run_impl

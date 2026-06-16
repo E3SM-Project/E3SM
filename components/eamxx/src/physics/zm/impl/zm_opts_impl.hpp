@@ -15,6 +15,7 @@ template<typename S, typename D>
 void Functions<S,D>::zm_opts_init()
 {
   s_zm_opts.use_fortran_bridge  = false;
+  s_zm_opts.apply_detr_tend     = true;
   s_zm_opts.upper_limit_pref    = 40e2;
   s_zm_opts.plenest             = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
   s_zm_opts.tau                 = 3600;
@@ -52,7 +53,7 @@ void Functions<S,D>::zm_opts_init()
 
   // Allocate SVP table.
   view_1d<Real> estbl("estbl", plenest);
-  Kokkos::parallel_for("MyLabel", Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
+  Kokkos::parallel_for("zm_calculate_estbl", Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
     estbl(i) = svp_trans(ZMC::tmin + i);
   });
   s_zm_opts.estbl = estbl;

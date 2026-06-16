@@ -12,7 +12,6 @@
 #include <ekat_math_utils.hpp>
 
 #include <iostream>
-#include <iomanip>
 
 namespace scream {
 namespace zm {
