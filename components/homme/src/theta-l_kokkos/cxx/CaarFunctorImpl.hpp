@@ -678,17 +678,7 @@ struct CaarFunctorImpl {
       }
 
       // Compute phi at midpoints.
-      // IMPORTANT: The original PR #8192 optimization guards this with (m_rsplit == 0)
-      // because compute_interface_quantities (the vertical advection remap step) only
-      // consumes m_buffers.phi when rsplit==0.  However, compute_phi_vadv in
-      // compute_vertical_advection is called whenever (!m_theta_hydrostatic_mode),
-      // regardless of rsplit, and it reads m_buffers.phi.  So when rsplit>0 and
-      // !m_theta_hydrostatic_mode, m_buffers.phi is read uninitialized.
-      // TODO: revisit whether compute_phi_vadv should also be guarded by (m_rsplit==0),
-      // or whether compute_interface_quantities should re-compute phi midpoints rather
-      // than relying on this buffer.  For now, widen the guard to cover the
-      // non-hydrostatic path so the buffer is always valid when it is read.
-      if (m_rsplit == 0 || !m_theta_hydrostatic_mode) {
+      if (m_rsplit == 0) {
         ColumnOps::compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
                                               Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
       }
