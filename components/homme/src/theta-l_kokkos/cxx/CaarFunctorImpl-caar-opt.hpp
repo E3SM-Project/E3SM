@@ -4,18 +4,18 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
-#ifndef HOMMEXX_CAAR_FUNCTOR_IMPL_HPP
-#define HOMMEXX_CAAR_FUNCTOR_IMPL_HPP
+#ifndef HOMMEXX_CAAR_FUNCTOR_IMPL_OPT_HPP
+#define HOMMEXX_CAAR_FUNCTOR_IMPL_OPT_HPP
 
 #include "Types.hpp"
 #include "Elements.hpp"
 #include "ColumnOps.hpp"
 #include "Context.hpp"
-#include "EquationOfState-caar-opt.hpp"
+#include "EquationOfState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
-#include "LimiterFunctor-caar-opt.hpp"
+#include "LimiterFunctor.hpp"
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
@@ -25,7 +25,7 @@
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
 #include "utilities/SubviewUtils.hpp"
-#include "utilities/ViewUtils-caar-opt.hpp"
+#include "utilities/ViewUtils.hpp"
 
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
@@ -1409,4 +1409,4 @@ struct CaarFunctorImpl {
 
 } // Namespace Homme
 
-#endif // HOMMEXX_CAAR_FUNCTOR_IMPL_HPP
+#endif // HOMMEXX_CAAR_FUNCTOR_IMPL_OPT_HPP
