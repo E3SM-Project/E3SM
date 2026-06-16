@@ -286,6 +286,8 @@ contains
       eflx_lh_tot_grc => lnd2atm_vars%eflx_lh_tot_grc      , &
       nee             => col_cf%nee, &
       nee_grc         => lnd2atm_vars%nee_grc   , &
+      fire_closs      => col_cf%fire_closs         , &
+      fire_co2_grc    => lnd2atm_vars%fire_co2_grc , &
       velocity_patch  => drydepvel_vars%velocity_patch , &
       ddvel_grc       => lnd2atm_vars%ddvel_grc        , &
       flx_mss_vrt_dst_patch => dust_vars%flx_mss_vrt_dst_patch, &
@@ -401,6 +403,11 @@ contains
             nee_grc(bounds%begg:bounds%endg)   , &
             c2l_scale_type= unity, l2g_scale_type=unity)
 
+       call c2g(bounds, &
+            fire_closs  (bounds%begc:bounds%endc)   , &
+            fire_co2_grc(bounds%begg:bounds%endg)   , &
+            c2l_scale_type= unity, l2g_scale_type=unity)
+
        if (use_lch4) then
           if (.not. ch4offline) then
              ! Adjust flux of CO2 by the net conversion of mineralizing C to CH4
@@ -411,13 +418,21 @@ contains
           end if
        end if
 
+       ! Subtract fire CO2 from NEE so CO2_LND = biospheric NEE only
+       ! fire_closs is already included in nee; separate it for CO2_FRE tracer
+       do g = bounds%begg,bounds%endg
+          nee_grc(g) = nee_grc(g) - fire_co2_grc(g)
+       end do
+
        ! Convert from gC/m2/s to kgCO2/m2/s
        do g = bounds%begg,bounds%endg
-          nee_grc(g) = nee_grc(g)*convertgC2kgCO2
+          nee_grc(g)     = nee_grc(g)     * convertgC2kgCO2
+          fire_co2_grc(g) = fire_co2_grc(g) * convertgC2kgCO2
        end do
     else
        do g = bounds%begg,bounds%endg
-          nee_grc(g) = 0._r8
+          nee_grc(g)     = 0._r8
+          fire_co2_grc(g) = 0._r8
        end do
     end if
 

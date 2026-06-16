@@ -1473,6 +1473,9 @@ contains
        if (index_l2x_Fall_fco2_lnd /= 0) then
           l2x(index_l2x_Fall_fco2_lnd,i) = -lnd2atm_vars%nee_grc(g)  
        end if
+       if (index_l2x_Fall_fco2_fire /= 0) then
+          l2x(index_l2x_Fall_fco2_fire,i) = -lnd2atm_vars%fire_co2_grc(g)
+       end if
 
        ! Additional fields for DUST, PROGSSLT, dry-deposition and VOC
        ! These are now standard fields, but the check on the index makes sure the driver handles them

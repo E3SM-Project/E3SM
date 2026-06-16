@@ -41,14 +41,15 @@ public co2_diags_store_fields
 public co2_diags_read_fields
 
 ! Number of CO2 tracers
-integer, parameter :: ncnst = 4      ! number of CO2 constituents
+integer, parameter :: ncnst = 5      ! number of CO2 constituents
 
 character(len=7), dimension(ncnst), parameter :: & ! constituent names
-     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
+     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2_FRE', 'CO2    '/)
 
 integer :: co2_ocn_glo_ind ! global index of 'CO2_OCN'
 integer :: co2_fff_glo_ind ! global index of 'CO2_FFF'
 integer :: co2_lnd_glo_ind ! global index of 'CO2_LND'
+integer :: co2_fre_glo_ind ! global index of 'CO2_FRE'
 integer :: co2_glo_ind     ! global index of 'CO2'
 
 !----- formats -----
@@ -240,6 +241,8 @@ contains
             co2_fff_glo_ind = c_i(m)
          case ('CO2_LND')
             co2_lnd_glo_ind = c_i(m)
+         case ('CO2_FRE')
+            co2_fre_glo_ind = c_i(m)
          case ('CO2')
             co2_glo_ind     = c_i(m)
          end select

@@ -51,6 +51,7 @@ module lnd2atmType
      real(r8), pointer :: fsr_nir_d_grc      (:)   => null() ! reflected direct beam nir solar radiation (W/m**2)
      real(r8), pointer :: fsr_nir_i_grc      (:)   => null() ! reflected diffuse nir solar radiation (W/m**2)
      real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
+     real(r8), pointer :: fire_co2_grc       (:)   => null() ! fire CO2 flux (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: nem_grc            (:)   => null() ! gridcell average net methane correction to CO2 flux (g C/m^2/s)
      real(r8), pointer :: ram1_grc           (:)   => null() ! aerodynamical resistance (s/m)
      real(r8), pointer :: fv_grc             (:)   => null() ! friction velocity (m/s) (for dust model)
@@ -147,6 +148,7 @@ contains
     allocate(this%fsr_nir_d_grc        (begg:endg))            ; this%fsr_nir_d_grc        (:) =ival
     allocate(this%fsr_nir_i_grc        (begg:endg))            ; this%fsr_nir_i_grc        (:) =ival
     allocate(this%nee_grc              (begg:endg))            ; this%nee_grc              (:) =ival
+    allocate(this%fire_co2_grc         (begg:endg))            ; this%fire_co2_grc         (:) =ival
     allocate(this%nem_grc              (begg:endg))            ; this%nem_grc              (:) =ival
     allocate(this%ram1_grc             (begg:endg))            ; this%ram1_grc             (:) =ival
     allocate(this%fv_grc               (begg:endg))            ; this%fv_grc               (:) =ival

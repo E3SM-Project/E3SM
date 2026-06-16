@@ -1503,8 +1503,8 @@ else {
 
         # co2_cycle
         if ($co2_cycle) {
-            $nadv += 4;
-            if ($print>=2) { print "Advected constituents added by co2_cycle: 4$eol"; }
+            $nadv += 5;
+            if ($print>=2) { print "Advected constituents added by co2_cycle: 5$eol"; }
         }
 
         # Chemistry package:

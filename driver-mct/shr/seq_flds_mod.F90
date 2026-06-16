@@ -3441,6 +3441,14 @@ contains
        attname  = 'Fall_fco2_lnd'
        call metadata_set(attname, longname, stdname, units)
 
+       call seq_flds_add(l2x_fluxes,  "Fall_fco2_fire")
+       call seq_flds_add(x2a_fluxes,  "Fall_fco2_fire")
+       longname = 'Surface flux of CO2 from land fire'
+       stdname  = 'surface_upward_flux_of_carbon_dioxide_from_fire'
+       units    = 'moles m-2 s-1'
+       attname  = 'Fall_fco2_fire'
+       call metadata_set(attname, longname, stdname, units)
+
     else if (flds_co2c) then
 
        call seq_flds_add(a2x_states, "Sa_co2prog")
@@ -3467,6 +3475,14 @@ contains
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
        units    = 'moles m-2 s-1'
        attname  = 'Fall_fco2_lnd'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(l2x_fluxes, "Fall_fco2_fire")
+       call seq_flds_add(x2a_fluxes, "Fall_fco2_fire")
+       longname = 'Surface flux of CO2 from land fire'
+       stdname  = 'surface_upward_flux_of_carbon_dioxide_from_fire'
+       units    = 'moles m-2 s-1'
+       attname  = 'Fall_fco2_fire'
        call metadata_set(attname, longname, stdname, units)
 
        call seq_flds_add(o2x_fluxes, "Faoo_fco2_ocn")
@@ -3509,6 +3525,14 @@ contains
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
        units    = 'moles m-2 s-1'
        attname  = 'Fall_fco2_lnd'
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(l2x_fluxes, "Fall_fco2_fire")
+       call seq_flds_add(x2a_fluxes, "Fall_fco2_fire")
+       longname = 'Surface flux of CO2 from land fire'
+       stdname  = 'surface_upward_flux_of_carbon_dioxide_from_fire'
+       units    = 'moles m-2 s-1'
+       attname  = 'Fall_fco2_fire'
        call metadata_set(attname, longname, stdname, units)
 
        call seq_flds_add(o2x_fluxes, "Faoo_fco2_ocn")

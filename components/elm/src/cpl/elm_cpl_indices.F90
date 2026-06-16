@@ -60,6 +60,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_evap       ! evaporation     water flux
   integer, public ::index_l2x_Fall_swnet      ! heat flux       shortwave net       
   integer, public ::index_l2x_Fall_fco2_lnd   ! co2 flux **For testing set to 0
+  integer, public ::index_l2x_Fall_fco2_fire  ! fire CO2 flux from land
   integer, public ::index_l2x_Fall_flxdst1    ! dust flux size bin 1    
   integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
@@ -244,6 +245,7 @@ contains
     index_l2x_Fall_flxdst4  = mct_avect_indexra(l2x,'Fall_flxdst4')
 
     index_l2x_Fall_fco2_lnd = mct_avect_indexra(l2x,'Fall_fco2_lnd',perrwith='quiet')
+    index_l2x_Fall_fco2_fire = mct_avect_indexra(l2x,'Fall_fco2_fire',perrwith='quiet')
 
     index_l2x_Fall_methane  = mct_avect_indexra(l2x,'Fall_methane',perrWith='quiet')
 

@@ -153,6 +153,10 @@ contains
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
 
+          if (index_x2a_Fall_fco2_fire /= 0) then
+             cam_in(c)%fco2_fire(i) = -x2a(index_x2a_Fall_fco2_fire,ig)
+          end if
+
           !------------------------------------------------------------------------------------------
           ! EHC fields do not need any interpolation: annual emissions were split assuming
           ! the monthly flux values were applied to the seconds in each month
@@ -249,10 +253,18 @@ contains
                 cam_in(c)%cflx(i,c_i(3)) = 0._r8
              end if
 
+             ! co2 flux from land fire
+             if (index_x2a_Fall_fco2_fire /= 0) then
+                cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%fco2_fire(i)
+             else
+                cam_in(c)%cflx(i,c_i(4)) = 0._r8
+             end if
+
              ! merged co2 flux
-             cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
+             cam_in(c)%cflx(i,c_i(5)) = cam_in(c)%cflx(i,c_i(1)) + &
                                         cam_in(c)%cflx(i,c_i(2)) + &
-                                        cam_in(c)%cflx(i,c_i(3))
+                                        cam_in(c)%cflx(i,c_i(3)) + &
+                                        cam_in(c)%cflx(i,c_i(4))
           end do
        end do
     end if

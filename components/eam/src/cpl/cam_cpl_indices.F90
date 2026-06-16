@@ -80,6 +80,7 @@ module cam_cpl_indices
   integer :: index_x2a_Fall_flxdst4    ! dust flux size bin 4
   integer :: index_x2a_Fall_flxvoc     ! MEGAN emissions fluxes
   integer :: index_x2a_Fall_fco2_lnd   ! co2 flux from land
+  integer :: index_x2a_Fall_fco2_fire  ! fire CO2 flux from land
   integer :: index_x2a_Faoo_fco2_ocn   ! co2 flux from ocean
   integer :: index_x2a_Faoo_fdms_ocn   ! dms flux from ocean
   integer :: index_x2a_Faoo_h2otemp    ! water temperature heat flux from ocean
@@ -155,6 +156,7 @@ contains
     index_x2a_Fall_flxdst3  = mct_avect_indexra(x2a,'Fall_flxdst3')
     index_x2a_Fall_flxdst4  = mct_avect_indexra(x2a,'Fall_flxdst4')
     index_x2a_Fall_fco2_lnd = mct_avect_indexra(x2a,'Fall_fco2_lnd',perrWith='quiet')
+    index_x2a_Fall_fco2_fire = mct_avect_indexra(x2a,'Fall_fco2_fire',perrWith='quiet')
     index_x2a_Faoo_fco2_ocn = mct_avect_indexra(x2a,'Faoo_fco2_ocn',perrWith='quiet')
     index_x2a_Faoo_fdms_ocn = mct_avect_indexra(x2a,'Faoo_fdms_ocn',perrWith='quiet')
     index_x2a_Faoo_h2otemp  = mct_avect_indexra(x2a,'Faoo_h2otemp',perrWith='quiet')
