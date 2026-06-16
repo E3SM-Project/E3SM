@@ -65,7 +65,6 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
   const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int n0          = tl.n0;
-  const int nlev_pack   = state.m_v.extent_int(5);
   const int nlev_scalar = m_helper_fields.at("grad_Ux_dyn")
                             .template get_view<Real*****>().extent_int(4);
 
@@ -84,17 +83,14 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   using MemberType = typename TeamPolicy::member_type;
   const int ncols = nelem*NGP*NGP;
   const TeamPolicy policy(ncols, Kokkos::AUTO());
-
-  // One scratch slot per GLL column. Packed views are used for ColumnOps,
-  // while scalar views make the horizontal-derivative algebra easier to read.
-  Homme::ExecViewManaged<Homme::Scalar * [NUM_LEV]> w_mid_row_all("w_mid_row_all", ncols);
-  Homme::ExecViewManaged<Homme::Scalar * [NUM_LEV]> w_mid_col_all("w_mid_col_all", ncols);
-  Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdx_Ux_all("dsdx_Ux_all", ncols);
-  Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdy_Ux_all("dsdy_Ux_all", ncols);
-  Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdx_Uy_all("dsdx_Uy_all", ncols);
-  Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdy_Uy_all("dsdy_Uy_all", ncols);
-  Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdx_Uz_all("dsdx_Uz_all", ncols);
-  Homme::ExecViewManaged<Real * [NUM_PHYSICAL_LEV]> dsdy_Uz_all("dsdy_Uz_all", ncols);
+  const auto w_mid_row_all = m_w_mid_row_all;
+  const auto w_mid_col_all = m_w_mid_col_all;
+  const auto dsdx_Ux_all = m_dsdx_Ux_all;
+  const auto dsdy_Ux_all = m_dsdy_Ux_all;
+  const auto dsdx_Uy_all = m_dsdx_Uy_all;
+  const auto dsdy_Uy_all = m_dsdy_Uy_all;
+  const auto dsdx_Uz_all = m_dsdx_Uz_all;
+  const auto dsdy_Uz_all = m_dsdy_Uz_all;
 
   Kokkos::parallel_for(
       "compute_horizontal_derivs_of_car_velocity",
@@ -110,16 +106,20 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     KernelVariables kv(team, ie);
 
     // Grab the scratch storage associated with this (ie,igp,jgp) column.
-    const auto w_mid_row_pack = Homme::subview(w_mid_row_all, icol);
-    const auto w_mid_col_pack = Homme::subview(w_mid_col_all, icol);
-    const auto w_mid_row = Homme::viewAsReal(w_mid_row_pack);
-    const auto w_mid_col = Homme::viewAsReal(w_mid_col_pack);
-    const auto dsdx_Ux = Homme::subview(dsdx_Ux_all, icol);
-    const auto dsdy_Ux = Homme::subview(dsdy_Ux_all, icol);
-    const auto dsdx_Uy = Homme::subview(dsdx_Uy_all, icol);
-    const auto dsdy_Uy = Homme::subview(dsdy_Uy_all, icol);
-    const auto dsdx_Uz = Homme::subview(dsdx_Uz_all, icol);
-    const auto dsdy_Uz = Homme::subview(dsdy_Uz_all, icol);
+    // The midpoint buffers are backed by Real storage from ATMBufferManager,
+    // then reinterpreted as packed Homme::Scalar so they can be passed to ColumnOps.
+    const auto w_mid_row = Kokkos::subview(w_mid_row_all, icol, Kokkos::ALL());
+    const auto w_mid_col = Kokkos::subview(w_mid_col_all, icol, Kokkos::ALL());
+    const Homme::ExecViewUnmanaged<Homme::Scalar[NUM_LEV]> w_mid_row_pack(
+        reinterpret_cast<Homme::Scalar*>(w_mid_row.data()));
+    const Homme::ExecViewUnmanaged<Homme::Scalar[NUM_LEV]> w_mid_col_pack(
+        reinterpret_cast<Homme::Scalar*>(w_mid_col.data()));
+    const auto dsdx_Ux = Kokkos::subview(dsdx_Ux_all, icol, Kokkos::ALL());
+    const auto dsdy_Ux = Kokkos::subview(dsdy_Ux_all, icol, Kokkos::ALL());
+    const auto dsdx_Uy = Kokkos::subview(dsdx_Uy_all, icol, Kokkos::ALL());
+    const auto dsdy_Uy = Kokkos::subview(dsdy_Uy_all, icol, Kokkos::ALL());
+    const auto dsdx_Uz = Kokkos::subview(dsdx_Uz_all, icol, Kokkos::ALL());
+    const auto dsdy_Uz = Kokkos::subview(dsdy_Uz_all, icol, Kokkos::ALL());
 
     // Accumulate reference-element derivatives in the two local horizontal directions.
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {

@@ -3,6 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/remap/abstract_remapper.hpp"
+#include "dynamics/homme/homme_dimensions.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <ekat_pack.hpp>
@@ -36,6 +37,8 @@ class HommeDynamics : public AtmosphereProcess
   using uview_1d = ekat::Unmanaged<view_1d<ST>>;
   template<typename ST>
   using uview_2d = ekat::Unmanaged<view_2d<ST>>;
+  using fixed_view_2d_phys = Kokkos::View<Real*[Homme::NUM_PHYSICAL_LEV], typename KT::view_2d<Real>::array_layout,
+                                           DefaultDevice, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
 public:
 
@@ -159,6 +162,16 @@ protected:
   Real m_raykrange; // Range of rayleigh friction profile.
   Real m_raytau0;   // Approximate value of decay time at model top (days)
                     // if set to 0, no rayleigh friction is applied
+
+  // Scratch reused by the 3D turbulence strain kernels when that feature is active.
+  fixed_view_2d_phys m_w_mid_row_all;
+  fixed_view_2d_phys m_w_mid_col_all;
+  fixed_view_2d_phys m_dsdx_Ux_all;
+  fixed_view_2d_phys m_dsdy_Ux_all;
+  fixed_view_2d_phys m_dsdx_Uy_all;
+  fixed_view_2d_phys m_dsdy_Uy_all;
+  fixed_view_2d_phys m_dsdx_Uz_all;
+  fixed_view_2d_phys m_dsdy_Uz_all;
 
   int m_bfb_hash_nstep;
 };

@@ -283,6 +283,8 @@ void HommeDynamics::create_requests ()
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
   using namespace Homme;
+  constexpr int num_turb3d_scratch_buffers = 8;
+  constexpr int np2 = HOMMEXX_NP*HOMMEXX_NP;
 
   auto& c       = Context::singleton();
   auto& params  = c.get<SimulationParams>();
@@ -325,7 +327,13 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   }
   fv_phys_requested_buffer_size_in_bytes();
 
-  return fbm.allocated_size()*sizeof(Real);
+  size_t requested_bytes = fbm.allocated_size()*sizeof(Real);
+  if (params.do_3d_turbulence) {
+    const size_t ncols = num_elems*np2;
+    requested_bytes += num_turb3d_scratch_buffers*sizeof(Real)*ncols*NUM_PHYSICAL_LEV;
+  }
+
+  return requested_bytes;
 }
 
 void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
@@ -336,14 +344,36 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   using namespace Homme;
   auto& c = Context::singleton();
   auto& fbm  = c.get<FunctorsBuffersManager>();
+  const auto& params = c.get<SimulationParams>();
 
   // Reset Homme buffer to use AD buffer memory.
   // Internally, homme will actually initialize its own buffers.
   EKAT_REQUIRE(buffer_manager.allocated_bytes()%sizeof(Real)==0); // Sanity check
 
+  const int fbm_size = fbm.allocated_size();
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-  fbm.allocate(mem, buffer_manager.allocated_bytes()/sizeof(Real));
-  mem += fbm.allocated_size();
+  fbm.allocate(mem, fbm_size);
+  mem += fbm_size;
+
+  if (params.do_3d_turbulence) {
+    constexpr int np2 = HOMMEXX_NP*HOMMEXX_NP;
+    const int ncols = c.get<Elements>().num_elems()*np2;
+    const int scratch_col_size = ncols*NUM_PHYSICAL_LEV;
+
+    auto assign_scratch = [&](HommeDynamics::fixed_view_2d_phys& view) {
+      view = HommeDynamics::fixed_view_2d_phys(mem, ncols);
+      mem += scratch_col_size;
+    };
+
+    assign_scratch(m_w_mid_row_all);
+    assign_scratch(m_w_mid_col_all);
+    assign_scratch(m_dsdx_Ux_all);
+    assign_scratch(m_dsdy_Ux_all);
+    assign_scratch(m_dsdx_Uy_all);
+    assign_scratch(m_dsdy_Uy_all);
+    assign_scratch(m_dsdx_Uz_all);
+    assign_scratch(m_dsdy_Uz_all);
+  }
 
   size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
