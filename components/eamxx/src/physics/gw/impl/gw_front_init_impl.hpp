@@ -87,6 +87,8 @@ void Functions<S,D>::gw_front_init(
       kfront_tmp = i;
     }
   }
+  EKAT_REQUIRE_MSG(kfront_tmp >= 0,
+    "Error! No interface pressure level found below kfront_pref_max. Check pref_int.\n");
   s_front_init.kfront = kfront_tmp;
 
   // Allocate and calculate fav
