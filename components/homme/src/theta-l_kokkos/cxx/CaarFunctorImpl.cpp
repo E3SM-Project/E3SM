@@ -1,6 +1,4 @@
-#include "Hommexx_config.h"
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-#include "CaarFunctorImpl.hpp"
+#include "CaarFunctorImpl-caar-opt.hpp"
 
 namespace Homme {
 
@@ -647,4 +645,3 @@ void CaarFunctorImpl::caar_compute()
 }
 
 }
-#endif // HOMMEXX_ENABLE_CAAR_OPT
