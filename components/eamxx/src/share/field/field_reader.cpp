@@ -143,18 +143,24 @@ void FieldReader::set_dim_decomp(const Field& gids, const ekat::Comm& comm)
 
 void FieldReader::setup_internals ()
 {
-  if (m_dim_decomp_name!="" and m_reader_state & (NEW_FILE | NEW_DECOMP)) {
-    if (std::is_same_v<std::int64_t,scorpio::offset_t>) {
-      scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, m_dim_decomp_offsets);
-    } else {
-      std::vector<scorpio::offset_t> offsets(m_dim_decomp_offsets.begin(),
-                                             m_dim_decomp_offsets.end());
-      scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, offsets);
-    }
+  using namespace ShortFieldTagsNames;
+
+  auto name_lat = m_tag_rename.count("lat")>0 ? m_tag_rename["lat"] : "lat";
+  auto name_lon = m_tag_rename.count("lon")>0 ? m_tag_rename["lon"] : "lon";
+  auto name_col = m_tag_rename.count("col")>0 ? m_tag_rename["col"] : "ncol";
+
+  // 1. Check if lat/lon dims are in the file
+  bool latlon_in_file = scorpio::has_dim(m_filename,name_lat) and scorpio::has_dim(m_filename,name_lon);
+
+  if (m_reader_state & NEW_FILE) {
+    EKAT_REQUIRE_MSG (not (latlon_in_file and scorpio::has_dim(m_filename,name_col)),
+        "Error! We cannot read from files that mix lat/lon vars and ncol vars.\n"
+        " - file name: " + m_filename + "\n");
   }
 
+  // 2. Check fields are in the file, with correct dim names
+  bool latlon_decomp = false;
   if (m_reader_state & (NEW_FIELDS | NEW_FILE)) {
-    // First, check fields are in the file, with correct layout
     for (const auto & f : m_fields) {
       // Check that the variable is in the file.
       EKAT_REQUIRE_MSG (scorpio::has_var(m_filename,f.name()),
@@ -162,39 +168,67 @@ void FieldReader::setup_internals ()
           " - filename: " + m_filename + "\n"
           " - varname : " + f.name() + "\n");
 
-      const auto& layout = f.get_header().get_identifier().get_layout();
-      auto io_dims = layout.names();
-      for (int i=0; i<layout.rank(); ++i) {
-        if (io_dims[i]=="dim")
-          io_dims[i] += std::to_string(layout.dim(i));
-        if (m_tag_rename.count(io_dims[i])>0) {
-          io_dims[i] = m_tag_rename.at(io_dims[i]);
-        }
+      const auto& fl = f.get_header().get_identifier().get_layout();
+      const auto& var = scorpio::get_var(m_filename,f.name());
+
+      auto f_dims = fl.names();
+      auto f_extents = fl.dims();
+      auto var_dims = var.dim_names();
+
+      if (fl.has_tag(COL) and latlon_in_file) {
+        auto idx = fl.dim_idx(COL);
+        f_extents.erase(f_extents.begin()+idx);
+        ekat::erase(f_dims,name_col);
+        ekat::erase(var_dims,name_col);
+        ekat::erase(var_dims,name_lat);
+        ekat::erase(var_dims,name_lon);
+        latlon_decomp |= m_dim_decomp_name==fl.name(idx);
       }
 
-      const auto& var = scorpio::get_var(m_filename,f.name());
-      EKAT_REQUIRE_MSG (var.dim_names()==io_dims,
+      EKAT_REQUIRE_MSG (var_dims==f_dims,
           "Error! Layout mismatch for input file variable.\n"
           " - filename: " + m_filename + "\n"
           " - varname : " + f.name() + "\n"
-          " - expected dim names: " + ekat::join(io_dims,",") + "\n"
-          " - dims from file    : " + ekat::join(var.dim_names(),",") + "\n");
+          " - field dim names: " + ekat::join(fl.names(),",") + "\n"
+          " - file var dim names: " + ekat::join(var.dim_names(),",") + "\n");
 
-      for (int i=0; i<layout.rank(); ++i) {
-        if (io_dims[i]!=m_dim_decomp_name) {
-          const int file_len  = scorpio::get_dimlen(m_filename,io_dims[i]);
-          EKAT_REQUIRE_MSG (layout.dim(i)==file_len,
+      for (auto [f_dim,var_dim,f_ext] : ekat::zip(f_dims,var_dims,f_extents)) {
+        if (f_dim!=m_dim_decomp_name) {
+          const int file_len  = scorpio::get_dimlen(m_filename,f_dim);
+          EKAT_REQUIRE_MSG (f_ext==file_len,
               "Error! Dimension mismatch for input file variable.\n"
             " - filename : " + m_filename + "\n"
             " - varname  : " + f.name() + "\n"
-            " - var dims : " + ekat::join(io_dims,",") + "\n"
-            " - dim name : " + io_dims[i] + "\n"
-            " - expected extent : " + std::to_string(layout.dim(i)) + "\n"
+            " - var dims : " + ekat::join(var_dims,",") + "\n"
+            " - dim name : " + var_dim + "\n"
+            " - expected extent : " + std::to_string(f_ext) + "\n"
             " - extent from file: " + std::to_string(file_len) + "\n");
         }
       }
     }
+  }
 
+  // 3. Set the decomp
+  if (m_dim_decomp_name!="" and m_reader_state & (NEW_FILE | NEW_FIELDS | NEW_DECOMP)) {
+    if (std::is_same_v<std::int64_t,scorpio::offset_t>) {
+      if (latlon_decomp) {
+        scorpio::set_dims_decomp(m_filename,{name_lat,name_lon},m_dim_decomp_offsets);
+      } else {
+        scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, m_dim_decomp_offsets);
+      }
+    } else {
+      std::vector<scorpio::offset_t> offsets(m_dim_decomp_offsets.begin(),
+                                             m_dim_decomp_offsets.end());
+      if (latlon_decomp) {
+        scorpio::set_dims_decomp(m_filename,{name_lat,name_lon},offsets);
+      } else {
+        scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, offsets);
+      }
+    }
+  }
+
+  // 4. Create IO fields
+  if (m_reader_state & (NEW_FIELDS | NEW_FILE)) {
     // Now create io_fields
     // IO fields MUST be contiguous, so if padded or with parent, create a new one.
     // Otherwise, we can alias input field, possibly with renamed tags

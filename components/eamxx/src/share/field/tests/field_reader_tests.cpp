@@ -140,7 +140,7 @@ TEST_CASE ("read_fields_no_decomp")
 //  Test: decomposed read (distributed column dimension)
 // ============================================================ //
 
-TEST_CASE ("read_fields_with_decomp", "[field_utils][io]")
+TEST_CASE ("read_fields_with_decomp")
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
@@ -218,6 +218,101 @@ TEST_CASE ("read_fields_with_decomp", "[field_utils][io]")
     read_fields(filename, {f2d, f1d}, my_gids, comm);
 
     // Verify local data
+    f2d.sync_to_host();
+    f1d.sync_to_host();
+
+    auto v2d = f2d.get_view<const Real**, Host>();
+    auto v1d = f1d.get_view<const int*,  Host>();
+
+    for (int li = 0; li < lcols_per_rank; ++li) {
+      const int gcol = my_gids_beg[li];
+      REQUIRE (v1d(li) == gcol);
+      for (int j = 0; j < nlevs; ++j) {
+        REQUIRE (v2d(li, j) == Real(gcol * nlevs + j));
+      }
+    }
+  }
+
+  scorpio::finalize_subsystem();
+}
+
+// ============================================================ //
+//  Test: decomposed read from lat/lon file into point-grid fields
+// ============================================================ //
+
+TEST_CASE ("read_fields_with_latlon_decomp", "[field_utils][io]")
+{
+  using namespace ShortFieldTagsNames;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
+
+  const std::string filename =
+      "field_io_test_latlon_decomp_np" + std::to_string(comm.size()) + ".nc";
+
+  const int lcols_per_rank = 3;
+  const int nlat           = comm.size();
+  const int nlon           = lcols_per_rank;
+  const int nlevs          = 4;
+
+  FieldLayout lay2d({COL, LEV}, {lcols_per_rank, nlevs});
+  FieldLayout lay1d({COL},      {lcols_per_rank});
+
+  auto my_gids = make_field("gids",lay1d,DataType::IntType);
+  auto my_gids_beg = my_gids.get_internal_view_data<int,Host>();
+  auto my_gids_end = my_gids_beg + lcols_per_rank;
+  std::iota(my_gids_beg,my_gids_end,1 + comm.rank() * lcols_per_rank);
+  my_gids.sync_to_dev();
+
+  // ---- Write phase ---- //
+  {
+    scorpio::register_file(filename, scorpio::Write);
+    scorpio::define_dim(filename, "lat", nlat);
+    scorpio::define_dim(filename, "lon", nlon);
+    scorpio::define_dim(filename, "lev", nlevs);
+
+    std::vector<scorpio::offset_t> offsets(lcols_per_rank);
+    for (int i = 0; i < lcols_per_rank; ++i) {
+      offsets[i] = my_gids_beg[i] - 1;
+    }
+    scorpio::set_dims_decomp(filename, {"lat","lon"}, offsets);
+
+    scorpio::define_var(filename, "f2d", {"lat", "lon", "lev"}, "real", false);
+    scorpio::define_var(filename, "f1d", {"lat", "lon"},        "int",  false);
+    scorpio::enddef(filename);
+
+    Field f2d = make_field("f2d", lay2d);
+    Field f1d = make_field("f1d", lay1d, DataType::IntType);
+    f2d.sync_to_host();
+    f1d.sync_to_host();
+
+    auto v2d = f2d.get_view<Real**, Host>();
+    auto v1d = f1d.get_view<int*,  Host>();
+    for (int li = 0; li < lcols_per_rank; ++li) {
+      const int gcol = my_gids_beg[li];
+      v1d(li) = gcol;
+      for (int j = 0; j < nlevs; ++j) {
+        v2d(li, j) = Real(gcol * nlevs + j);
+      }
+    }
+    f2d.sync_to_dev();
+    f1d.sync_to_dev();
+
+    write_field_to_file<Real>(filename, f2d);
+    write_field_to_file<int>(filename, f1d);
+
+    scorpio::release_file(filename);
+  }
+
+  // ---- Read phase ---- //
+  {
+    Field f2d = make_field("f2d", lay2d);
+    Field f1d = make_field("f1d", lay1d, DataType::IntType);
+    f2d.deep_copy(-1);
+    f1d.deep_copy(-1);
+
+    read_fields(filename, {f2d, f1d}, my_gids, comm);
+
     f2d.sync_to_host();
     f1d.sync_to_host();
 
