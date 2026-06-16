@@ -33,11 +33,13 @@ def _main_func(description):
     )
 
     import argparse
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=description, prog=".case.build")
     CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("--caseroot", default=os.getcwd(),
                         help="Case directory to build")
+    parser.add_argument("--no-batch-build", action="store_true",
+                        help="Ignore, this is always True")
     parser.add_argument("--sharedlib-only", action="store_true",
                         help="Only build shared libraries")
     parser.add_argument("--model-only", "-m", action="store_true",
@@ -51,8 +53,7 @@ def _main_func(description):
     parser.add_argument("--build", nargs="+", dest="buildlist",
                         help="Specific libraries/components to build")
 
-    args = CIME.utils.parse_args_and_handle_standard_logging_options(args=sys.argv,
-                                                                       parser=parser)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args=sys.argv, parser=parser)
 
     if args.caseroot is not None:
         os.chdir(args.caseroot)
@@ -70,7 +71,7 @@ def _main_func(description):
             save_build_provenance=not args.skip_provenance_check,
             separate_builds=args.separate_builds,
             ninja=args.ninja,
-            batched_build_active=True,
+            batched_build_active=True, # This is a batch script
         )
 
     sys.exit(0 if success else 1)
