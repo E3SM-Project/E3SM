@@ -778,7 +778,7 @@ KOKKOS_FUNCTION void calc_eta_dot_ref (
 // Given the vertical and horizontal nodal velocities at time endpoints,
 // evaluate the velocity estimate formula, providing the final horizontal
 // velocity estimates at midpoint nodes.
-KOKKOS_FUNCTION void calc_vel_horiz_formula_node_ref_mid (
+KOKKOS_INLINE_FUNCTION void calc_vel_horiz_formula_node_ref_mid (
   const KernelVariables& kv, const SphereOperators& sphere_ops,
   const CSNV<NUM_LEV>& hyetam, const ExecViewUnmanaged<Real[2][3][NP][NP]>& vec_sph2cart,
   // Velocities are at midpoints. Final eta_dot entry is ignored.
@@ -842,7 +842,7 @@ KOKKOS_FUNCTION void calc_vel_horiz_formula_node_ref_mid (
 // Given the vertical (interface) and horizontal (midpoint) nodal velocities at
 // time endpoints, evaluate the velocity estimate formula, providing the final
 // vertical velocity estimates at interface nodes.
-KOKKOS_FUNCTION void calc_eta_dot_formula_node_ref_int (
+KOKKOS_INLINE_FUNCTION void calc_eta_dot_formula_node_ref_int (
   const KernelVariables& kv, const SphereOperators& sphere_ops,
   const CRNV<NUM_INTERFACE_LEV>& hyetai, const CSNV<NUM_LEV>& hyetam,
   // Velocities are at midpoints. Final eta_dot entry is ignored.
