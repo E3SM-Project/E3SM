@@ -221,7 +221,7 @@ protected:
   // How to combine multiple snapshots in the output: instant, Max, Min, Average
   OutputAvgType m_avg_type;
   Real m_avg_coeff_threshold =
-      0.5; // % of unfilled values required to not just assign value as FillValue
+      0.01; // % of unfilled values required to not just assign value as FillValue
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
   // the global ids.
