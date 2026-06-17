@@ -12,9 +12,9 @@
 
 namespace Homme {
 
-class FunctorsBuffersManager;
-class SimulationParams;
-class GllFvRemapImpl;
+struct FunctorsBuffersManager;
+struct SimulationParams;
+struct GllFvRemapImpl;
 
 class GllFvRemap {
 public:
