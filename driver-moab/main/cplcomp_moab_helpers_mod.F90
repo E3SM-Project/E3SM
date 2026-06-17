@@ -28,7 +28,8 @@ contains
 
     integer :: ierr
 
-    ierr = iMOAB_RegisterApplication(trim(appname), mpicom, id_join, appid)
+    ! iMOAB_RegisterApplication is a C API: append C_NULL_CHAR here so callers stay null-free
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom, id_join, appid)
     if (ierr /= 0) then
       call shr_sys_abort(trim(subctx)//' ERROR cannot register app '//trim(appname))
     end if

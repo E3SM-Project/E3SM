@@ -245,7 +245,7 @@ contains
     endif
 
     ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
-                                 discretization_type, arearead, map_identifier, mapfile_term)
+                                 discretization_type, arearead, trim(map_identifier)//C_NULL_CHAR, mapfile_term)
     if (ierr .ne. 0) then
        write(logunit,*) subname,' error in loading map file - ' // mapfile
        call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
@@ -697,7 +697,7 @@ contains
           !***   fldlist_moab: Input and output field names (can be different)
           if(.not.use_nonlinear_map) then
              filter_type = 0 ! CAAS_NONE: plain low-order projection
-             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, &
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, trim(mapper%weight_identifier)//C_NULL_CHAR, &
                trim(fldlist_moab)//C_NULL_CHAR, trim(fldlist_moab)//C_NULL_CHAR)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in applying weights '
@@ -746,7 +746,7 @@ contains
                 ! iMOAB takes the plain ApplyWeights branch (no dual-map CAAS)
                 filter_type = 0
                 ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
-                       mapper%weight_identifier, fldlist_lo_only, fldlist_lo_only )
+                       trim(mapper%weight_identifier)//C_NULL_CHAR, fldlist_lo_only, fldlist_lo_only )
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error in applying weights (excluded fields + norm8wt, low-order)'
                    call shr_sys_abort(subname//' ERROR in applying weights (excluded fields + norm8wt, low-order)')

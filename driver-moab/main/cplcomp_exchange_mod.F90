@@ -184,10 +184,8 @@ subroutine  copy_aream_from_area(mbappid)
             ent_type = 0 ! vertices
          endif
          allocate(tagValues(arrSize))
-         tagname = 'area'//C_NULL_CHAR
-         ierr  = iMOAB_GetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
-         tagname = 'aream'//C_NULL_CHAR
-         ierr  = iMOAB_SetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
+         ierr  = iMOAB_GetDoubleTagStorage( mbappid, 'area'//C_NULL_CHAR, arrsize , ent_type, tagValues )
+         ierr  = iMOAB_SetDoubleTagStorage( mbappid, 'aream'//C_NULL_CHAR, arrsize , ent_type, tagValues )
          deallocate(tagValues)
       endif
 
@@ -207,9 +205,7 @@ subroutine  copy_aream_from_area(mbappid)
       type(component_type), intent(inout) :: comp
       integer,              intent(in)    :: comp_appid, cpl_appid
       character(len=*),     intent(in)    :: domain_fields, dom_context
-      character(CXX) :: tagname
-      tagname = trim(domain_fields)//C_NULL_CHAR
-      call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', tagname, context_exch=dom_context)
+      call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', trim(domain_fields)//C_NULL_CHAR, context_exch=dom_context)
       call copy_aream_from_area(cpl_appid)
   end subroutine moab_exchange_domain_tags
 
@@ -329,7 +325,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif ! atmosphere pes
 !!!!!!!!  ON ATM IN CPL
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_ATM"//C_NULL_CHAR
+         appname = "COUPLE_ATM"
          ! migrated mesh gets another app id, moab atm to coupler (mbax)
          call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
          !!!!  FULL ATM
@@ -477,7 +473,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif
 !!!!!!  OCN ON CPL
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASO"//C_NULL_CHAR
+         appname = "COUPLE_MPASO"
          ! migrated mesh gets another app id, moab ocean to coupler (mbox)
          call moab_register_app(appname, mpicom_new, id_join, mboxid, subname)
  !!!!! FULL OCN
@@ -546,7 +542,7 @@ subroutine  copy_aream_from_area(mbappid)
 
 !!!!!!  ON 2nd OCN ON CPL
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASOF"//C_NULL_CHAR
+         appname = "COUPLE_MPASOF"
          ! migrated mesh gets another app id, moab ocean to coupler (mbox)
          call moab_register_app(appname, mpicom_new, id_join, mbofxid, subname)
  !!!!! FULL OCN
@@ -569,12 +565,11 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_define_double_tag(mbofxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
 
          ! copy domain data to mbofxid
-         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          nloc = mbGetnCells(mbofxid)
          arrsize=nloc*5
          allocate(tagValues(arrsize))
-         call mbGetCellTagVals(mboxid,tagname,tagValues,arrsize)
-         call mbSetCellTagVals(mbofxid,tagname,tagValues,arrsize)
+         call mbGetCellTagVals(mboxid,'lat:lon:area:frac:mask'//C_NULL_CHAR,tagValues,arrsize)
+         call mbSetCellTagVals(mbofxid,'lat:lon:area:frac:mask'//C_NULL_CHAR,tagValues,arrsize)
          deallocate(tagValues)
 
       endif
@@ -638,7 +633,7 @@ subroutine  copy_aream_from_area(mbappid)
       call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
 
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_LAND"//C_NULL_CHAR
+         appname = "COUPLE_LAND"
          ! migrated mesh gets another app id, moab land to coupler (mblx)
          call moab_register_app(appname, mpicom_new, id_join, mblxid, subname)
       endif
@@ -695,9 +690,8 @@ subroutine  copy_aream_from_area(mbappid)
                  ent_type = 1 ! cell
               endif
               allocate(tagValues(arrsize))
-              tagname = trim(newlist)//C_NULL_CHAR
               tagValues = 0.0_r8
-              ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize, ent_type, tagValues)
+              ierr = iMOAB_SetDoubleTagStorage ( mblxid, trim(newlist)//C_NULL_CHAR, arrsize, ent_type, tagValues)
               if (ierr .ne. 0) then
                  write(logunit,*) subname,' error in zeroing Flrr tags on land', ierr
                  call shr_sys_abort(subname//' ERROR in zeroing Flrr tags land')
@@ -802,7 +796,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASSI"//C_NULL_CHAR
+         appname = "COUPLE_MPASSI"
          ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
          call moab_register_app(appname, mpicom_new, id_join, mbixid, subname)
          if ( trim(ice_domain) == 'none' ) then ! regular ice model
@@ -900,7 +894,7 @@ subroutine  copy_aream_from_area(mbappid)
 
       ! Coupler side: register application and receive/load mesh
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MROF"//C_NULL_CHAR
+         appname = "COUPLE_MROF"
          call moab_register_app(appname, mpicom_new, id_join, mbrxid, subname)
 
          if (dead_comps) then
