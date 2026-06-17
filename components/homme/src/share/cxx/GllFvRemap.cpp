@@ -7,12 +7,9 @@
 #include "GllFvRemap.hpp"
 #include "GllFvRemapImpl.hpp"
 #include "Context.hpp"
-#include "Elements.hpp"
-#include "ErrorDefs.hpp"
 #include "profiling.hpp"
 
 #include <assert.h>
-#include <type_traits>
 
 namespace Homme {
 
@@ -62,29 +59,18 @@ void GllFvRemap
 
 void GllFvRemap
 ::run_dyn_to_fv_phys (const int time_idx, const Phys1T& ps, const Phys1T& phis,
-                      const Phys2T& T, const Phys2T& omega, const Phys3T& strain3d_components,
-                      const Phys3T& uv, const Phys3T& q, const Phys2T* dp) {
-  m_impl->run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d_components, uv, q, dp);
-}
-
-void GllFvRemap
-::run_dyn_to_fv_phys (const int time_idx, const Phys1T& ps, const Phys1T& phis,
                       const Phys2T& T, const Phys2T& omega,
+                      const CPhys3T* strain3d_components_gll,
+                      const Phys3T* strain3d_components_fv,
                       const Phys3T& uv, const Phys3T& q, const Phys2T* dp) {
-  auto& derived = Context::singleton().get<Elements>().m_derived;
-  Kokkos::deep_copy(derived.m_turb_shear_strain3d_components, Scalar(0));
-  const auto strain3d_components =
-    Phys3T(reinterpret_cast<Real*>(derived.m_turb_shear_strain3d_components.data()),
-           derived.m_turb_shear_strain3d_components.extent_int(0),
-           derived.m_turb_shear_strain3d_components.extent_int(2) * derived.m_turb_shear_strain3d_components.extent_int(3),
-           derived.m_turb_shear_strain3d_components.extent_int(1),
-           derived.m_turb_shear_strain3d_components.extent_int(4) * VECTOR_SIZE);
-  run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d_components, uv, q, dp);
+  m_impl->run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                             strain3d_components_gll, strain3d_components_fv,
+                             uv, q, dp);
 }
 
 void GllFvRemap
 ::run_fv_phys_to_dyn (const int time_idx, const CPhys2T& T, const CPhys3T& uv,
-                      const CPhys3T& q, const CPhys2T& Km, const CPhys2T& Kh) {
+                      const CPhys3T& q, const CPhys2T* Km, const CPhys2T* Kh) {
   m_impl->run_fv_phys_to_dyn(time_idx, T, uv, q, Km, Kh);
 }
 

@@ -135,8 +135,13 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
     // To avoid any problem, we simply set the timestamp of FV state fields here.
     // NOTE: even if the init sequence *ever* changed, and the AD *did* read
     // IC for FV fields, this step remains safe (we're setting the same t0)
-    for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density","tke_shear_strain3d_components"}) {
+    for (auto n : {"T_mid","horiz_winds","ps","phis","omega","pseudo_density"}) {
       auto f = get_field_out(n,pgn);
+      f.get_header().get_tracking().update_time_stamp(ts);
+    }
+    const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+    if (params.do_3d_turbulence) {
+      auto f = get_field_out("tke_shear_strain3d_components",pgn);
       f.get_header().get_tracking().update_time_stamp(ts);
     }
     auto Q = get_group_out("tracers",pgn).m_monolithic_field;
@@ -186,9 +191,6 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
   const auto omega = Homme::GllFvRemap::Phys2T(
     get_field_out("omega", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
-  const auto strain3d_components = Homme::GllFvRemap::Phys3T(
-    get_field_out("tke_shear_strain3d_components", gn).get_view<Real***>().data(),
-    nelem, npg, 6, nlev);
   const auto uv = Homme::GllFvRemap::Phys3T(
     t ? t->horiz_winds.data() : get_field_out("horiz_winds", gn).get_view<Real***>().data(),
     nelem, npg, 2, nlev);
@@ -199,7 +201,21 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     get_field_out("pseudo_density", gn).get_view<Real**>().data(),
     nelem, npg, nlev);
 
-  gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega, strain3d_components, uv, q, &dp);
+  const auto& params = c.get<Homme::SimulationParams>();
+  if (params.do_3d_turbulence) {
+    const auto strain3d_components_gll = Homme::GllFvRemap::CPhys3T(
+      m_helper_fields.at("shear_strain3d_components_dyn").get_view<const Real*****>().data(),
+      nelem, NGP*NGP, 6, nlev);
+    const auto strain3d_components_fv = Homme::GllFvRemap::Phys3T(
+      get_field_out("tke_shear_strain3d_components", gn).get_view<Real***>().data(),
+      nelem, npg, 6, nlev);
+    gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                           &strain3d_components_gll, &strain3d_components_fv,
+                           uv, q, &dp);
+  } else {
+    gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                           nullptr, nullptr, uv, q, &dp);
+  }
   Kokkos::fence();
 }
 
@@ -219,10 +235,6 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   const auto uv_ndim = m_helper_fields.at("FM_phys").get_view<const Real***>().extent_int(1);
   assert(uv_ndim == 2);
 
-  // SGS Eddy diffusivities on FV phys grid
-  const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real**>();
-  const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real**>();
-
   const auto T = Homme::GllFvRemap::CPhys2T(
     m_helper_fields.at("FT_phys").get_view<const Real**>().data(),
     nelem, npg, nlev);
@@ -233,10 +245,17 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
     get_group_in("tracers", gn).m_monolithic_field->get_view<const Real***>().data(),
     nelem, npg, nq, nlev);
 
-  const auto Km = Homme::GllFvRemap::CPhys2T(Km_phys.data(), nelem, npg, nlev);
-  const auto Kh = Homme::GllFvRemap::CPhys2T(Kh_phys.data(), nelem, npg, nlev);
+  const auto& params = c.get<Homme::SimulationParams>();
+  if (params.do_3d_turbulence) {
+    const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real**>();
+    const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real**>();
+    const auto Km = Homme::GllFvRemap::CPhys2T(Km_phys.data(), nelem, npg, nlev);
+    const auto Kh = Homme::GllFvRemap::CPhys2T(Kh_phys.data(), nelem, npg, nlev);
+    gfr.run_fv_phys_to_dyn(time_idx, T, uv, q, &Km, &Kh);
+  } else {
+    gfr.run_fv_phys_to_dyn(time_idx, T, uv, q);
+  }
 
-  gfr.run_fv_phys_to_dyn(time_idx, T, uv, q, Km, Kh);
   Kokkos::fence();
   gfr.run_fv_phys_to_dyn_dss();
   Kokkos::fence();

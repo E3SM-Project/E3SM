@@ -1,15 +1,13 @@
 #include "eamxx_homme_process_interface.hpp"
 
 // HOMMEXX includes
-#include "Elements.hpp"
-#include "ElementsDerivedState.hpp"
 #include "Context.hpp"
 #include "ElementsGeometry.hpp"
 #include "ElementsState.hpp"
 #include "ReferenceElement.hpp"
 #include "TimeLevel.hpp"
 #include "Types.hpp"
-#include "PhysicalConstants.hpp"
+#include "utilities/ViewUtils.hpp"
 
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
@@ -23,51 +21,32 @@ namespace scream
 
 namespace {
 
-// Build one Cartesian velocity component from the local horizontal wind only.
-// vec_sph2cart layout is assumed to be:
-//   (ie, isph, icart, igp, jgp)
-// where isph=0,1,2 are the local spherical basis directions
-// (zonal, meridional, radial) and icart=0,1,2 are x,y,z Cartesian components.
-template <typename VDynViewType, typename VecSph2CartViewType>
+// Project a local velocity vector (u,v,w) into one Cartesian component.
+template <typename BasisViewType>
 KOKKOS_INLINE_FUNCTION
-auto horiz_wind_to_cart_component(
-    const VDynViewType& v_dyn,
-    const VecSph2CartViewType& vec_sph2cart,
-    const int ie,
-    const int tl,
-    const int icart,
-    const int igp,
-    const int jgp,
-    const int ilev_pack)
+Real local_to_cart_component(
+    const BasisViewType& basis_sph2cart,
+    const Real u,
+    const Real v,
+    const Real w)
 {
-  const auto u = v_dyn(ie,tl,0,igp,jgp,ilev_pack);
-  const auto v = v_dyn(ie,tl,1,igp,jgp,ilev_pack);
-
-  return vec_sph2cart(ie,0,icart,igp,jgp) * u
-       + vec_sph2cart(ie,1,icart,igp,jgp) * v;
+  return basis_sph2cart(0) * u
+       + basis_sph2cart(1) * v
+       + basis_sph2cart(2) * w;
 }
 
-template <typename GradViewType, typename VecSph2CartViewType>
+// Project a Cartesian gradient vector back onto one local basis direction.
+template <typename BasisViewType>
 KOKKOS_INLINE_FUNCTION
 Real cart_grad_to_local_component(
-    const GradViewType& grad_Ux_dyn,
-    const GradViewType& grad_Uy_dyn,
-    const GradViewType& grad_Uz_dyn,
-    const VecSph2CartViewType& vec_sph2cart,
-    const int ie,
-    const int idir,   // local velocity component index: 0,1
-    const int jdir,   // local derivative direction index: 0,1
-    const int igp,
-    const int jgp,
-    const int ilev)
+    const BasisViewType& basis_sph2cart,
+    const Real grad_x,
+    const Real grad_y,
+    const Real grad_z)
 {
-  // grad_U[xyz]_dyn(ie,jdir,igp,jgp,ilev) are the Cartesian velocity-component
-  // gradients with respect to local horizontal direction jdir.
-  //
-  // Project that Cartesian gradient vector back onto the local basis idir.
-  return vec_sph2cart(ie,idir,0,igp,jgp) * grad_Ux_dyn(ie,jdir,igp,jgp,ilev)
-       + vec_sph2cart(ie,idir,1,igp,jgp) * grad_Uy_dyn(ie,jdir,igp,jgp,ilev)
-       + vec_sph2cart(ie,idir,2,igp,jgp) * grad_Uz_dyn(ie,jdir,igp,jgp,ilev);
+  return basis_sph2cart(0) * grad_x
+       + basis_sph2cart(1) * grad_y
+       + basis_sph2cart(2) * grad_z;
 }
 
 } // anonymous namespace
@@ -77,25 +56,19 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   using namespace Homme;
 
   constexpr int NGP  = HOMMEXX_NP;
-  constexpr int VLEN = VECTOR_SIZE;
 
   const auto& c      = Context::singleton();
   const auto& state  = c.get<ElementsState>();
   const auto& geom   = c.get<ElementsGeometry>();
   const auto& ref_fe = c.get<ReferenceElement>();
   const auto& tl     = c.get<TimeLevel>();
-  const auto& elems  = c.get<Elements>();
 
   const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int n0          = tl.n0;
-  const int nlev_pack   = state.m_v.extent_int(5);
   const int nlev_scalar = m_helper_fields.at("grad_Ux_dyn")
                             .template get_view<Real*****>().extent_int(4);
 
   const auto w_int_dyn = state.m_w_i;
-
-  using MidColumn = decltype(Homme::subview(elems.m_derived.m_turb_diff_mom, 0, 0, 0));
-  using IntColumn = decltype(Homme::subview(state.m_w_i, 0, 0, 0, 0));
 
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
@@ -108,171 +81,113 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
   using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
   using MemberType = typename TeamPolicy::member_type;
+  const int ncols = nelem*NGP*NGP;
+  const TeamPolicy policy(ncols, Kokkos::AUTO());
+  const auto w_mid_row_all = m_w_mid_row_all;
+  const auto w_mid_col_all = m_w_mid_col_all;
+  const auto dsdx_Ux_all = m_dsdx_Ux_all;
+  const auto dsdy_Ux_all = m_dsdy_Ux_all;
+  const auto dsdx_Uy_all = m_dsdx_Uy_all;
+  const auto dsdy_Uy_all = m_dsdy_Uy_all;
+  const auto dsdx_Uz_all = m_dsdx_Uz_all;
+  const auto dsdy_Uz_all = m_dsdy_Uz_all;
 
   Kokkos::parallel_for(
       "compute_horizontal_derivs_of_car_velocity",
-      TeamPolicy(nelem, Kokkos::AUTO()),
+      policy,
       KOKKOS_LAMBDA (const MemberType& team) {
 
-    const int ie = team.league_rank();
+    const int ie  =  team.league_rank() / (NGP*NGP);
+    const int igp = (team.league_rank() / NGP) % NGP;
+    const int jgp =  team.league_rank() % NGP;
+    const int icol = team.league_rank();
 
     // Construct the KernelVariables object needed by ColumnOps.
     KernelVariables kv(team, ie);
 
-    Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, NGP*NGP),
-        [&] (const int idx) {
+    // Grab the scratch storage associated with this (ie,igp,jgp) column.
+    // The midpoint buffers are backed by Real storage from ATMBufferManager,
+    // then reinterpreted as packed Homme::Scalar so they can be passed to ColumnOps.
+    const auto w_mid_row = Kokkos::subview(w_mid_row_all, icol, Kokkos::ALL());
+    const auto w_mid_col = Kokkos::subview(w_mid_col_all, icol, Kokkos::ALL());
+    const Homme::ExecViewUnmanaged<Homme::Scalar[NUM_LEV]> w_mid_row_pack(
+        reinterpret_cast<Homme::Scalar*>(w_mid_row.data()));
+    const Homme::ExecViewUnmanaged<Homme::Scalar[NUM_LEV]> w_mid_col_pack(
+        reinterpret_cast<Homme::Scalar*>(w_mid_col.data()));
+    const auto dsdx_Ux = Kokkos::subview(dsdx_Ux_all, icol, Kokkos::ALL());
+    const auto dsdy_Ux = Kokkos::subview(dsdy_Ux_all, icol, Kokkos::ALL());
+    const auto dsdx_Uy = Kokkos::subview(dsdx_Uy_all, icol, Kokkos::ALL());
+    const auto dsdy_Uy = Kokkos::subview(dsdy_Uy_all, icol, Kokkos::ALL());
+    const auto dsdx_Uz = Kokkos::subview(dsdx_Uz_all, icol, Kokkos::ALL());
+    const auto dsdy_Uz = Kokkos::subview(dsdy_Uz_all, icol, Kokkos::ALL());
 
-      const int igp = idx / NGP;
-      const int jgp = idx % NGP;
+    // Accumulate reference-element derivatives in the two local horizontal directions.
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
+      dsdx_Ux(ilev) = 0;
+      dsdy_Ux(ilev) = 0;
+      dsdx_Uy(ilev) = 0;
+      dsdy_Uy(ilev) = 0;
+      dsdx_Uz(ilev) = 0;
+      dsdy_Uz(ilev) = 0;
+    });
+    team.team_barrier();
 
-      // One packed vertical accumulator per midpoint level.
-      Scalar dsdx_Ux[NUM_LEV];
-      Scalar dsdy_Ux[NUM_LEV];
-      Scalar dsdx_Uy[NUM_LEV];
-      Scalar dsdy_Uy[NUM_LEV];
-      Scalar dsdx_Uz[NUM_LEV];
-      Scalar dsdy_Uz[NUM_LEV];
+    for (int kgp = 0; kgp < NGP; ++kgp) {
+      // The horizontal stencil uses interface w, so first put the two stencil
+      // columns of vertical velocity onto midpoint levels.
+      const auto w_row_i = Homme::subview(w_int_dyn, ie, n0, igp, kgp);
+      const auto w_col_i = Homme::subview(w_int_dyn, ie, n0, kgp, jgp);
 
-      for (int k = 0; k < nlev_pack; ++k) {
-        dsdx_Ux[k] = 0.0;
-        dsdy_Ux[k] = 0.0;
-        dsdx_Uy[k] = 0.0;
-        dsdy_Uy[k] = 0.0;
-        dsdx_Uz[k] = 0.0;
-        dsdy_Uz[k] = 0.0;
-      }
+      ColumnOps::compute_midpoint_values(kv, w_row_i, w_mid_row_pack);
+      team.team_barrier();
+      ColumnOps::compute_midpoint_values(kv, w_col_i, w_mid_col_pack);
+      team.team_barrier();
 
-      for (int kgp = 0; kgp < NGP; ++kgp) {
-        // Sweep the element stencil to build local horizontal derivatives of the
-        // full 3D Cartesian velocity field at each GLL point.
+      const auto row_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, igp, kgp);
+      const auto row_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, igp, kgp);
+      const auto row_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, igp, kgp);
+      const auto col_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, kgp, jgp);
+      const auto col_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, kgp, jgp);
+      const auto col_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, kgp, jgp);
+      const auto u_row_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 0, igp, kgp));
+      const auto v_row_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 1, igp, kgp));
+      const auto u_col_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 0, kgp, jgp));
+      const auto v_col_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 1, kgp, jgp));
 
-        // Full interface columns for w at the two stencil points.
-        const auto w_int_row = Homme::subview(w_int_dyn, ie, n0, igp, kgp);
-        const auto w_int_col = Homme::subview(w_int_dyn, ie, n0, kgp, jgp);
+      // Build the full Cartesian velocity on the two stencil lines and apply
+      // the derivative matrix weights along each local direction.
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
+        const Real u_row = u_row_view(ilev);
+        const Real v_row = v_row_view(ilev);
+        const Real w_row = w_mid_row(ilev);
 
-        // Temporary midpoint columns.
-        Scalar w_mid_row_buf[NUM_LEV];
-        Scalar w_mid_col_buf[NUM_LEV];
+        const Real u_col = u_col_view(ilev);
+        const Real v_col = v_col_view(ilev);
+        const Real w_col = w_mid_col(ilev);
 
-        MidColumn w_mid_row(w_mid_row_buf);
-        MidColumn w_mid_col(w_mid_col_buf);
+        dsdx_Ux(ilev) += dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row);
+        dsdy_Ux(ilev) += dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col);
 
-        // Put vertical velocity on the midpoint grid
-        ColumnOps::compute_midpoint_values(kv, w_int_row, w_mid_row);
-        ColumnOps::compute_midpoint_values(kv, w_int_col, w_mid_col);
+        dsdx_Uy(ilev) += dvv(jgp,kgp) * local_to_cart_component(row_y, u_row, v_row, w_row);
+        dsdy_Uy(ilev) += dvv(igp,kgp) * local_to_cart_component(col_y, u_col, v_col, w_col);
 
-        team.team_barrier();
-
-        Kokkos::parallel_for(
-            Kokkos::ThreadVectorRange(team, nlev_pack),
-            [&] (const int ilev_pack) {
-
-          Scalar Ux_row = 0.0;
-          Scalar Ux_col = 0.0;
-          Scalar Uy_row = 0.0;
-          Scalar Uy_col = 0.0;
-          Scalar Uz_row = 0.0;
-          Scalar Uz_col = 0.0;
-
-          for (int s = 0; s < VLEN; ++s) {
-            const int ilev = ilev_pack*VLEN + s;
-
-            if (ilev < nlev_scalar) {
-
-              const Real Ux_row_h = horiz_wind_to_cart_component(
-                  state.m_v, vec_sph2cart, ie, n0, 0, igp, kgp, ilev_pack)[s];
-
-              const Real Ux_col_h = horiz_wind_to_cart_component(
-                  state.m_v, vec_sph2cart, ie, n0, 0, kgp, jgp, ilev_pack)[s];
-
-              const Real Uy_row_h = horiz_wind_to_cart_component(
-                  state.m_v, vec_sph2cart, ie, n0, 1, igp, kgp, ilev_pack)[s];
-
-              const Real Uy_col_h = horiz_wind_to_cart_component(
-                  state.m_v, vec_sph2cart, ie, n0, 1, kgp, jgp, ilev_pack)[s];
-
-              const Real Uz_row_h = horiz_wind_to_cart_component(
-                  state.m_v, vec_sph2cart, ie, n0, 2, igp, kgp, ilev_pack)[s];
-
-              const Real Uz_col_h = horiz_wind_to_cart_component(
-                  state.m_v, vec_sph2cart, ie, n0, 2, kgp, jgp, ilev_pack)[s];
-
-              // Add the vertical motion to the horizontal wind so the gradients
-              // are taken on the full resolved 3D velocity, not just (u,v).
-              const Real w_row = w_mid_row(ilev_pack)[s];
-              const Real w_col = w_mid_col(ilev_pack)[s];
-
-              const Real wx_row = vec_sph2cart(ie,2,0,igp,kgp) * w_row;
-              const Real wy_row = vec_sph2cart(ie,2,1,igp,kgp) * w_row;
-              const Real wz_row = vec_sph2cart(ie,2,2,igp,kgp) * w_row;
-
-              const Real wx_col = vec_sph2cart(ie,2,0,kgp,jgp) * w_col;
-              const Real wy_col = vec_sph2cart(ie,2,1,kgp,jgp) * w_col;
-              const Real wz_col = vec_sph2cart(ie,2,2,kgp,jgp) * w_col;
-
-              Ux_row[s] = Ux_row_h + wx_row;
-              Ux_col[s] = Ux_col_h + wx_col;
-
-              Uy_row[s] = Uy_row_h + wy_row;
-              Uy_col[s] = Uy_col_h + wy_col;
-
-              Uz_row[s] = Uz_row_h + wz_row;
-              Uz_col[s] = Uz_col_h + wz_col;
-            }
-          }
-
-          dsdx_Ux[ilev_pack] += dvv(jgp,kgp) * Ux_row;
-          dsdy_Ux[ilev_pack] += dvv(igp,kgp) * Ux_col;
-
-          dsdx_Uy[ilev_pack] += dvv(jgp,kgp) * Uy_row;
-          dsdy_Uy[ilev_pack] += dvv(igp,kgp) * Uy_col;
-
-          dsdx_Uz[ilev_pack] += dvv(jgp,kgp) * Uz_row;
-          dsdy_Uz[ilev_pack] += dvv(igp,kgp) * Uz_col;
-        });
-
-        team.team_barrier();
-      }
-
-      Kokkos::parallel_for(
-          Kokkos::ThreadVectorRange(team, nlev_pack),
-          [&] (const int ilev_pack) {
-
-        // Convert reference-element derivatives into physical horizontal
-        // gradients using the local metric tensor on the curved element.
-        Scalar gx0 = (dinv(ie,0,0,igp,jgp) * dsdx_Ux[ilev_pack]
-                    + dinv(ie,0,1,igp,jgp) * dsdy_Ux[ilev_pack]) * scale_factor_inv;
-
-        Scalar gy0 = (dinv(ie,0,0,igp,jgp) * dsdx_Uy[ilev_pack]
-                    + dinv(ie,0,1,igp,jgp) * dsdy_Uy[ilev_pack]) * scale_factor_inv;
-
-        Scalar gz0 = (dinv(ie,0,0,igp,jgp) * dsdx_Uz[ilev_pack]
-                    + dinv(ie,0,1,igp,jgp) * dsdy_Uz[ilev_pack]) * scale_factor_inv;
-
-        Scalar gx1 = (dinv(ie,1,0,igp,jgp) * dsdx_Ux[ilev_pack]
-                    + dinv(ie,1,1,igp,jgp) * dsdy_Ux[ilev_pack]) * scale_factor_inv;
-
-        Scalar gy1 = (dinv(ie,1,0,igp,jgp) * dsdx_Uy[ilev_pack]
-                    + dinv(ie,1,1,igp,jgp) * dsdy_Uy[ilev_pack]) * scale_factor_inv;
-
-        Scalar gz1 = (dinv(ie,1,0,igp,jgp) * dsdx_Uz[ilev_pack]
-                    + dinv(ie,1,1,igp,jgp) * dsdy_Uz[ilev_pack]) * scale_factor_inv;
-
-        for (int s = 0; s < VLEN; ++s) {
-          const int ilev = ilev_pack*VLEN + s;
-          if (ilev < nlev_scalar) {
-            grad_Ux_dyn(ie,0,igp,jgp,ilev) = gx0[s];
-            grad_Uy_dyn(ie,0,igp,jgp,ilev) = gy0[s];
-            grad_Uz_dyn(ie,0,igp,jgp,ilev) = gz0[s];
-
-            grad_Ux_dyn(ie,1,igp,jgp,ilev) = gx1[s];
-            grad_Uy_dyn(ie,1,igp,jgp,ilev) = gy1[s];
-            grad_Uz_dyn(ie,1,igp,jgp,ilev) = gz1[s];
-          }
-        }
+        dsdx_Uz(ilev) += dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row);
+        dsdy_Uz(ilev) += dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col);
       });
+      team.team_barrier();
+    }
 
+    // Convert the reference-element derivatives into physical horizontal
+    // gradients using the inverse metric tensor on this curved element.
+    const auto dinv_ij = Kokkos::subview(dinv, ie, Kokkos::ALL(), Kokkos::ALL(), igp, jgp);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
+      grad_Ux_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Ux(ilev) + dinv_ij(0,1) * dsdy_Ux(ilev)) * scale_factor_inv;
+      grad_Uy_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Uy(ilev) + dinv_ij(0,1) * dsdy_Uy(ilev)) * scale_factor_inv;
+      grad_Uz_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Uz(ilev) + dinv_ij(0,1) * dsdy_Uz(ilev)) * scale_factor_inv;
+
+      grad_Ux_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Ux(ilev) + dinv_ij(1,1) * dsdy_Ux(ilev)) * scale_factor_inv;
+      grad_Uy_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Uy(ilev) + dinv_ij(1,1) * dsdy_Uy(ilev)) * scale_factor_inv;
+      grad_Uz_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Uz(ilev) + dinv_ij(1,1) * dsdy_Uz(ilev)) * scale_factor_inv;
     });
   });
 
@@ -284,11 +199,9 @@ void HommeDynamics::compute_local_strain_components3d ()
   using namespace Homme;
 
   constexpr int NGP  = HOMMEXX_NP;
-  constexpr int VLEN = VECTOR_SIZE;
 
-  const auto& c     = Context::singleton();
-  const auto& geom  = c.get<ElementsGeometry>();
-  const auto& elems = c.get<Elements>();
+  const auto& c    = Context::singleton();
+  const auto& geom = c.get<ElementsGeometry>();
 
   const int nelem = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
 
@@ -301,68 +214,41 @@ void HommeDynamics::compute_local_strain_components3d ()
   const auto vec_sph2cart = geom.m_vec_sph2cart;
 
   const int nlev_scalar = grad_Ux_dyn.extent_int(4);
-  const int nlev_pack   = elems.m_derived.m_turb_diff_mom.extent_int(3);
 
   using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
   using MemberType = typename TeamPolicy::member_type;
 
   Kokkos::parallel_for(
       "compute_local_strain_components3d",
-      TeamPolicy(nelem, Kokkos::AUTO()),
+      TeamPolicy(nelem*NGP*NGP, Kokkos::AUTO()),
       KOKKOS_LAMBDA (const MemberType& team) {
 
-    const int ie = team.league_rank();
+    const int ie  =  team.league_rank() / (NGP*NGP);
+    const int igp = (team.league_rank() / NGP) % NGP;
+    const int jgp =  team.league_rank() % NGP;
 
-    Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, NGP*NGP),
-        [&] (const int idx) {
+    const auto basis0 = Kokkos::subview(vec_sph2cart, ie, 0, Kokkos::ALL(), igp, jgp);
+    const auto basis1 = Kokkos::subview(vec_sph2cart, ie, 1, Kokkos::ALL(), igp, jgp);
+    const auto basis2 = Kokkos::subview(vec_sph2cart, ie, 2, Kokkos::ALL(), igp, jgp);
 
-      const int igp = idx / NGP;
-      const int jgp = idx % NGP;
+    // The stored gradients are Cartesian components differentiated along the
+    // two local horizontal directions. Project them back into the local basis
+    // so SHOC receives the six local shear-tensor components it expects.
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
+      const Real gx0 = grad_Ux_dyn(ie,0,igp,jgp,ilev);
+      const Real gy0 = grad_Uy_dyn(ie,0,igp,jgp,ilev);
+      const Real gz0 = grad_Uz_dyn(ie,0,igp,jgp,ilev);
 
-      Kokkos::parallel_for(
-          Kokkos::ThreadVectorRange(team, nlev_pack),
-          [&] (const int ilev_pack) {
+      const Real gx1 = grad_Ux_dyn(ie,1,igp,jgp,ilev);
+      const Real gy1 = grad_Uy_dyn(ie,1,igp,jgp,ilev);
+      const Real gz1 = grad_Uz_dyn(ie,1,igp,jgp,ilev);
 
-        for (int s = 0; s < VLEN; ++s) {
-          const int ilev = ilev_pack*VLEN + s;
-
-          if (ilev < nlev_scalar) {
-            // Project the Cartesian gradient tensor back into the local
-            // element basis so SHOC receives a physically meaningful shear rate.
-            const Real A00 = cart_grad_to_local_component(
-                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-                vec_sph2cart, ie, 0, 0, igp, jgp, ilev);
-
-            const Real A01 = cart_grad_to_local_component(
-                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-                vec_sph2cart, ie, 0, 1, igp, jgp, ilev);
-
-            const Real A10 = cart_grad_to_local_component(
-                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-                vec_sph2cart, ie, 1, 0, igp, jgp, ilev);
-
-            const Real A11 = cart_grad_to_local_component(
-                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-                vec_sph2cart, ie, 1, 1, igp, jgp, ilev);
-
-            const Real A20 = cart_grad_to_local_component(
-                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-                vec_sph2cart, ie, 2, 0, igp, jgp, ilev);
-
-            const Real A21 = cart_grad_to_local_component(
-                grad_Ux_dyn, grad_Uy_dyn, grad_Uz_dyn,
-                vec_sph2cart, ie, 2, 1, igp, jgp, ilev);
-
-            shear_components_dyn(ie,0,igp,jgp,ilev) = A00;
-            shear_components_dyn(ie,1,igp,jgp,ilev) = A01;
-            shear_components_dyn(ie,2,igp,jgp,ilev) = A10;
-            shear_components_dyn(ie,3,igp,jgp,ilev) = A11;
-            shear_components_dyn(ie,4,igp,jgp,ilev) = A20;
-            shear_components_dyn(ie,5,igp,jgp,ilev) = A21;
-          }
-        }
-      });
+      shear_components_dyn(ie,0,igp,jgp,ilev) = cart_grad_to_local_component(basis0, gx0, gy0, gz0);
+      shear_components_dyn(ie,1,igp,jgp,ilev) = cart_grad_to_local_component(basis0, gx1, gy1, gz1);
+      shear_components_dyn(ie,2,igp,jgp,ilev) = cart_grad_to_local_component(basis1, gx0, gy0, gz0);
+      shear_components_dyn(ie,3,igp,jgp,ilev) = cart_grad_to_local_component(basis1, gx1, gy1, gz1);
+      shear_components_dyn(ie,4,igp,jgp,ilev) = cart_grad_to_local_component(basis2, gx0, gy0, gz0);
+      shear_components_dyn(ie,5,igp,jgp,ilev) = cart_grad_to_local_component(basis2, gx1, gy1, gz1);
     });
   });
 

@@ -111,10 +111,12 @@ struct GllFvRemapImpl {
                  const Real* f2g_remapd_r, const Real* D_f_r, const Real* Dinv_f_r);
 
   void run_dyn_to_fv_phys(const int time_idx, const Phys1T& ps, const Phys1T& phis,
-                          const Phys2T& T, const Phys2T& omega, const Phys3T& strain3d_components,
+                          const Phys2T& T, const Phys2T& omega,
+                          const CPhys3T* strain3d_components_gll,
+                          const Phys3T* strain3d_components_fv,
                           const Phys3T& uv, const Phys3T& q, const Phys2T* dp);
   void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
-                          const CPhys3T& q, const CPhys2T& Km, const CPhys2T& Kh);
+                          const CPhys3T& q, const CPhys2T* Km, const CPhys2T* Kh);
   void run_fv_phys_to_dyn_dss();
 
   void remap_tracer_dyn_to_fv_phys(const int time_idx, const int nq,

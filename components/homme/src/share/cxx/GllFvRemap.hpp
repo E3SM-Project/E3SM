@@ -52,24 +52,18 @@ public:
                           const Phys1T& ps, const Phys1T& phis,
                           // T,omega(ie,col,lev)
                           const Phys2T& T, const Phys2T& omega,
-                          const Phys3T& strain3d_components,
+                          const CPhys3T* strain3d_components_gll,
+                          const Phys3T* strain3d_components_fv,
                           // uv(ie, col, 0 or 1, lev)
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)
                           const Phys3T& q,
                           // Optionally return dp
                           const Phys2T* dp = nullptr);
-  // Backward-compatible overload for callers that do not provide the optional
-  // 3D shear-strain tensor components. In that case, use the current
-  // zero-initialized Homme derived-state storage.
-  void run_dyn_to_fv_phys(const int time_idx,
-                          const Phys1T& ps, const Phys1T& phis,
-                          const Phys2T& T, const Phys2T& omega,
-                          const Phys3T& uv, const Phys3T& q,
-                          const Phys2T* dp = nullptr);
   //   Remap physics state and tendencies to dynamics state and tendencies.
   void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
-                          const CPhys3T& q, const CPhys2T& Km, const CPhys2T& Kh);
+                          const CPhys3T& q, const CPhys2T* Km = nullptr,
+                          const CPhys2T* Kh = nullptr);
   //   DSS the remapped dynamics tendencies and state. Call this after
   //   run_fv_phys_to_dyn if the dynamics-physics coupler does not already
   //   provide it.
