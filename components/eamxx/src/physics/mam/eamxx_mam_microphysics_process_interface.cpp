@@ -30,6 +30,14 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
   config_.amicphys.do_coag   = m_params.get<bool>("mam4_do_coag");
   check_fields_intervals_    = m_params.get<bool>("create_fields_interval_checks", false);
 
+  // Determine aerosol microphysics timestep, specified as number of atm
+  // steps. Aerosol microphysics (gas-phase/aqueous chemistry, condensation,
+  // nucleation, coagulation, etc.) is only computed every
+  // mam4_aero_micro_frequency_ steps; on the intervening steps the
+  // previously computed tendencies/outputs are left untouched.
+  // Defaults to 1 (run every step).
+  mam4_aero_micro_frequency_ = m_params.get<int>("mam4_aero_micro_frequency", 1);
+
   // these parameters guide the coupling between parameterizations
   // NOTE: mam4xx was ported with these parameters fixed, so it's probably not
   // NOTE: safe to change these without code modifications.
@@ -774,6 +782,23 @@ void MAMMicrophysics::run_impl(const double dt) {
   const int ncol = ncol_;
   const int nlev = nlev_;
 
+  // Are we going to update aerosol microphysics tendencies/outputs this
+  // step? Mirrors the rad_frequency / mam4_wetscav_frequency pattern:
+  // aerosol microphysics only runs every mam4_aero_micro_frequency_ atm
+  // steps. On the steps it does run, it uses an effective timestep of
+  // mam4_aero_micro_frequency_ * dt so that the computed tendencies
+  // represent the full interval since the last call (rather than just
+  // the current physics step).
+  const auto run_ts = start_of_step_ts();
+  const bool update_aero_micro =
+      (run_ts.get_num_steps() % mam4_aero_micro_frequency_ == 0);
+
+  if (!update_aero_micro) {
+    return;
+  }
+
+  const double aero_micro_dt = mam4_aero_micro_frequency_ * dt;
+
   // preprocess input -- needs a scan for the calculation of atm height
   pre_process(wet_aero_, dry_aero_, wet_atm_, dry_atm_);
   Kokkos::fence();
@@ -841,8 +866,10 @@ void MAMMicrophysics::run_impl(const double dt) {
       Real lat =
           col_latitudes_host(i) * M_PI / 180.0;  // Convert lat/lon to radians
       Real lon = col_longitudes_host(i) * M_PI / 180.0;
-      // what's the aerosol microphys frequency?
-      Real temp = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+      // Average the cosine zenith angle over the full aerosol microphysics
+      // interval (mam4_aero_micro_frequency_ * dt), consistent with how
+      // infrequently aerosol microphysics is actually called.
+      Real temp = shr_orb_cosz_c2f(calday, lat, lon, delta, aero_micro_dt);
       acos_cosine_zenith_host_(i) = acos(temp);
     }
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
@@ -853,7 +880,7 @@ void MAMMicrophysics::run_impl(const double dt) {
   const auto &extfrc   = extfrc_;
   constexpr int extcnt = mam4::gas_chemistry::extcnt;
 
-  run_microphysics_kernels(dt, eccf);
+  run_microphysics_kernels(aero_micro_dt, eccf);
 
   auto extfrc_fm = get_field_out("mam4_external_forcing").get_view<Real***>();
 

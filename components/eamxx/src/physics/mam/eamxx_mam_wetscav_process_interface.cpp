@@ -21,6 +21,11 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params
    * initialized here. Like universal constants, mam wetscav options.
    */
   check_fields_intervals_          = m_params.get<bool>("create_fields_interval_checks", false);
+  // Determine wetscav timestep, specified as number of atm steps.
+  // Wetscav is only computed every mam4_wetscav_frequency_ steps; on the
+  // intervening steps the previously computed tendencies/outputs are
+  // left untouched. Defaults to 1 (run every step).
+  mam4_wetscav_frequency_ = m_params.get<int>("mam4_wetscav_frequency", 1);
   scav_fraction_in_cloud_strat_    = m_params.get<Real>("scav_fraction_in_cloud_strat", 1.00);
   scav_fraction_in_cloud_conv_     = m_params.get<Real>("scav_fraction_in_cloud_conv", 0.00);
   scav_fraction_below_cloud_strat_ = m_params.get<Real>("scav_fraction_below_cloud_strat", 0.03);
@@ -339,6 +344,22 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 void MAMWetscav::run_impl(const double dt) {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
+  // Are we going to update wetscav tendencies/outputs this step?
+  // Mirrors the rad_frequency pattern used by RRTMGP: wetscav only runs
+  // every mam4_wetscav_frequency_ atm steps. On the steps it does run,
+  // it uses an effective timestep of mam4_wetscav_frequency_ * dt so that
+  // the computed tendencies represent removal over the full interval
+  // since the last call (rather than just the current physics step).
+  const auto ts = start_of_step_ts();
+  const bool update_wetscav =
+      (ts.get_num_steps() % mam4_wetscav_frequency_ == 0);
+
+  if (!update_wetscav) {
+    return;
+  }
+
+  const double wetscav_dt = mam4_wetscav_frequency_ * dt;
+
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
   // preprocess input -- needs a scan for the calculation of all variables
@@ -481,7 +502,7 @@ void MAMWetscav::run_impl(const double dt) {
         auto isprx_icol = ekat::subview(isprx, icol);
 
         mam4::wetdep::aero_model_wetdep(
-            team, atm, progs, tends, dt,
+            team, atm, progs, tends, wetscav_dt,
             scav_fraction_in_cloud_strat,
             scav_fraction_in_cloud_conv,
             scav_fraction_below_cloud_strat,
@@ -499,11 +520,11 @@ void MAMWetscav::run_impl(const double dt) {
           for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
             const auto n_mode_i       = progs.n_mode_i[m];
             const auto tends_n_mode_i = tends.n_mode_i[m];
-            n_mode_i(kk) += tends_n_mode_i(kk) * dt;
+            n_mode_i(kk) += tends_n_mode_i(kk) * wetscav_dt;
             for(int a = 0; a < mam4::num_species_mode(m); ++a) {
               const auto q_aero_i       = progs.q_aero_i[m][a];
               const auto tends_q_aero_i = tends.q_aero_i[m][a];
-              q_aero_i(kk) += tends_q_aero_i(kk) * dt;
+              q_aero_i(kk) += tends_q_aero_i(kk) * wetscav_dt;
             }
           }
         });  // parallel_for for update interstitial aerosol state

@@ -310,6 +310,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mam4_aero_microphys inherit="mam4_atm_proc_base">
       <!--Aerosol Microphysics processes on/off switches -->
       <mam4_number_so4_monolayers_to_age_carbon_particle type="integer" doc="number of so4 manolayers to age carbon particle">8</mam4_number_so4_monolayers_to_age_carbon_particle>	   
+      mam4_aero_micro_frequency
+      <mam4_aero_micro_frequency type="integer">1</mam4_aero_micro_frequency>  
       <mam4_do_gas_phase_chemistry type="logical" doc="Switch to enable gas phase chemistry">true</mam4_do_gas_phase_chemistry>
       <mam4_do_aqueous_phase_chemistry type="logical" doc="Switch to enable aqueous chemistry (setsox)">true</mam4_do_aqueous_phase_chemistry>
       <extra_mam4_aero_microphys_diags type="logical" doc="Extra MAM4xx aerosol microphysics diagnostics">false</extra_mam4_aero_microphys_diags>
@@ -383,7 +385,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_optics>
 
     <!-- MAM4xx-Wetscav -->
-    <mam4_wetscav inherit="mam4_atm_proc_base" />
+    <mam4_wetscav inherit="mam4_atm_proc_base" >
+      <mam4_wetscav_frequency type="integer">1</mam4_wetscav_frequency>
+    </mam4_wetscav>
 
     <!-- MAM4xx-Surface-Emissions -->
     <mam4_srf_online_emiss inherit="mam4_atm_proc_base">
