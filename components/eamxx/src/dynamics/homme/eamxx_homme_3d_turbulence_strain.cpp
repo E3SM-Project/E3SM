@@ -11,7 +11,7 @@
 
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
-#include "ColumnOps.hpp"
+#include "share/util/eamxx_column_ops.hpp"
 
 // EKAT includes
 #include <ekat_assert.hpp>
@@ -35,25 +35,12 @@ Real local_to_cart_component(
        + basis_sph2cart(2) * w;
 }
 
-// Project a Cartesian gradient vector back onto one local basis direction.
-template <typename BasisViewType>
-KOKKOS_INLINE_FUNCTION
-Real cart_grad_to_local_component(
-    const BasisViewType& basis_sph2cart,
-    const Real grad_x,
-    const Real grad_y,
-    const Real grad_z)
-{
-  return basis_sph2cart(0) * grad_x
-       + basis_sph2cart(1) * grad_y
-       + basis_sph2cart(2) * grad_z;
-}
-
 } // anonymous namespace
 
 void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 {
   using namespace Homme;
+  using ColOps = scream::ColumnOps<DefaultDevice, Real>;
 
   constexpr int NGP  = HOMMEXX_NP;
 
@@ -102,18 +89,13 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     const int jgp =  team.league_rank() % NGP;
     const int icol = team.league_rank();
 
-    // Construct the KernelVariables object needed by ColumnOps.
-    KernelVariables kv(team, ie);
-
     // Grab the scratch storage associated with this (ie,igp,jgp) column.
-    // The midpoint buffers are backed by Real storage from ATMBufferManager,
-    // then reinterpreted as packed Homme::Scalar so they can be passed to ColumnOps.
     const auto w_mid_row = Kokkos::subview(w_mid_row_all, icol, Kokkos::ALL());
     const auto w_mid_col = Kokkos::subview(w_mid_col_all, icol, Kokkos::ALL());
-    const Homme::ExecViewUnmanaged<Homme::Scalar[NUM_LEV]> w_mid_row_pack(
-        reinterpret_cast<Homme::Scalar*>(w_mid_row.data()));
-    const Homme::ExecViewUnmanaged<Homme::Scalar[NUM_LEV]> w_mid_col_pack(
-        reinterpret_cast<Homme::Scalar*>(w_mid_col.data()));
+    using Unmanaged = Kokkos::MemoryTraits<Kokkos::Unmanaged>;
+    using Real1dU = typename ColOps::template view_1d<Real, Unmanaged>;
+    const Real1dU w_mid_row_1d(w_mid_row.data(), nlev_scalar);
+    const Real1dU w_mid_col_1d(w_mid_col.data(), nlev_scalar);
     const auto dsdx_Ux = Kokkos::subview(dsdx_Ux_all, icol, Kokkos::ALL());
     const auto dsdy_Ux = Kokkos::subview(dsdy_Ux_all, icol, Kokkos::ALL());
     const auto dsdx_Uy = Kokkos::subview(dsdx_Uy_all, icol, Kokkos::ALL());
@@ -135,12 +117,14 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     for (int kgp = 0; kgp < NGP; ++kgp) {
       // The horizontal stencil uses interface w, so first put the two stencil
       // columns of vertical velocity onto midpoint levels.
-      const auto w_row_i = Homme::subview(w_int_dyn, ie, n0, igp, kgp);
-      const auto w_col_i = Homme::subview(w_int_dyn, ie, n0, kgp, jgp);
+      const auto w_row_i = Kokkos::subview(w_int_dyn, ie, n0, igp, kgp, Kokkos::ALL());
+      const auto w_col_i = Kokkos::subview(w_int_dyn, ie, n0, kgp, jgp, Kokkos::ALL());
+      const auto w_row_i_real = Homme::viewAsReal(w_row_i);
+      const auto w_col_i_real = Homme::viewAsReal(w_col_i);
 
-      ColumnOps::compute_midpoint_values(kv, w_row_i, w_mid_row_pack);
+      ColOps::compute_midpoint_values(team, nlev_scalar, w_row_i_real, w_mid_row_1d);
       team.team_barrier();
-      ColumnOps::compute_midpoint_values(kv, w_col_i, w_mid_col_pack);
+      ColOps::compute_midpoint_values(team, nlev_scalar, w_col_i_real, w_mid_col_1d);
       team.team_barrier();
 
       const auto row_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, igp, kgp);
@@ -149,10 +133,14 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       const auto col_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, kgp, jgp);
       const auto col_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, kgp, jgp);
       const auto col_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, kgp, jgp);
-      const auto u_row_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 0, igp, kgp));
-      const auto v_row_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 1, igp, kgp));
-      const auto u_col_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 0, kgp, jgp));
-      const auto v_col_view = Homme::viewAsReal(Homme::subview(state.m_v, ie, n0, 1, kgp, jgp));
+      const auto u_row_view =
+          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, igp, kgp, Kokkos::ALL()));
+      const auto v_row_view =
+          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, igp, kgp, Kokkos::ALL()));
+      const auto u_col_view =
+          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, kgp, jgp, Kokkos::ALL()));
+      const auto v_col_view =
+          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, kgp, jgp, Kokkos::ALL()));
 
       // Build the full Cartesian velocity on the two stencil lines and apply
       // the derivative matrix weights along each local direction.
@@ -215,41 +203,43 @@ void HommeDynamics::compute_local_strain_components3d ()
 
   const int nlev_scalar = grad_Ux_dyn.extent_int(4);
 
-  using TeamPolicy = Kokkos::TeamPolicy<KT::ExeSpace>;
-  using MemberType = typename TeamPolicy::member_type;
+  using Policy = Kokkos::MDRangePolicy<KT::ExeSpace, Kokkos::Rank<4>>;
+  const Policy policy({0, 0, 0, 0}, {nelem, NGP, NGP, nlev_scalar});
 
   Kokkos::parallel_for(
       "compute_local_strain_components3d",
-      TeamPolicy(nelem*NGP*NGP, Kokkos::AUTO()),
-      KOKKOS_LAMBDA (const MemberType& team) {
-
-    const int ie  =  team.league_rank() / (NGP*NGP);
-    const int igp = (team.league_rank() / NGP) % NGP;
-    const int jgp =  team.league_rank() % NGP;
-
-    const auto basis0 = Kokkos::subview(vec_sph2cart, ie, 0, Kokkos::ALL(), igp, jgp);
-    const auto basis1 = Kokkos::subview(vec_sph2cart, ie, 1, Kokkos::ALL(), igp, jgp);
-    const auto basis2 = Kokkos::subview(vec_sph2cart, ie, 2, Kokkos::ALL(), igp, jgp);
+      policy,
+      KOKKOS_LAMBDA (const int ie, const int igp, const int jgp, const int ilev) {
 
     // The stored gradients are Cartesian components differentiated along the
     // two local horizontal directions. Project them back into the local basis
     // so SHOC receives the six local shear-tensor components it expects.
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
-      const Real gx0 = grad_Ux_dyn(ie,0,igp,jgp,ilev);
-      const Real gy0 = grad_Uy_dyn(ie,0,igp,jgp,ilev);
-      const Real gz0 = grad_Uz_dyn(ie,0,igp,jgp,ilev);
+    const Real gx0 = grad_Ux_dyn(ie,0,igp,jgp,ilev);
+    const Real gy0 = grad_Uy_dyn(ie,0,igp,jgp,ilev);
+    const Real gz0 = grad_Uz_dyn(ie,0,igp,jgp,ilev);
 
-      const Real gx1 = grad_Ux_dyn(ie,1,igp,jgp,ilev);
-      const Real gy1 = grad_Uy_dyn(ie,1,igp,jgp,ilev);
-      const Real gz1 = grad_Uz_dyn(ie,1,igp,jgp,ilev);
+    const Real gx1 = grad_Ux_dyn(ie,1,igp,jgp,ilev);
+    const Real gy1 = grad_Uy_dyn(ie,1,igp,jgp,ilev);
+    const Real gz1 = grad_Uz_dyn(ie,1,igp,jgp,ilev);
 
-      shear_components_dyn(ie,0,igp,jgp,ilev) = cart_grad_to_local_component(basis0, gx0, gy0, gz0);
-      shear_components_dyn(ie,1,igp,jgp,ilev) = cart_grad_to_local_component(basis0, gx1, gy1, gz1);
-      shear_components_dyn(ie,2,igp,jgp,ilev) = cart_grad_to_local_component(basis1, gx0, gy0, gz0);
-      shear_components_dyn(ie,3,igp,jgp,ilev) = cart_grad_to_local_component(basis1, gx1, gy1, gz1);
-      shear_components_dyn(ie,4,igp,jgp,ilev) = cart_grad_to_local_component(basis2, gx0, gy0, gz0);
-      shear_components_dyn(ie,5,igp,jgp,ilev) = cart_grad_to_local_component(basis2, gx1, gy1, gz1);
-    });
+    const Real b0_0 = vec_sph2cart(ie, 0, 0, igp, jgp);
+    const Real b0_1 = vec_sph2cart(ie, 0, 1, igp, jgp);
+    const Real b0_2 = vec_sph2cart(ie, 0, 2, igp, jgp);
+
+    const Real b1_0 = vec_sph2cart(ie, 1, 0, igp, jgp);
+    const Real b1_1 = vec_sph2cart(ie, 1, 1, igp, jgp);
+    const Real b1_2 = vec_sph2cart(ie, 1, 2, igp, jgp);
+
+    const Real b2_0 = vec_sph2cart(ie, 2, 0, igp, jgp);
+    const Real b2_1 = vec_sph2cart(ie, 2, 1, igp, jgp);
+    const Real b2_2 = vec_sph2cart(ie, 2, 2, igp, jgp);
+
+    shear_components_dyn(ie,0,igp,jgp,ilev) = b0_0 * gx0 + b0_1 * gy0 + b0_2 * gz0;
+    shear_components_dyn(ie,1,igp,jgp,ilev) = b0_0 * gx1 + b0_1 * gy1 + b0_2 * gz1;
+    shear_components_dyn(ie,2,igp,jgp,ilev) = b1_0 * gx0 + b1_1 * gy0 + b1_2 * gz0;
+    shear_components_dyn(ie,3,igp,jgp,ilev) = b1_0 * gx1 + b1_1 * gy1 + b1_2 * gz1;
+    shear_components_dyn(ie,4,igp,jgp,ilev) = b2_0 * gx0 + b2_1 * gy0 + b2_2 * gz0;
+    shear_components_dyn(ie,5,igp,jgp,ilev) = b2_0 * gx1 + b2_1 * gy1 + b2_2 * gz1;
   });
 
   Kokkos::fence();
