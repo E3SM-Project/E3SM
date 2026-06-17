@@ -120,10 +120,10 @@ struct Functions {
     static inline constexpr Real MCSP_conv_depth_min       = 700e2;    // pressure thickness of convective heating [Pa]
     static inline constexpr Real MCSP_shear_min            = 3.0;      // min shear value for MCSP to be active
     static inline constexpr Real MCSP_shear_max            = 200.0;    // max shear value for MCSP to be active
-    static inline constexpr Real MCSP_t_coeff              = 0.3;      // default MCSP temperature coefficient
-    static inline constexpr Real MCSP_q_coeff              = 0.0;      // default MCSP sp. humidity coefficient
-    static inline constexpr Real MCSP_u_coeff              = 0.0;      // default MCSP U-wind coefficient
-    static inline constexpr Real MCSP_v_coeff              = 0.0;      // default MCSP V-wind coefficient
+    static inline constexpr Real MCSP_t_coeff_default      = 0.3;      // default MCSP temperature coefficient
+    static inline constexpr Real MCSP_q_coeff_default      = 0.0;      // default MCSP sp. humidity coefficient
+    static inline constexpr Real MCSP_u_coeff_default      = 0.0;      // default MCSP U-wind coefficient
+    static inline constexpr Real MCSP_v_coeff_default      = 0.0;      // default MCSP V-wind coefficient
     // Default values for ZmRuntimeOpt fields
     static inline constexpr Real alfa                      = 0.14;     // default downdraft proportionality factor
     static inline constexpr Real ke                        = 2.5E-6;   // default evaporation efficiency
@@ -173,10 +173,10 @@ struct Functions {
       old_snow            = params.get<bool>("old_snow",            true);
       // MCSP parameters
       mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
-      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff);
-      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff);
-      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        ZMC::MCSP_u_coeff);
-      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        ZMC::MCSP_v_coeff);
+      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff_default);
+      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff_default);
+      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        ZMC::MCSP_u_coeff_default);
+      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        ZMC::MCSP_v_coeff_default);
 
       // determine SVP table size (add two to make the table slightly too big, just in case)
       plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;

@@ -39,10 +39,10 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.old_snow            = true;
   // MCSP parameters
   s_zm_opts.mcsp_enabled        = true;
-  s_zm_opts.mcsp_t_coeff        = ZMC::MCSP_t_coeff;
-  s_zm_opts.mcsp_q_coeff        = ZMC::MCSP_q_coeff;
-  s_zm_opts.mcsp_u_coeff        = ZMC::MCSP_u_coeff;
-  s_zm_opts.mcsp_v_coeff        = ZMC::MCSP_v_coeff;
+  s_zm_opts.mcsp_t_coeff        = ZMC::MCSP_t_coeff_default;
+  s_zm_opts.mcsp_q_coeff        = ZMC::MCSP_q_coeff_default;
+  s_zm_opts.mcsp_u_coeff        = ZMC::MCSP_u_coeff_default;
+  s_zm_opts.mcsp_v_coeff        = ZMC::MCSP_v_coeff_default;
 
   //
   // set up table values of saturation vapor pressure
