@@ -26,9 +26,9 @@ defaults:
     shell: bash --login {0}
 
 jobs:
-  gcc-openmp:
-    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
-    name: gcc-openmp / cov
+  gnu-openmp:
+    runs-on:  [self-hosted, ghci-snl, gnu]
+    name: gnu-openmp / cov
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
@@ -42,13 +42,13 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: cov
-          machine: ghci-snl-cpu
+          machine: ghci-snl-gnu
           generate: false
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  gcc-cuda:
-    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
-    name: gcc-cuda / cov
+  gnu-cuda:
+    runs-on:  [self-hosted, ghci-snl, cuda, gnu]
+    name: gnu-cuda / cov
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6

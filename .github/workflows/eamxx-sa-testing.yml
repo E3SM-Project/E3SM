@@ -31,8 +31,8 @@ on:
         required: true
         type: choice
         options:
-          - gcc-openmp
-          - gcc-cuda
+          - gnu-openmp
+          - gnu-cuda
           - oneapi-openmp
           - all
       bless:
@@ -74,21 +74,21 @@ defaults:
     shell: bash --login {0}
 
 jobs:
-  gcc-openmp:
+  gnu-openmp:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-openmp' ||
+          github.event.inputs.job_to_run == 'gnu-openmp' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
+    runs-on:  [self-hosted, ghci-snl, gnu]
     strategy:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, fpe, opt]
-    name: gcc-openmp / ${{ matrix.build_type }}
+    name: gnu-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
@@ -117,7 +117,7 @@ jobs:
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl-oneapi, oneapi]
+    runs-on:  [self-hosted, ghci-snl, oneapi]
     strategy:
       fail-fast: false
       matrix:
@@ -142,16 +142,16 @@ jobs:
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
-  gcc-cuda:
+  gnu-cuda:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-cuda' ||
+          github.event.inputs.job_to_run == 'gnu-cuda' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+    runs-on:  [self-hosted, ghci-snl, cuda, gnu]
     strategy:
       fail-fast: false
       matrix:
@@ -162,7 +162,7 @@ jobs:
             SK: ON
           - build_type: opt
             SK: OFF
-    name: gcc-cuda / ${{ matrix.test.build_type }}
+    name: gnu-cuda / ${{ matrix.test.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v6
