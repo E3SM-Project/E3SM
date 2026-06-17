@@ -4366,10 +4366,13 @@
       </modules>
 
       <modules compiler="gnu" mpilib="mpi-serial">
-        <command name="load">DefApps</command>
+        <command name="load">miniforge3/24.11.3-0</command>
+        <command name="load">Core/25.05</command>
+        <command name="load">cmake/3.30.5</command>
+        <command name="load">wget/1.24.5</command>
         <command name="load">gcc/12.4.0</command>
-        <command name="unload">openmpi</command>
-        <command name="load">netlib-lapack/3.11.0</command>
+        <command name="load">openblas/0.3.28</command>
+        <command name="load">hdf5/1.14.5</command>
       </modules>
 
     </module_system>
@@ -4407,6 +4410,17 @@
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH"></env>
       <env name="BLASLAPACK_LIBDIR">$ENV{OLCF_OPENBLAS_ROOT}</env>
+    </environment_variables>
+    <environment_variables compiler="gnu" mpilib="mpi-serial">
+      <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+      <!-- The following is really hard-coded, so make sure those long paths are there -->
+      <env name="NETCDF_PATH">/software/baseline/nsp/spack-envs/base-25.05/opt/gcc-12.4.0/netcdf-c-4.9.2-yy3hjtlp2mdvultyp653qks7u7x77ct5</env>
+      <env name="NETCDF_C_PATH">/software/baseline/nsp/spack-envs/base-25.05/opt/gcc-12.4.0/netcdf-c-4.9.2-yy3hjtlp2mdvultyp653qks7u7x77ct5</env>
+      <env name="NETCDF_FORTRAN_PATH">/software/baseline/nsp/spack-envs/base-25.05/opt/gcc-12.4.0/netcdf-fortran-4.6.1-dpqjrikidtzwxfym4vsrrmobz77mlzwo</env>
+      <env name="PNETCDF_PATH"></env>
+      <env name="BLASLAPACK_LIBDIR">$ENV{OLCF_OPENBLAS_ROOT}/lib</env>
+      <env name="PATH">/software/baseline/nsp/spack-envs/base-25.05/opt/gcc-12.4.0/netcdf-fortran-4.6.1-dpqjrikidtzwxfym4vsrrmobz77mlzwo/bin:/software/baseline/nsp/spack-envs/base-25.05/opt/gcc-12.4.0/netcdf-c-4.9.2-yy3hjtlp2mdvultyp653qks7u7x77ct5/bin:/software/baseline/nsp/spack-envs/base-25.05/opt/gcc-12.4.0/nco-5.2.4-c7eqqvzacjgvxr4wfn4xktwrp3rps33s/bin:$ENV{PATH}</env>
+      <env name="PERL5LIB">/projects/hpcl-cli185/users/zdr/perl/pathfinder/local/lib/perl5:/projects/hpcl-cli185/users/zdr/perl/pathfinder/local/lib/perl5/x86_64-linux-thread-multi</env>
     </environment_variables>
 
   </machine>
