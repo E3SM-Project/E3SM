@@ -180,6 +180,7 @@ contains
                    description_string, esmf_map, fallback_map_identifier )
 
     use iMOAB, only: iMOAB_LoadMapFile
+    use iso_c_binding, only: C_NULL_CHAR
     implicit none
     !-----------------------------------------------------
     !
@@ -212,6 +213,7 @@ contains
     character(len=128)          :: nl_label
     logical                     :: nl_found
     integer                     :: ierr
+    integer                     :: null_pos
 
     character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
     !-----------------------------------------------------
@@ -239,7 +241,7 @@ contains
 
     mapfile_term = trim(mapfile)//CHAR(0)
     if (seq_comm_iamroot(CPLID)) then
-        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
+        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile)
     endif
 
     ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
@@ -258,11 +260,19 @@ contains
 
     if (nl_found) then
          mapper%nl_available = .true.
-         nlmap_id = 'ho_'//map_identifier
+         ! Strip any embedded C_NULL_CHAR from map_identifier before concatenating
+         ! so that diagnostic writes remain clean (null-free). The terminator is
+         ! re-added at each iMOAB C API call site below.
+         null_pos = index(map_identifier, C_NULL_CHAR)
+         if (null_pos > 1) then
+            nlmap_id = 'ho_'//map_identifier(1:null_pos-1)
+         else
+            nlmap_id = 'ho_'//trim(map_identifier)
+         end if
          mapper%howeight_identifier = nlmap_id
          mapfile_term = trim(nl_mapfile)//CHAR(0)
          ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
-                                 discretization_type, 0, nlmap_id, mapfile_term)
+                                 discretization_type, 0, trim(nlmap_id)//C_NULL_CHAR, mapfile_term)
          if (ierr .ne. 0) then
            write(logunit,*) subname,' error in loading nlmap file - ' // nl_mapfile
            call shr_sys_abort(subname//' ERROR in loading nlmap file - ' // nl_mapfile)
@@ -562,9 +572,9 @@ contains
              !*** After mapping, dividing by the mapped norm8wt gives proper normalization.
              allocate(wghts(lsize_src))
              wghts = 1.0_r8
-             tagname = "norm8wt"//C_NULL_CHAR
+             tagname = "norm8wt"
              !*** MOAB: iMOAB_SetDoubleTagStorage - Set tag values on mesh elements
-             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
+             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(tagname)//C_NULL_CHAR, lsize_src , mapper%tag_entity_type, wghts)
               if (ierr .ne. 0) then
                  write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
                 call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
@@ -581,8 +591,8 @@ contains
              !*** This is used for flux-weighted mapping (e.g., area-weighted averages).
              if(mbpresent) then
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get weight field values
-                tagname = avwtsfld_s//C_NULL_CHAR
-                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
+                tagname = trim(avwtsfld_s)
+                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, trim(tagname)//C_NULL_CHAR, lsize_src , mapper%tag_entity_type, wghts)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
                    call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
@@ -724,7 +734,7 @@ contains
              if (ncaas_fields > 0) then
                 filter_type = 2 ! CAAS_LOCAL
                 ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
-                       mapper%howeight_identifier, fldlist_caas, fldlist_caas )
+                       trim(mapper%howeight_identifier)//C_NULL_CHAR, fldlist_caas, fldlist_caas )
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
                    call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
@@ -757,13 +767,13 @@ contains
              endif
 
              lsize_tgt = nvise(1) ! number of active cells
-             tagname = "norm8wt"//C_NULL_CHAR
+             tagname = "norm8wt"
              allocate(wghts(lsize_tgt))
              wghts = 0.0_r8   ! defensive zero-init: iMOAB_GetDoubleTagStorage may leave some entries untouched
                               ! if the tag was never set on those cells; this avoids reading uninitialised memory below.
 
              !*** MOAB: Get mapped normalization weights on target grid
-             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize_tgt , mapper%tag_entity_type, wghts)
+             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, trim(tagname)//C_NULL_CHAR, lsize_tgt , mapper%tag_entity_type, wghts)
               if (ierr .ne. 0) then
                  write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
                 call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
