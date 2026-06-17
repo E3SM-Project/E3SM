@@ -273,6 +273,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_max, mpiinteger_t
+    use mpi, only: MPI_Allreduce
 #endif
     use parallel_mod, only: abortmp
 
@@ -320,6 +321,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_max, mpireal_t
+    use mpi, only: MPI_Allreduce
 #endif
     use parallel_mod, only: abortmp
 
@@ -370,6 +372,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_maxloc, mpi2real_t
+    use mpi, only: MPI_Allreduce
 #endif
 
     real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
@@ -415,6 +418,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_minloc, mpi2real_t
+    use mpi, only: MPI_Allreduce
 #endif
 
     real (kind=real_kind), intent(inout) :: redp(2) ! thread private vector of partial sum
@@ -464,6 +468,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_min, mpireal_t
+    use mpi, only: MPI_Allreduce
 #endif
     use parallel_mod, only: abortmp
 
@@ -515,6 +520,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_sum, mpiinteger_t
+    use mpi, only: MPI_Allreduce
 #endif
     use parallel_mod, only: abortmp
 
@@ -558,6 +564,7 @@ contains
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
   use parallel_mod, only : ORDERED, mpireal_t, mpi_min, mpi_max, mpi_sum, mpi_success
+  use mpi, only: MPI_Barrier, MPI_Allreduce, MPI_Error_String
 #else
   use dimensions_mod, only : nelem
   use parallel_mod, only : ORDERED

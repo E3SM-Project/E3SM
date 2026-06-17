@@ -44,6 +44,9 @@ module repro_sum_mod
    use shr_abort_mod,   only: shr_sys_abort=>shr_abort_abort
    use perf_mod  ! _EXTERNAL
    use parallel_mod, only : abortmp
+#if ( defined SPMD )
+   use mpi
+#endif
 !-----------------------------------------------------------------------
 !- module boilerplate --------------------------------------------------
 !-----------------------------------------------------------------------
@@ -52,9 +55,6 @@ module repro_sum_mod
 !-----------------------------------------------------------------------
 !- include statements --------------------------------------------------
 !-----------------------------------------------------------------------
-#if ( defined SPMD )
-#include <mpif.h>  
-#endif
 
    save
 
