@@ -57,7 +57,7 @@ string(APPEND TIMING_CPPDEFS " -D${UPVAR}_INTERFACE")
 if (DEBUG)
   string(APPEND TIMING_CPPDEFS " -DDEBUG")
 endif()
-if (EXISTS /proc/self/status)
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   string(APPEND TIMING_CPPDEFS " -DHAVE_SLASHPROC")
 endif()
 
