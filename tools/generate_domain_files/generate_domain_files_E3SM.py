@@ -365,7 +365,7 @@ def main():
 
   add_metadata(ds_out)
 
-  ds_out.to_netcdf(path=domain_file_ocn_on_atm, mode='w', format=output_netcdf_type)
+  ds_out.to_netcdf(path=domain_file_ocn_on_atm, mode='w', format=output_netcdf_type, engine='netcdf4')
 
   print(f'successfully created domain file: {clr.MAGENTA}{domain_file_ocn_on_atm}{clr.END}')
   print()
