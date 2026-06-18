@@ -46,18 +46,18 @@ class ZMDeepConvection : public AtmosphereProcess
   protected:
 #endif
 
-    void initialize_impl (const RunType run_type);
-    void run_impl        (const double dt);
+    void initialize_impl (const RunType run_type) override;
+    void run_impl        (const double dt) override;
 
   protected:
 
-    void finalize_impl   ();
+    void finalize_impl   () override;
 
     // Computes total number of bytes needed for local variables
-    size_t requested_buffer_size_in_bytes() const;
+    size_t requested_buffer_size_in_bytes() const override;
 
     // Set local variables using memory provided by the ATMBufferManager
-    void init_buffers(const ATMBufferManager &buffer_manager);
+    void init_buffers(const ATMBufferManager &buffer_manager) override;
 
     // define ZM process variables
     std::shared_ptr<const AbstractGrid> m_grid;
