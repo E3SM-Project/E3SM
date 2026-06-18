@@ -41,7 +41,7 @@ void GWDrag::create_requests() {
   const auto s2     = pow(s,2);
   // const auto K2     = pow(K,2);
 
-  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();        // 2D variables
+  FieldLayout scalar2d     = m_grid->get_2d_scalar_layout();       // 2D variables
   FieldLayout scalar3d_mid = m_grid->get_3d_scalar_layout(LEV);    // 3D variables at mid-levels
   FieldLayout scalar3d_int = m_grid->get_3d_scalar_layout(ILEV);   // 3D variables at interfaces
   FieldLayout vector3d_mid = m_grid->get_3d_vector_layout(LEV,2);  // horiz_wind field
@@ -95,9 +95,8 @@ void GWDrag::initialize_impl (const RunType) {
   scorpio::release_file(gw_drag_file);
   Kokkos::deep_copy(mfcc, mfcc_h);
 
-  GWF::gw_convect_init( m_params, mfcc );
-
-  GWF::gw_front_init( m_params, pref_int );
+  if (GWF::s_common_init.use_gw_convect) { GWF::gw_convect_init( m_params, mfcc ); }
+  if (GWF::s_common_init.use_gw_frontal) { GWF::gw_front_init( m_params, pref_int ); }
 
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;

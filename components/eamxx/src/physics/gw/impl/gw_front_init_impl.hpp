@@ -75,6 +75,9 @@ void Functions<S,D>::gw_front_init(
 
   using exe_space_t = typename KT::ExeSpace;
 
+  EKAT_REQUIRE_MSG(params.isParameter("gw_frontal_fgfc"),
+                    "Error! Missing required parameter 'gw_frontal_fgfc' for frontal GW scheme.\n");
+
   s_front_init.taubgnd        = params.get<Real>("gw_frontal_taubgnd",s_front_init.taubgnd);
   s_front_init.frontgfc       = params.get<Real>("gw_frontal_fgfc",s_front_init.frontgfc);
   s_front_init.gw_frontal_eff = params.get<Real>("gw_frontal_eff",s_front_init.gw_frontal_eff);
