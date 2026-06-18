@@ -51,7 +51,6 @@ void GWDrag::create_requests() {
   add_field<Required>("p_int",                scalar3d_int, Pa,     grid_name, pack_size);
   add_field<Required>("pseudo_density",       scalar3d_mid, Pa,     grid_name, pack_size);
   add_field<Required>("phis",                 scalar2d    , m2/s2,  grid_name);
-  add_field<Required>("omega",                scalar3d_mid, Pa/s,   grid_name, pack_size);
   add_field<Required>("landfrac",             scalar2d    , nondim, grid_name);
   add_field<Required>("sgh",                  scalar2d    , nondim, grid_name);
 
@@ -124,7 +123,6 @@ void GWDrag::run_impl (const double dt) {
   const auto& p_mid       = get_field_in("p_mid")         .get_view<const Real**>();
   const auto& p_int       = get_field_in("p_int")         .get_view<const Real**>();
   const auto& p_del       = get_field_in("pseudo_density").get_view<const Real**>();
-  const auto& omega       = get_field_in("omega")         .get_view<const Real**>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
   // get fields updated by GWD
