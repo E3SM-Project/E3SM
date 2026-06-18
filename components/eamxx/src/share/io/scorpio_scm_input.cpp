@@ -1,5 +1,5 @@
 #include "share/io/scorpio_scm_input.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/grid/point_grid.hpp"
@@ -107,12 +107,8 @@ void SCMInput::create_closest_col_info (double target_lat, double target_lon)
   auto lat = m_io_grid->create_geometry_data("lat",m_io_grid->get_2d_scalar_layout(),ekat::units::none);
   auto lon = m_io_grid->create_geometry_data("lon",m_io_grid->get_2d_scalar_layout(),ekat::units::none);
 
-  std::vector<Field> latlon = {lat,lon};
-
   // Read from file
-  AtmosphereInput file_reader(m_filename, m_io_grid, latlon);
-  file_reader.read_variables();
-  file_reader.finalize();
+  read_fields(m_filename, {lat,lon}, m_io_grid->get_partitioned_dim_gids(),m_io_grid->get_comm());
 
   // Find column index of closest lat/lon to target_lat/lon params
   auto lat_d = lat.get_view<Real*>();
