@@ -37,7 +37,7 @@ class HommeDynamics : public AtmosphereProcess
   using uview_1d = ekat::Unmanaged<view_1d<ST>>;
   template<typename ST>
   using uview_2d = ekat::Unmanaged<view_2d<ST>>;
-  using fixed_view_2d_phys = Kokkos::View<Real*[Homme::NUM_PHYSICAL_LEV], typename KT::view_2d<Real>::array_layout,
+  using fixed_view_2d_phys = Kokkos::View<Real*[HOMMEXX_NUM_PHYSICAL_LEV], KT::view_2d<Real>::array_layout,
                                            DefaultDevice, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
 public:
