@@ -307,6 +307,15 @@ Fields to add to history tape series  3.
 Default: ' '
 </entry>
 
+<entry id="rtmhist_empty_htapes"
+       type="logical"
+       category="history"
+       group="mosart_inparm"
+       valid_values="" >
+If TRUE, no history fields are output by default on history tapes.
+Default: .false.
+</entry>
+
 <entry id="rtmhist_mfilt" 
        type="integer(6)" 
        category="history"
