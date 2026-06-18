@@ -715,6 +715,7 @@ contains
     integer, intent(inout) :: xcount
     integer, intent(in) :: drv_grp
 
+    character(len=*), parameter :: subname = "(comp_exstride_init) "
     integer :: exlist(3), exgrp, ierr
 
     xcount = xcount + 2*num_inst_comp + 2
@@ -723,9 +724,11 @@ contains
     exlist(2) = comp_rootpe + (comp_ntasks - 1) * comp_pestride
     exlist(3) = comp_exstride
     call mpi_bcast(exlist, 3, MPI_INTEGER, 0, driver_comm, ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_bcast exlist')
 
     if (exlist(3) > 0) then
        call mpi_group_range_incl(drv_grp, 1, exlist, exgrp, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl excl_group')
        seq_comms(xcount)%excl_group = exgrp
     endif
 
