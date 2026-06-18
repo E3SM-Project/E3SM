@@ -78,7 +78,7 @@ struct ComposeTransportImpl {
   struct VelocityRecord;
 
   struct Data {
-    int nelemd, qsize, limiter_option, cdr_check, hv_q, hv_subcycle_q;
+    int nelemd, qsize, limiter_option, cdr_check, hv_q, hv_subcycle_q, hv_subcycle_q_sgs;
     int geometry_type; // 0: sphere, 1: plane
     int trajectory_nsubstep; // 0: original alg, >= 1: enhanced
     int trajectory_nvelocity;
@@ -107,7 +107,7 @@ struct ComposeTransportImpl {
 
     Data ()
       : nelemd(-1), qsize(-1), limiter_option(9), cdr_check(0), hv_q(0),
-        hv_subcycle_q(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
+        hv_subcycle_q(0), hv_subcycle_q_sgs(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
         independent_time_steps(false), do_3d_turbulence(false)
     {}
   };

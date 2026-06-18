@@ -9,7 +9,8 @@ interface
   ! Copies simulation parameters to C++ structures
   subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
                                        qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
-                                       hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,     &
+                                       hypervis_order, hypervis_subcycle, hypervis_subcycle_sgs,     &
+                                       hypervis_subcycle_tom,                                         &
                                        hypervis_scaling,                                             &
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, use_moisture, &
                                        disable_diagnostics, use_cpstar, transport_alg,               &
@@ -27,7 +28,7 @@ interface
     integer(kind=c_int),  intent(in) :: state_frequency, qsize, internal_diagnostics_level
     real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
                                         scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
-    integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
+    integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_sgs, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     integer(kind=c_int),  intent(in) :: prescribed_wind, use_moisture, disable_diagnostics, use_cpstar
     integer(kind=c_int),  intent(in) :: theta_hydrostatic_mode, pgrad_correction, do_3d_turbulence

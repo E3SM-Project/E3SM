@@ -12,7 +12,7 @@
 namespace Homme {
 
 void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const Real dt_q) {
-  const auto dt = dt_q / m_data.hv_subcycle_q;
+  const auto dt = dt_q / m_data.hv_subcycle_q_sgs;
   const auto hv_q = m_data.hv_q;
   const auto Qtens = m_tracers.qtens_biharmonic;
   const auto Q = m_tracers.Q;
@@ -20,7 +20,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
   const auto spheremp = m_geometry.m_spheremp;
   const auto tu_ne_hv_q = m_tu_ne_hv_q;
   const auto sphere_ops = m_sphere_ops;
-  for (int it = 0; it < m_data.hv_subcycle_q; ++it) {
+  for (int it = 0; it < m_data.hv_subcycle_q_sgs; ++it) {
     { // Qtens = Q
       const auto f = KOKKOS_LAMBDA (const int idx) {
         int ie, q, i, j, lev;

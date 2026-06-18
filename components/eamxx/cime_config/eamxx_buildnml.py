@@ -219,6 +219,19 @@ def perform_consistency_checks(case, xml):
                     " Please, ensure restart happens on a step when rad is ON\n"
                     " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
 
+    ctl_nl = find_node(xml, "ctl_nl")
+    if ctl_nl is not None:
+        hypervis_subcycle = find_node(ctl_nl, "hypervis_subcycle")
+        hypervis_subcycle_sgs = find_node(ctl_nl, "hypervis_subcycle_sgs")
+        if hypervis_subcycle is not None and hypervis_subcycle_sgs is not None:
+            if int(hypervis_subcycle_sgs.text) == -1:
+                hypervis_subcycle_sgs.text = hypervis_subcycle.text
+        hypervis_subcycle_q = find_node(ctl_nl, "hypervis_subcycle_q")
+        hypervis_subcycle_q_sgs = find_node(ctl_nl, "hypervis_subcycle_q_sgs")
+        if hypervis_subcycle_q is not None and hypervis_subcycle_q_sgs is not None:
+            if int(hypervis_subcycle_q_sgs.text) < 0:
+                hypervis_subcycle_q_sgs.text = hypervis_subcycle_q.text
+
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
 ###############################################################################

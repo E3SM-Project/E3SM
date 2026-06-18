@@ -107,8 +107,10 @@ We can do that by using the `--grep` flag:
 $ ./atmquery --grep sub
     iop_options::iop_dosubsidence: false
     ctl_nl::hypervis_subcycle: 1
+    ctl_nl::hypervis_subcycle_sgs: 0
     ctl_nl::hypervis_subcycle_tom: 1
     ctl_nl::hypervis_subcycle_q: 6
+    ctl_nl::hypervis_subcycle_q_sgs: 6
     atmosphere_processes::number_of_subcycles: 1
     sc_import::number_of_subcycles: 1
     homme::number_of_subcycles: 1

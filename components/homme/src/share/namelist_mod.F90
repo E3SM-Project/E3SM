@@ -79,8 +79,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
     hypervis_order,       &
     hypervis_subcycle,    &
+    hypervis_subcycle_sgs,&
     hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
+    hypervis_subcycle_q_sgs, &
     smooth_phis_numcycle, &
     smooth_phis_p2filt, &
     smooth_phis_nudt,     &
@@ -311,8 +313,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       dcmip16_pbl_type,&
       hypervis_order,    &
       hypervis_subcycle, &
+      hypervis_subcycle_sgs, &
       hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
+      hypervis_subcycle_q_sgs, &
       hypervis_scaling, &
       smooth_phis_numcycle, &
       smooth_phis_p2filt, &
@@ -814,8 +818,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(hypervis_subcycle_sgs,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(hypervis_subcycle_q_sgs,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_p2filt,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -959,6 +965,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           call abortmp('hypervis_subcycle auto determine only supported for nv==4 and topology==cube')
        endif
     endif
+    if (hypervis_subcycle_sgs == -1) hypervis_subcycle_sgs = hypervis_subcycle
+    if (hypervis_subcycle_q_sgs < 0) hypervis_subcycle_q_sgs = hypervis_subcycle_q
 #endif
     ! set defautl for dynamics remap
     if (vert_remap_u_alg == -2) vert_remap_u_alg = vert_remap_q_alg
@@ -1224,8 +1232,10 @@ end if
        endif
 
        write(iulog,*)"hypervis_subcycle     = ",hypervis_subcycle
+       write(iulog,*)"hypervis_subcycle_sgs = ",hypervis_subcycle_sgs
        write(iulog,*)"hypervis_subcycle_tom = ",hypervis_subcycle_tom
        write(iulog,*)"hypervis_subcycle_q   = ",hypervis_subcycle_q
+       write(iulog,*)"hypervis_subcycle_q_sgs = ",hypervis_subcycle_q_sgs
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q
