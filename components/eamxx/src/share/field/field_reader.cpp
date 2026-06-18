@@ -160,6 +160,8 @@ void FieldReader::setup_internals ()
 
   // 2. Check fields are in the file, with correct dim names
   bool latlon_decomp = false;
+  auto dim_decomp_ncname = m_tag_rename.count(m_dim_decomp_name)>0 ?
+                           m_tag_rename.at(m_dim_decomp_name) : m_dim_decomp_name;
   if (m_reader_state & (NEW_FIELDS | NEW_FILE)) {
     for (const auto & f : m_fields) {
       // Check that the variable is in the file.
@@ -173,6 +175,13 @@ void FieldReader::setup_internals ()
 
       auto f_dims = fl.names();
       auto f_extents = fl.dims();
+      for (int i=0; i<fl.rank(); ++i) {
+        if (f_dims[i]=="dim")
+          f_dims[i] += std::to_string(f_extents[i]);
+        if (m_tag_rename.count(f_dims[i]))
+          f_dims[i] = m_tag_rename.at(f_dims[i]);
+      }
+
       auto var_dims = var.dim_names();
 
       if (fl.has_tag(COL) and latlon_in_file) {
@@ -193,7 +202,7 @@ void FieldReader::setup_internals ()
           " - file var dim names: " + ekat::join(var.dim_names(),",") + "\n");
 
       for (auto [f_dim,var_dim,f_ext] : ekat::zip(f_dims,var_dims,f_extents)) {
-        if (f_dim!=m_dim_decomp_name) {
+        if (f_dim!=dim_decomp_ncname) {
           const int file_len  = scorpio::get_dimlen(m_filename,f_dim);
           EKAT_REQUIRE_MSG (f_ext==file_len,
               "Error! Dimension mismatch for input file variable.\n"
@@ -214,7 +223,7 @@ void FieldReader::setup_internals ()
       if (latlon_decomp) {
         scorpio::set_dims_decomp(m_filename,{name_lat,name_lon},m_dim_decomp_offsets);
       } else {
-        scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, m_dim_decomp_offsets);
+        scorpio::set_dim_decomp(m_filename, dim_decomp_ncname, m_dim_decomp_offsets);
       }
     } else {
       std::vector<scorpio::offset_t> offsets(m_dim_decomp_offsets.begin(),
@@ -222,7 +231,7 @@ void FieldReader::setup_internals ()
       if (latlon_decomp) {
         scorpio::set_dims_decomp(m_filename,{name_lat,name_lon},offsets);
       } else {
-        scorpio::set_dim_decomp(m_filename, m_dim_decomp_name, offsets);
+        scorpio::set_dim_decomp(m_filename, dim_decomp_ncname, offsets);
       }
     }
   }

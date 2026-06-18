@@ -577,6 +577,8 @@ void MAMMicrophysics::set_exo_coldens_reader()
 // set DataInterpolation object for elevated emissions reader.
 void MAMMicrophysics::set_elevated_emissions_reader()
 {
+  using namespace ShortFieldTagsNames;
+
   const auto z_iface = get_field_out("z_mam4_int");
   const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
@@ -591,8 +593,8 @@ void MAMMicrophysics::set_elevated_emissions_reader()
       vertical_fields.push_back(get_field_out(field_name+"_"+var_name).alias(field_name));
     }
     std::shared_ptr<DataInterpolation> di_vertical = std::make_shared<DataInterpolation>(grid_,vertical_fields);
-    di_vertical->set_input_files_dimname(ShortFieldTagsNames::LEV,"altitude");
-    di_vertical->set_input_files_dimname(ShortFieldTagsNames::ILEV,"altitude_int");
+    di_vertical->set_input_files_dimname(e2str(LEV),"altitude");
+    di_vertical->set_input_files_dimname(e2str(ILEV),"altitude_int");
     di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_vertical);
     di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
     di_vertical->set_logger(m_atm_logger);

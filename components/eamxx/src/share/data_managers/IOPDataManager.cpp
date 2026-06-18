@@ -2,6 +2,7 @@
 #include "share/remap/iop_remapper.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/data_managers/IOPDataManager.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_pack.hpp>
@@ -11,59 +12,6 @@
 #include <numeric>
 
 namespace scream {
-
-namespace {
-
-void read_fields (const std::string& filename,
-                  const std::shared_ptr<const AbstractGrid>& grid,
-                  std::vector<Field>& fields)
-{
-  using gid_type = AbstractGrid::gid_type;
-
-  scorpio::register_file(filename,scorpio::Read);
-
-  // Some input files have the "time" dimension as non-unlimited. This messes up our
-  // scorpio interface, which stores a pointer to a "time" dim to be used to read/write
-  // slices. This ptr is automatically inited to the unlimited dim in the file. If there is
-  // no unlim dim, this ptr remains uninited.
-  if (not scorpio::has_time_dim(filename) and scorpio::has_dim(filename,"time")) {
-    scorpio::mark_dim_as_time(filename,"time");
-  }
-
-  auto min_gid = grid->get_global_min_partitioned_dim_gid();
-  auto gids_h = grid->get_dofs_gids().get_view<const gid_type*,Host>();
-  std::vector<scorpio::offset_t> offsets(gids_h.size());
-  for (size_t i=0; i<gids_h.size(); ++i) {
-    offsets[i] = gids_h[i]-min_gid;
-  }
-  const auto decomp_tag  = grid->get_partitioned_dim_tag();
-  std::string decomp_dim = grid->has_special_tag_name(decomp_tag)
-                         ? grid->get_special_tag_name(decomp_tag)
-                         : e2str(decomp_tag);
-
-  scorpio::set_dim_decomp(filename,decomp_dim,offsets);
-  for (auto& f : fields) {
-    EKAT_REQUIRE_MSG (f.get_header().get_parent()==nullptr,
-        "Error! Fields to be read from file in IOPDataManager should not be subfields.\n"
-        " - field name: " + f.name() + "\n"
-        " - parent field name: " + f.get_header().get_parent()->get_identifier().name() + "\n");
-
-    if (f.get_header().get_alloc_properties().get_padding()==0 and
-        f.get_header().get_alloc_properties().contiguous()) {
-      scorpio::read_var(filename,f.name(),f.get_internal_view_data<Real,Host>());
-      f.sync_to_dev();
-    } else {
-      // Create non-padded, contiguous clone
-      auto f_no_padding = f.clone();
-      scorpio::read_var(filename,f.name(),f_no_padding.get_internal_view_data<Real,Host>());
-      f_no_padding.sync_to_dev();
-      f.deep_copy(f_no_padding);
-    }
-  }
-  scorpio::release_file(filename);
-}
-
-} // anonymous namespace
 
 IOPDataManager::
 IOPDataManager(const ekat::Comm& comm,
@@ -370,7 +318,7 @@ setup_io_info(const std::string& file_name,
       grid->create_geometry_data("lat",grid->get_2d_scalar_layout()),
       grid->create_geometry_data("lon",grid->get_2d_scalar_layout())
     };
-    read_fields(file_name,grid,latlon);
+    read_fields(file_name,latlon,grid->get_partitioned_dim_gids(),grid->get_comm());
 
     m_io_grids[grid_name] = grid;
   }
@@ -389,11 +337,13 @@ read_fields_from_file_for_iop (const std::string& file_name,
       "Error! Attempting to read IOP initial conditions on" +
       grid->name() + " grid, but m_io_grid entry has not been created.\n");
 
+  std::map<std::string,std::string> tag_rename;
   if (grid->name()=="physics_gll" and scorpio::has_dim(file_name,"ncol_d")) {
     // If we are on GLL grid, and nc file contains "ncol_d" dimension, we need to reset COL dim tag
     auto grid = io_grid->clone(io_grid->name(),true);
     grid->reset_field_tag_name(FieldTag::Column,"ncol_d");
     io_grid = grid;
+    tag_rename["ncol"] = "ncol_d";
   }
 
   // Create IOP remapper
@@ -411,7 +361,11 @@ read_fields_from_file_for_iop (const std::string& file_name,
   for (int i=0; i<remapper->get_num_fields(); ++i) {
     io_fields.push_back(remapper->get_src_field(i));
   }
-  read_fields(file_name,io_grid,io_fields);
+  FieldReader reader;
+  reader.set_file_specs(file_name,tag_rename);
+  reader.set_fields(io_fields);
+  reader.set_dim_decomp(io_grid->get_partitioned_dim_gids(),io_grid->get_comm());
+  reader.read();
 
   // Remap
   remapper->remap_fwd();
