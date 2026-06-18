@@ -9,6 +9,7 @@ on:
       # first, yes to these
       - '.github/workflows/eamxx-v1-testing.yml'
       - 'cime_config/machine/config_machines.xml'
+      - 'cime_config/machine/cmake_macros/ghci-snl*.cmake'
       - 'components/eamxx/**'
       - 'components/homme/**'
       - 'components/eam/src/physics/rrtmgp/**'
