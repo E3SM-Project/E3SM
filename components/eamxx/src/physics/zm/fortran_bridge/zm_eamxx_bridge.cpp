@@ -45,7 +45,16 @@ void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real *output_prec_flux,   // 32
                             Real *output_snow_flux,   // 33
                             Real *output_mass_flux,   // 34
-                            Real *output_dlf          // 35
+                            Real *output_dlf,         // 35
+                            Real *mcsp_freq,          // 36
+                            Real *mcsp_shear,         // 37
+                            Real *zm_depth,           // 38
+                            Real *mcsp_ds_out,        // 39
+                            Real *mcsp_dq_out,        // 40
+                            Real *mcsp_du_out,        // 41
+                            Real *mcsp_dv_out,        // 42
+                            Real *evap_ds_out,        // 43
+                            Real *evap_dq_out         // 44
                             );
 } // extern "C" : end _c decls
 
@@ -102,7 +111,16 @@ void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,
                          zm_output.h_prec_flux  .data(),  // 32
                          zm_output.h_snow_flux  .data(),  // 33
                          zm_output.h_mass_flux  .data(),  // 34
-                         zm_output.h_dlf        .data()   // 35
+                         zm_output.h_dlf        .data(),  // 35
+                         zm_output.h_mcsp_freq  .data(),  // 36
+                         zm_output.h_mcsp_shear .data(),  // 37
+                         zm_output.h_zm_depth   .data(),  // 38
+                         zm_output.h_mcsp_ds_out.data(),  // 39
+                         zm_output.h_mcsp_dq_out.data(),  // 40
+                         zm_output.h_mcsp_du_out.data(),  // 41
+                         zm_output.h_mcsp_dv_out.data(),  // 42
+                         zm_output.h_evap_ds_out.data(),  // 43
+                         zm_output.h_evap_dq_out.data()   // 44
                         );
 
   zm_output.transpose<ekat::TransposeDirection::f2c>(ncol,pver);

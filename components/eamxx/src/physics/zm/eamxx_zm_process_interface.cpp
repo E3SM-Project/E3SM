@@ -108,6 +108,9 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("mcsp_shear",           scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_depth",             scalar2d,     Pa,     grid_name);
 
+  add_field<Computed>("evap_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
+  add_field<Computed>("evap_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
+
 } // ZMDeepConvection::create_requests
 
 /*------------------------------------------------------------------------------------------------*/
@@ -205,6 +208,9 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_output.mcsp_shear  = get_field_out("mcsp_shear") .get_view<Real*>();
   zm_output.zm_depth    = get_field_out("zm_depth")   .get_view<Real*>();
 
+  zm_output.evap_ds_out = get_field_out("evap_ds_out").get_view<Real**>();
+  zm_output.evap_dq_out = get_field_out("evap_dq_out").get_view<Real**>();
+
   //----------------------------------------------------------------------------
   // initialize output buffer variables
   zm_output.init_all(m_ncol, nlev_mid);
@@ -262,6 +268,9 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_mcsp_freq        = zm_output.mcsp_freq;
   const auto loc_zm_output_mcsp_shear       = zm_output.mcsp_shear;
   const auto loc_zm_output_zm_depth         = zm_output.zm_depth;
+
+  const auto loc_zm_output_evap_ds_out      = zm_output.evap_ds_out;
+  const auto loc_zm_output_evap_dq_out      = zm_output.evap_dq_out;
 
   const auto loc_zm_output_mflx_up          = zm_output.mflx_up;
   const auto loc_zm_output_entr_up          = zm_output.entr_up;
@@ -334,72 +343,79 @@ void ZMDeepConvection::run_impl (const double dt)
     //--------------------------------------------------------------------------
     // MCSP modifies tendencies from zm_conv_main() prior to updating the state
 
-    // initialize intermediate output tendencies for MCSP
-    zm_output.init_tmp(m_ncol, nlev_mid);
+    if (zm_opts.mcsp_enabled) {
 
-    // perform the MCSP calculations
-    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-      const Int i = team.league_rank();
-      const auto phis_i         = loc_zm_input_phis(i);
-      const auto jctop_i        = loc_zm_output_jctop(i);
-      const auto z_mid_i        = ekat::subview(loc_zm_input_z_mid, i);
-      const auto p_mid_i        = ekat::subview(loc_zm_input_p_mid, i);
-      const auto p_int_i        = ekat::subview(loc_zm_input_p_int, i);
-      const auto p_del_i        = ekat::subview(loc_zm_input_p_del, i);
-      const auto T_mid_i        = ekat::subview(loc_zm_input_T_mid, i);
-      const auto qv_i           = ekat::subview(loc_zm_input_qv, i);
-      const auto uwind_i        = ekat::subview(loc_zm_input_uwind, i);
-      const auto vwind_i        = ekat::subview(loc_zm_input_vwind, i);
-      const auto tmp_s_mid_i    = ekat::subview(loc_zm_input_tmp_s_mid, i);
-      const auto tmp_T_mid_i    = ekat::subview(loc_zm_input_tmp_T_mid, i);
-      const auto tmp_qv_i       = ekat::subview(loc_zm_input_tmp_qv, i);
-      const auto tmp_winds_i    = ekat::subview(loc_zm_input_tmp_winds, i); // (nwind, nlev)
-      const auto tmp_uwind_i    = ekat::subview(tmp_winds_i, 0);            // (nlev)
-      const auto tmp_vwind_i    = ekat::subview(tmp_winds_i, 1);            // (nlev)
-      const auto tend_out_s_i   = ekat::subview(loc_zm_output_tend_out_s, i);
-      const auto tend_out_qv_i  = ekat::subview(loc_zm_output_tend_out_qv, i);
-      const auto tend_out_u_i   = ekat::subview(loc_zm_output_tend_out_u, i);
-      const auto tend_out_v_i   = ekat::subview(loc_zm_output_tend_out_v, i);
-      const auto tend_tmp_s_i   = ekat::subview(loc_zm_output_tend_tmp_s, i);
-      const auto tend_tmp_qv_i  = ekat::subview(loc_zm_output_tend_tmp_qv, i);
-      const auto tend_tmp_winds_i = ekat::subview(loc_zm_output_tend_tmp_winds, i); // (nwind, nlev)
-      const auto tend_tmp_u_i   = ekat::subview(tend_tmp_winds_i, 0);               // (nlev)
-      const auto tend_tmp_v_i   = ekat::subview(tend_tmp_winds_i, 1);               // (nlev)
-      const auto mcsp_ds_out_i  = ekat::subview(loc_zm_output_mcsp_ds_out, i);
-      const auto mcsp_dq_out_i  = ekat::subview(loc_zm_output_mcsp_dq_out, i);
-      const auto mcsp_du_out_i  = ekat::subview(loc_zm_output_mcsp_du_out, i);
-      const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
-      auto& mcsp_freq_i         = loc_zm_output_mcsp_freq(i);
-      auto& mcsp_shear_i        = loc_zm_output_mcsp_shear(i);
-      auto& zm_depth_i          = loc_zm_output_zm_depth(i);
+      // initialize intermediate output tendencies for MCSP
+      zm_output.init_tmp(m_ncol, nlev_mid);
 
-      // calculate DSE for MCSP
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
-        tmp_s_mid_i(k) = T_mid_i(k)*PC::CP.value + z_mid_i(k)*PC::gravit.value + phis_i;
+      // perform the MCSP calculations
+      Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+        const Int i = team.league_rank();
+        const auto phis_i         = loc_zm_input_phis(i);
+        const auto jctop_i        = loc_zm_output_jctop(i);
+        const auto z_mid_i        = ekat::subview(loc_zm_input_z_mid, i);
+        const auto p_mid_i        = ekat::subview(loc_zm_input_p_mid, i);
+        const auto p_int_i        = ekat::subview(loc_zm_input_p_int, i);
+        const auto p_del_i        = ekat::subview(loc_zm_input_p_del, i);
+        const auto T_mid_i        = ekat::subview(loc_zm_input_T_mid, i);
+        const auto qv_i           = ekat::subview(loc_zm_input_qv, i);
+        const auto uwind_i        = ekat::subview(loc_zm_input_uwind, i);
+        const auto vwind_i        = ekat::subview(loc_zm_input_vwind, i);
+        const auto tmp_s_mid_i    = ekat::subview(loc_zm_input_tmp_s_mid, i);
+        const auto tend_out_s_i   = ekat::subview(loc_zm_output_tend_out_s, i);
+        const auto tend_out_qv_i  = ekat::subview(loc_zm_output_tend_out_qv, i);
+        const auto tend_out_u_i   = ekat::subview(loc_zm_output_tend_out_u, i);
+        const auto tend_out_v_i   = ekat::subview(loc_zm_output_tend_out_v, i);
+        const auto tend_tmp_s_i   = ekat::subview(loc_zm_output_tend_tmp_s, i);
+        const auto tend_tmp_qv_i  = ekat::subview(loc_zm_output_tend_tmp_qv, i);
+        const auto tend_tmp_winds_i = ekat::subview(loc_zm_output_tend_tmp_winds, i); // (nwind, nlev)
+        const auto tend_tmp_u_i   = ekat::subview(tend_tmp_winds_i, 0);               // (nlev)
+        const auto tend_tmp_v_i   = ekat::subview(tend_tmp_winds_i, 1);               // (nlev)
+        const auto mcsp_ds_out_i  = ekat::subview(loc_zm_output_mcsp_ds_out, i);
+        const auto mcsp_dq_out_i  = ekat::subview(loc_zm_output_mcsp_dq_out, i);
+        const auto mcsp_du_out_i  = ekat::subview(loc_zm_output_mcsp_du_out, i);
+        const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
+        auto& mcsp_freq_i         = loc_zm_output_mcsp_freq(i);
+        auto& mcsp_shear_i        = loc_zm_output_mcsp_shear(i);
+        auto& zm_depth_i          = loc_zm_output_zm_depth(i);
+
+        // calculate DSE for MCSP
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
+          tmp_s_mid_i(k) = T_mid_i(k)*PC::CP.value + z_mid_i(k)*PC::gravit.value + phis_i;
+        });
+        team.team_barrier();
+
+        // call the MCSP scheme
+        ZMF::zm_conv_mcsp_tend( team, wsm.get_workspace(team), zm_opts, nlev_mid, nlev_int, dt,
+          jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
+          tend_out_s_i, tend_out_qv_i,
+          tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
+          mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
+          mcsp_freq_i, mcsp_shear_i, zm_depth_i );
+
+        // add MCSP tendencies to output tendencies
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
+          tend_out_s_i(k)  += tend_tmp_s_i(k);
+          tend_out_qv_i(k) += tend_tmp_qv_i(k);
+          tend_out_u_i(k)  += tend_tmp_u_i(k);
+          tend_out_v_i(k)  += tend_tmp_v_i(k);
+        });
       });
-      team.team_barrier();
 
-      // call the MCSP scheme
-      ZMF::zm_conv_mcsp_tend( team, wsm.get_workspace(team), zm_opts, nlev_mid, nlev_int, dt,
-        jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
-        tend_out_s_i, tend_out_qv_i,
-        tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
-        mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
-        mcsp_freq_i, mcsp_shear_i, zm_depth_i );
+    }
 
-      // add MCSP tendencies to output tendencies
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
-        tend_out_s_i(k)  += tend_tmp_s_i(k);
-        tend_out_qv_i(k) += tend_tmp_qv_i(k);
-        tend_out_u_i(k)  += tend_tmp_u_i(k);
-        tend_out_v_i(k)  += tend_tmp_v_i(k);
-        // calculate temporary T/qv for zm_conv_evap()
-        tmp_T_mid_i(k) = T_mid_i(k) + tend_out_s_i(k)/PC::CP.value * dt;
-        tmp_qv_i(k)    = qv_i(k)    + tend_out_qv_i(k) * dt;
-        // calculate temporary winds for zm_transport_momentum()
-        tmp_uwind_i(k) = uwind_i(k) + tend_out_u_i(k) * dt;
-        tmp_vwind_i(k) = vwind_i(k) + tend_out_v_i(k) * dt;
-      });
+    //--------------------------------------------------------------------------
+    // apply tendencies from zm_conv_main() (& MCSP) to temporary state variables for zm_conv_evap()
+
+    Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+      const int i = idx/nlev_mid;
+      const int k = idx%nlev_mid;
+      // calculate temporary T/qv for zm_conv_evap()
+      loc_zm_input_tmp_T_mid(i,k) = loc_zm_input_T_mid(i,k) + loc_zm_output_tend_out_s(i,k)/PC::CP.value * dt;
+      loc_zm_input_tmp_qv(i,k)    = loc_zm_input_qv(i,k)    + loc_zm_output_tend_out_qv(i,k) * dt;
+      // calculate temporary winds for zm_transport_momentum()
+      loc_zm_input_tmp_winds(i,0,k) = loc_zm_input_uwind(i,k) + loc_zm_output_tend_out_u(i,k) * dt;
+      loc_zm_input_tmp_winds(i,1,k) = loc_zm_input_vwind(i,k) + loc_zm_output_tend_out_v(i,k) * dt;
     });
 
     //--------------------------------------------------------------------------
@@ -433,19 +449,22 @@ void ZMDeepConvection::run_impl (const double dt)
       const auto ntsnprd_i          = ekat::subview(loc_zm_output_ntsnprd, i);
       const auto flxprec_i          = ekat::subview(loc_zm_output_flxprec, i);
       const auto flxsnow_i          = ekat::subview(loc_zm_output_flxsnow, i);
-      auto& prec_i                  = loc_zm_output_prec(i);
-      auto& snow_i                  = loc_zm_output_snow(i);
+      const auto evap_ds_out_i      = ekat::subview(loc_zm_output_evap_ds_out, i);
+      const auto evap_dq_out_i      = ekat::subview(loc_zm_output_evap_dq_out, i);
 
       // call the ZM evap scheme
       ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
-       p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, rain_prod_i, cldfrac_i,
-       tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
-       prec_i, snow_i, ntprprd_i, ntsnprd_i, flxprec_i, flxsnow_i );
+        p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, rain_prod_i, cldfrac_i,
+        tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
+        loc_zm_output_prec(i), loc_zm_output_snow(i),
+        ntprprd_i, ntsnprd_i, flxprec_i, flxsnow_i );
 
       // add zm_conv_evap() tendencies to output tendencies and update temporary state variables
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
         tend_out_s_i(k)  += tend_tmp_s_i(k);
         tend_out_qv_i(k) += tend_tmp_qv_i(k);
+        evap_ds_out_i(k) = tend_tmp_s_i(k);
+        evap_dq_out_i(k) = tend_tmp_qv_i(k);
       });
 
     });
@@ -631,7 +650,7 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
-  int num_f_mid  = (11+7);
+  int num_f_mid  = (11+13);
   int num_f_int  = (2+3);
   zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
   zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
@@ -654,7 +673,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_midlv = ZMF::ZmInputState::num_2d_midlv + ZMF::ZmOutputTend::num_2d_midlv;
   constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
-  constexpr int num_f_mid  = (11+7);
+  constexpr int num_f_mid  = (11+13);
   constexpr int num_f_int  = (2+3);
 
   //----------------------------------------------------------------------------
@@ -713,6 +732,12 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.f_rain_prod,
                                                                   &zm_output.f_snow_prod,
                                                                   &zm_output.f_dlf,
+                                                                  &zm_output.f_mcsp_ds_out,
+                                                                  &zm_output.f_mcsp_dq_out,
+                                                                  &zm_output.f_mcsp_du_out,
+                                                                  &zm_output.f_mcsp_dv_out,
+                                                                  &zm_output.f_evap_ds_out,
+                                                                  &zm_output.f_evap_dq_out,
                                                                 };
   for (auto& v : ptrs_f_midlv) {
     *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);

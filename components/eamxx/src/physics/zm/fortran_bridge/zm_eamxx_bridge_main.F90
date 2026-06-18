@@ -86,7 +86,9 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
                                   output_tend_t, output_tend_q, output_tend_u, output_tend_v, &
                                   output_rain_prod, output_snow_prod, &
                                   output_prec_flux, output_snow_flux, output_mass_flux, &
-                                  output_dlf ) bind(C)
+                                  output_dlf, mcsp_freq, mcsp_shear, zm_depth, &
+                                  mcsp_ds_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
+                                  evap_ds_out, evap_dq_out ) bind(C)
   use zm_conv,                  only: zm_const, zm_param
   use zm_aero_type,             only: zm_aero_t
   use zm_microphysics_state,    only: zm_microp_st
@@ -133,6 +135,15 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_snow_flux   ! 33 output precip flux at each mid-levels   (flxsnow)
   real(kind=c_real),  dimension(ncol,pverp),intent(  out) :: output_mass_flux   ! 34 output convective mass flux--m sub c    (mcon)
   real(kind=c_real),  dimension(ncol,pver), intent(  out) :: output_dlf         ! 35 detrained convective cloud water        (dlf)
+  real(kind=c_real),  dimension(ncol),      intent(  out) :: mcsp_freq          ! 36 MCSP diagnostic output
+  real(kind=c_real),  dimension(ncol),      intent(  out) :: mcsp_shear         ! 37 MCSP diagnostic output
+  real(kind=c_real),  dimension(ncol),      intent(  out) :: zm_depth           ! 38 MCSP diagnostic output
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: mcsp_ds_out        ! 39 MCSP tendency
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: mcsp_dq_out        ! 40 MCSP tendency
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: mcsp_du_out        ! 41 MCSP tendency
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: mcsp_dv_out        ! 42 MCSP tendency
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: evap_ds_out        ! 43 zm_conv_evap tendency
+  real(kind=c_real),  dimension(ncol,pver), intent(  out) :: evap_dq_out        ! 44 zm_conv_evap tendency
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: i,k
@@ -190,15 +201,6 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   real(r8), dimension(ncol,pver,2) :: tx_pgdall
   real(r8), dimension(ncol,pver,2) :: tx_icwu
   real(r8), dimension(ncol,pver,2) :: tx_icwd
-
-  ! MCSP history output variables
-   real(r8), dimension(ncol,pver) :: mcsp_ds_out     ! MCSP tendency for DSE
-   real(r8), dimension(ncol,pver) :: mcsp_dq_out     ! MCSP tendency for qv
-   real(r8), dimension(ncol,pver) :: mcsp_du_out     ! MCSP tendency for u wind
-   real(r8), dimension(ncol,pver) :: mcsp_dv_out     ! MCSP tendency for v wind
-   real(r8), dimension(ncol)      :: mcsp_freq       ! MSCP frequency for output
-   real(r8), dimension(ncol)      :: mcsp_shear      ! shear used to check against threshold
-   real(r8), dimension(ncol)      :: zm_depth        ! pressure depth of ZM heating
 
   !-----------------------------------------------------------------------------
   ! initialize various thing
@@ -324,15 +326,10 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
     do k = 1,pver
       output_tend_s(i,k) = output_tend_s(i,k) + local_tend_s(i,k)
       output_tend_q(i,k) = output_tend_q(i,k) + local_tend_q(i,k)
+      evap_ds_out(i,k)   = local_tend_s(i,k)
+      evap_dq_out(i,k)   = local_tend_q(i,k)
     end do
   end do
-
-  ! apply tendencies from zm_conv_evap() to local copy of state variables
-  call zm_physics_update( ncol, dtime, &
-                          state_phis, local_state_zm, local_state_zi, &
-                          state_p_mid, state_p_int, state_p_del, &
-                          local_state_t, local_state_qv, &
-                          local_tend_s, local_tend_q)
 
   !-----------------------------------------------------------------------------
   ! convective momentum transport

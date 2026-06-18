@@ -19,21 +19,30 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
   // ***********************************************************************
   if (DirT == ekat::TransposeDirection::f2c) {
     // copy back to device
-    Kokkos::deep_copy(f_tend_t,   h_tend_t);
-    Kokkos::deep_copy(f_tend_qv,  h_tend_qv);
-    Kokkos::deep_copy(f_tend_u,   h_tend_u);
-    Kokkos::deep_copy(f_tend_v,   h_tend_v);
-    Kokkos::deep_copy(f_rain_prod,h_rain_prod);
-    Kokkos::deep_copy(f_snow_prod,h_snow_prod);
-    Kokkos::deep_copy(f_dlf,      h_dlf);
-    Kokkos::deep_copy(f_prec_flux,h_prec_flux);
-    Kokkos::deep_copy(f_snow_flux,h_snow_flux);
-    Kokkos::deep_copy(f_mass_flux,h_mass_flux);
-    Kokkos::deep_copy(prec,       h_prec);
-    Kokkos::deep_copy(snow,       h_snow);
-    Kokkos::deep_copy(cape,       h_cape);
-    Kokkos::deep_copy(dcape,      h_dcape);
-    Kokkos::deep_copy(activity,   h_activity);
+    Kokkos::deep_copy(f_tend_t,       h_tend_t);
+    Kokkos::deep_copy(f_tend_qv,      h_tend_qv);
+    Kokkos::deep_copy(f_tend_u,       h_tend_u);
+    Kokkos::deep_copy(f_tend_v,       h_tend_v);
+    Kokkos::deep_copy(f_rain_prod,    h_rain_prod);
+    Kokkos::deep_copy(f_snow_prod,    h_snow_prod);
+    Kokkos::deep_copy(f_dlf,          h_dlf);
+    Kokkos::deep_copy(f_prec_flux,    h_prec_flux);
+    Kokkos::deep_copy(f_snow_flux,    h_snow_flux);
+    Kokkos::deep_copy(f_mass_flux,    h_mass_flux);
+    Kokkos::deep_copy(prec,           h_prec);
+    Kokkos::deep_copy(snow,           h_snow);
+    Kokkos::deep_copy(cape,           h_cape);
+    Kokkos::deep_copy(dcape,          h_dcape);
+    Kokkos::deep_copy(activity,       h_activity);
+    Kokkos::deep_copy(mcsp_freq,      h_mcsp_freq);
+    Kokkos::deep_copy(mcsp_shear,     h_mcsp_shear);
+    Kokkos::deep_copy(zm_depth,       h_zm_depth);
+    Kokkos::deep_copy(f_mcsp_ds_out,  h_mcsp_ds_out);
+    Kokkos::deep_copy(f_mcsp_dq_out,  h_mcsp_dq_out);
+    Kokkos::deep_copy(f_mcsp_du_out,  h_mcsp_du_out);
+    Kokkos::deep_copy(f_mcsp_dv_out,  h_mcsp_dv_out);
+    Kokkos::deep_copy(f_evap_ds_out,  h_evap_ds_out);
+    Kokkos::deep_copy(f_evap_dq_out,  h_evap_dq_out);
 
     //----------------------------------------------------------------------
     // create temporaries to avoid "Implicit capture" warning
@@ -47,30 +56,48 @@ void Functions<S,D>::ZmOutputTend::transpose(int ncol, int nlev_mid)
     const auto loc_prec_flux   = prec_flux;
     const auto loc_snow_flux   = snow_flux;
     const auto loc_mass_flux   = mass_flux;
+    const auto loc_mcsp_ds_out = mcsp_ds_out;
+    const auto loc_mcsp_dq_out = mcsp_dq_out;
+    const auto loc_mcsp_du_out = mcsp_du_out;
+    const auto loc_mcsp_dv_out = mcsp_dv_out;
+    const auto loc_evap_ds_out = evap_ds_out;
+    const auto loc_evap_dq_out = evap_dq_out;
 
-    const auto loc_f_tend_t    = f_tend_t;
-    const auto loc_f_tend_qv   = f_tend_qv;
-    const auto loc_f_tend_u    = f_tend_u;
-    const auto loc_f_tend_v    = f_tend_v;
-    const auto loc_f_rain_prod = f_rain_prod;
-    const auto loc_f_snow_prod = f_snow_prod;
-    const auto loc_f_dlf       = f_dlf;
-    const auto loc_f_prec_flux = f_prec_flux;
-    const auto loc_f_snow_flux = f_snow_flux;
-    const auto loc_f_mass_flux = f_mass_flux;
+    const auto loc_f_tend_t       = f_tend_t;
+    const auto loc_f_tend_qv      = f_tend_qv;
+    const auto loc_f_tend_u       = f_tend_u;
+    const auto loc_f_tend_v       = f_tend_v;
+    const auto loc_f_rain_prod    = f_rain_prod;
+    const auto loc_f_snow_prod    = f_snow_prod;
+    const auto loc_f_dlf          = f_dlf;
+    const auto loc_f_prec_flux    = f_prec_flux;
+    const auto loc_f_snow_flux    = f_snow_flux;
+    const auto loc_f_mass_flux    = f_mass_flux;
+    const auto loc_f_mcsp_ds_out  = f_mcsp_ds_out;
+    const auto loc_f_mcsp_dq_out  = f_mcsp_dq_out;
+    const auto loc_f_mcsp_du_out  = f_mcsp_du_out;
+    const auto loc_f_mcsp_dv_out  = f_mcsp_dv_out;
+    const auto loc_f_evap_ds_out  = f_evap_ds_out;
+    const auto loc_f_evap_dq_out  = f_evap_dq_out;
 
     //----------------------------------------------------------------------
     // mid-point level variables
     Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid), KOKKOS_LAMBDA (const int i) {
       const int icol = i/nlev_mid;
       const int klev = i%nlev_mid;
-      loc_tend_out_t (icol,klev) = loc_f_tend_t   (icol,klev);
-      loc_tend_out_qv(icol,klev) = loc_f_tend_qv  (icol,klev);
-      loc_tend_out_u (icol,klev) = loc_f_tend_u   (icol,klev);
-      loc_tend_out_v (icol,klev) = loc_f_tend_v   (icol,klev);
-      loc_rain_prod  (icol,klev) = loc_f_rain_prod(icol,klev);
-      loc_snow_prod  (icol,klev) = loc_f_snow_prod(icol,klev);
-      loc_dlf        (icol,klev) = loc_f_dlf      (icol,klev);
+      loc_tend_out_t (icol,klev) = loc_f_tend_t     (icol,klev);
+      loc_tend_out_qv(icol,klev) = loc_f_tend_qv    (icol,klev);
+      loc_tend_out_u (icol,klev) = loc_f_tend_u     (icol,klev);
+      loc_tend_out_v (icol,klev) = loc_f_tend_v     (icol,klev);
+      loc_rain_prod  (icol,klev) = loc_f_rain_prod  (icol,klev);
+      loc_snow_prod  (icol,klev) = loc_f_snow_prod  (icol,klev);
+      loc_dlf        (icol,klev) = loc_f_dlf        (icol,klev);
+      loc_mcsp_ds_out(icol,klev) = loc_f_mcsp_ds_out(icol,klev);
+      loc_mcsp_dq_out(icol,klev) = loc_f_mcsp_dq_out(icol,klev);
+      loc_mcsp_du_out(icol,klev) = loc_f_mcsp_du_out(icol,klev);
+      loc_mcsp_dv_out(icol,klev) = loc_f_mcsp_dv_out(icol,klev);
+      loc_evap_ds_out(icol,klev) = loc_f_evap_ds_out(icol,klev);
+      loc_evap_dq_out(icol,klev) = loc_f_evap_dq_out(icol,klev);
     });
 
     // interface level variables
@@ -114,6 +141,12 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
   auto loc_prec_flux   = prec_flux;
   auto loc_snow_flux   = snow_flux;
   auto loc_mass_flux   = mass_flux;
+  auto loc_mcsp_ds_out = mcsp_ds_out;
+  auto loc_mcsp_dq_out = mcsp_dq_out;
+  auto loc_mcsp_du_out = mcsp_du_out;
+  auto loc_mcsp_dv_out = mcsp_dv_out;
+  auto loc_evap_ds_out = evap_ds_out;
+  auto loc_evap_dq_out = evap_dq_out;
 
   // 1D scalar variables
   Kokkos::parallel_for("zm_output_init_s", KT::RangePolicy(0, ncol), KOKKOS_LAMBDA (const int i) {
@@ -139,6 +172,12 @@ void Functions<S,D>::ZmOutputTend::init_all(int ncol, int nlev_mid)
     loc_rain_prod    (icol,klev) = init_fill_value;
     loc_snow_prod    (icol,klev) = init_fill_value;
     loc_dlf          (icol,klev) = init_fill_value;
+    loc_mcsp_ds_out  (icol,klev) = init_fill_value;
+    loc_mcsp_dq_out  (icol,klev) = init_fill_value;
+    loc_mcsp_du_out  (icol,klev) = init_fill_value;
+    loc_mcsp_dv_out  (icol,klev) = init_fill_value;
+    loc_evap_ds_out  (icol,klev) = init_fill_value;
+    loc_evap_dq_out  (icol,klev) = init_fill_value;
   });
 
   // interface level variables

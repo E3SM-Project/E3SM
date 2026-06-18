@@ -463,6 +463,9 @@ struct Functions {
     view_1d<Real>    mcsp_freq;      // MSCP frequency for output
     view_1d<Real>    mcsp_shear;     // MCSP shear used to check against threshold
     view_1d<Real>    zm_depth;       // MCSP pressure depth of ZM heating
+    // ZM evap diagnostic outputs
+    view_2d<Real>    evap_ds_out;    // zm_conv_evap output tendency
+    view_2d<Real>    evap_dq_out;    // zm_conv_evap output tendency
 
     // *************************************************************************
     // TEMPORARY
@@ -478,6 +481,12 @@ struct Functions {
     uview_2dl<Real>  f_prec_flux;
     uview_2dl<Real>  f_snow_flux;
     uview_2dl<Real>  f_mass_flux;
+    uview_2dl<Real>  f_mcsp_ds_out;
+    uview_2dl<Real>  f_mcsp_dq_out;
+    uview_2dl<Real>  f_mcsp_du_out;
+    uview_2dl<Real>  f_mcsp_dv_out;
+    uview_2dl<Real>  f_evap_ds_out;
+    uview_2dl<Real>  f_evap_dq_out;
     // *************************************************************************
     // TEMPORARY
     // *************************************************************************
@@ -498,25 +507,43 @@ struct Functions {
     view_2dh<Real>   h_prec_flux;
     view_2dh<Real>   h_snow_flux;
     view_2dh<Real>   h_mass_flux;
+    view_1dh<Scalar> h_mcsp_freq;
+    view_1dh<Scalar> h_mcsp_shear;
+    view_1dh<Scalar> h_zm_depth;
+    view_2dh<Real>   h_mcsp_ds_out;
+    view_2dh<Real>   h_mcsp_dq_out;
+    view_2dh<Real>   h_mcsp_du_out;
+    view_2dh<Real>   h_mcsp_dv_out;
+    view_2dh<Real>   h_evap_ds_out;
+    view_2dh<Real>   h_evap_dq_out;
 
     // -------------------------------------------------------------------------
     // allocate host mirror output variables (only needed for fortran bridge)
     void init_host_mirrors(int ncol, int nlev) {
-      h_activity  = view_1dh<Int>   ("zm_output.h_activity",  ncol);
-      h_prec      = view_1dh<Scalar>("zm_output.h_prec",      ncol);
-      h_snow      = view_1dh<Scalar>("zm_output.h_snow",      ncol);
-      h_cape      = view_1dh<Scalar>("zm_output.h_cape",      ncol);
-      h_dcape     = view_1dh<Scalar>("zm_output.h_dcape",     ncol);
-      h_tend_t    = view_2dh<Real>  ("zm_output.h_tend_t",    ncol, nlev);
-      h_tend_qv   = view_2dh<Real>  ("zm_output.h_tend_qv",   ncol, nlev);
-      h_tend_u    = view_2dh<Real>  ("zm_output.h_tend_u",    ncol, nlev);
-      h_tend_v    = view_2dh<Real>  ("zm_output.h_tend_v",    ncol, nlev);
-      h_rain_prod = view_2dh<Real>  ("zm_output.h_rain_prod", ncol, nlev);
-      h_snow_prod = view_2dh<Real>  ("zm_output.h_snow_prod", ncol, nlev);
-      h_dlf       = view_2dh<Real>  ("zm_output.h_dlf",       ncol, nlev);
-      h_prec_flux = view_2dh<Real>  ("zm_output.h_prec_flux", ncol, nlev+1);
-      h_snow_flux = view_2dh<Real>  ("zm_output.h_snow_flux", ncol, nlev+1);
-      h_mass_flux = view_2dh<Real>  ("zm_output.h_mass_flux", ncol, nlev+1);
+      h_activity    = view_1dh<Int>   ("zm_output.h_activity",    ncol);
+      h_prec        = view_1dh<Scalar>("zm_output.h_prec",        ncol);
+      h_snow        = view_1dh<Scalar>("zm_output.h_snow",        ncol);
+      h_cape        = view_1dh<Scalar>("zm_output.h_cape",        ncol);
+      h_dcape       = view_1dh<Scalar>("zm_output.h_dcape",       ncol);
+      h_tend_t      = view_2dh<Real>  ("zm_output.h_tend_t",      ncol, nlev);
+      h_tend_qv     = view_2dh<Real>  ("zm_output.h_tend_qv",     ncol, nlev);
+      h_tend_u      = view_2dh<Real>  ("zm_output.h_tend_u",      ncol, nlev);
+      h_tend_v      = view_2dh<Real>  ("zm_output.h_tend_v",      ncol, nlev);
+      h_rain_prod   = view_2dh<Real>  ("zm_output.h_rain_prod",   ncol, nlev);
+      h_snow_prod   = view_2dh<Real>  ("zm_output.h_snow_prod",   ncol, nlev);
+      h_dlf         = view_2dh<Real>  ("zm_output.h_dlf",         ncol, nlev);
+      h_prec_flux   = view_2dh<Real>  ("zm_output.h_prec_flux",   ncol, nlev+1);
+      h_snow_flux   = view_2dh<Real>  ("zm_output.h_snow_flux",   ncol, nlev+1);
+      h_mass_flux   = view_2dh<Real>  ("zm_output.h_mass_flux",   ncol, nlev+1);
+      h_mcsp_freq   = view_1dh<Scalar>("zm_output.h_mcsp_freq",   ncol);
+      h_mcsp_shear  = view_1dh<Scalar>("zm_output.h_mcsp_shear",  ncol);
+      h_zm_depth    = view_1dh<Scalar>("zm_output.h_zm_depth",    ncol);
+      h_mcsp_ds_out = view_2dh<Real>  ("zm_output.h_mcsp_ds_out", ncol, nlev);
+      h_mcsp_dq_out = view_2dh<Real>  ("zm_output.h_mcsp_dq_out", ncol, nlev);
+      h_mcsp_du_out = view_2dh<Real>  ("zm_output.h_mcsp_du_out", ncol, nlev);
+      h_mcsp_dv_out = view_2dh<Real>  ("zm_output.h_mcsp_dv_out", ncol, nlev);
+      h_evap_ds_out = view_2dh<Real>  ("zm_output.h_evap_ds_out", ncol, nlev);
+      h_evap_dq_out = view_2dh<Real>  ("zm_output.h_evap_dq_out", ncol, nlev);
     }
 
     // -------------------------------------------------------------------------
