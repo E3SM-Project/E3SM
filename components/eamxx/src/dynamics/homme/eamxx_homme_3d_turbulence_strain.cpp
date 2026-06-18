@@ -40,7 +40,6 @@ Real local_to_cart_component(
 void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 {
   using namespace Homme;
-  using ColOps = scream::ColumnOps<DefaultDevice, Real>;
 
   constexpr int NGP  = HOMMEXX_NP;
 
@@ -70,8 +69,6 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   using MemberType = typename TeamPolicy::member_type;
   const int ncols = nelem*NGP*NGP;
   const TeamPolicy policy(ncols, Kokkos::AUTO());
-  const auto w_mid_row_all = m_w_mid_row_all;
-  const auto w_mid_col_all = m_w_mid_col_all;
   const auto dsdx_Ux_all = m_dsdx_Ux_all;
   const auto dsdy_Ux_all = m_dsdy_Ux_all;
   const auto dsdx_Uy_all = m_dsdx_Uy_all;
@@ -90,12 +87,6 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     const int icol = team.league_rank();
 
     // Grab the scratch storage associated with this (ie,igp,jgp) column.
-    const auto w_mid_row = Kokkos::subview(w_mid_row_all, icol, Kokkos::ALL());
-    const auto w_mid_col = Kokkos::subview(w_mid_col_all, icol, Kokkos::ALL());
-    using Unmanaged = Kokkos::MemoryTraits<Kokkos::Unmanaged>;
-    using Real1dU = typename ColOps::template view_1d<Real, Unmanaged>;
-    const Real1dU w_mid_row_1d(w_mid_row.data(), nlev_scalar);
-    const Real1dU w_mid_col_1d(w_mid_col.data(), nlev_scalar);
     const auto dsdx_Ux = Kokkos::subview(dsdx_Ux_all, icol, Kokkos::ALL());
     const auto dsdy_Ux = Kokkos::subview(dsdy_Ux_all, icol, Kokkos::ALL());
     const auto dsdx_Uy = Kokkos::subview(dsdx_Uy_all, icol, Kokkos::ALL());
@@ -114,18 +105,13 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     });
     team.team_barrier();
 
-    for (int kgp = 0; kgp < NGP; ++kgp) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, NGP), [&] (const int kgp) {
       // The horizontal stencil uses interface w, so first put the two stencil
       // columns of vertical velocity onto midpoint levels.
       const auto w_row_i = Kokkos::subview(w_int_dyn, ie, n0, igp, kgp, Kokkos::ALL());
       const auto w_col_i = Kokkos::subview(w_int_dyn, ie, n0, kgp, jgp, Kokkos::ALL());
       const auto w_row_i_real = Homme::viewAsReal(w_row_i);
       const auto w_col_i_real = Homme::viewAsReal(w_col_i);
-
-      ColOps::compute_midpoint_values(team, nlev_scalar, w_row_i_real, w_mid_row_1d);
-      team.team_barrier();
-      ColOps::compute_midpoint_values(team, nlev_scalar, w_col_i_real, w_mid_col_1d);
-      team.team_barrier();
 
       const auto row_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, igp, kgp);
       const auto row_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, igp, kgp);
@@ -144,26 +130,32 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
       // Build the full Cartesian velocity on the two stencil lines and apply
       // the derivative matrix weights along each local direction.
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {
         const Real u_row = u_row_view(ilev);
         const Real v_row = v_row_view(ilev);
-        const Real w_row = w_mid_row(ilev);
+        const Real w_row = 0.5 * (w_row_i_real(ilev) + w_row_i_real(ilev + 1));
 
         const Real u_col = u_col_view(ilev);
         const Real v_col = v_col_view(ilev);
-        const Real w_col = w_mid_col(ilev);
+        const Real w_col = 0.5 * (w_col_i_real(ilev) + w_col_i_real(ilev + 1));
 
-        dsdx_Ux(ilev) += dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row);
-        dsdy_Ux(ilev) += dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col);
+        Kokkos::atomic_add(&dsdx_Ux(ilev),
+                           dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row));
+        Kokkos::atomic_add(&dsdy_Ux(ilev),
+                           dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col));
 
-        dsdx_Uy(ilev) += dvv(jgp,kgp) * local_to_cart_component(row_y, u_row, v_row, w_row);
-        dsdy_Uy(ilev) += dvv(igp,kgp) * local_to_cart_component(col_y, u_col, v_col, w_col);
+        Kokkos::atomic_add(&dsdx_Uy(ilev),
+                           dvv(jgp,kgp) * local_to_cart_component(row_y, u_row, v_row, w_row));
+        Kokkos::atomic_add(&dsdy_Uy(ilev),
+                           dvv(igp,kgp) * local_to_cart_component(col_y, u_col, v_col, w_col));
 
-        dsdx_Uz(ilev) += dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row);
-        dsdy_Uz(ilev) += dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col);
+        Kokkos::atomic_add(&dsdx_Uz(ilev),
+                           dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row));
+        Kokkos::atomic_add(&dsdy_Uz(ilev),
+                           dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col));
       });
-      team.team_barrier();
-    }
+    });
+    team.team_barrier();
 
     // Convert the reference-element derivatives into physical horizontal
     // gradients using the inverse metric tensor on this curved element.
