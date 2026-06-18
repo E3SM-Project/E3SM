@@ -650,10 +650,14 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
-  int num_f_mid  = (11+13);
-  int num_f_int  = (2+3);
-  zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
-  zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
+  // fortran-bridge (LayoutLeft) transpose buffers are only used when running
+  // the fortran bridge, so only reserve space for them in that case
+  if (ZMF::s_zm_opts.use_fortran_bridge) {
+    constexpr int num_f_mid = ZMF::ZmInputState::num_f_midlv + ZMF::ZmOutputTend::num_f_midlv;
+    constexpr int num_f_int = ZMF::ZmInputState::num_f_intfc + ZMF::ZmOutputTend::num_f_intfc;
+    zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
+    zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
+  }
 
   return zm_buffer_size;
 }
@@ -673,8 +677,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_midlv = ZMF::ZmInputState::num_2d_midlv + ZMF::ZmOutputTend::num_2d_midlv;
   constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
-  constexpr int num_f_mid  = (11+13);
-  constexpr int num_f_int  = (2+3);
+  constexpr int num_f_mid  = ZMF::ZmInputState::num_f_midlv + ZMF::ZmOutputTend::num_f_midlv;
+  constexpr int num_f_int  = ZMF::ZmInputState::num_f_intfc + ZMF::ZmOutputTend::num_f_intfc;
 
   //----------------------------------------------------------------------------
   Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
@@ -713,8 +717,11 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   // ***************************************************************************
   Real* r_mem = reinterpret_cast<Real*>(scl_mem);
   //----------------------------------------------------------------------------
-  // device 2D views on mid-point levels
-  ZMF::uview_2dl<Real>* ptrs_f_midlv[num_f_mid]               = { &zm_input.f_z_mid,
+  // fortran-bridge (LayoutLeft) transpose buffers are only carved out when
+  // running the fortran bridge (must match requested_buffer_size_in_bytes())
+  if (ZMF::s_zm_opts.use_fortran_bridge) {
+    // device 2D views on mid-point levels
+    ZMF::uview_2dl<Real>* ptrs_f_midlv[num_f_mid]             = { &zm_input.f_z_mid,
                                                                   &zm_input.f_p_mid,
                                                                   &zm_input.f_p_del,
                                                                   &zm_input.f_T_mid,
@@ -739,21 +746,22 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.f_evap_ds_out,
                                                                   &zm_output.f_evap_dq_out,
                                                                 };
-  for (auto& v : ptrs_f_midlv) {
-    *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
-    r_mem += v->size();
-  }
-  //----------------------------------------------------------------------------
-  // device 2D views on interface levels
-  ZMF::uview_2dl<Real>* ptrs_f_intfc[num_f_int]               = { &zm_input.f_z_int,
+    for (auto& v : ptrs_f_midlv) {
+      *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
+      r_mem += v->size();
+    }
+    //--------------------------------------------------------------------------
+    // device 2D views on interface levels
+    ZMF::uview_2dl<Real>* ptrs_f_intfc[num_f_int]             = { &zm_input.f_z_int,
                                                                   &zm_input.f_p_int,
                                                                   &zm_output.f_prec_flux,
                                                                   &zm_output.f_snow_flux,
                                                                   &zm_output.f_mass_flux,
                                                                 };
-  for (auto& v : ptrs_f_intfc) {
-    *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
-    r_mem += v->size();
+    for (auto& v : ptrs_f_intfc) {
+      *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
+      r_mem += v->size();
+    }
   }
   //----------------------------------------------------------------------------
   // ***************************************************************************

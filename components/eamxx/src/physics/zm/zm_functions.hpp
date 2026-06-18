@@ -302,6 +302,8 @@ struct Functions {
     static constexpr int num_2d_midlv = 5;  // number of 2D mid-point views
     static constexpr int num_2d_intfc = 1;  // number of 2D interface views
     static constexpr int num_3d_midlv = 1;  // number of 3D mid-point views (ncol,nwind,nlev)
+    static constexpr int num_f_midlv  = 11; // number of fortran-bridge (LayoutLeft) 2D mid-point views
+    static constexpr int num_f_intfc  = 2;  // number of fortran-bridge (LayoutLeft) 2D interface views
 
     uview_1d<     Scalar> tpert;    // PBL top temperature perturb. [K]
     uview_2d<     Real>   z_mid;    // mid-point level altitude     [m]
@@ -412,6 +414,8 @@ struct Functions {
     static constexpr int num_2d_midlv = 24; // number of 2D mid-point views
     static constexpr int num_2d_intfc =  3; // number of 2D interface views
     static constexpr int num_3d_midlv =  1; // number of 3D mid-point views (ncol,nwind,nlev)
+    static constexpr int num_f_midlv  = 13; // number of fortran-bridge (LayoutLeft) 2D mid-point views
+    static constexpr int num_f_intfc  =  3; // number of fortran-bridge (LayoutLeft) 2D interface views
 
     uview_1d<Int>    activity;       // integer deep convection activity flag
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
