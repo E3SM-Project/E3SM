@@ -2684,7 +2684,7 @@
       <pes compset=".*SCREAM.*ELM.*MPASSI.*MPASO.*" pesize="S">
         <comment>frontier ne256 fully coupled cases with ATM on GPU, MPAS on CPU -- WCYCLXX2010 64 nodes, 56x1</comment>
         <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
-        <ntasks>  
+        <ntasks>
           <ntasks_atm>512</ntasks_atm>
           <ntasks_cpl>-64</ntasks_cpl>
           <ntasks_lnd>-64</ntasks_lnd>
