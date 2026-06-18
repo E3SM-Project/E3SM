@@ -3130,6 +3130,99 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="tuo">
+    <DESC>LLNL Linux Cluster, AMD Instinct MI300A processors 84 cores/node (12 reserved), 4 accelerators/node, 512 GB memory, 1144 compute nodes</DESC>
+    <NODENAME_REGEX>tuolumne.*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>crayamd-mphipcc,crayamd</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>e3smtest</PROJECT>
+    <CIME_OUTPUT_ROOT>/p/lustre5/$USER/e3sm_scratch/tuo</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/p/vast1/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/p/vast1/e3sm/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/p/lustre5/$USER/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/p/lustre5/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/usr/workspace/e3sm/apps/cprnc</CCSM_CPRNC>
+    <GMAKE_J>14</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>flux</BATCH_SYSTEM>
+    <SUPPORTED_BY>boutte3 -at- llnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="crayamd">84</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="crayamd">84</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>flux run</executable>
+      <arguments>
+	<arg name="debug"> --label-io --verbose --setopt=mpibind=verbose:1</arg>
+	<arg name="num_tasks"> -N{{ num_nodes }} -n{{ total_tasks }} --exclusive</arg>
+	<arg name="log"> --output={{name}}-{{id}}.out --error={{name}}-{{id}}.err</arg>
+	<arg name="kokkos"> --env=PMI_LOCAL_RANK={{task.localid}} --env=PMI_LOCAL_SIZE={{ tasks_per_node }}</arg>
+	<arg name="rocr_bind"> --env-remove=ROCR_VISIBLE_DEVICES --env=ROCR_VISIBLE_DEVICES={{task.localid}}</arg>
+	<arg name="hip_bind"> --env-remove=HIP_VISIBLE_DEVICES --env=HIP_VISIBLE_DEVICES=0</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <modules>
+	<command name="purge"/>
+	<command name="load">PrgEnv-cray/8.7.0</command>
+	<command name="load">cray-mpich/9.0.1</command>
+	<command name="load">craype-x86-trento</command>
+	<command name="load">cmake/3.24.2</command>
+      </modules>
+      <modules compiler="crayamd-mphipcc">
+	<command name="load">rocmcc/6.4.3-cce-20.0.0a-magic</command>
+	<command name="load">cray-libsci/24.11.0</command>
+	<command name="load">craype-accel-amd-gfx942</command>
+      </modules>
+      <modules compiler="crayamd.*">
+	<command name="load">cray-hdf5-parallel/1.14.3.7</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+	<command name="load">cray-parallel-netcdf/1.12.3.19</command> 
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+    <environment_variables>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="FI_CXI_RX_MATCH_MODE">hybrid</env>
+      <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+    </environment_variables>
+    <environment_variables compiler="crayamd-mphipcc">
+      <env name="FC">/usr/tce/packages/cray-mpich/cray-mpich-9.0.1-cce-20.0.0a-magic/bin/mpicrayftn</env>
+      <env name="ROCM_PATH">/opt/rocm-6.4.3</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="HSA_XNACK">1</env>
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">XPMEM</env>
+    </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PLACES">cores</env>
+      <env name="OMP_PROC_BIND">close</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+      <resource name="RLIMIT_CORE">-1</resource>
+      <resource name="RLIMIT_OFILE">65535</resource>
+    </resource_limits>
+  </machine>
+
   <machine MACH="jlse">
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
