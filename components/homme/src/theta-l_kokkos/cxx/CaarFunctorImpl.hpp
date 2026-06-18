@@ -607,9 +607,11 @@ struct CaarFunctorImpl {
         if ( ! ok1) ok = false;
       }
 
-      // Compute phi at midpoints
-      ColumnOps::compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
-                                            Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
+      if (m_rsplit == 0) {
+        // Compute phi at midpoints
+        ColumnOps::compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
+                                              Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
+      }
     });
     kv.team_barrier();
     return ok;
@@ -1135,10 +1137,6 @@ struct CaarFunctorImpl {
       // Compute grad(average(w^2/2)). Store in wvor.
       m_sphere_ops.gradient_sphere(kv, Homme::subview(m_buffers.temp,kv.team_idx),
                                        wvor);
-
-      // Compute grad(w)
-      m_sphere_ops.gradient_sphere(kv, Homme::subview(m_state.m_w_i,kv.ie,m_data.n0),
-                                       Homme::subview(m_buffers.v_i,kv.team_idx));
       kv.team_barrier();
     }
 
@@ -1172,8 +1170,8 @@ struct CaarFunctorImpl {
       if (!m_theta_hydrostatic_mode) {
         // Compute wvor = grad(average(w^2/2)) - average(w*grad(w))
         // Note: vtens is already storing grad(avg(w^2/2))
-        auto gradw_x = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
-        auto gradw_y = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
+        auto gradw_x = Homme::subview(m_buffers.grad_w_i,kv.team_idx,0,igp,jgp);
+        auto gradw_y = Homme::subview(m_buffers.grad_w_i,kv.team_idx,1,igp,jgp);
         auto w_i = Homme::subview(m_state.m_w_i,kv.ie,m_data.n0,igp,jgp);
 
         const auto w_gradw_x = [&gradw_x,&w_i] (const int ilev) -> Scalar {
