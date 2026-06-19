@@ -204,7 +204,7 @@ void Functions<S,D>::zm_conv_main(
     Int pbl_top_result = pver - 1;
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver - 1),
       [&](const Int k, Int& val) {
-        if (std::abs(z_mid(i,k) - pbl_hgt(i)) < (z_int(i,k) - z_int(i,k+1)) * ZMC::half) {
+        if (std::abs(z_mid(i,k) - z_srf(i) - pbl_hgt(i)) < (z_int(i,k) - z_int(i,k+1)) * ZMC::half) {
           val = Kokkos::min(val, k);
         }
       }, Kokkos::Min<Int>(pbl_top_result));
