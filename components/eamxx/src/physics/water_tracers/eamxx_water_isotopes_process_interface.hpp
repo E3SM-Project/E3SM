@@ -12,13 +12,13 @@ namespace scream
  * The class responsible to handle water isotope transport and fractionation
  *
  * This process extends WaterTracers to add equilibrium and kinetic fractionation
- * during phase changes for water isotope species (e.g., HDO, H2-18O, HTO).
+ * during phase changes for water isotope species.
  *
  * By inheriting from WaterTracers, this class reuses all tracer field handling
  * and only needs to override specific fractionation hooks.
  *
  * Note: This is a stub implementation that registers the process. Fractionation
- * physics will be added in later specs of the water isotope campaign.
+ * physics will be added later.
 */
 
 class WaterIsotopes : public WaterTracers
@@ -36,7 +36,7 @@ protected:
   // For now, just calls base class implementation
   void run_impl (const double dt) override;
 
-  // TODO (later campaign specs): Add virtual hooks for fractionation processes
+  // TODO: Add virtual hooks for fractionation processes
   // e.g., apply_equilibrium_fractionation(), apply_kinetic_fractionation()
 
 }; // class WaterIsotopes

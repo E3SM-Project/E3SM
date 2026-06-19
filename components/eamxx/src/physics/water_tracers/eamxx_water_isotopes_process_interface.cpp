@@ -7,7 +7,7 @@ namespace scream
 WaterIsotopes::WaterIsotopes(const ekat::Comm& comm, const ekat::ParameterList& params)
   : WaterTracers(comm, params)
 {
-  // Water isotopes inherits all tracer handling from WaterTracers
+  // Water isotopes will inherit all tracer handling from WaterTracers
   // No additional initialization needed at this stage
 }
 
@@ -17,10 +17,7 @@ void WaterIsotopes::run_impl(const double dt)
   // Call base class tracer physics (currently a no-op)
   WaterTracers::run_impl(dt);
 
-  // TODO (later campaign specs): Add fractionation physics here
-  // - Equilibrium fractionation during phase changes
-  // - Kinetic fractionation during evaporation
-  // - Isotope-specific adjustments to microphysics processes
+  // TODO: Add fractionation physics here
 }
 
 } // namespace scream
