@@ -1525,7 +1525,7 @@ contains
           ! double counts frazil energy
           nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) !+ (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
           nf = f_hfrazo;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazilh,n))
-          nf = f_sfrazo;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazils,n)
+          nf = f_sfrazo;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Fioo_frazils,n)
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_h2otemp,n)
           if (flds_polar) then
              nf = f_wpolar;budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_c*o2x_o%rAttr(index_o2x_Foxo_frazil_li,n)
