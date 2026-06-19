@@ -177,8 +177,9 @@ module seq_diag_moab
   integer(in),parameter :: f_wevap_HDO =40     ! water: evaporation
   integer(in),parameter :: f_wroff_HDO =41     ! water: runoff/flood
   integer(in),parameter :: f_wioff_HDO =42     ! water: frozen runoff
+  integer(in),parameter :: f_salt      =43     ! salt: salinity flux
 
-  integer(in),parameter :: f_size     = f_wioff_HDO   ! Total array size of all elements
+  integer(in),parameter :: f_size     = f_salt        ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_h        = f_hfrz        ! 1st index for heat
@@ -191,6 +192,8 @@ module seq_diag_moab
   integer(in),parameter :: f_16O_end  = f_wioff_16O   ! Last index for 16O water isotope
   integer(in),parameter :: f_18O_end  = f_wioff_18O   ! Last index for 18O water isotope
   integer(in),parameter :: f_HDO_end  = f_wioff_HDO   ! Last index for HDO water isotope
+  integer(in),parameter :: f_s        = f_salt        ! 1st index for salt
+  integer(in),parameter :: f_s_end    = f_salt        ! last index for salt
 
   character(len=12),parameter :: fname(f_size) = &
 
@@ -204,7 +207,7 @@ module seq_diag_moab
        ' wfreeze_18O','   wmelt_18O','   wrain_18O','   wsnow_18O',                &
        '   wevap_18O',' wrunoff_18O',' wfrzrof_18O',                               &
        ' wfreeze_HDO','   wmelt_HDO','   wrain_HDO','   wsnow_HDO',                &
-       '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO'/)
+       '   wevap_HDO',' wrunoff_HDO',' wfrzrof_HDO','        salt'/)
 
   !--- P for period ---
 
@@ -1311,7 +1314,7 @@ contains
     real(r8), allocatable    :: fld_evap_16O(:), fld_evap_18O(:), fld_evap_HDO(:)
     real(r8), allocatable    :: fld_melth(:), fld_meltw(:), fld_bergh(:), fld_bergw(:)
     real(r8), allocatable    :: fld_swnet(:), fld_lwdn(:), fld_rain(:), fld_snow(:)
-    real(r8), allocatable    :: fld_rofl(:), fld_rofi(:)
+    real(r8), allocatable    :: fld_rofl(:), fld_rofi(:), fld_salt(:)
     real(r8), allocatable    :: fld_meltw_16O(:), fld_meltw_18O(:), fld_meltw_HDO(:)
     real(r8), allocatable    :: fld_rain_16O(:),  fld_rain_18O(:),  fld_rain_HDO(:)
     real(r8), allocatable    :: fld_snow_16O(:),  fld_snow_18O(:),  fld_snow_HDO(:)
@@ -1456,7 +1459,7 @@ contains
 
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_bergh(lSize), fld_bergw(lSize))
        allocate(fld_swnet(lSize), fld_lwdn(lSize), fld_rain(lSize), fld_snow(lSize))
-       allocate(fld_rofl(lSize), fld_rofi(lSize))
+       allocate(fld_rofl(lSize), fld_rofi(lSize), fld_salt(lSize))
     ! if model is not prognostic, need to make sure these fields are zero
        if(ocn_prognostic) then
          call mbGetCellTagVals(mboxid, 'Fioi_melth',  fld_melth,  lSize)
@@ -1468,6 +1471,7 @@ contains
          call mbGetCellTagVals(mboxid, 'Foxx_rofl',   fld_rofl,   lSize)
          call mbGetCellTagVals(mboxid, 'PFioi_bergh', fld_bergh,  lSize)
          call mbGetCellTagVals(mboxid, 'PFioi_bergw', fld_bergw,  lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_salt',   fld_salt,   lSize)
        else
          fld_melth(:)=0.0_r8
          fld_meltw(:)=0.0_r8
@@ -1478,6 +1482,7 @@ contains
          fld_rofl(:) = 0.0_r8
          fld_bergh(:) = 0.0_r8
          fld_bergw(:) = 0.0_r8
+         fld_salt(:) = 0.0_r8
        endif
        call mbGetCellTagVals(mboxid, 'Faxa_lwdn',   fld_lwdn,   lSize)
        if ( flds_wiso_ocn ) then
@@ -1518,6 +1523,7 @@ contains
           nf = f_wpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_bergw(n)
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rofl(n)
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rofi(n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_salt(n)
           if ( flds_wiso_ocn ) then
              nf = f_wmelt_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_meltw_16O(n)
@@ -1555,7 +1561,7 @@ contains
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
        deallocate(fld_melth, fld_meltw, fld_bergh, fld_bergw)
        deallocate(fld_swnet, fld_lwdn, fld_rain, fld_snow)
-       deallocate(fld_rofl, fld_rofi)
+       deallocate(fld_rofl, fld_rofi, fld_salt)
        if (flds_wiso_ocn) then
           deallocate(fld_meltw_16O, fld_meltw_18O, fld_meltw_HDO)
           deallocate(fld_rain_16O,  fld_rain_18O,  fld_rain_HDO)
@@ -1608,7 +1614,7 @@ contains
     real(r8), allocatable    :: fld_evap_16O(:),  fld_evap_18O(:),  fld_evap_HDO(:)
     real(r8), allocatable    :: fld_lwdn(:), fld_rain(:), fld_snow(:), fld_frazil(:), fld_q(:), fld_rofi(:)
     real(r8), allocatable    :: fld_rain_16O(:), fld_rain_18O(:), fld_rain_HDO(:)
-    real(r8), allocatable    :: fld_snow_16O(:), fld_snow_18O(:), fld_snow_HDO(:)
+    real(r8), allocatable    :: fld_snow_16O(:), fld_snow_18O(:), fld_snow_HDO(:), fld_salt(:)
     logical,save             :: first_time        = .true.
     logical,save             :: flds_wiso_ice     = .false.
     logical,save             :: flds_wiso_ice_x2i = .false.
@@ -1648,7 +1654,7 @@ contains
 
     if (present(do_i2x)) then
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_swpen(lSize), fld_swnet(lSize))
-       allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize))
+       allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize), fld_salt(lSize))
        call mbGetCellTagVals(mbixid, 'Fioi_melth', fld_melth, lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_meltw', fld_meltw, lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_swpen', fld_swpen, lSize)
@@ -1657,6 +1663,7 @@ contains
        call mbGetCellTagVals(mbixid, 'Faii_lat',   fld_lat,   lSize)
        call mbGetCellTagVals(mbixid, 'Faii_sen',   fld_sen,   lSize)
        call mbGetCellTagVals(mbixid, 'Faii_evap',  fld_evap,  lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_salt',  fld_salt,  lSize)
        if ( flds_wiso_ice ) then
           allocate(fld_meltw_16O(lSize), fld_meltw_18O(lSize), fld_meltw_HDO(lSize))
           allocate(fld_evap_16O(lSize),  fld_evap_18O(lSize),  fld_evap_HDO(lSize))
@@ -1683,6 +1690,7 @@ contains
           nf = f_hsen  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_sen(n)
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw(n)
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_evap(n)
+          nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_salt(n)
           if ( flds_wiso_ice ) then
              nf = f_wmelt_16O;
              budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw_16O(n)
@@ -1699,7 +1707,7 @@ contains
           end if
        end do
        deallocate(fld_melth, fld_meltw, fld_swpen, fld_swnet)
-       deallocate(fld_lwup, fld_lat, fld_sen, fld_evap)
+       deallocate(fld_lwup, fld_lat, fld_sen, fld_evap, fld_salt)
        if (flds_wiso_ice) then
           deallocate(fld_meltw_16O, fld_meltw_18O, fld_meltw_HDO)
           deallocate(fld_evap_16O,  fld_evap_18O,  fld_evap_HDO)
@@ -1886,6 +1894,7 @@ contains
              !  old budget normalizations (global area and 1e6 for water)
              dataGpr = dataGpr/(4.0_r8*shr_const_pi)
              dataGpr(f_w:f_w_end,:,:) = dataGpr(f_w:f_w_end,:,:) * 1.0e6_r8
+             dataGpr(f_s:f_s_end,:,:) = dataGpr(f_s:f_s_end,:,:) * 1.0e8_r8
              if ( flds_wiso )then
                 dataGpr(iso0(1):isof(nisotopes),:,:) = dataGpr(iso0(1):isof(nisotopes),:,:) * 1.0e6_r8
              end if
@@ -1980,6 +1989,17 @@ contains
                            sum(dataGpr(iso0(is):isof(is),ico,ip))
                    end do
                 end if
+
+                write(logunit,*) ' '
+                write(logunit,FAH) subname,trim(str)//' SALT BUDGET ((kg/s)/m^2*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
+                write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
+                do nf = f_s, f_s_end
+                   write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
+                        dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
+                        dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
+                        dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
+                enddo
+                write(logunit,*) ' '
 
              enddo
           endif   ! plev
@@ -2086,6 +2106,16 @@ contains
                            -sum(dataGpr(iso0(is):isof(is),icas,ip))
                    end do
                 end if
+                write(logunit,*) ' '
+                write(logunit,FAH) subname,trim(str)//' SALT BUDGET (kg/m2s*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
+                write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
+                do nf = f_s, f_s_end
+                   write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
+                        dataGpr(nf,icxr,ip),-dataGpr(nf,icas,ip), &
+                        -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
+                        dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
+                enddo
+                write(logunit,*) ' '
              enddo
           endif   ! plev
 
@@ -2233,6 +2263,26 @@ contains
                         sum(dataGpr(iso0(is):isof(is),c_glc_gs,ip))
                 end do
              end if
+                       write(logunit,*) ' '
+             write(logunit,FAH) subname,'NET SALT BUDGET (kg/m2s*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
+             write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
+             do nf = f_s, f_s_end
+                write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
+                     dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip), &
+                     dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip), &
+                     dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip), &
+                     dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip), &
+                     dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip), &
+                     dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip), &
+                     dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip)+ &
+                     dataGpr(nf,c_lnd_lr,ip)+dataGpr(nf,c_lnd_ls,ip)+ &
+                     dataGpr(nf,c_rof_rr,ip)+dataGpr(nf,c_rof_rs,ip)+ &
+                     dataGpr(nf,c_ocn_or,ip)+dataGpr(nf,c_ocn_os,ip)+ &
+                     dataGpr(nf,c_inh_ir,ip)+dataGpr(nf,c_inh_is,ip)+ &
+                     dataGpr(nf,c_ish_ir,ip)+dataGpr(nf,c_ish_is,ip)+ &
+                     dataGpr(nf,c_glc_gr,ip)+dataGpr(nf,c_glc_gs,ip)
+             enddo
+             write(logunit,*) ' '
 
           endif
 
