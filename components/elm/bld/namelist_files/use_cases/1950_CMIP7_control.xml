@@ -23,4 +23,5 @@
 <!-- CMIP7 DECK compsets -->
       
 <fsurdat hgrid="r025" >lnd/clm2/surfdata_map/surfdata_r025_simyr1950_cmip7_c260404.nc </fsurdat>
+<finidat hgrid="r025" >lnd/clm2/initdata_map/elmi.CNPRDCTCBCTOP.r025_RRSwISC6to18E3r5.1950-01-01-00000.c20260412.nc </finidat>
 </namelist_defaults>
