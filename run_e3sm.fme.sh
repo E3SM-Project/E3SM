@@ -129,10 +129,12 @@ else
   # production cadence keeps things simple by avoiding that path.
   readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
   readonly CASE_RUN_DIR=${CASE_ROOT}/run
-  # PELAYOUT and WALLTIME defaults are pm-cpu-tuned. On sites with
-  # shorter max walltime (e.g. 24h on chrysalis), export WALLTIME=24:00:00.
+  # PELAYOUT and WALLTIME defaults are pm-cpu-tuned. The default is the 24h
+  # pm-cpu regular-QOS cap (Slurm rejects longer at submit); the 5-leg RESUBMIT
+  # design absorbs a per-leg walltime shorter than one leg's runtime anyway.
+  # Override with e.g. WALLTIME=12:00:00 on shorter-cap sites.
   readonly PELAYOUT=${PELAYOUT:-L}
-  readonly WALLTIME=${WALLTIME:-34:00:00}
+  readonly WALLTIME=${WALLTIME:-24:00:00}
   readonly STOP_OPTION="nyears"
   readonly STOP_N="20"
   readonly REST_OPTION="nyears"
@@ -346,12 +348,11 @@ case_setup() {
     ./xmlchange DOUT_S=${DO_SHORT_TERM_ARCHIVING^^}
     ./xmlchange DOUT_S_ROOT=${CASE_ARCHIVE_DIR}
 
-    if [ `./xmlquery --value COMP_ATM` == "datm"  ]; then
-      echo $'\nThe specified configuration uses a data atmosphere, so cannot activate COSP simulator\n'
-    else
-      echo $'\nConfiguring E3SM to use the COSP simulator\n'
-      ./xmlchange --id CAM_CONFIG_OPTS --append --val='-cosp'
-    fi
+    # COSP simulator intentionally NOT enabled. The FME/SamudrACE tape carries
+    # no COSP fields, so '-cosp' (docosp=.true.) would run the simulator every
+    # few radiation steps for 100 years and produce nothing on tape. Re-add
+    # "--id CAM_CONFIG_OPTS --append --val='-cosp'" here if COSP output is ever
+    # wanted.
 
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 

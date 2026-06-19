@@ -1016,6 +1016,18 @@ contains
             call seaice_fme_horiz_remap_def_var(trim(pio_var_names(iv)), &
                  trim(stored_units(iv)), trim(stored_long_names(iv)), 1, ierr, &
                  cell_methods=trim(stored_cell_methods(iv)))
+            if (ierr /= 0) then
+               ! Surface the failure: def_var already bumped n_pio_vars with a
+               ! possibly-stale descriptor and write_var matches by name, so a
+               ! later write would push data through the previous file's varid.
+               ! Accumulate into err (no name-clearing: the registered-var and
+               ! per-file var lists share these arrays).
+               err = ierr
+               call mpas_log_write( &
+                    'seaice_fme_horiz_remap: check_rotate def_var replay failed for ' &
+                    // trim(pio_var_names(iv)) // ' (code $i)', &
+                    messageType=MPAS_LOG_ERR, intArgs=(/ierr/))
+            end if
          end do
       end if
 
@@ -1680,6 +1692,15 @@ contains
             call seaice_fme_horiz_remap_def_var_5D(trim(pio_var_names_5D(iv)), &
                  trim(stored_units_5D(iv)), trim(stored_long_names_5D(iv)), 1, ierr, &
                  cell_methods=trim(stored_cell_methods_5D(iv)))
+            if (ierr /= 0) then
+               ! See the primary check_rotate: surface the def_var failure into
+               ! err so a stale-descriptor write can't proceed silently.
+               err = ierr
+               call mpas_log_write( &
+                    'seaice_fme_horiz_remap: check_rotate_5D def_var replay failed for ' &
+                    // trim(pio_var_names_5D(iv)) // ' (code $i)', &
+                    messageType=MPAS_LOG_ERR, intArgs=(/ierr/))
+            end if
          end do
       end if
    end subroutine seaice_fme_horiz_remap_check_rotate_5D!}}}

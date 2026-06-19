@@ -101,7 +101,13 @@ module eam_vcoarsen
 
   ! Column integration tendency: previous timestep values (pcols, max_flds, begchunk:endchunk)
   real(r8), allocatable :: int_prev(:,:,:)
-  logical :: int_prev_valid = .false.
+  ! Per-chunk "previous values valid" flag (begchunk:endchunk). MUST be a
+  ! per-chunk array, not a scalar: eam_vcoarsen_write runs inside the
+  ! !$OMP PARALLEL DO chunk loop, so a module-scope scalar both races across
+  ! threads and lets the first-processed chunk's update leak (integrated-0)/dt
+  ! garbage tendencies into every other chunk on the first step. Mirrors
+  ! eam_derived's tend_initialized.
+  logical, allocatable :: int_prev_valid(:)
 
 contains
 
@@ -395,8 +401,8 @@ contains
           call make_sel_height_name(vcoarsen_select_height_flds(i), &
                vcoarsen_select_heights(k), fname)
           write(lname, '(A,A,F0.1,A)') trim(vcoarsen_select_height_flds(i)), &
-               ' linearly interpolated to ', vcoarsen_select_heights(k), &
-               ' m above surface'
+               ' at ', vcoarsen_select_heights(k), &
+               ' m above surface (linearly interpolated; collapses to the lowest model level, ~10-25 m AGL, where the target is below the lowest midpoint)'
           call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
@@ -410,6 +416,8 @@ contains
       ! Allocate previous-timestep storage for tendency computation
       allocate(int_prev(pcols, n_int_flds, begchunk:endchunk))
       int_prev(:,:,:) = 0.0_r8
+      allocate(int_prev_valid(begchunk:endchunk))
+      int_prev_valid(:) = .false.
       do i = 1, n_int_flds
         call validate_field_name(vcoarsen_int_flds(i))
         src_units = lookup_field_units(vcoarsen_int_flds(i))
@@ -589,7 +597,7 @@ contains
         ! Compute tendency: (current - previous) / dt
         dt = real(get_step_size(), r8)
         selected(:) = fillvalue
-        if (int_prev_valid) then
+        if (int_prev_valid(lchnk)) then
           selected(1:ncol) = (integrated(1:ncol) - int_prev(1:ncol, i, lchnk)) / dt
         else
           selected(1:ncol) = 0.0_r8
@@ -601,9 +609,10 @@ contains
         int_prev(1:ncol, i, lchnk) = integrated(1:ncol)
       end do
 
-      ! Mark previous values as valid after first complete pass through all chunks.
-      ! This is approximate — it becomes valid after the first timestep completes.
-      if (.not. int_prev_valid) int_prev_valid = .true.
+      ! Mark previous values valid for THIS chunk after its first pass, so the
+      ! next timestep on the same chunk computes a real tendency. Per-chunk to
+      ! stay correct under the OMP chunk loop.
+      if (.not. int_prev_valid(lchnk)) int_prev_valid(lchnk) = .true.
     end if
 
   end subroutine eam_vcoarsen_write

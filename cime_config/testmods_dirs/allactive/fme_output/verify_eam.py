@@ -157,6 +157,12 @@ VCOARSEN_PBOUNDS = np.array([
     10.0, 4803.81, 13913.06, 26856.34,
     43998.31, 59659.67, 76854.15, 90711.83, 101325.0
 ])
+# Coarsening mode used by production. "level-index": fixed native-level bins per
+# column, so every output layer always has valid samples -> 0 topographic fill
+# by construction. "pressure-bounded": a layer is fill where PS is below its top
+# bound. Keep in lockstep with vcoarsen_level_bounds vs vcoarsen_pres_bounds in
+# shell_commands.
+VCOARSEN_MODE = "level-index"
 
 # Fields that appear in BOTH fme_output and fme_legacy_output for BFB identity checks
 # Instantaneous (no :A suffix)
@@ -1361,7 +1367,7 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
     if not fme_h0 or not leg_h0:
         print("  SKIP EAM: h0 files not found in both rundirs")
         print(f"    fme: {len(fme_h0)} files,  legacy: {len(leg_h0)} files")
-        return issues
+        return issues, results, xv_plots
 
     ds_fme = safe_open(fme_h0[0])
     ds_leg = safe_open(leg_h0[0])
@@ -1369,7 +1375,7 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
     if has_time_zero(ds_fme) or has_time_zero(ds_leg):
         print("  SKIP: time dimension has size 0")
         close_ds(ds_fme); close_ds(ds_leg)
-        return issues
+        return issues, results, xv_plots
 
     # -- 1. FIELD IDENTITY ------------------------------------------------------
     # Detect grid mismatch (FME may be remapped to lat-lon, legacy on native)
@@ -1573,16 +1579,23 @@ def cross_verify(fme_rundir, legacy_rundir, outdir, verbose=False):
 
     # -- 1b. TOPOGRAPHIC FILL VALIDATION ----------------------------------------
     print("\n--- Test 1b: Topographic Fill Validation ---")
-    # Verify that fill values in coarsened layers correspond exactly to grid cells
-    # where the surface pressure is below the target layer's top pressure bound.
+    # Verify that the fill fraction in each coarsened layer matches what the
+    # active coarsening mode predicts (see VCOARSEN_MODE): 0% for level-index
+    # mode (production), or the PS-below-top-bound fraction for pressure-bounded.
     fme_ps = get_var(ds_fme, "PS")
     if fme_ps is not None:
         ps_last = fme_ps[-1] if fme_ps.ndim >= 2 else fme_ps
         topo_max_err = 0.0
         for k in range(N_VCOARSEN_LAYERS):
-            p_top = VCOARSEN_PBOUNDS[k]
-            # Expected: fill where PS < layer's top bound (no model levels in range)
-            expected_pct = 100.0 * np.mean(ps_last.ravel() < p_top)
+            if VCOARSEN_MODE == "level-index":
+                # Fixed native-level bins include every column's levels, so an
+                # output layer is never below-terrain -> 0 expected fill.
+                expected_pct = 0.0
+            else:
+                # Pressure-bounded: fill where PS < layer's top bound (no model
+                # levels in range).
+                p_top = VCOARSEN_PBOUNDS[k]
+                expected_pct = 100.0 * np.mean(ps_last.ravel() < p_top)
             t_k = get_var(ds_fme, f"T_{k}")
             if t_k is None:
                 continue

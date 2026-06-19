@@ -4058,10 +4058,15 @@ def check_training_readiness(rundir, outdir, verbose):
         "fmeVerticalReduce":       "*.mpaso.hist.am.fmeVerticalReduce.*.remapped.nc",
         "fmeSeaiceDerivedFields":  "*.mpassi.hist.am.fmeSeaiceDerivedFields.*.remapped.nc",
     }
+    # fmeVerticalReduce is disabled in the production testmod (gotcha #33), so
+    # its absence is expected and must NOT fail certification. It is still
+    # globbed and -- if a user re-enables the AM -- fully certified when its
+    # files are present.
+    OPTIONAL_STREAMS = {"fmeVerticalReduce"}
     stream_files = {}
     for stream, pat in streams.items():
         stream_files[stream] = find_files(rundir, pat)
-        if not stream_files[stream]:
+        if not stream_files[stream] and stream not in OPTIONAL_STREAMS:
             issues.append(f"  MISSING stream: no {stream} remapped files found")
 
     if not any(stream_files.values()):
@@ -4075,8 +4080,10 @@ def check_training_readiness(rundir, outdir, verbose):
         expected_vars[v] = "fmeDerivedFields"
     for v in REMAPPED_SEAICE_VARS:
         expected_vars[v] = "fmeSeaiceDerivedFields"
-    for v in REMAPPED_VERTREDUCE_VARS:
-        expected_vars[v] = "fmeVerticalReduce"
+    # Only require vertical-reduce vars when the (optional) AM actually ran.
+    if stream_files.get("fmeVerticalReduce"):
+        for v in REMAPPED_VERTREDUCE_VARS:
+            expected_vars[v] = "fmeVerticalReduce"
     # Depth-coarsened: auto-detect layer count from first file
     n_depth = 19  # default ACE expectation
     if stream_files.get("fmeDepthCoarsening"):
@@ -4305,6 +4312,22 @@ def check_training_readiness(rundir, outdir, verbose):
             return ice_mask
         return land_mask
 
+    def _ice_fill_mask_record(ice_area_arr, ti):
+        """Per-record ice-presence fill mask from this record's iceAreaTotal.
+
+        Ice cover is strongly seasonal, so the mask MUST be rebuilt per record:
+        a single first-file snapshot would flag every cell that was icy at
+        snapshot time but melted by a later record as a false NaN/fill failure
+        on a multi-season production tape. Mask = `iceAreaTotal is fill OR == 0`.
+        Returns None if iceAreaTotal is unavailable.
+        """
+        if ice_area_arr is None:
+            return None
+        ia = ice_area_arr[ti] if ice_area_arr.ndim >= 3 else ice_area_arr
+        ia_f = ia.astype(float)
+        ia_fill = (~np.isfinite(ia_f)) | (np.abs(ia_f) >= fill_thresh)
+        return ia_fill | (ia_f == 0.0)
+
     # Main pass: check each variable's fill pattern against the appropriate
     # expected-fill mask.
     mask_issues = 0
@@ -4316,14 +4339,20 @@ def check_training_readiness(rundir, outdir, verbose):
             ds = safe_open(fpath)
             dims = get_dims(ds)
             nt = dims.get("Time", dims.get("time", 1))
+            # iceAreaTotal for THIS file -> per-record ice-presence fill mask.
+            ice_area = get_var(ds, "iceAreaTotal")
             for vname in sorted(expected_vars.keys()):
                 if expected_vars[vname] != stream:
                     continue
                 arr = get_var(ds, vname)
                 if arr is None:
                     continue
-                expect_fill = _expected_fill_mask(vname)
-                if expect_fill is None:
+                is_ice_var = vname in ICE_ONLY_VARS
+                # Non-ice vars use a static land/bathymetry mask; ice vars get a
+                # per-record mask (rebuilt inside the ti loop) since ice cover
+                # is seasonal.
+                static_fill = None if is_ice_var else _expected_fill_mask(vname)
+                if not is_ice_var and static_fill is None:
                     continue
                 for ti in range(min(nt, arr.shape[0]) if arr.ndim >= 3 else 1):
                     if arr.ndim == 3:
@@ -4332,6 +4361,12 @@ def check_training_readiness(rundir, outdir, verbose):
                         slab = arr
                     else:
                         continue
+                    if is_ice_var:
+                        expect_fill = _ice_fill_mask_record(ice_area, ti)
+                        if expect_fill is None:
+                            continue
+                    else:
+                        expect_fill = static_fill
                     slab_f = slab.astype(float)
                     bad = (~np.isfinite(slab_f)) | (np.abs(slab_f) >= fill_thresh)
 

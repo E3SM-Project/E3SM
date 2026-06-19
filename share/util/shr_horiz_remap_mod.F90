@@ -320,7 +320,7 @@ CONTAINS
     integer, allocatable, intent(out) :: send_gcol_list(:)
     integer, intent(out) :: ierr
 
-    integer :: i, r, gcol, owner_rank, irow, j
+    integer :: i, r, gcol, owner_rank, irow, j, n_dropped
     integer, allocatable :: need_from_rank(:), recv_gcols(:)
     integer, allocatable :: gcol_to_recvpos(:)
     integer, allocatable :: recvidx_unsorted(:), row_counts(:), bucket_pos(:)
@@ -333,13 +333,28 @@ CONTAINS
     ! --- Step 1: determine recv_counts ---
     allocate(need_from_rank(0:nprocs-1))
     need_from_rank = 0
+    n_dropped = 0
     do i = 1, rd%n_src_need
       gcol = rd%src_need_gids(i)
       owner_rank = gcol_to_rank(gcol)
       if (owner_rank >= 0 .and. owner_rank < nprocs) then
         need_from_rank(owner_rank) = need_from_rank(owner_rank) + 1
+      else
+        n_dropped = n_dropped + 1
       end if
     end do
+
+    ! A needed source column with no valid owner rank (gcol_to_rank entry
+    ! outside [0,nprocs)) cannot be requested from anyone. Silently dropping it
+    ! leaves its gcol_to_recvpos at 0, so col_recvidx==0 and apply() reads
+    ! ws_recv_buf at index k-numlev (<=0) -- out of bounds with ierr=0. This
+    ! signals a map/mesh mismatch (the map references cells no rank owns); fail
+    ! loudly so the caller aborts rather than shipping garbage.
+    if (n_dropped > 0) then
+      deallocate(need_from_rank)
+      ierr = 1
+      return
+    end if
 
     allocate(rd%recv_counts(0:nprocs-1), rd%recv_displs(0:nprocs-1))
     rd%recv_counts = need_from_rank

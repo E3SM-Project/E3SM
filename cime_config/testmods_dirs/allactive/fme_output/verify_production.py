@@ -1159,6 +1159,36 @@ def main():
         push_to_share(out_root, Path(args.share_dir).expanduser().resolve(),
                       case_label)
 
+    # Aggregate sanity results into a process exit code so CI / callers can
+    # distinguish a clean tape from FAILs (previously main() always fell through
+    # to exit 0 even with FAIL sanity entries or missing streams). A FAIL in any
+    # stream's sanity report -- or a missing PRIMARY stream -- fails the run;
+    # WARN does not, and a missing 5D companion is tolerated (may be disabled).
+    # The HTML/share output above is still produced on failure.
+    n_fail = 0
+    fail_lines = []
+    for stream in STREAMS:
+        res = results[stream["key"]]
+        if res["no_files"]:
+            if stream.get("companion_of"):
+                print(f"  NOTE [{stream['key']}]: no files (5D companion "
+                      f"disabled?) -- not counted as a failure")
+            else:
+                n_fail += 1
+                fail_lines.append(f"  FAIL [{stream['key']}]: no files found")
+            continue
+        for lvl, msg in res["sanity"]:
+            if lvl == "FAIL":
+                n_fail += 1
+                fail_lines.append(f"  FAIL [{stream['key']}]: {msg}")
+
+    if n_fail:
+        print(f"\nverify_production: {n_fail} FAIL(s) -- exiting nonzero:")
+        for line in fail_lines:
+            print(line)
+        sys.exit(1)
+    print("\nverify_production: all streams PASS (no FAIL sanity entries)")
+
 
 if __name__ == "__main__":
     try:

@@ -783,9 +783,14 @@ CONTAINS
       bufptr => bufptr%nexthdr
     end do
 
-    ndims = 0
-    do i = 1, 6
-      if (bufptr%dimsizes(i, col_type_grid) > 0) then
+    ! pbuf_register_field initializes all dimsizes slots to 1 and then
+    ! overwrites only the leading dimcnt entries, so trailing (unused) dims
+    ! stay 1, never 0. Counting "> 0" therefore always returns 6. The first
+    ! (column) dimension is always present; count the higher dims that are
+    ! genuinely multi-element (> 1) to recover the registered rank.
+    ndims = 1
+    do i = 2, 6
+      if (bufptr%dimsizes(i, col_type_grid) > 1) then
         ndims = ndims + 1
       else
         exit

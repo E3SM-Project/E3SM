@@ -66,8 +66,9 @@ micromamba run -n xgns python \
     --rundir $RUNDIR --outdir /path/to/output_figs
 ```
 
-Map files default to `/pscratch/sd/m/mahf708/fme_maps/` (NERSC); override
-with the `FME_MAPS_DIR` environment variable on other systems.
+Map files default to `$DIN_LOC_ROOT/fme/` (the standard E3SM inputdata tree --
+`shell_commands` sets `FME_MAPS_DIR=$(xmlquery --value DIN_LOC_ROOT)/fme`);
+override with the `FME_MAPS_DIR` environment variable to point elsewhere.
 - `map_ne30pg2_to_gaussian_180by360_shifted.nc` (EAM, n_a=21600)
 - `map_IcoswISC30E3r5_to_gaussian_180by360_shifted.nc` (MPAS, n_a=465044)
 
@@ -1518,6 +1519,87 @@ These are hard-won lessons. Read before modifying FME code.
     26S/114.5E) and sea-ice `surfaceTemperatureMean` ~ -50 degC in polar
     winter — both identical before and after the swap.
 
+48. **Code-review follow-up — latent-path correctness + verify-script /
+    submission fixes (APPLIED 2026-06-19; full findings in `REVIEW.md` in this
+    dir).** A branch-wide re-review found no CRITICAL defects in
+    production-exercised paths, but several latent bugs one namelist edit from
+    triggering, verify scripts drifted from the production config, and two
+    submission-script issues. Fixes applied:
+
+    **EAM latent Fortran (production-unused today, but namelist-reachable):**
+    - `physics_buffer.F90.in` `pbuf_get_field_ndims` counted padded trailing
+      dims (always returned 6, so eam_derived misrouted 2D pbuf operands into
+      OOB reads). Now counts dims with size > 1 (column dim always present).
+    - `eam_derived.F90` passed the whole `tmp_fields(pcols,pver,*)` to
+      `shr_derived_eval`; for a 2D expression (nlev=1) sequence association
+      mapped operands 2..N onto operand 1's upper levels (gotcha #2 class),
+      silently evaluating them as zero. Now passes `(:,1:nlev,1:n_operands)`.
+    - `eam_vcoarsen.F90` `int_prev_valid` was a module-scope SCALAR used inside
+      the OMP chunk loop (race + wrong first-step `d*_INT_dt`). Now a per-chunk
+      `(begchunk:endchunk)` array. **This corrects gotcha #16:** the
+      scalar-flag race was eliminated in eam_derived but NOT in eam_vcoarsen
+      until now.
+    - `*at2m`/`*at10m` long_names now disclose that the height select collapses
+      to the lowest model level (~10-25 m AGL) when the target is below the
+      lowest midpoint.
+
+    **Shared remap (`shr_horiz_remap_mod.F90`):** `build_comm` now counts source
+    gcols with no valid owner rank and returns nonzero `ierr` instead of
+    silently dropping them (which left `col_recvidx=0` → OOB read at apply with
+    `ierr=0`). All three wrappers already abort on a nonzero build_comm ierr.
+
+    **MPAS remap def_var replay:** ocean + seaice (primary and `_5D`)
+    `check_rotate` replay loops now fold each `def_var` ierr into `err` and log
+    loudly, so a failed (re)definition can't leave a stale descriptor that
+    `write_var` then writes through silently. (No slot-name clearing: the
+    registered-var and per-file var lists share arrays — the
+    `seaice_fme_remap_file_t` refactor in "Extensions" would let `write_var`
+    skip dead slots cleanly; deferred.)
+
+    **CIME test integrity (`config_archive.xml`) — corrects gotcha #34.** The
+    1D and 5D FME streams collapsed into one `_get_extension` ext-bucket (the
+    unanchored 1D regex `fmeDepthCoarsening` also matches `…Coarsening5D…`
+    files), so ERS silently restart-BFB-compared only one of {1D,5D} per AM and
+    base/rest could pick different ones (flaky NO_COMPARE). Added `…5D`
+    `<hist_file_ext_regex>` entries BEFORE the 1D ones and anchored the 1D
+    regexes with a trailing `\.`. **Re-create existing test cases** so their
+    CASEROOT `env_archive.xml` picks up the new spec (per gotcha #34's note).
+
+    **Verify scripts (now usable on the production config):**
+    - `verify_mpas.py` certification made `fmeVerticalReduce` OPTIONAL (disabled
+      in production, gotcha #33) so the cert can PASS; it previously hard-required
+      that stream and always FAILed + `exit 1`.
+    - `verify_mpas.py` ice-presence fill mask is now rebuilt PER RECORD from each
+      record's `iceAreaTotal` (was a single first-file snapshot → false FAILs on
+      seasonal ice).
+    - `verify_eam.py` `cross_verify` SKIP paths now return the 3-tuple shape
+      (were bare lists → `ValueError` unpack crash when h0 missing/header-only).
+    - `verify_eam.py` Test 1b TOPO_FILL now expects 0% fill in level-index
+      coarsening mode (production) via a `VCOARSEN_MODE` constant, instead of a
+      pressure-bound expectation that always DIFFed.
+    - `verify_production.py` `main()` now aggregates FAIL sanity entries (and
+      missing PRIMARY streams; a missing 5D companion is tolerated) into a
+      nonzero exit code — was implicit `exit 0` on the normal path (the
+      exception handler already exited 1).
+
+    **Submission script (`run_e3sm.fme.sh`):** dropped `-cosp` (no COSP fields
+    on the FME tape → 100 yr of wasted simulator runs) and set the default
+    `WALLTIME` to the 24 h pm-cpu regular-QOS cap (was 34 h, which Slurm
+    rejects).
+
+    **Other doc corrections from the review (no code change needed):** gotcha
+    #47's loud negative-weight init abort is NOT ocean-only — the seaice
+    (`mpas_seaice_fme_horiz_remap.F:224`) and EAM (`horiz_remap_mod.F90:110`)
+    wrappers already have it. Gotcha #9's `nCoarsenLevels > nFmeDepthLevels`
+    guard fires at first compute, not init. Gotcha #22 now covers 23
+    fill-threshold sites, not 22. `FME_MAPS_DIR` defaults to `$DIN_LOC_ROOT/fme`,
+    not NERSC scratch (corrected in the two sections above).
+
+    **NOT changed (deferred, see REVIEW.md):** O2 (no `fmeVerticalReduceOutput`
+    buildnml block — only matters if that AM is re-enabled; the stream query
+    falls back); gotcha #46 proper map-identity sidecar discard; the seaice
+    type-encapsulation refactor; the remaining LOW/robustness items.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -1535,7 +1617,7 @@ FME_EAM_MFILT=1500              # Safety bound when calendar rotation is in
 FME_MPAS_INTERVAL=00-00-01_00:00:00      # MPAS output/averaging interval (default: daily)
 FME_MPAS_INTERVAL_5D=00-00-05_00:00:00   # 5-day-mean companion stream cadence
                                          # (set to 'none' to disable; see #42)
-FME_MAPS_DIR=/path/to/fme_maps  # SCRIP map directory (default: NERSC mahf708 scratch)
+FME_MAPS_DIR=/path/to/fme_maps  # SCRIP map directory (default: $DIN_LOC_ROOT/fme)
 ```
 
 Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_test ...`

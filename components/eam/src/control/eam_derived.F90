@@ -450,8 +450,13 @@ contains
         end if
       end do
 
-      ! Evaluate expression
-      call shr_derived_eval(expressions(i), tmp_fields, ncol, nlev, pcols, result)
+      ! Evaluate expression. Pass an explicit (:,1:nlev,1:n_operands) section:
+      ! for a 2D expression (nlev=1) passing the whole (pcols,pver,*) array
+      ! would sequence-associate operands 2..N onto operand 1's upper levels
+      ! (the gotcha #2 stride bug), silently evaluating them as zero.
+      call shr_derived_eval(expressions(i), &
+           tmp_fields(:, 1:nlev, 1:expressions(i)%n_operands), &
+           ncol, nlev, pcols, result)
 
       ! Cache result for chaining and tendencies
       derived_cache(1:ncol, 1:nlev, i, lchnk) = result(1:ncol, 1:nlev)
