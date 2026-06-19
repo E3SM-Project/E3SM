@@ -74,6 +74,16 @@ for the iac data in the e3sm distribution
 <base_pft_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_20260303_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3_PerAvg_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_hdd_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_ELM_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_cdd_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_ELM_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_regional.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>

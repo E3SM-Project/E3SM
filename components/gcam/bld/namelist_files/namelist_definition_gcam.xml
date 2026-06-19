@@ -178,6 +178,24 @@ Initial hr values file for scalars
 Initial pft weights values file for scalars
 </entry>
 
+<entry id="base_hdd_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Baseline hdd values file for scaling
+</entry>
+
+<entry id="base_cdd_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Baseline cdd values file for scaling
+</entry>
+
 <entry id="gcam2elm_co2_mapping_file"
 	type="char*256"
 	category="gcam"

@@ -441,6 +441,8 @@ add_default($nl, 'base_co2_aircraft_file');
 add_default($nl, 'base_npp_file');
 add_default($nl, 'base_hr_file');
 add_default($nl, 'base_pft_file');
+add_default($nl, 'base_hdd_file');
+add_default($nl, 'base_cdd_file');
 add_default($nl, 'gcam2elm_co2_mapping_file');
 add_default($nl, 'gcam2elm_luc_mapping_file');
 add_default($nl, 'gcam2elm_woodharvest_mapping_file');
