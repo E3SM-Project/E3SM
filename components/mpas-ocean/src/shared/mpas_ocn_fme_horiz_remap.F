@@ -1402,6 +1402,21 @@ contains
                  scalar_value=self%stored_scalar_value(iv), &
                  positive=trim(self%stored_positive(iv)), &
                  standard_name=trim(self%stored_standard_name(iv)))
+            if (ierr /= 0) then
+               ! Surface the failure instead of swallowing it. def_var has
+               ! already bumped n_pio_vars with a possibly-invalid descriptor,
+               ! and write_var matches purely by name, so a later write would
+               ! push data through a stale varid (silent garbage). Accumulate
+               ! into err so the caller sees a nonzero status. We do NOT clear
+               ! the slot name here: the registered-var list and the per-file
+               ! var list share these arrays, and the next rotation replays
+               ! from them.
+               err = ierr
+               call mpas_log_write( &
+                    'ocn_fme_remap_file: check_rotate def_var replay failed for ' &
+                    // trim(self%pio_var_names(iv)) // ' (code $i)', &
+                    messageType=MPAS_LOG_ERR, intArgs=(/ierr/))
+            end if
          end do
       end if
 

@@ -85,7 +85,11 @@
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist\..*\.nc$</hist_file_extension>
-    <hist_file_ext_regex>hist\.am\.fmeSeaiceDerivedFields</hist_file_ext_regex>
+    <!-- 5D companion stream before the 1D one; 1D anchored with a trailing '\.'.
+         See the mpaso block for why (1D/5D ext-bucket collapse in
+         _get_extension would drop one of them from ERS restart-BFB comparison). -->
+    <hist_file_ext_regex>hist\.am\.fmeSeaiceDerivedFields5D</hist_file_ext_regex>
+    <hist_file_ext_regex>hist\.am\.fmeSeaiceDerivedFields\.</hist_file_ext_regex>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
@@ -104,9 +108,20 @@
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
     <hist_file_extension>hist\..*\.nc$</hist_file_extension>
-    <hist_file_ext_regex>hist\.am\.fmeDepthCoarsening</hist_file_ext_regex>
-    <hist_file_ext_regex>hist\.am\.fmeDerivedFields</hist_file_ext_regex>
-    <hist_file_ext_regex>hist\.am\.fmeVerticalReduce</hist_file_ext_regex>
+    <!-- The 5D companion streams MUST precede their 1D counterparts, and the 1D
+         regexes MUST be anchored with a trailing '\.'. _get_extension
+         (archive_base.py) returns on the FIRST matching regex and buckets on the
+         captured group; the unanchored 1D pattern 'fmeDepthCoarsening' also
+         matches a 'fmeDepthCoarsening5D...' file (the capture stops before '5D',
+         the trailing chars are eaten by [-\w\.]*), so 1D and 5D would collapse
+         into one comparison bucket and only one of them would ever be
+         restart-BFB-compared in ERS. Listing 5D first + anchoring 1D keeps each
+         stream in its own ext-bucket regardless of regex iteration order. -->
+    <hist_file_ext_regex>hist\.am\.fmeDepthCoarsening5D</hist_file_ext_regex>
+    <hist_file_ext_regex>hist\.am\.fmeDerivedFields5D</hist_file_ext_regex>
+    <hist_file_ext_regex>hist\.am\.fmeDepthCoarsening\.</hist_file_ext_regex>
+    <hist_file_ext_regex>hist\.am\.fmeDerivedFields\.</hist_file_ext_regex>
+    <hist_file_ext_regex>hist\.am\.fmeVerticalReduce\.</hist_file_ext_regex>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
