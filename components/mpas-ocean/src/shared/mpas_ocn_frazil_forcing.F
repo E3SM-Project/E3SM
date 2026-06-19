@@ -467,6 +467,8 @@ contains
 
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceMassOld
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyNew
+      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyNew
@@ -523,6 +525,8 @@ contains
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassOld, 1)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyNew, 2)
+      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
@@ -666,13 +670,12 @@ contains
             ! layer thickness decreased due to creation of frazil
             ! note: -- this has to be density (not rho_sw) to keep buoyancy equal
             frazilLayerThicknessTendency(k,iCell) = - newFrazilIceThickness * config_frazil_ice_density / density(k,iCell) / dt
-
             ! salt is extracted with the frazil
             frazilSalinityTendency(k,iCell) = - newThicknessWeightedSaltContent / dt
 
             ! ocean fluid temperature is warmed due to creation of frazil
             frazilTemperatureTendency(k,iCell) =  newFrazilEnergy / config_specific_heat_sea_water / rho_sw / dt
-            
+
             ! keep track of sum of frazil ice
             sumNewFrazilIceThickness = sumNewFrazilIceThickness + newFrazilIceThickness
             sumNewThicknessWeightedSaltContent = sumNewThicknessWeightedSaltContent + newThicknessWeightedSaltContent
@@ -717,6 +720,10 @@ contains
               ! keep track of new frazil ice
               sumNewThicknessWeightedSaltContent = max(0.0_RKIND,sumNewThicknessWeightedSaltContent - meltedThicknessWeightedSaltContent)
               sumNewFrazilIceThickness = max(0.0_RKIND,sumNewFrazilIceThickness - meltedFrazilIceThickness)
+              meltedFrazilEnergy = meltedFrazilIceThickness * config_frazil_ice_density *  &
+                 config_frazil_heat_of_fusion -  rho_sw * config_specific_heat_sea_water * &
+                 (oceanFreezingTemperature - activeTracers(indexTemperature,k,iCell)) * &
+                 config_frazil_ice_density * meltedFrazilIceThickness / density(k,iCell)
 
               sumNewFrazilEnergy = max(0.0_RKIND,sumNewFrazilEnergy - meltedFrazilEnergy)
             endif  ! if (sumNewFrazilIceThickness > 0.0_RKIND)
@@ -729,6 +736,8 @@ contains
         ! note: the accumulatedFrazilIceMass (at both time levels) is reset to zero after being sent to the coupler
         accumulatedFrazilIceMassNew(iCell) = accumulatedFrazilIceMassOld(iCell) + sumNewFrazilIceThickness &
            * config_frazil_ice_density
+
+        accumulatedFrazilIceEnergyNew(iCell) = accumulatedFrazilIceEnergyOld(iCell) + sumNewFrazilEnergy
 
         accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
            (1-usePorosity) * sumNewThicknessWeightedSaltContent

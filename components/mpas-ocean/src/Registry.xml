@@ -2293,6 +2293,7 @@
 			<var name="accumulatedFrazilIceMass"/>
 			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedFrazilIceSalinity"/>
+			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedLandIceMass"/>
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
@@ -2666,7 +2667,8 @@
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceEnergy" type="real" dimensions="nCells Time" units="J m^-2"
-			 description="Energy added to the ocean per unit area from frazil ice production. Reset to zero at each coupling interval"
+
+			 description="Accumulated frazil ice energy per unit area. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
