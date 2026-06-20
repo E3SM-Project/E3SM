@@ -195,10 +195,9 @@ contains
     allocate(mapper_Sg2l)
     allocate(mapper_Fg2l)
 
-      ! C_NULL_CHAR is added at each iMOAB C API call site; keep variables clean for diagnostics.
-      wgtIdFr2l = 'flux_r2l'
-      wgtIdFa2l = 'flux_a2l'
-      wgtIdSa2l = 'scalar_a2l'
+      wgtIdFr2l = 'flux_r2l'//C_NULL_CHAR
+      wgtIdFa2l = 'flux_a2l'//C_NULL_CHAR
+      wgtIdSa2l = 'scalar_a2l'//C_NULL_CHAR
       compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
@@ -260,10 +259,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Fr2l'
             end if
-            appname = "ROF_LND_COU"
+            appname = "ROF_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between rof and lnd mesh
             idintx = 100*rof(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxrl)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxrl)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering  rof lnd intx'
               call shr_sys_abort(subname//' ERROR in registering rof lnd intx')
@@ -355,7 +354,7 @@ contains
                                                     noConserve, validate, &
                                                     trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, trim(wgtIdFr2l)//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, wgtIdFr2l, &
                                                     trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                     fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                     noConserve, validate, &
@@ -467,10 +466,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Sa2l and mapper_Fa2l'
             end if
-            appname = "ATM_LND_COU"
+            appname = "ATM_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxal)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxal)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering atm lnd intx '
               call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
@@ -552,7 +551,7 @@ contains
                                                       trim(dofnameS), trim(dofnameT)
                   endif
 
-                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, trim(wgtIdSa2l)//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIdSa2l, &
                                                       trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
@@ -563,7 +562,7 @@ contains
                   endif
 
                   ! Next compute the conservative map for projection of flux fields
-                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, trim(wgtIdFa2l)//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIdFa2l, &
                                                   trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                   noConserve, validate, &

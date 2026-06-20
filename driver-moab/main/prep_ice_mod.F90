@@ -308,10 +308,10 @@ contains
                write(logunit,F00) 'Initializing MOAB mapper_Rr2i'
             end if
 
-            appname = "ROF_ICE_COU"
+            appname = "ROF_ICE_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
             idintx = 100*rof(1)%cplcompid + ice(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxri)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxri)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ROF-ICE intersection'
               call shr_sys_abort(subname//' ERROR in registering ROF-ICE intersection')

@@ -81,11 +81,6 @@ CONTAINS
 
     call seq_infodata_getData(infodata, wav_phase=phase)
 
-    ! Determine instance information
-    inst_name   = seq_comm_name(compid)
-    inst_index  = seq_comm_inst(compid)
-    inst_suffix = seq_comm_suffix(compid)
-
     if (phase == 1) then
        ! Determine communicator group
        call mpi_comm_rank(mpicom, my_task, ierr)

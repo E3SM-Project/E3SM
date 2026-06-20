@@ -389,9 +389,9 @@ contains
     call compute_local_area (pg)
 #ifdef HAVE_MOAB
     if (pgN > 0) then
-        appname="HM_COARSE"
+        appname="HM_COARSE"//C_NULL_CHAR
         ATM_ID1 = 120 !
-        ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, par%comm, ATM_ID1, MHID)
+        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
         if (ierr > 0 )  &
         call abortmp('Error: cannot register moab app')
         if(par%masterproc) then
@@ -399,9 +399,9 @@ contains
             write(iulog,*) "register MOAB app:", trim(appname), "  MHID=", MHID
             write(iulog,*) " "
         endif
-        appname="HM_FINE"
+        appname="HM_FINE"//C_NULL_CHAR
         ATM_ID1 = 119 ! this number should not conflict with other components IDs; how do we know?
-        ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, par%comm, ATM_ID1, MHFID)
+        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHFID)
         if (ierr > 0 )  &
         call abortmp('Error: cannot register moab app for fine mesh')
         if(par%masterproc) then
@@ -409,12 +409,12 @@ contains
             write(iulog,*) "register MOAB app:", trim(appname), "  MHFID=", MHFID
             write(iulog,*) " "
         endif
-        appname="HM_PGX"
+        appname="HM_PGX"//C_NULL_CHAR
         ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
         !
         ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
         ! still, need to be careful
-        ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, par%comm, ATM_ID1, mhpgid)
+        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
         if (ierr > 0 )  &
             call abortmp('Error: cannot register moab app for fine mesh')
         if(par%masterproc) then

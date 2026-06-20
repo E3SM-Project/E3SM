@@ -224,11 +224,10 @@ contains
          ocn_gnam=ocn_gnam             , &
          cpl_compute_maps_online=cpl_compute_maps_online )
 
-    ! C_NULL_CHAR is added at each iMOAB C API call site; keep variables clean for diagnostics.
-    wgtIdl2r = 'conservative_l2r'
-    wgtIdFa2r = 'flux_a2r'
-    wgtIdSa2r = 'scalar_a2r'
-    wgtIdSo2r = 'scalar_o2r'
+    wgtIdl2r = 'conservative_l2r'//C_NULL_CHAR
+    wgtIdFa2r = 'flux_a2r'//C_NULL_CHAR
+    wgtIdSa2r = 'scalar_a2r'//C_NULL_CHAR
+    wgtIdSo2r = 'scalar_o2r'//C_NULL_CHAR
     compute_maps_online_l2r = cpl_compute_maps_online ! read from disk or compute online
     compute_maps_online_a2r = cpl_compute_maps_online ! read from disk or compute online
     compute_maps_online_o2r = cpl_compute_maps_online ! read from disk or compute online
@@ -322,10 +321,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Fl2r'
             endif
-            appname = "LND_ROF_COU"
+            appname = "LND_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
             idintx = 100*lnd(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxlr)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxlr)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering LND-ROF intersection'
               call shr_sys_abort(subname//' ERROR in registering LND-ROF intersection')
@@ -430,7 +429,7 @@ contains
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxlr, trim(wgtIdl2r)//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxlr, wgtIdl2r, &
                                                    trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -548,10 +547,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Fa2r'
             end if
-            appname = "ATM_ROF_COU"
+            appname = "ATM_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between rof and atm mesh
             idintx = 100*atm(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxar)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxar)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ATM-ROF mesh intersection context'
               call shr_sys_abort(subname//' ERROR in registering ATM-ROF mesh intersection context')
@@ -642,7 +641,7 @@ contains
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxar, trim(wgtIdFa2r)//C_NULL_CHAR, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxar, wgtIdFa2r, &
                                                    trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -804,10 +803,10 @@ contains
                write(logunit,F00) 'Initializing MOAB mapper_So2r'
             end if
 
-            appname = "OCN_ROF_COU"
+            appname = "OCN_ROF_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between OCN and ROF mesh
             idintx = 100*ocn(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxor)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxor)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering OCN-ROF intersection'
               call shr_sys_abort(subname//' ERROR in registering OCN-ROF intersection')
