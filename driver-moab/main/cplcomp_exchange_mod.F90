@@ -17,7 +17,7 @@ module cplcomp_exchange_mod
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2l_fields !
   use seq_flds_mod, only: seq_flds_r2x_fields, seq_flds_x2r_fields, seq_flds_r2x_fluxes
   use seq_comm_mct, only: cplid, logunit
-  use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
+  use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin, seq_comm_iamroot
   use cplcomp_moab_helpers_mod, only: moab_register_app, moab_send_mesh, moab_receive_mesh, &
      moab_load_mesh, moab_free_sender_buffers, moab_define_global_id_tag, moab_define_double_tag
 
@@ -184,10 +184,8 @@ subroutine  copy_aream_from_area(mbappid)
             ent_type = 0 ! vertices
          endif
          allocate(tagValues(arrSize))
-         tagname = 'area'//C_NULL_CHAR
-         ierr  = iMOAB_GetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
-         tagname = 'aream'//C_NULL_CHAR
-         ierr  = iMOAB_SetDoubleTagStorage( mbappid, tagname, arrsize , ent_type, tagValues )
+         ierr  = iMOAB_GetDoubleTagStorage( mbappid, 'area'//C_NULL_CHAR, arrsize , ent_type, tagValues )
+         ierr  = iMOAB_SetDoubleTagStorage( mbappid, 'aream'//C_NULL_CHAR, arrsize , ent_type, tagValues )
          deallocate(tagValues)
       endif
 
@@ -207,9 +205,7 @@ subroutine  copy_aream_from_area(mbappid)
       type(component_type), intent(inout) :: comp
       integer,              intent(in)    :: comp_appid, cpl_appid
       character(len=*),     intent(in)    :: domain_fields, dom_context
-      character(CXX) :: tagname
-      tagname = trim(domain_fields)//C_NULL_CHAR
-      call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', tagname, context_exch=dom_context)
+      call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', trim(domain_fields)//C_NULL_CHAR, context_exch=dom_context)
       call copy_aream_from_area(cpl_appid)
   end subroutine moab_exchange_domain_tags
 
@@ -329,7 +325,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif ! atmosphere pes
 !!!!!!!!  ON ATM IN CPL
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_ATM"//C_NULL_CHAR
+         appname = "COUPLE_ATM"
          ! migrated mesh gets another app id, moab atm to coupler (mbax)
          call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
          !!!!  FULL ATM
@@ -341,8 +337,8 @@ subroutine  copy_aream_from_area(mbappid)
          !!!!  DATA ATM
          else
            ! we need to read the atm mesh on coupler, from domain file
-            infile = trim(atm_mesh)//C_NULL_CHAR
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+            infile = trim(atm_mesh)
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'
             if (seq_comm_iamroot(CPLID)) then
                write(logunit,'(A)') subname//' loading atm domain mesh from file '//trim(atm_mesh) &
                 , ' with options ' // trim(ropts)
@@ -477,7 +473,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif
 !!!!!!  OCN ON CPL
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASO"//C_NULL_CHAR
+         appname = "COUPLE_MPASO"
          ! migrated mesh gets another app id, moab ocean to coupler (mbox)
          call moab_register_app(appname, mpicom_new, id_join, mboxid, subname)
  !!!!! FULL OCN
@@ -486,8 +482,8 @@ subroutine  copy_aream_from_area(mbappid)
  !!!!! DATA OCN
          else
            ! we need to read the ocean mesh on coupler, from domain file
-            infile = trim(ocn_domain)//C_NULL_CHAR
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
+            infile = trim(ocn_domain)
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'
             if (seq_comm_iamroot(CPLID)) then
                write(logunit,'(A)') subname//' loading ocn domain mesh from file '//trim(infile) &
                 , ' with options ' // trim(ropts)
@@ -546,7 +542,7 @@ subroutine  copy_aream_from_area(mbappid)
 
 !!!!!!  ON 2nd OCN ON CPL
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASOF"//C_NULL_CHAR
+         appname = "COUPLE_MPASOF"
          ! migrated mesh gets another app id, moab ocean to coupler (mbox)
          call moab_register_app(appname, mpicom_new, id_join, mbofxid, subname)
  !!!!! FULL OCN
@@ -555,8 +551,8 @@ subroutine  copy_aream_from_area(mbappid)
  !!!!! DATA OCN
          else
              ! we need to read the ocean mesh on coupler, from domain file
-            infile = trim(ocn_domain)//C_NULL_CHAR
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
+            infile = trim(ocn_domain)
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'
             if (seq_comm_iamroot(CPLID)) then
                write(logunit,'(A)') subname//' load ocn domain mesh from file for second ocn instance '//trim(ocn_domain) &
                , ' with options '//trim(ropts)
@@ -569,12 +565,11 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_define_double_tag(mbofxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
 
          ! copy domain data to mbofxid
-         tagname = 'lat:lon:area:frac:mask'//C_NULL_CHAR
          nloc = mbGetnCells(mbofxid)
          arrsize=nloc*5
          allocate(tagValues(arrsize))
-         call mbGetCellTagVals(mboxid,tagname,tagValues,arrsize)
-         call mbSetCellTagVals(mbofxid,tagname,tagValues,arrsize)
+         call mbGetCellTagVals(mboxid,'lat:lon:area:frac:mask'//C_NULL_CHAR,tagValues,arrsize)
+         call mbSetCellTagVals(mbofxid,'lat:lon:area:frac:mask'//C_NULL_CHAR,tagValues,arrsize)
          deallocate(tagValues)
 
       endif
@@ -638,7 +633,7 @@ subroutine  copy_aream_from_area(mbappid)
       call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
 
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_LAND"//C_NULL_CHAR
+         appname = "COUPLE_LAND"
          ! migrated mesh gets another app id, moab land to coupler (mblx)
          call moab_register_app(appname, mpicom_new, id_join, mblxid, subname)
       endif
@@ -662,11 +657,11 @@ subroutine  copy_aream_from_area(mbappid)
                ! do not cull in case of data land, like all other data models
                ! for regular land model, cull, because the lnd component culls too
                if (lnd_prognostic) then
-                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'
                else
-                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'//C_NULL_CHAR
+                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'
                endif
-               outfile = trim(lnd_domain)//C_NULL_CHAR
+               outfile = trim(lnd_domain)
                nghlay = 0 ! no ghost layers
                if (seq_comm_iamroot(CPLID) ) then
                   write(logunit, *) "loading land domain file from file: ", trim(lnd_domain), &
@@ -695,9 +690,8 @@ subroutine  copy_aream_from_area(mbappid)
                  ent_type = 1 ! cell
               endif
               allocate(tagValues(arrsize))
-              tagname = trim(newlist)//C_NULL_CHAR
               tagValues = 0.0_r8
-              ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize, ent_type, tagValues)
+              ierr = iMOAB_SetDoubleTagStorage ( mblxid, trim(newlist)//C_NULL_CHAR, arrsize, ent_type, tagValues)
               if (ierr .ne. 0) then
                  write(logunit,*) subname,' error in zeroing Flrr tags on land', ierr
                  call shr_sys_abort(subname//' ERROR in zeroing Flrr tags land')
@@ -802,7 +796,7 @@ subroutine  copy_aream_from_area(mbappid)
          endif
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASSI"//C_NULL_CHAR
+         appname = "COUPLE_MPASSI"
          ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
          call moab_register_app(appname, mpicom_new, id_join, mbixid, subname)
          if ( trim(ice_domain) == 'none' ) then ! regular ice model
@@ -810,10 +804,10 @@ subroutine  copy_aream_from_area(mbappid)
          else
             ! we need to read the mesh ice (domain file)
             ! we could be using cice model or data sea ice; in both cases ice_domain should be non-empty
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'//C_NULL_CHAR
-            infile = trim(ice_domain)//C_NULL_CHAR
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'
+            infile = trim(ice_domain)
             if (seq_comm_iamroot(CPLID)) then
-               write(logunit,'(A)') subname//' loading ice domain mesh from file '//infile &
+               write(logunit,'(A)') subname//' loading ice domain mesh from file '//trim(infile) &
                  , ' with options '//trim(ropts)
             endif
             call moab_load_mesh(mbixid, infile, ropts, 0, subname)
@@ -967,7 +961,7 @@ subroutine  copy_aream_from_area(mbappid)
 
       ! Coupler side: register application and receive/load mesh
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MROF"//C_NULL_CHAR
+         appname = "COUPLE_MROF"
          call moab_register_app(appname, mpicom_new, id_join, mbrxid, subname)
 
          if (dead_comps) then
@@ -1248,8 +1242,8 @@ subroutine  copy_aream_from_area(mbappid)
        id_join = comp%cplcompid
        call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-       ! Prepare tag name with C null terminator for iMOAB interface
-       tagName = trim(fields)//C_NULL_CHAR
+       ! Keep tag name clean; C_NULL_CHAR is appended only at each iMOAB call site
+       tagName = trim(fields)
 
        !---------------------------------------------------------------------------
        ! Determine source and target IDs based on data flow direction
@@ -1284,7 +1278,7 @@ subroutine  copy_aream_from_area(mbappid)
        ! Only PEs with valid mbAPPid1 participate in sending
        !---------------------------------------------------------------------------
        if (mbAPPid1 .ge. 0) then !  we are on the sending pes
-          ierr = iMOAB_SendElementTag(mbAPPid1, tagName, mpicom_join, target_id)
+          ierr = iMOAB_SendElementTag(mbAPPid1, trim(tagName)//C_NULL_CHAR, mpicom_join, target_id)
           if (ierr .ne. 0) then
              call shr_sys_abort(subname//' cannot send element tag: '//trim(tagName))
           endif
@@ -1295,7 +1289,7 @@ subroutine  copy_aream_from_area(mbappid)
        ! Only PEs with valid mbAPPid2 participate in receiving
        !---------------------------------------------------------------------------
        if ( mbAPPid2 .ge. 0 ) then !  we are on receiving end
-          ierr = iMOAB_ReceiveElementTag(mbAPPid2, tagName, mpicom_join, source_id)
+          ierr = iMOAB_ReceiveElementTag(mbAPPid2, trim(tagName)//C_NULL_CHAR, mpicom_join, source_id)
           if (ierr .ne. 0) then
              call shr_sys_abort(subname//' cannot receive element tag: '//trim(tagName))
           endif
@@ -1368,14 +1362,14 @@ subroutine  copy_aream_from_area(mbappid)
     ! Write received mesh data to HDF5 file for visualization/debugging
     if (mbAPPid2 .ge. 0 ) then !  we are on receiving pes, for sure
       if (present(context_exch)) then
-         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(context_exch)//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'
       else
-         outfile = comp%ntype//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         outfile = comp%ntype//'_'//trim(direction)//'_'//trim(lnum)//'.h5m'
       endif
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-      ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile), trim(wopts))
+      wopts   = ';PARALLEL=WRITE_PART'
+      ierr = iMOAB_WriteMesh(mbAPPid2, trim(outfile)//C_NULL_CHAR, trim(wopts)//C_NULL_CHAR)
       if (ierr .ne. 0) then
-          call shr_sys_abort(subname//' cannot write file '// outfile)
+          call shr_sys_abort(subname//' cannot write file '// trim(outfile))
        endif
     endif
 #endif
