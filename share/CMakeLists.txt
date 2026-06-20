@@ -9,6 +9,28 @@ cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0079 NEW) # Remove once scorpio in a better state
 set(CMAKE_CXX_STANDARD 17)
 
+if(DEFINED$ENV{MOAB_ROOT})
+  message("moab root: $ENV{MOAB_ROOT}")
+else()
+  message("moab root not in env")
+endif()
+execute_process(
+    COMMAND bash -c "for var in \$(compgen -e); do echo \"\$var=\${!var}\"; done"
+    OUTPUT_VARIABLE ENV_VARS_OUTPUT
+)
+
+# Print the cleaned environment variables to the CMake configuration log
+message(STATUS "Cleaned Environment Variables:\n${ENV_VARS_OUTPUT}")
+execute_process(
+  COMMAND bash -c "ls $MOAB_ROOT"
+  OUTPUT_VARIABLE MOAB_ROOT_CONTENT
+)
+message(STATUS "moab root content:\n${MOAB_ROOT_CONTENT}")
+execute_process(
+  COMMAND bash -c "ls $MOAB_ROOT/lib/cmake/MOAB"
+  OUTPUT_VARIABLE MOAB_CMAKE_CONTENT
+)
+message(STATUS "moab cmake content:\n${MOAB_CMAKE_CONTENT}")
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
 # However, we do *not* want to pollute the environment with other

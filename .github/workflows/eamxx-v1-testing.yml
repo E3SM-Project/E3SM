@@ -87,6 +87,21 @@ jobs:
       fail-fast: false
     name: gnu / ${{ matrix.test.short_name }}
     steps:
+      - name: Dump Container Identity
+        run: |
+          echo "=== Container ID (cgroup) ==="
+          cat /proc/1/cgroup | grep -oE '[a-f0-9]{64}' | head -n 1 || echo "Not found"
+          echo "=== Image Environment Variables ==="
+          env
+      - name: DEBUG
+        id: debug-moab
+        run: |
+          echo "e3sm\n"
+          ls -l /projects/e3sm
+          echo "moab\n"
+          ls -l /projects/e3sm/software/moab
+          echo "moab cmake\n"
+          ls -l /projects/e3sm/software/moab/lib/cmake/MOAB
       - name: Check out the repository
         uses: actions/checkout@v6
         with:
