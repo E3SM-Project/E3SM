@@ -1724,6 +1724,13 @@ def check_remapped_grid(ds, label):
     # datesec mirroring EAM. Warn (don't fail) if any are missing in
     # case we're inspecting a pre-rewrite file.
     varnames = get_varnames(ds)
+    # CF dimension-coordinates (notably 'time') are promoted by xarray into
+    # ds.coords, NOT ds.data_vars, so get_varnames() (data_vars only on the
+    # xarray backend) misses them -- a false "missing time" warning on
+    # perfectly correct files. Union in the coordinate names here. The NC4
+    # backend already returns all variables, so this is a no-op there.
+    if HAS_XR and isinstance(ds, xr.Dataset):
+        varnames = list(varnames) + list(ds.coords)
     cf_time_vars = ("time", "time_bnds", "date", "datesec")
     missing_cf = [v for v in cf_time_vars if v not in varnames]
     if missing_cf:
