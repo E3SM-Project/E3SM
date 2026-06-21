@@ -5,6 +5,12 @@ field computation, and vertical reduction to E3SM for FME (Full Model
 Emulation) training data generation (ACE/Samudra). Eliminates offline
 postprocessing. Overhead: +1.6% wallclock.
 
+> **Next major workstream:** see `## PLAN: Coupler-Native FME Output —
+> As-Exchanged Merged Forcing (driver-mct)` at the END of this file — a
+> self-contained, design-approved brief (2026-06-20, not yet implemented)
+> for emitting the merged post-coupler forcing (`x2o`/`x2i`/`xao`) that no
+> component tape can provide.
+
 ## Source Files
 
 Shared infrastructure (pure computation, no I/O or MPI):
@@ -1835,6 +1841,10 @@ would catch latent issues during the 100-yr run:
   grid diagnostic plots
 
 ### Extensions
+- **Coupler-native FME output (merged forcing).** Design approved, not yet
+  implemented — full brief in `## PLAN: Coupler-Native FME Output` at the
+  end of this file. Emits `x2o`/`x2i`/`xao` (the post-merge forcing each
+  component integrates), which no component tape exposes.
 - Online spherical harmonics roundtrip (replaces ACE offline SH smoothing)
 - ELM / MOSART FME integration (deferred -- needs reimplementation)
 - Performance: persistent work arrays, O(n) send_local_cell lookup, OpenMP
@@ -1858,3 +1868,438 @@ would catch latent issues during the 100-yr run:
   (timeseries + climatology per var). Plotting takes the bulk of
   the runtime; iterating on the cross-check / sanity logic doesn't
   need fresh figures.
+
+## PLAN: Coupler-Native FME Output — As-Exchanged Merged Forcing (driver-mct)
+
+**Status:** design approved 2026-06-20. **IMPLEMENTED 2026-06-20/06-21 — SEVEN
+bundles. Ocean-mesh bundles each 1D + 5D (10 streams): imports x2o/x2i, exports
+o2x/i2x, plus coupler xao. Atm-grid bundles x2a(in)/a2x(out) each a SINGLE
+configurable sub-daily stream (`cpl_fme_atm_interval`, default 6 h) = 2 streams.
+12 streams total.** Purely additive: the EAM h0 tape and the MPAS-O/SI FME AMs
+stay exactly as-is. All file:line refs were verified against *this* checkout's
+`driver-mct` before coding.
+
+> ### ⇨ HANDOFF — read this first (state as of 2026-06-21 PM, 4th update)
+> **Where it stands: ✅ ACCEPTANCE MET — coupler-native FME is BFB-validated
+> end-to-end on ERS_Ld4 with all 12 streams on.** Fixed: `cime_final` segfault
+> (gotcha #49); archive bug that compared only a sidecar (gotcha #50); the
+> merged-import warm-restart BFB bug (gotcha #51). **Progression of ERS_Ld4
+> COMPARE_base_rest runs:**
+> - run `...185103_coawyr` (pre-#50): "PASS" but only 1 sidecar compared — false
+>   confidence.
+> - run `...143731_xn3ikq` (post-#50, pre-#51): all 7 outputs compared → 5
+>   IDENTICAL, **2 FAILED (`x2a`,`x2i`)** — diagnosed gotcha #51.
+> - run `...153319_od1ku8` (post-#51): **COMPARE_base_rest PASS, ALL 7 coupler
+>   outputs IDENTICAL** (x2o/x2i/o2x/i2x/x2a/a2x/xao). x2a came back clean too,
+>   so no residual upstream-driver issue. Full test green (RUN, COMPARE, MEMLEAK,
+>   SHORT_TERM_ARCHIVER).
+>
+> **Remaining work is NOT correctness — it's housekeeping:**
+> 1. **Commit** the validated tree (currently the `tmp` commit `e15fe601a3` +
+>    uncommitted rename/archive/#51 changes). Suggested split: (a) coupler module
+>    `cpl_fme_mod.F90` + driver hooks + namelist + verify_cpl.py; (b) archive fix
+>    + ocn/ice→x2o/x2i rename; (c) the #51 phase-hook fix. (User is handling the
+>    commit.)
+> 2. **5D outputs are still unexercised** — a 4-day ERS never flushes a 5-day
+>    window, so only `.accum.nc` sidecars exist for the 5D streams. Run a longer
+>    test (≥ ERS_Ld11, or production cadence) to BFB-validate the 5D output
+>    flush + its append-mode reopen.
+> 3. Optional: add `cpl_fme_mod.F90` + `verify_cpl.py` to the "Source Files"
+>    section of this doc.
+>
+> **Streams (renamed 2026-06-21, gotcha #50 "Stream rename"):** ocean/ice
+> IMPORTS are `x2o`/`x2i` (were `ocn`/`ice`). The 6 component bundles are
+> symmetric by direction: `x2o`/`o2x`, `x2i`/`i2x`, `x2a`/`a2x` (+ coupler
+> `xao`). Files `<case>.cpl.fme.<stream>{1D,5D}.YYYY-MM.nc`, stream ∈
+> {x2o,x2i,o2x,i2x,xao} (1D+5D) and {x2a,a2x} (single 6 h). Per-bundle enable
+> flags `cpl_fme_<stream>_enable`/`_5d_enable`; SHARED ocean-mesh map/window vars
+> stay `cpl_fme_ocn_{map,interval,5d_interval}` on purpose.
+>
+> **To re-validate / re-run from scratch:** `cd cime/scripts && ./create_test
+> ERS_Ld4_P1024.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.pm-cpu_gnu --testmod
+> allactive/fme_output` — MUST be a fresh case-create (the `config_archive.xml`
+> spec only reaches a case via its CASEROOT `env_archive.xml` at create time, not
+> a rebuild). Acceptance = COMPARE_base_rest PASS with all 7 `cpl.fme.*1D`/`x2a`/
+> `a2x` outputs IDENTICAL. If `x2a`/`x2i` ever regress, check only the
+> post-restart records (day 3.25 for x2a, day 4 for x2i) — that points back at
+> the merged-import sampling phase (gotcha #51).
+>
+> **Config (testmod defaults, all `.true.`):** all 12 streams,
+> x2a/a2x at 6 h, the ocean/ice bundles at 1D + 5D. Atm maps confirmed present:
+> `$DIN_LOC_ROOT/fme/map_{ne30pg2,IcoswISC30E3r5}_to_gaussian_180by360_shifted_trintbilin.nc`.
+>
+> **Known-unfixed:** gotcha #46 (map-change-across-restart accumulator
+> contamination) applies to the coupler sidecars too in principle, but the
+> coupler accumulates in SOURCE space (map-independent) so it is **immune** —
+> see the "KEY DESIGN DECISION" note below.
+
+**Coupler data model (why these names):** the MCT mediator stores, per
+component, an IMPORT (`x2c`: x2a/x2o/x2i — what the component integrates) and an
+EXPORT (`c2x`: a2x/o2x/i2x — what it produces). There is NO `a2o`/`a2i` bundle;
+the atm→ocean piece is the transient `a2x_ox` consumed by the `x2o` merge. So
+the FME coverage is per-component in/out: atm = x2a(in)+a2x(out), ocn =
+x2o(in)+o2x(out), ice = x2i(in)+i2x(out), plus xao (coupler bulk fluxes). x2a
+AND a2x ride the ATM grid (ne30pg2 → `cpl_fme_atm_map` = the EAM map); all
+others ride the ocean mesh (`cpl_fme_ocn_map`; sea-ice shares it). Note a2x is
+ALSO available on the EAM h0 tape, but the coupler-native a2x is emitted on the
+same lat-lon grid / cadence as x2a so SamudrACE gets atm forcing both IN and OUT
+in one self-consistent place.
+
+**Average vs. flux (matches the coupler) — IMPLEMENTED.** Every field in every
+bundle is accumulated (running source-space SUM over the output window) and
+divided by `nAccum` at flush → a true time-mean, tagged `cell_methods='time:
+mean'`. This mirrors the coupler's own treatment: x2o is sampled from the
+`x2oacc` accumulator the coupler itself sums-then-averages; the other bundles
+have no native accumulator so we average coupling-cadence snapshots. Crucially,
+**no field is summed instead of averaged** because the coupler exchanges flux
+DENSITIES (rates: W m⁻², kg m⁻² s⁻¹), not per-step accumulated totals — so the
+mean rate is the correct aggregation for both state and flux variables, exactly
+as the coupler/EAM-h0 do. There is no quantity in these bundles that is a true
+per-step running total, so uniform time-mean is right across the board.
+
+**Atm cadence (x2a/a2x) — configurable.** `cpl_fme_atm_interval` (days, default
+0.25 = 6 h) sets the atm window; sampling happens once per ocean coupling step
+(the `cpl_fme_accum` hook), so the interval must be ≥ and a multiple of the
+coupling step. For default WCYCL (ATM_NCPL=OCN_NCPL=ICE_NCPL=48 → 30-min step)
+a 6-h window averages 12 exact snapshots. If a config ever couples the ocean
+coarser than the atm, x2a/a2x would undersample — only then is a second hook in
+`cime_run_atmocn_fluxes` warranted (the still-live "second hook" open question).
+
+### Implementation notes (2026-06-20)
+New module `driver-mct/main/cpl_fme_mod.F90` + 5 hooks in `cime_comp_mod.F90`
+(use:133; `cpl_fme_init` at the end of `init_readrestart` ~2438;
+`cpl_fme_accum` right after `prep_ocn_accum_avg` ~4014; `cpl_fme_restart_write`
+after `seq_rest_write` ~5155; `cpl_fme_final` in `cime_final` ~3605).
+**12 config-driven streams across 7 bundles:** ocean-mesh `x2o{1D,5D}` (ocean
+merged import), `xao{1D,5D}` (Faox_*), `x2i{1D,5D}` (sea-ice import, ice gsmap —
+sea-ice shares the ocean mesh so the SAME map file), `o2x{1D,5D}` (ocean
+export), `i2x{1D,5D}` (ice export); atm-grid `x2a` (merged import) and `a2x`
+(atm export), each a single
+stream at `cpl_fme_atm_interval` (default 6 h). x2o is sampled from the
+cpl-restart-safe `x2oacc` window-mean (PLAN enabler #1); all other bundles have
+no native accumulator so we average coupling-cadence snapshots (sampled at the
+ocean hook). `cpl_fme_init` takes `(infodata, EClock, ocn, ocn_present, ice,
+ice_present, atm, atm_present, read_restart)` — atm args are REQUIRED (they feed
+x2a/a2x). Config: `cpl_fme_inparm` group in `namelist_definition_drv.xml`
+(auto-written to `drv_in` by the existing nmlgen — no buildnml change; ocn map +
+atm map + ocn 1D/5D windows + atm window + per-bundle enable flags), `FME_CPL_*`
+env + `user_nl_cpl` block in the testmod `shell_commands`, per-stream
+`<hist_file_extension>fme\.<stream>\.\d.*\.nc$</hist_file_extension>` (dated
+outputs only, NOT the `.accum.nc` sidecars — gotcha #50) plus ONE
+`<hist_file_ext_regex>fme\.\w+</hist_file_ext_regex>` for the per-stream COMPARE
+bucket, for `{x2o,x2i,xao,o2x,i2x}{1D,5D}` plus `x2a` and `a2x`, in
+`driver-mct/cime_config/config_archive.xml` so ERS actually COMPAREs the new
+files (gotchas #34/#48/#50 — **re-create test cases** to pick up the spec).
+Readiness check: `verify_cpl.py` (CF time/grid/field-presence/fill-leak +
+5D-vs-mean(1D) cross-check for the ocean-mesh bundles; xgns→share flow).
+
+**KEY DESIGN DECISION — accumulate in SOURCE space, not remap space.** The
+super-accumulator is an `mct_aVect` of the merged forcing on the ocean-cell
+decomposition (built/averaged with the same MCT ops as `x2oacc_ox` itself);
+fields are remapped via `shr_horiz_remap` *only at flush*. For a linear masked
+remap with a static land mask this is bit-equivalent to remap-then-accumulate,
+but it (a) reuses the proven `x2oacc` persistence path for restart-BFB trust,
+(b) is **immune to gotcha #46** (map-change contamination — the accumulator is
+map-independent), and (c) is cheaper (1 remap/field/window vs per coupling
+step). Consequence: the per-cell-count machinery of gotcha #36 is unnecessary
+here (coupler bundles carry no time-varying source fill; the only fill is the
+static land mask introduced by `apply_masked` at the spatial level). The
+restart sidecar is `<case>.cpl.fme.<stream>.accum.nc` (per-field source-space
+sums + `nAccum` + drift-free schedule + epoch), written on the coupler restart
+alarm and read at init; rewind handled per gotcha #45 (strict `>` keeps warm-
+restart BFB; future schedule ⇒ reset + clobber-create). Honors #11 (advance
+`next_output_time` by exactly one interval — no drift), #29/#44 (first-open
+append + strict-`<` frame seeding to overwrite the straddling leftover record),
+#1 (real(4)/PIO_REAL), #3/#5 (apply_masked + SHR_FILL_VALUE), #47 (init refuses
+negative-weight maps). Output files: `<case>.cpl.fme.x2o1D.YYYY-MM.nc` and
+`...x2o5D...` (renamed from `ocn1D`/`ocn5D` 2026-06-21 — see gotcha #50), CF
+time = END of window (matches EAM/#39), reusing the existing
+`map_IcoswISC30E3r5_to_gaussian_180by360_shifted*.nc` (no new map files).
+
+**Acceptance bar: MET (2026-06-21).** Fresh ERS_Ld4 `...153319_od1ku8` with all
+fixes + 12 streams PASSED `COMPARE_base_rest` with every per-stream 1D output
+(`cpl.fme.{x2o,x2i,o2x,i2x,xao}1D.*` + `x2a`/`a2x`) IDENTICAL — see the HANDOFF
+box at the top of this PLAN. **Remaining housekeeping:** (1) commit the validated
+tree (user is doing this); (2) a longer run (≥ ERS_Ld11 / production cadence) to
+BFB-exercise the 5D output flush, which a 4-day ERS never reaches. The default
+field lists are the authoritative sets in `cpl_fme_mod.F90`
+(`x2o_default`/`xao_default`/`x2i_default`/`o2x_default`/`i2x_default`/
+`x2a_default`/`a2x_default`); absent fields are skipped+warned at setup for
+compset safety. **Source files for the FME testmod doc list:** add
+`cpl_fme_mod.F90` (coupler) and `verify_cpl.py` (this dir) when next updating
+the "Source Files" section.
+
+### gotcha #49 — coupler FME segfault in `cime_final`: free PIO decomp BEFORE close flushes the buffered darray (FIXED 2026-06-21)
+First ERS_Ld4 (built from the 3-bundle ocn/xao/ice tree) ran the entire leg —
+wrote the restart at day 4, all `fme.*` output + `.accum.nc` sidecars on disk —
+then **SIGSEGV at the very end** on ~all cpl ranks. The GNU backtrace was
+misleading (line numbers skewed by `-O2` inlining; the SIGSEGV itself was a
+*secondary* fault during Kokkos `atexit` teardown after an `MPI_Abort`).
+`addr2line` on the executable gave the true chain:
+`pio_closefile → PIOc_closefile → sync_file → flush_buffer →
+PIOc_write_darray_multi → pio_err → piodie`.
+**Root cause:** `pio_write_darray` (in `cpl_fme_file_write_var`) BUFFERS field
+writes and PIO flushes them inside `pio_closefile`. `cpl_fme_final` was freeing
+`iodesc_dst` (`pio_freedecomp`) *before* `cpl_fme_file_close`, so the close-time
+flush dereferenced a freed decomposition → PIO aborts. (The sidecar path didn't
+crash because it frees via the *file* overload `pio_freedecomp(pf, iod)` AFTER
+its own write, and closes after — order was fine there.) **Fix:** in
+`cpl_fme_final`, **close the file FIRST** (flush buffered darrays with the decomp
+still valid), **then** `pio_freedecomp`. One-spot reorder; canonical PIO
+lifecycle. NB: the run also exposed a compile-blocking typo — `cpl_fme_init`
+declared `atm`/`atm_present` but omitted them from the SUBROUTINE arg list (the
+3-bundle tree that built predates the atm additions); fixed alongside.
+**Lesson:** never free a PIO decomposition while any buffered (unflushed)
+`write_darray` still references it; close/sync first. Diagnose PIO segfaults
+with `addr2line -f -e bld/e3sm.exe <addr>`, not the inlined Fortran line nums.
+
+### gotcha #50 — coupler FME files weren't actually BFB-compared; sidecars must NOT be archived (FIXED 2026-06-21)
+The first passing ERS_Ld4 (WCYCL1850, COMPARE_base_rest PASS) hid a gap: of all
+`cpl.fme.*` files, cprnc compared exactly ONE — `cpl.fme.xao5D.accum.nc`, a
+restart *sidecar*, not even a data output. Two distinct CIME-archive bugs, both
+in the `drv` `comp_archive_spec` (`driver-mct/cime_config/config_archive.xml`):
+
+1. **Bucket collapse (the gotcha #34 mechanism, again).** `config_archive.xml`
+   had 12 per-stream `<hist_file_extension>` entries but NO
+   `<hist_file_ext_regex>`. `archive_base._get_extension` uses the latter to
+   key the "latest file per ext" COMPARE dedup; with none, it falls back to
+   `\w+` and collapses EVERY `cpl.fme.*` file into one `"fme"` bucket → only the
+   alphabetically-last survives (`xao5D.accum.nc`). **Fix:** add one
+   `<hist_file_ext_regex>fme\.\w+</hist_file_ext_regex>` → each stream gets its
+   own bucket (`fme.x2o1D`, `fme.x2a`, ...). Verified by simulating
+   `get_all_hist_files`+`_get_extension` on the real rundir: 3/3 enabled 1D
+   outputs now bucketed separately.
+
+   **Stream rename (2026-06-21, same pass):** the ocean/ice IMPORT streams were
+   renamed `ocn`→`x2o` and `ice`→`x2i` so all six component bundles read
+   symmetrically by direction: `x2o`/`o2x`, `x2i`/`i2x`, `x2a`/`a2x` (+ `xao`).
+   Files are now `<case>.cpl.fme.{x2o,x2i}{1D,5D}.YYYY-MM.nc`. The rename touched,
+   in lockstep: the `add_stream` name strings + per-bundle enable flags
+   `cpl_fme_{x2o,x2i}_enable`/`_5d_enable` in `cpl_fme_mod.F90`; the matching
+   `<entry id=...>` in `namelist_definition_drv.xml`; the `user_nl_cpl` heredoc
+   in `shell_commands`; the `config_archive.xml` globs + tfiles; and
+   `verify_cpl.py` (`EXPECTED` keys + `STREAMS`). The SHARED ocean-mesh
+   map/window namelist vars stay named `cpl_fme_ocn_{map,interval,5d_interval}`
+   on purpose — they are mesh-level (used by x2o/o2x/x2i/i2x/xao), not
+   bundle-specific.
+
+2. **Sidecars were being swept in as hist (latent PRODUCTION restart bug).**
+   The cpl accumulator sidecars are named `<case>.cpl.fme.<stream>.accum.nc` —
+   they carry the casename prefix, so unlike the MPAS `*.fme_accum_restart.nc`
+   sidecars (which dodge archiving by NOT starting with the casename) they
+   matched the bare `fme\.<stream>\..*\.nc$` glob. With `disposition="move"`,
+   st_archive would MOVE them out of the run dir at end-of-leg → the next
+   RESUBMIT leg's `cpl_fme_read_sidecar` (reads from the run dir at init) finds
+   nothing → cold-starts the accumulator (WARN) → breaks warm-restart BFB across
+   the archive boundary. Didn't surface in ERS (no post-archive leg). **Fix:**
+   tighten each glob to dated OUTPUTS only — `fme\.<stream>\.\d.*\.nc$` (the
+   `\.\d` requires the YYYY-MM date right after the stream name, excluding
+   `.accum.nc`). Sidecars now stay in the run dir for restart and are simply not
+   compared — which is fine: their BFB correctness is already exercised by the
+   dated 1D output comparison (same accumulator + append-mode-reopen path).
+   **Consequence:** a short ERS (<5 d) compares only the 1D outputs; the 5D
+   outputs need a test long enough to flush a 5-day window.
+
+**Acceptance bar still requires a case RE-CREATE** (not just rebuild): the
+`env_archive.xml` baked into an existing CASEROOT is a stale copy of this spec.
+The 2026-06-20/21 case was created from the 3-bundle tree, so its
+`env_archive.xml` predates even the o2x/i2x/x2a/a2x streams.
+
+### gotcha #51 — merged-import streams (x2i, x2a) not warm-restart BFB: sample each import AFTER its own merge, not at the ocean hook (FIXED + CONFIRMED 2026-06-21)
+With gotcha #50's archive fix the coupler OUTPUTS finally got cprnc-compared on
+a fresh case (`...20260621_143731_xn3ikq`), and ERS_Ld4 COMPARE_base_rest
+**FAILED on exactly two streams — `x2a` and `x2i`** — while `x2o`, `o2x`,
+`i2x`, `xao`, `a2x` were all IDENTICAL. The two failures are precisely the
+merged IMPORTS (`component_get_x2c_cx`).
+
+**Diagnosis (the arithmetic nails it).** ERS restarts at end of day 3, so only
+post-restart records can differ:
+- `x2i` (1-day window, 48 coupling steps/window): its single leg-2 record
+  (day 4) is off by mean ~5.87 K on `Sa_tbot` (Sa_tbot≈282 K). **282/48 =
+  5.875 K** = exactly ONE zero-valued sample dragging down a 48-sample mean.
+- `x2a` (6-h window, 12 steps/window): differs ONLY on the first post-restart
+  record (day 3.25); later records identical. `Sx_tref` normalized RMS ≈ 8.7%
+  ≈ **1/12** = one zero sample in 12. Only the dynamic ocean/ice-derived fields
+  (`Sx_*`,`So_*`,`Faxx_*`) differ; near-static `Sf_*` fractions don't (a single
+  zero barely moves a constant). For `x2i` the WHOLE bundle is stale so even
+  `Sa_*`/`Faxa_*` differ.
+
+**Root cause.** The single accum hook was at the OCEAN phase (right after
+`prep_ocn_accum_avg`). In the driver step order: `prep_atm_mrg` (merges x2a) →
+ocean hook → `prep_ice_mrg` (merges x2i). So at that hook **x2i is sampled one
+merge too early** — it still holds the PREVIOUS step's value, which is a
+re-initialized ZERO on the first step of a warm-restart leg. x2a is merged
+before the hook but from an ocean→atm contribution that is stale/zero on the
+first restart step. Either way the first post-restart sample is ~0 and pollutes
+that window's mean by `field/nAccum`. The other five streams are immune: `x2o`
+reads the restart-persisted `x2oacc` window-mean; `xao` is recomputed each step;
+`o2x`/`i2x`/`a2x` are component EXPORTS straight from the (BFB) models.
+
+**Why skipping the bad sample does NOT work.** Dropping the first post-restart
+sample would leave the restart window with `nAccum`-1 samples vs the base
+window's `nAccum` → different mean → still not BFB. The only correct fix is to
+sample the import at a point where it is validly merged in BOTH runs.
+
+**Fix.** Sample each merged import right after its own merge — the same point
+`component_diag(flow='x2c')` reads it for the (BFB) cpl history. `cpl_fme_accum`
+gained a `phase` argument (`CPL_FME_PHASE_{OCN,ICE,ATM}`); each stream carries a
+`phase` (set in `add_stream`: x2i→ICE, x2a→ATM, all else→OCN) and is processed
+only at its phase. `cime_comp_mod.F90` now calls the hook three times per step:
+OCN after `prep_ocn_accum_avg`, ATM right after `prep_atm_mrg`, ICE right after
+`prep_ice_mrg`. The driver clock advances once per step (`seq_timemgr_clockAdvance`,
+well before any prep), so all three phases see the same `curr_time` and the
+drift-free flush schedule (gotcha #11) stays consistent. Files: `cpl_fme_mod.F90`
+(+phase param/field, `add_stream` select, `cpl_fme_accum(EClock, phase)` filter)
+and `cime_comp_mod.F90` (use-list + 3 hook calls). Minimal/surgical — only x2i
+and x2a moved; the 5 already-BFB streams stay at the ocean hook.
+
+**STATUS: CONFIRMED.** Fresh ERS_Ld4 `...153319_od1ku8` (all fixes #49/#50/#51,
+12 streams on) PASSED COMPARE_base_rest with **all 7 coupler outputs IDENTICAL**
+— `x2a` and `x2i` now bit-for-bit alongside the 5 that already passed. `x2a`
+came back clean, so the feared upstream-driver residue (ocean→atm export not
+restored before the first restart-step atm merge) did NOT materialize: sampling
+right after `prep_atm_mrg` is sufficient. Full test green (RUN, COMPARE_base_rest,
+MEMLEAK, SHORT_TERM_ARCHIVER).
+
+### Why (the one quantity component tapes cannot provide)
+The EAM h0 tape and the MPAS FME AMs emit each component's *internal*
+fields. They do NOT emit the **merged, post-coupler forcing each component
+actually integrates** — that exists only on the mediator:
+- `x2o` — merged forcing the ocean imports (atm precip/radiation +
+  coupler-computed turbulent fluxes `Foxx_*` + ice melt `Fioi_*`).
+- `x2i` — merged forcing sea-ice imports.
+- `xao` — the coupler's own atm–ocean bulk fluxes (`Faox_taux/tauy/lat/
+  sen/lwup/evap/swdn/swup`), recomputed on the exchange grid every atm
+  step — distinct from EAM's surface fluxes.
+For a *coupled* ACE/Samudra emulator the training target is precisely this
+exchanged forcing. That is the SOLE justification for a coupler path.
+**`a2x` is NOT a reason** — EAM already emits it (the `zbot..swnet` block
+added to `cam_diagnostics::diag_export` 2026-06-20 mirrors `atm_export`
+bit-for-bit). So skip the 6h atm coupler stream unless you want
+config consolidation; it duplicates EAM h0.
+
+### Key enabler #1 — the merged ocean forcing is already accumulated AND restart-safe
+`x2oacc_ox` (`driver-mct/main/prep_ocn_mod.F90:104-105,247-252`) is a running
+SUM of merged `x2o` over the ocean coupling window:
+- accumulated every atm step in `prep_ocn_accum` (prep_ocn_mod.F90:394-423),
+- averaged in place (÷count) in `prep_ocn_accum_avg` (prep_ocn_mod.F90:427-455),
+  which copies the window-mean into `x2o_ox = component_get_x2c_cx(ocn)`
+  and resets the counter (`x2oacc_ox_cnt = 0`),
+- **persisted to the cpl restart** (`x2oacc_ox` + `x2oacc_ox_cnt`:
+  `seq_rest_mod.F90:271-272` read / `607-609` write) — so the window-mean
+  base is BFB across a mid-window stop with ZERO new code.
+- exposed through **existing public getters** `prep_ocn_get_x2oacc_ox()` /
+  `prep_ocn_get_x2oacc_ox_cnt()` (prep_ocn_mod.F90:50-51, 1481-1489) — the
+  same ones `seq_rest_mod` uses (:54-55).
+⇒ The "as-exchanged ocean forcing" is `x2o_ox` immediately after
+`prep_ocn_accum_avg`. Cleanest tap: `use prep_ocn_mod, only:
+prep_ocn_get_x2oacc_ox` and read the accumulator pointer directly (it holds
+the in-place-averaged window-mean after `prep_ocn_accum_avg`) — this
+decouples `cpl_fme` from call-ordering instead of relying on `x2o_ox`
+still holding the mean. There is **no** native
+accumulator for ice (`x2i`) or atm (`x2a`) — those are sampled at
+coupling cadence. `xao` (`Faox_*`) is recomputed every atm step in
+`seq_flux_atmocn_mct` (`driver-mct/main/seq_flux_mct.F90:1316`; exchange-
+grid variant `seq_flux_atmocnexch_mct` at :960 — confirm which is active).
+
+### Key enabler #2 — no new map files
+Coupler bundles live on decompositions we already have maps for (see
+`$DIN_LOC_ROOT/fme/`):
+- atm-grid (a2x/x2a) → `map_ne30pg2_to_gaussian_180by360_shifted.nc` (n_a=21600)
+- ocn/ice-grid (x2o/o2x/x2i/i2x/xao; **sea-ice shares the ocean mesh**) →
+  `map_IcoswISC30E3r5_to_gaussian_180by360_shifted.nc` (n_a=465044)
+The shared remap `share/util/shr_horiz_remap_mod.F90` is component-agnostic
+— pack `x2o`/`x2i` as a flat array sized to the gsmap exactly the way
+`components/eam/src/control/horiz_remap_mod.F90` packs CAM chunks.
+
+### Design
+New module `driver-mct/main/cpl_fme_mod.F90`, mirroring the MPAS FME AM
+pattern (init → accumulate → remap → direct-PIO monthly write + sidecar
+restart). N independent streams, each with own alarm / field list / map /
+accumulator. `seq_hist_mod.F90:seq_hist_writeaux` (1060-1365) is the
+structural template for multi-stream/multi-cadence/optional-averaging —
+but route the averaged AV through `shr_horiz_remap`, not raw `seq_io`.
+
+Streams (priority order):
+1. **ocn-merged-1D** — `x2o` (the prize) + `o2x` ocean state, daily mean, IcoswISC30E3r5 map.
+2. **ocn/ice-merged-5D** — `x2o` + `x2i` + `xao`, 5-day mean, IcoswISC30E3r5 map.
+3. *(optional, redundant — default OFF)* **atm-6h** — `a2x`, ne30pg2 map.
+
+Accumulation:
+- ocean streams: accumulate the window-mean `x2o_ox` (BFB base) into a
+  1D / 5D super-accumulator. ONLY this super-accumulator needs a sidecar.
+- ice/xao: accumulate `x2i_ix` / `xao_ox` at coupling cadence (fluxes ⇒
+  average, not snapshot).
+
+### Integration points (`driver-mct/main/cime_comp_mod.F90`)
+- `cpl_fme_init` — near existing FME/AM + histaux setup, after gsmaps/doms.
+- `cpl_fme_accum(...)` — call right after `prep_ocn_accum_avg` (so
+  `x2o_ox` holds the window-mean) and after the ice merge each ocn/ice
+  coupling step. Co-locate with the histaux call block (~4912-5078).
+- `cpl_fme_write(EClock)` — on each stream's alarm; remap + monthly PIO write.
+- `cpl_fme_restart_write/read` — co-locate with `cime_run_write_restart`
+  (~5101-5148) and the `seq_rest` read.
+
+### Config
+Mirror the `FME_EAM_*`/`FME_OCN_*` pattern: add `FME_CPL_*` env vars in the
+testmod `shell_commands` → translate to a `cpl_fme` namelist group in
+`drv_in` via the driver `cime_config/buildnml` +
+`driver-mct/cime_config/namelist_definition_drv.xml` (the `histaux_*` defs
+at 1211-1346 are the template: per-stream enable, cadence option/N, field
+list, map file, storage type).
+
+### Packaging
+Monthly files with sub-window snapshots, via the MPAS `$Y-$M` filename
+rotation + `check_rotate` / `register_var` replay (gotcha #6) — direct
+PIO, NOT the CAM history path.
+
+### Restart / BFB — reuse the proven patterns, do not reinvent
+- Port the MPAS accumulator sidecar
+  (`mpas_ocn_fme_horiz_remap.F` write_accum 1527-1643 / read_accum
+  1660-1787) → `*.cpl.fme_accum_restart.nc` for the 1D/5D super-accumulators.
+- Honor gotcha **#11** (advance `avg_last_output_time + interval` exactly —
+  no drift), **#29** (append-mode reopen + frame tracking), **#36**
+  (per-cell valid-sample counts so fill never enters the mean), **#45**
+  (rewind-restart: clobber-create + strict `>` to stay BFB).
+- The base `x2oacc` is already cpl-restart-safe — do NOT re-accumulate it;
+  only the 1D/5D layer is ours.
+- Acceptance bar: ERS_Ld4 PASSes COMPARE_base_rest with the cpl FME streams
+  ON (same bar as the existing EAM/MPAS path).
+
+### Remap details (reuse)
+- Output `real(4)` with `PIO_REAL` decomp (gotcha #1).
+- `apply_masked` with level-numlev+1 mask packing (gotcha #3) and
+  `SHR_FILL_VALUE` flow (gotcha #5).
+
+### Verify
+Extend `verify_production.py` with a coupler-stream readiness check (CF
+time/bnds, fill-leak scan, range sanity, 5D-vs-mean(1D) cross-check #42 vs
+the daily stream), or a parallel `verify_cpl.py`; add to the xgns run block.
+
+### Field selection (authoritative lists in `driver-mct/shr/seq_flds_mod.F90`)
+- **x2o** merged forcing: `Foxx_taux/tauy/sen/lat/lwup/evap`, `Foxx_swnet`,
+  `Faxa_lwdn`, `Faxa_rain/snow`, `Fioi_melth/meltw/salt`, `Sa_pslv`,
+  `Si_ifrac` (x2o assembled at :3934; fluxes 1307-1682).
+- **xao**: `Faox_taux/tauy/lat/sen/lwup/evap/swdn/swup`,
+  `So_tref/qref/u10/ustar/duu10n` (:1176-1491, 2642-2649).
+- **x2i**: atm state `Sa_*` + `Faxa_*` + ocean state `So_*` + `Fioo_q`
+  (:627-1744).
+Start with `x2o` (the exact ocean-integrated forcing); add `xao`/`x2i`
+once the path is proven.
+
+### Task checklist
+1. `cpl_fme_mod.F90` skeleton: types, init (read maps via shr_horiz_remap), per-stream state.
+2. Accum hook after `prep_ocn_accum_avg` + ice merge; super-accumulator + per-cell counts.
+3. Remap + direct-PIO monthly write (port from `mpas_ocn_fme_horiz_remap.F`).
+4. Sidecar restart read/write; wire into `seq_rest` / `cime_run_write_restart`.
+5. `namelist_definition_drv.xml` + driver buildnml `cpl_fme` group; `shell_commands` `FME_CPL_*` block.
+6. ERS_Ld4 COMPARE_base_rest BFB validation.
+7. `verify_production.py` (or `verify_cpl.py`) coupler-stream check.
+
+### Open questions
+- Ocean/ice coupling cadence vs the 1D/5D windows: confirm the
+  window-mean→day super-accumulation count math (reuse #11 drift-free advance).
+- `x2i` has no native accumulator: snapshot-at-cadence vs our-own-average
+  (fluxes ⇒ average).
+- Whether to ship the redundant 6h `a2x` stream (default: NO).
+- Which `seq_flux_atmocn*` variant is active in WCYCL (decides `xao` cadence).

@@ -39,9 +39,38 @@ FME_MPAS_INTERVAL_5D=${FME_MPAS_INTERVAL_5D:-00-00-05_00:00:00}
 # Override only if you keep maps in a non-DIN_LOC_ROOT location.
 FME_MAPS_DIR=${FME_MAPS_DIR:-$(./xmlquery --value DIN_LOC_ROOT)/fme}
 
+# Coupler-native FME output (as-exchanged merged forcing x2o/x2i/xao).
+# Emits the post-coupler forcing each component actually integrates -- the one
+# quantity no component history tape can provide. Phase 1 ships the ocean
+# merged-forcing (x2o) stream only (daily + 5-day means); xao/x2i follow.
+# Set FME_CPL_ENABLE=FALSE to turn it off (e.g. to isolate a component issue).
+# Imports (cpl->component, what each component integrates):
+#   x2o = ocean merged forcing (the prize); x2i = sea-ice import;
+#   x2a = atm import (ACE boundary forcing IN, ATM grid).
+# Exports (component->cpl, what each component produces):
+#   o2x = ocean state out (Samudra outputs); i2x = sea-ice export;
+#   a2x = atm export (ACE forcing OUT, ATM grid).
+# Coupler-computed: xao = atm-ocean bulk fluxes (Faox_*).
+# x2i/o2x/i2x/xao share the ocean mesh map; x2a/a2x use the ATM (EAM) map.
+# The atm streams (x2a, a2x) run at a configurable sub-daily cadence
+# (FME_CPL_ATM_INTERVAL, default 6 h); the ocean/ice streams have 1D + 5D means.
+FME_CPL_ENABLE=${FME_CPL_ENABLE:-.true.}         # x2o ocean merged forcing
+FME_CPL_XAO_ENABLE=${FME_CPL_XAO_ENABLE:-.true.} # xao atm-ocean fluxes
+FME_CPL_ICE_ENABLE=${FME_CPL_ICE_ENABLE:-.true.} # x2i sea-ice import
+FME_CPL_O2X_ENABLE=${FME_CPL_O2X_ENABLE:-.true.} # o2x ocean export
+FME_CPL_I2X_ENABLE=${FME_CPL_I2X_ENABLE:-.true.} # i2x sea-ice export
+FME_CPL_X2A_ENABLE=${FME_CPL_X2A_ENABLE:-.true.} # x2a atm import (ATM grid)
+FME_CPL_A2X_ENABLE=${FME_CPL_A2X_ENABLE:-.true.} # a2x atm export (ATM grid)
+FME_CPL_INTERVAL=${FME_CPL_INTERVAL:-1.0}        # 1D mean window (days)
+FME_CPL_INTERVAL_5D=${FME_CPL_INTERVAL_5D:-5.0}  # 5D mean window (days)
+FME_CPL_ATM_INTERVAL=${FME_CPL_ATM_INTERVAL:-0.25} # atm x2a/a2x window (days; 6 h)
+# Set FME_CPL_5D_ENABLE=.false. to skip ALL 5-day companion streams.
+FME_CPL_5D_ENABLE=${FME_CPL_5D_ENABLE:-.true.}
+
 echo "FME output configuration:"
 echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
 echo "  MPAS: interval=${FME_MPAS_INTERVAL}, 5D companion=${FME_MPAS_INTERVAL_5D}"
+echo "  CPL: enable=${FME_CPL_ENABLE}, ocn 1D=${FME_CPL_INTERVAL}d, ocn 5D=${FME_CPL_INTERVAL_5D}d (5D enable=${FME_CPL_5D_ENABLE})"
 echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
 #
 # ---------------------------------------------------------------------------
@@ -216,6 +245,47 @@ cat >> user_nl_eam << EOF
 ! Staging is the responsibility of CIME's check_input_data via
 ! Buildconf/fme.input_data_list (registered earlier in this script).
 horiz_remap_file(1) = '${EAM_MAP}'
+EOF
+
+# ---------------------------------------------------------------------------
+# Coupler (driver-mct) namelist: coupler-native FME output.
+# Emits the merged, post-coupler forcing each component actually integrates --
+# x2o (ocean), xao (atm-ocean bulk fluxes), x2i (sea-ice import) -- remapped to
+# the same lat-lon grid as the MPAS FME tape, as monthly files
+# ($case.cpl.fme.{ocn,xao,ice}{1D,5D}.YYYY-MM.nc). Reuses the ocean remap (no
+# new map files; sea-ice shares the ocean mesh) and a source-space accumulator
+# persisted across restart via a per-stream sidecar. See AGENTS.md PLAN
+# section "Coupler-Native FME Output".
+# ---------------------------------------------------------------------------
+# Derive the per-bundle 5-day enables from the global 5D toggle (ocean-mesh
+# bundles only; the atm streams use a single configurable sub-daily cadence).
+FME_CPL_OCN5D=.false.; FME_CPL_XAO5D=.false.; FME_CPL_ICE5D=.false.
+FME_CPL_O2X5D=.false.; FME_CPL_I2X5D=.false.
+if [ "${FME_CPL_5D_ENABLE}" = ".true." ]; then
+  FME_CPL_OCN5D=${FME_CPL_ENABLE}
+  FME_CPL_XAO5D=${FME_CPL_XAO_ENABLE}
+  FME_CPL_ICE5D=${FME_CPL_ICE_ENABLE}
+  FME_CPL_O2X5D=${FME_CPL_O2X_ENABLE}
+  FME_CPL_I2X5D=${FME_CPL_I2X_ENABLE}
+fi
+cat >> user_nl_cpl << EOF
+cpl_fme_ocn_map         = '${OCN_MAP}'
+cpl_fme_atm_map         = '${EAM_MAP}'
+cpl_fme_ocn_interval    = ${FME_CPL_INTERVAL}
+cpl_fme_ocn_5d_interval = ${FME_CPL_INTERVAL_5D}
+cpl_fme_atm_interval    = ${FME_CPL_ATM_INTERVAL}
+cpl_fme_x2o_enable      = ${FME_CPL_ENABLE}
+cpl_fme_x2o_5d_enable   = ${FME_CPL_OCN5D}
+cpl_fme_xao_enable      = ${FME_CPL_XAO_ENABLE}
+cpl_fme_xao_5d_enable   = ${FME_CPL_XAO5D}
+cpl_fme_x2i_enable      = ${FME_CPL_ICE_ENABLE}
+cpl_fme_x2i_5d_enable   = ${FME_CPL_ICE5D}
+cpl_fme_o2x_enable      = ${FME_CPL_O2X_ENABLE}
+cpl_fme_o2x_5d_enable   = ${FME_CPL_O2X5D}
+cpl_fme_i2x_enable      = ${FME_CPL_I2X_ENABLE}
+cpl_fme_i2x_5d_enable   = ${FME_CPL_I2X5D}
+cpl_fme_x2a_enable      = ${FME_CPL_X2A_ENABLE}
+cpl_fme_a2x_enable      = ${FME_CPL_A2X_ENABLE}
 EOF
 
 # ---------------------------------------------------------------------------
