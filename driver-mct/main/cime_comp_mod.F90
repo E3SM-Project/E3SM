@@ -130,6 +130,11 @@ module cime_comp_mod
   ! restart file routines
   use seq_rest_mod, only : seq_rest_read, seq_rest_write
 
+  ! coupler-native FME output (as-exchanged merged forcing x2o/x2i/xao)
+  use cpl_fme_mod, only : cpl_fme_init, cpl_fme_accum, &
+       cpl_fme_restart_write, cpl_fme_final, &
+       CPL_FME_PHASE_OCN, CPL_FME_PHASE_ICE, CPL_FME_PHASE_ATM
+
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
   use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
@@ -2501,6 +2506,14 @@ contains
     call t_stopf  ('CPL:init_readrestart')
 
     !----------------------------------------------------------
+    !| Coupler-native FME output: init streams + (warm) restart read.
+    !| Placed after prep_ocn_init and the cpl restart read so the ocean
+    !| gsmap / x2oacc accumulator are available and read_restart is known.
+    !----------------------------------------------------------
+    call cpl_fme_init(infodata, EClock_d, ocn, ocn_present, ice, ice_present, &
+         atm, atm_present, read_restart)
+
+    !----------------------------------------------------------
     !| Map initial r2x_rx and g2x_gx to _ox, _ix and _lx
     !----------------------------------------------------------
 
@@ -3685,6 +3698,9 @@ contains
     call seq_timemgr_EClockGetData( EClock_d, stepno=endstep)
     call shr_mem_getusage(msize,mrss)
 
+    ! close coupler-native FME output files + free decompositions
+    call cpl_fme_final()
+
     call component_final(EClock_z, iac, iac_final)
     call component_final(EClock_w, wav, wav_final)
     call component_final(EClock_g, glc, glc_final)
@@ -4006,6 +4022,13 @@ contains
           call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
        endif
 
+       ! coupler-native FME (atm phase): sample x2a now that prep_atm_mrg has
+       ! merged the atm import for this step -- the same point component_diag
+       ! reads it for the BFB cpl history (gotcha #51).  Sampling x2a at the
+       ! later ocean hook instead captured a stale (zero) value on the first
+       ! step of a warm-restart leg.
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_ATM)
+
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
             timer_diag='CPL:atmprep_diagav')
 
@@ -4093,6 +4116,12 @@ contains
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
        call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
+
+       ! coupler-native FME (ocean phase): sample x2o (window-mean now that
+       ! x2oacc_ox holds it), xao, and the o2x/i2x/a2x exports; flush/remap/
+       ! write on the output alarm.  x2i/x2a are sampled at their own merge
+       ! points instead (gotcha #51).
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_OCN)
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
@@ -4661,6 +4690,12 @@ contains
        if (wav_c2_ice) call prep_ice_calc_w2x_ix(timer='CPL:iceprep_wav2ice')
 
        call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
+
+       ! coupler-native FME (ice phase): sample x2i now that prep_ice_mrg has
+       ! merged the ice import for this step -- the ocean hook runs BEFORE this
+       ! merge, so sampling there captured the previous step's value (a
+       ! re-initialized zero on the first step of a warm-restart leg, gotcha #51).
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_ICE)
 
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
@@ -5244,6 +5279,10 @@ contains
                fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
                trim(cpl_inst_tag), drv_resume_file)
           call t_stopf('CPL:seq_rest_write')
+
+          ! coupler-native FME: persist the 1D/5D super-accumulator sidecars
+          ! (the base x2oacc is already in the cpl restart -- not re-persisted)
+          call cpl_fme_restart_write(EClock_d)
 
           if (iamroot_CPLID) then
              write(logunit,103) ' Restart filename: ',trim(drv_resume_file)
