@@ -57,11 +57,13 @@ int initStateValidationTest(const std::string &MeshFile) {
    Config::readAll("omega.yml");
 
    TimeStepper::init1();
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
 
    IO::init(DefComm);
    Decomp::init(MeshFile);
 
-   IOStream::init();
+   IOStream::init(ModelClock);
 
    int HaloErr = Halo::init();
    if (HaloErr != 0) {
@@ -69,7 +71,7 @@ int initStateValidationTest(const std::string &MeshFile) {
       LOG_ERROR("StateValidationTest: error initializing default halo");
    }
 
-   HorzMesh::init();
+   HorzMesh::init(ModelClock);
    VertCoord::init();
    Tracers::init();
    Eos::init();
