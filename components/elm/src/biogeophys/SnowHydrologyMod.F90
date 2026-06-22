@@ -2314,7 +2314,6 @@ contains
 
      ! Determine model time step
      dtime = dtime_mod 
-
      ! Initialize capping fluxes for all columns in domain (lake or non-lake)
      do fc = 1, num_nolakec
         c = filter_initc(fc)
@@ -2369,7 +2368,6 @@ contains
            mss_dst2(c,0)    = mss_dst2(c,0) * frac_adjust
            mss_dst3(c,0)    = mss_dst3(c,0) * frac_adjust
            mss_dst4(c,0)    = mss_dst4(c,0) * frac_adjust
-
         end if
 
      end do loop_columns
