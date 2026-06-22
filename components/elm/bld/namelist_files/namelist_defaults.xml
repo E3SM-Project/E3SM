@@ -267,6 +267,108 @@ lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr1850_c220712.nc</fsurda
 <fsurdat hgrid="ne0np4_CAx32v1.pg2" sim_year="2015">
 lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr2015_c220914.nc</fsurdat>
 
+<fsurdat hgrid="ne0np4_CASonomax32subx3v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CASonomax32subx3v1.pg2_simyr2010_c250601.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CASonomax32subx3v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CASonomax32subx3v1.pg2_simyr2010_c250601.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CASonomax32subx4v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CASonomax32subx4v1.pg2_simyr2010_c250525.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CASonomax32subx4v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CASonomax32subx4v1.pg2_simyr2010_c250525.nc</fsurdat>
+
+<!-- ARM RRM grids -->
+<fsurdat hgrid="ne0np4_CACTIx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CACTIx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CACTIx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CACTIx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CACTIx64v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CACTIx64v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CACTIx64v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CACTIx64v1.pg2_simyr2010_c230913.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_COMBLEx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_COMBLEx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_COMBLEx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_COMBLEx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_combx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_COMBLEx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_combx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_COMBLEx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_CONUSx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CONUSx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CONUSx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CONUSx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_COURAGEx32subx3v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_COURAGEx32subx3v1.pg2_simyr2010_c251118.nc</fsurdat>
+<fsurdat hgrid="ne0np4_COURAGEx32subx3v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_COURAGEx32subx3v1.pg2_simyr2010_c251118.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_EPCAPEx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_EPCAPEx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_EPCAPEx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_EPCAPEx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_GoAmazonx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_GoAmazonx32v1.pg2_simyr2010_c230316.nc</fsurdat>
+<fsurdat hgrid="ne0np4_GoAmazonx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_GoAmazonx32v1.pg2_simyr2010_c230316.nc</fsurdat>
+<fsurdat hgrid="ne0np4_GoAmazonx32subx3v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_GoAmazonx32subx3v1.pg2_simyr2010_c251111.nc</fsurdat>
+<fsurdat hgrid="ne0np4_GoAmazonx32subx3v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_GoAmazonx32subx3v1.pg2_simyr2010_c251111.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_IOMCx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_IOMCx32v1.pg2_simyr2010_c250510.nc</fsurdat>
+<fsurdat hgrid="ne0np4_IOMCx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_IOMCx32v1.pg2_simyr2010_c250510.nc</fsurdat>
+<fsurdat hgrid="ne0np4_IOMCx16v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_IOMCx16v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_IOMCx16v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_IOMCx16v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_IOMCx8v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_IOMCx8v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_IOMCx8v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_IOMCx8v1.pg2_simyr2010_c230913.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_MAGICx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_MAGICx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_MAGICx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_MAGICx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_TRACERx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERx32v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERx64v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERx64v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERx64v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERx64v1.pg2_simyr2010_c230913.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERmipx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERmipx32v1.pg2_simyr2010_c250522.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERmipx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERmipx32v1.pg2_simyr2010_c250522.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERmipx32subx3v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERmipx32subx3v1.pg2_simyr2010_c250522.nc</fsurdat>
+<fsurdat hgrid="ne0np4_TRACERmipx32subx3v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_TRACERmipx32subx3v1.pg2_simyr2010_c250522.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_WPacificx32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_WPacificx32v1.pg2_simyr2010_c260317.nc</fsurdat>
+<fsurdat hgrid="ne0np4_WPacificx32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_WPacificx32v1.pg2_simyr2010_c260317.nc</fsurdat>
+<fsurdat hgrid="ne0np4_WPacificx32subx3v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_WPacificx32subx3v1.pg2_simyr2010_c260317.nc</fsurdat>
+<fsurdat hgrid="ne0np4_WPacificx32subx3v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_WPacificx32subx3v1.pg2_simyr2010_c260317.nc</fsurdat>
+
+<fsurdat hgrid="ne0np4_WP20ne32x32v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_WP20ne32x32v1pg2_rcp8.5_simyr2015_c250320.nc</fsurdat>
+<fsurdat hgrid="ne0np4_WP20ne32x32v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_WP20ne32x32v1pg2_rcp8.5_simyr2015_c250320.nc</fsurdat>
+
+
 <!-- ne0np4_northamericax4v1.pg2 -->
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr1850_c210112_with_TOP.nc</fsurdat>

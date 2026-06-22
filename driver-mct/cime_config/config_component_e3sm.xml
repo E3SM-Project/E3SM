@@ -439,6 +439,28 @@
       <value compset=".+" grid="a%ne512np4">432</value>
       <value compset=".+" grid="a%ne1024np4">864</value>
       <value compset=".+" grid="a%ne0np4_CAx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_CASonomax32subx3v1">7200</value>
+      <value compset=".+" grid="a%ne0np4_CASonomax32subx4v1">86400</value>
+      <value compset=".+" grid="a%ne0np4_CACTIx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_CACTIx64v1">1728</value>
+      <value compset=".+" grid="a%ne0np4_COMBLEx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_combx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_CONUSx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_COURAGEx32subx3v1">7200</value>
+      <value compset=".+" grid="a%ne0np4_EPCAPEx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_GoAmazonx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_GoAmazonx32subx3v1">7200</value>
+      <value compset=".+" grid="a%ne0np4_IOMCx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_IOMCx16v1">432</value>
+      <value compset=".+" grid="a%ne0np4_IOMCx8v1">144</value>
+      <value compset=".+" grid="a%ne0np4_MAGICx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_TRACERx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_TRACERx64v1">1728</value>
+      <value compset=".+" grid="a%ne0np4_TRACERmipx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_TRACERmipx32subx3v1">7200</value>
+      <value compset=".+" grid="a%ne0np4_WPacificx32v1">864</value>
+      <value compset=".+" grid="a%ne0np4_WPacificx32subx3v1">7200</value>
+      <value compset=".+" grid="a%ne0np4_WP20ne32x32v1">864</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_northamericax4v1" >48</value>

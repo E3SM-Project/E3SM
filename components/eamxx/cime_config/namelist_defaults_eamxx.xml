@@ -482,6 +482,28 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spa_remap_file>
       <spa_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CASonomax32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CASonomax32subx3v1pg2_intbilin_se2fv_20250510.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CASonomax32subx4v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CASonomax32subx4v1pg2_intbilin_se2fv_20250510.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CACTIx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CACTIx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CACTIx64v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CACTIx64v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_COMBLEx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_COMBLEx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_combx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_COMBLEx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_CONUSx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CONUSx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_COURAGEx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_COURAGEx32subx3v1pg2_intbilin_se2fv_20251117.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_EPCAPEx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_EPCAPEx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_GoAmazonx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_GoAmazonx32v1pg2_intbilin_se2fv_20230517.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_GoAmazonx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_GoAmazonx32subx3v1pg2_intbilin_se2fv_20251111.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_IOMCx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_IOMCx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_IOMCx16v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_IOMCx16v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_IOMCx8v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_IOMCx8v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_MAGICx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_MAGICx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_TRACERx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERx32v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_TRACERx64v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERx64v1pg2_intbilin_se2fv_20230909.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_TRACERmipx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERmipx32v1pg2_intbilin_se2fv_20250422.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_TRACERmipx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERmipx32subx3v1pg2_intbilin_se2fv_20250506.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_WPacificx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_WPacificx32v1pg2_intbilin_se2fv_20260316.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_WPacificx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_WPacificx32subx3v1pg2_intbilin_se2fv_20260316.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne0np4_WP20ne32x32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_WP20ne32x32v1pg2.intbilin.20260128.nc</spa_remap_file>
       <spa_remap_file COMPSET=".*DP-EAMxx">none</spa_remap_file>
 
       <spa_data_file type="file" doc="File containing aerosol data. Must be on same grid as the atm, or a coarser one">none</spa_data_file>
@@ -502,6 +524,28 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</spc_remap_file>
       <spc_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</spc_remap_file>
       <spc_remap_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CAx32v1pg2_intbilin_se2fv_20230420.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_CASonomax32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CASonomax32subx3v1pg2_intbilin_se2fv_20250510.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_CASonomax32subx4v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CASonomax32subx4v1pg2_intbilin_se2fv_20250510.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_CACTIx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CACTIx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_CACTIx64v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CACTIx64v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_COMBLEx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_COMBLEx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_combx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_COMBLEx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_CONUSx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_CONUSx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_COURAGEx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_COURAGEx32subx3v1pg2_intbilin_se2fv_20251117.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_EPCAPEx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_EPCAPEx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_GoAmazonx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_GoAmazonx32v1pg2_intbilin_se2fv_20230517.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_GoAmazonx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_GoAmazonx32subx3v1pg2_intbilin_se2fv_20251111.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_IOMCx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_IOMCx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_IOMCx16v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_IOMCx16v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_IOMCx8v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_IOMCx8v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_MAGICx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_MAGICx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_TRACERx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERx32v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_TRACERx64v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERx64v1pg2_intbilin_se2fv_20230909.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_TRACERmipx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERmipx32v1pg2_intbilin_se2fv_20250422.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_TRACERmipx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_TRACERmipx32subx3v1pg2_intbilin_se2fv_20250506.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_WPacificx32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_WPacificx32v1pg2_intbilin_se2fv_20260316.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_WPacificx32subx3v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_WPacificx32subx3v1pg2_intbilin_se2fv_20260316.nc</spc_remap_file>
+      <spc_remap_file hgrid="ne0np4_WP20ne32x32v1">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_WP20ne32x32v1pg2.intbilin.20260128.nc</spc_remap_file>
       <spc_remap_file COMPSET=".*DP-EAMxx">none</spc_remap_file>
 
       <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
@@ -563,6 +607,28 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_CAx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_CASonomax32subx3v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_CASonomax32subx4v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_CACTIx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_CACTIx64v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_COMBLEx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_combx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_CONUSx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_COURAGEx32subx3v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_EPCAPEx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_GoAmazonx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_GoAmazonx32subx3v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_IOMCx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_IOMCx16v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_IOMCx8v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_MAGICx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_TRACERx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_TRACERx64v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_TRACERmipx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_TRACERmipx32subx3v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_WPacificx32v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_WPacificx32subx3v1">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_WP20ne32x32v1">3</rad_frequency>
       <rad_frequency COMPSET=".*DP-EAMxx">3</rad_frequency>
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
@@ -602,6 +668,28 @@ be lost if SCREAM_HACK_XML is not enabled.
       <number_of_subcycles hgrid="ne512np4">2</number_of_subcycles>
       <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_CAx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CASonomax32subx3v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CASonomax32subx4v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CACTIx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CACTIx64v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_COMBLEx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_combx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_CONUSx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_COURAGEx32subx3v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_EPCAPEx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_GoAmazonx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_GoAmazonx32subx3v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_IOMCx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_IOMCx16v1">2</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_IOMCx8v1">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_MAGICx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_TRACERx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_TRACERx64v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_TRACERmipx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_TRACERmipx32subx3v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_WPacificx32v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_WPacificx32subx3v1">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_WP20ne32x32v1">1</number_of_subcycles>
       <number_of_subcycles COMPSET=".*DP-EAMxx">1</number_of_subcycles>
       <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
     </mac_aero_mic>
@@ -662,6 +750,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
     <filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</filename>
     <filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</filename>
+    <Filename hgrid="ne0np4_CASonomax32subx3v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.CASonoma_ne32_x32_subx3_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_CASonomax32subx4v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.CASonoma_ne32_x32_subx4_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_CACTIx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.CACTI_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_CACTIx64v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.CACTI_ne32_x64_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_COMBLEx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.COMBLE_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_combx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.COMBLE_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_CONUSx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.CONUS_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_COURAGEx32subx3v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.COURAGE_ne32_x32_subx3_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_EPCAPEx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.EPCAPE_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_GoAmazonx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.GoAmazon_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_GoAmazonx32subx3v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.GoAmazon_ne32_x32_subx3_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_IOMCx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.IOMC_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_IOMCx16v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.IOMC_ne32_x16_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_IOMCx8v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.IOMC_ne32_x8_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_MAGICx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.MAGIC_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_TRACERx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.TRACER_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_TRACERx64v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.TRACER_ne32_x64_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_TRACERmipx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.TRACERmip_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_TRACERmipx32subx3v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.TRACERmip_ne32_x32_subx3_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_WPacificx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.WPacific_ne32_x32_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_WPacificx32subx3v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.WPacific_ne32_x32_subx3_v1.L128.nc</Filename>
+    <Filename hgrid="ne0np4_WP20x32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_atm_era5.2020-01-20.WP20_ne32_x32_subx3_v1.L128.nc</Filename>
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
@@ -683,6 +793,33 @@ be lost if SCREAM_HACK_XML is not enabled.
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
+
+    <topography_filename hgrid="ne0np4_CASonomax32subx3v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CASonoma_ne32_x32_subx3_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_CASonomax32subx4v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CASonoma_ne32_x32_subx4_v1_pg2_x6t.nc</topography_filename>
+
+    <!-- ARM RRM grids -->
+    <topography_filename hgrid="ne0np4_CACTIx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CACTI_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_CACTIx64v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CACTI_ne32_x64_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_COMBLEx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_COMBLE_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_combx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_COMBLE_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_CONUSx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CONUS_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_COURAGEx32subx3v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_COURAGE_ne32_x32_subx3_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_EPCAPEx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_EPCAPE_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_GoAmazonx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_GoAmazon_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_GoAmazonx32subx3v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_GoAmazon_ne32_x32_subx3_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_IOMCx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_IOMC_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_IOMCx16v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_IOMC_ne32_x16_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_IOMCx8v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_IOMC_ne32_x8_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_MAGICx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_MAGIC_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_TRACERx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_TRACER_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_TRACERx64v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_TRACER_ne32_x64_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_TRACERmipx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_TRACERmip_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_TRACERmipx32subx3v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_TRACERmip_ne32_x32_subx3_v1_pg2_x6t.nc</topography_filename>
+
+    <topography_filename hgrid="ne0np4_WPacificx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_WPacific_ne32_x32_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_WPacificx32subx3v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_WPacific_ne32_x32_subx3_v1_pg2_x6t.nc</topography_filename>
+    <topography_filename hgrid="ne0np4_WP20ne32x32v1">${DIN_LOC_ROOT}/atm/cam/topo/GTOPO30_WP20ne32x32v1np4pg2_x6t.nc</topography_filename>
+
 
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
@@ -757,8 +894,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
     <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
     <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+    <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1|ne0np4_CASonomax32subx3v1|ne0np4_CASonomax32subx4v1|ne0np4_CACTIx32v1|ne0np4_CACTIx64v1|ne0np4_COMBLEx32v1|ne0np4_combx32v1|ne0np4_CONUSx32v1|ne0np4_COURAGEx32subx3v1|ne0np4_EPCAPEx32v1|ne0np4_GoAmazonx32v1|ne0np4_GoAmazonx32subx3v1|ne0np4_IOMCx32v1|ne0np4_IOMCx16v1|ne0np4_IOMCx8v1|ne0np4_MAGICx32v1|ne0np4_TRACERx32v1|ne0np4_TRACERx64v1|ne0np4_TRACERmipx32v1|ne0np4_TRACERmipx32subx3v1|ne0np4_WPacificx32v1|ne0np4_WPacificx32subx3v1|ne0np4_WP20ne32x32v1">0.0</nc>
+    <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1|ne0np4_CASonomax32subx3v1|ne0np4_CASonomax32subx4v1|ne0np4_CACTIx32v1|ne0np4_CACTIx64v1|ne0np4_COMBLEx32v1|ne0np4_combx32v1|ne0np4_CONUSx32v1|ne0np4_COURAGEx32subx3v1|ne0np4_EPCAPEx32v1|ne0np4_GoAmazonx32v1|ne0np4_GoAmazonx32subx3v1|ne0np4_IOMCx32v1|ne0np4_IOMCx16v1|ne0np4_IOMCx8v1|ne0np4_MAGICx32v1|ne0np4_TRACERx32v1|ne0np4_TRACERx64v1|ne0np4_TRACERmipx32v1|ne0np4_TRACERmipx32subx3v1|ne0np4_WPacificx32v1|ne0np4_WPacificx32subx3v1|ne0np4_WP20ne32x32v1">0.0</ni>
     <nc hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
     <ni hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
@@ -880,6 +1017,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_CAx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_CASonomax32subx3v1">1250.0</nu_top>
+    <nu_top hgrid="ne0np4_CASonomax32subx4v1">625.0</nu_top>
+    <nu_top hgrid="ne0np4_CACTIx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_CACTIx64v1">5.0e3</nu_top>
+    <nu_top hgrid="ne0np4_COMBLEx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_combx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_CONUSx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_COURAGEx32subx3v1">1250.0</nu_top>
+    <nu_top hgrid="ne0np4_EPCAPEx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_GoAmazonx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_GoAmazonx32subx3v1">1250.0</nu_top>
+    <nu_top hgrid="ne0np4_IOMCx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_IOMCx16v1">2.0e4</nu_top>
+    <nu_top hgrid="ne0np4_IOMCx8v1">4.0e4</nu_top>
+    <nu_top hgrid="ne0np4_MAGICx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_TRACERx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_TRACERx64v1">5.0e3</nu_top>
+    <nu_top hgrid="ne0np4_TRACERmipx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_TRACERmipx32subx3v1">1250.0</nu_top>
+    <nu_top hgrid="ne0np4_WPacificx32v1">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_WPacificx32subx3v1">1250.0</nu_top>
+    <nu_top hgrid="ne0np4_WP20ne32x32v1">1.0e4</nu_top>
     <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
     <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">0.0</tom_sponge_start>
@@ -899,6 +1058,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
     <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
     <se_ne hgrid="ne0np4_CAx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_CASonomax32subx3v1">0</se_ne>
+    <se_ne hgrid="ne0np4_CASonomax32subx4v1">0</se_ne>
+    <se_ne hgrid="ne0np4_CACTIx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_CACTIx64v1">0</se_ne>
+    <se_ne hgrid="ne0np4_COMBLEx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_combx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_CONUSx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_COURAGEx32subx3v1">0</se_ne>
+    <se_ne hgrid="ne0np4_EPCAPEx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_GoAmazonx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_GoAmazonx32subx3v1">0</se_ne>
+    <se_ne hgrid="ne0np4_IOMCx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_IOMCx16v1">0</se_ne>
+    <se_ne hgrid="ne0np4_IOMCx8v1">0</se_ne>
+    <se_ne hgrid="ne0np4_MAGICx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_TRACERx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_TRACERx64v1">0</se_ne>
+    <se_ne hgrid="ne0np4_TRACERmipx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_TRACERmipx32subx3v1">0</se_ne>
+    <se_ne hgrid="ne0np4_WPacificx32v1">0</se_ne>
+    <se_ne hgrid="ne0np4_WPacificx32subx3v1">0</se_ne>
+    <se_ne hgrid="ne0np4_WP20ne32x32v1">0</se_ne>
     <se_ne COMPSET=".*DP-EAMxx">1024</se_ne>
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
     <se_ne_x>0</se_ne_x>
@@ -924,6 +1105,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne512np4">16.6666666666666</se_tstep>
     <se_tstep hgrid="ne1024np4">8.3333333333333</se_tstep>
     <se_tstep hgrid="ne0np4_CAx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CASonomax32subx3v1">1.0</se_tstep>
+    <se_tstep hgrid="ne0np4_CASonomax32subx4v1">0.083333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CACTIx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CACTIx64v1">4.166666666666666</se_tstep>
+    <se_tstep hgrid="ne0np4_COMBLEx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_combx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_CONUSx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_COURAGEx32subx3v1">1.0</se_tstep>
+    <se_tstep hgrid="ne0np4_EPCAPEx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_GoAmazonx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_GoAmazonx32subx3v1">1.0</se_tstep>
+    <se_tstep hgrid="ne0np4_IOMCx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_IOMCx16v1">16.6666666666666</se_tstep>
+    <se_tstep hgrid="ne0np4_IOMCx8v1">33.33333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_MAGICx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_TRACERx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_TRACERx64v1">4.166666666666666</se_tstep>
+    <se_tstep hgrid="ne0np4_TRACERmipx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_TRACERmipx32subx3v1">1.0</se_tstep>
+    <se_tstep hgrid="ne0np4_WPacificx32v1">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_WPacificx32subx3v1">1.0</se_tstep>
+    <se_tstep hgrid="ne0np4_WP20ne32x32v1">8.3333333333333</se_tstep>
     <se_tstep COMPSET=".*DP-EAMxx">8.3333333333333</se_tstep>
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon">75</se_tstep>
     <statefreq>9999</statefreq>
@@ -952,6 +1155,28 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mesh_file type="file">none</mesh_file>
     <mesh_file hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/inic/homme/conusx4v1.g</mesh_file>
     <mesh_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CASonomax32subx3v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CASonoma_ne32_x32_subx3_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CASonomax32subx4v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CASonoma_ne32_x32_subx4_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CACTIx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CACTI_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CACTIx64v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CACTI_ne32_x64_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_COMBLEx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/COMBLE_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_combx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/COMBLE_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_CONUSx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CONUS_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_COURAGEx32subx3v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/COURAGE_ne32_x32_subx3_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_EPCAPEx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/EPCAPE_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_GoAmazonx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/GoAmazon_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_GoAmazonx32subx3v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/GoAmazon_ne32_x32_subx3_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_IOMCx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/IOMC_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_IOMCx16v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/IOMC_ne32_x16_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_IOMCx8v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/IOMC_ne32_x8_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_MAGICx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/MAGIC_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_TRACERx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/TRACER_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_TRACERx64v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/TRACER_ne32_x64_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_TRACERmipx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/TRACERmip_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_TRACERmipx32subx3v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/TRACERmip_ne32_x32_subx3_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_WPacificx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/WPacific_ne32_x32_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_WPacificx32subx3v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/WPacific_ne32_x32_subx3_v1.g</mesh_file>
+    <mesh_file hgrid="ne0np4_WP20ne32x32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/WP20ne32x32v1.g</mesh_file>
     <!-- Settings related to 3D turbulence -->
     <do_3d_turbulence>false</do_3d_turbulence>
   </ctl_nl>

@@ -2276,7 +2276,7 @@
 
   <entry id="EPS_AGRID">
     <type>real</type>
-    <default_value>1.0e-12</default_value>
+    <default_value>1.0e-09</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Error tolerance for differences in atm/land lat/lon in domain checking</desc>
