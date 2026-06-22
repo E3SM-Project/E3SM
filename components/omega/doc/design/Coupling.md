@@ -80,6 +80,8 @@ An enum class specifies the coupled driver layout:
 enum class CouplingLayout { MCT, MOAB };
 ```
 
+The initial implementation will not have any runtime configuration options.
+
 #### 4.1.2 Class/structs/data types
 
 `SurfaceCoupling` lives in `src/ocn/` alongside `AuxiliaryState` and
@@ -168,7 +170,16 @@ SurfaceCoupling *SurfaceCoupling::getDefault();
 SurfaceCoupling *SurfaceCoupling::get(const std::string &Name);
 ```
 
-#### 4.2.3 Import and Export
+Other portions of the code can inquire whether running in coupled mode by
+doing:
+
+```cpp
+if (!SurfaceCoupling::getDefault) {
+    // no instance of SurfaceCoupling, therefore running in standalone mode
+}
+```
+
+#### 4.2.3 Import, Apply, Accumulate, Export
 
 `importFromCoupler` unpacks the driver array into typed member arrays using
 the name→column-index map. The stride calculation is layout-dependent: MCT
@@ -178,17 +189,50 @@ radiation to be positive) are applied inline. The corrections are applied to
 address numerical issues, not and physical one, in the off chance monotonicity
 is not preserved during remapping.
 
-`exportToCoupler` packs export arrays into the driver array. State fields
-are divided by `NAccumSteps` (interval mean); flux fields are packed directly
-(interval total).
+`applyImportedState` copies imported fields from the `SurfaceCoupling` class
+into the appropriate arrays in the `Forcing` class. This method will be called
+directly after `importFromCoupler` is called, but outside of the coupled loop.
 
-`applyImportedState` copies imported fields into the appropriate locations in
-`AuxiliaryState` for use by ocean physics.
+`accumulateExportState` is called *within* the coupled loop, and adds the
+current-step values to running sums each ocean timestep.
 
-`accumulateExportState` adds current-step values to running sums each ocean
-timestep.
+`exportToCoupler` packs export arrays into the driver array. This function is
+called directly after the coupled loop. State fields are divided by
+`NAccumSteps` (interval mean); flux fields are packed directly (interval total).
 
 `resetAccumulators` zeroes all export arrays and sets `NAccumSteps = 0`.
+
+A rough sketch of how/when these function will be called within `OcnRun` looks
+like:
+
+```cpp
+// fetch default OceanState, TimeStepper, and SurfaceCoupler
+OceanState *DefOceanState   = OceanState::getDefault();
+TimeStepper *DefTimeStepper = TimeStepper::getDefault();
+SurfaceCoupler *DefSurfaceCoupler = SurfaceCoupler::getDefault();
+
+// get coupling alarm
+Alarm *CouplingAlarm = DefTimeStepper->getCouplingAlarm();
+
+// these two could be wrapped into a single call
+DefSurfaceCoupler->importFromCoupler(...);
+DefSurfaceCoupler->applyImportedState(...);
+
+while (Err == 0 && !(CouplingAlarm->isRinging())) {
+
+   DefTimeStepper->doStep(DefOceanState, SimTime);
+
+   DefSurfaceCoupler->accumulateExportState(...);
+
+}
+
+// if coupler tells us, force write restate stream
+
+DefSurfaceCoupler->exportToCoupler(...);
+
+// Reset accumulators
+DefSurfaceCoupler->resetAccumulators(...);
+```
 
 #### 4.2.4 Conversion Methods
 
