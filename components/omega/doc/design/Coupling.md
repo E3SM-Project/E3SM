@@ -128,8 +128,8 @@ class SurfaceCoupling {
    // Public methods
    int importFromCoupler(const Real *x2oData, int NFields, int NCells);
    int exportToCoupler(Real *o2xData, int NFields, int NCells);
-   int applyImportedState(AuxiliaryState *AuxState);
-   int accumulateExportState(const OceanState *State,
+   int applyImportFields(AuxiliaryState *AuxState);
+   int accumulateExportFields(const OceanState *State,
                              const Array3DReal &TracerArray,
                              int TimeLevel);
    void resetAccumulators();
@@ -189,16 +189,19 @@ radiation to be positive) are applied inline. The corrections are applied to
 address numerical issues, not and physical one, in the off chance monotonicity
 is not preserved during remapping.
 
-`applyImportedState` copies imported fields from the `SurfaceCoupling` class
+`applyImportFields` copies imported fields from the `SurfaceCoupling` class
 into the appropriate arrays in the `Forcing` class. This method will be called
 directly after `importFromCoupler` is called, but outside of the coupled loop.
 
-`accumulateExportState` is called *within* the coupled loop, and adds the
-current-step values to running sums each ocean timestep.
+`accumulateExportFields` is called *within* the coupled loop, and adds the
+current-step values to running sums each ocean timestep. The accumulation
+step in agnostic of whether the fields are passed back to the coupler as
+sums or averages.
 
 `exportToCoupler` packs export arrays into the driver array. This function is
 called directly after the coupled loop. State fields are divided by
-`NAccumSteps` (interval mean); flux fields are packed directly (interval total).
+`NAccumSteps` (interval mean); flux fields are packed directly (interval total);
+and `SSH` is passed as an instantaneous field.
 
 `resetAccumulators` zeroes all export arrays and sets `NAccumSteps = 0`.
 
@@ -216,13 +219,13 @@ Alarm *CouplingAlarm = DefTimeStepper->getCouplingAlarm();
 
 // these two could be wrapped into a single call
 DefSurfaceCoupler->importFromCoupler(...);
-DefSurfaceCoupler->applyImportedState(...);
+DefSurfaceCoupler->applyImportFields(...);
 
 while (Err == 0 && !(CouplingAlarm->isRinging())) {
 
    DefTimeStepper->doStep(DefOceanState, SimTime);
 
-   DefSurfaceCoupler->accumulateExportState(...);
+   DefSurfaceCoupler->accumulateExportFields(...);
 
 }
 
@@ -280,7 +283,7 @@ To add a new coupling field:
 2. Add the field registration in `registerFields()`
 3. Add an unpack/pack call in `importFromCoupler`/`exportToCoupler`
 4. Add the name/index entry in the Fortran bridge file
-5. Fill the field in `applyImportedState()` or `accumulateExportState()`
+5. Fill the field in `applyImportFields()` or `accumulateExportFields()`
 
 No changes to method signatures or ordering constraints are needed.
 
