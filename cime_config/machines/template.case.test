@@ -37,7 +37,7 @@ description=description,
 formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 
-    CIME.utils.setup_standard_logging_options(parser)
+    CIME.utils.setup_standard_logging_options(parser, prog=".case.test")
 
     parser.add_argument("testname", nargs="?",default=None,
                         help="Name of the test to run, default is set in TESTCASE in env_test.xml")

@@ -798,6 +798,18 @@
     <desc>Number of processors for gmake</desc>
   </entry>
 
+  <entry id="BATCHED_BUILD">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>If TRUE, case.build submits the build as a batch job instead of
+    building interactively on the login node. The machine must define a
+    supported batch system (BATCH_SYSTEM != none). When BATCH_SYSTEM is
+    none, CIME falls back to an interactive build with a warning.</desc>
+  </entry>
+
   <entry id="BUILD_COMPLETE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>

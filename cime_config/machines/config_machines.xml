@@ -1868,6 +1868,7 @@
     <BASELINE_ROOT>/sems-data-store/ACME/baselines/mappy/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/sems-data-store/ACME/mappy/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>64</GMAKE_J>
+    <BATCHED_BUILD>FALSE</BATCHED_BUILD>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>slurm_single_node</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>

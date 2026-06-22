@@ -39,7 +39,7 @@ OR
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    CIME.utils.setup_standard_logging_options(parser)
+    CIME.utils.setup_standard_logging_options(parser, prog=".case.run")
 
     parser.add_argument("--caseroot",
                         help="Case directory to build")
