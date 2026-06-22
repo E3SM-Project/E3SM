@@ -86,7 +86,7 @@ struct Functions {
     static inline constexpr Real small_conv       = 1.e-20;   // small number to limit blowup when normalizing by mass flux
     static inline constexpr Real interp_diff_min  = 1.E-6;    // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
     // conversion factors
-    static inline constexpr Real zvir             = 0.608;    // virtual temperature factor (Rv/Rd - 1)
+    static inline constexpr Real zvir             = 0.608;    // virtual temperature factor (Rv/Rd - 1) - matches hardcoded 0.608 literal in Fortran zm_closure
     static inline constexpr Real lcl_coeff_a      = 2840;     // Bolton (1980) LCL temperature formula coefficient A
     static inline constexpr Real lcl_coeff_b      = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
     static inline constexpr Real lcl_coeff_c      = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
