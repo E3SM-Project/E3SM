@@ -44,8 +44,8 @@ int ocnRun(TimeInstant &CurrTime ///< [inout] current sim time
       // track step count
       ++IStep;
 
-      // call forcing routines, anything needed pre-timestep
-      DefForcing->computeAll();
+      // placeholder: call needed pre-timestep compute here
+      // (e.g. forcing routine)
 
       // do forward time step
       // first call to doStep can sometimes take very long

@@ -11,6 +11,7 @@
 
 #include "Forcing.h"
 #include "Field.h"
+#include "IOStream.h"
 #include "Logging.h"
 #include "Pacer.h"
 
@@ -58,6 +59,7 @@ Forcing *Forcing::create(const std::string &Name, const HorzMesh *Mesh,
 }
 
 // Initialize the default forcing instance and read configuration.
+// Reads the forcing fields from streams at startup (for now).
 void Forcing::init() {
    if (DefaultForcing != nullptr) {
       return;
@@ -78,6 +80,10 @@ void Forcing::init() {
 
    Config *OmegaConfig = Config::getOmegaConfig();
    DefaultForcing->readConfigOptions(OmegaConfig);
+   // for now, forcing fields are read at start-up only.
+   // to be extended to include switch from standalone to coupled.
+   // to be moved to a Forcing->prepareForStep(SimTime) method later.
+   DefaultForcing->readStreamIntoArrays();
 }
 
 // Return the default forcing instance.
@@ -157,6 +163,34 @@ I4 Forcing::exchangeHalo() const {
                                           OnCell);
 
    return Err;
+}
+
+// Read forcing fields from input stream.
+// To be extended with time indexing later.
+void Forcing::readStreamIntoArrays() {
+   Error Err;
+
+   Real FillValueReal = -999._Real;
+   deepCopy(SfcStressForcing.ZonalStressCell, FillValueReal);
+   deepCopy(SfcStressForcing.MeridStressCell, FillValueReal);
+
+   std::string StreamName = "Forcing";
+
+   // Attempt to read stream; if unavailable, log and fall back to zero forcing.
+   Err = IOStream::read(StreamName);
+   if (Err.isFail()) {
+      LOG_INFO("Forcing: Error while reading {} stream, using zero forcing",
+               StreamName);
+      deepCopy(SfcStressForcing.ZonalStressCell, 0._Real);
+      deepCopy(SfcStressForcing.MeridStressCell, 0._Real);
+   }
+
+   I4 HaloErr = exchangeHalo();
+   if (HaloErr != 0) {
+      ABORT_ERROR("Forcing: Error exchanging halo for startup forcing fields");
+   }
+
+   computeAll();
 }
 
 } // namespace OMEGA
