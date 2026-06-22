@@ -415,14 +415,6 @@
       </queues>
     </batch_system>
 
-    <batch_system MACH="anvil" type="slurm" >
-      <queues>
-        <queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
-        <queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
-        <queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
-      </queues>
-    </batch_system>
-
     <batch_system MACH="chrysalis" type="slurm" >
       <directives>
         <directive> --switches=$SHELL{echo "(`./xmlquery --value NUM_NODES` + 19) / 20" |bc}</directive>
@@ -857,48 +849,6 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="summit" type="lsf" >
-     <directives>
-       <directive>-P {{ project }}</directive>
-     </directives>
-     <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
-     </directives>
-     <directives compiler=".*gpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="true">batch</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="54" strict="true" default="false">batch-hm</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="91" strict="true" default="false">killable</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="false">debug</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="lassen" type="lsf" >
-     <queues>
-       <queue walltimemax="02:00" nodemin="1" nodemax="18" strict="true" default="true">pdebug</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="256" default="false">pbatch</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="ascent" type="lsf" >
-     <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
-     <directives>
-       <directive>-P {{ project }}</directive>
-     </directives>
-     <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
-     </directives>
-     <directives compiler=".*gpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="02:00" default="true" strict="true" nodemin="1" nodemax="2">batch</queue>
-       <queue walltimemax="01:00" strict="true" nodemin="3" nodemax="16">batch</queue>
-     </queues>
-   </batch_system>
-
    <batch_system MACH="frontier" type="frontier_slurm">
     <batch_submit>sbatch</batch_submit>
      <directives>
@@ -912,21 +862,6 @@
        <queue strict="true" nodemin="92" nodemax="183" walltimemax="6:00:00">batch</queue>
        <queue strict="true" nodemin="184" nodemax="9408" walltimemax="12:00:00">batch</queue>
        <queue strict="true" nodemin="1" nodemax="4" walltimemax="2:00:00">debug</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="snl-white" type="lsf" >
-     <queues>
-       <queue walltimemax="02:00" default="true">rhel7G</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="weaver" type="lsf" >
-     <submit_args>
-       <arg flag="-n" name=" $TOTALPES"/>
-     </submit_args>
-     <queues>
-       <queue walltimemax="02:00" default="true">rhel7W</queue>
      </queues>
    </batch_system>
 

@@ -71,9 +71,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="anvil|compy">
+    <mach name="compy">
       <pes compset="any" pesize="any">
-        <comment>anvil/compy: ne4 eamxx 1 node CPU</comment>
+        <comment>compy: ne4 eamxx 1 node CPU</comment>
         <ntasks>
           <ntasks_atm>-1</ntasks_atm>
           <ntasks_lnd>-1</ntasks_lnd>

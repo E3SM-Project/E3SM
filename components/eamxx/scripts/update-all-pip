@@ -6,9 +6,6 @@
 # in utils.py. These functions will not reliably work unless the set
 # of existing python packages are relatively up-to-date. This script
 # will update all pip packages.
-#
-# Note: netcdf4 1.6.2 would not install cleanly on weaver so we had
-# to force a downgrade to 1.6.0.
 
 # Make sure pip itself is installed and at the latest version
 python3 -m pip install --upgrade pip --user
