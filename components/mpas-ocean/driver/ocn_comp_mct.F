@@ -1066,7 +1066,7 @@ contains
       type (domain_type), pointer :: domain_ptr
       character(len=StrKIND) :: timeStamp, streamName, WCstring
       type (MPAS_timeInterval_type) :: timeStep
-      integer :: i, iam, ierr, streamDirection, errorCode
+      integer :: iam, ierr, streamDirection, errorCode
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
@@ -1083,7 +1083,6 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
       real (kind=RKIND), pointer :: &
          runningMeanRemovedIceRunoff ! the area integrated, running mean of removed ice runoff from the ocean
-      real (kind=RKIND), dimension(:), pointer :: areaCell
 
       ! freshwater balance adjustment 
       logical, pointer :: config_use_precip_scaling
