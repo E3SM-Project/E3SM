@@ -57,6 +57,9 @@ string(APPEND TIMING_CPPDEFS " -D${UPVAR}_INTERFACE")
 if (DEBUG)
   string(APPEND TIMING_CPPDEFS " -DDEBUG")
 endif()
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  string(APPEND TIMING_CPPDEFS " -DHAVE_SLASHPROC")
+endif()
 
 if (CPRE)
   # Not sure what to do here or if this is really needed
