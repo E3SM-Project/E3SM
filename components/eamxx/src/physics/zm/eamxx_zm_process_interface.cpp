@@ -85,7 +85,7 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
-  add_field<Computed>("zm_dcape",             scalar2d,     J/kg,   grid_name);
+  add_field<Computed>("zm_dcape",             scalar2d,   J/kg/s,   grid_name);
   add_field<Computed>("zm_activity",          scalar2d,     none,   grid_name);
 
   add_field<Computed>("zm_detr_qc",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
