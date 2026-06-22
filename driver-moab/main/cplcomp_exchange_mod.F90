@@ -856,6 +856,73 @@ subroutine  copy_aream_from_area(mbappid)
 
   end subroutine cplcomp_moab_init_ice
 
+  subroutine cplcomp_moab_pick_load_options(filename, ropts, ierr)
+      ! Inspect filename's netCDF contents and choose MOAB load options that match
+      ! the file's grid format. MOAB's parallel readers couple format to partition
+      ! method: NCHelperScrip handles SCRIP files and supports RCBZOLTAN; NCHelperDomain
+      ! handles CESM domain files (xc/yc/xv/yv) and supports only SQIJ-family partitions.
+      !
+      ! Detection (in order):
+      !   - 'grid_size' dimension present                 => SCRIP (structured or unstructured)
+      !   - 'xc' or 'yc' variable, or 'ni'+'nj' dims      => CESM domain
+      !     (variable names xc/yc/lon/lat vary across files, but the ni/nj dim pair
+      !     is the canonical CESM/CIME domain-file layout that NCHelperDomain expects)
+      ! Returns ierr /= 0 for unrecognized formats; caller decides whether to abort.
+      use pio,          only: file_desc_t, iosystem_desc_t, &
+                              pio_openfile, pio_closefile, pio_nowrite, &
+                              pio_inq_dimid, pio_inq_varid, pio_seterrorhandling, &
+                              PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_NOERR
+      use shr_pio_mod,  only: shr_pio_getiosys, shr_pio_getiotype
+
+      character(len=*), intent(in)  :: filename
+      character(len=*), intent(out) :: ropts
+      integer,          intent(out) :: ierr
+
+      type(file_desc_t) :: pioid
+      type(iosystem_desc_t), pointer :: iosys
+      integer :: rcode, iotype, dimid_grid_size, dimid_ni, dimid_nj, varid_xc, varid_yc
+      logical :: is_scrip, is_cesm_domain
+      logical :: has_ni, has_nj, has_xc, has_yc
+
+      ierr = 0
+      is_scrip = .false.
+      is_cesm_domain = .false.
+
+      iosys  => shr_pio_getiosys(CPLID)
+      iotype =  shr_pio_getiotype(CPLID)
+      rcode = pio_openfile(iosys, pioid, iotype, trim(filename), pio_nowrite)
+      if (rcode /= PIO_NOERR) then
+         ierr = 1
+         return
+      endif
+
+      call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+
+      ! SCRIP marker: 'grid_size' dimension
+      rcode = pio_inq_dimid(pioid, 'grid_size', dimid_grid_size)
+      if (rcode == PIO_NOERR) then
+         is_scrip = .true.
+      else
+         ! CESM domain markers: any of xc, yc variables OR ni+nj dimension pair
+         has_xc = (pio_inq_varid(pioid, 'xc', varid_xc) == PIO_NOERR)
+         has_yc = (pio_inq_varid(pioid, 'yc', varid_yc) == PIO_NOERR)
+         has_ni = (pio_inq_dimid(pioid, 'ni', dimid_ni) == PIO_NOERR)
+         has_nj = (pio_inq_dimid(pioid, 'nj', dimid_nj) == PIO_NOERR)
+         if (has_xc .or. has_yc .or. (has_ni .and. has_nj)) is_cesm_domain = .true.
+      endif
+
+      call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+      call pio_closefile(pioid)
+
+      if (is_scrip) then
+         ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'
+      else if (is_cesm_domain) then
+         ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'
+      else
+         ierr = 2
+      endif
+  end subroutine cplcomp_moab_pick_load_options
+
   subroutine cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
       use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
@@ -919,12 +986,22 @@ subroutine  copy_aream_from_area(mbappid)
                ! load mesh from scrip file passed from river model, if domain file is not available
                call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh,rof_domain=rof_domain)
                if ( trim(rof_domain) == 'none' ) then
-                  outfile = trim(rtm_mesh)//C_NULL_CHAR
-                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
+                  outfile = trim(rtm_mesh)
                else
-                  outfile = trim(rof_domain)//C_NULL_CHAR
-                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+                  outfile = trim(rof_domain)
                endif
+               ! Pick MOAB load options based on actual file format. MOSART's frivinp_mesh
+               ! may be either a SCRIP-format mesh (structured or unstructured, handled by
+               ! NCHelperScrip with RCBZOLTAN) or a CESM domain file (xc/yc/xv/yv, handled
+               ! by NCHelperDomain with SQIJ-family partitions). The two readers don't share
+               ! partition-method support, so the right options depend on the file format.
+               call cplcomp_moab_pick_load_options(trim(outfile), ropts, ierr)
+               if (ierr /= 0) then
+                  write(logunit,*) subname,' cannot determine MOAB load options for ', trim(outfile)
+                  call shr_sys_abort(subname//' ERROR: unrecognized ROF mesh file format: '//trim(outfile))
+               endif
+               outfile = trim(outfile)//C_NULL_CHAR
+               ropts = trim(ropts)//C_NULL_CHAR
                nghlay = 0 ! no ghost layers
                if (seq_comm_iamroot(CPLID)) then
                   write(logunit,'(A)') subname//' loading rof from file '//trim(outfile) &
