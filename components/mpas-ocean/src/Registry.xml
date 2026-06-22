@@ -314,7 +314,7 @@
                                         description="Non-dimensional Leith del4 closure divergence scaler"
                                         possible_values="any positive real"
                 />
-                <nml_option name="config_Leith_dx" type="real" default_value="15000.0" units="m"
+                <nml_option name="config_Leith_dx" type="real" default_value="30000.0" units="m"
                                         description="Characteristic length scale, usually the smallest dx in the mesh"
                                         possible_values="any positive real"
                 />
