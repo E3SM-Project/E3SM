@@ -115,6 +115,14 @@ OceanState::OceanState(
                                        NEdgesSize, NVertLayers);
    }
 
+   // Apply edge layer mask to NormalVelocity for all time levels so that
+   // fully-inactive layers are initialized with FillValueReal and boundary
+   // layers with 0.
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   for (int I = 0; I < NTimeLevels; I++) {
+      DefVCoord->applyEdgeLayerMask(NormalVelocity[I], NEdgesAll);
+   }
+
    // Register fields and metadata for IO
    defineFields();
 
