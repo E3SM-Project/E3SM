@@ -420,7 +420,7 @@ struct Functions {
     uview_1d<Int>    activity;       // integer deep convection activity flag
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
     uview_1d<Scalar> snow;           // surface snow                            [m/s]
-    uview_1d<Scalar> cape;           // convective available potential energy   [J]
+    uview_1d<Scalar> cape;           // convective available potential energy   [J/kg]
     uview_2d<Real>   tend_out_t;     // output tendency of temperature          [K/s]
     uview_2d<Real>   tend_out_s;     // output tendency of dry static energy    [J/s]
     uview_2d<Real>   tend_out_qv;    // output tendency of water vapor          [kg/kg/s]
