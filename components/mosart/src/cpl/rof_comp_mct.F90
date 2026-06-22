@@ -919,7 +919,8 @@ contains
 
           endif
 
-             if (convert_ice_to_river_runoff_latband) then
+          ! Reclassify frozen runoff as liquid within the lat band so snowcapped ice routes through the river network, not the ocean.
+          if (convert_ice_to_river_runoff_latband) then
                 if (abs(rtmCTL%latc(n)) <= latband_width_deg) then
                    rofi_pre = r2x_r(index_r2x_Forr_rofi,ni)
                    if (rofi_pre > 0._r8) then
