@@ -1076,19 +1076,18 @@ contains
 
        ! note: size of dof is ns
        if (ns > 0) then
-          tagname = 'GLOBAL_ID'//C_NULL_CHAR
-          ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' ERROR: cannot get dofs '
-            call shr_sys_abort(subname//'cannot get dofs ')
-          endif
+           ierr = iMOAB_GetIntTagStorage ( mbxid, 'GLOBAL_ID'//C_NULL_CHAR, ns , ent_type, dof)
+           if (ierr .ne. 0) then
+             write(logunit,*) subname,' ERROR: cannot get dofs '
+             call shr_sys_abort(subname//'cannot get dofs ')
+           endif
 
-          call IndexSet(ns, indx)
-          call IndexSort(ns, indx, dof, descend=.false.)
-          !      after sort, dof( indx(i)) < dof( indx(i+1) )
-          do ix=1,ns
-             dof_reorder(ix) = dof(indx(ix)) !
-          enddo
+           call IndexSet(ns, indx)
+           call IndexSort(ns, indx, dof, descend=.false.)
+           !      after sort, dof( indx(i)) < dof( indx(i+1) )
+           do ix=1,ns
+              dof_reorder(ix) = dof(indx(ix)) !
+           enddo
           ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
        endif
        if (luse_float) then
@@ -1112,16 +1111,16 @@ contains
                do ix = 1, ns
                  data1(ix) = matrix(ix, index_list) !
                enddo
-             else
-               tagname = trim(field)//C_NULL_CHAR
-               if (ns > 0 ) then
-                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns, ent_type, data1)
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
-                     call shr_sys_abort(subname//'cannot get tag data ')
-                  endif
-               endif
-             endif
+              else
+                tagname = trim(field)
+                if (ns > 0 ) then
+                    ierr = iMOAB_GetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns, ent_type, data1)
+                    if (ierr .ne. 0) then
+                       write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
+                      call shr_sys_abort(subname//'cannot get tag data ')
+                   endif
+                endif
+              endif
 
              ! remove MOAB default values
              ! This is needed to match MCT coupler history fields where data
@@ -1574,16 +1573,15 @@ contains
     allocate(dof(ns))
     allocate(dof_reorder(ns))
 
-   ! note: size of dof is ns
-    tagname = 'GLOBAL_ID'//C_NULL_CHAR
-    if (ns > 0 ) then
-       ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
-       if (ierr .ne. 0) then
-          write(logunit,*) subname,' ERROR: cannot get dofs '
-          call shr_sys_abort(subname//'cannot get dofs ')
-       endif
-    endif
-   allocate(indx(ns))
+    ! note: size of dof is ns
+     if (ns > 0 ) then
+        ierr = iMOAB_GetIntTagStorage ( mbxid, 'GLOBAL_ID'//C_NULL_CHAR, ns , ent_type, dof)
+        if (ierr .ne. 0) then
+           write(logunit,*) subname,' ERROR: cannot get dofs '
+           call shr_sys_abort(subname//'cannot get dofs ')
+        endif
+     endif
+    allocate(indx(ns))
    call IndexSet(ns, indx)
    call IndexSort(ns, indx, dof, descend=.false.)
    !      after sort, dof( indx(i)) < dof( indx(i+1) )
@@ -1631,22 +1629,16 @@ contains
                matrix(ix, index_list)  = data_reorder(ix) !
             enddo
           else
-            tagname = trim(field)//C_NULL_CHAR
-            if (ns > 0) then
-               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
-                  call shr_sys_abort(subname//'cannot set tag data ')
-               endif
-            endif
-          endif
-         !  n = 0
-         !  do n1 = 1,ni
-         !     do n2 = 1,ns
-         !        n = n + 1
-         !        avs(:n1)%rAttr(k,n2) = data(n)
-         !     enddo
-         !  enddo
+             tagname = trim(field)
+             if (ns > 0) then
+                ierr = iMOAB_SetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns , ent_type, data_reorder)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+                   call shr_sys_abort(subname//'cannot set tag data ')
+                endif
+             endif
+           endif
+
        else
           write(logunit,*)subname, ' warning: field ',trim(field), ' name1:', trim(name1),  ' is not on restart file'
           write(logunit,*)'for backwards compatibility will set it to 0'
@@ -1659,16 +1651,16 @@ contains
             do ix = 1,ns
                matrix(ix, index_list)  = data_reorder(ix) !
             enddo
-         else
-            tagname = trim(field)//C_NULL_CHAR
-            if ( ns > 0 ) then
-               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder)
-               if (ierr .ne. 0) then
-                  write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
-                  call shr_sys_abort(subname//'cannot set tag data ')
-               endif
-            endif
-         endif
+          else
+             tagname = trim(field)
+             if ( ns > 0 ) then
+                ierr = iMOAB_SetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns , ent_type, data_reorder)
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
+                   call shr_sys_abort(subname//'cannot set tag data ')
+                endif
+             endif
+          endif
 
        end if
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
