@@ -1093,7 +1093,7 @@ void AtmosphereDriver::set_initial_conditions ()
                         "double or string, or vector double arguments are allowed");
       }
       m_fields_inited[grid_name].push_back(fname);
-    } else if (fname == "phis" or fname == "sgh30") {
+    } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
       // Both phis and sgh30 need to be loaded from the topography file
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
@@ -1119,6 +1119,15 @@ void AtmosphereDriver::set_initial_conditions ()
                         "Error! Requesting sgh30 field on " + grid_name +
                         " topo file only has sgh30 for physics_pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
+        topography_eamxx_fields_names[grid_name].push_back(fname);
+        m_fields_inited[grid_name].push_back(fname);
+      } else if (fname == "sgh") {
+        // The eamxx field "sgh" is called "SGH" in the
+        // topography file and is only available on the PG2 grid.
+        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
+                        "Error! Requesting sgh field on " + grid_name +
+                        " topo file only has sgh for physics_pg2.\n");
+        topography_file_fields_names[grid_name].push_back("SGH");
         topography_eamxx_fields_names[grid_name].push_back(fname);
         m_fields_inited[grid_name].push_back(fname);
       }
