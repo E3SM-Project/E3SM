@@ -122,6 +122,10 @@ class OceanState {
    /// Get normal velocity host array at given time level
    HostArray2DReal getNormalVelocityH(const I4 TimeLevel) const;
 
+   /// Apply layer masks to NormalVelocity, PseudoThickness, Temperature, and
+   /// Salinity after reading an IC or restart file
+   void applyLayerMasks(const I4 TimeLevel);
+
    /// Exchange halo
    void exchangeHalo(const I4 TimeLevel);
 

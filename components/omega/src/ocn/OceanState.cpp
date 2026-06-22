@@ -17,6 +17,7 @@
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
 #include "TimeStepper.h"
+#include "Tracers.h"
 
 namespace OMEGA {
 
@@ -300,6 +301,21 @@ void OceanState::copyToHost(const I4 TimeLevel) {
    deepCopy(PseudoThicknessH[TimeIndex], PseudoThickness[TimeIndex]);
    deepCopy(NormalVelocityH[TimeIndex], NormalVelocity[TimeIndex]);
 } // end copyToHost
+
+//------------------------------------------------------------------------------
+// Apply layer masks to NormalVelocity, PseudoThickness, Temperature, and
+// Salinity at the given time level after reading an IC or restart file.
+void OceanState::applyLayerMasks(const I4 TimeLevel) {
+
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   DefVCoord->applyEdgeLayerMask(getNormalVelocity(TimeLevel), NEdgesAll);
+   DefVCoord->applyCellLayerMask(getPseudoThickness(TimeLevel), NCellsAll);
+   DefVCoord->applyCellLayerMask(Tracers::getByName(TimeLevel, "Temperature"),
+                                 NCellsAll);
+   DefVCoord->applyCellLayerMask(Tracers::getByName(TimeLevel, "Salinity"),
+                                 NCellsAll);
+
+} // end applyLayerMasks
 
 //------------------------------------------------------------------------------
 // Perform state halo exchange

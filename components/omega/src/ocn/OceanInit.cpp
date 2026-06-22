@@ -150,13 +150,10 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    I4 CurTimeLevel      = 0;
    DefState->exchangeHalo(CurTimeLevel);
 
-   // Enforce 3-zone edge mask on NormalVelocity: fully-inactive layers get
-   // FillValueReal, boundary layers (one active neighbor) get 0, active layers
-   // keep their IC/restart value.
-   VertCoord *DefVCoord = VertCoord::getDefault();
-   HorzMesh *DefMesh    = HorzMesh::getDefault();
-   DefVCoord->applyEdgeLayerMask(DefState->getNormalVelocity(CurTimeLevel),
-                                 DefMesh->NEdgesAll);
+   // Enforce layer masks on state and tracer variables: fully-inactive layers
+   // get FillValueReal, boundary layers get 0, active layers keep their
+   // IC/restart value.
+   DefState->applyLayerMasks(CurTimeLevel);
 
    DefState->copyToHost(CurTimeLevel);
 
