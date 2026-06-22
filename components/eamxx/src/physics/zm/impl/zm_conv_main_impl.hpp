@@ -446,6 +446,11 @@ void Functions<S,D>::zm_conv_main(
       if (runtime_opt.clos_dyn_adj) {
         cld_base_mass_flux(i) = Kokkos::max(
           cld_base_mass_flux(i) - omega(i, pbl_top(i)) * ZMC::pa_to_mb, Real(0));
+        // reapply limiter from above to protect against instability caused by large omega values
+        if (mflx_up_max_val > 0) {
+          cld_base_mass_flux(i) = Kokkos::min(cld_base_mass_flux(i),
+                                                   1 / (time_step * mflx_up_max_val));
+        }
       }
       if (runtime_opt.no_deep_pbl && z_mid_in(i, jt(i)) < pbl_hgt(i)) {
         cld_base_mass_flux(i) = 0;
