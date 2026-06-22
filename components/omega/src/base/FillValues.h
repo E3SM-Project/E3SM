@@ -29,15 +29,11 @@ template <>
 inline constexpr R8 FillValue<R8> = 9.9692099683868690e+36; ///< NC_FILL_DOUBLE
 
 /// Named aliases for readability in comparison and test code.
-constexpr I4 FillValueI4 = FillValue<I4>;
-constexpr I8 FillValueI8 = FillValue<I8>;
-constexpr R4 FillValueR4 = FillValue<R4>;
-constexpr R8 FillValueR8 = FillValue<R8>;
-#if defined(SINGLE_PRECISION)
-constexpr Real FillValueReal = FillValue<R4>;
-#else
-constexpr Real FillValueReal = FillValue<R8>;
-#endif
+constexpr I4 FillValueI4     = FillValue<I4>;
+constexpr I8 FillValueI8     = FillValue<I8>;
+constexpr R4 FillValueR4     = FillValue<R4>;
+constexpr R8 FillValueR8     = FillValue<R8>;
+constexpr Real FillValueReal = FillValue<Real>;
 
 } // end namespace OMEGA
 

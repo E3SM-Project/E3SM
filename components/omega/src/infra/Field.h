@@ -95,7 +95,7 @@ class Field {
       // tools (ncview, Xarray, NCO, ...); store only that, no non-standard
       // alias
       FieldMeta["_FillValue"] = FillVal;
-      Kokkos::deep_copy((InDataArray, FillVal);
+      deepCopy(InDataArray, FillVal);
    }
 
  public:
