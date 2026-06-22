@@ -86,6 +86,8 @@ void ForwardBackwardStepper::doStep(
    Tracers::updateTimeLevels();
    Pacer::stop("ForwardBackward:haloExch", 3);
 
+   validateOceanState(State, AuxState, VertCoord::getDefault(), 0);
+
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
