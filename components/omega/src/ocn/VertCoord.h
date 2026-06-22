@@ -255,6 +255,19 @@ class VertCoord {
    ///   [MinLayerEdgeBot, MaxLayerEdgeTop] -> unchanged (IC/restart values)
    void applyEdgeLayerMask(Array2DReal Arr, I4 NEdgesAll) const;
 
+   /// Enforce masking on a cell field after IC or restart read:
+   ///   K < MinLayerCell(ICell) or K > MaxLayerCell(ICell) -> FillValueReal
+   ///   [MinLayerCell(ICell), MaxLayerCell(ICell)] -> unchanged (IC/restart
+   ///   values)
+   void applyCellLayerMask(Array2DReal Arr, I4 NCellsAll) const;
+
+   /// Enforce masking on a vertex field after IC or restart read. Unlike
+   /// edges, a boundary vertex with one or more active surrounding cells holds
+   /// valid (generally non-zero) data, so there is no zeroed boundary zone:
+   ///   K < MinLayerVertexTop or K > MaxLayerVertexBot -> FillValueReal
+   ///   [MinLayerVertexTop, MaxLayerVertexBot] -> unchanged (IC/restart values)
+   void applyVertexLayerMask(Array2DReal Arr, I4 NVerticesAll) const;
+
    /// Sums the mass thickness times g from the top layer down, starting with
    /// the surface pressure
    void computePressure(

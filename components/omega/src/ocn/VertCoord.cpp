@@ -1196,6 +1196,47 @@ void VertCoord::zeroEdgeField(Array2DReal Arr, I4 NEdgesAll) const {
 }
 
 //------------------------------------------------------------------------------
+// Enforce masking on a cell field after IC or restart read.
+void VertCoord::applyCellLayerMask(Array2DReal Arr, I4 NCellsAll) const {
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin = LocMinLayerCell(ICell);
+          const int KMax = LocMaxLayerCell(ICell);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KMin || K > KMax)
+                    Arr(ICell, K) = FillValueReal;
+                 // else: active layer - keep IC/restart value
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce masking on a vertex field after IC or restart read.
+void VertCoord::applyVertexLayerMask(Array2DReal Arr, I4 NVerticesAll) const {
+   OMEGA_SCOPE(LocMinLayerVertexTop, MinLayerVertexTop);
+   OMEGA_SCOPE(LocMaxLayerVertexBot, MaxLayerVertexBot);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NVerticesAll}, KOKKOS_LAMBDA(int IVertex, const TeamMember &Team) {
+          const int KMin = LocMinLayerVertexTop(IVertex);
+          const int KMax = LocMaxLayerVertexBot(IVertex);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KMin || K > KMax)
+                    Arr(IVertex, K) = FillValueReal;
+                 // else: active layer - keep IC/restart value
+                 // Unlike edges, boundary vertices (those with one or more
+                 // active surrounding cells) hold valid, generally non-zero
+                 // data and are not zeroed.
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
 // Enforce 3-zone masking on an edge field after IC or restart read.
 void VertCoord::applyEdgeLayerMask(Array2DReal Arr, I4 NEdgesAll) const {
    OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
