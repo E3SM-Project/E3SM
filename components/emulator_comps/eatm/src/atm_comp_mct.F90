@@ -522,10 +522,9 @@ CONTAINS
           if (index_x2a_Sf_ofrac>0) then
              ocnfrac(i,j) = x2a_a%rAttr(index_x2a_Sf_ofrac,n)
           end if
-          if (index_x2a_Sf_lfrac>0) then
-             !lndfrac(i,j) = x2a_a%rAttr(index_x2a_Sf_lfrac,n)
-             lndfrac(i, j) = max(0.0_R8, 1.0_R8 - ocnfrac(i, j) - icefrac(i, j))
-          end if
+           if (index_x2a_Sf_lfrac>0) then
+              lndfrac(i,j) = x2a_a%rAttr(index_x2a_Sf_lfrac,n)
+           end if
        end do
     end do
 
@@ -702,6 +701,8 @@ CONTAINS
 
     call ncd_io(ncid=ncid, varname='grid_area', flag='read', data=areac_g, dim1name='grid_size', readvar=found)
     if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read eatm area')
+
+    call ncd_pio_closefile(ncid)
 
     return
 

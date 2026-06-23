@@ -210,7 +210,7 @@ module eatm_restart_mod
           uname = "W/m2"
         elseif (c == 44) then
           vname = "tendency_of_total_water_path_due_to_advection"
-          lname = "Tendency of total water path form advection"
+          lname = "Tendency of total water path from advection"
           uname = "kg/m2/s"
         else
           print *, "Something is wrong"

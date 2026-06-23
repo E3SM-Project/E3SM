@@ -301,7 +301,7 @@ CONTAINS
         net_inputs(1,  3, i, j) = icefrac(i, j)            ! ACE2-EAMv3: ICEFRAC
         net_inputs(1,  6, i, j) = net_outputs(1, 1, i, j)  ! ACE2-EAMv3: PS
         ! use landfrac as weights to paint in ACE TS over land
-        net_inputs(1,  7, i, j) = ts(i, j) + lndfrac(i, j) * net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
+        net_inputs(1,  7, i, j) = (1 - lndfrac(i, j))*ts(i, j) + lndfrac(i, j) * net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
         ! net_inputs(1,  7, i, j) = net_outputs(1, 2, i, j)  ! ACE2-EAMv3: TS
         ! For 3D fields just advance through with time
         net_inputs(1,  8, i, j) = net_outputs(1,  3, i, j) ! ACE2-EAMv3: T_0
@@ -372,11 +372,11 @@ CONTAINS
         pslv(i, j) = net_outputs(1,  1, i, j) ! PS (Surface pressure)
         pbot(i, j) = (ak_7 + bk_7 * net_outputs(1, 1, i, j))
         ! https://en.wikipedia.org/wiki/Pressure_altitude w/ Pa --> hPa
-        zbot(i, j) = 44307.694_R8 * ( 1.0_R8 - (pbot(i, j) / 1013250.0_R8)**0.190284_R8 )
+        zbot(i, j) = 44307.694_R8 * ( 1.0_R8 - (pbot(i, j) / SHR_CONST_PSTD)**0.190284_R8 )
         ubot(i, j) = net_outputs(1, 26, i, j) ! U_7
         vbot(i, j) = net_outputs(1, 34, i, j) ! V_7
         tbot(i, j) = net_outputs(1, 10, i, j) ! T_7
-        ptem(i, j) = net_outputs(1, 10, i, j) ! T_7
+        ptem(i, j) = tbot(i,j) * (pslv(i,j)/pbot(i,j))**(rdair/SHR_CONST_CPDAIR)
         lwdn(i, j) = net_outputs(1, 40, i, j) ! FLDS (Downwelling longwave flux at surface)
 
         !--- saturation vapor pressure ---
