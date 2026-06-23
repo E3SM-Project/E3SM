@@ -51,6 +51,7 @@ module cpl_fme_mod
   use seq_timemgr_mod,     only: seq_timemgr_EClockGetData
   use seq_infodata_mod,    only: seq_infodata_type, seq_infodata_GetData
   use seq_io_mod,          only: seq_io_date2yyyymmdd, seq_io_sec2hms
+  use seq_flds_mod,        only: seq_flds_lookup
   use component_type_mod,  only: component_type, component_get_gsmap_cx, &
                                  component_get_x2c_cx, component_get_c2x_cx
   use prep_ocn_mod,        only: prep_ocn_get_x2oacc_ox
@@ -132,6 +133,7 @@ module cpl_fme_mod
      integer            :: nflds = 0
      character(len=64)  :: fldnames(max_fme_vars) = ''
      integer            :: fld_kidx(max_fme_vars) = 0   ! index into source aVect
+     logical            :: fld_is_state(max_fme_vars) = .false.  ! S* snapshot vs F* mean
 
      ! horizontal remap (shared module) + send-side packing
      type(shr_horiz_remap_t) :: map
@@ -260,9 +262,10 @@ module cpl_fme_mod
        'So_ssq          ' /)
 
   ! a2x: atm export to the coupler (what the atm sends out each coupling step).
-  ! States (Sa_*) and downwelling/precip flux densities (Faxa_*); both are
-  ! time-averaged for output, matching the coupler's own accumulate-then-average
-  ! treatment.  Absent fields are skipped at setup (perrWith='quiet').
+  ! States (Sa_*) are written as instantaneous snapshots at the record time;
+  ! downwelling/precip flux densities (Faxa_*) are written as window means --
+  ! see cpl_fme_accum/flush and the per-field cell_methods.  Absent fields are
+  ! skipped at setup (perrWith='quiet').
   integer, parameter :: n_a2x_default = 18
   character(len=16), parameter :: a2x_default(n_a2x_default) = (/ &
        'Sa_z            ', 'Sa_u            ', 'Sa_v            ', &
@@ -276,13 +279,15 @@ CONTAINS
 
   !=============================================================================
   subroutine cpl_fme_init(infodata, EClock, ocn, ocn_present, ice, ice_present, &
-       atm, atm_present, read_restart)
+       atm, atm_present, read_restart, ocn_cpl_dt)
     !---------------------------------------------------------------------------
     ! One-time setup.  Reads the cpl_fme_inparm namelist group from drv_in,
     ! loads maps, builds remap comm patterns + decompositions, allocates the
     ! source-space accumulators, and (on a warm restart) restores accumulator
     ! state from the per-stream sidecars.  Inert (no streams) when the
     ! namelist group is absent or all streams are disabled -- purely additive.
+    ! ocn_cpl_dt (ocean coupling step, seconds) is used only for a cadence
+    ! sanity WARN -- see the OCN_NCPL check at the end of this routine.
     !---------------------------------------------------------------------------
     use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
 
@@ -295,8 +300,9 @@ CONTAINS
     type(component_type),    intent(in)    :: atm(:)
     logical,                 intent(in)    :: atm_present
     logical,                 intent(in)    :: read_restart
+    integer,                 intent(in)    :: ocn_cpl_dt
 
-    integer :: s, ierr
+    integer :: s, ierr, base_dt
     type(mct_aVect), pointer :: avp(:)
     character(len=*), parameter :: subname = '(cpl_fme_init)'
 
@@ -380,6 +386,25 @@ CONTAINS
     if (cpl_iam == 0 .and. active) then
        write(logunit,*) subname, ': coupler-native FME output ACTIVE, ', &
             'nstreams=', count(streams(1:nstreams)%enabled)
+    end if
+
+    ! Cadence sanity (gotcha #52): the cpl-FME reductions assume the ocean
+    ! couples every driver step (OCN_NCPL == ATM_NCPL).  If the ocean couples
+    ! COARSER than the base step, the coupler's x2oacc accumulator pre-averages
+    ! the ocean forcing over its window, so an x2o STATE snapshot becomes the
+    ! last ocean-coupling-window mean (not a true instant), and the x2a/a2x
+    ! window means undersample.  Output is still produced -- this is a loud
+    ! heads-up, not a fatal error.
+    if (active .and. cpl_iam == 0) then
+       call seq_timemgr_EClockGetData(EClock, dtime=base_dt)
+       if (ocn_cpl_dt > base_dt) then
+          write(logunit,*) subname, ': WARNING OCN couples coarser than the ', &
+               'base step (ocn_cpl_dt=', ocn_cpl_dt, 's > base dt=', base_dt, &
+               's, i.e. OCN_NCPL < ATM_NCPL). cpl-FME assumes equal cadence: ', &
+               'x2o STATE fields (Sa_pslv, Si_ifrac) snapshot the last ', &
+               'ocean-coupling-window mean rather than a true instant, and ', &
+               'x2a/a2x means undersample. See AGENTS.md gotcha #52.'
+       end if
     end if
 
   end subroutine cpl_fme_init
@@ -594,6 +619,14 @@ CONTAINS
           st%nflds = st%nflds + 1
           st%fldnames(st%nflds) = trim(flist(i))
           st%fld_kidx(st%nflds) = kf
+          ! MCT field-naming convention: 'S*' = state (instantaneous snapshot),
+          ! 'F*' = flux (time-mean over the output window).  Everything else
+          ! defaults to mean (treated as a flux) and is warned below.
+          st%fld_is_state(st%nflds) = (flist(i)(1:1) == 'S')
+          if (cpl_iam == 0 .and. flist(i)(1:1) /= 'S' .and. flist(i)(1:1) /= 'F') then
+             write(logunit,*) subname, ': WARNING field ', trim(flist(i)), &
+                  ' has no S/F prefix -- treating as flux (time: mean)'
+          end if
        else if (cpl_iam == 0) then
           write(logunit,*) subname, ': note field ', trim(flist(i)), &
                ' absent from ', trim(st%bundle), ' -- skipped'
@@ -735,13 +768,20 @@ CONTAINS
        if (.not. streams(s)%enabled) cycle
        if (streams(s)%phase /= phase) cycle
 
-       ! accumulate the latest sample (source space) for the selected fields.
-       ! x2o is the ocean window-mean; xao/x2i are coupling-cadence snapshots
-       ! (no native accumulator) -- averaging snapshots over the window.
+       ! Sample the latest values (source space) for the selected fields.
+       ! State ('S*') fields are captured as an instantaneous snapshot -- the
+       ! accumulator slot just holds the most recent sample (overwrite).  Flux
+       ! ('F*') fields are summed and divided by nAccum at flush to form the
+       ! time-mean over the output window (matching the coupler's own
+       ! accumulate-then-average treatment of fluxes).
        do f = 1, streams(s)%nflds
           kf = streams(s)%fld_kidx(f)
-          streams(s)%accum%rAttr(f, :) = streams(s)%accum%rAttr(f, :) &
-               + streams(s)%src_bundle%rAttr(kf, :)
+          if (streams(s)%fld_is_state(f)) then
+             streams(s)%accum%rAttr(f, :) = streams(s)%src_bundle%rAttr(kf, :)
+          else
+             streams(s)%accum%rAttr(f, :) = streams(s)%accum%rAttr(f, :) &
+                  + streams(s)%src_bundle%rAttr(kf, :)
+          end if
        end do
        streams(s)%nAccum = streams(s)%nAccum + 1
 
@@ -766,7 +806,7 @@ CONTAINS
     real(r8),               intent(in)    :: curr_time
 
     integer :: f, i, ierr, curr_ymd, curr_tod
-    real(r8) :: rinv, tlo, thi
+    real(r8) :: rinv, fred, tlo, thi
     real(r8), allocatable :: fld_out(:,:)
     character(len=*), parameter :: subname = '(cpl_fme_flush)'
 
@@ -786,10 +826,17 @@ CONTAINS
 
     allocate(fld_out(max(1, st%map%n_b_local), 1))
     do f = 1, st%nflds
-       ! average in source space, pack (value, mask=1) and remap (apply_masked
-       ! -> land/no-coverage target cells get SHR_FILL_VALUE; gotchas #3/#5)
+       ! Reduce in source space, pack (value, mask=1) and remap (apply_masked
+       ! -> land/no-coverage target cells get SHR_FILL_VALUE; gotchas #3/#5).
+       ! State fields are the stored snapshot (no division); flux fields are
+       ! divided by nAccum to form the window-mean.
+       if (st%fld_is_state(f)) then
+          fred = 1.0_r8        ! snapshot: accumulator already holds the value
+       else
+          fred = rinv          ! flux: divide the running sum by nAccum
+       end if
        do i = 1, st%n_send
-          st%send_buf((i-1)*2 + 1) = st%accum%rAttr(f, st%send_local_idx(i)) * rinv
+          st%send_buf((i-1)*2 + 1) = st%accum%rAttr(f, st%send_local_idx(i)) * fred
           st%send_buf((i-1)*2 + 2) = 1.0_r8
        end do
        call st%map%apply_masked(st%send_buf, 1, fld_out, cpl_mpicom, &
@@ -914,6 +961,7 @@ CONTAINS
     type(cpl_fme_file_t), pointer :: fh
     integer :: rc, f
     real(r8), parameter :: fillv = SHR_FILL_VALUE
+    character(len=CL) :: lname, sname, cunit
 
     fh => st%outfile
 
@@ -949,12 +997,32 @@ CONTAINS
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reference_date', trim(seq_io_date2yyyymmdd(epoch_ymd)))
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'case', trim(case_name))
     rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'git_version', trim(model_version))
+    ! document the per-field time-reduction convention so the files are
+    ! self-describing (see also each var's cell_methods attribute)
+    rc = pio_put_att(fh%pio_file, PIO_GLOBAL, 'time_reduction', &
+         'State fields (name prefix "S") are instantaneous snapshots at the '// &
+         'record time (cell_methods="time: point"); flux fields (name prefix '// &
+         '"F") are means over the output window [time_bnds(1), time_bnds(2)] '// &
+         '(cell_methods="time: mean").')
 
     do f = 1, st%nflds
+       ! pull long_name / standard_name / units from the coupler field registry
+       ! (same lookup the cpl history aux files use; falls back to the
+       ! underscore-stripped shortname, then to 'unknown' if unregistered)
+       call seq_flds_lookup(trim(st%fldnames(f)), longname=lname, &
+            stdname=sname, units=cunit)
        rc = pio_def_var(fh%pio_file, trim(st%fldnames(f)), PIO_REAL, &
             (/fh%dim_lon, fh%dim_lat, fh%dim_time/), fh%var_descs(f))
-       rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'long_name', trim(st%fldnames(f)))
-       rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'cell_methods', 'time: mean')
+       rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'long_name', trim(lname))
+       rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'standard_name', trim(sname))
+       rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'units', trim(cunit))
+       ! state ('S*') vars are instantaneous snapshots at the record time;
+       ! flux ('F*') vars are means over [time_bnds(1), time_bnds(2)]
+       if (st%fld_is_state(f)) then
+          rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'cell_methods', 'time: point')
+       else
+          rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'cell_methods', 'time: mean')
+       end if
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), '_FillValue', real(fillv, r4))
        rc = pio_put_att(fh%pio_file, fh%var_descs(f), 'missing_value', real(fillv, r4))
     end do

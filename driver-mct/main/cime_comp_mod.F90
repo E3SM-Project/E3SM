@@ -348,6 +348,7 @@ module cime_comp_mod
 
   integer  :: dtime                  ! dt of one coupling interval
   integer  :: ncpl                   ! number of coupling intervals per day
+  integer  :: fme_ocn_cpl_dt         ! ocn coupling interval (s), for cpl-FME cadence WARN
   integer  :: ymd                    ! Current date (YYYYMMDD)
   integer  :: year                   ! Current date (YYYY)
   integer  :: month                  ! Current date (MM)
@@ -2436,8 +2437,12 @@ contains
     !| Placed after prep_ocn_init and the cpl restart read so the ocean
     !| gsmap / x2oacc accumulator are available and read_restart is known.
     !----------------------------------------------------------
+    ! ocean coupling step for the cpl-FME cadence sanity WARN (gotcha #52);
+    ! 0 when no ocean (cpl-FME is inert without ocn_present anyway)
+    fme_ocn_cpl_dt = 0
+    if (ocn_present) call seq_timemgr_EClockGetData(EClock_o, dtime=fme_ocn_cpl_dt)
     call cpl_fme_init(infodata, EClock_d, ocn, ocn_present, ice, ice_present, &
-         atm, atm_present, read_restart)
+         atm, atm_present, read_restart, fme_ocn_cpl_dt)
 
     !----------------------------------------------------------
     !| Map initial r2x_rx and g2x_gx to _ox, _ix and _lx
