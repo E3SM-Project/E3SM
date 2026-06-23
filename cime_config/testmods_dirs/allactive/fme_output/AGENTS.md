@@ -2161,6 +2161,92 @@ restored before the first restart-step atm merge) did NOT materialize: sampling
 right after `prep_atm_mrg` is sufficient. Full test green (RUN, COMPARE_base_rest,
 MEMLEAK, SHORT_TERM_ARCHIVER).
 
+### gotcha #52 — coupler FME tape: state fields are SNAPSHOTS, flux fields are MEANS; per-var CF metadata from seq_flds_lookup (ADDED 2026-06-23)
+The original `cpl_fme_mod.F90` accumulated *every* field each coupling step and
+divided by `nAccum` at flush, so all vars got `cell_methods="time: mean"` —
+including the atmosphere STATE fields (`Sa_z`, `Sa_tbot`, `Sa_pslv`, ...). That
+over-averages state: for ACE/Samudra training the state forcing should be an
+instantaneous snapshot at the record time, and only the *flux* densities
+(`Faxa_rainc`, `Faxa_lwdn`, precip/radiation) should be window means.
+
+**Classification is automatic from the MCT field-naming convention**: a field
+whose shortname starts with `S` is state (snapshot), `F` is flux (mean). Verified
+against every default list in the module — `Sa_/So_/Si_/Sx_/Sf_` are all state,
+`Faxa_/Foxx_/Fioi_/Faox_/Faii_/Faxx_/Fioo_` are all flux. No namelist, no
+hand-maintained list. A field with neither prefix defaults to mean + WARN. The
+per-stream flag is `cpl_fme_stream_t%fld_is_state(:)`, set in
+`cpl_fme_stream_setup`.
+
+**Implementation (4 sites in `cpl_fme_mod.F90`):**
+- `cpl_fme_accum`: state slot is OVERWRITTEN with the latest sample (snapshot);
+  flux slot is summed. `nAccum` still counts samples (used only by flux).
+- `cpl_fme_flush`: reduction factor `fred = 1.0` for state (accumulator already
+  holds the value), `fred = rinv = 1/nAccum` for flux.
+- `cpl_fme_file_define`: per-var `cell_methods` = `"time: point"` (state) vs
+  `"time: mean"` (flux). `time` is the record time = the snapshot instant;
+  `time_bnds=[tlo,thi]` still describes the window cell (CF-fine for point data).
+- A global `time_reduction` attr documents the S/F convention so files are
+  self-describing.
+- `cpl_fme_init` gained an `ocn_cpl_dt` arg + a one-time cadence WARN (see the
+  x2o caveat below); `cime_comp_mod` queries `EClock_o` dtime and passes it.
+
+**Per-variable CF metadata**: `long_name`, `standard_name`, and `units` are now
+pulled from `seq_flds_lookup` (public alias of `seq_flds_esmf_metadata_get` in
+`seq_flds_mod.F90`) — the SAME registry the coupler's own history aux files use
+(`seq_io_mod.F90`). It auto-falls-back to the underscore-stripped shortname
+(`Faxa_rainc`→`rainc`) and returns `'unknown'` if unregistered. Replaces the old
+`long_name = <fieldname>` placeholder and the missing `units`. No new dependency
+(cpl_fme already uses `seq_io_mod`, which uses `seq_flds_mod`).
+
+**Restart/BFB is unaffected and actually safer for state**: the sidecar still
+persists `accum`+`nAccum`; a state slot just holds the last snapshot, which the
+next sample overwrites before any flush (flush only runs from inside
+`cpl_fme_accum`, after the sample). So warm-restart BFB (gotchas #29/#51) holds
+with no sidecar-format change.
+
+**x2o caveat — depends entirely on `OCN_NCPL` vs `ATM_NCPL`, and is a NO-OP in
+production.** `x2o` is the ONLY bundle read from a coupler *accumulator*
+(`prep_ocn_get_x2oacc_ox()`); every other bundle is a raw per-step exchange
+(`component_get_{c2x,x2c}_cx` / recomputed bulk flux). `prep_ocn_accum_avg`
+averages `x2oacc` over the ocean coupling window ONLY when more than one
+`prep_ocn_accum` ran since the last ocean coupling — i.e. only when the ocean
+couples coarser than the base step:
+```fortran
+if (x2oacc_ox_cnt > 1) call mct_avect_avg(x2oacc_ox, x2oacc_ox_cnt)  ! else SKIPPED
+```
+For the SamudrACE config **`ATM_NCPL == OCN_NCPL == ICE_NCPL == 48`** (MPAS-O
+`OCN_NCPL` defaults to `$ATM_NCPL`; `config_component_e3sm.xml:487`), so the ocean
+couples every 30-min driver step, `x2oacc_ox_cnt == 1` every time, the average is
+SKIPPED, and `x2o` is just the per-coupling-step merged forcing — exactly like
+`a2x`/`x2a`. So `Sa_pslv`/`Si_ifrac` snapshots are genuine 30-min-cadence instants
+(the last of the window's ~48), NOT "snapshots of a daily mean", and the flux
+fields are true daily/5-day means. The uniform S/F rule is correct here; no x2o
+exclusion needed. (An earlier version of this gotcha wrongly claimed x2o5D would
+snapshot "the last daily mean" — that mis-modeled x2o as a daily accumulator.)
+
+**The only regime where it bites: `OCN_NCPL < ATM_NCPL`** (e.g. a POP2 compset, or
+a hand-set coarser ocean cadence). Then `x2oacc` genuinely sub-window-averages, so
+an x2o STATE snapshot becomes the last ocean-coupling-window mean (not a true
+instant) and `x2a`/`a2x` window means undersample (the same assumption behind the
+"second hook" open question for x2a/a2x). Even there the x2o flux means stay exact
+(mean-of-equal-length-means = grand mean). Guarded by a one-time
+`MPAS_LOG`/`logunit` WARN in `cpl_fme_init` (`ocn_cpl_dt > base_dt`,
+`ocn_cpl_dt` plumbed in from `cime_comp_mod` via `EClock_o`). To get true x2o-state
+means in that regime, exclude x2o from the snapshot rule (force `fld_is_state=.false.`
+for the x2o stream).
+
+**VERIFIED 2026-06-23** — `ERS_Ld4_P1024.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.pm-cpu_gnu`
+(`...20260623_102630_f0a5c5`, all 12 streams) PASSED RUN + **COMPARE_base_rest**
+(mixed snapshot/mean is warm-restart BFB) + MEMLEAK + SHORT_TERM_ARCHIVER; build
+clean. `ncdump -h` confirms: `a2x` `Sa_z`→`cell_methods="time: point"`,
+long_name="Height at the lowest model level", standard_name="height", units="m";
+`Sa_tbot`→point/air_temperature/K; `Faxa_rainc`→`"time: mean"`/
+convective_precipitation_flux/`kg m-2 s-1`; global `time_reduction` attr present.
+`x2o1D` splits exactly 15 `time: mean` + 2 `time: point` (`Sa_pslv` units `Pa`,
+`Si_ifrac` units `1`). No `unknown` units anywhere; zero "no S/F prefix" warnings
+(every field classified). Cadence WARN correctly SILENT (0 hits in both legs'
+cpl.log — `ATM_NCPL==OCN_NCPL==48`). `cpl_fme_init` logged `ACTIVE, nstreams=12`.
+
 ### Why (the one quantity component tapes cannot provide)
 The EAM h0 tape and the MPAS FME AMs emit each component's *internal*
 fields. They do NOT emit the **merged, post-coupler forcing each component
