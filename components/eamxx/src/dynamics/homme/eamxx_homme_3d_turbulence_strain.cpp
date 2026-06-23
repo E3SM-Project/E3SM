@@ -51,8 +51,9 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
   const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int n0          = tl.n0;
-  const int nlev_scalar = m_helper_fields.at("grad_Ux_dyn")
-                            .template get_view<Real*****>().extent_int(4);
+  const auto& grad_Ux_field = m_helper_fields.at("grad_Ux_dyn");
+  const auto& grad_Ux_layout = grad_Ux_field.get_header().get_identifier().get_layout();
+  const int nlev_scalar = grad_Ux_layout.dims().back();
 
   const auto w_int_dyn = state.m_w_i;
 
@@ -189,11 +190,13 @@ void HommeDynamics::compute_local_strain_components3d ()
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
 
-  auto shear_components_dyn = m_helper_fields.at("shear_strain3d_components_dyn").template get_view<Real*****>();
+  auto& shear_components_field = m_helper_fields.at("shear_strain3d_components_dyn");
+  const auto& shear_components_layout = shear_components_field.get_header().get_identifier().get_layout();
+  auto shear_components_dyn = shear_components_field.template get_view<Real*****>();
 
   const auto vec_sph2cart = geom.m_vec_sph2cart;
 
-  const int nlev_scalar = grad_Ux_dyn.extent_int(4);
+  const int nlev_scalar = shear_components_layout.dims().back();
 
   using Policy = Kokkos::MDRangePolicy<KT::ExeSpace, Kokkos::Rank<4>>;
   const Policy policy({0, 0, 0, 0}, {nelem, NGP, NGP, nlev_scalar});

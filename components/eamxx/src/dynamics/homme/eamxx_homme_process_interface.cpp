@@ -181,7 +181,7 @@ void HommeDynamics::create_requests ()
     add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
     add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
     auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
-    add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, nondim/s, pgn,N);
+    add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, 1/s, pgn,N);
   }
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
