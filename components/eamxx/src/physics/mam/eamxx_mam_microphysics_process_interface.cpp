@@ -472,7 +472,16 @@ void MAMMicrophysics::set_oxid_reader()
   util::TimeStamp ref_ts_oxid (1,1,1,0,0,0);
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
   data_interp_oxid_->setup_time_database ({oxid_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_oxid);
-  data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
+  if (m_iop_data_manager != nullptr) {
+    EKAT_REQUIRE_MSG(oxid_map_file == "" or oxid_map_file == "none",
+      "Error! Cannot define aero_microphys_remap_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data -> model data.\n");
+    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    data_interp_oxid_->create_horiz_remappers (iop_lat, iop_lon);
+  } else {
+    data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
+  }
   data_interp_oxid_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_data_oxid;
   remap_data_oxid.vr_type = DataInterpolation::Dynamic3DRef;
@@ -508,7 +517,16 @@ void MAMMicrophysics::set_linoz_reader(){
 
   data_interp_linoz_ = std::make_shared<DataInterpolation>(grid_,linoz_fields);
   data_interp_linoz_->setup_time_database ({m_linoz_file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_linoz);
-  data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
+  if (m_iop_data_manager != nullptr) {
+    EKAT_REQUIRE_MSG(linoz_map_file == "" or linoz_map_file == "none",
+      "Error! Cannot define aero_microphys_remap_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data -> model data.\n");
+    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    data_interp_linoz_->create_horiz_remappers (iop_lat, iop_lon);
+  } else {
+    data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
+  }
   data_interp_linoz_->set_logger(m_atm_logger);
 
   DataInterpolation::VertRemapData remap_data_linoz;
@@ -558,7 +576,16 @@ void MAMMicrophysics::set_exo_coldens_reader()
   util::TimeStamp ref_ts_exo_coldens (1,1,1,0,0,0);
   data_interp_exo_coldens_ = std::make_shared<DataInterpolation>(grid_exo_coldens,exo_coldens_fields_);
   data_interp_exo_coldens_->setup_time_database ({exo_coldens_file_name},util::TimeLine::YearlyPeriodic,DataInterpolation::Linear, ref_ts_exo_coldens);
-  data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file);
+  if (m_iop_data_manager != nullptr) {
+    EKAT_REQUIRE_MSG(exo_coldens_map_file == "" or exo_coldens_map_file == "none",
+      "Error! Cannot define aero_microphys_remap_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data -> model data.\n");
+    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    data_interp_exo_coldens_->create_horiz_remappers (iop_lat, iop_lon);
+  } else {
+    data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file);
+  }
   data_interp_exo_coldens_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_exo_coldens;
   remap_exo_coldens.vr_type = DataInterpolation::Custom;
@@ -582,6 +609,14 @@ void MAMMicrophysics::set_elevated_emissions_reader()
   const auto z_iface = get_field_out("z_mam4_int");
   const std::string extfrc_map_file =
         m_params.get<std::string>("aero_microphys_remap_file", "");
+  Real iop_lat = 0, iop_lon = 0;
+  if (m_iop_data_manager != nullptr) {
+    EKAT_REQUIRE_MSG(extfrc_map_file == "" or extfrc_map_file == "none",
+      "Error! Cannot define aero_microphys_remap_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data -> model data.\n");
+    iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+  }
   for(const auto &pair : elevated_emis_var_names_) {
     const auto& var_name=pair.first;
     std::string item_name = "mam4_" + var_name + "_elevated_emiss_file_name";
@@ -596,7 +631,11 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     di_vertical->set_input_files_dimname(e2str(LEV),"altitude");
     di_vertical->set_input_files_dimname(e2str(ILEV),"altitude_int");
     di_vertical->setup_time_database ({file_name},util::TimeLine::YearlyPeriodic, DataInterpolation::Linear, ref_ts_vertical);
-    di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
+    if (m_iop_data_manager != nullptr) {
+      di_vertical->create_horiz_remappers (iop_lat, iop_lon);
+    } else {
+      di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
+    }
     di_vertical->set_logger(m_atm_logger);
     DataInterpolation::VertRemapData remap_data_vertical;
     remap_data_vertical.vr_type = DataInterpolation::Custom;
