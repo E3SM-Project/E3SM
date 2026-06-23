@@ -609,7 +609,7 @@ contains
     call MPAS_stream_mgr_add_att(domain % streamManager, 'institution_id', 'E3SM-Project')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', 'e3sm-data-support@llnl.gov')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'license', &
-        'This data is made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.')
+        'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
     call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
 

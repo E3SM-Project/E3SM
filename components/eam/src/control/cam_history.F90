@@ -3850,7 +3850,7 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
                       'e3sm-data-support@llnl.gov')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'license',  &
-                      'This data is made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.')
+                      'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 

@@ -1739,7 +1739,7 @@ contains
        call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
            'e3sm-data-support@llnl.gov')
        call MPAS_stream_mgr_add_att(domain % streamManager, 'license', &
-           'This data is made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.')
+           'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
 
 
       call MPAS_stream_mgr_add_att(stream_manager, 'on_a_sphere', domain % on_a_sphere)

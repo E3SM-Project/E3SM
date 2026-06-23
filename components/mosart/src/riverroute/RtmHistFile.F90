@@ -701,7 +701,7 @@ contains
     call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
              'e3sm-data-support@llnl.gov')
     call ncd_putatt(lnfid, ncd_global, 'license' ,  &
-             'This data is made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.')
+             'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
 
     str = get_filename(frivinp_rtm)

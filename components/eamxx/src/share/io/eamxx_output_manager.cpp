@@ -911,7 +911,7 @@ void OutputManager::set_file_header(const IOFileSpecs& file_specs)
   set_str_att("atm_initial_conditions_file",p.get<std::string>("initial_conditions_file","NONE"));
   set_str_att("topography_file",p.get<std::string>("topography_file","NONE"));
   set_str_att("contact","e3sm-data-support@llnl.gov");
-  set_str_att("license","This data is made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.");
+  set_str_att("license","http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)");
   set_str_att("institution_id","E3SM-Project");
   set_str_att("realm","atmos");
   set_str_att("history",ts_str);
