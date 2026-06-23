@@ -151,7 +151,7 @@ jobs:
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl, cuda, gnu]
+    runs-on:  [self-hosted, ghci-snl, cuda]
     strategy:
       fail-fast: false
       matrix:
