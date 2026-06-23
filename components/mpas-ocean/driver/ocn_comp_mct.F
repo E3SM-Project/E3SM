@@ -3494,10 +3494,12 @@ contains
           &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
           &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
           &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
-          &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+          &Mailing address: LLNL Climate Program, c/o Peter M. Caldwell, &
           &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
       call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', &
           'e3sm-data-support@llnl.gov')
+      call MPAS_stream_mgr_add_att(domain % streamManager, 'license', &
+          'This data is made available under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.')
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
