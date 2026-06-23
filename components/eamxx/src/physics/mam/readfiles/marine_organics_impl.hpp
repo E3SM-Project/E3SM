@@ -3,6 +3,9 @@
 
 #include "share/remap/identity_remapper.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/remap/iop_remapper.hpp"
+#include "share/grid/point_grid.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -75,6 +78,55 @@ marineOrganicsFunctions<S, D>::create_horiz_remapper(
   return remapper;
 
 }  // create_horiz_remapper
+
+// -------------------------------------------------------------------------------------------
+template <typename S, typename D>
+std::shared_ptr<AbstractRemapper>
+marineOrganicsFunctions<S, D>::create_horiz_remapper(
+    const std::shared_ptr<const AbstractGrid> &model_grid,
+    const std::string &data_file, const Real iop_lat, const Real iop_lon,
+    const std::vector<std::string> &field_name, const std::string &dim_name1) {
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+  using namespace ekat::prefixes;
+
+  scorpio::register_file(data_file, scorpio::Read);
+  const int ncols_data = scorpio::get_dimlen(data_file, dim_name1);
+  scorpio::release_file(data_file);
+
+  // Create a point grid matching the data file's column count
+  auto data_grid = create_point_grid("marine_organics_iop_data", ncols_data, 1,
+                                     model_grid->get_comm());
+
+  // Read lat/lon geometry so IOPRemapper can locate the closest column
+  std::vector<Field> latlon = {
+    data_grid->create_geometry_data("lat", data_grid->get_2d_scalar_layout()),
+    data_grid->create_geometry_data("lon", data_grid->get_2d_scalar_layout())
+  };
+  AtmosphereInput latlon_reader(data_file, data_grid, latlon);
+  latlon_reader.read_variables();
+
+  auto horiz_interp_tgt_grid =
+      model_grid->clone("marine_organics_horiz_interp_tgt_grid", true);
+
+  auto remapper = std::make_shared<IOPRemapper>(data_grid, horiz_interp_tgt_grid,
+                                                iop_lat, iop_lon);
+
+  const auto tgt_grid  = remapper->get_tgt_grid();
+  const auto layout_2d = tgt_grid->get_2d_scalar_layout();
+  Units umolC(micro * mol, "umol C");
+
+  const int field_size = field_name.size();
+  for(int icomp = 0; icomp < field_size; ++icomp) {
+    Field f(FieldIdentifier(field_name[icomp], layout_2d, umolC, tgt_grid->name()));
+    f.allocate_view();
+    remapper->register_field_from_tgt(f);
+  }
+
+  remapper->registration_ends();
+
+  return remapper;
+}  // create_horiz_remapper (IOP)
 
 // -------------------------------------------------------------------------------------------
 template <typename S, typename D>
@@ -286,6 +338,33 @@ void marineOrganicsFunctions<S, D>::init_marine_organics_file_read(
       create_data_reader(marineOrganicsHorizInterp, data_file);
 
 }  // init_marine_organics_file_read
+
+// -------------------------------------------------------------------------------------------
+template <typename S, typename D>
+void marineOrganicsFunctions<S, D>::init_marine_organics_file_read(
+    const int &ncol, const std::vector<std::string> &field_name,
+    const std::string &dim_name1,
+    const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file,
+    const Real iop_lat, const Real iop_lon,
+    // output
+    std::shared_ptr<AbstractRemapper> &marineOrganicsHorizInterp,
+    marineOrganicsInput &data_start_, marineOrganicsInput &data_end_,
+    marineOrganicsData &data_out_,
+    std::shared_ptr<AtmosphereInput> &marineOrganicsDataReader) {
+  // Init horizontal remap using IOP target lat/lon
+  marineOrganicsHorizInterp = create_horiz_remapper(
+      grid, data_file, iop_lat, iop_lon, field_name, dim_name1);
+
+  // Initialize the size of start/end/out data structures
+  data_start_ = marineOrganicsInput(ncol, field_name.size());
+  data_end_   = marineOrganicsInput(ncol, field_name.size());
+  data_out_.init(ncol, field_name.size(), true);
+
+  // Create reader (an AtmosphereInput object)
+  marineOrganicsDataReader =
+      create_data_reader(marineOrganicsHorizInterp, data_file);
+}  // init_marine_organics_file_read (IOP)
 }  // namespace marine_organics
 }  // namespace scream
 

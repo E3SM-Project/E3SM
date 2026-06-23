@@ -205,21 +205,22 @@ void MAMSrfOnlineEmiss::create_requests() {
   //--------------------------------------------------------------------
   // Init data structures to read and interpolate
   //--------------------------------------------------------------------
+  Real iop_lat = 0, iop_lon = 0;
   if (m_iop_data_manager != nullptr) {
     EKAT_REQUIRE_MSG(srf_map_file == "" or srf_map_file == "none",
       "Error! Cannot define srf_remap_file for cases with an Intensive Observation Period defined. "
       "The IOP class defines its own remap from file data -> model data.\n");
-    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
-    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
-    for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+    iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+  }
+  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+    if (m_iop_data_manager != nullptr) {
       srfEmissFunc::init_srf_emiss_objects(
           ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, iop_lat, iop_lon,
           // output
           ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
           ispec_srf.data_out_, ispec_srf.dataReader_);
-    }
-  } else {
-    for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+    } else {
       srfEmissFunc::init_srf_emiss_objects(
           ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
           // output
@@ -242,10 +243,17 @@ void MAMSrfOnlineEmiss::create_requests() {
   const std::string soil_erod_dname = "ncol";
 
   // initialize the file read
-  soilErodibilityFunc::init_soil_erodibility_file_read(
-      ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
-      soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
-      serod_dataReader_);  // output
+  if (m_iop_data_manager != nullptr) {
+    soilErodibilityFunc::init_soil_erodibility_file_read(
+        ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
+        soil_erodibility_data_file, iop_lat, iop_lon,
+        serod_horizInterp_, serod_dataReader_);  // output
+  } else {
+    soilErodibilityFunc::init_soil_erodibility_file_read(
+        ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
+        soil_erodibility_data_file, srf_map_file,
+        serod_horizInterp_, serod_dataReader_);  // output
+  }
 
   // -------------------------------------------------------------
   // Setup to enable reading marine organics file
@@ -262,12 +270,21 @@ void MAMSrfOnlineEmiss::create_requests() {
   const std::string marine_org_dname = "ncol";
 
   // initialize the file read
-  marineOrganicsFunc::init_marine_organics_file_read(
-      ncol_, marine_org_fld_name, marine_org_dname, grid_,
-      marine_organics_data_file, srf_map_file,
-      // output
-      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
-      morg_dataReader_);
+  if (m_iop_data_manager != nullptr) {
+    marineOrganicsFunc::init_marine_organics_file_read(
+        ncol_, marine_org_fld_name, marine_org_dname, grid_,
+        marine_organics_data_file, iop_lat, iop_lon,
+        // output
+        morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
+        morg_dataReader_);
+  } else {
+    marineOrganicsFunc::init_marine_organics_file_read(
+        ncol_, marine_org_fld_name, marine_org_dname, grid_,
+        marine_organics_data_file, srf_map_file,
+        // output
+        morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
+        morg_dataReader_);
+  }
 
 }  // set_grid ends
 

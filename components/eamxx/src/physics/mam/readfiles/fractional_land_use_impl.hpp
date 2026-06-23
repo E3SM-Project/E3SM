@@ -3,6 +3,9 @@
 
 #include "share/remap/identity_remapper.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/remap/iop_remapper.hpp"
+#include "share/grid/point_grid.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -66,6 +69,54 @@ fracLandUseFunctions<S, D>::create_horiz_remapper(
 
   return remapper;
 }  // create_horiz_remapper
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+
+template <typename S, typename D>
+std::shared_ptr<AbstractRemapper>
+fracLandUseFunctions<S, D>::create_horiz_remapper(
+    const std::shared_ptr<const AbstractGrid> &model_grid,
+    const std::string &data_file, const Real iop_lat, const Real iop_lon,
+    const std::string &field_name, const std::string &dim_name1,
+    const std::string &dim_name2) {
+  using namespace ShortFieldTagsNames;
+
+  scorpio::register_file(data_file, scorpio::Read);
+  const int ncols_data  = scorpio::get_dimlen(data_file, dim_name1);
+  const int nclass_data = scorpio::get_dimlen(data_file, dim_name2);
+  scorpio::release_file(data_file);
+
+  // Create a point grid matching the data file's column count
+  auto data_grid = create_point_grid("frac_land_use_iop_data", ncols_data, 1,
+                                     model_grid->get_comm());
+
+  // Read lat/lon geometry so IOPRemapper can locate the closest column
+  std::vector<Field> latlon = {
+    data_grid->create_geometry_data("lat", data_grid->get_2d_scalar_layout()),
+    data_grid->create_geometry_data("lon", data_grid->get_2d_scalar_layout())
+  };
+  AtmosphereInput latlon_reader(data_file, data_grid, latlon);
+  latlon_reader.read_variables();
+
+  auto horiz_interp_tgt_grid =
+      model_grid->clone("frac_land_use_horiz_interp_tgt_grid", true);
+
+  auto remapper = std::make_shared<IOPRemapper>(data_grid, horiz_interp_tgt_grid,
+                                                iop_lat, iop_lon);
+
+  const auto tgt_grid  = remapper->get_tgt_grid();
+  const auto layout_2d = tgt_grid->get_2d_vector_layout(nclass_data, "class");
+
+  Field fractional_land_use(
+      FieldIdentifier(field_name, layout_2d, ekat::units::none, tgt_grid->name()));
+  fractional_land_use.allocate_view();
+
+  remapper->register_field_from_tgt(fractional_land_use);
+  remapper->registration_ends();
+
+  return remapper;
+}  // create_horiz_remapper (IOP)
 
 // -------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------
@@ -138,6 +189,27 @@ void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
   // Create reader (an AtmosphereInput object)
   FracLandUseDataReader = create_data_reader(FracLandUseHorizInterp, data_file);
 }  // init_frac_landuse_file_read
+
+// -------------------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------
+
+template <typename S, typename D>
+void fracLandUseFunctions<S, D>::init_frac_landuse_file_read(
+    const int ncol, const std::string field_name, const std::string dim_name1,
+    const std::string dim_name2,
+    const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file,
+    const Real iop_lat, const Real iop_lon,
+    // output
+    std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
+    std::shared_ptr<AtmosphereInput> &FracLandUseDataReader) {
+  // Init horizontal remap using IOP target lat/lon
+  FracLandUseHorizInterp = create_horiz_remapper(
+      grid, data_file, iop_lat, iop_lon, field_name, dim_name1, dim_name2);
+
+  // Create reader (an AtmosphereInput object)
+  FracLandUseDataReader = create_data_reader(FracLandUseHorizInterp, data_file);
+}  // init_frac_landuse_file_read (IOP)
 
 }  // namespace frac_landuse
 }  // namespace scream
