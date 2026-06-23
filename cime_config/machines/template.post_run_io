@@ -38,11 +38,11 @@ OR
     \033[1;32m# case.post_run_io SMS\033[0m
     > {0}
 """.format(os.path.basename(args[0])),
-        description=description,
+        description=description, prog=".case.post_run_io",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    CIME.utils.setup_standard_logging_options(parser, prog=".case.post_run_io")
+    CIME.utils.setup_standard_logging_options(parser)
 
     parser.add_argument("--caseroot",
                         help="Case directory to build")
