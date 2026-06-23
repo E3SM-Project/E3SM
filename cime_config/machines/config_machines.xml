@@ -1939,18 +1939,18 @@
   </machine>
 
   <machine MACH="ghci-snl">
-    <DESC>Huge Linux workstation for Sandia climate scientists</DESC>
+    <DESC>RHEL9 image(s) hosted on SNL machines, used for Git Hub CI</DESC>
     <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
     <COMPILERS>gnu</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/tmp</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/projects/e3sm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/projects/e3sm/data/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/projects/e3sm/baselines/ghci-snl/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/projects/e3sm/cprnc/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/projects/e3sm/data/baselines/ghci-snl/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/projects/e3sm/software/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -1978,7 +1978,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="BLA_VENDOR">Generic</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
-      <env name="MOAB_ROOT">/projects/e3sm/moab</env>
+      <env name="MOAB_ROOT">/projects/e3sm/software/moab</env>
     </environment_variables>
   </machine>
 
