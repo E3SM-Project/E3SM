@@ -261,7 +261,7 @@ class GHCISNLGNU(Machine):
     @classmethod
     def setup(cls):
         super().setup_base("ghci-snl-gnu")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-gnu"
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-gnu"
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
 
 ###############################################################################
@@ -271,7 +271,7 @@ class GHCISNLOneAPI(Machine):
     @classmethod
     def setup(cls):
         super().setup_base("ghci-snl-oneapi")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-oneapi"
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-oneapi"
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB",
                          "export OMPI_MCA_io=romio321"]
 
@@ -282,7 +282,7 @@ class GHCISNLCuda(Machine):
     @classmethod
     def setup(cls):
         super().setup_base(name="ghci-snl-cuda")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cuda"
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-cuda"
         cls.gpu_arch = "cuda"
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
 

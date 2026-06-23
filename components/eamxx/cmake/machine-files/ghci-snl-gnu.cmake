@@ -11,4 +11,5 @@ set(LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/lib64/liblapack.so" CACHE STRING "Path to 
 # Set SCREAM_MACHINE
 set(SCREAM_MACHINE ghci-snl-gnu CACHE STRING "")
 
+set(EKAT_VALGRIND_SUPPRESSION_FILE "/projects/e3sm/data/baselines/scream/ghci-snl-gnu/eamxx-valgrind.supp" CACHE FILEPATH "Use this valgrind suppression file if valgrind is enabled.")
 option (EAMXX_ENABLE_PYTHON "Whether to enable python interface from eamxx" ON)
