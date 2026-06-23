@@ -130,7 +130,10 @@ set_elem_data (const int ie,
     }
   }
   
+  if (ie==0)
+    printf("[ElementsGeometry::set_elem_data] Copying tensorvisc for element %d (consthv=%d), sample h_tensorvisc_f90(0,0,0,0)=%e\n", ie, consthv, h_tensorvisc_f90(0,0,0,0));
   if(!consthv) {
+    printf("consthv is False \n");
     for (int idim = 0; idim < 2; ++idim) {
       for (int jdim = 0; jdim < 2; ++jdim) {
         for (int igp = 0; igp < NP; ++igp) {

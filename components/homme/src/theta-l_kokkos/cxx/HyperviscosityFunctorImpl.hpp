@@ -243,6 +243,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagSecondLaplaceTensorHV&, const TeamMember& team) const {
     KernelVariables kv(team, m_tu);
+    if (kv.ie==0)
+      printf("[HyperviscosityFunctorImpl::TagSecondLaplaceTensorHV] Using m_tensorvisc for element %d, sample m_tensorvisc(0,0,0,0)=%e\n", kv.ie, m_geometry.m_tensorvisc(kv.ie,0,0,0,0));
     // Laplacian of layers thickness
     m_sphere_ops.laplace_tensor(kv,
                    Homme::subview(m_geometry.m_tensorvisc,kv.ie),
