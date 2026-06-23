@@ -977,6 +977,7 @@ contains
 
     real(kind=real_kind) :: wrk(np*np*nphys*nphys), v
     integer :: gi, gj, fi, fj, info
+    external :: dgeqrf
 
     do fj = 1,nphys
        do fi = 1,nphys
@@ -1061,6 +1062,7 @@ contains
 
     integer :: nf, nf2, npi, np2, gi, gj, fi, fj, info
     real(kind=real_kind) :: wrk(gfr%nphys,gfr%nphys), x(np,np), wr(np*np)
+    external :: dtrsm, dormqr, dtrtrs
 
     nf = gfr%nphys
     nf2 = nf*nf
@@ -1636,6 +1638,7 @@ contains
 
     real(kind=real_kind) :: Mnp2(np*np,4)
     integer :: i, info, n
+    external :: dpotrf, dtrtrs
 
     if (gfr%nphys /= 1) return
 
@@ -1677,6 +1680,7 @@ contains
 
     real(kind=real_kind) :: x(np*np), mass, wr(4)
     integer :: np2, i, n, info
+    external :: dtrtrs
 
     np2 = np*np
     n = np2
