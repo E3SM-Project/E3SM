@@ -205,12 +205,27 @@ void MAMSrfOnlineEmiss::create_requests() {
   //--------------------------------------------------------------------
   // Init data structures to read and interpolate
   //--------------------------------------------------------------------
-  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    srfEmissFunc::init_srf_emiss_objects(
-        ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
-        // output
-        ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
-        ispec_srf.data_out_, ispec_srf.dataReader_);
+  if (m_iop_data_manager != nullptr) {
+    EKAT_REQUIRE_MSG(srf_map_file == "" or srf_map_file == "none",
+      "Error! Cannot define srf_remap_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data -> model data.\n");
+    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+      srfEmissFunc::init_srf_emiss_objects(
+          ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, iop_lat, iop_lon,
+          // output
+          ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
+          ispec_srf.data_out_, ispec_srf.dataReader_);
+    }
+  } else {
+    for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+      srfEmissFunc::init_srf_emiss_objects(
+          ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
+          // output
+          ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
+          ispec_srf.data_out_, ispec_srf.dataReader_);
+    }
   }  // srf emissions file read init
 
   // -------------------------------------------------------------
