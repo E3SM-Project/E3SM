@@ -1,0 +1,26 @@
+# Sets up a DPxx/IOP case to test MAM4xx processes
+# using the ARM97 (continental deep convection over land) IOP
+# with prescribed surface fluxes and nudged winds
+
+./xmlchange RUN_STARTDATE="1997-06-23"
+./xmlchange PTS_LAT=36.605
+./xmlchange PTS_LON=262.515
+
+# Scripts location
+ATMCHANGE=$CIMEROOT/../components/eamxx/scripts/atmchange
+
+#------------------------------------------------------
+# Add MAM4xx processes
+#------------------------------------------------------
+$ATMCHANGE physics::atm_procs_list="iop_forcing,mam4_constituent_fluxes,mac_aero_mic,rrtmgp,mam4_aero_microphys,mam4_srf_online_emiss,mam4_drydep" -b
+
+$ATMCHANGE mam4_drydep::fractional_land_use_file='${DIN_LOC_ROOT}'/atm/scream/mam4xx/drydep/ne30pg2/atmsrf_ne30pg2_c20260624.nc
+
+#------------------------------------------------------
+# Set IOP parameters (ARM97)
+#------------------------------------------------------
+$ATMCHANGE iop_file='${DIN_LOC_ROOT}'/atm/cam/scam/iop/ARM97_iopfile_4scam.nc -b
+$ATMCHANGE target_latitude=36.605 -b
+$ATMCHANGE target_longitude=262.515 -b
+$ATMCHANGE iop_nudge_uv=true -b
+$ATMCHANGE iop_srf_prop=true -b
