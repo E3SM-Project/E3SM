@@ -279,7 +279,16 @@ setup_time_database (const strvec_t& input_files,
 
     auto time_name  = scorpio::get_time_name(fname);
     auto time_units = scorpio::get_attribute<std::string>(fname,time_name,"units");
-    auto [parsed_ref, time_mult] = parse_cf_time_units(time_units,fname);
+
+    util::TimeStamp parsed_ref;
+    int time_mult;
+    try {
+      std::tie(parsed_ref, time_mult) = parse_cf_time_units(time_units);
+    } catch (std::exception& e) {
+      std::string msg = e.what();
+      msg += " - Filename: " + fname + "\n";
+      throw std::runtime_error(msg);
+    }
     auto t_ref = ref_ts.is_valid() ? ref_ts : parsed_ref;
 
     times.emplace_back();
