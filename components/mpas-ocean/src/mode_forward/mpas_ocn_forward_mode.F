@@ -161,7 +161,8 @@ module ocn_forward_mode
          block              ! structure with all data for a given block
 
       type (mpas_pool_type), pointer :: &
-         diagnosticsPool    ! structure containing diagnostics data
+         diagnosticsPool, &  ! structure containing diagnostics data
+         forcingPool         ! structure containing forcing data
 
       type (MPAS_Time_type) :: &
          xtime_timeType,               &! current time
@@ -337,6 +338,7 @@ module ocn_forward_mode
       daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
 
       call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+      call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
       ! add units of "days since <ref_date>" to Time
       write(units, '(a10,a20)') 'days since', &
@@ -475,7 +477,7 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_submesoscale_init(err_tmp)
+      call ocn_submesoscale_init(forcingPool,err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
