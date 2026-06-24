@@ -13,17 +13,17 @@ module zm_c2f_bridge
 contains
 !===================================================================================================
 
-subroutine zm_common_init_bridge_f() bind(C)
+subroutine zm_opts_init_bridge_f() bind(C)
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_init
 
   call wv_sat_init()
-end subroutine zm_common_init_bridge_f
+end subroutine zm_opts_init_bridge_f
 
-subroutine zm_common_finalize_bridge_f() bind(C)
+subroutine zm_opts_finalize_bridge_f() bind(C)
   use zm_eamxx_bridge_wv_saturation, only: wv_sat_final
 
   call wv_sat_final()
-end subroutine zm_common_finalize_bridge_f
+end subroutine zm_opts_finalize_bridge_f
 
 subroutine ientropy_bridge_f(s, p, qt, t, qst, tfg) bind(C)
   use zm_conv_util, only : ientropy
@@ -181,7 +181,7 @@ subroutine zm_conv_mcsp_calculate_shear_bridge_f(pcols, ncol, pver, state_pmid, 
   call zm_conv_mcsp_calculate_shear(pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
 end subroutine zm_conv_mcsp_calculate_shear_bridge_f
 
-subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth) bind(C)
+subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_ds_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth) bind(C)
   use zm_conv_mcsp, only : zm_conv_mcsp_tend
   use zm_conv_types,  only: zm_const_t, zm_param_t
   use zm_conv_types,  only: zm_param_set_for_testing, zm_const_set_for_testing
@@ -192,7 +192,7 @@ subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, st
   real(kind=c_real) , intent(in), dimension(pcols, pver) :: state_pmid, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q
   real(kind=c_real) , intent(in), dimension(pcols, pverp) :: state_pint
   real(kind=c_real) , intent(inout), dimension(pcols, pver) :: ptend_s, ptend_q, ptend_u, ptend_v
-  real(kind=c_real) , intent(out), dimension(pcols, pver) :: mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out
+  real(kind=c_real) , intent(out), dimension(pcols, pver) :: mcsp_ds_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out
   real(kind=c_real) , intent(out), dimension(pcols) :: mcsp_freq, mcsp_shear, zm_depth
 
   type(zm_const_t) :: zm_const ! derived type to hold ZM constants
@@ -201,7 +201,7 @@ subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, st
   call zm_param_set_for_testing(zm_param)
   call zm_const_set_for_testing(zm_const)
 
-  call zm_conv_mcsp_tend(pcols, ncol, pver, pverp, ztodt, jctop, zm_const, zm_param, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth)
+  call zm_conv_mcsp_tend(pcols, ncol, pver, pverp, ztodt, jctop, zm_const, zm_param, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_ds_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth)
 end subroutine zm_conv_mcsp_tend_bridge_f
 
 subroutine zm_conv_main_bridge_f(pcols, ncol, pver, pverp, is_first_step, time_step, t_mid, q_mid_in, omega, p_mid_in, p_int_in, p_del_in, geos, z_mid_in, z_int_in, pbl_hgt, tpert, landfrac, t_star, q_star, lengath, gather_index, msemax_klev_g, jctop, jcbot, jt, prec, heat, qtnd, cape, dcape, mcon, pflx, zdu, mflx_up, entr_up, detr_up, mflx_dn, entr_dn, p_del, dsubcld, ql, rliq, rprd, dlf) bind(C)

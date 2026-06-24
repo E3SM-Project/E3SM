@@ -19,7 +19,7 @@ namespace zm {
  */
 
 template<typename S, typename D>
-typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
+void Functions<S,D>::zm_conv_main(
   // Inputs
   const ZmRuntimeOpt& runtime_opt,
   const Int& ncol,
@@ -46,6 +46,7 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
   const uview_1d<Int>& jctop,
   const uview_1d<Int>& jcbot,
   const uview_1d<Int>& jt,
+  const uview_1d<Int>& active,
   const uview_1d<Real>& prec,
   const uview_2d<Real>& heat,
   const uview_2d<Real>& qtnd,
@@ -64,7 +65,9 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
   const uview_2d<Real>& ql,
   const uview_1d<Real>& rliq,
   const uview_2d<Real>& rprd,
-  const uview_2d<Real>& dlf)
+  const uview_2d<Real>& dlf,
+  Int& ktm,
+  Int& kbm)
 {
   //----------------------------------------------------------------------------
   // Purpose: Main driver for Zhang-McFarlane convection scheme
@@ -127,7 +130,6 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
     jlcl           ("jlcl",            ncol),
     j0             ("j0",              ncol),
     jd             ("jd",              ncol);
-  view_1d<bool> active("active", ncol);
 
   // Workspace for sub-functions (max 20 arrays for zm_cloud_properties + entrainment)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ncol, pver);
@@ -202,7 +204,7 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
     Int pbl_top_result = pver - 1;
     Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, msg + 1, pver - 1),
       [&](const Int k, Int& val) {
-        if (std::abs(z_mid(i,k) - pbl_hgt(i)) < (z_int(i,k) - z_int(i,k+1)) * ZMC::half) {
+        if (std::abs(z_mid(i,k) - z_srf(i) - pbl_hgt(i)) < (z_int(i,k) - z_int(i,k+1)) * ZMC::half) {
           val = Kokkos::min(val, k);
         }
       }, Kokkos::Min<Int>(pbl_top_result));
@@ -288,10 +290,11 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
   int inactive_cnt = 0;
   Kokkos::parallel_reduce("zm_conv_main_active", RangePolicy(0, ncol),
                           KOKKOS_LAMBDA(const Int i, Int& local_inactive) {
-      active(i) = use_dcape_trigger
+      const bool is_active = use_dcape_trigger
         ? (cape(i) > cape_threshold_loc && dcape(i) > ZMC::dcape_threshold)
         : (cape(i) > cape_threshold_loc);
-      if (!active(i)) {
+      active(i) = is_active ? 1 : 0;
+      if (!is_active) {
         local_inactive+=1;
       }
   }, inactive_cnt);
@@ -443,6 +446,11 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
       if (runtime_opt.clos_dyn_adj) {
         cld_base_mass_flux(i) = Kokkos::max(
           cld_base_mass_flux(i) - omega(i, pbl_top(i)) * ZMC::pa_to_mb, Real(0));
+        // reapply limiter from above to protect against instability caused by large omega values
+        if (mflx_up_max_val > 0) {
+          cld_base_mass_flux(i) = Kokkos::min(cld_base_mass_flux(i),
+                                                   1 / (time_step * mflx_up_max_val));
+        }
       }
       if (runtime_opt.no_deep_pbl && z_mid_in(i, jt(i)) < pbl_hgt(i)) {
         cld_base_mass_flux(i) = 0;
@@ -482,6 +490,10 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
       if (active(i)) mn = Kokkos::min(mn, msemax_klev(i));
     }, Kokkos::Min<Int>(ktb_val));
   Kokkos::fence();
+
+  // export domain-wide convection level bounds for use in zm_transport_momentum
+  ktm = ktm_val;
+  kbm = ktb_val;
 
   //============================================================================
   // Kernel 9: Compute temperature and moisture tendencies
@@ -555,8 +567,6 @@ typename Functions<S,D>::template view_1d<bool> Functions<S,D>::zm_conv_main(
     });
   });
   Kokkos::fence();
-
-  return active;
 }
 
 } // namespace zm
