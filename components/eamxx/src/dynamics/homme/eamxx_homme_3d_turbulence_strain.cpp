@@ -106,32 +106,37 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     });
     team.team_barrier();
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, NGP), [&] (const int kgp) {
-      // The horizontal stencil uses interface w, so first put the two stencil
-      // columns of vertical velocity onto midpoint levels.
-      const auto w_row_i = Kokkos::subview(w_int_dyn, ie, n0, igp, kgp, Kokkos::ALL());
-      const auto w_col_i = Kokkos::subview(w_int_dyn, ie, n0, kgp, jgp, Kokkos::ALL());
-      const auto w_row_i_real = Homme::viewAsReal(w_row_i);
-      const auto w_col_i_real = Homme::viewAsReal(w_col_i);
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
+      Real dsdx_ux = 0;
+      Real dsdy_ux = 0;
+      Real dsdx_uy = 0;
+      Real dsdy_uy = 0;
+      Real dsdx_uz = 0;
+      Real dsdy_uz = 0;
 
-      const auto row_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, igp, kgp);
-      const auto row_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, igp, kgp);
-      const auto row_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, igp, kgp);
-      const auto col_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, kgp, jgp);
-      const auto col_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, kgp, jgp);
-      const auto col_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, kgp, jgp);
-      const auto u_row_view =
-          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, igp, kgp, Kokkos::ALL()));
-      const auto v_row_view =
-          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, igp, kgp, Kokkos::ALL()));
-      const auto u_col_view =
-          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, kgp, jgp, Kokkos::ALL()));
-      const auto v_col_view =
-          Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, kgp, jgp, Kokkos::ALL()));
+      for (int kgp = 0; kgp < NGP; ++kgp) {
+        // The horizontal stencil uses interface w, so average the two
+        // adjacent interface values onto midpoint levels on the fly.
+        const auto w_row_i = Kokkos::subview(w_int_dyn, ie, n0, igp, kgp, Kokkos::ALL());
+        const auto w_col_i = Kokkos::subview(w_int_dyn, ie, n0, kgp, jgp, Kokkos::ALL());
+        const auto w_row_i_real = Homme::viewAsReal(w_row_i);
+        const auto w_col_i_real = Homme::viewAsReal(w_col_i);
 
-      // Build the full Cartesian velocity on the two stencil lines and apply
-      // the derivative matrix weights along each local direction.
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, nlev_scalar), [&] (const int ilev) {
+        const auto row_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, igp, kgp);
+        const auto row_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, igp, kgp);
+        const auto row_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, igp, kgp);
+        const auto col_x = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 0, kgp, jgp);
+        const auto col_y = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 1, kgp, jgp);
+        const auto col_z = Kokkos::subview(vec_sph2cart, ie, Kokkos::ALL(), 2, kgp, jgp);
+        const auto u_row_view =
+            Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, igp, kgp, Kokkos::ALL()));
+        const auto v_row_view =
+            Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, igp, kgp, Kokkos::ALL()));
+        const auto u_col_view =
+            Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, kgp, jgp, Kokkos::ALL()));
+        const auto v_col_view =
+            Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, kgp, jgp, Kokkos::ALL()));
+
         const Real u_row = u_row_view(ilev);
         const Real v_row = v_row_view(ilev);
         const Real w_row = 0.5 * (w_row_i_real(ilev) + w_row_i_real(ilev + 1));
@@ -140,21 +145,22 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
         const Real v_col = v_col_view(ilev);
         const Real w_col = 0.5 * (w_col_i_real(ilev) + w_col_i_real(ilev + 1));
 
-        Kokkos::atomic_add(&dsdx_Ux(ilev),
-                           dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row));
-        Kokkos::atomic_add(&dsdy_Ux(ilev),
-                           dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col));
+        dsdx_ux += dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row);
+        dsdy_ux += dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col);
 
-        Kokkos::atomic_add(&dsdx_Uy(ilev),
-                           dvv(jgp,kgp) * local_to_cart_component(row_y, u_row, v_row, w_row));
-        Kokkos::atomic_add(&dsdy_Uy(ilev),
-                           dvv(igp,kgp) * local_to_cart_component(col_y, u_col, v_col, w_col));
+        dsdx_uy += dvv(jgp,kgp) * local_to_cart_component(row_y, u_row, v_row, w_row);
+        dsdy_uy += dvv(igp,kgp) * local_to_cart_component(col_y, u_col, v_col, w_col);
 
-        Kokkos::atomic_add(&dsdx_Uz(ilev),
-                           dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row));
-        Kokkos::atomic_add(&dsdy_Uz(ilev),
-                           dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col));
-      });
+        dsdx_uz += dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row);
+        dsdy_uz += dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col);
+      }
+
+      dsdx_Ux(ilev) = dsdx_ux;
+      dsdy_Ux(ilev) = dsdy_ux;
+      dsdx_Uy(ilev) = dsdx_uy;
+      dsdy_Uy(ilev) = dsdy_uy;
+      dsdx_Uz(ilev) = dsdx_uz;
+      dsdy_Uz(ilev) = dsdy_uz;
     });
     team.team_barrier();
 
