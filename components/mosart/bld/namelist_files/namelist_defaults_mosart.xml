@@ -18,6 +18,8 @@ for the CLM data in the CESM distribution
 
 <delt_mosart>3600</delt_mosart> 
 <ice_runoff>.true.</ice_runoff>
+<convert_ice_to_river_runoff_latband>.false.</convert_ice_to_river_runoff_latband>
+<convert_ice_to_river_runoff_latband_width_degrees>20.0</convert_ice_to_river_runoff_latband_width_degrees>
 <wrmflag>.false.</wrmflag>
 <inundflag>.false.</inundflag>
 <sediflag>.false.</sediflag>

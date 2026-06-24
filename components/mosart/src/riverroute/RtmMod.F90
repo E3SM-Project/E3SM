@@ -18,6 +18,8 @@ module RtmMod
   use shr_reprosum_mod, only : shr_reprosum_calc
   use mpi
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
+                               convert_ice_to_river_runoff_latband, &
+                               convert_ice_to_river_runoff_latband_width_degrees, &
                                frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,ngeom,nlayers,rinittemp, &
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
@@ -278,6 +280,7 @@ contains
     !-------------------------------------------------------
 
     namelist /mosart_inparm / ice_runoff, do_rtm, do_rtmflood, &
+          convert_ice_to_river_runoff_latband, convert_ice_to_river_runoff_latband_width_degrees, &
          frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm, coupling_period, &
          rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq, &
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
@@ -296,6 +299,8 @@ contains
     do_rtm      = .true.
     do_rtmflood = .false.
     ice_runoff  = .true.
+   convert_ice_to_river_runoff_latband = .false.
+   convert_ice_to_river_runoff_latband_width_degrees = 20.0_r8
     wrmflag     = .false.
     rstraflag   = .false.
     rinittemp   = 283.15_r8
@@ -395,6 +400,8 @@ contains
     call mpi_bcast (do_rtm,         1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (do_rtmflood,    1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (ice_runoff,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
+   call mpi_bcast (convert_ice_to_river_runoff_latband, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
+   call mpi_bcast (convert_ice_to_river_runoff_latband_width_degrees, 1, MPI_REAL8, 0, mpicom_rof, ier)
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
@@ -498,6 +505,9 @@ contains
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
        write(iulog,*) '   DLevelR               = ',Tctl%DLevelR
        write(iulog,*) '   data_bgc_fluxes_to_ocean_flag = ',data_bgc_fluxes_to_ocean_flag
+       write(iulog,*) '   convert_ice_to_river_runoff_latband = ', convert_ice_to_river_runoff_latband
+       write(iulog,*) '   convert_ice_to_river_runoff_latband_width_degrees = ', &
+                      convert_ice_to_river_runoff_latband_width_degrees
        if (nsrest == nsrStartup .and. finidat_rtm /= ' ') then
           write(iulog,*) '   MOSART initial data   = ',trim(finidat_rtm)
        end if
