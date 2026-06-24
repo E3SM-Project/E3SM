@@ -533,6 +533,22 @@ Valid values: around 1 degree
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_submesoscale_ice_aware" type="logical"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+flag to enable the ice-aware MLE for submesoscale eddies
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ice_aware_crit" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+Criteria for evaluating the efficiency of the ice-aware MLE in submesoscale eddies
+
+Valid values: between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- GM_eddy_parameterization -->
 
