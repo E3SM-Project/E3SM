@@ -5315,9 +5315,109 @@
 </ul>
 <h2 id="zm">zm</h2>
 <ul>
-<li>zm::apply_tendencies:<ul>
-<li>description: flag to apply ZM tendencies or not</li>
+<li>zm::apply_detr_tend:<ul>
+<li>description: ZM flag for cld liq/ice detrainment tend</li>
 <li>type: logical</li>
+</ul>
+</li>
+<li>zm::use_fortran_bridge:<ul>
+<li>description: ZM flag to call fortran ZM</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>zm::trig_dcape:<ul>
+<li>description: ZM flag to enable DCAPE trigger</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>zm::trig_ull:<ul>
+<li>description: ZM flag to enable ULL mode</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>zm::clos_dyn_adj:<ul>
+<li>description: ZM flag to enable dynamic closure adjustment</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>zm::upper_limit_pref:<ul>
+<li>description: ZM upper pressure limit for convection</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::tau:<ul>
+<li>description: ZM convective adjustment time scale</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::alfa:<ul>
+<li>description: ZM max downdraft mass flux fraction</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm:<img alt="🇰🇪" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f1f0-1f1ea.svg" title=":ke:" /><ul>
+<li>description: ZM evaporation efficiency</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::dmpdz:<ul>
+<li>description: ZM fractional mass entrainment rate [1/m]</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::tpert_fix:<ul>
+<li>description: ZM flag to enable tpert</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>zm::tpert_fac:<ul>
+<li>description: ZM tunable temperature perturbation factor</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::tiedke_add:<ul>
+<li>description: ZM tunable temperature perturbation</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::c0_lnd:<ul>
+<li>description: ZM autoconversion coefficient over land</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::c0_ocn:<ul>
+<li>description: ZM autoconversion coefficient over ocean</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::num_cin:<ul>
+<li>description: ZM num of neg buoyancy regions allowed</li>
+<li>type: integer</li>
+</ul>
+</li>
+<li>zm::mcsp_enabled:<ul>
+<li>description: ZM flag to enable MCSP in ZM</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>zm::mcsp_t_coeff:<ul>
+<li>description: MCSP temperature coefficient</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::mcsp_q_coeff:<ul>
+<li>description: MCSP sp. humidity coefficient</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::mcsp_u_coeff:<ul>
+<li>description: MCSP U-wind coefficient</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::mcsp_v_coeff:<ul>
+<li>description: MCSP V-wind coefficient</li>
+<li>type: real</li>
 </ul>
 </li>
 <li>zm::number_of_subcycles:<ul>
