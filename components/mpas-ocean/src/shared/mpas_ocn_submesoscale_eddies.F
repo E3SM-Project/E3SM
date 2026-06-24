@@ -111,16 +111,6 @@ module ocn_submesoscale_eddies
      allocate(streamFunction(nVertLevels+1))
      allocate(zEdge(nVertLevels+1))
 
-     call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
-     call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
-     call mpas_pool_get_array(forcingPool, 'landIceMask',landIceMask)
-
-     if ( associated(iceFraction) .and. associated(landIceFraction) ) then
-        iceAwareActive = .true.
-     else
-        iceAwareActive = .false.
-     end if
-
      !compute the mixed layer average buoyancy gradient and bvf
      !This is thickness weighted to allow for non uniform grid spacing,
      !and centered on layer interfaces. The mixed layer goes from the
@@ -182,6 +172,10 @@ module ocn_submesoscale_eddies
         !  - Section 8 in Shrestha and Manucharyan, 2022
         !    (https://journals.ametsoc.org/view/journals/phoc/52/3/JPO-D-21-0024.1.xml)
         if ( iceAwareActive ) then
+           call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+           call mpas_pool_get_array(forcingPool, 'landIceMask',landIceMask)
+
            iceFracEdge = 0.5_RKIND*(    iceFraction(cell1)+    iceFraction(cell2)) &
                        + 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
@@ -199,7 +193,7 @@ module ocn_submesoscale_eddies
 
            ! We add an addtional condition here to prevent grid-scale noise in MLE at
            ! land-ice mask = 1.
-           if ( landIceMaskEdge == 1 .or. iceFracEdge > 1.000000001_RKIND ) then
+           if ( landIceMaskEdge == 1 ) then
               iceMLE_eff = 0.0_RKIND
            end if
 
@@ -274,7 +268,12 @@ module ocn_submesoscale_eddies
   !>
   !***********************************************************************
 
-  subroutine ocn_submesoscale_init(err)
+  subroutine ocn_submesoscale_init(forcingPool,err)
+
+     type (mpas_pool_type), pointer, intent(in) :: &
+        forcingPool   !< Input: forcing information
+
+     real (kind=RKIND), dimension(:), pointer :: iceFraction, landIceFraction
 
      integer, intent(out) :: err !< Output: error flag
 
@@ -297,7 +296,19 @@ module ocn_submesoscale_eddies
      !$omp end parallel
 
      ! Ice-aware MLE
-     iceAwareActive = config_submesoscale_ice_aware
+     call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+     call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+
+     if ( .not. config_submesoscale_ice_aware ) then
+        iceAwareActive = .false.
+     else
+        if ( associated(iceFraction) .and. associated(landIceFraction) ) then
+           iceAwareActive = .true.
+        else
+           iceAwareActive = .false.
+        end if
+     end if
+
      iceMLE_crit    = config_submesoscale_ice_aware_crit
      iceMLE_s       = 2.25_RKIND
      iceMLE_k       = 430.0_RKIND
