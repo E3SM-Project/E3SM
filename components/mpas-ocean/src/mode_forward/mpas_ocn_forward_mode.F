@@ -669,7 +669,7 @@ module ocn_forward_mode
       call ocn_time_varying_forcing_init(domain)
 
       ! if not using RK4, calculate time varying forcing terms once per
-      ! time-step as opposed at each RK substage as implemented in RK4 
+      ! time-step as opposed at each RK substage as implemented in RK4
       if (timeIntegratorChoice /= timeIntRK4) then
         call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
       endif
@@ -716,7 +716,7 @@ module ocn_forward_mode
                call mpas_pool_get_subpool(forcingPool, 'ecosysFrazilForcing', ecosysFrazilForcingPool)
                call ocn_frazil_forcing_build_ecosys_arrays(domain, meshPool, forcingPool, statePool, &
                   ecosysFrazilForcingPool, ierr)
-           end if  
+           end if
            call mpas_timer_start("land_ice_build_arrays")
            call ocn_surface_land_ice_fluxes_build_arrays(meshPool, &
                                                          forcingPool, scratchPool, statePool, err)
@@ -735,7 +735,7 @@ module ocn_forward_mode
 
            if (config_submesoscale_enable) then
                call mpas_timer_start("submesoscale eddy velocity compute", .false.)
-               call ocn_submesoscale_compute_velocity()
+               call ocn_submesoscale_compute_velocity(forcingPool)
                call mpas_timer_stop("submesoscale eddy velocity compute")
            end if
 

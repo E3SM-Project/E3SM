@@ -597,6 +597,8 @@ add_default($nl, 'config_submesoscale_tau');
 add_default($nl, 'config_submesoscale_Ce');
 add_default($nl, 'config_submesoscale_Lfmin');
 add_default($nl, 'config_submesoscale_ds_max');
+add_default($nl, 'config_submesoscale_ice_aware');
+add_default($nl, 'config_submesoscale_ice_aware_crit');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
