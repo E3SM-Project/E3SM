@@ -157,7 +157,6 @@ void HommeDynamics::create_requests ()
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
-  const auto nondim = ekat::units::none;
 
   // Note: qv is needed to transform T<->Theta
 
@@ -181,7 +180,7 @@ void HommeDynamics::create_requests ()
     add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
     add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
     auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
-    add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, nondim/s, pgn,N);
+    add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, 1/s, pgn,N);
   }
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
@@ -398,8 +397,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // value. Homme overwrites them after each dynamics step when 3D turbulence is
   // enabled.
   if (params.do_3d_turbulence) {
-    m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
-    get_field_out("tke_shear_strain3d_components").deep_copy(0.0);
+    m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0);
+    get_field_out("tke_shear_strain3d_components").deep_copy(0);
   }
 
   // Complete Homme prim_init1_xyz sequence
