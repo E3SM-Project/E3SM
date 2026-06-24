@@ -449,7 +449,7 @@ class TestAllScream(object):
         return len(resources)
 
     ###############################################################################
-    def generate_ctest_config(self, cmake_config, extra_configs, test):
+    def generate_ctest_config(self, cmake_config, test):
     ###############################################################################
         result = ""
 
@@ -471,9 +471,6 @@ class TestAllScream(object):
 
         if isinstance(test, COV):
             result += "-DDO_COVERAGE=True "
-
-        for key, value in extra_configs:
-            result += f"-D{key}={value} "
 
         if self._machine.use_ninja:
             result += "-DUSE_NINJA=TRUE "
@@ -617,7 +614,7 @@ class TestAllScream(object):
 
         test_dir = self.get_test_dir(self._work_dir,test)
         cmake_config = self.generate_cmake_config(test, for_ctest=True)
-        ctest_config = self.generate_ctest_config(cmake_config, [], test)
+        ctest_config = self.generate_ctest_config(cmake_config, test)
 
         if self._config_only:
             ctest_config += "-DCONFIG_ONLY=TRUE"
