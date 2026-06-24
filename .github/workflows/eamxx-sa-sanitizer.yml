@@ -47,7 +47,7 @@ jobs:
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
   gnu-cuda:
-    runs-on:  [self-hosted, ghci-snl, cuda, gnu]
+    runs-on:  [self-hosted, ghci-snl, cuda]
     strategy:
       fail-fast: false
       matrix:
