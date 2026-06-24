@@ -35,8 +35,9 @@ IOPRemapper (const grid_ptr_type src_grid,
 
   EKAT_REQUIRE_MSG (src_grid->has_geometry_data("lat") and src_grid->has_geometry_data("lon"),
       "Error! IOP remapper requires lat/lon geometry data in the source grid.\n");
-  EKAT_REQUIRE_MSG (src_grid->get_num_vertical_levels()==tgt_grid->get_num_vertical_levels(),
-      "Error! IOP remapper requires src/tgt grid to have the same number of vertical levels.\n");
+  ! Does the IOP mapper also perform vertical interpolation?
+  !EKAT_REQUIRE_MSG (src_grid->get_num_vertical_levels()==tgt_grid->get_num_vertical_levels(),
+  !    "Error! IOP remapper requires src/tgt grid to have the same number of vertical levels.\n");
   EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point and tgt_grid->type()==GridType::Point,
       "Error! IOP remapper requires src/tgt grid to be PointGrid instances.\n");
   
