@@ -3,6 +3,9 @@
 
 #include "share/remap/identity_remapper.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/remap/iop_remapper.hpp"
+#include "share/grid/point_grid.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_team_policy_utils.hpp>
@@ -70,6 +73,53 @@ srfEmissFunctions<S, D>::create_horiz_remapper(
 
   return remapper;
 }  // create_horiz_remapper
+
+template <typename S, typename D>
+std::shared_ptr<AbstractRemapper>
+srfEmissFunctions<S, D>::create_horiz_remapper(
+    const std::shared_ptr<const AbstractGrid> &model_grid,
+    const std::string &data_file, const std::vector<std::string> &sector_names,
+    const Real iop_lat, const Real iop_lon) {
+  using namespace ShortFieldTagsNames;
+
+  scorpio::register_file(data_file, scorpio::Read);
+  const int ncols_data = scorpio::get_dimlen(data_file, "ncol");
+  scorpio::release_file(data_file);
+
+  // Create a point grid matching the data file's column count
+  auto data_grid = create_point_grid("srf_emiss_iop_data", ncols_data, 1,
+                                     model_grid->get_comm());
+
+  // Read lat/lon geometry from the data file so IOPRemapper can find the
+  // closest column to the IOP target point
+  std::vector<Field> latlon = {
+    data_grid->create_geometry_data("lat", data_grid->get_2d_scalar_layout()),
+    data_grid->create_geometry_data("lon", data_grid->get_2d_scalar_layout())
+  };
+  AtmosphereInput latlon_reader(data_file, data_grid, latlon);
+  latlon_reader.read_variables();
+
+  auto horiz_interp_tgt_grid =
+      model_grid->clone("srf_emiss_horiz_interp_tgt_grid", true);
+
+  auto remapper = std::make_shared<IOPRemapper>(data_grid, horiz_interp_tgt_grid,
+                                                iop_lat, iop_lon);
+
+  const auto tgt_grid = remapper->get_tgt_grid();
+  const auto layout_2d = tgt_grid->get_2d_scalar_layout();
+
+  const int sector_size = sector_names.size();
+  for(int icomp = 0; icomp < sector_size; ++icomp) {
+    Field f(FieldIdentifier(sector_names[icomp], layout_2d, ekat::units::none,
+                            tgt_grid->name()));
+    f.allocate_view();
+    remapper->register_field_from_tgt(f);
+  }
+
+  remapper->registration_ends();
+
+  return remapper;
+}  // create_horiz_remapper (IOP)
 
 template <typename S, typename D>
 std::shared_ptr<AtmosphereInput>
@@ -271,6 +321,30 @@ void srfEmissFunctions<S, D>::init_srf_emiss_objects(
   SrfEmissDataReader =
       create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
 }  // init_srf_emiss_objects
+
+template <typename S, typename D>
+void srfEmissFunctions<S, D>::init_srf_emiss_objects(
+    const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
+    const std::string &data_file, const std::vector<std::string> &sectors,
+    const Real iop_lat, const Real iop_lon,
+    // output
+    std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+    srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+    srfEmissOutput &SrfEmissData_out,
+    std::shared_ptr<AtmosphereInput> &SrfEmissDataReader) {
+  // Init horizontal remap using IOP target lat/lon
+  SrfEmissHorizInterp =
+      create_horiz_remapper(grid, data_file, sectors, iop_lat, iop_lon);
+
+  // Initialize the size of start/end/out data structures
+  SrfEmissData_start = srfEmissInput(ncol, sectors.size());
+  SrfEmissData_end   = srfEmissInput(ncol, sectors.size());
+  SrfEmissData_out.init(ncol, 1, true);
+
+  // Create reader (an AtmosphereInput object)
+  SrfEmissDataReader =
+      create_srfEmiss_data_reader(SrfEmissHorizInterp, data_file);
+}  // init_srf_emiss_objects (IOP)
 }  // namespace scream::mam_coupling
 
 #endif  // SRF_EMISSION_IMPL_HPP

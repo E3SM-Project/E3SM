@@ -163,9 +163,20 @@ void MAMDryDep::create_requests() {
   const std::string dim_name2 = "class";
 
   // initialize the file read
-  FracLandUseFunc::init_frac_landuse_file_read(
-      ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
-      mapping_file, horizInterp_, dataReader_);  // output
+  if (m_iop_data_manager != nullptr) {
+    EKAT_REQUIRE_MSG(mapping_file == "" or mapping_file == "none",
+      "Error! Cannot define drydep_remap_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data -> model data.\n");
+    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
+    FracLandUseFunc::init_frac_landuse_file_read(
+        ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
+        iop_lat, iop_lon, horizInterp_, dataReader_);  // output
+  } else {
+    FracLandUseFunc::init_frac_landuse_file_read(
+        ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
+        mapping_file, horizInterp_, dataReader_);  // output
+  }
 
 }  // set_grids
 

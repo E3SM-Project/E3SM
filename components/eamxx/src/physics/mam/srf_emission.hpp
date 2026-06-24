@@ -75,6 +75,12 @@ struct srfEmissFunctions {
       const std::string &srfEmiss_data_file,
       const std::vector<std::string> &field_names, const std::string &map_file);
 
+  static std::shared_ptr<AbstractRemapper> create_horiz_remapper(
+      const std::shared_ptr<const AbstractGrid> &model_grid,
+      const std::string &srfEmiss_data_file,
+      const std::vector<std::string> &field_names,
+      const Real iop_lat, const Real iop_lon);
+
   static std::shared_ptr<AtmosphereInput> create_srfEmiss_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &srfEmiss_data_file);
@@ -124,6 +130,16 @@ struct srfEmissFunctions {
       const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
       const std::string &data_file, const std::vector<std::string> &sectors,
       const std::string &srf_map_file,
+      // output
+      std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
+      srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,
+      srfEmissOutput &SrfEmissData_out,
+      std::shared_ptr<AtmosphereInput> &SrfEmissDataReader);
+
+  static void init_srf_emiss_objects(
+      const int ncol, const std::shared_ptr<const AbstractGrid> &grid,
+      const std::string &data_file, const std::vector<std::string> &sectors,
+      const Real iop_lat, const Real iop_lon,
       // output
       std::shared_ptr<AbstractRemapper> &SrfEmissHorizInterp,
       srfEmissInput &SrfEmissData_start, srfEmissInput &SrfEmissData_end,

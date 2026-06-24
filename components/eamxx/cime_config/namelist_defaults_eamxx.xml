@@ -312,7 +312,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- MAM4xx-Dry Deposition -->
     <mam4_drydep inherit="mam4_atm_proc_base">
-    <fractional_land_use_file type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne30pg2/atmsrf_ne30pg2_c20241017.nc</fractional_land_use_file>
+    <fractional_land_use_file type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne30pg2/atmsrf_ne30pg2_c20260624.nc</fractional_land_use_file>
     <fractional_land_use_file hgrid="ne4np4.pg2" type="file" doc="File containing Fractional land use data for drydep">${DIN_LOC_ROOT}/atm/scream/mam4xx/drydep/ne4pg2/atmsrf_ne4pg2_c20241017.nc</fractional_land_use_file>
 
     <!-- Mapping Files for finer resolutions -->
