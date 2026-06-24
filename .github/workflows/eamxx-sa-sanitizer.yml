@@ -31,7 +31,7 @@ jobs:
     name: gnu-openmp / valg
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
@@ -55,7 +55,7 @@ jobs:
     name: gnu-cuda / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
