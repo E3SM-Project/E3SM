@@ -1,10 +1,10 @@
-#include "impl/zm_common_init_impl.hpp"
+#include "impl/zm_opts_impl.hpp"
 
 namespace scream {
 namespace zm {
 
 /*
- * Explicit instantiation for doing zm_common_init on Reals using the
+ * Explicit instantiation for doing zm_opts_init on Reals using the
  * default device.
  */
 

@@ -17,8 +17,6 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
   // ***********************************************************************
   // TEMPORARY
   // ***********************************************************************
-  auto nlev_mid_packs = ekat::npack<Pack>(nlev_mid);
-  auto nlev_int_packs = ekat::npack<Pack>(nlev_int);
   if (DirT == ekat::TransposeDirection::c2f) {
     // create temporaries to avoid "Implicit capture" warning
     const auto loc_f_z_mid   = f_z_mid;
@@ -30,6 +28,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     const auto loc_f_vwind   = f_vwind;
     const auto loc_f_omega   = f_omega;
     const auto loc_f_cldfrac = f_cldfrac;
+    const auto loc_f_t_prev  = f_t_prev;
+    const auto loc_f_q_prev  = f_q_prev;
     const auto loc_f_z_int   = f_z_int;
     const auto loc_f_p_int   = f_p_int;
 
@@ -42,31 +42,35 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     const auto loc_vwind     = vwind;
     const auto loc_omega     = omega;
     const auto loc_cldfrac   = cldfrac;
+    const auto loc_t_prev    = t_prev;
+    const auto loc_q_prev    = q_prev;
     const auto loc_z_int     = z_int;
     const auto loc_p_int     = p_int;
 
     //----------------------------------------------------------------------
     // mid-point level variables
-    Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_mid_packs), KOKKOS_LAMBDA (const int i) {
-      const int icol = i/nlev_mid_packs;
-      const int klev = i%nlev_mid_packs;
-      loc_f_z_mid   (icol,klev) = loc_z_mid   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_p_mid   (icol,klev) = loc_p_mid   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_p_del   (icol,klev) = loc_p_del   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_T_mid   (icol,klev) = loc_T_mid   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_qv      (icol,klev) = loc_qv      (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_uwind   (icol,klev) = loc_uwind   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_vwind   (icol,klev) = loc_vwind   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_omega   (icol,klev) = loc_omega   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_cldfrac (icol,klev) = loc_cldfrac (icol,klev/Pack::n)[klev%Pack::n];
+    Kokkos::parallel_for("zm_input_tx_mid",KT::RangePolicy(0, ncol*nlev_mid), KOKKOS_LAMBDA (const int i) {
+      const int icol = i/nlev_mid;
+      const int klev = i%nlev_mid;
+      loc_f_z_mid   (icol,klev) = loc_z_mid   (icol,klev);
+      loc_f_p_mid   (icol,klev) = loc_p_mid   (icol,klev);
+      loc_f_p_del   (icol,klev) = loc_p_del   (icol,klev);
+      loc_f_T_mid   (icol,klev) = loc_T_mid   (icol,klev);
+      loc_f_qv      (icol,klev) = loc_qv      (icol,klev);
+      loc_f_uwind   (icol,klev) = loc_uwind   (icol,klev);
+      loc_f_vwind   (icol,klev) = loc_vwind   (icol,klev);
+      loc_f_omega   (icol,klev) = loc_omega   (icol,klev);
+      loc_f_cldfrac (icol,klev) = loc_cldfrac (icol,klev);
+      loc_f_t_prev  (icol,klev) = loc_t_prev  (icol,klev);
+      loc_f_q_prev  (icol,klev) = loc_q_prev  (icol,klev);
     });
 
     // interface level variables
-    Kokkos::parallel_for("zm_output_tx_mid",KT::RangePolicy(0, ncol*nlev_int_packs), KOKKOS_LAMBDA (const int i) {
-      const int icol = i/nlev_int_packs;
-      const int klev = i%nlev_int_packs;
-      loc_f_z_int   (icol,klev) = loc_z_int   (icol,klev/Pack::n)[klev%Pack::n];
-      loc_f_p_int   (icol,klev) = loc_p_int   (icol,klev/Pack::n)[klev%Pack::n];
+    Kokkos::parallel_for("zm_input_tx_int",KT::RangePolicy(0, ncol*nlev_int), KOKKOS_LAMBDA (const int i) {
+      const int icol = i/nlev_int;
+      const int klev = i%nlev_int;
+      loc_f_z_int   (icol,klev) = loc_z_int   (icol,klev);
+      loc_f_p_int   (icol,klev) = loc_p_int   (icol,klev);
     });
 
     //----------------------------------------------------------------------
@@ -84,6 +88,8 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
     Kokkos::deep_copy(h_vwind,    f_vwind );
     Kokkos::deep_copy(h_omega,    f_omega );
     Kokkos::deep_copy(h_cldfrac,  f_cldfrac );
+    Kokkos::deep_copy(h_t_prev,   f_t_prev );
+    Kokkos::deep_copy(h_q_prev,   f_q_prev );
     Kokkos::deep_copy(h_z_int,    f_z_int );
     Kokkos::deep_copy(h_p_int,    f_p_int );
   }
@@ -92,23 +98,7 @@ void Functions<S,D>::ZmInputState::transpose(int ncol, int nlev_mid)
   // TEMPORARY
   // ***********************************************************************
 
-  // if (DirT == ekat::TransposeDirection::c2f) {
-  //   ekat::device_to_host({h_phis.data()},     ncol,           std::vector< view_1d<const Scalar>>{phis});
-  //   ekat::device_to_host({h_pblh.data()},     ncol,           std::vector< view_1d<const Scalar>>{pblh});
-  //   ekat::device_to_host({h_tpert.data()},    ncol,           std::vector<uview_1d<      Scalar>>{tpert});
-  //   ekat::device_to_host({h_landfrac.data()}, ncol,           std::vector< view_1d<const Scalar>>{landfrac});
-  //   ekat::device_to_host({h_z_mid.data()},    ncol, nlev_mid, std::vector<uview_2d<const Pack >>{z_mid});
-  //   ekat::device_to_host({h_p_mid.data()},    ncol, nlev_mid, std::vector< view_2d<const Pack >>{p_mid});
-  //   ekat::device_to_host({h_p_del.data()},    ncol, nlev_mid, std::vector< view_2d<const Pack >>{p_del});
-  //   ekat::device_to_host({h_T_mid.data()},    ncol, nlev_mid, std::vector< view_2d<      Pack >>{T_mid});
-  //   ekat::device_to_host({h_qv.data()},       ncol, nlev_mid, std::vector< view_2d<      Pack >>{qv});
-  //   ekat::device_to_host({h_uwind.data()},    ncol, nlev_mid, std::vector< view_2d<      Pack >>{uwind});
-  //   ekat::device_to_host({h_vwind.data()},    ncol, nlev_mid, std::vector< view_2d<      Pack >>{vwind});
-  //   ekat::device_to_host({h_omega.data()},    ncol, nlev_mid, std::vector< view_2d<const Pack >>{omega});
-  //   ekat::device_to_host({h_cldfrac.data()},  ncol, nlev_mid, std::vector< view_2d<const Pack >>{cldfrac});
-  //   ekat::device_to_host({h_z_int.data()},    ncol, nlev_int, std::vector<uview_2d<      Pack >>{z_int});
-  //   ekat::device_to_host({h_p_int.data()},    ncol, nlev_int, std::vector< view_2d<const Pack >>{p_int});
-  // }
+  // if (DirT == ekat::TransposeDirection::c2f) { ... }
 }
 
 template<typename S, typename D>
@@ -134,8 +124,8 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
       // identify interface index for top of PBL
       int pblh_k_ind = -1;
       for (int k=0; k<nlev; ++k) {
-        auto z_int_tmp_k   = loc_z_int(i,k/Pack::n)[k%Pack::n];
-        auto z_int_tmp_kp1 = loc_z_int(i,k/Pack::n)[k%Pack::n];
+        auto z_int_tmp_k   = loc_z_int(i,k);
+        auto z_int_tmp_kp1 = loc_z_int(i,k+1);
         if ( z_int_tmp_k>loc_pblh(i) && z_int_tmp_kp1<=loc_pblh(i) ) {
           pblh_k_ind = k;
         }
@@ -145,9 +135,9 @@ void Functions<S,D>::ZmInputState::calculate_tpert(int ncol, int nlev, bool is_f
         loc_tpert(i) = 0;
       } else {
         // calculate tpert as std deviation of temperature from SHOC's theta-l variance
-        auto exner_pbl    = PF::exner_function( loc_p_mid(i,pblh_k_ind/Pack::n)[pblh_k_ind%Pack::n] );
-        auto qc_pbl       = loc_qc(i,pblh_k_ind/Pack::n)[pblh_k_ind%Pack::n];
-        auto thl_sec_pbl  = loc_thl_sec(i,pblh_k_ind/Pack::n)[pblh_k_ind%Pack::n];
+        auto exner_pbl    = PF::exner_function( loc_p_mid(i,pblh_k_ind) );
+        auto qc_pbl       = loc_qc(i,pblh_k_ind);
+        auto thl_sec_pbl  = loc_thl_sec(i,pblh_k_ind);
         auto thl_std_pbl  = sqrt( thl_sec_pbl ); // std deviation of thetal;
         loc_tpert(i) = ( thl_std_pbl + (latvap/cpair)*qc_pbl ) / exner_pbl;
         loc_tpert(i) = Kokkos::min(tpert_limiter, loc_tpert(i)); // apply limiter

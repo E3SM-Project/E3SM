@@ -271,7 +271,29 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
-      <apply_tendencies type="logical" doc="flag to apply ZM tendencies or not">true</apply_tendencies>
+      <apply_detr_tend    type="logical" doc="ZM flag for cld liq/ice detrainment tend"     >true</apply_detr_tend>
+      <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >true</use_fortran_bridge>
+      <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
+      <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>
+      <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >false</clos_dyn_adj>
+      <!-- ZM tuning parameters -->
+      <upper_limit_pref type="real"    doc="ZM upper pressure limit for convection"    >40e2</upper_limit_pref>
+      <tau              type="real"    doc="ZM convective adjustment time scale"       >3600</tau>
+      <alfa             type="real"    doc="ZM max downdraft mass flux fraction"       >0.14</alfa>
+      <ke               type="real"    doc="ZM evaporation efficiency"                 >2.5E-6</ke>
+      <dmpdz            type="real"    doc="ZM fractional mass entrainment rate [1/m]" >-0.7e-3</dmpdz>
+      <tpert_fix        type="logical" doc="ZM flag to enable tpert"                   >true</tpert_fix>
+      <tpert_fac        type="real"    doc="ZM tunable temperature perturbation factor">2.0</tpert_fac>
+      <tiedke_add       type="real"    doc="ZM tunable temperature perturbation"       >0.8</tiedke_add>
+      <c0_lnd           type="real"    doc="ZM autoconversion coefficient over land"   >0.002</c0_lnd>
+      <c0_ocn           type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
+      <num_cin          type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
+      <!-- MCSP -->
+      <mcsp_enabled type="logical" doc="ZM flag to enable MCSP in ZM" >true</mcsp_enabled>
+      <mcsp_t_coeff type="real" doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
+      <mcsp_q_coeff type="real" doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
+      <mcsp_u_coeff type="real" doc="MCSP U-wind coefficient"         >0.0</mcsp_u_coeff>
+      <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
     <!-- Basic options for each mam4 atm process -->

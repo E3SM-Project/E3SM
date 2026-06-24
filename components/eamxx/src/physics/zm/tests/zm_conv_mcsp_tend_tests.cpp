@@ -74,7 +74,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspTend : public UnitWrap::UnitTest<D>:
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.ptend_q));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.ptend_u));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.ptend_v));
-        REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_dt_out));
+        REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_ds_out));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_dq_out));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_du_out));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_dv_out));
@@ -83,7 +83,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspTend : public UnitWrap::UnitTest<D>:
           REQUIRE(d_baseline.ptend_q[k] == d_test.ptend_q[k]);
           REQUIRE(d_baseline.ptend_u[k] == d_test.ptend_u[k]);
           REQUIRE(d_baseline.ptend_v[k] == d_test.ptend_v[k]);
-          REQUIRE(d_baseline.mcsp_dt_out[k] == Approx(d_test.mcsp_dt_out[k]).margin(margin));
+          REQUIRE(d_baseline.mcsp_ds_out[k] == Approx(d_test.mcsp_ds_out[k]).margin(margin));
           REQUIRE(d_baseline.mcsp_dq_out[k] == d_test.mcsp_dq_out[k]);
           REQUIRE(d_baseline.mcsp_du_out[k] == d_test.mcsp_du_out[k]);
           REQUIRE(d_baseline.mcsp_dv_out[k] == d_test.mcsp_dv_out[k]);

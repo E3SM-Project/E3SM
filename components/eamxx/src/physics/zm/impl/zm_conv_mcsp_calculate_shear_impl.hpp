@@ -45,29 +45,32 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
     Kokkos::Min<Int>(k_below));
   team.team_barrier();
 
-  // Linear interpolation
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-    if (state_pmid(0) >= ZMC::MCSP_storm_speed_pref) {
-      storm_u = state_u(0);
-    }
-    else if (state_pmid(pver - 1) < ZMC::MCSP_storm_speed_pref) {
-      storm_u = state_u(pver - 1);
-    }
-    else {
-      EKAT_KERNEL_ASSERT(k_below < pver-1);
-      const Real dpu = ZMC::MCSP_storm_speed_pref - state_pmid(k_below);
-      const Real dpl = state_pmid(k_below+1) - ZMC::MCSP_storm_speed_pref;
-      storm_u = (state_u(k_below)*dpl + state_u(k_below+1)*dpu) / (dpl + dpu);
-    }
+  // Linear interpolation - computed redundantly on all team threads so the
+  // result is consistent across the team (no single/broadcast needed). Using
+  // Kokkos::single here would update mcsp_shear on only one thread, leaving the
+  // other threads with stale values and causing a divergent branch (and GPU
+  // deadlock) where mcsp_shear later gates a team-collective.
+  // (removing the Kokkos::single fixed a hang issue)
+  if (state_pmid(0) >= ZMC::MCSP_storm_speed_pref) {
+    storm_u = state_u(0);
+  }
+  else if (state_pmid(pver - 1) < ZMC::MCSP_storm_speed_pref) {
+    storm_u = state_u(pver - 1);
+  }
+  else {
+    EKAT_KERNEL_ASSERT(k_below < pver-1);
+    const Real dpu = ZMC::MCSP_storm_speed_pref - state_pmid(k_below);
+    const Real dpl = state_pmid(k_below+1) - ZMC::MCSP_storm_speed_pref;
+    storm_u = (state_u(k_below)*dpl + state_u(k_below+1)*dpu) / (dpl + dpu);
+  }
 
-    //----------------------------------------------------------------------------
-    // calculate low-level shear
-    if (state_pmid(pver - 1) > ZMC::MCSP_storm_speed_pref) {
-      mcsp_shear = storm_u - state_u(pver - 1);
-    } else {
-      mcsp_shear = -999;
-    }
-  });
+  //----------------------------------------------------------------------------
+  // calculate low-level shear
+  if (state_pmid(pver - 1) > ZMC::MCSP_storm_speed_pref) {
+    mcsp_shear = storm_u - state_u(pver - 1);
+  } else {
+    mcsp_shear = -999;
+  }
 }
 
 } // namespace zm
