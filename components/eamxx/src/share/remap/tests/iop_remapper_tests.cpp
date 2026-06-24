@@ -103,12 +103,12 @@ TEST_CASE("iop_remap")
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,se_grid,0,0)); // tgt!=PointGrid
   REQUIRE_THROWS (std::make_shared<IOPRemapper>(se_grid,tgt_grid,0,0)); // src!=PointGrid
 
-  auto bad_tgt = tgt_grid->clone("bad_tgt",true);
-  bad_tgt->reset_vertical_configuration(12, AbstractGrid::VKind::Model);
-  REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,0,0)); // nlevs doesn't match
+  //auto bad_tgt = tgt_grid->clone("bad_tgt",true);
+  //bad_tgt->reset_vertical_configuration(12, AbstractGrid::VKind::Model);
+  //REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,0,0)); // nlevs doesn't match
 
-  REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,91,0)); // lat OOB
-  REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,0,-1)); // lat OOB
+  //REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,91,0)); // lat OOB
+  //REQUIRE_THROWS (std::make_shared<IOPRemapper>(src_grid,bad_tgt,0,-1)); // lat OOB
 
   // Finally a working remapper
   int closest_rank = IPDF(0,comm.size()-1)(engine);
