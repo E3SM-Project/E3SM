@@ -17,10 +17,7 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
     const std::string &field_name, const std::string &dim_name1) {
   using namespace ShortFieldTagsNames;
 
-  scorpio::register_file(data_file, scorpio::Read);
   const int ncols_data = scorpio::get_dimlen(data_file, dim_name1);
-
-  scorpio::release_file(data_file);
 
   // We could use model_grid directly if using same num levels,
   // but since shallow clones are cheap, we may as well do it (less lines of
@@ -68,7 +65,7 @@ soilErodibilityFunctions<S, D>::create_horiz_remapper(
 
 // -------------------------------------------------------------------------------------------
 template <typename S, typename D>
-std::shared_ptr<AtmosphereInput>
+std::shared_ptr<FieldReader>
 soilErodibilityFunctions<S, D>::create_data_reader(
     const std::shared_ptr<AbstractRemapper> &horiz_remapper,
     const std::string &data_file) {
@@ -77,13 +74,19 @@ soilErodibilityFunctions<S, D>::create_data_reader(
     io_fields.push_back(horiz_remapper->get_src_field(i));
   }
   const auto io_grid = horiz_remapper->get_src_grid();
-  return std::make_shared<AtmosphereInput>(data_file, io_grid, io_fields, true);
+  auto gids = io_grid->get_partitioned_dim_gids();
+  auto comm = io_grid->get_comm();
+  auto reader = std::make_shared<FieldReader>();
+  reader->set_file_specs(data_file);
+  reader->set_dim_decomp(gids, comm);
+  reader->set_fields(io_fields);
+  return reader;
 }  // create_data_reader
 
 // -------------------------------------------------------------------------------------------
 template <typename S, typename D>
 void soilErodibilityFunctions<S, D>::update_soil_erodibility_data_from_file(
-    std::shared_ptr<AtmosphereInput> &scorpio_reader,
+    std::shared_ptr<FieldReader> &reader,
     AbstractRemapper &horiz_interp, const_view_1d &input) {
   start_timer("EAMxx::soilErodibility::update_soil_erodibility_data_from_file");
 
@@ -91,7 +94,7 @@ void soilErodibilityFunctions<S, D>::update_soil_erodibility_data_from_file(
   start_timer(
       "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::read_"
       "data");
-  scorpio_reader->read_variables();
+  reader->read();
   stop_timer(
       "EAMxx::soilErodibility::update_soil_erodibility_data_from_file::read_"
       "data");
@@ -129,12 +132,12 @@ void soilErodibilityFunctions<S, D>::init_soil_erodibility_file_read(
     const std::string &data_file, const std::string &mapping_file,
     // output
     std::shared_ptr<AbstractRemapper> &soilErodibilityHorizInterp,
-    std::shared_ptr<AtmosphereInput> &soilErodibilityDataReader) {
+    std::shared_ptr<FieldReader> &soilErodibilityDataReader) {
   // Init horizontal remap
   soilErodibilityHorizInterp = create_horiz_remapper(
       grid, data_file, mapping_file, field_name, dim_name1);
 
-  // Create reader (an AtmosphereInput object)
+  // Create reader (an FieldReader object)
   soilErodibilityDataReader =
       create_data_reader(soilErodibilityHorizInterp, data_file);
 }  // init_soil_erodibility_file_read

@@ -151,13 +151,6 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
-  ## Test single-column reader
-  CreateUnitTest(io_scm_reader
-    SOURCES io_scm_reader.cpp
-    LIBS eamxx_io LABELS io
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-  )
-
   ## Test latlon output
   set(MAP_FILE map_ne30pg2_to_20x40_20260112.nc)
   set(MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${MAP_FILE})

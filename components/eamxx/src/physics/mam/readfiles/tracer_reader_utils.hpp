@@ -2,7 +2,7 @@
 #define EAMXX_MAM_TRACER_READER_UTILS
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/algorithm/eamxx_time_interpolation.hpp"
 
