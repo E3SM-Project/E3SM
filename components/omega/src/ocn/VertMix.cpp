@@ -369,9 +369,8 @@ void VertMix::defineFields() {
                      "sea_water_gradient_richardson_number", // CF-ish Name
                      std::numeric_limits<Real>::min(),       // Min valid value
                      std::numeric_limits<Real>::max(),       // Max valid value
-                     FillValue, // Scalar used for undefined entries
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,   // Number of dimensions
+                     DimNames // Dimension names
        );
    /// Create and register the GradRichNumSmoothed field
    auto GradRichNumSmoothedField = Field::create(
@@ -381,9 +380,8 @@ void VertMix::defineFields() {
        "sea_water_gradient_richardson_number_smoothed", // CF-ish Name
        std::numeric_limits<Real>::min(),                // Min valid value
        std::numeric_limits<Real>::max(),                // Max valid value
-       FillValue, // Scalar used for undefined entries
-       NDims,     // Number of dimensions
-       DimNames   // Dimension names
+       NDims,                                           // Number of dimensions
+       DimNames                                         // Dimension names
    );
 
    // Create a field group for the vertmix-specific state fields
