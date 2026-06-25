@@ -1,5 +1,13 @@
-from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil, \
-    SharedArea
+import os
+import shutil
+import concurrent.futures as threading3
+import itertools
+import json
+import re
+from pathlib import Path
+
+from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, \
+                  ensure_psutil, SharedArea
 from git_utils import get_current_head, get_current_commit
 
 from test_factory import create_tests, COV, CSR
@@ -9,16 +17,8 @@ from machines_specs import get_machine, setup_mach_env, is_machine_supported, \
 
 check_minimum_python_version(3, 4)
 
-import os, shutil
-import concurrent.futures as threading3
-import itertools
-import json
 
 ensure_psutil()
-import psutil
-import re
-
-from pathlib import Path
 
 ###############################################################################
 class TestAllScream(object):
@@ -76,19 +76,16 @@ class TestAllScream(object):
                 "Makes no sense to ask for --quick-rerun and --config-only at the same time")
 
         # Probe machine if none was specified
-        if machine is not None:
-            self._machine = get_machine(machine)
-            expect (not local, "Specifying a machine while passing '-l,--local' is ambiguous.")
-        else:
-            # We could potentially integrate more with CIME here to do actual
-            # nodename probing.
-            if "SCREAM_MACHINE" in os.environ and is_machine_supported(os.environ["SCREAM_MACHINE"]):
-                self._machine = get_machine(os.environ["SCREAM_MACHINE"])
-            else:
-                expect(local,
-                       "test-all-eamxx requires either the machine arg (-m $machine) or the -l flag,"
-                       "which makes it look for machine specs in '~/.cime/scream_mach_specs.py'.")
-                self._machine = get_machine("local")
+        expect (not (local and machine), "Specifying a machine while passing '-l,--local' is ambiguous.")
+        expect (local or machine or os.environ.get('SCREAM_MACHINE'),
+               "test-all-eamxx requires either the machine arg (-m $machine), "
+               "the SCREAM_MACHINE env var, "
+               "or the -l flag (which makes it look for machine specs in '~/.cime/scream_mach_specs.py')")
+
+        mach_name = machine or os.environ.get('SCREAM_MACHINE') or "local"
+        expect (is_machine_supported(mach_name),
+                f"The machine '{mach_name}' is not supported")
+        self._machine = get_machine(machine)
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
@@ -399,6 +396,8 @@ class TestAllScream(object):
     ###############################################################################
     def get_taskset_resources(self, test, for_compile=True):
     ###############################################################################
+        import psutil
+
         res_name = "compile_res_count" if for_compile else "testing_res_count"
 
         if not for_compile and self._machine.uses_gpu():
@@ -679,8 +678,8 @@ class TestAllScream(object):
                         curr_idx = int(tokens[2])
 
             return latest
-        else:
-            return None
+
+        return None
 
     ###############################################################################
     def baselines_to_be_generated(self):
