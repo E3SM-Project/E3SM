@@ -43,7 +43,7 @@ on:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 concurrency:
   # Two runs are in the same group if they are testing the same git ref
