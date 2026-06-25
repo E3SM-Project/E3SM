@@ -12,9 +12,19 @@ variables at runtime. After each timestep (or at user-defined intervals) the
 model can call `validateOceanState` to scan every owned cell and vertical layer
 for NaN (Not-a-Number) values and values that lie outside a pre-defined
 physically meaningful range. Any detected anomaly is reported through the
-OMEGA logging infrastructure as a critical error together with a full stack
-backtrace; the run is then terminated via `MPI_Abort` so that corrupted output
-is not silently written to disk.
+OMEGA logging infrastructure as a critical error message.
+
+Whether the run is aborted on detection is controlled by two runtime
+configuration options under `Omega::State::Validation`:
+
+- **`AbortOnNan`** (default: `true`) — when `true`, the presence of any NaN
+  values in a checked field causes the run to be terminated via `MPI_Abort`
+  (with a full stack backtrace printed first).
+- **`AbortOnOOB`** (default: `false`) — when `true`, out-of-bounds values
+  trigger the same hard abort.
+
+When both flags are `false` and errors are detected, a critical-level log
+message is emitted and the run continues rather than being terminated.
 
 ## 2 Requirements
 
@@ -71,9 +81,7 @@ parallel reductions.
 
 On detection of any failure the module must log a critical-level message that
 identifies the field name, the nature of the problem (NaN or out-of-bounds),
-and the number of offending elements.  After all fields are checked the
-module must additionally print a stack backtrace to assist with debugging,
-then abort the run via `MPI_Abort`.
+and the number of offending elements.
 
 ### 2.9 Requirement: Graceful handling of absent tracers
 
@@ -81,13 +89,29 @@ If the Temperature or Salinity tracer is not present in the tracer registry
 (e.g. in configurations that do not activate active tracers) the
 corresponding check must be skipped silently rather than causing an error.
 
-### 2.10 Desired: Configurable valid ranges
+### 2.10 Requirement: Configurable abort-on-error behavior
+
+The user must be able to independently control whether NaN errors and
+out-of-bounds errors cause the run to abort.  Two boolean YAML options
+(`AbortOnNan` and `AbortOnOOB`, both nested under
+`Omega::State::Validation`) govern this:
+
+- When `AbortOnNan: true`, any detected NaN value triggers a hard abort via
+  `MPI_Abort` (with a stack backtrace printed beforehand).
+- When `AbortOnOOB: true`, any detected out-of-bounds value triggers the same
+  hard abort.
+- When both are `false`, errors are logged at critical severity and the run
+  continues.
+
+The defaults are `AbortOnNan: true` and `AbortOnOOB: false`.
+
+### 2.11 Desired: Configurable valid ranges
 
 In the future it may be desirable to allow the user to override the default
 valid ranges through the OMEGA configuration system (e.g. for idealised
 process studies that intentionally use non-oceanic parameter values).
 
-### 2.11 Desired: Configurable validation frequency
+### 2.12 Desired: Configurable validation frequency
 
 In the future it may be desirable to allow the user to control whether
 validation is performed every timestep, every N timesteps, or only at
@@ -147,9 +171,30 @@ implementation:
 | `Temperature`        | −10       | 50     |
 | `Salinity`           | −2        | 60     |
 
+The abort-on-error behavior is governed by two runtime YAML options nested
+under `Omega::State::Validation`:
+
+| YAML key      | Type | Default | Meaning                                      |
+|---------------|------|---------|----------------------------------------------|
+| `AbortOnNan`  | bool | `true`  | Abort via `MPI_Abort` when NaNs are detected |
+| `AbortOnOOB`  | bool | `false` | Abort via `MPI_Abort` when OOBs are detected |
+
+When both flags are `false` and errors are found, a CRITICAL log message is
+emitted and the run continues.
+
 #### 4.1.2 Class/structs/data types
 
-No new classes or data types are introduced. The module uses the existing
+The module introduces one file-local plain struct:
+
+```c++
+struct ValidationAbortConfig {
+   bool AbortOnOOB = false;
+   bool AbortOnNan = true;
+};
+```
+
+This struct is populated by `getValidationAbortConfig` (see §4.2.5) and
+consumed by `validateOceanState`. All other types are the existing
 `OceanState`, `AuxiliaryState`, `VertCoord`, and `Tracers` types from the
 OMEGA ocean component.
 
@@ -157,23 +202,23 @@ OMEGA ocean component.
 
 #### 4.2.1 `checkOceanState` (public)
 
-Performs all field checks and returns the total count of errors found:
+Performs all field checks and returns separate NaN and out-of-bounds counts:
 
 ```c++
-I4 checkOceanState(const OceanState *State,
-                   const AuxiliaryState *AuxState,
-                   const VertCoord *VCoord,
-                   I4 TimeLevel);
+std::pair<I4, I4> checkOceanState(const OceanState *State,
+                                  const AuxiliaryState *AuxState,
+                                  const VertCoord *VCoord,
+                                  I4 TimeLevel);
 ```
 
 Checks all fields described in Section 2, skipping inactive cells
 (`CellMask == 0`). Logs critical messages for each type of error. Returns
-the total number of errors as an `I4`; returns 0 if all checks pass. Does
+`{TotalNaNs, TotalOOBs}` where both values are 0 if all checks pass. Does
 **not** abort. Suitable for calling from tests.
 
 #### 4.2.2 `validateOceanState` (public)
 
-Production entry-point that aborts on failure:
+Production entry-point that applies the configured abort policy on failure:
 
 ```c++
 void validateOceanState(const OceanState *State,
@@ -182,8 +227,15 @@ void validateOceanState(const OceanState *State,
                         I4 TimeLevel);
 ```
 
-Calls `checkOceanState` and aborts via `MPI_Abort` if the return value is
-greater than zero.
+Calls `checkOceanState` to obtain `{NaNs, OOBs}`, then reads
+`ValidationAbortConfig` via `getValidationAbortConfig`. Aborts via
+`abortWithMessage` (which logs at CRITICAL severity, prints a stack
+backtrace, and calls `MPI_Abort`) if:
+- `NaNs > 0` **and** `AbortOnNan` is `true`, **or**
+- `OOBs > 0` **and** `AbortOnOOB` is `true`.
+
+If neither abort condition is met but errors were detected, a CRITICAL log
+message is emitted and the function returns normally.
 
 #### 4.2.3 `checkArray2D` (file-local helper)
 
@@ -215,7 +267,19 @@ Performs the NaN and bounds counts for a single tracer slice (identified by
 `TracerIdx`) of the 3-D tracer array, restricted to active cells
 (`CellMask(Cell, K) > 0`). Returns `{NaNCount, OutOfRangeCount}`.
 
-#### 4.2.5 `abortWithMessage` (file-local helper)
+#### 4.2.5 `getValidationAbortConfig` (file-local helper)
+
+```c++
+static ValidationAbortConfig getValidationAbortConfig();
+```
+
+Reads the two boolean options `AbortOnNan` and `AbortOnOOB` from the OMEGA
+config under `Omega::State::Validation` and returns a populated
+`ValidationAbortConfig`. If the config node is absent the struct's
+default-initialised values (`AbortOnNan = true`, `AbortOnOOB = false`) are
+returned unchanged.
+
+#### 4.2.6 `abortWithMessage` (file-local helper)
 
 ```c++
 static void abortWithMessage(const std::string &Msg);
@@ -254,7 +318,8 @@ errors can be detected without triggering `MPI_Abort`. Each sub-test:
 1. Resets the state to valid values via `restoreValidState`.
 2. Injects a single type of invalid value (NaN or OOB) into one field using
    a `parallelFor` kernel that overwrites all owned cell-layer entries.
-3. Calls `checkOceanState` and verifies a non-zero error count is returned.
+3. Calls `checkOceanState`, which returns `{NaNs, OOBs}`, and verifies that
+   the sum `NaNs + OOBs` is greater than zero.
 
 The following sub-tests are implemented:
 
@@ -270,4 +335,4 @@ The following sub-tests are implemented:
 | `testNaNSalinity`             | NaN                    | Salinity           |
 | `testOOBSalinity`             | 9999 g kg⁻¹ (> max 60) | Salinity           |
 
-Tests requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8.
+Tests requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.10.

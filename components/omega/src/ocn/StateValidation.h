@@ -7,9 +7,12 @@
 ///
 /// Provides two functions:
 ///   - checkOceanState: checks for NaN and out-of-bounds conditions and
-///     returns the total error count without aborting. Suitable for testing.
-///   - validateOceanState: calls checkOceanState and aborts via MPI_Abort if
-///     any errors are found.
+///     returns the NaN count and out-of-bounds count as a pair without
+///     aborting. Suitable for testing.
+///   - validateOceanState: calls checkOceanState and conditionally aborts
+///     via MPI_Abort based on runtime YAML options AbortOnNan and AbortOnOOB
+///     (under Omega::State::Validation). When both flags are false a
+///     CRITICAL log message is emitted and the run continues.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,7 +24,7 @@
 namespace OMEGA {
 
 /// Check ocean state fields for NaN values and out-of-bounds conditions
-/// without aborting, returning the total count of errors found.
+/// without aborting, returning counts of each error type found.
 ///
 /// Only active ocean cells (where CellMask > 0) are checked. Critical log
 /// messages are emitted for each type of error found.
@@ -37,14 +40,17 @@ namespace OMEGA {
 /// \param[in] AuxState    Auxiliary state containing KineticEnergyCell
 /// \param[in] VCoord      Vertical coordinate containing the CellMask
 /// \param[in] TimeLevel   Time level index to validate (typically 0 = current)
-/// \return I4 total count of errors found across all checked fields (0 = valid)
-I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
-                   const VertCoord *VCoord, I4 TimeLevel);
+/// \return std::pair<I4,I4> {NaN count, out-of-bounds count}; both 0 if valid
+std::pair<I4, I4> checkOceanState(const OceanState *State,
+                                  const AuxiliaryState *AuxState,
+                                  const VertCoord *VCoord, I4 TimeLevel);
 
 /// Check ocean state fields for NaN values and out-of-bounds conditions.
 ///
-/// Calls checkOceanState and aborts via MPI_Abort if any errors are found.
-/// Only active ocean cells (where CellMask > 0) are checked.
+/// Calls checkOceanState and conditionally aborts via MPI_Abort based on the
+/// runtime YAML options AbortOnNan and AbortOnOOB (under
+/// Omega::State::Validation). Only active ocean cells (where CellMask > 0)
+/// are checked.
 ///
 /// The following fields are validated:
 ///   - PseudoThickness     : [1e-10, 1000]  (from OceanState)
@@ -53,9 +59,11 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
 ///   - Temperature tracer  : [-10, 50]      (from Tracers)
 ///   - Salinity tracer     : [-2, 60]       (from Tracers)
 ///
-/// If any check fails a critical error is logged with an informative message
-/// and a stack backtrace, and the run is aborted via MPI_Abort on the
-/// communicator obtained from the default MachEnv.
+/// If AbortOnNan is true and NaN values are detected, or AbortOnOOB is true
+/// and out-of-bounds values are detected, a critical error is logged with a
+/// stack backtrace and the run is aborted via MPI_Abort. When both flags are
+/// false but errors are found, a CRITICAL log message is emitted and execution
+/// continues.
 ///
 /// \param[in] State       Ocean state to validate
 /// \param[in] AuxState    Auxiliary state containing KineticEnergyCell

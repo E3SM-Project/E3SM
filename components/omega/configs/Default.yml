@@ -24,6 +24,9 @@ Omega:
     NTimeLevels: 2
     PrescribeThicknessType: None
     PrescribeVelocityType: None
+    Validation:
+      AbortOnOOB: false
+      AbortOnNan: true
   Advection:
     Coef3rdOrder: 0.25
     FluxThicknessType: Center

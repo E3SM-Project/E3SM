@@ -1,14 +1,18 @@
 //===-- ocn/StateValidation.cpp - ocean state validation --------*- C++ -*-===//
 //
 // Validates ocean state fields by checking for NaN values and
-// out-of-bounds conditions. Any failure triggers a critical error log with
-// backtrace and MPI_Abort on the local communicator.
+// out-of-bounds conditions. Abort behaviour is controlled at runtime via the
+// YAML options Omega::State::Validation::AbortOnNan (default true) and
+// Omega::State::Validation::AbortOnOOB (default false). When an abort flag is
+// set a critical error log with backtrace is emitted and MPI_Abort is called;
+// otherwise a CRITICAL log message is written and execution continues.
 //
 //===----------------------------------------------------------------------===//
 
 #include "StateValidation.h"
 
 #include "AuxiliaryState.h"
+#include "Config.h"
 #include "DataTypes.h"
 #include "Error.h"
 #include "Logging.h"
@@ -25,6 +29,35 @@
 #include <utility>
 
 namespace OMEGA {
+
+struct ValidationAbortConfig {
+   bool AbortOnOOB = false;
+   bool AbortOnNan = true;
+};
+
+static ValidationAbortConfig getValidationAbortConfig() {
+   ValidationAbortConfig AbortConfig;
+
+   Config *OmegaConfig = Config::getOmegaConfig();
+   if (!OmegaConfig) {
+      return AbortConfig;
+   }
+
+   Config StateConfig("State");
+   if (!OmegaConfig->get(StateConfig).isSuccess()) {
+      return AbortConfig;
+   }
+
+   Config ValidationConfig("Validation");
+   if (!StateConfig.get(ValidationConfig).isSuccess()) {
+      return AbortConfig;
+   }
+
+   ValidationConfig.get("AbortOnOOB", AbortConfig.AbortOnOOB);
+   ValidationConfig.get("AbortOnNan", AbortConfig.AbortOnNan);
+
+   return AbortConfig;
+}
 
 //------------------------------------------------------------------------------
 // Helper: abort on the local Omega communicator with a message and backtrace
@@ -126,10 +159,12 @@ static std::pair<I4, I4> checkTracerArray(const Array3DReal &Tracers3D,
 /// Check ocean state fields for NaN and out-of-bounds conditions.
 /// Only active cells (where CellMask > 0) are checked.
 /// Returns the total count of errors found; does not abort.
-I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
-                   const VertCoord *VCoord, I4 TimeLevel) {
+std::pair<I4, I4> checkOceanState(const OceanState *State,
+                                  const AuxiliaryState *AuxState,
+                                  const VertCoord *VCoord, I4 TimeLevel) {
 
-   I4 TotalErrors = 0;
+   I4 TotalNaNs = 0;
+   I4 TotalOOBs = 0;
 
    const Array2DReal &CellMask = VCoord->CellMask;
 
@@ -146,14 +181,14 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       if (NaNs > 0) {
          LOG_CRITICAL(
              "StateValidation: PseudoThickness contains {} NaN value(s)", NaNs);
-         TotalErrors += NaNs;
+         TotalNaNs += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL(
              "StateValidation: PseudoThickness has {} value(s) outside "
              "valid range [1e-10, 1000]",
              OOB);
-         TotalErrors += OOB;
+         TotalOOBs += OOB;
       }
    }
 
@@ -171,14 +206,14 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
          LOG_CRITICAL(
              "StateValidation: KineticEnergyCell contains {} NaN value(s)",
              NaNs);
-         TotalErrors += NaNs;
+         TotalNaNs += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL(
              "StateValidation: KineticEnergyCell has {} value(s) outside "
              "valid range [0, 10]",
              OOB);
-         TotalErrors += OOB;
+         TotalOOBs += OOB;
       }
    }
 
@@ -194,13 +229,13 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       if (NaNs > 0) {
          LOG_CRITICAL("StateValidation: Temperature contains {} NaN value(s)",
                       NaNs);
-         TotalErrors += NaNs;
+         TotalNaNs += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL("StateValidation: Temperature has {} value(s) outside "
                       "valid range [-10, 50]",
                       OOB);
-         TotalErrors += OOB;
+         TotalOOBs += OOB;
       }
    }
 
@@ -216,17 +251,17 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
       if (NaNs > 0) {
          LOG_CRITICAL("StateValidation: Salinity contains {} NaN value(s)",
                       NaNs);
-         TotalErrors += NaNs;
+         TotalNaNs += NaNs;
       }
       if (OOB > 0) {
          LOG_CRITICAL("StateValidation: Salinity has {} value(s) outside "
                       "valid range [-2, 60]",
                       OOB);
-         TotalErrors += OOB;
+         TotalOOBs += OOB;
       }
    }
 
-   return TotalErrors;
+   return {TotalNaNs, TotalOOBs};
 }
 
 //------------------------------------------------------------------------------
@@ -236,9 +271,27 @@ I4 checkOceanState(const OceanState *State, const AuxiliaryState *AuxState,
 void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
                         const VertCoord *VCoord, I4 TimeLevel) {
 
-   if (checkOceanState(State, AuxState, VCoord, TimeLevel) > 0) {
-      abortWithMessage("StateValidation: Ocean state validation failed. "
-                       "See critical messages above for details.");
+   auto [NaNs, OOBs]      = checkOceanState(State, AuxState, VCoord, TimeLevel);
+   const auto AbortConfig = getValidationAbortConfig();
+   bool abort             = false;
+
+   if (NaNs > 0 && AbortConfig.AbortOnNan) {
+      abort = true;
+   }
+   if (OOBs > 0 && AbortConfig.AbortOnOOB) {
+      abort = true;
+   }
+   if (abort) {
+      abortWithMessage(
+          "StateValidation: Ocean state validation aborting with " +
+          std::to_string(NaNs) + " NaNs and " + std::to_string(OOBs) +
+          " OOBs." + "See critical messages above for details.");
+   } else if ((NaNs + OOBs) > 0) {
+      LOG_CRITICAL(
+          "StateValidation: Ocean state validation failed with {} "
+          "NaNs and {} OOBs. AbortOnOOB and AbortOnNan are both false; "
+          "continuing after logging.",
+          NaNs, OOBs);
    }
 }
 

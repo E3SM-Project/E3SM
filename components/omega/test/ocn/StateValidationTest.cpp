@@ -161,7 +161,8 @@ static int testValidState(OceanState *State, AuxiliaryState *AuxState,
 
 static int expectErrors(const char *TestName, OceanState *State,
                         AuxiliaryState *AuxState, VertCoord *VCoord) {
-   I4 Errs = checkOceanState(State, AuxState, VCoord, 0);
+   auto [NaNs, OOBs] = checkOceanState(State, AuxState, VCoord, 0);
+   auto Errs         = NaNs + OOBs;
    if (Errs == 0) {
       LOG_ERROR("StateValidationTest: {} - expected errors but got none",
                 TestName);
