@@ -218,6 +218,9 @@ void MAMSrfOnlineEmiss::create_requests() {
         }
         ispec_srf.emiss_sector_fields_ = srf_fields;
 
+        std::cout << "[MAMSrfOnlineEmiss] Setting up DataInterpolation for species: " << ispec_srf.species_name << "\n";
+        std::cout << "[MAMSrfOnlineEmiss]   - data file: " << ispec_srf.data_file << "\n";
+
         ispec_srf.data_interp_ =
                 std::make_shared<DataInterpolation>(grid_, srf_fields);
         ispec_srf.data_interp_->setup_time_database(
@@ -229,6 +232,8 @@ void MAMSrfOnlineEmiss::create_requests() {
         DataInterpolation::VertRemapData remap_data;
         remap_data.vr_type = DataInterpolation::None;
         ispec_srf.data_interp_->create_vert_remapper(remap_data);
+
+        std::cout << "[MAMSrfOnlineEmiss] DataInterpolation setup complete for species: " << ispec_srf.species_name << "\n";
     }
 
   // -------------------------------------------------------------
