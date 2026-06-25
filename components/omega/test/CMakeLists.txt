@@ -555,3 +555,15 @@ add_omega_test(
     ocn/StateValidationTest.cpp
     "-n;8"
 )
+
+#####################
+# SurfaceCouling test
+#####################
+
+# TODO: no halo exhange. Worth testnig with more than 1 task?
+add_omega_test(
+    SFCCOUPLING_TEST
+    testSfcCoupling.exe
+    ocn/SfcCouplingTest.cpp
+    "-n;1"
+)
