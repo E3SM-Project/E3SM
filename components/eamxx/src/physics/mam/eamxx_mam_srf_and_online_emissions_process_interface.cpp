@@ -207,6 +207,7 @@ void MAMSrfOnlineEmiss::create_requests() {
   //--------------------------------------------------------------------
     const auto srf_time_interp = DataInterpolation::Linear;
     const auto srf_timeline    = util::TimeLine::YearlyPeriodic;
+  std::cout << "[MAMSrfOnlineEmiss] Starting DataInterpolation setup for all surface emission species.\n";
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
         std::vector<Field> srf_fields;
         srf_fields.reserve(ispec_srf.sectors.size());
@@ -235,6 +236,7 @@ void MAMSrfOnlineEmiss::create_requests() {
 
         std::cout << "[MAMSrfOnlineEmiss] DataInterpolation setup complete for species: " << ispec_srf.species_name << "\n";
     }
+  std::cout << "[MAMSrfOnlineEmiss] DataInterpolation setup complete for all surface emission species.\n";
 
   // -------------------------------------------------------------
   // Setup to enable reading soil erodibility file
@@ -344,9 +346,13 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     //--------------------------------------------------------------------
     // Initialize data interpolation for surface emissions.
     //--------------------------------------------------------------------
+  std::cout << "[MAMSrfOnlineEmiss] Starting init_data_interval for all surface emission species.\n";
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+        std::cout << "[MAMSrfOnlineEmiss] Calling init_data_interval for species: " << ispec_srf.species_name << "\n";
         ispec_srf.data_interp_->init_data_interval(start_of_step_ts());
+        std::cout << "[MAMSrfOnlineEmiss] init_data_interval complete for species: " << ispec_srf.species_name << "\n";
   }
+  std::cout << "[MAMSrfOnlineEmiss] init_data_interval complete for all surface emission species.\n";
 
     // Current month ( 0-based)
     const int curr_month = start_of_step_ts().get_month() - 1;
@@ -461,8 +467,11 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
 
+  std::cout << "[MAMSrfOnlineEmiss] Starting data interpolation run for all surface emission species.\n";
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+        std::cout << "[MAMSrfOnlineEmiss] Calling data_interp_->run for species: " << ispec_srf.species_name << "\n";
         ispec_srf.data_interp_->run(ts);
+        std::cout << "[MAMSrfOnlineEmiss] data_interp_->run complete for species: " << ispec_srf.species_name << "\n";
 
     //--------------------------------------------------------------------
     // Modify units to MKS units (from molecules/cm2/s to kg/m2/s)
@@ -490,6 +499,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
                             fluxes_in_mks_units(icol) * mfactor;
         });
   }  // for loop for species
+  std::cout << "[MAMSrfOnlineEmiss] Data interpolation run complete for all surface emission species.\n";
   Kokkos::fence();
 }  // run_impl ends
 // =============================================================================
