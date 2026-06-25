@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 

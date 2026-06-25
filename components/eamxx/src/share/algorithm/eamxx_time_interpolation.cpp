@@ -1,6 +1,5 @@
 #include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/eamxx_io_utils.hpp"
 
 namespace scream{
 namespace util {
@@ -250,7 +249,16 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     scorpio::register_file(filename,scorpio::FileMode::Read);
     // Parse CF-compliant time units to get both the reference timestamp and the multiplier
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
-    auto [ts_file_start, time_mult] = parse_cf_time_units(time_units,filename);
+
+    util::TimeStamp ts_file_start;
+    int time_mult;
+    try {
+      std::tie(ts_file_start, time_mult) = parse_cf_time_units(time_units);
+    } catch (std::exception& e) {
+      std::string msg = e.what();
+      msg += " - Filename: " + filename + "\n";
+      throw std::runtime_error(msg);
+    }
     // Gather information about time in this file
     if (ii==0) {
       ts_ref = ts_file_start;

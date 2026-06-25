@@ -11,11 +11,11 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #endif
 
+#include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/physics/physics_constants.hpp"
 
 // Get all Homme's compile-time dims and constants
@@ -350,10 +350,7 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   auto hyam = dyn_grid->create_geometry_data("hyam",layout_mid,ekat::units::none);
   auto hybm = dyn_grid->create_geometry_data("hybm",layout_mid,ekat::units::none);
 
-  std::vector<Field> fields = {hyai, hybi, hyam, hybm};
-  AtmosphereInput vcoord_reader(filename,dyn_grid,fields);
-  vcoord_reader.read_variables();
-  vcoord_reader.finalize();
+  read_fields(filename,{hyai, hybi, hyam, hybm});
 
   // Set vcoords in f90
   // NOTE: homme does the check for these arrays, so no need to do any property check here

@@ -18,6 +18,6 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   # Time interpolation
   CreateUnitTest(time_interpolation
     SOURCES time_interpolation_tests.cpp
-    LIBS eamxx_algorithm
+    LIBS eamxx_algorithm eamxx_io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 endif()

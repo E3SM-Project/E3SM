@@ -1,8 +1,11 @@
 #ifndef FRACTIONAL_LANDUSE_HPP
 #define FRACTIONAL_LANDUSE_HPP
 
-// For AtmosphereInput
-#include "share/io/scorpio_input.hpp"
+#include "share/remap/abstract_remapper.hpp"
+#include "share/field/field_reader.hpp"
+#include "share/core/eamxx_types.hpp"
+
+#include <memory>
 
 namespace scream {
 namespace frac_landuse {
@@ -27,7 +30,7 @@ struct fracLandUseFunctions {
   // -------------------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  static std::shared_ptr<AtmosphereInput> create_data_reader(
+  static std::shared_ptr<FieldReader> create_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &data_file);
 
@@ -35,7 +38,7 @@ struct fracLandUseFunctions {
   // -------------------------------------------------------------------------------------------
 
   static void update_frac_land_use_data_from_file(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      std::shared_ptr<FieldReader> &scorpio_reader,
       AbstractRemapper &horiz_interp, const_view_2d &input);
 
   // -------------------------------------------------------------------------------------------
@@ -48,7 +51,7 @@ struct fracLandUseFunctions {
       const std::string &data_file, const std::string &mapping_file,
       // output
       std::shared_ptr<AbstractRemapper> &FracLandUseHorizInterp,
-      std::shared_ptr<AtmosphereInput> &FracLandUseDataReader);
+      std::shared_ptr<FieldReader> &FracLandUseDataReader);
 
 };  // struct fracLandUseFunctions
 
