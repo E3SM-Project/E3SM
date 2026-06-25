@@ -439,7 +439,7 @@
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
-                <nml_option name="config_GM_geometric_alpha" type="real" default_value="0.035" units="constant"
+                <nml_option name="config_GM_geometric_alpha" type="real" default_value="0.030" units="constant"
                                         description="Configured GEOMETRIC efficiency"
                 />
                 <nml_option name="config_GM_geometric_eddyDiff" type="real" default_value="600.0" units="m^2 s^-1"
