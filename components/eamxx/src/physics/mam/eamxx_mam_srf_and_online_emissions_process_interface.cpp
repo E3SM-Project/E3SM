@@ -222,14 +222,19 @@ void MAMSrfOnlineEmiss::create_requests() {
         std::cout << "[MAMSrfOnlineEmiss] Setting up DataInterpolation for species: " << ispec_srf.species_name << "\n";
         std::cout << "[MAMSrfOnlineEmiss]   - data file: " << ispec_srf.data_file << "\n";
 
+        std::cout << "[MAMSrfOnlineEmiss]   constructing DataInterpolation...\n"; std::cout.flush();
         ispec_srf.data_interp_ =
                 std::make_shared<DataInterpolation>(grid_, srf_fields);
+        std::cout << "[MAMSrfOnlineEmiss]   calling setup_time_database...\n"; std::cout.flush();
         ispec_srf.data_interp_->setup_time_database(
                 {ispec_srf.data_file}, srf_timeline, srf_time_interp);
+        std::cout << "[MAMSrfOnlineEmiss]   calling create_horiz_remappers...\n"; std::cout.flush();
         ispec_srf.data_interp_->create_horiz_remappers(
                 srf_map_file == "none" ? "" : srf_map_file);
+        std::cout << "[MAMSrfOnlineEmiss]   calling set_logger...\n"; std::cout.flush();
         ispec_srf.data_interp_->set_logger(m_atm_logger);
 
+        std::cout << "[MAMSrfOnlineEmiss]   calling create_vert_remapper...\n"; std::cout.flush();
         DataInterpolation::VertRemapData remap_data;
         remap_data.vr_type = DataInterpolation::None;
         ispec_srf.data_interp_->create_vert_remapper(remap_data);
