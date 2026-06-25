@@ -122,6 +122,10 @@ void initIOStreamTest(Clock *&ModelClock // Model clock
    // Initialize Tracers
    Tracers::init();
 
+   // IOStream::validateAll() depends on Forcing::init() so Forcing fields
+   // are registered before stream validation.
+   Forcing::init();
+
    // Initialize Aux State
    AuxiliaryState::init();
 

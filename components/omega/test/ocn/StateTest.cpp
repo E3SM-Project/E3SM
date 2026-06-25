@@ -16,6 +16,7 @@
 #include "Eos.h"
 #include "Error.h"
 #include "Field.h"
+#include "Forcing.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -90,6 +91,10 @@ void initStateTest() {
 
    // Initialize tracers
    Tracers::init();
+
+   // IOStream::validateAll() depends on Forcing::init() so Forcing fields
+   // are registered before stream validation.
+   Forcing::init();
 
    // Initialize Aux State variables
    AuxiliaryState::init();
@@ -414,6 +419,7 @@ int main(int argc, char *argv[]) {
       // Finalize Omega objects
       OceanState::clear();
       Tracers::clear();
+      Forcing::clear();
       AuxiliaryState::clear();
       PressureGrad::clear();
       VertMix::destroyInstance();
