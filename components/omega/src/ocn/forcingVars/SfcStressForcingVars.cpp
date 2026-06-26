@@ -36,7 +36,6 @@ void SfcStressForcingVars::registerFields(
                      "",                               // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
-                     FillValue,                        // scalar for undefined
                      NDims,                            // number of dimensions
                      DimNames                          // dim names
        );
@@ -48,7 +47,6 @@ void SfcStressForcingVars::registerFields(
                      "",                          // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
-                     FillValue,                        // scalar used undefined
                      NDims,                            // number of dimensions
                      DimNames                          // dimension names
        );
