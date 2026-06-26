@@ -62,13 +62,15 @@ struct TestSetupSphere {
 };
 
 #ifdef FORCING_TEST_PLANE
-constexpr Geometry Geom          = Geometry::Planar;
-constexpr char DefaultMeshFile[] = "OmegaPlanarMesh.nc";
-using TestSetup                  = TestSetupPlane;
+constexpr Geometry Geom             = Geometry::Planar;
+constexpr char DefaultMeshFile[]    = "OmegaPlanarMesh.nc";
+constexpr char DefaultForcingFile[] = "forcingPlanar.nc";
+using TestSetup                     = TestSetupPlane;
 #else
-constexpr Geometry Geom          = Geometry::Spherical;
-constexpr char DefaultMeshFile[] = "OmegaSphereMesh.nc";
-using TestSetup                  = TestSetupSphere;
+constexpr Geometry Geom             = Geometry::Spherical;
+constexpr char DefaultMeshFile[]    = "OmegaSphereMesh.nc";
+constexpr char DefaultForcingFile[] = "forcingSphere.nc";
+using TestSetup                     = TestSetupSphere;
 #endif
 
 int testSfcStressForcingVars(Real RTol) {
@@ -143,6 +145,10 @@ int initForcingTest(const std::string &MeshFile) {
 
    Field::init(ModelClock);
    IOStream::init(ModelClock);
+
+   // Select the case-specific forcing file before Forcing::init() performs
+   // startup stream reads.
+   IOStream::changeFilename("Forcing", DefaultForcingFile);
 
    Err = Halo::init();
    if (Err != 0) {
