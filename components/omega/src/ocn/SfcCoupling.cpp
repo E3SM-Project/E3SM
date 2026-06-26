@@ -194,6 +194,17 @@ void SfcCoupling::importFromCoupler() {
    });
 }
 
+void SfcCoupling::applyImportFields(Forcing *Forcing) {
+
+   // Copy the SfcCoupling host arrays into the Forcing device arrays.
+   // Copy is only done over the owned cells, since thats all the SfcCoupling
+   // data is defined over. Forcing will be responsible for halo exchanges.
+   deepCopy(ownedSubView(Forcing->SfcStressForcing.ZonalStressCell),
+            CplToOcn.SfcStressZonal);
+   deepCopy(ownedSubView(Forcing->SfcStressForcing.MeridStressCell),
+            CplToOcn.SfcStressMeridional);
+};
+
 CplToOcnFields::CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh)
     : SfcStressZonal("SfcStressZonal" + Suffix, Mesh->NCellsOwned),
       SfcStressMeridional("SfcStressMeridional" + Suffix, Mesh->NCellsOwned) {}

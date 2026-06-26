@@ -4,6 +4,7 @@
 #include "Decomp.h"
 #include "Eos.h"
 #include "Field.h"
+#include "Forcing.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -24,6 +25,24 @@ struct TestSetup {
    std::map<std::string, int> ExportIdx = {
        {"So_t", 0}, {"So_u", 1}, {"So_v", 2}};
 };
+
+CouplingInitParams mockCouplingInitParams(
+    CouplingLayout Layout                        = CouplingLayout::MCT,
+    std::optional<TimeInterval> CouplingTimeStep = std::nullopt) {
+
+   TestSetup Setup;
+
+   auto *DefTimeStepper = TimeStepper::getDefault();
+   TimeInterval CouplingTimeStep_ =
+       CouplingTimeStep.value_or(DefTimeStepper->getTimeStep());
+
+   CouplingInitParams CouplingParams{.ImportIdx        = Setup.ImportIdx,
+                                     .ExportIdx        = Setup.ExportIdx,
+                                     .CouplingTimeStep = CouplingTimeStep_,
+                                     .Layout           = Layout};
+
+   return CouplingParams;
+}
 
 std::string toString(const CouplingLayout &Layout) {
    switch (Layout) {
@@ -81,41 +100,35 @@ int initSfcCouplingTest(const std::string &MeshFile) {
    }
 
    Eos::init();
+   Forcing::init();
 
    return Err;
 }
 
-int testSfcCoupling(const CouplingLayout Layout,
-                    const TimeInterval CouplingTimeStep) {
+int testImportFromCoupler(const CouplingLayout Layout) {
 
    int Err = 0;
 
-   TestSetup Setup;
-
-   CouplingInitParams CouplingParams{.ImportIdx        = Setup.ImportIdx,
-                                     .ExportIdx        = Setup.ExportIdx,
-                                     .CouplingTimeStep = CouplingTimeStep,
-                                     .Layout           = Layout};
-
+   auto CouplingParams = mockCouplingInitParams(Layout);
    Err += SfcCoupling::init(CouplingParams);
 
-   // test retrival of default
    SfcCoupling *DefCoupling = SfcCoupling::getDefault();
-
-   if (DefCoupling) {
-      LOG_INFO("SfcCouplingTest: Default retrival PASS");
-   } else {
-      Err++;
-      LOG_ERROR("SfcCouplingTest: Default retrival FAIL");
-      return -1;
-   }
 
    int NCells   = DefCoupling->NCellsOwned;
    int NImports = DefCoupling->NImportFields;
    int NExports = DefCoupling->NExportFields;
 
+   int TauxIdx = CouplingParams.ImportIdx.at("Foxx_taux");
+   int TauyIdx = CouplingParams.ImportIdx.at("Foxx_tauy");
+
    std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
    std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
+
+   HostArray1DReal ExpectedSfcStressZonal("ExpectedSfcStressZonal", NCells);
+   HostArray1DReal ExpectedSfcStressMerid("ExpectedSfcStressMerid", NCells);
+
+   deepCopy(ExpectedSfcStressZonal, Real(TauxIdx));
+   deepCopy(ExpectedSfcStressMerid, Real(TauyIdx));
 
    // Index formula depend on the Layout
    auto flatIdx = [&](int Cell, int Field) -> int {
@@ -125,20 +138,18 @@ int testSfcCoupling(const CouplingLayout Layout,
          return Field * NCells + Cell;
    };
 
-   for (int Cell = 0; Cell < NCells; Cell++)
-      for (int Field = 0; Field < NImports; Field++)
-         CplToOcnData[flatIdx(Cell, Field)] = static_cast<Real>(Field);
+   for (int Cell = 0; Cell < NCells; Cell++) {
+      CplToOcnData[flatIdx(Cell, TauxIdx)] = static_cast<Real>(TauxIdx);
+      CplToOcnData[flatIdx(Cell, TauyIdx)] = static_cast<Real>(TauyIdx);
+   }
 
    DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
    DefCoupling->importFromCoupler();
 
-   bool ImportPass = true;
-   for (int Cell = 0; Cell < NCells; Cell++) {
-      if (DefCoupling->CplToOcn.SfcStressZonal(Cell) != Real(0))
-         ImportPass = false;
-      if (DefCoupling->CplToOcn.SfcStressMeridional(Cell) != Real(1))
-         ImportPass = false;
-   }
+   auto ImportPass = arraysEqual(DefCoupling->CplToOcn.SfcStressZonal,
+                                 ExpectedSfcStressZonal) &&
+                     arraysEqual(DefCoupling->CplToOcn.SfcStressMeridional,
+                                 ExpectedSfcStressMerid);
 
    if (ImportPass) {
       LOG_INFO("SfcCouplingTest: importFromCoupler with {} layout PASS",
@@ -154,8 +165,62 @@ int testSfcCoupling(const CouplingLayout Layout,
    return Err;
 }
 
+int testApplyImportFields() {
+
+   int Err = 0;
+
+   auto CouplingParams = mockCouplingInitParams();
+   Err += SfcCoupling::init(CouplingParams);
+
+   Forcing *DefForcing      = Forcing::getDefault();
+   SfcCoupling *DefCoupling = SfcCoupling::getDefault();
+
+   int NCells   = DefCoupling->NCellsOwned;
+   int NImports = DefCoupling->NImportFields;
+   int NExports = DefCoupling->NExportFields;
+
+   int TauxIdx = CouplingParams.ImportIdx.at("Foxx_taux");
+   int TauyIdx = CouplingParams.ImportIdx.at("Foxx_tauy");
+
+   std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
+   std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
+
+   HostArray1DReal ExpectedSfcStressZonal("ExpectedSfcStressZonal", NCells);
+   HostArray1DReal ExpectedSfcStressMerid("ExpectedSfcStressMerid", NCells);
+
+   int Offset = 27;
+   deepCopy(ExpectedSfcStressZonal, Real(TauxIdx + Offset));
+   deepCopy(ExpectedSfcStressMerid, Real(TauyIdx + Offset));
+
+   // Copy the expected values into the CplToOcn fields directly
+   deepCopy(DefCoupling->CplToOcn.SfcStressZonal, ExpectedSfcStressZonal);
+   deepCopy(DefCoupling->CplToOcn.SfcStressMeridional, ExpectedSfcStressMerid);
+
+   DefCoupling->applyImportFields(DefForcing);
+
+   auto SfcStressZonalOwned = Kokkos::subview(
+       DefForcing->SfcStressForcing.ZonalStressCell, std::pair(0, NCells));
+   auto SfcStressMeridOwned = Kokkos::subview(
+       DefForcing->SfcStressForcing.MeridStressCell, std::pair(0, NCells));
+
+   auto ApplyPass = arraysEqual(SfcStressZonalOwned, ExpectedSfcStressZonal) &&
+                    arraysEqual(SfcStressMeridOwned, ExpectedSfcStressMerid);
+
+   if (ApplyPass) {
+      LOG_INFO("SfcCouplingTest: applyImportFields PASS");
+   } else {
+      Err++;
+      LOG_ERROR("SfcCouplingTest: applyImportFields FAIL");
+   }
+
+   SfcCoupling::clear();
+
+   return Err;
+}
+
 void finalizeSfcCouplingTest() {
 
+   Forcing::clear();
    OceanState::clear();
    VertCoord::clear();
    HorzMesh::clear();
@@ -175,11 +240,10 @@ int sfcCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
       LOG_CRITICAL("SfcCouplingTest: Error initializing");
    }
 
-   auto *DefTimeStepper     = TimeStepper::getDefault();
-   TimeInterval OcnTimeStep = DefTimeStepper->getTimeStep();
+   Err += testImportFromCoupler(CouplingLayout::MCT);
+   Err += testImportFromCoupler(CouplingLayout::MOAB);
 
-   Err += testSfcCoupling(CouplingLayout::MCT, OcnTimeStep);
-   Err += testSfcCoupling(CouplingLayout::MOAB, OcnTimeStep);
+   Err += testApplyImportFields();
 
    if (Err == 0) {
       LOG_INFO("SfcCouplingTest: Successful completion");

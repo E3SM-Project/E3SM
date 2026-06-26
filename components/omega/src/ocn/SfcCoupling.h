@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "DataTypes.h"
+#include "Forcing.h"
 #include "HorzMesh.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
@@ -85,6 +86,11 @@ class SfcCoupling {
    SfcCoupling(const SfcCoupling &) = delete;
    SfcCoupling(SfcCoupling &&)      = delete;
 
+   // Create subview that only include the owned cells
+   template <class View> auto ownedSubView(const View &V) const {
+      return Kokkos::subview(V, std::make_pair(0, NCellsOwned));
+   }
+
    // Number of ocn timesteps acccumulated over the coupling interval
    I4 NAccumSteps;
 
@@ -149,7 +155,16 @@ class SfcCoupling {
    /// Create views of the coupling data arrays
    void attachData(const Real *CplToOcnData, Real *OcnToCplData);
 
+   /// Import data from the unmanaged view of the coupler data into the
+   /// SfcCoupling.OcnToCpl object
    void importFromCoupler();
+
+   /// Export data from the SfcCoupling.OcnToCpl object into the unmanaged view
+   /// of the coupler data
+   // void exportToCoupler();
+
+   /// Apply the imported data to the Forcing object
+   void applyImportFields(Forcing *Forcing);
 };
 
 } // end namespace OMEGA
