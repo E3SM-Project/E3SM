@@ -211,13 +211,12 @@ void MAMSrfOnlineEmiss::create_requests() {
         ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
         ispec_srf.data_out_, ispec_srf.dataReader_);
   }  // srf emissions file read init
-
+  std::cout << "MAMSrfOnlineEmiss: Setup marine_organics_data_files "
+  << std::endl;
   // -------------------------------------------------------------
   // Setup to enable reading marine organics file
   // -------------------------------------------------------------
-  const std::string marine_organics_data_file =
-      m_params.get<std::string>("marine_organics_file");
-  const auto marine_map_file = m_params.get<std::string>("srf_remap_file", "");
+
 
   // Fields to be read from file (order matters as they are read in the same
   // order)
@@ -226,41 +225,7 @@ void MAMSrfOnlineEmiss::create_requests() {
   for (const auto &field_name : marine_org_fld_name) {
     add_field<Computed>("morg_" + field_name, scalar2d, none, grid_name);
   }
-  morg_fields_.clear();
-  morg_fields_.reserve(marine_org_fld_name.size());
-  for (const auto &field_name : marine_org_fld_name) {
-    morg_fields_.push_back(
-        get_field_out("morg_" + field_name).alias(field_name));
-  }
 
-  std::cout << "MAMSrfOnlineEmiss: before DataInterpolation ctor for marine organics"
-            << std::endl;
-  morg_data_interp_ = std::make_shared<DataInterpolation>(grid_, morg_fields_);
-  std::cout << "MAMSrfOnlineEmiss: after DataInterpolation ctor for marine organics"
-            << std::endl;
-  std::cout << "MAMSrfOnlineEmiss: before set_logger (marine organics)"
-            << std::endl;
-  morg_data_interp_->set_logger(m_atm_logger);
-  std::cout << "MAMSrfOnlineEmiss: after set_logger (marine organics)"
-            << std::endl;
-  std::cout << "MAMSrfOnlineEmiss: before setup_periodic_time_database (marine organics)"
-            << std::endl;
-  morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
-  std::cout << "MAMSrfOnlineEmiss: after setup_periodic_time_database (marine organics)"
-            << std::endl;
-  std::cout << "MAMSrfOnlineEmiss: before create_horiz_remappers (marine organics)"
-            << std::endl;
-  morg_data_interp_->create_horiz_remappers(
-      marine_map_file == "none" ? "" : marine_map_file);
-  std::cout << "MAMSrfOnlineEmiss: after create_horiz_remappers (marine organics)"
-            << std::endl;
-  DataInterpolation::VertRemapData remap_data;
-  remap_data.vr_type = DataInterpolation::None;
-  std::cout << "MAMSrfOnlineEmiss: before create_vert_remapper (marine organics)"
-            << std::endl;
-  morg_data_interp_->create_vert_remapper(remap_data);
-  std::cout << "MAMSrfOnlineEmiss: after create_vert_remapper (marine organics)"
-            << std::endl;
 
 }  // set_grid ends
 
@@ -326,6 +291,49 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Current month (0-based) for monthly surface emission interpolation.
   const int curr_month = start_of_step_ts().get_month() - 1;
 
+    const std::string marine_organics_data_file =
+      m_params.get<std::string>("marine_organics_file");
+  const auto marine_map_file = m_params.get<std::string>("srf_remap_file", "");
+
+     std::cout << "MAMSrfOnlineEmiss: get_field_out marine_organics_data_files "
+             << std::endl;
+   const std::vector<std::string> marine_org_fld_name = {
+      "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};           
+  morg_fields_={};
+  morg_fields_.reserve(marine_org_fld_name.size());
+  for (const auto &field_name : marine_org_fld_name) {
+    morg_fields_.push_back(
+        get_field_out("morg_" + field_name).alias(field_name));
+  }
+
+  std::cout << "MAMSrfOnlineEmiss: before DataInterpolation ctor for marine organics"
+            << std::endl;
+  morg_data_interp_ = std::make_shared<DataInterpolation>(grid_, morg_fields_);
+  std::cout << "MAMSrfOnlineEmiss: after DataInterpolation ctor for marine organics"
+            << std::endl;
+  std::cout << "MAMSrfOnlineEmiss: before set_logger (marine organics)"
+            << std::endl;
+  morg_data_interp_->set_logger(m_atm_logger);
+  std::cout << "MAMSrfOnlineEmiss: after set_logger (marine organics)"
+            << std::endl;
+  std::cout << "MAMSrfOnlineEmiss: before setup_periodic_time_database (marine organics)"
+            << std::endl;
+  morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
+  std::cout << "MAMSrfOnlineEmiss: after setup_periodic_time_database (marine organics)"
+            << std::endl;
+  std::cout << "MAMSrfOnlineEmiss: before create_horiz_remappers (marine organics)"
+            << std::endl;
+  morg_data_interp_->create_horiz_remappers(
+      marine_map_file == "none" ? "" : marine_map_file);
+  std::cout << "MAMSrfOnlineEmiss: after create_horiz_remappers (marine organics)"
+            << std::endl;
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  std::cout << "MAMSrfOnlineEmiss: before create_vert_remapper (marine organics)"
+            << std::endl;
+  morg_data_interp_->create_vert_remapper(remap_data);
+  std::cout << "MAMSrfOnlineEmiss: after create_vert_remapper (marine organics)"
+            << std::endl;
   //--------------------------------------------------------------------
   // Update surface emissions from file
   //--------------------------------------------------------------------

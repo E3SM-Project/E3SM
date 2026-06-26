@@ -25,7 +25,7 @@ eamxx:
     srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20240726.nc
 
     soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
-    marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20241030.nc
+    marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20260626.nc
 grids_manager:
   type: mesh_free
   geo_data_source: IC_FILE
