@@ -179,15 +179,8 @@ void Forcing::readStreamIntoArrays() {
    // Attempt to read stream; if unavailable, log and fall back to zero forcing.
    Err = IOStream::read(StreamName);
    if (Err.isFail()) {
-      std::string StreamFile = IOStream::getFilename(StreamName);
-      LOG_WARN("Forcing: Error while reading {} stream from file {}",
-               StreamName, StreamFile);
-      if (!Err.Msg.empty()) {
-         LOG_WARN("Forcing: stream read details:\n{}", Err.Msg);
-      }
-      LOG_WARN("Forcing: expected fields {} and {} on dimension NCells; "
-               "falling back to zero forcing",
-               "SfcStressZonal", "SfcStressMeridional");
+      LOG_INFO("Forcing: Error while reading {} stream, using zero forcing",
+               StreamName);
       deepCopy(SfcStressForcing.ZonalStressCell, 0._Real);
       deepCopy(SfcStressForcing.MeridStressCell, 0._Real);
    }
