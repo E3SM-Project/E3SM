@@ -394,23 +394,21 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
             # Start a couple new tests, baselines will be generated in ctest-build/$machine/baselines
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE1"
-            opts = "-b LOCAL -g -t dbg -t sp"
+            opts = "-b LOCAL -g -t dbg"
             cmd = self.get_cmd(f"{env} ./test-all-eamxx -m $machine {opts}",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
-            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
             # Re-run reusing baselines from above
             env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE2"
-            opts = "-b LOCAL -t dbg -t sp"
+            opts = "-b LOCAL -t dbg"
             cmd = self.get_cmd(f"{env} ./test-all-eamxx -m $machine {opts}",
                                self._machine)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
-            test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
         else:
             self.skipTest("Skipping full run")

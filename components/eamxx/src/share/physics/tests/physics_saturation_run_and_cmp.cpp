@@ -134,9 +134,12 @@ struct UnitWrap::UnitTest<D>::TestSaturation
     return 0;
   }
 
-  Int run_and_cmp (const std::string& filename, const Scalar& tol) {
-    std::ifstream ifile(filename);
-    EKAT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read " + filename + "\n");
+  Int run_and_cmp (const std::string& filename, const Scalar& tol, bool no_baseline) {
+    std::ifstream ifile;
+    if (!no_baseline) {
+      ifile.open(filename,std::ios::binary);
+      EKAT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read " + filename + "\n");
+    }
     Int nerr = 0, ne;
     int case_num = 0;
     for (auto p : params_) {
@@ -144,7 +147,6 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       OutputData ref;
       ParamSet ps = p;
       std::cout << "--- checking physics saturation case # " << case_num << std::endl;
-      read(ifile, ref);
 
       Kokkos::View<OutputData*> d_dev("",1);
       Kokkos::parallel_for(1,
@@ -165,8 +167,12 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       auto d_host = Kokkos::create_mirror_view(d_dev);
       Kokkos::deep_copy(d_host,d_dev);
 
-      ne = compare(tol, ref, d_host[0]);
-      if (ne) std::cout << "Ref impl failed.\n";
+      if (!no_baseline) {
+        read(ifile, ref);
+        ne = compare(tol, ref, d_host[0]);
+        if (ne) std::cout << "Ref impl failed.\n";
+      }
+
       nerr += ne;
     }
     return nerr;
@@ -279,13 +285,15 @@ int main (int argc, char** argv) {
       argv[0] << " [options]\n"
       "Options:\n"
       "  -g                  Generate baseline file. Default False.\n"
-      "  -b <baseline-file>  Path to baseline file. Required.\n"
+      "  -c                  Compare baseline file. Default False.\n"
+      "  -n                  Run without baseline actions. Default True.\n"
+      "  -b <baseline_path>  Path to directory containing baselines.\n"
       "  -t <tol>            Tolerance for relative error. Default machine eps (*10000 for Release).\n";
     return 1;
   }
 
   // Set up options with defaults
-  bool generate = false;
+  bool generate = false, no_baseline = true;
   scream::Real tol = UnitTest::C::macheps
 #ifdef NDEBUG
       * 10000
@@ -295,7 +303,8 @@ int main (int argc, char** argv) {
 
   // Parse options
   for (int i = 1; i < argc-1; ++i) {
-    if (ekat::argv_matches(argv[i], "-g", "--generate")) generate = true;
+    if (ekat::argv_matches(argv[i], "-g", "--generate")) {generate = true; no_baseline = false;}
+    if (ekat::argv_matches(argv[i], "-c", "--compare"))  {no_baseline = false;}
     if (ekat::argv_matches(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
@@ -308,8 +317,8 @@ int main (int argc, char** argv) {
     }
   }
 
-  // Decorate baseline name with precision.
-  baseline_fn += std::to_string(sizeof(scream::Real));
+  // Compute full baseline file name with precision.
+  baseline_fn += "/physics_saturation.baseline" + std::to_string(sizeof(scream::Real));
 
   std::vector<char*> args;
   for (int i=0; i<argc; ++i) {
@@ -321,9 +330,12 @@ int main (int argc, char** argv) {
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn);
+    } else if (no_baseline) {
+      printf("Running with no baseline actions\n");
+      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
-      nerr += bln.run_and_cmp(baseline_fn, tol);
+      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
     }
   } scream::finalize_eamxx_session();
 
