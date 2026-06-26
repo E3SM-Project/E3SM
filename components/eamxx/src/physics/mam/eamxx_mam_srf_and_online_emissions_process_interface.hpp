@@ -2,7 +2,6 @@
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
 #include "share/remap/abstract_remapper.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 
 // For MAM4 aerosol configuration
