@@ -611,12 +611,12 @@ contains
             bglfr_leaf(p)  = 1._r8/(leaf_long(ivt(p)) * dayspyr * secspday)
             bglfr_froot(p) = 1._r8/(froot_long(ivt(p)) * dayspyr * secspday)
             ! bgtr(p)  = 0._r8
-            ! B. Sulman: set background transfer rate based on interpreting fstor2tran as a per-year fraction 
+            ! set background transfer rate based on interpreting fstor2tran as a per-year fraction
             ! If bgtr is nonzero, C/N/P will automatically be transferred from xfer to displayed pools in CNOnsetGrowth
             bgtr(p)   = PhenolParamsInst%fstor2tran/(dayspyr * secspday) 
             lgsf(p)  = 0._r8
 
-            ! B. Sulman: Allow evergreen plants to transfer C/N/P from storage pools to growth, at a constant rate (for now)
+            ! Allow evergreen plants to transfer C/N/P from storage pools to growth, at a constant rate (for now)
             leafc_storage_to_xfer(p)  = bgtr(p) * leafc_storage(p)
             frootc_storage_to_xfer(p)  = bgtr(p) * frootc_storage(p)
             livecrootc_storage_to_xfer(p) = bgtr(p) * livecrootc_storage(p) ! For graminoid rhizomes
