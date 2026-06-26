@@ -27,6 +27,10 @@ initial_conditions:
   precip_ice_surf_mass: 1.0
   precip_liq_surf_mass: 2.0
   sfc_flux_sw_net:      3.0
+  um_pert_diff: 4.0
+  vm_pert_diff: 5.0
+  tau_est: 6.0
+
   # These fields are needed for the export,
   # but will be computed for the import
   sfc_flux_dif_nir:     0.0
