@@ -585,7 +585,7 @@ contains
          &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
          &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
          &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
-         &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+         &Mailing address: LLNL Climate Program, c/o Peter M. Caldwell, &
          &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA'
     call datetime(curdate, curtime)
     history = 'created on ' // trim(curdate) // ' ' // trim(curtime)
@@ -599,6 +599,8 @@ contains
     call MPAS_stream_mgr_add_att(domain % streamManager, 'institution',trim(institution))
     call MPAS_stream_mgr_add_att(domain % streamManager, 'institution_id', 'E3SM-Project')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'contact', 'e3sm-data-support@llnl.gov')
+    call MPAS_stream_mgr_add_att(domain % streamManager, 'license', &
+        'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'username', trim(username))
     call MPAS_stream_mgr_add_att(domain % streamManager, 'hostname', trim(hostname))
 
