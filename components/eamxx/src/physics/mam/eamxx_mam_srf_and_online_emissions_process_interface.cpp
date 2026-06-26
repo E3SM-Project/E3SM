@@ -331,7 +331,6 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   {
     const auto srf_map_file    = m_params.get<std::string>("srf_remap_file", "");
     const auto srf_time_interp = DataInterpolation::Linear;
-    const auto srf_timeline    = util::TimeLine::YearlyPeriodic;
     for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
       std::vector<Field> srf_fields;
       srf_fields.reserve(ispec_srf.sectors.size());
@@ -344,8 +343,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
       ispec_srf.data_interp_ = std::make_shared<DataInterpolation>(grid_, srf_fields);
       ispec_srf.data_interp_->set_logger(m_atm_logger);
-      ispec_srf.data_interp_->setup_time_database(
-          {ispec_srf.data_file}, srf_timeline, srf_time_interp);
+      ispec_srf.data_interp_->setup_periodic_time_database(
+          {ispec_srf.data_file});
       ispec_srf.data_interp_->create_horiz_remappers(
           srf_map_file == "none" ? "" : srf_map_file);
 
@@ -353,7 +352,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       remap_data.vr_type = DataInterpolation::None;
       ispec_srf.data_interp_->create_vert_remapper(remap_data);
 
-      ispec_srf.data_interp_->init_data_interval(start_of_step_ts());
+      ispec_srf.data_interp_->init_time_interpolation(start_of_step_ts(), srf_time_interp);
     }
   }
 
@@ -472,11 +471,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Interpolate srf emiss data read in from emissions files
   //--------------------------------------------------------------------
 
-  std::cout << "[MAMSrfOnlineEmiss] Starting data interpolation run for all surface emission species.\n";
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-        std::cout << "[MAMSrfOnlineEmiss] Calling data_interp_->run for species: " << ispec_srf.species_name << "\n";
         ispec_srf.data_interp_->run(ts);
-        std::cout << "[MAMSrfOnlineEmiss] data_interp_->run complete for species: " << ispec_srf.species_name << "\n";
 
     //--------------------------------------------------------------------
     // Modify units to MKS units (from molecules/cm2/s to kg/m2/s)
@@ -484,7 +480,6 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     // Get species index in array with pcnst dimension (e.g., state_q or
     // constituent_fluxes_)
     const int species_index = spcIndex_in_pcnst_.at(ispec_srf.species_name);
-    std::cout<<" specie name"<<  ispec_srf.species_name <<"\n";
 
     // modify units from molecules/cm2/s to kg/m2/s
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
@@ -505,7 +500,6 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
                             fluxes_in_mks_units(icol) * mfactor;
         });
   }  // for loop for species
-  std::cout << "[MAMSrfOnlineEmiss] Data interpolation run complete for all surface emission species.\n";
   Kokkos::fence();
 }  // run_impl ends
 // =============================================================================
