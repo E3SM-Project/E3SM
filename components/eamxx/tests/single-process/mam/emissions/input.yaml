@@ -14,15 +14,15 @@ eamxx:
     # MAM4xx-Surface-Emissions
     create_fields_interval_checks: true
     srf_remap_file: ""
-    srf_emis_specifier_for_dms: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/DMSflux.2010.ne2np4_conserv.POPmonthlyClimFromACES4BGC_c20240726.nc
-    srf_emis_specifier_for_so2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc
-    srf_emis_specifier_for_bc_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_bc_a4_surf_ne2np4_2010_clim_c20240726.nc
-    srf_emis_specifier_for_num_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a1_surf_ne2np4_2010_clim_c20240726.nc
-    srf_emis_specifier_for_num_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a2_surf_ne2np4_2010_clim_c20240726.nc
-    srf_emis_specifier_for_num_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a4_surf_ne2np4_2010_clim_c20240726.nc
-    srf_emis_specifier_for_pom_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_pom_a4_surf_ne2np4_2010_clim_c20240726.nc
-    srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20240726.nc
-    srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20240726.nc
+    srf_emis_specifier_for_dms: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/DMSflux.2010.ne2np4_conserv.POPmonthlyClimFromACES4BGC_c20260625.nc
+    srf_emis_specifier_for_so2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so2_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_bc_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_bc_a4_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_num_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a1_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_num_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a2_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_num_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a4_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_pom_a4: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_pom_a4_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_so4_a1: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20260625.nc
+    srf_emis_specifier_for_so4_a2: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_20260625.nc
 
     soil_erodibility_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
     marine_organics_file: ${SCREAM_DATA_DIR}/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20241030.nc
