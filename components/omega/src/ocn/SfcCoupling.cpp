@@ -179,9 +179,9 @@ void SfcCoupling::importFromCoupler() {
    int TauyIdx = ImportIdx.at("Foxx_tauy");
 
    // Copy Kokkos view handles
-   auto CplToOcnView_            = CplToOcnView;
-   auto SurfaceStressZonal_      = CplToOcn.SurfaceStressZonal;
-   auto SurfaceStressMeridional_ = CplToOcn.SurfaceStressMeridional;
+   auto CplToOcnView_        = CplToOcnView;
+   auto SfcStressZonal_      = CplToOcn.SfcStressZonal;
+   auto SfcStressMeridional_ = CplToOcn.SfcStressMeridional;
 
    /// TODO: Shouldn't be making direct calls to Kokkos here.
    ///       How often is threading used? Becuase this will be a serial loop
@@ -189,19 +189,18 @@ void SfcCoupling::importFromCoupler() {
    auto Policy = Kokkos::RangePolicy<HostExecSpace, Kokkos::IndexType<int>>(
        0, NCellsOwned);
    Kokkos::parallel_for("importFromCoupler", Policy, [=](int Idx) {
-      SurfaceStressZonal_(Idx)      = CplToOcnView_(TauxIdx, Idx);
-      SurfaceStressMeridional_(Idx) = CplToOcnView_(TauyIdx, Idx);
+      SfcStressZonal_(Idx)      = CplToOcnView_(TauxIdx, Idx);
+      SfcStressMeridional_(Idx) = CplToOcnView_(TauyIdx, Idx);
    });
 }
 
 CplToOcnFields::CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh)
-    : SurfaceStressZonal("SurfaceStressZonal" + Suffix, Mesh->NCellsOwned),
-      SurfaceStressMeridional("SurfaceStressMeridional" + Suffix,
-                              Mesh->NCellsOwned) {}
+    : SfcStressZonal("SfcStressZonal" + Suffix, Mesh->NCellsOwned),
+      SfcStressMeridional("SfcStressMeridional" + Suffix, Mesh->NCellsOwned) {}
 
 OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
-    : SurfaceTemperature("SurfaceTemperature" + Suffix, Mesh->NCellsOwned),
-      SurfaceVelocityZonal("SurfaceVelocityZonal" + Suffix, Mesh->NCellsOwned),
-      SurfaceVelocityMeridional("SurfaceVelocityMeridional" + Suffix,
-                                Mesh->NCellsOwned) {}
+    : SfcTemperature("SfcTemperature" + Suffix, Mesh->NCellsOwned),
+      SfcVelocityZonal("SfcVelocityZonal" + Suffix, Mesh->NCellsOwned),
+      SfcVelocityMeridional("SfcVelocityMeridional" + Suffix,
+                            Mesh->NCellsOwned) {}
 } // namespace OMEGA

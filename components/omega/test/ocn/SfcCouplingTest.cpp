@@ -36,12 +36,6 @@ std::string toString(const CouplingLayout &Layout) {
    }
 }
 
-int initRawData() {
-   int Err = 0;
-
-   return Err;
-}
-
 int initSfcCouplingTest(const std::string &MeshFile) {
 
    int Err = 0;
@@ -140,9 +134,9 @@ int testSfcCoupling(const CouplingLayout Layout,
 
    bool ImportPass = true;
    for (int Cell = 0; Cell < NCells; Cell++) {
-      if (DefCoupling->CplToOcn.SurfaceStressZonal(Cell) != Real(0))
+      if (DefCoupling->CplToOcn.SfcStressZonal(Cell) != Real(0))
          ImportPass = false;
-      if (DefCoupling->CplToOcn.SurfaceStressMeridional(Cell) != Real(1))
+      if (DefCoupling->CplToOcn.SfcStressMeridional(Cell) != Real(1))
          ImportPass = false;
    }
 
@@ -173,7 +167,7 @@ void finalizeSfcCouplingTest() {
    MachEnv::removeAll();
 }
 
-int surfaceCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
+int sfcCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    int Err = initSfcCouplingTest(MeshFile);
 
@@ -205,7 +199,7 @@ int main(int argc, char *argv[]) {
    Pacer::initialize(MPI_COMM_WORLD);
    Pacer::setPrefix("Omega:");
 
-   RetVal += surfaceCouplingTest();
+   RetVal += sfcCouplingTest();
 
    Pacer::finalize();
    Kokkos::finalize();

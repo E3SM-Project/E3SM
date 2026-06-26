@@ -1,11 +1,11 @@
 #ifndef OMEGA_SURFACECOUPLING_H
 #define OMEGA_SURFACECOUPLING_H
-//===-- ocn/SurfaceCouling.h - surface coupling ----------------*- C++ -*-===//
+//===-- ocn/SfcCouling.h - surface coupling ----------------*- C++ -*-===//
 //
 /// \file
 /// \brief Contains the coupling variables exchanged with the coupler
 ///
-/// The SurfaceCouling class contains the variables exchanged with the coupler
+/// The SfcCouling class contains the variables exchanged with the coupler
 /// for a sub-domain of the global horizontal mesh.
 //
 //===----------------------------------------------------------------------===//
@@ -36,8 +36,8 @@ class CplToOcnFields {
    // x2o fields only need to be stored on the host.
    // The SfcCoupling::applyImportFields() method will handle copying the
    // data to the device.
-   HostArray1DReal SurfaceStressZonal;      ///< Foxx_taux  [N m^-2]
-   HostArray1DReal SurfaceStressMeridional; ///< Foxx_tauy  [N m^-2]
+   HostArray1DReal SfcStressZonal;      ///< Foxx_taux  [N m^-2]
+   HostArray1DReal SfcStressMeridional; ///< Foxx_tauy  [N m^-2]
 
    CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh);
 };
@@ -46,16 +46,16 @@ class CplToOcnFields {
 class OcnToCplFields {
  public:
    ///< So_t    [deg C]
-   Array1DReal SurfaceTemperature;
-   HostArray1DReal SurfaceTemperature_H;
+   Array1DReal SfcTemperature;
+   HostArray1DReal SfcTemperature_H;
 
    ///< So_u    [m s^-1]
-   Array1DReal SurfaceVelocityZonal;
-   HostArray1DReal SurfaceVelocityZonal_H;
+   Array1DReal SfcVelocityZonal;
+   HostArray1DReal SfcVelocityZonal_H;
 
    ///< So_v    [m s^-1]
-   Array1DReal SurfaceVelocityMeridional;
-   HostArray1DReal SurfaceVelocityMeridional_H;
+   Array1DReal SfcVelocityMeridional;
+   HostArray1DReal SfcVelocityMeridional_H;
 
    OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh);
 };
