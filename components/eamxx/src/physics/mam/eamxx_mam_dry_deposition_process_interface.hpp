@@ -7,8 +7,6 @@
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 
-#include "share/field/field_reader.hpp"
-
 // For component name
 #include <string>
 
@@ -89,11 +87,7 @@ class MAMDryDep final : public MAMGenericInterface {
   // Filled with Prognostics::n_mode_c and Prognostics::q_aero_c
   view_3d qqcw_;
 
-  // For reading fractional land use file
-  std::shared_ptr<AbstractRemapper> horizInterp_;
-  std::shared_ptr<FieldReader> dataReader_;
   const_view_2d frac_landuse_;
-  view_2d frac_landuse_fm_;
   // aerosol state variables
   mam_coupling::AerosolState wet_aero_, dry_aero_;
   // wet mixing ratios (water species)
