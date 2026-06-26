@@ -59,7 +59,7 @@ def add_file_and_commit(repo, filename, contents, commit_msg):
         fd.write(contents)
 
     run_cmd_no_fail(f"git add {filename}", from_dir=repo)
-    run_cmd_no_fail(f"git commit -c user.email='nobody@fake.com' -c user.name='Nobody Knows' -m {commit_msg}", from_dir=repo)
+    run_cmd_no_fail(f"git -c user.email='nobody@fake.com' -c user.name='Nobody Knows' commit -m {commit_msg}", from_dir=repo)
 
 ###############################################################################
 def test_branch_switch(test_obj, repo, branch_name):
