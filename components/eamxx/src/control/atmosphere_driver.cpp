@@ -1094,7 +1094,12 @@ void AtmosphereDriver::set_initial_conditions ()
       }
       m_fields_inited[grid_name].push_back(fname);
     } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
-      // Both phis and sgh30 need to be loaded from the topography file
+      // these fields need to be loaded from the topography file
+	  // - phis is the surface geopotential height
+	  // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
+	  //   needed for turbulent mountain stress scheme (i.e. TMS)
+	  // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
+	  //   needed for orographic gravity wave drag scheme (i.e. GWD)
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
