@@ -58,6 +58,9 @@ SfcCoupling::SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
 
    // Retrieve mesh cell count
    NCellsOwned = Mesh->NCellsOwned;
+   // Retrieve import/export field counts
+   NImportFields = ImportIdx.size();
+   NExportFields = ExportIdx.size();
 
    NAccumSteps = 0;
 
@@ -133,6 +136,62 @@ void SfcCoupling::erase(const std::string Name) { AllSfcCoupling.erase(Name); }
 void SfcCoupling::clear() {
    AllSfcCoupling.clear();
    DefaultSfcCoupling = nullptr; // prevent dangling pointer
+}
+
+// Create views of the raw coupling data arrays
+void SfcCoupling::attachData(const Real *CplToOcnData, Real *OcnToCplData) {
+
+   // Kokkos::LayoutStride index math uses a runtime stride value, rather than
+   // a compile-time-optimized stride value. Can switch to ifdefs if this
+   // becomes a performance bottleneck
+   Kokkos::LayoutStride CplToOcnLayout, OcnToCplLayout;
+
+   if (Layout == CouplingLayout::MCT) {
+      /// MCT layout: (NCellsOwned, NImportFields) - field idx strides faster
+      CplToOcnLayout =
+          Kokkos::LayoutStride(NImportFields, 1, NCellsOwned, NImportFields);
+      OcnToCplLayout =
+          Kokkos::LayoutStride(NExportFields, 1, NCellsOwned, NImportFields);
+   } else if (Layout == CouplingLayout::MOAB) {
+      /// MOAB layout: (NImportFields, NCellsOwned) - cell idx strides faster
+      CplToOcnLayout =
+          Kokkos::LayoutStride(NImportFields, NCellsOwned, NCellsOwned, 1);
+      OcnToCplLayout =
+          Kokkos::LayoutStride(NExportFields, NCellsOwned, NCellsOwned, 1);
+   } else {
+      ABORT_ERROR("SfcCoupling::attachData: Unknown coupling layout");
+   }
+
+   CplToOcnView = decltype(CplToOcnView)(CplToOcnData, CplToOcnLayout);
+   OcnToCplView = decltype(OcnToCplView)(OcnToCplData, OcnToCplLayout);
+}
+
+void SfcCoupling::importFromCoupler() {
+
+   if (CplToOcnView.data() == nullptr) {
+      ABORT_ERROR(
+          "CplToOcnView is not attached to data. The SfcCoupling::attachData "
+          "method must be called before importing data from the coupler.");
+   }
+
+   //
+   int TauxIdx = ImportIdx.at("Foxx_taux");
+   int TauyIdx = ImportIdx.at("Foxx_tauy");
+
+   // Copy Kokkos view handles
+   auto CplToOcnView_            = CplToOcnView;
+   auto SurfaceStressZonal_      = CplToOcn.SurfaceStressZonal;
+   auto SurfaceStressMeridional_ = CplToOcn.SurfaceStressMeridional;
+
+   /// TODO: Shouldn't be making direct calls to Kokkos here.
+   ///       How often is threading used? Becuase this will be a serial loop
+   ///       unless threading is used. But this has to be run on the host.
+   auto Policy = Kokkos::RangePolicy<HostExecSpace, Kokkos::IndexType<int>>(
+       0, NCellsOwned);
+   Kokkos::parallel_for("importFromCoupler", Policy, [=](int Idx) {
+      SurfaceStressZonal_(Idx)      = CplToOcnView_(TauxIdx, Idx);
+      SurfaceStressMeridional_(Idx) = CplToOcnView_(TauyIdx, Idx);
+   });
 }
 
 CplToOcnFields::CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh)

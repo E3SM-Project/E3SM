@@ -20,20 +20,21 @@ using namespace OMEGA;
 
 struct TestSetup {
 
-   std::map<std::string, int> ImportIdx = {
-       {"Foxx_taux", 0},  {"Foxx_tauy", 1},   {"Foxx_swnet", 2},
-       {"Foxx_lwnet", 3}, {"Foxx_lat", 4},    {"Foxx_sen", 5},
-       {"Foxx_lwup", 6},  {"Faxa_lwdn", 7},   {"Fioi_melth", 8},
-       {"Fioi_bergh", 9}, {"Faxa_snow", 10},  {"Faxa_rain", 11},
-       {"Foxx_evap", 12}, {"Fioi_meltw", 13}, {"Fioi_bergw", 14},
-       {"Fioi_salt", 15}, {"Foxx_rofl", 16},  {"Foxx_rofi", 17},
-       {"Si_ifrac", 18},  {"Si_bpress", 19},  {"Sa_pslv", 20}};
-
+   std::map<std::string, int> ImportIdx = {{"Foxx_taux", 0}, {"Foxx_tauy", 1}};
    std::map<std::string, int> ExportIdx = {
-       {"So_t", 0},        {"So_s", 1},        {"So_u", 2},    {"So_v", 3},
-       {"So_ssh", 4},      {"So_dhdx", 5},     {"So_dhdy", 6}, {"Fioo_q", 7},
-       {"Fioo_frazil", 8}, {"Faoo_h2otemp", 9}};
+       {"So_t", 0}, {"So_u", 1}, {"So_v", 2}};
 };
+
+std::string toString(const CouplingLayout &Layout) {
+   switch (Layout) {
+   case CouplingLayout::MCT:
+      return "MCT";
+   case CouplingLayout::MOAB:
+      return "MOAB";
+   default:
+      return "Unknown";
+   }
+}
 
 int initRawData() {
    int Err = 0;
@@ -90,17 +91,17 @@ int initSfcCouplingTest(const std::string &MeshFile) {
    return Err;
 }
 
-int testSfcCoupling() {
+int testSfcCoupling(const CouplingLayout Layout,
+                    const TimeInterval CouplingTimeStep) {
 
    int Err = 0;
 
    TestSetup Setup;
 
-   CouplingInitParams CouplingParams;
-   CouplingParams.ImportIdx        = Setup.ImportIdx;
-   CouplingParams.ExportIdx        = Setup.ExportIdx;
-   CouplingParams.CouplingTimeStep = TimeInterval(3600.0, TimeUnits::Seconds);
-   CouplingParams.Layout           = CouplingLayout::MCT;
+   CouplingInitParams CouplingParams{.ImportIdx        = Setup.ImportIdx,
+                                     .ExportIdx        = Setup.ExportIdx,
+                                     .CouplingTimeStep = CouplingTimeStep,
+                                     .Layout           = Layout};
 
    Err += SfcCoupling::init(CouplingParams);
 
@@ -115,10 +116,50 @@ int testSfcCoupling() {
       return -1;
    }
 
+   int NCells   = DefCoupling->NCellsOwned;
+   int NImports = DefCoupling->NImportFields;
+   int NExports = DefCoupling->NExportFields;
+
+   std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
+   std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
+
+   // Index formula depend on the Layout
+   auto flatIdx = [&](int Cell, int Field) -> int {
+      if (Layout == CouplingLayout::MCT)
+         return Cell * NImports + Field;
+      else // MOAB
+         return Field * NCells + Cell;
+   };
+
+   for (int Cell = 0; Cell < NCells; Cell++)
+      for (int Field = 0; Field < NImports; Field++)
+         CplToOcnData[flatIdx(Cell, Field)] = static_cast<Real>(Field);
+
+   DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
+   DefCoupling->importFromCoupler();
+
+   bool ImportPass = true;
+   for (int Cell = 0; Cell < NCells; Cell++) {
+      if (DefCoupling->CplToOcn.SurfaceStressZonal(Cell) != Real(0))
+         ImportPass = false;
+      if (DefCoupling->CplToOcn.SurfaceStressMeridional(Cell) != Real(1))
+         ImportPass = false;
+   }
+
+   if (ImportPass) {
+      LOG_INFO("SfcCouplingTest: importFromCoupler with {} layout PASS",
+               toString(Layout));
+   } else {
+      Err++;
+      LOG_ERROR("SfcCouplingTest: importFromCoupler with {} layout FAIL",
+                toString(Layout));
+   }
+
    SfcCoupling::clear();
 
    return Err;
 }
+
 void finalizeSfcCouplingTest() {
 
    OceanState::clear();
@@ -140,7 +181,11 @@ int surfaceCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
       LOG_CRITICAL("SfcCouplingTest: Error initializing");
    }
 
-   Err += testSfcCoupling();
+   auto *DefTimeStepper     = TimeStepper::getDefault();
+   TimeInterval OcnTimeStep = DefTimeStepper->getTimeStep();
+
+   Err += testSfcCoupling(CouplingLayout::MCT, OcnTimeStep);
+   Err += testSfcCoupling(CouplingLayout::MOAB, OcnTimeStep);
 
    if (Err == 0) {
       LOG_INFO("SfcCouplingTest: Successful completion");

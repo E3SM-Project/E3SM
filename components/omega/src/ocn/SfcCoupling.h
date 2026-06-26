@@ -97,13 +97,25 @@ class SfcCoupling {
  public:
    std::string Name;
 
-   I4 NCellsOwned; ///< Number of cells owned by this task
+   I4 NCellsOwned;   ///< Number of cells owned by this task
+   I4 NImportFields; ///< Number of fields imported from the coupler
+   I4 NExportFields; ///< Number of fields exported to the coupler
 
    // Coupling Variable containers
    CplToOcnFields CplToOcn; ///< Coupler to Ocean (x2o)
    OcnToCplFields OcnToCpl; ///< Ocean to Coupler (o2x)
 
    Alarm CouplingAlarm; ///< Alarm for coupling interval
+
+   /// View of Coupler to Ocean (x2o) raw data
+   Kokkos::View<const Real **, Kokkos::LayoutStride, Kokkos::HostSpace,
+                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+       CplToOcnView;
+
+   /// View of Ocean to Coupler (o2x) raw data
+   Kokkos::View<Real **, Kokkos::LayoutStride, Kokkos::HostSpace,
+                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+       OcnToCplView;
 
    // Methods
 
@@ -128,9 +140,16 @@ class SfcCoupling {
    /// Remove surface coupling object by name
    static void erase(const std::string InName);
 
+   /// Get the default surface coupling object
    static SfcCoupling *getDefault();
 
+   /// Get a surface coupling object by name
    static SfcCoupling *get(const std::string name);
+
+   /// Create views of the coupling data arrays
+   void attachData(const Real *CplToOcnData, Real *OcnToCplData);
+
+   void importFromCoupler();
 };
 
 } // end namespace OMEGA
