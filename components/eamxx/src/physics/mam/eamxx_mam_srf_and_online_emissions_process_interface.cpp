@@ -94,7 +94,10 @@ void MAMSrfOnlineEmiss::create_requests() {
   // Constituent fluxes of species in [kg/m2/s]
   // FIXME: confirm if it is Updated or Computed
   add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
-                     grid_name);
+                      grid_name);
+
+  // Soil erodibility [fraction]
+  add_field<Computed>("soil_erodibility", scalar2d, none, grid_name);
 
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
@@ -209,33 +212,34 @@ void MAMSrfOnlineEmiss::create_requests() {
   }  // srf emissions file read init
 
   // -------------------------------------------------------------
-  // Setup soil erodibility output field
-  // -------------------------------------------------------------
-  soil_erodibility_field_ =
-      Field(FieldIdentifier("soil_erodibility", scalar2d, none, grid_name));
-  soil_erodibility_field_.allocate_view();
-
-  // -------------------------------------------------------------
   // Setup to enable reading marine organics file
   // -------------------------------------------------------------
   const std::string marine_organics_data_file =
       m_params.get<std::string>("marine_organics_file");
+  const auto marine_map_file = m_params.get<std::string>("srf_remap_file", "");
 
   // Fields to be read from file (order matters as they are read in the same
   // order)
   const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
+  for (const auto &field_name : marine_org_fld_name) {
+    add_field<Computed>("morg_" + field_name, scalar2d, none, grid_name);
+  }
+  morg_fields_.clear();
+  morg_fields_.reserve(marine_org_fld_name.size());
+  for (const auto &field_name : marine_org_fld_name) {
+    morg_fields_.push_back(
+        get_field_out("morg_" + field_name).alias(field_name));
+  }
 
-  // Dimensions of the field
-  const std::string marine_org_dname = "ncol";
-
-  // initialize the file read
-  marineOrganicsFunc::init_marine_organics_file_read(
-      ncol_, marine_org_fld_name, marine_org_dname, grid_,
-      marine_organics_data_file, srf_map_file,
-      // output
-      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
-      morg_dataReader_);
+  morg_data_interp_ = std::make_shared<DataInterpolation>(grid_, morg_fields_);
+  morg_data_interp_->set_logger(m_atm_logger);
+  morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
+  morg_data_interp_->create_horiz_remappers(
+      marine_map_file == "none" ? "" : marine_map_file);
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  morg_data_interp_->create_vert_remapper(remap_data);
 
 }  // set_grid ends
 
@@ -298,13 +302,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Work array to store fluxes after unit conversions to kg/m2/s
   fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
 
-  // Current month ( 0-based)
+  // Current month (0-based) for monthly surface emission interpolation.
   const int curr_month = start_of_step_ts().get_month() - 1;
-
-  // Load the first month into data_end.
-
-  // Note: At the first time step, the data will be moved into data_beg,
-  // and data_end will be reloaded from file with the new month.
 
   //--------------------------------------------------------------------
   // Update surface emissions from file
@@ -327,7 +326,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
 
     std::vector<Field> soil_erod_fields = {
-        soil_erodibility_field_.alias(soil_erod_fld_name)};
+        get_field_out("soil_erodibility").alias(soil_erod_fld_name)};
     auto soil_erod_data_interp =
         std::make_shared<DataInterpolation>(grid_, soil_erod_fields);
     soil_erod_data_interp->set_logger(m_atm_logger);
@@ -339,16 +338,14 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     soil_erod_data_interp->create_vert_remapper(remap_data);
     soil_erod_data_interp->run();
 
-    soil_erodibility_ = soil_erodibility_field_.get_view<const Real *>();
+    soil_erodibility_ = get_field_out("soil_erodibility").get_view<const Real *>();
   }
 
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
-  // Time dependent data
-  marineOrganicsFunc::update_marine_organics_data_from_file(
-      morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
-      morg_data_end_);  // output
+  morg_data_interp_->init_time_interpolation(start_of_step_ts(),
+                                             DataInterpolation::Linear);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -383,24 +380,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   // --- Interpolate marine organics data --
-
-  // Update TimeState, note the addition of dt
-  morg_timeState_.t_now = ts.frac_of_year_in_days();
-
-  // Update time state and if the month has changed, update the data.
-  marineOrganicsFunc::update_marine_organics_timestate(
-      morg_dataReader_, ts, *morg_horizInterp_,
-      // output
-      morg_timeState_, morg_data_start_, morg_data_end_);
-
-  // Call the main marine organics routine to get interpolated forcings.
-  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
-                                          morg_data_end_, morg_data_out_);
+  morg_data_interp_->run(ts);
 
   // Marine organics emission data read from the file (order is important here)
-  const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
-  const const_view_1d mprot = ekat::subview(morg_data_out_.emiss_sectors, 1);
-  const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
+  const const_view_1d mpoly = morg_fields_[0].get_view<const Real *>();
+  const const_view_1d mprot = morg_fields_[1].get_view<const Real *>();
+  const const_view_1d mlip  = morg_fields_[2].get_view<const Real *>();
 
   // Ocean fraction [unitless]
   const const_view_1d ocnfrac =
