@@ -153,7 +153,7 @@ contains
     use global_norms_mod, only: wrap_repro_sum
     use reduction_mod, only: parallelmax, parallelmin
 
-    integer :: GPTLget_memusage
+    integer, external :: GPTLget_memusage
 
     type(hybrid_t), intent(in) :: hybrid
     integer, intent(in) :: nets, nete
