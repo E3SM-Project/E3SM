@@ -174,7 +174,7 @@ contains
       ! set constants
       br_mr = br_mr_Inst
 
-      ! Ben Sulman: Adding dormant maintenance resp
+      ! Adding dormant maintenance resp
       dormant_mr_temp = dormant_mr_temp_Inst
       dormant_mr_factor = dormant_mr_factor_Inst
 
@@ -195,8 +195,7 @@ contains
             ! estimating fine root maintenance respiration with depth
             tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
 
-            ! Ben Sulman: Adding lower dormant maintenance resp below a certain
-            ! temperature
+            ! Adding lower dormant maintenance resp below a certain temperature
             tcsoi(c,j) = Q10**((t_soisno(c,j)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
             if (t_soisno(c,j) < dormant_mr_temp) then
                 tcsoi(c,j) = tcsoi(c,j)*dormant_mr_factor
@@ -212,7 +211,7 @@ contains
          ! gC/m2/s for each of the live plant tissues.
          ! Leaf and live wood MR
 
-         ! Ben Sulman: Add dormant MR level below a certain temperature
+         ! Add dormant MR level below a certain temperature
          tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
          if(t_ref2m(p) < dormant_mr_temp) then
              tc = tc*dormant_mr_factor

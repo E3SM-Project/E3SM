@@ -134,7 +134,7 @@ module pftvarcon
   real(r8), allocatable :: livewdcp(:)    !live wood (phloem and ray parenchyma) C:P (gC/gP)
   real(r8), allocatable :: deadwdcp(:)    !dead wood (xylem and heartwood) C:P (gC/gP)
 
-  ! Add user-defined N fixation parameters - B. Sulman
+  ! Add user-defined N fixation parameters
   real(r8), allocatable :: Nfix_NPP_c1(:) ! Pre-exponential parameter in NPP-Nfix eqn
   real(r8), allocatable :: Nfix_NPP_c2(:) ! Exponential parameter in NPP-Nfix eqn
 
