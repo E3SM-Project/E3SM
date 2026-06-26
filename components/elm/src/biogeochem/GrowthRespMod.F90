@@ -133,7 +133,7 @@ contains
          transfer_froot_gr(p)      = frootc_xfer_to_frootc(p) * grperc(ivt(p)) * &
               (1._r8 - grpnow(ivt(p)))
 
-         ! B. Sulman: Moved out of woody to allow graminoid rhizomes
+         ! Moved out of woody to allow graminoid rhizomes
          cpool_livecroot_gr(p)         = cpool_to_livecrootc(p) * grperc(ivt(p))
          cpool_livecroot_storage_gr(p) = cpool_to_livecrootc_storage(p) * &
              grperc(ivt(p)) * grpnow(ivt(p))
