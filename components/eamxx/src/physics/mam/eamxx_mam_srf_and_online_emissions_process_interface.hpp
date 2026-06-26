@@ -52,8 +52,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
   // For reading soil erodibility file
-  std::shared_ptr<AbstractRemapper> serod_horizInterp_;
-  std::shared_ptr<FieldReader> serod_dataReader_;
+  Field soil_erodibility_field_;
   const_view_1d soil_erodibility_;
 
  public:
