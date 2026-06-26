@@ -3,14 +3,11 @@
 // Drydep functions are stored in the following hpp file
 #include <physics/mam/eamxx_mam_dry_deposition_functions.hpp>
 
-// For reading fractional land use file
-#include <physics/mam/readfiles/fractional_land_use.hpp>
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
 namespace scream {
-
-using FracLandUseFunc = frac_landuse::fracLandUseFunctions<Real, DefaultDevice>;
 
 MAMDryDep::MAMDryDep(const ekat::Comm &comm, const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params) {
@@ -147,25 +144,6 @@ void MAMDryDep::create_requests() {
 
   // Fractional land use [fraction]
   add_field<Computed>("fraction_landuse", vector2d_class, none, grid_name);
-  // -------------------------------------------------------------
-  // setup to enable reading fractional land use file
-  // -------------------------------------------------------------
-
-  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
-  const std::string frac_landuse_data_file =
-      m_params.get<std::string>("fractional_land_use_file");
-
-  // Field to be read from file
-  const std::string field_name = "fraction_landuse";
-
-  // Dimensions of the filed
-  const std::string dim_name1 = "ncol";
-  const std::string dim_name2 = "class";
-
-  // initialize the file read
-  FracLandUseFunc::init_frac_landuse_file_read(
-      ncol_, field_name, dim_name1, dim_name2, grid_, frac_landuse_data_file,
-      mapping_file, horizInterp_, dataReader_);  // output
 
 }  // set_grids
 
@@ -321,15 +299,25 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Read fractional land use data
   //-----------------------------------------------------------------
-  frac_landuse_fm_ = get_field_out("fraction_landuse").get_view<Real **>();
-  // This data is time-independent, we read all data here for the
-  // entire simulation
-  FracLandUseFunc::update_frac_land_use_data_from_file(
-      dataReader_, *horizInterp_,
-      frac_landuse_);  // output
+  {
+    const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
+    const auto frac_landuse_data_file =
+        m_params.get<std::string>("fractional_land_use_file");
+    std::vector<Field> frac_landuse_fields = {
+        get_field_out("fraction_landuse")};
+    auto frac_landuse_interp =
+        std::make_shared<DataInterpolation>(grid_, frac_landuse_fields);
+    frac_landuse_interp->set_logger(m_atm_logger);
+    frac_landuse_interp->setup_static_database({frac_landuse_data_file});
+    frac_landuse_interp->create_horiz_remappers(
+        mapping_file == "none" ? "" : mapping_file);
+    DataInterpolation::VertRemapData remap_data;
+    remap_data.vr_type = DataInterpolation::None;
+    frac_landuse_interp->create_vert_remapper(remap_data);
+    frac_landuse_interp->run();
 
-  // Copy fractional landuse values to a FM array to be used by other processes
-  Kokkos::deep_copy(frac_landuse_fm_, frac_landuse_);
+    frac_landuse_ = get_field_out("fraction_landuse").get_view<const Real **>();
+  }
 }  // initialize_impl
 
 // =========================================================================================
