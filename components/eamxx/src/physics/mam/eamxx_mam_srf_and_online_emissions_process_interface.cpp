@@ -203,45 +203,15 @@ void MAMSrfOnlineEmiss::create_requests() {
   srf_emiss_species_.push_back(so4_a2);
 
   //--------------------------------------------------------------------
-    // Init data interpolation objects for surface emissions.
+  // Register sector fields in FM for surface emissions.
+  // DataInterpolation is set up in initialize_impl.
   //--------------------------------------------------------------------
-    const auto srf_time_interp = DataInterpolation::Linear;
-    const auto srf_timeline    = util::TimeLine::YearlyPeriodic;
-  std::cout << "[MAMSrfOnlineEmiss] Starting DataInterpolation setup for all surface emission species.\n";
-  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-        std::vector<Field> srf_fields;
-        srf_fields.reserve(ispec_srf.sectors.size());
-        for(const auto &sector_name : ispec_srf.sectors) {
-            Field srf_field(
-                    FieldIdentifier(sector_name, scalar2d, none, grid_name));
-            srf_field.allocate_view();
-            srf_fields.push_back(srf_field);
-        }
-        ispec_srf.emiss_sector_fields_ = srf_fields;
-
-        std::cout << "[MAMSrfOnlineEmiss] Setting up DataInterpolation for species: " << ispec_srf.species_name << "\n";
-        std::cout << "[MAMSrfOnlineEmiss]   - data file: " << ispec_srf.data_file << "\n";
-
-        std::cout << "[MAMSrfOnlineEmiss]   constructing DataInterpolation...\n"; std::cout.flush();
-        ispec_srf.data_interp_ =
-                std::make_shared<DataInterpolation>(grid_, srf_fields);
-        std::cout << "[MAMSrfOnlineEmiss]   calling set_logger...\n"; std::cout.flush();
-        ispec_srf.data_interp_->set_logger(m_atm_logger);
-        std::cout << "[MAMSrfOnlineEmiss]   calling setup_time_database...\n"; std::cout.flush();
-        ispec_srf.data_interp_->setup_time_database(
-                {ispec_srf.data_file}, srf_timeline, srf_time_interp);
-        std::cout << "[MAMSrfOnlineEmiss]   calling create_horiz_remappers...\n"; std::cout.flush();
-        ispec_srf.data_interp_->create_horiz_remappers(
-                srf_map_file == "none" ? "" : srf_map_file);
-
-        std::cout << "[MAMSrfOnlineEmiss]   calling create_vert_remapper...\n"; std::cout.flush();
-        DataInterpolation::VertRemapData remap_data;
-        remap_data.vr_type = DataInterpolation::None;
-        ispec_srf.data_interp_->create_vert_remapper(remap_data);
-
-        std::cout << "[MAMSrfOnlineEmiss] DataInterpolation setup complete for species: " << ispec_srf.species_name << "\n";
+  for(const srf_emiss_ &ispec_srf : srf_emiss_species_) {
+    for(const auto &sector_name : ispec_srf.sectors) {
+      add_field<Computed>("srf_emiss_" + ispec_srf.species_name + "_" + sector_name,
+                          scalar2d, none, grid_name);
     }
-  std::cout << "[MAMSrfOnlineEmiss] DataInterpolation setup complete for all surface emission species.\n";
+  }
 
   // -------------------------------------------------------------
   // Setup to enable reading soil erodibility file
@@ -348,16 +318,37 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Work array to store fluxes after unit conversions to kg/m2/s
   fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
 
-    //--------------------------------------------------------------------
-    // Initialize data interpolation for surface emissions.
-    //--------------------------------------------------------------------
-  std::cout << "[MAMSrfOnlineEmiss] Starting init_data_interval for all surface emission species.\n";
-  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-        std::cout << "[MAMSrfOnlineEmiss] Calling init_data_interval for species: " << ispec_srf.species_name << "\n";
-        ispec_srf.data_interp_->init_data_interval(start_of_step_ts());
-        std::cout << "[MAMSrfOnlineEmiss] init_data_interval complete for species: " << ispec_srf.species_name << "\n";
+  //--------------------------------------------------------------------
+  // Setup data interpolation for surface emissions.
+  //--------------------------------------------------------------------
+  {
+    const auto srf_map_file    = m_params.get<std::string>("srf_remap_file", "");
+    const auto srf_time_interp = DataInterpolation::Linear;
+    const auto srf_timeline    = util::TimeLine::YearlyPeriodic;
+    for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+      std::vector<Field> srf_fields;
+      srf_fields.reserve(ispec_srf.sectors.size());
+      for(const auto &sector_name : ispec_srf.sectors) {
+        srf_fields.push_back(
+          get_field_out("srf_emiss_" + ispec_srf.species_name + "_" + sector_name)
+          .alias(sector_name));
+      }
+      ispec_srf.emiss_sector_fields_ = srf_fields;
+
+      ispec_srf.data_interp_ = std::make_shared<DataInterpolation>(grid_, srf_fields);
+      ispec_srf.data_interp_->set_logger(m_atm_logger);
+      ispec_srf.data_interp_->setup_time_database(
+          {ispec_srf.data_file}, srf_timeline, srf_time_interp);
+      ispec_srf.data_interp_->create_horiz_remappers(
+          srf_map_file == "none" ? "" : srf_map_file);
+
+      DataInterpolation::VertRemapData remap_data;
+      remap_data.vr_type = DataInterpolation::None;
+      ispec_srf.data_interp_->create_vert_remapper(remap_data);
+
+      ispec_srf.data_interp_->init_data_interval(start_of_step_ts());
+    }
   }
-  std::cout << "[MAMSrfOnlineEmiss] init_data_interval complete for all surface emission species.\n";
 
     // Current month ( 0-based)
     const int curr_month = start_of_step_ts().get_month() - 1;
@@ -484,10 +475,11 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     // Get species index in array with pcnst dimension (e.g., state_q or
     // constituent_fluxes_)
     const int species_index = spcIndex_in_pcnst_.at(ispec_srf.species_name);
+    std::cout<<" specie name"<<  ispec_srf.species_name <<"\n";
 
     // modify units from molecules/cm2/s to kg/m2/s
     auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-        Kokkos::deep_copy(fluxes_in_mks_units, 0.0);
+    Kokkos::deep_copy(fluxes_in_mks_units, 0.0);
         for(const auto &sector_field : ispec_srf.emiss_sector_fields_) {
             const auto sector_flux = sector_field.get_view<const Real *>();
             Kokkos::parallel_for(
