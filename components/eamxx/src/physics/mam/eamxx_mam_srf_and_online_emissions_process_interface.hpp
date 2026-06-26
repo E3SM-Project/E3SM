@@ -3,6 +3,7 @@
 
 #include "share/remap/abstract_remapper.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "share/field/field.hpp"
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
@@ -50,8 +51,7 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
   // For reading soil erodibility file
-  std::shared_ptr<AbstractRemapper> serod_horizInterp_;
-  std::shared_ptr<AtmosphereInput> serod_dataReader_;
+  Field soil_erodibility_field_;
   const_view_1d soil_erodibility_;
 
  public:

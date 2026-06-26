@@ -3,16 +3,11 @@
 // For surface and online emission functions
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_functions.hpp>
 
-// For reading soil erodibility file
-#include <physics/mam/readfiles/soil_erodibility.hpp>
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 
 namespace scream {
-
-// For reading soil erodibility file
-using soilErodibilityFunc =
-    soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
 
 // ================================================================
 //  Constructor
@@ -214,23 +209,11 @@ void MAMSrfOnlineEmiss::create_requests() {
   }  // srf emissions file read init
 
   // -------------------------------------------------------------
-  // Setup to enable reading soil erodibility file
+  // Setup soil erodibility output field
   // -------------------------------------------------------------
-
-  const std::string soil_erodibility_data_file =
-      m_params.get<std::string>("soil_erodibility_file");
-
-  // Field to be read from file
-  const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
-
-  // Dimensions of the field
-  const std::string soil_erod_dname = "ncol";
-
-  // initialize the file read
-  soilErodibilityFunc::init_soil_erodibility_file_read(
-      ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
-      soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
-      serod_dataReader_);  // output
+  soil_erodibility_field_ =
+      Field(FieldIdentifier("soil_erodibility", scalar2d, none, grid_name));
+  soil_erodibility_field_.allocate_view();
 
   // -------------------------------------------------------------
   // Setup to enable reading marine organics file
@@ -336,11 +319,28 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Read Soil erodibility data
   //-----------------------------------------------------------------
-  // This data is time-independent, we read all data here for the
-  // entire simulation
-  soilErodibilityFunc::update_soil_erodibility_data_from_file(
-      serod_dataReader_, *serod_horizInterp_,
-      soil_erodibility_);  // output
+  // This data is time-independent, so use the static DataInterpolation path.
+  {
+    const auto soil_erodibility_data_file =
+        m_params.get<std::string>("soil_erodibility_file");
+    const auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
+    const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
+
+    std::vector<Field> soil_erod_fields = {
+        soil_erodibility_field_.alias(soil_erod_fld_name)};
+    auto soil_erod_data_interp =
+        std::make_shared<DataInterpolation>(grid_, soil_erod_fields);
+    soil_erod_data_interp->set_logger(m_atm_logger);
+    soil_erod_data_interp->setup_static_database({soil_erodibility_data_file});
+    soil_erod_data_interp->create_horiz_remappers(
+        srf_map_file == "none" ? "" : srf_map_file);
+    DataInterpolation::VertRemapData remap_data;
+    remap_data.vr_type = DataInterpolation::None;
+    soil_erod_data_interp->create_vert_remapper(remap_data);
+    soil_erod_data_interp->run();
+
+    soil_erodibility_ = soil_erodibility_field_.get_view<const Real *>();
+  }
 
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
