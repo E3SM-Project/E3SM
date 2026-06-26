@@ -5,14 +5,10 @@
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/field/field.hpp"
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
-
-// For reading marine organics file
-#include <physics/mam/readfiles/marine_organics.hpp>
-
-#include "share/field/field_reader.hpp"
 
 // For declaring surface and online emission class derived from atm process
 // class
@@ -53,8 +49,6 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // Unified atomic mass unit used for unit conversion (BAD constant)
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
-  // For reading soil erodibility file
-  Field soil_erodibility_field_;
   const_view_1d soil_erodibility_;
 
  public:
@@ -159,11 +153,16 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   std::vector<srf_emiss_> srf_emiss_species_;
 
   // For reading marine organics file
+<<<<<<< HEAD
   std::shared_ptr<AbstractRemapper> morg_horizInterp_;
   std::shared_ptr<FieldReader> morg_dataReader_;
   marineOrganicsFunc::marineOrganicsTimeState morg_timeState_;
   marineOrganicsFunc::marineOrganicsInput morg_data_start_, morg_data_end_;
   marineOrganicsFunc::marineOrganicsOutput morg_data_out_;
+=======
+  std::shared_ptr<DataInterpolation> morg_data_interp_;
+  std::vector<Field> morg_fields_;
+>>>>>>> a8bf878d73 (Using DataInterpolation for marine organics and soild erodibility.)
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
