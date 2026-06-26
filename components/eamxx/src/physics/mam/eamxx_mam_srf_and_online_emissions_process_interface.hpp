@@ -7,9 +7,6 @@
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 
-// For reading marine organics file
-#include <physics/mam/readfiles/marine_organics.hpp>
-
 #include "share/field/field_reader.hpp"
 
 // For declaring surface and online emission class derived from atm process
@@ -54,12 +51,8 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   const_view_1d soil_erodibility_;
 
  public:
-  // For reading surface emissions file
-  using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
-
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
-
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
