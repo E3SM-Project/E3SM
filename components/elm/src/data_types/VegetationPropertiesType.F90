@@ -64,6 +64,7 @@ module VegetationPropertiesType
      real(r8), pointer :: fr_flig       (:) => null()  ! fine root litter lignin fraction
      real(r8), pointer :: leaf_long     (:) => null()  ! leaf longevity (yrs)
      real(r8), pointer :: froot_long    (:) => null()  ! fine root longevity (yrs)
+     real(r8), pointer :: rhizome_long  (:) => null()  ! nonwoody rhizome longevity (yrs)
      real(r8), pointer :: evergreen     (:) => null()  ! binary flag for evergreen leaf habit (0 or 1)
      real(r8), pointer :: stress_decid  (:) => null()  ! binary flag for stress-deciduous leaf habit (0 or 1)
      real(r8), pointer :: season_decid  (:) => null()  ! binary flag for seasonal-deciduous leaf habit (0 or 1)
@@ -92,6 +93,9 @@ module VegetationPropertiesType
      real(r8), pointer :: livewdcp      (:) => null()  ! live wood (phloem and ray parenchyma) C:P (gC/gP)
      real(r8), pointer :: deadwdcp      (:) => null()  ! dead wood (xylem and heartwood) C:P (gC/gP)
      real(r8), pointer :: graincp       (:) => null()  ! grain C:P (gC/gP) for prognostic crop model
+
+     real(r8), pointer :: Nfix_NPP_c1   (:) => null()  ! Pre-exponential parameter in NPP-based N fixation eqn
+     real(r8), pointer :: Nfix_NPP_c2   (:) => null()  ! Exponential parameter in NPP-based N fixation eqn
 
      ! pft dependent parameters for phosphorus for nutrient competition
      real(r8), pointer :: vmax_plant_nh4(:)      => null()   ! vmax for plant nh4 uptake
@@ -177,9 +181,11 @@ contains
     use pftvarcon , only : lflitcn, frootcn, livewdcn, deadwdcn, froot_leaf, stem_leaf, croot_stem
     use pftvarcon , only : flivewd, fcur, lf_flab, lf_fcel, lf_flig, fr_flab, fr_fcel, fr_flig
     use pftvarcon , only : leaf_long, froot_long, evergreen, stress_decid, season_decid
+    use pftvarcon , only : rhizome_long
     use pftvarcon , only : manunitro, graincn, fleafcn, ffrootcn, fstemcn, dwood
     use pftvarcon , only : presharv, convfact, fyield
     use pftvarcon , only : leafcp,lflitcp, frootcp, livewdcp, deadwdcp,graincp
+    use pftvarcon , only : Nfix_NPP_c1, Nfix_NPP_c2 
     use pftvarcon , only : vmax_plant_nh4, vmax_plant_no3, vmax_plant_p, vmax_minsurf_p_vr
     use pftvarcon , only : km_plant_nh4, km_plant_no3, km_plant_p, km_minsurf_p_vr
     use pftvarcon , only : km_decomp_nh4, km_decomp_no3, km_decomp_p, km_nit, km_den
@@ -245,6 +251,7 @@ contains
     allocate(this%fr_flig       (0:numpft))        ; this%fr_flig      (:)   =spval
     allocate(this%leaf_long     (0:numpft))        ; this%leaf_long    (:)   =spval
     allocate(this%froot_long    (0:numpft))        ; this%froot_long   (:)   =spval
+    allocate(this%rhizome_long  (0:numpft))        ; this%rhizome_long (:)   =spval
     allocate(this%evergreen     (0:numpft))        ; this%evergreen    (:)   =spval
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =spval
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =spval
@@ -267,6 +274,8 @@ contains
     allocate(this%livewdcp      (0:numpft))        ; this%livewdcp     (:)   =spval
     allocate(this%deadwdcp      (0:numpft))        ; this%deadwdcp     (:)   =spval
     allocate(this%graincp       (0:numpft))        ; this%graincp      (:)   =spval
+    allocate(this%Nfix_NPP_c1   (0:numpft))        ; this%Nfix_NPP_c1   (:)  =spval
+    allocate(this%Nfix_NPP_c2   (0:numpft))        ; this%Nfix_NPP_c2   (:)  =spval
 
     allocate( this%alpha_nfix    (0:numpft))                     ; this%alpha_nfix    (:)        =spval
     allocate( this%alpha_ptase   (0:numpft))                     ; this%alpha_ptase   (:)        =spval
@@ -382,6 +391,7 @@ contains
        this%fr_flig(m)      = fr_flig(m)
        this%leaf_long(m)    = leaf_long(m)
        this%froot_long(m)   = froot_long(m)
+       this%rhizome_long(m) = rhizome_long(m)
        this%evergreen(m)    = evergreen(m)
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)
@@ -429,6 +439,10 @@ contains
        this%iscft(m)        = iscft(m)
        this%needleleaf(m)   = needleleaf(m)
        this%nfixer(m)       = nfixer(m)
+
+
+       this%Nfix_NPP_c1(m)  = Nfix_NPP_c1(m)
+       this%Nfix_NPP_c2(m)  = Nfix_NPP_c2(m)
 
     end do
 
