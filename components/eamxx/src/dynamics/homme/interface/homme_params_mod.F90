@@ -150,7 +150,7 @@ contains
   end function get_homme_real_param_f90
 
   function get_homme_bool_param_f90 (param_name_c) result(param_value) bind(c)
-    use control_mod,    only: moisture
+    use control_mod,    only: moisture, do_3d_turbulence
     !
     ! Input(s)
     !
@@ -171,6 +171,8 @@ contains
         else
           param_value = .true.
         endif
+      case("do_3d_turbulence")
+        param_value = do_3d_turbulence
       case default
         call abortmp ("[get_homme_bool_param_f90] Error! Unrecognized parameter name.")
         param_value = .false.

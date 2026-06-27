@@ -52,6 +52,8 @@ public:
                           const Phys1T& ps, const Phys1T& phis,
                           // T,omega(ie,col,lev)
                           const Phys2T& T, const Phys2T& omega,
+                          const CPhys3T* strain3d_components_gll,
+                          const Phys3T* strain3d_components_fv,
                           // uv(ie, col, 0 or 1, lev)
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)
@@ -60,7 +62,8 @@ public:
                           const Phys2T* dp = nullptr);
   //   Remap physics state and tendencies to dynamics state and tendencies.
   void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
-                          const CPhys3T& q, const CPhys2T& Km, const CPhys2T& Kh);
+                          const CPhys3T& q, const CPhys2T* Km = nullptr,
+                          const CPhys2T* Kh = nullptr);
   //   DSS the remapped dynamics tendencies and state. Call this after
   //   run_fv_phys_to_dyn if the dynamics-physics coupler does not already
   //   provide it.

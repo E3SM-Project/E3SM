@@ -710,7 +710,7 @@ contains
        ! (This is just a faster way of doing a dot product for each grid point,
        ! since reindexing the inputs to use the intrinsic effectively would be
        ! just asking for trouble.)
-       uxyz(:,:,i)=sum( elem%vec_sphere2cart(:,:,i,:)*vstar(:,:,:) ,3)
+       uxyz(:,:,i)=sum( elem%vec_sphere2cart(:,:,i,1:2)*vstar(:,:,:) ,3)
     end do
     ! compute departure point
     ! crude, 1st order accurate approximation.  to be improved
@@ -1647,7 +1647,7 @@ contains
        vfsph = half*vfsph
        ! Transform to Cartesian.
        do d = 1, 3
-          vnode(d,:,:,k) = sum(elem%vec_sphere2cart(:,:,d,:)*vfsph, 3)
+          vnode(d,:,:,k) = sum(elem%vec_sphere2cart(:,:,d,1:2)*vfsph, 3)
        end do
     end do
   end subroutine calc_vel_horiz_formula_node_ref_mid
