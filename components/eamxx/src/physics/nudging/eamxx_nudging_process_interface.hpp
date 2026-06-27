@@ -3,8 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 
-#include "share/algorithm/eamxx_time_interpolation.hpp"
-#include "share/remap/abstract_remapper.hpp"
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_parameter_list.hpp>
 #include <string>
@@ -70,7 +69,6 @@ protected:
   // Keep track of field dimensions and the iteration count
   int m_num_cols;
   int m_num_levs;
-  int m_num_src_levs;
   int m_timescale;
   bool m_use_weights;
   bool m_skip_vert_interpolation;
@@ -90,12 +88,10 @@ protected:
   bool m_refine_remap;
   // file containing coarse data mapping
   std::string m_refine_remap_file;
-  // (refining) remapper object
-  std::shared_ptr<scream::AbstractRemapper> m_horiz_remapper;
   // (refining) remapper vertical cutoff
   Real m_refine_remap_vert_cutoff;
 
-  util::TimeInterpolation m_time_interp;
+  std::shared_ptr<DataInterpolation> m_data_interpolation;
 }; // class Nudging
 
 } // namespace scream

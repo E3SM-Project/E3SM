@@ -41,6 +41,7 @@ public:
     std::string extrap_top = "P0";
     std::string extrap_bot = "P0";
     std::string pname; // What we need to load from nc file
+    std::string pfile = "";
     Field pmid, pint;  // The model pmid/pint
     std::shared_ptr<AbstractRemapper> custom_remapper; // Use this custom remapper
   };
@@ -75,11 +76,13 @@ public:
   std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
 
   void set_name (const std::string& name) { m_name = name; }
+  void set_fill_value_correction (bool enable) { m_correct_fill_values = enable; }
 
 protected:
 
   void shift_data_interval ();
   void update_end_fields ();
+  void correct_masked_values (const Field& f) const;
 
   int get_input_files_dimlen (const std::string& dimname) const;
 
@@ -145,6 +148,7 @@ protected:
   bool                  m_fields_have_col_dim = false;
   bool                  m_fields_have_lev_dim = false;
   bool                  m_fields_have_ilev_dim = false;
+  bool                  m_correct_fill_values = false;
 
   std::string           m_name = "DataInterp";
 
