@@ -49,6 +49,7 @@ module histFileMod
   integer , public, parameter :: max_flds = 2500        ! max number of history fields
   integer , public, parameter :: max_namlen = 64        ! maximum number of characters for field name
   integer , private, parameter :: hist_dim_name_length = 16 ! lenngth of character strings in dimension names
+  integer , private, parameter :: hist_date_str_len    =  8 ! length of date/time strings (cdate, ctime from getdatetime)
 
   ! Possible ways to treat multi-layer snow fields at times when no snow is present in a
   ! given layer. Note that the public parameters are the only ones that can be used by
@@ -181,10 +182,10 @@ module histFileMod
      integer :: num1d_out                      ! size of hbuf first dimension (all nodes)
      integer :: num2d                          ! size of hbuf second dimension (e.g. number of vertical levels)
      integer :: hpindex                        ! history pointer index 
-     character(len=8) :: p2c_scale_type        ! scale factor when averaging pft to column
-     character(len=8) :: c2l_scale_type        ! scale factor when averaging column to landunit
-     character(len=8) :: l2g_scale_type        ! scale factor when averaging landunit to gridcell
-     character(len=8) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell
+     character(len=hist_dim_name_length) :: p2c_scale_type        ! scale factor when averaging pft to column
+     character(len=hist_dim_name_length) :: c2l_scale_type        ! scale factor when averaging column to landunit
+     character(len=hist_dim_name_length) :: l2g_scale_type        ! scale factor when averaging landunit to gridcell
+     character(len=hist_dim_name_length) :: t2g_scale_type        ! scale factor when averaging topounit to gridcell
      integer :: no_snow_behavior               ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
   end type field_info
 
@@ -251,7 +252,8 @@ module histFileMod
   type(file_desc_t) :: ncid_hist(max_tapes)  ! file ids for history restart files
   integer :: time_dimid                      ! time dimension id
   integer :: hist_interval_dimid             ! time bounds dimension id
-  integer :: strlen_dimid                    ! string dimension id
+  integer :: strlen_dimid                    ! string dimension id (length hist_dim_name_length)
+  integer :: strlen_dt_dimid                 ! date/time string dimension id (length hist_date_str_len)
   !
   ! Time Constant variable names and filename
   !
@@ -1048,10 +1050,10 @@ contains
     character(len=hist_dim_name_length)  :: type1d         ! 1d clm pointerr type   ["gridcell","landunit","column","pft"]
     character(len=hist_dim_name_length)  :: type1d_out     ! 1d history buffer type ["gridcell","landunit","column","pft"]
     character(len=1)  :: avgflag        ! time averaging flag
-    character(len=8)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
-    character(len=8)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
-    character(len=8)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells
-    character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
+    character(len=hist_dim_name_length)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
+    character(len=hist_dim_name_length)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
+    character(len=hist_dim_name_length)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells
+    character(len=hist_dim_name_length)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
     real(r8), pointer :: hbuf(:,:)      ! history buffer
     integer , pointer :: nacs(:,:)      ! accumulation counter
     real(r8), pointer :: field(:)       ! clm 1d pointer field
@@ -1300,10 +1302,10 @@ contains
     character(len=hist_dim_name_length)  :: type1d         ! 1d clm pointerr type   ["gridcell","landunit","column","pft"]
     character(len=hist_dim_name_length)  :: type1d_out     ! 1d history buffer type ["gridcell","landunit","column","pft"]
     character(len=1)  :: avgflag        ! time averaging flag
-    character(len=8)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
-    character(len=8)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
-    character(len=8)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells
-    character(len=8)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
+    character(len=hist_dim_name_length)  :: p2c_scale_type ! scale type for subgrid averaging of pfts to column
+    character(len=hist_dim_name_length)  :: c2l_scale_type ! scale type for subgrid averaging of columns to landunits
+    character(len=hist_dim_name_length)  :: l2g_scale_type ! scale type for subgrid averaging of landunits to gridcells
+    character(len=hist_dim_name_length)  :: t2g_scale_type ! scale type for subgrid averaging of topounits to gridcells
     integer  :: no_snow_behavior        ! for multi-layer snow fields, behavior to use when a given layer is absent
     real(r8), pointer :: hbuf(:,:)      ! history buffer
     integer , pointer :: nacs(:,:)      ! accumulation counter
@@ -1928,6 +1930,7 @@ contains
        call ncd_defdim(lnfid, subs_name(n), subs_dim(n), dimid)
     end do
     call ncd_defdim(lnfid, 'string_length', hist_dim_name_length, strlen_dimid)
+    call ncd_defdim(lnfid, 'string_date_len', hist_date_str_len, strlen_dt_dimid)
     call ncd_defdim( lnfid, 'levdcmp', nlevdecomp_full, dimid)
     call ncd_defdim( lnfid, 'levtrc', nlevtrc_full, dimid)    
     
@@ -2109,7 +2112,7 @@ contains
     character(len=max_chars) :: standard_name ! variable CF standard_name
     character(len=max_namlen):: varname   ! variable name
     character(len=max_namlen):: units     ! variable units
-    character(len=8) :: l2g_scale_type    ! scale type for subgrid averaging of landunits to grid cells
+    character(len=hist_dim_name_length) :: l2g_scale_type    ! scale type for subgrid averaging of landunits to grid cells
     !
     real(r8), pointer :: histi(:,:)       ! temporary
     real(r8), pointer :: histo(:,:)       ! temporary
@@ -2648,7 +2651,7 @@ contains
        call ncd_defvar(nfid(t), 'time_bounds', ncd_double, 2, dim2id, varid, &
           long_name = 'history time interval endpoints')
 
-       dim2id(1) = strlen_dimid;  dim2id(2) = time_dimid
+       dim2id(1) = strlen_dt_dimid;  dim2id(2) = time_dimid
        call ncd_defvar(nfid(t), 'date_written', ncd_char, 2, dim2id, varid)
        call ncd_defvar(nfid(t), 'time_written', ncd_char, 2, dim2id, varid)
 
@@ -4497,11 +4500,11 @@ contains
     integer :: hpindex                 ! history buffer pointer index
     character(len=hist_dim_name_length) :: l_type1d       ! 1d data type
     character(len=hist_dim_name_length) :: l_type1d_out   ! 1d output type
-    character(len=8) :: scale_type_p2c ! scale type for subgrid averaging of pfts to column
-    character(len=8) :: scale_type_c2l ! scale type for subgrid averaging of columns to landunits
-    character(len=8) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
-    character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
-    type(bounds_type):: bounds         ! boudns 
+    character(len=hist_dim_name_length) :: scale_type_p2c ! scale type for subgrid averaging of pfts to column
+    character(len=hist_dim_name_length) :: scale_type_c2l ! scale type for subgrid averaging of columns to landunits
+    character(len=hist_dim_name_length) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
+    character(len=hist_dim_name_length) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
+    type(bounds_type):: bounds         ! boudns
     character(len=16):: l_default      ! local version of 'default'
     character(len=max_namlen) :: lstandard_name  ! local standard name
     character(len=*),parameter :: subname = 'hist_addfld1d'
@@ -4744,11 +4747,11 @@ contains
     integer :: hpindex                 ! history buffer index
     character(len=hist_dim_name_length) :: l_type1d         ! 1d data type
     character(len=hist_dim_name_length) :: l_type1d_out     ! 1d output type
-    character(len=8) :: scale_type_p2c ! scale type for subgrid averaging of pfts to column
-    character(len=8) :: scale_type_c2l ! scale type for subgrid averaging of columns to landunits
-    character(len=8) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
-    character(len=8) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
-    type(bounds_type):: bounds          
+    character(len=hist_dim_name_length) :: scale_type_p2c ! scale type for subgrid averaging of pfts to column
+    character(len=hist_dim_name_length) :: scale_type_c2l ! scale type for subgrid averaging of columns to landunits
+    character(len=hist_dim_name_length) :: scale_type_l2g ! scale type for subgrid averaging of landunits to gridcells
+    character(len=hist_dim_name_length) :: scale_type_t2g ! scale type for subgrid averaging of topounits to gridcells
+    type(bounds_type):: bounds
     character(len=16):: l_default      ! local version of 'default'
     character(len=max_namlen) :: lstandard_name  ! local standard name
     character(len=*),parameter :: subname = 'hist_addfld2d'
