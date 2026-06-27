@@ -43,6 +43,12 @@ module ocn_submesoscale_eddies
    real(kind=RKIND) :: tau, LfMin, Ce, dsMax
    real(kind=RKIND),dimension(:),allocatable :: time_scale
 
+   ! Ice-aware MLE
+   logical :: iceAwareActive
+   real(kind=RKIND) :: iceMLE_s, iceMLE_k, iceMLE_u, iceMLE_c, &
+                       iceMLE_crit, iceFracEdge, iceMLE_eps,   &
+                       iceMLE_eff, erfv, expc
+
   !***********************************************************************
 
   contains
@@ -53,32 +59,45 @@ module ocn_submesoscale_eddies
   !
   !> \brief   Computes velocity from submesoscale eddies
   !> \details
-  !>  This routine implements the Fox-Kemper et al 2011 submesoscale 
+  !>  This routine implements the Fox-Kemper et al 2011 submesoscale
   !>  parameterization (https://doi.org/10.1016/j.ocemod.2010.09.002).
-  !>  The transport velocity from the submesoscales is given by a 
+  !>  The transport velocity from the submesoscales is given by a
   !>  stream function which is given as
   !>
   !>  Psi = C_e*Delta_S/L_f*H^2 int(bGrad_H)/sqrt(f^2+tau^-2)*mu(z)
   !>
-  !>  here C_e is a specified efficiency, Delta_s is taken as 
+  !>  here C_e is a specified efficiency, Delta_s is taken as
   !>  min(dcEdge,dsMax), H is the mixed layer depth, L_f is the subgrid
-  !>  frontal width that is scaled to the coarse grid, f is the 
-  !>  coriolis parameter, and tau is a time scale specified to prevent 
+  !>  frontal width that is scaled to the coarse grid, f is the
+  !>  coriolis parameter, and tau is a time scale specified to prevent
   !>  the singularity near the equator.  the horizontal buoyancy gradient
   !>  is integrated over the mixed layer depth and mu(z) is a non-dimensional
   !>  shape function that is zero below the mixed layer depth
   !>
   !***********************************************************************
 
-  subroutine ocn_submesoscale_compute_velocity()
+  subroutine ocn_submesoscale_compute_velocity(forcingPool)
+
+     !-----------------------------------------------------------------
+     !
+     ! input variables
+     !
+     !-----------------------------------------------------------------
+
+     type (mpas_pool_type), pointer, intent(in) :: &
+        forcingPool   !< Input: forcing information
 
      !-----------------------------------------------------------------
      !
      ! local variables
      !
      !-----------------------------------------------------------------
+     real (kind=RKIND), dimension(:), pointer :: iceFraction, landIceFraction
+
+     integer, dimension(:), pointer :: landIceMask
 
      integer :: k, nEdges, nCells, iCell, iEdge, cell1, cell2, indMLDedge
+     integer :: landIceMaskEdge
 
      real(kind=RKIND),dimension(:),allocatable :: &
         streamFunction, &
@@ -93,11 +112,11 @@ module ocn_submesoscale_eddies
      allocate(zEdge(nVertLevels+1))
 
      !compute the mixed layer average buoyancy gradient and bvf
-     !This is thickness weighted to allow for non uniform grid spacing, 
-     !and centered on layer interfaces. The mixed layer goes from the 
+     !This is thickness weighted to allow for non uniform grid spacing,
+     !and centered on layer interfaces. The mixed layer goes from the
      !ocean top layer to mid-depth of layer(indMLDedge)
-     !NOTE, gradDensityEddy and BFV are defined at the top cell interface 
-     !and not valid for minLevelCell, so properties for the top layer 
+     !NOTE, gradDensityEddy and BFV are defined at the top cell interface
+     !and not valid for minLevelCell, so properties for the top layer
      !rely on the values at (minLevelCell+1).
      !$omp parallel
      !$omp do schedule(runtime) &
@@ -149,10 +168,45 @@ module ocn_submesoscale_eddies
 
         ds = min(dcEdge(iEdge),dsMax)
 
+        ! Ice-aware MLE efficiency computation:
+        !  - Section 8 in Shrestha and Manucharyan, 2022
+        !    (https://journals.ametsoc.org/view/journals/phoc/52/3/JPO-D-21-0024.1.xml)
+        if ( iceAwareActive ) then
+           call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+           call mpas_pool_get_array(forcingPool, 'landIceMask',landIceMask)
+
+           iceFracEdge = 0.5_RKIND*(    iceFraction(cell1)+    iceFraction(cell2)) &
+                       + 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
+
+           if ( iceFracEdge <= iceMLE_crit ) then
+              expc = iceFracEdge**2.0_RKIND * exp(-iceMLE_c * (1.0_RKIND - iceFracEdge))
+              erfv = 0.8_RKIND * erf((iceFracEdge - iceMLE_crit)/0.05_RKIND)
+              iceMLE_eps = iceMLE_k * (1.0_RKIND - erfv) * expc
+           else
+              iceMLE_eps = iceMLE_u
+           end if
+
+           iceMLE_eff = 1.0_RKIND - iceMLE_s * iceMLE_eps
+
+           landIceMaskEdge = max(landIceMask(cell1), landIceMask(cell2))
+
+           ! We add an addtional condition here to prevent grid-scale noise in MLE at
+           ! land-ice mask = 1.
+           if ( landIceMaskEdge == 1 ) then
+              iceMLE_eff = 0.0_RKIND
+           end if
+
+        else
+
+           iceMLE_eff = 1.0_RKIND
+
+        end if ! iceAwareActive
+
         do k = minLevelEdgeTop(iEdge)+1,maxLevelEdgeTop(iEdge)
            mu = max(0.0_RKIND,(1.0_RKIND - (2.0_RKIND*zEdge(k) / zMLD + 1.0_RKIND)**2.0)* &
                     (1.0_RKIND + 5.0_RKIND/21.0_RKIND*(2.0_RKIND*zEdge(k)/zMLD + 1.0_RKIND)**2.0))
-           streamFunction(k) = Ce*ds/Lf*zMLD**2.0*gradBuoyML/time_scale(iEdge)*mu
+           streamFunction(k) = Ce*ds/Lf*zMLD**2.0*gradBuoyML/time_scale(iEdge)*mu * iceMLE_eff
         end do
 
         ! integrate in vertical to get the velocity
@@ -175,8 +229,8 @@ module ocn_submesoscale_eddies
   !
   !> \brief   Submesoscale parameterization add to transport Vel
   !> \details
-  !>  adds the MLE induced velocity to the transport velocity 
-  !>  
+  !>  adds the MLE induced velocity to the transport velocity
+  !>
   !***********************************************************************
 
   subroutine ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
@@ -210,11 +264,16 @@ module ocn_submesoscale_eddies
   !
   !> \brief   Submesoscale parameterization init
   !> \details
-  !>  Initializes parameters related to the submesoscale eddy parameterization 
-  !>  
+  !>  Initializes parameters related to the submesoscale eddy parameterization
+  !>
   !***********************************************************************
 
-  subroutine ocn_submesoscale_init(err)
+  subroutine ocn_submesoscale_init(forcingPool,err)
+
+     type (mpas_pool_type), pointer, intent(in) :: &
+        forcingPool   !< Input: forcing information
+
+     real (kind=RKIND), dimension(:), pointer :: iceFraction, landIceFraction
 
      integer, intent(out) :: err !< Output: error flag
 
@@ -235,6 +294,26 @@ module ocn_submesoscale_eddies
      end do
      !$omp end do
      !$omp end parallel
+
+     ! Ice-aware MLE
+     call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+     call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+
+     if ( .not. config_submesoscale_ice_aware ) then
+        iceAwareActive = .false.
+     else
+        if ( associated(iceFraction) .and. associated(landIceFraction) ) then
+           iceAwareActive = .true.
+        else
+           iceAwareActive = .false.
+        end if
+     end if
+
+     iceMLE_crit    = config_submesoscale_ice_aware_crit
+     iceMLE_s       = 2.25_RKIND
+     iceMLE_k       = 430.0_RKIND
+     iceMLE_u       = 0.33_RKIND
+     iceMLE_c       = 20.0_RKIND
 
    end subroutine ocn_submesoscale_init
 
