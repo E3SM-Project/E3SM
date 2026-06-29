@@ -148,7 +148,7 @@ int testImportFromCoupler(const CouplingLayout Layout) {
 
    auto ImportPass = arraysEqual(DefCoupling->CplToOcn.SfcStressZonal,
                                  ExpectedSfcStressZonal) &&
-                     arraysEqual(DefCoupling->CplToOcn.SfcStressMeridional,
+                     arraysEqual(DefCoupling->CplToOcn.SfcStressMerid,
                                  ExpectedSfcStressMerid);
 
    if (ImportPass) {
@@ -194,7 +194,7 @@ int testApplyImportFields() {
 
    // Copy the expected values into the CplToOcn fields directly
    deepCopy(DefCoupling->CplToOcn.SfcStressZonal, ExpectedSfcStressZonal);
-   deepCopy(DefCoupling->CplToOcn.SfcStressMeridional, ExpectedSfcStressMerid);
+   deepCopy(DefCoupling->CplToOcn.SfcStressMerid, ExpectedSfcStressMerid);
 
    DefCoupling->applyImportFields(DefForcing);
 

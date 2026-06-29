@@ -37,8 +37,8 @@ class CplToOcnFields {
    // x2o fields only need to be stored on the host.
    // The SfcCoupling::applyImportFields() method will handle copying the
    // data to the device.
-   HostArray1DReal SfcStressZonal;      ///< Foxx_taux  [N m^-2]
-   HostArray1DReal SfcStressMeridional; ///< Foxx_tauy  [N m^-2]
+   HostArray1DReal SfcStressZonal; ///< Foxx_taux  [N m^-2]
+   HostArray1DReal SfcStressMerid; ///< Foxx_tauy  [N m^-2]
 
    CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh);
 };
@@ -55,8 +55,8 @@ class OcnToCplFields {
    HostArray1DReal SfcVelocityZonal_H;
 
    ///< So_v    [m s^-1]
-   Array1DReal SfcVelocityMeridional;
-   HostArray1DReal SfcVelocityMeridional_H;
+   Array1DReal SfcVelocityMerid;
+   HostArray1DReal SfcVelocityMerid_H;
 
    OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh);
 };
