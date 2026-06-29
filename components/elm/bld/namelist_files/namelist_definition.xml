@@ -339,8 +339,8 @@ Note that the landuse_timeseries option is not the same as the FATES fluh_timese
 This option is older than the luhdata options and may be depricated at some point in the future.
 </entry>
 
-<entry id="fates_parteh_mode" type="integer" category="physics"
-       group="elm_inparm" valid_values="1,2">
+<entry id="fates_parteh_mode" type="char*80" category="physics"
+       group="elm_inparm" valid_values="carbon_only,cnp">
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
@@ -455,6 +455,13 @@ Toggle to turn on prescribed physiology (only relevant if FATES is being used).
 <entry id="use_fates_inventory_init" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on inventory initialization(only relevant if FATES is being used).
+</entry>
+
+<entry id="use_fates_dbh_init" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Initialize cohorts at coldstart with diameter at breast height instead of density
+(Applies only if use_fates_nocomp=.true.)
+(Only relevant if FATES is on).
 </entry>
 
 <entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
