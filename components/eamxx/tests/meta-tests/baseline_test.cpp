@@ -1,13 +1,11 @@
-#include "share/util/eamxx_utils.hpp"
-#include "share/core/eamxx_session.hpp"
-#include "share/core/eamxx_types.hpp"
-
 #include <string>
 #include <fstream>
+#include <vector>
 
-namespace scream {
-namespace physics {
-namespace unit_test {
+using Real = double;
+using Int  = int;
+
+namespace {
 
 struct FakeBaselineTest
 {
@@ -19,7 +17,7 @@ struct FakeBaselineTest
 
 
     Real result = 42;
-    impl::write_scalars(ofile, result);
+    ofile << result;
 
     return 0;
   }
@@ -35,7 +33,7 @@ struct FakeBaselineTest
 
     if (!no_baseline) {
       Real ref;
-      impl::read_scalars(ifile, ref);
+      ifile >> ref;
       if (ref != result) {
         return 1;
       }
@@ -45,11 +43,6 @@ struct FakeBaselineTest
   }
 };
 
-}
-}
-}
-
-namespace {
 
 void expect_another_arg (int i, int argc) {
   EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
@@ -58,9 +51,6 @@ void expect_another_arg (int i, int argc) {
 } // empty namespace
 
 int main (int argc, char** argv) {
-  using UnitTest = scream::physics::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>;
-  using FakeBaselineTest = UnitTest::FakeBaselineTest;
-
   int nerr = 0;
 
   if (argc == 1) {
@@ -77,11 +67,7 @@ int main (int argc, char** argv) {
 
   // Set up options with defaults
   bool generate = false, no_baseline = true;
-  scream::Real tol = UnitTest::C::macheps
-#ifdef NDEBUG
-      * 10000
-#endif
-    ;
+  Real tol = 0;
   std::string baseline_fn;
 
   // Parse options
@@ -101,26 +87,24 @@ int main (int argc, char** argv) {
   }
 
   // Compute full baseline file name with precision.
-  baseline_fn += "/baseline_test.baseline" + std::to_string(sizeof(scream::Real));
+  baseline_fn += "/baseline_test.baseline" + std::to_string(sizeof(Real));
 
   std::vector<char*> args;
   for (int i=0; i<argc; ++i) {
     args.push_back(argv[i]);
   }
 
-  scream::initialize_eamxx_session(args.size(), args.data()); {
-    FakeBaselineTest bln;
-    if (generate) {
-      std::cout << "Generating to " << baseline_fn << "\n";
-      nerr += bln.generate_baseline(baseline_fn);
-    } else if (no_baseline) {
-      printf("Running with no baseline actions\n");
-      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
-    } else {
-      printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
-      nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
-    }
-  } scream::finalize_eamxx_session();
+  FakeBaselineTest bln;
+  if (generate) {
+    std::cout << "Generating to " << baseline_fn << "\n";
+    nerr += bln.generate_baseline(baseline_fn);
+  } else if (no_baseline) {
+    printf("Running with no baseline actions\n");
+    nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
+  } else {
+    printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
+    nerr += bln.run_and_cmp(baseline_fn, tol, no_baseline);
+  }
 
   return nerr != 0 ? 1 : 0;
 }
