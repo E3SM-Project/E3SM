@@ -1,44 +1,91 @@
 # Invoke this script as
 #  cmake -P CprncTest.cmake src_nc_file tgt_nc_file
 
-if (NOT ${CMAKE_ARGC} EQUAL 5)
-  message (FATAL_ERROR "CprncTest should be invoked with 2 arguments (src and tgt nc file).")
+function(get_script_positional_arguments out_var)
+  set(real_args "")
+  set(found_script FALSE)
+
+  # Calculate total arguments passed to the command line
+  math(EXPR max_index "${CMAKE_ARGC} - 1")
+
+  foreach(i RANGE ${max_index})
+    set(current_arg "${CMAKE_ARGV${i}}")
+
+    # Everything after the .cmake file is a real positional argument
+    if(found_script)
+      list(APPEND real_args "${current_arg}")
+    endif()
+
+    # Mark that we found the script file itself
+    if(current_arg MATCHES "\\.cmake$")
+      set(found_script TRUE)
+    endif()
+  endforeach()
+
+  # Propagate the filtered list back to the caller's scope
+  set(${out_var} "${real_args}" PARENT_SCOPE)
+endfunction()
+
+get_script_positional_arguments(my_args)
+list(LENGTH my_args arg_count)
+
+if (NOT arg_count EQUAL 2)
+  message (FATAL_ERROR "CprncTest should be invoked with 2 arguments (src and tgt nc file). You passed '${my_args}' ")
 endif()
 
-set (SRC_FILE ${CMAKE_ARGV3})
-set (TGT_FILE ${CMAKE_ARGV4})
+list(GET my_args 0 SRC_FILE)
+list(GET my_args 1 TGT_FILE)
 set (CPRNC @CPRNC_BINARY@)
 if (NOT CPRNC)
   message (FATAL_ERROR "This script was not configured correctly (CPRNC_BINARY was not set).")
 endif()
 
-execute_process (
-  COMMAND ${CPRNC} ${SRC_FILE} ${TGT_FILE}
-  RESULT_VARIABLE cprnc_result
-  OUTPUT_VARIABLE cprnc_output
-  ERROR_VARIABLE  cprnc_output)
+if (SCREAM_ONLY_GENERATE_BASELINES)
+  execute_process (
+    COMMAND /bin/cp -f ${SRC_FILE} ${TGT_FILE}
+    RESULT_VARIABLE cp_result
+    OUTPUT_VARIABLE cp_output
+    ERROR_VARIABLE  cp_output)
 
-if (NOT cprnc_result EQUAL 0)
-  string (CONCAT msg
-          "Command\n"
-          "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'"
-          "returned '${cprnc_result}', and output:\n"
-          "${cprnc_output}")
-  message ("${msg}")
-  message (FATAL_ERROR "Aborting.")
+  if (NOT cp_result EQUAL 0)
+    string (CONCAT msg
+      "Command\n"
+      "  '${CP} -f ${SRC_FILE} ${TGT_FILE}'"
+      "returned '${cp_result}', and output:\n"
+      "${cp_output}")
+    message ("${msg}")
+    message (FATAL_ERROR "Aborting.")
+  endif()
+
+else()
+  execute_process (
+    COMMAND ${CPRNC} ${SRC_FILE} ${TGT_FILE}
+    RESULT_VARIABLE cprnc_result
+    OUTPUT_VARIABLE cprnc_output
+    ERROR_VARIABLE  cprnc_output)
+
+  if (NOT cprnc_result EQUAL 0)
+    string (CONCAT msg
+      "Command\n"
+      "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'"
+      "returned '${cprnc_result}', and output:\n"
+      "${cprnc_output}")
+    message ("${msg}")
+    message (FATAL_ERROR "Aborting.")
+  endif()
+
+  # Search output for "IDENTICAL". -1 means it does not exist. Use REVERSE on
+  # the off chance that makes it faster, since "IDENTICAL", if it exists, is
+  # near the end of the output.
+  string (FIND "${cprnc_output}" "IDENTICAL" identical_pos REVERSE)
+
+  if (identical_pos EQUAL -1)
+    string (CONCAT msg
+      "Command\n"
+      "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'\n"
+      "reported differences between the files. Here's the output from cprnc:\n")
+    message ("${msg}")
+    message ("${cprnc_output}")
+    message (FATAL_ERROR "Aborting.")
+  endif ()
 endif()
-
-# Search output for "IDENTICAL". -1 means it does not exist. Use REVERSE on
-# the off chance that makes it faster, since "IDENTICAL", if it exists, is
-# near the end of the output.
-string (FIND "${cprnc_output}" "IDENTICAL" identical_pos REVERSE)
-
-if (identical_pos EQUAL -1)
-  string (CONCAT msg
-          "Command\n"
-          "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'\n"
-          "reported differences between the files. Here's the output from cprnc:\n")
-  message ("${msg}")
-  message ("${cprnc_output}")
-  message (FATAL_ERROR "Aborting.")
-endif ()

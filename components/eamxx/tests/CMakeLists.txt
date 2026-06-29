@@ -34,15 +34,15 @@ function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BA
   set (SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE})
   set (TGT_FILE ${SCREAM_BASELINES_DIR}/data/${OUT_FILE})
 
-  # Add comparison test using the CprncTest.cmake scritp shipped by EAMxx
+  # Add comparison test using the CprncTest.cmake script shipped by EAMxx
   add_test (
     NAME ${TEST_BASE_NAME}_baseline_cmp
-    COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+    COMMAND cmake -DSCREAM_ONLY_GENERATE_BASELINES=${SCREAM_ONLY_GENERATE_BASELINES} -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties(
     ${TEST_BASE_NAME}_baseline_cmp
     PROPERTIES
-    LABELS baseline_cmp
+    LABELS "baseline_cmp;baseline_gen"
     FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
 
   # Add the test that generated the baseline to the baseline_gen label, so scripts/test-all-eamxx
