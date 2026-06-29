@@ -65,15 +65,17 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   )
 
   # Compare against bfb hashes in baseline dir
-  set (SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/p3_bfb_hash.txt)
-  set (TGT_FILE ${SCREAM_BASELINES_DIR}/data/p3_bfb_hash.txt)
-  add_test (NAME ${TEST_BASE_NAME}_bfb_hash_baseline_cmp
-    COMMAND ${CMAKE_COMMAND} -P ${SCREAM_BASE_DIR}/cmake/CompareTextFiles.cmake ${SRC_FILE} ${TGT_FILE})
+  if (NOT SCREAM_ONLY_GENERATE_BASELINES)
+    set (SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/p3_bfb_hash.txt)
+    set (TGT_FILE ${SCREAM_BASELINES_DIR}/data/p3_bfb_hash.txt)
+    add_test (NAME ${TEST_BASE_NAME}_bfb_hash_baseline_cmp
+      COMMAND ${CMAKE_COMMAND} -P ${SCREAM_BASE_DIR}/cmake/CompareTextFiles.cmake ${SRC_FILE} ${TGT_FILE})
 
-  set_tests_properties (
-    ${TEST_BASE_NAME}_bfb_hash_baseline_cmp PROPERTIES
-    FIXTURES_REQUIRED ${TEST_BASE_NAME}_gen_bfb_hash
-    LABELS "p3;baseline_cmp")
+    set_tests_properties (
+      ${TEST_BASE_NAME}_bfb_hash_baseline_cmp PROPERTIES
+      FIXTURES_REQUIRED ${TEST_BASE_NAME}_gen_bfb_hash
+      LABELS "p3;baseline_cmp")
+  endif()
 
   # Store p3_bfb_hash.txt in the baseline folder
   file (APPEND ${SCREAM_TEST_OUTPUT_DIR}/baseline_list
