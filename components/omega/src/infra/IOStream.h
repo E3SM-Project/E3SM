@@ -301,6 +301,11 @@ class IOStream {
    );
 
    //---------------------------------------------------------------------------
+   // Retrieve the Alarm for a given stream
+   static Alarm *getAlarm(const std::string &StreamName ///< [in] name of stream
+   );
+
+   //---------------------------------------------------------------------------
    /// Changes the filename in a stream (typically during unit testing)
    static void changeFilename(
        const std::string &StreamName, ///< [in] name of stream to modify

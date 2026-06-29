@@ -150,6 +150,15 @@ IOStream::getFilename(const std::string &StreamName ///< [in] name of stream
 } // End getFilename
 
 //------------------------------------------------------------------------------
+// Retrieves a pointer to the Read/Write alarm for the stream with the input
+// name
+Alarm *IOStream::getAlarm(const std::string &StreamName ///< [in] name of stream
+) {
+   auto StreamPtr = get(StreamName);
+   return &StreamPtr->MyAlarm;
+}
+
+//------------------------------------------------------------------------------
 // Changes the filename associated with a stream (eg during unit testing)
 void IOStream::changeFilename(
     const std::string &StreamName, ///< [in] name of stream to modify
