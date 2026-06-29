@@ -46,7 +46,7 @@ static MPI_Op MPI_SUMDD; // special MPI operator for reproducible R8 sum
 // Special sum function to use in custom double precision MPI reduction.
 // Implements the DD algorithm for reproducible sums as implemented in
 //
-void sumDD(void *InBuffer, void *OutBuffer, int *Len, MPI_Datatype *DataType) {
+inline void sumDD(void *InBuffer, void *OutBuffer, int *Len, MPI_Datatype *DataType) {
    complex<double> *DDa = (complex<double> *)InBuffer;
    complex<double> *DDb = (complex<double> *)OutBuffer;
    double E, T1, T2;
@@ -60,7 +60,7 @@ void sumDD(void *InBuffer, void *OutBuffer, int *Len, MPI_Datatype *DataType) {
 }
 
 // Local iteration of a DD sum for use in local sums
-void sumDDLocal(complex<double> &DDb, //< [inout] local sum and residual
+inline void sumDDLocal(complex<double> &DDb, //< [inout] local sum and residual
                 const double &DDa     //< [in] local double to add to sum
 ) {
    double T1 = DDa + real(DDb);
@@ -138,7 +138,7 @@ void getReduceArrayInfo(
 }
 
 /// Copies some array index info to device
-void copyReduceInfoToDevice(
+inline void copyReduceInfoToDevice(
     Array1DI4 &DevRange,     ///< [out] index range for reduction
     Array1DI8 &DevStrides,   ///< [out] array stride for each dim
     std::vector<I4> &IRange, ///< [in] index range for reduction
@@ -157,7 +157,7 @@ void copyReduceInfoToDevice(
 
 //------------------------------------------------------------------------------
 // Initialize the special DD sum operator for double precision reproducible sums
-void globalSumInit() {
+inline void globalSumInit() {
    int Err = MPI_Op_create(&sumDD, 1, &MPI_SUMDD);
    if (Err == 0)
       R8SumNotInitialized = false;
@@ -168,7 +168,7 @@ void globalSumInit() {
 /// with the communicator.  Return value is sum across all tasks and sums are
 /// bit reproducible.
 /// I4 specific interface
-I4 globalSum(const I4 &Val,      ///< [in] local scalar value to be summed
+inline I4 globalSum(const I4 &Val,      ///< [in] local scalar value to be summed
              const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    I4 Result;
@@ -179,7 +179,7 @@ I4 globalSum(const I4 &Val,      ///< [in] local scalar value to be summed
 }
 
 /// I8 specific interface
-I8 globalSum(const I8 &Val,      ///< [in] local scalar value to be summed
+inline I8 globalSum(const I8 &Val,      ///< [in] local scalar value to be summed
              const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    I8 Result;
@@ -190,7 +190,7 @@ I8 globalSum(const I8 &Val,      ///< [in] local scalar value to be summed
 }
 
 /// R4 specific interface
-R4 globalSum(const R4 &Val,      ///< [in] local scalar value to be summed
+inline R4 globalSum(const R4 &Val,      ///< [in] local scalar value to be summed
              const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    R8 LocalTmp, GlobalTmp;
@@ -203,7 +203,7 @@ R4 globalSum(const R4 &Val,      ///< [in] local scalar value to be summed
 }
 
 /// R8 specific interface
-R8 globalSum(const R8 &Val,      ///< [in] local scalar value to be summed
+inline R8 globalSum(const R8 &Val,      ///< [in] local scalar value to be summed
              const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    // initialize reproducible MPI_SUMDD operator
@@ -228,7 +228,7 @@ R8 globalSum(const R8 &Val,      ///< [in] local scalar value to be summed
 /// Multifield scalar sums - sums a set of scalar values across MPI tasks
 /// Return value is a vector containg the sum of each scalar across all tasks
 /// I4 specific interface
-std::vector<I4> globalSum(
+inline std::vector<I4> globalSum(
     const std::vector<I4> &Scalars, ///< [in] vector of scalars to be summed
     const MPI_Comm Comm             ///< [in] MPI communicator
 ) {
@@ -242,7 +242,7 @@ std::vector<I4> globalSum(
 }
 
 /// I8 specific interface
-std::vector<I8> globalSum(
+inline std::vector<I8> globalSum(
     const std::vector<I8> &Scalars, ///< [in] vector of scalars to be summed
     const MPI_Comm Comm             ///< [in] MPI communicator
 ) {
@@ -256,7 +256,7 @@ std::vector<I8> globalSum(
 }
 
 /// R4 specific interface
-std::vector<R4> globalSum(
+inline std::vector<R4> globalSum(
     const std::vector<R4> &Scalars, ///< [in] vector of scalars to be summed
     const MPI_Comm Comm             ///< [in] MPI communicator
 ) {
@@ -279,7 +279,7 @@ std::vector<R4> globalSum(
 }
 
 /// R8 specific interface
-std::vector<R8> globalSum(
+inline std::vector<R8> globalSum(
     const std::vector<R8> &Scalars, ///< [in] vector of scalars to be summed
     const MPI_Comm Comm             ///< [in] MPI communicator
 ) {
