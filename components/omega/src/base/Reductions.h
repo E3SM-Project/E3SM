@@ -46,7 +46,8 @@ static MPI_Op MPI_SUMDD; // special MPI operator for reproducible R8 sum
 // Special sum function to use in custom double precision MPI reduction.
 // Implements the DD algorithm for reproducible sums as implemented in
 //
-inline void sumDD(void *InBuffer, void *OutBuffer, int *Len, MPI_Datatype *DataType) {
+inline void sumDD(void *InBuffer, void *OutBuffer, int *Len,
+                  MPI_Datatype *DataType) {
    complex<double> *DDa = (complex<double> *)InBuffer;
    complex<double> *DDb = (complex<double> *)OutBuffer;
    double E, T1, T2;
@@ -61,7 +62,7 @@ inline void sumDD(void *InBuffer, void *OutBuffer, int *Len, MPI_Datatype *DataT
 
 // Local iteration of a DD sum for use in local sums
 inline void sumDDLocal(complex<double> &DDb, //< [inout] local sum and residual
-                const double &DDa     //< [in] local double to add to sum
+                       const double &DDa     //< [in] local double to add to sum
 ) {
    double T1 = DDa + real(DDb);
    double E  = T1 - DDa;
@@ -168,8 +169,8 @@ inline void globalSumInit() {
 /// with the communicator.  Return value is sum across all tasks and sums are
 /// bit reproducible.
 /// I4 specific interface
-inline I4 globalSum(const I4 &Val,      ///< [in] local scalar value to be summed
-             const MPI_Comm Comm ///< [in] MPI communicator
+inline I4 globalSum(const I4 &Val, ///< [in] local scalar value to be summed
+                    const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    I4 Result;
    int Err = MPI_Allreduce(&Val, &Result, 1, MPI_INT32_T, MPI_SUM, Comm);
@@ -179,8 +180,8 @@ inline I4 globalSum(const I4 &Val,      ///< [in] local scalar value to be summe
 }
 
 /// I8 specific interface
-inline I8 globalSum(const I8 &Val,      ///< [in] local scalar value to be summed
-             const MPI_Comm Comm ///< [in] MPI communicator
+inline I8 globalSum(const I8 &Val, ///< [in] local scalar value to be summed
+                    const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    I8 Result;
    int Err = MPI_Allreduce(&Val, &Result, 1, MPI_INT64_T, MPI_SUM, Comm);
@@ -190,8 +191,8 @@ inline I8 globalSum(const I8 &Val,      ///< [in] local scalar value to be summe
 }
 
 /// R4 specific interface
-inline R4 globalSum(const R4 &Val,      ///< [in] local scalar value to be summed
-             const MPI_Comm Comm ///< [in] MPI communicator
+inline R4 globalSum(const R4 &Val, ///< [in] local scalar value to be summed
+                    const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    R8 LocalTmp, GlobalTmp;
    LocalTmp = Val; // convert to double for reproducibility
@@ -203,8 +204,8 @@ inline R4 globalSum(const R4 &Val,      ///< [in] local scalar value to be summe
 }
 
 /// R8 specific interface
-inline R8 globalSum(const R8 &Val,      ///< [in] local scalar value to be summed
-             const MPI_Comm Comm ///< [in] MPI communicator
+inline R8 globalSum(const R8 &Val, ///< [in] local scalar value to be summed
+                    const MPI_Comm Comm ///< [in] MPI communicator
 ) {
    // initialize reproducible MPI_SUMDD operator
    if (R8SumNotInitialized)
@@ -1606,6 +1607,513 @@ globalMaxVal(const Kokkos::View<T, ML, MS> Arr1, ///< [in] 1st array in product
       ABORT_ERROR("MPI Error in GlobalMaxVal for R8 array product");
 
    return GlobalMax;
+}
+///-----------------------------------------------------------------------------
+/// Sums a product of two arrays (eg a mask), where the two arrays need not
+/// be the same size and type. The Mask array (Arr2) is either a 1D array (based
+/// on the horizontal index) or a 2D array (1st index: horiz, 2nd index:
+/// vertical) An optional index range can be specified through a vector of min,
+/// max indices for each dimension of the arrays.
+/// I4 specific interface
+template <typename T1, typename ML1, typename MS1, typename T2, typename ML2,
+          typename MS2>
+std::enable_if_t<
+    std::is_same_v<I4, typename Kokkos::View<T1, ML1, MS1>::value_type> &&
+        std::is_arithmetic_v<typename Kokkos::View<T2, ML2, MS2>::value_type>,
+    I4>
+globalMaskedSum(const Kokkos::View<T1, ML1, MS1> Arr1,
+                const Kokkos::View<T2, ML2, MS2> Arr2, const MPI_Comm Comm,
+                const std::vector<I4> *IndxRange = nullptr) {
+
+   // Error checks
+   OMEGA_REQUIRE(Arr2.rank == 1 || Arr2.rank == 2,
+                 "globalMaskedSum: Arr2 must be 1D or 2D");
+   OMEGA_REQUIRE(Arr1.rank >= Arr2.rank,
+                 "globalMaskedSum: Arr1 rank must be >= Arr2 rank");
+   // Verify dimension matching
+   if (Arr2.rank == 1) {
+      int HorizDim1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+      OMEGA_REQUIRE(Arr1.extent(HorizDim1) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+   } else { // Arr2.rank == 2
+      OMEGA_REQUIRE(
+          Arr1.rank >= 2,
+          "globalMaskedSum: Arr1 must be at least 2D when Arr2 is 2D");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 2) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 1) == Arr2.extent(1),
+                    "globalMaskedSum: Vertical dimensions must match");
+   }
+
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Arr1);
+   std::vector<I8> Strides1(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides1, Arr1,
+                      IndxRange); ///< [out] true if host array
+
+   // Compute Arr2 strides
+   I8 Stride2H = (Arr2.rank == 1) ? 1 : Arr2.extent(1);
+   I8 Stride2V = 1;
+
+   // Compute local sum on host or device
+   I4 LocalSum = 0;
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t Addr1 = I * Strides1[0] + J * Strides1[1] +
+                                    K * Strides1[2] + L * Strides1[3] +
+                                    M * Strides1[4];
+
+                     size_t Addr2              = 0;
+                     std::array<I4, 5> Indices = {I, J, K, L, M};
+
+                     if (Arr2.rank == 1) {
+                        int HorizIdx1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+                        Addr2         = Indices[HorizIdx1];
+                     } else {
+                        int HorizIdx = Indices[Arr1.rank - 2];
+                        int VertIdx  = Indices[Arr1.rank - 1];
+                        Addr2        = HorizIdx * Stride2H + VertIdx * Stride2V;
+                     }
+
+                     LocalSum += Arr1.data()[Addr1] * Arr2.data()[Addr2];
+                  }
+               }
+            }
+         }
+      }
+   } else { // on device
+      const int Arr1Rank = Arr1.rank;
+      const int Arr2Rank = Arr2.rank;
+
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides1);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArr1, Arr1);
+      OMEGA_SCOPE(LocArr2, Arr2);
+
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, I4 &Lsum) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+
+                size_t Addr1 = I * LocStrides(0) + J * LocStrides(1) +
+                               K * LocStrides(2) + L * LocStrides(3) +
+                               M * LocStrides(4);
+
+                size_t Addr2   = 0;
+                int Indices[5] = {I, J, K, L, M};
+                if (Arr2Rank == 1) {
+                   int HorizIdx1 = (Arr1Rank == 1) ? 0 : Arr1Rank - 2;
+                   Addr2         = Indices[HorizIdx1];
+                } else {
+                   int HorizIdx = Indices[Kokkos::max(0, Arr1Rank - 2)];
+                   int VertIdx  = Indices[Arr1Rank - 1];
+                   Addr2        = HorizIdx * LocArr2.extent(1) + VertIdx;
+                }
+
+                Lsum += LocArr1.data()[Addr1] * LocArr2.data()[Addr2];
+             }
+          },
+          LocalSum);
+   } // end if onHost
+   // Compute final sum by adding local sums from each MPI task
+   I4 GlobalSum;
+   int Err =
+       MPI_Allreduce(&LocalSum, &GlobalSum, 1, MPI_INT32_T, MPI_SUM, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("globalMaskedSum: Error in MPI_Allreduce");
+   return GlobalSum;
+}
+
+/// I8 specific interface
+template <typename T1, typename ML1, typename MS1, typename T2, typename ML2,
+          typename MS2>
+std::enable_if_t<
+    std::is_same_v<I8, typename Kokkos::View<T1, ML1, MS1>::value_type> &&
+        std::is_arithmetic_v<typename Kokkos::View<T2, ML2, MS2>::value_type>,
+    I8>
+globalMaskedSum(const Kokkos::View<T1, ML1, MS1> Arr1,
+                const Kokkos::View<T2, ML2, MS2> Arr2, const MPI_Comm Comm,
+                const std::vector<I4> *IndxRange = nullptr) {
+
+   // Error checks
+   OMEGA_REQUIRE(Arr2.rank == 1 || Arr2.rank == 2,
+                 "globalMaskedSum: Arr2 must be 1D or 2D");
+   OMEGA_REQUIRE(Arr1.rank >= Arr2.rank,
+                 "globalMaskedSum: Arr1 rank must be >= Arr2 rank");
+   // Verify dimension matching
+   if (Arr2.rank == 1) {
+      int HorizDim1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+      OMEGA_REQUIRE(Arr1.extent(HorizDim1) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+   } else { // Arr2.rank == 2
+      OMEGA_REQUIRE(
+          Arr1.rank >= 2,
+          "globalMaskedSum: Arr1 must be at least 2D when Arr2 is 2D");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 2) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 1) == Arr2.extent(1),
+                    "globalMaskedSum: Vertical dimensions must match");
+   }
+
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Arr1);
+   std::vector<I8> Strides1(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides1, Arr1,
+                      IndxRange); ///< [out] true if host array
+
+   // Compute Arr2 strides
+   I8 Stride2H = (Arr2.rank == 1) ? 1 : Arr2.extent(1);
+   I8 Stride2V = 1;
+
+   // Compute local sum on host or device
+   I8 LocalSum = 0;
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t Addr1 = I * Strides1[0] + J * Strides1[1] +
+                                    K * Strides1[2] + L * Strides1[3] +
+                                    M * Strides1[4];
+
+                     size_t Addr2              = 0;
+                     std::array<I4, 5> Indices = {I, J, K, L, M};
+
+                     if (Arr2.rank == 1) {
+                        int HorizIdx1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+                        Addr2         = Indices[HorizIdx1];
+                     } else {
+                        int HorizIdx = Indices[Arr1.rank - 2];
+                        int VertIdx  = Indices[Arr1.rank - 1];
+                        Addr2        = HorizIdx * Stride2H + VertIdx * Stride2V;
+                     }
+
+                     LocalSum += Arr1.data()[Addr1] * Arr2.data()[Addr2];
+                  }
+               }
+            }
+         }
+      }
+   } else { // on device
+      const int Arr1Rank = Arr1.rank;
+      const int Arr2Rank = Arr2.rank;
+
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides1);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArr1, Arr1);
+      OMEGA_SCOPE(LocArr2, Arr2);
+
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, I8 &Lsum) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+
+                size_t Addr1 = I * LocStrides(0) + J * LocStrides(1) +
+                               K * LocStrides(2) + L * LocStrides(3) +
+                               M * LocStrides(4);
+
+                size_t Addr2   = 0;
+                int Indices[5] = {I, J, K, L, M};
+                if (Arr2Rank == 1) {
+                   int HorizIdx1 = (Arr1Rank == 1) ? 0 : Arr1Rank - 2;
+                   Addr2         = Indices[HorizIdx1];
+                } else {
+                   int HorizIdx = Indices[Kokkos::max(0, Arr1Rank - 2)];
+                   int VertIdx  = Indices[Arr1Rank - 1];
+                   Addr2        = HorizIdx * LocArr2.extent(1) + VertIdx;
+                }
+
+                Lsum += LocArr1.data()[Addr1] * LocArr2.data()[Addr2];
+             }
+          },
+          LocalSum);
+   } // end if onHost
+   // Compute final sum by adding local sums from each MPI task
+   I8 GlobalSum;
+   int Err =
+       MPI_Allreduce(&LocalSum, &GlobalSum, 1, MPI_INT64_T, MPI_SUM, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("globalMaskedSum: Error in MPI_Allreduce");
+   return GlobalSum;
+}
+
+/// R4 specific interface
+template <typename T1, typename ML1, typename MS1, typename T2, typename ML2,
+          typename MS2>
+std::enable_if_t<
+    std::is_same_v<R4, typename Kokkos::View<T1, ML1, MS1>::value_type> &&
+        std::is_arithmetic_v<typename Kokkos::View<T2, ML2, MS2>::value_type>,
+    R4>
+globalMaskedSum(const Kokkos::View<T1, ML1, MS1> Arr1,
+                const Kokkos::View<T2, ML2, MS2> Arr2, const MPI_Comm Comm,
+                const std::vector<I4> *IndxRange = nullptr) {
+
+   // Error checks
+   OMEGA_REQUIRE(Arr2.rank == 1 || Arr2.rank == 2,
+                 "globalMaskedSum: Arr2 must be 1D or 2D");
+   OMEGA_REQUIRE(Arr1.rank >= Arr2.rank,
+                 "globalMaskedSum: Arr1 rank must be >= Arr2 rank");
+   // Verify dimension matching
+   if (Arr2.rank == 1) {
+      int HorizDim1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+      OMEGA_REQUIRE(Arr1.extent(HorizDim1) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+   } else { // Arr2.rank == 2
+      OMEGA_REQUIRE(
+          Arr1.rank >= 2,
+          "globalMaskedSum: Arr1 must be at least 2D when Arr2 is 2D");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 2) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 1) == Arr2.extent(1),
+                    "globalMaskedSum: Vertical dimensions must match");
+   }
+
+   // Get array and layout information
+   bool IsHost = isReduceArrayOnHost(Arr1);
+   std::vector<I8> Strides1(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides1, Arr1,
+                      IndxRange); ///< [out] true if host array
+
+   // Compute Arr2 strides
+   I8 Stride2H = (Arr2.rank == 1) ? 1 : Arr2.extent(1);
+   I8 Stride2V = 1;
+
+   // Compute local sum on host or device
+   R8 LocalSum = 0;
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+                     size_t Addr1 = I * Strides1[0] + J * Strides1[1] +
+                                    K * Strides1[2] + L * Strides1[3] +
+                                    M * Strides1[4];
+
+                     size_t Addr2              = 0;
+                     std::array<I4, 5> Indices = {I, J, K, L, M};
+
+                     if (Arr2.rank == 1) {
+                        int HorizIdx1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+                        Addr2         = Indices[HorizIdx1];
+                     } else {
+                        int HorizIdx = Indices[Arr1.rank - 2];
+                        int VertIdx  = Indices[Arr1.rank - 1];
+                        Addr2        = HorizIdx * Stride2H + VertIdx * Stride2V;
+                     }
+
+                     // convert each to R8 to be sure prod is computed in R8
+                     R8 DTmp1 = Arr1.data()[Addr1];
+                     R8 DTmp2 = Arr2.data()[Addr2];
+                     LocalSum += DTmp1 * DTmp2;
+                  }
+               }
+            }
+         }
+      }
+   } else { // on device
+      const int Arr1Rank = Arr1.rank;
+      const int Arr2Rank = Arr2.rank;
+
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides1);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArr1, Arr1);
+      OMEGA_SCOPE(LocArr2, Arr2);
+
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, R8 &Lsum) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+
+                size_t Addr1 = I * LocStrides(0) + J * LocStrides(1) +
+                               K * LocStrides(2) + L * LocStrides(3) +
+                               M * LocStrides(4);
+
+                size_t Addr2   = 0;
+                int Indices[5] = {I, J, K, L, M};
+                if (Arr2Rank == 1) {
+                   int HorizIdx1 = (Arr1Rank == 1) ? 0 : Arr1Rank - 2;
+                   Addr2         = Indices[HorizIdx1];
+                } else {
+                   int HorizIdx = Indices[Kokkos::max(0, Arr1Rank - 2)];
+                   int VertIdx  = Indices[Arr1Rank - 1];
+                   Addr2        = HorizIdx * LocArr2.extent(1) + VertIdx;
+                }
+
+                // convert each to R8 to be sure prod is computed in R8
+                R8 DTmp1 = LocArr1.data()[Addr1];
+                R8 DTmp2 = static_cast<R8>(LocArr2.data()[Addr2]);
+                Lsum += DTmp1 * DTmp2;
+             }
+          },
+          LocalSum);
+   } // end if onHost
+   // Compute final sum by adding local sums from each MPI task
+   R8 GlobalTmp;
+   int Err = MPI_Allreduce(&LocalSum, &GlobalTmp, 1, MPI_DOUBLE, MPI_SUM, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("globalMaskedSum: Error in MPI_Allreduce");
+   R4 GlobalSum = GlobalTmp;
+   return GlobalSum;
+}
+
+/// R8 specific interface
+template <typename T1, typename ML1, typename MS1, typename T2, typename ML2,
+          typename MS2>
+std::enable_if_t<
+    std::is_same_v<R8, typename Kokkos::View<T1, ML1, MS1>::value_type> &&
+        std::is_arithmetic_v<typename Kokkos::View<T2, ML2, MS2>::value_type>,
+    R8>
+globalMaskedSum(const Kokkos::View<T1, ML1, MS1> Arr1,
+                const Kokkos::View<T2, ML2, MS2> Arr2, const MPI_Comm Comm,
+                const std::vector<I4> *IndxRange = nullptr) {
+
+   // initialize reproducible MPI_SUMDD operator
+   if (R8SumNotInitialized)
+      globalSumInit();
+
+   using Scalar2 = typename Kokkos::View<T2, ML2, MS2>::value_type;
+
+   // Error checks
+   OMEGA_REQUIRE(Arr2.rank == 1 || Arr2.rank == 2,
+                 "globalMaskedSum: Arr2 must be 1D or 2D");
+   OMEGA_REQUIRE(Arr1.rank >= Arr2.rank,
+                 "globalMaskedSum: Arr1 rank must be >= Arr2 rank");
+
+   // Verify dimension matching
+   if (Arr2.rank == 1) {
+      int HorizDim1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+      OMEGA_REQUIRE(Arr1.extent(HorizDim1) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+   } else { // Arr2.rank == 2
+      OMEGA_REQUIRE(
+          Arr1.rank >= 2,
+          "globalMaskedSum: Arr1 must be at least 2D when Arr2 is 2D");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 2) == Arr2.extent(0),
+                    "globalMaskedSum: Horizontal dimensions must match");
+      OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 1) == Arr2.extent(1),
+                    "globalMaskedSum: Vertical dimensions must match");
+   }
+
+   bool IsHost = isReduceArrayOnHost(Arr1);
+   std::vector<I8> Strides1(5, 0);
+   std::vector<I4> IRange(10, 0);
+   getReduceArrayInfo(IRange, Strides1, Arr1, IndxRange);
+
+   // Compute Arr2 strides
+   I8 Stride2H = (Arr2.rank == 1) ? 1 : Arr2.extent(1);
+   I8 Stride2V = 1;
+
+   complex<double> DDTmp(0.0, 0.0);
+
+   if (IsHost) {
+      for (I4 I = IRange[0]; I <= IRange[1]; ++I) {
+         for (I4 J = IRange[2]; J <= IRange[3]; ++J) {
+            for (I4 K = IRange[4]; K <= IRange[5]; ++K) {
+               for (I4 L = IRange[6]; L <= IRange[7]; ++L) {
+                  for (I4 M = IRange[8]; M <= IRange[9]; ++M) {
+
+                     size_t Addr1 = I * Strides1[0] + J * Strides1[1] +
+                                    K * Strides1[2] + L * Strides1[3] +
+                                    M * Strides1[4];
+
+                     size_t Addr2              = 0;
+                     std::array<I4, 5> Indices = {I, J, K, L, M};
+
+                     if (Arr2.rank == 1) {
+                        int HorizIdx1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
+                        Addr2         = Indices[HorizIdx1];
+                     } else {
+                        int HorizIdx = Indices[Arr1.rank - 2];
+                        int VertIdx  = Indices[Arr1.rank - 1];
+                        Addr2        = HorizIdx * Stride2H + VertIdx * Stride2V;
+                     }
+
+                     R8 ProdTmp = Arr1.data()[Addr1] *
+                                  static_cast<R8>(Arr2.data()[Addr2]);
+                     sumDDLocal(DDTmp, ProdTmp);
+                  }
+               }
+            }
+         }
+      }
+   } else {
+      R8 LocalSum = 0.0;
+
+      const int Arr1Rank = Arr1.rank;
+      const int Arr2Rank = Arr2.rank;
+
+      Array1DI4 DevRange("IRange", 10);
+      Array1DI8 DevStrides("Strides", 5);
+      copyReduceInfoToDevice(DevRange, DevStrides, IRange, Strides1);
+      OMEGA_SCOPE(LocStrides, DevStrides);
+      OMEGA_SCOPE(LocRange, DevRange);
+      OMEGA_SCOPE(LocArr1, Arr1);
+      OMEGA_SCOPE(LocArr2, Arr2);
+
+      parallelReduce(
+          {IRange[1] + 1, IRange[3] + 1, IRange[5] + 1, IRange[7] + 1,
+           IRange[9] + 1},
+          KOKKOS_LAMBDA(int I, int J, int K, int L, int M, R8 &Lsum) {
+             if (I >= LocRange(0) and J >= LocRange(2) and K >= LocRange(4) and
+                 L >= LocRange(6) and M >= LocRange(8)) {
+
+                size_t Addr1 = I * LocStrides(0) + J * LocStrides(1) +
+                               K * LocStrides(2) + L * LocStrides(3) +
+                               M * LocStrides(4);
+
+                size_t Addr2   = 0;
+                int Indices[5] = {I, J, K, L, M};
+                if (Arr2Rank == 1) {
+                   int HorizIdx1 = (Arr1Rank == 1) ? 0 : Arr1Rank - 2;
+                   Addr2         = Indices[HorizIdx1];
+                } else {
+                   int HorizIdx = Indices[Kokkos::max(0, Arr1Rank - 2)];
+                   int VertIdx  = Indices[Arr1Rank - 1];
+                   Addr2        = HorizIdx * LocArr2.extent(1) + VertIdx;
+                }
+
+                Lsum += LocArr1.data()[Addr1] *
+                        static_cast<R8>(LocArr2.data()[Addr2]);
+             }
+          },
+          LocalSum);
+
+      DDTmp = complex<double>(LocalSum, 0.0);
+   }
+
+   // Compute final sum by adding local sums from each MPI task
+   complex<double> GlobalTmp(0.0, 0.0);
+   int Err = MPI_Allreduce(&DDTmp, &GlobalTmp, 1, MPI_C_DOUBLE_COMPLEX,
+                           MPI_SUMDD, Comm);
+   if (Err != MPI_SUCCESS)
+      ABORT_ERROR("globalMaskedSum: Error in MPI_Allreduce");
+
+   R8 GlobalSum = real(GlobalTmp);
+   return GlobalSum;
 }
 
 //------------------------------------------------------------------------------
