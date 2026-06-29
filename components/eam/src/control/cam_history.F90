@@ -103,7 +103,7 @@ module cam_history
   !   The size of these parameters should match the assignments in restart_vars_setnames and restart_dims_setnames below
   !   
   integer, parameter :: restartvarcnt              = 38
-  integer, parameter :: restartdimcnt              = 10
+  integer, parameter :: restartdimcnt              = 11
   type(rvar_id)      :: restartvars(restartvarcnt)
   type(rdim_id)      :: restartdims(restartdimcnt)
   integer, parameter :: ptapes_dim_ind             =  1
@@ -116,6 +116,7 @@ module cam_history
   integer, parameter :: maxvarmdims_dim_ind        =  8
   integer, parameter :: registeredmdims_dim_ind    =  9
   integer, parameter :: max_hcoordname_len_dim_ind = 10
+  integer, parameter :: avgflag_len_dim_ind        = 11
 
   integer :: nfmaster = 0             ! number of fields in master field list
   integer :: nflds(ptapes)            ! number of fields per tape
@@ -1099,9 +1100,10 @@ CONTAINS
     rvindex = rvindex + 1
     restartvars(rvindex)%name = 'avgflag'
     restartvars(rvindex)%type = pio_char
-    restartvars(rvindex)%ndims = 2
-    restartvars(rvindex)%dims(1) = maxnflds_dim_ind
-    restartvars(rvindex)%dims(2) = ptapes_dim_ind
+    restartvars(rvindex)%ndims = 3
+    restartvars(rvindex)%dims(1) = avgflag_len_dim_ind
+    restartvars(rvindex)%dims(2) = maxnflds_dim_ind
+    restartvars(rvindex)%dims(3) = ptapes_dim_ind
 
     rvindex = rvindex + 1
     restartvars(rvindex)%name = 'sampling_seq'
@@ -1262,6 +1264,9 @@ CONTAINS
 
     restartdims(max_hcoordname_len_dim_ind)%name = 'max_hcoordname_len'
     restartdims(max_hcoordname_len_dim_ind)%len  = max_hcoordname_len
+
+    restartdims(avgflag_len_dim_ind)%name = 'avgflag_len'
+    restartdims(avgflag_len_dim_ind)%len  = 1
 
   end subroutine restart_dims_setnames
 
@@ -1517,11 +1522,11 @@ CONTAINS
         ierr = pio_put_var(File, numlev_desc,start,tape(t)%hlist(f)%field%numlev)
 
         ierr = pio_put_var(File, hwrt_prec_desc,start,tape(t)%hlist(f)%hwrt_prec)
+        ierr = pio_put_var(File, avgflag_desc,startc,tape(t)%hlist(f)%avgflag)
         ierr = pio_put_var(File, sseq_desc,startc,tape(t)%hlist(f)%field%sampling_seq)
         ierr = pio_put_var(File, longname_desc,startc,tape(t)%hlist(f)%field%long_name)
         ierr = pio_put_var(File, standardname_desc,startc,tape(t)%hlist(f)%field%standard_name)
         ierr = pio_put_var(File, units_desc,startc,tape(t)%hlist(f)%field%units)
-        ierr = pio_put_var(File, avgflag_desc,start, tape(t)%hlist(f)%avgflag)
 
         ierr = pio_put_var(File, fillval_desc,start, tape(t)%hlist(f)%field%fillvalue)
         ierr = pio_put_var(File, meridional_complement_desc,start, tape(t)%hlist(f)%field%meridional_complement)
@@ -1583,7 +1588,7 @@ CONTAINS
 
   subroutine read_restart_history (File)
     use pio,                 only: pio_inq_dimid
-    use pio,                 only: pio_inq_varid, pio_inq_dimname
+    use pio,                 only: pio_inq_varid, pio_inq_dimname, pio_inq_varndims
     use cam_pio_utils,       only: cam_pio_openfile, cam_pio_closefile
     use cam_pio_utils,       only: cam_pio_var_info
     use ioFileMod,           only: getfil
@@ -1836,11 +1841,22 @@ CONTAINS
         ierr = pio_get_var(File,fillval_desc, (/f,t/), tape(t)%hlist(f)%field%fillvalue)
         ierr = pio_get_var(File,meridional_complement_desc, (/f,t/), tape(t)%hlist(f)%field%meridional_complement)
         ierr = pio_get_var(File,zonal_complement_desc, (/f,t/), tape(t)%hlist(f)%field%zonal_complement)
-        ierr = pio_get_var(File,avgflag_desc, (/f,t/), tape(t)%hlist(f)%avgflag)
+        ! avgflag: new restarts store it as 3D (avgflag_len=1, maxnflds, ptapes) to satisfy
+        ! PIO's convention that the first Fortran dim is the string length.  Old restarts
+        ! stored it as 2D (maxnflds, ptapes) without a leading string-length dim, which
+        ! caused spurious PIO buffer-size warnings.  Support both layouts here.
+        ierr = pio_inq_varndims(File, avgflag_desc, ndims)
+        if (ndims == 3) then
+          ierr = pio_get_var(File,avgflag_desc, (/1,f,t/), tape(t)%hlist(f)%avgflag)
+        else
+          ierr = pio_get_var(File,avgflag_desc, (/f,t/), tape(t)%hlist(f)%avgflag)
+        end if
         ierr = pio_get_var(File,longname_desc, (/1,f,t/), tape(t)%hlist(f)%field%long_name)
         tape(t)%hlist(f)%field%standard_name = ''
         ierr = pio_get_var(File,standardname_desc, (/1,f,t/), tape(t)%hlist(f)%field%standard_name)
+        call strip_null(tape(t)%hlist(f)%field%standard_name)
         ierr = pio_get_var(File,units_desc, (/1,f,t/), tape(t)%hlist(f)%field%units)
+        call strip_null(tape(t)%hlist(f)%field%units)
         tape(t)%hlist(f)%field%sampling_seq(1:max_chars) = ' '
         ierr = pio_get_var(File,sseq_desc, (/1,f,t/), tape(t)%hlist(f)%field%sampling_seq)
         call strip_null(tape(t)%hlist(f)%field%sampling_seq)
@@ -4151,7 +4167,7 @@ end subroutine print_active_fldlst
              'h_define: cannot define long_name for '//trim(fname_tmp))
 
         str = tape(t)%hlist(f)%field%standard_name
-        if (str /= ' ') then
+        if (len_trim(str) > 0) then
           ierr=pio_put_att (tape(t)%File, varid, 'standard_name', trim(str))
           call cam_pio_handle_error(ierr,                                       &
                'h_define: cannot define standard_name for '//trim(fname_tmp))
