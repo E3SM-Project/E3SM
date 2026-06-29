@@ -30,8 +30,6 @@
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 
-#include "Hommexx_config.h"
-
 #include <assert.h>
 
 namespace Homme {
@@ -109,7 +107,7 @@ struct CaarFunctorImpl {
   struct TagPostExchange {};
 
   // Policies
-#if defined(KOKKOS_ENABLE_CUDA) && !defined(NDEBUG)
+#ifndef NDEBUG
   template<typename Tag>
   using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Kokkos::LaunchBounds<512,1>,Tag>;
 #else
@@ -125,7 +123,6 @@ struct CaarFunctorImpl {
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
-  public:
   CaarFunctorImpl(const Elements &elements, const Tracers &/* tracers */,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
@@ -182,7 +179,7 @@ struct CaarFunctorImpl {
   }
 
   int requested_buffer_size () const {
-    // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs.
+    // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
     const int nslots = m_tu.get_num_ws_slots();
 
     int num_scalar_mid_buf = Buffers::num_3d_scalar_mid_buf;
@@ -193,9 +190,8 @@ struct CaarFunctorImpl {
     // Depending on rsplit/hydro-mode, we may remove some
     // buffers that are not needed from the counters above.
     if (m_theta_hydrostatic_mode) {
-      // pi=pnh, and no dpnh_dp_i/phitens
+      // pi=pnh, and no wtens/phitens
       num_scalar_mid_buf -= 1;
-      // No dpnh_dp_i/phitens/wtens
       num_scalar_int_buf -= 3;
 
       // No grad_w_i/v_i
@@ -351,9 +347,9 @@ struct CaarFunctorImpl {
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
     Kokkos::fence();
+    GPTLstop("caar compute");
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
-    GPTLstop("caar compute");
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
@@ -563,13 +559,11 @@ struct CaarFunctorImpl {
       kv.team_barrier(); // necessary to avoid race in column_scan_mid_to_int
 
       ColumnOps::column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
-      kv.team_barrier();
       // Average omega_i to midpoints, and change sign, since later
       //   omega=v*grad(pi)-average(omega_i)
       auto omega = Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp);
       ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv,omega_i,omega,-1.0);
     });
-
     kv.team_barrier();
 
     // Compute grad(pi)

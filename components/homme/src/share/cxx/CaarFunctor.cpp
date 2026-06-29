@@ -5,12 +5,7 @@
  *******************************************************************************/
 
 #include "CaarFunctor.hpp"
-#include "Hommexx_config.h"
-#ifdef HOMMEXX_ENABLE_CAAR_OPT
-#include "CaarFunctorImpl-caar-opt.hpp"
-#else
 #include "CaarFunctorImpl.hpp"
-#endif
 #include "Context.hpp"
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"

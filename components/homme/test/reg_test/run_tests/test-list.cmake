@@ -106,13 +106,6 @@ IF (BUILD_HOMME_THETA_KOKKOS)
         thetah-sl-test11conv-r0t1-cdr30-rrm
         thetanh-moist-bubble-sl
         thetanh-moist-bubble-sl-pg2)
-      # QLT vertical_levels not yet supported on GPU (compose_cedr_qlt.cpp:182)
-      IF (NOT (Kokkos_ENABLE_CUDA OR Kokkos_ENABLE_HIP))
-        LIST(APPEND HOMME_TESTS
-          thetah-sl-dcmip16_test1pg2-kokkos.cmake)
-        LIST(APPEND HOMME_ONEOFF_CVF_TESTS
-          thetah-sl-dcmip16_test1pg2)
-      ENDIF()
     ENDIF()
   ENDIF()
   IF (HOMMEXX_BFB_TESTING)

@@ -1,1 +1,0 @@
-./xmlchange --append SCREAM_CMAKE_OPTIONS='HOMMEXX_ENABLE_CAAR_OPT ON'
