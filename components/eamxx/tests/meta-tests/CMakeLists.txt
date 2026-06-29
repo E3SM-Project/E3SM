@@ -24,9 +24,8 @@ EkatCreateUnitTest(test_fail
   LABELS fail
 )
 
-CreateUnitTest(baseline_test
+EkatCreateUnitTest(baseline_test
   SOURCES baseline_test.cpp
-  LIBS scream_share
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
   EXE_ARGS "${SCREAM_BASELINE_FILE_ARG}"

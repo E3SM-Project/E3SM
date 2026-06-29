@@ -1,9 +1,20 @@
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <vector>
+#include <iostream>
 
 using Real = double;
 using Int  = int;
+
+#define BT_REQUIRE_MSG(condition, msg)          \
+  do {                                                                  \
+    if ( ! (condition) ) {                                              \
+      std::stringstream ekat_msg_ss, ekat_tmp_ss;                       \
+      ekat_msg_ss << msg;                                               \
+      throw std::runtime_error(ekat_msg_ss.str());                      \
+    }                                                                   \
+  } while(0)
 
 namespace {
 
@@ -13,7 +24,7 @@ struct FakeBaselineTest
 
   Int generate_baseline (const std::string& filename) {
     std::ofstream ofile(filename,std::ios::binary);
-    EKAT_REQUIRE_MSG( ofile.good(), "generate_baseline can't write " + filename + "\n");
+    BT_REQUIRE_MSG( ofile.good(), "generate_baseline can't write " + filename + "\n");
 
 
     Real result = 42;
@@ -22,11 +33,11 @@ struct FakeBaselineTest
     return 0;
   }
 
-  Int run_and_cmp (const std::string& filename, const Scalar& tol, bool no_baseline) {
+  Int run_and_cmp (const std::string& filename, const Real& tol, bool no_baseline) {
     std::ifstream ifile;
     if (!no_baseline) {
       ifile.open(filename,std::ios::binary);
-      EKAT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read " + filename + "\n");
+      BT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read " + filename + "\n");
     }
 
     Real result = 42;
@@ -45,7 +56,11 @@ struct FakeBaselineTest
 
 
 void expect_another_arg (int i, int argc) {
-  EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
+  BT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
+}
+
+bool argv_matches(const std::string& s, const std::string& short_opt, const std::string& long_opt) {
+  return (s == short_opt) || (s == long_opt) || s == ("-" + short_opt);
 }
 
 } // empty namespace
@@ -72,14 +87,14 @@ int main (int argc, char** argv) {
 
   // Parse options
   for (int i = 1; i < argc-1; ++i) {
-    if (ekat::argv_matches(argv[i], "-g", "--generate")) {generate = true; no_baseline = false;}
-    if (ekat::argv_matches(argv[i], "-c", "--compare"))  {no_baseline = false;}
-    if (ekat::argv_matches(argv[i], "-t", "--tol")) {
+    if (argv_matches(argv[i], "-g", "--generate")) {generate = true; no_baseline = false;}
+    if (argv_matches(argv[i], "-c", "--compare"))  {no_baseline = false;}
+    if (argv_matches(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
       tol = std::atof(argv[i]);
     }
-    if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
+    if (argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;
       baseline_fn = argv[i];
