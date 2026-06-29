@@ -56,6 +56,18 @@ void Functions<S,D>::zm_opts_init()
   Kokkos::parallel_for("zm_calculate_estbl", Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
     estbl(i) = svp_trans(ZMC::tmin + i);
   });
+
+  // Intel compiler workaround: the constexpr SharedAllocationTracker default
+  // constructor is not called for inline static template members, leaving
+  // m_record_bits=0 instead of DO_NOT_DEREF_FLAG (0x01), which causes
+  // assign_direct to call decrement(nullptr) -> SIGSEGV. Placement new
+  // forces m_record_bits=0x01 before the assignment; safe because
+  // use_count()==0 means there is no live allocation to leak.
+  EKAT_ASSERT_MSG(s_zm_opts.estbl.use_count() == 0,
+                  "zm_opts_init: estbl has a live allocation at entry; "
+                  "zm_finalize_cxx must be called before zm_opts_init");
+  new (&s_zm_opts.estbl) view_1d<Real>();
+
   s_zm_opts.estbl = estbl;
 }
 
