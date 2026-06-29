@@ -151,15 +151,6 @@ class IOStream {
    bool Validated;
 
    //---- Private utility functions to support public interfaces
-   /// Creates a new stream and adds to the list of all streams, based on
-   /// options in the input model configuration. This routine is called by
-   /// the IOStreams initialize function. It requires an initialized model
-   /// clock so that stream alarm can be attached to this clock during creation.
-   static void create(const std::string &StreamName, ///< [in] name of stream
-                      Config &StreamConfig, ///< [in] stream configuration
-                      Clock *&ModelClock    ///< [inout] Omega model clock
-   );
-
    /// Read all dimensions from an input file and determine the dimension ID.
    /// The file must be in data mode.
    void readAllDims(
@@ -276,6 +267,15 @@ class IOStream {
    //---------------------------------------------------------------------------
    /// Overloaded init with no args, helpful for tests where no Clock exists
    static void init(void);
+
+   /// Creates a new stream and adds to the list of all streams, based on
+   /// options in the input model configuration. This routine is called by
+   /// the IOStreams initialize function. It requires an initialized model
+   /// clock so that stream alarm can be attached to this clock during creation.
+   static void create(const std::string &StreamName, ///< [in] name of stream
+                      Config &StreamConfig, ///< [in] stream configuration
+                      Clock *&ModelClock    ///< [inout] Omega model clock
+   );
 
    //---------------------------------------------------------------------------
    /// Performs a final write of any streams that have the OnShutdown option and
