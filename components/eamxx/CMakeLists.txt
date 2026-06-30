@@ -367,7 +367,8 @@ if (NOT SCREAM_LIB_ONLY)
     if (NOT EXISTS ${SCREAM_BASELINES_DIR}/data OR NOT IS_DIRECTORY ${SCREAM_BASELINES_DIR}/data)
       string (CONCAT msg
         "Error! Baselines tests enabled, but baseline dir is invalid.\n"
-        "  SCREAM_BASELINES_DIR: ${SCREAM_BASELINES_DIR}")
+        "  SCREAM_BASELINES_DIR: ${SCREAM_BASELINES_DIR}\n"
+        "  Expected to see directory ${SCREAM_BASELINES_DIR}/data")
       message ("${msg}")
       message (FATAL_ERROR "Aborting...")
     endif()
