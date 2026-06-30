@@ -1182,6 +1182,16 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="CAx128Altamont100mv2_CAx128Altamont100mv2">
+      <grid name="atm">ne0np4_CAx128Altamont100mv2.pg2</grid>
+      <grid name="lnd">ne0np4_CAx128Altamont100mv2.pg2</grid>
+      <grid name="ocnice">ne0np4_CAx128Altamont100mv2.pg2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <model_grid alias="northamericax4v1_r0125_oRRS15to5">
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
@@ -3893,6 +3903,14 @@
       <desc>1-deg with 3 km over California (version 1; as described in Zhang et al. (2024)) pg2:</desc>
     </domain>
 
+    <domain name="ne0np4_CAx128Altamont100mv2.pg2">
+      <nx>1333296</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.CAne32x128Altamont100mv2pg2_oRRS18to6v3.231107.nc</file>
+      <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.CAne32x128Altamont100mv2pg2_oRRS18to6v3.231107.nc</file>
+      <desc>1-deg with 0.8 km over California overlaid by a 100m mesh over Altamont (version 2) pg2:</desc>
+    </domain>
+
     <domain name="ne0np4_eastasiax4v1.pg2">
       <nx>48864</nx>
       <ny>1</ny>
@@ -5159,6 +5177,13 @@
      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_traave.20220430.nc</map>
      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_traave.20220430.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_CAx128Altamont100mv2.pg2" rof_grid="r0125">
+     <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/CAx128Altamont100mv2pg2/map_CAne32x128Altamont100mv2pg2_to_r0125_mono.20231107.nc</map>
+     <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/CAx128Altamont100mv2pg2/map_CAne32x128Altamont100mv2pg2_to_r0125_mono.20231107.nc</map>
+     <map name="LND2ROF_FMAPNAME">cpl/gridmaps/CAx128Altamont100mv2pg2/map_CAne32x128Altamont100mv2pg2_to_r0125_mono.20231107.nc</map>
+     <map name="ROF2LND_FMAPNAME">cpl/gridmaps/CAx128Altamont100mv2pg2/map_r0125_to_CAne32x128Altamont100mv2pg2_mono.20231107.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
