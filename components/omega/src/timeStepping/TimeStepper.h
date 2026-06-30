@@ -42,6 +42,7 @@
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "OceanState.h"
+#include "StateValidation.h"
 #include "Tendencies.h"
 #include "TimeMgr.h"
 #include "Tracers.h"

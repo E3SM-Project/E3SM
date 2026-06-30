@@ -135,6 +135,8 @@ void RungeKutta4Stepper::doStep(OceanState *State,   // model state
    Tracers::updateTimeLevels();
    Pacer::stop("RK4:haloExch", 3);
 
+   validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);
+
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
