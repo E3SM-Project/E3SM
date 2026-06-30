@@ -6,7 +6,7 @@
 #  n=1: -P
 #  n=2: script name
 #  n=3,..: args
-include (ScreamUtils)
+include (${CMAKE_CURRENT_LIST_DIR}/ProcessUtils.cmake)
 
 GetScriptPositionalArguments(my_args)
 list(LENGTH my_args arg_count)

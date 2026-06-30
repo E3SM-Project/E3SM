@@ -1,6 +1,6 @@
 # Invoke this script as
 #  cmake -P CprncTest.cmake src_nc_file tgt_nc_file
-include (ScreamUtils)
+include (${CMAKE_CURRENT_LIST_DIR}/ProcessUtils.cmake)
 
 GetScriptPositionalArguments(my_args)
 list(LENGTH my_args arg_count)
