@@ -577,3 +577,20 @@ add_omega_test(
     ocn/SfcCouplingTest.cpp
     "-n;8"
 )
+##################
+# Analysis tests
+##################
+
+add_omega_test(
+    ANALYSIS_OP_TEST
+    testAnalysisOps.exe
+    analysis/AnalysisOperatorTest.cpp
+    "-n;8"
+)
+
+add_omega_test(
+    ANALYSIS_SYS_TEST
+    testAnalysisSys.exe
+    analysis/AnalysisSystemTest.cpp
+    "-n;8"
+)

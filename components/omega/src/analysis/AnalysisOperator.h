@@ -35,7 +35,6 @@
 #include "HorzMesh.h"
 #include "Logging.h"
 #include "MachEnv.h"
-#include "OmegaDispatch.h"
 #include "OmegaKokkos.h"
 #include "TimeMgr.h"
 #include "VertCoord.h"

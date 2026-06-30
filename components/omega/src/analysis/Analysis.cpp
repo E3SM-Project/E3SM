@@ -203,6 +203,7 @@ void Analysis::parseChainAndBuildOps(const std::string &OpChainStr) {
          // Spatial operators (SpatialMean, SpatialMax, etc.)
          if (ChainNode.find("Spatial") != std::string::npos) {
             registerAnalysisOp(ChainNode, {Upstream}, makeOpConfig());
+            continue;
          }
 
          // Temporal operators (TimeMean, etc.) with period embedded in name
@@ -217,7 +218,10 @@ void Analysis::parseChainAndBuildOps(const std::string &OpChainStr) {
             std::string FreqStr = ChainNode.substr(Pos);
             registerAnalysisOp(TimeOp, {Upstream},
                                makeOpConfig(opParam("Period", FreqStr)));
+            continue;
          }
+         ABORT_ERROR("Analysis: Error trying to parse {}. No Field or "
+                     "Operator named {}", OpChainStr, ChainNode);
       }
    }
 

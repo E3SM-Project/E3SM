@@ -199,3 +199,16 @@ Omega:
       EndTime: 0001-07-31_00:00:00
       Contents:
         - Tracers
+  Analysis:
+    GlobalStats:
+      Enable: true
+      Fields: ["NormalVelocity", "PseudoThickness", "Temperature", "Salinity"]
+      SpatialStats: ["Max", "Min", "Mean", "StdDev"]
+      ReductionPeriod: ["1Day", "1Month"]
+      SampleFreq: ["6Hours", "2Days"]
+      Filename: global.stats.$Y
+      Stream:
+        FileFreq: 1
+        FileFreqUnits: years
+    CustomGroup:
+       Enable: false
