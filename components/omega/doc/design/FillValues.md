@@ -93,8 +93,10 @@ edges shallower than the cell — see Section 4.5 for the resolution.
 
 ### 2.7 Requirement: CTests
 
-CTests must verify Requirements 2.1–2.3, 2.5, and Desired Requirement 2.6 for
-`NormalVelocity`.
+CTests must verify Requirements 2.1–2.3, 2.5, and Desired Requirement 2.6. The
+three-zone boundary behavior (2.6) is exercised for `NormalVelocity` via the edge
+mask; the two-zone cell and vertex masks are verified with synthetic cell and
+vertex fields.
 
 ## 3 Algorithmic Formulation
 
@@ -345,11 +347,36 @@ three-zone mask on an edge field after IC or restart read: layers outside
 `[MinLayerEdgeTop, MaxLayerEdgeBot]` are set to `FillValueReal`; layers inside
 `[MinLayerEdgeTop, MaxLayerEdgeBot]` but outside the active range
 `[MinLayerEdgeBot, MaxLayerEdgeTop]` are set to 0; active layers are left
-unchanged. Called in `ocnInit` (`OceanInit.cpp`) for
-`NormalVelocity[CurTimeLevel]` after `exchangeHalo` and before `copyToHost`.
-`NormalVelocity` is the only edge-based state field read from IC/restart; all
-other IC fields (pseudo-thickness, tracers, VertCoord fields) are cell-based
-and need no edge masking.
+unchanged.
+
+**`applyCellLayerMask(Array2DReal &Arr, I4 NCellsAll)`** — enforces the
+two-zone mask on a cell field after IC or restart read: layers outside the
+active range `[MinLayerCell, MaxLayerCell]` are set to `FillValueReal`; active
+layers are left unchanged. Cell fields have no boundary (zero) zone because a
+cell column is either active or inactive at a given layer — there is no
+neighbor-dependent partial-activity range as there is for edges and vertices.
+
+**`applyVertexLayerMask(Array2DReal &Arr, I4 NVerticesAll)`** — enforces the
+two-zone mask on a vertex field: layers outside `[MinLayerVertexTop,
+MaxLayerVertexBot]` are set to `FillValueReal`; active layers are left
+unchanged. Unlike an edge, a vertex does **not** have a zeroed boundary zone: a
+boundary vertex with one or more active surrounding cells holds valid, generally
+non-zero data (for example, relative vorticity at such a vertex is computed from
+its active surrounding edges — see `VorticityAuxVars::computeVarsOnVertex`, which
+loops over the full `[MinLayerVertexTop, MaxLayerVertexBot]` range). Zeroing that
+boundary band would discard real signal, so the whole valid range is kept. There
+is currently no vertex-based state field read from IC/restart, so this method has
+no production caller yet; it is provided for completeness and is exercised by the
+CTest (Section 5.6).
+
+All three `apply*LayerMask` methods use the inclusive `[Min, Max]` layer
+convention consistent with `computeGeomZHeight`/`computePressure`. They are
+driven through `OceanState::applyLayerMasks(TimeLevel)`
+(`src/ocn/OceanState.cpp`), which is called from `ocnInit` (`OceanInit.cpp`)
+after `exchangeHalo` and before `copyToHost`. `applyLayerMasks` applies the
+edge mask to `NormalVelocity` and the cell mask to `PseudoThickness`,
+`Temperature`, and `Salinity` — the state and tracer fields read from
+IC/restart.
 
 Fields that are *not* fluxes — `MeanPseudoThickEdge`, `FluxPseudoThickEdge` —
 are genuinely undefined at boundary edges (interpolating thickness when one
@@ -377,51 +404,44 @@ cell-level flux-accumulation kernel, and avoids the need to zero
 
 ## 5 Verification and Testing
 
-A new test `test/infra/FillValueTest.cpp` is added and registered as
-`FILL_VALUE_TEST` with 8 MPI tasks using `add_omega_test()` in the test
-`CMakeLists.txt`. The test follows the standard Omega test pattern: initialize
-`MachEnv`, logging, IO, `Decomp`, and `Dimension` before running assertions.
+A test `test/ocn/FillValueTest.cpp` is added and registered as `FILL_VALUE_TEST`
+with 8 MPI tasks (building `testFillValue.exe`) using `add_omega_test()` in the
+test `CMakeLists.txt`. The test performs a full ocean initialization (matching
+the `StateTest` pattern: `MachEnv`, logging, Config, `TimeStepper`, IO, `Field`,
+`IOStream`, `Decomp`, `Halo`, `HorzMesh`, `VertCoord`, `Tracers`,
+`AuxiliaryState`, `PressureGrad`, `Tendencies`, `OceanState`), reads the initial
+state, exchanges halos, and applies `applyEdgeLayerMask` to `NormalVelocity`
+before running its assertions. Each test counts mismatches and, on any failure,
+accumulates an `Error(ErrorCode::Fail, ...)` into a top-level `Error` whose
+final state sets the process return code.
 
 ### 5.1 Test: fill constant values
 
-Verify that each Omega fill value constant exactly equals its NetCDF-C counterpart:
-
-```c++
-TstEval<I4>("FillValueI4 == NC_FILL_INT",   FillValueI4, (I4)NC_FILL_INT,    Err);
-TstEval<I8>("FillValueI8 == NC_FILL_INT64", FillValueI8, (I8)NC_FILL_INT64,  Err);
-TstEval<R4>("FillValueR4 == NC_FILL_FLOAT", FillValueR4, (R4)NC_FILL_FLOAT,  Err);
-TstEval<R8>("FillValueR8 == NC_FILL_DOUBLE",FillValueR8, (R8)NC_FILL_DOUBLE, Err);
-```
+Verify that each Omega fill value constant exactly equals its NetCDF-C
+counterpart (`FillValueI4 == NC_FILL_INT`, `FillValueI8 == NC_FILL_INT64`,
+`FillValueR4 == NC_FILL_FLOAT`, `FillValueR8 == NC_FILL_DOUBLE`), comparing
+directly against the `<netcdf.h>` `NC_FILL_*` macros.
 
 Tests requirements: 2.1, 2.2, 2.7
 
 ### 5.2 Test: attachData auto-fill
 
-Create a `Field`, allocate a Kokkos host or device array whose elements are all set
-to a distinct sentinel (e.g., 0), then call `attachData()`. Verify that after the
-call every element of the array equals `FillValueR8` (or the appropriate type).
-Repeat for I4, R4, and R8 types.
+Create a `Field`, allocate a Kokkos host array whose elements are all set to a
+distinct sentinel (`0`), then call `attachData()`. Verify that after the call
+every element of the array equals `FillValueR8`.
 
 Tests requirements: 2.3, 2.7
 
-### 5.3 Test: inactive layers contain fill values after compute
+### 5.3 Test: inactive layers contain fill values
 
-Using the smallest test mesh (the `planar` mesh used by `VertCoordTest`),
-run `VertCoord::computePressure()` or `computeGeomZHeight()`. For each cell, verify
-that all entries at depth index `k > MaxLayerCell(ICell)` equal `FillValueR8`.
-
-Tests requirements: 2.5, 2.7
-
-### 5.4 Test: NetCDF output contains correct fill value attribute
-
-Write a field to a test NetCDF file via `IOStream`. Read back the file's `_FillValue`
-attribute for the variable and verify it equals `NC_FILL_DOUBLE` (or `NC_FILL_FLOAT`
-for reduced-precision fields). Also read back the array entries for inactive layers
-and verify they equal the fill value.
+After `VertCoord` initialization, verify that the cell field `GeomZMid` carries
+`FillValueReal` in every inactive layer (`k >= MaxLayerCell(ICell)`) for all
+owned cells. This confirms that the auto-fill applied at `attachData()` time
+survives initialization for inactive layers.
 
 Tests requirements: 2.5, 2.7
 
-### 5.5 Test: NormalVelocity three-zone fill/zero/real pattern
+### 5.4 Test: NormalVelocity three-zone fill/zero/real pattern
 
 After full state initialization, IC read, halo exchange, and
 `VertCoord::applyEdgeLayerMask()`, verify that `NormalVelocity` satisfies the
@@ -440,3 +460,35 @@ was changed) and (b) IC files that store zeros in inactive layers, which
 `applyEdgeLayerMask` must replace with `FillValueReal`.
 
 Tests requirements: 2.5, 2.6, 2.7
+
+### 5.5 Test: applyCellLayerMask two-zone pattern
+
+Allocate a synthetic cell field, fill it with a sentinel value (≠ 0 and
+≠ `FillValueReal`), apply `VertCoord::applyCellLayerMask()`, and verify for every
+owned cell that:
+
+- **Inactive layers** (outside `[MinLayerCell, MaxLayerCell]`): equal
+  `FillValueReal`.
+- **Active layers** (`[MinLayerCell, MaxLayerCell]`): retain the sentinel value.
+
+Using a sentinel rather than IC data gives an exact check that the mask
+overwrites only the inactive layers.
+
+Tests requirements: 2.5, 2.7
+
+### 5.6 Test: applyVertexLayerMask two-zone pattern
+
+Allocate a synthetic vertex field, fill it with the same sentinel value, apply
+`VertCoord::applyVertexLayerMask()`, and verify for every owned vertex that:
+
+- **Inactive layers** (outside `[MinLayerVertexTop, MaxLayerVertexBot]`): equal
+  `FillValueReal`.
+- **Active layers** (`[MinLayerVertexTop, MaxLayerVertexBot]`): retain the
+  sentinel value.
+
+Vertices have no zeroed boundary zone (a boundary vertex holds valid data), so
+the whole valid range is checked for the sentinel. Because no vertex-based state
+field is read from IC/restart, this synthetic test is the primary coverage for
+`applyVertexLayerMask`.
+
+Tests requirements: 2.5, 2.7
