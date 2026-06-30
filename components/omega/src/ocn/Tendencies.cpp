@@ -321,6 +321,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
                              TracerIdsToRestoreVec.size()));
    }
 
+   // Validate VertMix tendency
    Err += TendConfig.get("VelVertMixTendencyEnable",
                          this->VMix->VelVertMixSetup.Enabled);
    CHECK_ERROR_ABORT(
@@ -330,6 +331,19 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
                          this->VMix->TracerVertMixSetup.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: TracerVertMixTendencyEnable not found in TendConfig");
+
+   if (this->VMix->VelVertMixSetup.Enabled ||
+       this->VMix->TracerVertMixSetup.Enabled) {
+
+      if (!this->EqState) {
+         ABORT_ERROR("Tendencies: Eos must be initialized when"
+                     "vertical mixing tendencies are enabled");
+      }
+      if (!this->VMix) {
+         ABORT_ERROR("Tendencies: VertMix must be initialized when"
+                     "vertical mixing tendencies are enabled");
+      }
+   }
 }
 
 //------------------------------------------------------------------------------
