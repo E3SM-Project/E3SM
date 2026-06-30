@@ -13,6 +13,11 @@
 ///      fully-inactive layers = FillValueReal, boundary layers = 0, active
 ///      layers
 ///      != FillValueReal (quiescent IC gives 0, which is valid)
+///   5. applyCellLayerMask sets inactive cell layers to FillValueReal and
+///      leaves active layers ([MinLayerCell, MaxLayerCell]) unchanged
+///   6. applyVertexLayerMask sets inactive vertex layers to FillValueReal and
+///      leaves active layers ([MinLayerVertexTop, MaxLayerVertexBot])
+///      unchanged (no zeroed boundary zone, unlike edges)
 //
 //===----------------------------------------------------------------------===//
 
@@ -313,6 +318,114 @@ int main(int argc, char *argv[]) {
                 "FillValueTest: NormalVelocity fill/zero/real pattern FAIL"
                 " (ErrInactive={}, ErrBoundary={}, ErrActive={})",
                 ErrInactive, ErrBoundary, ErrActive);
+         }
+      }
+
+      // ------------------------------------------------------------------
+      // Test 5: applyCellLayerMask sets inactive cell layers to FillValueReal
+      //         and leaves active layers ([MinLayerCell, MaxLayerCell])
+      //         unchanged.
+      //   A synthetic cell field is filled with a sentinel value (!= 0 and
+      //   != FillValueReal); after masking:
+      //   - Inactive layers (K < MinLayerCell or K > MaxLayerCell):
+      //     FillValueReal
+      //   - Active layers ([MinLayerCell, MaxLayerCell]): sentinel (unchanged)
+      // ------------------------------------------------------------------
+      {
+         I4 NCellsOwned = DefMesh->NCellsOwned;
+         I4 NVertLayers = DefVertCoord->NVertLayers;
+
+         const Real Sentinel = 42.0_Real;
+
+         Array2DReal SynthCell("SynthCell", DefMesh->NCellsSize, NVertLayers);
+         deepCopy(SynthCell, Sentinel);
+         DefVertCoord->applyCellLayerMask(SynthCell, DefMesh->NCellsAll);
+
+         auto SynthCellH           = createHostMirrorCopy(SynthCell);
+         const auto &MinLayerCellH = DefVertCoord->MinLayerCellH;
+         const auto &MaxLayerCellH = DefVertCoord->MaxLayerCellH;
+
+         int ErrInactive = 0; // non-fill in inactive zone (bad)
+         int ErrActive   = 0; // not sentinel in active zone (bad)
+
+         for (int ICell = 0; ICell < NCellsOwned; ++ICell) {
+            int KMin = MinLayerCellH(ICell);
+            int KMax = MaxLayerCellH(ICell); // -1 for fully-land cells
+
+            for (int K = 0; K < NVertLayers; ++K) {
+               Real Val    = SynthCellH(ICell, K);
+               bool active = (K >= KMin && K <= KMax);
+
+               if (active && Val != Sentinel)
+                  ++ErrActive;
+               if (!active && Val != FillValueReal)
+                  ++ErrInactive;
+            }
+         }
+
+         if (ErrInactive == 0 && ErrActive == 0) {
+            LOG_INFO("FillValueTest: applyCellLayerMask pattern PASS");
+         } else {
+            ErrAll += Error(ErrorCode::Fail,
+                            "FillValueTest: applyCellLayerMask pattern FAIL"
+                            " (ErrInactive={}, ErrActive={})",
+                            ErrInactive, ErrActive);
+         }
+      }
+
+      // ------------------------------------------------------------------
+      // Test 6: applyVertexLayerMask sets inactive vertex layers to
+      //         FillValueReal and leaves active layers
+      //         ([MinLayerVertexTop, MaxLayerVertexBot]) unchanged.
+      //   Unlike edges, a boundary vertex with one or more active surrounding
+      //   cells holds valid (generally non-zero) data, so there is no zeroed
+      //   boundary zone.
+      //   A synthetic vertex field is filled with a sentinel value (!= 0 and
+      //   != FillValueReal); after masking:
+      //   - Inactive layers (outside [MinLayerVertexTop, MaxLayerVertexBot]):
+      //     FillValueReal
+      //   - Active layers ([MinLayerVertexTop, MaxLayerVertexBot]): sentinel
+      //     (unchanged)
+      // ------------------------------------------------------------------
+      {
+         I4 NVerticesOwned = DefMesh->NVerticesOwned;
+         I4 NVertLayers    = DefVertCoord->NVertLayers;
+
+         const Real Sentinel = 42.0_Real;
+
+         Array2DReal SynthVtx("SynthVtx", DefMesh->NVerticesSize, NVertLayers);
+         deepCopy(SynthVtx, Sentinel);
+         DefVertCoord->applyVertexLayerMask(SynthVtx, DefMesh->NVerticesAll);
+
+         auto SynthVtxH                 = createHostMirrorCopy(SynthVtx);
+         const auto &MinLayerVertexTopH = DefVertCoord->MinLayerVertexTopH;
+         const auto &MaxLayerVertexBotH = DefVertCoord->MaxLayerVertexBotH;
+
+         int ErrInactive = 0; // non-fill in inactive zone (bad)
+         int ErrActive   = 0; // not sentinel in active zone (bad)
+
+         for (int IVertex = 0; IVertex < NVerticesOwned; ++IVertex) {
+            int KMin = MinLayerVertexTopH(IVertex);
+            int KMax = MaxLayerVertexBotH(IVertex); // -1 for invalid vertices
+
+            for (int K = 0; K < NVertLayers; ++K) {
+               Real Val    = SynthVtxH(IVertex, K);
+               bool active = (K >= KMin && K <= KMax);
+
+               if (active && Val != Sentinel)
+                  ++ErrActive;
+               if (!active && Val != FillValueReal)
+                  ++ErrInactive;
+            }
+         }
+
+         if (ErrInactive == 0 && ErrActive == 0) {
+            LOG_INFO("FillValueTest: applyVertexLayerMask pattern PASS");
+         } else {
+            ErrAll += Error(ErrorCode::Fail,
+                            "FillValueTest: applyVertexLayerMask pattern FAIL"
+                            " (ErrInactive={}, ErrActive={})",
+                            ErrInactive, ErrActive);
          }
       }
 
