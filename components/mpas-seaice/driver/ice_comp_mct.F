@@ -3061,10 +3061,11 @@ contains
             ! field frazilMassAdjust.
             i2x_i(index_i2x_Fioi_melth  ,n) = oceanHeatFlux(i)
             i2x_i(index_i2x_Fioi_swpen  ,n) = oceanShortwaveFlux(i)
-            i2x_i(index_i2x_Fioi_meltw  ,n) = oceanFreshWaterFlux(i)
+            i2x_i(index_i2x_Fioi_meltw  ,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
             i2x_i(index_i2x_Fioi_frazil ,n) = frazilMassAdjust(i)/ailohi
-            i2x_i(index_i2x_Fioi_salt   ,n) = oceanSaltFlux(i) 
+            i2x_i(index_i2x_Fioi_salt   ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
             i2x_i(index_i2x_Fioi_frazils,n) = seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_frazilh,n) = 0.0_RKIND
             i2x_i(index_i2x_Fioi_taux   ,n) = tauxo
             i2x_i(index_i2x_Fioi_tauy   ,n) = tauyo
 
