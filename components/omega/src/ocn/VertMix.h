@@ -268,23 +268,23 @@ class VelVertMixSetupOnEdge {
              0.5_Real *
              (PseudoThickCell(JCell0, K + 1) + PseudoThickCell(JCell1, K + 1));
 
-         const Real PseudoThickEdgeTop =
+         const Real PseudoThickEdgeBot =
              0.5_Real * (PseudoThickEdgeK + PseudoThickEdgeKp1);
 
          // Interpolation from cell center to top using
          // the two-point linear interpolation
-         const Real SpecVolEdgeTop =
+         const Real SpecVolEdgeBot =
              (0.5_Real * (SpecVol(JCell0, K) + SpecVol(JCell1, K)) *
                   PseudoThickEdgeKp1 +
               0.5_Real * (SpecVol(JCell0, K + 1) + SpecVol(JCell1, K + 1)) *
                   PseudoThickEdgeK) /
              (PseudoThickEdgeK + PseudoThickEdgeKp1);
 
-         const Real ViscAlphaEdgeTop =
+         const Real ViscAlphaEdgeBot =
              0.5_Real * (VertVisc(JCell0, K + 1) + VertVisc(JCell1, K + 1)) /
-             (LocRhoSw * SpecVolEdgeTop);
+             (LocRhoSw * SpecVolEdgeBot);
 
-         G = DT * ViscAlphaEdgeTop / PseudoThickEdgeTop;
+         G = DT * ViscAlphaEdgeBot / PseudoThickEdgeBot;
       }
    }
 
@@ -327,20 +327,20 @@ class TracerVertMixSetupOnCell {
 
          const Real PseudoThickCellKp1 = PseudoThickCell(ICell, K + 1);
 
-         const Real PseudoThickCellTop =
+         const Real PseudoThickCellBot =
              0.5_Real * (PseudoThickCellK + PseudoThickCellKp1);
 
          // Interpolation from cell center to top using
          // the two-point linear interpolation
-         const Real SpecVolCellTop =
+         const Real SpecVolCellBot =
              (SpecVol(ICell, K) * PseudoThickCellKp1 +
               SpecVol(ICell, K + 1) * PseudoThickCellK) /
              (PseudoThickCellK + PseudoThickCellKp1);
 
-         const Real DiffAlphaCellTop =
-             VertDiff(ICell, K + 1) / (LocRhoSw * SpecVolCellTop);
+         const Real DiffAlphaCellBot =
+             VertDiff(ICell, K + 1) / (LocRhoSw * SpecVolCellBot);
 
-         G = DT * DiffAlphaCellTop / PseudoThickCellTop;
+         G = DT * DiffAlphaCellBot / PseudoThickCellBot;
       }
    }
 
