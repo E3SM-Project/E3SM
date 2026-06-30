@@ -500,6 +500,10 @@ globalSum(const Kokkos::View<T, ML, MS> Array, ///< [in] array to be summed
           const MPI_Comm Comm,                 ///< [in] MPI Communicator
           const std::vector<I4> *IndxRange = nullptr ///< [in] index range
 ) {
+   // initialize reproducible MPI_SUMDD operator
+   if (R8SumNotInitialized)
+      globalSumInit();
+
    // Get array and layout information
    bool IsHost = isReduceArrayOnHost(Array);
    std::vector<I8> Strides(5, 0);
@@ -804,6 +808,10 @@ globalSum(const Kokkos::View<T, ML, MS> Arr1, // [in] first  array in product
           const MPI_Comm Comm,                // [in] MPI Communicator
           const std::vector<I4> *IndxRange = nullptr ///< [in] opt index range
 ) {
+   // initialize reproducible MPI_SUMDD operator
+   if (R8SumNotInitialized)
+      globalSumInit();
+
    // Some error checks
    OMEGA_REQUIRE(Arr1.rank == Arr2.rank,
                  "globalSum (R8 Array product): Arrays must have same rank");
@@ -2246,6 +2254,7 @@ localMaskedMin(
    }
 
    LocalMinVal = LocalMin;
+   MPI_Barrier(MPI_COMM_WORLD);
    return;
 }
 
@@ -2374,22 +2383,22 @@ localMaskedMax(const Kokkos::View<T1, ML1, MS1> Arr1, ///< [in] 1st array
 
    // Error checks
    OMEGA_REQUIRE(Arr2.rank == 1 || Arr2.rank == 2,
-                 "localMaskedMin: Arr2 must be 1D or 2D");
+                 "localMaskedMax: Arr2 must be 1D or 2D");
    OMEGA_REQUIRE(Arr1.rank >= Arr2.rank,
-                 "localMaskedMin: Arr1 rank must be >= Arr2 rank");
+                 "localMaskedMax: Arr1 rank must be >= Arr2 rank");
 
    // Verify dimension matching
    if (Arr2.rank == 1) {
       int horizDim1 = (Arr1.rank == 1) ? 0 : Arr1.rank - 2;
       OMEGA_REQUIRE(Arr1.extent(horizDim1) == Arr2.extent(0),
-                    "localMaskedMin: Horizontal dimensions must match");
+                    "localMaskedMax: Horizontal dimensions must match");
    } else { // Arr2.rank == 2
       OMEGA_REQUIRE(Arr1.rank >= 2,
-                    "localMaskedMin: Arr1 must be at least 2D when Arr2 is 2D");
+                    "localMaskedMax: Arr1 must be at least 2D when Arr2 is 2D");
       OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 2) == Arr2.extent(0),
-                    "localMaskedMin: Horizontal dimensions must match");
+                    "localMaskedMax: Horizontal dimensions must match");
       OMEGA_REQUIRE(Arr1.extent(Arr1.rank - 1) == Arr2.extent(1),
-                    "localMaskedMin: Vertical dimensions must match");
+                    "localMaskedMax: Vertical dimensions must match");
    }
 
    // Get array and layout information
@@ -2484,6 +2493,7 @@ localMaskedMax(const Kokkos::View<T1, ML1, MS1> Arr1, ///< [in] 1st array
    }
 
    LocalMaxVal = LocalMax;
+   MPI_Barrier(MPI_COMM_WORLD);
    return;
 }
 
