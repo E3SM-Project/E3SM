@@ -34,7 +34,7 @@ endfunction()
 function(CopyFile src_file tgt_file)
 ###############################################################################
   execute_process (
-    COMMAND /bin/cp -f ${src_file} ${tgt_file}
+    COMMAND ${CMAKE_COMMAND} -E copy "${src_file}" "${tgt_file}"
     RESULT_VARIABLE cp_result
     OUTPUT_VARIABLE cp_output
     ERROR_VARIABLE  cp_output)
@@ -42,7 +42,7 @@ function(CopyFile src_file tgt_file)
   if (NOT cp_result EQUAL 0)
     string (CONCAT msg
       "Command\n"
-      "  '${CP} -f ${SRC_FILE} ${TGT_FILE}'"
+      "  '${CMAKE_COMMAND} -E copy ${src_file} ${tgt_file}'"
       "returned '${cp_result}', and output:\n"
       "${cp_output}")
     message ("${msg}")

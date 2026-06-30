@@ -3,6 +3,9 @@
 #include <fstream>
 #include <vector>
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
 
 using Real = double;
 using Int  = int;
@@ -10,7 +13,7 @@ using Int  = int;
 #define BT_REQUIRE_MSG(condition, msg)          \
   do {                                                                  \
     if ( ! (condition) ) {                                              \
-      std::stringstream ekat_msg_ss, ekat_tmp_ss;                       \
+      std::stringstream ekat_msg_ss;                                    \
       ekat_msg_ss << msg;                                               \
       throw std::runtime_error(ekat_msg_ss.str());                      \
     }                                                                   \
@@ -33,7 +36,7 @@ struct FakeBaselineTest
     return 0;
   }
 
-  Int run_and_cmp (const std::string& filename, const Real& tol, bool no_baseline) {
+  Int run_and_cmp (const std::string& filename, const Real&, bool no_baseline) {
     std::ifstream ifile;
     if (!no_baseline) {
       ifile.open(filename,std::ios::binary);
@@ -103,11 +106,6 @@ int main (int argc, char** argv) {
 
   // Compute full baseline file name with precision.
   baseline_fn += "/baseline_test.baseline" + std::to_string(sizeof(Real));
-
-  std::vector<char*> args;
-  for (int i=0; i<argc; ++i) {
-    args.push_back(argv[i]);
-  }
 
   FakeBaselineTest bln;
   if (generate) {

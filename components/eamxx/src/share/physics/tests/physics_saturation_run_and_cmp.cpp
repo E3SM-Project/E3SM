@@ -140,7 +140,7 @@ struct UnitWrap::UnitTest<D>::TestSaturation
       ifile.open(filename,std::ios::binary);
       EKAT_REQUIRE_MSG( ifile.good(), "run_and_cmp can't read " + filename + "\n");
     }
-    Int nerr = 0, ne;
+    Int nerr = 0, ne = 0;
     int case_num = 0;
     for (auto p : params_) {
       ++case_num;
