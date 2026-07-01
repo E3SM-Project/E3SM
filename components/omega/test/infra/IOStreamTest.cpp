@@ -15,6 +15,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Forcing.h"
@@ -108,6 +109,9 @@ void initIOStreamTest(Clock *&ModelClock // Model clock
       ABORT_ERROR("IOStreamTest: Error initializing OceanState");
 
    PressureGrad::init();
+
+   // Initialize Eos
+   Eos::init();
 
    // Initialize VertMix
    VertMix::init();

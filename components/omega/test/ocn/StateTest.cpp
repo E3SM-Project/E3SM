@@ -13,6 +13,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Halo.h"
@@ -96,7 +97,10 @@ void initStateTest() {
    // Initialize pressure gradient
    PressureGrad::init();
 
-   // Create tendencies
+   // Initialize equation of state
+   Eos::init();
+
+   // Initialize vertical mixing
    VertMix::init();
 
    // Create tendencies
