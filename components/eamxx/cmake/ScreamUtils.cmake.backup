@@ -186,17 +186,13 @@ function(GetInputFile src_path)
     endif()
     set(full_src_path ${SCREAM_INPUT_ROOT}/atm/${src_path})
     if (NOT EXISTS ${full_src_path})
-      if (SCREAM_SKIP_INPUT_DOWNLOAD)
-        message(STATUS "Skipping download of ${src_path} (SCREAM_SKIP_INPUT_DOWNLOAD=ON)")
-      else()
-        execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/${src_path}
-          RESULT_VARIABLE check_input_status
-          OUTPUT_VARIABLE check_input_output
-          ERROR_VARIABLE  check_input_output
-          )
-        if (NOT check_input_status EQUAL 0)
-          message(FATAL_ERROR "Could not download ${src_path}, output was: ${check_input_output}")
-        endif()
+      execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/${src_path}
+        RESULT_VARIABLE check_input_status
+        OUTPUT_VARIABLE check_input_output
+        ERROR_VARIABLE  check_input_output
+        )
+      if (NOT check_input_status EQUAL 0)
+        message(FATAL_ERROR "Could not download ${src_path}, output was: ${check_input_output}")
       endif()
     endif()
   endif()

@@ -165,6 +165,49 @@ void DataInterpolation::shift_data_interval ()
 }
 
 void DataInterpolation::
+correct_masked_values (const Field& f) const
+{
+  using namespace ShortFieldTagsNames;
+  const auto& fl = f.get_header().get_identifier().get_layout();
+
+  if (not fl.has_tag(COL) or not fl.has_tag(LEV)) {
+    return;
+  }
+
+  using KT = KokkosTypes<DefaultDevice>;
+  using RangePolicy = typename KT::RangePolicy;
+
+  constexpr Real fill_value = constants::fill_value<Real>;
+  const auto thresh = std::abs(fill_value)*0.0001;
+
+  const auto v = f.get_view<Real**>();
+  const int ncols = fl.dim(COL);
+  const int nlevs = fl.dim(LEV);
+
+  auto lambda = KOKKOS_LAMBDA(const int icol) {
+    int first_good = nlevs;
+    int last_good = -1;
+    for (int k=0; k<nlevs; ++k) {
+      if (Kokkos::abs(v(icol,k)-fill_value)>thresh) {
+        first_good = ekat::impl::min(first_good,k);
+        last_good  = ekat::impl::max(last_good,k);
+      }
+    }
+    if (first_good>=nlevs or last_good<0) {
+      return;
+    }
+
+    for (int k=0; k<first_good; ++k) {
+      v(icol,k) = v(icol,first_good);
+    }
+    for (int k=last_good+1; k<nlevs; ++k) {
+      v(icol,k) = v(icol,last_good);
+    }
+  };
+  Kokkos::parallel_for(RangePolicy(0,ncols),lambda);
+}
+
+void DataInterpolation::
 update_end_fields ()
 {
   // First, set the correct fields in the reader
@@ -203,6 +246,11 @@ update_end_fields ()
   m_logger->info(" - filename: " + slice_end.filename);
   m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
   m_reader->read(slice_end.time_idx);
+  if (m_correct_fill_values) {
+    for (int i=0; i<m_nfields; ++i) {
+      correct_masked_values(m_horiz_remapper_end->get_src_field(i));
+    }
+  }
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -637,9 +685,10 @@ create_vert_remapper (const VertRemapData& data)
       read_fields (m_time_database.files.front(),{hyam,hybm});
     } else if (m_vr_type==Static1D) {
       // Can load p now, since it's static
+      auto src_file = data.pfile.empty() ? m_time_database.files.front() : data.pfile;
       std::vector<Field> fields = {p_data.alias(data.pname)};
       auto gids = m_grid_after_hremap->get_partitioned_dim_gids();
-      read_fields(m_time_database.files.front(),fields);
+      read_fields(src_file,fields);
     }
     vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
 
