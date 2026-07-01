@@ -222,12 +222,13 @@ contains
       if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
 
       ! TODO: make these namelists
-      wgtIdSo2a = 'scalar_o2a'//C_NULL_CHAR
-      wgtIdFo2a = 'flux_o2a'//C_NULL_CHAR
-      wgtIdSi2a = 'scalar_i2a'//C_NULL_CHAR
-      wgtIdFi2a = 'flux_i2a'//C_NULL_CHAR
-      wgtIdSl2a = 'scalar_l2a'//C_NULL_CHAR
-      wgtIdFl2a = 'flux_l2a'//C_NULL_CHAR
+      ! C_NULL_CHAR is added at each iMOAB C API call site; keep variables clean for diagnostics.
+      wgtIdSo2a = 'scalar_o2a'
+      wgtIdFo2a = 'flux_o2a'
+      wgtIdSi2a = 'scalar_i2a'
+      wgtIdFi2a = 'flux_i2a'
+      wgtIdSl2a = 'scalar_l2a'
+      wgtIdFl2a = 'flux_l2a'
       compute_maps_online_o2a = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_i2a = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_l2a = cpl_compute_maps_online ! read from disk or compute online
@@ -261,10 +262,10 @@ contains
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing MOAB mapper_So2a'
             endif
-            appname = "OCN_ATM_COU"//C_NULL_CHAR
+            appname = "OCN_ATM_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between atm and ocn mesh
             idintx = 100*ocn(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxoa)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ATM-OCN intersection application'
               call shr_sys_abort(subname//' ERROR in registering ATM-OCN intersection application')
@@ -346,7 +347,7 @@ contains
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdSo2a, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, trim(wgtIdSo2a)//C_NULL_CHAR, &
                                                    trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -584,10 +585,10 @@ contains
               write(logunit,*) ' '
               write(logunit,F00) 'Initializing ice atm coupler'
             endif
-            appname = "ICE_ATM_COU"//C_NULL_CHAR
+            appname = "ICE_ATM_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between ice and atm mesh
             idintx = 100*ice(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxia)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxia)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ICE-ATM intersection'
               call shr_sys_abort(subname//' ERROR in registering ICE-ATM intersection')
@@ -672,7 +673,7 @@ contains
                                               noConserve, validate, &
                                               trim(dofnameS), trim(dofnameT)
                endif
-               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxia, wgtIdSi2a, &
+               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxia, trim(wgtIdSi2a)//C_NULL_CHAR, &
                                                 trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                 fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                 noConserve, validate, &
@@ -826,10 +827,10 @@ contains
               write(logunit,F00) 'Initializing MOAB mapper_Fl2a'
             endif
 
-            appname = "LND_ATM_COU"//C_NULL_CHAR
+            appname = "LND_ATM_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*lnd(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxla)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering lnd atm intx '
               call shr_sys_abort(subname//' ERROR in registering lnd atm intx ')
@@ -903,7 +904,7 @@ contains
                                                    noConserve, validate, &
                                                    trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdFl2a, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, trim(wgtIdFl2a)//C_NULL_CHAR, &
                                                    trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &

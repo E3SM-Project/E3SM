@@ -291,12 +291,13 @@ contains
 
     compute_maps_online_a2o = cpl_compute_maps_online  ! read from disk or compute online
     compute_maps_online_r2o = .false.  ! *always* read from disk
-    wgtIdFa2o = 'flux_a2o'//C_NULL_CHAR
-    wgtIdSa2o = 'bilinear_a2o'//C_NULL_CHAR
-    wgtIdVa2o = 'vector_a2o'//C_NULL_CHAR
-    wgtIdFr2ol = 'flux_r2o_liq'//C_NULL_CHAR
-    wgtIdFr2oi = 'flux_r2o_ice'//C_NULL_CHAR
-    wgtIdFr2o = 'flux_r2o'//C_NULL_CHAR
+    ! C_NULL_CHAR is added at each iMOAB C API call site; keep variables clean for diagnostics.
+    wgtIdFa2o = 'flux_a2o'
+    wgtIdSa2o = 'bilinear_a2o'
+    wgtIdVa2o = 'vector_a2o'
+    wgtIdFr2ol = 'flux_r2o_liq'
+    wgtIdFr2oi = 'flux_r2o_ice'
+    wgtIdFr2o = 'flux_r2o'
     no_match = .true. ! force to create a new mapper object
 
     allocate(mapper_Sa2o)
@@ -421,10 +422,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Fa2o and mapper_Sa2o'
             end if
-            appname = "ATM_OCN_COU"//C_NULL_CHAR
+            appname = "ATM_OCN_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
             idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxao)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxao)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ATM-OCN intersection application'
               call shr_sys_abort(subname//' ERROR in registering ATM-OCN intersection application')
@@ -530,7 +531,7 @@ contains
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "bilinear", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdSa2o, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, trim(wgtIdSa2o)//C_NULL_CHAR, &
                                                    trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -548,7 +549,7 @@ contains
                         trim(dm1), orderS, trim(dofnameS), trim(dm2), orderT, trim(dofnameT), "", &
                         fNoBubble, monotonicity, volumetric, fInverseDistanceMap, noConserve, validate)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdFa2o, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, trim(wgtIdFa2o)//C_NULL_CHAR, &
                                                    trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                    fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                    noConserve, validate, &
@@ -764,10 +765,10 @@ contains
           call seq_comm_getData(CPLID, mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
           call seq_comm_getData(CPLID, mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
 
-          appname = "ROF_OCN_COU"//CHAR(0)
+          appname = "ROF_OCN_COU"
             ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
           rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbintxro)
+          ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, rmapid, mbintxro)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof 2 ocn moab map '
              call shr_sys_abort(subname//' ERROR in registering  rof 2 ocn moab map ')

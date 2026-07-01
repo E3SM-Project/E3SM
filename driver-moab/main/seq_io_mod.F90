@@ -1074,10 +1074,9 @@ contains
        allocate(dof_reorder(ns))
        allocate(indx(ns))
 
-       ! note: size of dof is ns
-       if (ns > 0) then
-          tagname = 'GLOBAL_ID'//C_NULL_CHAR
-          ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
+        ! note: size of dof is ns
+        if (ns > 0) then
+           ierr = iMOAB_GetIntTagStorage ( mbxid, 'GLOBAL_ID'//C_NULL_CHAR, ns , ent_type, dof)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' ERROR: cannot get dofs '
             call shr_sys_abort(subname//'cannot get dofs ')
@@ -1113,9 +1112,9 @@ contains
                  data1(ix) = matrix(ix, index_list) !
                enddo
              else
-               tagname = trim(field)//C_NULL_CHAR
+               tagname = trim(field)
                if (ns > 0 ) then
-                  ierr = iMOAB_GetDoubleTagStorage (mbxid, tagname, ns, ent_type, data1)
+                  ierr = iMOAB_GetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns, ent_type, data1)
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' ERROR: cannot get tag data ', trim(tagname)
                      call shr_sys_abort(subname//'cannot get tag data ')
@@ -1575,9 +1574,8 @@ contains
     allocate(dof_reorder(ns))
 
    ! note: size of dof is ns
-    tagname = 'GLOBAL_ID'//C_NULL_CHAR
     if (ns > 0 ) then
-       ierr = iMOAB_GetIntTagStorage ( mbxid, tagname, ns , ent_type, dof)
+       ierr = iMOAB_GetIntTagStorage ( mbxid, 'GLOBAL_ID'//C_NULL_CHAR, ns , ent_type, dof)
        if (ierr .ne. 0) then
           write(logunit,*) subname,' ERROR: cannot get dofs '
           call shr_sys_abort(subname//'cannot get dofs ')
@@ -1631,9 +1629,9 @@ contains
                matrix(ix, index_list)  = data_reorder(ix) !
             enddo
           else
-            tagname = trim(field)//C_NULL_CHAR
-            if (ns > 0) then
-               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder)
+             tagname = trim(field)
+             if (ns > 0) then
+                ierr = iMOAB_SetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns , ent_type, data_reorder)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
                   call shr_sys_abort(subname//'cannot set tag data ')
@@ -1659,10 +1657,10 @@ contains
             do ix = 1,ns
                matrix(ix, index_list)  = data_reorder(ix) !
             enddo
-         else
-            tagname = trim(field)//C_NULL_CHAR
-            if ( ns > 0 ) then
-               ierr = iMOAB_SetDoubleTagStorage (mbxid, tagname, ns , ent_type, data_reorder)
+          else
+             tagname = trim(field)
+             if ( ns > 0 ) then
+                ierr = iMOAB_SetDoubleTagStorage (mbxid, trim(tagname)//C_NULL_CHAR, ns , ent_type, data_reorder)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' ERROR: cannot set tag data ', trim(tagname)
                   call shr_sys_abort(subname//'cannot set tag data ')
