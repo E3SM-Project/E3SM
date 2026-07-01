@@ -77,11 +77,11 @@ type :: zm_param_t
    real(r8) :: accr_fac        = unset_r8    ! ZM microphysics enhancement factor for droplet-rain accretion
    real(r8) :: micro_dcs       = unset_r8    ! ZM microphysics size threshold for cloud ice to snow autoconversion [m]
    ! MCSP parameters
-   logical  :: mcsp_enabled    = .false.     ! flag for mesoscale coherent structure parameterization (MSCP)
-   real(r8) :: mcsp_t_coeff    = 0           ! MCSP coefficient for temperature tendencies
-   real(r8) :: mcsp_q_coeff    = 0           ! MCSP coefficient for specific humidity tendencies
-   real(r8) :: mcsp_u_coeff    = 0           ! MCSP coefficient for zonal momentum tendencies
-   real(r8) :: mcsp_v_coeff    = 0           ! MCSP coefficient for meridional momentum tendencies
+   logical  :: mcsp_enabled       = .false.  ! flag for mesoscale coherent structure parameterization (MSCP)
+   real(r8) :: mcsp_t_coeff       = 0        ! MCSP coefficient for temperature tendencies
+   real(r8) :: mcsp_q_coeff       = 0        ! MCSP coefficient for specific humidity tendencies
+   real(r8) :: mcsp_mom_coeff     = 0        ! MCSP momentum coefficient (dimensionless fraction of the shear)
+   logical  :: mcsp_use_full_shear = .false. ! use full (u,v) shear vector instead of zonal-only shear (default preserves E3SMv3)
 end type zm_param_t
 
 !===================================================================================================
@@ -213,11 +213,11 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%accr_fac        = 1.5D0
    zm_param%micro_dcs       = 150.E-6
    ! MCSP parameters
-   zm_param%mcsp_enabled    = .true.
-   zm_param%mcsp_t_coeff    = 0.3
-   zm_param%mcsp_q_coeff    = 0
-   zm_param%mcsp_u_coeff    = 0
-   zm_param%mcsp_v_coeff    = 0
+   zm_param%mcsp_enabled       = .true.
+   zm_param%mcsp_t_coeff       = 0.3
+   zm_param%mcsp_q_coeff       = 0
+   zm_param%mcsp_mom_coeff     = 0
+   zm_param%mcsp_use_full_shear = .false.
 end subroutine zm_param_set_for_testing
 
 !===================================================================================================
@@ -256,8 +256,8 @@ subroutine zm_param_mpi_broadcast(zm_param)
    call mpibcast(zm_param%mcsp_enabled,      1, mpilog, 0, mpicom) ! MCSP parameters
    call mpibcast(zm_param%mcsp_t_coeff,      1, mpir8,  0, mpicom)
    call mpibcast(zm_param%mcsp_q_coeff,      1, mpir8,  0, mpicom)
-   call mpibcast(zm_param%mcsp_u_coeff,      1, mpir8,  0, mpicom)
-   call mpibcast(zm_param%mcsp_v_coeff,      1, mpir8,  0, mpicom)
+   call mpibcast(zm_param%mcsp_mom_coeff,    1, mpir8,  0, mpicom)
+   call mpibcast(zm_param%mcsp_use_full_shear, 1, mpilog, 0, mpicom)
 #endif
 end subroutine zm_param_mpi_broadcast
 
@@ -300,8 +300,8 @@ subroutine zm_param_print(zm_param)
       write(iulog,*) indent,'mcsp_enabled    : ',zm_param%mcsp_enabled
       write(iulog,*) indent,'mcsp_t_coeff    : ',zm_param%mcsp_t_coeff
       write(iulog,*) indent,'mcsp_q_coeff    : ',zm_param%mcsp_q_coeff
-      write(iulog,*) indent,'mcsp_u_coeff    : ',zm_param%mcsp_u_coeff
-      write(iulog,*) indent,'mcsp_v_coeff    : ',zm_param%mcsp_v_coeff
+      write(iulog,*) indent,'mcsp_mom_coeff  : ',zm_param%mcsp_mom_coeff
+      write(iulog,*) indent,'mcsp_use_full_shear : ',zm_param%mcsp_use_full_shear
       write(iulog,*) ''
       call shr_sys_flush(iulog)
    end if ! masterproc
