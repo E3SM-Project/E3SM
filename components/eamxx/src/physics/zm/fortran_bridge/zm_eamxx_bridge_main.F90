@@ -28,7 +28,9 @@ contains
 
 subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in, &
                                   trig_dcape_in, trig_ull_in, &
-                                  clos_dyn_adj_in, mcsp_enabled_in ) bind(C)
+                                  clos_dyn_adj_in, mcsp_enabled_in, &
+                                  mcsp_t_coeff_in, mcsp_q_coeff_in, &
+                                  mcsp_mom_coeff_in, mcsp_use_full_shear_in ) bind(C)
   use mpi
   use zm_conv,       only: zm_const, zm_param
   use zm_conv_types, only: zm_const_set_for_testing, zm_param_set_for_testing
@@ -42,6 +44,10 @@ subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in, &
   logical(kind=c_bool),value, intent(in) :: trig_ull_in
   logical(kind=c_bool),value, intent(in) :: clos_dyn_adj_in
   logical(kind=c_bool),value, intent(in) :: mcsp_enabled_in
+  real(kind=c_real),   value, intent(in) :: mcsp_t_coeff_in
+  real(kind=c_real),   value, intent(in) :: mcsp_q_coeff_in
+  real(kind=c_real),   value, intent(in) :: mcsp_mom_coeff_in
+  logical(kind=c_bool),value, intent(in) :: mcsp_use_full_shear_in
   !-----------------------------------------------------------------------------
   ! Local variables
   integer :: mpi_rank, ierror
@@ -67,6 +73,10 @@ subroutine zm_eamxx_bridge_init_c( pver_in, limcnv_in, &
   zm_param%trig_ull        = trig_ull_in
   zm_param%clos_dyn_adj    = clos_dyn_adj_in
   zm_param%mcsp_enabled    = mcsp_enabled_in
+  zm_param%mcsp_t_coeff       = mcsp_t_coeff_in
+  zm_param%mcsp_q_coeff       = mcsp_q_coeff_in
+  zm_param%mcsp_mom_coeff     = mcsp_mom_coeff_in
+  zm_param%mcsp_use_full_shear = mcsp_use_full_shear_in
   call zm_param_print(zm_param)
   !-----------------------------------------------------------------------------
   call wv_sat_init()

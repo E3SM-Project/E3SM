@@ -16,7 +16,9 @@ using ZMF = zm::Functions<Real, DefaultDevice>;
 // Glue functions to call fortran from from C++ with the Data struct
 void zm_eamxx_bridge_init( Int pver, Int limcnv_in,
                            bool trig_dcape_in, bool trig_ull_in,
-                           bool clos_dyn_adj_in, bool mcsp_enabled_in );
+                           bool clos_dyn_adj_in, bool mcsp_enabled_in,
+                           Real mcsp_t_coeff_in, Real mcsp_q_coeff_in,
+                           Real mcsp_mom_coeff_in, bool mcsp_use_full_shear_in );
 void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,
                           ZMF::ZmInputState& zm_input,
                           ZMF::ZmOutputTend& zm_output,
