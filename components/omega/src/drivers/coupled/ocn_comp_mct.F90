@@ -40,14 +40,29 @@ module ocn_comp_mct
 
 contains
    subroutine ocn_init_mct(EClock, cdata, x2o, o2x, NLFilename)
-      use omega_f2cxx_mod, only: omega_ocn_init
       use, intrinsic :: iso_c_binding, only: c_null_char
       use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_int, c_char
+
+      use omega_f2cxx_mod, only: &
+         omega_ocn_init1, &
+         omega_ocn_init2, &
+         omega_get_layout_mct, &
+         omega_get_layout_moab
+
+      use omega_cpl_indices, only: &
+         num_coupler_imports, &
+         num_coupler_exports, &
+         import_field_names, &
+         export_field_names, &
+         import_field_indices, &
+         export_field_indices, &
+         omega_set_cpl_indices
 
       use mct_mod, only: mct_gsMap_lsize
       use seq_comm_mct, only: seq_comm_suffix
       use seq_flds_mod, only: seq_flds_o2x_fields, seq_flds_x2o_fields
       use seq_infodata_mod, only: &
+         seq_infodata_PutData, &
          seq_infodata_start_type_start, &
          seq_infodata_start_type_cont, &
          seq_infodata_start_type_brnch
@@ -78,8 +93,10 @@ contains
       type(mct_gGrid), pointer :: gGrid_ocn
       integer :: lsize
       integer(IN) :: ierr, mpi_ierr  ! error codes
-      integer(IN) :: case_start_tod, case_start_ymd, cur_tod, cur_ymd
+      integer(IN) :: &
+         coupling_time_step, case_start_tod, case_start_ymd, cur_tod, cur_ymd
       integer(kind=c_int) :: start_type_c
+      integer(kind=c_int) :: layout
       character(kind=c_char, len=CL), target :: calendar_c
       character(kind=c_char, len=CL), target :: ocn_log_fname_c
 
@@ -148,6 +165,7 @@ contains
       ! Get clock and calendar information
       call seq_timemgr_EClockGetData( &
          EClock, &
+         dtime=coupling_time_step, &
          calendar=calendar, &
          curr_ymd=cur_ymd, &
          curr_tod=cur_tod, &
@@ -165,14 +183,33 @@ contains
          call mpi_abort(mpicom_ocn, ierr, mpi_ierr)
       end if
 
-      call omega_ocn_init( &
+      ! populate the import/export field name and index arrays
+      call omega_set_cpl_indices()
+
+#ifdef HAVE_MOAB
+      layout = omega_get_layout_moab()
+#else
+      layout = omega_get_layout_mct()
+#endif
+
+      call omega_ocn_init1( &
          mpicom_ocn, &
          OCN_ID, &
          "omega.yml"//c_null_char, &
          trim(ocn_log_fname)//c_null_char, &
+         start_type_c, &
          calendar_c, &
          case_start_ymd, &
-         case_start_tod &
+         case_start_tod, &
+         coupling_time_step, &
+         num_coupler_imports, &
+         num_coupler_exports, &
+         size(import_field_names), &
+         size(export_field_names), &
+         c_loc(import_field_names), &
+         c_loc(export_field_names), &
+         c_loc(import_field_indices), &
+         c_loc(export_field_indices) &
          )
 
       !-------------------------------------------------------------------------
@@ -193,6 +230,23 @@ contains
       ! Init import/export mct attribute vectors
       call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
       call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=lsize)
+
+      ! coupler needs Omega's decomposition before it can size x2o/o2x, so
+      ! attach/export/import/halo-update must wait until they're allocated
+      call seq_infodata_PutData( &
+         infodata, &
+         ocn_prognostic=.true., &
+         ocnrof_prognostic=.true., &
+         ocn_c2_glcshelf=.false. &
+         )
+
+      ! TODO: ifdef HAVE_MOAB
+      call omega_ocn_init2(c_loc(x2o%rAttr), c_loc(o2x%rAttr))
+
+      ! TODO: Remove print statement after debugging
+      if (my_task == master_task) then
+         print *, "[omega] omega_ocn_init2 done"
+      end if
 
    end subroutine ocn_init_mct
 

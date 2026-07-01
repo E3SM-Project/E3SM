@@ -13,16 +13,54 @@
 #include "TimeStepper.h"
 #include <mpi.h>
 
+// helper C++ functions
+namespace {
+
+// coupler provides (year, month, day) and (time of day) as ints
+OMEGA::TimeInstant buildStartTime(int RunStartYMD, int RunStartTOD) {
+   OMEGA::I8 Year   = (RunStartYMD / 100) / 100;
+   OMEGA::I8 Month  = (RunStartYMD / 100) % 100;
+   OMEGA::I8 Day    = RunStartYMD % 100;
+   OMEGA::I8 Hour   = (RunStartTOD / 60) / 60;
+   OMEGA::I8 Minute = (RunStartTOD / 60) % 60;
+   OMEGA::R8 Second = RunStartTOD % 60;
+   return OMEGA::TimeInstant(Year, Month, Day, Hour, Minute, Second);
+}
+
+std::map<std::string, int> buildFieldIndexMap(const char *FieldNames,
+                                              const int *FieldIndices,
+                                              const int NFields) {
+   std::map<std::string, int> FieldIdx;
+   for (int I = 0; I < NFields; ++I) {
+      // null-terminator stops string, so only start index is needed
+      std::string FieldName(FieldNames + I * 32);
+      // convert from 1-based index (Fortran) to 0-based index (C++)
+      FieldIdx[FieldName] = FieldIndices[I] - 1;
+   }
+   return FieldIdx;
+}
+} // namespace
+
 extern "C" {
 
-void omega_ocn_init(
-    const MPI_Fint FComm,       // [in] MPI communicator from Fortran
-    const int OcnID,            // [in] mct comp id for ocn mode
-    const char *YamlConfigFile, // [in] yaml file name for ocean model
-    const char *OcnLogFile,     // [in] log file name for ocean model
-    const char *CalendarName,   // [in] CIME calendar name
-    const int RunStartYMD,      // [in] run start date in YYYYMMDD
-    const int RunStartTOD       // [in] run start time in seconds of day
+void omega_ocn_init1(
+    const MPI_Fint FComm,           // [in] MPI communicator from Fortran
+    const int OcnID,                // [in] mct comp id for ocn mode
+    const char *YamlConfigFile,     // [in] yaml file name for ocean model
+    const char *OcnLogFile,         // [in] log file name for ocean model
+    const int StartType,            // [in] 0=startup, 1=continue, 2=branch
+    const char *CalendarName,       // [in] CIME calendar name
+    const int RunStartYMD,          // [in] run start date in YYYYMMDD
+    const int RunStartTOD,          // [in] run start time in seconds of day
+    const int CouplingTimeStep,     // [in] coupling time step in seconds
+    const int NCouplerImports,      // [in] number of coupler import fields
+    const int NCouplerExports,      // [in] number of coupler export fields
+    const int NOmegaImports,        // [in] number of omega import fields
+    const int NOmegaExports,        // [in] number of omega export fields
+    const char *&ImportFieldNames,  // [in] array of import field names
+    const char *&ExportFieldNames,  // [in] array of export field names
+    const int *&ImportFieldIndices, // [in] array of import field indices
+    const int *&ExportFieldIndices  // [in] array of export field indices
 ) {
 
    // Create the C MPI_Comm from the Fortran one
@@ -38,14 +76,6 @@ void omega_ocn_init(
    std::string CalendarKindStr = CalendarName;
    std::string LogFileStr      = OcnLogFile;
 
-   // Recall that e3sm uses the int YYYYMMDD to store a date
-   OMEGA::I8 Year   = (RunStartYMD / 100) / 100;
-   OMEGA::I8 Month  = (RunStartYMD / 100) % 100;
-   OMEGA::I8 Day    = RunStartYMD % 100;
-   OMEGA::I8 Hour   = (RunStartTOD / 60) / 60;
-   OMEGA::I8 Minute = (RunStartTOD / 60) % 60;
-   OMEGA::R8 Second = RunStartTOD % 60;
-
    // Initialize machine environment and logging before initializing
    // the calendar to ensure all output goes to the correct log file
    OMEGA::MachEnv::init(Comm);
@@ -53,19 +83,45 @@ void omega_ocn_init(
 
    initLogging(DefEnv, LogFileStr);
 
-   // Initialize the Calendar prior to creating the TimeInstant
+   // Init Calendar prior to creating the TimeInstant/TimeInterval objects
    OMEGA::Calendar::init(CalendarKindStr);
 
-   OMEGA::TimeInstant StartTime(Year, Month, Day, Hour, Minute, Second);
+   OMEGA::TimeInstant StartTime = buildStartTime(RunStartYMD, RunStartTOD);
+   OMEGA::TimeInterval CouplingInterval(CouplingTimeStep,
+                                        OMEGA::TimeUnits::Seconds);
+
+   std::map<std::string, int> ImportIdxMap =
+       buildFieldIndexMap(ImportFieldNames, ImportFieldIndices, NOmegaImports);
+   std::map<std::string, int> ExportIdxMap =
+       buildFieldIndexMap(ExportFieldNames, ExportFieldIndices, NOmegaExports);
 
    // Pacer::start("Init", 0);
 
-   OMEGA::ocnInit(Comm, OcnID, YamlConfigFile, OcnLogFile, StartTime);
+   OMEGA::StartType StartTypeEnum = OMEGA::safeIntToStartType(StartType);
+   OMEGA::TimeInitParams TimeParams{StartTime, std::nullopt};
+   OMEGA::CouplingInitParams CouplingParams{
+       NCouplerImports, NCouplerExports,  ImportIdxMap,
+       ExportIdxMap,    CouplingInterval, OMEGA::CouplingLayout::MCT};
+
+   OMEGA::ocnInit1(Comm, OcnID, YamlConfigFile, OcnLogFile, StartTypeEnum,
+                   TimeParams, CouplingParams);
 
    // Pacer::stop("Init", 0);
 
    LOG_INFO("ocnInit: Finished initializing ocean model");
    int ErrAll;
+}
+
+void omega_ocn_init2(const double *cpl_to_ocn_data, double *ocn_to_cpl_data) {
+   OMEGA::ocnInit2(cpl_to_ocn_data, ocn_to_cpl_data);
+}
+
+int omega_get_layout_mct() {
+   return static_cast<int>(OMEGA::CouplingLayout::MCT);
+}
+
+int omega_get_layout_moab() {
+   return static_cast<int>(OMEGA::CouplingLayout::MOAB);
 }
 
 int omega_get_ncells_local() {
@@ -114,4 +170,5 @@ void omega_get_area_cell(double *AreaCell) {
                                            (OMEGA::REarth * OMEGA::REarth));
    }
 }
+
 } // extern "C"

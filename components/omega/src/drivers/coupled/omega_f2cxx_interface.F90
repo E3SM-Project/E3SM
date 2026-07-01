@@ -4,25 +4,83 @@ module omega_f2cxx_mod
    public
 
    interface
-      subroutine omega_ocn_init( &
+      subroutine omega_ocn_init1( &
          f_comm, &
          ocn_id, &
          yaml_config_name, &
          ocn_log_name, &
+         start_type, &
          calendar_name, &
          run_start_ymd, &
-         run_start_tod) bind(c)
+         run_start_tod, &
+         coupler_time_step, &
+         n_coupler_imports, &
+         n_coupler_exports, &
+         n_omega_imports, &
+         n_omega_exports, &
+         import_field_names, &
+         export_field_names, &
+         import_field_indices, &
+         export_field_indices) bind(c)
 
-         use, intrinsic :: iso_c_binding, only: c_int, c_char
+         use, intrinsic :: iso_c_binding, only: c_int, c_char, c_ptr
 
          implicit none
 
          integer(kind=c_int), value, intent(in) :: &
-            f_comm, ocn_id, run_start_ymd, run_start_tod
+            f_comm, &
+            ocn_id, &
+            start_type, &
+            run_start_ymd, &
+            run_start_tod, &
+            coupler_time_step, &
+            n_coupler_imports, &
+            n_coupler_exports, &
+            n_omega_imports, &
+            n_omega_exports
+
          character(kind=c_char), target, intent(in) :: &
             yaml_config_name, ocn_log_name, calendar_name
 
-      end subroutine omega_ocn_init
+         type(c_ptr), target, intent(in) :: &
+            import_field_names, &
+            export_field_names, &
+            import_field_indices, &
+            export_field_indices
+
+      end subroutine omega_ocn_init1
+
+      subroutine omega_ocn_init2(cpl_to_ocn_data, ocn_to_cpl_data &
+                                 ) bind(c)
+
+         use, intrinsic :: iso_c_binding, only: c_ptr
+
+         implicit none
+
+         type(c_ptr), target, intent(in) :: &
+            cpl_to_ocn_data, ocn_to_cpl_data
+
+      end subroutine omega_ocn_init2
+
+      function omega_get_layout_mct() result(layout_mct) bind(c)
+
+         use, intrinsic :: iso_c_binding, only: c_int
+
+         implicit none
+
+         integer(kind=c_int) :: layout_mct
+
+      end function omega_get_layout_mct
+
+      function omega_get_layout_moab() result(layout_moab) bind(c)
+
+         use, intrinsic :: iso_c_binding, only: c_int
+
+         implicit none
+
+         integer(kind=c_int) :: layout_moab
+
+      end function omega_get_layout_moab
 
       function omega_get_ncells_local() result(ncells_local) bind(c)
 

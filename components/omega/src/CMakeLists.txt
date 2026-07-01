@@ -114,6 +114,7 @@ if(DEFINED E3SM_SOURCE_DIR)
       drivers/coupled/ocn_comp_mct.F90
       drivers/coupled/omega_cxx2f_interface.cpp
       drivers/coupled/omega_f2cxx_interface.F90
+      drivers/coupled/omega_cpl_indices.F90
     )
 
     # create ocn lib

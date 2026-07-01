@@ -12,12 +12,19 @@
 //===----------------------------------------------------------------------===//
 
 #include "Config.h"
+#include "SfcCoupling.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
 
 #include "mpi.h"
 
 namespace OMEGA {
+
+/// enumeration for the different "start_type"s supported by the coupler
+enum class StartType { StartUp, Continue, Branch };
+
+/// Convienvence converter of an int to a StartType enum, with error checking
+StartType safeIntToStartType(int val);
 
 /// Should timing info be printed from all ranks
 bool printTimingAllRanks();
@@ -26,11 +33,22 @@ bool printTimingAllRanks();
 /// for each Omega module
 int ocnInit(MPI_Comm Comm);
 
-int ocnInit(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
-            const int OcnId,               ///< [in] mct comp id for ocean
-            const std::string &ConfigFile, ///< [in] path to yaml config file
-            const std::string &LogFile,    ///< [in] path to log file
-            const TimeInstant &StartTime   ///< [in] simulation start time
+/// Coupled init phase 1: everything up through mesh/decomp/state, before the
+/// coupler-owned MCT buffers exist for attachData
+int ocnInit1(
+    MPI_Comm Comm,                           ///< [in] ocean MPI communicator
+    const int OcnId,                         ///< [in] mct comp id for ocean
+    const std::string &ConfigFile,           ///< [in] path to yaml config file
+    const std::string &LogFile,              ///< [in] path to log file
+    const StartType StartType,               ///< [in] simulation start type
+    const TimeInitParams &TimeParams,        ///< [in] time parameters
+    const CouplingInitParams &CouplingParams ///< [in] coupling parameters
+);
+
+/// Coupled init phase 2: runs once the coupler has allocated its MCT buffers;
+/// attaches them and exchanges the initial coupled state
+int ocnInit2(const Real *CplToOcnData, ///< [in] coupler import data pointer
+             Real *OcnToCplData        ///< [out] coupler export data pointer
 );
 
 /// Advance the model from starting from CurrTime until EndAlarm rings
@@ -43,7 +61,11 @@ int ocnFinalize(const TimeInstant &CurrTime);
 int initOmegaModules(MPI_Comm Comm);
 
 /// Initialize Omega modules with coupler-provided time parameters
-int initOmegaModules(MPI_Comm Comm, const TimeInitParams &TParams);
+int initOmegaModules(MPI_Comm Comm, const TimeInitParams &TParams,
+                     const CouplingInitParams &CParams);
+
+/// Update Halo/Host arrays with new state, auxiliary state, and tracer fields
+int initUpdateHaloAndHostArrays();
 
 } // end namespace OMEGA
 
