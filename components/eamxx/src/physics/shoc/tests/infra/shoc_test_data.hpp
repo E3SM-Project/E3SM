@@ -695,14 +695,14 @@ struct ShocMainData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi, nadv, num_qtracers;
   Real dtime;
-  Real *host_dx, *host_dy, *thv, *pres, *presi, *pdel, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *wtracer_sfc, *w_field, *inv_exner, *phis;
+  Real *host_dx, *host_dy, *thv, *pres, *presi, *pdel, *wthl_sfc, *wqw_sfc, *uw_sfc, *vw_sfc, *uw_sfc_pert, *vw_sfc_pert, *wtracer_sfc, *w_field, *inv_exner, *phis;
 
   // Inputs for shoc_init
   Int nbot_shoc, ntop_shoc;
   Real *pref_mid;
 
   // Inputs/Outputs
-  Real *host_dse, *tke, *thetal, *qw, *u_wind, *v_wind, *qtracers, *wthv_sec, *tkh, *tk, *shoc_ql, *shoc_cldfrac;
+  Real *host_dse, *tke, *thetal, *qw, *u_wind, *v_wind, *qtracers, *wthv_sec, *tkh, *tk, *shoc_ql, *um_pert, *vm_pert, *shoc_cldfrac;
 
   // Outputs
   Real *pblh, *shoc_mix, *isotropy, *w_sec, *thl_sec, *qw_sec, *qwthl_sec, *wthl_sec, *wqw_sec, *wtke_sec, *uw_sec, *vw_sec, *w3, *wqls_sec, *brunt, *shoc_ql2;
@@ -711,9 +711,9 @@ struct ShocMainData : public ShocTestGridDataBase {
 
   ShocMainData(Int shcol_, Int nlev_, Int nlevi_, Int num_qtracers_, Real dtime_, Int nadv_, Int nbot_shoc_, Int ntop_shoc_) :
     ShocTestGridDataBase({{ shcol_ }, { shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_, num_qtracers_ }, { shcol_, nlev_, num_qtracers_ }, { nlev_ }},
-                    {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &phis, &pblh },
+                    {{ &host_dx, &host_dy, &wthl_sfc, &wqw_sfc, &uw_sfc, &vw_sfc, &uw_sfc_pert, &vw_sfc_pert, &phis, &pblh },
                      { &thv, &zt_grid, &pres, &pdel, &w_field, &inv_exner, &host_dse, &tke, &thetal,
-                       &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &shoc_cldfrac,
+                       &qw, &u_wind, &v_wind, &wthv_sec, &tkh, &tk, &shoc_ql, &um_pert, &vm_pert, &shoc_cldfrac,
                        &shoc_mix, &isotropy, &w_sec, &wqls_sec, &brunt, &shoc_ql2 },
                      { &zi_grid, &presi, &thl_sec, &qw_sec, &qwthl_sec, &wthl_sec,
                        &wqw_sec, &wtke_sec, &uw_sec, &vw_sec, &w3 },
@@ -1077,9 +1077,9 @@ void dp_inverse_host(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_z
 int shoc_init_host(Int nlev, Real* pref_mid, Int nbot_shoc, Int ntop_shoc);
 Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, Real* host_dx, Real* host_dy, Real* thv,
                 Real* zt_grid, Real* zi_grid, Real* pres, Real* presi, Real* pdel, Real* wthl_sfc, Real* wqw_sfc,
-                Real* uw_sfc, Real* vw_sfc, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* inv_exner,
+                Real* uw_sfc, Real* vw_sfc, Real* uw_sfc_pert, Real* vw_sfc_pert, Real* wtracer_sfc, Int num_qtracers, Real* w_field, Real* inv_exner,
                 Real* phis, Real* host_dse, Real* tke, Real* thetal, Real* qw, Real* u_wind, Real* v_wind,
-                Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* shoc_cldfrac, Real* pblh,
+                Real* qtracers, Real* wthv_sec, Real* tkh, Real* tk, Real* shoc_ql, Real* um_pert, Real* vm_pert, Real* shoc_cldfrac, Real* pblh,
                 Real* shoc_mix, Real* isotropy, Real* w_sec, Real* thl_sec, Real* qw_sec, Real* qwthl_sec,
                 Real* wthl_sec, Real* wqw_sec, Real* wtke_sec, Real* uw_sec, Real* vw_sec, Real* w3, Real* wqls_sec,
                 Real* brunt, Real* shoc_ql2);
