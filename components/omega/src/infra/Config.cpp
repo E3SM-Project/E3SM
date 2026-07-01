@@ -182,10 +182,11 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
          Value = Node[VarName].as<I4>();
          // Success - returns Value
       } catch (const YAML::TypedBadConversion<I4> &) { // bad conversion
-         // Return error message
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get I4: Expected an integer but encountered "
-                      "an incompatible data type in input config");
+         // Abort on bad conversion
+         ABORT_ERROR(
+             "Config get I4: Expected an integer for variable {} "
+             "but encountered an incompatible data type in input config",
+             VarName);
       }
    } else {
       // Do not modify value if not found to preserve any default value set
@@ -211,10 +212,11 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
          Value = Node[VarName].as<I8>();
          // Success - returns Value
       } catch (const YAML::TypedBadConversion<I8> &) { // bad conversion
-         // Return error message
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get I8: Expected an 8-byte integer but "
-                      "encountered an incompatible data type in input config");
+         // Abort on bad conversion
+         ABORT_ERROR(
+             "Config get I8: Expected an 8-byte integer for variable {} "
+             "but encountered an incompatible data type in input config",
+             VarName);
       }
    } else {
       // Do not modify value if not found to preserve any default value set
@@ -240,10 +242,11 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
          Value = Node[VarName].as<R4>();
          // Success - returns Value
       } catch (const YAML::TypedBadConversion<R4> &) { // bad conversion
-         // Return error message
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get R4: Expected a real variable but "
-                      "encountered an incompatible data type in input config");
+         // Abort on bad conversion
+         ABORT_ERROR(
+             "Config get R4: Expected a real variable for {} "
+             "but encountered an incompatible data type in input config",
+             VarName);
       }
    } else {
       // Do not modify value if not found to preserve any default value set
@@ -269,10 +272,11 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
          Value = Node[VarName].as<R8>();
          // Success - returns Value
       } catch (const YAML::TypedBadConversion<R8> &) { // check conversion
-         // Return error message
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get R8: Expected a double precision variable but "
-                      "encountered an incompatible data type in input config");
+         // Abort on bad conversion
+         ABORT_ERROR(
+             "Config get R8: Expected a double precision variable for {} "
+             "but encountered an incompatible data type in input config",
+             VarName);
       }
    } else {
       // Do not modify value if not found to preserve any default value set
@@ -297,10 +301,11 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
          Value = Node[VarName].as<bool>();
          // Success - returns Value
       } catch (const YAML::TypedBadConversion<bool> &) { // check bad conversion
-         // Return error message
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get bool: Expected a boolean variable but "
-                      "encountered an incompatible data type in input config");
+         // Abort on bad conversion
+         ABORT_ERROR(
+             "Config get bool: Expected a boolean variable for {} "
+             "but encountered an incompatible data type in input config",
+             VarName);
       }
    } else {
       // Do not modify value if not found to preserve any default value set
@@ -361,17 +366,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
                Vector[i] = Sequence[i].as<I4>();
                // Success - returns Value
             } catch (const YAML::TypedBadConversion<I4> &) { // bad conversion
-               // Return error message
-               RETURN_ERROR(
-                   Err, ErrorCode::Fail,
-                   "Config get I4 vector: Expected an integer but "
-                   "encountered an incompatible data type in input config");
+               // Abort on bad conversion
+               ABORT_ERROR(
+                   "Config get I4 vector: Expected an integer for variable {} "
+                   "but encountered an incompatible data type in input config",
+                   VarName);
             }
          }
 
-      } else { // not a sequence (vector) node so log an error
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get I4 vector: entry not a sequence {}", VarName);
+      } else { // not a sequence (vector) node so log an error and abort
+         ABORT_ERROR("Config get I4 vector: entry not a sequence {}", VarName);
       }
    } else { // node with that name does not exist
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -409,17 +413,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
                Vector[i] = Sequence[i].as<I8>();
                // Success - returns Value
             } catch (const YAML::TypedBadConversion<I8> &) { // bad conversion
-               // Return error message
-               RETURN_ERROR(
-                   Err, ErrorCode::Fail,
-                   "Config get I8 vector: Expected an 8-byte integer but "
-                   "encountered an incompatible data type in input config");
+               // Abort on bad conversion
+               ABORT_ERROR(
+                   "Config get I8 vector: Expected an 8-byte integer for {} "
+                   "but encountered an incompatible data type in input config",
+                   VarName);
             }
          }
 
-      } else { // not a sequence (vector) so log an error
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get I8 vector: entry not a sequence {}", VarName);
+      } else { // not a sequence (vector) node so log an error and abort
+         ABORT_ERROR("Config get I8 vector: entry not a sequence {}", VarName);
       }
    } else { // Node with that name does not exist
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -457,17 +460,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
                Vector[i] = Sequence[i].as<R4>();
                // Success - returns Value
             } catch (const YAML::TypedBadConversion<R4> &) { // bad conversion
-               // Return error message
-               RETURN_ERROR(
-                   Err, ErrorCode::Fail,
-                   "Config get R4 vector: Expected a real value but "
-                   "encountered an incompatible data type in input config");
+               // Abort on bad conversion
+               ABORT_ERROR(
+                   "Config get R4 vector: Expected a real value for {} but "
+                   "encountered an incompatible data type in input config",
+                   VarName);
             }
          }
 
-      } else { // not a sequence (vector) so log an error
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get R4 vector: entry not a sequence {}", VarName);
+      } else { // not a sequence (vector) node so log an error and abort
+         ABORT_ERROR("Config get R4 vector: entry not a sequence {}", VarName);
       }
    } else { // Node with that name does not exist
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -505,17 +507,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
                Vector[i] = Sequence[i].as<R8>();
                // Success - returns Value
             } catch (const YAML::TypedBadConversion<R8> &) { // bad conversion
-               // Return error message
-               RETURN_ERROR(
-                   Err, ErrorCode::Fail,
+               // Abort on bad conversion
+               ABORT_ERROR(
                    "Config get R8 vector: Expected a double precision value "
-                   "but encountered an incompatible data type in input config");
+                   "for {} but encountered an incompatible data type in input "
+                   "config",
+                   VarName);
             }
          }
 
-      } else { // not a sequence (vector) so log an error
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get R8 vector: entry not a sequence {}", VarName);
+      } else { // not a sequence (vector) node so log an error and abort
+         ABORT_ERROR("Config get R8 vector: entry not a sequence {}", VarName);
       }
    } else { // Node with that name does not exist
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -553,18 +555,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
                Vector[i] = Sequence[i].as<bool>();
                // Success - returns Value
             } catch (const YAML::TypedBadConversion<bool> &) { // bad conversion
-               // Return error message
-               RETURN_ERROR(
-                   Err, ErrorCode::Fail,
-                   "Config get bool vector: Expected a boolean value "
-                   "but encountered an incompatible data type in input config");
+               // Abort on bad conversion
+               ABORT_ERROR(
+                   "Config get bool vector: Expected a boolean value for {} "
+                   "but encountered an incompatible data type in input config",
+                   VarName);
             }
          }
 
-      } else { // not a sequence (vector) so log an error
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get bool vector: entry not a sequence {}",
-                      VarName);
+      } else { // not a sequence (vector) node so log an error and abort
+         ABORT_ERROR("Config get bool vector: entry not a sequence {}",
+                     VarName);
       }
    } else { // Node with that name does not exist
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -601,10 +602,9 @@ Error Config::get(const std::string &VarName,    // [in] name of variable to get
             List[i] = Sequence[i].as<std::string>();
          }
 
-      } else { // not a sequence (list) so log an error
-         RETURN_ERROR(Err, ErrorCode::Fail,
-                      "Config get string list: entry not a sequence {}",
-                      VarName);
+      } else { // not a sequence (vector) node so log an error and abort
+         ABORT_ERROR("Config get string list: entry not a sequence {}",
+                     VarName);
       }
    } else { // Node with that name does not exist
       RETURN_ERROR(Err, ErrorCode::Fail,
