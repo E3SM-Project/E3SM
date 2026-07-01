@@ -88,12 +88,22 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
       // Attach output data array to Field
       OutputField->attachData<Array1DReal>(OutputData);
 
-      // Allocate work array matching input field layout
+      // Allocate work array matching input field layout but always using Real type
       // Used to store squared differences: (x - mean)^2
+      // Must be Real type to preserve precision when computing variance
       auto InputField = Field::get(InputNames[0]);
       auto InputData  = InputField->template getDataArray<ArrayT>();
-      WorkArray       = decltype(InputData)(OutputNames[0] + "_work_array",
-                                      InputData.layout());
+
+      // Create Real-type array with same shape as input
+      if constexpr (ArrayT::rank == 1) {
+         WorkArray = Array1D_t<Real>(OutputNames[0] + "_work_array", InputData.extent(0));
+      } else if constexpr (ArrayT::rank == 2) {
+         WorkArray = Array2D_t<Real>(OutputNames[0] + "_work_array", 
+                                     InputData.extent(0), InputData.extent(1));
+      } else if constexpr (ArrayT::rank == 3) {
+         WorkArray = Array3D_t<Real>(OutputNames[0] + "_work_array",
+                                     InputData.extent(0), InputData.extent(1), InputData.extent(2));
+      }
 
    } // end constructor
 
@@ -202,9 +212,9 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
              }
 
              // Compute squared difference and store in work array
-             // Cast input to Real for computation
+             // Cast input to Real for computation, WorkArray is Real type
              auto Diff = static_cast<Real>(InputData.data()[FlatIdx]) - MeanVal(0);
-             LocWorkArray.data()[FlatIdx] = static_cast<ScalarT>(Diff * Diff);
+             LocWorkArray.data()[FlatIdx] = Diff * Diff;
           });
 
       // Compute masked sum of squared differences and sum of mask values
@@ -273,9 +283,12 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
    /// value). Always Real type regardless of input type
    Array1DReal OutputData;
 
-   /// Work array matching input field layout, used to store squared differences
-   /// (x - mean)^2 before masked reduction
-   ArrayT WorkArray;
+   /// Work array matching input field layout but always Real type to preserve precision
+   /// Used to store squared differences (x - mean)^2 before masked reduction
+   typename std::conditional<
+      ArrayT::rank == 1, Array1D_t<Real>,
+      typename std::conditional<ArrayT::rank == 2, Array2D_t<Real>, Array3D_t<Real>>::type
+   >::type WorkArray;
 
    /// Temporary storage for the computed standard deviation before copying to
    /// OutputData
