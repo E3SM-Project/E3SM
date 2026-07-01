@@ -138,10 +138,10 @@ void ZMDeepConvection::initialize_impl (const RunType)
     zm_output.init_host_mirrors(m_ncol, m_nlev);
     // initialize variables on the fortran side
     zm::zm_eamxx_bridge_init( m_nlev, ZMF::s_zm_opts.limcnv+1,
-                              ZMF::s_zm_opts.trig_dcape,
-                              ZMF::s_zm_opts.trig_ull,
-                              ZMF::s_zm_opts.clos_dyn_adj,
-                              ZMF::s_zm_opts.mcsp_enabled);
+                              ZMF::s_zm_opts.trig_dcape, ZMF::s_zm_opts.trig_ull,
+                              ZMF::s_zm_opts.clos_dyn_adj, ZMF::s_zm_opts.mcsp_enabled,
+                              ZMF::s_zm_opts.mcsp_t_coeff, ZMF::s_zm_opts.mcsp_q_coeff,
+                              ZMF::s_zm_opts.mcsp_mom_coeff, ZMF::s_zm_opts.mcsp_use_full_shear );
   } // if use_fortran_bridge
   //----------------------------------------------------------------------------
 } // ZMDeepConvection::initialize_impl
