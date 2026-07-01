@@ -289,11 +289,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <c0_ocn           type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
       <num_cin          type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
       <!-- MCSP -->
-      <mcsp_enabled type="logical" doc="ZM flag to enable MCSP in ZM" >true</mcsp_enabled>
-      <mcsp_t_coeff type="real" doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
-      <mcsp_q_coeff type="real" doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
-      <mcsp_u_coeff type="real" doc="MCSP U-wind coefficient"         >0.0</mcsp_u_coeff>
-      <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
+      <mcsp_enabled        type="logical" doc="ZM flag to enable MCSP in ZM"    >true</mcsp_enabled>
+      <mcsp_t_coeff        type="real"    doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
+      <mcsp_q_coeff        type="real"    doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
+      <mcsp_mom_coeff      type="real"    doc="MCSP momentum coefficient"       >0.0</mcsp_mom_coeff>
+      <mcsp_use_full_shear type="logical" doc="MCSP flag to use full shear vector instead of zonal-only" >true</mcsp_use_full_shear>
     </zm>
 
     <!-- Basic options for each mam4 atm process -->

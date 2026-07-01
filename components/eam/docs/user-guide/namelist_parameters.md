@@ -147,8 +147,8 @@
 | ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
 | `zmconv_mcsp_heat_coeff`     | MCSP heating coefficient                                          | `0.3`                  |
 | `zmconv_mcsp_moisture_coeff` | MCSP moisture coefficient                                         | `0.0`                  |
-| `zmconv_mcsp_uwind_coeff`    | MCSP zonal wind coefficient                                       | `0.0`                  |
-| `zmconv_mcsp_vwind_coeff`    | MCSP meridional wind coefficient                                  | `0.0`                  |
+| `zmconv_mcsp_mom_coeff`      | MCSP momentum coefficient (fraction of storm-relative shear)       | `0.0`                  |
+| `zmconv_mcsp_use_full_shear` | MCSP use full (u,v) shear vector instead of zonal-only shear       | `.false.`              |
 
 ## Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package
 
