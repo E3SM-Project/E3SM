@@ -104,7 +104,7 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
       OutputData = OutputArrayT(OutputNames[0] + "_out", InputData.layout());
 
       // Attach output data array to Field
-      OutputField->attachData<OutputArrayT>(OutputData);
+      OutputField->template attachData<OutputArrayT>(OutputData);
 
       // Initialize accumulation state
       NumAccum    = 0;

@@ -86,7 +86,7 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
           );
 
       // Attach output data array to Field
-      OutputField->attachData<Array1DReal>(OutputData);
+      OutputField->template attachData<Array1DReal>(OutputData);
 
       // Allocate work array matching input field layout but always using Real type
       // Used to store squared differences: (x - mean)^2
@@ -185,7 +185,7 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
 
       // Retrieve spatial mean value computed by upstream SpatialMeanOp
       auto MeanField = Field::get(InputNames[1]);
-      auto MeanVal   = MeanField->getDataArray<Array1DReal>();
+      auto MeanVal   = MeanField->template getDataArray<Array1DReal>();
 
       // Fill work array with squared differences: (x - mean)^2
       // Mask will be applied later during reduction

@@ -78,7 +78,7 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
           );
 
       // Attach output data array to Field
-      OutputField->attachData<Array1DReal>(OutputData);
+      OutputField->template attachData<Array1DReal>(OutputData);
 
    } // end constructor
 
