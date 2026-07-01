@@ -80,9 +80,11 @@ end subroutine zm_conv_mcsp_init
 
 !===================================================================================================
 
-subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
+subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u, state_v, shear_u, shear_v)
    !----------------------------------------------------------------------------
-   ! Purpose: calculate shear for MCSP
+   ! Purpose: calculate storm-relative shear vector for MCSP. The zonal and
+   ! meridional components are returned separately; the caller decides whether to
+   ! gate/scale on the zonal component alone (legacy) or the full shear magnitude.
    !----------------------------------------------------------------------------
 #ifdef SCREAM_CONFIG_IS_CMAKE
    use zm_eamxx_bridge_methods, only: vertinterp
@@ -97,23 +99,29 @@ subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u,
    real(r8), dimension(pcols,pver),       intent(in   ) :: state_pmid ! physics state mid-point pressure
    real(r8), dimension(pcols,pver),       intent(in   ) :: state_u    ! physics state u momentum
    real(r8), dimension(pcols,pver),       intent(in   ) :: state_v    ! physics state v momentum
-   real(r8), dimension(pcols),            intent(  out) :: mcsp_shear
+   real(r8), dimension(pcols),            intent(  out) :: shear_u    ! zonal component of storm-relative shear
+   real(r8), dimension(pcols),            intent(  out) :: shear_v    ! meridional component of storm-relative shear
    !----------------------------------------------------------------------------
    ! Local variables
    integer  :: i
    real(r8), dimension(pcols) :: storm_u         ! u wind at storm reference level set by MCSP_storm_speed_pref
+   real(r8), dimension(pcols) :: storm_v         ! v wind at storm reference level set by MCSP_storm_speed_pref
 
    !----------------------------------------------------------------------------
-   ! Interpolate wind to pressure level specified by MCSP_storm_speed_pref
+   ! Interpolate winds to pressure level specified by MCSP_storm_speed_pref
    call vertinterp( ncol, pcols, pver, state_pmid, MCSP_storm_speed_pref, state_u, storm_u )
+   call vertinterp( ncol, pcols, pver, state_pmid, MCSP_storm_speed_pref, state_v, storm_v )
 
    !----------------------------------------------------------------------------
-   ! calculate low-level shear
+   ! calculate low-level shear components. The -999 sentinel (when the surface is
+   ! above the storm reference level) fails the caller's shear-magnitude gate.
    do i = 1,ncol
       if (state_pmid(i,pver).gt.MCSP_storm_speed_pref) then
-         mcsp_shear(i) = storm_u(i)-state_u(i,pver)
+         shear_u(i) = storm_u(i)-state_u(i,pver)
+         shear_v(i) = storm_v(i)-state_v(i,pver)
       else
-         mcsp_shear(i) = -999
+         shear_u(i) = -999
+         shear_v(i) = 0
       end if
    end do
 
@@ -185,10 +193,13 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
    real(r8), dimension(pcols)      :: mcsp_avg_tend_q ! mass weighted column average MCSP tendency of qv
    real(r8), dimension(pcols)      :: mcsp_avg_tend_k ! mass weighted column average MCSP tendency of kinetic energy
 
+   real(r8), dimension(pcols)      :: shear_u         ! zonal component of storm-relative shear
+   real(r8), dimension(pcols)      :: shear_v         ! meridional component of storm-relative shear
+   real(r8) :: cos_struct   ! vertical structure factor for momentum tendencies
+
    logical :: do_mcsp_t = .false.   ! internal flag to enable tendency calculations
    logical :: do_mcsp_q = .false.   ! internal flag to enable tendency calculations
-   logical :: do_mcsp_u = .false.   ! internal flag to enable tendency calculations
-   logical :: do_mcsp_v = .false.   ! internal flag to enable tendency calculations
+   logical :: do_mcsp_mom = .false. ! internal flag to enable momentum tendency calculations
 
    !----------------------------------------------------------------------------
 
@@ -197,10 +208,9 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
    !----------------------------------------------------------------------------
    ! initialize variables
 
-   if (zm_param%mcsp_t_coeff>0) do_mcsp_t = .true.
-   if (zm_param%mcsp_q_coeff>0) do_mcsp_q = .true.
-   if (zm_param%mcsp_u_coeff>0) do_mcsp_u = .true.
-   if (zm_param%mcsp_v_coeff>0) do_mcsp_v = .true.
+   if (zm_param%mcsp_t_coeff>0)   do_mcsp_t   = .true.
+   if (zm_param%mcsp_q_coeff>0)   do_mcsp_q   = .true.
+   if (zm_param%mcsp_mom_coeff>0) do_mcsp_mom = .true.
 
    zm_avg_tend_s(1:ncol) = 0
    zm_avg_tend_q(1:ncol) = 0
@@ -219,7 +229,7 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
    !----------------------------------------------------------------------------
    ! calculate shear
 
-   call zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear )
+   call zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u, state_v, shear_u, shear_v )
 
    !----------------------------------------------------------------------------
    ! calculate mass weighted column average tendencies from ZM
@@ -259,6 +269,17 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
 
    do i = 1,ncol
 
+      ! The momentum forcing always follows the (u,v) shear vector (du~shear_u,
+      ! dv~shear_v). The mcsp_use_full_shear option only controls the scalar shear
+      ! used for the activation threshold and diagnostic: the full shear magnitude,
+      ! or the legacy signed zonal shear (which reproduces E3SMv3, since the same
+      ! shear also gates the T/q tendencies).
+      if (zm_param%mcsp_use_full_shear) then
+         mcsp_shear(i) = sqrt( shear_u(i)*shear_u(i) + shear_v(i)*shear_v(i) )
+      else
+         mcsp_shear(i) = shear_u(i)          ! legacy signed zonal shear diagnostic
+      end if
+
       ! check that ZM produced tendencies over a depth that exceeds the threshold
       if ( zm_depth(i) >= MCSP_conv_depth_min ) then
          ! check that ZM provided a non-zero column total heating
@@ -275,8 +296,18 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                   ! specify the assumed vertical structure
                   if (do_mcsp_t) mcsp_tend_s(i,k) = -1*zm_param%mcsp_t_coeff * bfb_sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
                   if (do_mcsp_q) mcsp_tend_q(i,k) = -1*zm_param%mcsp_q_coeff * bfb_sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
-                  if (do_mcsp_u) mcsp_tend_u(i,k) =    zm_param%mcsp_u_coeff * (bfb_cos(zm_const%pi*(pdepth_mid_k/pdepth_total)))
-                  if (do_mcsp_v) mcsp_tend_v(i,k) =    zm_param%mcsp_v_coeff * (bfb_cos(zm_const%pi*(pdepth_mid_k/pdepth_total)))
+                  ! Momentum tendencies are scaled by the storm-relative shear vector so
+                  ! mcsp_mom_coeff is a dimensionless O(0.01-0.1) fraction rather than a
+                  ! raw acceleration. The implied wind increment over the step is
+                  !   du = -mcsp_mom_coeff * shear_u * cos(...)   ->  tend_u = du / ztodt
+                  ! The leading minus sign makes the forcing up-gradient (amplifying the
+                  ! shear), consistent with organized-convection momentum transport
+                  ! (Moncrieff), and bounds the KE correction.
+                  if (do_mcsp_mom) then
+                     cos_struct = bfb_cos(zm_const%pi*(pdepth_mid_k/pdepth_total))
+                     mcsp_tend_u(i,k) = -1*zm_param%mcsp_mom_coeff * shear_u(i) * cos_struct / ztodt
+                     mcsp_tend_v(i,k) = -1*zm_param%mcsp_mom_coeff * shear_v(i) * cos_struct / ztodt
+                  end if
 
                   ! scale the vertical structure by the ZM heating/drying tendencies
                   if (do_mcsp_t) mcsp_tend_s(i,k) = zm_avg_tend_s(i) * mcsp_tend_s(i,k)
@@ -287,7 +318,7 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                   if (do_mcsp_q) mcsp_avg_tend_q(i) = mcsp_avg_tend_q(i) + mcsp_tend_q(i,k) * state_pdel(i,k) / pdel_sum(i)
 
                   ! integrate the change in kinetic energy (KE) for energy fixer
-                  if (do_mcsp_u.or.do_mcsp_v) then
+                  if (do_mcsp_mom) then
                      tend_k = ( 2.0_r8*mcsp_tend_u(i,k)*ztodt*state_u(i,k) + mcsp_tend_u(i,k)*mcsp_tend_u(i,k)*ztodt*ztodt &
                                +2.0_r8*mcsp_tend_v(i,k)*ztodt*state_v(i,k) + mcsp_tend_v(i,k)*mcsp_tend_v(i,k)*ztodt*ztodt )/2.0_r8/ztodt
                      mcsp_avg_tend_k(i) = mcsp_avg_tend_k(i) + tend_k*state_pdel(i,k) / pdel_sum(i)
@@ -326,15 +357,15 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
 
          ! make sure kinetic energy correction is added to DSE tendency
          ! to conserve total energy whenever momentum tendencies are calculated
-         if (do_mcsp_u.or.do_mcsp_v) then
+         if (do_mcsp_mom) then
             mcsp_dt_out(i,k) = mcsp_dt_out(i,k) - mcsp_avg_tend_k(i)
          end if
 
          ! update output tendencies
-         if (do_mcsp_t) ptend_s(i,k) = ptend_s(i,k) + mcsp_dt_out(i,k)
-         if (do_mcsp_q) ptend_q(i,k) = ptend_q(i,k) + mcsp_dq_out(i,k)
-         if (do_mcsp_u) ptend_u(i,k) = ptend_u(i,k) + mcsp_du_out(i,k)
-         if (do_mcsp_v) ptend_v(i,k) = ptend_v(i,k) + mcsp_dv_out(i,k)
+         if (do_mcsp_t)   ptend_s(i,k) = ptend_s(i,k) + mcsp_dt_out(i,k)
+         if (do_mcsp_q)   ptend_q(i,k) = ptend_q(i,k) + mcsp_dq_out(i,k)
+         if (do_mcsp_mom) ptend_u(i,k) = ptend_u(i,k) + mcsp_du_out(i,k)
+         if (do_mcsp_mom) ptend_v(i,k) = ptend_v(i,k) + mcsp_dv_out(i,k)
 
          ! adjust units for diagnostic outputs
          if (do_mcsp_t) mcsp_dt_out(i,k) = mcsp_dt_out(i,k)/zm_const%cpair
