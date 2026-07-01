@@ -62,16 +62,16 @@ struct TestSetupSphere {
 };
 
 #ifdef FORCING_TEST_PLANE
-constexpr Geometry Geom             = Geometry::Planar;
-constexpr char DefaultMeshFile[]    = "OmegaPlanarMesh.nc";
-constexpr char DefaultForcingFile[] = "forcingPlanar.nc";
-using TestSetup                     = TestSetupPlane;
+constexpr Geometry Geom          = Geometry::Planar;
+constexpr char DefaultMeshFile[] = "OmegaPlanarMesh.nc";
+using TestSetup                  = TestSetupPlane;
 #else
-constexpr Geometry Geom             = Geometry::Spherical;
-constexpr char DefaultMeshFile[]    = "OmegaSphereMesh.nc";
-constexpr char DefaultForcingFile[] = "forcingSphere.nc";
-using TestSetup                     = TestSetupSphere;
+constexpr Geometry Geom          = Geometry::Spherical;
+constexpr char DefaultMeshFile[] = "OmegaSphereMesh.nc";
+using TestSetup                  = TestSetupSphere;
 #endif
+
+Forcing *TestForcing = nullptr;
 
 int testSfcStressForcingVars(Real RTol) {
    int Err = 0;
@@ -146,17 +146,22 @@ int initForcingTest(const std::string &MeshFile) {
    Field::init(ModelClock);
    IOStream::init(ModelClock);
 
-   // Select the case-specific forcing file before Forcing::init() performs
-   // startup stream reads.
-   IOStream::changeFilename("Forcing", DefaultForcingFile);
-
    Err = Halo::init();
    if (Err != 0) {
       ABORT_ERROR("ForcingTest: error initializing default halo");
    }
 
    HorzMesh::init(ModelClock);
-   Forcing::init();
+
+   const HorzMesh *DefMesh = HorzMesh::getDefault();
+   Halo *DefHalo           = Halo::getDefault();
+   TestForcing             = Forcing::create("Default", DefMesh, DefHalo);
+   if (TestForcing == nullptr) {
+      ABORT_ERROR("ForcingTest: failed creating default forcing instance");
+   }
+
+   Config *OmegaConfig = Config::getOmegaConfig();
+   TestForcing->readConfigOptions(OmegaConfig);
 
    return 0;
 }
@@ -174,12 +179,12 @@ void finalizeForcingTest() {
 }
 
 int testForcingInitAndConfig() {
-   // Verify Forcing::init consumes Omega.SfcStress config and maps InterpType.
+   // Verify forcing setup consumes Omega.SfcStress config and maps InterpType.
    int Err = 0;
 
-   Forcing *DefForcing = Forcing::getDefault();
+   Forcing *DefForcing = TestForcing;
    if (DefForcing == nullptr) {
-      LOG_ERROR("ForcingTest: default forcing instance is null");
+      LOG_ERROR("ForcingTest: test forcing instance is null");
       return 1;
    }
 
@@ -209,7 +214,7 @@ int testForcingInitAndConfig() {
    }
 
    if (DefForcing->SfcStressForcing.InterpChoice != ExpectedChoice) {
-      LOG_ERROR("ForcingTest: InterpChoice mismatch after Forcing::init");
+      LOG_ERROR("ForcingTest: InterpChoice mismatch after forcing setup");
       Err++;
    }
 
@@ -226,7 +231,7 @@ int testForcingComputeAll() {
    int Err = 0;
 
    const HorzMesh *Mesh = HorzMesh::getDefault();
-   Forcing *DefForcing  = Forcing::getDefault();
+   Forcing *DefForcing  = TestForcing;
    if (Mesh == nullptr || DefForcing == nullptr) {
       LOG_ERROR("ForcingTest: missing mesh or forcing for compute test");
       return 1;

@@ -139,7 +139,7 @@ Omega:
       Mode: read
       Precision: double
       Freq: 1
-      FreqUnits: OnStartup
+      FreqUnits: Never
       UseStartEnd: false
       Contents:
         - Forcing
