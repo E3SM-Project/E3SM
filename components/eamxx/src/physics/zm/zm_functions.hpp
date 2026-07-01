@@ -122,8 +122,7 @@ struct Functions {
     static inline constexpr Real MCSP_shear_max            = 200.0;    // max shear value for MCSP to be active
     static inline constexpr Real MCSP_t_coeff_default      = 0.3;      // default MCSP temperature coefficient
     static inline constexpr Real MCSP_q_coeff_default      = 0.0;      // default MCSP sp. humidity coefficient
-    static inline constexpr Real MCSP_u_coeff_default      = 0.0;      // default MCSP U-wind coefficient
-    static inline constexpr Real MCSP_v_coeff_default      = 0.0;      // default MCSP V-wind coefficient
+    static inline constexpr Real MCSP_mom_coeff_default    = 0.0;      // default MCSP momentum coefficient (fraction of shear)
     // Default values for ZmRuntimeOpt fields
     static inline constexpr Real alfa                      = 0.14;     // default downdraft proportionality factor
     static inline constexpr Real ke                        = 2.5E-6;   // default evaporation efficiency
@@ -175,8 +174,10 @@ struct Functions {
       mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
       mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff_default);
       mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff_default);
-      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        ZMC::MCSP_u_coeff_default);
-      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        ZMC::MCSP_v_coeff_default);
+      mcsp_mom_coeff      = params.get<Real>("mcsp_mom_coeff",      ZMC::MCSP_mom_coeff_default);
+      // new-feature toggle: eamxx defaults ON (vector shear); Fortran/EAM defaults
+      // OFF to preserve bit-for-bit E3SMv3 (zonal-only shear that gates T/q)
+      mcsp_use_full_shear = params.get<bool>("mcsp_use_full_shear", true);
 
       // determine SVP table size (add two to make the table slightly too big, just in case)
       plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
@@ -251,8 +252,8 @@ struct Functions {
       os << indent << "mcsp_enabled    : " << mcsp_enabled   << "\n";
       os << indent << "mcsp_t_coeff    : " << mcsp_t_coeff   << "\n";
       os << indent << "mcsp_q_coeff    : " << mcsp_q_coeff   << "\n";
-      os << indent << "mcsp_u_coeff    : " << mcsp_u_coeff   << "\n";
-      os << indent << "mcsp_v_coeff    : " << mcsp_v_coeff   << "\n";
+      os << indent << "mcsp_mom_coeff  : " << mcsp_mom_coeff << "\n";
+      os << indent << "mcsp_use_full_shear : " << mcsp_use_full_shear << "\n";
       os << std::endl;
       os.flags(saved_flags);
     }
@@ -283,8 +284,8 @@ struct Functions {
     bool mcsp_enabled;      // flag for mesoscale coherent structure parameterization (MSCP)
     Real mcsp_t_coeff;      // MCSP coefficient for temperature tendencies
     Real mcsp_q_coeff;      // MCSP coefficient for specific humidity tendencies
-    Real mcsp_u_coeff;      // MCSP coefficient for zonal momentum tendencies
-    Real mcsp_v_coeff;      // MCSP coefficient for meridional momentum tendencies
+    Real mcsp_mom_coeff;    // MCSP momentum coefficient (dimensionless fraction of the shear)
+    bool mcsp_use_full_shear; // use full (u,v) shear vector instead of zonal-only shear
     // saturation vapor pressure (svp) table
     Int plenest;            // saturation vapor pressure table size
     view_1d<Real> estbl;    // saturation vapor pressure table values
@@ -751,8 +752,10 @@ struct Functions {
     const Int& pver, // number of mid-point vertical levels
     const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
     const uview_1d<const Real>& state_u, // physics state u momentum
+    const uview_1d<const Real>& state_v, // physics state v momentum
     // Outputs
-    Real& mcsp_shear);
+    Real& shear_u,  // zonal component of storm-relative shear
+    Real& shear_v); // meridional component of storm-relative shear
 
   KOKKOS_FUNCTION
   static void zm_conv_mcsp_tend(
