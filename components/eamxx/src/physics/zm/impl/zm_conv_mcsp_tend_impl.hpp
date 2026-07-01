@@ -54,10 +54,9 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   //----------------------------------------------------------------------------
   // initialize variables
 
-  const bool do_mcsp_t = (runtime_opt.mcsp_t_coeff > 0);
-  const bool do_mcsp_q = (runtime_opt.mcsp_q_coeff > 0);
-  const bool do_mcsp_u = (runtime_opt.mcsp_u_coeff > 0);
-  const bool do_mcsp_v = (runtime_opt.mcsp_v_coeff > 0);
+  const bool do_mcsp_t   = (runtime_opt.mcsp_t_coeff > 0);
+  const bool do_mcsp_q   = (runtime_opt.mcsp_q_coeff > 0);
+  const bool do_mcsp_mom = (runtime_opt.mcsp_mom_coeff > 0);
 
   // Allocate temporary arrays
   uview_1d<Real> mcsp_tend_s, mcsp_tend_q, mcsp_tend_u, mcsp_tend_v;
@@ -86,9 +85,21 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   team.team_barrier();
 
   //----------------------------------------------------------------------------
-  // calculate shear
+  // calculate shear vector and derive the scalar metric used for gating/scaling
 
-  zm_conv_mcsp_calculate_shear(team, pver, state_pmid, state_u, mcsp_shear);
+  Real shear_u = 0; // zonal component of storm-relative shear
+  Real shear_v = 0; // meridional component of storm-relative shear
+  zm_conv_mcsp_calculate_shear(team, pver, state_pmid, state_u, state_v, shear_u, shear_v);
+
+  // The momentum forcing always follows the (u,v) shear vector (du~shear_u,
+  // dv~shear_v). The mcsp_use_full_shear option only controls the scalar shear
+  // used for the activation threshold and diagnostic: the full shear magnitude,
+  // or the legacy signed zonal shear (which reproduces E3SMv3, since the same
+  // shear also gates the T/q tendencies). The gate below uses abs(mcsp_shear),
+  // which equals the magnitude either way.
+  mcsp_shear = runtime_opt.mcsp_use_full_shear
+             ? std::sqrt(shear_u * shear_u + shear_v * shear_v)
+             : shear_u;
 
   //----------------------------------------------------------------------------
   // calculate mass weighted column average tendencies from ZM
@@ -143,8 +154,19 @@ void Functions<S,D>::zm_conv_mcsp_tend(
             // specify the assumed vertical structure
             if (do_mcsp_t) mcsp_tend_s(k) = -1 * runtime_opt.mcsp_t_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
             if (do_mcsp_q) mcsp_tend_q(k) = -1 * runtime_opt.mcsp_q_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
-            if (do_mcsp_u) mcsp_tend_u(k) = runtime_opt.mcsp_u_coeff * (std::cos(PC::Pi * (pdepth_mid_k / pdepth_total)));
-            if (do_mcsp_v) mcsp_tend_v(k) = runtime_opt.mcsp_v_coeff * (std::cos(PC::Pi * (pdepth_mid_k / pdepth_total)));
+            // Momentum tendencies are scaled by the storm-relative shear vector so
+            // mcsp_mom_coeff is a dimensionless O(0.01-0.1) fraction rather than a
+            // raw acceleration. The implied wind increment over the step is
+            //   du = -mcsp_mom_coeff * shear_u * cos(...)   ->  tend_u = du / ztodt
+            // The leading minus sign makes the forcing up-gradient (amplifying the
+            // shear), consistent with organized-convection momentum transport
+            // (Moncrieff). Using the shear components keeps the tendency aligned
+            // with the shear vector and bounds the KE correction.
+            if (do_mcsp_mom) {
+              const Real cos_struct = std::cos(PC::Pi * (pdepth_mid_k / pdepth_total));
+              mcsp_tend_u(k) = -1 * runtime_opt.mcsp_mom_coeff * shear_u * cos_struct / ztodt;
+              mcsp_tend_v(k) = -1 * runtime_opt.mcsp_mom_coeff * shear_v * cos_struct / ztodt;
+            }
 
             // scale the vertical structure by the ZM heating/drying tendencies
             if (do_mcsp_t) mcsp_tend_s(k) = zm_avg_tend_s * mcsp_tend_s(k);
@@ -155,9 +177,9 @@ void Functions<S,D>::zm_conv_mcsp_tend(
             if (do_mcsp_q) avg_q += mcsp_tend_q(k) * state_pdel(k) / pdel_sum;
 
             // integrate the change in kinetic energy (KE) for energy fixer
-            if (do_mcsp_u || do_mcsp_v) {
+            if (do_mcsp_mom) {
               const Real tend_k = (2 * mcsp_tend_u(k) * ztodt * state_u(k) + mcsp_tend_u(k) * mcsp_tend_u(k) * ztodt * ztodt
-                                  + 2 * mcsp_tend_v(k) * ztodt * state_v(k) + mcsp_tend_v(k) * mcsp_tend_v(k) * ztodt * ztodt) / 2 / ztodt;
+                                  +2 * mcsp_tend_v(k) * ztodt * state_v(k) + mcsp_tend_v(k) * mcsp_tend_v(k) * ztodt * ztodt) / 2 / ztodt;
               avg_k += tend_k * state_pdel(k) / pdel_sum;
             }
           },
@@ -184,15 +206,15 @@ void Functions<S,D>::zm_conv_mcsp_tend(
 
       // make sure kinetic energy correction is added to DSE tendency
       // to conserve total energy whenever momentum tendencies are calculated
-      if (do_mcsp_u || do_mcsp_v) {
+      if (do_mcsp_mom) {
         mcsp_ds_out(k) = mcsp_ds_out(k) - mcsp_avg_tend_k;
       }
 
       // update output tendencies
-      if (do_mcsp_t) ptend_s(k) = ptend_s(k) + mcsp_ds_out(k);
-      if (do_mcsp_q) ptend_q(k) = ptend_q(k) + mcsp_dq_out(k);
-      if (do_mcsp_u) ptend_u(k) = ptend_u(k) + mcsp_du_out(k);
-      if (do_mcsp_v) ptend_v(k) = ptend_v(k) + mcsp_dv_out(k);
+      if (do_mcsp_t)   ptend_s(k) = ptend_s(k) + mcsp_ds_out(k);
+      if (do_mcsp_q)   ptend_q(k) = ptend_q(k) + mcsp_dq_out(k);
+      if (do_mcsp_mom) ptend_u(k) = ptend_u(k) + mcsp_du_out(k);
+      if (do_mcsp_mom) ptend_v(k) = ptend_v(k) + mcsp_dv_out(k);
 
       // adjust units for diagnostic outputs
       if (do_mcsp_t) mcsp_ds_out(k) = mcsp_ds_out(k) / PC::Cpair.value;

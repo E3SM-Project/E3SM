@@ -19,15 +19,20 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
   const Int& pver, // number of mid-point vertical levels
   const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
   const uview_1d<const Real>& state_u, // physics state u momentum
+  const uview_1d<const Real>& state_v, // physics state v momentum
   // Outputs
-  Real& mcsp_shear)
+  Real& shear_u,  // zonal component of storm-relative shear
+  Real& shear_v)  // meridional component of storm-relative shear
 {
   //----------------------------------------------------------------------------
-  // Purpose: calculate shear for MCSP
+  // Purpose: calculate storm-relative shear vector for MCSP. The zonal and
+  // meridional components are returned separately; the caller decides whether to
+  // gate/scale on the zonal component alone (legacy) or the full shear magnitude.
   //----------------------------------------------------------------------------
 
   // Local variables
   Real storm_u = 0;         // u wind at storm reference level set by MCSP_storm_speed_pref
+  Real storm_v = 0;         // v wind at storm reference level set by MCSP_storm_speed_pref
 
   //----------------------------------------------------------------------------
   // Interpolate wind to pressure level specified by MCSP_storm_speed_pref
@@ -47,29 +52,35 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
 
   // Linear interpolation - computed redundantly on all team threads so the
   // result is consistent across the team (no single/broadcast needed). Using
-  // Kokkos::single here would update mcsp_shear on only one thread, leaving the
+  // Kokkos::single here would update the outputs on only one thread, leaving the
   // other threads with stale values and causing a divergent branch (and GPU
-  // deadlock) where mcsp_shear later gates a team-collective.
+  // deadlock) where the shear later gates a team-collective.
   // (removing the Kokkos::single fixed a hang issue)
   if (state_pmid(0) >= ZMC::MCSP_storm_speed_pref) {
     storm_u = state_u(0);
+    storm_v = state_v(0);
   }
   else if (state_pmid(pver - 1) < ZMC::MCSP_storm_speed_pref) {
     storm_u = state_u(pver - 1);
+    storm_v = state_v(pver - 1);
   }
   else {
     EKAT_KERNEL_ASSERT(k_below < pver-1);
     const Real dpu = ZMC::MCSP_storm_speed_pref - state_pmid(k_below);
     const Real dpl = state_pmid(k_below+1) - ZMC::MCSP_storm_speed_pref;
     storm_u = (state_u(k_below)*dpl + state_u(k_below+1)*dpu) / (dpl + dpu);
+    storm_v = (state_v(k_below)*dpl + state_v(k_below+1)*dpu) / (dpl + dpu);
   }
 
   //----------------------------------------------------------------------------
-  // calculate low-level shear
+  // calculate low-level shear components. The -999 sentinel (when the surface is
+  // above the storm reference level) fails the caller's shear-magnitude gate.
   if (state_pmid(pver - 1) > ZMC::MCSP_storm_speed_pref) {
-    mcsp_shear = storm_u - state_u(pver - 1);
+    shear_u = storm_u - state_u(pver - 1);
+    shear_v = storm_v - state_v(pver - 1);
   } else {
-    mcsp_shear = -999;
+    shear_u = -999;
+    shear_v = 0;
   }
 }
 
