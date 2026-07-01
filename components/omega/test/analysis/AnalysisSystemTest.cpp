@@ -767,7 +767,6 @@ int main(int argc, char *argv[]) {
       auto VCoord     = VertCoord::getDefault();
       auto ModelClock = DefStepper->getClock();
 
-
       // Dependency Resolution and Execution Order
       testSharedIntermediates();
       testUpstreamDependencies();

@@ -221,7 +221,8 @@ void Analysis::parseChainAndBuildOps(const std::string &OpChainStr) {
             continue;
          }
          ABORT_ERROR("Analysis: Error trying to parse {}. No Field or "
-                     "Operator named {}", OpChainStr, ChainNode);
+                     "Operator named {}",
+                     OpChainStr, ChainNode);
       }
    }
 

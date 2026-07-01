@@ -77,32 +77,34 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
           Field::create(OutputNames[0],
                         "Standard deviation of " + InputNames[0], // Description
                         "",                                       // Units
-                        "",                                       // Standard name
-                        static_cast<Real>(0),                     // Min valid value
-                        std::numeric_limits<Real>::max(),         // Max valid value
-                        -std::numeric_limits<Real>::max(),        // Fill value
-                        NDims,                                    // Rank
-                        DimNames                                  // Dimension names
+                        "",                                // Standard name
+                        static_cast<Real>(0),              // Min valid value
+                        std::numeric_limits<Real>::max(),  // Max valid value
+                        -std::numeric_limits<Real>::max(), // Fill value
+                        NDims,                             // Rank
+                        DimNames                           // Dimension names
           );
 
       // Attach output data array to Field
       OutputField->template attachData<Array1DReal>(OutputData);
 
-      // Allocate work array matching input field layout but always using Real type
-      // Used to store squared differences: (x - mean)^2
-      // Must be Real type to preserve precision when computing variance
+      // Allocate work array matching input field layout but always using Real
+      // type Used to store squared differences: (x - mean)^2 Must be Real type
+      // to preserve precision when computing variance
       auto InputField = Field::get(InputNames[0]);
       auto InputData  = InputField->template getDataArray<ArrayT>();
 
       // Create Real-type array with same shape as input
       if constexpr (ArrayT::rank == 1) {
-         WorkArray = Array1D_t<Real>(OutputNames[0] + "_work_array", InputData.extent(0));
+         WorkArray = Array1D_t<Real>(OutputNames[0] + "_work_array",
+                                     InputData.extent(0));
       } else if constexpr (ArrayT::rank == 2) {
-         WorkArray = Array2D_t<Real>(OutputNames[0] + "_work_array", 
+         WorkArray = Array2D_t<Real>(OutputNames[0] + "_work_array",
                                      InputData.extent(0), InputData.extent(1));
       } else if constexpr (ArrayT::rank == 3) {
          WorkArray = Array3D_t<Real>(OutputNames[0] + "_work_array",
-                                     InputData.extent(0), InputData.extent(1), InputData.extent(2));
+                                     InputData.extent(0), InputData.extent(1),
+                                     InputData.extent(2));
       }
 
    } // end constructor
@@ -213,7 +215,8 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
 
              // Compute squared difference and store in work array
              // Cast input to Real for computation, WorkArray is Real type
-             auto Diff = static_cast<Real>(InputData.data()[FlatIdx]) - MeanVal(0);
+             auto Diff =
+                 static_cast<Real>(InputData.data()[FlatIdx]) - MeanVal(0);
              LocWorkArray.data()[FlatIdx] = Diff * Diff;
           });
 
@@ -234,7 +237,8 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
              {static_cast<I4>(MaskArray.extent(0))},
              KOKKOS_LAMBDA(int I) { LocalMask1D(I) = LocalMaskArray(I, 0); });
 
-         WorkSum = static_cast<Real>(globalMaskedSum(WorkArray, Mask1D, Comm, &IndxRange));
+         WorkSum = static_cast<Real>(
+             globalMaskedSum(WorkArray, Mask1D, Comm, &IndxRange));
 
          // Use cached mask sum if available, otherwise compute and cache it
          if (CachedMaskSum < 0) {
@@ -243,7 +247,8 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
          MaskSum = CachedMaskSum;
       } else {
          // For 2D+ arrays, use full 2D mask
-         WorkSum = static_cast<Real>(globalMaskedSum(WorkArray, MaskArray, Comm, &IndxRange));
+         WorkSum = static_cast<Real>(
+             globalMaskedSum(WorkArray, MaskArray, Comm, &IndxRange));
 
          // Use cached mask sum if available, otherwise compute and cache it
          if (CachedMaskSum < 0) {
@@ -283,12 +288,13 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
    /// value). Always Real type regardless of input type
    Array1DReal OutputData;
 
-   /// Work array matching input field layout but always Real type to preserve precision
-   /// Used to store squared differences (x - mean)^2 before masked reduction
+   /// Work array matching input field layout but always Real type to preserve
+   /// precision Used to store squared differences (x - mean)^2 before masked
+   /// reduction
    typename std::conditional<
-      ArrayT::rank == 1, Array1D_t<Real>,
-      typename std::conditional<ArrayT::rank == 2, Array2D_t<Real>, Array3D_t<Real>>::type
-   >::type WorkArray;
+       ArrayT::rank == 1, Array1D_t<Real>,
+       typename std::conditional<ArrayT::rank == 2, Array2D_t<Real>,
+                                 Array3D_t<Real>>::type>::type WorkArray;
 
    /// Temporary storage for the computed standard deviation before copying to
    /// OutputData

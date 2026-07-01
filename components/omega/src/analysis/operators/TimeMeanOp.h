@@ -41,15 +41,14 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
  public:
    /// Scalar type extracted from the input array type
    using ScalarT = typename ArrayT::non_const_value_type;
-   
+
    /// Output array type - same rank as input but always Real precision
    using OutputArrayT = typename std::conditional<
        ArrayT::rank == 1, Array1D_t<Real>,
        typename std::conditional<
            ArrayT::rank == 2, Array2D_t<Real>,
-           typename std::conditional<
-               ArrayT::rank == 3, Array3D_t<Real>,
-               Array4D_t<Real>>::type>::type>::type;
+           typename std::conditional<ArrayT::rank == 3, Array3D_t<Real>,
+                                     Array4D_t<Real>>::type>::type>::type;
 
    /// Constructs a TimeMeanOp operator. Reads averaging period from config,
    /// creates output Field matching input dimensions and layout, allocates
@@ -87,14 +86,14 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
       // Register output Field with same dimensions as input but Real type
       auto OutputField =
           Field::create(OutputNames[0],
-                        "Time average of " + InputNames[0],   // Description
-                        "",                                   // Units
-                        "",                                   // Standard name
-                        -std::numeric_limits<Real>::max(),    // Min valid value
-                        std::numeric_limits<Real>::max(),     // Max valid value
-                        -std::numeric_limits<Real>::max(),    // Fill value
-                        NDims,                                // Rank
-                        DimNames                              // Dimension names
+                        "Time average of " + InputNames[0], // Description
+                        "",                                 // Units
+                        "",                                 // Standard name
+                        -std::numeric_limits<Real>::max(),  // Min valid value
+                        std::numeric_limits<Real>::max(),   // Max valid value
+                        -std::numeric_limits<Real>::max(),  // Fill value
+                        NDims,                              // Rank
+                        DimNames                            // Dimension names
           );
 
       // Store array size for parallel iteration
@@ -143,14 +142,16 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
          NumAccum = 1;
          parallelFor(
              {ArraySize}, KOKKOS_LAMBDA(const int FlatIdx) {
-                LocOutputData.data()[FlatIdx] = static_cast<Real>(InputData.data()[FlatIdx]);
+                LocOutputData.data()[FlatIdx] =
+                    static_cast<Real>(InputData.data()[FlatIdx]);
              });
          IsNewPeriod = false;
       } else {
          // Continue accumulation: add input to running sum
          parallelFor(
              {ArraySize}, KOKKOS_LAMBDA(const int FlatIdx) {
-                LocOutputData.data()[FlatIdx] += static_cast<Real>(InputData.data()[FlatIdx]);
+                LocOutputData.data()[FlatIdx] +=
+                    static_cast<Real>(InputData.data()[FlatIdx]);
              });
          ++NumAccum;
 

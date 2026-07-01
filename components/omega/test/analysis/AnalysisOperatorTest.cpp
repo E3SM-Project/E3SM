@@ -378,15 +378,20 @@ void testSpatialMeanOpType(const std::string &TypeName, const MachEnv *Env,
    if constexpr (Rank == 1) {
       // 1D: count based on horizontal index pattern
       for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         if ((i % 2) == 0) LocalCount1++;
-         else LocalCount2++;
+         if ((i % 2) == 0)
+            LocalCount1++;
+         else
+            LocalCount2++;
       }
    } else if constexpr (Rank == 2) {
       // 2D: count based on (i+j) pattern within active vertical layers
       for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
-            if (((i + j) % 2) == 0) LocalCount1++;
-            else LocalCount2++;
+         for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i);
+              ++j) {
+            if (((i + j) % 2) == 0)
+               LocalCount1++;
+            else
+               LocalCount2++;
          }
       }
    } else if constexpr (Rank == 3) {
@@ -394,18 +399,21 @@ void testSpatialMeanOpType(const std::string &TypeName, const MachEnv *Env,
       I4 NTracers = Tracers::getNumTracers();
       for (I4 t = 0; t < NTracers; ++t) {
          for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-            for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
-               if (((t + i + j) % 2) == 0) LocalCount1++;
-               else LocalCount2++;
+            for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i);
+                 ++j) {
+               if (((t + i + j) % 2) == 0)
+                  LocalCount1++;
+               else
+                  LocalCount2++;
             }
          }
       }
    }
 
    // Global sum across MPI ranks
-   I8 Count1 = globalSum(LocalCount1, Env->getComm());
-   I8 Count2 = globalSum(LocalCount2, Env->getComm());
-   I8 TotalElements = Count1 + Count2;
+   I8 Count1         = globalSum(LocalCount1, Env->getComm());
+   I8 Count2         = globalSum(LocalCount2, Env->getComm());
+   I8 TotalElements  = Count1 + Count2;
    Real ExpectedMean = (static_cast<Real>(Value1) * static_cast<Real>(Count1) +
                         static_cast<Real>(Value2) * static_cast<Real>(Count2)) /
                        static_cast<Real>(TotalElements);
@@ -422,8 +430,8 @@ void testSpatialMeanOpType(const std::string &TypeName, const MachEnv *Env,
    // Get result. The operator attaches output as Array1DReal (always Real type
    // regardless of input type).
    auto ResultField = Field::get(FieldName + "_SpatialMean");
-   auto ResultData = ResultField->getDataArray<Array1DReal>();
-   auto ResultHost = Kokkos::create_mirror_view(ResultData);
+   auto ResultData  = ResultField->getDataArray<Array1DReal>();
+   auto ResultHost  = Kokkos::create_mirror_view(ResultData);
    Kokkos::deep_copy(ResultHost, ResultData);
 
    Real ComputedMean = ResultHost(0);
@@ -479,15 +487,20 @@ void testSpatialStdDevOpType(const std::string &TypeName, const MachEnv *Env,
    if constexpr (Rank == 1) {
       // 1D: count based on horizontal index pattern
       for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         if ((i % 2) == 0) LocalCount1++;
-         else LocalCount2++;
+         if ((i % 2) == 0)
+            LocalCount1++;
+         else
+            LocalCount2++;
       }
    } else if constexpr (Rank == 2) {
       // 2D: count based on (i+j) pattern within active vertical layers
       for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
-            if (((i + j) % 2) == 0) LocalCount1++;
-            else LocalCount2++;
+         for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i);
+              ++j) {
+            if (((i + j) % 2) == 0)
+               LocalCount1++;
+            else
+               LocalCount2++;
          }
       }
    } else if constexpr (Rank == 3) {
@@ -495,19 +508,22 @@ void testSpatialStdDevOpType(const std::string &TypeName, const MachEnv *Env,
       I4 NTracers = Tracers::getNumTracers();
       for (I4 t = 0; t < NTracers; ++t) {
          for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-            for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
-               if (((t + i + j) % 2) == 0) LocalCount1++;
-               else LocalCount2++;
+            for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i);
+                 ++j) {
+               if (((t + i + j) % 2) == 0)
+                  LocalCount1++;
+               else
+                  LocalCount2++;
             }
          }
       }
    }
 
    // Global sum across MPI ranks
-   I8 Count1 = globalSum(LocalCount1, Env->getComm());
-   I8 Count2 = globalSum(LocalCount2, Env->getComm());
+   I8 Count1        = globalSum(LocalCount1, Env->getComm());
+   I8 Count2        = globalSum(LocalCount2, Env->getComm());
    I8 TotalElements = Count1 + Count2;
-   Real Mean = (static_cast<Real>(Value1) * static_cast<Real>(Count1) +
+   Real Mean        = (static_cast<Real>(Value1) * static_cast<Real>(Count1) +
                 static_cast<Real>(Value2) * static_cast<Real>(Count2)) /
                static_cast<Real>(TotalElements);
 
@@ -538,8 +554,8 @@ void testSpatialStdDevOpType(const std::string &TypeName, const MachEnv *Env,
    // Get result. The operator attaches output as Array1DReal (always Real type
    // regardless of input type).
    auto ResultField = Field::get(FieldName + "_SpatialStdDev");
-   auto ResultData = ResultField->getDataArray<Array1DReal>();
-   auto ResultHost = Kokkos::create_mirror_view(ResultData);
+   auto ResultData  = ResultField->getDataArray<Array1DReal>();
+   auto ResultHost  = Kokkos::create_mirror_view(ResultData);
    Kokkos::deep_copy(ResultHost, ResultData);
 
    Real ComputedStdDev = ResultHost(0);

@@ -67,14 +67,14 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
       // Register output Field with metadata
       auto OutputField =
           Field::create(OutputNames[0],
-                        "Spatial mean of " + InputNames[0],   // Description
-                        "",                                   // Units
-                        "",                                   // Standard name
-                        -std::numeric_limits<Real>::max(),    // Min valid value
-                        std::numeric_limits<Real>::max(),     // Max valid value
-                        -std::numeric_limits<Real>::max(),    // Fill value
-                        NDims,                                // Rank
-                        DimNames                              // Dimension names
+                        "Spatial mean of " + InputNames[0], // Description
+                        "",                                 // Units
+                        "",                                 // Standard name
+                        -std::numeric_limits<Real>::max(),  // Min valid value
+                        std::numeric_limits<Real>::max(),   // Max valid value
+                        -std::numeric_limits<Real>::max(),  // Fill value
+                        NDims,                              // Rank
+                        DimNames                            // Dimension names
           );
 
       // Attach output data array to Field
@@ -172,7 +172,8 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
              {static_cast<I4>(MaskArray.extent(0))},
              KOKKOS_LAMBDA(int I) { LocalMask1D(I) = LocalMaskArray(I, 0); });
 
-         ValSum = static_cast<Real>(globalMaskedSum(InputData, Mask1D, Comm, &IndxRange));
+         ValSum = static_cast<Real>(
+             globalMaskedSum(InputData, Mask1D, Comm, &IndxRange));
 
          // Use cached mask sum if available, otherwise compute and cache it
          if (CachedMaskSum < 0) {
@@ -181,7 +182,8 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
          MaskSum = CachedMaskSum;
       } else {
          // For 2D+ arrays, use full 2D mask
-         ValSum = static_cast<Real>(globalMaskedSum(InputData, MaskArray, Comm, &IndxRange));
+         ValSum = static_cast<Real>(
+             globalMaskedSum(InputData, MaskArray, Comm, &IndxRange));
 
          // Use cached mask sum if available, otherwise compute and cache it
          if (CachedMaskSum < 0) {
