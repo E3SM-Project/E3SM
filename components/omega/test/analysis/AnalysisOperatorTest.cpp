@@ -403,16 +403,14 @@ void testSpatialMeanOpType(const std::string &TypeName, const MachEnv *Env,
    TimeInstant TestTime;
    MeanOp->compute(TestTime);
 
-   // Get result. The operator attaches output as Array1D<ScalarT>, so retrieve
-   // with the matching type to avoid reinterpreting bits via
-   // static_pointer_cast.
+   // Get result. The operator attaches output as Array1DReal (always Real type
+   // regardless of input type).
    auto ResultField = Field::get(FieldName + "_SpatialMean");
-   auto ResultData =
-       ResultField->getDataArray<typename Array1D<ScalarT>::type>();
+   auto ResultData = ResultField->getDataArray<Array1DReal>();
    auto ResultHost = Kokkos::create_mirror_view(ResultData);
    Kokkos::deep_copy(ResultHost, ResultData);
 
-   Real ComputedMean = static_cast<Real>(ResultHost(0));
+   Real ComputedMean = ResultHost(0);
 
    // Verify
    bool Passed = (std::abs(ComputedMean - ExpectedMean) <=
@@ -504,16 +502,14 @@ void testSpatialStdDevOpType(const std::string &TypeName, const MachEnv *Env,
    StdDevOp->initialize(Env, Mesh, VCoord, EmptyConfig);
    StdDevOp->compute(TestTime);
 
-   // Get result. The operator attaches output as Array1D<ScalarT>, so retrieve
-   // with the matching type to avoid reinterpreting bits via
-   // static_pointer_cast.
+   // Get result. The operator attaches output as Array1DReal (always Real type
+   // regardless of input type).
    auto ResultField = Field::get(FieldName + "_SpatialStdDev");
-   auto ResultData =
-       ResultField->getDataArray<typename Array1D<ScalarT>::type>();
+   auto ResultData = ResultField->getDataArray<Array1DReal>();
    auto ResultHost = Kokkos::create_mirror_view(ResultData);
    Kokkos::deep_copy(ResultHost, ResultData);
 
-   Real ComputedStdDev = static_cast<Real>(ResultHost(0));
+   Real ComputedStdDev = ResultHost(0);
 
    // Verify
    bool Passed = (std::abs(ComputedStdDev - ExpectedStdDev) <=
@@ -651,17 +647,16 @@ void testTimeMeanOpType(const std::string &TypeName, const MachEnv *Env,
    std::string ResultFieldName = FieldName + "_TimeMean" + PeriodLabel;
    auto ResultField            = Field::get(ResultFieldName);
 
-   // Verify a sample of values. The TimeMeanOp output field is attached with
-   // the same ArrayType as the input, so retrieve with the matching type.
+   // Verify a sample of values. The TimeMeanOp output field is always Real type
+   // regardless of input type.
    bool Passed = true;
    if constexpr (Rank == 1) {
-      auto ResultData =
-          ResultField->getDataArray<typename Array1D<ScalarT>::type>();
+      auto ResultData = ResultField->getDataArray<Array1D_t<Real>>();
       auto ResultHost = Kokkos::create_mirror_view(ResultData);
       Kokkos::deep_copy(ResultHost, ResultData);
 
       for (I4 i = 0; i < std::min(10, Dims[0]); ++i) {
-         Real ComputedValue = static_cast<Real>(ResultHost(i));
+         Real ComputedValue = ResultHost(i);
          if (std::abs(ComputedValue - ExpectedMean) >
              static_cast<Real>(Helper::getTolerance())) {
             Passed = false;
@@ -671,14 +666,13 @@ void testTimeMeanOpType(const std::string &TypeName, const MachEnv *Env,
          }
       }
    } else if constexpr (Rank == 2) {
-      auto ResultData =
-          ResultField->getDataArray<typename Array2D<ScalarT>::type>();
+      auto ResultData = ResultField->getDataArray<Array2D_t<Real>>();
       auto ResultHost = Kokkos::create_mirror_view(ResultData);
       Kokkos::deep_copy(ResultHost, ResultData);
 
       for (I4 i = 0; i < std::min(5, Dims[0]); ++i) {
          for (I4 j = 0; j < std::min(5, Dims[1]); ++j) {
-            Real ComputedValue = static_cast<Real>(ResultHost(i, j));
+            Real ComputedValue = ResultHost(i, j);
             if (std::abs(ComputedValue - ExpectedMean) >
                 static_cast<Real>(Helper::getTolerance())) {
                Passed = false;
@@ -691,15 +685,14 @@ void testTimeMeanOpType(const std::string &TypeName, const MachEnv *Env,
             break;
       }
    } else if constexpr (Rank == 3) {
-      auto ResultData =
-          ResultField->getDataArray<typename Array3D<ScalarT>::type>();
+      auto ResultData = ResultField->getDataArray<Array3D_t<Real>>();
       auto ResultHost = Kokkos::create_mirror_view(ResultData);
       Kokkos::deep_copy(ResultHost, ResultData);
 
       for (I4 i = 0; i < std::min(3, Dims[0]); ++i) {
          for (I4 j = 0; j < std::min(3, Dims[1]); ++j) {
             for (I4 k = 0; k < std::min(3, Dims[2]); ++k) {
-               Real ComputedValue = static_cast<Real>(ResultHost(i, j, k));
+               Real ComputedValue = ResultHost(i, j, k);
                if (std::abs(ComputedValue - ExpectedMean) >
                    static_cast<Real>(Helper::getTolerance())) {
                   Passed = false;

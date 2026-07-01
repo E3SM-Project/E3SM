@@ -34,12 +34,22 @@ namespace OMEGA {
 /// TimeMeanOp computes the time-averaged mean of a field over a specified
 /// period. The operator accumulates input values at each timestep, and when
 /// the period alarm rings, divides by the accumulation count to produce the
-/// mean. Output Field has the same dimensions and layout as input. Maintains
-/// state across timesteps for accumulation.
+/// mean. Output Field has the same dimensions and layout as input but always
+/// uses Real type for accuracy. Maintains state across timesteps for
+/// accumulation.
 template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
  public:
    /// Scalar type extracted from the input array type
    using ScalarT = typename ArrayT::non_const_value_type;
+   
+   /// Output array type - same rank as input but always Real precision
+   using OutputArrayT = typename std::conditional<
+       ArrayT::rank == 1, Array1D_t<Real>,
+       typename std::conditional<
+           ArrayT::rank == 2, Array2D_t<Real>,
+           typename std::conditional<
+               ArrayT::rank == 3, Array3D_t<Real>,
+               Array4D_t<Real>>::type>::type>::type;
 
    /// Constructs a TimeMeanOp operator. Reads averaging period from config,
    /// creates output Field matching input dimensions and layout, allocates
@@ -74,15 +84,15 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
       std::vector<std::string> DimNames;
       InputField->getDimNames(DimNames);
 
-      // Register output Field with same dimensions as input
+      // Register output Field with same dimensions as input but Real type
       auto OutputField =
           Field::create(OutputNames[0],
                         "Time average of " + InputNames[0],   // Description
                         "",                                   // Units
                         "",                                   // Standard name
-                        -std::numeric_limits<ScalarT>::max(), // Min valid value
-                        std::numeric_limits<ScalarT>::max(),  // Max valid value
-                        -std::numeric_limits<ScalarT>::max(), // Fill value
+                        -std::numeric_limits<Real>::max(),    // Min valid value
+                        std::numeric_limits<Real>::max(),     // Max valid value
+                        -std::numeric_limits<Real>::max(),    // Fill value
                         NDims,                                // Rank
                         DimNames                              // Dimension names
           );
@@ -90,12 +100,11 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
       // Store array size for parallel iteration
       ArraySize = static_cast<I4>(InputData.size());
 
-      // Allocate output data array matching input layout
-      OutputData =
-          decltype(InputData)(OutputNames[0] + "_out", InputData.layout());
+      // Allocate output data array matching input layout but with Real type
+      OutputData = OutputArrayT(OutputNames[0] + "_out", InputData.layout());
 
       // Attach output data array to Field
-      OutputField->template attachData<ArrayT>(OutputData);
+      OutputField->attachData<OutputArrayT>(OutputData);
 
       // Initialize accumulation state
       NumAccum    = 0;
@@ -130,14 +139,18 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
       // Accumulate input values into output array
       if (IsNewPeriod) {
          // Start of new averaging period: initialize with first input
+         // Cast to Real for accumulation
          NumAccum = 1;
-         deepCopy(OutputData, InputData);
+         parallelFor(
+             {ArraySize}, KOKKOS_LAMBDA(const int FlatIdx) {
+                LocOutputData.data()[FlatIdx] = static_cast<Real>(InputData.data()[FlatIdx]);
+             });
          IsNewPeriod = false;
       } else {
          // Continue accumulation: add input to running sum
          parallelFor(
              {ArraySize}, KOKKOS_LAMBDA(const int FlatIdx) {
-                LocOutputData.data()[FlatIdx] += InputData.data()[FlatIdx];
+                LocOutputData.data()[FlatIdx] += static_cast<Real>(InputData.data()[FlatIdx]);
              });
          ++NumAccum;
 
@@ -165,9 +178,9 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
    } // end compute
 
  private:
-   /// Output data array matching input layout, used to accumulate sum and
-   /// store the final time-averaged mean
-   ArrayT OutputData;
+   /// Output data array matching input layout but with Real type, used to
+   /// accumulate sum and store the final time-averaged mean
+   OutputArrayT OutputData;
 
    /// Number of values accumulated in current averaging period
    I4 NumAccum;

@@ -55,8 +55,8 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
       OutputNames                 = {OutputFieldName};
       InstanceName                = OutputFieldName;
 
-      // Allocate output data array (single scalar value)
-      OutputData = Array1D_t<ScalarT>(OutputNames[0], 1);
+      // Allocate output data array (single scalar value, always Real type)
+      OutputData = Array1DReal(OutputNames[0], 1);
 
       // Create scalar dimension for output Field
       I4 NDims = 1;
@@ -70,15 +70,15 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
                         "Spatial mean of " + InputNames[0],   // Description
                         "",                                   // Units
                         "",                                   // Standard name
-                        -std::numeric_limits<ScalarT>::max(), // Min valid value
-                        std::numeric_limits<ScalarT>::max(),  // Max valid value
-                        -std::numeric_limits<ScalarT>::max(), // Fill value
+                        -std::numeric_limits<Real>::max(),    // Min valid value
+                        std::numeric_limits<Real>::max(),     // Max valid value
+                        -std::numeric_limits<Real>::max(),    // Fill value
                         NDims,                                // Rank
                         DimNames                              // Dimension names
           );
 
       // Attach output data array to Field
-      OutputField->template attachData<Array1D_t<ScalarT>>(OutputData);
+      OutputField->attachData<Array1DReal>(OutputData);
 
    } // end constructor
 
@@ -156,8 +156,9 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
       std::vector<I4> MaskIndxRange = {0, NOwned - 1, 0, NVertLayers - 1};
 
       // Compute masked sum of values and sum of mask values
-      ScalarT ValSum;
-      ScalarT MaskSum;
+      // Cast ValSum to Real immediately to ensure proper precision
+      Real ValSum;
+      Real MaskSum;
 
       if (NDims == 1) {
          // For 1D arrays, use horizontal-only mask (k=0 column of 2D mask)
@@ -171,7 +172,7 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
              {static_cast<I4>(MaskArray.extent(0))},
              KOKKOS_LAMBDA(int I) { LocalMask1D(I) = LocalMaskArray(I, 0); });
 
-         ValSum = globalMaskedSum(InputData, Mask1D, Comm, &IndxRange);
+         ValSum = static_cast<Real>(globalMaskedSum(InputData, Mask1D, Comm, &IndxRange));
 
          // Use cached mask sum if available, otherwise compute and cache it
          if (CachedMaskSum < 0) {
@@ -180,7 +181,7 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
          MaskSum = CachedMaskSum;
       } else {
          // For 2D+ arrays, use full 2D mask
-         ValSum = globalMaskedSum(InputData, MaskArray, Comm, &IndxRange);
+         ValSum = static_cast<Real>(globalMaskedSum(InputData, MaskArray, Comm, &IndxRange));
 
          // Use cached mask sum if available, otherwise compute and cache it
          if (CachedMaskSum < 0) {
@@ -214,11 +215,12 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
 
  private:
    /// Output data array holding the computed spatial mean (single scalar value)
-   Array1D_t<ScalarT> OutputData;
+   /// Always Real type regardless of input type
+   Array1DReal OutputData;
 
    /// Temporary storage for the computed mean value before copying to
    /// OutputData
-   ScalarT SpatialMean;
+   Real SpatialMean;
 
    /// Contiguous 1D mask for horizontal-only operations (1D inputs).
    /// Stores k=0 column of the 2D mask. Allocated lazily on first compute
@@ -229,7 +231,7 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
    /// The mask is constant in time, so this optimization avoids redundant
    /// global reduction operations. Initialized to -1 to indicate not yet
    /// computed.
-   ScalarT CachedMaskSum{static_cast<ScalarT>(-1)};
+   Real CachedMaskSum{static_cast<Real>(-1)};
 
 }; // end class SpatialMeanOp
 
