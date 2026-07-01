@@ -177,7 +177,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
    // Extract variable from config
    if (Node[VarName]) { // the variable exists
-      Value = Node[VarName].as<I4>();
+      // Catch error if input an incompatible type
+      try {
+         Value = Node[VarName].as<I4>();
+         // Success - returns Value
+      } catch (const YAML::TypedBadConversion<I4> &) { // bad conversion
+         // Return error message
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "Config get I4: Expected an integer but encountered "
+                      "an incompatible data type in input config");
+      }
    } else {
       // Do not modify value if not found to preserve any default value set
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -197,7 +206,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
    // Extract variable from config
    if (Node[VarName]) { // the variable exists
-      Value = Node[VarName].as<I8>();
+      // Catch error if input an incompatible type
+      try {
+         Value = Node[VarName].as<I8>();
+         // Success - returns Value
+      } catch (const YAML::TypedBadConversion<I8> &) { // bad conversion
+         // Return error message
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "Config get I8: Expected an 8-byte integer but "
+                      "encountered an incompatible data type in input config");
+      }
    } else {
       // Do not modify value if not found to preserve any default value set
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -217,7 +235,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
    // Extract variable from config
    if (Node[VarName]) { // the variable exists
-      Value = Node[VarName].as<R4>();
+      // Catch error if input an incompatible type
+      try {
+         Value = Node[VarName].as<R4>();
+         // Success - returns Value
+      } catch (const YAML::TypedBadConversion<R4> &) { // bad conversion
+         // Return error message
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "Config get R4: Expected a real variable but "
+                      "encountered an incompatible data type in input config");
+      }
    } else {
       // Do not modify value if not found to preserve any default value set
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -237,7 +264,16 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
    // Extract variable from config
    if (Node[VarName]) { // the variable exists
-      Value = Node[VarName].as<R8>();
+      // Catch error if input an incompatible type
+      try {
+         Value = Node[VarName].as<R8>();
+         // Success - returns Value
+      } catch (const YAML::TypedBadConversion<R8> &) { // check conversion
+         // Return error message
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "Config get R8: Expected a double precision variable but "
+                      "encountered an incompatible data type in input config");
+      }
    } else {
       // Do not modify value if not found to preserve any default value set
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -257,7 +293,15 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
    // Extract variable from config
    if (Node[VarName]) { // the variable exists
-      Value = Node[VarName].as<bool>();
+      try {
+         Value = Node[VarName].as<bool>();
+         // Success - returns Value
+      } catch (const YAML::TypedBadConversion<bool> &) { // check bad conversion
+         // Return error message
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "Config get bool: Expected a boolean variable but "
+                      "encountered an incompatible data type in input config");
+      }
    } else {
       // Do not modify value if not found to preserve any default value set
       RETURN_ERROR(Err, ErrorCode::Fail,
@@ -278,6 +322,8 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
    // Extract variable from config on master task
    std::string TmpVal;
    if (Node[VarName]) { // the variable exists
+      // No need to check for type conversion since YAML treats all
+      // values as string by default
       Value = Node[VarName].as<std::string>();
    } else {
       // Do not modify value if not found to preserve any default value set
@@ -310,7 +356,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
          // Now copy the sequence into the vector
          for (int i = 0; i < VecSize; ++i) {
-            Vector[i] = Sequence[i].as<I4>();
+            // Catch error if input an incompatible type
+            try {
+               Vector[i] = Sequence[i].as<I4>();
+               // Success - returns Value
+            } catch (const YAML::TypedBadConversion<I4> &) { // bad conversion
+               // Return error message
+               RETURN_ERROR(
+                   Err, ErrorCode::Fail,
+                   "Config get I4 vector: Expected an integer but "
+                   "encountered an incompatible data type in input config");
+            }
          }
 
       } else { // not a sequence (vector) node so log an error
@@ -348,7 +404,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
          // Now copy the sequence into the vector
          for (int i = 0; i < VecSize; ++i) {
-            Vector[i] = Sequence[i].as<I8>();
+            // Catch error if input an incompatible type
+            try {
+               Vector[i] = Sequence[i].as<I8>();
+               // Success - returns Value
+            } catch (const YAML::TypedBadConversion<I8> &) { // bad conversion
+               // Return error message
+               RETURN_ERROR(
+                   Err, ErrorCode::Fail,
+                   "Config get I8 vector: Expected an 8-byte integer but "
+                   "encountered an incompatible data type in input config");
+            }
          }
 
       } else { // not a sequence (vector) so log an error
@@ -386,7 +452,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
          // Now copy the sequence into the vector
          for (int i = 0; i < VecSize; ++i) {
-            Vector[i] = Sequence[i].as<R4>();
+            // Catch error if input an incompatible type
+            try {
+               Vector[i] = Sequence[i].as<R4>();
+               // Success - returns Value
+            } catch (const YAML::TypedBadConversion<R4> &) { // bad conversion
+               // Return error message
+               RETURN_ERROR(
+                   Err, ErrorCode::Fail,
+                   "Config get R4 vector: Expected a real value but "
+                   "encountered an incompatible data type in input config");
+            }
          }
 
       } else { // not a sequence (vector) so log an error
@@ -424,7 +500,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
          // Now copy the sequence into the vector
          for (int i = 0; i < VecSize; ++i) {
-            Vector[i] = Sequence[i].as<R8>();
+            // Catch error if input an incompatible type
+            try {
+               Vector[i] = Sequence[i].as<R8>();
+               // Success - returns Value
+            } catch (const YAML::TypedBadConversion<R8> &) { // bad conversion
+               // Return error message
+               RETURN_ERROR(
+                   Err, ErrorCode::Fail,
+                   "Config get R8 vector: Expected a double precision value "
+                   "but encountered an incompatible data type in input config");
+            }
          }
 
       } else { // not a sequence (vector) so log an error
@@ -462,7 +548,17 @@ Error Config::get(const std::string &VarName, // [in] name of variable to get
 
          // Now copy the sequence into the vector
          for (int i = 0; i < VecSize; ++i) {
-            Vector[i] = Sequence[i].as<bool>();
+            // Catch error if input an incompatible type
+            try {
+               Vector[i] = Sequence[i].as<bool>();
+               // Success - returns Value
+            } catch (const YAML::TypedBadConversion<bool> &) { // bad conversion
+               // Return error message
+               RETURN_ERROR(
+                   Err, ErrorCode::Fail,
+                   "Config get bool vector: Expected a boolean value "
+                   "but encountered an incompatible data type in input config");
+            }
          }
 
       } else { // not a sequence (vector) so log an error
