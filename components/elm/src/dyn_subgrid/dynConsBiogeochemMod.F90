@@ -498,6 +498,7 @@ contains
     do fp = 1, num_soilp_with_inactive
        p = filter_soilp_with_inactive(fp)
        c = veg_pp%column(p)
+       g = veg_pp%gridcell(p)
 
        ! fine and coarse root to litter and CWD slash carbon fluxes
        col_cf%dwt_slash_cflux(c) =            &
@@ -506,9 +507,21 @@ contains
             dwt_livecrootc_to_litter(fp) /dt + &
             dwt_deadcrootc_to_litter(fp) /dt
 
+       grc_cf%dwt_slash_cflux(g) =            &
+            grc_cf%dwt_slash_cflux(g)       + &
+            dwt_frootc_to_litter(fp)     /dt + &
+            dwt_livecrootc_to_litter(fp) /dt + &
+            dwt_deadcrootc_to_litter(fp) /dt
+
        if ( use_c13 ) then
           c13_col_cf%dwt_slash_cflux(c) =          &
                c13_col_cf%dwt_slash_cflux(c)     + &
+               dwt_frootc13_to_litter(fp)     /dt + &
+               dwt_livecrootc13_to_litter(fp) /dt + &
+               dwt_deadcrootc13_to_litter(fp) /dt
+
+          c13_grc_cf%dwt_slash_cflux(g) =          &
+               c13_grc_cf%dwt_slash_cflux(g)     + &
                dwt_frootc13_to_litter(fp)     /dt + &
                dwt_livecrootc13_to_litter(fp) /dt + &
                dwt_deadcrootc13_to_litter(fp) /dt
@@ -520,6 +533,12 @@ contains
                dwt_frootc14_to_litter(fp)     /dt + &
                dwt_livecrootc14_to_litter(fp) /dt + &
                dwt_deadcrootc14_to_litter(fp) /dt
+
+          c14_grc_cf%dwt_slash_cflux(g) =          &
+               c14_grc_cf%dwt_slash_cflux(g)     + &
+               dwt_frootc14_to_litter(fp)     /dt + &
+               dwt_livecrootc14_to_litter(fp) /dt + &
+               dwt_deadcrootc14_to_litter(fp) /dt
        endif
 
        col_nf%dwt_slash_nflux(c) =            &
@@ -528,8 +547,20 @@ contains
             dwt_livecrootn_to_litter(fp) /dt + &
             dwt_deadcrootn_to_litter(fp) /dt
 
+       grc_nf%dwt_slash_nflux(g) =            &
+            grc_nf%dwt_slash_nflux(g)       + &
+            dwt_frootn_to_litter(fp)     /dt + &
+            dwt_livecrootn_to_litter(fp) /dt + &
+            dwt_deadcrootn_to_litter(fp) /dt
+
        col_pf%dwt_slash_pflux(c) =            &
             col_pf%dwt_slash_pflux(c)       + &
+            dwt_frootp_to_litter(fp)     /dt + &
+            dwt_livecrootp_to_litter(fp) /dt + &
+            dwt_deadcrootp_to_litter(fp) /dt
+
+       grc_pf%dwt_slash_pflux(g) =            &
+            grc_pf%dwt_slash_pflux(g)       + &
             dwt_frootp_to_litter(fp)     /dt + &
             dwt_livecrootp_to_litter(fp) /dt + &
             dwt_deadcrootp_to_litter(fp) /dt
@@ -686,6 +717,7 @@ contains
        grc_cf%dwt_prod100c_gain(g)   = grc_cf%dwt_prod100c_gain(g) + veg_cf%dwt_prod100c_gain(p)
 
        veg_cf%dwt_crop_productc_gain(p) = - crop_product_cflux(fp)/dt
+       grc_cf%dwt_crop_productc_gain(g)   = grc_cf%dwt_crop_productc_gain(g) + veg_cf%dwt_crop_productc_gain(p)
 
        if ( use_c13 ) then
           ! C13 column-level flux updates
@@ -701,6 +733,7 @@ contains
           c13_grc_cf%dwt_prod100c_gain(g)   = c13_grc_cf%dwt_prod100c_gain(g) + c13_veg_cf%dwt_prod100c_gain(p)
 
           c13_veg_cf%dwt_crop_productc_gain(p) = - crop_product_c13flux(fp)/dt
+          c13_grc_cf%dwt_crop_productc_gain(g)   = c13_grc_cf%dwt_crop_productc_gain(g) + c13_veg_cf%dwt_crop_productc_gain(p)
 
        endif
 
@@ -718,6 +751,7 @@ contains
           c14_grc_cf%dwt_prod100c_gain(g)   = c14_grc_cf%dwt_prod100c_gain(g) + c14_veg_cf%dwt_prod100c_gain(p)
 
           c14_veg_cf%dwt_crop_productc_gain(p) = - crop_product_c14flux(fp)/dt
+          c14_grc_cf%dwt_crop_productc_gain(g)   = c14_grc_cf%dwt_crop_productc_gain(g) + c14_veg_cf%dwt_crop_productc_gain(p)
 
        endif
 
@@ -734,6 +768,7 @@ contains
        grc_nf%dwt_prod100n_gain(g)  = grc_nf%dwt_prod100n_gain(g) + veg_nf%dwt_prod100n_gain(p)
 
        veg_nf%dwt_crop_productn_gain(p) = -crop_product_nflux(fp)/dt
+       grc_nf%dwt_crop_productn_gain(g)  = grc_nf%dwt_crop_productn_gain(g) + veg_nf%dwt_crop_productn_gain(p)
 
        ! column-level P flux updates
 
@@ -749,6 +784,7 @@ contains
        grc_pf%dwt_prod100p_gain(g)  = grc_pf%dwt_prod100p_gain(g) + veg_pf%dwt_prod100p_gain(p)
 
        veg_pf%dwt_crop_productp_gain(p) = -crop_product_pflux(fp)/dt
+       grc_pf%dwt_crop_productp_gain(g)  = grc_pf%dwt_crop_productp_gain(g) + veg_pf%dwt_crop_productp_gain(p)
 
     end do
 

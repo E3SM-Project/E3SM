@@ -141,8 +141,10 @@ module GridcellDataType
     real(r8), pointer :: dwt_seedc_to_deadstem     (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_conv_cflux            (:) => null()  ! (gC/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
     real(r8), pointer :: dwt_conv_cflux_dribbled   (:) => null()  ! (gC/m2/s) dwt_conv_cflux dribbled evenly throughout the year
+    real(r8), pointer :: dwt_slash_cflux           (:) => null()  ! (gC/m2/s) fine/coarse root conversion slash flux to litter and CWD due to landcover change
     real(r8), pointer :: dwt_prod10c_gain          (:) => null()  ! (gC/m2/s) dynamic landcover addition to 10-year wood product pool
     real(r8), pointer :: dwt_prod100c_gain         (:) => null()  ! (gC/m2/s) dynamic landcover addition to 100-year wood product pool
+    real(r8), pointer :: dwt_crop_productc_gain    (:) => null()  ! (gC/m2/s) dynamic landcover addition to crop product pool
     real(r8), pointer :: hrv_deadstemc_to_prod10c  (:) => null()  ! (gC/m2/s) dead stem harvest to 10-year wood product pool
     real(r8), pointer :: hrv_deadstemc_to_prod100c (:) => null()  ! (gC/m2/s) dead stem harvest to 100-year wood product pool
     real(r8), pointer :: cinputs                   (:) => null()  ! (gC/m2/s) grid-level C inputs
@@ -185,9 +187,11 @@ module GridcellDataType
     real(r8), pointer :: dwt_seedn_to_leaf      (:) => null()  ! (gN/m2/s) dwt_seedn_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_seedn_to_deadstem  (:) => null()  ! (gN/m2/s) dwt_seedn_to_deadstem_patch summed to the gridcell-level
     real(r8), pointer :: dwt_conv_nflux         (:) => null()  ! (gN/m2/s) dwt_conv_nflux_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_slash_nflux        (:) => null()  ! (gN/m2/s) fine/coarse root conversion slash flux to litter and CWD due to landcover change
     real(r8), pointer :: dwt_seedn_to_npool     (:) => null()  ! (gN/m2/s) seed source to PFT level
     real(r8), pointer :: dwt_prod10n_gain       (:) => null()  ! (gN/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100n_gain      (:) => null()  ! (gN/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productn_gain (:) => null()  ! (gN/m2/s) addition to crop product pool
     real(r8), pointer :: ninputs                (:) => null()  ! (gN/m2/s) grid-level N inputs
     real(r8), pointer :: noutputs               (:) => null()  ! (gN/m2/s) grid-level N outputs
   contains
@@ -216,9 +220,11 @@ module GridcellDataType
     real(r8), pointer :: dwt_seedp_to_leaf        (:)  ! (gP/m2/s) dwt_seedn_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_seedp_to_deadstem    (:)  ! (gP/m2/s) dwt_seedn_to_deadstem_patch summed to the gridcell-level
     real(r8), pointer :: dwt_conv_pflux           (:)  ! (gP/m2/s) dwt_conv_nflux_patch summed to the gridcell-level
+    real(r8), pointer :: dwt_slash_pflux          (:)  ! (gP/m2/s) fine/coarse root conversion slash flux to litter and CWD due to landcover change
     real(r8), pointer :: dwt_seedp_to_ppool       (:)  ! (gP/m2/s) seed source to PFT-level
     real(r8), pointer :: dwt_prod10p_gain         (:)  ! (gP/m2/s) addition to 10-yr wood product pool
     real(r8), pointer :: dwt_prod100p_gain        (:)  ! (gP/m2/s) addition to 100-yr wood product pool
+    real(r8), pointer :: dwt_crop_productp_gain   (:)  ! (gP/m2/s) addition to crop product pool
     real(r8), pointer :: pinputs                  (:)  ! (gP/m2/s) grid-level P inputs
     real(r8), pointer :: poutputs                 (:)  ! (gP/m2/s) grid-level P outputs
   contains
@@ -687,8 +693,10 @@ contains
     allocate(this%dwt_seedc_to_deadstem        (begg:endg)) ; this%dwt_seedc_to_deadstem     (:) = spval
     allocate(this%dwt_conv_cflux               (begg:endg)) ; this%dwt_conv_cflux            (:) = spval
     allocate(this%dwt_conv_cflux_dribbled      (begg:endg)) ; this%dwt_conv_cflux_dribbled   (:) = spval
+    allocate(this%dwt_slash_cflux              (begg:endg)) ; this%dwt_slash_cflux           (:) = spval
     allocate(this%dwt_prod10c_gain             (begg:endg)) ; this%dwt_prod10c_gain          (:) = spval
     allocate(this%dwt_prod100c_gain            (begg:endg)) ; this%dwt_prod100c_gain         (:) = spval
+    allocate(this%dwt_crop_productc_gain       (begg:endg)) ; this%dwt_crop_productc_gain    (:) = spval
     allocate(this%hrv_deadstemc_to_prod10c     (begg:endg)) ; this%hrv_deadstemc_to_prod10c  (:) = spval
     allocate(this%hrv_deadstemc_to_prod100c    (begg:endg)) ; this%hrv_deadstemc_to_prod100c (:) = spval
     allocate(this%cinputs                      (begg:endg)) ; this%cinputs                   (:) = spval
@@ -736,6 +744,11 @@ contains
             long_name='conversion C flux (immediate loss to atm), dribbled throughout the year', &
             ptr_gcell=this%dwt_conv_cflux_dribbled)
 
+       this%dwt_slash_cflux(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_SLASH_CFLUX_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='fine/coarse root conversion slash flux to litter and CWD', &
+            ptr_col=this%dwt_slash_cflux, default='inactive')
+
        this%dwt_prod10c_gain(begg:endg) = spval
        call hist_addfld1d (fname='DWT_PROD10C_GAIN_GRC', units='gC/m^2/s', &
             avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
@@ -745,6 +758,11 @@ contains
        call hist_addfld1d (fname='DWT_PROD100C_GAIN_GRC', units='gC/m^2/s', &
             avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
             ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%dwt_crop_productc_gain(begg:endg) = spval
+       call hist_addfld1d (fname='DWT_CROP_PRODUCTC_GAIN_GRC', units='gC/m^2/s', &
+            avgflag='A', long_name='landcover change-driven addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain, default='inactive')
 
        this%hrv_deadstemc_to_prod10c(begg:endg) = spval
        call hist_addfld1d (fname='HRV_DEADSTEM_TO_PROD10C_GRC', units='gC/m^2/s', &
@@ -786,6 +804,11 @@ contains
             avgflag='A', long_name='C13 seed source to patch-level deadstem', &
             ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
 
+       this%dwt_slash_cflux(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_SLASH_CFLUX_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 fine/coarse root conversion slash flux to litter and CWD', &
+            ptr_col=this%dwt_slash_cflux, default='inactive')
+
        this%dwt_prod10c_gain(begg:endg) = spval
        call hist_addfld1d (fname='C13_DWT_PROD10C_GAIN_GRC', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 landcover change-driven addition to 10-yr wood product pool', &
@@ -795,6 +818,11 @@ contains
        call hist_addfld1d (fname='C13_DWT_PROD100C_GAIN_GRC', units='gC13/m^2/s', &
             avgflag='A', long_name='C13 landcover change-driven addition to 100-yr wood product pool', &
             ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%dwt_crop_productc_gain(begg:endg) = spval
+       call hist_addfld1d (fname='C13_DWT_CROP_PRODUCTC_GAIN_GRC', units='gC13/m^2/s', &
+            avgflag='A', long_name='C13 landcover change-driven addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain, default='inactive')
 
        this%hrv_deadstemc_to_prod10c(begg:endg) = spval
        call hist_addfld1d (fname='C13_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC13/m^2/s', &
@@ -836,6 +864,11 @@ contains
             avgflag='A', long_name='C14 seed source to patch-level deadstem', &
             ptr_gcell=this%dwt_seedc_to_deadstem, default='inactive')
 
+       this%dwt_slash_cflux(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_SLASH_CFLUX_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 fine/coarse root conversion slash flux to litter and CWD', &
+            ptr_col=this%dwt_slash_cflux, default='inactive')
+
        this%dwt_prod10c_gain(begg:endg) = spval
        call hist_addfld1d (fname='C14_DWT_PROD10C_GAIN_GRC', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 landcover change-driven addition to 10-yr wood product pool', &
@@ -845,6 +878,11 @@ contains
        call hist_addfld1d (fname='C14_DWT_PROD100C_GAIN_GRC', units='gC14/m^2/s', &
             avgflag='A', long_name='C14 landcover change-driven addition to 100-yr wood product pool', &
             ptr_col=this%dwt_prod100c_gain, default='inactive')
+
+       this%dwt_crop_productc_gain(begg:endg) = spval
+       call hist_addfld1d (fname='C14_DWT_CROP_PRODUCTC_GAIN_GRC', units='gC14/m^2/s', &
+            avgflag='A', long_name='C14 landcover change-driven addition to crop product pool', &
+            ptr_col=this%dwt_crop_productc_gain, default='inactive')
 
        this%hrv_deadstemc_to_prod10c(begg:endg) = spval
        call hist_addfld1d (fname='C14_HRV_DEADSTEM_TO_PROD10C_GRC', units='gC14/m^2/s', &
@@ -861,14 +899,16 @@ contains
     ! set cold-start initial values for select members of grc_cf
     !-----------------------------------------------------------------------
     do g = begg, endg
+       this%dwt_slash_cflux(g)           = 0._r8
        this%dwt_prod10c_gain(g)          = 0._r8
        this%dwt_prod100c_gain(g)         = 0._r8
+       this%dwt_crop_productc_gain(g)    = 0._r8
        this%hrv_deadstemc_to_prod10c(g)  = 0._r8
        this%hrv_deadstemc_to_prod100c(g) = 0._r8
        this%cinputs(g)                   = 0._r8
        this%coutputs(g)                  = 0._r8
     end do
-    
+
   end subroutine grc_cf_init
   
   !-----------------------------------------------------------------------
@@ -892,8 +932,10 @@ contains
        this%dwt_seedc_to_leaf(g)         = 0._r8
        this%dwt_seedc_to_deadstem(g)     = 0._r8
        this%dwt_conv_cflux(g)            = 0._r8
+       this%dwt_slash_cflux(g)           = 0._r8
        this%dwt_prod10c_gain(g)          = 0._r8
        this%dwt_prod100c_gain(g)         = 0._r8
+       this%dwt_crop_productc_gain(g)    = 0._r8
        this%hrv_deadstemc_to_prod10c(g)  = 0._r8
        this%hrv_deadstemc_to_prod100c(g) = 0._r8
     end do
@@ -976,9 +1018,11 @@ contains
     allocate(this%dwt_seedn_to_leaf     (begg:endg)) ; this%dwt_seedn_to_leaf     (:) = spval
     allocate(this%dwt_seedn_to_deadstem (begg:endg)) ; this%dwt_seedn_to_deadstem (:) = spval
     allocate(this%dwt_conv_nflux        (begg:endg)) ; this%dwt_conv_nflux        (:) = spval
+    allocate(this%dwt_slash_nflux       (begg:endg)) ; this%dwt_slash_nflux       (:) = spval
     allocate(this%dwt_seedn_to_npool    (begg:endg)) ; this%dwt_seedn_to_npool    (:) = spval
     allocate(this%dwt_prod10n_gain      (begg:endg)) ; this%dwt_prod10n_gain      (:) = spval
     allocate(this%dwt_prod100n_gain     (begg:endg)) ; this%dwt_prod100n_gain     (:) = spval
+    allocate(this%dwt_crop_productn_gain(begg:endg)) ; this%dwt_crop_productn_gain(:) = spval
     allocate(this%ninputs               (begg:endg)) ; this%ninputs               (:) = spval
     allocate(this%noutputs              (begg:endg)) ; this%noutputs              (:) = spval
     
@@ -1006,6 +1050,11 @@ contains
          avgflag='A', long_name='seed source to PFT-level npool', &
          ptr_gcell=this%dwt_seedn_to_npool, default='inactive')
 
+    this%dwt_slash_nflux(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SLASH_NFLUX_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='fine/coarse root conversion slash flux to litter and CWD', &
+         ptr_gcell=this%dwt_slash_nflux, default='inactive')
+
     this%dwt_prod10n_gain(begg:endg) = spval
     call hist_addfld1d (fname='DWT_PROD10N_GAIN_GRC', units='gN/m^2/s', &
          avgflag='A', long_name='landcover change-driven addition to 10-yr wood product pool', &
@@ -1016,16 +1065,23 @@ contains
          avgflag='A', long_name='landcover change-driven addition to 100-yr wood product pool', &
          ptr_gcell=this%dwt_prod100n_gain, default='inactive')
 
+    this%dwt_crop_productn_gain(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_CROP_PRODUCTN_GAIN_GRC', units='gN/m^2/s', &
+         avgflag='A', long_name='landcover change-driven addition to crop product pool', &
+         ptr_gcell=this%dwt_crop_productn_gain, default='inactive')
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_nf
     !-----------------------------------------------------------------------
     do g = begg, endg
+       this%dwt_slash_nflux(g)           = 0._r8
        this%dwt_prod10n_gain(g)          = 0._r8
        this%dwt_prod100n_gain(g)         = 0._r8
+       this%dwt_crop_productn_gain(g)    = 0._r8
        this%ninputs(g)                   = 0._r8
        this%noutputs(g)                  = 0._r8
     end do
-    
+
   end subroutine grc_nf_init
   
   !-----------------------------------------------------------------------
@@ -1046,9 +1102,11 @@ contains
        this%dwt_seedn_to_leaf(g)     = 0._r8
        this%dwt_seedn_to_deadstem(g) = 0._r8
        this%dwt_conv_nflux(g)        = 0._r8
+       this%dwt_slash_nflux(g)       = 0._r8
        this%dwt_seedn_to_npool(g)    = 0._r8
        this%dwt_prod10n_gain(g)      = 0._r8
        this%dwt_prod100n_gain(g)     = 0._r8
+       this%dwt_crop_productn_gain(g) = 0._r8
     end do
 
   end subroutine grc_nf_zerodwt
@@ -1123,9 +1181,11 @@ contains
     allocate(this%dwt_seedp_to_leaf      (begg:endg))   ; this%dwt_seedp_to_leaf      (:) = spval
     allocate(this%dwt_seedp_to_deadstem  (begg:endg))   ; this%dwt_seedp_to_deadstem  (:) = spval
     allocate(this%dwt_conv_pflux         (begg:endg))   ; this%dwt_conv_pflux         (:) = spval
+    allocate(this%dwt_slash_pflux        (begg:endg))   ; this%dwt_slash_pflux        (:) = spval
     allocate(this%dwt_seedp_to_ppool     (begg:endg))   ; this%dwt_seedp_to_ppool     (:) = spval
     allocate(this%dwt_prod10p_gain       (begg:endg))   ; this%dwt_prod10p_gain       (:) = spval
     allocate(this%dwt_prod100p_gain      (begg:endg))   ; this%dwt_prod100p_gain      (:) = spval
+    allocate(this%dwt_crop_productp_gain (begg:endg))   ; this%dwt_crop_productp_gain (:) = spval
     allocate(this%pinputs                (begg:endg))   ; this%pinputs                (:) = spval
     allocate(this%poutputs               (begg:endg))   ; this%poutputs               (:) = spval
     
@@ -1153,6 +1213,11 @@ contains
          avgflag='A', long_name='seed source to PFT-level', &
          ptr_gcell=this%dwt_seedp_to_ppool, default='inactive')
 
+    this%dwt_slash_pflux(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_SLASH_PFLUX_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='fine/coarse root conversion slash flux to litter and CWD', &
+         ptr_gcell=this%dwt_slash_pflux, default='inactive')
+
     this%dwt_prod10p_gain(begg:endg) = spval
     call hist_addfld1d (fname='DWT_PROD10P_GAIN_GRC', units='gP/m^2/s', &
          avgflag='A', long_name='addition to 10-yr wood product pool', &
@@ -1163,16 +1228,23 @@ contains
          avgflag='A', long_name='addition to 10-yr wood product pool', &
          ptr_gcell=this%dwt_prod100p_gain, default='inactive')
 
+    this%dwt_crop_productp_gain(begg:endg) = spval
+    call hist_addfld1d (fname='DWT_CROP_PRODUCTP_GAIN_GRC', units='gP/m^2/s', &
+         avgflag='A', long_name='addition to crop product pool', &
+         ptr_gcell=this%dwt_crop_productp_gain, default='inactive')
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_pf
     !------------------------------------------------------------------------
     do g = begg, endg
+       this%dwt_slash_pflux(g)           = 0._r8
        this%dwt_prod10p_gain(g)          = 0._r8
        this%dwt_prod100p_gain(g)         = 0._r8
+       this%dwt_crop_productp_gain(g)    = 0._r8
        this%pinputs(g)                   = 0._r8
        this%poutputs(g)                  = 0._r8
     end do
-  
+
   end subroutine grc_pf_init
 
   !-----------------------------------------------------------------------
@@ -1192,11 +1264,13 @@ contains
        this%dwt_seedp_to_leaf(g)     = 0._r8
        this%dwt_seedp_to_deadstem(g) = 0._r8
        this%dwt_conv_pflux(g)        = 0._r8
+       this%dwt_slash_pflux(g)       = 0._r8
        this%dwt_seedp_to_ppool(g)    = 0._r8
        this%dwt_prod10p_gain(g)      = 0._r8
        this%dwt_prod100p_gain(g)     = 0._r8
+       this%dwt_crop_productp_gain(g) = 0._r8
     end do
-  
+
   end subroutine grc_pf_zerodwt
   
   !------------------------------------------------------------------------

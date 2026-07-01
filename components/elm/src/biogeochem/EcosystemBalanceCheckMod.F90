@@ -1104,6 +1104,10 @@ contains
     associate(                                                                       &
          totcolc                   =>    col_cs%totcolc              , & ! Input:  [real(r8) (:) ]  (gC/m2)   total column carbon, incl veg and cpool
          dwt_conv_cflux_grc        =>    grc_cf%dwt_conv_cflux        , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         dwt_slash_cflux_grc       =>    grc_cf%dwt_slash_cflux       , & ! Input: [real(r8) (:) ]  fine/coarse root slash flux to litter and CWD (gC/m2/s)
+         dwt_prod10c_gain_grc      =>    grc_cf%dwt_prod10c_gain      , & ! Input: [real(r8) (:) ]  addition to 10-yr wood product pool (gC/m2/s)
+         dwt_prod100c_gain_grc     =>    grc_cf%dwt_prod100c_gain     , & ! Input: [real(r8) (:) ]  addition to 100-yr wood product pool (gC/m2/s)
+         dwt_crop_productc_gain_grc =>   grc_cf%dwt_crop_productc_gain, & ! Input: [real(r8) (:) ]  addition to crop product pool (gC/m2/s)
          dwt_seedc_to_leaf_grc     =>    grc_cf%dwt_seedc_to_leaf     , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_cinputs               =>    grc_cf%cinputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
@@ -1132,7 +1136,11 @@ contains
               dwt_seedc_to_deadstem_grc(g)
 
          grc_coutputs(g) = &
-              dwt_conv_cflux_grc(g)
+              dwt_conv_cflux_grc(g)         + &
+              dwt_slash_cflux_grc(g)        + &
+              dwt_prod10c_gain_grc(g)       + &
+              dwt_prod100c_gain_grc(g)      + &
+              dwt_crop_productc_gain_grc(g)
 
 
          errcb_grc(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (endcb_grc(g) - begcb_grc(g))
@@ -1189,6 +1197,10 @@ contains
     associate(                                                          &
          totcoln                   =>    col_ns%totcoln               , & ! Input:  [real(r8) (:) ]  (gN/m22)   total column nitrogen, incl veg and cpool
          dwt_conv_nflux_grc        =>    grc_nf%dwt_conv_nflux        , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_slash_nflux_grc       =>    grc_nf%dwt_slash_nflux       , & ! Input: [real(r8) (:) ]  fine/coarse root slash flux to litter and CWD (gN/m2/s)
+         dwt_prod10n_gain_grc      =>    grc_nf%dwt_prod10n_gain      , & ! Input: [real(r8) (:) ]  addition to 10-yr wood product pool (gN/m2/s)
+         dwt_prod100n_gain_grc     =>    grc_nf%dwt_prod100n_gain     , & ! Input: [real(r8) (:) ]  addition to 100-yr wood product pool (gN/m2/s)
+         dwt_crop_productn_gain_grc =>   grc_nf%dwt_crop_productn_gain, & ! Input: [real(r8) (:) ]  addition to crop product pool (gN/m2/s)
          dwt_seedn_to_leaf_grc     =>    grc_nf%dwt_seedn_to_leaf     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_deadstem_grc =>    grc_nf%dwt_seedn_to_deadstem , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          grc_ninputs               =>    grc_nf%ninputs               , & ! Output: [real(r8) (:)]  grid-level N inputs (gN/m2/s)
@@ -1217,7 +1229,11 @@ contains
               dwt_seedn_to_deadstem_grc(g)
 
          grc_noutputs(g) = &
-              dwt_conv_nflux_grc(g)
+              dwt_conv_nflux_grc(g)         + &
+              dwt_slash_nflux_grc(g)        + &
+              dwt_prod10n_gain_grc(g)       + &
+              dwt_prod100n_gain_grc(g)      + &
+              dwt_crop_productn_gain_grc(g)
 
 
          errnb_grc(g) = (grc_ninputs(g) - grc_noutputs(g))*dt - (endnb_grc(g) - begnb_grc(g))
@@ -1280,6 +1296,10 @@ contains
     associate(                                                          &
          totcolp                   =>    col_ps%totcolp               , & ! Input:  [real(r8) (:) ]  (gP/m2)   total column phosphorus, incl veg and cpool
          dwt_conv_pflux_grc        =>    grc_pf%dwt_conv_pflux        , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_slash_pflux_grc       =>    grc_pf%dwt_slash_pflux       , & ! Input: [real(r8) (:) ]  fine/coarse root slash flux to litter and CWD (gP/m2/s)
+         dwt_prod10p_gain_grc      =>    grc_pf%dwt_prod10p_gain      , & ! Input: [real(r8) (:) ]  addition to 10-yr wood product pool (gP/m2/s)
+         dwt_prod100p_gain_grc     =>    grc_pf%dwt_prod100p_gain     , & ! Input: [real(r8) (:) ]  addition to 100-yr wood product pool (gP/m2/s)
+         dwt_crop_productp_gain_grc =>   grc_pf%dwt_crop_productp_gain, & ! Input: [real(r8) (:) ]  addition to crop product pool (gP/m2/s)
          dwt_seedp_to_leaf_grc     =>    grc_pf%dwt_seedp_to_leaf     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_deadstem_grc =>    grc_pf%dwt_seedp_to_deadstem , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          grc_pinputs               =>    grc_pf%pinputs               , & ! Output: [real(r8) (:)]  grid-level P inputs (gP/m2/s)
@@ -1308,7 +1328,11 @@ contains
               dwt_seedp_to_deadstem_grc(g)
 
          grc_poutputs(g) = &
-              dwt_conv_pflux_grc(g)
+              dwt_conv_pflux_grc(g)         + &
+              dwt_slash_pflux_grc(g)        + &
+              dwt_prod10p_gain_grc(g)       + &
+              dwt_prod100p_gain_grc(g)      + &
+              dwt_crop_productp_gain_grc(g)
 
 
          errpb_grc(g) = (grc_pinputs(g) - grc_poutputs(g))*dt - (endpb_grc(g) - begpb_grc(g))
