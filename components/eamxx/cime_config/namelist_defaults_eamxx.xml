@@ -727,6 +727,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nc_nuceat_tend    >0.0</nc_nuceat_tend>
     <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
     <tke               >0.0</tke>
+    <!-- ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized -->
+    <pbl_height        >2000.0</pbl_height>
     <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
     <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
     <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
