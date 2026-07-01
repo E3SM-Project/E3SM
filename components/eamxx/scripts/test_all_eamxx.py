@@ -296,7 +296,7 @@ class TestAllScream(object):
                 if not data_dir.is_dir():
                     test.baselines_missing = True
                     missing.append(test.longname)
-                    print(f" -> Test {test} is missing baselines")
+                    print(f" -> Test {test} is missing baselines {data_dir}")
                 else:
                     print(f" -> Test {test} appears to have baselines")
             else:
