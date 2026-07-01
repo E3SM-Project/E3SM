@@ -234,12 +234,8 @@ class VelVertMixSetupOnEdge {
    bool Enabled;
    Real LocRhoSw;
 
-   /// constructor declaration
    VelVertMixSetupOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
 
-   /// The functor takes edge index, vertical chunk index, and arrays for
-   /// layer specific volume, layer thickness on edge,
-   /// interface pressure, and outputs tendency array
    KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, I4 KMin, I4 KMax, Real DT,
                                    const Array2DReal &SpecVol,
                                    const Array2DReal &PseudoThickCell,
@@ -247,20 +243,51 @@ class VelVertMixSetupOnEdge {
                                    const Array2DReal &NormalVelEdge, Real &G,
                                    Real &H, Real &X) const {
 
-      const I4 JCell0 = CellsOnEdge(IEdge, 0);
-      const I4 JCell1 = CellsOnEdge(IEdge, 1);
+      // Implicit vertical mixing is solved using the diffusion-form
+      // tridiagonal solver, `TriDiagDiffSolver`, provided by `TriDiagSolvers`.
+      //
+      // * Governing tridiagonal system:
+      //
+      //   -G_{k-1} Y_{k-1}
+      //   + (G_{k-1} + G_k + H_k) Y_k
+      //   - G_k Y_{k+1}
+      //   = X_k
+      //
+      //   G: coefficient contributing to both diagonal and off-diagonal entries
+      //   H: coefficient contributing only to the diagonal entry
+      //   X: RHS vector
+      //
+      // * Matrix structure:
+      //
+      //   [ D G 0   ... 0 ][ ]   [ ]  : k = 0
+      //   [ G D G   ... 0 ][ ]   [ ]
+      //   [ 0 G D G ... 0 ][ ]   [ ]
+      //   [      ...      ][Y] = [X]
+      //   [ 0 ... G D G 0 ][ ]   [ ]
+      //   [ 0 ... 0 G D G ][ ]   [ ]
+      //   [ 0 ... 0 0 G D ][ ]   [ ]  : k = NVertLayers - 1
+      //
+      //   where D = G_{k-1} + G_k + H_k
+      //
+      //   G_k = [DT * VertVisc_k^top / (Rho_0 * SpecVol_k^top)]
+      //         / PseudoThick_k^top
+      //   H_k = PseudoThick_k
+      //   X_k = PseudoThick_k * NormVel_k
 
       // Fill values
       G = 0.0_Real;
       H = 1.0_Real;
       X = 0.0_Real;
 
+      const I4 JCell0 = CellsOnEdge(IEdge, 0);
+      const I4 JCell1 = CellsOnEdge(IEdge, 1);
+
       const Real PseudoThickEdgeK =
           0.5_Real * (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
 
-      // Row-scaled conservative form.
-      // Unknown is u^{n+1}.
       H = PseudoThickEdgeK;
+
+      // Unknown is NormVel^{n+1}.
       X = PseudoThickEdgeK * NormalVelEdge(IEdge, K);
 
       if (K < KMax) {
@@ -311,6 +338,37 @@ class TracerVertMixSetupOnCell {
                                    const Array3DReal &TracersOnCell, Real &G,
                                    Real &H, Real &X) const {
 
+      // Implicit vertical mixing is solved using the diffusion-form
+      // tridiagonal solver, `TriDiagDiffSolver`, provided by `TriDiagSolvers`.
+      //
+      // * Governing tridiagonal system:
+      //
+      //   -G_{k-1} Y_{k-1}
+      //   + (G_{k-1} + G_k + H_k) Y_k
+      //   - G_k Y_{k+1}
+      //   = X_k
+      //
+      //   G: coefficient contributing to both diagonal and off-diagonal entries
+      //   H: coefficient contributing only to the diagonal entry
+      //   X: RHS vector
+      //
+      // * Matrix structure:
+      //
+      //   [ D G 0   ... 0 ][ ]   [ ]  : k = 0
+      //   [ G D G   ... 0 ][ ]   [ ]
+      //   [ 0 G D G ... 0 ][ ]   [ ]
+      //   [      ...      ][Y] = [X]
+      //   [ 0 ... G D G 0 ][ ]   [ ]
+      //   [ 0 ... 0 G D G ][ ]   [ ]
+      //   [ 0 ... 0 0 G D ][ ]   [ ]  : k = NVertLayers - 1
+      //
+      //   where D = G_{k-1} + G_k + H_k
+      //
+      //   G_k = [DT * VertDiff_k^top / (Rho_0 * SpecVol_k^top)]
+      //         / PseudoThick_k^top
+      //   H_k = PseudoThick_k
+      //   X_k = PseudoThick_k * Phi_k
+
       // Fill values
       G = 0.0_Real;
       H = 1.0_Real;
@@ -318,9 +376,9 @@ class TracerVertMixSetupOnCell {
 
       const Real PseudoThickCellK = PseudoThickCell(ICell, K);
 
-      // Row-scaled conservative form.
-      // Unknown is phi^{n+1}.
       H = PseudoThickCellK;
+
+      // Unknown is Phi^{n+1}.
       X = PseudoThickCellK * TracersOnCell(L, ICell, K);
 
       if (K < KMax) {
