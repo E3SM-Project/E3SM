@@ -57,15 +57,12 @@ void Functions<S,D>::zm_opts_init()
     estbl(i) = svp_trans(ZMC::tmin + i);
   });
 
-  // Intel compiler workaround: the constexpr SharedAllocationTracker default
-  // constructor is not called for inline static template members, leaving
-  // m_record_bits=0 instead of DO_NOT_DEREF_FLAG (0x01), which causes
-  // assign_direct to call decrement(nullptr) -> SIGSEGV. Placement new
-  // forces m_record_bits=0x01 before the assignment; safe because
-  // use_count()==0 means there is no live allocation to leak.
+  // FIXME: Intel compiler bug workaround. We need to reallocate view metadata for this static inline member. 
+  // We can remove this line once we update C++20 (and classic intel compiler is no longer supported). 
   EKAT_ASSERT_MSG(s_zm_opts.estbl.use_count() == 0,
-                  "zm_opts_init: estbl has a live allocation at entry; "
-                  "zm_finalize_cxx must be called before zm_opts_init");
+                  "Internal error: estbl still has a live allocation. "
+                  "Ensure zm_finalize_cxx() is called at the end of each C++ ZM unit test "
+                  "to release estbl allocation before the next unit test is called.");
   new (&s_zm_opts.estbl) view_1d<Real>();
 
   s_zm_opts.estbl = estbl;
