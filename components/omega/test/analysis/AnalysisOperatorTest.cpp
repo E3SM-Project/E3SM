@@ -371,19 +371,28 @@ void testSpatialMeanOpType(const std::string &TypeName, const MachEnv *Env,
                           });
    }
 
-   // Calculate expected mean based on exact element count
-   I8 TotalElements = 0;
+   // Calculate expected mean based on actual active element count using
+   // MinLayerCell/MaxLayerCell arrays to account for inactive layers
+   I8 LocalCount = 0;
    if constexpr (Rank == 1) {
-      TotalElements = Mesh->NCellsGlobal;
+      // 1D: just count owned horizontal cells
+      LocalCount = Mesh->NCellsOwned;
    } else if constexpr (Rank == 2) {
-      TotalElements = static_cast<I8>(Mesh->NCellsGlobal) *
-                      static_cast<I8>(VCoord->NVertLayers);
+      // 2D: sum active vertical layers across owned cells
+      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+         LocalCount += (VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1);
+      }
    } else if constexpr (Rank == 3) {
-      I4 NTracers   = Tracers::getNumTracers();
-      TotalElements = static_cast<I8>(NTracers) *
-                      static_cast<I8>(Mesh->NCellsGlobal) *
-                      static_cast<I8>(VCoord->NVertLayers);
+      // 3D: multiply active layers by number of tracers
+      I4 NTracers = Tracers::getNumTracers();
+      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+         I4 ActiveLayers = VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1;
+         LocalCount += NTracers * ActiveLayers;
+      }
    }
+   
+   // Global sum across MPI ranks to get total active elements
+   I8 TotalElements = globalSum(LocalCount, Env->getComm());
 
    // For alternating pattern, count of Value1 = (TotalElements + 1) / 2, count
    // of Value2 = TotalElements / 2
@@ -456,19 +465,28 @@ void testSpatialStdDevOpType(const std::string &TypeName, const MachEnv *Env,
                           });
    }
 
-   // Calculate expected standard deviation based on exact element count
-   I8 TotalElements = 0;
+   // Calculate expected standard deviation based on actual active element count
+   // using MinLayerCell/MaxLayerCell arrays to account for inactive layers
+   I8 LocalCount = 0;
    if constexpr (Rank == 1) {
-      TotalElements = Mesh->NCellsGlobal;
+      // 1D: just count owned horizontal cells
+      LocalCount = Mesh->NCellsOwned;
    } else if constexpr (Rank == 2) {
-      TotalElements = static_cast<I8>(Mesh->NCellsGlobal) *
-                      static_cast<I8>(VCoord->NVertLayers);
+      // 2D: sum active vertical layers across owned cells
+      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+         LocalCount += (VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1);
+      }
    } else if constexpr (Rank == 3) {
-      I4 NTracers   = Tracers::getNumTracers();
-      TotalElements = static_cast<I8>(NTracers) *
-                      static_cast<I8>(Mesh->NCellsGlobal) *
-                      static_cast<I8>(VCoord->NVertLayers);
+      // 3D: multiply active layers by number of tracers
+      I4 NTracers = Tracers::getNumTracers();
+      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+         I4 ActiveLayers = VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1;
+         LocalCount += NTracers * ActiveLayers;
+      }
    }
+   
+   // Global sum across MPI ranks to get total active elements
+   I8 TotalElements = globalSum(LocalCount, Env->getComm());
 
    // For alternating pattern, count of Value1 = (TotalElements + 1) / 2, count
    // of Value2 = TotalElements / 2
