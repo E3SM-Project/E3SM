@@ -146,6 +146,12 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
                     static_cast<Real>(InputData.data()[FlatIdx]);
              });
          IsNewPeriod = false;
+
+         // If the period alarm rings on the first sample of a period, finalize
+         // immediately (mean == current value) and start a new period next call.
+         if (PeriodAlarm != nullptr && PeriodAlarm->isRinging()) {
+            IsNewPeriod = true;
+         }
       } else {
          // Continue accumulation: add input to running sum
          parallelFor(

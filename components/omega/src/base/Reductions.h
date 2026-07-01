@@ -2254,7 +2254,6 @@ localMaskedMin(
    }
 
    LocalMinVal = LocalMin;
-   MPI_Barrier(MPI_COMM_WORLD);
    return;
 }
 
@@ -2493,7 +2492,6 @@ localMaskedMax(const Kokkos::View<T1, ML1, MS1> Arr1, ///< [in] 1st array
    }
 
    LocalMaxVal = LocalMax;
-   MPI_Barrier(MPI_COMM_WORLD);
    return;
 }
 

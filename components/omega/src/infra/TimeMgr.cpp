@@ -3170,6 +3170,20 @@ bool TimeInterval::isDivisibleBy(
                   "Call Calendar::init() before using time intervals.");
    }
 
+   // Divisor must be non-zero to avoid modulo-by-zero below.
+   if ((Divisor.IsCalendar && Divisor.CalInterval == 0) ||
+       (!Divisor.IsCalendar && Divisor.Interval.getWhole() == 0 &&
+        Divisor.Interval.getNumer() == 0)) {
+      ABORT_ERROR(
+          "TimeInterval::isDivisibleBy: Divisor interval must be non-zero");
+   }
+
+   // This routine currently checks divisibility in whole seconds for
+   // non-calendar intervals; reject fractional-second intervals explicitly.
+   if ((!IsCalendar && Interval.getNumer() != 0) ||
+       (!Divisor.IsCalendar && Divisor.Interval.getNumer() != 0)) {
+      return false;
+   }
    // First check for calendar-based relationships that can be handled directly
    // without converting to seconds (e.g., years and months)
 

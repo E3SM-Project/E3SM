@@ -59,9 +59,21 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
    std::string FilenameTemplate;
    size_t Pos = FilenameStr.find("$");
    if (Pos != std::string::npos) {
-      // Found timestamp template - split at the $ character
-      FilenamePrefix   = FilenameStr.substr(0, Pos - 1);
-      FilenameTemplate = FilenameStr.substr(Pos - 1);
+      if (Pos == 0) {
+         FilenamePrefix.clear();
+         FilenameTemplate = FilenameStr;
+      } else {
+         // Split at '$'. If a separator (e.g., '.' or '_') immediately precedes
+         // the template, keep it in the template for backwards compatibility.
+         FilenamePrefix = FilenameStr.substr(0, Pos);
+         if (!FilenamePrefix.empty() &&
+             (FilenamePrefix.back() == '.' || FilenamePrefix.back() == '_')) {
+            FilenamePrefix.pop_back();
+            FilenameTemplate = FilenameStr.substr(Pos - 1);
+         } else {
+            FilenameTemplate = FilenameStr.substr(Pos);
+         }
+      }
    } else {
       // No timestamp template - use entire string as prefix
       FilenamePrefix = FilenameStr;

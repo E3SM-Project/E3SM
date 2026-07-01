@@ -37,7 +37,7 @@ std::vector<std::string> parseFreqStr(const std::string &FreqStr) {
    }
 
    // Validate that we found both components
-   if (FreqStr == "" or UnitsStr == "") {
+   if (DigitStr.empty() || UnitsStr.empty()) {
       ABORT_ERROR("Analysis: Invalid frequency string found in Config: {}",
                   FreqStr);
    }
@@ -489,9 +489,11 @@ bool Analysis::OpNodeExists(const std::string &FullOpName) {
 // Retrieves the default Analysis instance
 Analysis *Analysis::getDefault() { return DefAnalysis; } // end getDefault
 
-//------------------------------------------------------------------------------
 // Removes all defined Analysis instances and cleans up static resources
-void Analysis::finalize() { AllAnalysisObjects.clear(); } // end finalize
+void Analysis::finalize() {
+   DefAnalysis = nullptr;
+   AllAnalysisObjects.clear();
+} // end finalize
 
 //------------------------------------------------------------------------------
 // Destructor - deallocates all memory
