@@ -25,6 +25,8 @@ enum class CouplingLayout { MCT, MOAB };
 // Parameters needed to initialize a SfcCoupling object. The information
 // needed to initialize these parameters is provided by the coupler.
 struct CouplingInitParams {
+   int NImportFields;
+   int NExportFields;
    std::map<std::string, int> ImportIdx;
    std::map<std::string, int> ExportIdx;
    TimeInterval CouplingTimeStep;
@@ -77,6 +79,7 @@ class SfcCoupling {
 
    // Construct a new local coupling object
    SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
+               const int NImportFields_, const int NExportFields_,
                const std::map<std::string, int> &ImportIdx,
                const std::map<std::string, int> &ExportIdx,
                TimeStepper *Stepper, const TimeInterval &CouplingTimeStep,
@@ -103,9 +106,12 @@ class SfcCoupling {
  public:
    std::string Name;
 
-   I4 NCellsOwned;   ///< Number of cells owned by this task
-   I4 NImportFields; ///< Number of fields imported from the coupler
-   I4 NExportFields; ///< Number of fields exported to the coupler
+   I4 NCellsOwned; ///< Number of cells owned by this task
+
+   // The values below will be larger than InportIdx.size() and ExportIdx.size()
+   // because omega does not ingest all cpl fields (e.g. BGC, landice), yet...
+   I4 NImportFields; ///< Num of fields in the x2o pointer array
+   I4 NExportFields; ///< Num of fields in the o2x pointer array
 
    // Coupling Variable containers
    CplToOcnFields CplToOcn; ///< Coupler to Ocean (x2o)
@@ -128,6 +134,7 @@ class SfcCoupling {
    /// Create a new surface coupling by calling the constructor and put it
    /// in the AllSfcCoupling map
    static SfcCoupling *create(const std::string &Name, const HorzMesh *Mesh,
+                              const int NImportFields, const int NExportFields,
                               const std::map<std::string, int> &ImportIdx,
                               const std::map<std::string, int> &ExportIdx,
                               TimeStepper *Stepper,

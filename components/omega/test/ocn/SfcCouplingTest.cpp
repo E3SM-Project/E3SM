@@ -21,9 +21,9 @@ using namespace OMEGA;
 
 struct TestSetup {
 
-   std::map<std::string, int> ImportIdx = {{"Foxx_taux", 0}, {"Foxx_tauy", 1}};
+   std::map<std::string, int> ImportIdx = {{"Foxx_taux", 3}, {"Foxx_tauy", 8}};
    std::map<std::string, int> ExportIdx = {
-       {"So_t", 0}, {"So_u", 1}, {"So_v", 2}};
+       {"So_t", 3}, {"So_u", 6}, {"So_v", 9}};
 };
 
 CouplingInitParams mockCouplingInitParams(
@@ -36,7 +36,9 @@ CouplingInitParams mockCouplingInitParams(
    TimeInterval CouplingTimeStep_ =
        CouplingTimeStep.value_or(DefTimeStepper->getTimeStep());
 
-   CouplingInitParams CouplingParams{.ImportIdx        = Setup.ImportIdx,
+   CouplingInitParams CouplingParams{.NImportFields    = 10,
+                                     .NExportFields    = 10,
+                                     .ImportIdx        = Setup.ImportIdx,
                                      .ExportIdx        = Setup.ExportIdx,
                                      .CouplingTimeStep = CouplingTimeStep_,
                                      .Layout           = Layout};

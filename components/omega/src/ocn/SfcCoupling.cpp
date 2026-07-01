@@ -38,29 +38,29 @@ int SfcCoupling::init(const CouplingInitParams &CouplingInitParams) {
    }
 
    // Create the default surface coupling object and set pointer to it
-   SfcCoupling::DefaultSfcCoupling =
-       SfcCoupling::create("Default", DefHorzMesh, CouplingInitParams.ImportIdx,
-                           CouplingInitParams.ExportIdx, DefTimeStepper,
-                           CplTimeStep, CouplingInitParams.Layout);
+   SfcCoupling::DefaultSfcCoupling = SfcCoupling::create(
+       "Default", DefHorzMesh, CouplingInitParams.NImportFields,
+       CouplingInitParams.NImportFields, CouplingInitParams.ImportIdx,
+       CouplingInitParams.ExportIdx, DefTimeStepper, CplTimeStep,
+       CouplingInitParams.Layout);
 
    return Err;
 }
 
 // Construct a new surface coupling object
 SfcCoupling::SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
+                         const int NImportFields_, const int NExportFields_,
                          const std::map<std::string, int> &ImportIdx,
                          const std::map<std::string, int> &ExportIdx,
                          TimeStepper *Stepper,
                          const TimeInterval &CouplingTimeStep,
                          const CouplingLayout &Layout)
-    : Name(Name_), ImportIdx(ImportIdx), ExportIdx(ExportIdx),
-      CplToOcn(Name_, Mesh), OcnToCpl(Name_, Mesh), Layout(Layout) {
+    : Name(Name_), NImportFields(NImportFields_), NExportFields(NExportFields_),
+      ImportIdx(ImportIdx), ExportIdx(ExportIdx), CplToOcn(Name_, Mesh),
+      OcnToCpl(Name_, Mesh), Layout(Layout) {
 
    // Retrieve mesh cell count
    NCellsOwned = Mesh->NCellsOwned;
-   // Retrieve import/export field counts
-   NImportFields = ImportIdx.size();
-   NExportFields = ExportIdx.size();
 
    NAccumSteps = 0;
 
@@ -79,12 +79,11 @@ SfcCoupling::SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
 
 // Create a new surface coupling object by calling the constructor and storing
 // it in the AllSfcCoupling map
-SfcCoupling *SfcCoupling::create(const std::string &Name, const HorzMesh *Mesh,
-                                 const std::map<std::string, int> &ImportIdx,
-                                 const std::map<std::string, int> &ExportIdx,
-                                 TimeStepper *Stepper,
-                                 const TimeInterval &CouplingTimeStep,
-                                 const CouplingLayout &Layout) {
+SfcCoupling *SfcCoupling::create(
+    const std::string &Name, const HorzMesh *Mesh, const int NImportFields,
+    const int NExportFields, const std::map<std::string, int> &ImportIdx,
+    const std::map<std::string, int> &ExportIdx, TimeStepper *Stepper,
+    const TimeInterval &CouplingTimeStep, const CouplingLayout &Layout) {
 
    // Check to see if a surface coupling of the same name already exists
    if (AllSfcCoupling.find(Name) != AllSfcCoupling.end()) {
@@ -96,8 +95,9 @@ SfcCoupling *SfcCoupling::create(const std::string &Name, const HorzMesh *Mesh,
 
    // create a new surface coupling on the heap and store it in the map of
    // unique_ptrs, which will manage its lifetime
-   auto *NewSfcCoupling = new SfcCoupling(Name, Mesh, ImportIdx, ExportIdx,
-                                          Stepper, CouplingTimeStep, Layout);
+   auto *NewSfcCoupling =
+       new SfcCoupling(Name, Mesh, NImportFields, NExportFields, ImportIdx,
+                       ExportIdx, Stepper, CouplingTimeStep, Layout);
    AllSfcCoupling.emplace(Name, NewSfcCoupling);
 
    return NewSfcCoupling;
