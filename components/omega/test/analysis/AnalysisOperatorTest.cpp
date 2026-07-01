@@ -371,34 +371,41 @@ void testSpatialMeanOpType(const std::string &TypeName, const MachEnv *Env,
                           });
    }
 
-   // Calculate expected mean based on actual active element count using
-   // MinLayerCell/MaxLayerCell arrays to account for inactive layers
-   I8 LocalCount = 0;
+   // Calculate expected mean by counting actual Value1 and Value2 elements
+   // in the active region (accounting for masked layers)
+   I8 LocalCount1 = 0, LocalCount2 = 0;
+
    if constexpr (Rank == 1) {
-      // 1D: just count owned horizontal cells
-      LocalCount = Mesh->NCellsOwned;
-   } else if constexpr (Rank == 2) {
-      // 2D: sum active vertical layers across owned cells
+      // 1D: count based on horizontal index pattern
       for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         LocalCount += (VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1);
+         if ((i % 2) == 0) LocalCount1++;
+         else LocalCount2++;
+      }
+   } else if constexpr (Rank == 2) {
+      // 2D: count based on (i+j) pattern within active vertical layers
+      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+         for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
+            if (((i + j) % 2) == 0) LocalCount1++;
+            else LocalCount2++;
+         }
       }
    } else if constexpr (Rank == 3) {
-      // 3D: multiply active layers by number of tracers
+      // 3D: count based on (t+i+j) pattern within active layers
       I4 NTracers = Tracers::getNumTracers();
-      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         I4 ActiveLayers = VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1;
-         LocalCount += NTracers * ActiveLayers;
+      for (I4 t = 0; t < NTracers; ++t) {
+         for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+            for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
+               if (((t + i + j) % 2) == 0) LocalCount1++;
+               else LocalCount2++;
+            }
+         }
       }
    }
-   
-   // Global sum across MPI ranks to get total active elements
-   I8 TotalElements = globalSum(LocalCount, Env->getComm());
 
-   // For alternating pattern, count of Value1 = (TotalElements + 1) / 2, count
-   // of Value2 = TotalElements / 2
-   I8 Count1 = (TotalElements + 1) /
-               2; // Ceiling division (for odd total, Value1 gets extra)
-   I8 Count2         = TotalElements / 2; // Floor division
+   // Global sum across MPI ranks
+   I8 Count1 = globalSum(LocalCount1, Env->getComm());
+   I8 Count2 = globalSum(LocalCount2, Env->getComm());
+   I8 TotalElements = Count1 + Count2;
    Real ExpectedMean = (static_cast<Real>(Value1) * static_cast<Real>(Count1) +
                         static_cast<Real>(Value2) * static_cast<Real>(Count2)) /
                        static_cast<Real>(TotalElements);
@@ -465,33 +472,41 @@ void testSpatialStdDevOpType(const std::string &TypeName, const MachEnv *Env,
                           });
    }
 
-   // Calculate expected standard deviation based on actual active element count
-   // using MinLayerCell/MaxLayerCell arrays to account for inactive layers
-   I8 LocalCount = 0;
+   // Calculate expected standard deviation by counting actual Value1 and Value2
+   // elements in the active region (accounting for masked layers)
+   I8 LocalCount1 = 0, LocalCount2 = 0;
+
    if constexpr (Rank == 1) {
-      // 1D: just count owned horizontal cells
-      LocalCount = Mesh->NCellsOwned;
-   } else if constexpr (Rank == 2) {
-      // 2D: sum active vertical layers across owned cells
+      // 1D: count based on horizontal index pattern
       for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         LocalCount += (VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1);
+         if ((i % 2) == 0) LocalCount1++;
+         else LocalCount2++;
+      }
+   } else if constexpr (Rank == 2) {
+      // 2D: count based on (i+j) pattern within active vertical layers
+      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+         for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
+            if (((i + j) % 2) == 0) LocalCount1++;
+            else LocalCount2++;
+         }
       }
    } else if constexpr (Rank == 3) {
-      // 3D: multiply active layers by number of tracers
+      // 3D: count based on (t+i+j) pattern within active layers
       I4 NTracers = Tracers::getNumTracers();
-      for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
-         I4 ActiveLayers = VCoord->MaxLayerCellH(i) - VCoord->MinLayerCellH(i) + 1;
-         LocalCount += NTracers * ActiveLayers;
+      for (I4 t = 0; t < NTracers; ++t) {
+         for (I4 i = 0; i < Mesh->NCellsOwned; ++i) {
+            for (I4 j = VCoord->MinLayerCellH(i); j <= VCoord->MaxLayerCellH(i); ++j) {
+               if (((t + i + j) % 2) == 0) LocalCount1++;
+               else LocalCount2++;
+            }
+         }
       }
    }
-   
-   // Global sum across MPI ranks to get total active elements
-   I8 TotalElements = globalSum(LocalCount, Env->getComm());
 
-   // For alternating pattern, count of Value1 = (TotalElements + 1) / 2, count
-   // of Value2 = TotalElements / 2
-   I8 Count1 = (TotalElements + 1) / 2; // Ceiling division
-   I8 Count2 = TotalElements / 2;       // Floor division
+   // Global sum across MPI ranks
+   I8 Count1 = globalSum(LocalCount1, Env->getComm());
+   I8 Count2 = globalSum(LocalCount2, Env->getComm());
+   I8 TotalElements = Count1 + Count2;
    Real Mean = (static_cast<Real>(Value1) * static_cast<Real>(Count1) +
                 static_cast<Real>(Value2) * static_cast<Real>(Count2)) /
                static_cast<Real>(TotalElements);
