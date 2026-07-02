@@ -12,27 +12,3 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
       string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -check nouninit")
   endif()
 endif()
-
-# Same hack as pm-cpu_intel. For whatever reason, the intel version on chrysalis
-# does not seem to have the -fp-model=source flag (docs still show it). For now,
-# simply manually adjust the CXXFLAG setting for chrysalis_intel
-set(CMAKE_CXX_FLAGS " ") # hardcode it here to blank, then try to do same things as in intel.cmake
-string(APPEND CMAKE_CXX_FLAGS " -fp-model precise")
-if (compile_threaded)
-  string(APPEND CMAKE_CXX_FLAGS " -qopenmp")
-endif()
-
-# Use oneapi compilers (intel.cmake uses intel-classic compilers)
-set(MPIFC "mpifort")
-set(MPICC "mpicc")
-set(MPICXX "mpicxx")
-set(SCC "icx")
-set(SCXX "icpx")
-set(SFC "ifx")
-
-if (COMP_NAME STREQUAL gcam)
-  string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-relax")
-  string(APPEND CMAKE_Fortran_FLAGS " -mcmodel=medium")
-  string(APPEND CMAKE_C_FLAGS " -mcmodel=medium")
-  string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
-endif()
