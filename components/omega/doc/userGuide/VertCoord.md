@@ -57,10 +57,11 @@ standard atmosphere of 101325 Pa) at the top of the ocean column. It is the top 
 condition used when integrating layer pressures downward in `computePressure`, and is
 effectively $\tilde{z}$ at the top of the water column (times a scaling factor).
 Unlike the other pressure variables, which are recomputed each timestep, `SurfacePressure` is
-registered in the `State` and `Restart` field groups, so it is read from the initial-condition
-file and written to restart files.
+registered in the `State` and `Restart` field groups, so it is written to restart files and read
+from the initial-condition and restart files when present. The read is optional: if
+`SurfacePressure` is not present in the file, it defaults to zero rather than causing an error.
 For a free-surface ocean run with standard atmospheric forcing, the surface pressure is
-zero (0 Pa) in the initial-condition file.
+zero (0 Pa), so it may simply be omitted from the initial-condition file.
 For a coupled ocean–atmosphere run, `SurfacePressure` holds the anomaly of the atmospheric
 surface pressure from the standard atmosphere; eventually it will be updated each timestep
 via the coupler as a weighted sum of atmosphere, sea-ice, and land-ice pressure.

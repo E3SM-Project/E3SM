@@ -13,4 +13,5 @@ This involves a halo update, time level index update, and updating the `IOFields
 The relative pressure at the top of the ocean column, `SurfacePressure`, is owned by the
 [vertical coordinate](omega-user-vert-coord) rather than the `OceanState`, since it is the top
 boundary condition of the pressure field. It is still registered in the `State` and `Restart`
-field groups, so it continues to be read from the initial-condition and restart files.
+field groups, so it continues to be written to restart files and read from the initial-condition
+and restart files when present; if it is absent, it defaults to zero.

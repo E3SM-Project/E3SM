@@ -221,6 +221,13 @@ Ordering invariants preserved by this design:
 - Compute routines run after initialization and overwrite active entries, leaving
   inactive entries (below `MaxLayerCell`) at the fill value.
 
+The fill value also serves as the "not read" sentinel for optional reads. A field
+marked with `Field::setOptionalRead(true)` that is absent from an input file is
+skipped by the IOStream read and keeps the fill value from `attachData()`; the
+owning module detects the fill value afterward and substitutes a default. For
+example, `VertCoord::SurfacePressure` defaults to zero when it is not present in
+the initial-condition or restart file.
+
 #### 4.2.2 No per-module manual initialization required
 
 Because `attachData()` handles initialization automatically, no module needs to

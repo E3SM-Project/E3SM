@@ -72,6 +72,20 @@ input stream is read using:
 The returned error code typically means that a field in the stream could
 not be found in the input file - most other errors abort immediately. The
 calling routine is then responsible for deciding what action to take.
+
+By default every field listed in a stream's contents must be present in the
+input file or the read returns an error. A field can instead be marked as an
+optional read using
+```c++
+   FieldPtr->setOptionalRead(true);
+```
+When such a field's variable is missing from the file, the read logs an
+informational message, leaves the field's attached array at the fill value set
+by `attachData` (see [Fill Values](#omega-design-fill-values)), and continues
+without contributing an error. The owning module is then responsible for
+detecting that fill value after the read and substituting a default value. This
+is how `VertCoord` allows `SurfacePressure` to be absent from the
+initial-condition or restart file and default to zero.
 The ReqMetadata argument is a variable of type Metadata (defined in Field but
 essentially a ``std::map<std::string, std::any>`` for the name/value pair).
 This variable should include the names of global metadata that are desired

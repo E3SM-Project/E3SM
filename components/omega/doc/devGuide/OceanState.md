@@ -24,7 +24,9 @@ allocates the `NormalVelocity` and `PseudoThickness` arrays for a given number o
 The current time level of `NormalVelocity` and `PseudoThickness` are registered with the IO
 infrastructure and added to the `State` and `Restart` field groups.
 The `SurfacePressure` array is owned by [`VertCoord`](omega-dev-vert-coord) but is also added to
-these two groups so it is read from the initial-condition and restart files.
+these two groups so it is written to restart files and read from the initial-condition and restart
+files when present. Its read is optional, so it defaults to zero when absent (see the
+[`VertCoord`](omega-dev-vert-coord) guide).
 
 After initialization, the default state object can be retrieved via:
 ```

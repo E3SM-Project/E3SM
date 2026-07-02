@@ -82,8 +82,14 @@ during construction, `SurfacePressure` is a prognostic quantity read from the in
 or restart file. `defineFields()` therefore registers it and adds it to the `State` and `Restart`
 field groups (creating those groups if `VertCoord` initializes before `OceanState`). Because
 those streams are read later in `ocnInit`, the data are written directly into the attached device
-array; after the read, `initSurfacePressure()` must be called to exchange the halo and copy the
-device array to the host mirror:
+array.
+
+`SurfacePressure` is registered as an [optional read](omega-dev-iostreams)
+(`Field::setOptionalRead(true)`), so it is not required to be present in the initial-condition or
+restart file. When the variable is absent, the read is skipped and the array retains the fill
+value written by `attachData`. After the read, `initSurfacePressure()` must be called: it detects
+that leftover fill value on the owned cells and, if found, defaults the whole array to zero, then
+exchanges the halo and copies the device array to the host mirror:
 ```c++
 VertCoord::getDefault()->initSurfacePressure(Halo::getDefault());
 ```
