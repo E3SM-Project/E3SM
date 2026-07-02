@@ -310,6 +310,10 @@ void VertCoord::defineFields() {
        DimNames                                            // dimension names
    );
 
+   // SurfacePressure is optional in the initial-state/restart file; when it is
+   // absent the read is skipped and it defaults to zero in initSurfacePressure.
+   SurfacePressureField->setOptionalRead(true);
+
    NDims = 2;
    DimNames.resize(NDims);
    DimNames[1] = "NVertLayers";
@@ -459,10 +463,12 @@ void VertCoord::defineFields() {
    PseudoThicknessTargetField->attachData<Array2DReal>(PseudoThicknessTarget);
    SshField->attachData<Array1DReal>(SshCell);
 
-   // Add SurfacePressure to the State and Restart groups so it is read from the
-   // initial-state and restart files. VertCoord initializes before OceanState,
-   // which also contributes fields to these groups, so create each group only
-   // if it does not already exist.
+   // Add SurfacePressure to the State and Restart groups so it is written to
+   // the history/restart files and read from the initial-state and restart
+   // files when present. The read is optional (see setOptionalRead above): if
+   // the variable is absent, SurfacePressure defaults to zero. VertCoord
+   // initializes before OceanState, which also contributes fields to these
+   // groups, so create each group only if it does not already exist.
    std::string StateGrpName = "State";
    if (Name != "Default") {
       StateGrpName.append(Name);
@@ -702,9 +708,30 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
 }
 
 //------------------------------------------------------------------------------
-// Exchange halo and copy SurfacePressure to host after the initial-state or
+// Apply the zero default when SurfacePressure was absent from the input, then
+// exchange halo and copy SurfacePressure to host after the initial-state or
 // restart stream has been read.
 void VertCoord::initSurfacePressure(Halo *MeshHalo) {
+   // SurfacePressure is an optional read. If it was not present in the
+   // initial-state or restart file, its owned cells still hold the fill value
+   // set by attachData; in that case default the whole array to zero. Only the
+   // owned cells are checked because halo cells are not populated until the
+   // exchange below.
+   OMEGA_SCOPE(LocSurfacePressure, SurfacePressure);
+   I4 NFill = 0;
+   parallelReduce(
+       {NCellsOwned},
+       KOKKOS_LAMBDA(int ICell, I4 &Count) {
+          if (LocSurfacePressure(ICell) == FillValueReal)
+             ++Count;
+       },
+       NFill);
+   if (NFill > 0) {
+      LOG_INFO("VertCoord: SurfacePressure not found in input, "
+               "using SurfacePressure = 0");
+      deepCopy(SurfacePressure, 0._Real);
+   }
+
    MeshHalo->exchangeFullArrayHalo(SurfacePressure, OnCell);
    deepCopy(SurfacePressureH, SurfacePressure);
 }

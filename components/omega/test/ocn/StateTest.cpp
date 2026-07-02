@@ -279,8 +279,9 @@ int main(int argc, char *argv[]) {
          LOG_INFO("State: Out-of-range {} Non-zero: {}", Count2, Count1);
       }
 
-      // SurfacePressure is now owned by VertCoord but read from the same
-      // InitialState stream; verify its host mirror is sized and read
+      // SurfacePressure is owned by VertCoord and an optional read from the
+      // InitialState stream. It is absent from the test input file, so it
+      // defaults to zero; verify its host mirror is sized and defaulted
       // correctly.
       VertCoord *DefVCoord = VertCoord::getDefault();
       if (DefVCoord->SurfacePressureH.extent_int(0) == DefState->NCellsSize) {
