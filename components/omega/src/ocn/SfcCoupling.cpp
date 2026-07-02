@@ -158,7 +158,7 @@ void SfcCoupling::attachData(const Real *CplToOcnData, Real *OcnToCplData) {
       CplToOcnLayout =
           Kokkos::LayoutStride(NImportFields, 1, NCellsOwned, NImportFields);
       OcnToCplLayout =
-          Kokkos::LayoutStride(NExportFields, 1, NCellsOwned, NImportFields);
+          Kokkos::LayoutStride(NExportFields, 1, NCellsOwned, NExportFields);
    } else if (Layout == CouplingLayout::MOAB) {
       /// MOAB layout: (NImportFields, NCellsOwned) - cell idx strides faster
       CplToOcnLayout =
