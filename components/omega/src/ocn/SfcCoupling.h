@@ -159,6 +159,10 @@ class SfcCoupling {
    /// Get a surface coupling object by name
    static SfcCoupling *get(const std::string name);
 
+   /// Getter for the number of ocean timestpes accumulated over the coupling
+   /// interval
+   I4 getNAccumSteps() const;
+
    /// Create views of the coupling data arrays
    void attachData(const Real *CplToOcnData, Real *OcnToCplData);
 

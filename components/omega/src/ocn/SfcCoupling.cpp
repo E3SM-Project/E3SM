@@ -138,6 +138,9 @@ void SfcCoupling::clear() {
    DefaultSfcCoupling = nullptr; // prevent dangling pointer
 }
 
+// Getter for private member NAccumSteps
+I4 SfcCoupling::getNAccumSteps() const { return NAccumSteps; }
+
 // Create views of the raw coupling data arrays
 void SfcCoupling::attachData(const Real *CplToOcnData, Real *OcnToCplData) {
 
