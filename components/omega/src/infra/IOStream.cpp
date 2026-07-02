@@ -1725,11 +1725,22 @@ Error IOStream::readFieldData(
       } else {
          Err = IO::readNDVar(DataPtr, OldFieldName, FileID, FieldID);
       }
-      if (Err.isFail()) // still cannot find field, return with error
+      if (Err.isFail()) {
+         // If the field is optional, a missing variable is not an error. Leave
+         // the attached array at the fill value set by Field::attachData and
+         // return success so the remaining fields in the stream still read.
+         if (FieldPtr->isOptionalRead()) {
+            LOG_INFO("IOStream::readFieldData: optional field {} not found in "
+                     "stream {}; leaving fill value",
+                     FieldName, Name);
+            return Error{}; // success
+         }
+         // still cannot find field, return with error
          RETURN_ERROR(
              Err, ErrorCode::Fail,
              "IOStream::readFieldData: Field {} or {} not found in stream {}",
              FieldName, OldFieldName, Name);
+      }
    }
 
    // Unpack vector into array based on type, dims and location
