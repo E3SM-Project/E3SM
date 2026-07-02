@@ -18,6 +18,7 @@
 #include "Eos.h"
 #include "Error.h"
 #include "Field.h"
+#include "FillValues.h"
 #include "Forcing.h"
 #include "Halo.h"
 #include "HorzMesh.h"
@@ -183,10 +184,41 @@ int main(int argc, char **argv) {
       I4 NCellsOwned    = DefDecomp->NCellsOwned;
       Array1DI4 CellID  = DefDecomp->CellID;
 
+      // Register a field that is absent from the input file and mark it as an
+      // optional read, then add it to the InitialState stream. Reading the
+      // stream should succeed and leave the array at its fill value rather than
+      // failing because the variable is missing from the file.
+      Array1DReal OptTestData("OptionalTestField", NCellsSize);
+      auto OptTestField = Field::create("OptionalTestField", // field name
+                                        "optional read test field", // long name
+                                        "none",                     // units
+                                        "",         // CF standard name
+                                        -9.99E+10,  // min valid value
+                                        9.99E+10,   // max valid value
+                                        1,          // number of dimensions
+                                        {"NCells"}, // dimension names
+                                        false);     // not time dependent
+      OptTestField->setOptionalRead(true);
+      OptTestField->attachData<Array1DReal>(OptTestData);
+      IOStream::get("InitialState")->addField("OptionalTestField");
+
       // Read restart file for initial temperature and salinity data
       Metadata ReqMetadata; // leave empty for now - no required metadata
       Err = IOStream::read("InitialState", ModelClock, ReqMetadata);
       CHECK_ERROR_ABORT(Err, "IOStreamTest: Error reading initial state");
+
+      // The optional field was not in the file, so it should have been skipped
+      // and retain the fill value set by attachData on all owned cells.
+      I4 NOptFill     = 0;
+      auto OptReducer = Kokkos::Sum<I4>(NOptFill);
+      parallelReduce(
+          {NCellsOwned},
+          KOKKOS_LAMBDA(int Cell, I4 &Acc) {
+             if (OptTestData(Cell) == FillValueReal)
+                ++Acc;
+          },
+          OptReducer);
+      TestEval("Optional read fill retained", NOptFill, NCellsOwned, Err);
 
       // Overwrite salinity array with values associated with global cell
       // ID to test proper indexing of IO
