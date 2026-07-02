@@ -56,7 +56,10 @@ void Functions<S,D>::zm_conv_mcsp_tend(
 
   const bool do_mcsp_t   = (runtime_opt.mcsp_t_coeff > 0);
   const bool do_mcsp_q   = (runtime_opt.mcsp_q_coeff > 0);
-  const bool do_mcsp_mom = (runtime_opt.mcsp_mom_coeff > 0);
+  // momentum is active for any non-zero coefficient; a negative coefficient
+  // flips the leading sign in the tendency, switching up-gradient forcing
+  // (default) to down-gradient forcing.
+  const bool do_mcsp_mom = (runtime_opt.mcsp_mom_coeff != 0);
 
   // Allocate temporary arrays
   uview_1d<Real> mcsp_tend_s, mcsp_tend_q, mcsp_tend_u, mcsp_tend_v;
