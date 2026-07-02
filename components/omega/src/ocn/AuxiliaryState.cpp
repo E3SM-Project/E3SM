@@ -117,10 +117,8 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
 
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-   OMEGA_SCOPE(MinLayerVertexBot, VCoord->MinLayerVertexBot);
    OMEGA_SCOPE(MinLayerVertexTop, VCoord->MinLayerVertexTop);
    OMEGA_SCOPE(MaxLayerVertexBot, VCoord->MaxLayerVertexBot);
-   OMEGA_SCOPE(MaxLayerVertexTop, VCoord->MaxLayerVertexTop);
    OMEGA_SCOPE(MinLayerEdgeTop, VCoord->MinLayerEdgeTop);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeBot, VCoord->MaxLayerEdgeBot);
@@ -204,8 +202,12 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
    parallelForOuter(
        "vertexAuxState2", {Mesh->NVerticesAll},
        KOKKOS_LAMBDA(int IVertex, const TeamMember &Team) {
-          const int KMin   = MinLayerVertexBot(IVertex);
-          const int KMax   = MaxLayerVertexTop(IVertex);
+          // Del2RelVortVertex is computed over the full vertex valid range
+          // [MinLayerVertexTop, MaxLayerVertexBot] so that boundary-vertex
+          // layers read by the biharmonic velocity tendency are valid rather
+          // than fill values (see VelocityDel2AuxVars::computeVarsOnVertex).
+          const int KMin   = MinLayerVertexTop(IVertex);
+          const int KMax   = MaxLayerVertexBot(IVertex);
           const int KRange = vertRangeChunked(KMin, KMax);
 
           parallelForInner(

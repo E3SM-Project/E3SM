@@ -75,8 +75,17 @@ class VelocityDel2AuxVars {
    }
 
    KOKKOS_FUNCTION void computeVarsOnVertex(int IVertex, int KChunk) const {
-      const int KStart = chunkStart(KChunk, MinLayerVertexBot(IVertex));
-      const int KLen = chunkLength(KChunk, KStart, MaxLayerVertexTop(IVertex));
+      // Compute over the full vertex valid range [MinLayerVertexTop,
+      // MaxLayerVertexBot] so that boundary-vertex layers (where only some
+      // surrounding cells are active) receive a valid value. Each edge's
+      // contribution is clamped to that edge's valid range [MinLayerEdgeTop,
+      // MaxLayerEdgeBot], where Del2Edge has been computed or zeroed; this
+      // matches VorticityAuxVars::computeVarsOnVertex and avoids reading
+      // uninitialized (fill-value) layers of Del2Edge for deeper edges.
+      const int KStartVertex = chunkStart(KChunk, MinLayerVertexTop(IVertex));
+      const int KLenVertex =
+          chunkLength(KChunk, KStartVertex, MaxLayerVertexBot(IVertex));
+      const int KEndVertex = KStartVertex + KLenVertex - 1;
 
       const Real InvAreaTriangle = 1._Real / AreaTriangle(IVertex);
 
@@ -84,16 +93,19 @@ class VelocityDel2AuxVars {
 
       for (int J = 0; J < VertexDegree; ++J) {
          const int JEdge = EdgesOnVertex(IVertex, J);
-         for (int KVec = 0; KVec < KLen; ++KVec) {
-            const int K = KStart + KVec;
+         const int KStartEdge =
+             Kokkos::max(KStartVertex, MinLayerEdgeTop(JEdge));
+         const int KEndEdge = Kokkos::min(KEndVertex, MaxLayerEdgeBot(JEdge));
+         for (int K = KStartEdge; K <= KEndEdge; ++K) {
+            const int KVec = K - KStartVertex;
             Del2RelVortVertexTmp[KVec] += InvAreaTriangle * DcEdge(JEdge) *
                                           EdgeSignOnVertex(IVertex, J) *
                                           Del2Edge(JEdge, K);
          }
       }
 
-      for (int KVec = 0; KVec < KLen; ++KVec) {
-         const int K                   = KStart + KVec;
+      for (int KVec = 0; KVec < KLenVertex; ++KVec) {
+         const int K                   = KStartVertex + KVec;
          Del2RelVortVertex(IVertex, K) = Del2RelVortVertexTmp[KVec];
       }
    }
@@ -118,8 +130,10 @@ class VelocityDel2AuxVars {
    I4 VertexDegree;
    Array1DI4 MinLayerEdgeBot;
    Array1DI4 MaxLayerEdgeTop;
-   Array1DI4 MinLayerVertexBot;
-   Array1DI4 MaxLayerVertexTop;
+   Array1DI4 MinLayerEdgeTop;
+   Array1DI4 MaxLayerEdgeBot;
+   Array1DI4 MinLayerVertexTop;
+   Array1DI4 MaxLayerVertexBot;
    Array1DI4 MinLayerCell;
    Array1DI4 MaxLayerCell;
 };

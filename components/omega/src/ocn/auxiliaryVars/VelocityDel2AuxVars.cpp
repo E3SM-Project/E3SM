@@ -24,8 +24,10 @@ VelocityDel2AuxVars::VelocityDel2AuxVars(const std::string &AuxStateSuffix,
       AreaTriangle(Mesh->AreaTriangle), VertexDegree(Mesh->VertexDegree),
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop),
-      MinLayerVertexBot(VCoord->MinLayerVertexBot),
-      MaxLayerVertexTop(VCoord->MaxLayerVertexTop),
+      MinLayerEdgeTop(VCoord->MinLayerEdgeTop),
+      MaxLayerEdgeBot(VCoord->MaxLayerEdgeBot),
+      MinLayerVertexTop(VCoord->MinLayerVertexTop),
+      MaxLayerVertexBot(VCoord->MaxLayerVertexBot),
       MinLayerCell(VCoord->MinLayerCell), MaxLayerCell(VCoord->MaxLayerCell) {}
 
 void VelocityDel2AuxVars::registerFields(const std::string &AuxGroupName,
