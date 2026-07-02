@@ -170,7 +170,10 @@ class VertCoord {
 
    HostArray1DReal BottomGeomDepthH;
 
-   // TODO: Temporary handling of SurfacePressure
+   // Relative pressure (gauge pressure) at the top of the ocean column. Read
+   // from the initial-state/restart file via the "State"/"Restart" groups and
+   // used as the top boundary condition of the pressure field in
+   // computePressure().
    Array1DReal SurfacePressure;
 
    HostArray1DReal SurfacePressureH;
@@ -194,8 +197,9 @@ class VertCoord {
    std::string GeomZMidFldName; ///< Field name for midpoint geometric height
    std::string GeopotFldName;   ///< Field name for geopotential
    std::string
-       PseudoThicknessTargetFldName; ///< Field name for target thickness
-   std::string SshFldName;           ///< Field name for sea surface height
+       PseudoThicknessTargetFldName;   ///< Field name for target thickness
+   std::string SshFldName;             ///< Field name for sea surface height
+   std::string SurfacePressureFldName; ///< Field name for SurfacePressure
 
    // methods
 
@@ -215,6 +219,10 @@ class VertCoord {
 
    /// Copy member arrays from device to host
    void copyToHost();
+
+   /// Exchange halo and copy SurfacePressure to host after the initial-state
+   /// or restart stream has been read
+   void initSurfacePressure(Halo *MeshHalo);
 
    /// Copy member arrays from host to device
    void copyToDevice();
@@ -270,9 +278,12 @@ class VertCoord {
 
    /// Sums the mass thickness times g from the top layer down, starting with
    /// the surface pressure
+   /// Computes the relative pressure (gauge pressure, i.e., absolute pressure
+   /// minus the standard atmosphere) at layer interfaces and midpoints by
+   /// summing mass thickness times g from the top layer down.
    void computePressure(
        const Array2DReal &PseudoThickness, ///< [in] pseudo-thickness
-       const Array1DReal &SurfacePressure  ///< [in] surface pressure
+       const Array1DReal &SurfacePressure  ///< [in] relative surface pressure
    );
 
    /// Sum the mass thickness times specific volume from the bottom layer up,

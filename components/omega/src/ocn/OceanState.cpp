@@ -18,6 +18,7 @@
 #include "OmegaKokkos.h"
 #include "TimeStepper.h"
 #include "Tracers.h"
+#include "VertCoord.h"
 
 namespace OMEGA {
 
@@ -227,12 +228,18 @@ void OceanState::defineFields() {
                      DimNames          // dimension names
        );
 
-   // Create a field group for state fields
+   // Create a field group for state fields. VertCoord initializes before
+   // OceanState and owns SurfacePressure, which it also adds to this "State"
+   // group, so the group may already exist; reuse it if so.
    StateGroupName = "State";
    if (Name != "Default") {
       StateGroupName.append(Name);
    }
-   auto StateGroup = FieldGroup::create(StateGroupName);
+   std::shared_ptr<FieldGroup> StateGroup;
+   if (FieldGroup::exists(StateGroupName))
+      StateGroup = FieldGroup::get(StateGroupName);
+   else
+      StateGroup = FieldGroup::create(StateGroupName);
 
    // Add restart group if needed
    if (!FieldGroup::exists("Restart"))
