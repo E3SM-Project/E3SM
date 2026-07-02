@@ -66,6 +66,15 @@ HostArray1DReal makeCellVarryingArray(const std::string &Name, const int NCells,
    return Array;
 }
 
+// Shaed index formula for packing/unpacking from rae coupler buffer
+int flatIdx(const CouplingLayout Layout, const int Cell, const int Field,
+            const int NCells, const int NFields) {
+   if (Layout == CouplingLayout::MCT)
+      return Cell * NFields + Field;
+   else // MOAB
+      return Field * NCells + Cell;
+}
+
 int initSfcCouplingTest(const std::string &MeshFile) {
 
    int Err = 0;
@@ -141,17 +150,11 @@ int testImportFromCoupler(const CouplingLayout Layout) {
    HostArray1DReal ExpectedSfcStressMerid =
        makeCellVarryingArray("ExpectedSfcStressMerid", NCells, Real(TauyIdx));
 
-   // Index formula depend on the Layout
-   auto flatIdx = [&](int Cell, int Field) -> int {
-      if (Layout == CouplingLayout::MCT)
-         return Cell * NImports + Field;
-      else // MOAB
-         return Field * NCells + Cell;
-   };
-
    for (int Cell = 0; Cell < NCells; Cell++) {
-      CplToOcnData[flatIdx(Cell, TauxIdx)] = ExpectedSfcStressZonal(Cell);
-      CplToOcnData[flatIdx(Cell, TauyIdx)] = ExpectedSfcStressMerid(Cell);
+      CplToOcnData[flatIdx(Layout, Cell, TauxIdx, NCells, NImports)] =
+          ExpectedSfcStressZonal(Cell);
+      CplToOcnData[flatIdx(Layout, Cell, TauyIdx, NCells, NImports)] =
+          ExpectedSfcStressMerid(Cell);
    }
 
    DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
