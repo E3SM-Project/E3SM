@@ -11,7 +11,8 @@ namespace OMEGA {
 SfcCoupling *SfcCoupling::DefaultSfcCoupling = nullptr;
 std::map<std::string, std::unique_ptr<SfcCoupling>> SfcCoupling::AllSfcCoupling;
 
-// Initalize the surface coupling. Assumes the ... have been initialized
+// Initalize the surface coupling. Assumes the default HorzMesh and
+// TimeStepper have been initialized
 int SfcCoupling::init(const CouplingInitParams &CouplingInitParams) {
 
    int Err = 0; // default successful return code
@@ -73,7 +74,7 @@ SfcCoupling::SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
    Clock *StepperClock   = Stepper->getClock();
    TimeInstant StartTime = Stepper->getStartTime();
 
-   // Create a CouplingAlarm associated with CouplingTimeStep
+   // Avoid alarm name collisions on the shared clock for non-default instances
    if (Name_ != "Default")
       AlarmName += Name_;
 
@@ -181,7 +182,7 @@ void SfcCoupling::importFromCoupler() {
           "method must be called before importing data from the coupler.");
    }
 
-   //
+   // Get import field indices for surface stress components
    int TauxIdx = ImportIdx.at("Foxx_taux");
    int TauyIdx = ImportIdx.at("Foxx_tauy");
 
