@@ -11,6 +11,7 @@
 #include "IOStream.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "OceanTestCommon.h"
 #include "OmegaKokkos.h"
 #include "Pacer.h"
 #include "TimeStepper.h"
@@ -291,7 +292,10 @@ int testUpdateExportFields(const I4 NSteps) {
        createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcTemperature);
    auto AvgSalinH = createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcSalinity);
 
-   Real Tol        = 1e-10;
+   // Only accumulated round-off error (no discretization/truncation error),
+   // so use a tighter tolerance than tests comparing against analytic
+   // solutions of numerical operators.
+   Real RTol       = sizeof(Real) == 4 ? 1e-5 : 1e-10;
    Real StepOffset = static_cast<Real>(NSteps - 1) / 2.0;
    HostArray1DReal ExpectedTemp =
        makeCellVarryingArray("ExpectedTemp", NCells, TempBase + StepOffset);
@@ -301,37 +305,38 @@ int testUpdateExportFields(const I4 NSteps) {
    I4 TempErr  = 0;
    I4 SalinErr = 0;
 
-   // Will this fail for single precision, given the tolerance?
    for (int Cell = 0; Cell < NCells; Cell++) {
-      if (std::abs(AvgTempH(Cell) - ExpectedTemp(Cell)) > Tol) {
+      if (!isApprox(AvgTempH(Cell), ExpectedTemp(Cell), RTol)) {
          TempErr++;
       }
 
-      if (std::abs(AvgSalinH(Cell) - ExpectedSalin(Cell)) > Tol) {
+      if (!isApprox(AvgSalinH(Cell), ExpectedSalin(Cell), RTol)) {
          SalinErr++;
       }
    }
 
    if (TempErr == 0) {
       LOG_INFO("SfcCouplingTest: updateExportFields PASS - "
-               "AvgSfcTemperature within tolerance of {}",
-               Tol);
+               "AvgSfcTemperature within relative tolerance of {}",
+               RTol);
    } else {
       Err += TempErr;
       LOG_ERROR("SfcCouplingTest: updateExportFields FAIL - "
-                "AvgSfcTemperature outside tolerance of {} for {} cells",
-                Tol, TempErr);
+                "AvgSfcTemperature outside relative tolerance of {} for {} "
+                "cells",
+                RTol, TempErr);
    }
 
    if (SalinErr == 0) {
       LOG_INFO("SfcCouplingTest: updateExportFields PASS - "
-               "AvgSfcSalinity within tolerance of {}",
-               Tol);
+               "AvgSfcSalinity within relative tolerance of {}",
+               RTol);
    } else {
       Err += SalinErr;
       LOG_ERROR("SfcCouplingTest: updateExportFields FAIL - "
-                "AvgSfcSalinity outside tolerance of {} for {} cells",
-                Tol, SalinErr);
+                "AvgSfcSalinity outside relative tolerance of {} for {} "
+                "cells",
+                RTol, SalinErr);
    }
 
    // reset model clock to the start time for any subsequent tests
