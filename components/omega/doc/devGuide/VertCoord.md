@@ -69,6 +69,27 @@ A list of member variables along with their types and dimension sizes is below:
 | VertCoordMovementWeights | Real | NCellsSize, NVertLayers |
 | RefPseudoThickness | Real | NCellsSize, NVertLayers |
 | BottomGeomDepth | Real | NCellsSize |
+| SurfacePressure | Real | NCellsSize |
+
+### Surface pressure
+
+`SurfacePressure` is the relative pressure (gauge pressure) at the top of the ocean column and
+is the top boundary condition used by `computePressure`. It is owned by `VertCoord` and its host
+mirror is `SurfacePressureH`.
+
+Unlike the other `VertCoord` fields, whose data come from the mesh file (`InitVertCoord` group)
+during construction, `SurfacePressure` is a prognostic quantity read from the initial-condition
+or restart file. `defineFields()` therefore registers it and adds it to the `State` and `Restart`
+field groups (creating those groups if `VertCoord` initializes before `OceanState`). Because
+those streams are read later in `ocnInit`, the data are written directly into the attached device
+array; after the read, `initSurfacePressure()` must be called to exchange the halo and copy the
+device array to the host mirror:
+```c++
+VertCoord::getDefault()->initSurfacePressure(Halo::getDefault());
+```
+Eventually `SurfacePressure` will be updated each timestep via the coupler as a weighted sum of
+atmosphere, sea-ice, and land-ice pressure; that forcing update will live in a separate forcing
+class that writes into this array.
 
 ### Removal
 
