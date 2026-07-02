@@ -76,6 +76,12 @@ class OcnToCplFields {
    /// instantaneous field, so no device mirror is needed
    HostArray1DReal InstSshCellH;
 
+   // Refresh host mirrors from their devide counterparts
+   void copyToHost();
+
+   // Reset all fields to 0
+   void resetFields();
+
    OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh);
 };
 

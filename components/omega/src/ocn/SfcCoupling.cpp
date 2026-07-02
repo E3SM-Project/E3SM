@@ -269,11 +269,39 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
                           Mesh->NCellsOwned),
       InstSshCellH("InstSshCellH" + Suffix, Mesh->NCellsOwned) {
 
-   // TODO: Init the device values to 0; Doesn't kokkoks do this automatically?
+   // Kokkok views created with a label are zero-initialized by default.
+   // We reset the feilds here anyway to be explicit about the fact that the
+   // OcnToCpl fields need to being a coupling interval with all zeros.
+   resetFields();
 
    AvgSfcTemperatureH   = createHostMirrorCopy(AvgSfcTemperature);
    AvgSfcSalinityH      = createHostMirrorCopy(AvgSfcSalinity);
    AvgSfcVelocityZonalH = createHostMirrorCopy(AvgSfcVelocityZonal);
    AvgSfcVelocityMeridH = createHostMirrorCopy(AvgSfcVelocityMerid);
+}
+
+void OcnToCplFields::copyToHost() {
+
+   deepCopy(AvgSfcTemperatureH, AvgSfcTemperature);
+   deepCopy(AvgSfcSalinityH, AvgSfcSalinity);
+   deepCopy(AvgSfcVelocityZonalH, AvgSfcVelocityZonal);
+   deepCopy(AvgSfcVelocityMeridH, AvgSfcVelocityMerid);
+
+   // SSH is an instantaneous field, so we don't bother with a device mirror of
+   // our own. Instead, copy from the VertCoord, which owns SSH, host array.
+   VertCoord *DefVertCoord = VertCoord::getDefault();
+
+   auto SSHCellOwned = Kokkos::subview(
+       DefVertCoord->SshCell, std::make_pair(0, (int)InstSshCellH.extent(0)));
+
+   deepCopy(InstSshCellH, SSHCellOwned);
+}
+
+// OcnToCpl fields need to being a coupling interval with all values set to 0.
+void OcnToCplFields::resetFields() {
+   deepCopy(AvgSfcTemperature, 0.0);
+   deepCopy(AvgSfcSalinity, 0.0);
+   deepCopy(AvgSfcVelocityZonal, 0.0);
+   deepCopy(AvgSfcVelocityMerid, 0.0);
 }
 } // namespace OMEGA
