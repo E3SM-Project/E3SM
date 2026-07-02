@@ -1,5 +1,9 @@
 #include "SfcCoupling.h"
 #include "Logging.h"
+#include "OceanState.h"
+#include "OmegaKokkos.h"
+#include "Tracers.h"
+#include "VertCoord.h"
 
 namespace OMEGA {
 
@@ -207,6 +211,51 @@ void SfcCoupling::applyImportFields(Forcing *Forcing) {
    deepCopy(ownedSubView(Forcing->SfcStressForcing.MeridStressCell),
             CplToOcn.SfcStressMerid);
 };
+
+void SfcCoupling::updateExportFields(const OceanState *State,
+                                     const Array3DReal &TracerArray) {
+
+   I4 TemperatureIdx, SalinityIdx;
+   Tracers::getIndex(TemperatureIdx, "Temperature");
+   Tracers::getIndex(SalinityIdx, "Salinity");
+
+   auto Temperature =
+       Kokkos::subview(TracerArray, TemperatureIdx, Kokkos::ALL, Kokkos::ALL);
+   auto Salinity =
+       Kokkos::subview(TracerArray, SalinityIdx, Kokkos::ALL, Kokkos::ALL);
+
+   VertCoord *DefVertCoord = VertCoord::getDefault();
+   OMEGA_SCOPE(LocMinLayerCell, DefVertCoord->MinLayerCell);
+
+   OMEGA_SCOPE(LocNAccumSteps, NAccumSteps);
+   OMEGA_SCOPE(LocAvgSfcSalinity, OcnToCpl.AvgSfcSalinity);
+   OMEGA_SCOPE(LocAvgSfcTemp, OcnToCpl.AvgSfcTemperature);
+   OMEGA_SCOPE(LocAvgSfcVelZonal, OcnToCpl.AvgSfcVelocityZonal);
+   OMEGA_SCOPE(LocAvgSfcVelMerid, OcnToCpl.AvgSfcVelocityMerid);
+
+   // TODO: Implement vector reconsturction for velocity field.
+   constexpr Real ConstSfcVelocity = 1e-4;
+
+   parallelFor(
+       {NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
+          const int KSfc = LocMinLayerCell(ICell);
+
+          // Update the averaged fields using Welford's online algorithm
+          LocAvgSfcTemp(ICell) = updateAverage(
+              LocAvgSfcTemp(ICell), Temperature(ICell, KSfc), LocNAccumSteps);
+
+          LocAvgSfcSalinity(ICell) = updateAverage(
+              LocAvgSfcSalinity(ICell), Salinity(ICell, KSfc), LocNAccumSteps);
+
+          LocAvgSfcVelZonal(ICell) = updateAverage(
+              LocAvgSfcVelZonal(ICell), ConstSfcVelocity, LocNAccumSteps);
+
+          LocAvgSfcVelMerid(ICell) = updateAverage(
+              LocAvgSfcVelMerid(ICell), ConstSfcVelocity, LocNAccumSteps);
+       });
+
+   NAccumSteps++;
+}
 
 CplToOcnFields::CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh)
     : SfcStressZonal("SfcStressZonal" + Suffix, Mesh->NCellsOwned),

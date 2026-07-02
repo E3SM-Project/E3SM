@@ -13,12 +13,20 @@
 #include "DataTypes.h"
 #include "Forcing.h"
 #include "HorzMesh.h"
+#include "OceanState.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
 
 #include <string>
 
 namespace OMEGA {
+
+// Welford's online algorithm for computing a running average
+KOKKOS_INLINE_FUNCTION Real updateAverage(const Real OldAvg,
+                                          const Real NewValue,
+                                          const I4 NAccumSteps) {
+   return OldAvg + (NewValue - OldAvg) / (NAccumSteps + 1);
+}
 
 enum class CouplingLayout { MCT, MOAB };
 
@@ -184,6 +192,10 @@ class SfcCoupling {
 
    /// Apply the imported data to the Forcing object
    void applyImportFields(Forcing *Forcing);
+
+   /// Update the export fields
+   void updateExportFields(const OceanState *State,
+                           const Array3DReal &TracerArray);
 };
 
 } // end namespace OMEGA

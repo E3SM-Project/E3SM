@@ -23,7 +23,7 @@ struct TestSetup {
 
    std::map<std::string, int> ImportIdx = {{"Foxx_taux", 3}, {"Foxx_tauy", 8}};
    std::map<std::string, int> ExportIdx = {
-       {"So_t", 3}, {"So_u", 6}, {"So_v", 9}};
+       {"So_t", 2}, {"So_s", 4}, {"So_u", 6}, {"So_v", 9}};
 };
 
 CouplingInitParams mockCouplingInitParams(
@@ -103,6 +103,7 @@ int initSfcCouplingTest(const std::string &MeshFile) {
 
    Eos::init();
    Forcing::init();
+   Tracers::init();
 
    return Err;
 }
@@ -220,8 +221,118 @@ int testApplyImportFields() {
    return Err;
 }
 
+int testUpdateExportFields(const I4 NSteps) {
+
+   int Err = 0;
+
+   auto *DefStepper  = TimeStepper::getDefault();
+   Clock *ModelClock = DefStepper->getClock();
+
+   // Reset the shared clock
+   ModelClock->setCurrentTime(DefStepper->getStartTime());
+
+   // Coupling interval spans NSteps ocean timesteps
+   auto CouplingParams = mockCouplingInitParams(
+       CouplingLayout::MCT, DefStepper->getTimeStep() * NSteps);
+
+   Err += SfcCoupling::init(CouplingParams);
+
+   SfcCoupling *DefCoupling = SfcCoupling::getDefault();
+   OceanState *DefState     = OceanState::getDefault();
+   VertCoord *DefVertCoord  = VertCoord::getDefault();
+
+   int NCells = DefCoupling->NCellsOwned;
+
+   Real TempBase  = static_cast<Real>(CouplingParams.ExportIdx.at("So_t"));
+   Real SalinBase = static_cast<Real>(CouplingParams.ExportIdx.at("So_s"));
+
+   I4 TempIdx, SalinIdx;
+   Tracers::getIndex(TempIdx, "Temperature");
+   Tracers::getIndex(SalinIdx, "Salinity");
+
+   while (!DefCoupling->CouplingAlarm.isRinging()) {
+      Real CurrStep = static_cast<Real>(DefCoupling->getNAccumSteps());
+
+      HostArray2DReal TempH  = Tracers::getHostByIndex(0, TempIdx);
+      HostArray2DReal SalinH = Tracers::getHostByIndex(0, SalinIdx);
+
+      for (int Cell = 0; Cell < NCells; Cell++) {
+         int KSfc = DefVertCoord->MinLayerCell(Cell);
+
+         TempH(Cell, KSfc)  = TempBase + Cell + CurrStep;
+         SalinH(Cell, KSfc) = SalinBase + Cell + CurrStep;
+      }
+      Tracers::copyToDevice(0);
+
+      DefCoupling->updateExportFields(DefState, Tracers::getAll(0));
+
+      ModelClock->advance();
+   }
+
+   // Sanity check: alarm should ring after NSteps
+   if (DefCoupling->getNAccumSteps() != NSteps) {
+      Err++;
+      LOG_ERROR("SfcCouplingTest: updateExportFields FAIL - "
+                "NAccumSteps = {}, expected {}",
+                DefCoupling->getNAccumSteps(), NSteps);
+   }
+
+   auto AvgTempH =
+       createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcTemperature);
+   auto AvgSalinH = createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcSalinity);
+
+   Real StepOffset = static_cast<Real>(NSteps - 1) / 2.0;
+   Real Tol        = 1e-10;
+
+   I4 TempErr  = 0;
+   I4 SalinErr = 0;
+
+   // Will this fail for single precision, given the tolerance?
+   for (int Cell = 0; Cell < NCells; Cell++) {
+      Real ExpectedTemp  = TempBase + Cell + StepOffset;
+      Real ExpectedSalin = SalinBase + Cell + StepOffset;
+
+      if (std::abs(AvgTempH(Cell) - ExpectedTemp) > Tol) {
+         TempErr++;
+      }
+
+      if (std::abs(AvgSalinH(Cell) - ExpectedSalin) > Tol) {
+         SalinErr++;
+      }
+   }
+
+   if (TempErr == 0) {
+      LOG_INFO("SfcCouplingTest: updateExportFields PASS - "
+               "AvgSfcTemperature within tolerance of {}",
+               Tol);
+   } else {
+      Err += TempErr;
+      LOG_ERROR("SfcCouplingTest: updateExportFields FAIL - "
+                "AvgSfcTemperature outside tolerance of {} for {} cells",
+                Tol, TempErr);
+   }
+
+   if (SalinErr == 0) {
+      LOG_INFO("SfcCouplingTest: updateExportFields PASS - "
+               "AvgSfcSalinity within tolerance of {}",
+               Tol);
+   } else {
+      Err += SalinErr;
+      LOG_ERROR("SfcCouplingTest: updateExportFields FAIL - "
+                "AvgSfcSalinity outside tolerance of {} for {} cells",
+                Tol, SalinErr);
+   }
+
+   // reset model clock to the start time for any subsequent tests
+   ModelClock->setCurrentTime(DefStepper->getStartTime());
+
+   SfcCoupling::clear();
+   return Err;
+}
+
 void finalizeSfcCouplingTest() {
 
+   Tracers::clear();
    Forcing::clear();
    OceanState::clear();
    VertCoord::clear();
@@ -246,6 +357,9 @@ int sfcCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
    Err += testImportFromCoupler(CouplingLayout::MOAB);
 
    Err += testApplyImportFields();
+
+   Err += testUpdateExportFields(1);
+   Err += testUpdateExportFields(5);
 
    if (Err == 0) {
       LOG_INFO("SfcCouplingTest: Successful completion");
