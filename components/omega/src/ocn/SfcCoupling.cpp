@@ -213,7 +213,18 @@ CplToOcnFields::CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh)
       SfcStressMerid("SfcStressMeridional" + Suffix, Mesh->NCellsOwned) {}
 
 OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
-    : SfcTemperature("SfcTemperature" + Suffix, Mesh->NCellsOwned),
-      SfcVelocityZonal("SfcVelocityZonal" + Suffix, Mesh->NCellsOwned),
-      SfcVelocityMerid("SfcVelocityMeridional" + Suffix, Mesh->NCellsOwned) {}
+    : AvgSfcTemperature("AvgSfcTemperature" + Suffix, Mesh->NCellsOwned),
+      AvgSfcSalinity("AvgSfcSalinity" + Suffix, Mesh->NCellsOwned),
+      AvgSfcVelocityZonal("AvgSfcVelocityZonal" + Suffix, Mesh->NCellsOwned),
+      AvgSfcVelocityMerid("AvgSfcVelocityMeridional" + Suffix,
+                          Mesh->NCellsOwned),
+      InstSshCellH("InstSshCellH" + Suffix, Mesh->NCellsOwned) {
+
+   // TODO: Init the device values to 0; Doesn't kokkoks do this automatically?
+
+   AvgSfcTemperatureH   = createHostMirrorCopy(AvgSfcTemperature);
+   AvgSfcSalinityH      = createHostMirrorCopy(AvgSfcSalinity);
+   AvgSfcVelocityZonalH = createHostMirrorCopy(AvgSfcVelocityZonal);
+   AvgSfcVelocityMeridH = createHostMirrorCopy(AvgSfcVelocityMerid);
+}
 } // namespace OMEGA

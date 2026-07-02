@@ -49,16 +49,24 @@ class CplToOcnFields {
 class OcnToCplFields {
  public:
    ///< So_t    [deg C]
-   Array1DReal SfcTemperature;
-   HostArray1DReal SfcTemperature_H;
+   Array1DReal AvgSfcTemperature;
+   HostArray1DReal AvgSfcTemperatureH;
+
+   ///< So_s    [g kg^-1]
+   Array1DReal AvgSfcSalinity;
+   HostArray1DReal AvgSfcSalinityH;
 
    ///< So_u    [m s^-1]
-   Array1DReal SfcVelocityZonal;
-   HostArray1DReal SfcVelocityZonal_H;
+   Array1DReal AvgSfcVelocityZonal;
+   HostArray1DReal AvgSfcVelocityZonalH;
 
    ///< So_v    [m s^-1]
-   Array1DReal SfcVelocityMerid;
-   HostArray1DReal SfcVelocityMerid_H;
+   Array1DReal AvgSfcVelocityMerid;
+   HostArray1DReal AvgSfcVelocityMeridH;
+
+   ///< So_ssh [m]
+   /// instantaneous field, so no device mirror is needed
+   HostArray1DReal InstSshCellH;
 
    OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh);
 };
