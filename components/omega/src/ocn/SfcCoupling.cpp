@@ -45,7 +45,7 @@ int SfcCoupling::init(const CouplingInitParams &CouplingInitParams) {
    // Create the default surface coupling object and set pointer to it
    SfcCoupling::DefaultSfcCoupling = SfcCoupling::create(
        "Default", DefHorzMesh, CouplingInitParams.NImportFields,
-       CouplingInitParams.NImportFields, CouplingInitParams.ImportIdx,
+       CouplingInitParams.NExportFields, CouplingInitParams.ImportIdx,
        CouplingInitParams.ExportIdx, DefTimeStepper, CplTimeStep,
        CouplingInitParams.Layout);
 
