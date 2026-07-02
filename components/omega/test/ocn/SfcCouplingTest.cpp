@@ -465,6 +465,43 @@ int testExportToCoupler(const CouplingLayout Layout) {
 
    return Err;
 }
+
+int testEraseAndGet() {
+
+   int Err = 0;
+
+   TestSetup Setup;
+   auto *DefMesh         = HorzMesh::getDefault();
+   auto *DefStepper      = TimeStepper::getDefault();
+   TimeInterval TimeStep = DefStepper->getTimeStep();
+
+   // test creation of a non-default, named surface coupling object
+   SfcCoupling::create("AnotherSfcCoupling", DefMesh, 10, 12, Setup.ImportIdx,
+                       Setup.ExportIdx, DefStepper, TimeStep,
+                       CouplingLayout::MCT);
+
+   if (SfcCoupling::get("AnotherSfcCoupling")) {
+      LOG_INFO("SfcCouplingTest: Non-default SfcCoupling retrieval PASS");
+   } else {
+      Err++;
+      LOG_ERROR("SfcCouplingTest: Non-default SfcCoupling retrieval FAIL");
+   }
+
+   // test erase
+   SfcCoupling::erase("AnotherSfcCoupling");
+
+   // get() logs an expected error here; wrap with spdlog::set_level to
+   // silence it if the message becomes confusing in test logs
+   if (SfcCoupling::get("AnotherSfcCoupling")) {
+      Err++;
+      LOG_ERROR("SfcCouplingTest: erased SfcCoupling retrieval FAIL");
+   } else {
+      LOG_INFO("SfcCouplingTest: erased SfcCoupling retrieval PASS");
+   }
+
+   return Err;
+}
+
 void finalizeSfcCouplingTest() {
 
    Tracers::clear();
@@ -498,6 +535,8 @@ int sfcCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    Err += testExportToCoupler(CouplingLayout::MCT);
    Err += testExportToCoupler(CouplingLayout::MOAB);
+
+   Err += testEraseAndGet();
 
    if (Err == 0) {
       LOG_INFO("SfcCouplingTest: Successful completion");
