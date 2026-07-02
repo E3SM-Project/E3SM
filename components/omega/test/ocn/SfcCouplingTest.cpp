@@ -23,7 +23,7 @@ struct TestSetup {
 
    std::map<std::string, int> ImportIdx = {{"Foxx_taux", 3}, {"Foxx_tauy", 8}};
    std::map<std::string, int> ExportIdx = {
-       {"So_t", 2}, {"So_s", 4}, {"So_u", 6}, {"So_v", 9}};
+       {"So_t", 2}, {"So_s", 4}, {"So_u", 6}, {"So_v", 9}, {"So_ssh", 1}};
 };
 
 CouplingInitParams mockCouplingInitParams(
@@ -341,6 +341,125 @@ int testUpdateExportFields(const I4 NSteps) {
    return Err;
 }
 
+int testExportToCoupler(const CouplingLayout Layout) {
+
+   int Err = 0;
+
+   auto CouplingParams = mockCouplingInitParams(Layout);
+   Err += SfcCoupling::init(CouplingParams);
+
+   SfcCoupling *DefCoupling = SfcCoupling::getDefault();
+   VertCoord *DefVertCoord  = VertCoord::getDefault();
+
+   int NCells   = DefCoupling->NCellsOwned;
+   int NImports = DefCoupling->NImportFields;
+   int NExports = DefCoupling->NExportFields;
+
+   std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
+   std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
+
+   int TempIdx  = CouplingParams.ExportIdx.at("So_t");
+   int SalinIdx = CouplingParams.ExportIdx.at("So_s");
+   int VelUIdx  = CouplingParams.ExportIdx.at("So_u");
+   int VelVIdx  = CouplingParams.ExportIdx.at("So_v");
+   int SshIdx   = CouplingParams.ExportIdx.at("So_ssh");
+
+   DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
+
+   HostArray1DReal ExpectedTemp =
+       makeCellVarryingArray("ExpectedTemp", NCells, Real(TempIdx));
+   HostArray1DReal ExpectedSalin =
+       makeCellVarryingArray("ExpectedSalin", NCells, Real(SalinIdx));
+   HostArray1DReal ExpectedVelU =
+       makeCellVarryingArray("ExpectedVelU", NCells, Real(VelUIdx));
+   HostArray1DReal ExpectedVelV =
+       makeCellVarryingArray("ExpectedVelV", NCells, Real(VelVIdx));
+   HostArray1DReal ExpectedSsh =
+       makeCellVarryingArray("ExpectedSsh", NCells, Real(SshIdx));
+
+   deepCopy(DefCoupling->OcnToCpl.AvgSfcTemperature, ExpectedTemp);
+   deepCopy(DefCoupling->OcnToCpl.AvgSfcSalinity, ExpectedSalin);
+   deepCopy(DefCoupling->OcnToCpl.AvgSfcVelocityZonal, ExpectedVelU);
+   deepCopy(DefCoupling->OcnToCpl.AvgSfcVelocityMerid, ExpectedVelV);
+
+   auto SshCellOwned =
+       Kokkos::subview(DefVertCoord->SshCell, std::pair(0, NCells));
+   deepCopy(SshCellOwned, ExpectedSsh);
+
+   DefCoupling->exportToCoupler();
+
+   // Check 1: exportToCoupler properly packs into OcnToCplView
+   int PackErr = 0;
+   for (int Cell = 0; Cell < NCells; Cell++) {
+      if (OcnToCplData[flatIdx(Layout, Cell, TempIdx, NCells, NExports)] !=
+          ExpectedTemp(Cell)) {
+         PackErr++;
+      }
+      if (OcnToCplData[flatIdx(Layout, Cell, SalinIdx, NCells, NExports)] !=
+          ExpectedSalin(Cell)) {
+         PackErr++;
+      }
+      if (OcnToCplData[flatIdx(Layout, Cell, VelUIdx, NCells, NExports)] !=
+          ExpectedVelU(Cell)) {
+         PackErr++;
+      }
+      if (OcnToCplData[flatIdx(Layout, Cell, VelVIdx, NCells, NExports)] !=
+          ExpectedVelV(Cell)) {
+         PackErr++;
+      }
+      if (OcnToCplData[flatIdx(Layout, Cell, SshIdx, NCells, NExports)] !=
+          ExpectedSsh(Cell)) {
+         PackErr++;
+      }
+   }
+
+   if (PackErr == 0) {
+      LOG_INFO("SfcCouplingTest: exportToCoupler with {} layout PASS",
+               toString(Layout));
+   } else {
+      Err += PackErr;
+      LOG_ERROR("SfcCouplingTest: exportToCoupler with {} layout FAIL - "
+                "{} packing errors",
+                toString(Layout), PackErr);
+   }
+
+   // Check 2: resetFields() zeroed the running-average accumulators
+   HostArray1DReal ZeroArray("ZeroArray", NCells);
+   deepCopy(ZeroArray, 0.0);
+
+   // Refresh OcnToCpl's own host mirrors post-reset, rather than creating
+   // separate test-only mirrors
+   DefCoupling->OcnToCpl.copyToHost();
+
+   int ResetErr = 0;
+   if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcTemperatureH, ZeroArray))
+      ResetErr++;
+   if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcSalinityH, ZeroArray))
+      ResetErr++;
+   if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcVelocityZonalH, ZeroArray))
+      ResetErr++;
+   if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcVelocityMeridH, ZeroArray))
+      ResetErr++;
+
+   if (ResetErr == 0) {
+      LOG_INFO("SfcCouplingTest: exportToCoupler resetFields PASS");
+   } else {
+      Err += ResetErr;
+      LOG_ERROR("SfcCouplingTest: exportToCoupler resetFields FAIL");
+   }
+
+   // Check 3: NAccumSteps was reset to 0
+   if (DefCoupling->getNAccumSteps() != 0) {
+      Err++;
+      LOG_ERROR("SfcCouplingTest: exportToCoupler reset counter FAIL");
+   } else {
+      LOG_INFO("SfcCouplingTest: exportToCoupler reset counter PASS");
+   }
+
+   SfcCoupling::clear();
+
+   return Err;
+}
 void finalizeSfcCouplingTest() {
 
    Tracers::clear();
@@ -371,6 +490,9 @@ int sfcCouplingTest(const std::string &MeshFile = "OmegaMesh.nc") {
 
    Err += testUpdateExportFields(1);
    Err += testUpdateExportFields(5);
+
+   Err += testExportToCoupler(CouplingLayout::MCT);
+   Err += testExportToCoupler(CouplingLayout::MOAB);
 
    if (Err == 0) {
       LOG_INFO("SfcCouplingTest: Successful completion");

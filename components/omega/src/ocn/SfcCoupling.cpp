@@ -201,6 +201,45 @@ void SfcCoupling::importFromCoupler() {
    });
 }
 
+void SfcCoupling::exportToCoupler() {
+
+   if (OcnToCplView.data() == nullptr) {
+      ABORT_ERROR(
+          "OcnToCplView is not attached to data. The SfcCoupling::attachData "
+          "method must be called before exporting data to the coupler.");
+   }
+
+   // Copy the OcnToCpl fields to their host mirrors
+   OcnToCpl.copyToHost();
+
+   int TempIdx  = ExportIdx.at("So_t");
+   int SalinIdx = ExportIdx.at("So_s");
+   int VelUIdx  = ExportIdx.at("So_u");
+   int VelVIdx  = ExportIdx.at("So_v");
+   int SshIdx   = ExportIdx.at("So_ssh");
+
+   // Copy Kokkos view handles
+   auto OcnToCplView_        = OcnToCplView;
+   auto AvgSfcTemperature_   = OcnToCpl.AvgSfcTemperatureH;
+   auto AvgSfcSalinity_      = OcnToCpl.AvgSfcSalinityH;
+   auto AvgSfcVelocityZonal_ = OcnToCpl.AvgSfcVelocityZonalH;
+   auto AvgSfcVelocityMerid_ = OcnToCpl.AvgSfcVelocityMeridH;
+   auto InstSshCellH_        = OcnToCpl.InstSshCellH;
+
+   /// TODO: Shouldn't be making direct calls to Kokkos here.
+   auto Policy = Kokkos::RangePolicy<HostExecSpace, Kokkos::IndexType<int>>(
+       0, NCellsOwned);
+   Kokkos::parallel_for("exportToCoupler", Policy, [=](int Idx) {
+      OcnToCplView_(TempIdx, Idx)  = AvgSfcTemperature_(Idx);
+      OcnToCplView_(SalinIdx, Idx) = AvgSfcSalinity_(Idx);
+      OcnToCplView_(VelUIdx, Idx)  = AvgSfcVelocityZonal_(Idx);
+      OcnToCplView_(VelVIdx, Idx)  = AvgSfcVelocityMerid_(Idx);
+      OcnToCplView_(SshIdx, Idx)   = InstSshCellH_(Idx);
+   });
+
+   OcnToCpl.resetFields(); // Reset fields to 0 for the next coupling interval
+   NAccumSteps = 0;        // Reset step counter for the next coupling interval
+}
 void SfcCoupling::applyImportFields(Forcing *Forcing) {
 
    // Copy the SfcCoupling host arrays into the Forcing device arrays.

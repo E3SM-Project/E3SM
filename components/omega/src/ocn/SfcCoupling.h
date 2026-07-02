@@ -188,13 +188,11 @@ class SfcCoupling {
    /// Create views of the coupling data arrays
    void attachData(const Real *CplToOcnData, Real *OcnToCplData);
 
-   /// Import data from the unmanaged view of the coupler data into the
-   /// SfcCoupling.OcnToCpl object
+   /// Import data from the unmanaged view of x2o pointer into OcnToCpl object
    void importFromCoupler();
 
-   /// Export data from the SfcCoupling.OcnToCpl object into the unmanaged view
-   /// of the coupler data
-   // void exportToCoupler();
+   /// Export data from OcnToCpl object into the unmanaged view of o2x pointer
+   void exportToCoupler();
 
    /// Apply the imported data to the Forcing object
    void applyImportFields(Forcing *Forcing);
