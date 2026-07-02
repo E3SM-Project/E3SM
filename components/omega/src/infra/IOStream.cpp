@@ -574,6 +574,15 @@ void IOStream::create(const std::string &StreamName, //< [in] name of stream
                      "stream {} ",
                      StreamName);
       }
+   } else { // neither FileFreq variables are found
+      // Make sure the file frequency variables are present for append mode
+      if (NewStream->ExistAction == IO::IfExists::Append)
+         ABORT_ERROR(
+             "Error creating stream {}: FileFreq and FileFreqUnits must be "
+             "supplied if the append option is used for IfExists \n"
+             "Choose a very large file frequency if all time slices are "
+             "to be written to a single file (eg for testing)",
+             StreamName);
    }
 
    // Create and attach alarm for file frequency if needed
