@@ -216,8 +216,11 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%mcsp_enabled       = .true.
    zm_param%mcsp_t_coeff       = 0.3
    zm_param%mcsp_q_coeff       = 0
-   zm_param%mcsp_mom_coeff     = 0
-   zm_param%mcsp_use_full_shear = .false.
+   ! Use a negative momentum coefficient so the unit tests exercise the
+   ! do_mcsp_mom path AND confirm the guards admit a negative coefficient
+   ! (down-gradient forcing). Must match the C++ zm_opts_init test setup.
+   zm_param%mcsp_mom_coeff     = -0.05
+   zm_param%mcsp_use_full_shear = .true.
 end subroutine zm_param_set_for_testing
 
 !===================================================================================================

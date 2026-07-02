@@ -210,7 +210,10 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
 
    if (zm_param%mcsp_t_coeff>0)   do_mcsp_t   = .true.
    if (zm_param%mcsp_q_coeff>0)   do_mcsp_q   = .true.
-   if (zm_param%mcsp_mom_coeff>0) do_mcsp_mom = .true.
+   ! momentum is active for any non-zero coefficient; a negative coefficient
+   ! flips the leading sign in the tendency, switching up-gradient forcing
+   ! (default) to down-gradient forcing.
+   if (abs(zm_param%mcsp_mom_coeff)>0) do_mcsp_mom = .true.
 
    zm_avg_tend_s(1:ncol) = 0
    zm_avg_tend_q(1:ncol) = 0
