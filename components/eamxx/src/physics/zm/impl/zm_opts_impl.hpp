@@ -41,7 +41,12 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.mcsp_enabled        = true;
   s_zm_opts.mcsp_t_coeff        = ZMC::MCSP_t_coeff_default;
   s_zm_opts.mcsp_q_coeff        = ZMC::MCSP_q_coeff_default;
-  s_zm_opts.mcsp_mom_coeff      = ZMC::MCSP_mom_coeff_default;
+  // Use a negative momentum coefficient so the unit tests exercise the
+  // do_mcsp_mom path AND confirm the guards admit a negative coefficient
+  // (down-gradient forcing). Must match the Fortran zm_param_set_for_testing
+  // setup. (This routine is only used by the standalone test harness; the real
+  // eamxx run overwrites s_zm_opts via load_runtime_options from XML.)
+  s_zm_opts.mcsp_mom_coeff      = -0.05;
   s_zm_opts.mcsp_use_full_shear = true;
 
   //
