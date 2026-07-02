@@ -501,7 +501,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
+  const Real mask_threshold = 0.25;
 
   Pack fv_pack(fill_val);
   auto& mask = x.get_valid_mask();
