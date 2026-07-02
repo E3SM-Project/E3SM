@@ -201,13 +201,15 @@ subroutine  copy_aream_from_area(mbappid)
 
   end function cplcomp_moab_atm_phys_cid
 
-  subroutine moab_exchange_domain_tags(comp, comp_appid, cpl_appid, domain_fields, dom_context)
-      type(component_type), intent(inout) :: comp
-      integer,              intent(in)    :: comp_appid, cpl_appid
-      character(len=*),     intent(in)    :: domain_fields, dom_context
-      call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', trim(domain_fields)//C_NULL_CHAR, context_exch=dom_context)
-      call copy_aream_from_area(cpl_appid)
-  end subroutine moab_exchange_domain_tags
+   subroutine moab_exchange_domain_tags(comp, comp_appid, cpl_appid, domain_fields, dom_context)
+       type(component_type), intent(inout) :: comp
+       integer,              intent(in)    :: comp_appid, cpl_appid
+       character(len=*),     intent(in)    :: domain_fields, dom_context
+       character(CXX) :: tagname
+       tagname = trim(domain_fields)  ! No C_NULL_CHAR stored - clean for log output
+       call component_exch_moab(comp, comp_appid, cpl_appid, 'c2x', tagname, context_exch=dom_context)
+       call copy_aream_from_area(cpl_appid)
+   end subroutine moab_exchange_domain_tags
 
   subroutine cplcomp_moab_resolve_comm_types(src_has_cells, tgt_has_cells, typeA, typeB)
 
@@ -1190,7 +1192,7 @@ subroutine  copy_aream_from_area(mbappid)
     ! direction 'c2x' is from component to coupler; 'x2c' is from coupler to component
     integer,                   intent(in)           :: mbAPPid1, mbAppid2
     character(len=*)         , intent(in)           :: direction
-    character(CXX)           , intent(in)           :: fields
+    character(len=*)         , intent(in)           :: fields
     character(len=*)        ,  intent(in), optional :: context_exch
     type(seq_infodata_type) , intent(inout), optional :: infodata
     character(len=*)        , intent(in), optional :: infodata_string
