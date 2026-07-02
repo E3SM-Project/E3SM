@@ -57,6 +57,15 @@ std::string toString(const CouplingLayout &Layout) {
    }
 }
 
+HostArray1DReal makeCellVarryingArray(const std::string &Name, const int NCells,
+                                      const Real Base) {
+   HostArray1DReal Array(Name, NCells);
+   for (int Cell = 0; Cell < NCells; Cell++) {
+      Array(Cell) = Base + Cell;
+   }
+   return Array;
+}
+
 int initSfcCouplingTest(const std::string &MeshFile) {
 
    int Err = 0;
@@ -127,11 +136,10 @@ int testImportFromCoupler(const CouplingLayout Layout) {
    std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
    std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
 
-   HostArray1DReal ExpectedSfcStressZonal("ExpectedSfcStressZonal", NCells);
-   HostArray1DReal ExpectedSfcStressMerid("ExpectedSfcStressMerid", NCells);
-
-   deepCopy(ExpectedSfcStressZonal, Real(TauxIdx));
-   deepCopy(ExpectedSfcStressMerid, Real(TauyIdx));
+   HostArray1DReal ExpectedSfcStressZonal =
+       makeCellVarryingArray("ExpectedSfcStressZonal", NCells, Real(TauxIdx));
+   HostArray1DReal ExpectedSfcStressMerid =
+       makeCellVarryingArray("ExpectedSfcStressMerid", NCells, Real(TauyIdx));
 
    // Index formula depend on the Layout
    auto flatIdx = [&](int Cell, int Field) -> int {
@@ -142,8 +150,8 @@ int testImportFromCoupler(const CouplingLayout Layout) {
    };
 
    for (int Cell = 0; Cell < NCells; Cell++) {
-      CplToOcnData[flatIdx(Cell, TauxIdx)] = static_cast<Real>(TauxIdx);
-      CplToOcnData[flatIdx(Cell, TauyIdx)] = static_cast<Real>(TauyIdx);
+      CplToOcnData[flatIdx(Cell, TauxIdx)] = ExpectedSfcStressZonal(Cell);
+      CplToOcnData[flatIdx(Cell, TauyIdx)] = ExpectedSfcStressMerid(Cell);
    }
 
    DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
@@ -188,12 +196,11 @@ int testApplyImportFields() {
    std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
    std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
 
-   HostArray1DReal ExpectedSfcStressZonal("ExpectedSfcStressZonal", NCells);
-   HostArray1DReal ExpectedSfcStressMerid("ExpectedSfcStressMerid", NCells);
-
-   int Offset = 27;
-   deepCopy(ExpectedSfcStressZonal, Real(TauxIdx + Offset));
-   deepCopy(ExpectedSfcStressMerid, Real(TauyIdx + Offset));
+   int Offset                             = 27;
+   HostArray1DReal ExpectedSfcStressZonal = makeCellVarryingArray(
+       "ExpectedSfcStressZonal", NCells, Real(TauxIdx + Offset));
+   HostArray1DReal ExpectedSfcStressMerid = makeCellVarryingArray(
+       "ExpectedSfcStressMerid", NCells, Real(TauyIdx + Offset));
 
    // Copy the expected values into the CplToOcn fields directly
    deepCopy(DefCoupling->CplToOcn.SfcStressZonal, ExpectedSfcStressZonal);
@@ -281,22 +288,23 @@ int testUpdateExportFields(const I4 NSteps) {
        createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcTemperature);
    auto AvgSalinH = createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcSalinity);
 
-   Real StepOffset = static_cast<Real>(NSteps - 1) / 2.0;
    Real Tol        = 1e-10;
+   Real StepOffset = static_cast<Real>(NSteps - 1) / 2.0;
+   HostArray1DReal ExpectedTemp =
+       makeCellVarryingArray("ExpectedTemp", NCells, TempBase + StepOffset);
+   HostArray1DReal ExpectedSalin =
+       makeCellVarryingArray("ExpectedSalin", NCells, SalinBase + StepOffset);
 
    I4 TempErr  = 0;
    I4 SalinErr = 0;
 
    // Will this fail for single precision, given the tolerance?
    for (int Cell = 0; Cell < NCells; Cell++) {
-      Real ExpectedTemp  = TempBase + Cell + StepOffset;
-      Real ExpectedSalin = SalinBase + Cell + StepOffset;
-
-      if (std::abs(AvgTempH(Cell) - ExpectedTemp) > Tol) {
+      if (std::abs(AvgTempH(Cell) - ExpectedTemp(Cell)) > Tol) {
          TempErr++;
       }
 
-      if (std::abs(AvgSalinH(Cell) - ExpectedSalin) > Tol) {
+      if (std::abs(AvgSalinH(Cell) - ExpectedSalin(Cell)) > Tol) {
          SalinErr++;
       }
    }
