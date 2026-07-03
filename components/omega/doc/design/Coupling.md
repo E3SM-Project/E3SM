@@ -3,7 +3,7 @@
 
 ## 1 Overview
 
-The `SurfaceCoupling` class manages all fields exchanged between Omega and
+The `SfcCoupling` class manages all fields exchanged between Omega and
 the coupled system (via MCT or MOAB drivers). It owns import and export
 coupling field arrays, unpacks driver attribute-vector data into typed
 Omega arrays, applies imported fields to internal forcing state,
@@ -17,8 +17,9 @@ fields (BGC, waves, land-ice).
 
 ### 2.1 Requirement: Own coupling field storage
 
-The class must own all coupling fields as `Array1DReal` arrays indexed
-over ocean cells, consistent with other Omega field storage.
+The class must own all coupling fields as `Array1DReal`/`HostArray1DReal`
+arrays indexed over ocean cells, consistent with other Omega field
+storage.
 
 ### 2.2 Requirement: Clean driver boundary
 
@@ -31,14 +32,22 @@ infrastructure.
 ### 2.3 Requirement: Field system integration
 
 All coupling fields must be registerable with Omega's Field system for
-diagnostic output.
+diagnostic output. Not yet implemented in the initial pass.
 
 ### 2.4 Requirement: Per-coupling-interval operations
 
 The class must provide methods to import fields, pass the received
 import fields to the appropriate forcing class member variables,
-accumulate export quantities each ocean timestep, export
-accumulated fields, and reset accumulators.
+accumulate export quantities each ocean timestep, and export
+accumulated fields. Accumulators are reset as part of the export step,
+so no separate reset call is required in the run loop.
+
+`applyImportFields` writes directly into `Forcing` member arrays, the
+same arrays populated by file-based input in standalone runs. This
+keeps `Forcing` agnostic to whether its data originates from the
+coupler or from a file, and `SfcCoupling` itself has no user-facing
+runtime configuration options; all configuration comes from the
+coupler at initialization (see 4.1.1).
 
 ### 2.5 Requirement: Driver architecture agnosticism
 
@@ -54,10 +63,15 @@ per-coupling-interval operations should occur.
 
 ### 2.7 Requirement: Coupler conversion layer
 
-Private conversion methods must handle unit conversions and state
-variable transformations between Omega's internal representation and
-coupler expectations (e.g., conservative temperature ↔ in situ
-temperature).
+Unit conversions and state variable transformations between Omega's
+internal representation and coupler expectations (e.g., conservative
+temperature → in situ temperature, absolute → practical salinity) must
+be supported, and must be done once per coupling interval rather than
+every ocean timestep, since evaluating the EOS polynomial is expensive.
+Converted and unconverted representations must not both be reachable
+from outside the class, to prevent unit confusion. Temperature
+conversion is implemented (4.2.5); practical salinity conversion is a
+TODO (see 2.8).
 
 ### 2.8 Requirement: Extensible design
 
@@ -67,7 +81,19 @@ interfaces or method signatures should be needed.
 
 ## 3 Algorithmic Formulation
 
-No algorithms are required.
+Export fields are accumulated on-device each ocean timestep using Welford's
+online running-average algorithm, rather than a running sum divided at
+export time:
+```cpp
+KOKKOS_INLINE_FUNCTION Real updateAverage(const Real OldAvg,
+                                          const Real NewValue,
+                                          const I4 NAccumSteps) {
+   return OldAvg + (NewValue - OldAvg) / (NAccumSteps + 1);
+}
+```
+This produces the same interval-mean result as a naive sum-then-divide, but
+avoids growing partial sums. Instantaneous fields (e.g. `SSH`) bypass
+accumulation and are read directly from their source at export time.
 
 ## 4 Design
 
@@ -80,253 +106,370 @@ An enum class specifies the coupled driver layout:
 enum class CouplingLayout { MCT, MOAB };
 ```
 
-The initial implementation will not have any runtime configuration options.
+All initialization inputs are supplied by the coupler at runtime and
+bundled into a single struct, rather than passed as separate arguments:
+```cpp
+struct CouplingInitParams {
+   int NImportFields;
+   int NExportFields;
+   std::map<std::string, int> ImportIdx;
+   std::map<std::string, int> ExportIdx;
+   TimeInterval CouplingTimeStep;
+   CouplingLayout Layout;
+};
+```
+`SfcCoupling` has no user-facing runtime configuration options.
 
 #### 4.1.2 Class/structs/data types
 
-`SurfaceCoupling` lives in `src/ocn/` alongside `AuxiliaryState` and
+`SfcCoupling` lives in `src/ocn/` alongside `AuxiliaryState` and
 `OceanState`. It has no direct driver dependencies. The bridge layer in
 `src/drivers/coupled/` is the only code that calls it.
 
+Import (x2o) and export (o2x) fields are grouped into two small container
+classes, rather than flat members directly on `SfcCoupling`. Each is
+constructed with a name `Suffix` and `Mesh` so multiple named `SfcCoupling`
+instances don't collide on Kokkos view labels:
+
 ```cpp
-class SurfaceCoupling {
+// x2o: Coupler to Ocean. Host-only; applyImportFields() copies to the
+// device arrays owned by Forcing.
+class CplToOcnFields {
  public:
-   // Import fields (x2o): coupler → ocean
-   Array1DReal SurfaceStressZonal;      ///< Foxx_taux  [N m⁻²]
-   Array1DReal SurfaceStressMeridional; ///< Foxx_tauy  [N m⁻²]
-   Array1DReal SWHeatFlux;              ///< Foxx_swnet [W m⁻²]
-   Array1DReal LatentHeatFlux;          ///< Foxx_lat   [W m⁻²]
-   Array1DReal SensibleHeatFlux;        ///< Foxx_sen   [W m⁻²]
-   Array1DReal LWHeatFluxUp;            ///< Foxx_lwup  [W m⁻²]
-   Array1DReal LWHeatFluxDown;          ///< Faxa_lwdn  [W m⁻²]
-   Array1DReal SeaIceHeatFlux;          ///< Fioi_melth [W m⁻²]
-   Array1DReal IcebergHeatFlux;         ///< Fioi_bergh [W m⁻²]
-   Array1DReal SnowFlux;                ///< Faxa_snow  [kg m⁻² s⁻¹]
-   Array1DReal RainFlux;                ///< Faxa_rain  [kg m⁻² s⁻¹]
-   Array1DReal EvaporationFlux;         ///< Foxx_evap  [kg m⁻² s⁻¹]
-   Array1DReal SeaIceFreshWaterFlux;    ///< Fioi_meltw [kg m⁻² s⁻¹]
-   Array1DReal IcebergFreshWaterFlux;   ///< Fioi_bergw [kg m⁻² s⁻¹]
-   Array1DReal SeaIceSalinityFlux;      ///< Fioi_salt  [kg m⁻² s⁻¹]
-   Array1DReal RiverRunoffFlux;         ///< Foxx_rofl  [kg m⁻² s⁻¹]
-   Array1DReal IceRunoffFlux;           ///< Foxx_rofi  [kg m⁻² s⁻¹]
-   Array1DReal IceFraction;             ///< Si_ifrac   [-]
-   Array1DReal SeaIcePressure;          ///< Si_bpress  [Pa]
-   Array1DReal AtmosphericPressure;     ///< Sa_pslv    [Pa]
+   HostArray1DReal SfcStressZonal; ///< Foxx_taux  [N m⁻²]
+   HostArray1DReal SfcStressMerid; ///< Foxx_tauy  [N m⁻²]
 
-   // Export fields (o2x): ocean → coupler
-   Array1DReal SurfaceTemperature;        ///< So_t    [°C]
-   Array1DReal SurfaceSalinity;           ///< So_s    [g kg⁻¹]
-   Array1DReal SurfaceVelocityZonal;      ///< So_u    [m s⁻¹]
-   Array1DReal SurfaceVelocityMeridional; ///< So_v    [m s⁻¹]
-   Array1DReal SSH;                       ///< So_ssh  [m]
-   Array1DReal SSHGradientZonal;          ///< So_dhdx [m m⁻¹]
-   Array1DReal SSHGradientMeridional;     ///< So_dhdy [m m⁻¹]
-   Array1DReal SeaIceFormationHeat;       ///< Fioo_q      [W m⁻²]
-   Array1DReal FrazilIceMass;             ///< Fioo_frazil [kg m⁻² s⁻¹]
-   Array1DReal FreshWaterHeatFlux;        ///< Faoo_h2otemp[W m⁻²]
+   CplToOcnFields(const std::string &Suffix, const HorzMesh *Mesh);
+};
 
-   // Public methods
-   int importFromCoupler(const Real *x2oData, int NFields, int NCells);
-   int exportToCoupler(Real *o2xData, int NFields, int NCells);
-   int applyImportFields(AuxiliaryState *AuxState);
-   int accumulateExportFields(const OceanState *State,
-                             const Array3DReal &TracerArray,
-                             int TimeLevel);
-   void resetAccumulators();
+// o2x: Ocean to Coupler. Averaged fields keep a private device array
+// (updated each ocean timestep, native Omega units) plus a public host
+// mirror (converted units, packed into the driver buffer). Device
+// arrays are private so external code cannot read them in native units
+// and mistake them for the (unit-converted) host mirrors.
+class OcnToCplFields {
+ public:
+   HostArray1DReal AvgSfcTemperatureH;     ///< So_t   [K], in situ approx
+   HostArray1DReal AvgSfcSalinityH;        ///< So_s   [g kg⁻¹], TODO: practical
+   HostArray1DReal AvgSfcVelocityZonalH;   ///< So_u   [m s⁻¹]
+   HostArray1DReal AvgSfcVelocityMeridH;   ///< So_v   [m s⁻¹]
+   HostArray1DReal InstSshCellH;           ///< So_ssh [m], instantaneous
+
+   void updateFields(const OceanState *State, const Array3DReal &TracerArray,
+                     I4 NAccumSteps, I4 NCellsOwned);
+   void copyToHost();
+   void resetFields();
+
+   OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh);
 
  private:
-   int NAccumSteps = 0;
-   Alarm CouplingAlarm;
-   std::map<std::string, int> ImportIdx;
-   std::map<std::string, int> ExportIdx;
-   CouplingLayout DataLayout;
+   Array1DReal AvgSfcTemperature;      ///< [°C], conservative temperature
+   Array1DReal AvgSfcSalinity;         ///< [g kg⁻¹], absolute salinity
+   Array1DReal AvgSfcVelocityZonal;
+   Array1DReal AvgSfcVelocityMerid;
 
-   static Real potTempToConservTemp(Real PotTemp, Real Salinity, Real Pressure);
-   static Real conservTempToPotTemp(Real ConsTemp, Real Salinity, Real Pressure);
+   // Scratch buffer for the in situ/Kelvin conversion in copyToHost()
+   Array1DReal InSituTempScratch;
 };
 ```
 
-### 4.2 Methods
+`updateFields` (accumulation) and the conversion in `copyToHost` both
+need direct access to the device arrays, so that logic lives on
+`OcnToCplFields` itself rather than on `SfcCoupling`;
+`SfcCoupling::updateExportFields` is now a thin wrapper that just calls
+`OcnToCpl.updateFields(...)` and increments `NAccumSteps`.
 
-#### 4.2.1 Creation
-
-The `create` method allocates import/export arrays sized to `NCellsOwned`, stores
-the field index maps and `DataLayout`, creates the coupling `Alarm`, and calls
-`registerFields`. After creation, `create` internally calls
-`accumulateExportState` once to populate the initial export state.
+Only the fields above are wired up in the initial implementation. The
+remaining fields from the original field list are deferred to follow-on
+work and added the same way (4.5): SW/LW heat fluxes, latent/sensible
+heat, snow/rain/evaporation, sea-ice and iceberg heat/freshwater fluxes,
+`SeaIceSaltFlux` (renamed from `SeaIceSalinityFlux`), river/ice runoff,
+ice fraction, `WindSpeed10m` (needed for KPP), sea-ice/atmospheric
+pressure, SSH gradients, sea-ice formation heat (to be renamed once
+sign-definite, e.g. melt potential), frazil ice mass, and freshwater heat
+flux.
 
 ```cpp
-SurfaceCoupling *SurfaceCoupling::create(
-   const std::string &Name, int OcnId, const HorzMesh *Mesh,
-   const std::map<std::string, int> &ImportIdx,
-   const std::map<std::string, int> &ExportIdx,
-   const TimeInterval &CplInterval, CouplingLayout Layout);
+class SfcCoupling {
+ public:
+   std::string Name;
+   I4 NCellsOwned;      ///< Number of cells owned by this task
+   I4 NImportFields;    ///< Num of fields in the x2o pointer array
+   I4 NExportFields;    ///< Num of fields in the o2x pointer array
+
+   CplToOcnFields CplToOcn; ///< Coupler to Ocean (x2o)
+   OcnToCplFields OcnToCpl; ///< Ocean to Coupler (o2x)
+   Alarm CouplingAlarm;     ///< Alarm for the coupling interval
+
+   // Unmanaged, strided views over the driver's raw x2o/o2x buffers
+   Kokkos::View<const Real **, Kokkos::LayoutStride, Kokkos::HostSpace,
+                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+       CplToOcnView;
+   Kokkos::View<Real **, Kokkos::LayoutStride, Kokkos::HostSpace,
+                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+       OcnToCplView;
+
+   static SfcCoupling *create(const std::string &Name, const HorzMesh *Mesh,
+                              int NImportFields, int NExportFields,
+                              const std::map<std::string, int> &ImportIdx,
+                              const std::map<std::string, int> &ExportIdx,
+                              TimeStepper *Stepper,
+                              const TimeInterval &CouplingTimeStep,
+                              const CouplingLayout &Layout);
+   static int init(const CouplingInitParams &Params);
+   ~SfcCoupling();
+   static void clear();
+   static void erase(const std::string Name);
+   static SfcCoupling *getDefault();
+   static SfcCoupling *get(const std::string Name);
+   I4 getNAccumSteps() const;
+
+   void attachData(const Real *CplToOcnData, Real *OcnToCplData);
+   void importFromCoupler();
+   void exportToCoupler();
+   void applyImportFields(Forcing *Forcing);
+   void updateExportFields(const OceanState *State,
+                           const Array3DReal &TracerArray);
+
+ private:
+   I4 NAccumSteps = 0;
+   CouplingLayout Layout;
+   std::map<std::string, int> ImportIdx;
+   std::map<std::string, int> ExportIdx;
+
+   template <class View> auto ownedSubView(const View &V) const;
+};
+```
+
+Temperature conversion (2.7) is implemented in `copyToHost` (4.2.5);
+practical-salinity conversion is a TODO, so `AvgSfcSalinityH` is still
+absolute salinity.
+
+### 4.2 Methods
+
+#### 4.2.1 Creation and Initialization
+
+`init` retrieves the default `HorzMesh` and `TimeStepper`, validates that
+the coupling interval is not shorter than, and is evenly divisible by, the
+ocean timestep (aborting otherwise), then calls `create` to build the
+default instance:
+```cpp
+static int SfcCoupling::init(const CouplingInitParams &Params);
+```
+`create` allocates the `CplToOcn`/`OcnToCpl` field containers sized to
+`NCellsOwned`, stores the index maps and `Layout`, and constructs
+`CouplingAlarm` on `Stepper`'s `Clock`:
+```cpp
+static SfcCoupling *SfcCoupling::create(
+    const std::string &Name, const HorzMesh *Mesh, int NImportFields,
+    int NExportFields, const std::map<std::string, int> &ImportIdx,
+    const std::map<std::string, int> &ExportIdx, TimeStepper *Stepper,
+    const TimeInterval &CouplingTimeStep, const CouplingLayout &Layout);
 ```
 
 #### 4.2.2 Retrieval
 
 ```cpp
-SurfaceCoupling *SurfaceCoupling::getDefault();
-SurfaceCoupling *SurfaceCoupling::get(const std::string &Name);
+SfcCoupling *SfcCoupling::getDefault();
+SfcCoupling *SfcCoupling::get(const std::string &Name);
 ```
 
-Other portions of the code can inquire whether running in coupled mode by
-doing:
+Other portions of the code can inquire whether it is running in coupled
+mode by doing:
 
 ```cpp
-if (!SurfaceCoupling::getDefault) {
-    // no instance of SurfaceCoupling, therefore running in standalone mode
+if (!SfcCoupling::getDefault()) {
+    // no instance of SfcCoupling, therefore running in standalone mode
 }
 ```
 
-#### 4.2.3 Import, Apply, Accumulate, Export
+#### 4.2.3 Attaching coupler data
 
-`importFromCoupler` unpacks the driver array into typed member arrays using
-the name→column-index map. The stride calculation is layout-dependent: MCT
-uses `col*NCells + i`, MOAB uses `i*NFields + col`. Unit conversions (e.g.,
-in situ → conservative temperature) and corrections (e.g. forcing shortwave
-radiation to be positive) are applied inline. The corrections are applied to
-address numerical issues, not and physical one, in the off chance monotonicity
-is not preserved during remapping.
+Before import/export, `attachData` wraps the driver's raw `x2o`/`o2x`
+pointers in unmanaged, layout-strided Kokkos views, computing the
+layout-dependent stride once rather than on every element access: MCT
+lays fields out as `(NCellsOwned, NImportFields)` (field index strides
+fastest), MOAB as `(NImportFields, NCellsOwned)` (cell index strides
+fastest).
+```cpp
+void SfcCoupling::attachData(const Real *CplToOcnData, Real *OcnToCplData);
+```
 
-`applyImportFields` copies imported fields from the `SurfaceCoupling` class
-into the appropriate arrays in the `Forcing` class. This method will be called
-directly after `importFromCoupler` is called, but outside of the coupled loop.
+#### 4.2.4 Import, Apply, Update, Export
 
-`accumulateExportFields` is called *within* the coupled loop, and adds the
-current-step values to running sums each ocean timestep. The accumulation
-step in agnostic of whether the fields are passed back to the coupler as
-sums or averages.
+`importFromCoupler` looks up each field's column index from `ImportIdx`
+and copies it out of `CplToOcnView` into the corresponding `CplToOcn`
+array.
 
-`exportToCoupler` packs export arrays into the driver array. This function is
-called directly after the coupled loop. State fields are divided by
-`NAccumSteps` (interval mean); flux fields are packed directly (interval total);
-and `SSH` is passed as an instantaneous field.
+`applyImportFields` deep-copies `CplToOcn` arrays into the matching
+`Forcing` arrays (e.g. `Forcing->SfcStressForcing.ZonalStressCell`),
+restricted to the owned-cell subview since `SfcCoupling` has no halo
+information; `Forcing` is responsible for the halo exchange. Called once
+per coupling interval, directly after `importFromCoupler`, outside the
+ocean timestep loop.
 
-`resetAccumulators` zeroes all export arrays and sets `NAccumSteps = 0`.
+`updateExportFields` is called *within* the ocean timestep loop. It
+updates each `OcnToCpl` running average in place using Welford's
+algorithm (3), then increments `NAccumSteps`. Velocity currently uses a
+placeholder constant (`1e-4`) pending vector reconstruction, to avoid
+producing zero (and therefore divide-by-zero/infinite flux) velocities
+downstream in the coupler; this is a known limitation to revisit before
+production use.
 
-A rough sketch of how/when these function will be called within `OcnRun` looks
-like:
+`exportToCoupler` calls `OcnToCpl.copyToHost()`, which converts and
+copies device arrays to their host mirrors (SSH is read directly from
+`VertCoord`'s host SSH array, since it is instantaneous and not
+accumulated), then packs the host mirrors into `OcnToCplView` at their
+export indices, then resets `OcnToCpl` and `NAccumSteps` for the next
+interval. Resetting is folded into `exportToCoupler`; there is no
+separate `resetAccumulators` call in the run loop.
+
+A rough sketch of how/when these functions are called within `OcnRun`:
 
 ```cpp
-// fetch default OceanState, TimeStepper, and SurfaceCoupler
+// fetch default OceanState, TimeStepper, and SfcCoupling
 OceanState *DefOceanState   = OceanState::getDefault();
 TimeStepper *DefTimeStepper = TimeStepper::getDefault();
-SurfaceCoupler *DefSurfaceCoupler = SurfaceCoupler::getDefault();
+SfcCoupling *DefSfcCoupling = SfcCoupling::getDefault();
 
-// get coupling alarm
-Alarm *CouplingAlarm = DefTimeStepper->getCouplingAlarm();
+DefSfcCoupling->attachData(CplToOcnData, OcnToCplData);
 
 // these two could be wrapped into a single call
-DefSurfaceCoupler->importFromCoupler(...);
-DefSurfaceCoupler->applyImportFields(...);
+DefSfcCoupling->importFromCoupler();
+DefSfcCoupling->applyImportFields(DefForcing);
 
-while (Err == 0 && !(CouplingAlarm->isRinging())) {
+while (Err == 0 && !(DefSfcCoupling->CouplingAlarm.isRinging())) {
 
    DefTimeStepper->doStep(DefOceanState, SimTime);
 
-   DefSurfaceCoupler->accumulateExportFields(...);
+   DefSfcCoupling->updateExportFields(DefOceanState, TracerArray);
 
 }
 
-// if coupler tells us, force write restate stream
+// if coupler tells us, force write restart stream
 
-DefSurfaceCoupler->exportToCoupler(...);
-
-// Reset accumulators
-DefSurfaceCoupler->resetAccumulators(...);
+DefSfcCoupling->exportToCoupler(); // also resets accumulators
 ```
 
-#### 4.2.4 Conversion Methods
+#### 4.2.5 Conversion Methods
 
-Temperature conversion between conservative (Omega internal) and in situ
-(coupler expectation) is handled as private static methods. Similar handling
-will occur for salinity with conversion between absolute (Omega internal) and
-practical (MPAS-Seaice expectation).
+Conversion happens in `copyToHost`, once per coupling interval rather
+than every ocean timestep, since the EOS conversion polynomial is
+expensive. Conservative temperature is converted to potential
+temperature via a local `Teos10Eos` instance's `calcPtFromCt` (only
+under `EosType::Teos10Eos`; otherwise passed through unconverted), then
+shifted to Kelvin (`+ TkFrz`) as an in situ approximation. The result is
+written to a private scratch buffer (`InSituTempScratch`) rather than
+in place, so the device `AvgSfcTemperature` array driving the running
+average (3) always stays in native (deg C, conservative) units. A
+local `Teos10Eos` is constructed rather than reusing `Eos::getInstance()`
+since `calcPtFromCt` needs no config-derived state, avoiding exposure of
+`Eos` internals. Salinity conversion (absolute → practical) is a TODO;
+`AvgSfcSalinityH` is currently absolute salinity, copied through
+unconverted.
 
-#### 4.2.5 Destruction and removal
+The device arrays backing the conversion (`AvgSfcTemperature`,
+`AvgSfcSalinity`, ...) are private members of `OcnToCplFields`; only the
+post-conversion host mirrors are public. This prevents external code
+from reading the native-unit device arrays and confusing them with the
+converted host mirrors -- a hazard motivated by `copyToHost` itself
+needing to reach into `VertCoord::SshCell` (a raw device array) to
+populate `InstSshCellH`, which showed how easy it is to mix up
+device/host and native/converted units without this guard.
+
+#### 4.2.6 Destruction and removal
 
 ```cpp
-void SurfaceCoupling::erase(const std::string &Name);
-void SurfaceCoupling::clear();
+static void SfcCoupling::erase(const std::string Name);
+static void SfcCoupling::clear();
 ```
+The destructor does not detach `CouplingAlarm` from the shared `Clock`;
+callers must ensure `SfcCoupling` instances outlive the `Clock`, consistent
+with other `Alarm` owners in Omega.
 
 ### 4.3 Driver Interface Bridge
 
-The bridge layer in `src/drivers/coupled/` provides `extern "C"` entry points
-called from the Fortran driver (`ocn_comp_mct.F90`). The coupling interval
-and ocean timestep are independent: the driver calls `ocn_run_mct` once per
-coupling interval; the ocean *can* take multiple timesteps within the coupling
-interval.
+The bridge layer in `src/drivers/coupled/` is not yet implemented; it will
+provide `extern "C"` entry points, called from the Fortran driver
+(`ocn_comp_mct.F90`), that build a `CouplingInitParams` and call
+`SfcCoupling::init`. The coupling interval and ocean timestep are
+independent: the driver calls `ocn_run_mct` once per coupling interval;
+the ocean can take multiple timesteps within it.
 
 #### 4.3.1 Name-based Field Index Mapping
 
-At startup, the Fortran bridge populates parallel arrays of Omega field names
-and driver column indices, then passes them to `omega_ocn_init`. C++ builds
-`std::map<std::string, int>` objects for import/export lookups. This approach
-is driver-agnostic: MCT and MOAB differ only in how column indices are
-obtained. Field names are passed as fixed-length null-terminated character
-arrays (standard Fortran-C interop), parsed by stepping through the flat
-array at stride `FieldNameLen`.
+At startup, the Fortran bridge will populate parallel arrays of Omega
+field names and driver column indices and pass them into
+`CouplingInitParams::ImportIdx`/`ExportIdx`. This approach is
+driver-agnostic: MCT and MOAB differ only in how column indices are
+obtained.
 
 ### 4.4 Interval Accumulation
 
-Export state fields are accumulated each ocean timestep and divided by
-`NAccumSteps` at export time (interval mean). Export flux fields are
-accumulated and packed directly without dividing (interval total).
-`resetAccumulators` is called by `omega_ocn_export` after packing.
+Export fields accumulate a running average each ocean timestep via
+Welford's algorithm (3), in native Omega units; `SSH` is read directly
+from its source at export time instead of being accumulated. Unit
+conversion (4.2.5) is deferred to `copyToHost`/`exportToCoupler`, so it
+runs once per interval rather than once per accumulation step.
+`exportToCoupler` resets all accumulators after packing, so no separate
+reset call is needed in the run loop. Interval summation (as opposed to
+averaging), needed for flux-like fields, is not yet implemented; it can
+reuse `NAccumSteps` (average x steps) or a dedicated accumulation path
+once flux fields are added.
 
 ### 4.5 Extensibility
 
 To add a new coupling field:
-1. Add an `Array1DReal` member to `SurfaceCoupling.h`
-2. Add the field registration in `registerFields()`
-3. Add an unpack/pack call in `importFromCoupler`/`exportToCoupler`
-4. Add the name/index entry in the Fortran bridge file
-5. Fill the field in `applyImportFields()` or `accumulateExportFields()`
+1. Add an `Array1DReal`/`HostArray1DReal` member to `CplToOcnFields` or
+   `OcnToCplFields` in `SfcCoupling.h`, and initialize it in the
+   corresponding constructor
+2. Add an unpack/pack call in `importFromCoupler`/`exportToCoupler` (and,
+   for export fields, an update in `updateExportFields`)
+3. Add the name/index entry in the Fortran bridge file
+4. Fill the field in `applyImportFields()` or `updateExportFields()`
 
 No changes to method signatures or ordering constraints are needed.
 
 ## 5 Verification and Testing
 
-### 5.1 Test: Import/export round-trip
+### 5.1 Test: Import round-trip
 
-Create synthetic coupling arrays with known values, call
-`importFromCoupler`, verify member arrays match expected values. Pack
-export arrays and verify the output matches. Test both MCT and MOAB
-layouts.
-  - tests requirement 2.1, 2.2
+Attach synthetic `x2o` buffers with known, cell-varying values, call
+`importFromCoupler`, and verify the `CplToOcn` arrays match expected
+values. Test both MCT and MOAB layouts.
+  - tests requirement 2.1, 2.2, 2.5
 
-### 5.2 Test: Interval averaging for state fields
+### 5.2 Test: Apply imported fields to Forcing
 
-Accumulate the same state values over multiple simulated timesteps,
-export, and verify the output equals the mean.
-  - tests requirement 2.4
+Populate `CplToOcn` arrays directly, call `applyImportFields`, and verify
+the owned-cell subview of the matching `Forcing` arrays matches.
+  - tests requirement 2.1, 2.4
 
-### 5.3 Test: Interval summation for flux fields
+### 5.3 Test: Running-average accumulation and conversion
 
-Accumulate flux values over multiple timesteps, export, and verify the
-output equals the total sum (not divided).
-  - tests requirement 2.4
+Advance the model clock through a known number of ocean timesteps within
+one coupling interval, calling `updateExportFields` with cell- and
+step-varying tracer values each timestep (using the coupling `Alarm` to
+end the loop, as in the sketch in 4.2.4). Verify `NAccumSteps` matches
+the step count and, after `copyToHost` (the only sanctioned way to read
+the averages), the resulting host-mirror averages match the analytic
+mean within round-off tolerance. `EosType` is forced to `constant` for
+the test suite so `calcPtFromCt` is an identity, isolating the `+TkFrz`
+Kelvin shift; salinity is checked unconverted (practical conversion is a
+TODO).
+  - tests requirement 2.4, 2.6, 2.7
 
-### 5.4 Test: Name-keyed field mapping
+### 5.4 Test: Export round-trip and reset
 
-Build the name→index map with different fill orders and verify
-import/export produces correct results regardless of order. Request an
-unknown field name and verify error logging.
-  - tests requirement 2.2, 2.8
+Populate `OcnToCpl` averages via `updateExportFields` (seeded to the
+target value using `NAccumSteps == 0`), call `exportToCoupler`, and
+verify the packed `o2x` buffer matches expected values (temperature
+offset by `TkFrz`) for both MCT and MOAB layouts. Also verify `OcnToCpl`
+host mirrors and `NAccumSteps` are zeroed afterward.
+  - tests requirement 2.1, 2.4, 2.5, 2.7
 
-### 5.5 Test: Coupling alarm
+### 5.5 Test: Object lifecycle
 
-Create a `SurfaceCoupling` with a known coupling interval. Advance the
-simulation clock and verify the coupling alarm rings at the expected
-interval boundaries and does not ring between them.
-  - tests requirement 2.6
-
-### 5.6 Test: Coupling loop integration
-
-Simulate a complete coupling interval: import, run multiple ocean
-timesteps with accumulation, export, and reset. Verify the full
-import → accumulate → export → reset cycle produces correct results and
-that the accumulators are properly zeroed for the next interval.
-  - tests requirement 2.4, 2.6
+Create a non-default, named `SfcCoupling`, verify it can be retrieved
+with `get`, erase it, and verify retrieval afterward fails.
+  - tests requirement 2.8
