@@ -95,9 +95,14 @@ a template can be:
    if the file already exists. Acceptable options are:
    - Fail if you want the code to exit with an error
    - Replace if you want to replace the existing file with the new file
-   - Append if you want to append (eg multiple time slices) to the existing
-     file. When re-running an interval, this will also over-write existing
+   - Append if you want to write multiple time slices to a file. When
+     re-running an existing time interval, this will also over-write existing
      slices corresponding to the simulation time if they exist in the file.
+     For this option, both FileFreq and FileFreqUnits must be supplied to
+     determine how many frames or time slices are to be written per file.
+     In the special case (eg testing) where all slices are to be written
+     to a single file, choose a frequency option longer than the simulation
+     duration.
 - **FileFormat:** An optional field that can be used if the file has a format
    incompatible with the default IO format. If not supplied, the stream
    will use the default format.
@@ -121,16 +126,17 @@ a template can be:
    - Hours for a frequency every Freq hours (*not* Freq times per hour)
    - Minutes for a frequency every Freq minutes (*not* Freq times per minute)
    - Seconds for a frequency every Freq seconds (*not* Freq times per seconds)
-- **FileFreq:** An optional entry for including multiple time slices in a
-   single file (only supported for output presently)
+- **FileFreq:** An entry determining the frequency of file writes when
+   including multiple time slices in a single file. This is only required if the
+   IfExists append option is used and is only supported for output presently.
 - **FileFreqUnits:** A field that, combined with the integer frequency,
    determines the frequency of new files when multiple time slices are
    included in a file. The file frequency must be less than or equal to
    the data frequency. Acceptable values include all of the frequency values
    listed above except the one-time values (eg OnStartup/Shutdown or AtTime).
-   The filename template should reflect the frequency and the time used for
-   the file will correspond to the template at the time the file is first
-   opened.
+   The filename template should reflect the file frequency. The time used for
+   the filename will correspond to the template at the time the file is first
+   opened (ie the beginning of the file frequency interval).
 - **UseStartEnd:** A required entry that is true or false and is used if the
    I/O is desired only within a certain time interval. An example might be
    for specifying high-frequency output within a certain period of a simulation.
