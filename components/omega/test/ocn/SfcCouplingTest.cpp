@@ -5,6 +5,7 @@
 #include "Eos.h"
 #include "Field.h"
 #include "Forcing.h"
+#include "GlobalConstants.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -91,6 +92,13 @@ int initSfcCouplingTest(const std::string &MeshFile) {
    Config("Omega");
    Config::readAll("omega.yml");
 
+   // Force ConstantEos so calcPtFromCt() is a no-op, letting tests below use
+   // simple mocked Temperature/Salinity without the TEOS-10 polynomial
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config EosConfig("Eos");
+   OmegaConfig->get(EosConfig);
+   EosConfig.set("EosType", std::string("constant"));
+
    // Initialize time stepper and get model clock
    TimeStepper::init1();
    TimeStepper *DefStepper = TimeStepper::getDefault();
@@ -121,6 +129,7 @@ int initSfcCouplingTest(const std::string &MeshFile) {
    }
 
    Eos::init();
+
    Forcing::init();
    Tracers::init();
 
@@ -288,17 +297,19 @@ int testUpdateExportFields(const I4 NSteps) {
                 DefCoupling->getNAccumSteps(), NSteps);
    }
 
-   auto AvgTempH =
-       createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcTemperature);
-   auto AvgSalinH = createHostMirrorCopy(DefCoupling->OcnToCpl.AvgSfcSalinity);
+   // copyToHost() is the only sanctioned way to read the averages; it also
+   // converts temp to in-situ Kelvin (identity CT->PT w/ ConstantEos)
+   DefCoupling->OcnToCpl.copyToHost();
+   auto &AvgTempH  = DefCoupling->OcnToCpl.AvgSfcTemperatureH;
+   auto &AvgSalinH = DefCoupling->OcnToCpl.AvgSfcSalinityH;
 
    // Only accumulated round-off error (no discretization/truncation error),
    // so use a tighter tolerance than tests comparing against analytic
    // solutions of numerical operators.
-   Real RTol       = sizeof(Real) == 4 ? 1e-5 : 1e-10;
-   Real StepOffset = static_cast<Real>(NSteps - 1) / 2.0;
-   HostArray1DReal ExpectedTemp =
-       makeCellVarryingArray("ExpectedTemp", NCells, TempBase + StepOffset);
+   Real RTol                    = sizeof(Real) == 4 ? 1e-5 : 1e-10;
+   Real StepOffset              = static_cast<Real>(NSteps - 1) / 2.0;
+   HostArray1DReal ExpectedTemp = makeCellVarryingArray(
+       "ExpectedTemp", NCells, TempBase + StepOffset + TkFrz);
    HostArray1DReal ExpectedSalin =
        makeCellVarryingArray("ExpectedSalin", NCells, SalinBase + StepOffset);
 
@@ -354,6 +365,7 @@ int testExportToCoupler(const CouplingLayout Layout) {
    Err += SfcCoupling::init(CouplingParams);
 
    SfcCoupling *DefCoupling = SfcCoupling::getDefault();
+   OceanState *DefState     = OceanState::getDefault();
    VertCoord *DefVertCoord  = VertCoord::getDefault();
 
    int NCells   = DefCoupling->NCellsOwned;
@@ -365,8 +377,6 @@ int testExportToCoupler(const CouplingLayout Layout) {
 
    int TempIdx  = CouplingParams.ExportIdx.at("So_t");
    int SalinIdx = CouplingParams.ExportIdx.at("So_s");
-   int VelUIdx  = CouplingParams.ExportIdx.at("So_u");
-   int VelVIdx  = CouplingParams.ExportIdx.at("So_v");
    int SshIdx   = CouplingParams.ExportIdx.at("So_ssh");
 
    DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
@@ -375,17 +385,26 @@ int testExportToCoupler(const CouplingLayout Layout) {
        makeCellVarryingArray("ExpectedTemp", NCells, Real(TempIdx));
    HostArray1DReal ExpectedSalin =
        makeCellVarryingArray("ExpectedSalin", NCells, Real(SalinIdx));
-   HostArray1DReal ExpectedVelU =
-       makeCellVarryingArray("ExpectedVelU", NCells, Real(VelUIdx));
-   HostArray1DReal ExpectedVelV =
-       makeCellVarryingArray("ExpectedVelV", NCells, Real(VelVIdx));
    HostArray1DReal ExpectedSsh =
        makeCellVarryingArray("ExpectedSsh", NCells, Real(SshIdx));
 
-   deepCopy(DefCoupling->OcnToCpl.AvgSfcTemperature, ExpectedTemp);
-   deepCopy(DefCoupling->OcnToCpl.AvgSfcSalinity, ExpectedSalin);
-   deepCopy(DefCoupling->OcnToCpl.AvgSfcVelocityZonal, ExpectedVelU);
-   deepCopy(DefCoupling->OcnToCpl.AvgSfcVelocityMerid, ExpectedVelV);
+   // Seed the averages through the public API: at NAccumSteps == 0,
+   // Welford's update reduces to AvgSfc* := mocked value, so one call sets
+   // the averages to exactly ExpectedTemp/ExpectedSalin.
+   I4 TempTracerIdx, SalinTracerIdx;
+   Tracers::getIndex(TempTracerIdx, "Temperature");
+   Tracers::getIndex(SalinTracerIdx, "Salinity");
+
+   HostArray2DReal TempH  = Tracers::getHostByIndex(0, TempTracerIdx);
+   HostArray2DReal SalinH = Tracers::getHostByIndex(0, SalinTracerIdx);
+   for (int Cell = 0; Cell < NCells; Cell++) {
+      int KSfc           = DefVertCoord->MinLayerCell(Cell);
+      TempH(Cell, KSfc)  = ExpectedTemp(Cell);
+      SalinH(Cell, KSfc) = ExpectedSalin(Cell);
+   }
+   Tracers::copyToDevice(0);
+
+   DefCoupling->updateExportFields(DefState, Tracers::getAll(0));
 
    auto SshCellOwned =
        Kokkos::subview(DefVertCoord->SshCell, std::pair(0, NCells));
@@ -393,23 +412,19 @@ int testExportToCoupler(const CouplingLayout Layout) {
 
    DefCoupling->exportToCoupler();
 
-   // Check 1: exportToCoupler properly packs into OcnToCplView
+   // Check 1: exportToCoupler properly packs into OcnToCplView. Velocity
+   // is skipped here: its averaging is a hardcoded stub pending real vector
+   // reconstruction (see OcnToCplFields::updateAverages), not yet
+   // meaningful to check.
+   // copyToHost() converts temp to Kelvin (identity CT->PT w/ ConstantEos)
    int PackErr = 0;
    for (int Cell = 0; Cell < NCells; Cell++) {
       if (OcnToCplData[flatIdx(Layout, Cell, TempIdx, NCells, NExports)] !=
-          ExpectedTemp(Cell)) {
+          ExpectedTemp(Cell) + TkFrz) {
          PackErr++;
       }
       if (OcnToCplData[flatIdx(Layout, Cell, SalinIdx, NCells, NExports)] !=
           ExpectedSalin(Cell)) {
-         PackErr++;
-      }
-      if (OcnToCplData[flatIdx(Layout, Cell, VelUIdx, NCells, NExports)] !=
-          ExpectedVelU(Cell)) {
-         PackErr++;
-      }
-      if (OcnToCplData[flatIdx(Layout, Cell, VelVIdx, NCells, NExports)] !=
-          ExpectedVelV(Cell)) {
          PackErr++;
       }
       if (OcnToCplData[flatIdx(Layout, Cell, SshIdx, NCells, NExports)] !=
@@ -432,12 +447,16 @@ int testExportToCoupler(const CouplingLayout Layout) {
    HostArray1DReal ZeroArray("ZeroArray", NCells);
    deepCopy(ZeroArray, 0.0);
 
+   // AvgSfcTemperatureH holds Kelvin, so a reset (0 degC) mirrors to TkFrz
+   HostArray1DReal ZeroTempArray("ZeroTempArray", NCells);
+   deepCopy(ZeroTempArray, TkFrz);
+
    // Refresh OcnToCpl's own host mirrors post-reset, rather than creating
    // separate test-only mirrors
    DefCoupling->OcnToCpl.copyToHost();
 
    int ResetErr = 0;
-   if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcTemperatureH, ZeroArray))
+   if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcTemperatureH, ZeroTempArray))
       ResetErr++;
    if (!arraysEqual(DefCoupling->OcnToCpl.AvgSfcSalinityH, ZeroArray))
       ResetErr++;

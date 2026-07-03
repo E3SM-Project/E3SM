@@ -59,6 +59,18 @@ Export fields are accumulated (running average) each ocean time step with:
 SfcCoupling.updateExportFields(State, TracerArray);
 ```
 
+## Units
+
+`OcnToCplFields`'s averaged temperature is Conservative Temperature (deg C)
+on device (`AvgSfcTemperature`), invariant at all times. `copyToHost()`
+converts it to in-situ temperature in Kelvin (via TEOS-10, when in use)
+into the host mirror `AvgSfcTemperatureH`, once per coupling interval.
+All other averaged fields keep the same units and value on host and device.
+
+To keep this invariant, `OcnToCplFields`'s averaged device arrays are
+private: they can only be written via `updateAverages()` (called each
+ocean time step from `updateExportFields()`) and read via `copyToHost()`.
+
 ## Removal of surface coupling objects
 
 To erase a specific named instance use `erase`:

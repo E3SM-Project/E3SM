@@ -56,42 +56,53 @@ class CplToOcnFields {
 // o2x: Ocean to Coupler
 class OcnToCplFields {
  public:
-   ///< So_t    [deg C]
-   Array1DReal AvgSfcTemperature;
+   ///< So_t    [K], in-situ approx (potential temp at P=0)
    HostArray1DReal AvgSfcTemperatureH;
 
-   ///< So_s    [g kg^-1]
-   Array1DReal AvgSfcSalinity;
+   /// TODO: Export practical salinity (unitless) to coupler
+   ///< So_s    [g kg^-1], absolute salinity
    HostArray1DReal AvgSfcSalinityH;
 
    ///< So_u    [m s^-1]
-   Array1DReal AvgSfcVelocityZonal;
    HostArray1DReal AvgSfcVelocityZonalH;
 
    ///< So_v    [m s^-1]
-   Array1DReal AvgSfcVelocityMerid;
    HostArray1DReal AvgSfcVelocityMeridH;
 
    ///< So_ssh [m]
    /// instantaneous field, so no device mirror is needed
    HostArray1DReal InstSshCellH;
 
-   // Refresh host mirrors from their devide counterparts
+   // Accumulate one ocean timestep's contribution to the running averages
+   void updateAverages(const OceanState *State, const Array3DReal &TracerArray,
+                       I4 NAccumSteps, I4 NCellsOwned);
+
+   // Copy device arrays into their host mirrros and do unit conversion.
    void copyToHost();
 
    // Reset all fields to 0
    void resetFields();
 
    OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh);
+
+ private:
+   // Device arrays are private to prevent any code from mirroring to host
+   // except through copyToHost(), so that the different unit bewteen the
+   // device and host mirrors of temperature and salinity are not exposed to
+   // the rest of the code.
+   Array1DReal AvgSfcTemperature; // [C], conservative temperature
+   Array1DReal AvgSfcSalinity;    // [g kg^-1], absolute salinity
+   Array1DReal AvgSfcVelocityZonal;
+   Array1DReal AvgSfcVelocityMerid;
+
+   // Scratch buffer for the in-situ Kelvin conversion in copyToHost()
+   Array1DReal InSituTempScratch; // [K], in-situ approx (potential temp at P=0)
 };
 
 /// A class for interfacing with the coupler
 
 /// The SfcCoupling class provides a container for the variables exchanged
-/// to (o2x) and from (x2o) the coupler. It containes methods to handle the
-/// import and export of raw data from the coupler, unit conversion of said
-/// data, application of that data to the model state, and accumulation of the
-/// data for avergaing or sumation over multiple ocean time steps.
+/// to (o2x) and from (x2o) the coupler.
 class SfcCoupling {
 
  private:

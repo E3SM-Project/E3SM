@@ -1,4 +1,6 @@
 #include "SfcCoupling.h"
+#include "Eos.h"
+#include "GlobalConstants.h"
 #include "Logging.h"
 #include "OceanState.h"
 #include "OmegaKokkos.h"
@@ -255,44 +257,7 @@ void SfcCoupling::applyImportFields(Forcing *Forcing) {
 void SfcCoupling::updateExportFields(const OceanState *State,
                                      const Array3DReal &TracerArray) {
 
-   I4 TemperatureIdx, SalinityIdx;
-   Tracers::getIndex(TemperatureIdx, "Temperature");
-   Tracers::getIndex(SalinityIdx, "Salinity");
-
-   auto Temperature =
-       Kokkos::subview(TracerArray, TemperatureIdx, Kokkos::ALL, Kokkos::ALL);
-   auto Salinity =
-       Kokkos::subview(TracerArray, SalinityIdx, Kokkos::ALL, Kokkos::ALL);
-
-   VertCoord *DefVertCoord = VertCoord::getDefault();
-   OMEGA_SCOPE(LocMinLayerCell, DefVertCoord->MinLayerCell);
-
-   OMEGA_SCOPE(LocNAccumSteps, NAccumSteps);
-   OMEGA_SCOPE(LocAvgSfcSalinity, OcnToCpl.AvgSfcSalinity);
-   OMEGA_SCOPE(LocAvgSfcTemp, OcnToCpl.AvgSfcTemperature);
-   OMEGA_SCOPE(LocAvgSfcVelZonal, OcnToCpl.AvgSfcVelocityZonal);
-   OMEGA_SCOPE(LocAvgSfcVelMerid, OcnToCpl.AvgSfcVelocityMerid);
-
-   // TODO: Implement vector reconsturction for velocity field.
-   constexpr Real ConstSfcVelocity = 1e-4;
-
-   parallelFor(
-       {NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
-          const int KSfc = LocMinLayerCell(ICell);
-
-          // Update the averaged fields using Welford's online algorithm
-          LocAvgSfcTemp(ICell) = updateAverage(
-              LocAvgSfcTemp(ICell), Temperature(ICell, KSfc), LocNAccumSteps);
-
-          LocAvgSfcSalinity(ICell) = updateAverage(
-              LocAvgSfcSalinity(ICell), Salinity(ICell, KSfc), LocNAccumSteps);
-
-          LocAvgSfcVelZonal(ICell) = updateAverage(
-              LocAvgSfcVelZonal(ICell), ConstSfcVelocity, LocNAccumSteps);
-
-          LocAvgSfcVelMerid(ICell) = updateAverage(
-              LocAvgSfcVelMerid(ICell), ConstSfcVelocity, LocNAccumSteps);
-       });
+   OcnToCpl.updateAverages(State, TracerArray, NAccumSteps, NCellsOwned);
 
    NAccumSteps++;
 }
@@ -307,7 +272,8 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
       AvgSfcVelocityZonal("AvgSfcVelocityZonal" + Suffix, Mesh->NCellsOwned),
       AvgSfcVelocityMerid("AvgSfcVelocityMeridional" + Suffix,
                           Mesh->NCellsOwned),
-      InstSshCellH("InstSshCellH" + Suffix, Mesh->NCellsOwned) {
+      InstSshCellH("InstSshCellH" + Suffix, Mesh->NCellsOwned),
+      InSituTempScratch("InSituTempScratch" + Suffix, Mesh->NCellsOwned) {
 
    // Kokkok views created with a label are zero-initialized by default.
    // We reset the feilds here anyway to be explicit about the fact that the
@@ -320,9 +286,82 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
    AvgSfcVelocityMeridH = createHostMirrorCopy(AvgSfcVelocityMerid);
 }
 
+void OcnToCplFields::updateAverages(const OceanState *State,
+                                    const Array3DReal &TracerArray,
+                                    const I4 NAccumSteps,
+                                    const I4 NCellsOwned) {
+
+   I4 TemperatureIdx, SalinityIdx;
+   Tracers::getIndex(TemperatureIdx, "Temperature");
+   Tracers::getIndex(SalinityIdx, "Salinity");
+
+   auto Temperature =
+       Kokkos::subview(TracerArray, TemperatureIdx, Kokkos::ALL, Kokkos::ALL);
+   auto Salinity =
+       Kokkos::subview(TracerArray, SalinityIdx, Kokkos::ALL, Kokkos::ALL);
+
+   VertCoord *DefVertCoord = VertCoord::getDefault();
+
+   OMEGA_SCOPE(LocMinLayerCell, DefVertCoord->MinLayerCell);
+   OMEGA_SCOPE(LocAvgSfcSalinity, AvgSfcSalinity);
+   OMEGA_SCOPE(LocAvgSfcTemp, AvgSfcTemperature);
+   OMEGA_SCOPE(LocAvgSfcVelZonal, AvgSfcVelocityZonal);
+   OMEGA_SCOPE(LocAvgSfcVelMerid, AvgSfcVelocityMerid);
+
+   // TODO: Implement vector reconsturction for velocity field.
+   constexpr Real ConstSfcVelocity = 1e-4;
+
+   parallelFor(
+       {NCellsOwned}, KOKKOS_LAMBDA(int ICell) {
+          const int KSfc = LocMinLayerCell(ICell);
+
+          // Update the averaged fields using Welford's online algorithm
+          LocAvgSfcTemp(ICell) = updateAverage(
+              LocAvgSfcTemp(ICell), Temperature(ICell, KSfc), NAccumSteps);
+
+          LocAvgSfcSalinity(ICell) = updateAverage(
+              LocAvgSfcSalinity(ICell), Salinity(ICell, KSfc), NAccumSteps);
+
+          LocAvgSfcVelZonal(ICell) = updateAverage(
+              LocAvgSfcVelZonal(ICell), ConstSfcVelocity, NAccumSteps);
+
+          LocAvgSfcVelMerid(ICell) = updateAverage(
+              LocAvgSfcVelMerid(ICell), ConstSfcVelocity, NAccumSteps);
+       });
+}
+
+// Conversion from conservative [C] to in-situ [K] temperature is done on
+// the device, as well as conversion from practical to absolute salinity.
+// This allows the expensive unit conversions to be called on device, once
+// per coupling interval. Conversion is written to scratch buffers, to
+// keep units consitent in time. Special care is paid to guard extenal
+// access to the device arrays, so that inconsitent units between the device
+// and host mirrors are not exposed to the rest of the code.
 void OcnToCplFields::copyToHost() {
 
-   deepCopy(AvgSfcTemperatureH, AvgSfcTemperature);
+   // Convert averaged Conservative Temp to in-situ (approx by potential
+   // temp at P=0) Kelvin, once per coupling interval, on device. Written
+   // into a scratch buffer so AvgSfcTemperature always stays deg C.
+   // A local Teos10Eos is constructed here rather than reusing Eos's
+   // instance: calcPtFromCt() needs no config-derived state (fixed
+   // polynomial coefficients only), so this avoids exposing Eos internals.
+   EosType LocEosChoice = Eos::getInstance()->EosChoice;
+   Teos10Eos LocTeos10(VertCoord::getDefault());
+   OMEGA_SCOPE(LocAvgSfcTemp, AvgSfcTemperature);
+   OMEGA_SCOPE(LocAvgSfcSalinity, AvgSfcSalinity);
+   OMEGA_SCOPE(LocInSituTemp, InSituTempScratch);
+
+   parallelFor(
+       {(int)AvgSfcTemperature.extent(0)}, KOKKOS_LAMBDA(int Cell) {
+          const Real Ct       = LocAvgSfcTemp(Cell);
+          const Real Sa       = LocAvgSfcSalinity(Cell);
+          const Real Pt       = LocEosChoice == EosType::Teos10Eos
+                                    ? LocTeos10.calcPtFromCt(Sa, Ct)
+                                    : Ct;
+          LocInSituTemp(Cell) = Pt + TkFrz;
+       });
+
+   deepCopy(AvgSfcTemperatureH, InSituTempScratch);
    deepCopy(AvgSfcSalinityH, AvgSfcSalinity);
    deepCopy(AvgSfcVelocityZonalH, AvgSfcVelocityZonal);
    deepCopy(AvgSfcVelocityMeridH, AvgSfcVelocityMerid);
