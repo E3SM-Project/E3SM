@@ -257,7 +257,7 @@ void SfcCoupling::applyImportFields(Forcing *Forcing) {
 void SfcCoupling::updateExportFields(const OceanState *State,
                                      const Array3DReal &TracerArray) {
 
-   OcnToCpl.updateAverages(State, TracerArray, NAccumSteps, NCellsOwned);
+   OcnToCpl.updateFields(State, TracerArray, NAccumSteps, NCellsOwned);
 
    NAccumSteps++;
 }
@@ -276,7 +276,7 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
       InSituTempScratch("InSituTempScratch" + Suffix, Mesh->NCellsOwned) {
 
    // Kokkok views created with a label are zero-initialized by default.
-   // We reset the feilds here anyway to be explicit about the fact that the
+   // We reset the fields here anyway to be explicit about the fact that the
    // OcnToCpl fields need to being a coupling interval with all zeros.
    resetFields();
 
@@ -286,10 +286,9 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
    AvgSfcVelocityMeridH = createHostMirrorCopy(AvgSfcVelocityMerid);
 }
 
-void OcnToCplFields::updateAverages(const OceanState *State,
-                                    const Array3DReal &TracerArray,
-                                    const I4 NAccumSteps,
-                                    const I4 NCellsOwned) {
+void OcnToCplFields::updateFields(const OceanState *State,
+                                  const Array3DReal &TracerArray,
+                                  const I4 NAccumSteps, const I4 NCellsOwned) {
 
    I4 TemperatureIdx, SalinityIdx;
    Tracers::getIndex(TemperatureIdx, "Temperature");
@@ -334,8 +333,8 @@ void OcnToCplFields::updateAverages(const OceanState *State,
 // the device, as well as conversion from practical to absolute salinity.
 // This allows the expensive unit conversions to be called on device, once
 // per coupling interval. Conversion is written to scratch buffers, to
-// keep units consitent in time. Special care is paid to guard extenal
-// access to the device arrays, so that inconsitent units between the device
+// keep units consistent in time. Special care is paid to guard external
+// access to the device arrays, so that inconsistent units between the device
 // and host mirrors are not exposed to the rest of the code.
 void OcnToCplFields::copyToHost() {
 

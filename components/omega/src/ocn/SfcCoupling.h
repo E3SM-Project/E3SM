@@ -74,10 +74,10 @@ class OcnToCplFields {
    HostArray1DReal InstSshCellH;
 
    // Accumulate one ocean timestep's contribution to the running averages
-   void updateAverages(const OceanState *State, const Array3DReal &TracerArray,
-                       I4 NAccumSteps, I4 NCellsOwned);
+   void updateFields(const OceanState *State, const Array3DReal &TracerArray,
+                     I4 NAccumSteps, I4 NCellsOwned);
 
-   // Copy device arrays into their host mirrros and do unit conversion.
+   // Copy device arrays into their host mirrors and do unit conversion.
    void copyToHost();
 
    // Reset all fields to 0
@@ -174,7 +174,7 @@ class SfcCoupling {
                               const TimeInterval &CouplingTimeStep,
                               const CouplingLayout &CouplingLayout);
 
-   /// Initlaize SfcCoupling
+   /// Initialize SfcCoupling
    static int init(const CouplingInitParams &CouplingInitParams);
 
    /// Destructor - deallocates all memory and deletes an SfcCoupling
@@ -192,7 +192,7 @@ class SfcCoupling {
    /// Get a surface coupling object by name
    static SfcCoupling *get(const std::string name);
 
-   /// Getter for the number of ocean timestpes accumulated over the coupling
+   /// Getter for the number of ocean timesteps accumulated over the coupling
    /// interval
    I4 getNAccumSteps() const;
 
