@@ -18,6 +18,7 @@ module dynSubgridAdjustmentsMod
   use elm_varpar             , only : ndecomp_pools, nlevdecomp
   use elm_varctl             , only : use_crop
   use elm_varcon             , only : dzsoi_decomp
+  use ColumnType             , only : col_pp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynPatchStateUpdaterMod, only : update_patch_state, update_patch_state_partition_flux_by_type
   use dynColumnStateUpdaterMod,only : column_state_updater_type, update_column_state_no_special_handling
@@ -408,6 +409,14 @@ contains
     integer         :: l, j, c
     integer         :: begc, endc
     real(r8)        :: adjustment_one_level(bounds%begc:bounds%endc)
+    ! Scratch gridcell-indexed array required by the update_column_state_fill_special_
+    ! using_fixed_value API for a single call. It never persists across calls: each call's
+    ! contribution is immediately broadcast into the column-level dyn_nonconserved_cflux
+    ! field below (mass lost to/from a special landunit is fundamentally a gridcell
+    ! quantity, since it may combine contributions from multiple columns in the same
+    ! gridcell and so cannot be attributed to one column - but no persistent gridcell-level
+    ! state is kept in this sub-grid-level module).
+    real(r8)        :: non_conserved_mass_grc_1call(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
     associate(&
       decomp_cpools_vr    => col_cs%decomp_cpools_vr , &
@@ -420,64 +429,110 @@ contains
     endc = bounds%endc
 
     col_cs%dyn_cbal_adjustments(begc:endc) = 0._r8
+    col_cs%dyn_nonconserved_cflux(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
-          call update_column_state_no_special_handling( column_state_updater , &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+          call column_state_updater%update_column_state_fill_special_using_fixed_value( &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
                var         = decomp_cpools_vr(begc:endc, j, l),     &
+               special_value = 0._r8, &
+               non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
                adjustment  = adjustment_one_level(begc:endc))
 
           col_cs%dyn_cbal_adjustments(begc:endc) = &
                col_cs%dyn_cbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+          do c = begc, endc
+             col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
+
        end do
     end do
 
     do j = 1, nlevdecomp
-       call update_column_state_no_special_handling( column_state_updater , &
+       non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = ctrunc_vr(begc:endc,j),     &
+            special_value = 0._r8, &
+            non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
 
        col_cs%dyn_cbal_adjustments(begc:endc) = &
             col_cs%dyn_cbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+       do c = begc, endc
+          col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+               non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
+
     end do
 
-    call update_column_state_no_special_handling( column_state_updater, &
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod1c(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_cs%dyn_cbal_adjustments(begc:endc) = &
          col_cs%dyn_cbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
-    call update_column_state_no_special_handling( column_state_updater, &
+    do c = begc, endc
+       col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod10c(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_cs%dyn_cbal_adjustments(begc:endc) = &
          col_cs%dyn_cbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
-    call update_column_state_no_special_handling( column_state_updater, &
+    do c = begc, endc
+       col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod100c(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_cs%dyn_cbal_adjustments(begc:endc) = &
          col_cs%dyn_cbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
+
+    do c = begc, endc
+       col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
 
     end associate
   end subroutine dyn_col_cs_Adjustments
@@ -836,6 +891,7 @@ contains
     integer                     :: l, j, c
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)                    :: non_conserved_mass_grc_1call(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
     associate(&
       decomp_npools_vr    => col_ns%decomp_npools_vr , &
@@ -875,43 +931,74 @@ contains
     begc = bounds%begc
     endc = bounds%endc
     col_ns%dyn_nbal_adjustments(begc:endc) = 0._r8
+    col_ns%dyn_nonconserved_nflux(begc:endc) = 0._r8
+
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
-          call update_column_state_no_special_handling(column_state_updater, &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+          
+          call column_state_updater%update_column_state_fill_special_using_fixed_value( &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
                var         = decomp_npools_vr(begc:endc, j, l),     &
+               special_value = 0._r8, &
+               non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
                adjustment  = adjustment_one_level(begc:endc))
 
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-     
+
+          do c = begc, endc
+             col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        end do
     end do
 
     do j = 1, nlevdecomp
-       call update_column_state_no_special_handling(column_state_updater, &
+       non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = ntrunc_vr(begc:endc,j),     &
+            special_value = 0._r8, &
+            non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ns%dyn_nbal_adjustments(begc:endc) = &
             col_ns%dyn_nbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
-       call update_column_state_no_special_handling(column_state_updater, &
+       do c = begc, endc
+          col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+               non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
+
+       non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
            bounds      = bounds                          , &
            clump_index = clump_index                     , &
            var         = sminn_vr(begc:endc, j), &
+           special_value = 0._r8, &
+           non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
            adjustment  = adjustment_one_level(begc:endc))
 
        col_ns%dyn_nbal_adjustments(begc:endc) = &
            col_ns%dyn_nbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+       do c = begc, endc
+          col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+               non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
+
+       ! Note: smin_nh4_vr/smin_no3_vr do NOT feed into col_ns%sminn (which is derived
+       ! solely from sminn_vr, see ColumnDataType.F90) and hence are not part of totcoln,
+       ! so they are not special-landunit-aware here.
        call update_column_state_no_special_handling(column_state_updater, &
             bounds      = bounds                          , &
             clump_index = clump_index                     , &
@@ -925,59 +1012,100 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
     end do
 
-    call update_column_state_no_special_handling(column_state_updater, &
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = plant_n_buffer(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
-    call update_column_state_no_special_handling(column_state_updater, &
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod1n(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
-    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
           col_ns%dyn_nbal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
-    
 
-    call update_column_state_no_special_handling(column_state_updater, &
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod10n(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
           col_ns%dyn_nbal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
-    
 
-    call update_column_state_no_special_handling(column_state_updater, &
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod100n(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
-    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
           col_ns%dyn_nbal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
 
-    call update_column_state_no_special_handling(column_state_updater, &
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = fan_totn(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
+
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -1554,9 +1682,10 @@ contains
     type(column_phosphorus_state)   , intent(inout) :: col_ps
     !
     ! !LOCAL VARIABLES:
-    integer           :: l, j
+    integer           :: l, j, c
     integer           :: begc, endc
-    real(r8)          :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)          :: adjustment_one_level(bounds%begc:bounds%endc) 
+    real(r8)          :: non_conserved_mass_grc_1call(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
     associate(&
       decomp_ppools_vr    => col_ps%decomp_ppools_vr , &
@@ -1575,14 +1704,25 @@ contains
     endc = bounds%endc
 
     col_ps%dyn_pbal_adjustments(begc:endc) = 0._r8
+    col_ps%dyn_nonconserved_pflux(begc:endc) = 0._r8
+
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
 
-          call update_column_state_no_special_handling( column_state_updater, &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+          call column_state_updater%update_column_state_fill_special_using_fixed_value( &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
                var         = decomp_ppools_vr(begc:endc, j, l),     &
+               special_value = 0._r8, &
+               non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
                adjustment  = adjustment_one_level(begc:endc) )
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
@@ -1592,42 +1732,78 @@ contains
     end do
 
     do j = 1, nlevdecomp
-       call update_column_state_no_special_handling( column_state_updater, &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = ptrunc_vr(begc:endc,j),                &
+            special_value = 0._r8, &
+            non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
-       call update_column_state_no_special_handling( column_state_updater, &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = solutionp_vr(begc:endc,j),             &
+            special_value = 0._r8, &
+            non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
-       call update_column_state_no_special_handling( column_state_updater, &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = labilep_vr(begc:endc,j),               &
+            special_value = 0._r8, &
+            non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        !!
-       call update_column_state_no_special_handling( column_state_updater, &
+          non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+       call column_state_updater%update_column_state_fill_special_using_fixed_value( &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = secondp_vr(begc:endc,j),               &
+            special_value = 0._r8, &
+            non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  non_conserved_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
             col_ps%dyn_pbal_adjustments(begc:endc) + &
@@ -1646,36 +1822,63 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
     end do
-    call update_column_state_no_special_handling( column_state_updater, &
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod1p(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
    col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
-    call update_column_state_no_special_handling( column_state_updater, &
+    do c = begc, endc
+       col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod10p(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
-    call update_column_state_no_special_handling( column_state_updater, &
+    do c = begc, endc
+       col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    non_conserved_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+
+    call column_state_updater%update_column_state_fill_special_using_fixed_value( &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod100p(begc:endc),     &
+         special_value = 0._r8, &
+         non_conserved_mass_grc = non_conserved_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+            non_conserved_mass_grc_1call(col_pp%gridcell(c))
+    end do
+    
     end associate
 
   end subroutine dyn_col_ps_Adjustments

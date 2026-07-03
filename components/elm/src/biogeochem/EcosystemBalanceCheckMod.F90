@@ -1203,6 +1203,7 @@ contains
          dwt_crop_productn_gain_grc =>   grc_nf%dwt_crop_productn_gain, & ! Input: [real(r8) (:) ]  addition to crop product pool (gN/m2/s)
          dwt_seedn_to_leaf_grc     =>    grc_nf%dwt_seedn_to_leaf     , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
          dwt_seedn_to_deadstem_grc =>    grc_nf%dwt_seedn_to_deadstem , & ! Input: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
+         dwt_seedn_to_npool_grc    =>    grc_nf%dwt_seedn_to_npool    , & ! Input: [real(r8) (:) ]  seed source to PFT-level npool (gN/m2/s)
          grc_ninputs               =>    grc_nf%ninputs               , & ! Output: [real(r8) (:)]  grid-level N inputs (gN/m2/s)
          grc_noutputs              =>    grc_nf%noutputs              , & ! Output: [real(r8) (:)]  grid-level N outputs (gN/m2/s)
          begnb_grc                 =>    grc_ns%begnb                 , & ! Output: [real(r8) (:) ]  nitrogen mass, beginning of time step (gN/m2**2)
@@ -1226,7 +1227,8 @@ contains
 
          grc_ninputs(g) = &
               dwt_seedn_to_leaf_grc(g)     + &
-              dwt_seedn_to_deadstem_grc(g)
+              dwt_seedn_to_deadstem_grc(g) + &
+              dwt_seedn_to_npool_grc(g)
 
          grc_noutputs(g) = &
               dwt_conv_nflux_grc(g)         + &
@@ -1302,6 +1304,7 @@ contains
          dwt_crop_productp_gain_grc =>   grc_pf%dwt_crop_productp_gain, & ! Input: [real(r8) (:) ]  addition to crop product pool (gP/m2/s)
          dwt_seedp_to_leaf_grc     =>    grc_pf%dwt_seedp_to_leaf     , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
          dwt_seedp_to_deadstem_grc =>    grc_pf%dwt_seedp_to_deadstem , & ! Input: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
+         dwt_seedp_to_ppool_grc    =>    grc_pf%dwt_seedp_to_ppool    , & ! Input: [real(r8) (:) ]  seed source to PFT-level ppool (gP/m2/s)
          grc_pinputs               =>    grc_pf%pinputs               , & ! Output: [real(r8) (:)]  grid-level P inputs (gP/m2/s)
          grc_poutputs              =>    grc_pf%poutputs              , & ! Output: [real(r8) (:)]  grid-level P outputs (gP/m2/s)
          begpb_grc                 =>    grc_ps%begpb                 , & ! Output: [real(r8) (:) ]  phosphorus mass, beginning of time step (gP/m2**2)
@@ -1325,7 +1328,8 @@ contains
 
          grc_pinputs(g) = &
               dwt_seedp_to_leaf_grc(g)     + &
-              dwt_seedp_to_deadstem_grc(g)
+              dwt_seedp_to_deadstem_grc(g) + &
+              dwt_seedp_to_ppool_grc(g)
 
          grc_poutputs(g) = &
               dwt_conv_pflux_grc(g)         + &

@@ -1125,6 +1125,8 @@ contains
    use dynColumnStateUpdaterMod, only : column_state_updater_type
    use dynPriorWeightsMod      , only : prior_weights_type
    use elm_varctl              , only : use_lch4
+   use elm_time_manager        , only : get_step_size
+   use subgridAveMod           , only : c2g, unity
    !
    ! !ARGUMENTS:
    type(bounds_type)               , intent(in)    :: bounds
@@ -1137,23 +1139,69 @@ contains
    type(column_phosphorus_state)   , intent(inout) :: col_ps
    !
    ! !LOCAL VARIABLES:
+   real(r8) :: dt
+   real(r8) :: nonconserved_flux_grc(bounds%begg:bounds%endg)
 
    character(len=*), parameter :: subname = 'dyn_cnbal_col'
    !-----------------------------------------------------------------------
 
+   dt = get_step_size()
+
     call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, col_cs)
+
+   ! Mass lost from shrinking special-landunit columns (e.g. urban) that cannot be
+   ! attributed to any biogeochemistry column is otherwise invisible to the grid-level
+   ! balance checks (col_cs/ns/ps%Summary use filter_soilc, which excludes special
+   ! landunits). dyn_col_cs/ns/ps_Adjustments broadcasts that gridcell-level quantity onto
+   ! every column in the gridcell (in dyn_nonconserved_cflux etc); aggregate it back to the
+   ! gridcell level here, the same way dyn_cbal_adjustments would be, and route it into
+   ! dwt_conv_cflux/nflux/pflux as an immediate loss.
+   call c2g(bounds, col_cs%dyn_nonconserved_cflux(bounds%begc:bounds%endc), &
+        nonconserved_flux_grc(bounds%begg:bounds%endg), &
+        c2l_scale_type = unity, l2g_scale_type = unity)
+   grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) = &
+        grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) + &
+        nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
 
    if (use_c13) then
       call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, c13_col_cs)
+
+      call c2g(bounds, c13_col_cs%dyn_nonconserved_cflux(bounds%begc:bounds%endc), &
+           nonconserved_flux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = unity, l2g_scale_type = unity)
+      c13_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) = &
+           c13_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) + &
+           nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
    end if
 
    if (use_c14) then
       call dyn_col_cs_Adjustments(bounds, clump_index, column_state_updater, c14_col_cs)
+
+      call c2g(bounds, c14_col_cs%dyn_nonconserved_cflux(bounds%begc:bounds%endc), &
+           nonconserved_flux_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = unity, l2g_scale_type = unity)
+      c14_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) = &
+           c14_grc_cf%dwt_conv_cflux(bounds%begg:bounds%endg) + &
+           nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
    end if
 
    call dyn_col_ns_Adjustments(bounds, clump_index, column_state_updater, col_ns)
 
+   call c2g(bounds, col_ns%dyn_nonconserved_nflux(bounds%begc:bounds%endc), &
+        nonconserved_flux_grc(bounds%begg:bounds%endg), &
+        c2l_scale_type = unity, l2g_scale_type = unity)
+   grc_nf%dwt_conv_nflux(bounds%begg:bounds%endg) = &
+        grc_nf%dwt_conv_nflux(bounds%begg:bounds%endg) + &
+        nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
+
    call dyn_col_ps_Adjustments(bounds, clump_index, column_state_updater, col_ps)
+
+   call c2g(bounds, col_ps%dyn_nonconserved_pflux(bounds%begc:bounds%endc), &
+        nonconserved_flux_grc(bounds%begg:bounds%endg), &
+        c2l_scale_type = unity, l2g_scale_type = unity)
+   grc_pf%dwt_conv_pflux(bounds%begg:bounds%endg) = &
+        grc_pf%dwt_conv_pflux(bounds%begg:bounds%endg) + &
+        nonconserved_flux_grc(bounds%begg:bounds%endg) / dt
 
    ! DynamicColumnAdjustments for CH4 needs to be implemented
 
