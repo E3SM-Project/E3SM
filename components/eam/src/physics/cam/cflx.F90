@@ -91,6 +91,14 @@ contains
     end if
     call physics_ptend_init(ptend, state%psetcols, 'clubb_srf', lq=lq)
 
+    ! If no tracers are selected, ptend%q is not allocated; exit cleanly.
+    if (.not. any(lq)) then
+       cnst_type_loc(:) = cnst_type(:)
+       call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
+       call set_wet_to_dry(state, cnst_type_loc)
+       return
+    end if
+
     !-------------------------------------------------------
     ! Calculate tracer mixing ratio tendencies from cflx
 
@@ -107,6 +115,7 @@ contains
 
     ! Convert tendencies of dry constituents to dry basis.
     do m = 1,pcnst
+       if (.not. lq(m)) cycle
        if (cnst_type(m).eq.'dry') then
           ptend%q(:ncol,:pver,m) = ptend%q(:ncol,:pver,m)*state%pdel(:ncol,:pver)/state%pdeldry(:ncol,:pver)
        endif

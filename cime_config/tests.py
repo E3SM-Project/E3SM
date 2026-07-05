@@ -340,7 +340,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer", "e3sm_gcam_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480_rx1.A",
