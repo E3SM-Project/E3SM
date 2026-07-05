@@ -1,7 +1,6 @@
 #include "eamxx_nudging_process_interface.hpp"
 
 #include "share/field/field_reader.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
@@ -204,7 +203,7 @@ void Nudging::run_impl (const double dt)
     auto nudge_field = get_helper_field(name);
     auto state_field = get_field_out_wrap(name);
 
-    if (m_timescale == 0) {
+    if (m_timescale <= 0) {
       state_field.deep_copy(nudge_field);
     } else {
       apply_tendency(state_field,nudge_field,dt);

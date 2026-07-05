@@ -2,6 +2,8 @@
 
 #include "nudging_tests_helpers.hpp"
 
+#include <vector>
+
 using namespace scream;
 
 TEST_CASE("create_nudging_data") {
@@ -38,6 +40,18 @@ TEST_CASE("create_nudging_data") {
   const auto om1 = create_om("nudging_data",fm1,gm,t0,comm);
   const auto om2 = create_om("nudging_data_filled",fm2,gm,t0,comm);
   const auto om3 = create_om("nudging_data_nonconst_p",fm3,gm,t0,comm);
+
+  std::vector<Real> p_levs(nlevs);
+  for (int ilev=0; ilev<nlevs; ++ilev) {
+    p_levs[ilev] = ilev + 1;
+  }
+  const std::string pfile = "nudging_static_pressure.nc";
+  scorpio::register_file(pfile, scorpio::FileMode::Write);
+  scorpio::define_dim(pfile, "lev", nlevs);
+  scorpio::define_var(pfile, "p_levs", {"lev"}, "real");
+  scorpio::enddef(pfile);
+  scorpio::write_var(pfile, "p_levs", p_levs.data());
+  scorpio::release_file(pfile);
 
   auto time = t0;
   for (int istep=1; istep<=nsteps; ++istep) {

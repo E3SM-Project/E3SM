@@ -23,7 +23,7 @@ If the setup script does not work for your environment, install these manually:
 - **Git submodules:**
   ```bash
   git submodule update --init --recursive \
-      externals/ekat externals/scorpio externals/mam4xx externals/haero \
+      externals/ekat externals/scorpio externals/mam4xx \
       components/eam/src/physics/cosp2/external \
       components/eam/src/physics/rrtmgp/external
   git submodule update --init cime

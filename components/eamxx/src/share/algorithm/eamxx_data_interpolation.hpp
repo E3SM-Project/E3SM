@@ -82,7 +82,13 @@ protected:
 
   void shift_data_interval ();
   void update_end_fields ();
+
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
   void correct_masked_values (const Field& f) const;
+
+protected:
 
   int get_input_files_dimlen (const std::string& dimname) const;
 

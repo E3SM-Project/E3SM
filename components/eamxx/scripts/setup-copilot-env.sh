@@ -182,7 +182,7 @@ if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev
 fi
 
 git submodule update --init --recursive \
-    externals/ekat externals/scorpio externals/mam4xx externals/haero \
+    externals/ekat externals/scorpio externals/mam4xx \
     components/eam/src/physics/cosp2/external \
     components/eam/src/physics/rrtmgp/external \
     || _setup_copilot_fail "git submodule init failed"
