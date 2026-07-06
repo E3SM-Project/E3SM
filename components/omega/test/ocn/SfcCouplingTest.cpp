@@ -68,7 +68,7 @@ HostArray1DReal makeCellVarryingArray(const std::string &Name, const int NCells,
    return Array;
 }
 
-// Shaed index formula for packing/unpacking from rae coupler buffer
+// Shared index formula for packing/unpacking from raw coupler buffer
 int flatIdx(const CouplingLayout Layout, const int Cell, const int Field,
             const int NCells, const int NFields) {
    if (Layout == CouplingLayout::MCT)

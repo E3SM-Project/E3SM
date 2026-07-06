@@ -277,7 +277,7 @@ OcnToCplFields::OcnToCplFields(const std::string &Suffix, const HorzMesh *Mesh)
 
    // Kokkok views created with a label are zero-initialized by default.
    // We reset the fields here anyway to be explicit about the fact that the
-   // OcnToCpl fields need to being a coupling interval with all zeros.
+   // OcnToCpl fields need to begin a coupling interval with all zeros.
    resetFields();
 
    AvgSfcTemperatureH   = createHostMirrorCopy(AvgSfcTemperature);
