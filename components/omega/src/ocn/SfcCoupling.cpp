@@ -375,7 +375,7 @@ void OcnToCplFields::copyToHost() {
    deepCopy(InstSshCellH, SSHCellOwned);
 }
 
-// OcnToCpl fields need to being a coupling interval with all values set to 0.
+// OcnToCpl fields need to begin a coupling interval with all values set to 0.
 void OcnToCplFields::resetFields() {
    deepCopy(AvgSfcTemperature, 0.0);
    deepCopy(AvgSfcSalinity, 0.0);
