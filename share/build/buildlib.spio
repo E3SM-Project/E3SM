@@ -60,6 +60,7 @@ def buildlib(bldroot, installpath, case):
     srcroot     = case.get_value("SRCROOT")
     debug       = case.get_value("DEBUG")
     mpilib      = case.get_value("MPILIB")
+    gmake       = case.get_value("GMAKE")
     gmake_j     = case.get_value("GMAKE_J")
     case_config_opts = case.get_value("PIO_CONFIG_OPTS")
 
@@ -209,7 +210,7 @@ def buildlib(bldroot, installpath, case):
 
     # This runs the pio make command from the cmake generated Makefile
     logger.info("Building SCORPIO")
-    run_bld_cmd_ensure_logging(f"cmake --build . -v -j {gmake_j}", logger, from_dir=pio_bld_dir)
+    run_bld_cmd_ensure_logging(f"{gmake} -j {gmake_j}", logger, from_dir=pio_bld_dir)
 
     if pio_version == 1:
         expect_string = "D_NETCDF;"

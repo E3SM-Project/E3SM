@@ -12,7 +12,7 @@ GetScriptPositionalArguments(my_args)
 list(LENGTH my_args arg_count)
 
 if (NOT arg_count EQUAL 2)
-  message (FATAL_ERROR "CompareTextFiles should be invoked with 2 arguments (src and tgt text file). You passed '${my_args}' ")
+  message (FATAL_ERROR "CompareTextFiles should be invoked with 2 arguments (src and tgt nc file). You passed '${my_args}' ")
 endif()
 
 list(GET my_args 0 SRC_FILE)

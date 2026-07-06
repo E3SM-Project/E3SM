@@ -796,14 +796,6 @@
     none, CIME falls back to an interactive build with a warning.</desc>
   </entry>
 
-  <entry id="CMAKE_BACKEND">
-    <type>char</type>
-    <default_value>gmake</default_value>
-    <group>build_def</group>
-    <file>env_build.xml</file>
-    <desc>Tells cmake which backend to use</desc>
-  </entry>
-
   <entry id="BUILD_COMPLETE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>

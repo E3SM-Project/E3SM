@@ -89,7 +89,7 @@ int main (int argc, char** argv) {
   std::string baseline_fn;
 
   // Parse options
-  for (int i = 1; i < argc; ++i) {
+  for (int i = 1; i < argc-1; ++i) {
     if (argv_matches(argv[i], "-g", "--generate")) {generate = true; no_baseline = false;}
     if (argv_matches(argv[i], "-c", "--compare"))  {no_baseline = false;}
     if (argv_matches(argv[i], "-t", "--tol")) {

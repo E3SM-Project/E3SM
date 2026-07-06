@@ -50,7 +50,7 @@ int run_kokkos(int argc, char** argv) {
   }
   std::string inputfile, baseline, device;
 
-  for (int i = 1; i < argc; ++i) {
+  for (int i = 1; i < argc-1; ++i) {
     if (ekat::argv_matches(argv[i], "-b", "--baseline-file")) {
       expect_another_arg(i, argc);
       ++i;

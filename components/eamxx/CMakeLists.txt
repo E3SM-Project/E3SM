@@ -440,8 +440,8 @@ if (NOT SCREAM_LIB_ONLY)
   endif()
 
   # All standard baseline tests should use these settings!
-  set(SCREAM_BASELINE_TEST_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
   if (SCREAM_ENABLE_BASELINE_TESTS)
+    set(SCREAM_BASELINE_TEST_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
     if (SCREAM_ONLY_GENERATE_BASELINES)
       set(SCREAM_BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data")
       # We don't want to do thread spreads when generating. That
