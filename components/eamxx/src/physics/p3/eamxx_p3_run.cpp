@@ -31,6 +31,11 @@ void P3Microphysics::run_impl (const double dt)
   // Reset internal WSM variables.
   workspace_mgr.reset_internals();
 
+  // Test TKE
+  const auto& tke_in = get_field_in("tke").get_view<const Pack**>();
+  const auto& tke_out = get_field_out("tke_p3").get_view<Pack**>();
+  Kokkos::deep_copy(tke_out,tke_in);
+
   // Run p3 main
   get_field_out("micro_liq_ice_exchange").deep_copy(0.0);
   get_field_out("micro_vap_liq_exchange").deep_copy(0.0);

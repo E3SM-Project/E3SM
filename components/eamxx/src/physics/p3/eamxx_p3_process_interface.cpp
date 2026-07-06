@@ -28,6 +28,7 @@ void P3Microphysics::create_requests()
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto micron = micro*m;
   auto m2 = pow(m,2);
+  const auto s2 = pow(s,2);
 
   m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
@@ -84,6 +85,8 @@ void P3Microphysics::create_requests()
   add_tracer<Updated>("nr", m_grid, 1/kg,  ps);
   add_tracer<Updated>("ni", m_grid, 1/kg,  ps);
   add_tracer<Updated>("bm", m_grid, 1/kg,  ps);
+  add_tracer<Updated>("tke", m_grid, m2/s2, ps);
+  add_field<Computed> ("tke_p3", scalar3d_layout_mid, m2/s2, grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
