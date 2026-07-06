@@ -35,8 +35,8 @@ enum class CouplingLayout { MCT, MOAB };
 struct CouplingInitParams {
    int NImportFields;
    int NExportFields;
-   std::map<std::string, int> ImportIdx;
-   std::map<std::string, int> ExportIdx;
+   std::map<std::string, int> ImportIdxMap;
+   std::map<std::string, int> ExportIdxMap;
    TimeInterval CouplingTimeStep;
    CouplingLayout Layout;
 };
@@ -113,8 +113,8 @@ class SfcCoupling {
    // Construct a new local coupling object
    SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
                const int NImportFields_, const int NExportFields_,
-               const std::map<std::string, int> &ImportIdx,
-               const std::map<std::string, int> &ExportIdx,
+               const std::map<std::string, int> &ImportIdxMap,
+               const std::map<std::string, int> &ExportIdxMap,
                TimeStepper *Stepper, const TimeInterval &CouplingTimeStep,
                const CouplingLayout &Layout);
 
@@ -133,16 +133,17 @@ class SfcCoupling {
    CouplingLayout Layout; ///< Coupling layout (MCT or MOAB)
 
    // Map of import/export variable names to index in the raw data arrays
-   std::map<std::string, int> ImportIdx;
-   std::map<std::string, int> ExportIdx;
+   std::map<std::string, int> ImportIdxMap;
+   std::map<std::string, int> ExportIdxMap;
 
  public:
    std::string Name;
 
    I4 NCellsOwned; ///< Number of cells owned by this task
 
-   // The values below will be larger than InportIdx.size() and ExportIdx.size()
-   // because omega does not ingest all cpl fields (e.g. BGC, landice), yet...
+   // The values below will be larger than InportIdx.size() and
+   // ExportIdxMap.size() because omega does not ingest all cpl fields (e.g.
+   // BGC, landice), yet...
    I4 NImportFields; ///< Num of fields in the x2o pointer array
    I4 NExportFields; ///< Num of fields in the o2x pointer array
 
@@ -168,8 +169,8 @@ class SfcCoupling {
    /// in the AllSfcCoupling map
    static SfcCoupling *create(const std::string &Name, const HorzMesh *Mesh,
                               const int NImportFields, const int NExportFields,
-                              const std::map<std::string, int> &ImportIdx,
-                              const std::map<std::string, int> &ExportIdx,
+                              const std::map<std::string, int> &ImportIdxMap,
+                              const std::map<std::string, int> &ExportIdxMap,
                               TimeStepper *Stepper,
                               const TimeInterval &CouplingTimeStep,
                               const CouplingLayout &CouplingLayout);

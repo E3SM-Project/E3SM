@@ -29,7 +29,7 @@ A non-default instance can be created with the static `create` method,
 which returns a pointer to the newly created object:
 ```c++
 OMEGA::SfcCoupling* NewSfcCoupling = OMEGA::SfcCoupling::create(
-    Name, Mesh, NImportFields, NExportFields, ImportIdx, ExportIdx,
+    Name, Mesh, NImportFields, NExportFields, ImportIdxMap, ExportIdxMap,
     Stepper, CouplingTimeStep, Layout);
 ```
 Given its name, a pointer to a named instance can be obtained at any time:

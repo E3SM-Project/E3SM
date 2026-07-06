@@ -47,8 +47,8 @@ int SfcCoupling::init(const CouplingInitParams &CouplingInitParams) {
    // Create the default surface coupling object and set pointer to it
    SfcCoupling::DefaultSfcCoupling = SfcCoupling::create(
        "Default", DefHorzMesh, CouplingInitParams.NImportFields,
-       CouplingInitParams.NExportFields, CouplingInitParams.ImportIdx,
-       CouplingInitParams.ExportIdx, DefTimeStepper, CplTimeStep,
+       CouplingInitParams.NExportFields, CouplingInitParams.ImportIdxMap,
+       CouplingInitParams.ExportIdxMap, DefTimeStepper, CplTimeStep,
        CouplingInitParams.Layout);
 
    return Err;
@@ -57,14 +57,14 @@ int SfcCoupling::init(const CouplingInitParams &CouplingInitParams) {
 // Construct a new surface coupling object
 SfcCoupling::SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
                          const int NImportFields_, const int NExportFields_,
-                         const std::map<std::string, int> &ImportIdx,
-                         const std::map<std::string, int> &ExportIdx,
+                         const std::map<std::string, int> &ImportIdxMap,
+                         const std::map<std::string, int> &ExportIdxMap,
                          TimeStepper *Stepper,
                          const TimeInterval &CouplingTimeStep,
                          const CouplingLayout &Layout)
     : Name(Name_), NImportFields(NImportFields_), NExportFields(NExportFields_),
-      ImportIdx(ImportIdx), ExportIdx(ExportIdx), CplToOcn(Name_, Mesh),
-      OcnToCpl(Name_, Mesh), Layout(Layout) {
+      ImportIdxMap(ImportIdxMap), ExportIdxMap(ExportIdxMap),
+      CplToOcn(Name_, Mesh), OcnToCpl(Name_, Mesh), Layout(Layout) {
 
    // Retrieve mesh cell count
    NCellsOwned = Mesh->NCellsOwned;
@@ -88,8 +88,8 @@ SfcCoupling::SfcCoupling(const std::string &Name_, const HorzMesh *Mesh,
 // it in the AllSfcCoupling map
 SfcCoupling *SfcCoupling::create(
     const std::string &Name, const HorzMesh *Mesh, const int NImportFields,
-    const int NExportFields, const std::map<std::string, int> &ImportIdx,
-    const std::map<std::string, int> &ExportIdx, TimeStepper *Stepper,
+    const int NExportFields, const std::map<std::string, int> &ImportIdxMap,
+    const std::map<std::string, int> &ExportIdxMap, TimeStepper *Stepper,
     const TimeInterval &CouplingTimeStep, const CouplingLayout &Layout) {
 
    // Check to see if a surface coupling of the same name already exists
@@ -103,8 +103,8 @@ SfcCoupling *SfcCoupling::create(
    // create a new surface coupling on the heap and store it in the map of
    // unique_ptrs, which will manage its lifetime
    auto *NewSfcCoupling =
-       new SfcCoupling(Name, Mesh, NImportFields, NExportFields, ImportIdx,
-                       ExportIdx, Stepper, CouplingTimeStep, Layout);
+       new SfcCoupling(Name, Mesh, NImportFields, NExportFields, ImportIdxMap,
+                       ExportIdxMap, Stepper, CouplingTimeStep, Layout);
    AllSfcCoupling.emplace(Name, NewSfcCoupling);
 
    return NewSfcCoupling;
@@ -185,8 +185,8 @@ void SfcCoupling::importFromCoupler() {
    }
 
    // Get import field indices for surface stress components
-   int TauxIdx = ImportIdx.at("Foxx_taux");
-   int TauyIdx = ImportIdx.at("Foxx_tauy");
+   int TauxIdx = ImportIdxMap.at("Foxx_taux");
+   int TauyIdx = ImportIdxMap.at("Foxx_tauy");
 
    // Copy Kokkos view handles
    auto CplToOcnView_   = CplToOcnView;
@@ -215,11 +215,11 @@ void SfcCoupling::exportToCoupler() {
    // Copy the OcnToCpl fields to their host mirrors
    OcnToCpl.copyToHost();
 
-   int TempIdx  = ExportIdx.at("So_t");
-   int SalinIdx = ExportIdx.at("So_s");
-   int VelUIdx  = ExportIdx.at("So_u");
-   int VelVIdx  = ExportIdx.at("So_v");
-   int SshIdx   = ExportIdx.at("So_ssh");
+   int TempIdx  = ExportIdxMap.at("So_t");
+   int SalinIdx = ExportIdxMap.at("So_s");
+   int VelUIdx  = ExportIdxMap.at("So_u");
+   int VelVIdx  = ExportIdxMap.at("So_v");
+   int SshIdx   = ExportIdxMap.at("So_ssh");
 
    // Copy Kokkos view handles
    auto OcnToCplView_        = OcnToCplView;

@@ -23,8 +23,9 @@ using namespace OMEGA;
 
 struct TestSetup {
 
-   std::map<std::string, int> ImportIdx = {{"Foxx_taux", 3}, {"Foxx_tauy", 8}};
-   std::map<std::string, int> ExportIdx = {
+   std::map<std::string, int> ImportIdxMap = {{"Foxx_taux", 3},
+                                              {"Foxx_tauy", 8}};
+   std::map<std::string, int> ExportIdxMap = {
        {"So_t", 2}, {"So_s", 4}, {"So_u", 6}, {"So_v", 9}, {"So_ssh", 1}};
 };
 
@@ -40,8 +41,8 @@ CouplingInitParams mockCouplingInitParams(
 
    CouplingInitParams CouplingParams{.NImportFields    = 10,
                                      .NExportFields    = 10,
-                                     .ImportIdx        = Setup.ImportIdx,
-                                     .ExportIdx        = Setup.ExportIdx,
+                                     .ImportIdxMap     = Setup.ImportIdxMap,
+                                     .ExportIdxMap     = Setup.ExportIdxMap,
                                      .CouplingTimeStep = CouplingTimeStep_,
                                      .Layout           = Layout};
 
@@ -115,7 +116,7 @@ int initSfcCouplingTest(const std::string &MeshFile) {
    int HaloErr = Halo::init();
    if (HaloErr != 0) {
       Err++;
-      LOG_ERROR("SfcCouplingTest: Error initializing defualt halo");
+      LOG_ERROR("SfcCouplingTest: Error initializing default halo");
    }
 
    HorzMesh::init(ModelClock);
@@ -149,8 +150,8 @@ int testImportFromCoupler(const CouplingLayout Layout) {
    int NImports = DefCoupling->NImportFields;
    int NExports = DefCoupling->NExportFields;
 
-   int TauxIdx = CouplingParams.ImportIdx.at("Foxx_taux");
-   int TauyIdx = CouplingParams.ImportIdx.at("Foxx_tauy");
+   int TauxIdx = CouplingParams.ImportIdxMap.at("Foxx_taux");
+   int TauyIdx = CouplingParams.ImportIdxMap.at("Foxx_tauy");
 
    std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
    std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
@@ -203,8 +204,8 @@ int testApplyImportFields() {
    int NImports = DefCoupling->NImportFields;
    int NExports = DefCoupling->NExportFields;
 
-   int TauxIdx = CouplingParams.ImportIdx.at("Foxx_taux");
-   int TauyIdx = CouplingParams.ImportIdx.at("Foxx_tauy");
+   int TauxIdx = CouplingParams.ImportIdxMap.at("Foxx_taux");
+   int TauyIdx = CouplingParams.ImportIdxMap.at("Foxx_tauy");
 
    std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
    std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
@@ -263,8 +264,8 @@ int testUpdateExportFields(const I4 NSteps) {
 
    int NCells = DefCoupling->NCellsOwned;
 
-   Real TempBase  = static_cast<Real>(CouplingParams.ExportIdx.at("So_t"));
-   Real SalinBase = static_cast<Real>(CouplingParams.ExportIdx.at("So_s"));
+   Real TempBase  = static_cast<Real>(CouplingParams.ExportIdxMap.at("So_t"));
+   Real SalinBase = static_cast<Real>(CouplingParams.ExportIdxMap.at("So_s"));
 
    I4 TempIdx, SalinIdx;
    Tracers::getIndex(TempIdx, "Temperature");
@@ -375,9 +376,9 @@ int testExportToCoupler(const CouplingLayout Layout) {
    std::vector<Real> CplToOcnData(NCells * NImports, 0.0);
    std::vector<Real> OcnToCplData(NCells * NExports, 0.0);
 
-   int TempIdx  = CouplingParams.ExportIdx.at("So_t");
-   int SalinIdx = CouplingParams.ExportIdx.at("So_s");
-   int SshIdx   = CouplingParams.ExportIdx.at("So_ssh");
+   int TempIdx  = CouplingParams.ExportIdxMap.at("So_t");
+   int SalinIdx = CouplingParams.ExportIdxMap.at("So_s");
+   int SshIdx   = CouplingParams.ExportIdxMap.at("So_ssh");
 
    DefCoupling->attachData(CplToOcnData.data(), OcnToCplData.data());
 
@@ -495,9 +496,9 @@ int testEraseAndGet() {
    TimeInterval TimeStep = DefStepper->getTimeStep();
 
    // test creation of a non-default, named surface coupling object
-   SfcCoupling::create("AnotherSfcCoupling", DefMesh, 10, 12, Setup.ImportIdx,
-                       Setup.ExportIdx, DefStepper, TimeStep,
-                       CouplingLayout::MCT);
+   SfcCoupling::create("AnotherSfcCoupling", DefMesh, 10, 12,
+                       Setup.ImportIdxMap, Setup.ExportIdxMap, DefStepper,
+                       TimeStep, CouplingLayout::MCT);
 
    if (SfcCoupling::get("AnotherSfcCoupling")) {
       LOG_INFO("SfcCouplingTest: Non-default SfcCoupling retrieval PASS");
