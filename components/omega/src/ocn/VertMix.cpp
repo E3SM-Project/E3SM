@@ -464,21 +464,22 @@ void VertMix::applyVelVertMixImplicit(
       const auto &SpecVol  = EosInstance->SpecVol;
       const auto &VertVisc = VertMixInstance->VertVisc;
 
-      const int NVertLayers = VCoord->NVertLayers;
+      const int NVertLayers  = VCoord->NVertLayers;
+      const int LocVecLength = VecLength;
       auto LConfig =
           TriDiagSolver::makeLaunchConfig(Mesh->NEdgesAll, NVertLayers);
 
       parallelForOuter(
           LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
-             const int IStart = Team.league_rank() * VecLength;
-             const int ILen =
-                 Kokkos::max(0, Kokkos::min(VecLength, LocNEdgesAll - IStart));
+             const int IStart = Team.league_rank() * LocVecLength;
+             const int ILen   = Kokkos::max(
+                 0, Kokkos::min(LocVecLength, LocNEdgesAll - IStart));
 
              TriDiagDiffScratch Scratch(Team, NVertLayers);
 
              // Construct a tri-diag diffusion matrix and RHS
              parallelForInner(Team, NVertLayers, [=](int K) {
-                for (int IVec = 0; IVec < VecLength; ++IVec) {
+                for (int IVec = 0; IVec < LocVecLength; ++IVec) {
                    const int IEdge = IStart + IVec;
 
                    if (IEdge >= LocNEdgesAll) {
@@ -568,19 +569,20 @@ void VertMix::applyTracerVertMixImplicit(
       const int NVertLayers = VCoord->NVertLayers;
       auto LConfig =
           TriDiagSolver::makeLaunchConfig(Mesh->NCellsAll, NVertLayers);
+      const int LocVecLength = VecLength;
 
       for (int L = 0; L < NTracers; ++L) {
          parallelForOuter(
              LConfig, KOKKOS_LAMBDA(int, const TeamMember &Team) {
-                const int IStart = Team.league_rank() * VecLength;
+                const int IStart = Team.league_rank() * LocVecLength;
                 const int ILen   = Kokkos::max(
-                    0, Kokkos::min(VecLength, LocNCellsAll - IStart));
+                    0, Kokkos::min(LocVecLength, LocNCellsAll - IStart));
 
                 TriDiagDiffScratch Scratch(Team, NVertLayers);
 
                 // Construct a tri-diag diffusion matrix and RHS
                 parallelForInner(Team, NVertLayers, [=](int K) {
-                   for (int IVec = 0; IVec < VecLength; ++IVec) {
+                   for (int IVec = 0; IVec < LocVecLength; ++IVec) {
                       const int ICell = IStart + IVec;
 
                       if (ICell >= LocNCellsAll) {
