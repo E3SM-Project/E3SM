@@ -60,6 +60,9 @@ module seq_rest_mod
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
   use prep_rof_mod,    only: prep_rof_get_o2racc_ox
   use prep_rof_mod,    only: prep_rof_get_o2racc_ox_cnt
+  use prep_rof_mod,    only: prep_rof_get_a2racc_ax
+  use prep_rof_mod,    only: prep_rof_get_a2racc_ax_cnt
+  use seq_flds_mod,    only: rof_heat
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
   use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
@@ -132,6 +135,8 @@ module seq_rest_mod
   integer        , pointer :: x2oacc_ox_cnt
   type(mct_aVect), pointer :: l2racc_lx(:)
   integer        , pointer :: l2racc_lx_cnt
+  type(mct_aVect), pointer :: a2racc_ax(:)
+  integer        , pointer :: a2racc_ax_cnt
   type(mct_aVect), pointer :: o2racc_ox(:)
   integer        , pointer :: o2racc_ox_cnt
   type(mct_aVect), pointer :: l2gacc_lx(:)
@@ -237,6 +242,16 @@ contains
           l2racc_lx_cnt => prep_rof_get_l2racc_lx_cnt()
           call seq_io_read(rest_file, gsmap, l2racc_lx, 'l2racc_lx')
           call seq_io_read(rest_file, l2racc_lx_cnt ,'l2racc_lx_cnt')
+       end if
+       if (atm_present .and. rof_prognostic .and. rof_heat) then
+          ! atm->rof heat forcing accumulator (rof_heat feature); needed so the
+          ! first rof coupling step after restart sees the same atm forcing a
+          ! continuous run had, rather than a zero-filled accumulator.
+          gsmap         => component_get_gsmap_cx(atm(1))
+          a2racc_ax     => prep_rof_get_a2racc_ax()
+          a2racc_ax_cnt => prep_rof_get_a2racc_ax_cnt()
+          call seq_io_read(rest_file, gsmap, a2racc_ax, 'a2racc_ax')
+          call seq_io_read(rest_file, a2racc_ax_cnt ,'a2racc_ax_cnt')
        end if
        if (ocn_present .and. rofocn_prognostic) then
           gsmap         => component_get_gsmap_cx(ocn(1))
@@ -578,6 +593,15 @@ contains
              call seq_io_write(rest_file, gsmap, l2racc_lx, 'l2racc_lx', &
                   whead=whead, wdata=wdata)
              call seq_io_write(rest_file, l2racc_lx_cnt, 'l2racc_lx_cnt', &
+                  whead=whead, wdata=wdata)
+          end if
+          if (atm_present .and. rof_prognostic .and. rof_heat) then
+             gsmap         => component_get_gsmap_cx(atm(1))
+             a2racc_ax     => prep_rof_get_a2racc_ax()
+             a2racc_ax_cnt =>  prep_rof_get_a2racc_ax_cnt()
+             call seq_io_write(rest_file, gsmap, a2racc_ax, 'a2racc_ax', &
+                  whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, a2racc_ax_cnt, 'a2racc_ax_cnt', &
                   whead=whead, wdata=wdata)
           end if
           if (ocn_present .and. rofocn_prognostic) then

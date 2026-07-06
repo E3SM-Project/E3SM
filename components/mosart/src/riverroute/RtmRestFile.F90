@@ -14,7 +14,7 @@ module RtmRestFile
   use RtmSpmd           , only : masterproc 
   use RtmVar            , only : rtmlon, rtmlat, iulog, inst_suffix, rpntfil, &
                              caseid, nsrest, brnch_retain_casename, &
-                             finidat_rtm, nrevsn_rtm, wrmflag, inundflag, &
+                             finidat_rtm, nrevsn_rtm, wrmflag, inundflag, heatflag, &
                              nsrContinue, nsrBranch, nsrStartup, &
                              ctitle, version, username, hostname, conventions, source
   use RtmHistFile       , only : RtmHistRestart
@@ -408,6 +408,17 @@ if (wrmflag) then
 else
     nvmax = 18
 endif
+! Heat model state uses nv 23-25, independent of the WRM block (nv 19-22, self-gated by
+! wrmflag). Tt/Tr are the prognostic temperatures (the heat analogue of the water storages
+! wt/wr); Ha_rout is the persistent advective heat flux out of each cell — the heat analogue
+! of the water-side erout (nv 7), computed at the end of one step and read at the start of the
+! next to build each cell's UPSTREAM advected heat (Ha_eroutUp). Stock MOSART saves NO heat
+! state, so a heat run resumed from a restart cold-starts its temperatures at 273.15 K; over
+! CONUS this fix makes the restart near-seamless (a ~2-3 day settle vs a ~month-long cold-start
+! spin-up). A residual first-step transient remains only on the largest warm mainstems (Amazon/
+! Congo scale), where the operator-split heat-balance re-engagement + full-channel regime give a
+! multi-day adjustment even with all three fields restored.
+if (heatflag) nvmax = 25
 
     do nv = 1,nvmax
     do nt = 1,nt_rtm
@@ -571,7 +582,37 @@ endif
              lname = 'dam active stage'
              uname = 'no unit'
              dfld_int  => StorWater%active_stageG(:)
-          endif       
+          endif
+
+       ! heat model prognostic temperatures (written from rtmCTL%Tt/Tr, which are
+       ! synced from THeat%Tt/Tr every step in RtmMod; read back into THeat there too)
+       elseif (nv == 23 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
+          if (heatflag) then
+             varok = .true.
+             vname = 'RTM_TT_'//trim(rtm_tracers(nt))
+             lname = 'sub-network water temperature'
+             uname = 'K'
+             dfld  => rtmCTL%Tt(:)
+          endif
+       elseif (nv == 24 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
+          if (heatflag) then
+             varok = .true.
+             vname = 'RTM_TR_'//trim(rtm_tracers(nt))
+             lname = 'main channel water temperature'
+             uname = 'K'
+             dfld  => rtmCTL%Tr(:)
+          endif
+       elseif (nv == 25 .and. trim(rtm_tracers(nt)) == 'LIQ') then
+          varok = .false.
+          if (heatflag) then
+             varok = .true.
+             vname = 'RTM_HA_ROUT_'//trim(rtm_tracers(nt))
+             lname = 'advective heat flux out of main channel'
+             uname = 'W'
+             dfld  => rtmCTL%Ha_rout(:)
+          endif
        else
           varok = .false.
        endif
@@ -608,7 +649,15 @@ endif
                ncid=ncid, flag=flag, readvar=readvar)
          endif
           if (flag=='read' .and. .not. readvar) then
-             if (nsrest == nsrContinue) then
+             if (vname == 'RTM_TT_LIQ' .or. vname == 'RTM_TR_LIQ') then
+                ! heat temps absent (restart predates the heat-restart fix): cold-start
+                ! them to freezing (the prior behavior) rather than aborting.
+                dfld = 273.15_r8
+             else if (vname == 'RTM_HA_ROUT_LIQ') then
+                ! advective heat flux absent (old restart): start at 0 (rebuilds in a
+                ! few steps; only costs the seamless-mainstem behavior on those steps).
+                dfld = 0._r8
+             else if (nsrest == nsrContinue) then
                 call shr_sys_abort()
              else
                 dfld = 0._r8
@@ -650,6 +699,12 @@ endif
              if (abs(storWater%releaseG(n)) > 1.e30) storWater%releaseG(n) = 0.
              if (abs(WRMUnit%StorMthStOpG(n)) > 1.e30) WRMUnit%StorMthStOpG(n) = 0.
              if (abs(storWater%active_stageG(n)) > 1.e30) storWater%active_stageG(n) = 0.
+          endif
+
+          if (heatflag) then
+             if (abs(rtmCTL%Tt(n)) > 1.e30) rtmCTL%Tt(n) = 273.15_r8
+             if (abs(rtmCTL%Tr(n)) > 1.e30) rtmCTL%Tr(n) = 273.15_r8
+             if (abs(rtmCTL%Ha_rout(n)) > 1.e30) rtmCTL%Ha_rout(n) = 0._r8
           endif
 
           if (rtmCTL%mask(n) == 1) then

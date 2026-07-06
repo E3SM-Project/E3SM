@@ -1884,6 +1884,19 @@ contains
        TRunoff%rr   = rtmCTL%rr
        TRunoff%erout= rtmCTL%erout
 
+       if (heatflag) then
+          ! restore the heat state so a restart/branch run continues warm instead of
+          ! cold-starting THeat%Tt/Tr at 273.15 (rtmCTL%Tt/Tr/Ha_rout were read from the
+          ! restart; they are synced from THeat every step, so they hold the last saved
+          ! values). Ha_rout is the persistent advective heat flux used to build each
+          ! cell's upstream advected heat (Ha_eroutUp) on the next step. Over CONUS this
+          ! makes the restart near-seamless; only the largest warm mainstems keep a
+          ! multi-day re-engagement transient (see RtmRestFile.F90 nvmax note).
+          THeat%Tt = rtmCTL%Tt
+          THeat%Tr = rtmCTL%Tr
+          THeat%Ha_rout = rtmCTL%Ha_rout
+       endif
+
        if (inundflag) then
           ! If inundation scheme is turned on :
           if ( Tctl%OPT_inund .eq. 1 ) then
