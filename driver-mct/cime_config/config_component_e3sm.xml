@@ -437,9 +437,12 @@
       <value compset="_SCREAM.*" grid="a%ne4np4">24</value>
       <value compset=".+" grid="a%ne11np4">12</value>
       <value compset="_SCREAM.*" grid="a%ne11np4">24</value>
+      <value compset=".+" grid="a%ne32np4">48</value>
       <value compset=".+" grid="a%ne45np4">72</value>
       <value compset=".+" grid="a%ne60np4">96</value>
+      <value compset=".+" grid="a%ne64np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
+      <value compset=".+" grid="a%ne128np4">96</value>
       <value compset=".+" grid="a%ne240np4">144</value>
       <value compset=".+" grid="a%ne256np4">144</value>
       <value compset=".+" grid="a%ne512np4">432</value>
