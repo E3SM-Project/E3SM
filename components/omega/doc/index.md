@@ -108,6 +108,7 @@ devGuide/Forcing
 
 design/OmegaV0ShallowWater
 design/OmegaV1GoverningEqns
+design/Analysis
 design/Broadcast
 design/Config
 design/Coupling
