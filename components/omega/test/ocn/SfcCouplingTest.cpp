@@ -278,7 +278,7 @@ int testUpdateExportFields(const I4 NSteps) {
       HostArray2DReal SalinH = Tracers::getHostByIndex(0, SalinIdx);
 
       for (int Cell = 0; Cell < NCells; Cell++) {
-         int KSfc = DefVertCoord->MinLayerCell(Cell);
+         int KSfc = DefVertCoord->MinLayerCellH(Cell);
 
          TempH(Cell, KSfc)  = TempBase + Cell + CurrStep;
          SalinH(Cell, KSfc) = SalinBase + Cell + CurrStep;
@@ -399,7 +399,7 @@ int testExportToCoupler(const CouplingLayout Layout) {
    HostArray2DReal TempH  = Tracers::getHostByIndex(0, TempTracerIdx);
    HostArray2DReal SalinH = Tracers::getHostByIndex(0, SalinTracerIdx);
    for (int Cell = 0; Cell < NCells; Cell++) {
-      int KSfc           = DefVertCoord->MinLayerCell(Cell);
+      int KSfc           = DefVertCoord->MinLayerCellH(Cell);
       TempH(Cell, KSfc)  = ExpectedTemp(Cell);
       SalinH(Cell, KSfc) = ExpectedSalin(Cell);
    }
