@@ -228,6 +228,186 @@ class OneTwoOneFilter {
    Array1DI4 MaxLayerCell;
 };
 
+/// Velocity vertical mixing
+class VelVertMixSetupOnEdge {
+ public:
+   bool Enabled;
+   Real LocRhoSw;
+
+   VelVertMixSetupOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
+
+   KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, I4 KMin, I4 KMax, Real DT,
+                                   const Array2DReal &SpecVol,
+                                   const Array2DReal &PseudoThickCell,
+                                   const Array2DReal &VertVisc,
+                                   const Array2DReal &NormalVelEdge, Real &G,
+                                   Real &H, Real &X) const {
+
+      // Implicit vertical mixing is solved using the diffusion-form
+      // tridiagonal solver, `TriDiagDiffSolver`, provided by `TriDiagSolvers`.
+      //
+      // * Governing tridiagonal system:
+      //
+      //   -G_{k-1} Y_{k-1}
+      //   + (G_{k-1} + G_k + H_k) Y_k
+      //   - G_k Y_{k+1}
+      //   = X_k
+      //
+      //   G: coefficient contributing to both diagonal and off-diagonal entries
+      //   H: coefficient contributing only to the diagonal entry
+      //   X: RHS vector
+      //
+      // * Matrix structure:
+      //
+      //   [ D G 0   ... 0 ][ ]   [ ]  : k = 0
+      //   [ G D G   ... 0 ][ ]   [ ]
+      //   [ 0 G D G ... 0 ][ ]   [ ]
+      //   [      ...      ][Y] = [X]
+      //   [ 0 ... G D G 0 ][ ]   [ ]
+      //   [ 0 ... 0 G D G ][ ]   [ ]
+      //   [ 0 ... 0 0 G D ][ ]   [ ]  : k = NVertLayers - 1
+      //
+      //   where D = G_{k-1} + G_k + H_k
+      //
+      //   G_k = [DT * VertVisc_k^top / (Rho_0 * SpecVol_k^top)]
+      //         / PseudoThick_k^top
+      //   H_k = PseudoThick_k
+      //   X_k = PseudoThick_k * NormVel_k
+
+      // Fill values
+      G = 0.0_Real;
+      H = 1.0_Real;
+      X = 0.0_Real;
+
+      const I4 JCell0 = CellsOnEdge(IEdge, 0);
+      const I4 JCell1 = CellsOnEdge(IEdge, 1);
+
+      const Real PseudoThickEdgeK =
+          0.5_Real * (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
+
+      H = PseudoThickEdgeK;
+
+      // Unknown is NormVel^{n+1}.
+      X = PseudoThickEdgeK * NormalVelEdge(IEdge, K);
+
+      if (K < KMax) {
+         const Real PseudoThickEdgeKp1 =
+             0.5_Real *
+             (PseudoThickCell(JCell0, K + 1) + PseudoThickCell(JCell1, K + 1));
+
+         const Real PseudoThickEdgeBot =
+             0.5_Real * (PseudoThickEdgeK + PseudoThickEdgeKp1);
+
+         // Interpolation from cell center to top using
+         // the two-point linear interpolation
+         const Real SpecVolEdgeBot =
+             (0.5_Real * (SpecVol(JCell0, K) + SpecVol(JCell1, K)) *
+                  PseudoThickEdgeKp1 +
+              0.5_Real * (SpecVol(JCell0, K + 1) + SpecVol(JCell1, K + 1)) *
+                  PseudoThickEdgeK) /
+             (PseudoThickEdgeK + PseudoThickEdgeKp1);
+
+         const Real ViscAlphaEdgeBot =
+             0.5_Real * (VertVisc(JCell0, K + 1) + VertVisc(JCell1, K + 1)) /
+             (LocRhoSw * SpecVolEdgeBot);
+
+         G = DT * ViscAlphaEdgeBot / PseudoThickEdgeBot;
+      }
+   }
+
+ private:
+   I4 NVertLayers;
+   Array2DI4 CellsOnEdge;
+   Array2DReal EdgeMask;
+   Array1DI4 MinLayerEdgeBot;
+   Array1DI4 MaxLayerEdgeTop;
+};
+
+// Tracer vertical mixing term
+class TracerVertMixSetupOnCell {
+ public:
+   bool Enabled;
+   Real LocRhoSw;
+
+   TracerVertMixSetupOnCell(const HorzMesh *Mesh, const VertCoord *VCoord);
+
+   KOKKOS_FUNCTION void operator()(I4 L, I4 ICell, I4 K, I4 KMin, I4 KMax,
+                                   Real DT, const Array2DReal &SpecVol,
+                                   const Array2DReal &PseudoThickCell,
+                                   const Array2DReal &VertDiff,
+                                   const Array3DReal &TracersOnCell, Real &G,
+                                   Real &H, Real &X) const {
+
+      // Implicit vertical mixing is solved using the diffusion-form
+      // tridiagonal solver, `TriDiagDiffSolver`, provided by `TriDiagSolvers`.
+      //
+      // * Governing tridiagonal system:
+      //
+      //   -G_{k-1} Y_{k-1}
+      //   + (G_{k-1} + G_k + H_k) Y_k
+      //   - G_k Y_{k+1}
+      //   = X_k
+      //
+      //   G: coefficient contributing to both diagonal and off-diagonal entries
+      //   H: coefficient contributing only to the diagonal entry
+      //   X: RHS vector
+      //
+      // * Matrix structure:
+      //
+      //   [ D G 0   ... 0 ][ ]   [ ]  : k = 0
+      //   [ G D G   ... 0 ][ ]   [ ]
+      //   [ 0 G D G ... 0 ][ ]   [ ]
+      //   [      ...      ][Y] = [X]
+      //   [ 0 ... G D G 0 ][ ]   [ ]
+      //   [ 0 ... 0 G D G ][ ]   [ ]
+      //   [ 0 ... 0 0 G D ][ ]   [ ]  : k = NVertLayers - 1
+      //
+      //   where D = G_{k-1} + G_k + H_k
+      //
+      //   G_k = [DT * VertDiff_k^top / (Rho_0 * SpecVol_k^top)]
+      //         / PseudoThick_k^top
+      //   H_k = PseudoThick_k
+      //   X_k = PseudoThick_k * Phi_k
+
+      // Fill values
+      G = 0.0_Real;
+      H = 1.0_Real;
+      X = 0.0_Real;
+
+      const Real PseudoThickCellK = PseudoThickCell(ICell, K);
+
+      H = PseudoThickCellK;
+
+      // Unknown is Phi^{n+1}.
+      X = PseudoThickCellK * TracersOnCell(L, ICell, K);
+
+      if (K < KMax) {
+
+         const Real PseudoThickCellKp1 = PseudoThickCell(ICell, K + 1);
+
+         const Real PseudoThickCellBot =
+             0.5_Real * (PseudoThickCellK + PseudoThickCellKp1);
+
+         // Interpolation from cell center to top using
+         // the two-point linear interpolation
+         const Real SpecVolCellBot =
+             (SpecVol(ICell, K) * PseudoThickCellKp1 +
+              SpecVol(ICell, K + 1) * PseudoThickCellK) /
+             (PseudoThickCellK + PseudoThickCellKp1);
+
+         const Real DiffAlphaCellBot =
+             VertDiff(ICell, K + 1) / (LocRhoSw * SpecVolCellBot);
+
+         G = DT * DiffAlphaCellBot / PseudoThickCellBot;
+      }
+   }
+
+ private:
+   I4 NVertLayers;
+   Array1DI4 MinLayerCell;
+   Array1DI4 MaxLayerCell;
+};
+
 /// Class for Vertical Mixing Coefficient (VertMix) calculations
 class VertMix {
  public:
@@ -242,6 +422,9 @@ class VertMix {
    Array2DReal GradRichNum; ///< Gradient Richardson number field
    Array2DReal
        GradRichNumSmoothed; ///< Smoothed Gradient Richardson number field
+
+   // TODO: Temporary handling of TangentialVelocity
+   Array2DReal TangentialVelocity; ///< Tangential velocity
 
    std::string VertDiffFldName; ///< Field name for vertical diffusivity
    std::string VertViscFldName; ///< Field name for vertical viscosity
@@ -264,6 +447,9 @@ class VertMix {
                                  ///< calculation
    OneTwoOneFilter ComputeOneTwoOneFilter; ///< Functor for 1-2-1 filtering
 
+   VelVertMixSetupOnEdge VelVertMixSetup;
+   TracerVertMixSetupOnCell TracerVertMixSetup;
+
    /// Compute vertical diffusivity and viscosity for all cells/layers
    void computeVertMix(const Array2DReal &NormalVelocity,
                        const Array2DReal &TangentialVelocity,
@@ -271,6 +457,18 @@ class VertMix {
 
    /// Initialize VertMix from config and mesh
    static void init();
+
+   void applyVelVertMixImplicit(OceanState *State,
+                                const AuxiliaryState *AuxState,
+                                int ThickTimeLevel, int VelTimeLevel);
+   void applyTracerVertMixImplicit(OceanState *State,
+                                   const AuxiliaryState *AuxState,
+                                   Array3DReal &TracerArray, int NTracers,
+                                   int ThickTimeLevel, int VelTimeLevel);
+
+   /// Apply implicit vertical mixing to velocities and tracers
+   void VertMixImplicit(OceanState *State, AuxiliaryState *AuxState,
+                        Array3DReal &TracerArray, int NTracers, int TimeLevel);
 
  private:
    /// Private constructor

@@ -20,6 +20,7 @@
 #include "TimeStepper.h"
 #include "Tracers.h"
 #include "VertAdv.h"
+#include "VertMix.h"
 #include <string>
 
 namespace OMEGA {
@@ -39,6 +40,7 @@ void Tendencies::init() {
    TimeStepper *DefTimeStepper = TimeStepper::getDefault();
    Eos *DefEos                 = Eos::getInstance();
    PressureGrad *DefPGrad      = PressureGrad::getDefault();
+   VertMix *DefVertMix         = VertMix::getInstance();
 
    I4 NTracers = Tracers::getNumTracers();
 
@@ -78,9 +80,10 @@ void Tendencies::init() {
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
 
    // Ceate default tendencies
-   Tendencies::DefaultTendencies = create(
-       "Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad, DefEos,
-       NTracers, TimeStep, &TendConfig, CustomThickTend, CustomVelTend);
+   Tendencies::DefaultTendencies =
+       create("Default", DefHorzMesh, DefVertCoord, DefVertAdv, DefPGrad,
+              DefEos, DefVertMix, NTracers, TimeStep, &TendConfig,
+              CustomThickTend, CustomVelTend);
 
    DefaultTendencies->readConfig(OmegaConfig);
 
@@ -317,6 +320,30 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
                HostArray1DI4(TracerIdsToRestoreVec.data(),
                              TracerIdsToRestoreVec.size()));
    }
+
+   // Validate VertMix tendency
+   Err += TendConfig.get("VelVertMixTendencyEnable",
+                         this->VMix->VelVertMixSetup.Enabled);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: VelVertMixTendencyEnable not found in TendConfig");
+
+   Err += TendConfig.get("TracerVertMixTendencyEnable",
+                         this->VMix->TracerVertMixSetup.Enabled);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: TracerVertMixTendencyEnable not found in TendConfig");
+
+   if (this->VMix->VelVertMixSetup.Enabled ||
+       this->VMix->TracerVertMixSetup.Enabled) {
+
+      if (!this->EqState) {
+         ABORT_ERROR("Tendencies: Eos must be initialized when"
+                     "vertical mixing tendencies are enabled");
+      }
+      if (!this->VMix) {
+         ABORT_ERROR("Tendencies: VertMix must be initialized when"
+                     "vertical mixing tendencies are enabled");
+      }
+   }
 }
 
 //------------------------------------------------------------------------------
@@ -380,6 +407,7 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
                        VertAdv *VAdv,            ///< [in] Vertical advection
                        PressureGrad *PGrad,      ///< [in] Pressure gradient
                        Eos *EqState,             ///< [in] Equation of state
+                       VertMix *VMix,            ///< [in] Vertical mixing
                        int NTracersIn,           ///< [in] Number of tracers
                        TimeInterval TimeStepIn,  ///< [in] Time step
                        Config *Options,          ///< [in] Configuration options
@@ -393,7 +421,8 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
       TracerDiffusion(Mesh, VCoord), TracerHyperDiff(Mesh, VCoord),
       TracerHorzAdv(Mesh, VCoord), SurfaceTracerRestoring(Mesh),
       CustomThicknessTend(InCustomThicknessTend),
-      CustomVelocityTend(InCustomVelocityTend), EqState(EqState), PGrad(PGrad) {
+      CustomVelocityTend(InCustomVelocityTend), EqState(EqState), PGrad(PGrad),
+      VMix(VMix) {
 
    // Tendency arrays
    PseudoThicknessTend = Array2DReal("PseudoThicknessTend", Mesh->NCellsSize,
@@ -418,10 +447,11 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
                        VertAdv *VAdv,            ///< [in] Vertical advection
                        PressureGrad *PGrad,      ///< [in] Pressure gradient
                        Eos *EqState,             ///< [in] Equation of state
+                       VertMix *VMix,            ///< [in] Vertical mixing
                        int NTracersIn,           ///< [in] Number of tracers
                        TimeInterval TimeStepIn,  ///< [in] Time step
                        Config *Options)          ///< [in] Configuration options
-    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, NTracersIn,
+    : Tendencies(Name_, Mesh, VCoord, VAdv, PGrad, EqState, VMix, NTracersIn,
                  TimeStepIn, Options, CustomTendencyType{},
                  CustomTendencyType{}) {}
 

@@ -15,6 +15,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Forcing.h"
@@ -31,6 +32,7 @@
 #include "TimeStepper.h"
 #include "Tracers.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 #include "mpi.h"
 #include <chrono>
 #include <thread>
@@ -107,6 +109,12 @@ void initIOStreamTest(Clock *&ModelClock // Model clock
       ABORT_ERROR("IOStreamTest: Error initializing OceanState");
 
    PressureGrad::init();
+
+   // Initialize Eos
+   Eos::init();
+
+   // Initialize VertMix
+   VertMix::init();
 
    // Intialize Tendencies
    Tendencies::init();
@@ -229,6 +237,7 @@ int main(int argc, char **argv) {
    // Clean up environments
    TimeStepper::clear();
    PressureGrad::clear();
+   VertMix::destroyInstance();
    Tendencies::clear();
    Tracers::clear();
    OceanState::clear();

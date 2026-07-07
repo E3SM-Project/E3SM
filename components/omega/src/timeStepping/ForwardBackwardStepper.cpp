@@ -6,6 +6,7 @@
 
 #include "ForwardBackwardStepper.h"
 #include "Pacer.h"
+#include "VertMix.h"
 
 namespace OMEGA {
 
@@ -37,8 +38,12 @@ void ForwardBackwardStepper::doStep(
    const int ThickNextLevel  = 1;
    const int TracerNextLevel = 1;
 
+   int NTracers = Tracers::getNumTracers();
+
    Array3DReal CurTracerArray  = Tracers::getAll(TracerCurLevel);
    Array3DReal NextTracerArray = Tracers::getAll(TracerNextLevel);
+
+   VertMix *VMix = VertMix::getInstance();
 
    if (State == nullptr)
       LOG_CRITICAL("Invalid State");
@@ -85,6 +90,13 @@ void ForwardBackwardStepper::doStep(
    State->updateTimeLevels();
    Tracers::updateTimeLevels();
    Pacer::stop("ForwardBackward:haloExch", 3);
+
+   // Apply implicit vertical mixing
+   CurTracerArray = Tracers::getAll(VelCurLevel);
+   if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
+      VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
+                            State->CurTimeIndex);
+   }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), 0);
 

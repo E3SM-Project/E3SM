@@ -31,6 +31,7 @@
 #include "Tracers.h"
 #include "VertAdv.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 
 #include "mpi.h"
 
@@ -200,6 +201,7 @@ static int initOmegaModulesImpl(MPI_Comm Comm) {
    AuxiliaryState::init();
    Eos::init();
    PressureGrad::init();
+   VertMix::init();
    Tendencies::init();
 
    // Validate SurfaceTracerRestoring configuration

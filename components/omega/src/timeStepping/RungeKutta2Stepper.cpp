@@ -6,6 +6,7 @@
 
 #include "RungeKutta2Stepper.h"
 #include "Pacer.h"
+#include "VertMix.h"
 
 namespace OMEGA {
 
@@ -31,8 +32,12 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    const int CurLevel  = 0;
    const int NextLevel = 1;
 
+   int NTracers = Tracers::getNumTracers();
+
    Array3DReal CurTracerArray  = Tracers::getAll(CurLevel);
    Array3DReal NextTracerArray = Tracers::getAll(NextLevel);
+
+   VertMix *VMix = VertMix::getInstance();
 
    prescribeState(State, CurLevel, State, CurLevel, SimTime);
 
@@ -69,6 +74,13 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    State->updateTimeLevels();
    Tracers::updateTimeLevels();
    Pacer::stop("RK2:haloExch", 3);
+
+   // Apply implicit vertical mixing
+   CurTracerArray = Tracers::getAll(CurLevel);
+   if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
+      VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
+                            State->CurTimeIndex);
+   }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);
 

@@ -48,11 +48,6 @@ class OceanState {
    OceanState(const OceanState &) = delete;
    OceanState(OceanState &&)      = delete;
 
-   // Current time index
-   // this index is circular so that it returns to index 0
-   // if it is over max index
-   I4 CurTimeIndex; ///< Time dimension array index for current level
-
    /// Get the current time level index associated with a time level
    I4 getTimeIndex(const I4 TimeLevel) const;
 
@@ -62,6 +57,11 @@ class OceanState {
    // number of retrievals required.
 
    std::string Name;
+
+   // Current time index
+   // this index is circular so that it returns to index 0
+   // if it is over max index
+   I4 CurTimeIndex; ///< Time dimension array index for current level
 
    // Sizes and global IDs
    // Note that all sizes are actual counts (1-based) so that loop extents

@@ -13,6 +13,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Halo.h"
@@ -28,6 +29,7 @@
 #include "Tendencies.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 #include "mpi.h"
 
 #include <iostream>
@@ -94,6 +96,12 @@ void initStateTest() {
 
    // Initialize pressure gradient
    PressureGrad::init();
+
+   // Initialize equation of state
+   Eos::init();
+
+   // Initialize vertical mixing
+   VertMix::init();
 
    // Create tendencies
    Tendencies::init();
@@ -408,6 +416,7 @@ int main(int argc, char *argv[]) {
       Tracers::clear();
       AuxiliaryState::clear();
       PressureGrad::clear();
+      VertMix::destroyInstance();
       Tendencies::clear();
       TimeStepper::clear();
       HorzMesh::clear();
