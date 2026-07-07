@@ -25,8 +25,7 @@ void PseudoThicknessAuxVars::registerFields(const std::string &AuxGroupName,
                                             const std::string &MeshName) const {
 
    // Create/define fields
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    std::string DimSuffix;
    if (MeshName == "Default") {
@@ -47,7 +46,6 @@ void PseudoThicknessAuxVars::registerFields(const std::string &AuxGroupName,
        "",                                       // CF standard Name
        0,                                        // min valid value
        std::numeric_limits<Real>::max(),         // max valid value
-       FillValue,                                // scalar for undefined entries
        NDims,                                    // number of dimensions
        DimNames                                  // dimension names
    );
@@ -61,7 +59,6 @@ void PseudoThicknessAuxVars::registerFields(const std::string &AuxGroupName,
        "",                               // CF standard Name
        0,                                // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValue,                        // scalar used for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -74,7 +71,6 @@ void PseudoThicknessAuxVars::registerFields(const std::string &AuxGroupName,
        "",                                       // CF standard Name
        0,                                        // min valid value
        std::numeric_limits<Real>::max(),         // max valid value
-       FillValue,                                // scalar for undefined entries
        NDims,                                    // number of dimensions
        DimNames                                  // dimension names
    );

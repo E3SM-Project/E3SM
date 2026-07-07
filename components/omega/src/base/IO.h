@@ -364,6 +364,7 @@ void writeNDVar(void *Variable, ///< [in] variable to be written
 );
 
 } // end namespace IO
+
 } // end namespace OMEGA
 
 //===----------------------------------------------------------------------===//

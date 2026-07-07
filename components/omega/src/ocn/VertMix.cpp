@@ -354,8 +354,7 @@ void VertMix::defineFields() {
    }
 
    /// Create fields for state variables
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";
@@ -369,9 +368,8 @@ void VertMix::defineFields() {
                      "vertical_diffusivity",           // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValue, // Scalar used for undefined entries
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
    /// Create and register the VertVisc field
    auto VertViscField =
@@ -382,9 +380,8 @@ void VertMix::defineFields() {
                      "vertical_viscosity",             // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValue, // Scalar used for undefined entried
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
    /// Create and register the GradRichNum field
    auto GradRichNumField =
@@ -394,9 +391,8 @@ void VertMix::defineFields() {
                      "sea_water_gradient_richardson_number", // CF-ish Name
                      std::numeric_limits<Real>::min(),       // Min valid value
                      std::numeric_limits<Real>::max(),       // Max valid value
-                     FillValue, // Scalar used for undefined entries
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,   // Number of dimensions
+                     DimNames // Dimension names
        );
    /// Create and register the GradRichNumSmoothed field
    auto GradRichNumSmoothedField = Field::create(
@@ -406,9 +402,8 @@ void VertMix::defineFields() {
        "sea_water_gradient_richardson_number_smoothed", // CF-ish Name
        std::numeric_limits<Real>::min(),                // Min valid value
        std::numeric_limits<Real>::max(),                // Max valid value
-       FillValue, // Scalar used for undefined entries
-       NDims,     // Number of dimensions
-       DimNames   // Dimension names
+       NDims,                                           // Number of dimensions
+       DimNames                                         // Dimension names
    );
 
    // Create a field group for the vertmix-specific state fields

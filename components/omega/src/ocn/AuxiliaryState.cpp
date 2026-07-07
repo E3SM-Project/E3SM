@@ -167,6 +167,12 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
    const auto &VelocityDivCell = KineticAux.VelocityDivCell;
    const auto &RelVortVertex   = VorticityAux.RelVortVertex;
 
+   // Zero Del2Edge at boundary layers before accumulating over neighbouring
+   // edges in computeVarsOnCell/Vertex. Del4 hyperdiffusion reads Del2Edge at
+   // all edges sharing a cell or vertex; fill values in boundary layers would
+   // corrupt Del2DivCell and Del2RelVortVertex.
+   VCoord->zeroEdgeField(VelocityDel2Aux.Del2Edge, Mesh->NEdgesAll);
+
    Pacer::start("AuxState:edgeAuxState2", 2);
    parallelForOuter(
        "edgeAuxState2", {Mesh->NEdgesAll},

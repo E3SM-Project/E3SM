@@ -128,3 +128,25 @@ This `parallel_for` iterates over vertical chunks to facilitate vectorization on
 The vector length on GPUs is set to 1 to maximize parallelism.
 The `computeGeopotential` method uses hierarchical parallelism in a very similar way to `computeTargetThickness`, except that it doesn't require a column sum.
 It has an outer `parallel_for` that splits horizontal cells into teams and an inner `parallel_for` that does vertical computations in chunks.
+
+### Layer masking
+
+Field arrays are auto-filled with `FillValueReal` when they are attached to a `Field` (see the [Fill Values design](../design/FillValues.md)).
+Compute kernels only write to active layers, so inactive layers naturally retain the fill value.
+After an initial-condition or restart read, however, state and tracer arrays come from the input file and may hold zeros (or arbitrary values) in inactive and boundary layers.
+`VertCoord` provides a family of helper methods that enforce the correct layer pattern on such arrays.
+All of them use the inclusive `[Min, Max]` active-layer convention consistent with `computeGeomZHeight`/`computePressure`, and use hierarchical parallelism (an outer `parallelForOuter` over the horizontal dimension and an inner `parallelForInner` over the vertical layers).
+
+| Method | Element | Zones applied |
+|--------|---------|---------------|
+| `zeroEdgeField(Arr, NEdgesAll)` | edge | sets `[MinLayerEdgeTop, MaxLayerEdgeBot]` to 0; layers outside retain their fill value |
+| `applyEdgeLayerMask(Arr, NEdgesAll)` | edge | three-zone: outside `[MinLayerEdgeTop, MaxLayerEdgeBot]` → `FillValueReal`; inside that but outside `[MinLayerEdgeBot, MaxLayerEdgeTop]` → 0; active layers unchanged |
+| `applyCellLayerMask(Arr, NCellsAll)` | cell | two-zone: outside `[MinLayerCell, MaxLayerCell]` → `FillValueReal`; active layers unchanged |
+| `applyVertexLayerMask(Arr, NVerticesAll)` | vertex | two-zone: outside `[MinLayerVertexTop, MaxLayerVertexBot]` → `FillValueReal`; active layers unchanged |
+
+Cell fields have no boundary (zero) zone because a cell column is either active or inactive at a given layer, with no neighbor-dependent partial-activity range.
+Vertex fields also have no zeroed boundary zone, but for a different reason: a boundary vertex with one or more active surrounding cells holds valid, generally non-zero data (for example, relative vorticity computed from its active surrounding edges over the full `[MinLayerVertexTop, MaxLayerVertexBot]` range), so the entire valid range is kept rather than zeroed.
+This is unlike a flux-type edge field, where the normal flux through a face bordering land genuinely vanishes.
+The flux-type edge fields handled by `zeroEdgeField` (for example `NormalVelocityTend` and `VelocityDel2Aux.Del2Edge`) are zeroed before being recomputed each time step so that boundary edges carry 0 rather than `FillValueReal`.
+The `apply*LayerMask` methods are driven through `OceanState::applyLayerMasks`, which is called once from `ocnInit` after the IC/restart read: it applies the edge mask to `NormalVelocity` and the cell mask to `PseudoThickness`, `Temperature`, and `Salinity`.
+`applyVertexLayerMask` has no production caller yet because no vertex-based state field is read from the IC/restart; it is provided for completeness and verified by the fill-value CTest.

@@ -37,7 +37,6 @@ Fields are created with standard metadata using
                  StdName,     ///< [in] CF standard Name (string)
                  ValidMin,    ///< [in] min valid field value (same type as
                  ValidMax,    ///< [in] max valid field value  field data)
-                 FillValue,   ///< [in] scalar used for undefined entries
                  NumDims,     ///< [in] number of dimensions (int)
                  Dimensions,  ///< [in] dim names (vector of strings)
                  TimeDependent   ///< [in] (opt, default true) if time varying
@@ -49,9 +48,13 @@ not exist, an empty string can be provided. This is uncommon for most fields
 since the CF conventions maintain a fairly complete list, but can be the case
 for some intermediate calculations or unique analyses. If there is no
 restriction on valid range, an appropriately large range should be provided for
-the data type. Similarly, if a FillValue is not being used, a very unique
-number should be supplied to prevent accidentally treating valid data as a
-FillValue. The optional TimeDependent argument can be omitted and is assumed
+the data type. The fill value is not specified when creating a field; it is
+automatically deduced from the element type of the array passed to
+`attachData()` and set to the corresponding standard constant from `FillValues.h`
+(`FillValueI4`, `FillValueI8`, `FillValueR4`, or `FillValueR8`). These match
+the NetCDF-C `NC_FILL_*` standard values recognized by analysis tools such as
+ncview, Xarray, and NCO. The optional TimeDependent argument can be omitted
+and is assumed
 to be true by default. Fields with this attribute will be output with the
 unlimited time dimension added. Time should not be added explicitly in the
 dimension list since it will be added during I/O. Fields that do not change
@@ -113,6 +116,13 @@ is provided using the field name:
                     InDataArray  // [in] Array with data to attach
                     );
 ```
+When `attachData` is called, every element of the attached array is automatically
+initialized to the field's declared fill value. This ensures that inactive entries
+(e.g., ocean layers below `MaxLayerCell`) hold a well-defined NetCDF-standard
+sentinel in output without any explicit initialization in module code. Subsequent
+compute calls overwrite active entries; the fill value persists only where no valid
+data is written.
+
 Note that the data is assumed to reside in only one location so if a mirror
 array exists (eg if replicated on host and device), a separate Field may be
 needed. However, it is is better to define only one location and allow the

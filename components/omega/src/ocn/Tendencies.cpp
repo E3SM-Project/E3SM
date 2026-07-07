@@ -365,7 +365,7 @@ void Tendencies::defineFields() {
    auto PseudoThicknessTendField =
        Field::create(PseudoThicknessTendFieldName, "Pseudo-thickness tendency",
                      "m/s", "cell_thickness_tendency", -9.99E+10, 9.99E+10,
-                     -9.99E+30, NDims, DimNamesThickness);
+                     NDims, DimNamesThickness);
    NDims = 3;
    std::vector<std::string> DimNamesTracer(NDims);
    DimNamesTracer[0]    = "NTracers";
@@ -373,7 +373,7 @@ void Tendencies::defineFields() {
    DimNamesTracer[2]    = "NVertLayers";
    auto TracerTendField = Field::create(
        TracerTendFieldName, "Tracer tendency", "kg/m^3/s", "tracer_tendency",
-       -9.99E+10, 9.99E+10, -9.99E+30, NDims, DimNamesTracer);
+       -9.99E+10, 9.99E+10, NDims, DimNamesTracer);
    NDims = 2;
    std::vector<std::string> DimNamesVelocity(NDims);
    DimNamesVelocity[0] = "NEdges";
@@ -381,7 +381,7 @@ void Tendencies::defineFields() {
    auto NormalVelocityTendField =
        Field::create(NormalVelocityTendFieldName, "Normal velocity tendency",
                      "m/s^2", "sea_water_velocity_tendency", -9.99E+10,
-                     9.99E+10, -9.99E+30, NDims, DimNamesVelocity);
+                     9.99E+10, NDims, DimNamesVelocity);
 
    std::string TendGroupName = "Tendencies";
    if (Name != "Default") {
@@ -547,15 +547,12 @@ void Tendencies::computeVelocityTendenciesOnly(
 
    Pacer::start("Tend:computeVelocityTendenciesOnly", 1);
 
-   parallelForOuter(
-       {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
-          const int KMin = MinLayerEdgeBot(IEdge);
-          const int KMax = MaxLayerEdgeTop(IEdge);
-
-          parallelForInner(
-              Team, Range{KMin, KMax},
-              INNER_LAMBDA(int K) { LocNormalVelocityTend(IEdge, K) = 0; });
-       });
+   // Zero NVTend over all layers where at least one neighboring cell is active:
+   // [MinLayerEdgeTop, MaxLayerEdgeBot]. This includes boundary edges adjacent
+   // to land or bathymetry steps, which have no computed tendency but should
+   // show 0, not FillValueReal. Fully inactive layers (outside this range)
+   // keep their FillValueReal from attachData().
+   VCoord->zeroEdgeField(NormalVelocityTend, Mesh->NEdgesAll);
 
    // Compute potential vorticity horizontal advection
    const Array2DReal &FluxPseudoThickEdge =

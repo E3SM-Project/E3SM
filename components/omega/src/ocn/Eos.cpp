@@ -49,9 +49,6 @@ Eos::Eos(const std::string &Name, ///< [in] Name for eos object
    BruntVaisalaFreqSq = Array2DReal("BruntVaisalaFreqSq", Mesh->NCellsSize,
                                     VCoord->NVertLayersP1);
 
-   deepCopy(SpecVol, 1.0_Real / RhoSw);
-   deepCopy(SpecVolDisplaced, 1.0_Real / RhoSw);
-
    defineFields();
 }
 
@@ -142,8 +139,6 @@ void Eos::computeSpecVol(const Array2DReal &ConservTemp,
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
-   deepCopy(LocSpecVol, 0); /// Initialize local specific volume to zero
-
    I4 KDisp = 0; /// No displacement in this case
 
    /// Dispatch to the correct EOS calculation
@@ -208,9 +203,6 @@ void Eos::computeSpecVolDisp(const Array2DReal &ConservTemp,
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
-   deepCopy(LocSpecVolDisplaced,
-            0); /// Initialize local specific volume to zero
-
    /// Dispatch to the correct EOS calculation
    /// If EosChoice is Linear, the displaced specific
    /// volume is the same as the specific volume
@@ -272,9 +264,6 @@ void Eos::computeBruntVaisalaFreqSq(const Array2DReal &ConservTemp,
        ComputeBruntVaisalaFreqSqTeos10); /// Local view for TEOS-10 computation
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
-
-   deepCopy(LocBruntVaisalaFreqSq,
-            0); /// Initialize local Brunt-Vaisala frequency to zero
 
    /// Dispatch to the correct squared Brunt-Vaisala frequency calculation
    if (EosChoice == EosType::LinearEos) {
@@ -368,8 +357,7 @@ void Eos::defineFields() {
    }
 
    /// Create fields for state variables
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayers";
@@ -382,9 +370,8 @@ void Eos::defineFields() {
                      "sea_water_specific_volume",      // CF-ish Name
                      0.0,                              // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValue, // Scalar used for undefined entries
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
    /// Create and register the displaced specific volume field
    auto SpecVolDisplacedField =
@@ -395,9 +382,8 @@ void Eos::defineFields() {
                      "sea_water_specific_volume_displaced", // CF-ish Name
                      0.0,                                   // Min valid value
                      std::numeric_limits<Real>::max(),      // Max valid value
-                     FillValue, // Scalar used for undefined entried
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,   // Number of dimensions
+                     DimNames // Dimension names
        );
 
    // Brunt-Vaisala frequency is located at interfaces
@@ -411,9 +397,8 @@ void Eos::defineFields() {
                      "sea_water_brunt_vaisala_frequency_squared", // CF-ish Name
                      std::numeric_limits<Real>::min(), // Min valid value
                      std::numeric_limits<Real>::max(), // Max valid value
-                     FillValue, // Scalar used for undefined entries
-                     NDims,     // Number of dimensions
-                     DimNames   // Dimension names
+                     NDims,                            // Number of dimensions
+                     DimNames                          // Dimension names
        );
 
    // Create a field group for the eos-specific state fields

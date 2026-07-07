@@ -150,6 +150,12 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    OceanState *DefState = OceanState::getDefault();
    I4 CurTimeLevel      = 0;
    DefState->exchangeHalo(CurTimeLevel);
+
+   // Enforce layer masks on state and tracer variables: fully-inactive layers
+   // get FillValueReal, boundary layers get 0, active layers keep their
+   // IC/restart value.
+   DefState->applyLayerMasks(CurTimeLevel);
+
    DefState->copyToHost(CurTimeLevel);
 
    Forcing *DefForcing = Forcing::getDefault();

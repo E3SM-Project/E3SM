@@ -35,8 +35,7 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
                                       const std::string &MeshName) const {
 
    // Create fields with metadata
-   const Real FillValue = -9.99e30;
-   int NDims            = 2;
+   int NDims = 2;
    std::vector<std::string> DimNames(NDims);
    std::string DimSuffix;
    if (MeshName == "Default") {
@@ -56,9 +55,8 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
        "ocean_relative_vorticity",                         // CF standard Name
        std::numeric_limits<Real>::min(),                   // min valid value
        std::numeric_limits<Real>::max(),                   // max valid value
-       FillValue, // scalar for undefined entries
-       NDims,     // number of dimensions
-       DimNames   // dimension names
+       NDims,   // number of dimensions
+       DimNames // dimension names
    );
 
    // Normalized relative vorticity on vertices
@@ -69,7 +67,6 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValue,                        // scalar used for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -83,7 +80,6 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValue,                        // scalar used for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -98,7 +94,6 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValue,                        // scalar used for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -112,9 +107,8 @@ void VorticityAuxVars::registerFields(const std::string &AuxGroupName,
        "",                                           // CF standard Name
        std::numeric_limits<Real>::min(),             // min valid value
        std::numeric_limits<Real>::max(),             // max valid value
-       FillValue, // scalar used for undefined entries
-       NDims,     // number of dimensions
-       DimNames   // dimension names
+       NDims,                                        // number of dimensions
+       DimNames                                      // dimension names
    );
 
    // Add fields to Aux field group

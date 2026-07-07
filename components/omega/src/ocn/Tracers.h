@@ -81,7 +81,6 @@ class Tracers {
           const std::string &StdName,     ///< [in] CF standard Name
           const Real ValidMin,            ///< [in] min valid field value
           const Real ValidMax,            ///< [in] max valid field value
-          const Real FillValue,           ///< [in] value for undef entries
           I4 &Index = IndxInvalid         ///< [out] (optional) index value
    );
 

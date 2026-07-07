@@ -19,6 +19,7 @@
 #include "DataTypes.h"
 #include "Dimension.h"
 #include "Error.h"
+#include "FillValues.h"
 #include "Logging.h"
 #include "OmegaKokkos.h"
 #include "TimeMgr.h"
@@ -26,6 +27,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <type_traits>
 
 namespace OMEGA {
 
@@ -82,6 +84,20 @@ class Field {
    /// various types and cast to the appropriate type when needed.
    std::shared_ptr<void> DataArray;
 
+   /// Fills every element of InDataArray with the standard fill value for the
+   /// array's element type, then records that value in the field metadata.
+   /// Called automatically by attachData() so inactive entries are initialized
+   /// to a well-defined sentinel before any compute routine runs.
+   template <typename T> void fillWithValue(const T &InDataArray) {
+      using ValType             = typename T::non_const_value_type;
+      constexpr ValType FillVal = FillValue<ValType>;
+      // _FillValue is the NetCDF/CF standard attribute recognized by analysis
+      // tools (ncview, Xarray, NCO, ...); store only that, no non-standard
+      // alias
+      FieldMeta["_FillValue"] = FillVal;
+      deepCopy(InDataArray, FillVal);
+   }
+
  public:
    //---------------------------------------------------------------------------
    // Initialization
@@ -112,7 +128,6 @@ class Field {
           const std::string &StdName,     ///< [in] CF standard Name
           const std::any ValidMin,        ///< [in] min valid field value
           const std::any ValidMax,        ///< [in] max valid field value
-          const std::any FillValue,       ///< [in] scalar for undefined entries
           const int NumDims,              ///< [in] number of dimensions
           const std::vector<std::string> &Dimensions, ///< [in] dim names
           const bool TimeDependent   = true, ///< [in] opt flag for unlim time
@@ -303,7 +318,8 @@ class Field {
    /// templated based on the array data type so a template argument with
    /// the proper array data type (eg <Array2DR4>) must be supplied.
    template <typename T>
-   void attachData(const T &InDataArray ///< [in] Array with data to attach
+   void attachData(const T &InDataArray,    ///< [in] Array with data to attach
+                   bool FillOnAttach = true ///< [in] fill array with fill value
    ) {
       OMEGA_ASSERT(isKokkosArray<T>,
                    "Field::attachData requires Kokkos array as input");
@@ -314,6 +330,13 @@ class Field {
       // Determine type and location
       DataType = checkArrayType<T>();
       MemLoc   = findArrayMemLoc<T>();
+
+      // Initialize every element to the declared fill value so inactive
+      // entries (e.g. layers below MaxLayerCell) are well-defined in output.
+      // Pass FillOnAttach=false when re-attaching an existing data-filled array
+      // (e.g. time-level pointer updates) to preserve the computed values.
+      if (FillOnAttach)
+         fillWithValue<T>(InDataArray);
    };
 
    //---------------------------------------------------------------------------
@@ -325,7 +348,8 @@ class Field {
    template <typename T>
    static void
    attachFieldData(const std::string &FieldName, ///< [in] Name of Field
-                   const T &InDataArray ///< [in] Array with data to attach
+                   const T &InDataArray,    ///< [in] Array with data to attach
+                   bool FillOnAttach = true ///< [in] fill array with fill value
    ) {
       OMEGA_ASSERT(isKokkosArray<T>,
                    "Field::attachFieldData requires Kokkos array as input");
@@ -335,7 +359,7 @@ class Field {
          // Retrieve the field
          auto ThisField = AllFields[FieldName];
          // Attach the data array
-         ThisField->attachData<T>(InDataArray);
+         ThisField->attachData<T>(InDataArray, FillOnAttach);
 
       } else { // field has not yet been defined
          ABORT_ERROR("Field: error attaching data to {}. Field not defined",

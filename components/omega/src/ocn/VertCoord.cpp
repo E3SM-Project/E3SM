@@ -247,9 +247,7 @@ void VertCoord::defineFields() {
    }
 
    // Create fields for VertCoord variables
-   const I4 FillValueI4     = -999;
-   const Real FillValueReal = -9.99e30;
-   int NDims                = 1;
+   int NDims = 1;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
 
@@ -260,9 +258,8 @@ void VertCoord::defineFields() {
        "",                                          // CF standard Name
        0,                                           // min valid value
        std::numeric_limits<I4>::max(),              // max valid value
-       FillValueI4, // scalar for undefined entries
-       NDims,       // number of dimensions
-       DimNames     // dimension names
+       NDims,                                       // number of dimensions
+       DimNames                                     // dimension names
    );
 
    auto MaxLayerCellField = Field::create(
@@ -272,9 +269,8 @@ void VertCoord::defineFields() {
        "",                                         // CF standard Name
        -1,                                         // min valid value
        std::numeric_limits<I4>::max(),             // max valid value
-       FillValueI4, // scalar for undefined entries
-       NDims,       // number of dimensions
-       DimNames     // dimension names
+       NDims,                                      // number of dimensions
+       DimNames                                    // dimension names
    );
 
    auto BottomGeomDepthField = Field::create(
@@ -285,7 +281,6 @@ void VertCoord::defineFields() {
        "sea_floor_depth_below_geoid",    // CF standard Name
        0.0,                              // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -297,7 +292,6 @@ void VertCoord::defineFields() {
        "sea_surface_height",                // CF standard Name
        std::numeric_limits<Real>::min(),    // min valid value
        std::numeric_limits<Real>::max(),    // max valid value
-       FillValueReal,                       // scalar for undefined entries
        NDims,                               // number of dimensions
        DimNames                             // dimension names
    );
@@ -314,7 +308,6 @@ void VertCoord::defineFields() {
        "",                               // CF standard Name
        0.0,                              // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -331,7 +324,6 @@ void VertCoord::defineFields() {
        "",                               // CF standard Name
        0.0,                              // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -348,7 +340,6 @@ void VertCoord::defineFields() {
        "sea_water_pressure",                    // CF standard Name
        0.0,                                     // min valid value
        std::numeric_limits<Real>::max(),        // max valid value
-       FillValueReal,                           // scalar for undefined entries
        NDims,                                   // number of dimensions
        DimNames                                 // dimension names
    );
@@ -360,7 +351,6 @@ void VertCoord::defineFields() {
        "height",                               // CF standard Name
        std::numeric_limits<Real>::min(),       // min valid value
        std::numeric_limits<Real>::max(),       // max valid value
-       FillValueReal,                          // scalar for undefined entries
        NDims,                                  // number of dimensions
        DimNames                                // dimension names
    );
@@ -374,7 +364,6 @@ void VertCoord::defineFields() {
        "sea_water_pressure",                   // CF standard Name
        0.0,                                    // min valid value
        std::numeric_limits<Real>::max(),       // max valid value
-       FillValueReal,                          // scalar for undefined entries
        NDims,                                  // number of dimensions
        DimNames                                // dimension names
    );
@@ -386,7 +375,6 @@ void VertCoord::defineFields() {
        "height",                              // CF standard Name
        std::numeric_limits<Real>::min(),      // min valid value
        std::numeric_limits<Real>::max(),      // max valid value
-       FillValueReal,                         // scalar for undefined entries
        NDims,                                 // number of dimensions
        DimNames                               // dimension names
    );
@@ -398,7 +386,6 @@ void VertCoord::defineFields() {
        "geopotential",                    // CF standard Name
        std::numeric_limits<Real>::min(),  // min valid value
        std::numeric_limits<Real>::max(),  // max valid value
-       FillValueReal,                     // scalar for undefined entries
        NDims,                             // number of dimensions
        DimNames                           // dimension names
    );
@@ -411,7 +398,6 @@ void VertCoord::defineFields() {
        "",                                    // CF standard Name
        0.0,                                   // min valid value
        std::numeric_limits<Real>::max(),      // max valid value
-       FillValueReal,                         // scalar for undefined entries
        NDims,                                 // number of dimensions
        DimNames                               // dimension names
    );
@@ -524,15 +510,6 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    // uninitialized and will need to be initialized explicitly if needed.
    if (ReadStream) {
 
-      I4 FillValueI4     = -1;
-      Real FillValueReal = -999._Real;
-
-      deepCopy(MinLayerCell, FillValueI4);
-      deepCopy(MaxLayerCell, FillValueI4);
-      deepCopy(BottomGeomDepth, FillValueReal);
-      deepCopy(RefPseudoThickness, FillValueReal);
-      deepCopy(VertCoordMovementWeights, FillValueReal);
-
       // Fetch input stream and validate
       std::string StreamName = "InitialVertCoord";
       if (Name != "Default") {
@@ -558,76 +535,93 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
          Err = IOStream::read(StreamName);
          if (Err.isFail()) {
             LOG_INFO("VertCoord: Error while reading {} stream", StreamName);
-            I4 Sum1 = 0;
+            I4 NFill1 = 0;
             parallelReduce(
                 {MinLayerCell.extent_int(0)},
-                KOKKOS_LAMBDA(int I, int &Accum) {
-                   Accum += LocMinLayerCell(I);
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocMinLayerCell(I) == FillValueI4)
+                      ++Count;
                 },
-                Sum1);
-            if (Sum1 < 0) {
+                NFill1);
+            if (NFill1 > 0) {
                LOG_INFO("VertCoord: Error reading MinLayerCell from {}, "
                         "using MinLayerCell = 0",
                         StreamName);
                deepCopy(MinLayerCell, 1);
             }
-            I4 Sum2 = 0;
+            I4 NFill2 = 0;
             parallelReduce(
                 {MaxLayerCell.extent_int(0)},
-                KOKKOS_LAMBDA(int I, int &Accum) {
-                   Accum += LocMaxLayerCell(I);
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocMaxLayerCell(I) == FillValueI4)
+                      ++Count;
                 },
-                Sum2);
-            if (Sum2 < 0) {
+                NFill2);
+            if (NFill2 > 0) {
                LOG_INFO("VertCoord: Error reading MaxLayerCell from {}, "
                         "using MaxLayerCell = NVertLayers - 1",
                         StreamName);
                deepCopy(MaxLayerCell, NVertLayers);
             }
-            Real Sum3 = 0.;
+            I4 NFill3 = 0;
             parallelReduce(
                 {BottomGeomDepth.extent_int(0)},
-                KOKKOS_LAMBDA(int I, Real &Accum) {
-                   Accum += LocBottomGeomDepth(I);
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocBottomGeomDepth(I) == FillValueReal)
+                      ++Count;
                 },
-                Sum3);
-            if (Sum3 < 0.) {
+                NFill3);
+            if (NFill3 > 0) {
                ABORT_ERROR("VertCoord: Error reading BottomGeomDepth from {}",
                            StreamName);
             }
-            Real Sum4 = 0.;
+            I4 NFill4 = 0;
             parallelReduce(
                 {RefPseudoThickness.extent_int(0),
                  RefPseudoThickness.extent_int(1)},
-                KOKKOS_LAMBDA(int I, int J, Real &Accum) {
-                   Accum += LocPseudoThick(I, J);
+                KOKKOS_LAMBDA(int I, int J, I4 &Count) {
+                   if (LocPseudoThick(I, J) == FillValueReal)
+                      ++Count;
                 },
-                Sum4);
-            if (Sum4 < 0.) {
+                NFill4);
+            if (NFill4 > 0) {
                ABORT_ERROR("VertCoord: Error reading RefPseudoThickness "
                            "from {}",
                            StreamName);
             }
-            Real Sum5     = 0.;
-            I4 NumNonZero = 0;
+            I4 NFill5 = 0;
             parallelReduce(
                 {VertCoordMovementWeights.extent_int(0)},
-                KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
-                   Real W = LocVCoordMvmtWgts(I);
-                   Accum += W;
-                   if (W != 0) {
-                      NonZeroCount += 1;
-                   }
+                KOKKOS_LAMBDA(int I, I4 &Count) {
+                   if (LocVCoordMvmtWgts(I) == FillValueReal)
+                      ++Count;
                 },
-                Sum5, NumNonZero);
-            if (Sum5 < 0.) {
-               ABORT_ERROR("VertCoord: Error reading VertCoordMovementWeights "
-                           "from {}",
-                           StreamName);
-            }
-            if (NumNonZero == 0) {
-               // TODO: ABORT_ERROR when all weights equal 0
+                NFill5);
+            if (NFill5 > 0) {
+               // Stream did not populate weights — use default
                deepCopy(VertCoordMovementWeights, 1._Real);
+            } else {
+               Real Sum5     = 0.;
+               I4 NumNonZero = 0;
+               parallelReduce(
+                   {VertCoordMovementWeights.extent_int(0)},
+                   KOKKOS_LAMBDA(int I, Real &Accum, I4 &NonZeroCount) {
+                      Real W = LocVCoordMvmtWgts(I);
+                      Accum += W;
+                      if (W != 0) {
+                         NonZeroCount += 1;
+                      }
+                   },
+                   Sum5, NumNonZero);
+               if (Sum5 < 0.) {
+                  ABORT_ERROR(
+                      "VertCoord: Error reading VertCoordMovementWeights "
+                      "from {}",
+                      StreamName);
+               } else if (NumNonZero == 0) {
+                  // TODO: ABORT_ERROR when all weights equal 0
+                  deepCopy(VertCoordMovementWeights, 1._Real);
+               }
             }
          }
       } else {
@@ -1185,6 +1179,87 @@ VertCoord *VertCoord::get(const std::string Name ///< [in] Name of VertCoord
    }
 
 } // end get VertCoord
+
+//------------------------------------------------------------------------------
+// Zero all layers in [MinLayerEdgeTop, MaxLayerEdgeBot] of an edge field.
+void VertCoord::zeroEdgeField(Array2DReal Arr, I4 NEdgesAll) const {
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KTop = LocMinLayerEdgeTop(IEdge);
+          const int KBot = Kokkos::max(0, LocMaxLayerEdgeBot(IEdge));
+          parallelForInner(
+              Team, Range{KTop, KBot},
+              INNER_LAMBDA(int K) { Arr(IEdge, K) = 0._Real; });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce masking on a cell field after IC or restart read.
+void VertCoord::applyCellLayerMask(Array2DReal Arr, I4 NCellsAll) const {
+   OMEGA_SCOPE(LocMinLayerCell, MinLayerCell);
+   OMEGA_SCOPE(LocMaxLayerCell, MaxLayerCell);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NCellsAll}, KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+          const int KMin = LocMinLayerCell(ICell);
+          const int KMax = LocMaxLayerCell(ICell);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KMin || K > KMax)
+                    Arr(ICell, K) = FillValueReal;
+                 // else: active layer - keep IC/restart value
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce masking on a vertex field after IC or restart read.
+void VertCoord::applyVertexLayerMask(Array2DReal Arr, I4 NVerticesAll) const {
+   OMEGA_SCOPE(LocMinLayerVertexTop, MinLayerVertexTop);
+   OMEGA_SCOPE(LocMaxLayerVertexBot, MaxLayerVertexBot);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NVerticesAll}, KOKKOS_LAMBDA(int IVertex, const TeamMember &Team) {
+          const int KMin = LocMinLayerVertexTop(IVertex);
+          const int KMax = LocMaxLayerVertexBot(IVertex);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KMin || K > KMax)
+                    Arr(IVertex, K) = FillValueReal;
+                 // else: active layer - keep IC/restart value
+                 // Unlike edges, boundary vertices (those with one or more
+                 // active surrounding cells) hold valid, generally non-zero
+                 // data and are not zeroed.
+              });
+       });
+}
+
+//------------------------------------------------------------------------------
+// Enforce 3-zone masking on an edge field after IC or restart read.
+void VertCoord::applyEdgeLayerMask(Array2DReal Arr, I4 NEdgesAll) const {
+   OMEGA_SCOPE(LocMinLayerEdgeTop, MinLayerEdgeTop);
+   OMEGA_SCOPE(LocMaxLayerEdgeBot, MaxLayerEdgeBot);
+   OMEGA_SCOPE(LocMinLayerEdgeBot, MinLayerEdgeBot);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, MaxLayerEdgeTop);
+   I4 LocNVertLayers = NVertLayers;
+   parallelForOuter(
+       {NEdgesAll}, KOKKOS_LAMBDA(int IEdge, const TeamMember &Team) {
+          const int KTop = LocMinLayerEdgeTop(IEdge);
+          const int KBot = Kokkos::max(0, LocMaxLayerEdgeBot(IEdge));
+          const int KMin = LocMinLayerEdgeBot(IEdge);
+          const int KMax = LocMaxLayerEdgeTop(IEdge);
+          parallelForInner(
+              Team, Range{0, LocNVertLayers - 1}, INNER_LAMBDA(int K) {
+                 if (K < KTop || K > KBot)
+                    Arr(IEdge, K) = FillValueReal;
+                 else if (K < KMin || K > KMax)
+                    Arr(IEdge, K) = 0._Real;
+                 // else: active layer - keep IC/restart value
+              });
+       });
+}
 
 } // end namespace OMEGA
 

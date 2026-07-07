@@ -128,8 +128,7 @@ void VertAdv::defineFields() {
       LowOrderVertFluxFldName.append(Name);
    }
 
-   const Real FillValueReal = -9.99e30;
-   I4 NDims                 = 2;
+   I4 NDims = 2;
    std::vector<std::string> DimNames(NDims);
    DimNames[0] = "NCells";
    DimNames[1] = "NVertLayersP1";
@@ -143,7 +142,6 @@ void VertAdv::defineFields() {
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -156,9 +154,8 @@ void VertAdv::defineFields() {
                      "",                      // CF standard Name
                      std::numeric_limits<Real>::min(), // min valid value
                      std::numeric_limits<Real>::max(), // max valid value
-                     FillValueReal, // scalar for undefined entries
-                     NDims,         // number of dimensions
-                     DimNames       // dimension names
+                     NDims,                            // number of dimensions
+                     DimNames                          // dimension names
        );
 
    NDims = 3;
@@ -174,7 +171,6 @@ void VertAdv::defineFields() {
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -187,7 +183,6 @@ void VertAdv::defineFields() {
        "",                               // CF standard Name
        std::numeric_limits<Real>::min(), // min valid value
        std::numeric_limits<Real>::max(), // max valid value
-       FillValueReal,                    // scalar for undefined entries
        NDims,                            // number of dimensions
        DimNames                          // dimension names
    );
@@ -384,6 +379,7 @@ void VertAdv::computeVerticalPseudoVelocity(
    OMEGA_SCOPE(LocEOnC, Mesh->EdgesOnCell);
    OMEGA_SCOPE(LocDvE, Mesh->DvEdge);
    OMEGA_SCOPE(LocESOnC, Mesh->EdgeSignOnCell);
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
    // Loop over all cells owned by the task
    parallelForOuter(
@@ -407,12 +403,16 @@ void VertAdv::computeVerticalPseudoVelocity(
                  const I4 KLen            = chunkLength(KChunk, KStart, KMax);
 
                  for (int J = 0; J < LocNEOnC(ICell); ++J) {
-                    const I4 JEdge = LocEOnC(ICell, J);
+                    const I4 JEdge    = LocEOnC(ICell, J);
+                    const I4 MaxKEdge = LocMaxLayerEdgeTop(JEdge);
                     for (int KVec = 0; KVec < KLen; ++KVec) {
                        const I4 K = KStart + KVec;
-                       DivHUTmp[KVec] -= LocDvE(JEdge) * LocESOnC(ICell, J) *
-                                         FluxPseudoThickEdge(JEdge, K) *
-                                         NormalVelocity(JEdge, K) * InvAreaCell;
+                       if (K <= MaxKEdge) {
+                          DivHUTmp[KVec] -= LocDvE(JEdge) * LocESOnC(ICell, J) *
+                                            FluxPseudoThickEdge(JEdge, K) *
+                                            NormalVelocity(JEdge, K) *
+                                            InvAreaCell;
+                       }
                     }
                  }
                  for (int KVec = 0; KVec < KLen; ++KVec) {

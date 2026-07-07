@@ -27,16 +27,12 @@ static void defineAllTracers() {
           "sea_water_conservative_temperature", ///< [in] CF standard Name
           -273.15,                              ///< [in] min valid field value
           100.0,                                ///< [in] max valid field value
-          1.e33,                                ///< [in] value of undef entries
           IndxTemp);                            ///< [out] (optional) static index
 
    define("Salinity", "Absolute Salinity", "g kg-1",
-          "sea_water_absolute_salinity", 0.0, 50.0, 1.e33, IndxSalt);
+          "sea_water_absolute_salinity", 0.0, 50.0, IndxSalt);
 
-   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug1);
-   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug2);
-   define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, 1.e33,
-          IndxDebug3);
+   define("Debug1", "Debug Tracer 1", "none", "none", 0.0, 100.0, IndxDebug1);
+   define("Debug2", "Debug Tracer 2", "none", "none", 0.0, 100.0, IndxDebug2);
+   define("Debug3", "Debug Tracer 3", "none", "none", 0.0, 100.0, IndxDebug3);
 }

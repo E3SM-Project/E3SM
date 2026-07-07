@@ -559,10 +559,9 @@ void HorzMesh::defineMeshFields() {
                      "x",                                 // CF standard Name
                      0.0,                                 // min valid value
                      7.0E+6,                              // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                               // num of dimensions
+                     DimNames,                            // dimension names
+                     false                                // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, XCell);
@@ -576,10 +575,9 @@ void HorzMesh::defineMeshFields() {
                      "y",                                 // CF standard Name
                      0.0,                                 // min valid value
                      7.0E+6,                              // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                               // num of dimensions
+                     DimNames,                            // dimension names
+                     false                                // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, YCell);
@@ -593,10 +591,9 @@ void HorzMesh::defineMeshFields() {
                      "z",                                 // CF standard Name
                      0.0,                                 // min valid value
                      7.0E+6,                              // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                               // num of dimensions
+                     DimNames,                            // dimension names
+                     false                                // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, ZCell);
@@ -610,10 +607,9 @@ void HorzMesh::defineMeshFields() {
                      "latitude",                             // CF standard Name
                      -3.1415927,                             // min valid value
                      3.1415927,                              // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,    // num of dimensions
+                     DimNames, // dimension names
+                     false     // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, LatCell);
@@ -627,7 +623,6 @@ void HorzMesh::defineMeshFields() {
                      "longitude", // CF standard Name
                      0.0,         // min valid value
                      6.28319,     // max valid value
-                     -9.99E+30,   // scalar for undefined entries
                      NDims,       // num of dimensions
                      DimNames,    // dimension names
                      false        // not time dependent
@@ -646,10 +641,9 @@ void HorzMesh::defineMeshFields() {
                      "x",                               // CF standard Name
                      0.0,                               // min valid value
                      7.0E+6,                            // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                             // num of dimensions
+                     DimNames,                          // dimension names
+                     false                              // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, XEdge);
@@ -663,10 +657,9 @@ void HorzMesh::defineMeshFields() {
                      "y",                               // CF standard Name
                      0.0,                               // min valid value
                      7.0E+6,                            // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                             // num of dimensions
+                     DimNames,                          // dimension names
+                     false                              // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, YEdge);
@@ -680,10 +673,9 @@ void HorzMesh::defineMeshFields() {
                      "z",                               // CF standard Name
                      0.0,                               // min valid value
                      7.0E+6,                            // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                             // num of dimensions
+                     DimNames,                          // dimension names
+                     false                              // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, ZEdge);
@@ -697,10 +689,9 @@ void HorzMesh::defineMeshFields() {
                      "latitude",                           // CF standard Name
                      -3.1415927,                           // min valid value
                      3.1415927,                            // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                                // num of dimensions
+                     DimNames,                             // dimension names
+                     false                                 // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, LatEdge);
@@ -714,10 +705,9 @@ void HorzMesh::defineMeshFields() {
                      "longitude",                           // CF standard Name
                      0.0,                                   // min valid value
                      6.28319,                               // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                                 // num of dimensions
+                     DimNames,                              // dimension names
+                     false // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, LonEdge);
@@ -733,10 +723,9 @@ void HorzMesh::defineMeshFields() {
                      "x",                                  // CF standard Name
                      0.0,                                  // min valid value
                      7.0E+6,                               // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                                // num of dimensions
+                     DimNames,                             // dimension names
+                     false                                 // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, XVertex);
@@ -750,10 +739,9 @@ void HorzMesh::defineMeshFields() {
                      "y",                                  // CF standard Name
                      0.0,                                  // min valid value
                      7.0E+6,                               // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                                // num of dimensions
+                     DimNames,                             // dimension names
+                     false                                 // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, YVertex);
@@ -767,10 +755,9 @@ void HorzMesh::defineMeshFields() {
                      "z",                                  // CF standard Name
                      0.0,                                  // min valid value
                      7.0E+6,                               // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // num of dimensions
-                     DimNames,  // dimension names
-                     false      // not time dependent
+                     NDims,                                // num of dimensions
+                     DimNames,                             // dimension names
+                     false                                 // not time dependent
        );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, ZVertex);
@@ -784,7 +771,6 @@ void HorzMesh::defineMeshFields() {
                      "latitude", // CF standard Name
                      -3.1415927, // min valid value
                      3.1415927,  // max valid value
-                     -9.99E+30,  // scalar for undefined entries
                      NDims,      // num of dimensions
                      DimNames,   // dimension names
                      false       // not time dependent
@@ -801,7 +787,6 @@ void HorzMesh::defineMeshFields() {
                      "longitude", // CF standard Name
                      0.0,         // min valid value
                      6.28319,     // max valid value
-                     -9.99E+30,   // scalar for undefined entries
                      NDims,       // num of dimensions
                      DimNames,    // dimension names
                      false        // not time dependent
@@ -820,10 +805,9 @@ void HorzMesh::defineMeshFields() {
                                       "cell_area", // CF standard name
                                       0.0,         // min valid value
                                       9.99E+30,    // max valid value
-                                      -9.99E+30, // scalar for undefined entries
-                                      NDims,     // num of dimensions
-                                      DimNames,  // dimension names
-                                      false      // not time dependent
+                                      NDims,       // num of dimensions
+                                      DimNames,    // dimension names
+                                      false        // not time dependent
    );
    MeshGroupIn->addField(FieldName);
    Field::attachFieldData<Array1DReal>(FieldName, AreaCell);
@@ -838,7 +822,6 @@ void HorzMesh::defineMeshFields() {
                      "",              // CF standard name
                      0.0,             // min valid value
                      9.99E+30,        // max valid value
-                     -9.99E+30,       // scalar for undefined entries
                      NDims,           // num of dimensions
                      DimNames,        // dimension names
                      false            // not time dependent
@@ -856,7 +839,6 @@ void HorzMesh::defineMeshFields() {
                      "cell_area", // CF standard name
                      0.0,         // min valid value
                      9.99E+30,    // max valid value
-                     -9.99E+30,   // scalar for undefined entries
                      NDims,       // num of dimensions
                      DimNames,    // dimension names
                      false        // not time dependent
@@ -875,7 +857,6 @@ void HorzMesh::defineMeshFields() {
                      "",                    // CF standard name
                      0.0,                   // min valid value
                      9.99E+30,              // max valid value
-                     -9.99E+30,             // scalar for undefined entries
                      NDims,                 // num of dimensions
                      DimNames,              // dimension names
                      false                  // not time dependent
@@ -893,7 +874,6 @@ void HorzMesh::defineMeshFields() {
                      "",                 // CF standard name
                      0.0,                // min valid value
                      9.99E+30,           // max valid value
-                     -9.99E+30,          // scalar for undefined entries
                      NDims,              // num of dimensions
                      DimNames,           // dimension names
                      false               // not time dependent
@@ -911,7 +891,6 @@ void HorzMesh::defineMeshFields() {
                      "",           // CF standard name
                      -3.1415927,   // min valid value
                      3.1415927,    // max valid value
-                     -9.99E+30,    // scalar for undefined entries
                      NDims,        // num of dimensions
                      DimNames,     // dimension names
                      false         // not time dependent
@@ -934,7 +913,6 @@ void HorzMesh::defineMeshFields() {
                      "",                         // CF standard name
                      0.0,                        // min valid value
                      9.99E+30,                   // max valid value
-                     -9.99E+30,                  // scalar for undefined entries
                      NDims,                      // num of dimensions
                      DimNames,                   // dimension names
                      false                       // not time dependent
@@ -955,7 +933,6 @@ void HorzMesh::defineMeshFields() {
                      "",             // CF standard name
                      -1.0,           // min valid value
                      1.0,            // max valid value
-                     -9.99E+30,      // scalar for undefined entries
                      NDims,          // num of dimensions
                      DimNames,       // dimension names
                      false           // not time dependent
@@ -976,7 +953,6 @@ void HorzMesh::defineMeshFields() {
                      "coriolis_parameter", // CF standard name
                      -1.0E-3,              // min valid value
                      1.0E-3,               // max valid value
-                     -9.99E+30,            // scalar for undefined entries
                      NDims,                // num of dimensions
                      DimNames,             // dimension names
                      false                 // not time dependent
@@ -994,7 +970,6 @@ void HorzMesh::defineMeshFields() {
                      "coriolis_parameter", // CF standard name
                      -1.0E-3,              // min valid value
                      1.0E-3,               // max valid value
-                     -9.99E+30,            // scalar for undefined entries
                      NDims,                // num of dimensions
                      DimNames,             // dimension names
                      false                 // not time dependent
@@ -1012,7 +987,6 @@ void HorzMesh::defineMeshFields() {
                      "coriolis_parameter", // CF standard name
                      -1.0E-3,              // min valid value
                      1.0E-3,               // max valid value
-                     -9.99E+30,            // scalar for undefined entries
                      NDims,                // num of dimensions
                      DimNames,             // dimension names
                      false                 // not time dependent

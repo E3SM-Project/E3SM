@@ -46,3 +46,12 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | VertCoordMovementWeights | weights to specify how total column thickness changes are distributed across layers | - |
 | RefPseudoThickness | reference pseudo-thickness used to distribute total column thickness changes | m |
 | BottomGeomDepth | positive down distance from the reference geoid to the bottom | m |
+
+### Inactive and boundary layers in output
+
+Each output field declares a fill value (matching the NetCDF-C standard `_FillValue`) that marks entries outside the active domain.
+In a cell column only the active layers (`[MinLayerCell, MaxLayerCell]`) carry valid data; deeper, inactive layers contain the fill value.
+Edge and vertex fields have an intermediate boundary range where some, but not all, of the surrounding cells are active.
+For flux-type edge fields (such as `NormalVelocity`), the flux through a face bordering land vanishes, so those boundary layers carry `0`; layers fully outside the valid range carry the fill value.
+Vertex fields, by contrast, keep their computed (generally non-zero) values throughout the valid range, since a boundary vertex still has active surrounding cells contributing to quantities like vorticity; only layers outside the valid range carry the fill value.
+After an initial-condition or restart read, `VertCoord` enforces this pattern on the state and tracer fields so that analysis tools (ncview, Xarray, NCO, etc.) recognize and mask the inactive entries automatically.

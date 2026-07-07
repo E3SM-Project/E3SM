@@ -117,6 +117,7 @@ design/Decomp
 design/Driver
 design/EOS
 design/Error
+design/FillValues
 design/Halo
 design/HorzMeshClass
 design/Logging

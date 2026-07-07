@@ -1028,8 +1028,8 @@ void IOStream::writeFieldData(
       DataI4.resize(LocSize);
       DataPtr = DataI4.data();
       // get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValI4);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValI4);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       FillValPtr = &FillValI4;
 
@@ -1170,8 +1170,8 @@ void IOStream::writeFieldData(
       DataI8.resize(LocSize);
       DataPtr = DataI8.data();
       // Get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValI8);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValI8);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       FillValPtr = &FillValI8;
 
@@ -1311,8 +1311,8 @@ void IOStream::writeFieldData(
       DataR4.resize(LocSize);
       DataPtr = DataR4.data();
       // Get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValR4);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValR4);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       FillValPtr = &FillValR4;
 
@@ -1450,8 +1450,8 @@ void IOStream::writeFieldData(
    case ArrayDataType::R8:
 
       // Get fill value
-      Err += FieldPtr->getMetadata("FillValue", FillValR8);
-      CHECK_ERROR_ABORT(Err, "Error retrieving FillValue for Field {}",
+      Err += FieldPtr->getMetadata("_FillValue", FillValR8);
+      CHECK_ERROR_ABORT(Err, "Error retrieving _FillValue for Field {}",
                         FieldName);
       DataR8.resize(LocSize);
       if (ReducePrecision and !RetainPrecision) {
@@ -2491,13 +2491,15 @@ void IOStream::writeStream(
    if (Multiframe and !FileAlarm.isRinging())
       FileTime = *(FileAlarm.getRingTimePrev());
 
-   // Update the time field with elapsed time since simulation start
+   // Update the time field with elapsed time since simulation start.
+   // Attach before setting the value so the fill-on-attach does not
+   // overwrite the elapsed time (Kokkos host views share backing memory).
    TimeInterval ElapsedTime = SimTime - StartTime;
    R8 ElapsedTimeR8;
    ElapsedTime.get(ElapsedTimeR8, TimeUnits::Seconds);
    HostArray1DR8 OutTime("OutTime", 1);
-   OutTime(0) = ElapsedTimeR8;
    Field::attachFieldData("time", OutTime);
+   OutTime(0) = ElapsedTimeR8;
 
    // Reset alarms and flags
    if (OnStartup)

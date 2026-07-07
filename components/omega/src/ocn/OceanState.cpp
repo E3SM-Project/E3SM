@@ -17,6 +17,7 @@
 #include "MachEnv.h"
 #include "OmegaKokkos.h"
 #include "TimeStepper.h"
+#include "Tracers.h"
 
 namespace OMEGA {
 
@@ -115,6 +116,14 @@ OceanState::OceanState(
                                        NEdgesSize, NVertLayers);
    }
 
+   // Apply edge layer mask to NormalVelocity for all time levels so that
+   // fully-inactive layers are initialized with FillValueReal and boundary
+   // layers with 0.
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   for (int I = 0; I < NTimeLevels; I++) {
+      DefVCoord->applyEdgeLayerMask(NormalVelocity[I], NEdgesAll);
+   }
+
    // Register fields and metadata for IO
    defineFields();
 
@@ -202,9 +211,8 @@ void OceanState::defineFields() {
                      "sea_water_velocity",                // CF standard Name
                      -9.99E+10,                           // min valid value
                      9.99E+10,                            // max valid value
-                     -9.99E+30, // scalar for undefined entries
-                     NDims,     // number of dimensions
-                     DimNames   // dimension names
+                     NDims,   // number of dimensions
+                     DimNames // dimension names
        );
 
    DimNames[0] = "NCells";
@@ -215,7 +223,6 @@ void OceanState::defineFields() {
                      "cell_thickness", // CF standard Name
                      0.0,              // min valid value
                      9.99E+30,         // max valid value
-                     -9.99E+30,        // scalar used for undefined entries
                      NDims,            // number of dimensions
                      DimNames          // dimension names
        );
@@ -296,6 +303,21 @@ void OceanState::copyToHost(const I4 TimeLevel) {
 } // end copyToHost
 
 //------------------------------------------------------------------------------
+// Apply layer masks to NormalVelocity, PseudoThickness, Temperature, and
+// Salinity at the given time level after reading an IC or restart file.
+void OceanState::applyLayerMasks(const I4 TimeLevel) {
+
+   VertCoord *DefVCoord = VertCoord::getDefault();
+   DefVCoord->applyEdgeLayerMask(getNormalVelocity(TimeLevel), NEdgesAll);
+   DefVCoord->applyCellLayerMask(getPseudoThickness(TimeLevel), NCellsAll);
+   DefVCoord->applyCellLayerMask(Tracers::getByName(TimeLevel, "Temperature"),
+                                 NCellsAll);
+   DefVCoord->applyCellLayerMask(Tracers::getByName(TimeLevel, "Salinity"),
+                                 NCellsAll);
+
+} // end applyLayerMasks
+
+//------------------------------------------------------------------------------
 // Perform state halo exchange
 // TimeLevel == [1:new, 0:current, -1:previous, -2:two times ago, ...]
 void OceanState::exchangeHalo(const I4 TimeLevel) {
@@ -320,11 +342,12 @@ void OceanState::updateTimeLevels() {
    // Update current time index for pseudo-thickness and normal velocity
    CurTimeIndex = (CurTimeIndex + 1) % NTimeLevels;
 
-   // Update IOField data associations
+   // Update IOField data associations. Pass false to avoid overwriting the
+   // just-computed state with fill values; this is a pointer update only.
    Field::attachFieldData<Array2DReal>(NormalVelocityFldName,
-                                       NormalVelocity[CurTimeIndex]);
+                                       NormalVelocity[CurTimeIndex], false);
    Field::attachFieldData<Array2DReal>(PseudoThicknessFldName,
-                                       PseudoThickness[CurTimeIndex]);
+                                       PseudoThickness[CurTimeIndex], false);
 
 } // end updateTimeLevels
 
