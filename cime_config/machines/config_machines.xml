@@ -226,7 +226,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
-        <command name="load">cray-libsci/25.09.0</command>
+        <command name="unload">cray-libsci</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -486,6 +486,10 @@
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
       </modules>
+
+      <modules compiler="intel.*">
+        <command name="unload">cray-libsci</command>
+      </modules>
       <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
@@ -652,6 +656,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
+        <command name="unload">cray-libsci</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -908,6 +913,10 @@
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
       </modules>
+
+      <modules compiler="intel.*">
+        <command name="unload">cray-libsci</command>
+      </modules>
       <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
@@ -1071,6 +1080,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
+        <command name="unload">cray-libsci</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -1326,6 +1336,10 @@
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+
+      <modules compiler="intel.*">
+        <command name="unload">cray-libsci</command>
       </modules>
       <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>
