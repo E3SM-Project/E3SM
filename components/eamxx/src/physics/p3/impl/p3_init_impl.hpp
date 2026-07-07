@@ -28,8 +28,15 @@ void read_ice_lookup_tables(const ekat::Comm* comm, const char* p3_lookup_base, 
 
   std::string filename = std::string(p3_lookup_base) + std::string(p3_version);
 
-  const bool masterproc = comm == nullptr || comm->am_i_root();
-  if (masterproc) {
+  // Decouple "who does the I/O" from "who prints": do_io says which
+  // process(es) must touch the filesystem below, while do_print gates the
+  // informational message so it only appears for a genuine multi-rank root.
+  // This preserves the pre-existing quiet default when no comm is given
+  // (e.g. stand-alone tools/unit tests that call p3_init() with no args),
+  // instead of unconditionally printing just because comm is null.
+  const bool do_io    = comm == nullptr || comm->am_i_root();
+  const bool do_print = comm != nullptr && comm->am_i_root();
+  if (do_print) {
     std::cout << "Reading ice lookup tables in file: " << filename << std::endl;
   }
 
@@ -40,7 +47,7 @@ void read_ice_lookup_tables(const ekat::Comm* comm, const char* p3_lookup_base, 
   // the exact same (small, read-only) text file at initialization, which can
   // put unnecessary stress on shared/parallel filesystems and, in the worst
   // case, cause a slowdown or stall (see E3SM issue #6654 / #6833).
-  if (masterproc) {
+  if (do_io) {
     std::ifstream in(filename);
 
     // read header
@@ -229,8 +236,11 @@ static void action(StreamT& stream, S* data, const size_t size)
 template <bool IsRead, typename MuRT, typename VNT, typename VMT, typename RevapT>
 void io_impl(const ekat::Comm* comm, const char* dir, MuRT& mu_r_table_vals, VNT& vn_table_vals, VMT& vm_table_vals, RevapT& revap_table_vals)
 {
-  const bool masterproc = comm == nullptr || comm->am_i_root();
-  if (masterproc) {
+  // Decouple "who does the I/O" from "who prints" (see read_ice_lookup_tables
+  // above for the full rationale).
+  const bool do_io    = comm == nullptr || comm->am_i_root();
+  const bool do_print = comm != nullptr && comm->am_i_root();
+  if (do_print) {
     std::cout << (IsRead ? "Reading" : "Writing") << " lookup (non-ice) tables in dir " << dir << std::endl;
   }
 
@@ -262,17 +272,28 @@ void io_impl(const ekat::Comm* comm, const char* dir, MuRT& mu_r_table_vals, VNT
   // by the offline table-generation tool): only the root rank should write,
   // to avoid multiple ranks racing to write the same files. If comm is null,
   // every calling process reads/writes independently, as was always done.
-  if (masterproc) {
+  if (do_io) {
     stream_t mu_r_file(mu_r_filename.c_str(), std::ios::binary);
     stream_t revap_file(revap_filename.c_str(), std::ios::binary);
     stream_t vn_file(vn_filename.c_str(), std::ios::binary);
     stream_t vm_file(vm_filename, std::ios::binary);
+
+    EKAT_REQUIRE_MSG(mu_r_file.good(),  "Could not open file: " << mu_r_filename);
+    EKAT_REQUIRE_MSG(revap_file.good(), "Could not open file: " << revap_filename);
+    EKAT_REQUIRE_MSG(vn_file.good(),    "Could not open file: " << vn_filename);
+    EKAT_REQUIRE_MSG(vm_file.good(),    "Could not open file: " << vm_filename);
 
     // Read/write files
     action(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
     action(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
     action(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
     action(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
+
+    const char* verb = IsRead ? "read" : "write";
+    EKAT_REQUIRE_MSG(mu_r_file.good(),  "Failed to " << verb << " file: " << mu_r_filename);
+    EKAT_REQUIRE_MSG(revap_file.good(), "Failed to " << verb << " file: " << revap_filename);
+    EKAT_REQUIRE_MSG(vn_file.good(),    "Failed to " << verb << " file: " << vn_filename);
+    EKAT_REQUIRE_MSG(vm_file.good(),    "Failed to " << verb << " file: " << vm_filename);
   }
 
   // Copy back to device
@@ -357,12 +378,18 @@ typename Functions<S,D>::P3LookupTables Functions<S,D>
   auto version = P3C::p3_version;
   auto p3_lookup_base = P3C::p3_lookup_base;
   static const char* dir = SCREAM_DATA_DIR "/tables";
-  const bool masterproc = comm == nullptr || comm->am_i_root();
+  // compute_tables() below does no file I/O of its own (mu_r/vn/vm/revap are
+  // computed in-memory on every rank), so it only needs to know whether it
+  // should print, not whether it should do I/O. Gate that print the same way
+  // read_ice_lookup_tables/io_impl gate theirs (see do_print there), so a
+  // null comm (the common case for stand-alone tools/unit tests calling
+  // p3_init() with no args) stays quiet, matching the pre-existing default.
+  const bool do_print = comm != nullptr && comm->am_i_root();
   // p3_init_a (reads ice_table, collect_table)
   read_ice_lookup_tables<S>(comm, p3_lookup_base, version, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, P3C::densize, P3C::rimsize, P3C::isize, P3C::rcollsize);
   if (write_tables) {
     //p3_init_b (computes tables mu_r_table, revap_table, vn_table, vm_table)
-    compute_tables<S, P3C>(masterproc, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    compute_tables<S, P3C>(do_print, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
     write_computed_tables(comm, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
   }
   else {
