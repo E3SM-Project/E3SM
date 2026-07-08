@@ -227,6 +227,12 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             TestTestAllScream.CMDS_TO_TEST,
             *internal_args)
 
+        # If we are testing jenkins, baselines must exist
+        if self._jenkins:
+            cmd = self.get_cmd(f"SCREAM_FAKE_AUTO=TRUE ./test-all-eamxx -g -b AUTO -m $machine",
+                               self._machine)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+
     # Test that each build type generates the correct CMakeCache
     def test_dbg_details(self):
         """
