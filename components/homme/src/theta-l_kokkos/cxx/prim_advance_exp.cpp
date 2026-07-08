@@ -67,7 +67,8 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
       const int ie  = idx / (NP*NP);
       const int igp = (idx / NP) % NP;
       const int jgp = idx % NP;
-      w_i(ie,n0,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] = 
+
+      w_i(ie,n0,igp,jgp,LAST_LEV_P)[LAST_INTERFACE_VEC_IDX] =
                       (v(ie,n0,0,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,0,igp,jgp) +
                        v(ie,n0,1,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,1,igp,jgp))/PhysicalConstants::g;
     });
@@ -111,7 +112,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
     diags.run_diagnostics(false,4);
   }
 
-  //// case nu=0 but nu_top>0?  
+  //// case nu=0 but nu_top>0?
   if (params.hypervis_order==2 && params.nu>0) {
     HyperviscosityFunctor& functor = context.get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");
@@ -178,13 +179,13 @@ void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
         const int igp = (it / (NP*NUM_LEV)) % NP;
         const int jgp = (it / NUM_LEV) % NP;
         const int ilev = it % NUM_LEV;
-        v(ie,nm1,0,igp,jgp,ilev) = (5.0*v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/4.0;
-        v(ie,nm1,1,igp,jgp,ilev) = (5.0*v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/4.0;
-        vtheta_dp(ie,nm1,igp,jgp,ilev) = (5.0*vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/4.0;
-        dp3d(ie,nm1,igp,jgp,ilev) = (5.0*dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/4.0;
+        v(ie,nm1,0,igp,jgp,ilev) = (sp(5.0)*v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/sp(4.0);
+        v(ie,nm1,1,igp,jgp,ilev) = (sp(5.0)*v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/sp(4.0);
+        vtheta_dp(ie,nm1,igp,jgp,ilev) = (sp(5.0)*vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/sp(4.0);
+        dp3d(ie,nm1,igp,jgp,ilev) = (sp(5.0)*dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/sp(4.0);
         if (!hydrostatic_mode) {
-          w(ie,nm1,igp,jgp,ilev) = (5.0*w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/4.0;
-          phinh(ie,nm1,igp,jgp,ilev) = (5.0*phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/4.0;
+          w(ie,nm1,igp,jgp,ilev) = (sp(5.0)*w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/sp(4.0);
+          phinh(ie,nm1,igp,jgp,ilev) = (sp(5.0)*phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/sp(4.0);
         }
     });
     // If NUM_LEV==NUM_LEV_P, the code above will take care also of the last interface
@@ -196,14 +197,14 @@ void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
            const int ie  =  it / (NP*NP);
            const int igp = (it / NP) % NP;
            const int jgp =  it % NP;
-           w(ie,nm1,igp,jgp,LAST_INT) = (5.0*w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/4.0;
+           w(ie,nm1,igp,jgp,LAST_INT) = (sp(5.0)*w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/sp(4.0);
       });
     }
   }
   Kokkos::fence();
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
-  functor.run(RKStageData(nm1, np1, np1, qn0, 3.0*dt/4.0, 3.0*eta_ave_w/4.0));
+  functor.run(RKStageData(nm1, np1, np1, qn0, sp(3.0)*dt/sp(4.0), sp(3.0)*eta_ave_w/sp(4.0)));
   GPTLstop("ttype5_timestep");
 }
 
@@ -218,7 +219,7 @@ void ttype7_imex_timestep(const TimeLevel& /* tl */,
 }
 
 //note that ttype9 and ttype10 caqnnot be generalized easily into
-//one routine because of the 
+//one routine because of the
 //summation in expl part in stage 5 in ttype9
 void ttype9_imex_timestep(const TimeLevel& tl,
                          const Real dt_dyn,
@@ -276,14 +277,14 @@ void ttype9_imex_timestep(const TimeLevel& tl,
   dt = 3.0*dt_dyn/4.0;
   caar.run(RKStageData(nm1, np1, np1, qn0, dt, 3.0*eta_ave_w/4.0, 1.0, 0.0, 1.0));
   // u(np1) = [u1 + 3dt/4 RHS(u4)] +  1/4 (u1 - u0)
-  { 
+  {
     const auto v         = elements.m_state.m_v;
     const auto w         = elements.m_state.m_w_i;
     const auto vtheta_dp = elements.m_state.m_vtheta_dp;
     const auto phinh     = elements.m_state.m_phinh_i;
     const auto dp3d      = elements.m_state.m_dp3d;
     const auto hydrostatic_mode = params.theta_hydrostatic_mode;
-    
+
     Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP*NUM_LEV),
       KOKKOS_LAMBDA(const int it) {
@@ -291,13 +292,13 @@ void ttype9_imex_timestep(const TimeLevel& tl,
         const int igp = (it / (NP*NUM_LEV)) % NP;
         const int jgp = (it / NUM_LEV) % NP;
         const int ilev = it % NUM_LEV;
-        v(ie,np1,0,igp,jgp,ilev) += (v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/4.0;
-        v(ie,np1,1,igp,jgp,ilev) += (v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/4.0;
-        vtheta_dp(ie,np1,igp,jgp,ilev) += (vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/4.0;
-        dp3d(ie,np1,igp,jgp,ilev)      += (dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/4.0;
-        if (!hydrostatic_mode) { 
-          w(ie,np1,igp,jgp,ilev)       += (w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/4.0;
-          phinh(ie,np1,igp,jgp,ilev)   += (phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/4.0;
+        v(ie,np1,0,igp,jgp,ilev) += (v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/sp(4.0);
+        v(ie,np1,1,igp,jgp,ilev) += (v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/sp(4.0);
+        vtheta_dp(ie,np1,igp,jgp,ilev) += (vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/sp(4.0);
+        dp3d(ie,np1,igp,jgp,ilev)      += (dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/sp(4.0);
+        if (!hydrostatic_mode) {
+          w(ie,np1,igp,jgp,ilev)       += (w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/sp(4.0);
+          phinh(ie,np1,igp,jgp,ilev)   += (phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/sp(4.0);
         }
     });
     if (NUM_LEV_P>NUM_LEV && !hydrostatic_mode) {
@@ -308,8 +309,8 @@ void ttype9_imex_timestep(const TimeLevel& tl,
            const int ie  =  it / (NP*NP);
            const int igp = (it / NP) % NP;
            const int jgp =  it % NP;
-           w(ie,np1,igp,jgp,LAST_INT)  += (w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/4.0;
-      });  
+           w(ie,np1,igp,jgp,LAST_INT)  += (w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/sp(4.0);
+      });
     }
   }
   Kokkos::fence();

@@ -1,5 +1,6 @@
 include_directories (
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${HOMME_BINARY_DIR}/src/share/cxx
   ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 if (ENABLE_HORIZ_OPENMP)
   add_definitions(-DHORIZ_OPENMP)
@@ -46,5 +47,8 @@ add_library (${COMPOSE_LIBRARY}
   cedr_caas.cpp
   cedr_qlt.cpp
   cedr_test_randomized.cpp)
+
+target_compile_definitions(${COMPOSE_LIBRARY} PRIVATE
+  HOMMEXX_SINGLE_PREC=$<IF:$<BOOL:${HOMMEXX_SINGLE_PREC}>,1,0>)
 
 target_link_libraries(${COMPOSE_LIBRARY} Kokkos::kokkos)

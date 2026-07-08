@@ -41,7 +41,7 @@ class SphereOperators
 
   template<int NL>
   using vector_buf = ExecViewUnmanaged<Scalar[2][NP][NP][NL]>;
-  
+
   // std::min is constexpr only from c++14 on.
   template<int M, int N>
   struct Min {
@@ -233,12 +233,12 @@ public:
                          [&](const int loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
-      Real dudx = 0.0, dvdy = 0.0;
+      Real dudx = sp(0.0), dvdy = sp(0.0);
       for (int kgp = 0; kgp < NP; ++kgp) {
         dudx += dvv(jgp, kgp) * gv_buf(0, igp, kgp);
         dvdy += dvv(igp, kgp) * gv_buf(1, kgp, jgp);
       }
-      div_v(igp,jgp) = (dudx + dvdy) * ((1.0 / metdet(igp,jgp)) *
+      div_v(igp,jgp) = (dudx + dvdy) * ((sp(1.0) / metdet(igp,jgp)) *
                                          m_scale_factor_inv);
     });
     kv.team_barrier();
@@ -328,14 +328,14 @@ public:
                          [&](const int loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
-      Real dudy = 0.0;
-      Real dvdx = 0.0;
+      Real dudy = sp(0.0);
+      Real dvdx = sp(0.0);
       for (int kgp = 0; kgp < NP; ++kgp) {
         dvdx += dvv(jgp, kgp) * vcov_buf(1, igp, kgp);
         dudy += dvv(igp, kgp) * vcov_buf(0, kgp, jgp);
       }
 
-      vort(igp, jgp) = (dvdx - dudy) * ((1.0 / metdet(igp, jgp)) *
+      vort(igp, jgp) = (dvdx - dudy) * ((sp(1.0) / metdet(igp, jgp)) *
                                         m_scale_factor_inv);
     });
     kv.team_barrier();
@@ -646,7 +646,7 @@ public:
           dvdx += dvv(jgp, kgp) * vcov_buf(1, igp, kgp, ilev);
           dudy += dvv(igp, kgp) * vcov_buf(0, kgp, jgp, ilev);
         }
-        vort(igp, jgp, ilev) = (dvdx - dudy) * (1.0 / metdet(igp, jgp) *
+        vort(igp, jgp, ilev) = (dvdx - dudy) * (sp(1.0) / metdet(igp, jgp) *
                                                 m_scale_factor_inv);
       });
     });
@@ -695,7 +695,7 @@ public:
           dvdx += dvv(jgp, kgp) * sphere_buf(1, igp, kgp, ilev);
           dudy += dvv(igp, kgp) * sphere_buf(0, kgp, jgp, ilev);
         }
-        vort(igp, jgp, ilev) = (dvdx - dudy) * (1.0 / metdet(igp, jgp) *
+        vort(igp, jgp, ilev) = (dvdx - dudy) * (sp(1.0) / metdet(igp, jgp) *
                                                 m_scale_factor_inv);
       });
     });

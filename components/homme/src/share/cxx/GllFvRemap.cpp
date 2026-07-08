@@ -51,8 +51,8 @@ void GllFvRemap::init_boundary_exchanges () {
 
 void GllFvRemap
 ::init_data (const int nf, const int nf_max, const bool theta_hydrostatic_mode,
-             const Real* fv_metdet, const Real* g2f_remapd, const Real* f2g_remapd,
-             const Real* D_f, const Real* Dinv_f) {
+             const F90Real* fv_metdet, const F90Real* g2f_remapd, const F90Real* f2g_remapd,
+             const F90Real* D_f, const F90Real* Dinv_f) {
   m_impl->init_data(nf, nf_max, theta_hydrostatic_mode, fv_metdet,
                     g2f_remapd, f2g_remapd, D_f, Dinv_f);
 }
