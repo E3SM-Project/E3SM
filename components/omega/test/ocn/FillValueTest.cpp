@@ -438,6 +438,8 @@ int main(int argc, char *argv[]) {
       // ------------------------------------------------------------------
       OceanState::clear();
       Tendencies::clear();
+      Eos::destroyInstance();
+      VertMix::destroyInstance();
       PressureGrad::clear();
       AuxiliaryState::clear();
       Tracers::clear();
