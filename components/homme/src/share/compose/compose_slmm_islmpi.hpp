@@ -55,6 +55,7 @@ struct Request {
 template <typename T> MPI_Datatype get_type();
 template <> inline MPI_Datatype get_type<int>() { return MPI_INT; }
 template <> inline MPI_Datatype get_type<double>() { return MPI_DOUBLE; }
+template <> inline MPI_Datatype get_type<float>() { return MPI_FLOAT; }
 template <> inline MPI_Datatype get_type<long>() { return MPI_LONG_INT; }
 
 template <typename T>
@@ -154,7 +155,7 @@ struct FixedCapList {
 #endif
   }
 
-  SLMM_KIF T* data () const { return d_.data(); }  
+  SLMM_KIF T* data () const { return d_.data(); }
   SLMM_KIF T& back () const { slmm_kernel_assert_high(n() > 0); return d_[n()-1]; }
   SLMM_KIF T* begin () const { return d_.data(); }
   SLMM_KIF T* end () const { return d_.data() + n(); }
@@ -285,7 +286,7 @@ struct FixedCapListHostOnly {
   Int capacity () const { return d_.size(); }
   Int size () const { return n_; }
   Int n () const { return n_; }
-  
+
   void clear () { n_ = 0; }
 
   void inc () { ++n_; slmm_kernel_assert_high(n_ <= static_cast<Int>(d_.size())); }
@@ -293,7 +294,7 @@ struct FixedCapListHostOnly {
 
   T& operator() (const Int& i) { slmm_kernel_assert_high(i >= 0 && i < n_); return d_[i]; }
 
-  T* data () { return d_.data(); }  
+  T* data () { return d_.data(); }
   T& back () { slmm_kernel_assert_high(n_ > 0); return d_[n_-1]; }
   T* begin () { return d_.data(); }
   T* end () { return d_.data() + n_; }

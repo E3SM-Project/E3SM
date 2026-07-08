@@ -114,6 +114,9 @@ IF (${HOMME_QUAD_PREC})
   ENDIF()
 ENDIF ()
 
+# Default use double precision
+OPTION(HOMMEXX_SINGLE_PREC "Use single precision for Homme::Real in CXX code." FALSE)
+
 # Some options for conditional builds
 OPTION(BUILD_HOMME_SWEQX "Shallow water equations FEM" ON)
 OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
@@ -187,6 +190,19 @@ OPTION(HOMME_USE_ARKODE "Use ARKode package from SUNDIALS" FALSE)
 IF (${HOMME_USE_ARKODE})
   MESSAGE(STATUS "Using ARKode, adding -DARKODE")
   ADD_DEFINITIONS(-DARKODE)
+ENDIF ()
+
+# Checks for single precision
+IF (HOMMEXX_SINGLE_PREC)
+  IF (BUILD_HOMME_PREQX_KOKKOS)
+    MESSAGE(FATAL_ERROR
+      "BUILD_HOMME_PREQX_KOKKOS does not support HOMMEXX_SINGLE_PREC. "
+      "Disable one of these options.")
+  ELSEIF (NOT BUILD_HOMME_THETA_KOKKOS)
+    MESSAGE(STATUS
+      "HOMMEXX_SINGLE_PREC is ON but BUILD_HOMME_THETA_KOKKOS is OFF, "
+      "so no build is actually using single precision real type.")
+  ENDIF ()
 ENDIF ()
 
 IF (HOMME_USE_KOKKOS)

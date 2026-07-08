@@ -27,7 +27,7 @@ void ElementsGeometry::init(const int num_elems, const bool alloc_gradphis,
   assert(scale_factor > 0);
   m_scale_factor = scale_factor;
   m_laplacian_rigid_factor = laplacian_rigid_factor < 0 ? 1/scale_factor : laplacian_rigid_factor;
-  
+
   // Coriolis force
   m_fcor = ExecViewManaged<Real * [NP][NP]>("FCOR", m_num_elems);
 
@@ -51,7 +51,7 @@ void ElementsGeometry::init(const int num_elems, const bool alloc_gradphis,
 
   m_phis     = ExecViewManaged<Real *    [NP][NP]>("PHIS",          m_num_elems);
 
-  //matrix D and its derivatives 
+  //matrix D and its derivatives
   m_d    = ExecViewManaged<Real * [2][2][NP][NP]>("matrix D",                   m_num_elems);
   m_dinv = ExecViewManaged<Real * [2][2][NP][NP]>("DInv - inverse of matrix D", m_num_elems);
 
@@ -71,7 +71,7 @@ set_elem_data (const int ie,
                CF90Ptr& spheremp, CF90Ptr& rspheremp,
                CF90Ptr& metdet, CF90Ptr& metinv,
                CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart,
-               const Real* sphere_cart, const Real* sphere_latlon,
+               const F90Real* sphere_cart, const F90Real* sphere_latlon,
                CF90Ptr& tensorvisc2) {
   // Check geometry was inited
   assert (m_num_elems>0);
@@ -91,9 +91,9 @@ set_elem_data (const int ie,
   using TensorView   = ExecViewUnmanaged<Real [2][2][NP][NP]>;
   using Tensor33View = ExecViewUnmanaged<Real [3][3][NP][NP]>;
 
-  using ScalarViewF90   = HostViewUnmanaged<const Real [NP][NP]>;
-  using TensorViewF90   = HostViewUnmanaged<const Real [2][2][NP][NP]>;
-  using Tensor33ViewF90 = HostViewUnmanaged<const Real [3][3][NP][NP]>;
+  using ScalarViewF90   = HostViewUnmanaged<const F90Real [NP][NP]>;
+  using TensorViewF90   = HostViewUnmanaged<const F90Real [2][2][NP][NP]>;
+  using Tensor33ViewF90 = HostViewUnmanaged<const F90Real [3][3][NP][NP]>;
 
   ScalarView::host_mirror_type h_fcor      = Kokkos::create_mirror_view(Homme::subview(m_fcor,ie));
   ScalarView::host_mirror_type h_metdet    = Kokkos::create_mirror_view(Homme::subview(m_metdet,ie));
@@ -114,7 +114,7 @@ set_elem_data (const int ie,
   TensorViewF90 h_d_f90            (D);
   TensorViewF90 h_dinv_f90         (Dinv);
   Tensor33ViewF90 h_vec_sph2cart_f90 (vec_sph2cart);
-  
+
   // 2d scalars
   for (int igp = 0; igp < NP; ++igp) {
     for (int jgp = 0; jgp < NP; ++jgp) {
@@ -137,7 +137,7 @@ set_elem_data (const int ie,
       }
     }
   }
-  
+
   for (int idim = 0; idim < 3; ++idim) {
     for (int jdim = 0; jdim < 3; ++jdim) {
       for (int igp = 0; igp < NP; ++igp) {
@@ -158,12 +158,27 @@ set_elem_data (const int ie,
   Kokkos::deep_copy(Homme::subview(m_vec_sph2cart,ie), h_vec_sph2cart);
 
   if (sphere_cart && m_sphere_cart.size() != 0) {
-    const auto fsc = HostViewUnmanaged<const Real [NP][NP][3]>(sphere_cart);
-    Kokkos::deep_copy(Homme::subview(m_sphere_cart, ie), fsc);
+    const auto fsc              = HostViewUnmanaged<const F90Real [NP][NP][3]>(sphere_cart);
+    const auto dev_sphere_cart  = Homme::subview(m_sphere_cart, ie);
+    const auto host_sphere_cart = Kokkos::create_mirror_view(dev_sphere_cart);
+
+    Kokkos::parallel_for(
+      Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0}, {NP, NP, 3}),
+      KOKKOS_LAMBDA(const int igp, const int jgp, const int k) {
+        host_sphere_cart(igp,jgp,k) = static_cast<Real>(fsc(igp,jgp,k));
+      });
+    Kokkos::deep_copy(dev_sphere_cart, host_sphere_cart);
   }
   if (sphere_latlon && m_sphere_latlon.size() != 0) {
-    const auto fsl = HostViewUnmanaged<const Real [NP][NP][2]>(sphere_latlon);
-    Kokkos::deep_copy(Homme::subview(m_sphere_latlon, ie), fsl);
+    const auto fsl = HostViewUnmanaged<const F90Real [NP][NP][2]>(sphere_latlon);
+    const auto dev_sphere_latlon  = Homme::subview(m_sphere_latlon, ie);
+    const auto host_sphere_latlon = Kokkos::create_mirror_view(dev_sphere_latlon);
+    Kokkos::parallel_for(
+      Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0}, {NP, NP, 2}),
+      KOKKOS_LAMBDA(const int igp, const int jgp, const int k) {
+        host_sphere_latlon(igp,jgp,k) = static_cast<Real>(fsl(igp,jgp,k));
+      });
+    Kokkos::deep_copy(dev_sphere_latlon, host_sphere_latlon);
   }
 }
 
@@ -176,7 +191,7 @@ set_tensorvisc (const int ie, CF90Ptr& tensorvisc) {
   assert (ie>=0 && ie<m_num_elems);
 
   using TensorView    = ExecViewUnmanaged<Real [2][2][NP][NP]>;
-  using TensorViewF90 = HostViewUnmanaged<const Real [2][2][NP][NP]>;
+  using TensorViewF90 = HostViewUnmanaged<const F90Real [2][2][NP][NP]>;
 
   TensorView::host_mirror_type h_tensorvisc =
     Kokkos::create_mirror_view(Homme::subview(m_tensorvisc,ie));
@@ -204,7 +219,7 @@ set_tensorvisc2 (const int ie, CF90Ptr& tensorvisc2) {
   assert (ie>=0 && ie<m_num_elems);
 
   using TensorView    = ExecViewUnmanaged<Real [2][2][NP][NP]>;
-  using TensorViewF90 = HostViewUnmanaged<const Real [2][2][NP][NP]>;
+  using TensorViewF90 = HostViewUnmanaged<const F90Real [2][2][NP][NP]>;
 
   TensorView::host_mirror_type h_tensorvisc2 =
     Kokkos::create_mirror_view(Homme::subview(m_tensorvisc2,ie));
@@ -232,7 +247,7 @@ set_phis (const int ie, CF90Ptr& phis) {
   assert (ie>=0 && ie<m_num_elems);
 
   using ScalarView    = ExecViewUnmanaged<Real [NP][NP]>;
-  using ScalarViewF90 = HostViewUnmanaged<const Real [NP][NP]>;
+  using ScalarViewF90 = HostViewUnmanaged<const F90Real [NP][NP]>;
 
   ScalarViewF90           h_phis_f90 (phis);
   ScalarView::host_mirror_type  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));

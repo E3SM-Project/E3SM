@@ -21,14 +21,22 @@
 
 namespace Homme {
 
-// Usual typedef for real scalar type
+// Usual typedef for real scalar type. C data can be
+// double or single precision, depending on the build.
+#if HOMMEXX_SINGLE_PREC
+using Real = float;
+#else
 using Real = double;
+#endif
 using RCPtr = Real *const;
 using CRCPtr = const Real *const;
-using F90Ptr = Real *const; // Using this in a function signature emphasizes
-                            // that the ordering is Fortran
-using CF90Ptr = const Real *const; // Using this in a function signature
-                                   // emphasizes that the ordering is Fortran
+
+// F90 data is always double precision
+using F90Real = double;
+using F90Ptr = double *const; // Using this in a function signature emphasizes
+                              // that the ordering is Fortran
+using CF90Ptr = const double *const; // Using this in a function signature
+                                     // emphasizes that the ordering is Fortran
 
 using VectorTagType = KokkosKernels::Batched::Experimental::SIMD<Real, ExecSpace>;
 

@@ -12,7 +12,7 @@ namespace Homme {
 
 /*
  *  ColumnOps: a series of utility kernels inside an element
- * 
+ *
  *  This class is responsible of implementing common kernels used in the
  *  preqx and theta models to compute quantities at level midpoints and
  *  level interfaces. For instance, compute interface quantities from midpoints
@@ -24,12 +24,12 @@ namespace Homme {
  *  you should be inside a TeamThreadRange parallel loop before calling these
  *  kernels, but you should *not* be inside a ThreadVectorRange loop, since these
  *  kernels will attempt to create such loops.
- * 
+ *
  *  In the compute_* methods, InputProvider can either be a functor (e.g., a lambda) or a 1d view.
  *  The only requirement is that operator()(int)->Scalar is defined.
  *  For instance, one could use a lambda to compute the midpoint average of the product of two
  *  interface quantities, like this:
- *  
+ *
  *    auto prod = [&](const int ilev)->Scalar { return x(ilev)*y(ilev); }
  *    column_ops.compute_midpoint_values(kv,prod,output);
  *
@@ -40,7 +40,7 @@ namespace Homme {
  *        so it would *not* work on GPU. Hence, the whole class has a static_assert
  *        to make sure we have VECTOR_SIZE=1 or that we are not in a GPU build.
  */
-  
+
 class ColumnOps {
 public:
   using MIDPOINTS  = ColInfo<NUM_PHYSICAL_LEV>;
@@ -67,7 +67,7 @@ public:
     if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                            [&](const int& ilev) {
-        Scalar tmp = (x_i(ilev) + x_i(ilev+1))/2.0;
+        Scalar tmp = (x_i(ilev) + x_i(ilev+1))/Real(2.0);
         combine<CM>(tmp, x_m(ilev), alpha, beta);
       });
     } else {
@@ -82,7 +82,7 @@ public:
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
         tmp += x_i(ilev);
-        tmp /= 2.0;
+        tmp /= Real(2.0);
         combine<CM>(tmp, x_m(ilev), alpha, beta);
       }
 
@@ -91,7 +91,7 @@ public:
       tmp.shift_left(1);
       tmp[LAST_MID_PACK_END] = x_i(LAST_INT_PACK)[LAST_INT_PACK_END];
       tmp += x_i(LAST_MID_PACK);
-      tmp /= 2.0;
+      tmp /= Real(2.0);
       combine<CM>(tmp, x_m(LAST_MID_PACK), alpha, beta);
     }
   }
@@ -107,7 +107,7 @@ public:
     if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        Scalar tmp = (x_m(ilev) + x_m(ilev-1)) / 2.0;
+        Scalar tmp = (x_m(ilev) + x_m(ilev-1)) / Real(2.0);
         combine<CM>(tmp, x_i(ilev), alpha, beta);
       });
       // Fix the top/bottom
@@ -127,7 +127,7 @@ public:
         tmp.shift_right(1);
         tmp[0] = x_m(ilev-1)[VECTOR_END];
         tmp += x_m(ilev);
-        tmp /= 2.0;
+        tmp /= Real(2.0);
         combine<CM>(tmp, x_i(ilev), alpha, beta);
       }
 
@@ -136,7 +136,7 @@ public:
       Scalar tmp = x_m(0);
       tmp.shift_right(1);
       tmp += x_m(0);
-      tmp /= 2.0;
+      tmp /= Real(2.0);
       combine<CM>(tmp, x_i(0), alpha, beta);
 
       // Fix top/bottom
@@ -162,7 +162,7 @@ public:
     if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
-        Scalar tmp = (x_m(ilev)*weights_m(ilev) + x_m(ilev-1)*weights_m(ilev-1)) / (2.0*weights_i(ilev));
+        Scalar tmp = (x_m(ilev)*weights_m(ilev) + x_m(ilev-1)*weights_m(ilev-1)) / (Real(2.0)*weights_i(ilev));
         combine<CM>(tmp,x_i(ilev),alpha,beta);
       });
       // Fix the top/bottom
@@ -182,7 +182,7 @@ public:
         tmp.shift_right(1);
         tmp[0] = x_m(ilev-1)[VECTOR_END]*weights_m(ilev-1)[VECTOR_END];
         tmp += x_m(ilev)*weights_m(ilev);
-        tmp /= 2.0*weights_i(ilev);
+        tmp /= Real(2.0)*weights_i(ilev);
         combine<CM>(tmp,x_i(ilev),alpha,beta);
       }
 
@@ -191,7 +191,7 @@ public:
       Scalar tmp = x_m(0)*weights_m(0);
       tmp.shift_right(1);
       tmp += x_m(0)*weights_m(0);
-      tmp /= 2.0*weights_i(0);
+      tmp /= Real(2.0)*weights_i(0);
       combine<CM>(tmp, x_i(0), alpha, beta);
 
       // Fix top/bottom
@@ -344,13 +344,13 @@ public:
 
         // Integrate
         auto& sum_val = sum(ilev);
-        sum_val[0] = integration + (Inclusive ? input[0] : 0.0);
+        sum_val[0] = integration + (Inclusive ? input[0] : Real(0.0));
         for (int iv = 1; iv <= vec_end; ++iv) {
           sum_val[iv] = sum_val[iv - 1] + (Inclusive ? input[iv] : input[iv-1]);
         }
 
         // Update running integral
-        integration = sum_val[vec_end] + (Inclusive ? 0.0 : input[vec_end]);;
+        integration = sum_val[vec_end] + (Inclusive ? Real(0.0) : input[vec_end]);;
       }
 
       // In an exclusive sum, the procedure above failed to update the last level
@@ -361,7 +361,7 @@ public:
       // Running integral
       Real integration = s0;
 
-      // In an exclusive sum, the procedure below would fail to add 
+      // In an exclusive sum, the procedure below would fail to add
       // the input's last level to the output's second-to-last level
       if (!Inclusive) {
         integration += input_provider(LAST_PACK)[LAST_PACK_END];
@@ -376,13 +376,13 @@ public:
         auto input = input_provider(ilev);
         // Integrate
         auto& sum_val = sum(ilev);
-        sum_val[vec_start] = integration + (Inclusive ? input[vec_start] : 0.0);
+        sum_val[vec_start] = integration + (Inclusive ? input[vec_start] : Real(0.0));
         for (int iv = vec_start - 1; iv >= 0; --iv) {
           sum_val[iv] = sum_val[iv + 1] + (Inclusive ? input[iv] : input[iv+1]);
         }
 
         // Update running integral
-        integration = sum_val[0] + (Inclusive ? 0.0 : input[0]);
+        integration = sum_val[0] + (Inclusive ? Real(0.0) : input[0]);
       }
     }
   }

@@ -7,6 +7,20 @@ extern "C"
 void compose_repro_sum(const double* send, double* recv,
                        int nlocal, int nfld, int fcomm);
 
+template <class T>
+void compose_repro_sum_interface(const T* send, T* recv,
+                                 int nlocal, int nfld, int fcomm) {
+#if HOMMEXX_SINGLE_PREC
+  // The Fortran reproducible sum interface always uses c_double.
+  const std::vector<double> send_double(send, send + nlocal*nfld);
+  std::vector<double> recv_double(nfld);
+  compose_repro_sum(send_double.data(), recv_double.data(), nlocal, nfld, fcomm);
+  std::copy(recv_double.begin(), recv_double.end(), recv);
+#else
+  compose_repro_sum(send, recv, nlocal, nfld, fcomm);
+#endif
+}
+
 namespace compose {
 namespace test {
 
@@ -15,7 +29,11 @@ int cedr_unittest();
 int cedr_unittest(MPI_Comm comm);
 int interpolate_unittest();
 
+#if HOMMEXX_SINGLE_PREC
+typedef float Real;
+#else
 typedef double Real;
+#endif
 typedef int Int;
 typedef Int Size;
 
@@ -65,7 +83,7 @@ inline Real great_circle_dist (
 	cp2 = xB*zA - xA*zB;
 	cp3 = xA*yB - xB*yA;
 	cpnorm = std::sqrt(cp1*cp1 + cp2*cp2 + cp3*cp3);
-	dotprod = xA*xB + yA*yB + zA*zB;	
+	dotprod = xA*xB + yA*yB + zA*zB;
 	return R * std::atan2(cpnorm, dotprod);
 }
 

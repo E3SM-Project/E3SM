@@ -57,7 +57,7 @@ void initialize_dp3d_from_ps_c () {
   GPTLstop("tl-sc dp3d-from-ps");
 }
 
-void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, 
+void prim_run_subcycle_c (const F90Real& dt, int& nstep, int& nm1, int& n0, int& np1,
                           const int& next_output_step, const int& nsplit_iteration)
 {
   GPTLstart("tl-sc prim_run_subcycle_c");
@@ -113,12 +113,12 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     }
 
     apply_cam_forcing_dynamics(dt_remap);
-    
+
 #else
     // standalone homme, support ftype0 and ftype2
     // ftype0  = ftype2 if dt_remap>=dt_tracer, but
     // ftype0 != ftype2 for dt_remap<dt_tracer
-    if (params.ftype == ForcingAlg::FORCING_0 || 
+    if (params.ftype == ForcingAlg::FORCING_0 ||
         params.ftype == ForcingAlg::FORCING_2) {
       apply_cam_forcing(dt_remap);
     }

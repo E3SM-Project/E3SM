@@ -14,7 +14,7 @@ namespace Homme {
 /*
  *  A structure to hold views depending on the geometry/quadrature
  *
- *  This structure contains 2d views that depend only on the mesh 
+ *  This structure contains 2d views that depend only on the mesh
  *  (and possibly on quadrature). We also include the geopotential
  *  and the tensor viscosity, which also depend on some simulation
  *  parameter (e.g., how much the geopotential must be smoothed,
@@ -74,7 +74,7 @@ public:
                       CF90Ptr& metdet, CF90Ptr& metinv,
                       CF90Ptr& tensorvisc,
                       CF90Ptr& vec_sph2cart,
-                      const Real* sphere_cart = nullptr, const Real* sphere_latlon = nullptr,
+                      const F90Real* sphere_cart = nullptr, const F90Real* sphere_latlon = nullptr,
                       CF90Ptr& tensorvisc2 = nullptr);
 
   // Fill (or refresh) just the tensorVisc view for one element. This is

@@ -41,18 +41,29 @@ void Diagnostics::init (const ElementsState& state, const ElementsGeometry& geom
   m_elem_ops.init(m_hvcoord);
 
   // F90 ptr to array (n1,n2,...,nK,nelemd) can be stuffed directly in an unmanaged view
-  // with scalar type Real*[nK]...[n2][n1] (with runtime dimension nelemd)
-  h_Qvar   = decltype(h_Qvar)  (elem_accum_qvar_ptr,   m_num_elems);
-  h_Qmass  = decltype(h_Qmass) (elem_accum_qmass_ptr,  m_num_elems);
-  h_Q1mass = decltype(h_Q1mass)(elem_accum_q1mass_ptr, m_num_elems);
+  // with scalar type F90Real*[nK]...[n2][n1] (with runtime dimension nelemd).
+  h_Qvar_f90   = decltype(h_Qvar_f90)  (elem_accum_qvar_ptr,   m_num_elems);
+  h_Qmass_f90  = decltype(h_Qmass_f90) (elem_accum_qmass_ptr,  m_num_elems);
+  h_Q1mass_f90 = decltype(h_Q1mass_f90)(elem_accum_q1mass_ptr, m_num_elems);
+
+  h_IEner_f90  = decltype(h_IEner_f90) (elem_accum_iener_ptr, m_num_elems);
+  h_KEner_f90  = decltype(h_KEner_f90) (elem_accum_kener_ptr, m_num_elems);
+  h_PEner_f90  = decltype(h_PEner_f90) (elem_accum_pener_ptr, m_num_elems);
+
+#if HOMMEXX_SINGLE_PREC
+  // For single prec, we need a host view with Real type to copy from device, then convert to F90Real
+  h_Qvar_c   = decltype(h_Qvar_c)  ("h_Qvar",   m_num_elems);
+  h_Qmass_c  = decltype(h_Qmass_c) ("h_Qmass",  m_num_elems);
+  h_Q1mass_c = decltype(h_Q1mass_c)("h_Q1mass", m_num_elems);
+
+  h_IEner_c  = decltype(h_IEner_c) ("h_Internal  Energy", m_num_elems);
+  h_KEner_c  = decltype(h_KEner_c) ("h_Kinetic   Energy", m_num_elems);
+  h_PEner_c  = decltype(h_PEner_c) ("h_Potential Energy", m_num_elems);
+#endif
 
   d_Qvar   = decltype(d_Qvar)  ("Qvar",   m_num_elems);
   d_Qmass  = decltype(d_Qmass) ("Qmass",  m_num_elems);
   d_Q1mass = decltype(d_Q1mass)("Q1mass", m_num_elems);
-
-  h_IEner  = decltype(h_IEner) (elem_accum_iener_ptr, m_num_elems);
-  h_KEner  = decltype(h_KEner) (elem_accum_kener_ptr, m_num_elems);
-  h_PEner  = decltype(h_PEner) (elem_accum_pener_ptr, m_num_elems);
 
   d_IEner  = decltype(d_IEner) ("Internal  Energy", m_num_elems);
   d_KEner  = decltype(d_KEner) ("Kinetic   Energy", m_num_elems);
@@ -99,12 +110,35 @@ void Diagnostics::init_buffers (const FunctorsBuffersManager& fbm) {
 }
 
 void Diagnostics::sync_diagnostics_to_host () {
-  Kokkos::deep_copy(h_IEner,  d_IEner);
-  Kokkos::deep_copy(h_PEner,  d_PEner);
-  Kokkos::deep_copy(h_KEner,  d_KEner);
-  Kokkos::deep_copy(h_Qvar,   d_Qvar);
-  Kokkos::deep_copy(h_Qmass,  d_Qmass);
-  Kokkos::deep_copy(h_Q1mass, d_Q1mass);
+#if HOMMEXX_SINGLE_PREC
+  // For single precision, copy from device to host views with Real type, then convert to F90Real
+  Kokkos::deep_copy(h_IEner_c,  d_IEner);
+  Kokkos::deep_copy(h_PEner_c,  d_PEner);
+  Kokkos::deep_copy(h_KEner_c,  d_KEner);
+  Kokkos::deep_copy(h_Qvar_c,   d_Qvar);
+  Kokkos::deep_copy(h_Qmass_c,  d_Qmass);
+  Kokkos::deep_copy(h_Q1mass_c, d_Q1mass);
+
+  Kokkos::parallel_for(
+    Kokkos::MDRangePolicy(Kokkos::DefaultHostExecutionSpace(), {0, 0, 0, 0, 0}, {m_num_elems, NUM_DIAG_TIMES, QSIZE_D, NP, NP}),
+      KOKKOS_LAMBDA(const int ie, const int id, const int iq, const int igp, const int jgp) {
+    h_Qvar_f90(ie,id,iq,igp,jgp)  = static_cast<F90Real>(h_Qvar_c(ie,id,iq,igp,jgp));
+    h_Qmass_f90(ie,id,iq,igp,jgp) = static_cast<F90Real>(h_Qmass_c(ie,id,iq,igp,jgp));
+    if (id==0) h_Q1mass_f90(ie,iq,igp,jgp) = static_cast<F90Real>(h_Q1mass_c(ie,iq,igp,jgp));
+
+    h_IEner_f90(ie,id,igp,jgp) = static_cast<F90Real>(h_IEner_c(ie,id,igp,jgp));
+    h_KEner_f90(ie,id,igp,jgp) = static_cast<F90Real>(h_KEner_c(ie,id,igp,jgp));
+    h_PEner_f90(ie,id,igp,jgp) = static_cast<F90Real>(h_PEner_c(ie,id,igp,jgp));
+  });
+#else
+  // For double precision, copy directly from device to host views with F90Real type
+  Kokkos::deep_copy(h_IEner_f90, d_IEner);
+  Kokkos::deep_copy(h_PEner_f90, d_PEner);
+  Kokkos::deep_copy(h_KEner_f90, d_KEner);
+  Kokkos::deep_copy(h_Qvar_f90,  d_Qvar);
+  Kokkos::deep_copy(h_Qmass_f90, d_Qmass);
+  Kokkos::deep_copy(h_Q1mass_f90,d_Q1mass);
+#endif
 }
 
 void Diagnostics::run_diagnostics (const bool before_advance, const int ivar)
