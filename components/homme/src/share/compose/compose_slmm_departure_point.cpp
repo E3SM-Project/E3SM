@@ -59,8 +59,8 @@ void make_continuous (const Plane& p, LocalMesh<ko::MachineTraits::HES>& m) {
     if (ie == m.tgt_elem) continue;
     // Find the distance-minimizing translation, including 0 translation.
     Real min_dist = 1e20, mdx = 0, mdy = 0;
-    for (const Real dx : {-p.Lx, 0.0, p.Lx})
-      for (const Real dy : {-p.Ly, 0.0, p.Ly}) {
+    for (const Real dx : {-p.Lx, Real(0.0), p.Lx})
+      for (const Real dy : {-p.Ly, Real(0.0), p.Ly}) {
         const Real d = dist(ie, dx, dy);
         if (d < min_dist) { min_dist = d; mdx = dx; mdy = dy; }
       }
@@ -169,7 +169,7 @@ Int unittest (LocalMesh<ko::MachineTraits::HES>& m, const Int tgt_elem,
         const Real a = alphas[i], oma = 1-a, b = alphas[j], omb = 1-b;
         Real v[3] = {0};
         for (Int d = 0; d < 3; ++d)
-          v[d] = (  b*(a*m.p(cell[0], d) + oma*m.p(cell[1], d)) + 
+          v[d] = (  b*(a*m.p(cell[0], d) + oma*m.p(cell[1], d)) +
                   omb*(a*m.p(cell[3], d) + oma*m.p(cell[2], d)));
         if (i < 2 && j < 2) {
           if (get_src_cell(m, v, tgt_elem) != ic) ++ne;

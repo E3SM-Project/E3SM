@@ -7,6 +7,8 @@
 #ifndef HOMMEXX_MPI_HELPERS_HPP
 #define HOMMEXX_MPI_HELPERS_HPP
 
+#include <mpi.h>
+
 namespace Homme
 {
 
@@ -25,6 +27,11 @@ enum MinMaxId : int {
   MIN_ID = 0,
   MAX_ID = 1
 };
+
+template <typename T> MPI_Datatype get_mpi_type();
+template <> inline MPI_Datatype get_mpi_type<double>() { return MPI_DOUBLE; }
+template <> inline MPI_Datatype get_mpi_type<float>() { return MPI_FLOAT; }
+
 
 } // namespace Homme
 

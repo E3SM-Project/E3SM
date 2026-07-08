@@ -86,18 +86,18 @@ struct Basis {
 // These basis functions follow TempestRemap's monotone_type 0 and 1 basis
 // functions.
 class GLL {
-  const Real oo3 = 1.0/3.0;
-  const Real to3 = 2.0/3.0;
-  const Real oo6 = 1.0/6.0;
-  const Real oo8 = 1.0/8.0;
-  const Real sqrt5 = std::sqrt(5.0);
-  const Real oosqrt5 = 1.0/sqrt5;
-  const Real np2_coord[2] = {-1.0, 1.0};
-  const Real np2_wt[2]    = {1.0, 1.0};
-  const Real np3_coord[3] = {-1.0, 0.0, 1.0};
-  const Real np3_wt[3]    = {oo3, 2.0 - to3, oo3};
-  const Real np4_coord[4] = {-1.0, -oosqrt5, oosqrt5, 1.0};
-  const Real np4_wt[4]    = {oo6, 1.0 - oo6, 1.0 - oo6, oo6};
+  const Real oo3 = Real(1.0)/Real(3.0);
+  const Real to3 = Real(2.0)/Real(3.0);
+  const Real oo6 = Real(1.0)/Real(6.0);
+  const Real oo8 = Real(1.0)/Real(8.0);
+  const Real sqrt5 = std::sqrt(Real(5.0));
+  const Real oosqrt5 = Real(1.0)/sqrt5;
+  const Real np2_coord[2] = {Real(-1.0), Real(1.0)};
+  const Real np2_wt[2]    = {Real(1.0), Real(1.0)};
+  const Real np3_coord[3] = {Real(-1.0), Real(0.0), Real(1.0)};
+  const Real np3_wt[3]    = {oo3, Real(2.0) - to3, oo3};
+  const Real np4_coord[4] = {Real(-1.0), -oosqrt5, oosqrt5, Real(1.0)};
+  const Real np4_wt[4]    = {oo6, Real(1.0) - oo6, Real(1.0) - oo6, oo6};
 
 public:
   enum { np_max = 4 };
@@ -137,15 +137,15 @@ public:
       siqk::error("GLL::eval: monotone_type not supported.");
     switch (b.np) {
     case 2: {
-      ge[0] = 0.5*(1.0 - x);
-      ge[1] = 0.5*(1.0 + x);
+      ge[0] = Real(0.5)*(Real(1.0) - x);
+      ge[1] = Real(0.5)*(Real(1.0) + x);
     } break;
     case 3: {
       const Real x2 = x*x;
       if (b.monotone_type == 0) {
-        ge[0] = 0.5*(x2 - x);
-        ge[1] = 1.0 - x2;
-        ge[2] = 0.5*(x2 + x);
+        ge[0] = Real(0.5)*(x2 - x);
+        ge[1] = Real(1.0) - x2;
+        ge[2] = Real(0.5)*(x2 + x);
       } else {
         if (x < 0) {
           ge[0] = x2;
@@ -161,10 +161,10 @@ public:
     case 4: {
       const Real x2 = x*x;
       if (b.monotone_type == 0) {
-        ge[0] = (1.0 - x)*(5.0*x2 - 1.0)*oo8;
-        ge[1] = -sqrt5*oo8*(sqrt5 - 5.0*x)*(x2 - 1.0);
-        ge[2] = -sqrt5*oo8*(sqrt5 + 5.0*x)*(x2 - 1.0);
-        ge[3] = (1.0 + x)*(5.0*x2 - 1.0)*oo8;
+        ge[0] = (Real(1.0) - x)*(Real(5.0)*x2 - Real(1.0))*oo8;
+        ge[1] = -sqrt5*oo8*(sqrt5 - Real(5.0)*x)*(x2 - Real(1.0));
+        ge[2] = -sqrt5*oo8*(sqrt5 + Real(5.0)*x)*(x2 - Real(1.0));
+        ge[3] = (Real(1.0) + x)*(Real(5.0)*x2 - Real(1.0))*oo8;
       } else {
         const Real a0 = (1 + sqrt5)/16;
         const Real b0 = (5 + sqrt5)/16;
@@ -179,7 +179,7 @@ public:
           ge[3] = 0;
         } else if (x < oosqrt5) {
           ge[0] = 0;
-          ge[1] = 0.5 + x*(b1 + x2*d1);
+          ge[1] = Real(0.5) + x*(b1 + x2*d1);
           ge[2] = 1 - ge[1];
           ge[3] = 0;
         } else {
@@ -202,14 +202,14 @@ public:
       siqk::error("GLL::eval: monotone_type not supported.");
     switch (b.np) {
     case 2: {
-      ge[0] = -0.5;
-      ge[1] =  0.5;
+      ge[0] = Real(-0.5);
+      ge[1] = Real(0.5);
     } break;
     case 3: {
       const Real x2p = 2*x;
-      ge[0] =  0.5*(x2p - 1);
+      ge[0] = Real(0.5)*(x2p - 1);
       ge[1] = -x2p;
-      ge[2] =  0.5*(x2p + 1);
+      ge[2] = Real(0.5)*(x2p + 1);
     } break;
     case 4: {
       ge[0] =  oo8*((10 - 15*x)*x + 1);

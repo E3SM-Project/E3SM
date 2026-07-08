@@ -87,7 +87,7 @@ public:
       // check inputs
       const int vec_len = (ilev==(NUM_LEV-1)) ? ColInfo<NUM_PHYSICAL_LEV>::LastPackLen : VECTOR_SIZE;
       for (int iv=0; iv<vec_len; ++iv) {
-        if (vtheta_dp(ilev)[iv] < 0.0 || exner(ilev)[iv] > 0.0)
+        if (vtheta_dp(ilev)[iv] < Real(0.0) || exner(ilev)[iv] > Real(0.0))
           ++nerr;
       }
       if (nerr) return;
@@ -107,12 +107,12 @@ public:
     exner = (-PhysicalConstants::Rgas)*vtheta_dp / dphi;
     pnh = exner/PhysicalConstants::p0;
 #ifndef HOMMEXX_BFB_TESTING
-    pnh = pow(pnh,1.0/(1.0-PhysicalConstants::kappa));
+    pnh = pow(pnh,Real(1.0)/(Real(1.0)-PhysicalConstants::kappa));
 #else
-    pnh = bfb_pow(pnh,1.0/(1.0-PhysicalConstants::kappa));
+    pnh = bfb_pow(pnh,Real(1.0)/(Real(1.0)-PhysicalConstants::kappa));
 #endif
     pnh *= PhysicalConstants::p0;
-    exner = pnh/exner;    
+    exner = pnh/exner;
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -125,7 +125,7 @@ public:
       // Set dpnh_dp_i to 1.0
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),
                            [&](const int ilev) {
-        dpnh_dp_i(ilev) = 1.0;
+        dpnh_dp_i(ilev) = Real(1.0);
       });
     } else {
       // dp_i CANNOT alias dpnh_dp_i
@@ -204,7 +204,7 @@ public:
 #else
     // TODO: remove temporaries
     return (Rgas*vtheta_dp * pow(p/p0,kappa-1)) / p0;
-#endif    
+#endif
   }
 
   // If exner is available, then use exner/p instead of (p/p0)^(k-1)/p0, to avoid dealing with exponentials

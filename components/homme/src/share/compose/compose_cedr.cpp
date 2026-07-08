@@ -3,6 +3,9 @@
 #include "compose_kokkos.hpp"
 #include "cedr_bfb_tree_allreduce.hpp"
 
+#include <algorithm>
+#include <vector>
+
 namespace ko = Kokkos;
 
 namespace homme {
@@ -336,7 +339,7 @@ Int test_tree_maker () {
 }
 
 extern "C"
-void compose_repro_sum(const Real* send, Real* recv,
+void compose_repro_sum(const double* send, double* recv,
                        Int nlocal, Int nfld, Int fcomm);
 
 template <typename MT>
@@ -369,7 +372,17 @@ struct ReproSumReducer :
 #   pragma omp barrier
 #   pragma omp master
 #endif
-    compose_repro_sum(sendptr, rcvptr, nlocal, count, fcomm_);
+    {
+#if HOMMEXX_SINGLE_PREC
+      // The Fortran reproducible sum interface always uses c_double.
+      const std::vector<double> send_double(sendptr, sendptr + nlocal*count);
+      std::vector<double> recv_double(count);
+      compose_repro_sum(send_double.data(), recv_double.data(), nlocal, count, fcomm_);
+      std::copy(recv_double.begin(), recv_double.end(), rcvptr);
+#else
+      compose_repro_sum(sendptr, rcvptr, nlocal, count, fcomm_);
+#endif
+    }
 #ifdef COMPOSE_HORIZ_OPENMP
 #   pragma omp barrier
 #endif

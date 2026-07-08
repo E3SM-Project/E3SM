@@ -30,7 +30,7 @@ typedef Kokkos::Experimental::SYCL CedrGpuSpace;
 #define PROTECTED_CUDA public
 
 #if defined KOKKOS_COMPILER_GNU
-// See https://github.com/kokkos/kokkos-kernels/issues/129 
+// See https://github.com/kokkos/kokkos-kernels/issues/129
 # define ConstExceptGnu
 #else
 # define ConstExceptGnu const
@@ -163,8 +163,8 @@ template <> struct TypeTraits<double> {
 };
 
 template <> struct TypeTraits<float> {
-  static constexpr double epsilon = 1.1920928955078125e-07;
-  static constexpr double infinity = 1e38;
+  static constexpr float epsilon = 1.1920928955078125e-07;
+  static constexpr float infinity = 1e38;
 };
 
 } // namespace impl
