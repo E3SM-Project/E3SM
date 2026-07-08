@@ -173,6 +173,7 @@ subroutine phys_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
     use cospsimulator_intr, only: cospsimulator_intr_register
+    use modal_aer_opt,      only: modal_aer_opt_register
     use rad_constituents,   only: rad_cnst_get_info ! Added to query if it is a modal aero sim or not
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
@@ -289,6 +290,7 @@ subroutine phys_register
        if (clim_modal_aero) then
           call modal_aero_calcsize_reg()
           call modal_aero_wateruptake_reg()
+          call modal_aer_opt_register()
        endif
 
        ! register chemical constituents including aerosols ...
