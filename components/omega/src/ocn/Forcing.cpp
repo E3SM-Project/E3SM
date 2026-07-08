@@ -170,10 +170,6 @@ I4 Forcing::exchangeHalo() const {
 void Forcing::readStreamIntoArrays() {
    Error Err;
 
-   Real FillValueReal = -999._Real;
-   deepCopy(SfcStressForcing.ZonalStressCell, FillValueReal);
-   deepCopy(SfcStressForcing.MeridStressCell, FillValueReal);
-
    std::string StreamName = "Forcing";
 
    // Attempt to read stream; if unavailable, log and fall back to zero forcing.
