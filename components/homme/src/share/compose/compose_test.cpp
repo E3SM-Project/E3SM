@@ -123,7 +123,7 @@ void InitialCondition
         }
       }
       u[i] = b;
-    }      
+    }
   } break;
   case CorrelatedCosineBells: {
     const Real a = -0.8, b = 0.9;
@@ -297,8 +297,8 @@ struct StandaloneTracersTester {
       {
         homme::FA2<Real> l2_num(wrk_.data(), nlev, qsize),
                          l2_den(wrk_.data() + nr, nlev, qsize);
-        compose_repro_sum(l2_num_.data(), l2_num.data(), nelemd, nr, fcomm);
-        compose_repro_sum(l2_den_.data(), l2_den.data(), nelemd, nr, fcomm);
+        compose_repro_sum_interface(l2_num_.data(), l2_num.data(), nelemd, nr, fcomm);
+        compose_repro_sum_interface(l2_den_.data(), l2_den.data(), nelemd, nr, fcomm);
         if (rank == root)
           for (int q = 0, cnt = 0; q < qsize; ++q) {
             printf("COMPOSE>");
@@ -313,15 +313,15 @@ struct StandaloneTracersTester {
       {
         Real* const mass0 = wrk_.data();
         Real* const massf = mass0 + qsize;
-        compose_repro_sum(mass0_.data(), mass0, nelemd, qsize, fcomm);
-        compose_repro_sum(massf_.data(), massf, nelemd, qsize, fcomm);
+        compose_repro_sum_interface(mass0_.data(), mass0, nelemd, qsize, fcomm);
+        compose_repro_sum_interface(massf_.data(), massf, nelemd, qsize, fcomm);
         if (rank == root)
           for (int q = 0; q < qsize; ++q) {
             const auto err = (massf[q] - mass0[q])/mass0[q];
             mass_errs[q] = err;
             printf("COMPOSE> mass0 %8.2e mass re %9.2e\n", mass0[q], err);
           }
-      }  
+      }
 #ifdef COMPOSE_HORIZ_OPENMP
     }
 #endif
@@ -334,7 +334,7 @@ static StandaloneTracersTester::Ptr g_stt;
 
 using namespace compose::test;
 
-extern "C" void compose_unittest () { 
+extern "C" void compose_unittest () {
   slmm_unittest();
   cedr_unittest();
 }

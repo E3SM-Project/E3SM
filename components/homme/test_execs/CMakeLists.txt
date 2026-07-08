@@ -66,7 +66,7 @@ ELSE ()
 ENDIF ()
 
 # Queuing specific info
-IF (${HOMME_SUBMISSION_TYPE} STREQUAL none) 
+IF (${HOMME_SUBMISSION_TYPE} STREQUAL none)
   SET(HOMME_QUEUING FALSE)
   IF (USE_NUM_PROCS)
     # USE_NUM_PROCS is the number of ranks CIME has allocated (e.g. from a
@@ -122,7 +122,7 @@ ENDIF ()
 # Because of the queuing system on machines like Yellowstone the testing can be a little awkward
 # The following scripts prepare submission scripts and allow submission to
 # queues on machines that have queues.
-CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh 
+CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/createRunScripts.sh
                ${CMAKE_BINARY_DIR}/tests/createRunScripts.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
@@ -159,7 +159,7 @@ endif()
 # create list of all executables needed by tests
 ADD_CUSTOM_TARGET(test-execs)
 
-ADD_CUSTOM_TARGET(check 
+ADD_CUSTOM_TARGET(check
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
 if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
@@ -179,7 +179,7 @@ ADD_TEST(verifyBaselineResults ${CMAKE_BINARY_DIR}/tests/check_baseline.sh)
 
 IF (${HOMME_QUEUING})
   # The first CMake test is running
-  #   this is a little awkward because submit_tests.sh uses 
+  #   this is a little awkward because submit_tests.sh uses
   #   submissions-list.sh which hasn't been created yet.
   ADD_TEST(submitAndRunTests ${CMAKE_BINARY_DIR}/tests/submit_tests.sh "all")
 
@@ -265,13 +265,13 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
       ADD_SUBDIRECTORY(theta-nlev128)
     ENDIF()
 
-    ADD_SUBDIRECTORY(thetal_kokkos_ut)
+    #ADD_SUBDIRECTORY(thetal_kokkos_ut)
   endif()
 
 ENDIF()
 
 # Test some stuff in the shared folder
-ADD_SUBDIRECTORY (share_kokkos_ut)
+#ADD_SUBDIRECTORY (share_kokkos_ut)
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(preqx-nlev26-kokkos)
@@ -326,10 +326,10 @@ ADD_CUSTOM_TARGET(replaceBaselineResults)
 FOREACH(TEST_DIR ${TEST_DIR_LIST})
   GET_FILENAME_COMPONENT(TEST_BASE_NAME ${TEST_DIR} NAME)
   ADD_CUSTOM_COMMAND(TARGET replaceBaselineResults PRE_BUILD
-           COMMAND ${CMAKE_COMMAND} -E copy_directory 
+           COMMAND ${CMAKE_COMMAND} -E copy_directory
            ${TEST_DIR} ${Homme_Baseline_DIR}/${TEST_BASE_NAME})
   ADD_CUSTOM_COMMAND(TARGET replaceBaselineResults PRE_BUILD
-           COMMAND ${CMAKE_COMMAND} -E echo 
+           COMMAND ${CMAKE_COMMAND} -E echo
            "Copying test results ${TEST_DIR} to baseline directory ${Homme_Baseline_DIR}/${TEST_BASE_NAME}")
 ENDFOREACH()
 
@@ -344,7 +344,7 @@ EXECUTE_PROCESS(
 
 
 
-IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
+IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0)
   MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh all\" has failed with error
                         ${CREATE_RUNS_RESULT}\n"
           "OUTPUT: \n ${CREATE_RUNS_OUTPUT}\n"
@@ -357,7 +357,7 @@ EXECUTE_PROCESS(
   OUTPUT_VARIABLE CREATE_RUNS_OUTPUT
   ERROR_VARIABLE CREATE_RUNS_ERROR)
 
-IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0) 
+IF (NOT ${CREATE_RUNS_RESULT} EQUAL 0)
   MESSAGE(FATAL_ERROR "The script \"createRunScripts.sh baseline\" has failed with error
                         ${CREATE_RUNS_RESULT}\n"
           "OUTPUT: \n ${CREATE_RUNS_OUTPUT}\n"

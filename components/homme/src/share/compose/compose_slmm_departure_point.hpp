@@ -168,7 +168,7 @@ int get_src_cell (const LocalMesh<ES>& m, // Local mesh.
       } else {
         // Ok, we really didn't do that very well. We're still failing to find
         // the element. Ramp up the atol even more.
-        atol = ko::max(1e3*atol,
+        atol = ko::max(Real(1e3)*atol,
                        std::sqrt(ko::NumericTraits<Real>::epsilon()));
       }
     }
@@ -194,7 +194,7 @@ template <typename V3a, typename V3b>
 inline Real calc_dist (const V3a& p0, const V3b& p1) {
   Real len = 0;
   for (Int d = 0; d < 3; ++d) len += siqk::square(p0[d] - p1[d]);
-  return std::sqrt(len);    
+  return std::sqrt(len);
 }
 
 template <typename ES>
@@ -223,7 +223,7 @@ void find_external_edges (const LocalMesh<ES>& m, std::vector<Int>& external_edg
         if (ic1 == ic0) continue;
         const auto cell1 = slice(m.e, ic1);
         for (Int ie1 = 0; ie1 < 4; ++ie1) {
-          const auto edist = 
+          const auto edist =
             std::min(calc_dist(m, cell0[ie0], cell1[ie1]) +
                      calc_dist(m, cell0[(ie0+1)%4], cell1[(ie1+1)%4]),
                      calc_dist(m, cell0[ie0], cell1[(ie1+1)%4]) +
