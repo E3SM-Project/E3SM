@@ -25,6 +25,7 @@
 #include "DataTypes.h"
 #include "Decomp.h"
 #include "Dimension.h"
+#include "Eos.h"
 #include "Error.h"
 #include "Field.h"
 #include "Halo.h"
@@ -42,6 +43,7 @@
 #include "TimeStepper.h"
 #include "Tracers.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 #include "mpi.h"
 
 #include <netcdf.h>
@@ -130,6 +132,8 @@ void initFillValueTest() {
    Tracers::init();
    AuxiliaryState::init();
    PressureGrad::init();
+   Eos::init();
+   VertMix::init();
    Tendencies::init();
    TimeStepper::init2();
 
