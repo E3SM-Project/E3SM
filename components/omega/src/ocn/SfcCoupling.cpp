@@ -357,7 +357,7 @@ void OcnToCplFields::copyToHost() {
           const Real Pt       = LocEosChoice == EosType::Teos10Eos
                                     ? LocTeos10.calcPtFromCt(Sa, Ct)
                                     : Ct;
-          LocInSituTemp(Cell) = Pt + TkFrz;
+          LocInSituTemp(Cell) = Pt + TkFrz; // C to K temperature conversion
        });
 
    deepCopy(AvgSfcTemperatureH, InSituTempScratch);
@@ -377,9 +377,9 @@ void OcnToCplFields::copyToHost() {
 
 // OcnToCpl fields need to begin a coupling interval with all values set to 0.
 void OcnToCplFields::resetFields() {
-   deepCopy(AvgSfcTemperature, 0.0);
-   deepCopy(AvgSfcSalinity, 0.0);
-   deepCopy(AvgSfcVelocityZonal, 0.0);
-   deepCopy(AvgSfcVelocityMerid, 0.0);
+   deepCopy(AvgSfcTemperature, 0.0_Real);
+   deepCopy(AvgSfcSalinity, 0.0_Real);
+   deepCopy(AvgSfcVelocityZonal, 0.0_Real);
+   deepCopy(AvgSfcVelocityMerid, 0.0_Real);
 }
 } // namespace OMEGA
