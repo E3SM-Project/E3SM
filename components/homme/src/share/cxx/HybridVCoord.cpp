@@ -9,6 +9,7 @@
 #include "ErrorDefs.hpp"
 #include "PhysicalConstants.hpp"
 #include "utilities/TestUtils.hpp"
+#include "utilities/SyncUtils.hpp"
 
 #include <random>
 
@@ -16,10 +17,10 @@ namespace Homme
 {
 
 void HybridVCoord::init(const Real ps0_in,
-                   CRCPtr hybrid_am_ptr,
-                   CRCPtr hybrid_ai_ptr,
-                   CRCPtr hybrid_bm_ptr,
-                   CRCPtr hybrid_bi_ptr)
+                   CF90Ptr hybrid_am_ptr,
+                   CF90Ptr hybrid_ai_ptr,
+                   CF90Ptr hybrid_bm_ptr,
+                   CF90Ptr hybrid_bi_ptr)
 {
   // Sanity checks
   assert(hybrid_am_ptr!=nullptr);
@@ -43,16 +44,16 @@ void HybridVCoord::init(const Real ps0_in,
   ExecViewUnmanaged<Real[NUM_PHYSICAL_LEV]> bm_unpacked(reinterpret_cast<Real*>(hybrid_bm.data()));
 
   // Create views of input pointers
-  HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_ai(hybrid_ai_ptr);
-  HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_bi(hybrid_bi_ptr);
-  HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> host_hybrid_am(hybrid_am_ptr);
-  HostViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> host_hybrid_bm(hybrid_bm_ptr);
+  HostViewUnmanaged<const F90Real[NUM_INTERFACE_LEV]> host_hybrid_ai(hybrid_ai_ptr);
+  HostViewUnmanaged<const F90Real[NUM_INTERFACE_LEV]> host_hybrid_bi(hybrid_bi_ptr);
+  HostViewUnmanaged<const F90Real[NUM_PHYSICAL_LEV]> host_hybrid_am(hybrid_am_ptr);
+  HostViewUnmanaged<const F90Real[NUM_PHYSICAL_LEV]> host_hybrid_bm(hybrid_bm_ptr);
 
   // Copy inputs into class members
-  Kokkos::deep_copy(hybrid_ai, host_hybrid_ai);
-  Kokkos::deep_copy(hybrid_bi, host_hybrid_bi);
-  Kokkos::deep_copy(am_unpacked, host_hybrid_am);
-  Kokkos::deep_copy(bm_unpacked, host_hybrid_bm);
+  sync_to_device(host_hybrid_ai, hybrid_ai);
+  sync_to_device(host_hybrid_bi, hybrid_bi);
+  sync_to_device(host_hybrid_am, am_unpacked);
+  sync_to_device(host_hybrid_bm, bm_unpacked);
 
   // i don't think this saves us much now
   {
@@ -147,14 +148,14 @@ void HybridVCoord::random_init(int seed) {
   host_hybrid_bi(0) = 0;
   host_hybrid_ai(NUM_PHYSICAL_LEV) = 0;
   host_hybrid_bi(NUM_PHYSICAL_LEV) = 1;
-  
+
   // Safety check: a+b should be monotone here
   // Also, set midpoints
   HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> host_hybrid_am_real(reinterpret_cast<Real*>(host_hybrid_am.data()));
   HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> host_hybrid_bm_real(reinterpret_cast<Real*>(host_hybrid_bm.data()));
   for (int i=1; i<NUM_INTERFACE_LEV; ++i) {
     Real curr = host_hybrid_ai(i) + host_hybrid_bi(i);
-    Real prev = host_hybrid_ai(i-1) + host_hybrid_bi(i-1);   
+    Real prev = host_hybrid_ai(i-1) + host_hybrid_bi(i-1);
 
     Errors::runtime_check(curr>prev,"Error! hybrid_a+hybrid_b is not increasing.\n", -1);
 

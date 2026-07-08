@@ -6,7 +6,11 @@
 namespace homme {
 namespace compose {
 
+#if HOMMEXX_SINGLE_PREC
+typedef float HommexxReal;
+#else
 typedef double HommexxReal;
+#endif
 
 template <typename DataType>
 using SetView = Kokkos::View<DataType, Kokkos::LayoutRight, Kokkos::DefaultExecutionSpace>;

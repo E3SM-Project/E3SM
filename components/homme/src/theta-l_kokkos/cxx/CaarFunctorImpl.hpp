@@ -1139,7 +1139,7 @@ struct CaarFunctorImpl {
         };
 
         // Rescale by 2 (we are averaging kinetic energy w_i*w_i/2, but the provider has no '/2')
-        ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv, w_sq, Homme::subview(m_buffers.temp,kv.team_idx,igp,jgp),0.5);
+        ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv, w_sq, Homme::subview(m_buffers.temp,kv.team_idx,igp,jgp),sp(0.5));
       });
       kv.team_barrier();
 
@@ -1191,9 +1191,9 @@ struct CaarFunctorImpl {
         };
 
         ColumnOps::compute_midpoint_values<CombineMode::ScaleAdd>(kv,
-                          w_gradw_x, wvor_x, -1.0);
+                          w_gradw_x, wvor_x, sp(-1.0));
         ColumnOps::compute_midpoint_values<CombineMode::ScaleAdd>(kv,
-                          w_gradw_y, wvor_y, -1.0);
+                          w_gradw_y, wvor_y, sp(-1.0));
       } else {
         // wvor is not used if theta_hydrostatic_mode=1. Set to zero
         // here to avoid adding in uninitialized values into v_tens.
