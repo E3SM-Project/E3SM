@@ -37,7 +37,7 @@ template <typename ViewT, typename ArrayT> struct host_view_mappable {
     typename ViewT::traits,
     typename Kokkos::View<ArrayT, Kokkos::LayoutRight, HostMemSpace,
                           Kokkos::MemoryTraits<Kokkos::Unmanaged | Kokkos::Restrict> >::traits,
-    void>::is_assignable;  
+    void>::is_assignable;
 #endif
 };
 
@@ -53,7 +53,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::value &&
-     host_view_mappable<Dest_T, Real * [NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -79,7 +79,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar ** [NP][NP][NUM_LEV]>::value &&
-     host_view_mappable<Dest_T, Real ** [NUM_PHYSICAL_LEV][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real ** [NUM_PHYSICAL_LEV][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -105,7 +105,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV]>::value &&
-     host_view_mappable<Dest_T, Real * [NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -133,7 +133,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [NP][NP][NUM_LEV]>::value &&
-     host_view_mappable<Dest_T, Real * [NUM_PHYSICAL_LEV][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [NUM_PHYSICAL_LEV][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -157,7 +157,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Real * [NP][NP]>::value &&
-     host_view_mappable<Dest_T, Real * [NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -176,7 +176,7 @@ sync_to_host(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if<
     (exec_view_mappable<Source_T, Scalar[NP][NP][NUM_LEV]>::value &&
-         host_view_mappable<Dest_T, Real[NUM_PHYSICAL_LEV][NP][NP]>::value),
+         host_view_mappable<Dest_T, F90Real[NUM_PHYSICAL_LEV][NP][NP]>::value),
     void>::type
 sync_to_host(Source_T source, Dest_T dest) {
   typename Source_T::host_mirror_type source_mirror =
@@ -197,7 +197,7 @@ template <int DIM, typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [DIM][NP][NP][NUM_LEV]>::value &&
-     host_view_mappable<Dest_T, Real * [NUM_PHYSICAL_LEV][DIM][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [NUM_PHYSICAL_LEV][DIM][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -223,7 +223,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]>::value &&
-     host_view_mappable<Dest_T, Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -250,7 +250,7 @@ sync_to_host(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if<
     (exec_view_mappable<Source_T, Real[10][NUM_PHYSICAL_LEV + 2]>::value &&
-         host_view_mappable<Dest_T, Real[NUM_PHYSICAL_LEV + 2][10]>::value),
+         host_view_mappable<Dest_T, F90Real[NUM_PHYSICAL_LEV + 2][10]>::value),
     void>::type
 sync_to_host(Source_T source, Dest_T dest) {
   typename Source_T::host_mirror_type source_mirror =
@@ -270,7 +270,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [NP][NP][NUM_LEV_P]>::value &&
-     host_view_mappable<Dest_T, Real * [NUM_INTERFACE_LEV][NP][NP]>::value),
+     host_view_mappable<Dest_T, F90Real * [NUM_INTERFACE_LEV][NP][NP]>::value),
     void
   >::type
 sync_to_host(Source_T source, Dest_T dest)
@@ -294,7 +294,7 @@ template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
     (exec_view_mappable<Source_T, Scalar * [NP][NP][NUM_LEV]>::value &&
-     host_view_mappable< Dest_T, Real * [NUM_INTERFACE_LEV][NP][NP]>::value),
+     host_view_mappable< Dest_T, F90Real * [NUM_INTERFACE_LEV][NP][NP]>::value),
     void
   >::type
 sync_to_host_p2i(Source_T source, Dest_T dest)
@@ -319,7 +319,7 @@ sync_to_host_p2i(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real**[NUM_PHYSICAL_LEV][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real**[NUM_PHYSICAL_LEV][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar**[NP][NP][NUM_LEV]>::value),
     void
   >::type
@@ -348,7 +348,7 @@ sync_to_device(Source_T source, Dest_T dest) {
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real*[NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar*[NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::value),
     void
   >::type
@@ -373,7 +373,7 @@ sync_to_device(Source_T source, Dest_T dest) {
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real*[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar*[NUM_TIME_LEVELS][2][NP][NP][NUM_LEV]>::value),
     void
   >::type
@@ -399,7 +399,7 @@ sync_to_device(Source_T source, Dest_T dest) {
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real*[NUM_PHYSICAL_LEV][2][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real*[NUM_PHYSICAL_LEV][2][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar*[2][NP][NP][NUM_LEV]>::value),
     void
   >::type
@@ -423,7 +423,7 @@ sync_to_device(Source_T source, Dest_T dest) {
 template <int DIM, typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real * [NUM_PHYSICAL_LEV][DIM][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real * [NUM_PHYSICAL_LEV][DIM][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar * [DIM][NP][NP][NUM_LEV]>::value),
     void
   >::type
@@ -449,7 +449,7 @@ sync_to_device(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real * [NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real * [NP][NP]>::value &&
      exec_view_mappable<Dest_T, Real * [NP][NP]>::value),
     void
   >::type
@@ -469,7 +469,7 @@ sync_to_device(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real * [2][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real * [2][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Real * [2][NP][NP]>::value),
     void
   >::type
@@ -490,7 +490,7 @@ sync_to_device(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T,Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>::value &&
      exec_view_mappable<Dest_T,Scalar * [Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]>::value),
     void
   >::type
@@ -518,7 +518,7 @@ sync_to_device(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real*[NUM_PHYSICAL_LEV][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real*[NUM_PHYSICAL_LEV][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar*[NP][NP][NUM_LEV]>::value),
     void
   >::type
@@ -539,13 +539,46 @@ sync_to_device(Source_T source, Dest_T dest)
   Kokkos::deep_copy(dest, dest_mirror);
 }
 
+template <typename Source_T, typename Dest_T>
+typename std::enable_if
+  <
+    (host_view_mappable<Source_T, F90Real[NUM_PHYSICAL_LEV]>::value &&
+     exec_view_mappable<Dest_T, Real[NUM_PHYSICAL_LEV]>::value),
+    void
+  >::type
+sync_to_device(Source_T source, Dest_T dest)
+{
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
+  for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
+    dest_mirror(level) = source(level);
+  }
+  Kokkos::deep_copy(dest, dest_mirror);
+}
+
+template <typename Source_T, typename Dest_T>
+typename std::enable_if
+  <
+    (host_view_mappable<Source_T, F90Real[NUM_INTERFACE_LEV]>::value &&
+     exec_view_mappable<Dest_T, Real[NUM_INTERFACE_LEV]>::value),
+    void
+  >::type
+sync_to_device(Source_T source, Dest_T dest)
+{
+  typename Dest_T::host_mirror_type dest_mirror = Kokkos::create_mirror_view(dest);
+  for (int level = 0; level < NUM_INTERFACE_LEV; ++level) {
+    dest_mirror(level) = source(level);
+  }
+  Kokkos::deep_copy(dest, dest_mirror);
+}
+
+
 // These last two sync_to_host deal with views with NUM_INTERFACE_LEV levels on host,
 // and either copy the whole view from a view with NUM_LEV_P level packs (1st version) ,
 // or copy only the first NUM_PHYSICAL_LEV from a view with NUM_LEV level packs (2nd version)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real*[NUM_INTERFACE_LEV][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real*[NUM_INTERFACE_LEV][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar*[NP][NP][NUM_LEV_P]>::value),
     void
   >::type
@@ -569,7 +602,7 @@ sync_to_device(Source_T source, Dest_T dest)
 template <typename Source_T, typename Dest_T>
 typename std::enable_if
   <
-    (host_view_mappable<Source_T, Real * [NUM_INTERFACE_LEV][NP][NP]>::value &&
+    (host_view_mappable<Source_T, F90Real * [NUM_INTERFACE_LEV][NP][NP]>::value &&
      exec_view_mappable<Dest_T, Scalar * [NP][NP][NUM_LEV]>::value),
     void
   >::type

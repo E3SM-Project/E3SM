@@ -7,6 +7,19 @@ extern "C"
 void compose_repro_sum(const double* send, double* recv,
                        int nlocal, int nfld, int fcomm);
 
+template <class T>
+void compose_repro_sum_interface(const T* send, T* recv,
+                                 int nlocal, int nfld, int fcomm) {
+  if constexpr (std::is_same_v<T, double>) {
+    compose_repro_sum(send, recv, nlocal, nfld, fcomm);
+  } else {
+    std::vector<double> send_d(nlocal*nfld), recv_d(nlocal*nfld);
+    for (int i = 0; i < nlocal*nfld; ++i) send_d[i] = send[i];
+    compose_repro_sum(send_d.data(), recv_d.data(), nlocal, nfld, fcomm);
+    for (int i = 0; i < nlocal*nfld; ++i) recv[i] = recv_d[i];
+  }
+}
+
 namespace compose {
 namespace test {
 
@@ -15,7 +28,11 @@ int cedr_unittest();
 int cedr_unittest(MPI_Comm comm);
 int interpolate_unittest();
 
+#if HOMMEXX_SINGLE_PREC
+typedef float Real;
+#else
 typedef double Real;
+#endif
 typedef int Int;
 typedef Int Size;
 
@@ -65,7 +82,7 @@ inline Real great_circle_dist (
 	cp2 = xB*zA - xA*zB;
 	cp3 = xA*yB - xB*yA;
 	cpnorm = std::sqrt(cp1*cp1 + cp2*cp2 + cp3*cp3);
-	dotprod = xA*xB + yA*yB + zA*zB;	
+	dotprod = xA*xB + yA*yB + zA*zB;
 	return R * std::atan2(cpnorm, dotprod);
 }
 

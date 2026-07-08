@@ -61,7 +61,7 @@ static void fill_v (const ComposeTransportImpl& cti, const Real t, const int np1
       Real uv[2];
       wf.eval(t, latlon, uv);
       const int p = lev / packn, s = lev % packn;
-      for (int d = 0; d < 2; ++d) v(ie,np1,d,i,j,p)[s] = uv[d];  
+      for (int d = 0; d < 2; ++d) v(ie,np1,d,i,j,p)[s] = uv[d];
     };
     cti.loop_host_ie_plev_ij(f);
     Kokkos::deep_copy(cti.m_state.m_v, v);
@@ -76,7 +76,7 @@ static void fill_v (const ComposeTransportImpl& cti, const Real t, const int np1
       Real uv[2];
       wf.eval(t, latlon, uv);
       const int p = lev / packn, s = lev % packn;
-      for (int d = 0; d < 2; ++d) v(ie,np1,d,i,j,p)[s] = uv[d];  
+      for (int d = 0; d < 2; ++d) v(ie,np1,d,i,j,p)[s] = uv[d];
     };
     cti.launch_ie_physlev_ij(f);
   }
@@ -124,8 +124,8 @@ static void finish (const ComposeTransportImpl& cti, const Comm& comm,
     Kokkos::View<Real**, HostMemSpace>
       l2_num_red("l2_num_red", nlev, qsize), l2_den_red("l2_den_red", nlev, qsize);
     const auto nr = nlev*qsize;
-    compose_repro_sum(l2_num.data(), l2_num_red.data(), nelemd, nr, fcomm);
-    compose_repro_sum(l2_den.data(), l2_den_red.data(), nelemd, nr, fcomm);
+    compose_repro_sum_interface(l2_num.data(), l2_num_red.data(), nelemd, nr, fcomm);
+    compose_repro_sum_interface(l2_den.data(), l2_den_red.data(), nelemd, nr, fcomm);
     if (am_root)
       for (int q = 0; q < qsize; ++q) {
         printf("COMPOSE (hxx)>");
@@ -139,8 +139,8 @@ static void finish (const ComposeTransportImpl& cti, const Comm& comm,
   }
   {
     std::vector<Real> mass0_red(qsize), massf_red(qsize);
-    compose_repro_sum(mass0.data(), mass0_red.data(), nelemd, qsize, fcomm);
-    compose_repro_sum(massf.data(), massf_red.data(), nelemd, qsize, fcomm);
+    compose_repro_sum_interface(mass0.data(), mass0_red.data(), nelemd, qsize, fcomm);
+    compose_repro_sum_interface(massf.data(), massf_red.data(), nelemd, qsize, fcomm);
     if (am_root)
       for (int q = 0; q < qsize; ++q) {
         const auto err = (massf_red[q] - mass0_red[q])/mass0_red[q];

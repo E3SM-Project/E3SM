@@ -210,7 +210,7 @@ public:
       KEner = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
                                   [&](const int ilev, Real& accumulator){
-        accumulator += ((u(ilev)*u(ilev) + v(ilev)*v(ilev))/2.0) * dpt1_real(ilev);
+        accumulator += ((u(ilev)*u(ilev) + v(ilev)*v(ilev))/sp(2.0)) * dpt1_real(ilev);
       }, KEner);
 
       if (!m_theta_hydrostatic_mode) {
@@ -218,7 +218,7 @@ public:
         auto w_i = viewAsReal(Homme::subview(m_state.m_w_i,kv.ie,t1,igp,jgp));
         Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                                     [&](const int ilev, Real& accumulator){
-          accumulator += (w_i(ilev)*w_i(ilev) + w_i(ilev+1)*w_i(ilev+1))/4.0 *dpt1_real(ilev);
+          accumulator += (w_i(ilev)*w_i(ilev) + w_i(ilev+1)*w_i(ilev+1))/sp(4.0) *dpt1_real(ilev);
         },sum);
 
         // Only one thread can update KEner
@@ -251,17 +251,30 @@ private:
 
   static constexpr int NUM_DIAG_TIMES = 6;
 
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_IEner;
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_KEner;
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_PEner;
+  HostViewUnmanaged<F90Real*[NUM_DIAG_TIMES][NP][NP]> h_IEner_f90;
+  HostViewUnmanaged<F90Real*[NUM_DIAG_TIMES][NP][NP]> h_KEner_f90;
+  HostViewUnmanaged<F90Real*[NUM_DIAG_TIMES][NP][NP]> h_PEner_f90;
+
+  HostViewUnmanaged<F90Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qvar_f90;
+  HostViewUnmanaged<F90Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qmass_f90;
+  HostViewUnmanaged<F90Real*                [QSIZE_D][NP][NP]> h_Q1mass_f90;
+
+#if HOMMEXX_SINGLE_PREC
+  // We need host copies of views when running with hommexx single prec since
+  // F90 data is always double prec, and Kokkos:deep_copy doesn't support
+  // copying between double and float views.
+  HostViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_IEner_c;
+  HostViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_KEner_c;
+  HostViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_PEner_c;
+
+  HostViewManaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qvar_c;
+  HostViewManaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qmass_c;
+  HostViewManaged<Real*                [QSIZE_D][NP][NP]> h_Q1mass_c;
+#endif
 
   ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> d_IEner;
   ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> d_KEner;
   ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]> d_PEner;
-
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qvar;
-  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> h_Qmass;
-  HostViewUnmanaged<Real*                [QSIZE_D][NP][NP]> h_Q1mass;
 
   ExecViewManaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> d_Qvar;
   ExecViewManaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]> d_Qmass;

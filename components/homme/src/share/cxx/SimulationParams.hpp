@@ -8,6 +8,7 @@
 #define HOMMEXX_SIMULATION_PARAMS_HPP
 
 #include "HommexxEnums.hpp"
+#include "Types.hpp"
 
 #include <iostream>
 
@@ -45,32 +46,32 @@ struct SimulationParams
   bool      theta_hydrostatic_mode;   // Only for theta model
   bool      do_3d_turbulence;
 
-  double    tom_sponge_start = 0.0;   // start of TOM sponge layer, in hPa (0 = use ptop)
-  double    dcmip16_mu;               // Only for theta model
-  double    nu;
-  double    nu_p;
-  double    nu_q;
-  double    nu_s;
-  double    nu_top;
-  double    nu_div;
+  Real    tom_sponge_start = 0.0;   // start of TOM sponge layer, in hPa (0 = use ptop)
+  Real    dcmip16_mu;               // Only for theta model
+  Real    nu;
+  Real    nu_p;
+  Real    nu_q;
+  Real    nu_s;
+  Real    nu_top;
+  Real    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
   int       hypervis_subcycle_tom;
-  double    hypervis_scaling;
+  Real    hypervis_scaling;
   // Scaling exponent for the sponge-layer (nu_top) tensor viscosity, mirroring
   // Fortran's laplace_scaling (theta-l_kokkos only; defaults to 0, i.e. constant
   // coefficient sponge-layer diffusion, for preqx_kokkos and any case that
   // doesn't set it explicitly).
-  double    laplace_scaling = 0.0;
-  double    nu_ratio1, nu_ratio2; // control balance between div and vort components in vector laplace
+  Real    laplace_scaling = 0.0;
+  Real    nu_ratio1, nu_ratio2; // control balance between div and vort components in vector laplace
   int       nsplit = 0;
   int       nsplit_iteration;
-  double    scale_factor; // radius of Earth in sphere case; propagated then to Geometry and SphereOps
-  double    laplacian_rigid_factor; // propagated to SphereOps
+  Real    scale_factor; // radius of Earth in sphere case; propagated then to Geometry and SphereOps
+  Real    laplacian_rigid_factor; // propagated to SphereOps
   bool      pgrad_correction;
 
-  double    dp3d_thresh;
-  double    vtheta_thresh;
+  Real    dp3d_thresh;
+  Real    vtheta_thresh;
 
   // Optionally run diagnostics and output information. Default is 0, none. Set
   // to >0 for diagnostics.

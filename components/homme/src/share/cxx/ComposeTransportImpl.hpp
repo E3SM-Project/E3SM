@@ -324,7 +324,7 @@ struct ComposeTransportImpl {
     for (int d_cart = 0; d_cart < 3; ++d_cart) {
       const auto f1 = [&] (const int i, const int j, const int k) {
         v_cart(i,j,k) = (vec_sphere2cart(0,d_cart,i,j) * v(0,i,j,k) +
-                         vec_sphere2cart(1,d_cart,i,j) * v(1,i,j,k));      
+                         vec_sphere2cart(1,d_cart,i,j) * v(1,i,j,k));
       };
       loop_ijk<NUM_LEV>(kv, f1);
       kv.team_barrier();

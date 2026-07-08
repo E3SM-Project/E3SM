@@ -60,19 +60,19 @@ void Tracers::randomize(const int seed, const Real min, const Real max) {
 
 void Tracers::pull_qdp(CF90Ptr &state_qdp) {
   HostViewUnmanaged<
-      const Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>
+      const F90Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>
   state_qdp_f90(state_qdp, qdp.extent_int(0));
   sync_to_device(state_qdp_f90, qdp);
 }
 
 void Tracers::push_qdp(F90Ptr &state_qdp) const {
   HostViewUnmanaged<
-      Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>
+      F90Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>
   state_qdp_f90(state_qdp, qdp.extent_int(0));
   sync_to_host(qdp, state_qdp_f90);
 }
 
-HashType Tracers::hash (const int tl) const {  
+HashType Tracers::hash (const int tl) const {
   HashType accum = 0;
   Homme::hash(tl, qdp, NUM_PHYSICAL_LEV, accum);
   Homme::hash(      Q, NUM_PHYSICAL_LEV, accum);

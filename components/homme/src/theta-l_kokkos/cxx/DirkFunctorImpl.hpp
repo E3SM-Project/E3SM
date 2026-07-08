@@ -209,9 +209,17 @@ struct DirkFunctorImpl {
     const int nvec = npack;
     const int maxiter = 20;
 #ifdef HOMMEXX_BFB_TESTING
-    const Real deltatol = 1e-6; // In bfb testing, use coarse tolerance, due to zeroulp calls
+#if HOMMEXX_SINGLE_PREC
+    const Real deltatol = 1e-3; // In bfb testing, use coarse tolerance, due to zeroulp calls
 #else
-    const Real deltatol = 1e-11; // exit if newton increment < deltatol
+    const Real deltatol = 1e-6; // In bfb testing, use coarse tolerance, due to zeroulp calls
+#endif
+#else
+#if HOMMEXX_SINGLE_PREC
+    Real deltatol = 1e-5; // exit if newton increment < deltatol
+#else
+    Real deltatol = 1e-11; // exit if newton increment < deltatol
+#endif
 #endif
 
     const auto work = m_work;
@@ -254,7 +262,7 @@ struct DirkFunctorImpl {
       // View of xfull for use in the solver. We want xfull so that we
       // can use the nlevp-1 entry, which we make sure is 0, when convenient.
       LinearSystemSlot x = subview(xfull, Kokkos::pair<int,int>(0,nlev), a);
-      xfull(nlev,0)[0] = 0.0;
+      xfull(nlev,0)[0] = sp(0.0);
 
       const auto transpose4 = [&] (const int nt, const bool transpose_phi_np1 = true) {
         transpose(kv, nlev+1, subview(e_w_i      ,ie,nt,a,a,a), w_np1    );
@@ -462,7 +470,7 @@ struct DirkFunctorImpl {
       const int n = npack;
       const auto p = Kokkos::ThreadVectorRange(kv.team, n);
       Kokkos::parallel_for(p, g);
-    };    
+    };
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, nlev), f);
   }
 
@@ -489,7 +497,7 @@ struct DirkFunctorImpl {
       };
       const auto p = Kokkos::ThreadVectorRange(kv.team, dst.extent_int(2));
       Kokkos::parallel_for(p, g);
-    };    
+    };
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP*NP), f);
   }
 
@@ -648,7 +656,7 @@ struct DirkFunctorImpl {
       const int idx = i*packn + s, gi = idx / NP, gj = idx % NP;
       if ((int)scaln % (int)packn != 0 && idx >= scaln) break;
       phi_i(num_phys_lev,i)[s] = phis(gi,gj);
-    }    
+    }
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -674,7 +682,7 @@ struct DirkFunctorImpl {
     Real wmax;
     const auto tr = TeamThreadRange(kv.team, nlev);
     parallel_reduce(tr, f, Kokkos::Max<Real>(wmax));
-    return max(1.0, wmax);
+    return max(sp(1.0), wmax);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -759,7 +767,7 @@ struct DirkFunctorImpl {
         const int k = nlev-1;
         const auto b = 2*a/(dp3d(k-1,i) + dp3d(k,i));
         dl(k,i) = b*(pnh(k-1,i)/dphi(k-1,i));
-        d (k,i) = 1 - dl(k,i) - b*(pnh(k,i)/dphi(k,i));        
+        d (k,i) = 1 - dl(k,i) - b*(pnh(k,i)/dphi(k,i));
       };
       parallel_for(pv, ke);
     };
@@ -816,7 +824,7 @@ struct DirkFunctorImpl {
           dw = w_np1(k+1,i)[s] - w_np1(k,i)[s];
         } else {
           dx = -    x(k,i)[s];
-          dw = -w_np1(k,i)[s];          
+          dw = -w_np1(k,i)[s];
         }
         if (dx != 0) {
           // Step length at which dphi(k,i)[s] would = 0.
@@ -840,7 +848,7 @@ struct DirkFunctorImpl {
       const auto vr = ThreadVectorRange(kv.team, nlev);
       parallel_reduce(vr, g, Kokkos::Min<Real>(alpha));
       // Step halfway to the distance at which at least one dphi is 0.
-      wrk(2,i)[s] = min(1.0, alpha)/2;
+      wrk(2,i)[s] = min(sp(1.0), alpha)/2;
     };
     const auto tr = TeamThreadRange(kv.team, static_cast<int>(scaln));
     parallel_for(tr, f);

@@ -267,9 +267,9 @@ public:
     const int ivec = k % VECTOR_SIZE;
     Real fqdt = m_dt * fq(ilev)[ivec];
     const Real& qdp_s = qdp(ilev)[ivec];
-    if (qdp_s + fqdt < 0.0 && fqdt < 0.0) {
-      if (qdp_s < 0.0) {
-        fqdt = 0.0;
+    if (qdp_s + fqdt < sp(0.0) && fqdt < sp(0.0)) {
+      if (qdp_s < sp(0.0)) {
+        fqdt = sp(0.0);
       } else {
         fqdt = -qdp_s;
       }
@@ -286,9 +286,9 @@ public:
     // NOTE: here is where masks for simd operations would be handy
     VECTOR_SIMD_LOOP
     for (int iv=0; iv<VECTOR_SIZE; ++iv) {
-      if (qdp_s[iv] + fqdt[iv] < 0.0 && fqdt[iv] < 0.0) {
-        if (qdp_s[iv] < 0.0) {
-          fqdt[iv] = 0.0;
+      if (qdp_s[iv] + fqdt[iv] < sp(0.0) && fqdt[iv] < sp(0.0)) {
+        if (qdp_s[iv] < sp(0.0)) {
+          fqdt[iv] = sp(0.0);
         } else {
           fqdt[iv] = -qdp_s[iv];
         }

@@ -24,10 +24,10 @@ public:
 
   // This method should only be called from the host
   void init(const Real ps0_in,
-            CRCPtr hybrid_am_ptr,
-            CRCPtr hybrid_ai_ptr,
-            CRCPtr hybrid_bm_ptr,
-            CRCPtr hybrid_bi_ptr);
+            CF90Ptr hybrid_am_ptr,
+            CF90Ptr hybrid_ai_ptr,
+            CF90Ptr hybrid_bm_ptr,
+            CF90Ptr hybrid_bi_ptr);
 
   void random_init(int seed);
   void compute_deltas ();

@@ -79,7 +79,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 FortranCInterface_HEADER(cmake_fortran_c_interface.h
                          MACRO_NAMESPACE  "FCI_")
 
-# Prefer shared libraries (Yellowstone etc.) 
+# Prefer shared libraries (Yellowstone etc.)
 OPTION(PREFER_SHARED "Prefer linking with shared libraries." FALSE)
 
 # need to tell the source to use this capability
@@ -102,10 +102,13 @@ OPTION(IS_BIG_ENDIAN "Whether the machine is big endian" FALSE)
 #  ${HOMME_BINARY_DIR}/tests/compilerTests/
 #  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/compilerTests/isBigEndian.c)
 
+# Default use double precision
+OPTION(HOMMEXX_SINGLE_PREC "Default to using single precision for Real type in HOMMEXX" FALSE)
+
 # Default use quad precision
 OPTION(HOMME_QUAD_PREC "Default to try to use quadruple precision" TRUE)
 
-IF (${HOMME_QUAD_PREC}) 
+IF (${HOMME_QUAD_PREC})
   testQuadPrec(HOMME_QUAD_SUPPORTED)
   IF (NOT ${HOMME_QUAD_SUPPORTED})
     SET(HOMME_QUAD_PREC FALSE)
@@ -460,7 +463,7 @@ if(HOMME_BUILD_EXECS AND NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc)
     set(SFC ${CMAKE_Fortran_COMPILER})
     set(SCC ${CMAKE_C_COMPILER})
-    
+
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)

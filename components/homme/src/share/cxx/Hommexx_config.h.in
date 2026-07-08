@@ -24,6 +24,9 @@
 // Whether the debug parts of cxx code should be compiled or not
 #cmakedefine HOMMEXX_DEBUG
 
+// Whether or not Real type for C++ code should be single precision.
+#cmakedefine01 HOMMEXX_SINGLE_PREC
+
 // Whether the MPI operations have to be performed directly on the device
 #cmakedefine01 HOMMEXX_MPI_ON_DEVICE
 
