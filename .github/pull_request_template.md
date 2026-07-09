@@ -18,27 +18,42 @@ Checklist
   * [ ] CMake build does not produce any new warnings from changes in this PR
 * [ ] Testing
 
-| Machine, Compiler, MPI lib | CTests Pass | Polaris omega_pr Pass |
-|------------------------|-------------|-----------------------|
-| aurora, oneapi-ifx, mpich | [ ] | [ ] |
-| chrysalis, oneapi-ifx, openmpi | [ ] | [ ] |
-| frontier, craygnu, mpich | [ ] | [ ] |
-| frontier, craygnu-mphipcc, mpich | [ ] | [ ] |
-| pm-cpu, gnu, mpich | [ ] | [ ] |
-| pm-gpu, gnugpu, mpich | [ ] | [ ] |
+  **aurora, oneapi-ifx, mpich**
+  - [ ] CTests Pass
+  - [ ] Polaris omega_pr Pass
 
-  * [ ] Provide relevant details in a comment to the PR titled `Testing` with the following:
-    * Which machines [CTest unit tests](https://docs.e3sm.org/Omega/Omega/devGuide/QuickStart.html#running-ctests)
-          have been run on and indicate that are all passing.
-    * The [Polaris omega_pr test suite](https://docs.e3sm.org/Omega/Omega/devGuide/Testing.html)
-       has passed, using the Polaris `e3sm_submodules/Omega` baseline
-    * Document machine(s), compiler(s), and the build path(s) used for `-p` for both the baseline (Polaris `e3sm_submodules/Omega`) and the PR build
-    * Indicate "All tests passed" or document failing tests
-    * Document testing used to verify the changes including any tests that are added/modified/impacted.
-  * [ ] Performance related PRs: Please include a relevant PACE experiment link documenting performance before and after.
-  * [ ] New tests:
-    * [ ] CTest unit tests for new features have been added per the approved design.
-    * [ ] Polaris tests for new features have been added per the approved design (and included in a test suite)
+  **chrysalis, oneapi-ifx, openmpi**
+  - [ ] CTests Pass
+  - [ ] Polaris omega_pr Pass
+
+  **frontier, craygnu, mpich**
+  - [ ] CTests Pass
+  - [ ] Polaris omega_pr Pass
+
+  **frontier, craygnu-mphipcc, mpich**
+  - [ ] CTests Pass
+  - [ ] Polaris omega_pr Pass
+
+  **pm-cpu, gnu, mpich**
+  - [ ] CTests Pass
+  - [ ] Polaris omega_pr Pass
+
+  **pm-gpu, gnugpu, mpich**
+  - [ ] CTests Pass
+  - [ ] Polaris omega_pr Pass
+
+* [ ] Provide relevant details in a comment to the PR titled `Testing` with the following:
+  * Which machines [CTest unit tests](https://docs.e3sm.org/Omega/Omega/devGuide/QuickStart.html#running-ctests)
+        have been run on and indicate that are all passing.
+  * The [Polaris omega_pr test suite](https://docs.e3sm.org/Omega/Omega/devGuide/Testing.html)
+     has passed, using the Polaris `e3sm_submodules/Omega` baseline
+  * Document machine(s), compiler(s), and the build path(s) used for `-p` for both the baseline (Polaris `e3sm_submodules/Omega`) and the PR build
+  * Indicate "All tests passed" or document failing tests
+  * Document testing used to verify the changes including any tests that are added/modified/impacted.
+* [ ] Performance related PRs: Please include a relevant PACE experiment link documenting performance before and after.
+* [ ] New tests:
+  * [ ] CTest unit tests for new features have been added per the approved design.
+  * [ ] Polaris tests for new features have been added per the approved design (and included in a test suite)
 * Stealth Features
   * [ ] If any stealth features are included in the PR, please confirm that they have been documented.
 
