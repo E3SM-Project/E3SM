@@ -13,15 +13,12 @@ string(APPEND CPPDEFS " -DHAVE_SLASHPROC -DHIDE_MPI")
 # Hack similar to pm-cpu_intel.cmake. Reset the following flags and load
 # with oneapi supported options.
 set(CMAKE_CXX_FLAGS " ")
-set(CMAKE_Fortran_FLAGS " ")
 set(CMAKE_Fortran_FLAGS_DEBUG " ")
 
 if (compile_threaded)
   string(APPEND CMAKE_CXX_FLAGS " -qopenmp")
-  string(APPEND CMAKE_Fortran_FLAGS   " -qopenmp")
 endif()
 string(APPEND CMAKE_CXX_FLAGS " -fp-model precise")
-string(APPEND CMAKE_Fortran_FLAGS " -convert big_endian -assume byterecl -traceback -assume realloc_lhs -fpscomp logicals -fp-model precise")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g ")
 
 set(MPIFC "mpifort")
