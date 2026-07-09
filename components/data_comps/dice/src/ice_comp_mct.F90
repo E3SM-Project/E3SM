@@ -162,7 +162,7 @@ CONTAINS
 #ifdef HAVE_MOAB
     if (my_task == master_task) then
        ! send path of ice domain to MOAB coupler.
-       write(logunit,*), ' file used for ice domain ', SDICE%domainFile
+       write(logunit,*) ' file used for ice domain ', SDICE%domainFile
        call seq_infodata_PutData( infodata, ice_domain=SDICE%domainFile)
     endif
 #endif

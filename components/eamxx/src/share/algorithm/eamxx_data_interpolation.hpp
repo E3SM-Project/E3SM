@@ -5,13 +5,12 @@
 #include "share/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_logger.hpp>
 
 namespace scream
 {
-
-class AtmosphereInput;
 
 class DataInterpolation
 {
@@ -59,8 +58,8 @@ public:
                             const TimeInterpType interp_type = Linear,
                             const util::TimeStamp& ref_ts = util::TimeStamp());
 
-  // In case the input files store col/lev dims with exhotic names, the user can provide them here
-  void set_input_files_dimname (const FieldTag t, const std::string& name) { m_input_files_dimnames[t] = name; }
+  // In case the input files store dims with exhotic names, the user can provide them here
+  void set_input_files_dimname (const std::string& name, const std::string& nc_name);
 
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
@@ -106,7 +105,7 @@ protected:
 
   // --------------- Internal data ------------- //
 
-  std::shared_ptr<AtmosphereInput> m_reader;
+  std::shared_ptr<FieldReader> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
 
@@ -123,7 +122,7 @@ protected:
 
   // These are inited as the usual "ncol" and "lev" at construction, but the user
   // can reset them in case the input files store funky dimensions
-  std::map<FieldTag,std::string>    m_input_files_dimnames;
+  std::map<std::string,std::string>    m_input_files_dimnames;
 
   // If vertical remap happens, at runtime we may need to access some
   // versions of certain perssure fields. Store them here for convenient access

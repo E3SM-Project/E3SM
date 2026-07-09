@@ -3,10 +3,10 @@
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
+#include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
@@ -206,43 +206,33 @@ void read (const int seed, const ekat::Comm& comm)
   // Get gm
   auto gm = get_gm (comm);
   auto grid = gm->get_grid("point_grid");
+  auto gids = grid->get_partitioned_dim_gids();
 
   // Get initial fields
   auto fm0 = get_fm(grid,t0,seed);
   auto fm  = get_fm(grid,t0,seed,true);
 
-  std::vector<std::string> fnames;
-  std::string f_name;
-  for (auto it : fm->get_repo()) {
-    const auto& fn = it.second->name();
-    fnames.push_back(fn);
-    if (fn!="MyDiag") {
-      f_name = fn;
-    }
-  }
-
-  auto f0 = fm0->get_field(f_name).clone();
-  auto f  = fm->get_field(f_name);
-
-  // Sanity check
-  REQUIRE (f_name!="");
+  auto f  = fm->get_field("my_f");
+  auto f0 = f.clone(CloneFlags::CopyData);
 
   // Create reader pl
-  ekat::ParameterList reader_pl;
   std::string casename = "io_diags";
   auto filename = casename
     + ".INSTANT.nsteps_x1"
     + ".np" + std::to_string(comm.size())
     + "." + t0.to_string()
     + ".nc";
-  reader_pl.set("filename",filename);
-  reader_pl.set("field_names",fnames);
-  AtmosphereInput reader(reader_pl,fm);
+
+  auto d = fm->get_field("MyDiag");
+  FieldReader reader;
+  reader.set_file_specs(filename);
+  reader.set_dim_decomp(gids,comm);
+  reader.set_fields({f,d});
 
   Field one = f0.clone("one");
   one.deep_copy(1.0);
   for (int i=0; i<2; ++i) {
-    reader.read_variables(i);
+    reader.read(i);
 
     // Check regular field is correct
     REQUIRE (views_are_equal(f,f0));
@@ -250,8 +240,7 @@ void read (const int seed, const ekat::Comm& comm)
     // Check diag field is correct
     const auto t = t0+i*get_dt();
     const double dt = t-t0;
-    auto d = fm->get_field("MyDiag");
-    auto d0 = f0.clone();
+    auto d0 = f0.clone(CloneFlags::CopyData);
     d0.update(one,dt,2.0);
     REQUIRE (views_are_equal(d,d0));
 

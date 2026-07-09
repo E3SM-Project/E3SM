@@ -121,7 +121,7 @@ module seq_nlmap_mod
   !   0 <= (dM / (t g)'w) <= 1,
   ! permitting the final line to hold.
   !
-  ! Conservative variant:  NOT YET IMPLEMENTED IN MOAB
+  ! Total atmosphere-to-surface conservation variant:  NOT YET IMPLEMENTED IN MOAB
   !   Some modifications are made for this case.
   !   f, the vector of area fractions, is not used. That is because it is atm
   ! fractions, which are uniformly and globally 1.
@@ -140,7 +140,7 @@ module seq_nlmap_mod
   !
   ! Author: A.M. Bradley, Mar,Apr-2023
   ! Update: A.M. Bradley, Mar-2025. a2s_cons feature.
-  ! Update: MOAB Team, May 2026. MOAB version modifed from MCT original
+  ! Update: MOAB Team, May 2026. driver-moab version modifed from driver-mct original
   !
   !-----------------------------------------------------------------------------
   

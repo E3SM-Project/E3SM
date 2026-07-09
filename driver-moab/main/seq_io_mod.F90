@@ -903,9 +903,10 @@ contains
   !    2025-09-24   allow vertex type for entity, for spectral case for atmosphere
   !
   ! !INTERFACE: ------------------------------------------------------------------
-  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask )
+  subroutine seq_io_write_moab_tags(filename, mbxid, dname, tag_list, whead,wdata, matrix, nx, ny, nt, file_ind, dims2din, dims2do, mask, use_float )
 
     use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
+    use shr_kind_mod,     only: r4 => shr_kind_r4
     use iMOAB,            only: iMOAB_GetGlobalInfo, iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
         iMOAB_GetIntTagStorage
     use m_MergeSorts,     only: IndexSet, IndexSort
@@ -926,8 +927,9 @@ contains
     integer,optional,intent(in) :: dims2din(2)   ! dim ids to output
     integer,optional,intent(out):: dims2do(2)    ! dim ids for output
     real(r8)         ,optional,intent(in) :: mask(:)
+    logical          ,optional,intent(in) :: use_float  ! if true, write single precision
 
-    logical :: lwhead, lwdata
+    logical :: lwhead, lwdata, luse_float
     character(*),parameter :: subName = '(seq_io_write_moab_tags) '
     integer :: ndims, lfile_ind, iam, rcode
     integer(in)              :: ns, ng, lnx, lny, ix
@@ -954,6 +956,7 @@ contains
     integer, allocatable         :: Dof(:)  ! will be filled with global ids from cells
     integer, allocatable         :: Dof_reorder(:)  !
     real(r8), allocatable        :: data1(:), data_reorder(:)
+    real(r4), allocatable        :: data_reorder_r4(:)
     logical                    :: dead_comps = .false.
 
     !-------------------------------------------------------------------------------
@@ -962,9 +965,11 @@ contains
 
     lwhead = .true.
     lwdata = .true.
+    luse_float = .false.
     lfillvalue = fillvalue
     if (present(whead)) lwhead = whead
     if (present(wdata)) lwdata = wdata
+    if (present(use_float)) luse_float = use_float
     frame = -1
     if (.not.lwhead .and. .not.lwdata) then
        ! should we write a warning?
@@ -1040,17 +1045,18 @@ contains
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
+          call mct_string_clean(mctOStr)
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(field) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(field)
              call seq_flds_lookup(field,longname=lname,stdname=sname,units=cunit)
-            !  if (luse_float) then
-            !     rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid1,varid)
-            !     rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
-            !  else
-             rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
-             !end if
+             if (luse_float) then
+                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_REAL,dimid,varid)
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",real(lfillvalue,r4))
+             else
+                rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
+             end if
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
@@ -1085,13 +1091,18 @@ contains
           enddo
           ! so we know that dof_reorder(ix) < dof_reorder(ix+1)
        endif
-       call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
+       if (luse_float) then
+          call pio_initdecomp(cpl_io_subsystem, pio_real, (/lnx,lny/), dof_reorder, iodesc)
+       else
+          call pio_initdecomp(cpl_io_subsystem, pio_double, (/lnx,lny/), dof_reorder, iodesc)
+       endif
 
        deallocate(dof)
        deallocate(dof_reorder)
        do index_list = 1, size_list
           call mct_list_get(mctOStr,index_list,temp_list)
           field = mct_string_toChar(mctOStr)
+          call mct_string_clean(mctOStr)
           !-------tcraig, this is a temporary mod to NOT write hgt
           if (trim(field) /= "hgt") then
              name1 = trim(lpre)//'_'//trim(field)
@@ -1138,7 +1149,14 @@ contains
                enddo
              endif
 
-             call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
+             if (luse_float) then
+                allocate(data_reorder_r4(ns))
+                data_reorder_r4 = real(data_reorder, r4)
+                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder_r4, rcode, fillval=real(lfillvalue,r4))
+                deallocate(data_reorder_r4)
+             else
+                call pio_write_darray(cpl_io_file(lfile_ind), varid, iodesc, data_reorder, rcode, fillval=lfillvalue)
+             endif
           endif
        enddo
 
@@ -1149,6 +1167,7 @@ contains
 
     end if
 
+    call mct_list_clean(temp_list)
 
   end subroutine seq_io_write_moab_tags
 
@@ -1576,6 +1595,7 @@ contains
    do index_list = 1, size_list
        call mct_list_get(mctOStr,index_list,temp_list)
        field = mct_string_toChar(mctOStr)
+       call mct_string_clean(mctOStr)
        name1 = trim(lpre)//'_'//trim(field)
 
        call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
@@ -1670,6 +1690,10 @@ contains
 
     call pio_freedecomp(pioid, iodesc)
     call pio_closefile(pioid)
+
+    call mct_list_clean(temp_list)
+    if (allocated(indx)) deallocate(indx)
+    if (allocated(dof_reorder)) deallocate(dof_reorder)
 
   end subroutine seq_io_read_moab_tags
 

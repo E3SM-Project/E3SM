@@ -1116,6 +1116,8 @@ contains
 
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(fractions_am(lsize,5)) ! there are 5 fractions 'afrac:ifrac:ofrac:lfrac:lfrin'
+       fractions_am = 0.0_r8   ! defensive: read in merge loop before being written for all cells;
+                               ! iMOAB_GetDoubleTagStorage at line 1344 may leave inactive cells untouched.
        allocate(x2a_am (lsize, naflds))
        allocate(o2x_am (lsize, noflds))
        allocate(i2x_am (lsize, niflds))

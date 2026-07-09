@@ -437,9 +437,12 @@
       <value compset="_SCREAM.*" grid="a%ne4np4">24</value>
       <value compset=".+" grid="a%ne11np4">12</value>
       <value compset="_SCREAM.*" grid="a%ne11np4">24</value>
+      <value compset=".+" grid="a%ne32np4">48</value>
       <value compset=".+" grid="a%ne45np4">72</value>
       <value compset=".+" grid="a%ne60np4">96</value>
+      <value compset=".+" grid="a%ne64np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
+      <value compset=".+" grid="a%ne128np4">96</value>
       <value compset=".+" grid="a%ne240np4">144</value>
       <value compset=".+" grid="a%ne256np4">144</value>
       <value compset=".+" grid="a%ne512np4">432</value>
@@ -822,8 +825,8 @@
       <value compset="^20TR.+CMIP6-LULC"                        >284.317</value>
       <value compset="^20TR.+CMIP6-VOLC"                        >284.317</value>
       <value compset="^SSP.+CMIP6"                              >0.000001</value>
-      <value compset="^SSP245.+CMIP6"			                    	>0.000001</value>
-      <value compset="^SSP370.+CMIP6"				                    >0.000001</value>
+      <value compset="^SSP245.+CMIP6"                           >0.000001</value>
+      <value compset="^SSP370.+CMIP6"                           >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
@@ -831,6 +834,7 @@
       <value compset="^SSP585.*BGC%B"                           >284.317</value>  
       <value compset="^1850.*CMIP7"                             >284.297</value>
       <value compset="^1850.*CMIP7.+4xCO2"                      >1137.188</value>
+      <value compset="^1950.*CMIP7"                             >313.079</value>
       <value compset="^2010.+CMIP7"                             >388.901</value>
       <!-- Override values based on EAM (WACCM) chemistry -->
       <value compset="EAM%W"				>0.000001</value>

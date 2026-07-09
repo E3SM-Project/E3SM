@@ -473,9 +473,11 @@ contains
     endif ! valid_moab_context
 
     !=========================================================================
-    ! MOAB PATH: Copy/Rearrange Operations
+    ! MOAB: Copy/Rearrange Operations
     ! For COPY and REARRANGE strategies, MOAB uses point-to-point
     ! communication between MOAB app instances instead of MCT rearranger.
+    ! NOTE: COPY still uses MPI send/recv, which could be optimized for
+    ! monogrid cases.
     !=========================================================================
     if (mapper%copy_only .or. mapper%rearrange_only) then
 
@@ -528,7 +530,7 @@ contains
 
     else
        !=========================================================================
-       ! MOAB PATH: Full Mapping Operations (Strategy 3)
+       ! MOAB: Full Mapping Operations
        ! For full interpolation/regridding between different grids.
        ! This is more complex than copy/rearrange and involves:
        ! 1. Pre-normalization: Multiply source fields by normalization weight
@@ -759,6 +761,8 @@ contains
              lsize_tgt = nvise(1) ! number of active cells
              tagname = "norm8wt"//C_NULL_CHAR
              allocate(wghts(lsize_tgt))
+             wghts = 0.0_r8   ! defensive zero-init: iMOAB_GetDoubleTagStorage may leave some entries untouched
+                              ! if the tag was never set on those cells; this avoids reading uninitialised memory below.
 
              !*** MOAB: Get mapped normalization weights on target grid
              ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize_tgt , mapper%tag_entity_type, wghts)
@@ -769,6 +773,7 @@ contains
 
              !*** MOAB: Get mapped field values on target grid
              allocate(targtags(lsize_tgt,nfields))
+             targtags = 0.0_r8   ! defensive zero-init: see above for wghts
              arrsize_tgt=lsize_tgt*(nfields)
              ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
              if (ierr .ne. 0) then
@@ -816,6 +821,11 @@ contains
              endif
 
           endif ! end normalization
+
+          ! Defensive: targtags_ini is allocated under `if (mbpresent)` at line 596 but the
+          ! matching deallocate at line 820 sits inside `if (mbnorm)`. If a future caller ever
+          ! sets mbpresent=.true. with mbnorm=.false., the array would leak per mapping call.
+          if (allocated(targtags_ini)) deallocate(targtags_ini)
 
        endif
 

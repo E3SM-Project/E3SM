@@ -280,9 +280,20 @@ subroutine  copy_aream_from_area(mbappid)
       character(CL) :: atm_mesh
       integer :: ATM_PHYS_CID
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+      integer :: local_pg, global_pg
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+      ! Propagate atm_pg_active from the atm component PEs to the coupler PEs across the joint
+      ! communicator. atm_pg_active is set by semoab_mod (homme) on atm PEs when fv_nphys > 0;
+      ! on disjoint coupler PEs it would otherwise stay at the seq_comm_mct default .false.,
+      ! which makes the comm-graph / mesh-write branches below pick the wrong (point-cloud) path
+      ! and produces a mismatched src/tgt graph for ne4pg2-style cases.
+      local_pg = 0
+      if (atm_pg_active) local_pg = 1
+      call shr_mpi_max(local_pg, global_pg, mpicom_join, all=.true.)
+      atm_pg_active = (global_pg == 1)
 
       ! find atm mesh/domain file if it exists; it would be for data atm model (atm_prognostic false)
       call seq_infodata_GetData(infodata,atm_mesh = atm_mesh)
@@ -722,6 +733,7 @@ subroutine  copy_aream_from_area(mbappid)
       call moab_exchange_domain_tags(comp, mlnid, mblxid, 'lat:lon:area:frac:mask', 'doml')
 
 #ifdef MOABDEBUG
+      if (mblxid >= 0) then ! coupler pes only
          outfile = 'recMeshLand.h5m'//C_NULL_CHAR
          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
    !       write out the mesh file to disk
@@ -730,6 +742,7 @@ subroutine  copy_aream_from_area(mbappid)
             write(logunit,*) subname,' error in writing land coupler mesh'
             call shr_sys_abort(subname//' ERROR in writing land coupler mesh')
          endif
+      endif
 #endif
 
   end subroutine cplcomp_moab_init_lnd
@@ -828,18 +841,87 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_exchange_domain_tags(comp, MPSIID, mbixid, 'lat:lon:area:frac:mask', 'domi')
       endif
 #ifdef MOABDEBUG
+      if (mbixid >= 0) then ! coupler pes only
 !      debug test
-      outfile = 'recMeshSeaIce.h5m'//C_NULL_CHAR
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+         outfile = 'recMeshSeaIce.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
 !      write out the mesh file to disk
-      ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-      if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing sea ice mesh on coupler '
-          call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+         ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+             call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+         endif
       endif
 #endif
 
   end subroutine cplcomp_moab_init_ice
+
+  subroutine cplcomp_moab_pick_load_options(filename, ropts, ierr)
+      ! Inspect filename's netCDF contents and choose MOAB load options that match
+      ! the file's grid format. MOAB's parallel readers couple format to partition
+      ! method: NCHelperScrip handles SCRIP files and supports RCBZOLTAN; NCHelperDomain
+      ! handles CESM domain files (xc/yc/xv/yv) and supports only SQIJ-family partitions.
+      !
+      ! Detection (in order):
+      !   - 'grid_size' dimension present                 => SCRIP (structured or unstructured)
+      !   - 'xc' or 'yc' variable, or 'ni'+'nj' dims      => CESM domain
+      !     (variable names xc/yc/lon/lat vary across files, but the ni/nj dim pair
+      !     is the canonical CESM/CIME domain-file layout that NCHelperDomain expects)
+      ! Returns ierr /= 0 for unrecognized formats; caller decides whether to abort.
+      use pio,          only: file_desc_t, iosystem_desc_t, &
+                              pio_openfile, pio_closefile, pio_nowrite, &
+                              pio_inq_dimid, pio_inq_varid, pio_seterrorhandling, &
+                              PIO_BCAST_ERROR, PIO_INTERNAL_ERROR, PIO_NOERR
+      use shr_pio_mod,  only: shr_pio_getiosys, shr_pio_getiotype
+
+      character(len=*), intent(in)  :: filename
+      character(len=*), intent(out) :: ropts
+      integer,          intent(out) :: ierr
+
+      type(file_desc_t) :: pioid
+      type(iosystem_desc_t), pointer :: iosys
+      integer :: rcode, iotype, dimid_grid_size, dimid_ni, dimid_nj, varid_xc, varid_yc
+      logical :: is_scrip, is_cesm_domain
+      logical :: has_ni, has_nj, has_xc, has_yc
+
+      ierr = 0
+      is_scrip = .false.
+      is_cesm_domain = .false.
+
+      iosys  => shr_pio_getiosys(CPLID)
+      iotype =  shr_pio_getiotype(CPLID)
+      rcode = pio_openfile(iosys, pioid, iotype, trim(filename), pio_nowrite)
+      if (rcode /= PIO_NOERR) then
+         ierr = 1
+         return
+      endif
+
+      call pio_seterrorhandling(pioid, PIO_BCAST_ERROR)
+
+      ! SCRIP marker: 'grid_size' dimension
+      rcode = pio_inq_dimid(pioid, 'grid_size', dimid_grid_size)
+      if (rcode == PIO_NOERR) then
+         is_scrip = .true.
+      else
+         ! CESM domain markers: any of xc, yc variables OR ni+nj dimension pair
+         has_xc = (pio_inq_varid(pioid, 'xc', varid_xc) == PIO_NOERR)
+         has_yc = (pio_inq_varid(pioid, 'yc', varid_yc) == PIO_NOERR)
+         has_ni = (pio_inq_dimid(pioid, 'ni', dimid_ni) == PIO_NOERR)
+         has_nj = (pio_inq_dimid(pioid, 'nj', dimid_nj) == PIO_NOERR)
+         if (has_xc .or. has_yc .or. (has_ni .and. has_nj)) is_cesm_domain = .true.
+      endif
+
+      call pio_seterrorhandling(pioid, PIO_INTERNAL_ERROR)
+      call pio_closefile(pioid)
+
+      if (is_scrip) then
+         ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'
+      else if (is_cesm_domain) then
+         ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION;NO_CULLING'
+      else
+         ierr = 2
+      endif
+  end subroutine cplcomp_moab_pick_load_options
 
   subroutine cplcomp_moab_init_rof(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
@@ -904,12 +986,22 @@ subroutine  copy_aream_from_area(mbappid)
                ! load mesh from scrip file passed from river model, if domain file is not available
                call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh,rof_domain=rof_domain)
                if ( trim(rof_domain) == 'none' ) then
-                  outfile = trim(rtm_mesh)//C_NULL_CHAR
-                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
+                  outfile = trim(rtm_mesh)
                else
-                  outfile = trim(rof_domain)//C_NULL_CHAR
-                  ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;REPARTITION'//C_NULL_CHAR
+                  outfile = trim(rof_domain)
                endif
+               ! Pick MOAB load options based on actual file format. MOSART's frivinp_mesh
+               ! may be either a SCRIP-format mesh (structured or unstructured, handled by
+               ! NCHelperScrip with RCBZOLTAN) or a CESM domain file (xc/yc/xv/yv, handled
+               ! by NCHelperDomain with SQIJ-family partitions). The two readers don't share
+               ! partition-method support, so the right options depend on the file format.
+               call cplcomp_moab_pick_load_options(trim(outfile), ropts, ierr)
+               if (ierr /= 0) then
+                  write(logunit,*) subname,' cannot determine MOAB load options for ', trim(outfile)
+                  call shr_sys_abort(subname//' ERROR: unrecognized ROF mesh file format: '//trim(outfile))
+               endif
+               outfile = trim(outfile)//C_NULL_CHAR
+               ropts = trim(ropts)//C_NULL_CHAR
                nghlay = 0 ! no ghost layers
                if (seq_comm_iamroot(CPLID)) then
                   write(logunit,'(A)') subname//' loading rof from file '//trim(outfile) &

@@ -271,7 +271,29 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
-      <apply_tendencies type="logical" doc="flag to apply ZM tendencies or not">true</apply_tendencies>
+      <apply_detr_tend    type="logical" doc="ZM flag for cld liq/ice detrainment tend"     >true</apply_detr_tend>
+      <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >false</use_fortran_bridge>
+      <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
+      <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>
+      <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >false</clos_dyn_adj>
+      <!-- ZM tuning parameters -->
+      <upper_limit_pref type="real"    doc="ZM upper pressure limit for convection"    >40e2</upper_limit_pref>
+      <tau              type="real"    doc="ZM convective adjustment time scale"       >3600</tau>
+      <alfa             type="real"    doc="ZM max downdraft mass flux fraction"       >0.14</alfa>
+      <ke               type="real"    doc="ZM evaporation efficiency"                 >2.5E-6</ke>
+      <dmpdz            type="real"    doc="ZM fractional mass entrainment rate [1/m]" >-0.7e-3</dmpdz>
+      <tpert_fix        type="logical" doc="ZM flag to enable tpert"                   >true</tpert_fix>
+      <tpert_fac        type="real"    doc="ZM tunable temperature perturbation factor">2.0</tpert_fac>
+      <tiedke_add       type="real"    doc="ZM tunable temperature perturbation"       >0.8</tiedke_add>
+      <c0_lnd           type="real"    doc="ZM autoconversion coefficient over land"   >0.002</c0_lnd>
+      <c0_ocn           type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
+      <num_cin          type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
+      <!-- MCSP -->
+      <mcsp_enabled type="logical" doc="ZM flag to enable MCSP in ZM" >true</mcsp_enabled>
+      <mcsp_t_coeff type="real" doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
+      <mcsp_q_coeff type="real" doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
+      <mcsp_u_coeff type="real" doc="MCSP U-wind coefficient"         >0.0</mcsp_u_coeff>
+      <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
     <!-- Water tracers -->
@@ -283,6 +305,30 @@ be lost if SCREAM_HACK_XML is not enabled.
     <water_isotopes inherit="atm_proc_base">
       <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
     </water_isotopes>
+    
+    <!-- Gravity Wave Drag -->
+    <gw inherit="atm_proc_base">
+      <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
+      <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
+      <use_gw_orographic type="logical" doc="Flag for orographic GWD">false</use_gw_orographic>
+      <gw_drag_file type="string" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
+      <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
+      <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
+      <tau_0_ubc type="logical" doc="flag to enforce an upper boundary condition of tau=0">false</tau_0_ubc>
+      <fcrit2 type="real" doc="Critical Froude number">1.0</fcrit2>
+      <gw_orographic_eff type="real" doc="Efficiency of orographic GW tendencies">0.375</gw_orographic_eff>
+      <gw_frontal_taubgnd type="real" doc="Background stress source strength for frontal GW scheme">2.5E-3</gw_frontal_taubgnd>
+      <gw_frontal_eff type="real" doc="Efficiency of frontal GW tendencies">1.0</gw_frontal_eff>
+      <gw_frontal_fgfc hgrid="ne30np4.pg2"  type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">1.25E-15</gw_frontal_fgfc>
+      <gw_frontal_fgfc hgrid="ne120np4.pg2" type="real" doc="Frontogenesis function critical threshold for frontal GW scheme">2.00E-14</gw_frontal_fgfc>
+      <gw_convect_eff type="real" doc="Efficiency of convective GW tendencies">0.35</gw_convect_eff>
+      <gw_convect_hcf type="real" doc="Convective heating rate conversion factor">10.0</gw_convect_hcf>
+      <gw_convect_hdepth_scale type="real" doc="Scaling factor for convective heating depth">0.50</gw_convect_hdepth_scale>
+      <gw_convect_hdepth_min type="real" doc="Minimum hdepth for for convective GWD spectrum lookup table [km]">2.5</gw_convect_hdepth_min>
+      <gw_convect_storm_speed_min type="real" doc="Minimum convective storm speed for convective GWD [m/s]">10.0</gw_convect_storm_speed_min>
+      <gw_convect_plev_src_wind type="real" doc="Reference pressure level for source wind for convective GWD [Pa]">70000</gw_convect_plev_src_wind>
+      <use_gw_convect_old type="logical" doc="Switch to enable legacy behavior">false</use_gw_convect_old>
+    </gw>
 
     <!-- Basic options for each mam4 atm process -->
     <mam4_atm_proc_base inherit="atm_proc_base">
@@ -319,6 +365,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- MAM4xx-Aerosol-Microphysics -->
     <mam4_aero_microphys inherit="mam4_atm_proc_base">
       <!--Aerosol Microphysics processes on/off switches -->
+      <mam4_number_so4_monolayers_to_age_carbon_particle type="integer" doc="number of so4 manolayers to age carbon particle">8</mam4_number_so4_monolayers_to_age_carbon_particle>	   
       <mam4_do_gas_phase_chemistry type="logical" doc="Switch to enable gas phase chemistry">true</mam4_do_gas_phase_chemistry>
       <mam4_do_aqueous_phase_chemistry type="logical" doc="Switch to enable aqueous chemistry (setsox)">true</mam4_do_aqueous_phase_chemistry>
       <extra_mam4_aero_microphys_diags type="logical" doc="Extra MAM4xx aerosol microphysics diagnostics">false</extra_mam4_aero_microphys_diags>
@@ -422,6 +469,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- scale factors (applied to data read from file) -->
       <srf_emis_scale_factor_for_dms type="real" doc="Surface emissions scale factor for DMS">1.0</srf_emis_scale_factor_for_dms>
 
+      <dust_emis_scheme type="integer" doc="Dust emission scheme, 1: Zender et al. (2003), 2: Kok et al. (2014)">1</dust_emis_scheme>
       <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
       <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
 

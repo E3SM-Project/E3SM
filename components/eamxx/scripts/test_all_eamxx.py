@@ -1,5 +1,13 @@
-from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, ensure_psutil, \
-    SharedArea
+import os
+import shutil
+import concurrent.futures as threading3
+import itertools
+import json
+import re
+from pathlib import Path
+
+from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, \
+                  ensure_psutil, SharedArea
 from git_utils import get_current_head, get_current_commit
 
 from test_factory import create_tests, COV, CSR
@@ -9,16 +17,8 @@ from machines_specs import get_machine, setup_mach_env, is_machine_supported, \
 
 check_minimum_python_version(3, 4)
 
-import os, shutil
-import concurrent.futures as threading3
-import itertools
-import json
 
 ensure_psutil()
-import psutil
-import re
-
-from pathlib import Path
 
 ###############################################################################
 class TestAllScream(object):
@@ -76,19 +76,16 @@ class TestAllScream(object):
                 "Makes no sense to ask for --quick-rerun and --config-only at the same time")
 
         # Probe machine if none was specified
-        if machine is not None:
-            self._machine = get_machine(machine)
-            expect (not local, "Specifying a machine while passing '-l,--local' is ambiguous.")
-        else:
-            # We could potentially integrate more with CIME here to do actual
-            # nodename probing.
-            if "SCREAM_MACHINE" in os.environ and is_machine_supported(os.environ["SCREAM_MACHINE"]):
-                self._machine = get_machine(os.environ["SCREAM_MACHINE"])
-            else:
-                expect(local,
-                       "test-all-eamxx requires either the machine arg (-m $machine) or the -l flag,"
-                       "which makes it look for machine specs in '~/.cime/scream_mach_specs.py'.")
-                self._machine = get_machine("local")
+        expect (not (local and machine), "Specifying a machine while passing '-l,--local' is ambiguous.")
+        expect (local or machine or os.environ.get('SCREAM_MACHINE'),
+               "test-all-eamxx requires either the machine arg (-m $machine), "
+               "the SCREAM_MACHINE env var, "
+               "or the -l flag (which makes it look for machine specs in '~/.cime/scream_mach_specs.py')")
+
+        mach_name = machine or os.environ.get('SCREAM_MACHINE') or "local"
+        expect (is_machine_supported(mach_name),
+                f"The machine '{mach_name}' is not supported")
+        self._machine = get_machine(machine)
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
@@ -299,7 +296,7 @@ class TestAllScream(object):
                 if not data_dir.is_dir():
                     test.baselines_missing = True
                     missing.append(test.longname)
-                    print(f" -> Test {test} is missing baselines")
+                    print(f" -> Test {test} is missing baselines {data_dir}")
                 else:
                     print(f" -> Test {test} appears to have baselines")
             else:
@@ -308,11 +305,11 @@ class TestAllScream(object):
         return missing
 
     ###############################################################################
-    def generate_cmake_config(self, test, for_ctest=False):
+    def generate_cmake_config(self, test):
     ###############################################################################
 
         # Ctest only needs config options, and doesn't need the leading 'cmake '
-        result  = f"{'' if for_ctest else 'cmake '}-C {self._machine.mach_file}"
+        result  = f"-C {self._machine.mach_file}"
 
         # Netcdf should be available. But if the user is doing a testing session
         # where all netcdf-related code is disabled, he/she should be able to run
@@ -372,6 +369,19 @@ class TestAllScream(object):
         if "SCREAM_DYNAMICS_DYCORE" not in custom_opts_keys:
             result += " -DSCREAM_DYNAMICS_DYCORE=HOMME"
 
+        # NOTE: for generate, don't set baseline dir, since we don't want to overwrite
+        #       existing baselines until we know all tests completed normally
+        if self._generate:
+            test_dir = self.get_test_dir(self._work_dir,test)
+            result += " -DSCREAM_ENABLE_BASELINE_TESTS=ON"
+            result += f" -DSCREAM_BASELINES_DIR={test_dir}"
+            result += " -DSCREAM_ONLY_GENERATE_BASELINES=ON"
+        elif self._baseline_dir is not None and test.uses_baselines:
+            result += " -DSCREAM_ENABLE_BASELINE_TESTS=ON"
+            result += f" -DSCREAM_BASELINES_DIR={self.get_preexisting_baseline(test).parent}"
+        else:
+            result += " -DSCREAM_ENABLE_BASELINE_TESTS=Off"
+
         # For the compute-sanitizer tool 'racecheck', if no option --racecheck-num-workers
         # is provided, it will attempt to use all threads available on node. This can cause
         # issues if other test cases are being run in parallel. If the option was not specified,
@@ -386,6 +396,8 @@ class TestAllScream(object):
     ###############################################################################
     def get_taskset_resources(self, test, for_compile=True):
     ###############################################################################
+        import psutil
+
         res_name = "compile_res_count" if for_compile else "testing_res_count"
 
         if not for_compile and self._machine.uses_gpu():
@@ -446,7 +458,7 @@ class TestAllScream(object):
         return len(resources)
 
     ###############################################################################
-    def generate_ctest_config(self, cmake_config, extra_configs, test):
+    def generate_ctest_config(self, cmake_config, test):
     ###############################################################################
         result = ""
 
@@ -455,13 +467,12 @@ class TestAllScream(object):
         cmake_config += f" -DSCREAM_TEST_MAX_TOTAL_THREADS={num_test_res}"
         verbosity = "-V --output-on-failure" if not self._extra_verbose else "-VV"
 
-        result += f"SCREAM_BUILD_PARALLEL_LEVEL={test.compile_res_count} CTEST_PARALLEL_LEVEL={test.testing_res_count} ctest {verbosity} "
+        result += f"SCREAM_BUILD_PARALLEL_LEVEL={test.compile_res_count} "
+        result += f"CTEST_PARALLEL_LEVEL={test.testing_res_count} ctest {verbosity} "
         result += f"--resource-spec-file {test_dir}/ctest_resource_file.json "
 
-        if self._baseline_dir is not None and test.uses_baselines:
-            cmake_config += f" -DSCREAM_BASELINES_DIR={self.get_preexisting_baseline(test).parent}"
-        else:
-            cmake_config += " -DSCREAM_ENABLE_BASELINE_TESTS=Off"
+        if self._config_only:
+            result += "-DCONFIG_ONLY=TRUE "
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -469,8 +480,8 @@ class TestAllScream(object):
         if isinstance(test, COV):
             result += "-DDO_COVERAGE=True "
 
-        for key, value in extra_configs:
-            result += f"-D{key}={value} "
+        if self._machine.use_ninja:
+            result += "-DUSE_NINJA=TRUE "
 
         work_dir = self._work_dir/str(test)
         result += f"-DBUILD_WORK_DIR={work_dir} "
@@ -480,8 +491,9 @@ class TestAllScream(object):
         result += f"-DBUILD_NAME_MOD={build_name_mod}{suffix} "
 
         if self._limit_test_regex:
-            result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
-        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCTEST_SITE={self._machine.name} -DCMAKE_COMMAND="{cmake_config}" '
+            result += f'-DINCLUDE_REGEX={self._limit_test_regex} '
+        result += f'-S {self._root_dir}/cmake/ctest_script.cmake '
+        result += f'-DCTEST_SITE={self._machine.name} -DCMAKE_COMMAND="{cmake_config}" '
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
@@ -499,74 +511,33 @@ class TestAllScream(object):
         expect(test.uses_baselines,
                f"Something is off. generate_baseline should have not be called for test {test}")
 
-        self._machine.setup()
+        success = self.run_test(test)
 
-        baseline_dir = self.get_test_dir(self._baseline_dir, test)
-        test_dir = self.get_test_dir(self._work_dir, test)
-        if test_dir.exists():
-            shutil.rmtree(test_dir)
-        test_dir.mkdir()
+        if success:
+            test_dir = self.get_test_dir(self._work_dir,test)
+            # Read list of nc files to copy to baseline dir
+            baseline_dir = self.get_test_dir(self._baseline_dir, test)
+            with open(test_dir/"data/baseline_list","r",encoding="utf-8") as fd:
+                files = fd.read().splitlines()
 
-        num_test_res = self.create_ctest_resource_file(test,test_dir)
-        cmake_config = self.generate_cmake_config(test)
-        cmake_config +=  " -DSCREAM_ONLY_GENERATE_BASELINES=ON"
-        cmake_config += f" -DSCREAM_BASELINES_DIR={baseline_dir}"
-        cmake_config += f" -DSCREAM_TEST_MAX_TOTAL_THREADS={num_test_res}"
+                with SharedArea():
+                    for fn in files:
+                        # In case appending to the file leaves an empty line at the end
+                        if fn != "":
+                            src = Path(fn)
+                            dst = baseline_dir / "data" / src.name
+                            shutil.copyfile(src, dst)
 
-        print("===============================================================================")
-        print(f"Generating baseline for test {test} with config '{cmake_config}'")
-        print("===============================================================================")
+            # Some eamxx tests are designed to output directly in <bld_root>/data,
+            # so just copy all content from there into the baseline dir
+            shutil.copytree(test_dir/"data",baseline_dir/"data",dirs_exist_ok=True)
 
-        # We cannot just crash if we fail to generate baselines, since we would
-        # not get a dashboard report if we did that. Instead, just ensure there is
-        # no baseline file to compare against if there's a problem.
-        stat, _, err = run_cmd(f"{cmake_config} {self._root_dir}",
-                               from_dir=test_dir, verbose=True)
-        if stat != 0:
-            print (f"WARNING: Failed to create baselines (config phase):\n{err}")
-            return False
+            # Store the sha used for baselines generation. This is only for record
+            # keeping.
+            self.set_baseline_file_sha(test)
+            test.baselines_missing = False
 
-        cmd = f"make -j{test.compile_res_count}"
-        if self._parallel:
-            resources = self.get_taskset_resources(test)
-            cmd = f"taskset -c {','.join([str(r) for r in resources])} sh -c '{cmd}'"
-
-        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
-
-        if stat != 0:
-            print (f"WARNING: Failed to create baselines (build phase):\n{err}")
-            return False
-
-        cmd  = f"ctest -j{test.testing_res_count}"
-        cmd +=  " -L baseline_gen"
-        cmd += f" --resource-spec-file {test_dir}/ctest_resource_file.json"
-        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
-
-        if stat != 0:
-            print (f"WARNING: Failed to create baselines (run phase):\n{err}")
-            return False
-
-        # Read list of nc files to copy to baseline dir
-        with open(test_dir/"data/baseline_list","r",encoding="utf-8") as fd:
-            files = fd.read().splitlines()
-
-            with SharedArea():
-                for fn in files:
-                    # In case appending to the file leaves an empty line at the end
-                    if fn != "":
-                        src = Path(fn)
-                        dst = baseline_dir / "data" / src.name
-                        shutil.copyfile(src, dst)
-
-        # Store the sha used for baselines generation. This is only for record
-        # keeping.
-        self.set_baseline_file_sha(test)
-        test.baselines_missing = False
-
-        # Clean up the directory by removing everything
-        shutil.rmtree(test_dir)
-
-        return True
+        return success
 
     ###############################################################################
     def generate_all_baselines(self):
@@ -601,17 +572,22 @@ class TestAllScream(object):
         self._machine.setup()
 
         git_head = get_current_head()
-
-        print("===============================================================================")
-        print(f"Testing '{git_head}' for test '{test}'")
-        print("===============================================================================")
-
         test_dir = self.get_test_dir(self._work_dir,test)
-        cmake_config = self.generate_cmake_config(test, for_ctest=True)
-        ctest_config = self.generate_ctest_config(cmake_config, [], test)
+        cmake_config = self.generate_cmake_config(test)
 
+        print("===============================================================================")
+        if self._generate:
+            print(f"Generating baseline for test {test} with config '{cmake_config}'")
+        else:
+            print(f"Testing '{git_head}' for test '{test}'")
+        print("===============================================================================")
+
+        ctest_config = self.generate_ctest_config(cmake_config, test)
+
+        if self._generate:
+            ctest_config += "-L baseline_gen"
         if self._config_only:
-            ctest_config += "-DCONFIG_ONLY=TRUE"
+            ctest_config += "-DCONFIG_ONLY=TRUE "
 
         if self._quick_rerun and (test_dir/"CMakeCache.txt").is_file():
             # Do not purge bld dir, and do not rerun config step.
@@ -702,8 +678,8 @@ class TestAllScream(object):
                         curr_idx = int(tokens[2])
 
             return latest
-        else:
-            return None
+
+        return None
 
     ###############################################################################
     def baselines_to_be_generated(self):
@@ -730,15 +706,12 @@ class TestAllScream(object):
 
         success = True
 
+        # First, create build directories (one per test). If existing, nuke the content
+        self.create_tests_dirs(self._work_dir, not self._quick_rerun)
+
         if self._generate:
             success = self.generate_all_baselines()
-
         else:
-            # First, create build directories (one per test). If existing, nuke the content
-            self.create_tests_dirs(self._work_dir, not self._quick_rerun)
-
             success &= self.run_all_tests()
-            if not success:
-                print ("Error(s) occurred during test phase")
 
         return success

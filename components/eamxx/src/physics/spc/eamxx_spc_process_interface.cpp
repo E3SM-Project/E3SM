@@ -94,7 +94,6 @@ void SPC::initialize_impl (const RunType /* run_type */)
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;
-  const auto eps = std::numeric_limits<double>::epsilon();
 
   add_postcondition_check<FWI>(get_field_out("o3_volume_mix_ratio"),m_model_grid,1e-36,1e-2,true);
 }

@@ -53,8 +53,7 @@ TEST_CASE("field_over_dt") {
   auto diag_f = diag->get();
   for (int itest = 2; itest < ntests; itest++) {
     // Save qc before advancing
-    auto qc_prev = qc.clone();
-    qc_prev.deep_copy(qc);
+    auto qc_prev = qc.clone(CloneFlags::CopyData);
 
     // init_timestep saves start of step
     diag->init_timestep(ts);

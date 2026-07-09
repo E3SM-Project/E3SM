@@ -223,6 +223,11 @@ void Functions<S,D>::zm_conv_evap(
     snow = flxsnow(pver) / 1000;
 
   }); // Kokkos::single
+
+  // The k-loop above runs on a single thread (Kokkos::single has no implicit
+  // team barrier). Synchronize so all team threads see the outputs written
+  // here (tend_s, tend_q, flux arrays) before they are read by the caller.
+  team.team_barrier();
 }
 
 } // namespace zm

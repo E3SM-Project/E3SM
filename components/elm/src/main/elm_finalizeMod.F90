@@ -25,7 +25,7 @@ contains
     ! !DESCRIPTION:
     ! Finalize land surface model
     !
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     use MOABGridType, only : elm_moab_finalize
 #endif
 #ifdef USE_PETSC_LIB
@@ -41,7 +41,7 @@ contains
     implicit none
     !
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     call elm_moab_finalize()
 #endif
 
