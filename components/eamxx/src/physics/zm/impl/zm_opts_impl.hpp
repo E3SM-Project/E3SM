@@ -56,6 +56,15 @@ void Functions<S,D>::zm_opts_init()
   Kokkos::parallel_for("zm_calculate_estbl", Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
     estbl(i) = svp_trans(ZMC::tmin + i);
   });
+
+  // FIXME: Intel compiler bug workaround. We need to reallocate view metadata for this static inline member. 
+  // We can remove this line once we update C++20 (and classic intel compiler is no longer supported). 
+  EKAT_ASSERT_MSG(s_zm_opts.estbl.use_count() == 0,
+                  "Internal error: estbl still has a live allocation. "
+                  "Ensure zm_finalize_cxx() is called at the end of each C++ ZM unit test "
+                  "to release estbl allocation before the next unit test is called.");
+  new (&s_zm_opts.estbl) view_1d<Real>();
+
   s_zm_opts.estbl = estbl;
 }
 
