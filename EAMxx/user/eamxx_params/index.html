@@ -5454,6 +5454,137 @@
 </ul>
 </li>
 </ul>
+<h2 id="gw">gw</h2>
+<ul>
+<li>gw::use_gw_convect:<ul>
+<li>description: Flag for convective GWD</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::use_gw_frontal:<ul>
+<li>description: Flag for frontal GWD</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::use_gw_orographic:<ul>
+<li>description: Flag for orographic GWD</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::gw_drag_file:<ul>
+<li>description: GW source spectra file</li>
+<li>type: string</li>
+</ul>
+</li>
+<li>gw::pgwv:<ul>
+<li>description: Maximum number of waves allowed</li>
+<li>type: integer</li>
+</ul>
+</li>
+<li>gw::gw_dc:<ul>
+<li>description: Bin width for spectrum</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::tau_0_ubc:<ul>
+<li>description: flag to enforce an upper boundary condition of tau=0</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::fcrit2:<ul>
+<li>description: Critical Froude number</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_orographic_eff:<ul>
+<li>description: Efficiency of orographic GW tendencies</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_frontal_taubgnd:<ul>
+<li>description: Background stress source strength for frontal GW scheme</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_frontal_eff:<ul>
+<li>description: Efficiency of frontal GW tendencies</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_frontal_fgfc:<ul>
+<li>description: Frontogenesis function critical threshold for frontal GW scheme</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_convect_eff:<ul>
+<li>description: Efficiency of convective GW tendencies</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_convect_hcf:<ul>
+<li>description: Convective heating rate conversion factor</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_convect_hdepth_scale:<ul>
+<li>description: Scaling factor for convective heating depth</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_convect_hdepth_min:<ul>
+<li>description: Minimum hdepth for for convective GWD spectrum lookup table [km]</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_convect_storm_speed_min:<ul>
+<li>description: Minimum convective storm speed for convective GWD [m/s]</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::gw_convect_plev_src_wind:<ul>
+<li>description: Reference pressure level for source wind for convective GWD [Pa]</li>
+<li>type: real</li>
+</ul>
+</li>
+<li>gw::use_gw_convect_old:<ul>
+<li>description: Switch to enable legacy behavior</li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::number_of_subcycles:<ul>
+<li>description: how many times to subcycle this atm process</li>
+<li>type: <strong>MISSING</strong></li>
+<li>constraints: gt 0</li>
+</ul>
+</li>
+<li>gw::enable_precondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::enable_postcondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>gw::repair_log_level:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: string</li>
+<li>valid values: trace,debug,info,warn</li>
+</ul>
+</li>
+<li>gw::internal_diagnostics_level:<ul>
+<li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)</li>
+<li>type: integer</li>
+<li>valid values: 0,1,2</li>
+</ul>
+</li>
+<li>gw::compute_tendencies:<ul>
+<li>description: list of computed fields/groups for which this process will back out tendencies</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+</ul>
 <h2 id="mam4_atm_proc_base">mam4_atm_proc_base</h2>
 <ul>
 <li>mam4_atm_proc_base::create_fields_interval_checks:<ul>
