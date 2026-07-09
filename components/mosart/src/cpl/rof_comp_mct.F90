@@ -1002,7 +1002,7 @@ contains
 
     appname="ROFMB" ! only if rof_prognostic
     ! first rof instance, should be
-    ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, mpicom_rof, ROFID, mrofid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_rof, ROFID, mrofid)
        if (ierr > 0 )  &
           call shr_sys_abort( sub//' Error: cannot register moab app')
        if(masterproc) then

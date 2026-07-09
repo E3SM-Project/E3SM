@@ -885,7 +885,7 @@ contains
     ! define a MOAB app for ELM
     appname="LNDMB"
     ! first land instance, should be 9
-    ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, mpicom_lnd_moab, LNDID, mlnid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_lnd_moab, LNDID, mlnid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app')
     if(masterproc) then

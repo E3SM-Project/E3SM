@@ -139,7 +139,7 @@ contains
     ! We do this so that coupling does not have to deal with halos
     appname="MOAB_ELM_GHOSTED"
     LNDGHOSTID = 55120 ! this is arbitrary (but needs to be unique)
-    ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, mpicom, LNDGHOSTID, mlndghostid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom, LNDGHOSTID, mlndghostid)
     if (ierr > 0 )  &
          call endrun('Error: cannot register ELM-MOAB halo application')
     if(masterproc) then

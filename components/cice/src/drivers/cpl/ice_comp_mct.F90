@@ -1538,7 +1538,7 @@ end function restart_filename
     ! define a MOAB app for ELM
     appname="CICEMB"
     ! first cice instance, should be 13 ICEID is a private local variable
-    ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, mpicom_ice_moab, ICEID, MPSIID)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_ice_moab, ICEID, MPSIID)
     if (ierr > 0 )  then
        write(nu_diag, *) 'Error: cannot register moab app'
        call shr_sys_abort()

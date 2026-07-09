@@ -558,7 +558,7 @@ CONTAINS
 
     appname="ATM_PHYS_SCREAM"
     ATM_PHYS = 200 + ATM_ID !
-    ierr = iMOAB_RegisterApplication(appname//C_NULL_CHAR, mpicom_atm, ATM_PHYS, mphaid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_atm, ATM_PHYS, mphaid)
     if (ierr > 0 )  then
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif

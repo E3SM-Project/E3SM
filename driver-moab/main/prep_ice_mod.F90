@@ -159,7 +159,8 @@ contains
          wav_gnam=wav_gnam            , &
          glc_gnam=glc_gnam)
 
-    wgtIdSr2i = 'scalar_r2i'//C_NULL_CHAR
+    ! C_NULL_CHAR is added at each iMOAB C API call site; keep variable clean for diagnostics.
+    wgtIdSr2i = 'scalar_r2i'
     compute_maps_online_r2i = .false. ! force read from disk
     no_match = .true. ! force to create a new mapper object
 
