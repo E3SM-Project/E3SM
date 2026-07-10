@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace Homme
 {
@@ -37,6 +38,19 @@ constexpr Real get_lambda_vis ()
   case 7: return 652.3015;
   default: return 0.0;
   }
+}
+
+KOKKOS_INLINE_FUNCTION
+Real get_local_laplace_metric (const Real a, const Real b, const Real c, const Real d,
+                               const Real lambda_vis, const Real scale_factor_inv)
+{
+  const Real s11 = a*a + c*c;
+  const Real s22 = b*b + d*d;
+  const Real s12 = a*b + c*d;
+  const Real disc = (s11 - s22)*(s11 - s22) + 4.0*s12*s12;
+  const Real max_eig = 0.5 * (s11 + s22 + std::sqrt(disc));
+  const Real norm_dinv = std::sqrt(max_eig);
+  return lambda_vis * (scale_factor_inv * norm_dinv) * (scale_factor_inv * norm_dinv);
 }
 
 } // anonymous namespace
@@ -474,13 +488,7 @@ int HyperviscosityFunctorImpl::compute_sgs_subcycle_count (const Real dt) const
         // Recover a local 2-norm of D^{-1} from the largest eigenvalue of
         // D^{-1} (D^{-1})^T, then convert it into the Laplacian stability
         // factor used in HOMME's viscous CFL estimate.
-        const Real s11 = a*a + c*c;
-        const Real s22 = b*b + d*d;
-        const Real s12 = a*b + c*d;
-        const Real disc = (s11 - s22)*(s11 - s22) + 4.0*s12*s12;
-        const Real max_eig = 0.5 * (s11 + s22 + std::sqrt(disc));
-        const Real norm_dinv = std::sqrt(max_eig);
-        const Real laplace_metric = lambda_vis * (scale_factor_inv * norm_dinv) * (scale_factor_inv * norm_dinv);
+        const Real laplace_metric = get_local_laplace_metric(a, b, c, d, lambda_vis, scale_factor_inv);
 
         // Use the largest of Km and Kh at this horizontal point as a scalar
         // bound for the explicit SGS diffusion step.
@@ -683,6 +691,9 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
 
   using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
   using IntColumn = decltype(Homme::subview(m_state.m_w_i,0,0,0,0));
+  const bool clip_diffusivities = m_data.hypervis_subcycle_sgs > 0;
+  const Real lambda_vis = get_lambda_vis();
+  const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
 
   Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                        [&](const int idx) {
@@ -816,9 +827,45 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
 
       auto Km = Homme::subview(m_derived.m_turb_diff_mom,kv.ie,igp,jgp);
       auto Kh = Homme::subview(m_derived.m_turb_diff_heat,kv.ie,igp,jgp);
+      Scalar km_clip_buf[NUM_LEV];
+      Scalar kh_clip_buf[NUM_LEV];
+      MidColumn Km_clip(km_clip_buf);
+      MidColumn Kh_clip(kh_clip_buf);
 
       MidColumn wtens, phitens;
       IntColumn Km_i, Kh_i;
+
+      Real max_diffusivity = std::numeric_limits<Real>::max();
+      if (clip_diffusivities && lambda_vis > 0 && m_data.dt_hvs_sgs > 0) {
+        const auto& dinv = m_geometry.m_dinv;
+        const Real a = dinv(kv.ie,0,0,igp,jgp);
+        const Real b = dinv(kv.ie,0,1,igp,jgp);
+        const Real c = dinv(kv.ie,1,0,igp,jgp);
+        const Real d = dinv(kv.ie,1,1,igp,jgp);
+        const Real laplace_metric = get_local_laplace_metric(a, b, c, d, lambda_vis, scale_factor_inv);
+        if (laplace_metric > 0) {
+          // For a fixed SGS substep, clip Km/Kh so the local explicit diffusion
+          // update remains within the CFL <= 1 stability bound.
+          max_diffusivity = 2.0 / (m_data.dt_hvs_sgs * laplace_metric);
+        }
+      }
+
+      Kokkos::parallel_for(
+        Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+        [&] (const int k) {
+          auto km = Km(k);
+          auto kh = Kh(k);
+          if (clip_diffusivities) {
+            for (int s = 0; s < VECTOR_SIZE; ++s) {
+              if (km[s] > max_diffusivity) km[s] = max_diffusivity;
+              if (kh[s] > max_diffusivity) kh[s] = max_diffusivity;
+            }
+          }
+          Km_clip(k) = km;
+          Kh_clip(k) = kh;
+        });
+      kv.team_barrier();
+
       if (m_process_nh_vars) {
         wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
         phitens = Homme::subview(m_buffers.phitens,kv.ie,igp,jgp);
@@ -829,16 +876,16 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
 
         // Get diffusivities on the interface vertical grid from those
         //  on the mid-point grid that were passed from physics
-        ColumnOps::compute_interface_values(kv, Km, Km_i);
-        ColumnOps::compute_interface_values(kv, Kh, Kh_i);
+        ColumnOps::compute_interface_values(kv, Km_clip, Km_i);
+        ColumnOps::compute_interface_values(kv, Kh_clip, Kh_i);
       }
 
       Kokkos::parallel_for(
         Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
         [&] (const int k) {
 
-          const auto xf_m = m_data.dt_hvs_sgs * Km(k); // Momentum diffusivity
-          const auto xf_h = m_data.dt_hvs_sgs * Kh(k); // Heat diffusivity
+          const auto xf_m = m_data.dt_hvs_sgs * Km_clip(k); // Momentum diffusivity
+          const auto xf_h = m_data.dt_hvs_sgs * Kh_clip(k); // Heat diffusivity
           utens(k)  *= xf_m;
           vtens(k)  *= xf_m;
           ttens(k)  *= xf_h;
