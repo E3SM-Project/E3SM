@@ -860,7 +860,6 @@ setup_file (      IOFileSpecs& filespecs,
       const auto& c = pc_dict.at(n);
       scorpio::define_var (filename, n, c.units.to_string(), {},
                            "real", "real", false);
-      scorpio::write_var (filename, n, &c.value);
     }
   }
 
@@ -908,6 +907,16 @@ setup_file (      IOFileSpecs& filespecs,
   }
 
   scorpio::enddef (filename);
+
+  // Write the constants to the output file
+  if (!m_resume_output_file) {
+    const auto& pc_names = m_params.get<std::vector<std::string>>("constants",{});
+    const auto& pc_dict = physics::Constants<Real>::dictionary();
+    for (const auto& n: pc_names) {
+      const auto& c = pc_dict.at(n);
+      scorpio::write_var (filename, n, &c.value);
+    }
+  }
 
   if (m_save_grid_data and not filespecs.is_restart_file() and not m_resume_output_file) {
     // Immediately run the geo data streams
