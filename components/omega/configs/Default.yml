@@ -130,6 +130,19 @@ Omega:
       Contents:
         - State
         - Base
+    # Forcing is the external forcing in standalone mode.
+    # It contains the surface stress, surface fluxes
+    # and the surface restoring target files (if appl.).
+    Forcing:
+      UsePointerFile: false
+      Filename: forcing.nc
+      Mode: read
+      Precision: double
+      Freq: 1
+      FreqUnits: Never
+      UseStartEnd: false
+      Contents:
+        - Forcing
     # Restarts are used to initialize for all job submissions after the very
     # first startup job. We use UseStartEnd with a start time just after the
     # simulation start time so that omega does not attempt to use a restart

@@ -66,6 +66,9 @@ class Forcing {
    /// Unregister surface stress fields from IO streams
    void unregisterFields() const;
 
+   /// Read forcing fields from input stream at startup
+   void readStreamIntoArrays();
+
    /// Compute all forcing variables
    void computeAll() const;
 

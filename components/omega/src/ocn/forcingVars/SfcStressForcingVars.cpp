@@ -17,9 +17,7 @@ SfcStressForcingVars::SfcStressForcingVars(const std::string &Suffix,
 void SfcStressForcingVars::registerFields(
     const std::string &MeshName // name of horizontal mesh
 ) const {
-
-   const Real FillValue = -9.99e30;
-   int NDims            = 1;
+   int NDims = 1;
    std::vector<std::string> DimNames(NDims);
    std::string DimSuffix;
    if (MeshName == "Default") {
