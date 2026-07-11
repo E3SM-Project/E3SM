@@ -413,7 +413,6 @@ subroutine  copy_aream_from_area(mbappid)
 
       use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
-      use shr_moab_mod, only: mbGetnCells, mbGetCellTagVals, mbSetCellTagVals
 
       type(seq_infodata_type), intent(in) :: infodata
       type(component_type),    intent(inout) :: comp
@@ -428,10 +427,7 @@ subroutine  copy_aream_from_area(mbappid)
       integer :: ierr
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ocn_domain
-      character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      real(r8), allocatable :: tagValues(:)
-      integer :: arrsize, nloc
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
