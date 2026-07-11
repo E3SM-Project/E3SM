@@ -352,8 +352,6 @@ contains
     ! Initialization PETSc-based thermal model
     !
     ! !USES:
-    use mpp_varctl                , only : use_petsc_thermal_model
-    !
     implicit none
     ! !ARGUMENTS
     class(em_ptm_type)                   :: this
@@ -361,8 +359,6 @@ contains
     class(emi_data_list) , intent(inout) :: e2l_init_list
     integer              , intent(in)    :: iam
     type(bounds_type)    , intent (in)   :: bounds_clump
-
-    if (.not.use_petsc_thermal_model) return
 
     ! 1. Initialize the multi-physics-problem (MPP)
     call initialize_mpp(this, iam)

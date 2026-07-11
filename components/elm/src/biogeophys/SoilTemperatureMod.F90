@@ -136,14 +136,9 @@ contains
     !DESCRIPTION
     !  Initializes the soil tempreature model
     !
-    use elm_varctl, only : use_petsc_thermal_model
     ! !ARGUMENTS:
 
-    if (.not.use_petsc_thermal_model) then
-       thermal_model = default_thermal_model
-    else
-       thermal_model = petsc_thermal_model
-    endif
+    thermal_model = default_thermal_model
     !$acc update device(thermal_model)
 
   end subroutine init_soil_temperature

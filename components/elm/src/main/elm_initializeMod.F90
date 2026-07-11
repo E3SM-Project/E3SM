@@ -1162,20 +1162,9 @@ contains
     use landunit_varcon          , only : istsoil, istcrop, istice_mec, istice_mec
     use landunit_varcon          , only : istice, istdlak, istwet, max_lunit
     use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use elm_varctl               , only : use_vsfm, vsfm_use_dynamic_linesearch
-    use elm_varctl               , only : vsfm_include_seepage_bc, vsfm_satfunc_type
-    use elm_varctl               , only : vsfm_lateral_model_type
-    use elm_varctl               , only : use_petsc_thermal_model
     use elm_varctl               , only : lateral_connectivity
     use elm_varctl               , only : finidat
     use decompMod                , only : get_proc_clumps
-    use mpp_varpar               , only : mpp_varpar_init
-    use mpp_varcon               , only : mpp_varcon_init_landunit
-    use mpp_varcon               , only : mpp_varcon_init_column
-    use mpp_varctl               , only : mpp_varctl_init_vsfm
-    use mpp_varctl               , only : mpp_varctl_init_petsc_thermal
-    use mpp_bounds               , only : mpp_bounds_init_proc_bounds
-    use mpp_bounds               , only : mpp_bounds_init_clump
     use ExternalModelInterfaceMod, only : EMI_Init_EM
     use ExternalModelConstants   , only : EM_ID_VSFM
     use ExternalModelConstants   , only : EM_ID_PTM
@@ -1183,51 +1172,8 @@ contains
     implicit none
 
     type(bounds_type) :: bounds_proc
-    logical           :: restart_vsfm          ! does VSFM need to be restarted
 
     call t_startf('elm_init3')
-
-    ! Is this a restart run?
-    restart_vsfm = .false.
-    if (nsrest == nsrStartup) then
-       if (finidat == ' ') then
-          restart_vsfm = .false.
-       else
-          restart_vsfm = .true.
-       end if
-    else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
-       restart_vsfm = .true.
-    end if
-
-    call mpp_varpar_init (nlevsoi, nlevgrnd, nlevsno, max_patch_per_col)
-
-    call mpp_varcon_init_landunit   (istsoil, istcrop, istice, istice_mec, &
-           istdlak, istwet, max_lunit)
-
-    call mpp_varcon_init_column(icol_roof, icol_sunwall, icol_shadewall, &
-      icol_road_imperv, icol_road_perv)
-
-    call mpp_varctl_init_vsfm(use_vsfm, vsfm_use_dynamic_linesearch, &
-      vsfm_include_seepage_bc, lateral_connectivity, restart_vsfm, &
-      vsfm_satfunc_type, vsfm_lateral_model_type)
-
-    call mpp_varctl_init_petsc_thermal(use_petsc_thermal_model)
-
-    call get_proc_bounds(bounds_proc)
-    call mpp_bounds_init_proc_bounds(bounds_proc%begg    , bounds_proc%endg,     &
-                                     bounds_proc%begg_all, bounds_proc%endg_all, &
-                                     bounds_proc%begc    , bounds_proc%endc,     &
-                                     bounds_proc%begc_all, bounds_proc%endc_all)
-
-    call mpp_bounds_init_clump(get_proc_clumps())
-
-    if (use_vsfm) then
-       call EMI_Init_EM(EM_ID_VSFM)
-    endif
-
-    if (use_petsc_thermal_model) then
-       call EMI_Init_EM(EM_ID_PTM)
-    endif
 
     call t_stopf('elm_init3')
 
@@ -1245,9 +1191,7 @@ contains
 #endif
     ! !USES:
     use spmdMod    , only : mpicom
-    use elm_varctl , only : use_vsfm
     use elm_varctl , only : lateral_connectivity
-    use elm_varctl , only : use_petsc_thermal_model
 #ifdef USE_PETSC_LIB
     use petscsys
 #endif
@@ -1259,9 +1203,7 @@ contains
     PetscErrorCode        :: ierr                  ! get error code from PETSc
 #endif
 
-    if ( (.not. use_vsfm)               .and. &
-         (.not. lateral_connectivity)   .and. &
-         (.not. use_petsc_thermal_model) ) return
+    if ( (.not. lateral_connectivity) ) return
 
 #ifdef USE_PETSC_LIB
     ! Initialize PETSc

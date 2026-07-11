@@ -78,9 +78,7 @@ contains
 #ifndef FATES_VIA_EMI
     use elm_varctl, only : use_betr
     use elm_varctl, only : use_pflotran
-    use elm_varctl, only : use_vsfm
 #endif
-    use elm_varctl, only : use_petsc_thermal_model
     use elm_varctl, only : use_em_stub
     !
     implicit none
@@ -118,24 +116,6 @@ contains
        index_em_pflotran = num_em
     endif
 
-    ! Is VSFM active?
-    if (use_vsfm) then
-       num_em            = num_em + 1
-       index_em_vsfm     = num_em
-#ifdef USE_PETSC_LIB
-       allocate(em_vsfm(nclumps))
-#endif
-    endif
-
-    ! Is PETSc based Thermal Model active?
-    if (use_petsc_thermal_model) then
-       num_em            = num_em + 1
-       index_em_ptm      = num_em
-#ifdef USE_PETSC_LIB
-       allocate(em_ptm(nclumps))
-#endif
-    endif
-
 #endif
 
     ! Is Stub EM active?
@@ -150,9 +130,7 @@ contains
        write(iulog,*) '  Is BeTR present?     ',(index_em_betr     >0)
        write(iulog,*) '  Is FATES present?    ',(index_em_fates    >0)
        write(iulog,*) '  Is PFLOTRAN present? ',(index_em_pflotran >0)
-       write(iulog,*) '  Is PTM present?      ',(index_em_ptm      >0)
        write(iulog,*) '  Is Stub EM present?  ',(index_em_stub     >0)
-       write(iulog,*) '  Is VSFM present?     ',(index_em_vsfm     >0)
     endif
 
     if (num_em > 1) then
