@@ -243,7 +243,6 @@ MODULE WRM_subw_IO_mod
         end if
      end do
      write(iulog,FORMI) subname,' localNumDam = ',iam,ctlSubwWRM%localNumDam
-
      !-------------------
      !--- initialize icell, INVicell and dam indexing
      !-------------------
@@ -881,6 +880,7 @@ MODULE WRM_subw_IO_mod
             call pio_setframe(ncid,vardesc,frame)
             call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%ExtCons(:,mth), ier)
             if (masterproc) write(iulog,FORMR) trim(subname),' read ExtCons',minval(WRMUnit%ExtCons(:,mth)),maxval(WRMUnit%ExtCons(:,mth))
+            write(iulog,*)'TZ ExtCons ',WRMUnit%ExtCons
             call shr_sys_flush(iulog)
          enddo
 
@@ -984,8 +984,8 @@ MODULE WRM_subw_IO_mod
     
         write(strYear,'(I4.4)') yr
         write(strMonth,'(I2.2)') mon
-        fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
-
+        ! fname = trim(ctlSubwWRM%demandPath)// strYear//'_'//strMonth//'.nc'
+        fname = trim(ctlSubwWRM%demandPath)//'icom_domain_water_use_'//strMonth//'01'//strYear//'.nc'
         inquire (file = fname, exist = lexist)
         if ( .not. lexist ) then
           write(iulog,*) subname // ' ERROR: external demand file does NOT exist:'&

@@ -398,6 +398,14 @@ External Demand Flag, 0 = false
 Demand variable from external file
 </entry>
 
+<entry id="ExternalConsumptionFlag" 
+       type="integer" 
+       category="wrm"
+       group="wrm_inparm" 
+       valid_values="" >
+External Consumption Flag, 0 = false
+</entry>
+
 <entry id="DamConstructionFlag" 
        type="integer" 
        category="wrm"

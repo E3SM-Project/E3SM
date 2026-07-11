@@ -414,6 +414,7 @@ MODULE WRM_modules
      evap = StorWater%pot_evap(iunit) * theDeltaT * WRMUnit%SurfArea(damID) * 1000000._r8 ! potential evaporation in the grid cell of the reservoir
      StorWater%ExtCons(damID) = WRMUnit%ExtCons(damID, month)* theDeltaT ! external consumptive use over the time step (m3)
      extcons = StorWater%ExtCons(damID)
+     write(iulog,*)'TZ storwater damid, extcons ',damID, StorWater%ExtCons(damID)
      min_flow = 0.1_r8 * WRMUnit%MeanMthFlow(damID, month) * theDeltaT
      min_stor = 0.1_r8 * WRMUnit%StorCap(damID)
      max_stor = WRMUnit%StorCap(damID)
