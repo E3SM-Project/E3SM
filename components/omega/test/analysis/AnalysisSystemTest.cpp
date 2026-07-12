@@ -654,6 +654,15 @@ void initAnalysisSystemTest() {
    Config("Omega");
    Config::readAll("omega.yml");
 
+   // Enable GlobalStats to ensure at least one AnalysisGroup is enabled
+   // for testing
+   Config *OmegaConfig = Config::getOmegaConfig();
+   Config AnalysisCfg("Analysis");
+   OmegaConfig->get(AnalysisCfg);
+   Config GlobalStatsCfg("GlobalStats");
+   AnalysisCfg.get(GlobalStatsCfg);
+   GlobalStatsCfg.set("Enable", true); // Force enable for testing
+
    // First step of time stepper initialization needed for IOstream
    TimeStepper::init1();
 

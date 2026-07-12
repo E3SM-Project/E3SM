@@ -17,6 +17,62 @@ namespace OMEGA {
 std::string AnalysisGroup::getName() { return GroupName; } // end getName
 
 //------------------------------------------------------------------------------
+void AnalysisGroup::parseTemporalPeriods(Config &AnalysisGroupOptions) {
+   Error Err1;
+   Error Err2;
+
+   // Read optional temporal reduction periods (e.g., "1day", "1month")
+   Err1 = AnalysisGroupOptions.get("ReductionPeriod", ReductionPeriodList);
+
+   // Read optional instantaneous output intervals (e.g., "6hour")
+   Err2 = AnalysisGroupOptions.get("SnapshotPeriod", SnapshotPeriodList);
+
+   // Validate that at least one temporal specification is provided
+   if (Err1.isFail() && Err2.isFail()) {
+      ABORT_ERROR("{}: Error reading both ReductionPeriod and "
+                  "SnapshotPeriod from Config, at least one must be present",
+                  GroupName);
+   }
+} // end parseTemporalPeriods
+
+//------------------------------------------------------------------------------
+void AnalysisGroup::buildTemporalChains(
+    const std::vector<std::string> &ChainStems, Config &AnalysisGroupOptions,
+    Analysis *AnalysisManager) {
+
+   // Parse temporal periods from config
+   parseTemporalPeriods(AnalysisGroupOptions);
+
+   // Build temporal reduction chains for each stem
+   for (const auto &StemStr : ChainStems) {
+
+      // Create temporal reduction chains: Stem -> TimeMean<Period>
+      for (const auto &ReductionPeriod : ReductionPeriodList) {
+         // Build chain string (e.g., "Temperature_SpatialMean_TimeMean1day")
+         std::string ChainStr = StemStr + "_TimeMean" + ReductionPeriod;
+
+         // Store metadata for stream creation
+         OpChainInfos.push_back(OpChainInfo{ChainStr, ReductionPeriod, true});
+
+         // Parse chain and instantiate operators
+         AnalysisManager->parseChainAndBuildOps(ChainStr);
+      }
+
+      // Create instantaneous snapshot chains (if requested)
+      if (!SnapshotPeriodList.empty()) {
+         // Parse stem chain if not already built (operators may exist from
+         // reduction chains above, parseChainAndBuildOps handles duplicates)
+         AnalysisManager->parseChainAndBuildOps(StemStr);
+
+         // Store metadata for each snapshot frequency
+         for (const auto &SnapshotPeriod : SnapshotPeriodList) {
+            OpChainInfos.push_back(OpChainInfo{StemStr, SnapshotPeriod, false});
+         }
+      }
+   }
+} // end buildTemporalChains
+
+//------------------------------------------------------------------------------
 // Groups operator chains by output period and type (temporal reduction vs.
 // discrete sampling), validates temporal reduction periods against the restart
 // interval, and creates IOStream objects for the group's output. Each stream
@@ -53,7 +109,9 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
    // e.g., "analysis.$Y.$M" -> prefix="analysis", template=".$Y.$M"
    std::string FilenameStr;
    Err1 = AnalysisGroupOptions.get("Filename", FilenameStr);
-   CHECK_ERROR_ABORT(Err1, "Analysis: Filename not found in Config");
+   CHECK_ERROR_ABORT(Err1,
+                     "AnalysisGroup: Filename not found in Config for group {}",
+                     GroupName);
 
    std::string FilenamePrefix;
    std::string FilenameTemplate;

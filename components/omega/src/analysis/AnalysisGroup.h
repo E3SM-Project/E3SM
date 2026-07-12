@@ -140,7 +140,26 @@ class AnalysisGroup {
       std::map<std::string, std::string> Params;
    };
 
+   /// Reads ReductionPeriod and SnapshotPeriod from config, builds temporal
+   /// operator chains by appending time operators to the provided stems,
+   /// calls parseChainAndBuildOps for each chain, and populates OpChainInfos
+   /// with metadata for stream creation.
+   void buildTemporalChains(
+       const std::vector<std::string>
+           &ChainStems,              ///< [in] operator chain stems
+       Config &AnalysisGroupOptions, ///< [in] group configuration
+       Analysis *AnalysisManager     ///< [in] analysis manager
+   );
+
+   /// Reads ReductionPeriod and SnapshotPeriod from config and validates
+   /// that at least one is present
+   void parseTemporalPeriods(Config &AnalysisGroupOptions);
+
    std::string GroupName; ///< Name of this AnalysisGroup instance
+
+   std::vector<std::string> ReductionPeriodList; ///< Temporal averaging periods
+   std::vector<std::string>
+       SnapshotPeriodList; ///< Instantaneous sample periods
 
    /// Metadata for all operator chains in this group (output field name,
    /// frequency, and type). Populated by derived class constructors.
