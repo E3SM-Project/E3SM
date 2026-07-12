@@ -201,11 +201,11 @@ Omega:
         - Tracers
   Analysis:
     GlobalStats:
-      Enable: true
+      Enable: false
       Fields: ["NormalVelocity", "PseudoThickness", "Temperature", "Salinity"]
       SpatialStats: ["Max", "Min", "Mean", "StdDev"]
       ReductionPeriod: ["1Day", "1Month"]
-      SampleFreq: ["6Hours", "2Days"]
+      SnapshotPeriod: ["6Hours"]
       Filename: global.stats.$Y
       Stream:
         FileFreq: 1

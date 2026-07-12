@@ -91,7 +91,7 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
       if (Info.IsTimeReduction) {
          StreamName = GroupName + "_" + Info.FreqStr + "TimeStats";
       } else {
-         StreamName = GroupName + "_" + Info.FreqStr + "Samples";
+         StreamName = GroupName + "_" + Info.FreqStr + "Instants";
       }
 
       // Add this operator chain to the appropriate stream
@@ -115,7 +115,7 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
              PeriodWithSuffix.substr(0, PeriodWithSuffix.find("TimeStats"));
       } else {
          PeriodStr =
-             PeriodWithSuffix.substr(0, PeriodWithSuffix.find("Samples"));
+             PeriodWithSuffix.substr(0, PeriodWithSuffix.find("Instants"));
       }
 
       // Parse period string into numeric frequency and time units
@@ -144,7 +144,7 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
       // Build filename for this stream (includes period and type in name)
       StreamCfg.Params["Filename"] =
           FilenamePrefix + "_" + PeriodStr +
-          (IsTimeReduction ? "TimeStats" : "Samples") + FilenameTemplate;
+          (IsTimeReduction ? "TimeStats" : "Instants") + FilenameTemplate;
       StreamCfg.Params["Freq"]      = ParsedStr[0];
       StreamCfg.Params["FreqUnits"] = ParsedStr[1];
 

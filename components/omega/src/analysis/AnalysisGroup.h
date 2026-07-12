@@ -48,10 +48,10 @@ class AnalysisGroup {
    std::string getName();
 
    /// Groups operator chains by output period and type (time reduction vs.
-   /// discrete sampling), validates temporal reduction periods against the
-   /// restart interval, and creates IOStream objects for the group's output.
-   /// Called by derived class constructors after all operator chains have
-   /// been registered with the Analysis orchestrator.
+   /// instantaneous output intervals), validates temporal reduction periods
+   /// against the restart interval, and creates IOStream objects for the
+   /// group's output. Called by derived class constructors after all operator
+   /// chains have been registered with the Analysis orchestrator.
    void createAnalysisGroupStreams(
        const std::string &GroupName, ///< [in] name of this group
        Config &AnalysisGroupOptions, ///< [in] group configuration options
@@ -61,12 +61,13 @@ class AnalysisGroup {
  protected:
    /// Metadata about a single operator chain within this AnalysisGroup.
    /// Stores the chain string (operator instance name), the output frequency,
-   /// and whether the chain performs temporal reduction or discrete sampling.
+   /// and whether the chain outputs temporal reductions or instantaneous
+   /// snapshots.
    struct OpChainInfo {
       std::string ChainStr; ///< Operator instance name (output Field name)
-      std::string FreqStr;  ///< Period/frequency string (e.g., "1day", "6hour")
-      bool IsTimeReduction; ///< true for temporal reduction; false for discrete
-                            ///< samples
+      std::string FreqStr;  ///< Period/frequency string (e.g., "1Day", "6Hour")
+      bool IsTimeReduction; ///< true for temporal reduction; false for
+                            ///< instantaneous output
    };
 
    /// Template for constructing IOStream configurations for this group's
