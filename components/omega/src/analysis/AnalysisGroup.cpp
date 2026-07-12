@@ -139,45 +139,43 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
 
    // Group operator chains by their output stream characteristics
    // Chains with the same frequency and type go to the same stream
-   // Map: StreamName -> list of operator instance names
-   std::map<std::string, std::vector<std::string>> StreamToOpNames;
+   // Map: StreamName -> (OpNames, IsTimeReduction, FreqStr)
+   std::map<std::string, StreamInfo> StreamInfos;
 
-   for (const auto &Info : OpChainInfos) {
+   for (const auto &OpInfo : OpChainInfos) {
       std::string StreamName;
 
       // Construct stream name based on frequency and type
-      if (Info.IsTimeReduction) {
-         StreamName = GroupName + "_" + Info.FreqStr + "TimeStats";
+      if (OpInfo.IsTimeReduction) {
+         StreamName = GroupName + "_" + OpInfo.FreqStr + "TimeStats";
       } else {
-         StreamName = GroupName + "_" + Info.FreqStr + "Instants";
+         StreamName = GroupName + "_" + OpInfo.FreqStr + "Instants";
       }
 
       // Add this operator chain to the appropriate stream
-      StreamToOpNames[StreamName].push_back(Info.ChainStr);
+      // If this is the first operator for this stream, initialize metadata
+      if (StreamInfos.find(StreamName) == StreamInfos.end()) {
+         StreamInfos[StreamName] = {
+             {OpInfo.ChainStr},     // OpNames vector with first entry
+             OpInfo.FreqStr,        // Store the frequency string
+             OpInfo.IsTimeReduction // Store the flag
+         };
+      } else {
+         // Stream already exists, just add this operator
+         StreamInfos[StreamName].OpNames.push_back(OpInfo.ChainStr);
+      }
    }
 
    // Create IOStream objects and associate operator nodes
-   for (const auto &[StreamName, OpNames] : StreamToOpNames) {
+   for (const auto &[StreamName, Metadata] : StreamInfos) {
 
-      // Determine stream type from name suffix
-      bool IsTimeReduction =
-          (StreamName.find("TimeStats") != std::string::npos);
+      // Extract metadata (no need to parse stream name!)
+      bool IsTimeReduction       = Metadata.IsTimeReduction;
+      const std::string &FreqStr = Metadata.FreqStr;
+      const auto &OpNames        = Metadata.OpNames;
 
-      // Extract period string from stream name
-      // e.g., "GlobalStats_1dayTimeStats" -> "1day"
-      size_t UnderscorePos         = StreamName.find_last_of("_");
-      std::string PeriodWithSuffix = StreamName.substr(UnderscorePos + 1);
-      std::string PeriodStr;
-      if (IsTimeReduction) {
-         PeriodStr =
-             PeriodWithSuffix.substr(0, PeriodWithSuffix.find("TimeStats"));
-      } else {
-         PeriodStr =
-             PeriodWithSuffix.substr(0, PeriodWithSuffix.find("Instants"));
-      }
-
-      // Parse period string into numeric frequency and time units
-      std::vector<std::string> ParsedStr = parseFreqStr(PeriodStr);
+      // Parse frequency string into numeric frequency and time units
+      std::vector<std::string> ParsedStr = parseFreqStr(FreqStr);
       I4 Freq                            = std::stoi(ParsedStr[0]);
       TimeUnits FreqUnits                = TimeUnitsFromString(ParsedStr[1]);
       TimeInterval PeriodInterval(Freq, FreqUnits);
@@ -201,7 +199,7 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
 
       // Build filename for this stream (includes period and type in name)
       StreamCfg.Params["Filename"] =
-          FilenamePrefix + "_" + PeriodStr +
+          FilenamePrefix + "_" + FreqStr +
           (IsTimeReduction ? "TimeStats" : "Instants") + FilenameTemplate;
       StreamCfg.Params["Freq"]      = ParsedStr[0];
       StreamCfg.Params["FreqUnits"] = ParsedStr[1];

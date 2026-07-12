@@ -70,6 +70,17 @@ class AnalysisGroup {
                             ///< instantaneous output
    };
 
+   /// Aggregated metadata for a single output stream within this AnalysisGroup.
+   /// Groups multiple operator chains that share the same output frequency and
+   /// type (temporal reduction vs. instantaneous) into a single IOStream.
+   /// Created by grouping OpChainInfo objects in createAnalysisGroupStreams().
+   struct StreamInfo {
+      std::vector<std::string> OpNames; ///< Operator instance names to include
+      std::string FreqStr;  ///< Period/frequency string (e.g., "1Day", "6Hour")
+      bool IsTimeReduction; ///< true for temporal reduction; false for
+                            ///< instantaneous output
+   };
+
    /// Template for constructing IOStream configurations for this group's
    /// output. Provides default values for all IOStream creation parameters.
    /// Derived classes can override defaults using group-specific config options
