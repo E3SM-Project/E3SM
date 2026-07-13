@@ -12,13 +12,8 @@
 namespace OMEGA {
 
 //------------------------------------------------------------------------------
-// Default constructor - initializes cache tracking variables to indicate
-// no computation has occurred yet.
-AnalysisOperator::AnalysisOperator() {
-   // Initialize cache tracking variables
-   FieldComputed = false;
-   LastComputed  = TimeInstant();
-} // end default constructor
+// Default constructor
+AnalysisOperator::AnalysisOperator() = default;
 
 //------------------------------------------------------------------------------
 // Constructor with operator type name - stores the type and initializes
