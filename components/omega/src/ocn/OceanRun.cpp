@@ -5,6 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "Analysis.h"
 #include "Forcing.h"
 #include "IOStream.h"
 #include "OceanDriver.h"
@@ -62,6 +63,10 @@ int ocnRun(TimeInstant &CurrTime ///< [inout] current sim time
          DefTimeStepper->doStep(DefOceanState, SimTime);
          Pacer::stop("Stepper:doStep", 1);
       }
+
+      // Compute analysis fields whose alarms are ringing
+      Analysis *DefAnalysis = Analysis::getDefault();
+      DefAnalysis->computeAll();
 
       // write restart file/output, anything needed post-timestep
 

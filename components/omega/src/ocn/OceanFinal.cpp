@@ -5,6 +5,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "Analysis.h"
 #include "AuxiliaryState.h"
 #include "Decomp.h"
 #include "Eos.h"
@@ -40,6 +41,7 @@ int ocnFinalize(const TimeInstant &CurrTime ///< [in] current sim time
    if (TimeStepper::getDefault())
       IOStream::finalize(TimeStepper::getDefault()->getClock());
 
+   Analysis::finalize();
    Tracers::clear();
    TimeStepper::clear();
    PressureGrad::clear();

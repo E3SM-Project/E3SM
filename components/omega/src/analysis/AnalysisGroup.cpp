@@ -211,6 +211,7 @@ void AnalysisGroup::createAnalysisGroupStreams(const std::string &GroupName,
 
       // Retrieve the newly created stream
       auto Stream = IOStream::get(StreamName);
+      Stream->removeField("");
 
       // Associate operator nodes with this stream and populate stream contents
       auto OpNodes = AnalysisManager->getOpNodes();

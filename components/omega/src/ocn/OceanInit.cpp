@@ -7,6 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "Analysis.h"
 #include "AuxiliaryState.h"
 #include "Config.h"
 #include "DataTypes.h"
@@ -224,6 +225,8 @@ static int initOmegaModulesImpl(MPI_Comm Comm) {
    if (Err != 0) {
       ABORT_ERROR("ocnInit: Error initializing default state");
    }
+
+   Analysis::init();
 
    return Err;
 
