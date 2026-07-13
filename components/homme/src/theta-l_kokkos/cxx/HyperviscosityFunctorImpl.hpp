@@ -121,6 +121,7 @@ public:
 
   void run (const int np1, const Real dt, const Real eta_ave_w);
   int compute_sgs_subcycle_count (const Real dt) const;
+  void clip_sgs_diffusivities_for_fixed_subcycling () const;
 
   void biharmonic_wk_theta () const;
 
