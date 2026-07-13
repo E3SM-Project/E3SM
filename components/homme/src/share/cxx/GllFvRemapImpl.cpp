@@ -667,6 +667,8 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
   const auto dp3d = m_state.m_dp3d;
   const auto Km_gll = m_derived.m_turb_diff_mom;
   const auto Kh_gll = m_derived.m_turb_diff_heat;
+  const auto Km_gll_clip = m_derived.m_turb_diff_mom_clip_sgs;
+  const auto Kh_gll_clip = m_derived.m_turb_diff_heat_clip_sgs;
   const bool theta_hydrostatic_mode = m_data.theta_hydrostatic_mode;
   EquationOfState eos; eos.init(theta_hydrostatic_mode, hvcoord);
   ElementOps ops; ops.init(hvcoord);
@@ -708,6 +710,8 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
       // GLL-side Km/Kh on this element: [NP*NP][nlevpk]
       evus_np2_nlev Km_g_ie(&Km_gll(ie,0,0,0));
       evus_np2_nlev Kh_g_ie(&Kh_gll(ie,0,0,0));
+      evus_np2_nlev Km_g_clip_ie(&Km_gll_clip(ie,0,0,0));
+      evus_np2_nlev Kh_g_clip_ie(&Kh_gll_clip(ie,0,0,0));
 
       // dp on GLL grid/timeidx (needed by f2g_scalar_dp)
       const evucs_np2_nlev dp_g_ie(&dp3d(ie,timeidx,0,0,0));
@@ -729,6 +733,12 @@ run_fv_phys_to_dyn (const int timeidx, const CPhys2T& Ts, const CPhys3T& uvs,
                     Kh_f_ie,
                     evus_np2_nlev(rw1.data()),  // scratch
                     Kh_g_ie);
+      kv.team_barrier();
+
+      loop_ik(ttrg, tvr, [&] (int i, int k) {
+        Km_g_clip_ie(i,k) = Km_g_ie(i,k);
+        Kh_g_clip_ie(i,k) = Kh_g_ie(i,k);
+      });
       kv.team_barrier();
     }
 

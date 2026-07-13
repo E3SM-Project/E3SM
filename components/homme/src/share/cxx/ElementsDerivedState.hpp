@@ -32,6 +32,8 @@ public:
 
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_mom;     // SGS eddy diffusivity for momentum
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_heat;    // SGS eddy diffusivity for heat
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_mom_clip_sgs;  // SGS momentum diffusivity after any fixed-subcycle clipping
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_turb_diff_heat_clip_sgs; // SGS heat diffusivity after any fixed-subcycle clipping
 
   ElementsDerivedState() : m_num_elems(0) {}
 

@@ -16,7 +16,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
   const auto hv_q = m_data.hv_q;
   const auto Qtens = m_tracers.qtens_biharmonic;
   const auto Q = m_tracers.Q;
-  const auto Kh = m_derived.m_turb_diff_heat;
+  const auto Kh = m_derived.m_turb_diff_heat_clip_sgs;
   const auto spheremp = m_geometry.m_spheremp;
   const auto tu_ne_hv_q = m_tu_ne_hv_q;
   const auto sphere_ops = m_sphere_ops;
