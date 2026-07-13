@@ -82,7 +82,7 @@ machines:
         - 'export PnetCDF_C_ROOT=$(pnetcdf-config --prefix)'
     baselines_dir: "/sems-data-store/ACME/baselines/scream/master-baselines"
     node_regex: mappy
-    valg_supp_file: "${project.root_dir}/scripts/jenkins/valgrind/mappy.supp"
+    valg_supp_file: "${project.root_dir}/scripts/setup/valgrind/mappy.supp"
 
   pm-cpu:
     cxx_compiler: CC

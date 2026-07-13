@@ -7,7 +7,3 @@ enable_testing()
 include(CTest)
 
 add_test(NAME scripts_tests_tas COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../gather-all-data -l -m $ENV{SCREAM_MACHINE} "${CMAKE_CURRENT_SOURCE_DIR}/../scripts-tests -f -m \$machine TestTestAllScream")
-
-# Remove jenkins testing. We have moved to github workflows as the test drivers.
-# It is possible, but unlikely, that we will return to Jenkins at some point.
-#add_test(NAME scripts_tests_jenkins COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../scripts-tests -j -m $ENV{SCREAM_MACHINE} TestTestAllScream)
