@@ -26,6 +26,7 @@ namespace Homme
 namespace {
 
 constexpr int max_dynamic_sgs_subcycles = 12;
+constexpr bool print_sgs_diffusivity_clipping = true;
 
 constexpr Real get_lambda_vis ()
 {
@@ -542,6 +543,15 @@ void HyperviscosityFunctorImpl::clip_sgs_diffusivities_for_fixed_subcycling () c
   const auto Km = m_derived.m_turb_diff_mom;
   const auto Kh = m_derived.m_turb_diff_heat;
   const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
+  decltype(Kokkos::create_mirror_view(Km)) km_before_h;
+  decltype(Kokkos::create_mirror_view(Kh)) kh_before_h;
+
+  if (print_sgs_diffusivity_clipping) {
+    km_before_h = Kokkos::create_mirror_view(Km);
+    kh_before_h = Kokkos::create_mirror_view(Kh);
+    Kokkos::deep_copy(km_before_h, Km);
+    Kokkos::deep_copy(kh_before_h, Kh);
+  }
 
   Kokkos::parallel_for(
       "clip_sgs_diffusivities_fixed_subcycling",
@@ -578,6 +588,53 @@ void HyperviscosityFunctorImpl::clip_sgs_diffusivities_for_fixed_subcycling () c
         }
       });
   Kokkos::fence();
+
+  if (print_sgs_diffusivity_clipping) {
+    const auto km_after_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Km);
+    const auto kh_after_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Kh);
+    const int rank = Context::singleton().get<Comm>().rank();
+
+    for (int ie = 0; ie < m_num_elems; ++ie) {
+      for (int igp = 0; igp < NP; ++igp) {
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          for (int k = 0; k < NUM_LEV; ++k) {
+            const auto km_before = km_before_h(ie,igp,jgp,k);
+            const auto kh_before = kh_before_h(ie,igp,jgp,k);
+            const auto km_after = km_after_h(ie,igp,jgp,k);
+            const auto kh_after = kh_after_h(ie,igp,jgp,k);
+
+            for (int s = 0; s < VECTOR_SIZE; ++s) {
+              const int phys_lev = k * VECTOR_SIZE + s;
+              if (phys_lev >= NUM_PHYSICAL_LEV) continue;
+
+              const bool km_clipped = km_after[s] < km_before[s];
+              const bool kh_clipped = kh_after[s] < kh_before[s];
+              if (not km_clipped && not kh_clipped) continue;
+
+              const Real before_diff = std::abs(km_before[s] - kh_before[s]);
+              const Real after_diff = std::abs(km_after[s] - kh_after[s]);
+              const Real tol = 100.0 * std::numeric_limits<Real>::epsilon();
+              if (km_clipped && kh_clipped &&
+                  before_diff <= tol * std::max(std::abs(km_before[s]), std::abs(kh_before[s])) &&
+                  after_diff <= tol * std::max(std::abs(km_after[s]), std::abs(kh_after[s]))) {
+                printf("Warning: rank %d clipped SGS Km/Kh at ie=%d igp=%d jgp=%d lev=%d from %.16e to %.16e.\n",
+                       rank, ie, igp, jgp, phys_lev, km_before[s], km_after[s]);
+              } else {
+                if (km_clipped) {
+                  printf("Warning: rank %d clipped SGS Km at ie=%d igp=%d jgp=%d lev=%d from %.16e to %.16e.\n",
+                         rank, ie, igp, jgp, phys_lev, km_before[s], km_after[s]);
+                }
+                if (kh_clipped) {
+                  printf("Warning: rank %d clipped SGS Kh at ie=%d igp=%d jgp=%d lev=%d from %.16e to %.16e.\n",
+                         rank, ie, igp, jgp, phys_lev, kh_before[s], kh_after[s]);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
