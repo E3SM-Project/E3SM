@@ -447,6 +447,7 @@ add_default($nl, 'gcam2elm_co2_mapping_file');
 add_default($nl, 'gcam2elm_luc_mapping_file');
 add_default($nl, 'gcam2elm_woodharvest_mapping_file');
 add_default($nl, 'gcam2elm_cdensity_mapping_file');
+add_default($nl, 'gcam2elm_degdays_mapping_file');
 
 # grid mapping and initialization, relative to inputdata
 add_default($nl, 'gcam_gridfile');

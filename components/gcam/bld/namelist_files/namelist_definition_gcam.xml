@@ -232,6 +232,15 @@ Mapping file for woodharvest
 Mapping file for carbon density
 </entry>
 
+<entry id="gcam2elm_degdays_mapping_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Mapping file for heating/cooling degree days
+</entry>
+
 
 <entry id="gcam_gridfile"
         type="char*256"
