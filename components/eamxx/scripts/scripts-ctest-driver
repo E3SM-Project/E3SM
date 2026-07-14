@@ -2,7 +2,7 @@
 
 """
 Drive ctest testing of scream's scripts. Because this includes
-testing of jenkins scripts, it should always be run from a login node.
+testing of scripts, it should always be run from a login node.
 """
 
 from utils import check_minimum_python_version, GoodFormatter
