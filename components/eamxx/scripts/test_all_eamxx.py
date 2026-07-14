@@ -194,12 +194,13 @@ class TestAllScream(object):
         if "SCREAM_FAKE_AUTO" in os.environ:
             auto_dir = auto_dir / "fake"
 
-        if self._baseline_dir == "LOCAL":
-            self._baseline_dir = local_baseline_dir
-        elif self._baseline_dir == "AUTO":
-            self._baseline_dir = auto_dir
-        elif self._baseline_dir is not None:
-            self._baseline_dir = Path(self._baseline_dir).absolute()
+        if self._baseline_dir:
+            if self._baseline_dir.lower() == "local":
+                self._baseline_dir = local_baseline_dir
+            elif self._baseline_dir.lower() == "auto":
+                self._baseline_dir = auto_dir
+            elif self._baseline_dir is not None:
+                self._baseline_dir = Path(self._baseline_dir).absolute()
 
         # Make the baseline dir, if not already existing.
         if self._generate:
