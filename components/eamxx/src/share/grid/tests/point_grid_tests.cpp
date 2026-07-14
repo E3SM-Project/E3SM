@@ -56,7 +56,7 @@ TEST_CASE("point_grid", "") {
     REQUIRE (dcopy_gids[i]==grid_gids[i]);
   }
 
-  shallow_copy->reset_num_vertical_lev(4);
+  shallow_copy->reset_vertical_configuration(4, AbstractGrid::VKind::Model);
   REQUIRE (shallow_copy->get_num_vertical_levels()==4);
 }
 

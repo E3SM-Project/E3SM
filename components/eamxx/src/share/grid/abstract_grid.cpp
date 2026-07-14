@@ -1,7 +1,6 @@
 #include "share/grid/abstract_grid.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_assert.hpp>
 
@@ -62,22 +61,36 @@ void AbstractGrid::add_alias (const std::string& alias)
   }
 }
 
-FieldLayout AbstractGrid::
-get_vertical_layout (const bool midpoints) const
+void AbstractGrid::check_tag_vkind_compatibility (const FieldTag vtag) const
 {
   using namespace ShortFieldTagsNames;
-  const auto t = midpoints ? LEV : ILEV;
-  const auto d = m_num_vert_levs + (midpoints ? 0 : 1);
-  return FieldLayout({t},{d}).rename_dims(m_special_tag_names);
+  if (m_vkind == VKind::Model) {
+    EKAT_REQUIRE_MSG (vtag==LEV or vtag==ILEV,
+        "Error! A grid with VKind=Model only accepts LEV/ILEV as vertical dim tag.\n"
+        "  - grid name: " + m_name + "\n");
+  } else {
+    EKAT_REQUIRE_MSG (vtag==LEVP,
+        "Error! A grid with VKind=Pressure only accepts LEVP as vertical dim tag.\n"
+        "  - grid name: " + m_name + "\n");
+  }
 }
 
 FieldLayout AbstractGrid::
-get_vertical_layout (const bool midpoints,
+get_vertical_layout (const FieldTag vtag) const
+{
+  using namespace ShortFieldTagsNames;
+  check_tag_vkind_compatibility(vtag);
+  const auto d = m_num_vert_levs + (vtag==ILEV ? 1 : 0);
+  return FieldLayout({vtag},{d}).rename_dims(m_special_tag_names);
+}
+
+FieldLayout AbstractGrid::
+get_vertical_layout (const FieldTag vtag,
                      const int vector_dim,
                      const std::string& vec_dim_name) const
 {
   using namespace ShortFieldTagsNames;
-  auto l = get_vertical_layout(midpoints);
+  auto l = get_vertical_layout(vtag);
   l.prepend_dim(CMP,vector_dim,vec_dim_name);
   return l;
 }
@@ -98,18 +111,18 @@ AbstractGrid::get_2d_tensor_layout (const std::vector<int>& cmp_dims) const
 }
 
 FieldLayout
-AbstractGrid::get_3d_vector_layout (const bool midpoints, const int vector_dim) const
+AbstractGrid::get_3d_vector_layout (const FieldTag vtag, const int vector_dim) const
 {
   using namespace ShortFieldTagsNames;
-  return get_3d_vector_layout(midpoints,vector_dim,e2str(CMP));
+  return get_3d_vector_layout(vtag,vector_dim,e2str(CMP));
 }
 
 FieldLayout
-AbstractGrid::get_3d_tensor_layout (const bool midpoints, const std::vector<int>& cmp_dims) const
+AbstractGrid::get_3d_tensor_layout (const FieldTag vtag, const std::vector<int>& cmp_dims) const
 {
   using namespace ShortFieldTagsNames;
   std::vector<std::string> names (cmp_dims.size(),e2str(CMP));
-  return get_3d_tensor_layout(midpoints,cmp_dims,names);
+  return get_3d_tensor_layout(vtag,cmp_dims,names);
 }
 
 FieldLayout
@@ -119,7 +132,14 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
 
   FieldLayout ret_layout = FieldLayout::invalid();
 
-  const bool midpoints   = template_layout.has_tag(LEV);
+  // Extract the vertical tag from the template (LEV, ILEV, or LEVP).
+  // This tag is passed directly to the get_Xd_Y_layout methods, which will
+  // check compatibility with this grid's VKind and throw if incompatible.
+  FieldTag vlev_tag = FieldTag::Invalid;
+  if (template_layout.has_tag(LEV))       vlev_tag = LEV;
+  else if (template_layout.has_tag(ILEV)) vlev_tag = ILEV;
+  else if (template_layout.has_tag(LEVP)) vlev_tag = LEVP;
+
   const auto names       = template_layout.names();
   const auto vec_cmp     = template_layout.is_vector_layout() ?
                            template_layout.get_vector_component_idx() : -1;
@@ -142,10 +162,10 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
       ret_layout = template_layout;
       break;
     case LayoutType::Scalar1D:
-      ret_layout = get_vertical_layout(midpoints);
+      ret_layout = get_vertical_layout(vlev_tag);
       break;
     case LayoutType::Vector1D:
-      ret_layout = get_vertical_layout(midpoints, vec_dim, names[vec_cmp]);
+      ret_layout = get_vertical_layout(vlev_tag, vec_dim, names[vec_cmp]);
       break;
     case LayoutType::Scalar2D:
       ret_layout = get_2d_scalar_layout();
@@ -157,13 +177,13 @@ AbstractGrid::equivalent_layout (const FieldLayout& template_layout) const
       ret_layout = get_2d_tensor_layout(tensor_dims, tdims_names);
       break;
     case LayoutType::Scalar3D:
-      ret_layout = get_3d_scalar_layout(midpoints);
+      ret_layout = get_3d_scalar_layout(vlev_tag);
       break;
     case LayoutType::Vector3D:
-      ret_layout = get_3d_vector_layout(midpoints, vec_dim, names[vec_cmp]);
+      ret_layout = get_3d_vector_layout(vlev_tag, vec_dim, names[vec_cmp]);
       break;
     case LayoutType::Tensor3D:
-      ret_layout = get_3d_tensor_layout(midpoints, tensor_dims, tdims_names);
+      ret_layout = get_3d_tensor_layout(vlev_tag, tensor_dims, tdims_names);
       break;
     default:
       EKAT_ERROR_MSG("Error! Unknown FieldLayout type.\n");
@@ -178,7 +198,7 @@ bool AbstractGrid::is_unique () const {
     // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
     // since we need to sort dofs in order to call unique, and we don't
     // want to alter the order of gids in this grid.
-    auto dofs = m_dofs_gids.clone();
+    auto dofs = m_dofs_gids.clone(CloneFlags::CopyData);
     auto dofs_h = dofs.get_view<gid_type*,Host>();
 
     std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
@@ -248,7 +268,12 @@ is_valid_layout (const FieldLayout& layout) const
 {
   using namespace ShortFieldTagsNames;
 
-  const bool midpoints = layout.has_tag(LEV);
+  // Extract the vertical tag (LEV, ILEV, or LEVP) from the layout.
+  FieldTag vlev_tag = FieldTag::Invalid;
+  if (layout.has_tag(LEV))       vlev_tag = LEV;
+  else if (layout.has_tag(ILEV)) vlev_tag = ILEV;
+  else if (layout.has_tag(LEVP)) vlev_tag = LEVP;
+
   switch (layout.type()) {
     case LayoutType::Scalar0D: [[fallthrough]];
     case LayoutType::Vector0D:
@@ -256,9 +281,9 @@ is_valid_layout (const FieldLayout& layout) const
       // 0d quantities are always ok
       return true;
     case LayoutType::Scalar1D:
-      return layout.congruent(get_vertical_layout(midpoints));
+      return layout.congruent(get_vertical_layout(vlev_tag));
     case LayoutType::Vector1D:
-      return layout.congruent(get_vertical_layout(midpoints,layout.get_vector_dim()));
+      return layout.congruent(get_vertical_layout(vlev_tag,layout.get_vector_dim()));
     case LayoutType::Scalar2D:
       return layout.congruent(get_2d_scalar_layout());
     case LayoutType::Vector2D:
@@ -266,11 +291,11 @@ is_valid_layout (const FieldLayout& layout) const
     case LayoutType::Tensor2D:
       return layout.congruent(get_2d_tensor_layout(layout.get_tensor_dims()));
     case LayoutType::Scalar3D:
-      return layout.congruent(get_3d_scalar_layout(midpoints));
+      return layout.congruent(get_3d_scalar_layout(vlev_tag));
     case LayoutType::Vector3D:
-      return layout.congruent(get_3d_vector_layout(midpoints,layout.get_vector_dim()));
+      return layout.congruent(get_3d_vector_layout(vlev_tag,layout.get_vector_dim()));
     case LayoutType::Tensor3D:
-      return layout.congruent(get_3d_tensor_layout(midpoints,layout.get_tensor_dims()));
+      return layout.congruent(get_3d_tensor_layout(vlev_tag,layout.get_tensor_dims()));
     default:
       // Anything else is probably not ok
       return false;
@@ -395,76 +420,6 @@ AbstractGrid::delete_geometry_data (const std::string& name)
   m_geo_fields.erase(name);
 }
 
-void AbstractGrid::
-read_geometry_data(const std::string& filename,
-                   const std::vector<std::string>& names,
-                   const std::map<std::string,std::string>& dim_to_ncdim)
-{
-  read_geometry_data(filename,names,names,dim_to_ncdim);
-}
-
-void AbstractGrid::
-read_geometry_data(const std::string& filename,
-                   const std::vector<std::string>& names,
-                   const std::vector<std::string>& nc_names,
-                   const std::map<std::string,std::string>& dim_to_ncdim)
-{
-  EKAT_REQUIRE_MSG (names.size()==nc_names.size(),
-      "[AbstractGrid] Error! Input names and nc_names sizes differ.\n"
-      "  - grid name: " + this->name() + "\n"
-      "  - geo data names: " + ekat::join(names,",") + "\n"
-      "  - nc vars names: " + ekat::join(nc_names,",") + "\n");
-  scorpio::register_file(filename,scorpio::Read);
-
-  for (size_t i=0; i<names.size(); ++i) {
-    EKAT_REQUIRE_MSG (has_geometry_data(names[i]),
-        "Error! Cannot read geometry data from file, since it is does not exist.\n"
-        "  - grid name: " + this->name() + "\n"
-        "  - geo data name: " + names[i] + "\n");
-
-    auto f = m_geo_fields.at(names[i]);
-    const auto& fl = f.get_header().get_identifier().get_layout();
-
-    // If one of the field tags corresponds to the partitioned dim, init the decomp
-    if (fl.has_tag(get_partitioned_dim_tag())) {
-      auto t = get_partitioned_dim_tag();
-      std::string dimname = has_special_tag_name(t)
-                          ? get_special_tag_name(t)
-                          : e2str(t);
-      auto gids_h = get_partitioned_dim_gids().get_view<const gid_type*,Host>();
-      auto min_gid = get_global_min_partitioned_dim_gid();
-      std::vector<scorpio::offset_t> offsets(m_num_local_dofs);
-      for (int idof=0; idof<m_num_local_dofs; ++idof) {
-        offsets[idof] = gids_h[idof] - min_gid;
-      }
-      std::string nc_dimname = dim_to_ncdim.count(dimname)==1 ? dim_to_ncdim.at(dimname) : dimname;
-      scorpio::set_dim_decomp(filename,nc_dimname,offsets);
-    }
-
-    switch (f.data_type()) {
-      case DataType::DoubleType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<double,Host>());
-        break;
-      case DataType::FloatType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<float,Host>());
-        break;
-      case DataType::IntType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<int,Host>());
-        break;
-      default:
-        EKAT_ERROR_MSG (
-            "Error! Unsupported/unrecognized data type while reading field from file.\n"
-            " - file name : " + filename + "\n"
-            " - field name: " + names[i] + "\n");
-    }
-
-    // Ensure data is up to date on device, since we read on host
-    f.sync_to_dev();
-  }
-
-  scorpio::release_file(filename);
-}
-
 void
 AbstractGrid::set_geometry_data (const Field& f) const
 {
@@ -486,17 +441,18 @@ AbstractGrid::get_geometry_data_names () const
   return names;
 }
 
-void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
+void AbstractGrid::reset_vertical_configuration (const int num_vertical_lev, const VKind vkind) {
   m_num_vert_levs = num_vertical_lev;
+  m_vkind = vkind;
 
   using namespace ShortFieldTagsNames;
 
-  // Loop over geo data. If they have the LEV or ILEV tag, they are
+  // Loop over geo data. If they have the LEV, ILEV, or LEVP tag, they are
   // no longer valid, so we must erase them.
   for (auto it=m_geo_fields.cbegin(); it!=m_geo_fields.cend(); ) {
     const auto& fl = it->second.get_header().get_identifier().get_layout();
-    const auto has_lev = fl.has_tag(LEV) or fl.has_tag(ILEV);
-    if (has_lev) {
+    const auto has_vlev = fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(LEVP);
+    if (has_vlev) {
       it = m_geo_fields.erase(it);
     } else {
       ++it;
@@ -702,15 +658,14 @@ get_remote_pids_and_lids (const gid_view_h& gids,
 void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 {
   using namespace ShortFieldTagsNames;
-  const auto units = ekat::units::Units::nondimensional();
 
   // The dof gids field is a 1d field, while lid2idx has rank 2.
   // For both, the 1st dim is the num of local dofs. The 2nd dime of
   // lid2idx is the rank of a 2d scalar layout.
   FieldLayout dof_layout({COL},{get_num_local_dofs()});
   FieldLayout lid2idx_layout({COL,CMP},{get_num_local_dofs(),scalar2d_layout_rank});
-  m_dofs_gids = Field(FieldIdentifier("gids",dof_layout,units,m_name,DataType::IntType));
-  m_lid_to_idx = Field(FieldIdentifier("lid2idx",lid2idx_layout,units,m_name,DataType::IntType));
+  m_dofs_gids = Field(FieldIdentifier("gids",dof_layout,ekat::units::none,m_name,DataType::IntType));
+  m_lid_to_idx = Field(FieldIdentifier("lid2idx",lid2idx_layout,ekat::units::none,m_name,DataType::IntType));
 
   m_dofs_gids.allocate_view();
   m_lid_to_idx.allocate_view();
@@ -738,21 +693,21 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
     m_dofs_gids = src.m_dofs_gids;
     m_partitioned_dim_gids = src.m_partitioned_dim_gids;
   } else {
-    m_dofs_gids = src.m_dofs_gids.clone();
-    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone();
+    m_dofs_gids = src.m_dofs_gids.clone(CloneFlags::CopyData);
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone(CloneFlags::CopyData);
   }
 
   if (shallow) {
     m_lid_to_idx = src.m_lid_to_idx;
   } else {
-    m_lid_to_idx = src.m_lid_to_idx.clone();
+    m_lid_to_idx = src.m_lid_to_idx.clone(CloneFlags::CopyData);
   }
 
   for (const auto& name : src.get_geometry_data_names()) {
     if (shallow) {
       m_geo_fields[name] = src.m_geo_fields.at(name);
     } else {
-      m_geo_fields[name] = src.m_geo_fields.at(name).clone();
+      m_geo_fields[name] = src.m_geo_fields.at(name).clone(CloneFlags::CopyData);
     }
   }
 
@@ -760,6 +715,8 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
   m_global_min_dof_gid = src.m_global_min_dof_gid;
   m_is_unique = src.m_is_unique;
   m_is_unique_computed = src.m_is_unique_computed;
+
+  m_vkind = src.m_vkind;
 }
 
 } // namespace scream

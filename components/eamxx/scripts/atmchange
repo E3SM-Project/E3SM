@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
 from eamxx_buildnml import create_raw_xml_file
-from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, get_xml_nodes, parse_change
+from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, reset_node_changes, get_xml_nodes, parse_change
 from utils import run_cmd_no_fail, expect, GoodFormatter
 
 # Add path to cime
@@ -47,9 +47,17 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
         expect(not reset, "Makes no sense for buffer_only and reset to both be on")
 
     if reset:
-        reset_buffer()
-        print("All buffered atmchanges have been removed.")
         hack_xml = run_cmd_no_fail("./xmlquery SCREAM_HACK_XML --value")
+        if reset is True:
+            reset_buffer()
+            print("All buffered atmchanges have been removed.")
+        else:
+            with open("namelist_scream.xml", "r") as fd:
+                tree = ET.parse(fd)
+                root = tree.getroot()
+            reset_node_changes(root, reset)
+            print(f"Buffered atmchanges for '{reset}' have been removed.")
+
         if hack_xml == "TRUE":
             print("SCREAM_HACK_XML is on. Removing namelist_scream.xml to force regen")
             os.remove("namelist_scream.xml")
@@ -118,8 +126,10 @@ OR
     parser.add_argument(
         "-r", "--reset",
         default=False,
-        action="store_true",
-        help="Forget all previous atmchanges",
+        nargs="?",
+        const=True,
+        metavar="NODE",
+        help="Forget all previous atmchanges (if NODE is given, only forget changes targeting that XML node)",
     )
 
     parser.add_argument(

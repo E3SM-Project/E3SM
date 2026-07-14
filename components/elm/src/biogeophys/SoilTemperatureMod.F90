@@ -28,7 +28,7 @@ module SoilTemperatureMod
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef, veg_wf
   use timeinfoMod
-  use perfMod_GPU
+  use perf_mod, only: t_startf, t_stopf
   use ExternalModelConstants   , only : EM_ID_PTM
   use ExternalModelConstants   , only : EM_PTM_TBASED_SOLVE_STAGE
   use ExternalModelInterfaceMod, only : EMI_Driver
@@ -756,7 +756,6 @@ contains
     real(r8)           :: bmatrix(bounds%begc:bounds%endc,nband,-nlevsno:nlevgrnd) ! banded matrix for numerical solution of temperature
     real(r8)           :: rvector(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)       ! RHS vector for numerical solution of temperature
 
-    character(len=64) :: event
     !-----------------------------------------------------------------------
 
     associate(                                                             &
@@ -799,12 +798,11 @@ contains
 
 
     ! Solve the system
-    event = 'SoilTempBandDiag'
-    call t_start_lnd(event)
+    call t_startf('SoilTempBandDiag')
     call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
          num_filter, filter, nband, bmatrix(begc:endc, :, :), &
          rvector(begc:endc, :), tvector(begc:endc, :))
-    call t_stop_lnd(event)
+    call t_stopf('SoilTempBandDiag')
 
   end associate
 
@@ -857,8 +855,6 @@ contains
     real(r8) :: fl                        ! volume fraction of liquid or unfrozen water to total water
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
-    character(len=64) :: event
-    
     real(r8), parameter :: rho_ice     = 917._r8
     real(r8) :: k_snw_vals(5)
     real(r8) :: k_snw_tmps(5)
@@ -870,8 +866,7 @@ contains
     data k_snw_coe2(:) /-0.059_r8, 0.015_r8, 0.073_r8, 0.107_r8, 0.147_r8/
     data k_snw_coe3(:) /0.0205_r8, 0.0252_r8, 0.0336_r8, 0.0386_r8, 0.0455_r8/
     !-----------------------------------------------------------------------
-    event = 'SoilThermProp'
-    call t_start_lnd( event )
+    call t_startf('SoilThermProp')
 
     associate(                                                 &
          snl          =>    col_pp%snl                       , & ! Input:  [integer  (:)   ]  number of snow layers
@@ -1077,7 +1072,7 @@ contains
             end if
          end do
       end do
-      call t_stop_lnd( event )
+      call t_stopf('SoilThermProp')
 
     end associate
 
@@ -1118,10 +1113,8 @@ contains
     real(r8) :: c1
     real(r8) :: c2
 
-    character(len=64) :: event 
     !-----------------------------------------------------------------------
-    event = 'PhaseChangeH2osfc'
-    call t_start_lnd( event )
+    call t_startf('PhaseChangeH2osfc')
 
     associate(                                                                   &
          snl                       =>    col_pp%snl                               , & ! Input:  [integer  (:)   ] number of snow layers
@@ -1290,7 +1283,7 @@ contains
             endif
          endif
       enddo
-      call t_stop_lnd( event )
+      call t_stopf('PhaseChangeH2osfc')
 
     end associate
 
@@ -1345,10 +1338,8 @@ contains
     real(r8) :: tinc(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)  !t(n+1)-t(n) (K)
     real(r8) :: smp                                !frozen water potential (mm)
     
-    character(len=64) :: event 
     !-----------------------------------------------------------------------
-    event = 'PhaseChangebeta'
-    call t_start_lnd( event )
+    call t_startf('PhaseChangebeta')
 
     associate(                                                        &
          snl              =>    col_pp%snl                             , & ! Input:  [integer  (:)   ] number of snow layers
@@ -1689,7 +1680,7 @@ contains
          end if
       end do
 
-      call t_stop_lnd( event )
+      call t_stopf('PhaseChangebeta')
       do j = -nlevsno+1,0
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)

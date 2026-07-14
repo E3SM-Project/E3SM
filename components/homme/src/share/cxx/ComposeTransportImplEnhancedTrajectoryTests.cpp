@@ -43,8 +43,8 @@ struct TestData {
 struct ColData {
   int npack;
   ExecView<Scalar*> d;
-  ExecView<Scalar*>::HostMirror h;
-  ExecView<Real*>::HostMirror r;
+  ExecView<Scalar*>::host_mirror_type h;
+  ExecView<Real*>::host_mirror_type r;
 
   ColData (const std::string& name, const int nlev) {
     npack = calc_npack(nlev);
@@ -59,8 +59,8 @@ struct ColData {
 struct ElData {
   int npack;
   ExecView<Scalar***> d;
-  ExecView<Scalar***>::HostMirror h;
-  ExecView<Real***>::HostMirror r;
+  ExecView<Scalar***>::host_mirror_type h;
+  ExecView<Real***>::host_mirror_type r;
 
   ElData (const std::string& name, const int nlev) {
     npack = calc_npack(nlev);
@@ -126,7 +126,7 @@ void todev (const std::vector<Real>& h, const RnV& d) {
   Kokkos::deep_copy(d, m);
 }
 
-void fillcols (const int n, const Real* const h, const RelnV::HostMirror& a) {
+void fillcols (const int n, const Real* const h, const RelnV::host_mirror_type& a) {
   assert(n <= a.extent_int(2));
   for (int i = 0; i < a.extent_int(0); ++i)
     for (int j = 0; j < a.extent_int(1); ++j)
@@ -305,7 +305,7 @@ int test_deta_caas (TestData& td) {
 
     { // Test that if all is OK, the input is not altered.
       nerr += make_random_deta(td, deta_tol, deta);
-      ExecView<Real***>::HostMirror copy("copy",NP,NP,nlev+1);
+      ExecView<Real***>::host_mirror_type copy("copy",NP,NP,nlev+1);
       Kokkos::deep_copy(copy, deta);
       run(deta);
       const auto m = cti::cmvdc(deta);

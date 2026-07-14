@@ -23,15 +23,15 @@ env:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
-  gcc-openmp:
-    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
-    name: gcc-openmp / valg
+  gnu-openmp:
+    runs-on:  [self-hosted, ghci-snl, gnu]
+    name: gnu-openmp / valg
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
@@ -42,20 +42,20 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: valg
-          machine: ghci-snl-cpu
+          machine: ghci-snl-gnu
           generate: false
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  gcc-cuda:
-    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+  gnu-cuda:
+    runs-on:  [self-hosted, ghci-snl, cuda]
     strategy:
       fail-fast: false
       matrix:
         build_type: [csm, csr, csi, css]
-    name: gcc-cuda / ${{ matrix.build_type }}
+    name: gnu-cuda / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false

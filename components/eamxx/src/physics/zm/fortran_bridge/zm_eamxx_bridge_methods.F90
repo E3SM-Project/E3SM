@@ -1,6 +1,6 @@
 module zm_eamxx_bridge_methods
   !-----------------------------------------------------------------------------
-  use zm_eamxx_bridge_params, only: r8, pver, pverp, top_lev
+  use zm_eamxx_bridge_params, only: r8
   !-----------------------------------------------------------------------------
   implicit none
   private
@@ -16,7 +16,7 @@ contains
 !===================================================================================================
 
 ! Copied from cloud_fraction.F90 (and adjusted indentation)
-subroutine cldfrc_fice(ncol, t, fice, fsnow)
+subroutine cldfrc_fice(ncol, pver, top_lev, t, fice, fsnow)
   !
   ! Compute the fraction of the total cloud water which is in ice phase.
   ! The fraction depends on temperature only.
@@ -28,7 +28,7 @@ subroutine cldfrc_fice(ncol, t, fice, fsnow)
   use zm_eamxx_bridge_physconst, only: tmelt
 
   ! Arguments
-  integer,  intent(in)  :: ncol                 ! number of active columns
+  integer,  intent(in)  :: ncol, pver, top_lev  ! number of active columns
   real(r8), intent(in)  :: t(ncol,pver)         ! temperature
 
   real(r8), intent(out) :: fice(ncol,pver)      ! Fractional ice content within cloud
@@ -115,6 +115,7 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
                               state_p_mid, state_p_int, state_p_del, &
                               state_t, state_qv, ptend_s, ptend_q)
   use zm_eamxx_bridge_physconst, only: cpair
+  use zm_eamxx_bridge_params, only: pverp, pver
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                        intent(in   ) :: ncol             ! number of local columns
@@ -160,6 +161,7 @@ end subroutine zm_physics_update
 ! copied and modified from geopotential.F90
 subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
   use zm_eamxx_bridge_physconst, only: zvir, rair, gravit
+  use zm_eamxx_bridge_params, only: pverp, pver
   !-----------------------------------------------------------------------
   ! Purpose: Compute the geopotential height (above the surface) at the
   ! midpoints and interfaces using the input temperatures and pressures

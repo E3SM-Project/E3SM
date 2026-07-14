@@ -569,19 +569,19 @@ contains
 
     begp = bounds%begp; endp = bounds%endp
     call restartvar(ncid=ncid, flag=flag, varname='FRAC_VEG_NOSNO_ALB', xtype=ncd_int,  &
-         dim1name='pft', long_name='fraction of vegetation not covered by snow (0 or 1)', units='', &
+         dim1name='pft', long_name='fraction of vegetation not covered by snow (0 or 1)', units='fraction', &
          interpinic_flag='interp', readvar=readvar, data=this%frac_veg_nosno_alb_patch)
     call restartvar(ncid=ncid, flag=flag, varname='tlai', xtype=ncd_double,  &
-         dim1name='pft', long_name='one-sided leaf area index, no burying by snow', units='', &
+         dim1name='pft', long_name='one-sided leaf area index, no burying by snow', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%tlai_patch)
     call restartvar(ncid=ncid, flag=flag, varname='tsai', xtype=ncd_double,  &
-         dim1name='pft', long_name='one-sided stem area index, no burying by snow', units='', &
+         dim1name='pft', long_name='one-sided stem area index, no burying by snow', units='1', &
          interpinic_flag='interp', readvar=readvar, data=this%tsai_patch)
     call restartvar(ncid=ncid, flag=flag, varname='elai', xtype=ncd_double,  &
-         dim1name='pft', long_name='one-sided leaf area index, with burying by snow', units='', &
+         dim1name='pft', long_name='one-sided leaf area index, with burying by snow', units='m^2/m^2', &
          interpinic_flag='interp', readvar=readvar, data=this%elai_patch)
     call restartvar(ncid=ncid, flag=flag, varname='esai', xtype=ncd_double,  &
-         dim1name='pft', long_name='one-sided stem area index, with burying by snow', units='', &
+         dim1name='pft', long_name='one-sided stem area index, with burying by snow', units='m^2/m^2', &
          interpinic_flag='interp', readvar=readvar, data=this%esai_patch)
     call restartvar(ncid=ncid, flag=flag, varname='htop', xtype=ncd_double,  &
          dim1name='pft', long_name='canopy top', units='m', &
@@ -590,10 +590,10 @@ contains
          dim1name='pft', long_name='canopy botton', units='m', &
          interpinic_flag='interp', readvar=readvar, data=this%hbot_patch)
     call restartvar(ncid=ncid, flag=flag, varname='mlaidiff', xtype=ncd_double,  &
-         dim1name='pft', long_name='difference between lai month one and month two', units='', &
+         dim1name='pft', long_name='difference between lai month one and month two', units='m^2/m^2', &
          interpinic_flag='interp', readvar=readvar, data=this%mlaidiff_patch)
     call restartvar(ncid=ncid, flag=flag, varname='fsun', xtype=ncd_double,  &
-         dim1name='pft', long_name='sunlit fraction of canopy', units='', &
+         dim1name='pft', long_name='sunlit fraction of canopy', units='proportion', &
          interpinic_flag='interp', readvar=readvar, data=this%fsun_patch)
     if (flag=='read' )then
        do p = bounds%begp,bounds%endp
@@ -604,16 +604,16 @@ contains
     end if
     if (use_cn .or. use_fates) then
        call restartvar(ncid=ncid, flag=flag, varname='altmax', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
+            dim1name='column', long_name='', units='m', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_col)
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear', xtype=ncd_double,  &
-            dim1name='column', long_name='', units='', &
+            dim1name='column', long_name='', units='m', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_col)
        call restartvar(ncid=ncid, flag=flag, varname='altmax_indx', xtype=ncd_int,  &
-            dim1name='column', long_name='', units='', &
+            dim1name='column', long_name='', units='integer value', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_indx_col)
        call restartvar(ncid=ncid, flag=flag, varname='altmax_lastyear_indx', xtype=ncd_int,  &
-            dim1name='column', long_name='', units='', &
+            dim1name='column', long_name='', units='integer value', &
             interpinic_flag='interp', readvar=readvar, data=this%altmax_lastyear_indx_col)
        if (use_polygonal_tundra) then
           call restartvar(ncid=ncid, flag=flag, varname='altmax_1989_indx', xtype=ncd_double,  &

@@ -48,21 +48,21 @@ void Functions<S,D>::compute_cape_from_parcel(
 
   // Initialize variables
   eql_klev = pver - 1;
-  cape = 0.0;
+  cape = 0;
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_cin), [&] (const Int& n) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_cin), [&] (const Int& n) {
     eql_klev_tmp(n) = pver - 1;
-    cape_tmp(n) = 0.0;
+    cape_tmp(n) = 0;
   });
   team.team_barrier();
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, pver), [&] (const Int& k) {
-    buoyancy(k) = 0.0;
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, pver), [&] (const Int& k) {
+    buoyancy(k) = 0;
   });
   team.team_barrier();
 
   // Calculate buoyancy
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_msg, pver), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_msg, pver), [&] (const Int& k) {
     // Define buoyancy from launch level to equilibrium level
     if (k <= msemax_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
       buoyancy(k) = parcel_vtemp(k) - tv(k) + runtime_opt.tiedke_add;
@@ -79,17 +79,20 @@ void Functions<S,D>::compute_cape_from_parcel(
     Int neg_buoyancy_cnt = 0;
     for (Int k = num_msg + 1; k < pver; ++k) {
       if (k < lcl_klev && lcl_pmid >= ZMC::lcl_pressure_threshold) {
-        if (buoyancy(k + 1) > 0.0 && buoyancy(k) <= 0.0) {
-          neg_buoyancy_cnt = ekat::impl::min(num_cin, neg_buoyancy_cnt + 1);
+        if (buoyancy(k + 1) > 0 && buoyancy(k) <= 0) {
+          neg_buoyancy_cnt = Kokkos::min(num_cin, neg_buoyancy_cnt + 1);
           eql_klev_tmp(neg_buoyancy_cnt - 1) = k;
         }
       }
     }
   });
+  team.team_barrier();
 
-  // Integrate buoyancy to obtain possible CAPE values
+  // Integrate buoyancy to obtain possible CAPE values. For some reason, the
+  // sum order does not match the serial fortran, so tiny roundoff differences
+  // exist compared to fortran for cape.
   for (Int n = 0; n < num_cin; ++n) {
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_msg, pver),
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_msg, pver),
       [&] (const Int& k, Real& cape_n) {
         if (lcl_pmid >= ZMC::lcl_pressure_threshold &&
             k <= msemax_klev && k > eql_klev_tmp(n)) {
@@ -109,7 +112,7 @@ void Functions<S,D>::compute_cape_from_parcel(
     }
 
     // Apply limiter to ensure CAPE is positive
-    cape = ekat::impl::max(cape, 0.0);
+    cape = Kokkos::max(cape, 0.);
   });
 
   workspace.template release_many_contiguous<3>(

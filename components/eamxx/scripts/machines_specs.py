@@ -73,6 +73,7 @@ class Machine(object):
     c_compiler   = "mpicc"
     ftn_compiler = "mpifort"
     baselines_dir = ""
+    use_ninja = False
 
     @classmethod
     def setup_base(cls,name,num_bld_res=-1,num_run_res=-1):
@@ -94,6 +95,16 @@ class Generic(Machine):
     def setup(cls):
         super().setup_base("linux-generic")
         # Set baselines_dir to PWD/../ctest-build/baselines
+        cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
+
+###############################################################################
+class CopilotTesting(Machine):
+###############################################################################
+    concrete = True
+
+    @classmethod
+    def setup(cls):
+        super().setup_base("copilot-testing")
         cls.baselines_dir = os.path.join(os.path.dirname(__file__), '..', 'ctest-build', 'baselines')
 
 ###############################################################################
@@ -205,29 +216,10 @@ class Mappy(Machine):
         super().setup_base("mappy")
 
         cls.env_setup = ["module purge",
-                          "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/11.4.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
+                          "module load sems-cmake/3.27.9 sems-git/2.42.0 sems-gcc/13.2.0 sems-openmpi-no-cuda/4.1.6 sems-netcdf-c/4.9.2 sems-netcdf-cxx/4.2 sems-netcdf-fortran/4.6.1 sems-parallel-netcdf/1.12.3 sems-openblas",
                           "export GATOR_INITIAL_MB=4000MB",
                          ]
         cls.baselines_dir = "/sems-data-store/ACME/baselines/scream/master-baselines"
-
-###############################################################################
-class Weaver(Machine):
-###############################################################################
-    concrete = True
-    @classmethod
-    def setup(cls):
-        super().setup_base("weaver")
-
-        cls.env_setup = ["source /etc/profile.d/modules.sh",
-                          "module purge",
-                          "module load cmake/3.25.1 git/2.39.1 python/3.10.8 py-netcdf4/1.5.8 gcc/11.3.0 cuda/11.8.0 openmpi netcdf-c netcdf-fortran parallel-netcdf netlib-lapack",
-                          "export HDF5_USE_FILE_LOCKING=FALSE"
-                         ]
-        cls.baselines_dir = "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"
-        cls.batch = "bsub -I -q rhel8 -n 4 -gpu num=4"
-
-        cls.num_run_res = 4 # four gpus
-        cls.gpu_arch = "cuda"
 
 ###############################################################################
 class Lychee(Machine):
@@ -263,14 +255,25 @@ class Compy(Machine):
         cls.batch = "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm"
 
 ###############################################################################
-class GHCISNLCPU(Machine):
+class GHCISNLGNU(Machine):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base("ghci-snl-cpu")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cpu"
+        super().setup_base("ghci-snl-gnu")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-gnu"
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
+
+###############################################################################
+class GHCISNLOneAPI(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("ghci-snl-oneapi")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-oneapi"
+        cls.env_setup = ["export GATOR_INITIAL_MB=4000MB",
+                         "export OMPI_MCA_io=romio321"]
 
 ###############################################################################
 class GHCISNLCuda(Machine):
@@ -279,38 +282,9 @@ class GHCISNLCuda(Machine):
     @classmethod
     def setup(cls):
         super().setup_base(name="ghci-snl-cuda")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/ghci-snl-cuda"
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-cuda"
         cls.gpu_arch = "cuda"
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
-
-###############################################################################
-class GHCIOCI(Machine):
-###############################################################################
-    concrete = True
-    @classmethod
-    def setup(cls):
-        super().setup_base(name="ghci-oci")
-        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-oci_gnu)"]
-
-###############################################################################
-class Lassen(Machine):
-###############################################################################
-    concrete = True
-    @classmethod
-    def setup(cls):
-        super().setup_base("lassen")
-        cls.baselines_dir = "/projects/e3sm/baselines/scream/master-baselines"
-
-        cls.env_setup = ["module --force purge",
-                          "module load git gcc/8.3.1 cuda/11.8.0 cmake/3.16.8 spectrum-mpi python/3.7.2",
-                          "export LLNL_USE_OMPI_VARS='y'",
-                          "export PATH=/usr/workspace/e3sm/netcdf/bin:$PATH",
-                          "export LD_LIBRARY_PATH=/usr/workspace/e3sm/netcdf/lib:$LD_LIBRARY_PATH",
-                         ]
-        cls.batch = "bsub -Ip -qpdebug"
-
-        cls.num_run_res = 4 # four gpus
-        cls.gpu_arch = "cuda"
 
 ###############################################################################
 class LLNLIntel(Machine):

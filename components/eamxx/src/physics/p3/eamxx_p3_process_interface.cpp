@@ -26,7 +26,6 @@ void P3Microphysics::create_requests()
 
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto nondim = Units::nondimensional();
   auto micron = micro*m;
   auto m2 = pow(m,2);
 
@@ -64,10 +63,10 @@ void P3Microphysics::create_requests()
   constexpr int ps = Pack::n;
 
   // These variables are needed by the interface, but not actually passed to p3_main.
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, none, grid_name, ps);
   if (runtime_options.use_separate_ice_liq_frac) {
-    add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name, ps);
-    add_field<Required>("cldfrac_ice", scalar3d_layout_mid, nondim, grid_name, ps);
+    add_field<Required>("cldfrac_liq", scalar3d_layout_mid, none, grid_name, ps);
+    add_field<Required>("cldfrac_ice", scalar3d_layout_mid, none, grid_name, ps);
   }
 
   // should we use one pressure only, wet/full?
@@ -125,23 +124,23 @@ void P3Microphysics::create_requests()
   add_field<Computed>("eff_radius_qr",           scalar3d_layout_mid, micron,    grid_name, ps);
   add_field<Computed>("precip_total_tend",       scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
   add_field<Computed>("nevapr",                  scalar3d_layout_mid, kg/(kg*s), grid_name, ps);
-  add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, nondim,    grid_name, ps);
+  add_field<Computed>("diag_equiv_reflectivity", scalar3d_layout_mid, none,      grid_name, ps);
   if (runtime_options.extra_p3_diags) {
-    add_field<Computed>("qr2qv_evap", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qi2qv_sublim", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qr_accret", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qr_autoconv", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qv2qi_vapdep", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qi_berg", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qr_ice_shed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qr2qi_collect", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qv_evap",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi2qv_sublim",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_accret",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_autoconv",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qv2qi_vapdep",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_berg",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qr_ice_shed",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc2qi_collect",       scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr2qi_collect",       scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc2qi_hetero_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qr2qi_immers_freeze", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qi2qr_melt", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qr_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qc_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
-    add_field<Computed>("qi_sed", scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi2qr_melt",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qr_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qc_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("qi_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
   }
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
@@ -151,7 +150,7 @@ void P3Microphysics::create_requests()
   add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, kg/kg,  grid_name, ps);
-  add_field<Computed>("rainfrac",               scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Computed>("rainfrac",               scalar3d_layout_mid, none,   grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {

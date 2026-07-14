@@ -36,7 +36,7 @@ TEST_CASE ("update") {
   randomize_uniform (f_int, seed++, 0, 100);
 
   SECTION ("data_type_checks") {
-    Field f2 = f_int.clone();
+    Field f2 = f_int.clone(CloneFlags::CopyData);
 
     // Coeffs have wrong data type (precision loss casting to field's data type)
     REQUIRE_THROWS (f2.update (f_int,1.0,1.0));
@@ -64,43 +64,10 @@ TEST_CASE ("update") {
     }
   }
 
-  SECTION ("masked_deep_copy") {
-    auto f1 = f_real.clone();
-    auto f2 = f_real.clone();
-    auto f3 = f_real.clone();
-    f3.deep_copy(0);
-    for (int icol=0; icol<ncol; ++ icol) {
-      auto val = icol % 2 == 0 ? 1 : -1;
-      f1.subfield(0,icol).deep_copy(val);
-    }
-
-    // Compute mask where f1>0 (should be all even cols)
-    auto mask = f_int.clone("mask");
-    compute_mask(f1,0,Comparison::GT,mask);
-
-    // Set f3=1 where mask=1
-    f3.deep_copy(1,mask);
-
-    auto one = f1.subfield(0,0).clone("one");
-    auto zero = f1.subfield(0,0).clone("zero");
-    one.deep_copy(1);
-    zero.deep_copy(0);
-
-    // Check
-    for (int icol=0; icol<ncol; ++ icol) {
-      auto f3i = f3.subfield(0,icol);
-      if (icol % 2 == 0) {
-        REQUIRE (views_are_equal(f3i,one));
-      } else {
-        REQUIRE (views_are_equal(f3i,zero));
-      }
-    }
-  }
-
   SECTION ("scale") {
     SECTION ("real") {
       Field f1 = f_real.clone();
-      Field f2 = f_real.clone();
+      Field f2 = f_real.clone(CloneFlags::CopyData);
 
       // x=2, x*y = 2*y
       f1.deep_copy(2.0);
@@ -129,13 +96,13 @@ TEST_CASE ("update") {
       one.deep_copy(1.0);
       two.deep_copy(2.0);
 
-      Field f1 = one.clone();
-      Field f2 = two.clone();
+      Field f1 = one.clone(CloneFlags::CopyData);
+      Field f2 = two.clone(CloneFlags::CopyData);
       f1.max(f2);
       REQUIRE (views_are_equal(f1, f2));
 
-      Field f3 = one.clone();
-      Field f4 = two.clone();
+      Field f3 = one.clone(CloneFlags::CopyData);
+      Field f4 = two.clone(CloneFlags::CopyData);
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
 
@@ -153,13 +120,13 @@ TEST_CASE ("update") {
       one.deep_copy(1);
       two.deep_copy(2);
 
-      Field f1 = one.clone();
-      Field f2 = two.clone();
+      Field f1 = one.clone(CloneFlags::CopyData);
+      Field f2 = two.clone(CloneFlags::CopyData);
       f1.max(f2);
       REQUIRE (views_are_equal(f1, f2));
 
-      Field f3 = one.clone();
-      Field f4 = two.clone();
+      Field f3 = one.clone(CloneFlags::CopyData);
+      Field f4 = two.clone(CloneFlags::CopyData);
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
 
@@ -174,8 +141,8 @@ TEST_CASE ("update") {
 
   SECTION ("scale_inv") {
     SECTION ("real") {
-      Field f1 = f_real.clone();
-      Field f2 = f_real.clone();
+      Field f1 = f_real.clone(CloneFlags::CopyData);
+      Field f2 = f_real.clone(CloneFlags::CopyData);
       Field f3 = f_real.clone();
 
       f3.deep_copy(2.0);
@@ -198,8 +165,8 @@ TEST_CASE ("update") {
 
   SECTION ("update") {
     SECTION ("real") {
-      Field f2 = f_real.clone();
-      Field f3 = f_real.clone();
+      Field f2 = f_real.clone(CloneFlags::CopyData);
+      Field f3 = f_real.clone(CloneFlags::CopyData);
 
       // x+x == 2*x
       f2.update(f_real,1,1);
@@ -223,15 +190,18 @@ TEST_CASE ("update") {
       f3.get_header().set_may_be_filled(true);
       f2.deep_copy(1.0);
       f2.update(f3,1,1);
-      if (not views_are_equal(f2,one)) {
-        print_field_hyperslab(f2);
-      }
       REQUIRE (views_are_equal(f2,one));
+
+      // Check handling of additive scalar
+      f3.deep_copy(-2);
+      f2.deep_copy(2);
+      f3.update(f2,0,0,1);
+      REQUIRE (views_are_equal(f3,one));
     }
 
     SECTION ("int") {
-      Field f2 = f_int.clone();
-      Field f3 = f_int.clone();
+      Field f2 = f_int.clone(CloneFlags::CopyData);
+      Field f3 = f_int.clone(CloneFlags::CopyData);
 
       // x+x == 2*x
       f2.update(f_int,1,1);
@@ -256,6 +226,12 @@ TEST_CASE ("update") {
       f2.deep_copy(1);
       f2.update(f3,1,1);
       REQUIRE (views_are_equal(f2,one));
+
+      // Check handling of additive scalar
+      f3.deep_copy(-2);
+      f2.deep_copy(2);
+      f3.update(f2,0,0,1);
+      REQUIRE (views_are_equal(f3,one));
     }
   }
 }

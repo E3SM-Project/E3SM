@@ -15,7 +15,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct,     only: mblxid ! iMOAB id for land migrated mesh to coupler pes
-  use seq_comm_mct,     only: mb_scm_land ! flag that identifies PC for land; 
+  use seq_comm_mct,     only: mb_scm_land ! flag that identifies PC for land;
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
@@ -42,9 +42,6 @@ module prep_lnd_mod
   use seq_comm_mct,     only : num_moab_exports
   use shr_moab_mod,      only : mbGetnCells, mbGetCellTagVals
 
-#ifdef MOABCOMP
-  use component_type_mod, only:  compare_mct_av_moab_tag
-#endif
 
   implicit none
   save
@@ -55,7 +52,6 @@ module prep_lnd_mod
   !--------------------------------------------------------------------------
 
   public :: prep_lnd_init
-  public :: prep_lnd_mrg
   ! moab version
   public :: prep_lnd_mrg_moab
 
@@ -80,7 +76,6 @@ module prep_lnd_mod
   ! Private interfaces
   !--------------------------------------------------------------------------
 
-  private :: prep_lnd_merge
   private :: prep_lnd_set_glc2lnd_fields
 
   !--------------------------------------------------------------------------
@@ -148,6 +143,7 @@ contains
     logical                  :: lnd_present   ! .true. => land is present
     logical                  :: cpl_compute_maps_online    ! .true.  => maps are computed online
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
+    logical                  :: dead_comps    ! .true. => all comps are dead, so we need to be careful in map init and moab intx
     character(CL)            :: atm_gnam      ! atm grid
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: rof_gnam      ! rof grid
@@ -190,7 +186,8 @@ contains
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
          glc_gnam=glc_gnam,             &
-         cpl_compute_maps_online=cpl_compute_maps_online )
+         cpl_compute_maps_online=cpl_compute_maps_online, &
+         dead_comps=dead_comps )
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
@@ -198,9 +195,10 @@ contains
     allocate(mapper_Sg2l)
     allocate(mapper_Fg2l)
 
-      wgtIdFr2l = 'flux_r2l'//C_NULL_CHAR
-      wgtIdFa2l = 'flux_a2l'//C_NULL_CHAR
-      wgtIdSa2l = 'scalar_a2l'//C_NULL_CHAR
+      ! C_NULL_CHAR is added at each iMOAB C API call site; keep variables clean for diagnostics.
+      wgtIdFr2l = 'flux_r2l'
+      wgtIdFa2l = 'flux_a2l'
+      wgtIdSa2l = 'scalar_a2l'
       compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
@@ -250,9 +248,11 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fr2l'
           end if
-          call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
-               'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
-               string='mapper_Fr2l initialization',esmf_map=esmf_map_flag,no_match=.true.)
+          call seq_map_mapinit(mapper_Fr2l, mpicom_CPLID)
+          if (samegrid_lr) then
+             mapper_Fr2l%rearrange_only = .true.
+             mapper_Fr2l%strategy = "rearrange"
+          endif
 ! symmetric of l2r, from prep_rof
           ! Call moab intx only if land and river are init in moab
           if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
@@ -260,10 +260,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Fr2l'
             end if
-            appname = "ROF_LND_COU"//C_NULL_CHAR
+            appname = "ROF_LND_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between rof and lnd mesh
             idintx = 100*rof(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxrl)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxrl)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering  rof lnd intx'
               call shr_sys_abort(subname//' ERROR in registering rof lnd intx')
@@ -355,7 +355,7 @@ contains
                                                     noConserve, validate, &
                                                     trim(dofnameS), trim(dofnameT)
                   endif
-                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, wgtIdFr2l, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, trim(wgtIdFr2l)//C_NULL_CHAR, &
                                                     trim(dm1), orderS, trim(dm2), orderT, ''//C_NULL_CHAR, &
                                                     fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                     noConserve, validate, &
@@ -369,7 +369,7 @@ contains
               else ! read maps
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0
-                  call moab_map_init_rcfile( mbrxid, mblxid, mbintxrl, type1, &
+                  call moab_map_init_rcfile( mapper_Fr2l, type1, &
                         'seq_maps.rc', 'rof2lnd_fmapname:', 'rof2lnd_fmaptype:',samegrid_lr, &
                         arearead, wgtIdFr2l, 'mapper_Fr2l MOAB initialization', esmf_map_flag)
 
@@ -444,16 +444,20 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sa2l'
           end if
-          call seq_map_init_rcfile(mapper_Sa2l, atm(1), lnd(1), &
-               'seq_maps.rc','atm2lnd_smapname:','atm2lnd_smaptype:',samegrid_al, &
-               'mapper_Sa2l initialization',esmf_map_flag, no_match=.true.)
+          call seq_map_mapinit(mapper_Sa2l, mpicom_CPLID)
+          if (samegrid_al) then
+             mapper_Sa2l%rearrange_only = .true.
+             mapper_Sa2l%strategy = "rearrange"
+          endif
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Fa2l'
           end if
-          call seq_map_init_rcfile(mapper_Fa2l, atm(1), lnd(1), &
-               'seq_maps.rc','atm2lnd_fmapname:','atm2lnd_fmaptype:',samegrid_al, &
-               'mapper_Fa2l initialization',esmf_map_flag, no_match=.true.)
+          call seq_map_mapinit(mapper_Fa2l, mpicom_CPLID)
+          if (samegrid_al) then
+             mapper_Fa2l%rearrange_only = .true.
+             mapper_Fa2l%strategy = "rearrange"
+          endif
 ! similar to prep_atm_init, lnd and atm reversed
           ! important change: do not compute intx at all between atm and land when we have samegrid_al
           ! we will use just a comm graph to send data from atm to land on coupler
@@ -463,10 +467,10 @@ contains
                write(logunit,*) ' '
                write(logunit,F00) 'Initializing MOAB mapper_Sa2l and mapper_Fa2l'
             end if
-            appname = "ATM_LND_COU"//C_NULL_CHAR
+            appname = "ATM_LND_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxal)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxal)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering atm lnd intx '
               call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
@@ -548,7 +552,7 @@ contains
                                                       trim(dofnameS), trim(dofnameT)
                   endif
 
-                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIdSa2l, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, trim(wgtIdSa2l)//C_NULL_CHAR, &
                                                       trim(dm1), orderS, trim(dm2), orderT, 'bilin'//C_NULL_CHAR, &
                                                       fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                       noConserve, validate, &
@@ -559,7 +563,7 @@ contains
                   endif
 
                   ! Next compute the conservative map for projection of flux fields
-                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, wgtIdFa2l, &
+                  ierr = iMOAB_ComputeScalarProjectionWeights( mbintxal, trim(wgtIdFa2l)//C_NULL_CHAR, &
                                                   trim(dm1), orderS, trim(dm2), orderT, C_NULL_CHAR, &
                                                   fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                   noConserve, validate, &
@@ -569,10 +573,10 @@ contains
                      call shr_sys_abort(subname//' ERROR in computing ATM-LND weights ')
                   endif
 
-              else
+              else ! offline maps for atm to lnd
                   type1 = 3 ! this is type of grid, maybe should be saved on imoab app ?
                   arearead = 0 ! no need for areas
-                  call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
+                  call moab_map_init_rcfile( mapper_Sa2l, type1, &
                         'seq_maps.rc', 'atm2lnd_smapname:', 'atm2lnd_smaptype:', samegrid_al, &
                         arearead, wgtIdSa2l, 'mapper_Sa2l MOAB initialization', esmf_map_flag)
 
@@ -581,7 +585,10 @@ contains
                   ! read as the second one the f map, this one has the aream for land correct, so it should be fine
                   ! the area_b for the bilinear map above is 0 ! which caused grief
                   arearead = 2 !  area_b for land aream
-                  call moab_map_init_rcfile( mbaxid, mblxid, mbintxal, type1, &
+                  mapper_Fa2l%src_mbid = mbaxid
+                  mapper_Fa2l%tgt_mbid = mblxid
+                  mapper_Fa2l%intx_mbid = mbintxal
+                  call moab_map_init_rcfile( mapper_Fa2l, type1, &
                         'seq_maps.rc', 'atm2lnd_fmapname:', 'atm2lnd_fmaptype:',samegrid_al, &
                         arearead, wgtIdFa2l, 'mapper_Fa2l MOAB initialization', esmf_map_flag)
 
@@ -605,14 +612,14 @@ contains
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ATM-LND')
               endif
 
-            else
+            else ! not samegrid_al
               ! This is the case where ATM and LND use the same mesh and describe same DoFs. However, LND is a subset of ATM;
               ! So, we do not need to compute an intersection, as we will just send the data from ATM to LND and vice-versa,
               ! using GLOBAL_ID matching with point-to-point communication enabled through a communication graph.
-              if (atm_pg_active) then
+              if (atm_pg_active .or. dead_comps) then
                   type1 = 3; !  fv for atm; cgll does not work anyway
               else
-                  type1 = 2 ! in this case, atm is just PC 
+                  type1 = 2 ! in this case, atm is just PC
               endif
               if (mb_scm_land) then
                 type2 = 2 ! point cloud for land too, on coupler side; just one point, actually
@@ -728,40 +735,11 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_mrg(infodata, timer_mrg)
-
-    !---------------------------------------------------------------
-    ! Description
-    ! Prepare run phase, including running the merge
-    !
-    ! Arguments
-    type(seq_infodata_type) , intent(in) :: infodata
-    character(len=*)     , intent(in)    :: timer_mrg
-    !
-    ! Local Variables
-    integer                  :: eai, eri, egi, eli
-    type(mct_aVect), pointer :: x2l_lx
-    character(*), parameter  :: subname = '(prep_lnd_mrg)'
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
-    do eli = 1,num_inst_lnd
-       ! Use fortran mod to address ensembles in merge
-       eai = mod((eli-1),num_inst_atm) + 1
-       eri = mod((eli-1),num_inst_rof) + 1
-       egi = mod((eli-1),num_inst_glc) + 1
-
-       x2l_lx => component_get_x2c_cx(lnd(eli))  ! This is actually modifying x2l_lx
-       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), x2l_lx )
-    enddo
-    call t_drvstopf (trim(timer_mrg))
-
-  end subroutine prep_lnd_mrg
-
 ! this does almost nothing now, except documenting
-  subroutine prep_lnd_mrg_moab (infodata)
+  subroutine prep_lnd_mrg_moab (infodata, timer_mrg)
 
     type(seq_infodata_type) , intent(in) :: infodata
+    character(len=*)        , intent(in) :: timer_mrg
 
 
     type(mct_avect) , pointer   :: a2x_l  ! used just for indexing
@@ -791,14 +769,9 @@ contains
 #ifdef MOABDEBUG
     integer :: ierr
 #endif
-#ifdef MOABCOMP
-    character(CXX)           :: tagname, mct_field
-    real(R8)                 :: difference
-    type(mct_list) :: temp_list
-    integer :: size_list, index_list, ent_type
-    type(mct_string)    :: mctOStr  !
-#endif
     !-----------------------------------------------------------------------
+
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
 
@@ -858,23 +831,6 @@ contains
        deallocate(mrgstr)
     endif
 
-#ifdef MOABCOMP
-  ! land does not do any merge for moab, all fields are directly projected, from atm, river, glacier
-  ! compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    x2l_l => component_get_x2c_cx(lnd(1))
-    ! loop over all fields in seq_flds_x2l_fields
-    call mct_list_init(temp_list ,seq_flds_x2l_fields)
-    size_list=mct_list_nitem (temp_list)
-    ent_type = 1 ! cell for land now, it is a full mesh
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2l_fields)
-    do index_list = 1, size_list
-      call mct_list_get(mctOStr,index_list,temp_list)
-      mct_field = mct_string_toChar(mctOStr)
-      tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(lnd(1), x2l_l, mct_field,  mblxid, tagname, ent_type, difference, first_time)
-    enddo
-    call mct_list_clean(temp_list)
-#endif
 
     first_time = .false.
 
@@ -888,86 +844,9 @@ contains
 
 #endif
 
+    call t_drvstopf (trim(timer_mrg))
+
   end subroutine prep_lnd_mrg_moab
-  !================================================================================================
-
-  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
-    !---------------------------------------------------------------
-    ! Description
-    ! Create input land state directly from atm, runoff and glc outputs
-    !
-    ! Arguments
-    type(mct_aVect), intent(in)     :: a2x_l
-    type(mct_aVect), intent(in)     :: r2x_l
-    type(mct_aVect), intent(in)     :: g2x_l
-    type(mct_aVect), intent(inout)  :: x2l_l
-    !-----------------------------------------------------------------------
-    integer       :: nflds,i,i1,o1
-    logical       :: iamroot
-    logical, save :: first_time = .true.
-    character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: field   ! string converted to char
-    type(mct_aVect_sharedindices),save :: a2x_sharedindices
-    type(mct_aVect_sharedindices),save :: r2x_sharedindices
-    type(mct_aVect_sharedindices),save :: g2x_sharedindices
-    character(*), parameter   :: subname = '(prep_lnd_merge) '
-
-    !-----------------------------------------------------------------------
-
-    call seq_comm_getdata(CPLID, iamroot=iamroot)
-
-    if (first_time) then
-       nflds = mct_aVect_nRattr(x2l_l)
-
-       allocate(mrgstr(nflds))
-       do i = 1,nflds
-          field = mct_aVect_getRList2c(i, x2l_l)
-          mrgstr(i) = subname//'x2l%'//trim(field)//' ='
-       enddo
-
-       call mct_aVect_setSharedIndices(a2x_l, x2l_l, a2x_SharedIndices)
-       call mct_aVect_setSharedIndices(r2x_l, x2l_l, r2x_SharedIndices)
-       call mct_aVect_setSharedIndices(g2x_l, x2l_l, g2x_SharedIndices)
-
-       !--- document copy operations ---
-       do i=1,a2x_SharedIndices%shared_real%num_indices
-          i1=a2x_SharedIndices%shared_real%aVindices1(i)
-          o1=a2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, a2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
-       enddo
-       do i=1,r2x_SharedIndices%shared_real%num_indices
-          i1=r2x_SharedIndices%shared_real%aVindices1(i)
-          o1=r2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, r2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = r2x%'//trim(field)
-       enddo
-       do i=1,g2x_SharedIndices%shared_real%num_indices
-          i1=g2x_SharedIndices%shared_real%aVindices1(i)
-          o1=g2x_SharedIndices%shared_real%aVindices2(i)
-          field = mct_aVect_getRList2c(i1, g2x_l)
-          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
-       enddo
-    endif
-
-    call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
-    call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
-    call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
-
-    if (first_time) then
-       if (iamroot) then
-          write(logunit,'(A)') subname//' Summary:'
-          do i = 1,nflds
-             write(logunit,'(A)') trim(mrgstr(i))
-          enddo
-       endif
-       deallocate(mrgstr)
-    endif
-
-    first_time = .false.
-
-  end subroutine prep_lnd_merge
-
   !================================================================================================
 
   subroutine prep_lnd_calc_a2x_lx(timer)

@@ -20,7 +20,7 @@ mpas_li_mesh.o:
 
 mpas_li_config.o:
 
-mpas_li_time_average_coupled.o:
+mpas_li_time_average_coupled.o: mpas_li_setup.o
 
 clean:
 	$(RM) *.o *.mod *.f90

@@ -51,7 +51,6 @@
       <value mach="userdefined">netcdf</value>
       <value mach="melvin">netcdf</value>
       <value mach="mappy">netcdf</value>
-      <value mach="weaver">netcdf</value>
       <value mach="eastwind">netcdf</value>
       <value mach="constance">netcdf</value>
       <value mach="cascade">netcdf</value>
@@ -66,7 +65,6 @@
       <value mach="cades-baseline">netcdf</value>
       <value mach="chicoma-cpu">netcdf</value>
       <value mach="chicoma-gpu">netcdf</value>
-      <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
       <value mach="fugaku" compiler="gnu">netcdf</value>
     </values>
   </entry>
@@ -162,7 +160,6 @@
 
   <entry id="LND_PIO_TYPENAME">
     <values>
-      <value mach="bebop" compset=".*CLM45.+MALI%SIA.*">netcdf</value>
       <value mach="compy" compset=".*DLND.*">netcdf</value>
     </values>
   </entry>

@@ -1,7 +1,8 @@
 #include "eamxx_nudging_process_interface.hpp"
 
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/field/field_reader.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
@@ -58,14 +59,15 @@ Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
 void Nudging::create_requests()
 {
   using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
 
   m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(true);
-  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(true,2);
+  FieldLayout scalar3d_layout_mid = m_grid->get_3d_scalar_layout(LEV);
+  FieldLayout horiz_wind_layout = m_grid->get_3d_vector_layout(LEV,2);
 
   constexpr int ps = 1;
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
@@ -212,7 +214,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
 
   // The "intermediate" grid, is the grid after horiz remap, and before vert remap
   auto grid_tmp = m_grid->clone("after_horiz_before_vert",true);
-  grid_tmp->reset_num_vertical_lev(m_num_src_levs);
+  grid_tmp->reset_vertical_configuration(m_num_src_levs, AbstractGrid::VKind::Pressure);
 
   if (m_refine_remap) {
     m_horiz_remapper = std::make_shared<HorizontalRemapper>(grid_tmp, m_refine_remap_file);
@@ -232,9 +234,9 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   m_time_interp.set_logger(m_atm_logger,"[EAMxx::Nudging] Reading nudging data");
 
   // NOTE: we are ASSUMING all fields are 3d and scalar!
-  const auto layout_ext = grid_ext->get_3d_scalar_layout(true);
-  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(true);
-  const auto layout_atm = m_grid->get_3d_scalar_layout(true);
+  const auto layout_ext = grid_ext->get_3d_scalar_layout(LEVP);
+  const auto layout_tmp = grid_tmp->get_3d_scalar_layout(LEVP);
+  const auto layout_atm = m_grid->get_3d_scalar_layout(LEV);
   for (auto name : m_fields_nudge) {
     std::string name_ext = name + "_ext";
     std::string name_tmp = name + "_tmp";
@@ -289,9 +291,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
     create_helper_field("padded_p_mid_tmp",layout_padded,"");
   } else if (m_src_pres_type == STATIC_1D_VERTICAL_PROFILE) {
     // For static 1D profile, we can read p_mid now
-    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(true), grid_ext->name());
-    AtmosphereInput src_input(m_static_vertical_pressure_file,grid_ext,{pmid_ext.alias("p_levs")},true);
-    src_input.read_variables(-1);
+    auto pmid_ext = create_helper_field("p_mid_ext", grid_ext->get_vertical_layout(LEVP), grid_ext->name());
+    read_fields(m_static_vertical_pressure_file,{pmid_ext.alias("p_levs")});
 
     // For static 1d profile, p_mid_tmp is an alias of p_mid_ext
     m_helper_fields["p_mid_tmp"] = pmid_ext.alias("p_mid_tmp");
@@ -310,8 +311,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   // do the interpolation.
   if (m_use_weights) {
     auto nudging_weights = create_helper_field("nudging_weights", layout_atm, m_grid->name());
-    AtmosphereInput src_weights_input(m_weights_file, m_grid, {nudging_weights},true);
-    src_weights_input.read_variables();
+    read_fields(m_weights_file,{nudging_weights},m_grid->get_partitioned_dim_gids(),m_comm);
   }
 }
 
@@ -538,10 +538,8 @@ Field Nudging::create_helper_field (const std::string& name,
                                              const std::string& grid_name,
                                              const int ps)
 {
-  using namespace ekat::units;
-
   // For helper fields we don't bother w/ units, so we set them to non-dimensional
-  FieldIdentifier id(name,layout,Units::nondimensional(),grid_name);
+  FieldIdentifier id(name,layout,ekat::units::none,grid_name);
 
   // Create the field. Init with NaN's, so we spot instances of uninited memory usage
   Field f(id);

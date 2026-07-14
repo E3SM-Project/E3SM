@@ -43,6 +43,7 @@ module seq_map_type_mod
      ! source and target app ids also make sense only on the coupler pes
      integer                 :: src_mbid, tgt_mbid, intx_mbid, src_context, intx_context
      character*32            :: weight_identifier ! 'state' OR 'flux'
+     character*32            :: howeight_identifier ! high order flux
      character*16            :: mbname
      integer                 :: tag_entity_type
      integer                 :: nentities ! this should be used only if copy_only is true
@@ -56,8 +57,10 @@ module seq_map_type_mod
      real(R8), pointer       :: clon_d_moab(:)
      real(R8), pointer       :: slat_d_moab(:)
      real(R8), pointer       :: clat_d_moab(:)
-     character(CL)           :: cart3d_init_moab
      !
+     !---- optional nonlinear map; see seq_nlmap_mod.F90
+     logical                 :: nl_available
+     real(R8), allocatable   :: frac_s(:), frac_d(:)
 
   end type seq_map
   public seq_map
@@ -125,7 +128,7 @@ contains
           mapid = m
           if (seq_comm_iamroot(CPLID)) then
              write(logunit,'(A,i6)') subname//' found match ',mapid
-#ifdef MOABCOMP
+#ifdef MOABDEBUG
              write(logunit,'(A,i6)') subname//' strategy '//trim(seq_maps(mapid)%strategy)//&
              ' mapfile '//trim(seq_maps(mapid)%mapfile)
 #endif
@@ -170,6 +173,7 @@ contains
     mapper%intx_mbid = -1
     mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
+    mapper%howeight_identifier = "undefined"
     ! Initialize MOAB coordinate pointers
     nullify(mapper%slon_s_moab)
     nullify(mapper%clon_s_moab)
@@ -179,13 +183,7 @@ contains
     nullify(mapper%clon_d_moab)
     nullify(mapper%slat_d_moab)
     nullify(mapper%clat_d_moab)
-    mapper%cart3d_init_moab = "undefined"
-#ifdef MOABCOMP
-    if (seq_comm_iamroot(CPLID)) then
-      write(logunit,'(A,i6)') subname//' call init map for mapper with id ',mapper%counter
-      call shr_sys_flush(logunit)
-    endif
-#endif
+    mapper%cart3d_init = "undefined"
 
   end subroutine seq_map_mapinit
 

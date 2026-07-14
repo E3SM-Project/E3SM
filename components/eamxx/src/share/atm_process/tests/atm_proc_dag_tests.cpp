@@ -88,9 +88,10 @@ public:
 
   void create_requests () {
     using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
 
     const auto grid = m_grids_manager->get_grid(m_grid_name);
-    const auto lt = grid->get_3d_scalar_layout(true);
+    const auto lt = grid->get_3d_scalar_layout(LEV);
 
     add_field<Required>("Temperature tendency",lt,K/s,m_grid_name);
     add_field<Computed>("Temperature",lt,K,m_grid_name);
@@ -111,9 +112,10 @@ public:
 
   void create_requests () {
     using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
 
     const auto grid = m_grids_manager->get_grid(m_grid_name);
-    const auto lt = grid->get_3d_scalar_layout (true);
+    const auto lt = grid->get_3d_scalar_layout (LEV);
 
     add_field<Required>("Temperature",lt,K,m_grid_name);
     add_field<Computed>("Concentration A",lt,kg/pow(m,3),m_grid_name);
@@ -134,9 +136,10 @@ public:
 
   void create_requests () {
     using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
 
     const auto grid = m_grids_manager->get_grid(m_grid_name);
-    const auto phys_lt = grid->get_3d_scalar_layout (true);
+    const auto phys_lt = grid->get_3d_scalar_layout (LEV);
 
     add_field<Required>("Temperature",phys_lt,K,m_grid_name);
     add_field<Required>("Concentration A",phys_lt,kg/pow(m,3),m_grid_name);

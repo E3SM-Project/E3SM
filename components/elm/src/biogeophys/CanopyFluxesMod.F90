@@ -46,7 +46,7 @@ module CanopyFluxesMod
   !!! using elm_instMod messes with the compilation order
   use elm_instMod           , only : alm_fates, soil_water_retention_curve
   use TemperatureType , only : temperature_vars
-  use perfMod_GPU
+  use perf_mod, only: t_startf, t_stopf
   use timeinfoMod
   use spmdmod          , only: masterproc
   !
@@ -316,7 +316,6 @@ contains
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
-    character(len=64) :: event !! timing event
 
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -784,8 +783,7 @@ contains
       fporig(1:fn) = filterp(1:fn)
 
       ! Begin stability iteration
-      event = 'can_iter'
-      call t_start_lnd(event)
+      call t_startf('can_iter')
       ITERATION : do while (itlef <= itmax .and. fn > 0)
 
          ! Determine friction velocity, and potential temperature and humidity
@@ -1206,7 +1204,7 @@ contains
          end if
 
       end do ITERATION     ! End stability iteration
-      call t_stop_lnd(event)
+      call t_stopf('can_iter')
 
       fn = fnorig
       filterp(1:fn) = fporig(1:fn)

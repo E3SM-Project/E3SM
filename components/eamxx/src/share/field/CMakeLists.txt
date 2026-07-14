@@ -7,27 +7,37 @@ add_library(eamxx_field
   field.cpp
   field_group.cpp
   field_sync.cpp
-  eti/field_deep_copy_double.cpp
-  eti/field_deep_copy_float.cpp
-  eti/field_deep_copy_int.cpp
+  field_reader.cpp
   eti/field_get_strided_view_double_device.cpp
   eti/field_get_strided_view_float_device.cpp
   eti/field_get_strided_view_int_device.cpp
   eti/field_get_view_double_device.cpp
   eti/field_get_view_float_device.cpp
   eti/field_get_view_int_device.cpp
+  eti/field_deep_copy_impl_double.cpp
+  eti/field_deep_copy_impl_float.cpp
+  eti/field_deep_copy_impl_int.cpp
+  eti/field_deep_copy_masked_double.cpp
+  eti/field_deep_copy_masked_float.cpp
+  eti/field_deep_copy_masked_int.cpp
   eti/field_update_impl_double_double.cpp
   eti/field_update_impl_double_float.cpp
   eti/field_update_impl_double_int.cpp
   eti/field_update_impl_float_float.cpp
   eti/field_update_impl_float_int.cpp
   eti/field_update_impl_int_int.cpp
-  eti/field_update_impl_double_double_fill_aware.cpp
-  eti/field_update_impl_double_float_fill_aware.cpp
-  eti/field_update_impl_double_int_fill_aware.cpp
-  eti/field_update_impl_float_float_fill_aware.cpp
-  eti/field_update_impl_float_int_fill_aware.cpp
-  eti/field_update_impl_int_int_fill_aware.cpp
+  eti/field_update_fill_aware_double_double.cpp
+  eti/field_update_fill_aware_double_float.cpp
+  eti/field_update_fill_aware_double_int.cpp
+  eti/field_update_fill_aware_float_float.cpp
+  eti/field_update_fill_aware_float_int.cpp
+  eti/field_update_fill_aware_int_int.cpp
+  eti/field_update_masked_double_double.cpp
+  eti/field_update_masked_double_float.cpp
+  eti/field_update_masked_double_int.cpp
+  eti/field_update_masked_float_float.cpp
+  eti/field_update_masked_float_int.cpp
+  eti/field_update_masked_int_int.cpp
   utils/compute_mask.cpp
   utils/horiz_contraction.cpp
   utils/perturb.cpp
@@ -57,7 +67,8 @@ endif()
 
 target_link_libraries (eamxx_field PUBLIC
   eamxx_core
-  eamxx_utils)
+  eamxx_utils
+  eamxx_scorpio_interface)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

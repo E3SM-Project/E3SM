@@ -27,7 +27,7 @@ void ReferenceElement::init(CF90Ptr &deriv_ptr, CF90Ptr& mass_ptr) {
 }
 
 void ReferenceElement::init_deriv(CF90Ptr &deriv_ptr) {
-  ExecViewManaged<Real[NP][NP]>::HostMirror deriv_host =
+  ExecViewManaged<Real[NP][NP]>::host_mirror_type deriv_host =
       Kokkos::create_mirror_view(m_deriv);
 
   int k_deriv = 0;
@@ -41,7 +41,7 @@ void ReferenceElement::init_deriv(CF90Ptr &deriv_ptr) {
 }
 
 void ReferenceElement::init_mass(CF90Ptr &mass_ptr) {
-  ExecViewManaged<Real[NP][NP]>::HostMirror mass_host =
+  ExecViewManaged<Real[NP][NP]>::host_mirror_type mass_host =
       Kokkos::create_mirror_view(m_mass);
 
   int k_mass = 0;

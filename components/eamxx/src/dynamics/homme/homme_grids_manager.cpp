@@ -11,10 +11,12 @@
 #include "share/property_checks/field_within_interval_check.hpp"
 #endif
 
+#include "share/field/field_reader.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/physics/physics_constants.hpp"
 
 // Get all Homme's compile-time dims and constants
 #include "PhysicalConstants.hpp"
@@ -155,7 +157,6 @@ void HommeGridsManager::build_dynamics_grid () {
   auto dyn_grid = std::make_shared<SEGrid>("dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
 
   const auto layout2d = dyn_grid->get_2d_scalar_layout();
-  const Units rad (Units::nondimensional(),"rad");
 
   // Filling the cg/dg gids, elgpgp, coords, lat/lon views
   auto dg_dofs = dyn_grid->get_dofs_gids();
@@ -197,7 +198,8 @@ void HommeGridsManager::build_dynamics_grid () {
 }
 
 void HommeGridsManager::
-build_physics_grid (const ci_string& type, const ci_string& rebalance) {
+build_physics_grid (const ci_string& type, const ci_string& rebalance)
+{
   std::string name = "physics_" + type;
   if (rebalance != "none") {
     name += " " + rebalance;
@@ -225,12 +227,13 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   const auto layout2d = phys_grid->get_2d_scalar_layout();
-  const Units rad (Units::nondimensional(),"rad");
 
+  auto degN = none.rename("degrees_north");
+  auto degE = none.rename("degrees_east");
   auto dofs = phys_grid->get_dofs_gids();
-  auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
-  auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
-  auto area = phys_grid->create_geometry_data("area",layout2d,rad*rad);
+  auto lat  = phys_grid->create_geometry_data("lat",layout2d,degN);
+  auto lon  = phys_grid->create_geometry_data("lon",layout2d,degE);
+  auto area = phys_grid->create_geometry_data("area",layout2d,sr);
 
   using gid_type = AbstractGrid::gid_type;
 
@@ -264,28 +267,35 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   // If one of the hybrid vcoord arrays is there, they all are
   // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
   if (get_grid("dynamics")->has_geometry_data("hyam")) {
-    auto layout_mid = phys_grid->get_vertical_layout(true);
-    auto layout_int = phys_grid->get_vertical_layout(false);
-    using namespace ekat::units;
-    Units nondim = Units::nondimensional();
-    Units mbar(bar/1000,"mb");
+    auto layout_mid = phys_grid->get_vertical_layout(LEV);
+    auto layout_int = phys_grid->get_vertical_layout(ILEV);
+    auto mbar = (bar/1000).rename("mb");
 
-    auto hyai = phys_grid->create_geometry_data("hyai",layout_int,nondim);
-    auto hybi = phys_grid->create_geometry_data("hybi",layout_int,nondim);
-    auto hyam = phys_grid->create_geometry_data("hyam",layout_mid,nondim);
-    auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,nondim);
+    auto hyai = phys_grid->create_geometry_data("hyai",layout_int,none);
+    auto hybi = phys_grid->create_geometry_data("hybi",layout_int,none);
+    auto hyam = phys_grid->create_geometry_data("hyam",layout_mid,none);
+    auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,none);
     auto lev  = phys_grid->create_geometry_data("lev", layout_mid,mbar);
     auto ilev = phys_grid->create_geometry_data("ilev",layout_int,mbar);
+    auto P0   = phys_grid->create_geometry_data("P0", FieldLayout::scalar(), Pa);
+    const auto p0_val = physics::Constants<Real>::P0.value;
+    P0.deep_copy(p0_val);
 
     for (auto f : {hyai, hybi, hyam, hybm}) {
       auto f_d = get_grid("dynamics")->get_geometry_data(f.name());
       f.deep_copy(f_d);
       f.sync_to_host();
     }
-  
+
+    using stratts_t = std::map<std::string,std::string>;
+    auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+    lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+    ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+    lev_io_atts["positive"] = "down";
+    ilev_io_atts["positive"] = "down";
+
     // Build lev from hyam and hybm
-    const Real ps0        = 100000.0;
-  
     auto hyam_v = hyam.get_view<const Real*,Host>();
     auto hybm_v = hybm.get_view<const Real*,Host>();
     auto hyai_v = hyai.get_view<const Real*,Host>();
@@ -294,10 +304,10 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     auto ilev_v = ilev.get_view<Real*,Host>();
     auto num_v_levs = phys_grid->get_num_vertical_levels();
     for (int ii=0;ii<num_v_levs;ii++) {
-      lev_v(ii)  = 0.01*ps0*(hyam_v(ii)+hybm_v(ii));
-      ilev_v(ii) = 0.01*ps0*(hyai_v(ii)+hybi_v(ii));
+      lev_v(ii)  = 0.01*p0_val*(hyam_v(ii)+hybm_v(ii));
+      ilev_v(ii) = 0.01*p0_val*(hyai_v(ii)+hybi_v(ii));
     }
-    ilev_v(num_v_levs) = 0.01*ps0*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
+    ilev_v(num_v_levs) = 0.01*p0_val*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
     lev.sync_to_dev();
     ilev.sync_to_dev();
   }
@@ -332,19 +342,15 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   }
 
   // Create vcoords fields
-  auto layout_mid = dyn_grid->get_vertical_layout(true);
-  auto layout_int = dyn_grid->get_vertical_layout(false);
-  constexpr auto nondim = ekat::units::Units::nondimensional();
+  auto layout_mid = dyn_grid->get_vertical_layout(LEV);
+  auto layout_int = dyn_grid->get_vertical_layout(ILEV);
 
-  auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,nondim);
-  auto hybi = dyn_grid->create_geometry_data("hybi",layout_int,nondim);
-  auto hyam = dyn_grid->create_geometry_data("hyam",layout_mid,nondim);
-  auto hybm = dyn_grid->create_geometry_data("hybm",layout_mid,nondim);
+  auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,ekat::units::none);
+  auto hybi = dyn_grid->create_geometry_data("hybi",layout_int,ekat::units::none);
+  auto hyam = dyn_grid->create_geometry_data("hyam",layout_mid,ekat::units::none);
+  auto hybm = dyn_grid->create_geometry_data("hybm",layout_mid,ekat::units::none);
 
-  std::vector<Field> fields = {hyai, hybi, hyam, hybm};
-  AtmosphereInput vcoord_reader(filename,dyn_grid,fields);
-  vcoord_reader.read_variables();
-  vcoord_reader.finalize();
+  read_fields(filename,{hyai, hybi, hyam, hybm});
 
   // Set vcoords in f90
   // NOTE: homme does the check for these arrays, so no need to do any property check here

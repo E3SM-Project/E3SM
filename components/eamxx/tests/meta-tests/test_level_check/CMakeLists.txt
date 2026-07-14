@@ -1,9 +1,24 @@
 include(ScreamUtils)
 
-EkatCreateUnitTestExec(at_unit at_unit.cpp EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION)
-EkatCreateUnitTestExec(nightly_unit nightly_unit.cpp EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION)
-EkatCreateUnitTestExec(experimental_unit experimental_unit.cpp EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION)
+EkatCreateUnitTestExec(at_unit
+  SOURCES at_unit.cpp
+  EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
+)
+EkatCreateUnitTestExec(nightly_unit
+  SOURCES nightly_unit.cpp
+  EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
+)
+EkatCreateUnitTestExec(experimental_unit
+  SOURCES experimental_unit.cpp
+  EXCLUDE_MAIN_CPP USER_DEFINED_TEST_SESSION
+)
 
 CreateUnitTestFromExec(at_unit at_unit)
-CreateUnitTestFromExec(nightly_unit nightly_unit MINIMUM_TEST_LEVEL ${SCREAM_TEST_LEVEL_NIGHTLY})
-CreateUnitTestFromExec(experimental_unit experimental_unit MINIMUM_TEST_LEVEL ${SCREAM_TEST_LEVEL_EXPERIMENTAL})
+
+CreateUnitTestFromExec(nightly_unit nightly_unit
+  MINIMUM_TEST_LEVEL ${SCREAM_TEST_LEVEL_NIGHTLY}
+)
+
+CreateUnitTestFromExec(experimental_unit experimental_unit
+  MINIMUM_TEST_LEVEL ${SCREAM_TEST_LEVEL_EXPERIMENTAL}
+)

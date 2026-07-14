@@ -4,7 +4,7 @@
 # suite_name : {
 #     "inherit" : (suite1, suite2, ...), # Optional. Suites to inherit tests from. Default is None. Tuple, list, or str.
 #     "time"    : "HH:MM:SS",            # Optional. Recommended upper-limit on test time.
-#     "share"   : True|False,            # Optional. If True, all tests in this suite share a build. Default is False.
+#     "share"   : True|False|"testname", # Optional. If True, all tests share a build (first in suite order leads). If a test name string, that test's build is shared. Default is False.
 #     "tests"   : (test1, test2, ...)    # Optional. The list of tests for this suite. See above for format. Tuple, list, or str.
 # }
 
@@ -65,8 +65,8 @@ _TESTS = {
             "ERS.f19_g16.IERA56HRELM",
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
-            "ERS.hcru_hcru.IELM.elm-multi_inst",
-            "SMS.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
+            "ERS_Vmct.hcru_hcru.IELM.elm-multi_inst",
+            "SMS_Vmct.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
             )
         },
 
@@ -139,8 +139,8 @@ _TESTS = {
             "ERS_Ld5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
             "PEM_Ln5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
             "PET_Ln5.T62_oQU240wLI.GMPAS-DIB-IAF-DISMF",
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-DIS.mpaso-ocn_glcshelf",
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-SIS.mpaso-ocn_glcshelf",
+            "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-DIS.mpaso-ocn_glcshelf",
+            "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.GMPAS-JRA1p5-DIB-PISMF-SIS.mpaso-ocn_glcshelf",
             )
         },
 
@@ -346,13 +346,14 @@ _TESTS = {
             "ERS.ne4pg2_oQU480_rx1.A",
             "SEQ.f19_g16.X",
             "ERIO.ne4pg2_oQU480_rx1.A",
-            "NCK.ne4pg2_oQU480_rx1.A",
+            "NCK_Vmct.ne4pg2_oQU480_rx1.A",
             "SMS.ne4pg2_oQU480_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
-            "ERS.ne30pg2_r05_IcoswISC30E3r5_gis4to40.MALISIA",
-            "ERS_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
+            "ERS_Vmct.ne30pg2_r05_IcoswISC30E3r5_gis4to40.MALISIA",
+            "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
+            "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
             )
@@ -371,11 +372,10 @@ _TESTS = {
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
-            "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-wcprod",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4pg2_oQU480.F2010",
-            "NCK.ne4pg2_oQU480.WCYCL1850NS",
+            "NCK_Vmct.ne4pg2_oQU480.WCYCL1850NS",
             "PET.f19_g16.X.allactive-mach-pet",
             "PET.ne4pg2_oQU480_rx1.A.allactive-mach-pet",
             "PET_Ln9_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-mach-pet",
@@ -385,7 +385,7 @@ _TESTS = {
             "SMS_Ld2.ne30pg2_r05_IcoswISC30E3r5.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
-            "ERS_Ld3.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-nlmaps",
+            "ERS_Vmct_Ld3.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.allactive-nlmaps",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF",
             "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             "ERS.ne30pg2_r05_IcoswISC30E3r5.GPMPAS-JRA.mosart-rof_ocn_2way",
@@ -396,7 +396,7 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "SMS_Vmct_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
         },
 
@@ -516,7 +516,8 @@ _TESTS = {
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_st3",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_pphys",
             "SMS_D_Ld15.f45_g37.IELMFATES.elm-fates_cold_twostream",
-            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_managedfire"
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_managedfire",
+            "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_nocomp_dbhinit"
             )
         },
 
@@ -799,15 +800,15 @@ _TESTS = {
         "inherit" : (
         ),
         "tests" : (
-            "RCS_C4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perturb",  # 8 nodes, about 1.9 hours on pm-gpu
-            "RCS_C4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-perturb",    # 1 node, about 22min on pm-gpu
+            "RCS_Vmct_C4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-perturb",  # 8 nodes, about 1.9 hours on pm-gpu
+            "RCS_Vmct_C4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-perturb",    # 1 node, about 22min on pm-gpu
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
     },
 
     "e3sm_eamxx_v1_long_crusher" : {
-        # _D builds take a long longer on crusher than ascent or pm-gpu, so
+        # _D builds take a long longer on crusher than pm-gpu, so
         # don't run the long _D test.
         "time"  : "01:00:00",
         "tests" : (
@@ -905,6 +906,24 @@ _TESTS = {
             "ERS_Vmoab_Ld3.T62_oQU240.DTESTM",
             "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC",
             "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_Vmoab_Ld3.f45_g37.X",
+        )
+    },
+
+    "e3sm_moab_ersonline" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Vmoab_Ld3.ne4pg2_r05_oQU480.WCYCL1850NS.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.WCYCL1850NS.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F1850.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU240wLI.GMPAS-IAF.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU120.CMPASO-NYF.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.T62_oQU240.DTESTM.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.r05_r05.RMOSGPCC.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1.allactive-onlinemaps",
+            "ERS_Vmoab_Ld3.f45_g37.X.allactive-onlinemaps",
         )
     },
 
@@ -921,6 +940,7 @@ _TESTS = {
             "PEM_Vmoab_Ld3.T62_oQU240.DTESTM",
             "PEM_Vmoab_Ld3.r05_r05.RMOSGPCC",
             "PEM_Vmoab_Ld3.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "PEM_Vmoab_Ld3.f45_g37.X",
         )
     },
 
@@ -937,6 +957,7 @@ _TESTS = {
             "SMS_Vmoab_Ld1.r05_r05.RMOSGPCC",
             "SMS_Vmoab_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "SMS_Vmoab_Ld1.T62_oQU240.DTESTM",
+            "SMS_Vmoab_Ld1.f45_g37.X",
             "SMS_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
             "SMS_Ld1.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Ld1.ne4pg2_oQU480.F1850",
@@ -947,9 +968,26 @@ _TESTS = {
             "SMS_Ld1.r05_r05.RMOSGPCC",
             "SMS_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "SMS_Ld1.T62_oQU240.DTESTM",
+            "SMS_Ld1.f45_g37.X",
         )
     },
 
+    "e3sm_moab_dbg" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "SMS_Vmoab_D_Ld1.ne4pg2_r05_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_D_Ld1.ne4pg2_oQU480.WCYCL1850NS",
+            "SMS_Vmoab_D_Ld1.ne4pg2_oQU480.F1850",
+            "SMS_Vmoab_D_Ld1.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI",
+            "SMS_Vmoab_D_Ld1.ne4pg2_ne4pg2.I1850CNPRDCTCBCTOP",
+            "SMS_Vmoab_D_Ld1.T62_oQU240wLI.GMPAS-IAF",
+            "SMS_Vmoab_D_Ld1.T62_oQU120.CMPASO-NYF",
+            "SMS_Vmoab_D_Ld1.r05_r05.RMOSGPCC",
+            "SMS_Vmoab_D_Ld1.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_Vmoab_D_Ld1.T62_oQU240.DTESTM",
+            "SMS_Vmoab_D_Ld1.f45_g37.X",
+        )
+    },
 
     "e3sm_gpuacc" : {
         "tests"    : (
@@ -1018,6 +1056,7 @@ _TESTS = {
             "PEM_P480.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
             "PET.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
             "SMS_D_Ln3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL1850-WW3",
+            "SMS_D_Ln3.ne30pg2_IcoswISC30E3r5_wQU225Icos30E3r5.WCYCL2010-WW3",
             )
     },
 
@@ -1097,5 +1136,12 @@ _TESTS = {
         "inherit" : ("e3sm_superbfb_ocn", "e3sm_superbfb_ice",
                      "e3sm_superbfb_lnd", "e3sm_superbfb_rof",
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
+    },
+    "e3sm_gcam_developer" : {
+        "time"  : "1:00:00",
+        "tests" : (
+            "SMS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "ERS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            )
     },
 }

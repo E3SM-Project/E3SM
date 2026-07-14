@@ -74,6 +74,14 @@ struct UnitWrap {
     struct TestComputeDiluteParcel;
     struct TestComputeCapeFromParcel;
     struct TestZmConvMcspCalculateShear;
+    struct TestZmConvMcspTend;
+    struct TestZmConvMain;
+    struct TestZmConvEvap;
+    struct TestZmCalcFractionalEntrainment;
+    struct TestZmDowndraftProperties;
+    struct TestZmCloudProperties;
+    struct TestZmClosure;
+    struct TestZmCalcOutputTend;
   }; // UnitWrap
 };
 

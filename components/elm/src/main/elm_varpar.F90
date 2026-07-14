@@ -85,6 +85,12 @@ module elm_varpar
 
   integer, parameter :: ndir_horizon_angle = 8    ! number of directions for horizon angle
 
+  ! These strings define the elm-fates nutrient coupling, i.e. which chemical species
+  ! are cycled between the two, see corresponding values for fates_parteh_mode:
+  ! bld/namelist_files/namelist_definition.xml
+  character(len=256), public, parameter :: elmfates_carbon_only = 'carbon_only'
+  character(len=256), public, parameter :: elmfates_cnp         = 'cnp'
+  
   ! constants for decomposition cascade
 
   integer :: i_met_lit 

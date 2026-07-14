@@ -74,6 +74,7 @@ protected:
   // TODO: use atm buffer instead
   Field m_z_mid;
   Field m_z_int;
+  Field m_sunlit_real;
 }; // class Cosp
 
 } // namespace scream

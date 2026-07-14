@@ -1,6 +1,5 @@
 #include "share/algorithm/eamxx_time_interpolation.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/eamxx_io_utils.hpp"
 
 namespace scream{
 namespace util {
@@ -28,7 +27,7 @@ TimeInterpolation::TimeInterpolation(
 void TimeInterpolation::finalize()
 {
   if (m_is_data_from_file) {
-    m_file_data_atm_input = nullptr;
+    m_field_reader = nullptr;
     m_is_data_from_file = false;
   }
 }
@@ -109,13 +108,12 @@ void TimeInterpolation::add_field(const Field& field_in, const bool store_shallo
  */
 void TimeInterpolation::shift_data()
 {
+  std::swap(m_fm_time0,m_fm_time1);
+  std::vector<Field> fields;
   for (auto name : m_field_names)
-  {
-    auto& field0 = m_fm_time0->get_field(name);
-    auto& field1 = m_fm_time1->get_field(name);
-    std::swap(field0,field1);
-  }
-  m_file_data_atm_input->set_field_manager(m_fm_time1);
+    fields.push_back(m_fm_time1->get_field(name));
+
+  m_field_reader->set_fields(fields);
 }
 /*-----------------------------------------------------------------------------------------------*/
 /* Function which will initialize the TimeStamps.
@@ -158,12 +156,16 @@ void TimeInterpolation::initialize_data_from_field(const Field& field_in)
 void TimeInterpolation::initialize_data_from_files()
 {
   auto triplet_curr = m_file_data_triplets[m_triplet_idx];
-  // Initialize the AtmosphereInput object that will be used to gather data
-  ekat::ParameterList input_params;
-  input_params.set("field_names",m_field_names);
-  input_params.set("filename",triplet_curr.filename);
-  m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
-  m_file_data_atm_input->set_logger(m_logger);
+
+  auto gids = m_fm_time1->get_grid()->get_partitioned_dim_gids();
+  auto comm = m_fm_time1->get_grid()->get_comm();
+  std::vector<Field> fields;
+  for (auto n : m_field_names)
+    fields.push_back(m_fm_time1->get_field(n));
+  m_field_reader = std::make_shared<FieldReader>();
+  m_field_reader->set_file_specs(triplet_curr.filename);
+  m_field_reader->set_dim_decomp(gids,comm);
+  m_field_reader->set_fields(fields);
 
   // Read first snap of data and shift to time0
   read_data();
@@ -245,20 +247,17 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
     const auto filename = list_of_files[ii];
     // Reference TimeStamp
     scorpio::register_file(filename,scorpio::FileMode::Read);
-    auto ts_file_start = read_timestamp(filename,"case_t0");
-    // Gather the units of time
+    // Parse CF-compliant time units to get both the reference timestamp and the multiplier
     auto time_units = scorpio::get_attribute<std::string>(filename,"time","units");
+
+    util::TimeStamp ts_file_start;
     int time_mult;
-    if (time_units.find("seconds") != std::string::npos) {
-      time_mult = 1;
-    } else if (time_units.find("minutes") != std::string::npos) {
-      time_mult = 60;
-    } else if (time_units.find("hours") != std::string::npos) {
-      time_mult = 3600;
-    } else if (time_units.find("days") != std::string::npos) {
-      time_mult = 86400;
-    } else {
-      EKAT_ERROR_MSG("Error!! TimeInterpolation::set_file_triplets - unsupported units of time = (" << time_units << ") in source data file " << filename << ", supported units are: seconds, minutes, hours and days");
+    try {
+      std::tie(ts_file_start, time_mult) = parse_cf_time_units(time_units);
+    } catch (std::exception& e) {
+      std::string msg = e.what();
+      msg += " - Filename: " + filename + "\n";
+      throw std::runtime_error(msg);
     }
     // Gather information about time in this file
     if (ii==0) {
@@ -304,18 +303,13 @@ void TimeInterpolation::set_file_data_triplets(const vos_type& list_of_files) {
 void TimeInterpolation::read_data()
 {
   const auto triplet_curr = m_file_data_triplets[m_triplet_idx];
-  if (not m_file_data_atm_input or triplet_curr.filename != m_file_data_atm_input->get_filename()) {
-    // Then we need to close this input stream and open a new one
-    ekat::ParameterList input_params;
-    input_params.set("field_names",m_field_names);
-    input_params.set("filename",triplet_curr.filename);
-    m_file_data_atm_input = std::make_shared<AtmosphereInput>(input_params,m_fm_time1);
-    m_file_data_atm_input->set_logger(m_logger);
-  }
+
+  // If the filename has not changed, this is a no-op.
+  m_field_reader->set_file_specs(triplet_curr.filename);
 
   m_logger->info(m_header);
   m_logger->info("[EAMxx:time_interpolation] Reading data at time " + triplet_curr.timestamp.to_string());
-  m_file_data_atm_input->read_variables(triplet_curr.time_idx);
+  m_field_reader->read(triplet_curr.time_idx);
   m_time1 = triplet_curr.timestamp;
 }
 /*-----------------------------------------------------------------------------------------------*/

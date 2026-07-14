@@ -207,8 +207,8 @@ subroutine zm_param_set_for_testing(zm_param)
    zm_param%clos_dyn_adj    = .true.
    zm_param%no_deep_pbl     = .false.
    ! ZM micro parameters
-   zm_param%zm_microp       = .true.
-   zm_param%old_snow        = .false.
+   zm_param%zm_microp       = .false.
+   zm_param%old_snow        = .true.
    zm_param%auto_fac        = 7.0D0
    zm_param%accr_fac        = 1.5D0
    zm_param%micro_dcs       = 150.E-6

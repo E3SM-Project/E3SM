@@ -2,17 +2,14 @@
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_header.hpp"
-#include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/field/field.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 #include "share/core/eamxx_types.hpp"
@@ -163,11 +160,11 @@ get_test_fm(const std::shared_ptr<const AbstractGrid>& grid)
   // Create a fm
   auto fm = std::make_shared<FieldManager>(grid);
 
-  auto scalar_1d = grid->get_vertical_layout(true);
+  auto scalar_1d = grid->get_vertical_layout(LEV);
   auto scalar_2d = grid->get_2d_scalar_layout();
-  auto scalar_3d = grid->get_3d_scalar_layout(true);
-  auto vector_3d = grid->get_3d_vector_layout(true,2);
-  auto rad_vector_3d = grid->get_3d_vector_layout(true,3,"SWBND");
+  auto scalar_3d = grid->get_3d_scalar_layout(LEV);
+  auto vector_3d = grid->get_3d_vector_layout(LEV,2);
+  auto rad_vector_3d = grid->get_3d_vector_layout(LEV,3,"SWBND");
 
   const std::string& gn = grid->name();
 
@@ -200,7 +197,7 @@ std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
   auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
-    copy->add_field(it.second->clone());
+    copy->add_field(it.second->clone(CloneFlags::All));
   }
 
   return copy;

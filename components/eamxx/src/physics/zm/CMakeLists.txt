@@ -42,18 +42,26 @@ set(ZM_SRCS
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND ZM_SRCS
-    eti/zm_common_init.cpp
+    eti/zm_opts.cpp
     eti/zm_input_state.cpp
     eti/zm_output_tend.cpp
     eti/zm_invert_entropy.cpp
     eti/zm_entropy.cpp
-    eti/zm_zm_transport_tracer.cpp
-    eti/zm_zm_transport_momentum.cpp
+    eti/zm_transport_tracer.cpp
+    eti/zm_transport_momentum.cpp
     eti/zm_compute_dilute_cape.cpp
     eti/zm_find_mse_max.cpp
     eti/zm_compute_dilute_parcel.cpp
     eti/zm_compute_cape_from_parcel.cpp
-    eti/zm_zm_conv_mcsp_calculate_shear.cpp
+    eti/zm_conv_mcsp_calculate_shear.cpp
+    eti/zm_conv_mcsp_tend.cpp
+    eti/zm_conv_main.cpp
+    eti/zm_conv_evap.cpp
+    eti/zm_calc_fractional_entrainment.cpp
+    eti/zm_downdraft_properties.cpp
+    eti/zm_cloud_properties.cpp
+    eti/zm_closure.cpp
+    eti/zm_calc_output_tend.cpp
   ) # ZM ETI SRCS
 endif()
 

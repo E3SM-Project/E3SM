@@ -51,6 +51,33 @@ endif()
 # Only link what this library need. Other eamxx libs will link other tpls
 target_link_libraries(eamxx_core PUBLIC ekat::Core ekat::KokkosUtils)
 
+# Old gcc (and intel linking against old gcc) does not have the filesystem
+# header compiled in libstdc++, and need the separate libstdc++fs library.
+# TODO: remove this bit (including the if statement below) if/when you drop
+#       old gcc/intel support
+include(CheckCXXSourceCompiles)
+
+set(FS_SOURCE "
+#include <filesystem>
+int main() { std::filesystem::path p(\"/\"); return 0; }
+")
+
+# First, check if it works without any extra flags
+check_cxx_source_compiles("${FS_SOURCE}" STD_HAS_FS)
+
+if(NOT STD_HAS_FS)
+  # If it failed, try linking with stdc++fs
+  set(CMAKE_REQUIRED_LIBRARIES "stdc++fs")
+  check_cxx_source_compiles("${FS_SOURCE}" STD_HAS_FS_LIB)
+
+  if(NOT STD_HAS_FS_LIB)
+    message(FATAL_ERROR "Could not find a way to link std::filesystem")
+  endif()
+  unset(CMAKE_REQUIRED_LIBRARIES)
+
+  target_link_libraries(eamxx_core PUBLIC stdc++fs)
+endif()
+
 # Handle the case where we have python support
 if (EAMXX_ENABLE_PYTHON)
   if (NOT Python_EXECUTABLE)
@@ -75,9 +102,6 @@ if (EAMXX_ENABLE_PYTHON)
 
   target_link_libraries(eamxx_core PUBLIC pybind11::embed)
   target_compile_definitions (eamxx_core PUBLIC EAMXX_HAS_PYTHON)
-
-  # Used in eamxx_pysession.hpp to get current path
-  target_link_libraries(eamxx_core PUBLIC stdc++fs)
 endif()
 
 if (NOT SCREAM_LIB_ONLY)

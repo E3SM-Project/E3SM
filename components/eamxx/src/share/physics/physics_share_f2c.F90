@@ -122,6 +122,16 @@ interface
     real(kind=c_real)            :: scream_cos
   end function scream_cos
 
+  pure function scream_sin(input) bind(C)
+    import :: c_real
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: scream_sin
+  end function scream_sin
+
   pure function scream_erf(input) bind(C)
     import :: c_real
 

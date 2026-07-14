@@ -495,7 +495,11 @@ add_default($nl, 'config_SLM_to_MALI_weights_file');
 ###########################
 
 if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
-    add_default($nl, 'config_calving');
+    if ($GLC_GRID eq 'mpas.gis4to40km' || $GLC_GRID eq 'mpas.gis1to10kmR2') {
+         add_default($nl, 'config_calving', 'val'=>"crevasse_depth");
+    } else {
+         add_default($nl, 'config_calving');
+    }
 } else {
     add_default($nl, 'config_calving', 'val'=>"none");
 }
@@ -521,6 +525,7 @@ if ($MALI_PROGNOSTIC_MODE eq 'PROGNOSTIC') {
 add_default($nl, 'config_calving_speed_limit');
 add_default($nl, 'config_apply_facemelt_strainrate_enhancement');
 add_default($nl, 'config_calving_strainrate_scaling');
+add_default($nl, 'config_calving_strainrate_scaling_source');
 add_default($nl, 'config_grounded_von_Mises_threshold_stress');
 add_default($nl, 'config_floating_von_Mises_threshold_stress');
 add_default($nl, 'config_grounded_von_Mises_threshold_stress_source');
@@ -537,6 +542,7 @@ add_default($nl, 'config_damage_calving_method');
 add_default($nl, 'config_damagecalvingParameter');
 add_default($nl, 'config_crevasse_water_depth_source');
 add_default($nl, 'config_crevasse_water_depth');
+add_default($nl, 'config_smb_fraction_to_water_depth');
 add_default($nl, 'config_ismip6_retreat_k');
 add_default($nl, 'config_calving_error_threshold');
 add_default($nl, 'config_distribute_unablatedVolumeDynCell');
@@ -729,6 +735,8 @@ add_default($nl, 'config_SGH_adaptive_timestep_fraction');
 add_default($nl, 'config_SGH_max_adaptive_timestep');
 add_default($nl, 'config_SGH_tangent_slope_calculation');
 add_default($nl, 'config_SGH_pressure_calc');
+add_default($nl, 'config_SGH_transition_flow');
+add_default($nl, 'config_SGH_flow_transition_param');
 add_default($nl, 'config_SGH_alpha');
 add_default($nl, 'config_SGH_beta');
 add_default($nl, 'config_SGH_conduc_coeff');
@@ -741,6 +749,8 @@ add_default($nl, 'config_SGH_bed_roughness_max');
 add_default($nl, 'config_SGH_creep_coefficient');
 add_default($nl, 'config_SGH_englacial_porosity');
 add_default($nl, 'config_SGH_use_iceThicknessHydro');
+add_default($nl, 'config_SGH_flowA_source');
+add_default($nl, 'config_SGH_flowA_value');
 add_default($nl, 'config_SGH_chnl_active');
 add_default($nl, 'config_SGH_chnl_include_DCFL');
 add_default($nl, 'config_SGH_chnl_alpha');
@@ -748,10 +758,12 @@ add_default($nl, 'config_SGH_chnl_beta');
 add_default($nl, 'config_SGH_chnl_conduc_coeff');
 add_default($nl, 'config_SGH_chnl_creep_coefficient');
 add_default($nl, 'config_SGH_incipient_channel_width');
+add_default($nl, 'config_SGH_chnl_area_shutoff');
 add_default($nl, 'config_SGH_include_pressure_melt');
 add_default($nl, 'config_SGH_shmip_forcing');
 add_default($nl, 'config_SGH_basal_melt');
 add_default($nl, 'config_SGH_iter_smooth_waterPressureSlopeNormal');
+add_default($nl, 'config_SGH_allow_terrestrial_outflow');
 
 ##################################
 # Namelist group: AM_globalStats #
@@ -1167,34 +1179,30 @@ sub valid_date {
 # $$month by 1 (also incrementing $$year if going from Dec to Jan) and 
 # then return 0.
 
-  use Switch;
-
   my $day = shift;
   my $month = shift;
   my $year = shift;
   my $cal = shift;
 
   my $maxday = -1;
-  switch ($$month) {
-    case 1 { $maxday = 31; }
-    case 2 {
-      if (($cal eq 'NO_LEAP') || (not leap($$year))) {
-        $maxday = 28;
-      } else {
-        $maxday = 29;
-      }
+  if    ($$month == 1)  { $maxday = 31; }
+  elsif ($$month == 2) {
+    if (($cal eq 'NO_LEAP') || (not leap($$year))) {
+      $maxday = 28;
+    } else {
+      $maxday = 29;
     }
-    case 3 { $maxday = 31; }
-    case 4 { $maxday = 30; }
-    case 5 { $maxday = 31; }
-    case 6 { $maxday = 30; }
-    case 7 { $maxday = 31; }
-    case 8 { $maxday = 31; }
-    case 9 { $maxday = 30; }
-    case 10 { $maxday = 31; }
-    case 11 { $maxday = 30; }
-    case 12 { $maxday = 31; }
   }
+  elsif ($$month == 3)  { $maxday = 31; }
+  elsif ($$month == 4)  { $maxday = 30; }
+  elsif ($$month == 5)  { $maxday = 31; }
+  elsif ($$month == 6)  { $maxday = 30; }
+  elsif ($$month == 7)  { $maxday = 31; }
+  elsif ($$month == 8)  { $maxday = 31; }
+  elsif ($$month == 9)  { $maxday = 30; }
+  elsif ($$month == 10) { $maxday = 31; }
+  elsif ($$month == 11) { $maxday = 30; }
+  elsif ($$month == 12) { $maxday = 31; }
   if ($maxday == -1) {
     die "ERROR: can not figure out what month $$month is";
   }

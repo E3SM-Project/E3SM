@@ -610,16 +610,30 @@ void AtmosphereDriver::create_fields()
 
   // Now go through the input fields/groups to the atm proc group,
   // and mark them as part of the RESTART group.
+  // Skip fields in the ACCUMULATED group, since those are reset to 0
+  // at the beginning of each atm step, so there is no need to read
+  // them from the IC or restart file.
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
-    m_field_mgr->add_to_group(fid, "RESTART");
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      m_field_mgr->add_to_group(fid, "RESTART");
+    }
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      m_field_mgr->add_to_group(g.m_monolithic_field->get_header().get_identifier(), "RESTART");
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
+      }
     } else {
       for (const auto& fn : g.m_info->m_fields_names) {
-        m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        auto field = m_field_mgr->get_field(fn, g.grid_name());
+        const auto& fgroups = field.get_header().get_tracking().get_groups_names();
+        if (not ekat::contains(fgroups, "ACCUMULATED")) {
+          m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+        }
       }
     }
   }
@@ -952,7 +966,8 @@ void AtmosphereDriver::restart_model ()
       }
       fields.push_back(m_field_mgr->get_field(fn,gn));
     }
-    read_fields_from_file (fields,m_grids_manager->get_grid(gn),filename);
+    auto grid = m_grids_manager->get_grid(gn);
+    read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
     for (auto& f : fields) {
       f.get_header().get_tracking().update_time_stamp(m_current_ts);
     }
@@ -1063,7 +1078,8 @@ void AtmosphereDriver::set_initial_conditions ()
     if (ic_pl.isParameter(fname)) {
       // This is the case that the user provided an initialization
       // for this field in the parameter file.
-      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+      if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
+          ic_pl.isType<std::vector<double>>(fname)) {
         // Initial condition is a constant
         initialize_constant_field(fid, ic_pl);
 
@@ -1078,8 +1094,13 @@ void AtmosphereDriver::set_initial_conditions ()
                         "double or string, or vector double arguments are allowed");
       }
       m_fields_inited[grid_name].push_back(fname);
-    } else if (fname == "phis" or fname == "sgh30") {
-      // Both phis and sgh30 need to be loaded from the topography file
+    } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
+      // these fields need to be loaded from the topography file
+	  // - phis is the surface geopotential height
+	  // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
+	  //   needed for turbulent mountain stress scheme (i.e. TMS)
+	  // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
+	  //   needed for orographic gravity wave drag scheme (i.e. GWD)
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
@@ -1104,6 +1125,15 @@ void AtmosphereDriver::set_initial_conditions ()
                         "Error! Requesting sgh30 field on " + grid_name +
                         " topo file only has sgh30 for physics_pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
+        topography_eamxx_fields_names[grid_name].push_back(fname);
+        m_fields_inited[grid_name].push_back(fname);
+      } else if (fname == "sgh") {
+        // The eamxx field "sgh" is called "SGH" in the
+        // topography file and is only available on the PG2 grid.
+        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
+                        "Error! Requesting sgh field on " + grid_name +
+                        " topo file only has sgh for physics_pg2.\n");
+        topography_file_fields_names[grid_name].push_back("SGH");
         topography_eamxx_fields_names[grid_name].push_back(fname);
         m_fields_inited[grid_name].push_back(fname);
       }
@@ -1143,7 +1173,12 @@ void AtmosphereDriver::set_initial_conditions ()
   // First the individual input fields...
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
-    process_ic_field (f);
+    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
+    // each atm step, so there is no need to read them from the IC file.
+    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+    if (not ekat::contains(fgroups, "ACCUMULATED")) {
+      process_ic_field (f);
+    }
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
@@ -1151,10 +1186,18 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
-      process_ic_field(*g.m_monolithic_field);
+      const auto& mf = *g.m_monolithic_field;
+      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
+        process_ic_field(mf);
+      }
     }
     for (auto it : g.m_individual_fields) {
-      process_ic_field(*it.second);
+      const auto& f = *it.second;
+      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+      if (not ekat::contains(fgroups, "ACCUMULATED")) {
+        process_ic_field(f);
+      }
     }
   }
   m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
@@ -1229,7 +1272,7 @@ void AtmosphereDriver::set_initial_conditions ()
         ic_fields.push_back(m_field_mgr->get_field(fn,grid_name));
       }
       if (not m_iop_data_manager) {
-        read_fields_from_file (ic_fields,grid,file_name);
+        read_fields(file_name,ic_fields,grid->get_partitioned_dim_gids(),m_atm_comm);
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
@@ -1318,14 +1361,15 @@ void AtmosphereDriver::set_initial_conditions ()
       if (not m_iop_data_manager) {
         // Topography files always use "ncol_d" for the GLL grid value of ncol.
         // To ensure we read in the correct value, we must change the name for that dimension
-        auto io_grid = grid;
+        strmap_t<std::string> tag_rename;
         if (grid_name=="physics_gll") {
-          using namespace ShortFieldTagsNames;
-          auto tmp_grid = io_grid->clone(io_grid->name(),true);
-          tmp_grid->reset_field_tag_name(COL,"ncol_d");
-          io_grid = tmp_grid;
+          tag_rename["ncol"] = "ncol_d";
         }
-        read_fields_from_file (topo_fields,io_grid,file_name);
+        FieldReader reader;
+        reader.set_file_specs(file_name,tag_rename);
+        reader.set_dim_decomp(grid->get_partitioned_dim_gids(),m_atm_comm);
+        reader.set_fields(topo_fields);
+        reader.read();
       } else {
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
@@ -1408,8 +1452,9 @@ void AtmosphereDriver::set_initial_conditions ()
     constexpr auto ps0 = physics::Constants<Real>::P0.value;
     const auto min_pressure = ic_pl.get<Real>("perturbation_minimum_pressure", 1050.0);
 
-    const auto& pmask_lt = gll_grid->get_vertical_layout(true);
-    const auto nondim = ekat::units::Units::nondimensional();
+    using namespace ShortFieldTagsNames;
+    const auto& pmask_lt = gll_grid->get_vertical_layout(LEV);
+    const auto nondim = ekat::units::none;
     FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
     Field pressure_mask(pmask_fid,true);
     auto pmask_h = pressure_mask.get_view<int*,Host>();
@@ -1438,20 +1483,6 @@ void AtmosphereDriver::set_initial_conditions ()
 
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
-}
-
-void AtmosphereDriver::
-read_fields_from_file (const std::vector<Field>& fields,
-                       const std::shared_ptr<const AbstractGrid>& grid,
-                       const std::string& file_name)
-{
-  if (fields.size()==0) {
-    return;
-  }
-
-  AtmosphereInput ic_reader(file_name,grid,fields);
-  ic_reader.set_logger(m_atm_logger);
-  ic_reader.read_variables();
 }
 
 void AtmosphereDriver::
@@ -1507,8 +1538,13 @@ initialize_constant_field(const FieldIdentifier& fid,
       }
     }
   } else {
-    const auto& value = ic_pl.get<double>(name);
-    f.deep_copy(value);
+    if (ic_pl.isType<int>(name)) {
+      const auto& value = ic_pl.get<int>(name);
+      f.deep_copy(value);
+    } else {
+      const auto& value = ic_pl.get<double>(name);
+      f.deep_copy(value);
+    }
   }
 }
 

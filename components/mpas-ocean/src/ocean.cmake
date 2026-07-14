@@ -3,12 +3,12 @@
 list(APPEND CPPDEFS "-DCORE_OCEAN")
 list(APPEND CPPDEFS "-DEXCLUDE_INIT_MODE")
 list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
-list(APPEND INCLUDES "core_ocean/gotm/include")
+list(APPEND INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/gotm/include")
 
 # check if lapack is linked
 if (LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
-  list(APPEND LIBRARIES BLAS::BLAS LAPACK::LAPACK)
+  list(APPEND LIBRARIES LAPACK::LAPACK)
 endif()
 
 if (USE_PETSC)
@@ -154,8 +154,8 @@ set(BGC_FILES
 )
 
 # Add MARBL
-if (NOT EXISTS core_ocean/MARBL/.git)
-  message(FATAL "Missing core_ocean/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?")
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/MARBL/.git)
+  message(FATAL_ERROR "Missing core_ocean/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(MARBL_FILES
   core_ocean/MARBL/src/marbl_ciso_diagnostics_mod.F90
@@ -200,8 +200,8 @@ set(PPR_FILES
 )
 
 # Add GOTM
-if (NOT EXISTS core_ocean/gotm/.git)
-  message(FATAL "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?")
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/gotm/.git)
+  message(FATAL_ERROR "Missing core_ocean/gotm/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(GOTM_FILES
   core_ocean/gotm/src/util/adv_center.F90

@@ -2214,6 +2214,7 @@ CONTAINS
 
     type(master_entry), pointer :: listentry
     logical                     :: fieldontape      ! .true. iff field on tape
+    logical                     :: tape_names_valid ! .true. if tape names are valid
 
     ! List of active grids (first dim) for each tape (second dim)
     ! An active grid is one for which there is a least one field being output
@@ -2223,6 +2224,7 @@ CONTAINS
     !
     ! First ensure contents of fincl, fexcl, and fwrtpr are all valid names
     !
+    tape_names_valid = .true.
     do t=1,ptapes
       f = 1
       do while (f < pflds .and. fincl(f,t) /= ' ')
@@ -2232,7 +2234,7 @@ CONTAINS
         if(associated(listentry)) mastername = listentry%field%name
         if (name /= mastername) then
           write(iulog,*)'FLDLST: ', trim(name), ' in fincl(', f, ') not found'
-          call endrun
+          tape_names_valid = .false.
         end if
         f = f + 1
       end do
@@ -2245,7 +2247,7 @@ CONTAINS
 
         if (fexcl(f,t) /= mastername) then
           write(iulog,*)'FLDLST: ', fexcl(f,t), ' in fexcl(', f, ') not found'
-          call endrun
+          tape_names_valid = .false.
         end if
         f = f + 1
       end do
@@ -2258,17 +2260,21 @@ CONTAINS
         if(associated(listentry)) mastername = listentry%field%name
         if (name /= mastername) then
           write(iulog,*)'FLDLST: ', trim(name), ' in fwrtpr(', f, ') not found'
-          call endrun
+          tape_names_valid = .false.
         end if
         do ff=1,f-1                 ! If duplicate entry is found, stop
           if (trim(name) == trim(getname(fwrtpr(ff,t)))) then
             write(iulog,*)'FLDLST: Duplicate field ', name, ' in fwrtpr'
-            call endrun
+            tape_names_valid = .false.
           end if
         end do
         f = f + 1
       end do
     end do
+
+    if(.not. tape_names_valid) then
+      call endrun
+    end if
 
     nflds(:) = 0
     ! IC history file is to be created, set properties
@@ -3837,18 +3843,20 @@ end subroutine print_active_fldlst
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'institution', &
-    'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
-    &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
-    &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
-    &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
-    &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
-    &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
-    &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
-    &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
-    &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+    'LLNL (Lawrence Livermore National Laboratory); &
+    &ANL (Argonne National Laboratory); &
+    &BNL (Brookhaven National Laboratory); &
+    &LANL (Los Alamos National Laboratory); &
+    &LBNL (Lawrence Berkeley National Laboratory); &
+    &ORNL (Oak Ridge National Laboratory); &
+    &PNNL (Pacific Northwest National Laboratory); &
+    &SNL (Sandia National Laboratories). &
+    &Mailing address: LLNL Climate Program, c/o Peter M. Caldwell, &
     &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'contact',  &
                       'e3sm-data-support@llnl.gov')
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'license',  &
+                      'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'initial_file', ncdata)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'topography_file', bnd_topo)
 

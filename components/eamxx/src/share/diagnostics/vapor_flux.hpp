@@ -1,7 +1,7 @@
-#ifndef EAMXX_VAPOR_FLUX_DIAGNOSTIC_HPP
-#define EAMXX_VAPOR_FLUX_DIAGNOSTIC_HPP
+#ifndef EAMXX_VAPOR_FLUX_HPP
+#define EAMXX_VAPOR_FLUX_HPP
 
-#include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/diagnostics/abstract_diagnostic.hpp"
 
 namespace scream
 {
@@ -10,28 +10,22 @@ namespace scream
  * This diagnostic will produce the zonal or meridional water vapor flux.
  */
 
-class VaporFluxDiagnostic : public AtmosphereDiagnostic
+class VaporFlux : public AbstractDiagnostic
 {
 public:
   // Constructors
-  VaporFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VaporFlux (const ekat::Comm& comm, const ekat::ParameterList& params,
+             const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the diagnostic CLASS (not the computed field)
   std::string name () const override { return "VaporFlux"; }
-
-  // Set the grid
-  void create_requests ();
 
 protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void compute_diagnostic_impl ();
+  void compute_impl () override;
 protected:
-
-  // Keep track of field dimensions
-  int m_num_cols;
-  int m_num_levs;
 
   int m_component;
 

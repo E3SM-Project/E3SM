@@ -5,7 +5,7 @@ namespace scream {
 namespace impl {
 
 template<typename ST>
-void perturb (Field& f, const ST perturb_level,
+void perturb (const Field& f, const ST perturb_level,
               const int base_seed,
               const Field& level_mask,
               const Field& dof_gids)
@@ -66,7 +66,7 @@ void perturb (Field& f, const ST perturb_level,
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of column and level dimension.
     auto perturb_fl = fl.clone().strip_dims({COL,LEV});
-    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::none, "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
@@ -94,7 +94,7 @@ void perturb (Field& f, const ST perturb_level,
     // Create a field to store perturbation values with layout
     // the same as f, but stripped of level dimension.
     auto perturb_fl = fl.clone().strip_dim(LEV);
-    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::Units::nondimensional(), "");
+    FieldIdentifier perturb_fid("perturb_field", perturb_fl, ekat::units::none, "");
     Field perturb_f(perturb_fid);
     perturb_f.allocate_view();
 
@@ -116,7 +116,7 @@ void perturb (Field& f, const ST perturb_level,
 
 } // namespace impl
 
-void perturb (Field& f, const ScalarWrapper perturb_level,
+void perturb (const Field& f, const ScalarWrapper perturb_level,
               const int base_seed,
               const Field& level_mask,
               const Field& dof_gids)

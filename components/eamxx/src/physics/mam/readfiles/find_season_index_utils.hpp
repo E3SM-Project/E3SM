@@ -4,18 +4,18 @@
 #include <mam4xx/mam4.hpp>
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/core/eamxx_types.hpp"
 
 namespace scream::mam_coupling {
 
 // views for single- and multi-column data
 
-using const_view_1d = typename KT::template view_1d<const Real>;
-using view_int_2d   = typename KT::template view_2d<int>;
+using const_view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<const Real>;
+using view_int_2d   = typename KokkosTypes<DefaultDevice>::template view_2d<int>;
 
-using view_1d_host     = typename KT::view_1d<Real>::HostMirror;
-using view_int_3d_host = typename KT::view_3d<int>::HostMirror;
-using view_int_2d_host = typename KT::view_2d<int>::HostMirror;
+using view_1d_host     = typename KT::view_1d<Real>::host_mirror_type;
+using view_int_3d_host = typename KT::view_3d<int>::host_mirror_type;
+using view_int_2d_host = typename KT::view_2d<int>::host_mirror_type;
 
 /**
  * @brief Reads the season index from the given file and computes the season

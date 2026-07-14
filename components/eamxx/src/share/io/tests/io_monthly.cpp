@@ -1,10 +1,10 @@
 #include <catch2/catch.hpp>
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 
+#include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
@@ -75,10 +75,9 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto fm = std::make_shared<FieldManager>(grid);
 
-  const auto units = ekat::units::Units::nondimensional();
   int count=0;
   for (const auto& fl : layouts) {
-    FID fid("f_"+std::to_string(count),fl,units,grid->name());
+    FID fid("f_"+std::to_string(count),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
     randomize_discrete (f,seed++,values);
@@ -157,14 +156,14 @@ void read (const int seed, const ekat::Comm& comm)
   // Get gm
   auto gm = get_gm (comm);
   auto grid = gm->get_grid("point_grid");
+  auto gids = grid->get_partitioned_dim_gids();
 
   // Get initial fields. Use wrong seed for fm, so fields are not
   // inited with right data (avoid getting right answer without reading).
   auto fm0 = get_fm(grid,t0,seed);
-  auto fm  = get_fm(grid,t0,-seed-1);
-  std::vector<std::string> fnames;
-  for (auto it : fm->get_repo()) {
-    fnames.push_back(it.second->name());
+  std::vector<Field> fields;
+  for (auto it : fm0->get_repo()) {
+    fields.push_back(it.second->clone());
   }
 
   // Get filename from timestamp
@@ -179,10 +178,6 @@ void read (const int seed, const ekat::Comm& comm)
     return fname;
   };
 
-  // Create reader pl
-  ekat::ParameterList reader_pl;
-  reader_pl.set("field_names",fnames);
-
   for (int n=0; n<12; ++n) {
     auto t = t0 + n*dt;
     auto filename = get_filename(t);
@@ -190,13 +185,10 @@ void read (const int seed, const ekat::Comm& comm)
     // There should be just one time snapshot per file
     REQUIRE(scorpio::get_dimlen(filename,"time")==1);
 
-    reader_pl.set("filename",filename);
-    AtmosphereInput reader(reader_pl,fm);
-    reader.read_variables();
+    read_fields (filename,fields,gids,comm);
 
-    for (const auto& fn : fnames) {
-      auto f0 = fm0->get_field(fn).clone();
-      auto f  = fm->get_field(fn);
+    for (const auto& f : fields) {
+      auto f0 = fm0->get_field(f.name()).clone(CloneFlags::CopyData);
       add(f0,n);
       REQUIRE (views_are_equal(f,f0));
     }

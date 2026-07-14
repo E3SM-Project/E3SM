@@ -60,6 +60,9 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteCape : public UnitWrap::UnitTest<
       }
     }
 
+    const auto margin = std::numeric_limits<Real>::epsilon() *
+      (ekat::is_single_precision<Real>::value ? 1000 : 1);
+
     // Verify BFB results, all data should be in C layout
     if (SCREAM_BFB_TESTING && this->m_baseline_action == COMPARE) {
       for (Int i = 0; i < num_runs; ++i) {
@@ -80,7 +83,7 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteCape : public UnitWrap::UnitTest<
         REQUIRE(d_baseline.total(d_baseline.lcl_temperature) == d_test.total(d_test.eql_klev));
         for (Int k = 0; k < d_baseline.total(d_baseline.lcl_temperature); ++k) {
           REQUIRE(d_baseline.lcl_temperature[k] == d_test.lcl_temperature[k]);
-          REQUIRE(d_baseline.cape[k] == d_test.cape[k]);
+          REQUIRE(d_baseline.cape[k] == Approx(d_test.cape[k]).margin(margin));
           REQUIRE(d_baseline.q_mx[k] == d_test.q_mx[k]);
           REQUIRE(d_baseline.t_mx[k] == d_test.t_mx[k]);
           REQUIRE(d_baseline.msemax_klev[k] == d_test.msemax_klev[k]);

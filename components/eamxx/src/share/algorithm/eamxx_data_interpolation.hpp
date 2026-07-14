@@ -5,13 +5,12 @@
 #include "share/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_logger.hpp>
 
 namespace scream
 {
-
-class AtmosphereInput;
 
 class DataInterpolation
 {
@@ -59,8 +58,8 @@ public:
                             const TimeInterpType interp_type = Linear,
                             const util::TimeStamp& ref_ts = util::TimeStamp());
 
-  // In case the input files store col/lev dims with exhotic names, the user can provide them here
-  void set_input_files_dimname (const FieldTag t, const std::string& name) { m_input_files_dimnames[t] = name; }
+  // In case the input files store dims with exhotic names, the user can provide them here
+  void set_input_files_dimname (const std::string& name, const std::string& nc_name);
 
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
@@ -74,6 +73,8 @@ public:
   void run (const util::TimeStamp& ts);
 
   std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
+
+  void set_name (const std::string& name) { m_name = name; }
 
 protected:
 
@@ -104,10 +105,13 @@ protected:
 
   // --------------- Internal data ------------- //
 
-  std::shared_ptr<AtmosphereInput> m_reader;
+  std::shared_ptr<FieldReader> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
-  std::shared_ptr<AbstractGrid>       m_grid_after_hremap; // nonconst b/c we may need to set some geo data
+
+  // The following are nonconst, since we may need to modify a few things
+  std::shared_ptr<AbstractGrid>       m_data_grid;
+  std::shared_ptr<AbstractGrid>       m_grid_after_hremap;
 
   std::vector<Field>                  m_fields;
 
@@ -118,7 +122,7 @@ protected:
 
   // These are inited as the usual "ncol" and "lev" at construction, but the user
   // can reset them in case the input files store funky dimensions
-  std::map<FieldTag,std::string>    m_input_files_dimnames;
+  std::map<std::string,std::string>    m_input_files_dimnames;
 
   // If vertical remap happens, at runtime we may need to access some
   // versions of certain perssure fields. Store them here for convenient access
@@ -141,6 +145,8 @@ protected:
   bool                  m_fields_have_col_dim = false;
   bool                  m_fields_have_lev_dim = false;
   bool                  m_fields_have_ilev_dim = false;
+
+  std::string           m_name = "DataInterp";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_logger;
 };

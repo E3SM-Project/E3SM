@@ -6,8 +6,7 @@
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/physics/physics_constants.hpp"
@@ -41,12 +40,17 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
     m_fields_have_lev_dim |= fl.has_tag(ILEV);
   }
 
-  m_input_files_dimnames[COL] = "ncol";
-  m_input_files_dimnames[LEV] = "lev";
-  m_input_files_dimnames[ILEV] = "ilev";
+  for (auto t : {COL,LEV,ILEV})
+    m_input_files_dimnames[e2str(t)] = e2str(t);
 
   // Initialize logger with a console logger for warnings (logs on all ranks)
   m_logger = console_logger(ekat::logger::LogLevel::warn);
+}
+
+void DataInterpolation::
+set_input_files_dimname (const std::string& name, const std::string& nc_name)
+{
+  m_input_files_dimnames[name] = nc_name;
 }
 
 void DataInterpolation::
@@ -168,26 +172,37 @@ update_end_fields ()
   for (int i=0; i<m_nfields; ++i) {
     fields.push_back(m_horiz_remapper_end->get_src_field(i));
   }
-
   if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     // We also need to read the src pressure profile
     fields.push_back(m_horiz_remapper_end->get_src_field(m_nfields));
   }
-  m_reader->set_fields(fields);
 
   // If we're also changing the file, must (re)init the scorpio structures
   const auto& slice_beg = m_time_database.slices[m_curr_interval_idx.first];
   const auto& slice_end = m_time_database.slices[m_curr_interval_idx.second];
-  if (m_reader->get_filename()!=slice_end.filename) {
-    m_reader->reset_filename(slice_end.filename);
+
+  if (not m_reader) {
+    // NOTE: Sometimes the original data does not use the same field tags as eamxx.
+    // For these cases, we need to perform a shallow clone of
+    // io_grid because the tags are constant in this object.
+    using namespace ShortFieldTagsNames;
+    auto grid = m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
+
+    auto gids = grid->get_partitioned_dim_gids();
+    auto comm = grid->get_comm();
+    m_reader = std::make_shared<FieldReader>();
+    m_reader->set_dim_decomp(gids,comm);
   }
+  // This triggers opening of a new file at read time ONLY if the filename/fields have changed
+  m_reader->set_file_specs(slice_end.filename,m_input_files_dimnames);
+  m_reader->set_fields(fields);
 
   // Read and interpolate fields
   m_logger->info("[DataInterpolation] Reading end of interval fields.");
   m_logger->info(" - interval: [" + slice_beg.time.to_string() + ", " + slice_end.time.to_string() + "]");
   m_logger->info(" - filename: " + slice_end.filename);
   m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
-  m_reader->read_variables(slice_end.time_idx);
+  m_reader->read(slice_end.time_idx);
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -198,24 +213,6 @@ init_data_interval (const util::TimeStamp& t0)
       "[DataInterpolation] Error! Cannot call 'init_data_interval' until after remappers creation.\n");
 
   register_fields_in_remappers ();
-
-  // Create a bare reader. Fields and filename are set inside the update_end_fields call
-  strvec_t fnames;
-  for (auto f : m_fields) {
-    fnames.push_back(f.name());
-  }
-
-  // NOTE: Sometimes the original data does not use the same field tags as eamxx.
-  // For these cases, we need to perform a shallow clone of
-  // io_grid because the tags are constant in this object.
-  using namespace ShortFieldTagsNames;
-  auto horiz_interp_src_grid =
-        m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
-  horiz_interp_src_grid->reset_field_tag_name(COL, m_input_files_dimnames[COL]);
-  horiz_interp_src_grid->reset_field_tag_name(LEV, m_input_files_dimnames[LEV]);
-  horiz_interp_src_grid->reset_field_tag_name(ILEV, m_input_files_dimnames[ILEV]);
-
-  m_reader = std::make_shared<AtmosphereInput>(fnames,horiz_interp_src_grid);
 
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
@@ -280,11 +277,23 @@ setup_time_database (const strvec_t& input_files,
         "[DataInterpolation] Error! Input file contains no time variable.\n"
         " - file name: " + fname + "\n");
 
-    auto t_ref = ref_ts.is_valid() ? ref_ts : read_timestamp (fname,"reference_time_stamp");
+    auto time_name  = scorpio::get_time_name(fname);
+    auto time_units = scorpio::get_attribute<std::string>(fname,time_name,"units");
+
+    util::TimeStamp parsed_ref;
+    int time_mult;
+    try {
+      std::tie(parsed_ref, time_mult) = parse_cf_time_units(time_units);
+    } catch (std::exception& e) {
+      std::string msg = e.what();
+      msg += " - Filename: " + fname + "\n";
+      throw std::runtime_error(msg);
+    }
+    auto t_ref = ref_ts.is_valid() ? ref_ts : parsed_ref;
 
     times.emplace_back();
     for (const auto& t : file_times) {
-      times.back().push_back(t_ref + t*constants::seconds_per_day);
+      times.back().push_back(t_ref + t*time_mult);
     }
     scorpio::release_file(fname);
 
@@ -431,35 +440,21 @@ create_horiz_remappers (const std::string& map_file)
 
   // Create hremap tgt grid
   int nlevs_data = nlevs_model;
-  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
+  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(COL)]) : ncols_model;
 
   if (m_fields_have_lev_dim) {
-    nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+    nlevs_data = get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]);
   } else if (m_fields_have_ilev_dim) {
-    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[ILEV]);
+    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[e2str(ILEV)]);
   }
 
-  m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
-  m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
+  m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm(),1);
+  m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
+  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
 
   if (map_file!="") {
-    m_horiz_remapper_beg = std::make_shared<HorizontalRemapper>(m_grid_after_hremap,map_file);
-    m_horiz_remapper_end = std::make_shared<HorizontalRemapper>(m_grid_after_hremap,map_file);
-
-    int map_ncols_src = m_horiz_remapper_beg->get_src_grid()->get_num_global_dofs();
-    int map_ncols_tgt = m_horiz_remapper_beg->get_tgt_grid()->get_num_global_dofs();
-
-
-
-    // Ensure that the map file was compatible with data/model grids
-    EKAT_REQUIRE_MSG (map_ncols_src==ncols_data,
-        "[DataInterpolation] Error! Map file src grid is incompatible with the input data.\n"
-        " - map file ncols src: " + std::to_string(map_ncols_src) + "\n"
-        " - data file ncols   : " + std::to_string(ncols_data) + "\n");
-    EKAT_REQUIRE_MSG (map_ncols_tgt==ncols_model,
-        "[DataInterpolation] Error! Map file tgt grid is incompatible with the model grid.\n"
-        " - map file ncols tgt: " + std::to_string(map_ncols_tgt) + "\n"
-        " - model file ncols  : " + std::to_string(ncols_model) + "\n");
+    m_horiz_remapper_beg = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
+    m_horiz_remapper_end = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
   } else {
     // No hremap: 'ncols' from the data must match the model grid (nlev can differ; vremap is not set yet)
     EKAT_REQUIRE_MSG (ncols_data==ncols_model,
@@ -492,25 +487,22 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   int nlevs_model = m_model_grid->get_num_vertical_levels();
 
   // Create hremap tgt grid
-  int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[LEV]) : nlevs_model;
-  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
+  int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]) : nlevs_model;
+  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(COL)]) : ncols_model;
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
-  auto data_grid = create_point_grid("data",ncols_data,nlevs_data,m_model_grid->get_comm());
-  std::vector<Field> latlon = {
-    data_grid->create_geometry_data("lat",data_grid->get_2d_scalar_layout()),
-    data_grid->create_geometry_data("lon",data_grid->get_2d_scalar_layout())
-  };
-  AtmosphereInput latlon_reader (m_time_database.files.front(),data_grid,latlon);
-  latlon_reader.read_variables();
+  m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm());
+  auto lat  = m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout());
+  auto lon  = m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout());
+  auto gids = m_data_grid->get_partitioned_dim_gids();
+  auto comm = m_data_grid->get_comm();
+  read_fields(m_time_database.files.front(),{lat,lon},gids,comm);
 
   // Create iop remap tgt grid
-  m_grid_after_hremap = m_model_grid->clone("after_hremap",true);
-  m_grid_after_hremap->reset_num_vertical_lev(nlevs_data);
-
-  // Create IOP remappers
-  m_horiz_remapper_beg = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
-  m_horiz_remapper_end = std::make_shared<IOPRemapper>(data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
+  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
+  m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
 }
 
 void DataInterpolation::
@@ -529,7 +521,9 @@ create_vert_remapper (const VertRemapData& data)
 
   m_vr_type = data.vr_type;
 
+  int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
   int model_nlevs = m_model_grid->get_num_vertical_levels();
+  constexpr auto vkind_p = AbstractGrid::VKind::Pressure;
 
   if (m_vr_type==VRemapType::None) {
     // Not much to do. Set up a do-nothing remapper and return
@@ -537,13 +531,19 @@ create_vert_remapper (const VertRemapData& data)
     constexpr auto SAT = IDR::SrcAliasTgt;
 
     // If no vert remap is requested, model_grid and grid_after_hremap MUST have same nlevs
-    int data_nlevs  = m_grid_after_hremap->get_num_vertical_levels();
     EKAT_REQUIRE_MSG (model_nlevs==data_nlevs,
         "[DataInterpolation] Error! No vertical remap was requested, but the 'lev' dim from file does not match the model grid one.\n"
         " - model grid num vert levels: " + std::to_string(model_nlevs) + "\n"
         " - input data num vert levels: " + std::to_string(data_nlevs) + "\n");
     m_vert_remapper = std::make_shared<IDR>(m_grid_after_hremap,SAT);
     return;
+  }
+
+  // For non-Custom remap types, data is at pressure levels, so
+  // the grids before/after hremap MUST have vkind=Pressure
+  if (m_vr_type!=Custom) {
+    m_grid_after_hremap->reset_vertical_configuration(data_nlevs,vkind_p);
+    m_data_grid->reset_vertical_configuration(data_nlevs,vkind_p);
   }
 
   if (data.custom_remapper) {
@@ -565,13 +565,13 @@ create_vert_remapper (const VertRemapData& data)
         "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
         " - model grid num global cols      : " + std::to_string(m_model_grid->get_num_global_dofs()) + "\n"
         " - custom remapper num global cols : " + std::to_string(tgt_ncols) + "\n");
-    EKAT_REQUIRE_MSG (src_nlevs==m_grid_after_hremap->get_num_vertical_levels(),
+    EKAT_REQUIRE_MSG (src_nlevs==data_nlevs,
         "[DataInterpolation] Error! Custom vert remapper src grid incompatible with the grid after horiz remap.\n"
-        " - grid after horiz remap num levels: " + std::to_string(m_grid_after_hremap->get_num_vertical_levels()) + "\n"
+        " - grid after horiz remap num levels: " + std::to_string(data_nlevs) + "\n"
         " - custom remapper num levels       : " + std::to_string(src_nlevs) + "\n");
     EKAT_REQUIRE_MSG (tgt_nlevs==m_model_grid->get_num_vertical_levels(),
         "[DataInterpolation] Error! Custom vert remapper tgt grid incompatible with the model grid.\n"
-        " - model grid num levels      : " + std::to_string(m_model_grid->get_num_vertical_levels()) + "\n"
+        " - model grid num levels      : " + std::to_string(model_nlevs) + "\n"
         " - custom remapper num levels : " + std::to_string(tgt_nlevs) + "\n");
 
     m_vert_remapper = data.custom_remapper;
@@ -592,7 +592,7 @@ create_vert_remapper (const VertRemapData& data)
 
     // We need to build a vert remapper based on the input data.
     // Note: on src grid, we don't distinguish midpoints from interfaces, while on tgt we do.
-    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid,true,false);
+    auto vremap = std::make_shared<VerticalRemapper>(m_grid_after_hremap,m_model_grid);
 
     vremap->set_extrapolation_type(s2et(data.extrap_top),VerticalRemapper::Top);
     vremap->set_extrapolation_type(s2et(data.extrap_bot),VerticalRemapper::Bot);
@@ -602,6 +602,8 @@ create_vert_remapper (const VertRemapData& data)
 
   // If the vremap type is not CUSTOM, we need to setup the source pressure profile
   if (m_vr_type!=Custom) {
+    using namespace ShortFieldTagsNames;
+
     // If the remapper is not "custom", we MUST be able to cast down to VerticalRemapper
     auto vremap = std::dynamic_pointer_cast<VerticalRemapper>(m_vert_remapper);
 
@@ -611,8 +613,8 @@ create_vert_remapper (const VertRemapData& data)
     //  - p_data is the full 3d pressure where data is defined, while p_file is the field
     //    we read from file. For Static1D and Dynamic3D they are the same, but for
     //    Dynamic3DRef, p_file is the surf pressure (2d), while p_data is the full 3d pmid
-    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(true)
-                                        : m_grid_after_hremap->get_3d_scalar_layout(true);
+    auto p_layout = m_vr_type==Static1D ? m_grid_after_hremap->get_vertical_layout(LEVP)
+                                        : m_grid_after_hremap->get_3d_scalar_layout(LEVP);
     auto& p_data = m_helper_pressure_fields ["p_data"];
     p_data = Field (FieldIdentifier("p_data",p_layout,ekat::units::Pa,m_grid_after_hremap->name()));
     p_data.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
@@ -628,28 +630,24 @@ create_vert_remapper (const VertRemapData& data)
 
       // We need to reconstruct the 3d pressure from ps, hybm, and hyam.
       // We read and store hyam/hybm in the vremap src grid
-      auto layout = m_grid_after_hremap->get_vertical_layout(true);
-      auto nondim = ekat::units::Units::nondimensional();
+      auto layout = m_grid_after_hremap->get_vertical_layout(LEVP);
       DataType real_t = DataType::RealType;
-      std::vector<Field> fields = {
-        m_grid_after_hremap->create_geometry_data("hyam",layout,nondim,real_t,SCREAM_PACK_SIZE),
-        m_grid_after_hremap->create_geometry_data("hybm",layout,nondim,real_t,SCREAM_PACK_SIZE)
-      };
-      AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
-      hvcoord_reader.read_variables();
+      auto hyam = m_grid_after_hremap->create_geometry_data("hyam",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE);
+      auto hybm = m_grid_after_hremap->create_geometry_data("hybm",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE);
+      read_fields (m_time_database.files.front(),{hyam,hybm});
     } else if (m_vr_type==Static1D) {
       // Can load p now, since it's static
       std::vector<Field> fields = {p_data.alias(data.pname)};
-      AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
-      p_data_reader.read_variables();
+      auto gids = m_grid_after_hremap->get_partitioned_dim_gids();
+      read_fields(m_time_database.files.front(),fields);
     }
-    vremap->set_source_pressure (m_helper_pressure_fields["p_data"],VerticalRemapper::Both);
+    vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
 
     if (data.pint.is_allocated()) {
-      vremap->set_target_pressure(data.pint,VerticalRemapper::Interfaces);
+      vremap->set_target_pressure(data.pint);
     }
     if (data.pmid.is_allocated()) {
-      vremap->set_target_pressure(data.pmid,VerticalRemapper::Midpoints);
+      vremap->set_target_pressure(data.pmid);
     }
   }
 }
@@ -664,13 +662,13 @@ void DataInterpolation::register_fields_in_remappers ()
 
   for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
-    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));
-    m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name(), CloneFlags::MatchPacking));
+    m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name(), CloneFlags::MatchPacking));
   }
   if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     const auto& data_p = m_helper_pressure_fields["p_file"];
-    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_beg->get_src_grid()->name()));
-    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_end->get_src_grid()->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_beg->get_src_grid()->name(), CloneFlags::MatchPacking));
+    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_end->get_src_grid()->name(), CloneFlags::MatchPacking));
   }
   m_horiz_remapper_beg->registration_ends();
   m_horiz_remapper_end->registration_ends();

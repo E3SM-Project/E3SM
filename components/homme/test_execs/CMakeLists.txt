@@ -69,11 +69,22 @@ ENDIF ()
 IF (${HOMME_SUBMISSION_TYPE} STREQUAL none) 
   SET(HOMME_QUEUING FALSE)
   IF (USE_NUM_PROCS)
-    MESSAGE(STATUS "Using ${USE_NUM_PROCS} processors")
+    # USE_NUM_PROCS is the number of ranks CIME has allocated (e.g. from a
+    # _P96 test option).  Treat it as the cap: each test uses as many ranks
+    # as it needs, but no more than USE_NUM_PROCS.
+    SET(MAX_NUM_PROCS ${USE_NUM_PROCS})
+    MESSAGE(STATUS "HOMME testing max procs (from USE_NUM_PROCS): ${USE_NUM_PROCS}")
   ELSE ()
-    INCLUDE(ProcessorCount)
-    ProcessorCount(MAX_NUM_PROCS)
-    MESSAGE(STATUS "Warning: No queuing system. Maximum number of processes is ${MAX_NUM_PROCS}")
+    # HOMME_TESTING_MAX_PROCS caps the per-test NUM_CPUS when running without a
+    # queuing system and USE_NUM_PROCS is not set.  The default of 24 matches a
+    # typical CIME _P24 test layout; pass -DHOMME_TESTING_MAX_PROCS=N to
+    # override (e.g. from a CIME _P<N> test name or a machine XML default).
+    IF (NOT DEFINED HOMME_TESTING_MAX_PROCS)
+      SET (HOMME_TESTING_MAX_PROCS 24 CACHE STRING
+           "Maximum MPI ranks per test when running without a queuing system (default 24)")
+    ENDIF ()
+    SET(MAX_NUM_PROCS ${HOMME_TESTING_MAX_PROCS})
+    MESSAGE(STATUS "HOMME testing max procs (HOMME_TESTING_MAX_PROCS): ${HOMME_TESTING_MAX_PROCS}")
   ENDIF ()
 ELSE ()
   IF (USE_NUM_PROCS)
@@ -117,6 +128,15 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/submit_tests.sh
                ${CMAKE_BINARY_DIR}/tests/submit_tests.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diff_output.sh
                ${CMAKE_BINARY_DIR}/tests/diff_output.sh @ONLY)
+# Per-test timeout (seconds) applied by runTestsStd() via the shell 'timeout'
+# command.  On timeout the test is skipped and the suite continues rather than
+# aborting; 0 disables the timeout entirely.
+IF (NOT DEFINED HOMME_TESTING_TIMELIMIT)
+  SET (HOMME_TESTING_TIMELIMIT 1800 CACHE STRING
+       "Per-test timeout in seconds used by runTestsStd() (0 = no limit)")
+ENDIF ()
+MESSAGE(STATUS "HOMME per-test testing timelimit: ${HOMME_TESTING_TIMELIMIT} seconds")
+
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/cmake_variables.sh
                ${CMAKE_BINARY_DIR}/tests/cmake_variables.sh @ONLY)
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/check_baseline.sh

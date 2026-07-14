@@ -7,37 +7,53 @@
 <use_case_desc bgc="cndv"      >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
 <use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
 
-<!-- <sim_year>1850</sim_year> -->
-
 <sim_year_range>2015-2100</sim_year_range>
 
 <clm_start_type>arb_ic</clm_start_type>
 
-<!-- *** NOT USED FOR SATELLITE PHENOLOGY ***
-<stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
-<stream_year_last_ndep  phys="elm" use_cn=".true."   >2005</stream_year_last_ndep>
-<model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
+<!-- no crop model yet -->
+<use_crop>.false.</use_crop>
+
+<!-- v3 with the EHC includes toprad and plant hydraulics tuning with bgc-->
+<!-- valid compset with TOPCNPRDCTCBCPHS should include these two options -->
+<paramfile use_crop=".false." use_cn=".true." >lnd/clm2/paramdata/clm_params_c211124_tuned.nc</paramfile>
+<!-- the compset sets use_top_solar_rad but not the correct fsurdat -->
+<!-- toprad needs correct surfdata file -->
+<use_top_solar_rad>.true.</use_top_solar_rad>
+<fsurdat hgrid="0.9x1.25">lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c260223_with_TOP.nc</fsurdat>
+<!-- these are the most recently created files for these resolutions (none currently for f19) -->
+<!-- r0125 is an 1850 year; different year files differ at the precision level for vegetated land unit and pfts -->
+<!-- ssp-rcp (or hist) labels are simply labels and do not alter the data values, as the source year data are the same -->
+<fsurdat hgrid="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c250910_TOP.nc</fsurdat>
+<fsurdat hgrid="r025">lnd/clm2/surfdata_map/surfdata_0.25x0.25_simyr2010_c240206_TOP.nc</fsurdat>
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c230922_with_TOP.nc</fsurdat>
+<fsurdat hgrid="1.9x2.5">surfdata_1.9x2.5_SSP2_RCP45_simyr2015_c260422_with_TOP_ncremap_0.9x1.25.nc</fsurdat>
+
+<!-- *** NOT USED FOR SATELLITE PHENOLOGY ***-->
+<stream_year_first_ndep phys="elm" use_cn=".true."   >2015</stream_year_first_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true."   >2100</stream_year_last_ndep>
+<model_year_align_ndep  phys="elm" use_cn=".true."   >2015</model_year_align_ndep>
 
 <stream_year_first_pdep phys="elm" use_cn=".true."   >2000</stream_year_first_pdep>
 <stream_year_last_pdep  phys="elm" use_cn=".true."   >2000</stream_year_last_pdep>
 <model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
+<stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_ssp370_c220614.nc</stream_fldfilename_ndep>
 
-<stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
-<model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
--->
-
-
-<!-- CMIP6 DECK compsets -->
-
-<fsurdat>lnd/clm2/surfdata_map/surfdata_0.9x1.25_SSP3_RCP70_simyr2015_c240918.nc </fsurdat>
+<stream_year_first_popdens phys="elm" use_cn=".true."   >2015</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true."   >2100</stream_year_last_popdens>
+<model_year_align_popdens  phys="elm" use_cn=".true."   >2015</model_year_align_popdens>
+<stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp3_hdm_0.5x0.5_simyr1850-2101_c20200624.nc</stream_fldfilename_popdens>
 
 <!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->
 
 <check_finidat_fsurdat_consistency>.false.</check_finidat_fsurdat_consistency>
-<check_finidat_year_consistency>.true.</check_finidat_year_consistency>
+<check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <check_finidat_pct_consistency>.true.</check_finidat_pct_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
+
 <do_transient_pfts>.false.</do_transient_pfts>
+<do_transient_crops>.false.</do_transient_crops>
+<do_budgets>.true.</do_budgets>
+<do_harvest>.false.</do_harvest>
 
 </namelist_defaults>

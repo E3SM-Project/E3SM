@@ -17,6 +17,18 @@ set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 ctest_start(${dashboard_model} TRACK ${dashboard_track})
 
+# Add some exception rules for ctest automatic error detection
+# These are strings in the build output that ctest mistakenly
+# interprets as errors
+list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
+  ".*error_handler.*"
+  ".*spdlog/fmt/bundled/format.h.*"
+)
+
+if (USE_NINJA)
+  set (CTEST_CMAKE_GENERATOR Ninja)
+endif()
+
 separate_arguments(OPTIONS_LIST UNIX_COMMAND "${CMAKE_COMMAND}")
 ctest_configure(OPTIONS "${OPTIONS_LIST}" RETURN_VALUE CONFIG_ERROR_CODE)
 

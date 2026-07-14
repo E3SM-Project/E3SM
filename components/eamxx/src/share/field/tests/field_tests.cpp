@@ -36,6 +36,10 @@ TEST_CASE("field", "") {
 
     f1.allocate_view();
 
+    // Cannot get view using wrong scalar type (even if of same sizeof)
+    using same_sz_int = std::conditional_t<sizeof(Real)==8,std::int64_t,int>;
+    REQUIRE_THROWS(f1.get_view<same_sz_int**>());
+
     // Reshape should work with both dynamic and static dims
     auto v1 = f1.get_view<Real[3][24]>();
     auto v2 = f1.get_view<Real**>();
@@ -93,11 +97,35 @@ TEST_CASE("field", "") {
     fap1.request_allocation(16);
     f1.allocate_view();
     f1.deep_copy(3.0);
+    auto ts = util::TimeStamp(2022,1,2,3,4,5);
+    f1.get_header().get_tracking().update_time_stamp(ts);
 
-    Field f2 = f1.clone();
+    Field f_none = f1.clone();
+    REQUIRE(f_none.is_allocated());
+    REQUIRE(f_none.get_header().get_alloc_properties().get_largest_pack_size()==1);
+    REQUIRE(!f_none.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_alloc = f1.clone(CloneFlags::MatchPacking);
+    REQUIRE(f_alloc.is_allocated());
+    REQUIRE(f_alloc.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_alloc.get_header().get_tracking().get_time_stamp().is_valid());
+
+    Field f_ts = f1.clone(CloneFlags::CopyTimeStamp);
+    REQUIRE(f_ts.is_allocated());
+    REQUIRE(f_ts.get_header().get_tracking().get_time_stamp()==ts);
+    REQUIRE(f_ts.get_header().get_alloc_properties().get_largest_pack_size()==1);
+
+    Field f_data = f1.clone(CloneFlags::MatchPacking | CloneFlags::CopyData);
+    REQUIRE(f_data.is_allocated());
+    REQUIRE(f_data.get_header().get_alloc_properties().get_largest_pack_size()==16);
+    REQUIRE(!f_data.get_header().get_tracking().get_time_stamp().is_valid());
+    REQUIRE(views_are_equal(f1,f_data));
+
+    Field f2 = f1.clone(CloneFlags::All);
     auto& fap2 = f2.get_header().get_alloc_properties();
     REQUIRE(f2.is_allocated());
     REQUIRE(fap2.get_alloc_size()==fap1.get_alloc_size());
+    REQUIRE(f2.get_header().get_tracking().get_time_stamp()==ts);
     REQUIRE(views_are_equal(f1,f2));
 
     // Changing f2 should leave f1 unchanged
@@ -126,6 +154,25 @@ TEST_CASE("field", "") {
     // Check extra data is also shared
     f1.get_header().set_extra_data("foo",1);
     REQUIRE (f2.get_header().has_extra_data("foo"));
+
+    // alias with tag renaming: COL -> "ncol_d", LEV -> "lev_d"
+    std::map<FieldTag,std::string> tag_names = {{COL,"ncol_d"},{LEV,"lev_d"}};
+    Field f3 = f1.alias("renamed_alias", tag_names);
+
+    REQUIRE(f3.is_allocated());
+    REQUIRE(&f1.get_header().get_tracking()==&f3.get_header().get_tracking());
+    REQUIRE(&f1.get_header().get_alloc_properties()==&f3.get_header().get_alloc_properties());
+    REQUIRE(f1.get_internal_view_data<Real>()==f3.get_internal_view_data<Real>());
+    // Tags (FieldTag enum values) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().tags()==f3.get_header().get_identifier().get_layout().tags());
+    // Dims (extents) are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().dims()==f3.get_header().get_identifier().get_layout().dims());
+    // Names are renamed
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(0)=="ncol_d");
+    REQUIRE(f3.get_header().get_identifier().get_layout().name(1)=="lev_d");
+    // Original field's names are unchanged
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(0)=="ncol");
+    REQUIRE(f1.get_header().get_identifier().get_layout().name(1)=="lev");
   }
 
   SECTION ("is_aliasing") {
@@ -228,12 +275,12 @@ TEST_CASE("field", "") {
 
   SECTION ("rank0_field") {
     // Create 0d field
-    FieldIdentifier fid0("f_0d", FieldLayout({},{}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid0("f_0d", FieldLayout({},{}), none, "dummy_grid");
     Field f0(fid0);
     f0.allocate_view();
 
     // Create 1d field
-    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), Units::nondimensional(), "dummy_grid");
+    FieldIdentifier fid1("f_1d", FieldLayout({COL}, {5}), none, "dummy_grid");
     Field f1(fid1);
     f1.allocate_view();
 
@@ -270,6 +317,75 @@ TEST_CASE("field", "") {
     REQUIRE (not f.is_allocated());
     // Attempting to allocate should fail
     REQUIRE_THROWS (f.allocate_view());
+  }
+
+  SECTION ("shallow_const") {
+    // Manipulation methods should be callable on const Field objects,
+    // since Field uses a "shallow const" design (like Kokkos::View).
+    Field f(fid, true);
+
+    // Bind a const reference to the allocated field
+    const Field& cf = f;
+
+    // All manipulation methods should compile and run on a const Field
+    cf.deep_copy(1.0);
+    cf.scale(2.0);
+    cf.add_scalar(-1.0);
+    cf.update(cf, 0.0, 1.0);
+
+    // Verify effect: f started at 1.0, scale(2.0) -> 2.0,
+    // add_scalar(-1.0) -> 1.0, update(cf,0,1) -> 1.0
+    cf.sync_to_host();
+    {
+      auto v = cf.get_view<Real**,Host>();
+      for (int i=0; i<dims[0]; ++i)
+        for (int j=0; j<dims[1]; ++j)
+          REQUIRE (v(i,j)==1.0);
+    }
+
+    // A read-only field should throw on any manipulation method
+    const Field ro = f.get_const();
+    REQUIRE_THROWS (ro.deep_copy(0.0));
+    REQUIRE_THROWS (ro.deep_copy(f.clone()));
+    REQUIRE_THROWS (ro.scale(1.0));
+    REQUIRE_THROWS (ro.scale(f));
+    REQUIRE_THROWS (ro.scale_inv(f));
+    REQUIRE_THROWS (ro.update(f, 1.0, 0.0));
+    REQUIRE_THROWS (ro.add_scalar(0.0));
+    REQUIRE_THROWS (ro.max(f));
+    REQUIRE_THROWS (ro.min(f));
+
+    // But if rhs aliases lhs, deep_copy is skipped, so it should not throw
+    REQUIRE_NOTHROW(ro.deep_copy(ro.alias("")));
+  }
+
+  SECTION ("valid_mask") {
+    auto mfid = fid.clone("mask").reset_dtype(DataType::IntType);
+    auto ml = mfid.get_layout();
+
+    Field f1(fid,true);
+    REQUIRE (not f1.has_valid_mask());
+    REQUIRE_THROWS (f1.get_valid_mask()); // no mask stored
+
+    Field badm1(mfid.clone().reset_layout(ml.clone().reset_dim(0,999)),true);
+    Field badm2(mfid.clone().reset_dtype(DataType::RealType),true);
+    REQUIRE_THROWS (f1.set_valid_mask(badm1)); // bad mask layout
+    REQUIRE_THROWS (f1.set_valid_mask(badm2)); // bad mask dtype
+
+    f1.create_valid_mask();
+    REQUIRE_THROWS(f1.create_valid_mask());              // mask already set
+    REQUIRE_THROWS(f1.set_valid_mask(Field(mfid,true))); // mask already set
+
+    Field f2(fid,true),f3(fid,true);
+    f2.create_valid_mask(Field::MaskInit::Valid);
+    f3.create_valid_mask("my_mask",Field::MaskInit::Invalid);
+
+    Field ones(mfid,true), zeros(mfid,true);
+    ones.deep_copy(1);
+    zeros.deep_copy(0);
+    REQUIRE (views_are_equal(f2.get_valid_mask(),ones));
+    REQUIRE (views_are_equal(f3.get_valid_mask(),zeros));
+    REQUIRE (f3.get_valid_mask().name()=="my_mask");
   }
 }
 

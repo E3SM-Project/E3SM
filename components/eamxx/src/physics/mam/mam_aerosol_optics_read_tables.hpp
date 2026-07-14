@@ -4,9 +4,8 @@
 #include "mam_coupling.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
-#include "share/data_managers/grids_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_parameter_list.hpp>
 
@@ -18,21 +17,20 @@ make_field (const std::string& name,
             const FieldLayout& layout,
             const std::shared_ptr<const AbstractGrid>& grid)
 {
-  const auto units = ekat::units::Units::nondimensional();
-  FieldIdentifier fid(name,layout,units,grid->name());
+  FieldIdentifier fid(name,layout,ekat::units::none,grid->name());
   Field f(fid);
   f.allocate_view();
   return f;
 };
 
-using view_2d_host    = typename KT::view_2d<Real>::HostMirror;
-using view_5d_host    = typename KT::view_ND<Real, 5>::HostMirror;
+using view_2d_host    = typename KT::view_2d<Real>::host_mirror_type;
+using view_5d_host    = typename KT::view_ND<Real, 5>::host_mirror_type;
 using complex_view_1d = typename KT::view_1d<Kokkos::complex<Real>>;
 
-constexpr int nlwbands = mam4::modal_aer_opt::nlwbands;
-constexpr int nswbands = mam4::modal_aer_opt::nswbands;
+constexpr int nlwbands = mam4::modal_aero_opt::nlwbands;
+constexpr int nswbands = mam4::modal_aero_opt::nswbands;
 
-using AerosolOpticsDeviceData = mam4::modal_aer_opt::AerosolOpticsDeviceData;
+using AerosolOpticsDeviceData = mam4::modal_aero_opt::AerosolOpticsDeviceData;
 
 inline std::map<std::string,Field>
 create_optics_fields(const std::shared_ptr<const AbstractGrid> &grid)
@@ -40,9 +38,9 @@ create_optics_fields(const std::shared_ptr<const AbstractGrid> &grid)
   // Set up input structure to read data from file.
   using namespace ShortFieldTagsNames;
 
-  constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
-  constexpr int refindex_im   = mam4::modal_aer_opt::refindex_im;
-  constexpr int coef_number   = mam4::modal_aer_opt::coef_number;
+  constexpr int refindex_real = mam4::modal_aero_opt::refindex_real;
+  constexpr int refindex_im   = mam4::modal_aero_opt::refindex_im;
+  constexpr int coef_number   = mam4::modal_aero_opt::coef_number;
 
   auto make_layout = [](const std::vector<int> &extents,
                         const std::vector<std::string> &names) {
@@ -85,19 +83,18 @@ inline void read_rrtmg_table(
     const std::shared_ptr<const AbstractGrid> &grid,
     const std::map<std::string,Field> &aerosol_optics_fields,
     const AerosolOpticsDeviceData &aerosol_optics_device_data) {
-  constexpr int refindex_real = mam4::modal_aer_opt::refindex_real;
-  constexpr int refindex_im   = mam4::modal_aer_opt::refindex_im;
-  constexpr int coef_number   = mam4::modal_aer_opt::coef_number;
+  constexpr int refindex_real = mam4::modal_aero_opt::refindex_real;
+  constexpr int refindex_im   = mam4::modal_aero_opt::refindex_im;
+  constexpr int coef_number   = mam4::modal_aero_opt::coef_number;
 
-  using view_3d_host = typename KT::view_3d<Real>::HostMirror;
+  using view_3d_host = typename KT::view_3d<Real>::host_mirror_type;
 
   // temp views:
   view_3d_host temp_lw_3d_host("temp_absplw_host", coef_number, refindex_real,
                                refindex_im);
 
-  AtmosphereInput rrtmg(table_filename, grid, aerosol_optics_fields, true);
-  rrtmg.read_variables();
-  rrtmg.finalize();
+  // NOTE: no need to set decomp gids, since these fields are NOT decomposed
+  read_fields(table_filename,aerosol_optics_fields);
 
   // copy data from host to device for mode 1
   // TODO: why can't we copy device data directly?
@@ -223,10 +220,8 @@ inline void read_water_refindex(const std::string &table_filename,
     refindex_real_water_lw
   };
 
-  // create a object to read data
-  AtmosphereInput refindex_water(table_filename, grid, fields, true);
-  refindex_water.read_variables();
-  refindex_water.finalize();
+  // NOTE: no need to pass the gids, as these fields are not decomposed
+  read_fields(table_filename, fields);
 
   //  maybe make a 1D vied of Kokkos::complex<Real>
   const auto crefwlw_host = Kokkos::create_mirror_view(crefwlw);
@@ -238,14 +233,14 @@ inline void read_water_refindex(const std::string &table_filename,
   for(int i = 0; i < nlwbands; ++i) {
     // Kokkos::complex<Real> temp;
     crefwlw_host(i).real() = refindex_real_water_lw_host(i);
-    crefwlw_host(i).imag() = haero::abs(refindex_im_water_lw_host(i));
+    crefwlw_host(i).imag() = mam4::abs(refindex_im_water_lw_host(i));
   }
   Kokkos::deep_copy(crefwlw, crefwlw_host);
   // set complex representation of refractive indices as module data
   for(int i = 0; i < nswbands; ++i) {
     // Kokkos::complex<Real> temp;
     crefwsw_host(i).real() = refindex_real_water_sw_host(i);
-    crefwsw_host(i).imag() = haero::abs(refindex_im_water_sw_host(i));
+    crefwsw_host(i).imag() = mam4::abs(refindex_im_water_sw_host(i));
   }
   Kokkos::deep_copy(crefwsw, crefwsw_host);
 }
@@ -277,9 +272,9 @@ create_refindex_fields (const std::string& surname,
 inline void set_refindex_aerosol(
     const int species_id,
     std::map<std::string, Field> fields,
-    mam_coupling::complex_view_2d::HostMirror
+    mam_coupling::complex_view_2d::host_mirror_type
         &specrefndxsw_host,  // complex refractive index for water visible
-    mam_coupling::complex_view_2d::HostMirror &specrefndxlw_host)
+    mam_coupling::complex_view_2d::host_mirror_type &specrefndxlw_host)
 {
   std::string sw_real_name = "refindex_real_aer_sw";
   std::string lw_real_name = "refindex_real_aer_lw";
@@ -290,13 +285,13 @@ inline void set_refindex_aerosol(
     auto sw_real_h = fields[sw_real_name].get_view<const Real*,Host>();
     auto sw_im_h   = fields[sw_im_name].get_view<const Real*,Host>();
     specrefndxsw_host(i, species_id).real() = sw_real_h(i);
-    specrefndxsw_host(i, species_id).imag() = haero::abs(sw_im_h(i));
+    specrefndxsw_host(i, species_id).imag() = mam4::abs(sw_im_h(i));
   }
   for(int i = 0; i < nlwbands; i++) {
     auto lw_real_h = fields[lw_real_name].get_view<const Real*,Host>();
     auto lw_im_h   = fields[lw_im_name].get_view<const Real*,Host>();
     specrefndxlw_host(i, species_id).real() = lw_real_h(i);
-    specrefndxlw_host(i, species_id).imag() = haero::abs(lw_im_h(i));
+    specrefndxlw_host(i, species_id).imag() = mam4::abs(lw_im_h(i));
   }
 
 }  // copy_refindex_to_device

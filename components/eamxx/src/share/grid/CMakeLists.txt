@@ -9,7 +9,7 @@ target_link_libraries (eamxx_grid PUBLIC
   eamxx_core
   eamxx_utils
   eamxx_field
-  eamxx_scorpio_interface)
+)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

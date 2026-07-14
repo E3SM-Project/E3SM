@@ -77,6 +77,9 @@ public:
   // Create invalid layout
   static FieldLayout invalid () { return FieldLayout({FieldTag::Invalid},{0}); }
 
+  // Create scalar layout
+  static FieldLayout scalar () { return FieldLayout({},{}); }
+
   // ----- Getters ----- //
 
   LayoutType type () const { return m_type; }
@@ -101,7 +104,7 @@ public:
   int dim (const int idim) const;
   const std::vector<int>& dims () const { return m_dims; }
   const extents_type& extents () const { return m_extents; }
-  const extents_type::HostMirror& extents_h () const { return m_extents_h; }
+  const extents_type::host_mirror_type& extents_h () const { return m_extents_h; }
 
   long long  size () const;
 
@@ -144,6 +147,7 @@ public:
   // These overload allow to remove/rename dims *if found*. They won't throw if layout does not have them
   FieldLayout& strip_dims (const std::vector<FieldTag>& tags); // Does not throw if not found
   FieldLayout& rename_dims (const std::map<FieldTag,std::string>& new_names); // Does not throw if not found
+  FieldLayout& rename_dims (const std::map<std::string,std::string>& new_names); // Does not throw if not found
 
   FieldLayout clone() const;
   FieldLayout transpose () const;
@@ -166,12 +170,13 @@ protected:
   std::vector<std::string>  m_names;
   std::vector<int>          m_dims;
   extents_type              m_extents;
-  extents_type::HostMirror  m_extents_h;
+  extents_type::host_mirror_type  m_extents_h;
 
   LayoutType                m_type;
 };
 
 bool operator== (const FieldLayout& fl1, const FieldLayout& fl2);
+inline bool operator!= (const FieldLayout& fl1, const FieldLayout& fl2) { return not (fl1==fl2); }
 
 // ========================== IMPLEMENTATION ======================= //
 

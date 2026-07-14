@@ -252,12 +252,12 @@ OPTION(HOMME_USE_MKL "Whether to use Intel's MKL/oneMKL instead of blas/lapack" 
 IF(HOMME_USE_MKL)
   IF(DEFINED ENV{MKLROOT})
     SET(MKL_ROOT_PATH "$ENV{MKLROOT}")
-    IF(MKL_ROOT_PATH MATCHES "oneapi/mkl")
-      SET(MKL_TYPE "oneMKL")
+    IF(MKL_ROOT_PATH MATCHES "oneapi")
+      SET(MKL_TYPE "oneMKL" CACHE INTERNAL "")
       MESSAGE(STATUS "Detected oneMKL based on MKLROOT: ${MKL_ROOT_PATH}")
       FIND_PACKAGE(MKL REQUIRED $ENV{MKLROOT}/lib/cmake/mkl)
     ELSE()
-      SET(MKL_TYPE "Intel MKL")
+      SET(MKL_TYPE "Intel MKL" CACHE INTERNAL "")
       MESSAGE(STATUS "Detected standalone Intel MKL based on MKLROOT: ${MKL_ROOT_PATH}")
     ENDIF()
   ELSE()
@@ -483,6 +483,17 @@ IF (HOMME_USE_KOKKOS)
     # For instance, if HOMME is built inside EAMxx, Kokkos will already be available
     include (EkatBuildKokkos)
   endif()
+
+  # Add --fmad=false for BFB and CUDA
+  if (HOMMEXX_BFB_TESTING AND Kokkos_ENABLE_CUDA AND TARGET kokkoscore)
+    include (EkatSetCompilerFlags)
+    if (Kokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE)
+      SetCudaFlags(kokkoscore CUDA_LANG FLAGS --fmad=false)
+    else()
+      SetCudaFlags(kokkoscore FLAGS --fmad=false)
+    endif()
+  endif()
+
 ENDIF ()
 
 # This folder contains the CMake macro used to build cxx unit tests

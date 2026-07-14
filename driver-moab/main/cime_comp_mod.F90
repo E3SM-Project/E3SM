@@ -118,6 +118,10 @@ module cime_comp_mod
   use seq_infodata_mod, only: seq_infodata_init, seq_infodata_exchange
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_orb_variable_year
   use seq_infodata_mod, only: seq_infodata_print, seq_infodata_init2
+  use seq_infodata_mod, only: nlmaps_exclude_max_number, nlmaps_exclude_nchar
+
+  ! nonlinear maps
+  use seq_nlmap_mod, only : seq_nlmap_setopts, seq_nlmap_init_a2oi_cons, seq_nlmap_init_a2l_cons
 
   ! domain related routines
   use seq_domain_mct, only : seq_domain_check_moab
@@ -126,7 +130,7 @@ module cime_comp_mod
   use seq_hist_mod, only : seq_hist_write, seq_hist_writeavg, seq_hist_writeaux
 
   ! restart file routines
-  use seq_rest_mod, only : seq_rest_read, seq_rest_mb_read, seq_rest_write, seq_rest_mb_write
+  use seq_rest_mod, only : seq_rest_mb_read, seq_rest_mb_write
 #ifdef MOABDEBUG
   use seq_rest_mod, only : write_moab_state
   use iMOAB, only: iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
@@ -149,12 +153,12 @@ module cime_comp_mod
   use cplcomp_exchange_mod, only: seq_mctext_decomp
 
   ! diagnostic routines
-  use seq_diag_mct, only : seq_diag_zero_mct , seq_diag_avect_mct, seq_diag_lnd_mct
-  use seq_diag_mct, only : seq_diag_rof_mct  , seq_diag_ocn_mct  , seq_diag_atm_mct
-  use seq_diag_mct, only : seq_diag_ice_mct  , seq_diag_accum_mct, seq_diag_print_mct
-  use seq_diagBGC_mct, only : seq_diagBGC_zero_mct , seq_diagBGC_avect_mct, seq_diagBGC_lnd_mct
-  use seq_diagBGC_mct, only : seq_diagBGC_rof_mct  , seq_diagBGC_ocn_mct  , seq_diagBGC_atm_mct
-  use seq_diagBGC_mct, only : seq_diagBGC_ice_mct  , seq_diagBGC_accum_mct
+  use seq_diag_moab, only : seq_diag_zero_moab, seq_diag_lnd_moab
+  use seq_diag_moab, only : seq_diag_rof_moab , seq_diag_ocn_moab, seq_diag_atm_moab
+  use seq_diag_moab, only : seq_diag_ice_moab , seq_diag_accum_moab, seq_diag_print_moab
+  use seq_diagBGC_moab, only : seq_diagBGC_zero_moab, seq_diagBGC_lnd_moab
+  use seq_diagBGC_moab, only : seq_diagBGC_rof_moab  , seq_diagBGC_ocn_moab, seq_diagBGC_atm_moab
+  use seq_diagBGC_moab, only : seq_diagBGC_ice_moab  , seq_diagBGC_accum_moab
 
   ! list of fields transferred between components
   use seq_flds_mod, only : seq_flds_a2x_fluxes, seq_flds_x2a_fluxes
@@ -175,7 +179,7 @@ module cime_comp_mod
   use component_mod,      only: component_init_pre
   use component_mod,      only: component_init_cc, component_init_cx
   use component_mod,      only: component_run, component_final
-  use component_mod,      only: component_init_areacor, component_init_aream
+  use component_mod,      only: component_init_aream
   use component_mod,      only: component_init_areacor_moab
   use component_mod,      only: component_exch, component_diag
   use cplcomp_exchange_mod,      only: component_exch_moab
@@ -206,10 +210,7 @@ module cime_comp_mod
 
   use shr_moab_mod
 
-#ifdef MOABDEBUGMCT
-  ! --- expose grid with MOAB
-  use component_type_mod , only: expose_mct_grid_moab
-#endif
+
 
   use iso_c_binding
 
@@ -469,6 +470,8 @@ module cime_comp_mod
   logical  :: glcshelf_c2_ocn        ! .true.  => glc ice shelf to ocn coupling on
   logical  :: glcshelf_c2_ice        ! .true.  => glc ice shelf to ice coupling on
   logical  :: wav_c2_ocn             ! .true.  => wav to ocn coupling on
+  logical  :: wav_c2_atm             ! .true.  => wav to atm coupling on
+  logical  :: wav_c2_ice             ! .true.  => wav to ice coupling on
 
   logical  :: iac_c2_lnd             ! .true.  => iac to lnd coupling on
   logical  :: iac_c2_atm             ! .true.  => iac to atm coupling on
@@ -649,7 +652,7 @@ module cime_comp_mod
   logical  :: iamin_CPLALLWAVID     ! pe associated with CPLALLWAVID
   logical  :: iamin_CPLALLIACID     ! pe associated with CPLALLIACID
 
-  integer  :: atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
+  integer  :: cpl_rootpe,atm_rootpe,lnd_rootpe,ice_rootpe,ocn_rootpe,&
               glc_rootpe,rof_rootpe,wav_rootpe,iac_rootpe
 
   !----------------------------------------------------------------------------
@@ -675,6 +678,37 @@ module cime_comp_mod
   integer, parameter :: comp_num_iac = 9
 
   !----------------------------------------------------------------------------
+  ! Data structures and parameters for rpointer-consistency management.
+  !----------------------------------------------------------------------------
+  ! The number of components, including the driver. This should be 1 more than
+  ! the maximum comp_num_x integer.
+  integer, parameter :: rpointer_ncomp = 10
+  ! Suffixes x for rpointer.x files.
+  character(3), parameter :: rpointer_suffixes(rpointer_ncomp) = &
+       ['atm', 'lnd', 'ice', 'ocn', 'glc', 'rof', 'wav', 'esp', 'iac', 'drv']
+  ! Wrapper to a clock pointer.
+  type, private :: EClockPointer_t
+     type (ESMF_Clock), pointer :: ptr
+  end type EClockPointer_t
+  ! Manager data structure.
+  type, private :: RpointerMgr_t
+     ! Number of components active.
+     integer :: npresent
+     ! Program state variable.
+     logical :: remove_prev_in_next_call
+     ! Component i is present.
+     logical :: cpresent(rpointer_ncomp)
+     ! Component i's restart alarm rang.
+     logical :: rang(rpointer_ncomp)
+     ! Component i's clock.
+     type (EClockPointer_t) :: clock(rpointer_ncomp)
+     ! Verbosity flag
+     logical :: verbose
+  end type RpointerMgr_t
+  ! Manager object.
+  type (RpointerMgr_t) :: rpointer_mgr
+
+  !----------------------------------------------------------------------------
   ! misc
   !----------------------------------------------------------------------------
 
@@ -685,7 +719,7 @@ module cime_comp_mod
   !----------------------------------------------------------------------------
   ! formats
   !----------------------------------------------------------------------------
-  character(*), parameter :: subname = '(moab_driver)'
+  character(*), parameter :: subname = '(cpl7moab_driver)'
   character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
   character(*), parameter :: F0L = "('"//subname//" : ', A, L6 )"
   character(*), parameter :: F01 = "('"//subname//" : ', A, 2i8, 3x, A )"
@@ -702,7 +736,8 @@ module cime_comp_mod
   character(100) :: tagname
   type(mct_aVect) , pointer :: a2x_aa => null()
 #endif
-  real(r8) , pointer :: a2x_ox_tag_vals(:,:) ! a2x-ox tags
+  real(r8) , pointer :: a2x_ox_tag_vals(:,:)     ! a2x-ox tags (accumulated, pre-mapping)
+  real(r8) , pointer :: a2x_ox_new_tag_vals(:,:) ! a2x-ox tags (new, post-mapping)
   integer ::   a2x_ox_size
   !===============================================================================
 contains
@@ -719,7 +754,7 @@ contains
     use mpi
 #endif
     !----------------------------------------------------------
-    !| Initialize MCT and MPI communicators and IO
+    !| Initialize MOAB and MPI communicators and IO
     !----------------------------------------------------------
 
     character(CS), intent(out) :: esmf_log_option    ! For esmf_logfile_kind
@@ -764,7 +799,7 @@ contains
 
     call shr_pio_init1(num_inst_total,NLFileName, driver_comm)
 
-    !--- Initialize communicators, layouts, MCT
+    !--- Initialize communicators, layouts
     !--- Init MOAB
     if (num_inst_driver > 1) then
        call seq_comm_init(global_comm, driver_comm, NLFileName, drv_comm_ID=driver_id)
@@ -795,6 +830,7 @@ contains
     comp_iamin(it) = seq_comm_iamin(comp_id(it))
     comp_name(it)  = seq_comm_name(comp_id(it))
 
+    cpl_rootpe = seq_comm_gloroot(CPLID)
     atm_rootpe = seq_comm_gloroot(ALLATMID)
     lnd_rootpe = seq_comm_gloroot(ALLLNDID)
     ice_rootpe = seq_comm_gloroot(ALLICEID)
@@ -972,14 +1008,12 @@ contains
     !----------------------------------------------------------
 
     if (iamroot_CPLID) then
-#ifdef USE_ESMF_LIB
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is set'
-#else
-       write(logunit,'(2A)') subname,' USE_ESMF_LIB is NOT set, using esmf_wrf_timemgr'
-#endif
-       write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
-       if (num_inst_driver > 1) &
-            write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
+       write(logunit,'(2A)') subname,' Using esmf_wrf_timemgr'
+       write(logunit,'(2A)') subname,' CPL7-MOAB interface is set'
+       if (num_inst_driver > 1) then
+            write(logunit,'(2A,I0,A)') subname,' driver-moab does not yet support multi-driver'
+            call shr_sys_abort( subname//':: Multi-driver not supported')
+       endif
     endif
 
     !----------------------------------------------------------
@@ -1065,6 +1099,8 @@ contains
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
+    logical :: nlmaps_atm2srf_conserve
+    character(nlmaps_exclude_nchar) :: nlmaps_exclude_fields(nlmaps_exclude_max_number)
 
     !----------------------------------------------------------
     !| Timer initialization (has to be after mpi init)
@@ -1105,6 +1141,13 @@ contains
 
     !mt   call shr_mem_init(prt=.true.)
     call shr_mem_init(prt=iamroot_CPLID)
+
+    !----------------------------------------------------------
+    !| Prepare consistent rpointer.x files
+    !----------------------------------------------------------
+    ! This call must be made before the seq_infodata_init call below to make
+    ! rpointer.drv consistent.
+    call rpointer_prepare_restart()
 
     !----------------------------------------------------------
     !| Initialize infodata
@@ -1217,7 +1260,9 @@ contains
          reprosum_allow_infnan=reprosum_allow_infnan, &
          reprosum_diffmax=reprosum_diffmax         , &
          reprosum_recompute=reprosum_recompute     , &
-         max_cplstep_time=max_cplstep_time)
+         max_cplstep_time=max_cplstep_time         , &
+         nlmaps_atm2srf_conserve=nlmaps_atm2srf_conserve, &
+         nlmaps_exclude_fields=nlmaps_exclude_fields)
 
     ! above - cpl_decomp is set to pass the cpl_decomp value to seq_mctext_decomp
     ! (via a use statement)
@@ -1229,6 +1274,9 @@ contains
          repro_sum_allow_infnan_in = reprosum_allow_infnan, &
          repro_sum_rel_diff_max_in = reprosum_diffmax, &
          repro_sum_recompute_in    = reprosum_recompute)
+
+    call seq_nlmap_setopts(nlmaps_exclude_fields_in = nlmaps_exclude_fields, &
+         nlmaps_atm2srf_conserve_in = nlmaps_atm2srf_conserve)
 
     ! Check cpl_seq_option
 
@@ -1454,11 +1502,10 @@ contains
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
-#ifdef MOABDEBUGMCT
-    integer :: dummy_iMOAB
-#endif
+
     integer :: nfields, numpts
     type(mct_list) :: temp_list
+    type(seq_map), pointer :: mapper_lcl
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -1573,21 +1620,15 @@ contains
    !---------------------------------------------------------------------------------------
    ! Initialize coupler-component data
    !  if processor has cpl or model
-   !    init the extended gsMap that describes comp on mpijoin
    !    call call cplcomp_moab_Init and use infodata
-   !    MOAB: on component, send mesh (except lnd and rof).
+   !       on component, send mesh (except lnd and rof).
    !       on coupler, register coupler version
-   !       of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
-   !       send/receive of the mesh. For atm compute an additional CommGraph between physgrid on comp atm side
-   !       and mesh on coupler side
-   !    MOAB: for lnd and rof, read the mesh on coupler side from file and
+   !         of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
+   !         send/receive of the mesh.
+   !       for lnd and rof, read the mesh on coupler side from file and
    !         compute CommGraph between component (just a point cloud) and coupler version (full mesh)
-   !    MOAB: define c2x, x2c, domain tags
-   !    init the mappers that go between comp and coupler instances of mesh
-   !        these will be rearranger-type mappers since the meshss are the same
-   !    initialize extended Avs to match extended GsMaps
-   !    initialize extended domain
-   !    fill coupler domain with data using a map_exchange call (copy or rearrange only)
+   !       define c2x, x2c, domain tags
+   !       Fill domain info from component using component_exch_moab
    !---------------------------------------------------------------------------------------
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
@@ -1743,6 +1784,11 @@ contains
          iac_nx=iac_nx, iac_ny=iac_ny,          &
          atm_aero=atm_aero )
 
+    ! Initialize the rpointer manager. This is called after the restart routine
+    ! because we need to be further along in initialization to fully initialize
+    ! the manager. The restart routine doesn't need the initialized manager.
+    call rpointer_init_manager()
+
     ! derive samegrid flags
 
     samegrid_ao  = .true.
@@ -1798,6 +1844,8 @@ contains
     glcshelf_c2_ocn = .false.
     glcshelf_c2_ice = .false.
     wav_c2_ocn = .false.
+    wav_c2_atm = .false.
+    wav_c2_ice = .false.
     iac_c2_atm = .false.
     iac_c2_lnd = .false.
     lnd_c2_iac = .false.
@@ -1848,7 +1896,9 @@ contains
        if (glcice_present .and. iceberg_prognostic) glc_c2_ice = .true.
     endif
     if (wav_present) then
+       if (atm_prognostic) wav_c2_atm = .true.
        if (ocn_prognostic) wav_c2_ocn = .true.
+       if (ice_prognostic) wav_c2_ice = .true.
     endif
     if (iac_present) then
        if (lnd_prognostic) iac_c2_lnd = .true.
@@ -1936,6 +1986,8 @@ contains
        write(logunit,F0L)'glcshelf_c2_ocn       = ',glcshelf_c2_ocn
        write(logunit,F0L)'glcshelf_c2_ice       = ',glcshelf_c2_ice
        write(logunit,F0L)'wav_c2_ocn            = ',wav_c2_ocn
+       write(logunit,F0L)'wav_c2_atm            = ',wav_c2_atm
+       write(logunit,F0L)'wav_c2_ice            = ',wav_c2_ice
        write(logunit,F0L)'iac_c2_lnd            = ',iac_c2_lnd
        write(logunit,F0L)'iac_c2_atm            = ',iac_c2_atm
 
@@ -2086,7 +2138,7 @@ contains
 
        ! init maps for SFo2i, Rg2i, Sg2i, Fg2i, Rr2i
        ! MOABTODO:  ocn 2 ice intx, r2i intx ?
-       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
+       call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice, wav_c2_ice)
 
        ! init maps for Sa2r, Fa2r, Fl2r
        ! MOABTODO:  l2r intx, a2r intx
@@ -2187,35 +2239,29 @@ contains
     num_moab_exports = 0
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
-    ! send initial data to coupler
     if (atm_present) call component_init_areacor_moab(atm, areafact_samegrid, mphaid, mbaxid, seq_flds_a2x_fluxes, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
-    ! MOABTODO : lnd is vertex or cell ?
     if (lnd_present) call component_init_areacor_moab(lnd, areafact_samegrid, mlnid, mblxid, seq_flds_l2x_fluxes, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
     if (rof_present) call component_init_areacor_moab(rof, areafact_samegrid, mrofid, mbrxid, seq_flds_r2x_fluxes, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
     if (ocn_present) call component_init_areacor_moab(ocn, areafact_samegrid, mpoid, mboxid, seq_flds_o2x_fluxes, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
     if (ice_present) call component_init_areacor_moab(ice, areafact_samegrid, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
 
+    ! MOAB TODO: convert these to moab
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
+    !if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
+    !if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
 
     call mpi_barrier(mpicom_GLOID,ierr)
-    if (iac_present) call component_init_areacor(iac, areafact_samegrid, seq_flds_z2x_fluxes)
+    !if (iac_present) call component_init_areacor(iac, areafact_samegrid, seq_flds_z2x_fluxes)
 
     call t_adj_detailf(-2)
     call t_stopf ('CPL:init_areacor')
@@ -2409,6 +2455,20 @@ contains
     endif
 
     !----------------------------------------------------------
+    !| Initialize atm/srf exact mass conservation if requested
+    !----------------------------------------------------------
+
+    if (iamin_CPLID) then
+       if (atm_present .and. ocn_present .and. lnd_present .and. ice_present) then
+          ! Returns immediately if atm2srf_conserve is .false.
+          mapper_lcl => prep_lnd_get_mapper_Fa2l()
+          call seq_nlmap_init_a2l_cons(mapper_lcl, fractions_ax)
+          mapper_lcl => prep_ocn_get_mapper_Fa2o()
+          call seq_nlmap_init_a2oi_cons(mapper_lcl, fractions_ax)
+       end if
+    end if
+
+    !----------------------------------------------------------
     !| ATM PREP for recalculation of initial solar
     !  Note that ocean albedos are ALWAYS CALCULATED on the ocean grid
     !  If aoflux_grid = 'ocn' , xao_ox is input for atm/ocn fluxes and xao_ax is output
@@ -2452,10 +2512,7 @@ contains
              xao_ax => prep_aoflux_get_xao_ax()
              if (associated(xao_ax)) then
                 ! will call prep_atm_merge for each instance.
-                call  prep_atm_mrg(infodata, &
-                     fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
-                     ! MOAB
-                call  prep_atm_mrg_moab(infodata, xao_ax)
+                call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:init_atminit')
              endif
           endif
 
@@ -2525,28 +2582,17 @@ contains
     call t_startf('CPL:init_readrestart')
     call t_adj_detailf(+2)
 
-    call seq_diag_zero_mct(mode='all')
-    call seq_diagBGC_zero_mct(mode='all')
+    call seq_diag_zero_moab(mode='all')
+    call seq_diagBGC_zero_moab(mode='all')
     if (read_restart .and. iamin_CPLID) then
 
-       if (iamroot_CPLID) then
-          write(logunit,103) subname,' Reading restart file ',trim(rest_file)
-          call shr_sys_flush(logunit)
-       end if
-
-       call t_startf('CPL:seq_rest_read-init')
-       call seq_rest_read(rest_file, infodata, &
-            atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
-            fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-            fractions_rx, fractions_gx, fractions_wx, fractions_zx)
-       call t_stopf('CPL:seq_rest_read-init')
        if (iamroot_CPLID) then
           write(logunit,103) subname,' Reading moab restart file ','moab_'//trim(rest_file)
           call shr_sys_flush(logunit)
        end if
-       call t_startf('CPL:seq_rest_read-moab')
+       call t_startf('CPL:seq_rest_read-init')
        call seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
-       call t_stopf('CPL:seq_rest_read-moab')
+       call t_stopf('CPL:seq_rest_read-init')
 #ifdef MOABDEBUG
        call write_moab_state(.false.)
 #endif
@@ -2566,6 +2612,7 @@ contains
       nfields=mct_list_nitem (temp_list)
       call mct_list_clean(temp_list)
       allocate(a2x_ox_tag_vals(numpts,nfields))
+      allocate(a2x_ox_new_tag_vals(numpts,nfields))
       a2x_ox_size = nfields*numpts
     endif
 
@@ -2640,33 +2687,7 @@ contains
        call shr_sys_flush(logunit)
     endif
 
-#ifdef MOABDEBUGMCT
-    if (iamroot_CPLID )then
-       write(logunit,*) ' '
-       write(logunit,F00) ' start output mct data with MOAB '
-       write(logunit,*) ' '
-       call shr_sys_flush(logunit)
-    endif
-    if (atm_present) then
-      call expose_mct_grid_moab(atm(1), dummy_iMOAB)
-    endif
-    if (lnd_present) then
-      call expose_mct_grid_moab(lnd(1), dummy_iMOAB)
-    endif
-    if (ocn_present) then
-      call expose_mct_grid_moab(ocn(1), dummy_iMOAB)
-    endif
-    if (ice_present) then
-      call expose_mct_grid_moab(ice(1), dummy_iMOAB)
-    endif
-    if (rof_present) then
-      call expose_mct_grid_moab(rof(1), dummy_iMOAB)
-    endif
-    if (glc_present) then
-      call expose_mct_grid_moab(glc(1), dummy_iMOAB)
-    endif
 
-#endif
 
     call t_adj_detailf(-1)
     call t_stopf('CPL:cime_init')
@@ -2773,10 +2794,10 @@ contains
        mrssOnTask(:)  = 0
        call mpi_gather (msize, 1, mpi_real8, &
                         msizeOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
        call mpi_gather (mrss, 1, mpi_real8, &
                         mrssOnTask, 1, mpi_real8, &
-                        0, mpicom_GLOID, ierr)
+                        cpl_rootpe, mpicom_GLOID, ierr)
 
        if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
           allocate( msizeOnNode(0:driver_nnodes-1), mrssOnNode(0:driver_nnodes-1), stat=ierr)
@@ -2952,6 +2973,12 @@ contains
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
+       ! Monitor each component's restart alarm. Determine when to prepare
+       ! backup copies of the rpointer files and when it's OK to remove
+       ! these. .false. on input means never to force removal of the backup
+       ! files until the monitor's state machine says they can be removed.
+       call rpointer_manage(.false.)
+
        if (glc_prognostic .or. do_hist_l2x1yrg) then
           ! Is it time to average fields to pass to glc?
           !
@@ -3069,6 +3096,10 @@ contains
           ! do all a2o mappings which updates mboxid
           call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
 
+          ! save the newly mapped a2x values so we can restore them later
+          ! without a redundant re-mapping (used below after cime_run_ocn_setup_send)
+          call mbGetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_new_tag_vals,a2x_ox_size)
+
           ! move the proj of atm to ice right after calc of a2x_ox
           ! make a2x_ix using a2x_ox so its just a rearrange
           if (atm_c2_ice .and. ice_prognostic ) then
@@ -3092,7 +3123,7 @@ contains
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
-       ! map i,w to ocean, calc atmocn fluxes, do merge, accum,
+       ! map i,w to ocean, calc atmocn fluxes, do merge, accum on ocean
        !    calc ocn albedos
        !----------------------------------------------------------
        if (ocn_present) then
@@ -3103,7 +3134,7 @@ contains
 
        !----------------------------------------------------------
        !| OCN SETUP-SEND (cesm1_mod, cesm1_mod_tight, or rasm_option1)
-       ! make ocean time average, send.
+       ! make ocean time average, send ocean forcing from coupler
        !----------------------------------------------------------
        if (ocn_present .and. ocnrun_alarm) then
           if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
@@ -3114,12 +3145,11 @@ contains
        endif
 
        !----------------------------------------------------------
-       !| MAP ATM to OCN
-       !  map a 2 o again only for CESM1_MOD and CESM1_MOD_TIGHT where
-       !  the a2o map above was undone.
-       !  This will be used later in the atm/ocn flux calculation
-       !  form a2i by mapping the output of a2o to i.
-       !  This will be used later in the ice prep
+       !| MAP ATM to OCN (restore)
+       !  For CESM1_MOD and CESM1_MOD_TIGHT, restore the freshly mapped
+       !  a2x_ox values that were saved above (before cime_run_ocn_setup_send
+       !  temporarily restored the old accumulated values to mboxid).
+       !  This avoids a redundant full atm->ocn remapping.
        !----------------------------------------------------------
        if (trim(cpl_seq_option) == 'CESM1_MOD'       .or. &
            trim(cpl_seq_option) == 'CESM1_MOD_TIGHT') then
@@ -3128,14 +3158,8 @@ contains
           call t_drvstartf ('CPL:OCNPRE1',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(3))
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-          call prep_ocn_calc_a2x_ox(timer='CPL:ocnpre1_atm2ocn')
-          ! move the proj of atm to ice right after calc of a2x_ox
-          if (atm_c2_ice .and. ice_prognostic ) then
-            ! This is special to avoid remapping atm to ocn
-            ! Note it is constrained that different prep modules cannot  use or call each other
-            a2x_ox => prep_ocn_get_a2x_ox() ! array
-            call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
-          endif
+          ! restore the previously saved post-mapping values; no re-mapping needed
+          call mbSetCellTagVals(mboxid, seq_flds_a2x_fields,a2x_ox_new_tag_vals,a2x_ox_size)
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
@@ -3153,7 +3177,6 @@ contains
        !----------------------------------------------------------
        !| ICE SETUP-SEND
        !  map o2i (o2x_ox to o2x_ix)
-       !  MCT ONLY:  map a2x_ox to a2x_i
        !  mrg ice, diag, send
        !----------------------------------------------------------
        if (ice_present .and. icerun_alarm) then
@@ -3586,21 +3609,15 @@ contains
              call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:RESTART_READ_BARRIER')
              call t_drvstartf ('CPL:RESTART_READ',cplrun=.true.,barrier=mpicom_CPLID)
              call t_startf('CPL:seq_rest_read')
-             call seq_rest_read(drv_resume_file, infodata,                     &
-                  atm, lnd, ice, ocn, rof, glc, wav, esp, iac,                 &
-                  fractions_ax, fractions_lx, fractions_ix, fractions_ox,      &
-                  fractions_rx, fractions_gx, fractions_wx, fractions_zx)
-             call t_stopf('CPL:seq_rest_read')
-
-             call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
 
              if (iamroot_CPLID) then
                write(logunit,103) subname,' resume by moab restart file ','moab_'//trim(drv_resume_file)
                call shr_sys_flush(logunit)
              end if
-             call t_startf('CPL:seq_rest_read-moab')
              call seq_rest_mb_read(drv_resume_file, infodata, samegrid_al, samegrid_lr)
-             call t_stopf('CPL:seq_rest_read-moab')
+
+             call t_stopf('CPL:seq_rest_read')
+             call t_drvstopf  ('CPL:RESTART_READ',cplrun=.true.)
           end if
           ! Clear the resume file so we don't try to read it again
           drv_resume = .FALSE.
@@ -3692,10 +3709,10 @@ contains
           if (info_mprof > 0) then ! memory profiling is enabled
              call mpi_gather (msize, 1, mpi_real8, &
                               msizeOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
              call mpi_gather (mrss, 1, mpi_real8, &
                               mrssOnTask, 1, mpi_real8, &
-                              0, mpicom_GLOID, ierr)
+                              cpl_rootpe, mpicom_GLOID, ierr)
 
              if (info_mprof > 2) then ! aggregate task-level to node-level mem-usage
                 msizeOnNode(:) = 0
@@ -3837,6 +3854,12 @@ contains
     call component_final(EClock_l, lnd, lnd_final)
     call component_final(EClock_a, atm, atm_final)
 
+    ! Finalize the rpointer manager. The manager can't always tell the earliest
+    ! time at which it can safely remove the backup rpointer files; pass
+    ! .true. here to force their removal if they still exist, because we now are
+    ! certain they can be removed.
+    call rpointer_manage(.true.)
+
     !------------------------------------------------------------------------
     ! End the run cleanly
     !------------------------------------------------------------------------
@@ -3853,7 +3876,7 @@ contains
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod, dtime=dtime)
        simDays = (endStep-begStep)*dtime/(24._r8*3600._r8)
        write(logunit,'(//)')
-       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-'//trim(cime_model)
+       write(logunit,FormatA) subname, 'SUCCESSFUL TERMINATION OF CPL7-MOAB in '//trim(cime_model)
        write(logunit,FormatD) subname, '  at YMD,TOD = ',ymd,tod
        write(logunit,FormatR) subname, '# simulated days (this run) = ', simDays
        write(logunit,FormatR) subname, 'compute time (hrs)          = ', (Time_end-Time_begin)/3600._r8
@@ -3939,10 +3962,10 @@ contains
     ctime(6:6) = ':'
     ctime(7:8) = time(5:6)
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '  Common Infrastructure for Modeling the Earth (CIME) CPL7  '
+    write(logunit,F00) '                      CPL7-MOAB                             '
     write(logunit,F00) '------------------------------------------------------------'
-    write(logunit,F00) '     (Online documentation is available on the CIME         '
-    write(logunit,F00) '          github: http://esmci.github.io/cime/)             '
+    write(logunit,F00) '            (Online documentation is available              '
+    write(logunit,F00) '                https://docs.e3sm.org)             '
     write(logunit,F00) '     License information is available as a link from above  '
     write(logunit,F00) '------------------------------------------------------------'
     write(logunit,F00) '                     MODEL ',trim(cime_model)
@@ -4139,9 +4162,7 @@ contains
           call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:atmprep_iac2atm')
        endif
        if (associated(xao_ax)) then
-          call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
-          ! call moab atm merge too
-          call  prep_atm_mrg_moab(infodata, xao_ax)
+          call  prep_atm_mrg_moab(infodata, xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
        endif
 
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
@@ -4192,8 +4213,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (atm_c2_rof) then
-          call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
-          call prep_rof_accum_atm_moab()
+          call prep_rof_accum_atm_moab(timer='CPL:atmpost_acca2r')
        endif
 
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
@@ -4237,8 +4257,7 @@ contains
 
        ! finish accumulating ocean inputs
        ! reset the value of x2o_ox with the value in x2oacc_ox (module variable in prep_ocn_mod)
-       call prep_ocn_accum_avg(timer_accum='CPL:ocnprep_avg')
-       call prep_ocn_accum_avg_moab()
+       call prep_ocn_accum_avg_moab(timer_accum='CPL:ocnprep_avg')
 
        call component_diag(infodata, ocn, flow='x2c', comment= 'send ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnprep_diagav')
@@ -4289,8 +4308,7 @@ contains
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
-       if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
-       if (ocn_c2_rof) call prep_rof_accum_ocn_moab()
+       if (ocn_c2_rof) call prep_rof_accum_ocn_moab(timer='CPL:ocnpost_acco2r')
 
        call cime_run_ocnglc_coupling()
 
@@ -4323,7 +4341,7 @@ contains
        endif
 
 
-       call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
+      ! call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
 
        call component_diag(infodata, iac, flow='x2c', comment= 'send iac', &
             info_debug=info_debug, timer_diag='CPL:iacprep_diagav')
@@ -4392,14 +4410,13 @@ contains
   subroutine cime_run_atmocn_setup(hashint)
     integer, intent(inout) :: hashint(:)
 
-    ! call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
        call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        if (ocn_prognostic) then
-          ! Map to ocn
+          ! Map ice to ocn
           if (ice_c2_ocn) then
             call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
 
@@ -4407,21 +4424,17 @@ contains
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
        end if
 
-       ! atm/ocn flux on either atm or ocean grid
+       ! atm/ocn flux on either atm or ocean grid (MOAB: only ocean)
        call cime_run_atmocn_fluxes(hashint)
 
        ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
        if (ocn_prognostic) then
           ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
-          call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
-
-          ! moab version
-          call prep_ocn_mrg_moab(infodata, xao_ox)
+          call prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
-          call prep_ocn_accum(timer='CPL:atmocnp_accum')
-          call prep_ocn_accum_moab()
+          call prep_ocn_accum_moab(timer='CPL:atmocnp_accum')
        end if
 
        !----------------------------------------------------------
@@ -4509,8 +4522,7 @@ contains
        endif
 
        if (lnd_prognostic) then
-          call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
-          call prep_lnd_mrg_moab(infodata)
+          call prep_lnd_mrg_moab(infodata, timer_mrg='CPL:lndprep_mrgx2l')
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
@@ -4563,8 +4575,7 @@ contains
             info_debug=info_debug, timer_diag='CPL:lndpost_diagav')
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
-       if (lnd_c2_rof) call prep_rof_accum_lnd(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_rof) call prep_rof_accum_lnd_moab()
+       if (lnd_c2_rof) call prep_rof_accum_lnd_moab(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
@@ -4708,16 +4719,13 @@ contains
        call t_drvstartf ('CPL:ROFPREP', cplrun=.true., barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_rof_accum_avg(timer='CPL:rofprep_l2xavg')
-       call prep_rof_accum_avg_moab(ocn_c2_rof)
+       call prep_rof_accum_avg_moab(timer='CPL:rofprep_l2xavg', ocn_c2_rof=ocn_c2_rof)
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
 
        if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
-       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
-       !moab version
-       call prep_rof_mrg_moab(infodata, cime_model=cime_model)
+       call prep_rof_mrg_moab(infodata, timer_mrg='CPL:rofprep_mrgx2r')
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
@@ -4807,9 +4815,9 @@ contains
       !     call prep_ice_calc_a2x_ix(a2x_ox, timer='CPL:iceprep_atm2ice')
       !  endif
 
-       call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
+       if (wav_c2_ice) call prep_ice_calc_w2x_ix(timer='CPL:iceprep_wav2ice')
 
-       call prep_ice_mrg_moab(infodata,rof_c2_ice)
+       call prep_ice_mrg_moab(infodata, rof_c2_ice, timer_mrg='CPL:iceprep_mrgx2i')
 
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
@@ -4883,7 +4891,7 @@ contains
        if (ocn_c2_wav) call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
        if (ice_c2_wav) call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
 
-       call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
+       !call prep_wav_mrg(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
 
        call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
             info_debug=info_debug, timer_diag='CPL:wavprep_diagav')
@@ -4989,17 +4997,17 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET1_BARRIER')
        call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
-          call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+          call seq_diag_lnd_moab(lnd(ens1), infodata, do_l2x=.true., do_x2l=.true.)
        endif
        if (rof_present) then
-          call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+          call seq_diag_rof_moab(rof(ens1), infodata)
        endif
        if (ice_present) then
-          call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
+          call seq_diag_ice_moab(ice(ens1), infodata, do_x2i=.true.)
        endif
        if (do_bgc_budgets) then
           if (rof_present) then
-             call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+             call seq_diagBGC_rof_moab(rof(ens1), infodata)
           endif
        endif
        call t_drvstopf  ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.)
@@ -5031,44 +5039,43 @@ contains
 
        call t_drvstartf ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (atm_present) then
-          call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+          call seq_diag_atm_moab(atm(ens1), infodata, do_a2x=.true., do_x2a=.true.)
        endif
        if (ice_present) then
-          call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
+          call seq_diag_ice_moab(ice(ens1), infodata, do_i2x=.true.)
        endif
        if (do_bgc_budgets) then
           if (atm_present) then
-             call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+             call seq_diagBGC_atm_moab(atm(ens1), infodata, do_a2x=.true., do_x2a=.true.)
           endif
           if (ice_present) then
-             call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true., do_x2i=.true.)
+             call seq_diagBGC_ice_moab(ice(ens1), infodata, do_i2x=.true., do_x2i=.true.)
           endif
           if (lnd_present) then
-             call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+             call seq_diagBGC_lnd_moab(lnd(ens1), infodata, do_l2x=.true., do_x2l=.true.)
           endif
           if (ocn_present) then
-             call seq_diagBGC_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
+             call seq_diagBGC_ocn_moab(ocn(ens1), infodata, do_o2x=.true., do_x2o=.true.)
           endif
        endif
        call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
-       call seq_diag_accum_mct()
+       call seq_diag_accum_moab()
        if (do_bgc_budgets) then
-          call seq_diagBGC_accum_mct()
+          call seq_diagBGC_accum_moab()
        endif
        call t_drvstopf  ('CPL:BUDGET3',cplrun=lcplrun,budget=.true.)
 
        call t_drvstartf ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (.not. dead_comps) then
-          call seq_diag_print_mct(EClock_d,stop_alarm,do_bgc_budgets, budget_inst, &
+          call seq_diag_print_moab(EClock_d,stop_alarm,do_bgc_budgets, budget_inst, &
                budget_daily, budget_month, budget_ann, budget_ltann, &
                budget_ltend, infodata)
        endif
-       call seq_diag_zero_mct(EClock=EClock_d)
+       call seq_diag_zero_moab(EClock=EClock_d)
        if (do_bgc_budgets) then
-          call seq_diagBGC_zero_mct(EClock=EClock_d)
+          call seq_diagBGC_zero_moab(EClock=EClock_d)
        endif
 
        call t_drvstopf  ('CPL:BUDGETF',cplrun=lcplrun,budget=.true.)
@@ -5099,8 +5106,7 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:BUDGET0_BARRIER')
        call t_drvstartf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
-       call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-            do_o2x=.true., do_x2o=.true., do_xao=.true.)
+       call seq_diag_ocn_moab(ocn(ens1), infodata, do_o2x=.true., do_x2o=.true., do_xao=.true.)
        call t_drvstopf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets3
@@ -5440,5 +5446,414 @@ contains
     call t_adj_detailf(-1)
 
   end subroutine cime_write_performance_checkpoint
+
+!----------------------------------------------------------------------------------
+!
+! The following subroutines improve robustness of restart writing and reading.
+!
+! It's possible for a crash that occurs during restart writing to lead to
+! inconsistent or incomplete rpointer files. While we can't salvage the restart
+! files in general, we can at least provide a consistent set of rpointer files
+! -- namely, the previous ones -- for the next restart.
+!
+! These routines provide this capability by copying all rpointer.X files to
+! rpointer.X.prev before components write restart files, then removing
+! rpointer.X.prev files when all components are done.
+!
+! If a crash occurs midway through, on restart, the consistent rpointer.X.prev
+! files will be used.
+!
+!----------------------------------------------------------------------------------
+
+  subroutine rpointer_prepare_restart()
+    ! Prepare to restart. If .prev file are present, something went wrong in the
+    ! previous run's final restart write. Use the .prev files instead of the
+    ! invalid regular ones. If there are no prev files, then this subroutine
+    ! doesn't do anything.
+    !
+    ! This routine is called independently of the ones after it; in particular,
+    ! it does not require the manager to be initialized.
+
+    integer :: i, n, idxlist(rpointer_ncomp), sleep_len, rcode, unit
+    logical :: file_exists, ok, same, complete
+
+    ! Each rank checks if .prev files exist.
+    n = 0
+    do i = 1, rpointer_ncomp
+       inquire(file='rpointer.'//rpointer_suffixes(i)//'.prev', &
+            exist=file_exists)
+       if (file_exists) then
+          n = n + 1
+          idxlist(n) = i
+       end if
+    end do
+
+    if (n == 0) return
+
+    ! .prev files exist.
+
+    ! Check that there is not an rpointer.x file with no corresponding
+    ! rpointer.x.prev file. If there is, then we assume the .prev files are
+    ! incomplete and error out. Note the presence of at least one
+    ! rpointer.x.prev file means something went wrong in the previous run, so
+    ! it's best to let the user sort things out.
+    if (iamroot_CPLID) then
+       complete = .true.
+       do i = 1, rpointer_ncomp
+          inquire(file='rpointer.'//rpointer_suffixes(i), &
+               exist=file_exists)
+          if (file_exists) then
+             inquire(file='rpointer.'//rpointer_suffixes(i)//'.prev', &
+                  exist=file_exists)
+             if (.not. file_exists) then
+                complete = .false.
+                write(logunit,'(3a)') 'rpointer> ERROR: ', rpointer_suffixes(i), &
+                     ' has an rpointer.x file with no corresponding rpointer.x.prev file'
+             end if
+          end if
+       end do
+       if (.not. complete) then
+          call shr_sys_abort('rpointer_prepare_restart: &
+               &rpointer.x.prev files exist but rpointer.y &
+               &has no corresponding rpointer.y.prev file.')
+       end if
+    end if
+
+    ! The root rank copies the .prev files to regular files.
+    if (iamroot_CPLID) then
+       do i = 1, n
+          rcode = copy_and_trim_rpointer_file( &
+               'rpointer.'//rpointer_suffixes(idxlist(i))//'.prev', &
+               'rpointer.'//rpointer_suffixes(idxlist(i)))
+          if (rcode /= 0) write(logunit,*) 'rpointer> copy x.prev->x', rcode
+       end do
+    end if
+
+    ! Read-after-write consistency generally does not hold, so each rank
+    ! waits until it does, as follows: Check if rpointer.x is the same as
+    ! rpointer.x.prev. If not, then sleep and loop to try again. The sleep
+    ! period doubles each try until 15 seconds have elapsed, at which point,
+    ! if consistency still doesn't hold, give up.
+    sleep_len = 1
+    do while (.true.)
+       ok = .true.
+       do i = 1, n
+          same = are_files_same( &
+               'rpointer.'//rpointer_suffixes(idxlist(i))//'.prev', &
+               'rpointer.'//rpointer_suffixes(idxlist(i)))
+          if (.not. same) then
+             ok = .false.
+             exit
+          end if
+       end do
+       if (ok) exit
+       call sleep(sleep_len)
+       sleep_len = 2*sleep_len
+       ! Wait for up to 8 + 4 + 2 + 1 = 15 seconds.
+       if (sleep_len > 8) exit
+    end do
+    if (.not. ok) then
+       call shr_sys_abort('rpointer_prepare_restart: &
+            &Could not copy rpointer.x.prev to rpointer.x')
+    end if
+    ! This rank is consistent. Wait for everyone else.
+    call mpi_barrier(mpicom_GLOID, rcode)
+
+    ! After the barrier exits, the root rank can delete the .prev files.
+    if (iamroot_CPLID) then
+       unit = shr_file_getUnit()
+       do i = 1, n
+          open(file='rpointer.'//rpointer_suffixes(i)//'.prev', &
+               unit=unit, iostat=rcode)
+          if (rcode == 0) close(unit=unit, status='delete', iostat=rcode)
+       end do
+       call shr_file_freeUnit(unit)
+    end if
+
+  contains
+
+    function are_files_same(afname, bfname) result(same)
+      ! Do files afname and bfname contain the same contents?
+
+      character(*), intent(in) :: afname, bfname
+
+      integer :: aunit, bunit, astat, bstat, i, line
+      character(1024) :: abuf, bbuf
+      logical :: same
+
+      same = .true.
+
+      aunit = shr_file_getUnit()
+      bunit = shr_file_getUnit()
+
+      open(aunit, file=trim(afname), action='READ', iostat=astat)
+      open(bunit, file=trim(bfname), action='READ', iostat=bstat)
+
+      if ((astat == 0) .neqv. (bstat == 0)) same = .false.
+
+      if (same .and. astat /= 0) same = .false.
+
+      if (same) then
+         astat = 0
+         bstat = 0
+         abuf(:) = ' '
+         bbuf(:) = ' '
+         line = 1
+         do while (same .and. astat == 0 .and. bstat == 0)
+            read(aunit, '(a1024)', iostat=astat) abuf
+            read(bunit, '(a1024)', iostat=bstat) bbuf
+            if ((astat == 0) .neqv. (bstat == 0)) then
+               same = .false.
+               exit
+            end if
+            if (astat /= 0) exit
+            do i = 1, 1024
+               if (abuf(i:i) /= bbuf(i:i)) then
+                  same = .false.
+                  exit
+               end if
+            end do
+            line = line + 1
+         end do
+      end if
+
+      close(aunit)
+      close(bunit)
+      call shr_file_freeUnit(aunit)
+      call shr_file_freeUnit(bunit)
+
+    end function are_files_same
+
+  end subroutine rpointer_prepare_restart
+
+  subroutine rpointer_init_manager()
+    ! Initialize a manager that is accessed through calls to rpointer_manage.
+
+    integer :: i, n
+
+    rpointer_mgr%verbose = .false.
+    rpointer_mgr%rang(:) = .false.
+
+    do i = 1, rpointer_ncomp
+       rpointer_mgr%clock(i)%ptr => null()
+    end do
+
+    rpointer_mgr%cpresent(:) = .false.
+    n = 0
+
+    if (atm_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_atm) = .true.
+       rpointer_mgr%clock(comp_num_atm)%ptr => EClock_a
+    end if
+    if (lnd_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_lnd) = .true.
+       rpointer_mgr%clock(comp_num_lnd)%ptr => EClock_l
+    end if
+    if (ice_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_ice) = .true.
+       rpointer_mgr%clock(comp_num_ice)%ptr => EClock_i
+    end if
+    if (ocn_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_ocn) = .true.
+       rpointer_mgr%clock(comp_num_ocn)%ptr => EClock_o
+    end if
+    if (glc_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_glc) = .true.
+       rpointer_mgr%clock(comp_num_glc)%ptr => EClock_g
+    end if
+    if (rof_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_rof) = .true.
+       rpointer_mgr%clock(comp_num_rof)%ptr => EClock_r
+    end if
+    if (wav_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_wav) = .true.
+       rpointer_mgr%clock(comp_num_wav)%ptr => EClock_w
+    end if
+    if (esp_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_esp) = .true.
+       rpointer_mgr%clock(comp_num_esp)%ptr => EClock_e
+    end if
+    if (iac_present) then
+       n = n + 1
+       rpointer_mgr%cpresent(comp_num_iac) = .true.
+       rpointer_mgr%clock(comp_num_iac)%ptr => EClock_z
+    end if
+    n = n + 1
+    rpointer_mgr%cpresent(rpointer_ncomp) = .true.
+    rpointer_mgr%clock(rpointer_ncomp)%ptr => EClock_d
+
+    rpointer_mgr%npresent = n
+    rpointer_mgr%remove_prev_in_next_call = .false.
+
+  end subroutine rpointer_init_manager
+
+  subroutine rpointer_manage(force_remove)
+    ! Call this routine at certain places in the driver loop. This subroutine
+    ! monitors the restart alarms of all the active components and carries out
+    ! the steps required for rpointer file consistency based on state.
+
+    logical, intent(in) :: force_remove ! force removal of .prev files in this call
+
+    integer :: i, n, rcode, unit
+    logical :: previous_rings, file_exists
+    character(32) :: buf
+
+    if (.not. iamroot_CPLID) return
+
+    if (rpointer_mgr%remove_prev_in_next_call .or. force_remove) then
+       ! Now we've been told the restart writes really are all valid. Remove the
+       ! .prev files.
+       unit = shr_file_getUnit()
+       do i = 1, size(rpointer_suffixes,1)
+          if (rpointer_mgr%cpresent(i)) then
+             buf = 'rpointer.'//rpointer_suffixes(i)//'.prev'
+             inquire(file=trim(buf), exist=file_exists)
+             if (file_exists) then
+                open(file=trim(buf), unit=unit, iostat=rcode)
+                if (rcode == 0) close(unit, status='delete', iostat=rcode)
+             end if
+          end if
+       end do
+       call shr_file_freeUnit(unit)
+       rpointer_mgr%rang(:) = .false.
+       rpointer_mgr%remove_prev_in_next_call = .false.
+       if (rpointer_mgr%verbose) write(logunit,*) 'rpointer> rm .prev files'
+       return
+    end if
+
+    previous_rings = .false.
+    do i = 1, rpointer_ncomp
+       if (rpointer_mgr%rang(i)) previous_rings = .true.
+    end do
+
+    n = 0
+    do i = 1, rpointer_ncomp
+       if (.not. rpointer_mgr%cpresent(i)) cycle
+       if (.not. rpointer_mgr%rang(i)) then
+          if (seq_timemgr_alarmIsOn(rpointer_mgr%clock(i)%ptr, &
+               seq_timemgr_alarm_restart)) then
+             rpointer_mgr%rang(i) = .true.
+          end if
+       end if
+       if (rpointer_mgr%rang(i)) n = n + 1
+    end do
+
+    if (n > 0 .and. rpointer_mgr%verbose) then
+       write (logunit,*) 'rpointer> state'
+       do i = 1, rpointer_ncomp
+          if (rpointer_mgr%cpresent(i)) then
+             write (logunit, '(a,i2,i2,i2,a4,l2)') &
+                  'rpointer>',i,n,rpointer_mgr%npresent,rpointer_suffixes(i), &
+                  rpointer_mgr%rang(i)
+          end if
+       end do
+    end if
+
+    if (previous_rings .and. n == rpointer_mgr%npresent) then
+       ! All restart timers have rung. Get ready to remove the .prev files. We
+       ! don't want to do it in this rpointer_manage call, however. Because of
+       ! things like partial steps in the atmosphere model (initiated from
+       ! cime_final rather than cime_run), we can't yet be sure all
+       ! restart-related writes at the level of history tapes are complete. Set
+       ! our state to tell us that in the next call, we can remove the files.
+       rpointer_mgr%remove_prev_in_next_call = .true.
+       if (rpointer_mgr%verbose) &
+            write(logunit,*) 'rpointer> set remove_prev_in_next_call=true'
+       return
+    else if (.not. previous_rings) then
+       if (n == 0) then
+          ! Nothing happened.
+          return
+       else
+          ! A new round of restart writes is starting. Copy previous, valid
+          ! rpointer files to .prev in case one or more of the restart writes that
+          ! are about to occur fail.
+          do i = 1, size(rpointer_suffixes,1)
+             if (rpointer_mgr%cpresent(i)) then
+                buf = 'rpointer.'//rpointer_suffixes(i)
+                inquire(file=trim(buf), exist=file_exists)
+                if (file_exists) then
+                   rcode = copy_and_trim_rpointer_file(trim(buf), &
+                        'rpointer.'//rpointer_suffixes(i)//'.prev')
+                   if (rcode /= 0 .and. rpointer_mgr%verbose) &
+                        write(logunit,*) 'rpointer> copy x->x.prev',rcode
+                   if (rpointer_mgr%verbose) then
+                      if (rcode == 0) then
+                         write(logunit,*) 'rpointer> copied: ', rpointer_suffixes(i)
+                      else
+                         write(logunit,*) 'rpointer> failed to copy: ', rpointer_suffixes(i)
+                      end if
+                   end if
+                end if
+             end if
+          end do
+          return
+       end if
+    end if
+
+    ! If we reach this point, there were previous rings and n < npresent,
+    ! meaning > 2 iterations of the driver run loop will occur before all
+    ! restart alarms have rung, now that at least one has rung. Don't do
+    ! anything more yet.
+
+  end subroutine rpointer_manage
+
+  function copy_and_trim_rpointer_file(src, dst) result(out)
+    ! Copy rpointer file src to dst, with the caveat that the lines are
+    ! trimmed. We found that shr_file_put would result in mysterious errors
+    ! preventing copying, whereas this manual approach has yet to exhibit this
+    ! problem.
+
+    character(*), intent(in) :: src, dst
+
+    character(1024) :: buf
+    character(16) :: status
+    integer :: soi, doi, stat, out
+    logical :: file_exists
+
+    soi = shr_file_getUnit()
+    out = 0
+    open(soi, file=trim(src), status='old', action='read', iostat=stat)
+    if (stat /= 0) then
+       out = -3
+       call shr_file_freeUnit(soi)
+       return
+    end if
+    inquire(file=trim(dst), exist=file_exists)
+    ! Probably not needed; always using 'replace' I think should work.
+    if (file_exists) then
+       status = 'replace'
+    else
+       status = 'new'
+    end if
+    doi = shr_file_getUnit()
+    open(doi, file=trim(dst), status=trim(status), action='write', iostat=stat)
+    if (stat /= 0) then
+       close(soi)
+       out = -2
+       call shr_file_freeUnit(soi)
+       call shr_file_freeUnit(doi)
+       return
+    end if
+    do while (.true.)
+       read(soi, '(a1024)', iostat=stat) buf
+       if (stat /= 0) exit
+       write(doi, '(a)', iostat=stat) trim(buf)
+       if (stat /= 0) out = -1
+    end do
+    close(soi)
+    close(doi)
+    call shr_file_freeUnit(soi)
+    call shr_file_freeUnit(doi)
+
+  end function copy_and_trim_rpointer_file
 
 end module cime_comp_mod
