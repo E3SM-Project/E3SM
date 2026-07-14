@@ -412,7 +412,7 @@ module ocn_time_integration_split_ab2
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
-      !*** Retireve the state and tendency vars for the GEOMETRIC param
+      !*** Retrieve the state and tendency vars for the GEOMETRIC parameterization
       if ( config_use_GM .and. config_GM_closure == 'geometric') then
          call mpas_pool_get_array(statePool, 'totalParamEddyEnergy', &
                                               totalParamEddyEnergyCur, 1)
