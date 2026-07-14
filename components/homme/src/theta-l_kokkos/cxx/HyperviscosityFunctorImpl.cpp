@@ -303,7 +303,9 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   } else {
     m_data.dt_hvs_sgs = -1.0;
   }
-  prepare_sgs_diffusivities();
+  if (m_data.hypervis_subcycle_sgs > 0) {
+    clip_sgs_diffusivities_for_fixed_subcycling();
+  }
   if (m_data.hypervis_subcycle_sgs_eff > 1 && Context::singleton().get<Comm>().root()) {
     if (m_data.hypervis_subcycle_sgs > 0) {
       printf("Warning: SGS horizontal diffusion is using fixed subcycling of %d for this run.\n",
@@ -530,32 +532,29 @@ int HyperviscosityFunctorImpl::compute_sgs_subcycle_count (const Real dt) const
   return nsub;
 }
 
-void HyperviscosityFunctorImpl::prepare_sgs_diffusivities () const
+void HyperviscosityFunctorImpl::clip_sgs_diffusivities_for_fixed_subcycling () const
 {
   const Real lambda_vis = get_lambda_vis();
-  if (not m_data.do_3d_turbulence) {
+  if (not m_data.do_3d_turbulence || lambda_vis <= 0 || m_data.dt_hvs_sgs <= 0) {
     return;
   }
 
   const auto dinv = m_geometry.m_dinv;
-  const auto Km_src = m_derived.m_turb_diff_mom;
-  const auto Kh_src = m_derived.m_turb_diff_heat;
-  const auto Km = m_derived.m_turb_diff_mom_clip_sgs;
-  const auto Kh = m_derived.m_turb_diff_heat_clip_sgs;
+  const auto Km = m_derived.m_turb_diff_mom;
+  const auto Kh = m_derived.m_turb_diff_heat;
   const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
   decltype(Kokkos::create_mirror_view(Km)) km_before_h;
   decltype(Kokkos::create_mirror_view(Kh)) kh_before_h;
-  const bool clip_diffusivities = m_data.hypervis_subcycle_sgs > 0 && lambda_vis > 0 && m_data.dt_hvs_sgs > 0;
 
   if (print_sgs_diffusivity_clipping) {
-    km_before_h = Kokkos::create_mirror_view(Km_src);
-    kh_before_h = Kokkos::create_mirror_view(Kh_src);
-    Kokkos::deep_copy(km_before_h, Km_src);
-    Kokkos::deep_copy(kh_before_h, Kh_src);
+    km_before_h = Kokkos::create_mirror_view(Km);
+    kh_before_h = Kokkos::create_mirror_view(Kh);
+    Kokkos::deep_copy(km_before_h, Km);
+    Kokkos::deep_copy(kh_before_h, Kh);
   }
 
   Kokkos::parallel_for(
-      "prepare_sgs_diffusivities",
+      "clip_sgs_diffusivities_fixed_subcycling",
       Kokkos::RangePolicy<ExecSpace>(0, m_num_elems * NP * NP),
       KOKKOS_LAMBDA (const int idx) {
         const int ie = idx / (NP * NP);
@@ -563,29 +562,27 @@ void HyperviscosityFunctorImpl::prepare_sgs_diffusivities () const
         const int igp = rem / NP;
         const int jgp = rem % NP;
 
+        const Real a = dinv(ie,0,0,igp,jgp);
+        const Real b = dinv(ie,0,1,igp,jgp);
+        const Real c = dinv(ie,1,0,igp,jgp);
+        const Real d = dinv(ie,1,1,igp,jgp);
+        const Real laplace_metric = get_local_laplace_metric(a, b, c, d, lambda_vis, scale_factor_inv);
+
+        if (laplace_metric <= 0) {
+          return;
+        }
+
+        const Real max_diffusivity = 2.0 / (m_data.dt_hvs_sgs * laplace_metric);
         for (int k = 0; k < NUM_LEV; ++k) {
-          auto km = Km_src(ie,igp,jgp,k);
-          auto kh = Kh_src(ie,igp,jgp,k);
-
-          if (clip_diffusivities) {
-            const Real a = dinv(ie,0,0,igp,jgp);
-            const Real b = dinv(ie,0,1,igp,jgp);
-            const Real c = dinv(ie,1,0,igp,jgp);
-            const Real d = dinv(ie,1,1,igp,jgp);
-            const Real laplace_metric = get_local_laplace_metric(a, b, c, d, lambda_vis, scale_factor_inv);
-
-            if (laplace_metric > 0) {
-              const Real max_diffusivity = 2.0 / (m_data.dt_hvs_sgs * laplace_metric);
-              for (int s = 0; s < VECTOR_SIZE; ++s) {
-                const int phys_lev = k * VECTOR_SIZE + s;
-                if (phys_lev < NUM_PHYSICAL_LEV) {
-                  if (km[s] > max_diffusivity) km[s] = max_diffusivity;
-                  if (kh[s] > max_diffusivity) kh[s] = max_diffusivity;
-                }
-              }
+          auto km = Km(ie,igp,jgp,k);
+          auto kh = Kh(ie,igp,jgp,k);
+          for (int s = 0; s < VECTOR_SIZE; ++s) {
+            const int phys_lev = k * VECTOR_SIZE + s;
+            if (phys_lev < NUM_PHYSICAL_LEV) {
+              if (km[s] > max_diffusivity) km[s] = max_diffusivity;
+              if (kh[s] > max_diffusivity) kh[s] = max_diffusivity;
             }
           }
-
           Km(ie,igp,jgp,k) = km;
           Kh(ie,igp,jgp,k) = kh;
         }
@@ -934,8 +931,8 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
       const auto ttens  = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
       const auto dptens = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
 
-      const auto Km = Homme::subview(m_derived.m_turb_diff_mom_clip_sgs,kv.ie,igp,jgp);
-      const auto Kh = Homme::subview(m_derived.m_turb_diff_heat_clip_sgs,kv.ie,igp,jgp);
+      const auto Km = Homme::subview(m_derived.m_turb_diff_mom,kv.ie,igp,jgp);
+      const auto Kh = Homme::subview(m_derived.m_turb_diff_heat,kv.ie,igp,jgp);
 
       MidColumn wtens, phitens;
       IntColumn Km_i, Kh_i;
