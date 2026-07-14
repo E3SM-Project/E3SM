@@ -8,6 +8,8 @@ module emulator_f_api
      integer(c_int) :: run_type
      integer(c_int) :: start_ymd
      integer(c_int) :: start_tod
+     integer(c_int) :: case_start_ymd
+     integer(c_int) :: case_start_tod
      type(c_ptr)    :: input_file  ! C char*
      type(c_ptr)    :: log_file    ! C char*
   end type emulator_create_cfg
@@ -38,13 +40,15 @@ contains
 
    type(emulator_create_cfg) &
    function create_config(f_comm, comp_id, run_type,&
-            start_ymd, start_tod, &
+            start_ymd, start_tod, case_start_ymd, case_start_tod,&
             input_file, log_file) result(cfg)
       integer(c_int), intent(in) :: f_comm
       integer(c_int), intent(in) :: comp_id
       integer(c_int), intent(in) :: run_type
       integer(c_int), intent(in) :: start_ymd
       integer(c_int), intent(in) :: start_tod
+      integer(c_int), intent(in), optional :: case_start_ymd
+      integer(c_int), intent(in), optional :: case_start_tod
       character(kind=c_char), intent(in), target   :: input_file(*)
       character(kind=c_char), intent(in), target   :: log_file(*)
 
@@ -53,6 +57,16 @@ contains
       cfg%run_type=run_type
       cfg%start_ymd=start_ymd
       cfg%start_tod=start_tod
+      if (present(case_start_ymd)) then
+        cfg%case_start_ymd=case_start_ymd
+      else
+        cfg%case_start_ymd=-1
+      end if
+      if (present(case_start_tod)) then
+        cfg%case_start_tod=case_start_tod
+      else
+        cfg%case_start_tod=-1
+      end if
       cfg%input_file=c_loc(input_file(1))
       cfg%log_file=c_loc(log_file(1))
 

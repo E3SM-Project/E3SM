@@ -24,6 +24,8 @@ struct EmulatorCreateConfig {
   int  run_type;
   int  start_ymd;
   int  start_tod;
+  int  case_start_ymd;
+  int  case_start_tod;
   const char* input_file;
   const char* log_file;
 };
