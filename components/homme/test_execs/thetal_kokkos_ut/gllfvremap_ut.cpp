@@ -814,11 +814,26 @@ test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode
     dq1_dyn(g::cpack2real(q), q.extent_int(0), q.extent_int(1),
             q.extent_int(2)*q.extent_int(3), g::num_lev_aligned);
 
+  const GllFvRemap::Phys1T dps_u(dps.data(), dps.extent_int(0), dps.extent_int(1));
+  const GllFvRemap::Phys1T dphis_u(dphis.data(), dphis.extent_int(0), dphis.extent_int(1));
+  const GllFvRemap::Phys2T dT_u(dT.data(), dT.extent_int(0), dT.extent_int(1), dT.extent_int(2));
+  const GllFvRemap::Phys2T domega_u(domega.data(), domega.extent_int(0), domega.extent_int(1),
+                                    domega.extent_int(2));
+  const GllFvRemap::CPhys3T dstrain_gll_u(dstrain.data(), dstrain.extent_int(0), dstrain.extent_int(1),
+                                          dstrain.extent_int(2), dstrain.extent_int(3));
+  const GllFvRemap::Phys3T dstrain_fv_u(dstrain.data(), dstrain.extent_int(0), dstrain.extent_int(1),
+                                        dstrain.extent_int(2), dstrain.extent_int(3));
+  const GllFvRemap::Phys3T duv_u(duv.data(), duv.extent_int(0), duv.extent_int(1), duv.extent_int(2),
+                                 duv.extent_int(3));
+  const GllFvRemap::Phys3T dq_u(dq.data(), dq.extent_int(0), dq.extent_int(1), dq.extent_int(2),
+                                dq.extent_int(3));
+
   for (int nt = 0; nt < NUM_TIME_LEVELS; ++nt) {
     gfr_dyn_to_fv_phys_f90(nf, nt+1, fps.data(), fphis.data(), fT.data(), fuv.data(),
                            fomega.data(), fq.data());
 
-    gfr.run_dyn_to_fv_phys(nt, dps, dphis, dT, domega, &dstrain, &dstrain, duv, dq);
+    gfr.run_dyn_to_fv_phys(nt, dps_u, dphis_u, dT_u, domega_u, &dstrain_gll_u, &dstrain_fv_u,
+                           duv_u, dq_u);
 
     gfr.remap_tracer_dyn_to_fv_phys(nt, nq, dq1_dyn, dq1);
 
@@ -900,10 +915,17 @@ test_fv_phys_to_dyn (Session& s, const int nf, const bool theta_hydrostatic_mode
 
     const auto& c = Context::singleton();
     auto& gfr = c.get<GllFvRemap>();
+    const GllFvRemap::CPhys2T dT_u(dT.data(), dT.extent_int(0), dT.extent_int(1), dT.extent_int(2));
+    const GllFvRemap::CPhys3T duv_u(duv.data(), duv.extent_int(0), duv.extent_int(1), duv.extent_int(2),
+                                    duv.extent_int(3));
+    const GllFvRemap::CPhys3T dfq_u(dfq.data(), dfq.extent_int(0), dfq.extent_int(1), dfq.extent_int(2),
+                                    dfq.extent_int(3));
+    const GllFvRemap::CPhys2T dKm_u(dKm.data(), dKm.extent_int(0), dKm.extent_int(1), dKm.extent_int(2));
+    const GllFvRemap::CPhys2T dKh_u(dKh.data(), dKh.extent_int(0), dKh.extent_int(1), dKh.extent_int(2));
 
     const int nt = 1;
     gfr_fv_phys_to_dyn_f90(nf, nt+1, fT.data(), fuv.data(), ffq.data());
-    gfr.run_fv_phys_to_dyn(nt, dT, duv, dfq, dKm, dKh);
+    gfr.run_fv_phys_to_dyn(nt, dT_u, duv_u, dfq_u, &dKm_u, &dKh_u);
     gfr.run_fv_phys_to_dyn_dss();
   }
 
