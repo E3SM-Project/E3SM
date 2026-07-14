@@ -13,7 +13,10 @@ cmake_minimum_required(VERSION 3.18)
 cmake_policy(SET CMP0057 NEW)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0079 NEW) # Remove once scorpio in a better state
-set(CMAKE_CXX_STANDARD 17)
+
+# Set C++ standard to C++20.
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Turn on wrapper
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")

@@ -51,10 +51,9 @@ if (SCREAM_CIME_BUILD)
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
-if (NOT CMAKE_CXX_STANDARD)
-  # Default to C++17 in EAMxx
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+# Default to C++20 in EAMxx
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)
