@@ -9,6 +9,7 @@
 #include "AnalysisOpFactory.h"
 #include "Decomp.h"
 #include "Field.h"
+#include "Forcing.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -16,6 +17,7 @@
 #include "Logging.h"
 #include "TimeStepper.h"
 #include "VertCoord.h"
+#include "VertMix.h"
 
 #include <cmath>
 #include <functional>
@@ -86,7 +88,7 @@ template <typename ArrayType> struct TestHelper {
       auto DimNames = getDimNames();
       auto TestField =
           Field::create(FieldName, "Test field for multi-type validation", "m",
-                        "", -1.0e30, 1.0e30, -1.0e30, 1, DimNames);
+                        "", -1.0e30, 1.0e30, 1, DimNames);
 
       ArrayType TestData(FieldName + "_data", Dims[0]);
       TestField->attachData<ArrayType>(TestData);
@@ -107,7 +109,7 @@ template <typename ArrayType> struct TestHelper {
       auto DimNames = getDimNames();
       auto TestField =
           Field::create(FieldName, "Test field for multi-type validation", "m",
-                        "", -1.0e30, 1.0e30, -1.0e30, 2, DimNames);
+                        "", -1.0e30, 1.0e30, 2, DimNames);
 
       ArrayType TestData(FieldName + "_data", Dims[0], Dims[1]);
       TestField->attachData<ArrayType>(TestData);
@@ -130,7 +132,7 @@ template <typename ArrayType> struct TestHelper {
       auto DimNames = getDimNames();
       auto TestField =
           Field::create(FieldName, "Test field for multi-type validation", "m",
-                        "", -1.0e30, 1.0e30, -1.0e30, 3, DimNames);
+                        "", -1.0e30, 1.0e30, 3, DimNames);
 
       ArrayType TestData(FieldName + "_data", Dims[0], Dims[1], Dims[2]);
       TestField->attachData<ArrayType>(TestData);
@@ -953,6 +955,12 @@ void initAnalysisTest() {
    // Initialize pressure gradient
    PressureGrad::init();
 
+   // Initialize forcing
+   Forcing::init();
+
+   // Initialize vertical mixing
+   VertMix::init();
+
    // Initialize tendencies
    Tendencies::init();
 
@@ -977,6 +985,8 @@ void finalizeAnalysisTest() {
 
    Analysis::finalize();
    IOStream::finalize();
+   VertMix::destroyInstance();
+   Forcing::clear();
    OceanState::clear();
    Tracers::clear();
    AuxiliaryState::clear();

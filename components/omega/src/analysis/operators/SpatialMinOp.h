@@ -73,7 +73,6 @@ template <typename ArrayT> class SpatialMinOp : public AnalysisOperator {
                         "",                                    // Standard name
                         -std::numeric_limits<ScalarT>::max(), // Min valid value
                         std::numeric_limits<ScalarT>::max(),  // Max valid value
-                        -std::numeric_limits<ScalarT>::max(), // Fill value
                         NDims,                                // Rank
                         DimNames                              // Dimension names
           );

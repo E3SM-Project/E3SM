@@ -11,6 +11,7 @@
 #include "Decomp.h"
 #include "Eos.h"
 #include "Field.h"
+#include "Forcing.h"
 #include "Halo.h"
 #include "HorzMesh.h"
 #include "IO.h"
@@ -23,8 +24,7 @@
 #include "Tracers.h"
 #include "VertAdv.h"
 #include "VertCoord.h"
-
-#include <iostream>
+#include "VertMix.h"
 
 using namespace OMEGA;
 
@@ -262,7 +262,7 @@ void createFactoryTestField(const std::string &FieldName, const HorzMesh *Mesh,
    std::vector<std::string> DimNames = {"NCells", "NVertLayers"};
    auto TestField =
        Field::create(FieldName, "Test field for factory validation", "units",
-                     "", -1.0e30, 1.0e30, -1.0e30, 2, DimNames);
+                     "", -1.0e30, 1.0e30, 2, DimNames);
 
    // Allocate and attach data with known values
    Array2DReal TestData(FieldName + "_data", NCells, NVertLayers);
@@ -703,6 +703,12 @@ void initAnalysisSystemTest() {
    // Initialize pressure gradient
    PressureGrad::init();
 
+   // Initialize forcing
+   Forcing::init();
+
+   // Initialize vertical mixing
+   VertMix::init();
+
    // Initialize tendencies
    Tendencies::init();
 
@@ -739,6 +745,8 @@ void finalizeAnalysisSystemTest() {
 
    Analysis::finalize();
    IOStream::finalize();
+   VertMix::destroyInstance();
+   Forcing::clear();
    OceanState::clear();
    Tracers::clear();
    AuxiliaryState::clear();

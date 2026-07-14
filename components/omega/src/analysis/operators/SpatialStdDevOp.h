@@ -77,12 +77,11 @@ template <typename ArrayT> class SpatialStdDevOp : public AnalysisOperator {
           Field::create(OutputNames[0],
                         "Standard deviation of " + InputNames[0], // Description
                         "",                                       // Units
-                        "",                                // Standard name
-                        static_cast<Real>(0),              // Min valid value
-                        std::numeric_limits<Real>::max(),  // Max valid value
-                        -std::numeric_limits<Real>::max(), // Fill value
-                        NDims,                             // Rank
-                        DimNames                           // Dimension names
+                        "",                               // Standard name
+                        static_cast<Real>(0),             // Min valid value
+                        std::numeric_limits<Real>::max(), // Max valid value
+                        NDims,                            // Rank
+                        DimNames                          // Dimension names
           );
 
       // Attach output data array to Field

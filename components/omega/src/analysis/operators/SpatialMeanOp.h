@@ -72,7 +72,6 @@ template <typename ArrayT> class SpatialMeanOp : public AnalysisOperator {
                         "",                                 // Standard name
                         -std::numeric_limits<Real>::max(),  // Min valid value
                         std::numeric_limits<Real>::max(),   // Max valid value
-                        -std::numeric_limits<Real>::max(),  // Fill value
                         NDims,                              // Rank
                         DimNames                            // Dimension names
           );

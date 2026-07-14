@@ -91,7 +91,6 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
                         "",                                 // Standard name
                         -std::numeric_limits<Real>::max(),  // Min valid value
                         std::numeric_limits<Real>::max(),   // Max valid value
-                        -std::numeric_limits<Real>::max(),  // Fill value
                         NDims,                              // Rank
                         DimNames                            // Dimension names
           );
@@ -148,7 +147,8 @@ template <typename ArrayT> class TimeMeanOp : public AnalysisOperator {
          IsNewPeriod = false;
 
          // If the period alarm rings on the first sample of a period, finalize
-         // immediately (mean == current value) and start a new period next call.
+         // immediately (mean == current value) and start a new period next
+         // call.
          if (PeriodAlarm != nullptr && PeriodAlarm->isRinging()) {
             IsNewPeriod = true;
          }
