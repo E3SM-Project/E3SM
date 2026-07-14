@@ -300,14 +300,16 @@ void VertCoord::defineFields() {
    );
 
    auto SurfacePressureField = Field::create(
-       SurfacePressureFldName,                             // field name
-       "Relative pressure at the top of the ocean column", // long name
-       "Pa",                                               // units
-       "",                                                 // CF standard Name
-       -9.99E+10,                                          // min valid value
-       9.99E+10,                                           // max valid value
-       NDims,                                              // number of dims
-       DimNames                                            // dimension names
+       SurfacePressureFldName, // field name
+       "Pressure at the top of the ocean column relative to reference "
+       "atmospheric pressure (i.e. absolute pressure - 101,325 Pa)", // long
+                                                                     // name
+       "Pa",                                                         // units
+       "",        // CF standard Name
+       -9.99E+10, // min valid value
+       9.99E+10,  // max valid value
+       NDims,     // number of dims
+       DimNames   // dimension names
    );
 
    // SurfacePressure is optional in the initial-state/restart file; when it is
