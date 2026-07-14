@@ -43,7 +43,9 @@ OneTwoOneFilter::OneTwoOneFilter(const VertCoord *VCoord)
 
 VelVertMixSetupOnEdge::VelVertMixSetupOnEdge(const HorzMesh *Mesh,
                                              const VertCoord *VCoord)
-    : Enabled(false), LocRhoSw(RhoSw), NVertLayers(VCoord->NVertLayers),
+    : Enabled(false), ImplicitBottomDragEnabled(false),
+      BottomDragCoeff(0.0_Real),
+      LocRhoSw(RhoSw), NVertLayers(VCoord->NVertLayers),
       CellsOnEdge(Mesh->CellsOnEdge), EdgeMask(VCoord->EdgeMask),
       MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
@@ -458,6 +460,7 @@ void VertMix::applyVelVertMixImplicit(
 
       const auto &SpecVol  = EosInstance->SpecVol;
       const auto &VertVisc = VertMixInstance->VertVisc;
+      const auto &KineticEnergyCell = AuxState->KineticAux.KineticEnergyCell;
 
       const int NVertLayers  = VCoord->NVertLayers;
       const int LocVecLength = VecLength;
@@ -498,8 +501,8 @@ void VertMix::applyVelVertMixImplicit(
 
                    Real G, H, X;
                    LocVelVertMixSetup(IEdge, K, KMin, KMax, DT, SpecVol,
-                                      PseudoThickCell, VertVisc, NormalVelEdge,
-                                      G, H, X);
+                                      KineticEnergyCell, PseudoThickCell,
+                                      VertVisc, NormalVelEdge, G, H, X);
 
                    Scratch.G(K, IVec) = G;
                    Scratch.H(K, IVec) = H;
@@ -675,6 +678,30 @@ void VertMix::VertMixImplicit(OceanState *State, AuxiliaryState *AuxState,
                               NormalVelEdge);
               });
        });
+
+   // Refresh kinetic energy for the implicit bottom drag
+   // from the pre-vmix velocity
+   if (VelVertMixSetup.ImplicitBottomDragEnabled) {
+      OMEGA_SCOPE(LocKineticAux, AuxState->KineticAux);
+      OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
+      OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
+
+      Pacer::start("VertMix:computeKineticAuxForBottomDrag", 2);
+      parallelForOuter(
+          "computeKineticAuxForBottomDrag", {Mesh->NCellsAll},
+          KOKKOS_LAMBDA(int ICell, const TeamMember &Team) {
+             const int KMin   = MinLayerCell(ICell);
+             const int KMax   = MaxLayerCell(ICell);
+             const int KRange = vertRangeChunked(KMin, KMax);
+
+             parallelForInner(
+                 Team, KRange, INNER_LAMBDA(int KChunk) {
+                    LocKineticAux.computeVarsOnCell(ICell, KChunk,
+                                                    NormalVelEdge);
+                 });
+          });
+      Pacer::stop("VertMix:computeKineticAuxForBottomDrag", 2);
+   }
 
    // Update Pressure, SpecVol
    AuxState->computeMomVertAux(State, TracerArray, TimeLevel, TimeLevel);

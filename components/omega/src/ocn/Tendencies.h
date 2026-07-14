@@ -20,6 +20,11 @@
 ///    VelHyperDiffTendencyEnable: true
 ///    ViscDel4: 1.2e11
 ///    DivFactor: 1.0
+///    BottomDragTendency:
+///       Enable: true
+///       Mode: Implicit
+///       Type: Constant
+///       BottomDragCoeff: 1.0e-3
 ///    TracerHorzAdvTendencyEnable: true
 ///    TracerDiffTendencyEnable: true
 ///    EddyDiff2: 10.0
@@ -68,7 +73,7 @@ class Tendencies {
    VelocityDiffusionOnEdge VelocityDiffusion;
    VelocityHyperDiffOnEdge VelocityHyperDiff;
    SfcStressForcingOnEdge SfcStressForcing;
-   BottomDragOnEdge BottomDrag;
+   BottomDragOnEdge ExplicitBottomDrag;
    TracerHorzAdvOnCell TracerHorzAdv;
    TracerDiffOnCell TracerDiffusion;
    TracerHyperDiffOnCell TracerHyperDiff;

@@ -53,8 +53,11 @@ Omega:
     DivFactor: 1.0
     SfcStressForcingTendencyEnable: false
     SurfaceTracerRestoringEnable: false
-    BottomDragTendencyEnable: false
-    BottomDragCoeff: 0.0
+    BottomDragTendency:
+      Enable: true
+      Mode: Implicit
+      Type: Constant
+      BottomDragCoeff: 1.0e-3
     TracerHorzAdvTendencyEnable: true
     TracerDiffTendencyEnable: true
     EddyDiff2: 10.0

@@ -53,8 +53,10 @@ the currently available tendency terms:
 | TracerHyperDiffOnCell | TracerHyperDiffTendencyEnable | enable/disable term
 | | EddyDiff4 | biharmonic horizontal mixing coeffienct for tracers
 | SfcStressForcingOnEdge | SfcStressForcingTendencyEnable | enable/disable term
-| BottomDragOnEdge | BottomDragTendencyEnable | enable/disable term
-| | BottomDragCoeff | bottom drag coefficient
+| BottomDragOnEdge | BottomDragTendency | enable/disable term
+| | BottomDragTendency:Mode | bottom drag mode; `Implicit` or `Explicit`
+| | BottomDragTendency:Type | bottom drag type; `Constant`
+| | BottomDragTendency:BottomDragCoeff | bottom drag coefficient
 | SurfaceTracerRestoringOnCell | SurfaceTracerRestoringEnable | enable/disable term
 
 ## Second Order Horizontal Advection Algorithm
