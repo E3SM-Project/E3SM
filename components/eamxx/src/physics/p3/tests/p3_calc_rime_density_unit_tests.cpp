@@ -809,18 +809,20 @@ void run_bfb()
 
 namespace {
 
+TEST_CASE("p3_calc_rime_density_prop", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcRimeDensity;
+
+  T t;
+  t.run_phys();
+}
+
 TEST_CASE("p3_calc_rime_density_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcRimeDensity;
 
   T t;
-  SECTION("properties") {
-    t.run_phys();
-  }
-
-  SECTION("bfb") {
-    t.run_bfb();
-  }
+  t.run_bfb();
 }
 
 } // namespace

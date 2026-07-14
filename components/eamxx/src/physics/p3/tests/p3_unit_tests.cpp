@@ -1156,11 +1156,17 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap:
 
 namespace {
 
-TEST_CASE("p3_conservation_bfb", "[p3_unit_tests]"){
+TEST_CASE("p3_conservation_prop", "[p3_unit_tests]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation;
 
   T t;
   t.run();
+}
+
+TEST_CASE("p3_conservation_bfb", "[p3_unit_tests]"){
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation;
+
+  T t;
   t.run_bfb();
 }
 

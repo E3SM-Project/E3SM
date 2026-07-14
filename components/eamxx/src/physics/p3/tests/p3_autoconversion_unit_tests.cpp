@@ -586,7 +586,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
 namespace {
 
-TEST_CASE("p3_cloud_water_autoconversion_bfb", "[p3_cloud_water_autoconversion_test]"){
+TEST_CASE("p3_cloud_water_autoconversion_prop", "[p3_cloud_water_autoconversion_test]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion;
 
   T t;
@@ -609,10 +609,13 @@ TEST_CASE("p3_cloud_water_autoconversion_bfb", "[p3_cloud_water_autoconversion_t
   SECTION("variance") {
     t.run_variance_check();
   }
+}
 
-  SECTION("bfb") {
-    t.run_bfb();
-  }
+TEST_CASE("p3_cloud_water_autoconversion_bfb", "[p3_cloud_water_autoconversion_test]"){
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion;
+
+  T t;
+  t.run_bfb();
 }
 
 } // namespace
