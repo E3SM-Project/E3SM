@@ -865,6 +865,10 @@ int testExplicitBottomDrag(int NVertLayers, Real RTol) {
    Err += checkErrors("TendencyTermsTest", "ExplicitBottomDrag",
                       BottomDragErrors, Setup.ExpectedBottomDragErrors, RTol);
 
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: ExplicitBottomDrag PASS");
+   }
+
    return Err;
 } // end testExplicitBottomDrag
 
@@ -948,6 +952,10 @@ int testImplicitBottomDrag(int NVertLayers, Real RTol) {
    Err += checkErrors("TendencyTermsTest", "ImplicitBottomDrag",
                       ImplicitBottomDragErrors,
                       Setup.ExpectedBottomDragErrors, RTol);
+
+   if (Err == 0) {
+      LOG_INFO("TendencyTermsTest: ImplicitBottomDrag PASS");
+   }
 
    return Err;
 } // end testImplicitBottomDrag
