@@ -123,7 +123,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
   void validate_autoconversion_parameters() {
     auto runtime = p3::Functions<Real,DefaultDevice>::P3Runtime();
-    
+
     // Sanity bounds: Ensure parameters are physically reasonable
     // These catch catastrophic configuration errors (typos, unit mistakes, etc.)
     REQUIRE(runtime.autoconversion_radius > 1e-6);      // > 1 μm (activated droplet)
@@ -131,7 +131,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     REQUIRE(runtime.autoconversion_prefactor > 0);
     REQUIRE(runtime.autoconversion_qc_exponent > 0);
     REQUIRE(runtime.autoconversion_nc_exponent > 0);
-    
+
     // Informational output: Display current parameter values
     // Note: These are tunable parameters that may differ from KK2000 reference values
     std::cout << "\n=== Autoconversion Parameters ===\n";
@@ -150,19 +150,19 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     int n_qc;
     int n_nc;
     int num_cases;
-    
+
     // Input host views
     typename view_1d<Real>::host_mirror_type qc_host;
     typename view_1d<Real>::host_mirror_type nc_host;
-    
+
     // Output host views
     typename view_1d<Real>::host_mirror_type qc2qr_host;
     typename view_1d<Real>::host_mirror_type nc2nr_host;
     typename view_1d<Real>::host_mirror_type ncautr_host;
-    
+
     // Runtime parameters
     Real autoconversion_radius;
-    
+
     // Tolerance definitions
     Real identity_tol;
     Real physics_tol;
@@ -177,7 +177,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   AutoconversionTestData setup_parameter_sweep() {
     // Get runtime parameters for use in property checks
     auto runtime = p3::Functions<Real,DefaultDevice>::P3Runtime();
-    
+
     validate_autoconversion_parameters();
 
     // =========================================================================
@@ -200,13 +200,13 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     // P3 Autoconversion Physics Property Testing Plan
     // =========================================================================
     // This suite validates that the `cloud_water_autoconversion` implementation
-    // adheres to the fundamental physical principles of the Khairoutdinov and 
+    // adheres to the fundamental physical principles of the Khairoutdinov and
     // Kogan (2000) parameterization.
     //
     // Strategy:
-    // Uses a deterministic grid-sampling strategy that sweeps the parameter 
-    // space logarithmically to cover regimes ranging from sub-threshold 
-    // (qc < 1e-8) through incipient cloud to heavy precipitation, and 
+    // Uses a deterministic grid-sampling strategy that sweeps the parameter
+    // space logarithmically to cover regimes ranging from sub-threshold
+    // (qc < 1e-8) through incipient cloud to heavy precipitation, and
     // pristine to polluted conditions.
     // =========================================================================
 
@@ -217,7 +217,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     const int n_nc = 40;
     const int num_cases = n_qc * n_nc;
 
-    const Real log_qc_min = std::log10(5.0e-9);   
+    const Real log_qc_min = std::log10(5.0e-9);
     const Real log_qc_max = std::log10(1.0e-2);
     const Real log_nc_min = std::log10(1.0e6);
     const Real log_nc_max = std::log10(1.0e9);
@@ -226,7 +226,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     view_1d<Real> nc_dev("nc_dev", num_cases);
     view_1d<Real> rho_dev("rho_dev", num_cases);
     view_1d<Real> inv_qc_relvar_dev("inv_qc_relvar_dev", num_cases);
-    
+
     view_1d<Real> qc2qr_dev("qc2qr_dev", num_cases);
     view_1d<Real> nc2nr_dev("nc2nr_dev", num_cases);
     view_1d<Real> ncautr_dev("ncautr_dev", num_cases);
@@ -247,7 +247,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
         qc_host(idx) = qc;
         nc_host(idx) = nc;
-        rho_host(idx) = 1.0; 
+        rho_host(idx) = 1.0;
         inv_qc_relvar_host(idx) = 1.0;
       }
     }
@@ -262,10 +262,10 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
     Kokkos::parallel_for("P3_Property_Test_Kernel", num_packs, KOKKOS_LAMBDA(const Int& ip) {
       const int offset = ip * pack_size;
-      
+
       Pack rho, qc, nc, inv_qc_relvar;
       Pack qc2qr, nc2nr, ncautr;
-      
+
       bool any_valid = false;
       for (int s = 0; s < pack_size; ++s) {
         int idx = offset + s;
@@ -285,12 +285,12 @@ void cloud_water_autoconversion_unit_bfb_tests() {
 
       if (any_valid) {
           Functions::cloud_water_autoconversion(
-              rho, qc, nc, inv_qc_relvar, 
+              rho, qc, nc, inv_qc_relvar,
               qc2qr, nc2nr, ncautr,
               p3::Functions<Real,DefaultDevice>::P3Runtime()
           );
       }
-      
+
       for (int s = 0; s < pack_size; ++s) {
         int idx = offset + s;
         if (idx < num_cases) {
@@ -302,7 +302,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     });
 
     Kokkos::fence();
-    
+
     auto qc2qr_host = Kokkos::create_mirror_view(qc2qr_dev);
     auto nc2nr_host = Kokkos::create_mirror_view(nc2nr_dev);
     auto ncautr_host = Kokkos::create_mirror_view(ncautr_dev);
@@ -310,13 +310,13 @@ void cloud_water_autoconversion_unit_bfb_tests() {
     Kokkos::deep_copy(qc2qr_host, qc2qr_dev);
     Kokkos::deep_copy(nc2nr_host, nc2nr_dev);
     Kokkos::deep_copy(ncautr_host, ncautr_dev);
-    
+
     return AutoconversionTestData{
       n_qc, n_nc, num_cases,
       qc_host, nc_host,
       qc2qr_host, nc2nr_host, ncautr_host,
       runtime.autoconversion_radius,
-      identity_tol, physics_tol, small_droplet_regime_floor, 
+      identity_tol, physics_tol, small_droplet_regime_floor,
       absolute_floor, detect_threshold
     };
   }
@@ -334,7 +334,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         Real qc = data.qc_host(idx);
         Real R = data.qc2qr_host(idx);
         Real N_loss = data.nc2nr_host(idx);
-        Real R_ncautr = data.ncautr_host(idx); 
+        Real R_ncautr = data.ncautr_host(idx);
 
         // Check for non-zero below threshold
         if (qc < 1e-8) {
@@ -348,7 +348,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         if (R < 1e-30) R = 0.0;
         if (N_loss < 1e-30) N_loss = 0.0;
         if (R_ncautr < 1e-30) R_ncautr = 0.0;
-        
+
         // =====================================================================
         // Physical Sensitivity Tests (Monotonicity)
         // =====================================================================
@@ -359,21 +359,21 @@ void cloud_water_autoconversion_unit_bfb_tests() {
             int idx_next = (j + 1) * data.n_qc + i;
             Real R_next = data.qc2qr_host(idx_next);
             if (R_next < 1e-30) R_next = 0.0;
-            
+
             // A. Colloidal Stability (Inverse Nc Dependency): dR/dNc < 0
             // R_next (high Nc) must be strictly less than R (low Nc).
             if (R > data.absolute_floor) {
                 // FAIL if R_next is greater than or equal to R.
-                // We do not use the loose 'relative_tolerance' here because the physics 
+                // We do not use the loose 'relative_tolerance' here because the physics
                 // requires strict monotonicity.
                 if (R_next >= R) {
-                     std::cout << "Monotonicity Nc Fail: R increased or stayed same with Nc. qc=" << qc 
+                     std::cout << "Monotonicity Nc Fail: R increased or stayed same with Nc. qc=" << qc
                                << " R=" << R << " R_next=" << R_next << "\n";
                      failures++;
                 }
             }
         }
-        
+
         if (i < data.n_qc - 1) {
             int idx_next = j * data.n_qc + (i + 1);
             Real R_next = data.qc2qr_host(idx_next);
@@ -381,10 +381,10 @@ void cloud_water_autoconversion_unit_bfb_tests() {
             // B. Water Content Sensitivity (Positive qc Dependency): dR/dqc > 0
             // R_next (high qc) should be greater than R (low qc).
             if (R_next > data.absolute_floor) {
-                // If R_next < R, it's a failure. 
+                // If R_next < R, it's a failure.
                 Real min_allowed_R_next = R * (1.0 - relative_tolerance);
                 if (R_next < min_allowed_R_next) {
-                     std::cout << "Monotonicity qc Fail: R decreased with qc. qc=" << qc 
+                     std::cout << "Monotonicity qc Fail: R decreased with qc. qc=" << qc
                                << " R=" << R << " R_next=" << R_next << "\n";
                      failures++;
                 }
@@ -420,7 +420,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
              // Verifies: nc2nr_autoconv_tend = qc2qr_autoconv_tend * (nc/qc)
              Real expected_N_loss = R * nc / qc;
              Real rel_error = std::abs(N_loss - expected_N_loss) / std::max(data.absolute_floor, expected_N_loss);
-             
+
              if (rel_error > data.identity_tol) {
                  std::cout << "Specific Loss Conservation Fail (should be near machine precision):\n";
                  std::cout << "  Expected: " << expected_N_loss << "\n";
@@ -435,11 +435,11 @@ void cloud_water_autoconversion_unit_bfb_tests() {
              // B. Rain Embryo Size Consistency (Configuration Parameter)
              // Verifies: autoconversion_radius parameter is preserved through calculation
              Real mass_drop = R / R_ncautr;
-             
+
              using C = scream::physics::Constants<Real>;
              const Real r_expected = data.autoconversion_radius;  // Use runtime config
              const Real expected_mass = (4.0/3.0) * C::Pi * 1000.0 * std::pow(r_expected, 3);
-             
+
              if (std::abs(mass_drop - expected_mass) / expected_mass > data.physics_tol) {
                   std::cout << "Embryo Size Fail (configuration mismatch):\n";
                   std::cout << "  Computed mass: " << mass_drop << " kg\n";
@@ -468,15 +468,15 @@ void cloud_water_autoconversion_unit_bfb_tests() {
         Real R = data.qc2qr_host(idx);
 
         if (R < 1e-30) R = 0.0;
-        
+
         Real mean_mass = qc / nc;
         // Correct formula: r = (3*m / (4*pi*rho))^(1/3)
         // rho_w = 1000.
         using C = scream::physics::Constants<Real>;
         Real mean_rad = std::pow((3.0 * mean_mass) / (4.0 * C::Pi * 1000.0), 1.0/3.0);
-        
+
         // A. Small Droplet Regime Limit (Physical Relevance Check)
-        // For very small activated droplets (r < 1 μm), autoconversion rates 
+        // For very small activated droplets (r < 1 μm), autoconversion rates
         // should be physically negligible due to low collision efficiency.
         // This regime represents incipient cloud or sub-threshold conditions.
         // Note: Implementation threshold is qc < 1e-8, not radius-based.
@@ -499,35 +499,35 @@ void cloud_water_autoconversion_unit_bfb_tests() {
   void run_variance_check() {
     const int n_qc = 40;
     view_1d<Real> var_rate_1("rate_1", n_qc);
-    view_1d<Real> var_rate_2("rate_2", n_qc); 
-    
-    Real fixed_nc = 100.0e6; 
+    view_1d<Real> var_rate_2("rate_2", n_qc);
+
+    Real fixed_nc = 100.0e6;
 
     Kokkos::parallel_for("Variance_Check", n_qc, KOKKOS_LAMBDA(const int& i) {
         Real alpha = (Real)i / (Real)(n_qc - 1);
         Real qc = std::pow(10.0, -6.0 + alpha * 4.0);
-        
+
         Pack s_rho(1.0), s_qc(qc), s_nc(fixed_nc);
         Pack s_rate_1, s_rate_2, dummy;
-        
+
         // Run 1: Homogeneous
         Functions::cloud_water_autoconversion(
-            s_rho, s_qc, s_nc, Pack(1.0), 
-            s_rate_1, dummy, dummy, 
+            s_rho, s_qc, s_nc, Pack(1.0),
+            s_rate_1, dummy, dummy,
             p3::Functions<Real,DefaultDevice>::P3Runtime()
         );
-        
+
         // Run 2: High Variance
         Functions::cloud_water_autoconversion(
-            s_rho, s_qc, s_nc, Pack(0.1), 
-            s_rate_2, dummy, dummy, 
+            s_rho, s_qc, s_nc, Pack(0.1),
+            s_rate_2, dummy, dummy,
             p3::Functions<Real,DefaultDevice>::P3Runtime()
         );
-        
+
         var_rate_1(i) = s_rate_1[0];
         var_rate_2(i) = s_rate_2[0];
     });
-    
+
     Kokkos::fence();
     auto h_rate_1 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), var_rate_1);
     auto h_rate_2 = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), var_rate_2);
@@ -544,7 +544,7 @@ void cloud_water_autoconversion_unit_bfb_tests() {
             // Detection: Do standard and variance rates differ?
             if (std::abs(ratio - 1.0) > variance_detect_eps) {
                 is_variance_scaling_active = true;
-                
+
                 // Validation: If active, is the rate suppressed? (Physical violation)
                 // Jensen's inequality for convex functions implies enhancement (ratio > 1).
                 // We fail if ratio < 1.0 (minus tolerance).
@@ -590,30 +590,29 @@ TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion;
 
   T t;
-  
+
   SECTION("monotonicity") {
     auto data = t.setup_parameter_sweep();
     t.run_monotonicity_checks(data);
   }
-  
+
   SECTION("consistency") {
     auto data = t.setup_parameter_sweep();
     t.run_consistency_checks(data);
   }
-  
+
   SECTION("limits") {
     auto data = t.setup_parameter_sweep();
     t.run_limit_checks(data);
   }
-  
+
   SECTION("variance") {
     t.run_variance_check();
   }
-  
+
   SECTION("bfb") {
     t.run_bfb();
   }
 }
 
 } // namespace
-

@@ -267,7 +267,7 @@ namespace {
   {
     using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
 
-    T t;
+    T t(true);
     t.run_property();
   }
 

@@ -167,7 +167,7 @@ TEST_CASE("ice_deposition_sublimation_property", "[p3]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceDepositionSublimation;
 
-  T t;
+  T t(true);
   t.run_property();
 }
 

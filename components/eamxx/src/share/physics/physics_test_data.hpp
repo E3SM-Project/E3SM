@@ -478,20 +478,23 @@ struct UnitBase
   std::ifstream   m_ifile;
   std::ofstream   m_ofile;
 
-  UnitBase() :
+  UnitBase(const bool property=false) :
     m_baseline_path(""),
     m_test_name(Catch::getResultCapture().getCurrentTestName()),
     m_baseline_action(NONE)
   {
     auto& ts = ekat::TestSession::get();
-    if (ts.flags["c"]) {
-      m_baseline_action = COMPARE;
-    }
-    else if (ts.flags["g"]) {
-      m_baseline_action = GENERATE;
-    }
-    else if (ts.flags["n"]) {
-      m_baseline_action = NONE;
+    // Property tests do not use baselines
+    if (!property) {
+      if (ts.flags["c"]) {
+        m_baseline_action = COMPARE;
+      }
+      else if (ts.flags["g"]) {
+        m_baseline_action = GENERATE;
+      }
+      else if (ts.flags["n"]) {
+        m_baseline_action = NONE;
+      }
     }
     m_baseline_path = ts.params["b"];
 
