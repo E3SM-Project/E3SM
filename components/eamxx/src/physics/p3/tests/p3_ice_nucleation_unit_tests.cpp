@@ -122,7 +122,7 @@ struct UnitWrap::UnitTest<D>::TestIceNucleation : public UnitWrap::UnitTest<D>::
 
 namespace {
 
-TEST_CASE("p3_ice_nucleation", "[p3_functions]")
+TEST_CASE("p3_ice_nucleation_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceNucleation;
 

@@ -146,7 +146,7 @@ struct UnitWrap::UnitTest<D>::TestIncloudMixing : public UnitWrap::UnitTest<D>::
 
 namespace {
 
-TEST_CASE("p3_incloud_mixingratios", "[p3_functions]")
+TEST_CASE("p3_incloud_mixingratios_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIncloudMixing;
 

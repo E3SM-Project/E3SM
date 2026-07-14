@@ -1156,7 +1156,7 @@ struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi : public UnitWrap:
 
 namespace {
 
-TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
+TEST_CASE("p3_conservation_bfb", "[p3_unit_tests]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation;
 
   T t;
@@ -1164,28 +1164,28 @@ TEST_CASE("p3_conservation_test", "[p3_unit_tests]"){
   t.run_bfb();
 }
 
-TEST_CASE("p3_get_time_space_phys_variables_test", "[p3_unit_tests]"){
+TEST_CASE("p3_get_time_space_phys_variables_bfb", "[p3_unit_tests]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGetTimeSpacePhysVariables;
 
   T t;
   t.run_bfb();
 }
 
-TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
+TEST_CASE("p3_update_prognostic_ice_bfb", "[p3_unit_tests]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticIce;
 
   T t;
   t.run_bfb();
 }
 
-TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
+TEST_CASE("p3_update_prognostic_liquid_bfb", "[p3_unit_tests]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq;
 
   T t;
   t.run_bfb();
 }
 
-TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){
+TEST_CASE("p3_impose_max_total_ni_bfb", "[p3_unit_tests]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3FunctionsImposeMaxTotalNi;
 
   T t;

@@ -695,7 +695,7 @@ struct UnitWrap::UnitTest<D>::TestCalcLiqRelaxationTimescale : public UnitWrap::
 
 namespace {
 
-TEST_CASE("p3_calc_liq_relaxation_timescale", "[p3_functions]")
+TEST_CASE("p3_calc_liq_relaxation_timescale_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCalcLiqRelaxationTimescale;
 

@@ -525,7 +525,7 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_main", "[p3_functions]")
+TEST_CASE("p3_main_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Main;
 

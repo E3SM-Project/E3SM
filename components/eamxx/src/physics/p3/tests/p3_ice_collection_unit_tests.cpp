@@ -314,7 +314,7 @@ struct UnitWrap::UnitTest<D>::TestIceCollection : public UnitWrap::UnitTest<D>::
 
 namespace {
 
-TEST_CASE("p3_ice_cldliq", "[p3_functions]")
+TEST_CASE("p3_ice_cldliq_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
 
@@ -323,7 +323,7 @@ TEST_CASE("p3_ice_cldliq", "[p3_functions]")
   t.run_ice_cldliq_bfb();
 }
 
-TEST_CASE("p3_ice_rain", "[p3_functions]")
+TEST_CASE("p3_ice_rain_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
 
@@ -332,7 +332,7 @@ TEST_CASE("p3_ice_rain", "[p3_functions]")
   t.run_ice_rain_bfb();
 }
 
-TEST_CASE("p3_ice_self", "[p3_functions]")
+TEST_CASE("p3_ice_self_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCollection;
 

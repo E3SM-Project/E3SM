@@ -368,7 +368,7 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_upwind", "[p3_functions]")
+TEST_CASE("p3_upwind_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
 
@@ -377,7 +377,7 @@ TEST_CASE("p3_upwind", "[p3_functions]")
   t.run_bfb();
 }
 
-TEST_CASE("p3_gen_sed", "[p3_functions]")
+TEST_CASE("p3_gen_sed_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
 

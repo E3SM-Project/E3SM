@@ -128,7 +128,7 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_droplet_self_collection", "[p3_functions]")
+TEST_CASE("p3_droplet_self_collection_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestDropletSelfCollection;
 

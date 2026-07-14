@@ -863,7 +863,7 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 
 namespace {
 
-TEST_CASE("p3_back_to_cell_average", "[p3_back_to_cell_average]") {
+TEST_CASE("p3_back_to_cell_average_bfb", "[p3_back_to_cell_average]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3BackToCellAverage;
 
   T t;

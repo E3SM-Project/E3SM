@@ -329,7 +329,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce : public UnitWrap::UnitTest<D>::Base 
 
 namespace {
 
-TEST_CASE("p3_ice_tables", "[p3_functions]")
+TEST_CASE("p3_ice_tables_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce;
 

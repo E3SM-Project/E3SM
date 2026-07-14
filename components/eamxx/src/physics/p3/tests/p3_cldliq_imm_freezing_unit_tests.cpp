@@ -670,7 +670,7 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_cldliq_immersion_freezing", "[p3_functions]")
+TEST_CASE("p3_cldliq_immersion_freezing_bfb", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCldliqImmersionFreezing;
 
