@@ -76,51 +76,86 @@ template <class T> struct ArrayRank {
 };
 
 // Array type traits: Map scalar types to concrete OMEGA array types
-template<typename T> struct Array1D;
-template<> struct Array1D<I4> { using type = Array1DI4; };
-template<> struct Array1D<I8> { using type = Array1DI8; };
-template<> struct Array1D<R4> { using type = Array1DR4; };
-template<> struct Array1D<R8> { using type = Array1DR8; };
+template <typename T> struct Array1D;
+template <> struct Array1D<I4> {
+   using type = Array1DI4;
+};
+template <> struct Array1D<I8> {
+   using type = Array1DI8;
+};
+template <> struct Array1D<R4> {
+   using type = Array1DR4;
+};
+template <> struct Array1D<R8> {
+   using type = Array1DR8;
+};
 
-template<typename T> struct Array2D;
-template<> struct Array2D<I4> { using type = Array2DI4; };
-template<> struct Array2D<I8> { using type = Array2DI8; };
-template<> struct Array2D<R4> { using type = Array2DR4; };
-template<> struct Array2D<R8> { using type = Array2DR8; };
+template <typename T> struct Array2D;
+template <> struct Array2D<I4> {
+   using type = Array2DI4;
+};
+template <> struct Array2D<I8> {
+   using type = Array2DI8;
+};
+template <> struct Array2D<R4> {
+   using type = Array2DR4;
+};
+template <> struct Array2D<R8> {
+   using type = Array2DR8;
+};
 
-template<typename T> struct Array3D;
-template<> struct Array3D<I4> { using type = Array3DI4; };
-template<> struct Array3D<I8> { using type = Array3DI8; };
-template<> struct Array3D<R4> { using type = Array3DR4; };
-template<> struct Array3D<R8> { using type = Array3DR8; };
+template <typename T> struct Array3D;
+template <> struct Array3D<I4> {
+   using type = Array3DI4;
+};
+template <> struct Array3D<I8> {
+   using type = Array3DI8;
+};
+template <> struct Array3D<R4> {
+   using type = Array3DR4;
+};
+template <> struct Array3D<R8> {
+   using type = Array3DR8;
+};
 
-template<typename T> struct Array4D;
-template<> struct Array4D<I4> { using type = Array4DI4; };
-template<> struct Array4D<I8> { using type = Array4DI8; };
-template<> struct Array4D<R4> { using type = Array4DR4; };
-template<> struct Array4D<R8> { using type = Array4DR8; };
+template <typename T> struct Array4D;
+template <> struct Array4D<I4> {
+   using type = Array4DI4;
+};
+template <> struct Array4D<I8> {
+   using type = Array4DI8;
+};
+template <> struct Array4D<R4> {
+   using type = Array4DR4;
+};
+template <> struct Array4D<R8> {
+   using type = Array4DR8;
+};
 
-template<typename T> struct Array5D;
-template<> struct Array5D<I4> { using type = Array5DI4; };
-template<> struct Array5D<I8> { using type = Array5DI8; };
-template<> struct Array5D<R4> { using type = Array5DR4; };
-template<> struct Array5D<R8> { using type = Array5DR8; };
+template <typename T> struct Array5D;
+template <> struct Array5D<I4> {
+   using type = Array5DI4;
+};
+template <> struct Array5D<I8> {
+   using type = Array5DI8;
+};
+template <> struct Array5D<R4> {
+   using type = Array5DR4;
+};
+template <> struct Array5D<R8> {
+   using type = Array5DR8;
+};
 
 // Helper aliases for cleaner syntax
-template<typename T>
-using Array1D_t = typename Array1D<T>::type;
+template <typename T> using Array1D_t = typename Array1D<T>::type;
 
-template<typename T>
-using Array2D_t = typename Array2D<T>::type;
+template <typename T> using Array2D_t = typename Array2D<T>::type;
 
-template<typename T>
-using Array3D_t = typename Array3D<T>::type;
+template <typename T> using Array3D_t = typename Array3D<T>::type;
 
-template<typename T>
-using Array4D_t = typename Array4D<T>::type;
+template <typename T> using Array4D_t = typename Array4D<T>::type;
 
-template<typename T>
-using Array5D_t = typename Array5D<T>::type;
+template <typename T> using Array5D_t = typename Array5D<T>::type;
 
 template <typename V>
 auto createHostMirrorCopy(const V &View)

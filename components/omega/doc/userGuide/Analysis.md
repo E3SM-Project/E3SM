@@ -133,14 +133,14 @@ Omega:
   (e.g., `1Hour`, `6Hour`, `1Day`). At least one of `ReductionPeriod` or
   `SnapshotPeriod` must be specified.
 
-**Output fields:** 
+**Output fields:**
 For each `(Field, SpatialStat)` combination:
- - Instantaneous output: `FieldName_SpatialStat` (e.g., 
+ - Instantaneous output: `FieldName_SpatialStat` (e.g.,
  `Temperature_SpatialMean`)
  - Temporal reduction: `FieldName_SpatialStat_TimeMeanPeriod` (e.g.,
  `Temperature_SpatialMean_TimeMean1Day`)
 
-**Output streams:** 
+**Output streams:**
 Automatically created and named:
  - Time reduction: `GlobalStats_FreqTimeStats` (e.g.,
  `GlobalStats_1DayTimeStats`)
