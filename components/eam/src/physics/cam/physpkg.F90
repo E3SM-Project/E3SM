@@ -2856,8 +2856,10 @@ end if
        ! Note that these subroutine calls do not touch water vapor. They also have no effects
        ! on tracers for which cam_in%cflx(:,m) is zero at this point.
 
-      !if ( do_clubb_sgs .and. (cflx_cpl_opt==2) ) then
-       if ( cflx_cpl_opt==2 ) then
+       ! For cflx_cpl_opt==2, pre-apply non-CO2 surface fluxes here only when
+       ! CLUBB/SHOC is active. If vertical diffusion runs, it applies
+       ! constituent surface fluxes in tphysac.
+       if ( (do_clubb_sgs .or. do_shoc_sgs) .and. cflx_cpl_opt==2 ) then
           ! Apply surface fluxes for all tracers EXCEPT CO2; CO2 is applied in tphysac
           ! to avoid redundant additions during the multi-call init sequence (see GH #8201)
           call cflx_tend( state, cam_in, ztodt, ptend, skip_co2=.true.)
