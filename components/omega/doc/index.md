@@ -54,6 +54,7 @@ userGuide/Timing
 userGuide/VerticalMixingCoeff
 userGuide/VertAdv
 userGuide/Forcing
+userGuide/SfcCoupling
 ```
 
 ```{toctree}
@@ -100,6 +101,7 @@ devGuide/Timing
 devGuide/VerticalMixingCoeff
 devGuide/VertAdv
 devGuide/Forcing
+devGuide/SfcCoupling
 ```
 
 ```{toctree}

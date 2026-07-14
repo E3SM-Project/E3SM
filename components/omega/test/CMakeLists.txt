@@ -566,3 +566,14 @@ add_omega_test(
     ocn/StateValidationTest.cpp
     "-n;8"
 )
+
+#####################
+# SurfaceCouling test
+#####################
+
+add_omega_test(
+    SFCCOUPLING_TEST
+    testSfcCoupling.exe
+    ocn/SfcCouplingTest.cpp
+    "-n;8"
+)
