@@ -85,7 +85,7 @@ class TestAllScream(object):
         mach_name = machine or os.environ.get('SCREAM_MACHINE') or "local"
         expect (is_machine_supported(mach_name),
                 f"The machine '{mach_name}' is not supported")
-        self._machine = get_machine(machine)
+        self._machine = get_machine(mach_name)
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
