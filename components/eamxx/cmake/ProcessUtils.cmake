@@ -29,23 +29,3 @@ function(GetScriptPositionalArguments out_var)
   # Propagate the filtered list back to the caller's scope
   set(${out_var} "${real_args}" PARENT_SCOPE)
 endfunction()
-
-###############################################################################
-function(CopyFile src_file tgt_file)
-###############################################################################
-  execute_process (
-    COMMAND ${CMAKE_COMMAND} -E copy "${src_file}" "${tgt_file}"
-    RESULT_VARIABLE cp_result
-    OUTPUT_VARIABLE cp_output
-    ERROR_VARIABLE  cp_output)
-
-  if (NOT cp_result EQUAL 0)
-    string (CONCAT msg
-      "Command\n"
-      "  '${CMAKE_COMMAND} -E copy ${src_file} ${tgt_file}'"
-      "returned '${cp_result}', and output:\n"
-      "${cp_output}")
-    message ("${msg}")
-    message (FATAL_ERROR "Aborting.")
-  endif()
-endfunction()
