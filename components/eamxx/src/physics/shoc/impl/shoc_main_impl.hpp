@@ -669,7 +669,11 @@ Int Functions<S,D>::shoc_main(
     const auto w_field_s      = ekat::subview(shoc_input.w_field, i);
     const auto wtracer_sfc_s  = ekat::subview(shoc_input.wtracer_sfc, i);
     const auto inv_exner_s    = ekat::subview(shoc_input.inv_exner, i);
-    const auto shear_strain3d_components_s = Kokkos::subview(shoc_input.shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL());
+    uview_2d<const Pack> shear_strain3d_components_s;
+    if (do_3d_turb) {
+      shear_strain3d_components_s =
+        Kokkos::subview(shoc_input.shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL());
+    }
     const auto shear_strain3d_s = ekat::subview(shoc_input.shear_strain3d, i);
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);

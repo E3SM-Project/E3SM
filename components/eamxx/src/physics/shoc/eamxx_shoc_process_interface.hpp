@@ -502,7 +502,6 @@ protected:
   // Struct which contains local variables
   Buffer m_buffer;
   view_2d m_dummy_shear_strain3d;
-  view_3d m_dummy_shear_strain3d_components;
 
   // Store the structures for each argument to shoc_main;
   SHF::SHOCInput input;
