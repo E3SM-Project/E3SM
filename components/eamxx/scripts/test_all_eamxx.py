@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from utils import run_cmd, run_cmd_no_fail, expect, check_minimum_python_version, \
-                  ensure_psutil, SharedArea
+                  ensure_psutil
 from git_utils import get_current_head, get_current_commit
 
 from test_factory import create_tests, COV, CSR
@@ -251,14 +251,6 @@ class TestAllScream(object):
             (test_dir / "data").mkdir(parents=False,exist_ok=True)
 
     ###############################################################################
-    def set_baseline_file_sha(self, test):
-    ###############################################################################
-        sha = get_current_commit()
-        baseline_file = (self.get_preexisting_baseline(test).parent)/"baseline_git_sha"
-        with baseline_file.open("w", encoding="utf-8") as fd:
-            return fd.write(sha)
-
-    ###############################################################################
     def get_test_dir(self, root, test):
     ###############################################################################
         return root/str(test)
@@ -370,13 +362,10 @@ class TestAllScream(object):
         if "SCREAM_DYNAMICS_DYCORE" not in custom_opts_keys:
             result += " -DSCREAM_DYNAMICS_DYCORE=HOMME"
 
-        # NOTE: for generate, don't set baseline dir, since we don't want to overwrite
-        #       existing baselines until we know all tests completed normally
         if self._generate:
-            test_dir = self.get_test_dir(self._work_dir,test)
             result += " -DSCREAM_ENABLE_BASELINE_TESTS=ON"
-            result += f" -DSCREAM_BASELINES_DIR={test_dir}"
             result += " -DSCREAM_ONLY_GENERATE_BASELINES=ON"
+            result += f" -DSCREAM_BASELINES_DIR={self.get_preexisting_baseline(test).parent}"
         elif self._baseline_dir is not None and test.uses_baselines:
             result += " -DSCREAM_ENABLE_BASELINE_TESTS=ON"
             result += f" -DSCREAM_BASELINES_DIR={self.get_preexisting_baseline(test).parent}"
@@ -512,31 +501,17 @@ class TestAllScream(object):
         expect(test.uses_baselines,
                f"Something is off. generate_baseline should have not be called for test {test}")
 
+        # Ensure baselines files copied into the baseline dir get the correct permissions
+        os.umask(0o0002)
+
+        # Run tests
         success = self.run_test(test)
 
-        if success:
-            test_dir = self.get_test_dir(self._work_dir,test)
-            # Read list of nc files to copy to baseline dir
-            baseline_dir = self.get_test_dir(self._baseline_dir, test)
-            with open(test_dir/"data/baseline_list","r",encoding="utf-8") as fd:
-                files = fd.read().splitlines()
-
-                with SharedArea():
-                    for fn in files:
-                        # In case appending to the file leaves an empty line at the end
-                        if fn != "":
-                            src = Path(fn)
-                            dst = baseline_dir / "data" / src.name
-                            shutil.copyfile(src, dst)
-
-            # Some eamxx tests are designed to output directly in <bld_root>/data,
-            # so just copy all content from there into the baseline dir
-            shutil.copytree(test_dir/"data",baseline_dir/"data",dirs_exist_ok=True)
-
-            # Store the sha used for baselines generation. This is only for record
-            # keeping.
-            self.set_baseline_file_sha(test)
-            test.baselines_missing = False
+        # Update the baseline_git_sha file
+        sha = get_current_commit()
+        baseline_file = (self.get_preexisting_baseline(test).parent)/"baseline_git_sha"
+        with baseline_file.open("w", encoding="utf-8") as fd:
+            fd.write(sha)
 
         return success
 
