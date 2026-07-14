@@ -2857,7 +2857,7 @@ end if
        ! on tracers for which cam_in%cflx(:,m) is zero at this point.
 
       !if ( do_clubb_sgs .and. (cflx_cpl_opt==2) ) then
-       if ( cflx_cpl_opt==2 ) then
+       if ( (do_clubb_sgs .or. do_shoc_sgs) .and. (cflx_cpl_opt==2) ) then
           ! Apply surface fluxes for all tracers EXCEPT CO2; CO2 is applied in tphysac
           ! to avoid redundant additions during the multi-call init sequence (see GH #8201)
           call cflx_tend( state, cam_in, ztodt, ptend, skip_co2=.true.)
