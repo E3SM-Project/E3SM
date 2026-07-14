@@ -132,7 +132,7 @@ if [ "${run}" != "production" ]; then
   readonly RESUBMIT=${resubmit}
   readonly DO_SHORT_TERM_ARCHIVING=false
 
-  readonly WALLTIME=${WALLTIME_DEBUG}
+  readonly WALLTIME=${WALLTIME_DEBUG:-0:30:00}
   readonly RUN_QUEUE=${MACH_QUEUE_DEBUG}
 else
 
