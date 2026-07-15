@@ -16,37 +16,33 @@ if (NOT CPRNC)
   message (FATAL_ERROR "This script was not configured correctly (CPRNC_BINARY was not set).")
 endif()
 
-if (SCREAM_ONLY_GENERATE_BASELINES)
-  CopyFile(${SRC_FILE} ${TGT_FILE})
-else()
-  execute_process (
-    COMMAND ${CPRNC} ${SRC_FILE} ${TGT_FILE}
-    RESULT_VARIABLE cprnc_result
-    OUTPUT_VARIABLE cprnc_output
-    ERROR_VARIABLE  cprnc_output)
+execute_process (
+  COMMAND ${CPRNC} ${SRC_FILE} ${TGT_FILE}
+  RESULT_VARIABLE cprnc_result
+  OUTPUT_VARIABLE cprnc_output
+  ERROR_VARIABLE  cprnc_output)
 
-  if (NOT cprnc_result EQUAL 0)
-    string (CONCAT msg
-      "Command\n"
-      "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'"
-      "returned '${cprnc_result}', and output:\n"
-      "${cprnc_output}")
-    message ("${msg}")
-    message (FATAL_ERROR "Aborting.")
-  endif()
-
-  # Search output for "IDENTICAL". -1 means it does not exist. Use REVERSE on
-  # the off chance that makes it faster, since "IDENTICAL", if it exists, is
-  # near the end of the output.
-  string (FIND "${cprnc_output}" "IDENTICAL" identical_pos REVERSE)
-
-  if (identical_pos EQUAL -1)
-    string (CONCAT msg
-      "Command\n"
-      "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'\n"
-      "reported differences between the files. Here's the output from cprnc:\n")
-    message ("${msg}")
-    message ("${cprnc_output}")
-    message (FATAL_ERROR "Aborting.")
-  endif ()
+if (NOT cprnc_result EQUAL 0)
+  string (CONCAT msg
+    "Command\n"
+    "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'"
+    "returned '${cprnc_result}', and output:\n"
+    "${cprnc_output}")
+  message ("${msg}")
+  message (FATAL_ERROR "Aborting.")
 endif()
+
+# Search output for "IDENTICAL". -1 means it does not exist. Use REVERSE on
+# the off chance that makes it faster, since "IDENTICAL", if it exists, is
+# near the end of the output.
+string (FIND "${cprnc_output}" "IDENTICAL" identical_pos REVERSE)
+
+if (identical_pos EQUAL -1)
+  string (CONCAT msg
+    "Command\n"
+    "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'\n"
+    "reported differences between the files. Here's the output from cprnc:\n")
+  message ("${msg}")
+  message ("${cprnc_output}")
+  message (FATAL_ERROR "Aborting.")
+endif ()
