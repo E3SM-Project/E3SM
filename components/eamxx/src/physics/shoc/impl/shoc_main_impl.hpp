@@ -143,7 +143,11 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Pack>&       w3,
   const uview_1d<Pack>&       wqls_sec,
   const uview_1d<Pack>&       brunt,
-  const uview_1d<Pack>&       isotropy)
+  const uview_1d<Pack>&       isotropy,
+  const Scalar&               uw_sfc_pert,
+  const Scalar&               vw_sfc_pert,
+  const uview_1d<Pack>&       um_pert,
+  const uview_1d<Pack>&       vm_pert)
 {
 
   // Define temporary variables
@@ -239,7 +243,8 @@ void Functions<S,D>::shoc_main_internal(
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                 workspace,                                  // Workspace
-                                thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
+                                thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
+                                uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
 
     // Diagnose the second order moments
     diag_second_shoc_moments(team,nlev,nlevi,
@@ -406,6 +411,10 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Pack>&       wqls_sec,
   const view_2d<Pack>&       brunt,
   const view_2d<Pack>&       isotropy,
+  const view_1d<const Scalar>& uw_sfc_pert,
+  const view_1d<const Scalar>& vw_sfc_pert,
+  const view_2d<Pack>&       um_pert,
+  const view_2d<Pack>&       vm_pert,
   // Temporaries
   const view_1d<Scalar>& se_b,
   const view_1d<Scalar>& ke_b,
@@ -505,7 +514,8 @@ void Functions<S,D>::shoc_main_internal(
                                      dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                      vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                      workspace_mgr,                              // Workspace mgr
-                                     thetal,qw,qtracers,tke,u_wind,v_wind);      // Input/Output
+                                     thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
+                                     uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
 
     // Diagnose the second order moments
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
@@ -645,6 +655,8 @@ Int Functions<S,D>::shoc_main(
     const Scalar wqw_sfc_s{shoc_input.wqw_sfc(i)};
     const Scalar uw_sfc_s{shoc_input.uw_sfc(i)};
     const Scalar vw_sfc_s{shoc_input.vw_sfc(i)};
+    const Scalar uw_sfc_pert_s{shoc_input.uw_sfc_pert(i)};
+    const Scalar vw_sfc_pert_s{shoc_input.vw_sfc_pert(i)};
     const Scalar phis_s{shoc_input.phis(i)};
     Scalar pblh_s{0};
     Scalar ustar_s{0};
@@ -667,6 +679,8 @@ Int Functions<S,D>::shoc_main(
     const auto tk_s           = ekat::subview(shoc_input_output.tk, i);
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
+    const auto um_pert_s      = ekat::subview(shoc_input_output.um_pert, i);
+    const auto vm_pert_s      = ekat::subview(shoc_input_output.vm_pert, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
     const auto tkh_s          = ekat::subview(shoc_output.tkh, i);
     const auto shoc_cond_s    = ekat::subview(shoc_history_output.shoc_cond, i);
@@ -706,7 +720,8 @@ Int Functions<S,D>::shoc_main(
                        shoc_cond_s, shoc_evap_s,                              // Diagnostic Output Variables
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
-                       w3_s, wqls_sec_s, brunt_s, isotropy_s);                // Diagnostic Output Variables
+                       w3_s, wqls_sec_s, brunt_s, isotropy_s,                 // Diagnostic Output Variables
+                       uw_sfc_pert_s, vw_sfc_pert_s, um_pert_s, vm_pert_s);
 
     shoc_output.pblh(i) = pblh_s;
     shoc_output.ustar(i) = ustar_s;
@@ -734,6 +749,7 @@ Int Functions<S,D>::shoc_main(
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
     shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
+    shoc_input.uw_sfc_pert, shoc_input.vw_sfc_pert, shoc_input_output.um_pert, shoc_input_output.vm_pert,
     // Temporaries
     shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,
     shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
