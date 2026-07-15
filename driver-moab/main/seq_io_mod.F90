@@ -436,9 +436,11 @@ contains
        !       rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',1,dimid(1))
        !       rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_INT,dimid,varid)
        rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_INT,varid)
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       if (len_trim(cunit) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
        rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (len_trim(sname) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
        if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
@@ -513,9 +515,11 @@ contains
        lnx = size(idata)
        rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',lnx,dimid(1))
        rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_INT,dimid,varid)
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       if (len_trim(cunit) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
        rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (len_trim(sname) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
        if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
@@ -591,9 +595,11 @@ contains
 
        rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_DOUBLE,varid)
        if(rcode==PIO_NOERR) then
-          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+          if (len_trim(cunit) > 0) &
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
           rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+          if (len_trim(sname) > 0) &
+             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
           if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
        end if
     endif
@@ -667,9 +673,11 @@ contains
        lnx = size(rdata)
        rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_nx',lnx,dimid(1))
        rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_DOUBLE,dimid,varid)
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       if (len_trim(cunit) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
        rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (len_trim(sname) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
        if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
@@ -744,9 +752,11 @@ contains
        lnx = len(charvar)
        rcode = pio_def_dim(cpl_io_file(lfile_ind),trim(dname)//'_len',lnx,dimid(1))
        rcode = pio_def_var(cpl_io_file(lfile_ind),trim(dname),PIO_CHAR,dimid,varid)
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+       if (len_trim(cunit) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
        rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-       rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+       if (len_trim(sname) > 0) &
+          rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
        if (lwdata) call seq_io_enddef(filename, file_ind=lfile_ind)
     endif
 
@@ -1057,9 +1067,11 @@ contains
                 rcode = pio_def_var(cpl_io_file(lfile_ind),trim(name1),PIO_DOUBLE,dimid,varid)
                 rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"_FillValue",lfillvalue)
              end if
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
+             if (len_trim(cunit) > 0) &
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"units",trim(cunit))
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"long_name",trim(lname))
-             rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
+             if (len_trim(sname) > 0) &
+                rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"standard_name",trim(sname))
              rcode = pio_put_att(cpl_io_file(lfile_ind),varid,"internal_dname",trim(dname))
              !-------tcraig
           endif
