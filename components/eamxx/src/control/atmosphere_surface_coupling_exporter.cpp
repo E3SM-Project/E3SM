@@ -578,7 +578,7 @@ void SurfaceCouplingExporter::compute_eamxx_exports(const double dt, const bool 
       // by the time step. However, due to nonlinear effects in SHOC, we can get
       // wsresp above the expected maximum. In this case, we don't trust the
       // output and instead set wsresp to the maximum.
-      Sa_wsresp(i) = ekat::impl::min(Sa_wsresp(i), dt * PC::gravit.value / s_pseudo_density_i(num_levs-1));
+      Sa_wsresp(i) = ekat::impl::min(Sa_wsresp(i), sp(dt) * PC::gravit.value / s_pseudo_density_i(num_levs-1));
     }
   });
   // Variables that are already surface vars in the ATM can just be copied directly.
