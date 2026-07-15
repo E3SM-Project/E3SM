@@ -116,6 +116,31 @@ void omega_ocn_init2(const double *cpl_to_ocn_data, double *ocn_to_cpl_data) {
    OMEGA::ocnInit2(cpl_to_ocn_data, ocn_to_cpl_data);
 }
 
+int omega_ocn_finalize() {
+
+   int ErrFinalize;
+
+   OMEGA::TimeStepper *DefStepper = OMEGA::TimeStepper::getDefault();
+   OMEGA::Clock *ModelClock       = DefStepper->getClock();
+   OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
+
+   // Pacer::start("Finalize", 0);
+   OMEGA::ocnFinalize(CurrTime);
+   if (ErrFinalize != 0) {
+      LOG_ERROR("Error finalizing OMEGA");
+   } else {
+      LOG_INFO("OMEGA successfully completed");
+   }
+   // Pacer::stop("Finalize", 0);
+
+   // no Pacer::print or Pacer::finalize in coupled mode; cpl will handle it
+
+   // finalize Kokkos
+   Kokkos::finalize();
+
+   return ErrFinalize;
+}
+
 int omega_get_layout_mct() {
    return static_cast<int>(OMEGA::CouplingLayout::MCT);
 }

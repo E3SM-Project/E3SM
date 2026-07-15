@@ -62,6 +62,12 @@ module omega_f2cxx_mod
 
       end subroutine omega_ocn_init2
 
+      subroutine omega_ocn_finalize() bind(c)
+
+         implicit none
+
+      end subroutine omega_ocn_finalize
+
       function omega_get_layout_mct() result(layout_mct) bind(c)
 
          use, intrinsic :: iso_c_binding, only: c_int

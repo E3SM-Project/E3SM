@@ -258,10 +258,15 @@ contains
    end subroutine ocn_run_mct
 
    subroutine ocn_final_mct(EClock, cdata, x2o, o2x)
+      use omega_f2cxx_mod, only: omega_ocn_finalize
+
       ! !INPUT/OUTPUT PARAMETERS:
       type(ESMF_Clock), intent(inout) :: EClock
       type(seq_cdata), intent(inout) :: cdata
       type(mct_aVect), intent(inout) :: x2o, o2x
+
+      call omega_ocn_finalize()
+
    end subroutine ocn_final_mct
 
    subroutine ocn_set_gsmap_mct(mpicom_ocn, ocn_id, gsMap_ocn)
