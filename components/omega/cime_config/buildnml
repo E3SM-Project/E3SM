@@ -7,9 +7,141 @@ Namelist creator for E3SM's omega component
 import sys
 from pathlib import Path
 
+import yaml
 from CIME.buildnml import parse_input
 from CIME.case import Case
 from CIME.utils import SharedArea, expect, safe_copy
+
+nan_time_instant_str = "9999-12-31_00:00:00"
+
+
+# YAML representer to preserve order of dicts when dumping to yaml
+class OrderedSafeDumper(yaml.SafeDumper):
+    pass
+
+
+def _dict_representer(dumper, data):
+    return dumper.represent_mapping(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
+    )
+
+
+OrderedSafeDumper.add_representer(dict, _dict_representer)
+# end of YAML representer related code
+
+
+# Helper function to build the various sections of the omega streams
+def _build_initial_state_file_name(case):
+    """ """
+    # TODO: this will be condtional set based on grid and compset
+    return "OmegaMesh.nc"
+
+
+def _build_horz_mesh_file_name(case):
+    """ """
+    # TODO: this will be condtional set based on grid
+    return "OmegaMesh.nc"
+
+
+def _build_initial_state_read_io_stream(case):
+    """Reading initial state only happens for startup runs"""
+    # TODO: do we need to check CONTINUE_RUN here?
+    run_type = case.get_value("RUN_TYPE")
+
+    file_name = _build_initial_state_file_name(case)
+
+    return {
+        "UsePointerFile": False,
+        "Filename": file_name,
+        "Mode": "read",
+        "Precision": "double",
+        "Freq": 1,
+        "FreqUnits": "OnStartUp" if run_type == "startup" else "Never",
+        "UseStartEnd": False,
+        "Contents": ["State", "Base"],
+    }
+
+
+def _build_restart_read_io_stream(case):
+    """Restart reads happen for any run type that is not startup"""
+    # TODO: do we need to check CONTINUE_RUN here?
+    run_type = case.get_value("RUN_TYPE")
+
+    return {
+        "UsePointerFile": True,
+        "PointerFilename": "rpointer.ocn",
+        "Mode": "read",
+        "Precision": "double",
+        "Freq": 1,
+        "FreqUnits": "Never" if run_type == "startup" else "OnStartUp",
+        "UseStartEnd": False,
+        "Contents": ["Restart"],
+    }
+
+
+def _build_restart_write_io_stream(case):
+    """Coupler dictates when to write restart files, so we just need to set up
+       the stream here.
+    """
+    case_name = case.get_value("CASE")
+
+    return {
+        "UsePointerFile": True,
+        "PointerFilename": "rpointer.ocn",
+        "Filename": f"{case_name}.omega.r.$Y-$M-$D_$h.$m.$s",
+        "Mode": "write",
+        "IfExists": "replace",
+        "Precision": "double",
+        "Freq": 1,
+        "FreqUnits": "Never",
+        "UseStartEnd": False,
+        "Contents": ["Restart"],
+    }
+
+
+def _build_io_streams_config(default_io_streams, case):
+    """Build the io_streams section of the omega config file"""
+    io_streams = default_io_streams.copy()
+
+    # Add initial state read stream
+    io_streams["InitialState"] = _build_initial_state_read_io_stream(case)
+
+    # Add restart read stream
+    io_streams["RestartRead"] = _build_restart_read_io_stream(case)
+
+    # Add restart write stream
+    io_streams["RestartWrite"] = _build_restart_write_io_stream(case)
+
+    # Never read forcing stream in coupled runs
+    io_streams["Forcing"]["FreqUnits"] = "Never"
+
+    return io_streams
+
+
+def _build_time_integration_config(default_time_integration, case):
+    """Start and stop time are set by the coupler.
+       The time step is mesh dependent.
+    """
+    # ocn_grid = case.get_value("OCN_GRID")
+    calendar = case.get_value("CALENDAR")
+
+    time_integration = default_time_integration.copy()
+
+    # conver from CIME calendar to Omega calendar names
+    if calendar == "NO_LEAP":
+        time_integration["CalendarType"] = "No Leap"
+    elif calendar == "GREGORIAN":
+        time_integration["CalendarType"] = "Gregorian"
+
+    # Set start and stop time to invalid values in order to make clear to users
+    # these values come from the coupler at runtime
+    time_integration["StartTime"] = nan_time_instant_str
+    time_integration["StopTime"] = nan_time_instant_str
+    # RunDuration is not used in coupled runs
+    time_integration["RunDuration"] = "none"
+
+    # TODO: set time step based on grid
+    return time_integration
 
 
 def buildnml(case, caseroot, compname):
@@ -21,16 +153,41 @@ def buildnml(case, caseroot, compname):
     case_root = Path(case.get_value("CASEROOT"))
     omega_root = Path(case.get_value("SRCROOT")) / "components/omega"
 
+    with open(omega_root / "configs/Default.yml", "r") as file:
+        default_config = yaml.load(file, Loader=yaml.SafeLoader)
+        # unpack the Omega section of the default config
+        default_config = default_config["Omega"]
+
+    # start with a copy of the default config, unpack the Omega section
+    config = default_config.copy()
+
+    # update the TimeIntegration section of the config
+    config["TimeIntegration"] = _build_time_integration_config(
+        default_config["TimeIntegration"], case
+    )
+
+    # update the IOStreams section of the config
+    config["IOStreams"] = _build_io_streams_config(
+        default_config["IOStreams"], case
+    )
+
+    # repack everything withn a top-level Omega section
+    config = {"Omega": config}
+
+    # write yaml file and copy to CaseDocs within a SharedArea context so that
+    # correct file permissions are set
     with SharedArea():
 
-        src = omega_root / "configs/Default.yml"
+        output_file = run_dir / "omega.yml"
 
-        safe_copy(src, run_dir / "omega.yml")
+        # write the updated yaml file to the run directory
+        with open(output_file, "w") as file:
+            yaml.dump(config, file, Dumper=OrderedSafeDumper)
 
         # archive yaml file in CaseDocs
         case_docs = case_root / 'CaseDocs'
         if case_docs.exists():
-            safe_copy(src, case_docs / "omega.yml")
+            safe_copy(output_file, case_docs / "omega.yml")
 
 
 def _main_func():
