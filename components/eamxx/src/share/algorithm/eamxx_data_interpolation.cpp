@@ -324,6 +324,30 @@ setup_periodic_time_database (const strvec_t& input_files,
 }
 
 void DataInterpolation::
+check_files_readable (const strvec_t& input_files) const
+{
+  // Check readability of each file collectively across m_comm. We MUST NOT
+  // let a single rank throw here while other ranks proceed to the
+  // *collective* scorpio::register_file/PIOc_openfile call below: if a
+  // transient filesystem hiccup makes std::ifstream::good() spuriously fail
+  // on just one rank, that rank would throw/abort while its peers are stuck
+  // waiting in the collective open, hanging until wallclock instead of
+  // failing cleanly. So we all_reduce the readability flag first, and either
+  // all ranks throw the same error, or none do.
+  for (const auto& fname : input_files) {
+    int readable = 1;
+    {
+      std::ifstream file(fname);
+      readable = file.good() ? 1 : 0;
+    }
+    m_comm.all_reduce(&readable,1,MPI_MIN);
+    EKAT_REQUIRE_MSG (readable==1,
+        "[DataInterpolation] Error! One of the input files is not readable on at least one rank.\n"
+        " - file: " + fname + "\n");
+  }
+}
+
+void DataInterpolation::
 setup_static_database (const strvec_t& input_files, int time_index)
 {
   EKAT_REQUIRE_MSG (not m_input_db_created,
@@ -331,16 +355,7 @@ setup_static_database (const strvec_t& input_files, int time_index)
   EKAT_REQUIRE_MSG (not input_files.empty(),
       "[DataInterpolation] Error! Input files list is empty.\n");
 
-  auto file_readable = [] (const std::string& fileName) {
-    std::ifstream file(fileName);
-    return file.good();
-  };
-
-  for (const auto& fname : input_files) {
-    EKAT_REQUIRE_MSG (file_readable(fname),
-        "[DataInterpolation] Error! One of the input files is not readable.\n"
-        " - file: " + fname + "\n");
-  }
+  check_files_readable(input_files);
 
   // Populate m_time_database.files so that get_input_files_dimlen works
   m_time_database.files = input_files;
@@ -370,20 +385,15 @@ build_time_database_slices (const strvec_t& input_files,
       "[DataInterpolation] Error! The input files list contains duplicates.\n"
       " - input_files:\n     " + ekat::join(input_files,"\n     ") + "\n");
 
-  // We perform a bunch of checks on the input files
-  auto file_readable = [] (const std::string& fileName) {
-    std::ifstream file(fileName);
-    return file.good(); // Check if the file can be opened
-  };
+  // We perform a bunch of checks on the input files (collectively, so that a
+  // spurious per-rank filesystem hiccup can't cause one rank to throw while
+  // its peers proceed into the collective scorpio::register_file call below)
+  check_files_readable(input_files);
 
   // Read what time stamps we have in each file
   auto ts2str = [](const util::TimeStamp& t) { return t.to_string(); };
   std::vector<std::pair<std::string,std::vector<util::TimeStamp>>> file_times;
   for (const auto& fname : input_files) {
-    EKAT_REQUIRE_MSG (file_readable(fname),
-        "Error! One of the input files is not readable.\n"
-        " - file   : " + fname + "\n");
-
     scorpio::register_file(fname,scorpio::Read);
 
     if (not scorpio::has_time_dim(fname)) {
