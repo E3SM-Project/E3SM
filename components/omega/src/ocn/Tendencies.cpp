@@ -263,9 +263,9 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    CHECK_ERROR_ABORT(Err, "Tendencies: BottomDragTendency BottomDragCoeff not "
                           "found in TendConfig");
 
-   if (BottomDragType != "Constant" || BottomDragType != "constant") {
-      ABORT_ERROR("Tendencies: only Constant BottomDragTendency Type is "
-                  "currently supported");
+   if (BottomDragType != "Constant" && BottomDragType != "constant") {
+      ABORT_ERROR("Tendencies: BottomDragTendency Type should be one of "
+                  " 'Constant' but got {}:", BottomDragType);
    }
 
    this->ExplicitBottomDrag.Enabled                      = false;
