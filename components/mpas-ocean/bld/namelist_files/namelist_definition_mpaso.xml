@@ -548,7 +548,7 @@ Default: Defined in namelist_defaults.xml
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling
 
-Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'
+Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch', 'geometric'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -649,42 +649,42 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_GM_geometric_alpha" type="real"
-        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-scaling factor on the GEOMETRIC diffusivity parameterization
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Configured GEOMETRIC efficiency
 
-Valid values: small positive numbers around 0.02 - 0.05
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_GM_geometric_eddyDiff" type="real"
-        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-diffusion coefficient of the parameterized eddy energy
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Eddy diffusivity for the depth-integrated parameterized eddy energy
 
-Valid values: positive numbers
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_GM_geometric_dissipation" type="real"
-        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-number of days for the dissipation rate
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Number of days to dissipate the depth-integrated parameterized eddy energy
 
-Valid values: positive numbers
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_GM_geometric_backgroundEddyEnergy" type="real"
-        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-background parameterized eddy energy
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Background total depth-integrated parameterized eddy energy
 
-Valid values: small positive numbers around 0.1 m^3 s^-2
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_GM_geometric_maximumEddyEnergy" type="real"
-        category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-maximum parameterized eddy energy
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum total depth-integrated parameterized eddy energy
 
-Valid values: positive numbers around 1000 m^3 s^-2
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
