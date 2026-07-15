@@ -1,0 +1,5 @@
+cell_lat,cell_long,note,ibt,dncell1_lat,dncell1_long,ratio1,demand1,dncell2_lat,dncell2_long,ratio2,demand2,cell_id,dncell1_id,dncell2_id
+42.087,284.679,Cannonsville,0,-9999,-9999,0.1,-9999,41.7631,285.575,0.9,-9999,,,
+42.0889,285.125,Pepacton,0,-9999,-9999,0.5,-9999,41.7631,285.575,0.5,-9999,,,
+41.8622,285.33,Neversink,0,-9999,-9999,0.5,-9999,41.7631,285.575,0.5,-9999,,,
+40.4,284.96,DR cannel,0,-9999,-9999,0.4,-9999,40.5287,285.546,0.6,-9999,,,

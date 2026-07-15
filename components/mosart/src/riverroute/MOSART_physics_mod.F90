@@ -1238,8 +1238,7 @@ MODULE MOSART_physics_mod
     
     integer :: iunit, k
     real(r8) :: total_flow, available_flow, env_minimum, total_diverted
-    real(r8) :: actual_diversion(max_downstream), demand, remaining_ratio
-    real(r8) :: ratio_sum
+    real(r8) :: actual_diversion(max_downstream), demand
     logical :: has_ibt_demands
     character(len=*), parameter :: subname = '(UpdateIBTRatios)'
     
@@ -1300,27 +1299,16 @@ MODULE MOSART_physics_mod
                    else
                       ! Diversion channels get their specific ratios
                       rtmCTL%bifurc_ratio(iunit,k) = actual_diversion(k) / total_flow
-                      if (actual_diversion(k) > TINYVALUE) then
-                      endif
                    endif
                 else
                    rtmCTL%bifurc_ratio(iunit,k) = 0.0_r8
                 endif
              end do
-             
-             
-             ! Primary downstream gets remaining flow (environmental minimum + unused diversions)
-             ratio_sum = 0.0_r8
-             do k = 2, max_downstream
-                ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(iunit,k)
-             end do
-             remaining_ratio = 1.0_r8 - ratio_sum
-             rtmCTL%bifurc_ratio(iunit,1) = max(0.0_r8, remaining_ratio)
-             
+
              ! Environmental flow protection warning
-             if (remaining_ratio < 0.09_r8) then  ! Less than 9% remaining (close to 10% minimum)
+             if (rtmCTL%bifurc_ratio(iunit,1) < 0.09_r8) then  ! Less than 9% remaining (close to 10% minimum)
                 write(iulog,*) 'IBT WARNING: Environmental minimum triggered at cell ', iunit, &
-                               ' remaining ratio=', remaining_ratio, ' total_flow=', total_flow
+                               ' remaining ratio=', rtmCTL%bifurc_ratio(iunit,1), ' total_flow=', total_flow
              endif
              
              else
