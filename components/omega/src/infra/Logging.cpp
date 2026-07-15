@@ -9,13 +9,17 @@
 //===----------------------------------------------------------------------===//
 #include "Logging.h"
 #include "MachEnv.h"
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <set>
 #include <spdlog/sinks/basic_file_sink.h>
-
-#define _OMEGA_STRINGIFY(x) #x
-#define _OMEGA_TOSTRING(x)  _OMEGA_STRINGIFY(x)
+#include <sstream>
+#include <vector>
 
 namespace OMEGA {
 
@@ -39,52 +43,144 @@ _PackLogMsg(const char *file, // [in] file from where log called (cpp __FILE__)
 }
 
 //------------------------------------------------------------------------------
-// Utility function to determine which tasks perform logging based on
-// input variable string containing lists of tasks or other options
-std::vector<int>
-splitTasks(const std::string &str,  //[in] option for which tasks should write
-           const OMEGA::I4 NumTasks //[in] total number of tasks
-) {
+// Trim surrounding whitespace from a string
+static std::string trimStr(const std::string &Str) {
+   const std::string WhiteSpace = " \t\n\r\f\v";
+   std::size_t Begin            = Str.find_first_not_of(WhiteSpace);
+   if (Begin == std::string::npos)
+      return "";
+   std::size_t End = Str.find_last_not_of(WhiteSpace);
+   return Str.substr(Begin, End - Begin + 1);
+}
 
-   std::vector<int> Tasks;
-   std::stringstream ss(str);
-   std::string Task;
-   int Start, Stop;
-   char Dash;
+//------------------------------------------------------------------------------
+// Parse a string as a non-negative int. Returns false if the string is empty,
+// contains any non-digit character, or overflows an int.
+static bool toNonNegInt(const std::string &Str, int &Out) {
+   if (Str.empty())
+      return false;
+   for (char C : Str) {
+      if (!std::isdigit(static_cast<unsigned char>(C)))
+         return false;
+   }
+   try {
+      std::size_t Pos = 0;
+      long Val        = std::stol(Str, &Pos);
+      if (Pos != Str.size() || Val < 0 ||
+          Val > static_cast<long>(std::numeric_limits<int>::max()))
+         return false;
+      Out = static_cast<int>(Val);
+      return true;
+   } catch (...) {
+      return false;
+   }
+}
 
-   // If all tasks should write, create the explicit list of all tasks
-   if (str == "ALL") {
-      for (int i = 0; i < NumTasks; ++i) {
-         Tasks.push_back(i);
-      }
-      return Tasks;
+//------------------------------------------------------------------------------
+// Resolve a logging task selector string into the list of ranks that should log
+std::vector<int> _selectLogTasks(const std::string &Selector,
+                                 OMEGA::I4 NumTasks, OMEGA::I4 MasterTask,
+                                 bool &Valid) {
+
+   Valid = true;
+
+   std::string Sel = trimStr(Selector);
+
+   // Lowercase copy for case-insensitive keyword matching
+   std::string Lower = Sel;
+   std::transform(Lower.begin(), Lower.end(), Lower.begin(),
+                  [](unsigned char C) { return std::tolower(C); });
+
+   // Standalone keyword: all ranks in the sub-communicator
+   if (Lower == "*") {
+      std::vector<int> All;
+      for (int I = 0; I < NumTasks; ++I)
+         All.push_back(I);
+      return All;
    }
 
-   // Parse the task string. If there is a single task, extract the task id.
-   // If there is a range (beg:end), create a list with that range
-   while (std::getline(ss, Task, ':')) {
-      std::istringstream iss(Task);
-      iss >> Start;
+   // Standalone keyword: master rank only
+   if (Lower == "m" || Lower == "master")
+      return std::vector<int>{MasterTask};
 
-      if (iss.eof()) { // no range found, so extract single task
-         Tasks.push_back(Start);
+   // Empty selector is malformed
+   if (Sel.empty()) {
+      Valid = false;
+      return std::vector<int>{MasterTask};
+   }
 
-      } else {
-         iss >> Dash;
-         iss >> Stop;
+   // Numeric expression: comma-separated single ranks and/or "a-b" ranges.
+   // A std::set keeps the result sorted and deduplicated.
+   std::set<int> Selected;
+   std::stringstream Ss(Sel);
+   std::string Token;
+   while (std::getline(Ss, Token, ',')) {
+      Token = trimStr(Token);
 
-         for (int i = Start; i <= Stop; ++i) {
-            Tasks.push_back(i);
+      std::size_t DashPos = Token.find('-');
+      if (DashPos == std::string::npos) {
+         int Rank;
+         if (!toNonNegInt(Token, Rank)) {
+            Valid = false;
+            return std::vector<int>{MasterTask};
          }
+         Selected.insert(Rank);
+      } else {
+         int Lo, Hi;
+         if (!toNonNegInt(trimStr(Token.substr(0, DashPos)), Lo) ||
+             !toNonNegInt(trimStr(Token.substr(DashPos + 1)), Hi) || Lo > Hi) {
+            Valid = false;
+            return std::vector<int>{MasterTask};
+         }
+         for (int I = Lo; I <= Hi; ++I)
+            Selected.insert(I);
       }
    }
 
-   // Default to all tasks if a -1 task found in list
-   if (std::find(Tasks.begin(), Tasks.end(), -1) != Tasks.end()) {
-      Tasks.clear();
-      for (int i = 0; i < NumTasks; ++i) {
-         Tasks.push_back(i);
-      }
+   return std::vector<int>(Selected.begin(), Selected.end());
+}
+
+//------------------------------------------------------------------------------
+// Source the logging task selector from the OMEGA_LOG_TASKS environment
+// variable, falling back to the master rank when unset/empty.
+static std::string getLogTaskSelector() {
+   const char *Env = std::getenv("OMEGA_LOG_TASKS");
+   if (Env != nullptr && Env[0] != '\0')
+      return std::string(Env);
+   return std::string("master");
+}
+
+//------------------------------------------------------------------------------
+// Resolve which sub-communicator ranks should log from the runtime selector,
+// emitting master-rank diagnostics for invalid or empty selections. Sets
+// NumLogging to the count of selected ranks that exist in this communicator.
+static std::vector<int> resolveLogTasks(const OMEGA::MachEnv *DefEnv,
+                                        int &NumLogging) {
+
+   OMEGA::I4 NumTasks   = DefEnv->getNumTasks();
+   OMEGA::I4 MasterTask = DefEnv->getMasterTask();
+
+   std::string Selector = getLogTaskSelector();
+   bool Valid           = false;
+   std::vector<int> Tasks =
+       _selectLogTasks(Selector, NumTasks, MasterTask, Valid);
+
+   if (!Valid && DefEnv->isMasterTask()) {
+      std::cerr << "[Omega Logging] Invalid OMEGA_LOG_TASKS selector \""
+                << Selector << "\"; falling back to master rank only."
+                << std::endl;
+   }
+
+   // Count selected ranks that actually exist in this communicator
+   NumLogging = 0;
+   for (int Rank : Tasks) {
+      if (Rank >= 0 && Rank < NumTasks)
+         ++NumLogging;
+   }
+   if (Valid && NumLogging == 0 && DefEnv->isMasterTask()) {
+      std::cerr << "[Omega Logging] OMEGA_LOG_TASKS selector \"" << Selector
+                << "\" matches no ranks in this communicator; logging disabled."
+                << std::endl;
    }
 
    return Tasks;
@@ -100,15 +196,15 @@ int initLogging(
 
    int RetVal = 0;
 
-   OMEGA::I4 TaskId   = DefEnv->getMyTask();
-   OMEGA::I4 NumTasks = DefEnv->getNumTasks();
+   OMEGA::I4 TaskId = DefEnv->getMyTask();
 
-   // determine which tasks will write log files
-   std::vector<int> Tasks =
-       splitTasks(_OMEGA_TOSTRING(OMEGA_LOG_TASKS), NumTasks);
+   int NumLogging;
+   std::vector<int> Tasks = resolveLogTasks(DefEnv, NumLogging);
 
-   if (Tasks.size() > 0 &&
-       (std::find(Tasks.begin(), Tasks.end(), TaskId) != Tasks.end())) {
+   bool ThisTaskLogs =
+       (std::find(Tasks.begin(), Tasks.end(), TaskId) != Tasks.end());
+
+   if (ThisTaskLogs) {
 
       spdlog::set_default_logger(Logger);
 
@@ -140,22 +236,24 @@ int initLogging(
 
    int RetVal = 0;
 
-   OMEGA::I4 TaskId   = DefEnv->getMyTask();
-   OMEGA::I4 NumTasks = DefEnv->getNumTasks();
+   OMEGA::I4 TaskId = DefEnv->getMyTask();
+
    std::string NewLogFilePath;
 
-   // Determine which tasks will write log files
-   std::vector<int> Tasks =
-       splitTasks(_OMEGA_TOSTRING(OMEGA_LOG_TASKS), NumTasks);
+   int NumLogging;
+   std::vector<int> Tasks = resolveLogTasks(DefEnv, NumLogging);
 
-   if (Tasks.size() > 0 &&
-       (std::find(Tasks.begin(), Tasks.end(), TaskId) != Tasks.end())) {
+   bool ThisTaskLogs =
+       (std::find(Tasks.begin(), Tasks.end(), TaskId) != Tasks.end());
 
+   if (ThisTaskLogs) {
       try {
          std::size_t dotPos = LogFilePath.find_last_of('.');
 
-         // create log file name/path and set default (*) logger
-         if (Tasks.size() > 1 && dotPos != std::string::npos) {
+         // create log file name/path and set default (*) logger. When more than
+         // one rank logs, append the rank id to keep per-rank files distinct.
+         if (NumLogging > 1 && dotPos != std::string::npos) {
+
             NewLogFilePath = LogFilePath.substr(0, dotPos) + "_" +
                              std::to_string(TaskId) +
                              LogFilePath.substr(dotPos);
