@@ -265,7 +265,8 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
 
    if (BottomDragType != "Constant" && BottomDragType != "constant") {
       ABORT_ERROR("Tendencies: BottomDragTendency Type should be one of "
-                  " 'Constant' but got {}:", BottomDragType);
+                  " 'Constant' but got {}:",
+                  BottomDragType);
    }
 
    this->ExplicitBottomDrag.Enabled                      = false;
