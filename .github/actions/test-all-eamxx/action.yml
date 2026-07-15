@@ -118,6 +118,6 @@ runs:
       with:
         name: log-files-${{ inputs.build_type }}-${{ inputs.machine }}
         path: |
-          components/eamxx/ctest-build/**/Testing/Temporary/Last*.log
           components/eamxx/ctest-build/**/ctest_resource_file.json
           components/eamxx/ctest-build/**/CMakeCache.txt
+          components/eamxx/ctest-build/**/Testing/**
