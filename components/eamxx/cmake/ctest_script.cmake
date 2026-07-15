@@ -17,14 +17,6 @@ set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 ctest_start(${dashboard_model} TRACK ${dashboard_track})
 
-# Add some exception rules for ctest automatic error detection
-# These are strings in the build output that ctest mistakenly
-# interprets as errors
-list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
-  ".*error_handler.*"
-  ".*spdlog/fmt/bundled/format.h.*"
-)
-
 if (USE_NINJA)
   set (CTEST_CMAKE_GENERATOR Ninja)
 endif()
@@ -36,6 +28,9 @@ if (CONFIG_ERROR_CODE)
   set (TEST_FAILS TRUE)
 else ()
   if (NOT CONFIG_ONLY)
+    # Read CTestCustom.cmake from this folder
+    ctest_read_custom_files("${CMAKE_CURRENT_LIST_DIR}")
+
     if (DEFINED ENV{SCREAM_BUILD_PARALLEL_LEVEL})
       ctest_build(FLAGS "-j$ENV{SCREAM_BUILD_PARALLEL_LEVEL}" RETURN_VALUE BUILD_ERROR_CODE)
     else()
