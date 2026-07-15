@@ -892,14 +892,14 @@ int testImplicitBottomDrag(int NVertLayers, Real RTol) {
                                NVertLayers);
    Array2DReal VertVisc("VertVisc", Mesh->NCellsSize, NVertLayers + 1);
    Array2DReal NormalVelEdge("NormalVelEdge", Mesh->NEdgesSize, NVertLayers);
-   Array2DReal NumImplicitBottomDrag("NumImplicitBottomDrag",
-                                     Mesh->NEdgesOwned, NVertLayers);
+   Array2DReal NumImplicitBottomDrag("NumImplicitBottomDrag", Mesh->NEdgesOwned,
+                                     NVertLayers);
    Array2DReal ExactBottomDrag("ExactBottomDrag", Mesh->NEdgesOwned,
                                NVertLayers);
 
    VelVertMixSetupOnEdge ImplicitBottomDragOnE(Mesh, VCoord);
    ImplicitBottomDragOnE.ImplicitBottomDragEnabled = true;
-   ImplicitBottomDragOnE.BottomDragCoeff   = Coeff;
+   ImplicitBottomDragOnE.BottomDragCoeff           = Coeff;
 
    Err += setupBottomDragTestFields(NVertLayers, Coeff, ExactBottomDrag,
                                     NormalVelEdge, KineticEnergyCell,
@@ -938,9 +938,9 @@ int testImplicitBottomDrag(int NVertLayers, Real RTol) {
               (PseudoThickCell(JCell0, K) + PseudoThickCell(JCell1, K));
           const Real DragDiagContribution = H - PseudoThickCellEdge;
 
-          NumImplicitBottomDrag(IEdge, K) =
-              -DragDiagContribution * NormalVelEdge(IEdge, K) /
-              (DT * PseudoThickEdge(IEdge, K));
+          NumImplicitBottomDrag(IEdge, K) = -DragDiagContribution *
+                                            NormalVelEdge(IEdge, K) /
+                                            (DT * PseudoThickEdge(IEdge, K));
        });
 
    // Compute errors
@@ -950,8 +950,8 @@ int testImplicitBottomDrag(int NVertLayers, Real RTol) {
 
    // Check error values
    Err += checkErrors("TendencyTermsTest", "ImplicitBottomDrag",
-                      ImplicitBottomDragErrors,
-                      Setup.ExpectedBottomDragErrors, RTol);
+                      ImplicitBottomDragErrors, Setup.ExpectedBottomDragErrors,
+                      RTol);
 
    if (Err == 0) {
       LOG_INFO("TendencyTermsTest: ImplicitBottomDrag PASS");

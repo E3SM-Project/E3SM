@@ -44,10 +44,9 @@ OneTwoOneFilter::OneTwoOneFilter(const VertCoord *VCoord)
 VelVertMixSetupOnEdge::VelVertMixSetupOnEdge(const HorzMesh *Mesh,
                                              const VertCoord *VCoord)
     : Enabled(false), ImplicitBottomDragEnabled(false),
-      BottomDragCoeff(0.0_Real),
-      LocRhoSw(RhoSw), NVertLayers(VCoord->NVertLayers),
-      CellsOnEdge(Mesh->CellsOnEdge), EdgeMask(VCoord->EdgeMask),
-      MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
+      BottomDragCoeff(0.0_Real), LocRhoSw(RhoSw),
+      NVertLayers(VCoord->NVertLayers), CellsOnEdge(Mesh->CellsOnEdge),
+      EdgeMask(VCoord->EdgeMask), MinLayerEdgeBot(VCoord->MinLayerEdgeBot),
       MaxLayerEdgeTop(VCoord->MaxLayerEdgeTop) {}
 
 TracerVertMixSetupOnCell::TracerVertMixSetupOnCell(const HorzMesh *Mesh,
@@ -458,8 +457,8 @@ void VertMix::applyVelVertMixImplicit(
       R8 DT;
       TimeStep.get(DT, TimeUnits::Seconds);
 
-      const auto &SpecVol  = EosInstance->SpecVol;
-      const auto &VertVisc = VertMixInstance->VertVisc;
+      const auto &SpecVol           = EosInstance->SpecVol;
+      const auto &VertVisc          = VertMixInstance->VertVisc;
       const auto &KineticEnergyCell = AuxState->KineticAux.KineticEnergyCell;
 
       const int NVertLayers  = VCoord->NVertLayers;
