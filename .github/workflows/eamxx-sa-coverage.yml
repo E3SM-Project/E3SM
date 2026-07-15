@@ -46,9 +46,9 @@ jobs:
           generate: false
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
-  gnu-cuda:
+  cuda:
     runs-on:  [self-hosted, ghci-snl, cuda]
-    name: gnu-cuda / cov
+    name: cuda / cov
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7

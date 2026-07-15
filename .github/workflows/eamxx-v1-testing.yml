@@ -31,7 +31,7 @@ on:
         type: choice
         options:
           - gnu
-          - oneapi
+          - intel
           - cuda
           - all
       bless:
@@ -121,23 +121,23 @@ jobs:
           path: |
             /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
-  oneapi:
+  intel:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'oneapi' ||
+          github.event.inputs.job_to_run == 'intel' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, oneapi, ghci-snl]
+    runs-on:  [self-hosted, intel, ghci-snl]
     strategy:
       matrix:
         test:
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_oneapi.eamxx-prod
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_intel.eamxx-prod
             short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
       fail-fast: false
-    name: oneapi / ${{ matrix.test.short_name }}
+    name: intel / ${{ matrix.test.short_name }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
