@@ -155,7 +155,7 @@ void compute_nucleate_ice_tendencies(
         // grab views from the buffer to store tendencies, not used as all
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);  // not used
-        const mam4::AeroConfig aero_config;
+        const mam4::AeroConfig aero_config(nucleate_ice.aero_species);
         const Real t = 0;  // not used
         nucleate_ice.compute_tendencies(aero_config, team, t, dt, atm,
                                         surf, progs, diags, tends);
@@ -526,9 +526,8 @@ void call_hetfrz_compute_tendencies(
         // grab views from the buffer to store tendencies, not used as all
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
-        const mam4::AeroConfig aero_config;
         const Real t = 0;  // not used
-        hetfrz.compute_tendencies(aero_config, team, t, dt, atm, surf,
+        hetfrz.compute_tendencies(hetfrz.aero_config, team, t, dt, atm, surf,
                                   progs, diags, tends);
       });
 }
