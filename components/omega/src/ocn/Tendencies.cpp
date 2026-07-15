@@ -263,7 +263,7 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    CHECK_ERROR_ABORT(Err, "Tendencies: BottomDragTendency BottomDragCoeff not "
                           "found in TendConfig");
 
-   if (BottomDragType != "Constant") {
+   if (BottomDragType != "Constant" || BottomDragType != "constant") {
       ABORT_ERROR("Tendencies: only Constant BottomDragTendency Type is "
                   "currently supported");
    }
@@ -274,9 +274,9 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
    this->VMix->VelVertMixSetup.BottomDragCoeff           = BottomDragCoeff;
 
    if (BottomDragTendencyEnabled) {
-      if (BottomDragMode == "Explicit") {
+      if (BottomDragMode == "Explicit" || BottomDragMode == "explicit") {
          this->ExplicitBottomDrag.Enabled = true;
-      } else if (BottomDragMode == "Implicit") {
+      } else if (BottomDragMode == "Implicit" || BottomDragMode == "implicit") {
          this->VMix->VelVertMixSetup.ImplicitBottomDragEnabled = true;
       } else {
          ABORT_ERROR("Tendencies: BottomDragTendency Mode must be Explicit or "
