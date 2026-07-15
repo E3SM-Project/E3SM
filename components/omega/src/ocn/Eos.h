@@ -36,8 +36,10 @@ class Teos10Eos {
 
    //   The functor takes the full arrays of specific volume (inout),
    //   the indices ICell and KChunk, and the ocean tracers (conservative)
-   //   temperature, and (absolute) salinity as inputs, and outputs the
-   //   specific volume according to the Roquet et al. 2015 75 term expansion.
+   //   temperature, (absolute) salinity, and relative pressure (gauge pressure,
+   //   i.e., absolute pressure minus the standard atmosphere) as inputs, and
+   //   outputs the specific volume according to the Roquet et al. 2015 75 term
+   //   expansion.
    KOKKOS_FUNCTION void operator()(Array2DReal SpecVol, I4 ICell, I4 KChunk,
                                    const Array2DReal &ConservTemp,
                                    const Array2DReal &AbsSalinity,
@@ -353,7 +355,9 @@ class Teos10Eos {
    }
 
    /// Calculates freezing Conservative Temperature using TEOS-10 polynomial
-   /// (polynomial error in [-5e-4, 6e-4] K, from GSW package)
+   /// (polynomial error in [-5e-4, 6e-4] K, from GSW package).
+   /// P is relative pressure (gauge pressure in Pa, i.e., absolute pressure
+   /// minus the standard atmosphere).
    KOKKOS_FUNCTION Real calcCtFreezing(const Real Sa, const Real P,
                                        const Real SaturationFract) const {
       constexpr Real Sso = 35.16504;
@@ -482,8 +486,9 @@ class Teos10BruntVaisalaFreqSq {
 
    //   The functor takes the full arrays of squared Brunt-Vaisala frequency
    //   (inout) the index ICell, and the ocean tracers (conservative)
-   //   temperature, (absolute) salinity, pressure, specific volume as inputs,
-   //   and outputs the squared Brunt-Vaisala frequency.
+   //   temperature, (absolute) salinity, relative pressure (gauge pressure,
+   //   i.e., absolute pressure minus the standard atmosphere), and specific
+   //   volume as inputs, and outputs the squared Brunt-Vaisala frequency.
    KOKKOS_FUNCTION void operator()(Array2DReal BruntVaisalaFreqSq, I4 ICell,
                                    I4 KChunk, const Array2DReal &ConservTemp,
                                    const Array2DReal &AbsSalinity,

@@ -157,6 +157,7 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    DefState->applyLayerMasks(CurTimeLevel);
 
    DefState->copyToHost(CurTimeLevel);
+   VertCoord::getDefault()->initSurfacePressure(Halo::getDefault());
 
    Forcing *DefForcing = Forcing::getDefault();
    DefForcing->exchangeHalo();

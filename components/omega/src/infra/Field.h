@@ -79,6 +79,11 @@ class Field {
    /// operations when reduced precision is requested
    bool RetainPrecision;
 
+   /// Flag for whether this field may be absent from an input file. When true,
+   /// a read stream that does not contain this field's variable skips it
+   /// (leaving the attached array at its fill value) instead of failing.
+   bool OptionalRead;
+
    /// Data attached to this field. This will be a pointer to the Kokkos
    /// array holding the data. We use a void pointer to manage all the
    /// various types and cast to the appropriate type when needed.
@@ -225,6 +230,16 @@ class Field {
    /// Determine whether full precision should be maintained in cases where
    /// a reduced precision stream is requested.
    bool retainPrecision() const;
+
+   /// Determine whether this field may be absent from an input file. When true,
+   /// a read stream that does not contain the field's variable skips it and
+   /// leaves the attached array at its fill value rather than failing.
+   bool isOptionalRead() const;
+
+   /// Set whether this field may be absent from an input file (see
+   /// isOptionalRead). Fields are required (not optional) by default.
+   void setOptionalRead(bool OptRead ///< [in] optional-read flag value
+   );
 
    //---------------------------------------------------------------------------
    // Metadata functions

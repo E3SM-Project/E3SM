@@ -128,6 +128,16 @@ int main(int argc, char *argv[]) {
              Error(ErrorCode::Fail, "VertCoordTest: Bathy min/max test FAIL");
       }
 
+      // SurfacePressure is owned by VertCoord and its host mirror is sized on
+      // cells. Its value is read from the InitialState stream (exercised in
+      // StateTest); here we just verify the host mirror allocation.
+      if (DefVertCoord->SurfacePressureH.extent_int(0) == NCellsSize) {
+         LOG_INFO("VertCoordTest: SurfacePressureH size PASS");
+      } else {
+         ErrAll += Error(ErrorCode::Fail,
+                         "VertCoordTest: SurfacePressureH size FAIL");
+      }
+
       // Tests for computePressure
 
       Array2DReal PseudoThickness("PseudoThickness", NCellsSize, NVertLayers);

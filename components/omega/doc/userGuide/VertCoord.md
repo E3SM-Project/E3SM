@@ -4,7 +4,9 @@
 
 ### Overview
 
-Omega uses pseudo height, $\tilde{z} = \frac{p}{\rho_0 g}$,  as the vertical coordinate ([V1 governing equation document](omega-design-governing-eqns-omega1)).
+Omega uses pseudo height, $\tilde{z} = \frac{p}{\rho_0 g}$,  as the vertical coordinate ([V1 governing equation document](omega-design-governing-eqns-omega1)),
+where $p$ is **relative pressure** (gauge pressure, i.e., absolute pressure minus the standard atmosphere of 101325 Pa).
+With this definition, $\tilde{z} = 0$ at the sea surface under standard atmospheric forcing.
 In practice, $\tilde{z}$ is not computed directly.
 Instead, the model tracks and evolves the pseudo-thickness, $\tilde{h} = \Delta \tilde{z}$, defined as the difference between adjacent layer interfaces.
 The pseudo height is essentially a normalized pressure coordinate, with the advantage that it has units of meters.
@@ -27,8 +29,8 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | ------------- | ----------- | ----- |
 | NVertLayers   | maximum number of vertical layers | - |
 | NVertLayersP1 | maximum number of vertical layers plus 1 | - |
-| PressureInterface | pressure at layer interfaces | force per unit area at layer interfaces | kg m$^{-1}$ s$^{-2}$ |
-| PressureMid | pressure at layer mid points | force per unit area at layer mid point | kg m$^{-1}$ s$^{-2}$ |
+| PressureInterface | relative pressure (gauge pressure) at layer interfaces | Pa |
+| PressureMid | relative pressure (gauge pressure) at layer midpoints | Pa |
 | GeomZInterface | geometric height of layer interfaces | m |
 | GeomZMid | geometric height of layer midpoint | m |
 | GeopotentialMid | geopotential at layer mid points | m$^2$/s$^2$|
@@ -46,6 +48,23 @@ Multiple instances of the vertical coordinate class can be created and accessed 
 | VertCoordMovementWeights | weights to specify how total column thickness changes are distributed across layers | - |
 | RefPseudoThickness | reference pseudo-thickness used to distribute total column thickness changes | m |
 | BottomGeomDepth | positive down distance from the reference geoid to the bottom | m |
+| SurfacePressure | relative pressure (gauge pressure) at the top of the ocean column | Pa |
+
+### Surface pressure
+
+`SurfacePressure` is the relative pressure (gauge pressure, i.e., absolute pressure minus the
+standard atmosphere of 101325 Pa) at the top of the ocean column. It is the top boundary
+condition used when integrating layer pressures downward in `computePressure`, and is
+effectively $\tilde{z}$ at the top of the water column (times a scaling factor).
+Unlike the other pressure variables, which are recomputed each timestep, `SurfacePressure` is
+registered in the `State` and `Restart` field groups, so it is written to restart files and read
+from the initial-condition and restart files when present. The read is optional: if
+`SurfacePressure` is not present in the file, it defaults to zero rather than causing an error.
+For a free-surface ocean run with standard atmospheric forcing, the surface pressure is
+zero (0 Pa), so it may simply be omitted from the initial-condition file.
+For a coupled ocean–atmosphere run, `SurfacePressure` holds the anomaly of the atmospheric
+surface pressure from the standard atmosphere; eventually it will be updated each timestep
+via the coupler as a weighted sum of atmosphere, sea-ice, and land-ice pressure.
 
 ### Inactive and boundary layers in output
 

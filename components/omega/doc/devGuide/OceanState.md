@@ -21,7 +21,12 @@ OceanState::create(const std::string &Name, ///< [in] Name for mesh
 );
 ```
 allocates the `NormalVelocity` and `PseudoThickness` arrays for a given number of time levels.
-The current time level is then registered with the IO infrastructure.
+The current time level of `NormalVelocity` and `PseudoThickness` are registered with the IO
+infrastructure and added to the `State` and `Restart` field groups.
+The `SurfacePressure` array is owned by [`VertCoord`](omega-dev-vert-coord) but is also added to
+these two groups so it is written to restart files and read from the initial-condition and restart
+files when present. Its read is optional, so it defaults to zero when absent (see the
+[`VertCoord`](omega-dev-vert-coord) guide).
 
 After initialization, the default state object can be retrieved via:
 ```
@@ -70,6 +75,9 @@ HostArray2DReal NormVelH = State->getNormalVelocityH(TimeLevel);
 ```
 for the host arrays. These functions return the arrays directly and will abort
 via `OMEGA_REQUIRE` if an invalid `TimeLevel` is provided.
+
+The `SurfacePressure` array used as the top boundary condition for layer pressures is owned by
+[`VertCoord`](omega-dev-vert-coord); see that guide for how it is accessed and initialized.
 
 The time level convention is:
 | time level | `TimeLevel` |

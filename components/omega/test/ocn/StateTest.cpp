@@ -136,6 +136,10 @@ void initStateTest() {
    DefState->exchangeHalo(0);
    DefState->copyToHost(0);
 
+   // SurfacePressure is owned by VertCoord but read from the same InitialState
+   // stream; finish its initialization (halo exchange + copy to host).
+   VertCoord::getDefault()->initSurfacePressure(Halo::getDefault());
+
    return;
 }
 
@@ -273,6 +277,29 @@ int main(int argc, char *argv[]) {
          RetVal += 1;
          LOG_INFO("State: State read FAIL");
          LOG_INFO("State: Out-of-range {} Non-zero: {}", Count2, Count1);
+      }
+
+      // SurfacePressure is owned by VertCoord and an optional read from the
+      // InitialState stream. It is absent from the test input file, so it
+      // defaults to zero; verify its host mirror is sized and defaulted
+      // correctly.
+      VertCoord *DefVCoord = VertCoord::getDefault();
+      if (DefVCoord->SurfacePressureH.extent_int(0) == DefState->NCellsSize) {
+         LOG_INFO("State: SurfacePressureH size PASS");
+      } else {
+         RetVal += 1;
+         LOG_INFO("State: SurfacePressureH size FAIL");
+      }
+      int Count3 = 0;
+      for (int Cell = 0; Cell < NCellsAll; Cell++) {
+         if (DefVCoord->SurfacePressureH(Cell) != 0.0)
+            Count3++;
+      }
+      if (Count3 == 0) {
+         LOG_INFO("State: SurfacePressure read PASS");
+      } else {
+         RetVal += 1;
+         LOG_INFO("State: SurfacePressure read FAIL");
       }
 
       // Test time swapping with 2 and higher numbers of time levels

@@ -143,6 +143,7 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    MaxLayerCell    = Array1DI4("MaxLayerCell", NCellsSize);
    MinLayerCell    = Array1DI4("MinLayerCell", NCellsSize);
    BottomGeomDepth = Array1DReal("BottomGeomDepth", NCellsSize);
+   SurfacePressure = Array1DReal("SurfacePressure", NCellsSize);
    PressureInterface =
        Array2DReal("PressureInterface", NCellsSize, NVertLayersP1);
    PressureMid     = Array2DReal("PressureMid", NCellsSize, NVertLayers);
@@ -157,10 +158,6 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    VertCoordMovementWeights =
        Array1DReal("VertCoordMovementWeights", NVertLayers);
 
-   // TODO: Temporary handling of SurfacePressure
-   SurfacePressure = Array1DReal("SurfacePressure", NCellsSize);
-   deepCopy(SurfacePressure, 0);
-
    // Make host copies for device arrays not being read from file
    PressureInterfaceH     = createHostMirrorCopy(PressureInterface);
    PressureMidH           = createHostMirrorCopy(PressureMid);
@@ -169,6 +166,10 @@ VertCoord::VertCoord(const std::string &Name_, //< [in] Name for new VertCoord
    GeomZMidH              = createHostMirrorCopy(GeomZMid);
    GeopotentialMidH       = createHostMirrorCopy(GeopotentialMid);
    PseudoThicknessTargetH = createHostMirrorCopy(PseudoThicknessTarget);
+
+   // SurfacePressure is read from the initial-state/restart stream later, in
+   // OceanInit; its host mirror is refreshed then by initSurfacePressure().
+   SurfacePressureH = createHostMirrorCopy(SurfacePressure);
 
    // Define field metadata
    defineFields();
@@ -230,6 +231,7 @@ void VertCoord::defineFields() {
    SshFldName                   = "SshCell";
    GeopotFldName                = "GeopotentialMid";
    PseudoThicknessTargetFldName = "PseudoThicknessTarget";
+   SurfacePressureFldName       = "SurfacePressure";
 
    if (Name != "Default") {
       MinLayerCellFldName.append(Name);
@@ -244,6 +246,7 @@ void VertCoord::defineFields() {
       GeopotFldName.append(Name);
       PseudoThicknessTargetFldName.append(Name);
       SshFldName.append(Name);
+      SurfacePressureFldName.append(Name);
    }
 
    // Create fields for VertCoord variables
@@ -296,6 +299,23 @@ void VertCoord::defineFields() {
        DimNames                             // dimension names
    );
 
+   auto SurfacePressureField = Field::create(
+       SurfacePressureFldName, // field name
+       "Pressure at the top of the ocean column relative to reference "
+       "atmospheric pressure (i.e. absolute pressure - 101,325 Pa)", // long
+                                                                     // name
+       "Pa",                                                         // units
+       "",        // CF standard Name
+       -9.99E+10, // min valid value
+       9.99E+10,  // max valid value
+       NDims,     // number of dims
+       DimNames   // dimension names
+   );
+
+   // SurfacePressure is optional in the initial-state/restart file; when it is
+   // absent the read is skipped and it defaults to zero in initSurfacePressure.
+   SurfacePressureField->setOptionalRead(true);
+
    NDims = 2;
    DimNames.resize(NDims);
    DimNames[1] = "NVertLayers";
@@ -334,14 +354,14 @@ void VertCoord::defineFields() {
    DimNames[1] = "NVertLayersP1";
 
    auto PressureInterfaceField = Field::create(
-       PressInterfFldName,                      // field name
-       "Pressure at vertical layer interfaces", // long name or description
-       "Pa",                                    // units
-       "sea_water_pressure",                    // CF standard Name
-       0.0,                                     // min valid value
-       std::numeric_limits<Real>::max(),        // max valid value
-       NDims,                                   // number of dimensions
-       DimNames                                 // dimension names
+       PressInterfFldName,                                       // field name
+       "Relative pressure (gauge pressure) at layer interfaces", // long name
+       "Pa",                                                     // units
+       "",                               // CF standard Name
+       -AtmRefP,                         // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
    );
 
    auto GeomZInterfaceField = Field::create(
@@ -358,14 +378,14 @@ void VertCoord::defineFields() {
    DimNames[1] = "NVertLayers";
 
    auto PressureMidField = Field::create(
-       PressMidFldName,                        // field name
-       "Pressure at vertical layer midpoints", // long name or description
-       "Pa",                                   // units
-       "sea_water_pressure",                   // CF standard Name
-       0.0,                                    // min valid value
-       std::numeric_limits<Real>::max(),       // max valid value
-       NDims,                                  // number of dimensions
-       DimNames                                // dimension names
+       PressMidFldName,                                         // field name
+       "Relative pressure (gauge pressure) at layer midpoints", // long name
+       "Pa",                                                    // units
+       "",                               // CF standard Name
+       -AtmRefP,                         // min valid value
+       std::numeric_limits<Real>::max(), // max valid value
+       NDims,                            // number of dimensions
+       DimNames                          // dimension names
    );
 
    auto GeomZMidField = Field::create(
@@ -445,6 +465,26 @@ void VertCoord::defineFields() {
    PseudoThicknessTargetField->attachData<Array2DReal>(PseudoThicknessTarget);
    SshField->attachData<Array1DReal>(SshCell);
 
+   // Add SurfacePressure to the State and Restart groups so it is written to
+   // the history/restart files and read from the initial-state and restart
+   // files when present. The read is optional (see setOptionalRead above): if
+   // the variable is absent, SurfacePressure defaults to zero. VertCoord
+   // initializes before OceanState, which also contributes fields to these
+   // groups, so create each group only if it does not already exist.
+   std::string StateGrpName = "State";
+   if (Name != "Default") {
+      StateGrpName.append(Name);
+   }
+   if (!FieldGroup::exists(StateGrpName))
+      FieldGroup::create(StateGrpName);
+   FieldGroup::addFieldToGroup(SurfacePressureFldName, StateGrpName);
+
+   if (!FieldGroup::exists("Restart"))
+      FieldGroup::create("Restart");
+   FieldGroup::addFieldToGroup(SurfacePressureFldName, "Restart");
+
+   SurfacePressureField->attachData<Array1DReal>(SurfacePressure);
+
 } // end defineFields
 
 //------------------------------------------------------------------------------
@@ -469,6 +509,12 @@ VertCoord::~VertCoord() {
       Field::destroy(PseudoThicknessTargetFldName);
       Field::destroy(SshFldName);
       FieldGroup::destroy(GroupName);
+   }
+
+   // SurfacePressure belongs to the shared "State"/"Restart" groups (owned by
+   // OceanState), so destroy only the field here, not those groups.
+   if (Field::exists(SurfacePressureFldName)) {
+      Field::destroy(SurfacePressureFldName);
    }
 
 } // end destructor
@@ -661,6 +707,35 @@ void VertCoord::setStreamArrays(const bool ReadStream, Halo *MeshHalo) {
    BottomGeomDepthH          = createHostMirrorCopy(BottomGeomDepth);
    RefPseudoThicknessH       = createHostMirrorCopy(RefPseudoThickness);
    VertCoordMovementWeightsH = createHostMirrorCopy(VertCoordMovementWeights);
+}
+
+//------------------------------------------------------------------------------
+// Apply the zero default when SurfacePressure was absent from the input, then
+// exchange halo and copy SurfacePressure to host after the initial-state or
+// restart stream has been read.
+void VertCoord::initSurfacePressure(Halo *MeshHalo) {
+   // SurfacePressure is an optional read. If it was not present in the
+   // initial-state or restart file, its owned cells still hold the fill value
+   // set by attachData; in that case default the whole array to zero. Only the
+   // owned cells are checked because halo cells are not populated until the
+   // exchange below.
+   OMEGA_SCOPE(LocSurfacePressure, SurfacePressure);
+   I4 NFill = 0;
+   parallelReduce(
+       {NCellsOwned},
+       KOKKOS_LAMBDA(int ICell, I4 &Count) {
+          if (LocSurfacePressure(ICell) == FillValueReal)
+             ++Count;
+       },
+       NFill);
+   if (NFill > 0) {
+      LOG_INFO("VertCoord: SurfacePressure not found in input, "
+               "using SurfacePressure = 0");
+      deepCopy(SurfacePressure, 0._Real);
+   }
+
+   MeshHalo->exchangeFullArrayHalo(SurfacePressure, OnCell);
+   deepCopy(SurfacePressureH, SurfacePressure);
 }
 
 //------------------------------------------------------------------------------
@@ -958,11 +1033,12 @@ void VertCoord::setMasks() {
 } // end setMasks()
 
 //------------------------------------------------------------------------------
-// Compute the pressure at each layer interface and midpoint given the
-// PseudoThickness and SurfacePressure. Hierarchical parallelism is used with a
-// parallel_for loop over all cells and a parallel_scan performing a prefix sum
-// in each column to compute pressure from the top-most active layer to the
-// bottom-most active layer.
+// Compute the relative pressure (gauge pressure, i.e., absolute pressure minus
+// the standard atmosphere of 101325 Pa) at each layer interface and midpoint
+// given PseudoThickness and SurfacePressure (also relative). Hierarchical
+// parallelism is used with a parallel_for loop over all cells and a
+// parallel_scan performing a prefix sum in each column from the top-most active
+// layer to the bottom-most active layer.
 void VertCoord::computePressure(
     const Array2DReal &PseudoThickness, // [in] pseudo-thickness
     const Array1DReal &SurfacePressure  // [in] surface pressure

@@ -125,6 +125,11 @@ Field::create(const std::string &FieldName,   // [in] Name of variable/field
    // if reduced precision for the stream/file is requested
    ThisField->RetainPrecision = RetainPrecision;
 
+   // Fields are required in input files by default; owning modules may mark a
+   // field optional via setOptionalRead if it should default to its fill value
+   // when absent from a read stream.
+   ThisField->OptionalRead = false;
+
    // Number of dimensions for the field
    ThisField->NDims = NumDims;
 
@@ -332,6 +337,16 @@ bool Field::isDistributed() const { return Distributed; }
 // Determinse whether full precision should be retained in IO operations
 // when reduced precision for the stream/file is requested
 bool Field::retainPrecision() const { return RetainPrecision; }
+
+//------------------------------------------------------------------------------
+// Determines whether the field may be absent from an input file. When true, a
+// read stream that does not contain the field's variable skips it and leaves
+// the attached array at its fill value rather than failing.
+bool Field::isOptionalRead() const { return OptionalRead; }
+
+//------------------------------------------------------------------------------
+// Sets whether the field may be absent from an input file (see isOptionalRead)
+void Field::setOptionalRead(bool OptRead) { OptionalRead = OptRead; }
 
 //------------------------------------------------------------------------------
 // Returns a vector of dimension names associated with each dimension

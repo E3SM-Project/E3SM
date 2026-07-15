@@ -192,6 +192,18 @@ The first determines whether the unlimited time dimension should be added
 during IO operations. The second determines whether any of the dimensions
 are distributed across MPI tasks so that parallel IO is required.
 
+A field can also be marked as an optional read, which controls what happens
+when the field's variable is missing from an input file:
+```c++
+   MyField->setOptionalRead(true);
+   bool IsOptionalRead = MyField->isOptionalRead();
+```
+Fields are required by default (`isOptionalRead()` returns `false`). When a
+field is marked optional and its variable is absent from a read stream's file,
+the [IOStream](#omega-dev-iostreams) read skips it, leaving the attached array
+at its [fill value](#omega-design-fill-values) instead of failing. The owning
+module is responsible for detecting that fill value and substituting a default.
+
 The data and metadata stored in a field can be retrieved using several
 functions.  To retrieve a pointer to the full Field, use:
 ```c++
