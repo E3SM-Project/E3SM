@@ -18,36 +18,32 @@ endif()
 list(GET my_args 0 SRC_FILE)
 list(GET my_args 1 TGT_FILE)
 
-if (SCREAM_ONLY_GENERATE_BASELINES)
-  CopyFile(${SRC_FILE} ${TGT_FILE})
+# Print the files being compared
+message(STATUS "Comparing files: ${SRC_FILE} and ${TGT_FILE}")
+
+# Check if the source file exists
+if(NOT EXISTS ${SRC_FILE})
+  message(FATAL_ERROR "Error: Source file not found: ${SRC_FILE}")
+endif()
+
+# Check if the target file exists
+if(NOT EXISTS ${TGT_FILE})
+  message(FATAL_ERROR "Error: Target file not found: ${TGT_FILE}")
+endif()
+
+# Compare the files (note: works only on UNIX)
+execute_process(
+  COMMAND diff ${SRC_FILE} ${TGT_FILE}
+  RESULT_VARIABLE result
+  OUTPUT_VARIABLE diff_output
+  ERROR_VARIABLE diff_error
+  )
+
+# Check the result of the comparison
+if(result)
+  message(STATUS "Files differ:")
+  message(STATUS "${diff_output}")
+  message(FATAL_ERROR "Comparison failed.")
 else()
-  # Print the files being compared
-  message(STATUS "Comparing files: ${SRC_FILE} and ${TGT_FILE}")
-
-  # Check if the source file exists
-  if(NOT EXISTS ${SRC_FILE})
-    message(FATAL_ERROR "Error: Source file not found: ${SRC_FILE}")
-  endif()
-
-  # Check if the target file exists
-  if(NOT EXISTS ${TGT_FILE})
-    message(FATAL_ERROR "Error: Target file not found: ${TGT_FILE}")
-  endif()
-
-  # Compare the files (note: works only on UNIX)
-  execute_process(
-    COMMAND diff ${SRC_FILE} ${TGT_FILE}
-    RESULT_VARIABLE result
-    OUTPUT_VARIABLE diff_output
-    ERROR_VARIABLE diff_error
-    )
-
-  # Check the result of the comparison
-  if(result)
-    message(STATUS "Files differ:")
-    message(STATUS "${diff_output}")
-    message(FATAL_ERROR "Comparison failed.")
-  else()
-    message(STATUS "Files are identical.")
-  endif()
+  message(STATUS "Files are identical.")
 endif()
