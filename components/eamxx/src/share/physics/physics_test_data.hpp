@@ -509,7 +509,7 @@ struct UnitBase
       }
       else if (m_baseline_action == GENERATE) {
         m_ofile.open(baseline_name,std::ios::binary);
-        EKAT_REQUIRE_MSG(m_ofile.good(), "Coult not open baseline file for write: " + baseline_name + "\n");
+        EKAT_REQUIRE_MSG(m_ofile.good(), "Could not open baseline file for write: " + baseline_name + "\n");
       }
     }
   }

@@ -118,7 +118,7 @@ struct UnitWrap::UnitTest<D>::TestRainSelfCollection : public UnitWrap::UnitTest
 
 namespace {
 
-TEST_CASE("p3_rain_self_collection_bfb", "[p3_rain_self_collection_test"){
+TEST_CASE("p3_rain_self_collection_bfb", "[p3_rain_self_collection_test]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSelfCollection;
 
   T t;
