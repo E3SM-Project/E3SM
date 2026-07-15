@@ -165,6 +165,87 @@ void DataInterpolation::shift_data_interval ()
 }
 
 void DataInterpolation::
+correct_masked_values (const Field& f) const
+{
+  using namespace ShortFieldTagsNames;
+  const auto& fl = f.get_header().get_identifier().get_layout();
+
+  const bool has_vert_dim = fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(LEVP);
+  if (not fl.has_tag(COL) or not has_vert_dim) {
+    return;
+  }
+  EKAT_REQUIRE_MSG(fl.rank()==2 or fl.rank()==3,
+      "[DataInterpolation] Error! Fill-value correction only supports scalar or vector column fields.\n"
+      " - field name  : " + f.name() + "\n"
+      " - field layout: " + fl.to_string() + "\n");
+  const auto vtag = fl.tag(fl.rank()-1);
+  EKAT_REQUIRE_MSG(vtag==LEV or vtag==ILEV or vtag==LEVP,
+      "[DataInterpolation] Error! Fill-value correction expects the vertical dimension to be last.\n"
+      " - field name  : " + f.name() + "\n"
+      " - field layout: " + fl.to_string() + "\n");
+
+  using KT = KokkosTypes<DefaultDevice>;
+  using RangePolicy = typename KT::RangePolicy;
+
+  constexpr Real fill_value = constants::fill_value<Real>;
+  const auto thresh = std::abs(fill_value)*0.0001;
+
+  const int ncols = fl.dim(COL);
+  const int nlevs = fl.dim(fl.rank()-1);
+
+  if (fl.rank()==2) {
+    const auto v = f.get_view<Real**>();
+    auto lambda = KOKKOS_LAMBDA(const int icol) {
+      int first_good = nlevs;
+      int last_good = -1;
+      for (int k=0; k<nlevs; ++k) {
+        if (Kokkos::abs(v(icol,k)-fill_value)>thresh) {
+          first_good = ekat::impl::min(first_good,k);
+          last_good  = ekat::impl::max(last_good,k);
+        }
+      }
+      EKAT_KERNEL_REQUIRE_MSG (first_good<nlevs and last_good>=0,
+          "[DataInterpolation] Error! Could not locate a non-masked entry in a column.\n");
+
+      for (int k=0; k<first_good; ++k) {
+        v(icol,k) = v(icol,first_good);
+      }
+      for (int k=last_good+1; k<nlevs; ++k) {
+        v(icol,k) = v(icol,last_good);
+      }
+    };
+    Kokkos::parallel_for(RangePolicy(0,ncols),lambda);
+  } else {
+    const auto v = f.get_view<Real***>();
+    const int ncomps = fl.get_vector_dim();
+
+    auto lambda = KOKKOS_LAMBDA(const int idx) {
+      const int icol = idx / ncomps;
+      const int icmp = idx % ncomps;
+
+      int first_good = nlevs;
+      int last_good = -1;
+      for (int k=0; k<nlevs; ++k) {
+        if (Kokkos::abs(v(icol,icmp,k)-fill_value)>thresh) {
+          first_good = ekat::impl::min(first_good,k);
+          last_good  = ekat::impl::max(last_good,k);
+        }
+      }
+      EKAT_KERNEL_REQUIRE_MSG (first_good<nlevs and last_good>=0,
+          "[DataInterpolation] Error! Could not locate a non-masked entry in a column.\n");
+
+      for (int k=0; k<first_good; ++k) {
+        v(icol,icmp,k) = v(icol,icmp,first_good);
+      }
+      for (int k=last_good+1; k<nlevs; ++k) {
+        v(icol,icmp,k) = v(icol,icmp,last_good);
+      }
+    };
+    Kokkos::parallel_for(RangePolicy(0,ncols*ncomps),lambda);
+  }
+}
+
+void DataInterpolation::
 update_end_fields ()
 {
   // First, set the correct fields in the reader
@@ -203,6 +284,11 @@ update_end_fields ()
   m_logger->info(" - filename: " + slice_end.filename);
   m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
   m_reader->read(slice_end.time_idx);
+  if (m_correct_fill_values) {
+    for (int i=0; i<m_nfields; ++i) {
+      correct_masked_values(m_horiz_remapper_end->get_src_field(i));
+    }
+  }
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -237,7 +323,7 @@ setup_time_database (const strvec_t& input_files,
                      const util::TimeStamp& ref_ts)
 {
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
-  m_logger->debug("Setting up DataInerpolation object. List of input files:");
+  m_logger->debug("Setting up DataInterpolation object. List of input files:");
   for (const auto& fname : input_files) {
     m_logger->debug("  - " + fname);
   }
@@ -256,13 +342,18 @@ setup_time_database (const strvec_t& input_files,
     return file.good(); // Check if the file can be opened
   };
 
+  struct FileTimeInfo {
+    std::string filename;
+    std::vector<util::TimeStamp> times;
+  };
+
   // Read what time stamps we have in each file
   auto ts2str = [](const util::TimeStamp& t) { return t.to_string(); };
-  std::vector<std::vector<util::TimeStamp>> times;
+  std::vector<FileTimeInfo> file_infos;
   for (const auto& fname : input_files) {
-    EKAT_REQUIRE_MSG (file_readable(input_files.back()),
+    EKAT_REQUIRE_MSG (file_readable(fname),
         "Error! One of the input files is not readable.\n"
-        " - file   : " + input_files.back() + "\n");
+        " - file   : " + fname + "\n");
 
     scorpio::register_file(fname,scorpio::Read);
 
@@ -291,50 +382,53 @@ setup_time_database (const strvec_t& input_files,
     }
     auto t_ref = ref_ts.is_valid() ? ref_ts : parsed_ref;
 
-    times.emplace_back();
+    FileTimeInfo info;
+    info.filename = fname;
     for (const auto& t : file_times) {
-      times.back().push_back(t_ref + t*time_mult);
+      info.times.push_back(t_ref + t*time_mult);
     }
     scorpio::release_file(fname);
 
     // Ensure time slices are sorted (it would make code messy otherwise)
-    EKAT_REQUIRE_MSG (std::is_sorted(times.back().begin(),times.back().end()),
+    EKAT_REQUIRE_MSG (std::is_sorted(info.times.begin(),info.times.end()),
         "[DataInterpolation] Error! One of the input files has time slices not sorted.\n"
         " - file name  : " + fname + "\n"
-        " - time stamps: " + ekat::join(times.back(),ts2str,", ") + "\n");
+        " - time stamps: " + ekat::join(info.times,ts2str,", ") + "\n");
+    file_infos.push_back(info);
   }
 
   // Sort the files based on start date
-  auto fileCmp = [](const std::vector<util::TimeStamp>& times1,
-                    const std::vector<util::TimeStamp>& times2)
+  auto fileCmp = [](const FileTimeInfo& info1,
+                    const FileTimeInfo& info2)
   {
-    return times1.front() < times2.front();
+    return info1.times.front() < info2.times.front();
   };
-  std::sort(times.begin(),times.end(),fileCmp);
+  std::sort(file_infos.begin(),file_infos.end(),fileCmp);
 
   // Setup the time database
   m_time_database.timeline = timeline;
-  m_time_database.files = input_files;
 
-  int nfiles = input_files.size();
+  int nfiles = file_infos.size();
   for (int i=0; i<nfiles; ++i) {
+    m_time_database.files.push_back(file_infos[i].filename);
+
     int time_idx = 0;
-    for (const auto& t : times[i]) {
+    for (const auto& t : file_infos[i].times) {
       auto& slice = m_time_database.slices.emplace_back();
       slice.time = t;
-      slice.filename = input_files[i];
+      slice.filename = file_infos[i].filename;
       slice.time_idx = time_idx;
       ++time_idx;
     }
 
     if (i>0) {
       // Ensure files don't overlap (it would be a mess)
-      const auto& prev = times[i-1];
-      const auto& next = times[i];
+      const auto& prev = file_infos[i-1].times;
+      const auto& next = file_infos[i].times;
       EKAT_REQUIRE_MSG (prev.back() < next.front(),
           "[DataInterpolation] Error! The input files contain overlapping time slices.\n"
-          " - file1 name : " + input_files[i-1] + "\n"
-          " - file2 name : " + input_files[i] + "\n"
+          " - file1 name : " + file_infos[i-1].filename + "\n"
+          " - file2 name : " + file_infos[i].filename + "\n"
           " - file1 times: " + ekat::join(prev,ts2str,", ") + "\n"
           " - file2 times: " + ekat::join(next,ts2str,", ") + "\n");
     }
@@ -637,9 +731,9 @@ create_vert_remapper (const VertRemapData& data)
       read_fields (m_time_database.files.front(),{hyam,hybm});
     } else if (m_vr_type==Static1D) {
       // Can load p now, since it's static
+      auto src_file = data.pfile.empty() ? m_time_database.files.front() : data.pfile;
       std::vector<Field> fields = {p_data.alias(data.pname)};
-      auto gids = m_grid_after_hremap->get_partitioned_dim_gids();
-      read_fields(m_time_database.files.front(),fields);
+      read_fields(src_file,fields);
     }
     vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
 

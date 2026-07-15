@@ -54,6 +54,7 @@ TEST_CASE("nudging_tests") {
   auto postfix = ".INSTANT.nsteps_x1.np*." + get_t0().to_string() + ".nc";
   auto nudging_data        = "nudging_data" + postfix;
   auto nudging_data_filled = "nudging_data_filled" + postfix;
+  auto static_pressure_file = "nudging_static_pressure.nc";
   auto map_file = "map_ncol" + std::to_string(ngcols_data)
                 + "_to_"     + std::to_string(ngcols_fine) + ".nc";
 
@@ -70,6 +71,19 @@ TEST_CASE("nudging_tests") {
   auto grid_fine   = gm_fine->get_grid("point_grid");
   
   const int ncols_data = grid_data->get_num_local_dofs();
+
+  auto set_static_pressure = [] (const Field& p_mid) {
+    auto p_mid_h = p_mid.get_view<Real**,Host>();
+    const auto& fl = p_mid.get_header().get_identifier().get_layout();
+    const int ncols = fl.dim(0);
+    const int nlevs = fl.dim(1);
+    for (int icol=0; icol<ncols; ++icol) {
+      for (int ilev=0; ilev<nlevs; ++ilev) {
+        p_mid_h(icol,ilev) = ilev + 1;
+      }
+    }
+    p_mid.sync_to_dev();
+  };
 
   // First section tests nudging when there is no horiz-vert interp
   SECTION ("no-horiz-no-vert") {
@@ -154,21 +168,50 @@ TEST_CASE("nudging_tests") {
       }
       root_print (msg + (ok ? " PASS\n" : " FAIL\n"));
     }
+
+    SECTION ("static-1d-pressure") {
+      std::string msg = " -> Testing static 1d source pressure file ..............";
+      root_print (msg + "\n");
+      bool ok = true;
+
+      params.set<std::string>("source_pressure_type","STATIC_1D_VERTICAL_PROFILE");
+      params.set<std::string>("source_pressure_file",static_pressure_file);
+
+      auto fm = create_fm(grid_data);
+      set_static_pressure(fm->get_field("p_mid"));
+      auto U = fm->get_field("U");
+
+      auto nudging = create_nudging(comm,params,fm,gm_data,get_t0());
+
+      auto time = get_t0();
+      auto U_tgt = U.clone("U_tgt");
+      for (int n=0; ok and n<nsteps_data; ++n) {
+        time += dt_data;
+
+        nudging->run(dt_data);
+
+        compute_field(U_tgt,time,comm,0);
+
+        CHECK (views_are_equal(U,U_tgt));
+        ok &= catch_capture.lastAssertionPassed();
+      }
+      root_print (msg + (ok ? " PASS\n" : " FAIL\n"));
+    }
   }
 
   // Now test the case where we do have vertical interp.
   SECTION ("no-horiz-yes-vert") {
     const auto Pa = ekat::units::Pa;
 
-    // Helper lambda, to compute f on the "fine" vert grid from f on the data vert grid
-    // If in_bounds=false, top/bot entries are extrapolated:
-    //  top: f_out(0) = f_in(1) / 2
-    //  bot: f_out(bot) = f_in(bot-1)
-
-    auto manual_interp = [&](const Field& data, const Field& fine, const bool in_bounds) {
+    // Helper lambda, to compute f on the "fine" vert grid from f on the data vert grid.
+    // If in_bounds=false, target pressure is set outside the source bounds, while
+    // data fields use VerticalRemapper's P0 constant extrapolation.
+    auto manual_interp = [&](const Field& data,
+                             const Field& fine,
+                             const bool in_bounds,
+                             const bool is_target_pressure = false) {
       auto fine_h = fine.get_view<Real**,Host>();
       auto data_h = data.get_view<Real**,Host>();
-      const bool is_pmid = data.name()=="p_mid";
       const int nlevs_fine = 2*nlevs_data-1;
       const int top = 0;
       const int bot = nlevs_fine-1;
@@ -182,8 +225,13 @@ TEST_CASE("nudging_tests") {
           fine_h(icol,2*ilev+1) = (fine_h(icol,2*ilev)+fine_h(icol,2*ilev+2))/2;
         }
         if (not in_bounds) {
-          fine_h(icol,top) *= 0.5;
-          fine_h(icol,bot) *= is_pmid ? 2 : 1;
+          if (is_target_pressure) {
+            fine_h(icol,top) *= 0.5;
+            fine_h(icol,bot) *= 2;
+          } else {
+            fine_h(icol,top) = data_h(icol,0);
+            fine_h(icol,bot) = data_h(icol,nlevs_data-1);
+          }
         }
       }
       fine.sync_to_dev();
@@ -256,7 +304,7 @@ TEST_CASE("nudging_tests") {
       p_mid_data.allocate_view();
       compute_field(p_mid_data,get_t0(),comm,0);
 
-      manual_interp(p_mid_data,p_mid,false);
+      manual_interp(p_mid_data,p_mid,false,true);
 
       auto time = get_t0();
       Field tmp_data = p_mid_data.clone("tmp data");
