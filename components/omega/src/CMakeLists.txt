@@ -108,7 +108,7 @@ endif()
 
 
 # build Omega as an E3SM component
-if(DEFINED E3SM_SOURCE_DIR)
+if("${OMEGA_BUILD_MODE}" STREQUAL "E3SM")
 
     set(OCN_SRC
       drivers/coupled/ocn_comp_mct.F90
