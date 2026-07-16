@@ -157,6 +157,7 @@ CONTAINS
          trim(datamode) == 'IAF_JRA_1p5' .or. &
          trim(datamode) == 'CORE_RYF_JRA' .or. &
          trim(datamode) == 'CLMNCEP'   .or. &
+         trim(datamode) == 'IAF_CFORCE'.or. &
          trim(datamode) == 'COPYALL'   ) then
        if (my_task == master_task) then
           write(logunit,F00) ' datm datamode = ',trim(datamode)

@@ -706,6 +706,16 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="ERA5cforce_IcoswISC30E3r5" compset="(DATM|XATM|SATM)">
+      <grid name="atm">ERA5cforce</grid>
+      <grid name="lnd">ERA5cforce</grid>
+      <grid name="ocnice">IcoswISC30E3r5</grid>
+      <grid name="rof">r025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>IcoswISC30E3r5</mask>
+    </model_grid>
+
     <!-- finite volume grids -->
 
     <model_grid alias="f02_g16">
@@ -3338,6 +3348,14 @@
       <desc>ERA5r025 is the lat/lon cap grid used by ERA5 data:</desc>
     </domain>
 
+    <domain name="ERA5cforce">
+      <nx>1280</nx>
+      <ny>640</ny>
+      <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ERA5cforce_IcoswISC30E3r5.20260630.nc</file>
+      <file grid="ice|ocn" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ERA5cforce_IcoswISC30E3r5.20260630.nc</file>
+      <desc>ERA5r025 is the lat/lon cap grid used by CFORCE data:</desc>
+    </domain>
+
     <!--=====================================================================-->
     <!--=====================================================================-->
     <!-- SE grid domains -->
@@ -5817,6 +5835,14 @@
     <gridmap atm_grid="ERA5r025" rof_grid="r025">
        <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r025_traave.20240903.nc</map>
        <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ERA5r025/map_ERA5r025_to_r025_trbilin.20240903.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ERA5cforce" ocn_grid="IcoswISC30E3r5">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ERA5cforce/map_ERA5cforce_to_IcoswISC30E3r5_traave.20260630.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ERA5cforce/map_ERA5cforce_to_IcoswISC30E3r5-nomask_trbilin.20260630.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ERA5cforce/map_ERA5cforce_to_IcoswISC30E3r5_esmfpatch.20260716.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ERA5cforce_traave.20260630.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/IcoswISC30E3r5/map_IcoswISC30E3r5_to_ERA5cforce_traave.20260630.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T31" ocn_grid="gx3v7">

@@ -10,7 +10,7 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%DaymetGSWP3][%DaymetERA5][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%DaymetGSWP3][%DaymetERA5][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR][%CFORCE]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
@@ -38,6 +38,7 @@
     <desc option="JRA-RYF0304"> JRA55 Repeat Year Forcing v1.3 2003-2004</desc>
     <desc option="CFSv2">CFSv2 reanalysis forcing</desc>
     <desc option="CFSR">CFSR reanalysis forcing</desc>
+    <desc option="CFORCE">CFORCE forcing 1940-2024</desc>
   </description>
 
   <entry id="COMP_ATM">
@@ -51,7 +52,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,uELM_NA,uELM_TES,ELMERA5,ERA56HR,ELMGSWP3w5e5,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,E3SMWCv2,CPLWCH,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,uELM_NA,uELM_TES,ELMERA5,ERA56HR,ELMGSWP3w5e5,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,E3SMWCv2,CPLWCH,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR,IAF_CFORCE</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -92,6 +93,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%CFSR">CFSR</value>
       <value compset="%E3SMWCv2">E3SMWCv2</value>
       <value compset="%CPLWCH">CPLWCH</value>
+      <value compset="%CFORCE">IAF_CFORCE</value>
     </values>
   </entry>
 
@@ -409,6 +411,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="4804.*_DATM">$DATM_CLMNCEP_YR_START</value>
       <value compset="2000.*_DATM%ERA5">$DATM_CLMNCEP_YR_START</value>
       <value compset="2000.*_DATM%ERA56HR">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2000_DATM%CFORCE">1</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -458,6 +461,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="2000_DATM%JRA">1958</value>
       <value compset="2000.*_DATM%ERA5">1979</value>
       <value compset="2000.*_DATM%ERA56HR">1979</value>
+      <value compset="2000_DATM%CFORCE">1940</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -512,6 +516,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="2000_DATM%JRA-1p5-2023">2023</value>
       <value   compset="2000.*_DATM%ERA5">1979</value>
       <value   compset="2000.*_DATM%ERA56HR">1979</value>
+      <value   compset="2000_DATM%CFORCE">2024</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

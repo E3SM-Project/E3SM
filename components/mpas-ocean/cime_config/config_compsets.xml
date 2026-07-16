@@ -123,6 +123,17 @@
   </compset>
 
   <compset>
+    <alias>CMPASO-CFORCE</alias>
+    <lname>2000_DATM%CFORCE_SLND_DICE%SSMI_MPASO%DATMFORCED_DROF%CFORCE_SGLC_SWAV</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+    <alias>GMPAS-CFORCE</alias>
+    <lname>2000_DATM%CFORCE_SLND_MPASSI_MPASO%DATMFORCED_DROF%CFORCE_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA1p4-PISMF</alias>
     <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%PISMFDATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
   </compset>

@@ -55,6 +55,7 @@
     CPLHIST     	= Streams for lnd or ocn/ice forcing used for spinup
     E3SMWCv2            = Streams from E3SM water cycle V2 simulation used for lnd spinup
     CPLWCH           = Streams from E3SM water cycle V2 historical simulation used for lnd historical transient simulation 
+    CFORCE              = ....
     presaero		= Prescribed aerosol forcing
     topo		= Surface topography
     co2tseries		= Time series of prescribed CO2 forcing
@@ -281,6 +282,7 @@
       <value datm_mode="CFSR">CFSR.UV</value>
       <value datm_mode="E3SMWCv2">E3SMWCv2Forcing.Solar,E3SMWCv2Forcing.nonSolarFlux,E3SMWCv2Forcing.State3hr,E3SMWCv2Forcing.State1hr</value>
       <value datm_mode="CPLWCH">CPLWCHForcing.Solar,CPLWCHForcing.nonSolarFlux,CPLWCHForcing.State3hr,CPLWCHForcing.State1hr</value>
+      <value datm_mode="CFORCE">IAF_CFORCE.v.1.0.LWDN,IAF_CFORCE.v.1.0.Q10,IAF_CFORCE.v.1.0.RAIN,IAF_CFORCE.v.1.0.SLP,IAF_CFORCE.v.1.0.SNOW,IAF_CFORCE.v.1.0.SWDN,IAF_CFORCE.v.1.0.T10,IAF_CFORCE.v.1.0.U10,IAF_CFORCE.v.1.0.V10</value>
     </values>   
   </entry>
 
@@ -356,6 +358,7 @@
       <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
       <value stream="topo.e3smwcv2">null</value>
       <value stream="topo.cplwch">null</value>
+      <value stream="IAF_CFORCE.*">$DIN_LOC_ROOT/atm/datm7/ERA5cforce</value>
     </values>
   </entry>
 
@@ -477,6 +480,7 @@
       <value stream="CFSR.UV">domain.ocn.CFSR_CFSR.210415.nc</value>
       <value stream="topo.e3smwcv2">null</value>
       <value stream="topo.cplwch">null</value>
+      <value stream="IAF_CFORCE">domain.atm.ERA5cforce.20260630.nc</value>
     </values>
   </entry>
 
@@ -644,6 +648,7 @@
       <value stream="CFSR.UV">$DIN_LOC_ROOT/wav/cfsr</value>
       <value stream="topo.e3smwcv2">$DIN_LOC_ROOT_CLMFORC/v2.LR.piControl_land/3hrly_drivers</value>
       <value stream="topo.cplwch">$DIN_LOC_ROOT_CLMFORC/v2.LR.historical_land/3hrly_drivers</value>
+      <value stream="IAF_CFORCE.*">$DIN_LOC_ROOT/ocn/CFORCE</value>
     </values>
   </entry>
 
@@ -1556,6 +1561,33 @@
       <value stream="topo.observed">topodata_0.9x1.25_USGS_070110_stream_c151201.nc</value>
       <value stream="CFSv2.UV">sandy_wnd10m_ww3.nc</value>
       <value stream="CFSR.UV">wnd10mx0.5.gdas.200506.ww3.nc</value>
+      <value  stream="IAF_CFORCE.v.1.0.LWDN">
+        CFORCE.v.1.0.lwdn.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.Q10">
+        CFORCE.v.1.0.q10.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.RAIN">
+        CFORCE.v.1.0.rain.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.SLP">
+        CFORCE.v.1.0.slp.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.SNOW">
+        CFORCE.v.1.0.snow.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.SWDN">
+        CFORCE.v.1.0.swdn.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.T10">
+        CFORCE.v.1.0.t10.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.U10">
+        CFORCE.v.1.0.u10.%y.nc
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.V10">
+        CFORCE.v.1.0.v10.%y.nc
+      </value>
     </values>
   </entry>
 
@@ -2132,6 +2164,33 @@
         V_GRD_L103  v
         TBOT tbot
       </value>
+      <value  stream="IAF_CFORCE.v.1.0.LWDN">
+        lwdn  lwdn
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.Q10">
+        q_10  shum
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.RAIN">
+        rain  rainl
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.SLP">
+        slp  pslv
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.SNOW">
+        snow  snowl
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.SWDN">
+        swdn  swdn
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.T10">
+        t_10  tbot
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.U10">
+        u_10  u
+      </value>
+      <value  stream="IAF_CFORCE.v.1.0.V10">
+        v_10  v
+      </value>
     </values>
   </entry>
 
@@ -2187,6 +2246,7 @@
       <value stream="CFSR.UV">1</value>
       <value stream="topo.e3smwcv2">$DATM_E3SMWCv2_YR_ALIGN</value>
       <value stream="topo.cplwch">$DATM_CPLWCH_YR_ALIGN</value>
+      <value stream="IAF_CFORCE.*">$DATM_CLMNCEP_YR_ALIGN</value>
     </values>
   </entry>
 
@@ -2269,6 +2329,7 @@
       <value stream="CFSR.UV">1</value>
       <value stream="topo.e3smwcv2">$DATM_E3SMWCv2_YR_START</value>
       <value stream="topo.cplwch">$DATM_CPLWCH_YR_START</value>
+      <value stream="IAF_CFORCE.*">$DATM_CLMNCEP_YR_START</value>
     </values									>
   </entry>
 
@@ -2354,6 +2415,7 @@
       <value stream="CFSR.UV">1</value>
       <value stream="topo.e3smwcv2">$DATM_E3SMWCv2_YR_START</value>
       <value stream="topo.cplwch">$DATM_CPLWCH_YR_START</value>
+      <value stream="IAF_CFORCE.*">$DATM_CLMNCEP_YR_END</value>
     </values>
   </entry>
 
@@ -2410,7 +2472,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,IAF_JRA_1p5,CORE_RYF_JRA,NULL</valid_values>
+    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,IAF_JRA_1p5,CORE_RYF_JRA,IAF_CFORCE,NULL</valid_values>
     <desc>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
@@ -2475,6 +2537,7 @@
       <value datm_mode="CFSR">COPYALL</value>
       <value datm_mode="E3SMWCv2">COPYALL</value>
       <value datm_mode="CPLWCH">COPYALL</value>
+      <value datm_mode="IAF_CFORCE">IAF_CFORCE</value>
     </values>
   </entry>
 
@@ -2721,6 +2784,7 @@
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">coszen</value>
       <value stream="IAF_JRA_1p5.*.GISS.SWDN">coszen</value>
       <value stream="CORE_RYF.*.GISS.SWDN">coszen</value>
+      <value stream="IAF_CFORCE.*.SWDN">coszen</value>
     </values>
   </entry>
 
@@ -2849,6 +2913,7 @@
       <value datm_mode="CORE_RYF*">u:v</value>
       <value datm_mode="CFSv2">u:v</value>
       <value datm_mode="CFSR">u:v</value>
+      <value datm_mode="IAF_CFORCE">u:v</value>
     </values>
   </entry>
 

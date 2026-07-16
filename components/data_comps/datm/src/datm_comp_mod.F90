@@ -81,6 +81,7 @@ module datm_comp_mod
   integer(IN) :: kanidr,kanidf,kavsdr,kavsdf
   integer(IN) :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
   integer(IN) :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
+  integer(IN) :: srain, ssnow
 
   ! water isotopes / tracer input
   integer(IN) :: kshum_16O, kshum_18O, kshum_HDO
@@ -164,7 +165,7 @@ module datm_comp_mod
   ! other fields used in calculations. Fields that are simply read and passed directly to
   ! the coupler do not need to be in these lists.
 
-  integer(IN),parameter :: ktranss = 33
+  integer(IN),parameter :: ktranss = 35
 
   character(16),parameter  :: stofld(1:ktranss) = &
        (/"strm_tbot       ","strm_wind       ","strm_z          ","strm_pbot       ", &
@@ -172,6 +173,7 @@ module datm_comp_mod
        "strm_swdn       ","strm_swdndf     ","strm_swdndr     ","strm_precc      ", &
        "strm_precl      ","strm_precn      ","strm_co2prog    ","strm_co2diag    ", &
        "strm_swup       ","strm_prec       ","strm_tarcf      ", &
+       "strm_rainl      ","strm_snowl      ", &
                                 ! add bias correction / anomaly forcing streams
        "strm_precsf     ", &
        "strm_prec_af    ","strm_u_af       ","strm_v_af       ","strm_tbot_af    ", &
@@ -186,7 +188,8 @@ module datm_comp_mod
        "swdn            ","swdndf          ","swdndr          ","precc           ", &
        "precl           ","precn           ","co2prog         ","co2diag         ", &
                                 ! add precsf
-       "swup            ","prec            ","tarcf           ","precsf          ", &
+       "swup            ","prec            ","tarcf           ",&
+       "rainl           ","snowl           ","precsf          ", &
                                 ! add anomaly forcing streams
        "prec_af         ","u_af            ","v_af            ","tbot_af         ", &
        "pbot_af         ","shum_af         ","swdn_af         ","lwdn_af         ", &
@@ -586,6 +589,8 @@ CONTAINS
        sswup  = mct_aVect_indexRA(avstrm,'strm_swup'   ,perrWith='quiet')
        sprec  = mct_aVect_indexRA(avstrm,'strm_prec'   ,perrWith='quiet')
        starcf = mct_aVect_indexRA(avstrm,'strm_tarcf'  ,perrWith='quiet')
+       srain  = mct_aVect_indexRA(avstrm,'strm_rainl'  ,perrWith='quiet')
+       ssnow  = mct_aVect_indexRA(avstrm,'strm_snowl'  ,perrWith='quiet')
 
        ! anomaly forcing
        sprecsf  = mct_aVect_indexRA(avstrm,'strm_precsf'  ,perrWith='quiet')
@@ -1066,6 +1071,65 @@ CONTAINS
              a2x%rAttr(krl,n) = avstrm%rAttr(sprec,n)
              a2x%rAttr(ksl,n) = 0.0_R8
           endif
+
+          !-------------------------------------------------------------------------
+          ! RADIATION DATA
+          !-------------------------------------------------------------------------
+
+          !--- fabricate required swdn components from net swdn ---
+          a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
+          a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
+          a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
+          a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
+
+          !--- compute net short-wave based on LY08 latitudinally-varying albedo ---
+          avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
+          a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)*(1.0_R8 - avg_alb)
+
+       enddo   ! lsize
+
+    case('IAF_CFORCE')
+       if (firstcall) then
+          if (srain < 1 .or. ssnow < 1) then
+             write(logunit,F00) 'ERROR: rain and snow must be in streams for CFORCE'
+             call shr_sys_abort(trim(subname)//'ERROR: rain and snow must be in streams for CFORCE')
+          endif
+          if (trim(factorFn) == 'null') then
+             windFactor = 1.0_R8
+             winddFactor = 1.0_R8
+             qsatFactor = 1.0_R8
+          else
+             call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
+                  mpicom,compid,gsmap,ggrid,SDATM%nxg,SDATM%nyg)
+          endif
+       endif
+       call shr_cal_date2julian(currentYMD,currentTOD,rday,calendar)
+       rday = mod((rday - 1.0_R8),365.0_R8)
+       cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
+
+       lsize = mct_avect_lsize(a2x)
+       do n = 1,lsize
+          a2x%rAttr(kz,n) = 10.0_R8
+
+          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
+          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
+
+          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+
+          !--- density computation for JRA55 forcing ---
+          a2x%rAttr(kdens,n) = a2x%rAttr(kpbot,n)/(rdair*a2x%rAttr(ktbot,n) &
+               *(1+0.608* a2x%rAttr(kshum,n)))
+
+          !-------------------------------------------------------------------------
+          ! PRECIPITATION DATA
+          !-------------------------------------------------------------------------
+
+          a2x%rAttr(krc,n) = 0.0_R8                    ! default zero
+          a2x%rAttr(ksc,n) = 0.0_R8
+          a2x%rAttr(krl,n) = 0.0_R8
+          a2x%rAttr(ksl,n) = 0.0_R8
+          a2x%rAttr(krl,n) = max(0.0_R8,avstrm%rAttr(srain,n))
+          a2x%rAttr(ksl,n) = max(0.0_R8,avstrm%rAttr(ssnow,n))
 
           !-------------------------------------------------------------------------
           ! RADIATION DATA
