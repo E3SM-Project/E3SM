@@ -265,10 +265,10 @@ struct IsotropicTsData : public PhysicsTestData {
   Real *brunt_int, *tke, *a_diss, *brunt;
 
   // Outputs
-  Real *isotropy;
+  Real *isotropy, *stab_cor;
 
   IsotropicTsData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &brunt_int }, { &tke, &a_diss, &brunt, &isotropy }}), shcol(shcol_), nlev(nlev_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &brunt_int }, { &tke, &a_diss, &brunt, &isotropy, &stab_cor }}), shcol(shcol_), nlev(nlev_) {}
 
   PTD_STD_DEF(IsotropicTsData, 2, shcol, nlev);
 };
@@ -295,13 +295,13 @@ struct AdvSgsTkeData : public PhysicsTestData {
 struct EddyDiffusivitiesData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *tke;
+  Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *stab_cor, *tke;
 
   // Outputs
   Real *tkh, *tk;
 
   EddyDiffusivitiesData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &stab_cor, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
 
   PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
 };
@@ -1104,7 +1104,7 @@ void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_
 void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
                               Real *pres, Real *brunt, Real *brunt_int);
 void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
-                    Real* a_diss, Real* brunt, Real* isotropy);
+                    Real* a_diss, Real* brunt, Real* isotropy, Real* stab_cor);
 void dp_inverse_host(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 void compute_vertical_shear_terms_host(Int nlev, Int nlevi, Int shcol,
                                        Real* dz_zi, Real* u_wind, Real* v_wind, Real* w_field,
@@ -1137,7 +1137,7 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
 void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
 void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
-                          Real* tke, Real* tkh, Real* tk);
+                          Real* stab_cor, Real* tke, Real* tkh, Real* tk);
 void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* u_wind, Real* v_wind, Real* brunt, Real* obklen, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke,
                 Real* tk, Real* tkh, Real* isotropy);

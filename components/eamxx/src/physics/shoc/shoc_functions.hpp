@@ -699,7 +699,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                            const Scalar &lambda_high, const Scalar &lambda_slope,
                            const Scalar &lambda_thresh, const Scalar &brunt_int,
                            const uview_1d<const Pack> &tke, const uview_1d<const Pack> &a_diss,
-                           const uview_1d<const Pack> &brunt, const uview_1d<Pack> &isotropy);
+                           const uview_1d<const Pack> &brunt, const uview_1d<Pack> &isotropy,
+                           const uview_1d<Pack> &stab_cor);
 
   KOKKOS_FUNCTION
   static void dp_inverse(const MemberType &team, const Int &nlev,
@@ -894,8 +895,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                      const Scalar &Ckh, const Scalar &Ckm, const Scalar &pblh,
                      const uview_1d<const Pack> &zt_grid, const uview_1d<const Pack> &tabs,
                      const uview_1d<const Pack> &shoc_mix, const uview_1d<const Pack> &sterm_zt,
-                     const uview_1d<const Pack> &isotropy, const uview_1d<const Pack> &tke,
-                     const uview_1d<Pack> &tkh, const uview_1d<Pack> &tk);
+                     const uview_1d<const Pack> &isotropy, const uview_1d<const Pack> &stab_cor,
+                     const uview_1d<const Pack> &tke, const uview_1d<Pack> &tkh,
+                     const uview_1d<Pack> &tk);
 
   KOKKOS_FUNCTION
   static void shoc_tke(const MemberType &team, const Int &nlev, const Int &nlevi,

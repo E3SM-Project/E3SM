@@ -2274,7 +2274,7 @@ void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
 }
 
 void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
-                    Real* a_diss, Real* brunt, Real* isotropy)
+                    Real* a_diss, Real* brunt, Real* isotropy, Real* stab_cor)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -2305,7 +2305,8 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
     a_diss_d  (temp_2d[1]),
     brunt_d   (temp_2d[2]),
     //output
-    isotropy_d(temp_2d[3]);
+    isotropy_d(temp_2d[3]),
+    stab_cor_d(temp_2d[4]);
 
   const Int nk_pack = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nk_pack);
@@ -2321,6 +2322,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
 
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
+      const auto stab_cor_s = ekat::subview(stab_cor_d, i);
 
       // Hard code these runtime options for F90
       const Real lambda_low = 0.001;
@@ -2328,12 +2330,12 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       const Real lambda_slope  = 2.65;
       const Real lambda_thresh = 0.02;
       SHF::isotropic_ts(team, nlev, lambda_low, lambda_high, lambda_slope, lambda_thresh,
-		      brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
+		      brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s, stab_cor_s);
     });
 
   // Sync back to host
-  std::vector<view_2d> inout_views = {isotropy_d};
-  ekat::device_to_host({isotropy}, shcol, nlev, inout_views);
+  std::vector<view_2d> inout_views = {isotropy_d, stab_cor_d};
+  ekat::device_to_host({isotropy, stab_cor}, shcol, nlev, inout_views);
 
 }
 
@@ -2831,7 +2833,7 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
 }
 
 void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
-                          Real* isotropy, Real* tke, Real* tkh, Real* tk)
+                          Real* isotropy, Real* stab_cor, Real* tke, Real* tkh, Real* tk)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -2865,9 +2867,10 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     shoc_mix_d(temp_2d_d[2]),
     sterm_zt_d(temp_2d_d[3]),
     isotropy_d(temp_2d_d[4]),
-    tke_d(temp_2d_d[5]),
-    tkh_d(temp_2d_d[6]),
-    tk_d(temp_2d_d[7]);
+    stab_cor_d(temp_2d_d[5]),
+    tke_d(temp_2d_d[6]),
+    tkh_d(temp_2d_d[7]),
+    tk_d(temp_2d_d[8]);
 
   const Int nk_pack = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nk_pack);
@@ -2881,6 +2884,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
     const auto sterm_zt_s = ekat::subview(sterm_zt_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
+    const auto stab_cor_s = ekat::subview(stab_cor_d, i);
     const auto tke_s = ekat::subview(tke_d, i);
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto tk_s = ekat::subview(tk_d, i);
@@ -2889,7 +2893,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     const Real Ckh = 0.1;
     const Real Ckm = 0.1;
 
-    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
+    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, stab_cor_s, tke_s, tkh_s, tk_s);
   });
 
   // Sync back to host

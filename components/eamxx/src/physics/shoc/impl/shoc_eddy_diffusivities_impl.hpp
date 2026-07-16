@@ -24,6 +24,7 @@ void Functions<S,D>::eddy_diffusivities(
   const uview_1d<const Pack>& shoc_mix,
   const uview_1d<const Pack>& sterm_zt,
   const uview_1d<const Pack>& isotropy,
+  const uview_1d<const Pack>& stab_cor,
   const uview_1d<const Pack>& tke,
   const uview_1d<Pack>&       tkh,
   const uview_1d<Pack>&       tk)
@@ -50,8 +51,11 @@ void Functions<S,D>::eddy_diffusivities(
     tkh(k).set(condition, Ckh_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
     tk(k).set(condition,  Ckm_s*ekat::square(shoc_mix(k))*ekat::sqrt(sterm_zt(k)));
 
-    tkh(k).set(!condition, Ckh*isotropy(k)*tke(k));
-    tk(k).set(!condition,  Ckm*isotropy(k)*tke(k));
+    tkh(k).set(!condition, Ckh*stab_cor(k)*shoc_mix(k)*ekat::sqrt(tke(k)));
+    tk(k).set(!condition,  Ckm*stab_cor(k)*shoc_mix(k)*ekat::sqrt(tke(k)));
+
+    //tkh(k).set(!condition, Ckh*isotropy(k)*tke(k));
+    //tk(k).set(!condition,  Ckm*isotropy(k)*tke(k));
   });
 }
 
