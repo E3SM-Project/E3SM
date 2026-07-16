@@ -82,7 +82,7 @@ int ocnRun(TimeInstant &CurrTime ///< [inout] current sim time
 } // end ocnRun
 
 int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
-           bool WriteRestart      ///< [in] write restart at end of coupling interval
+           bool WriteRestart ///< [in] write restart at end of coupling interval
 ) {
 
    // error code
@@ -100,7 +100,6 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
    TimeInterval TimeStep = DefTimeStepper->getTimeStep();
    TimeInstant SimTime   = OmegaClock->getCurrentTime();
 
-
    // Reset coupling alarm at the start of the coupling interval
    CouplingAlarm->reset(SimTime);
 
@@ -117,29 +116,28 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
    // time loop, integrate until CouplingAlarm or error encountered
    while (Err == 0 && !(CouplingAlarm->isRinging())) {
 
-      // get step count, over the whole simulation, not just the coupling interval
+      // get step count, over the whole simulation
       const I8 IStep = DefTimeStepper->getStepCount();
 
       // do forward time step
       // first call to doStep can sometimes take very long
       // we want to time it separately and disable child timers
       // for that timer
-       if (IStep == 0) {
-          Pacer::start("Stepper:firstDoStep", 1);
-          Pacer::disableTiming();
-          DefTimeStepper->doStep(DefOceanState, SimTime);
-          Pacer::enableTiming();
-          Pacer::stop("Stepper:firstDoStep", 1);
-       } else {
+      if (IStep == 0) {
+         Pacer::start("Stepper:firstDoStep", 1);
+         Pacer::disableTiming();
+         DefTimeStepper->doStep(DefOceanState, SimTime);
+         Pacer::enableTiming();
+         Pacer::stop("Stepper:firstDoStep", 1);
+      } else {
          Pacer::start("Stepper:doStep", 1);
          DefTimeStepper->doStep(DefOceanState, SimTime);
          Pacer::stop("Stepper:doStep", 1);
-       }
+      }
 
       // Write any IOStreams with their alarms ringing
       IOStream::writeAll(OmegaClock);
 
-      // Is 0 the right argument for getAll, since it's after the step?
       DefSfcCoupling->updateExportFields(DefOceanState, Tracers::getAll(0));
 
       LOG_INFO("ocnRun: Time step {} complete, clock time: {}", IStep,
@@ -150,7 +148,9 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
    DefSfcCoupling->exportToCoupler();
 
    // force write a restart at end of coupling interval if cpl tell us to
-   if (WriteRestart) { IOStream::write("RestartWrite", OmegaClock, true); }
+   if (WriteRestart) {
+      IOStream::write("RestartWrite", OmegaClock, true);
+   }
 
    return Err;
 

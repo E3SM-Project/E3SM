@@ -44,19 +44,19 @@ std::map<std::string, int> buildFieldIndexMap(const char *FieldNames,
 extern "C" {
 
 void omega_ocn_init1(
-    const MPI_Fint FComm,           // [in] MPI communicator from Fortran
-    const int OcnID,                // [in] mct comp id for ocn mode
-    const char *YamlConfigFile,     // [in] yaml file name for ocean model
-    const char *OcnLogFile,         // [in] log file name for ocean model
-    const int StartType,            // [in] 0=startup, 1=continue, 2=branch
-    const char *CalendarName,       // [in] CIME calendar name
-    const int RunStartYMD,          // [in] run start date in YYYYMMDD
-    const int RunStartTOD,          // [in] run start time in seconds of day
-    const int CouplingTimeStep,     // [in] coupling time step in seconds
-    const int NCouplerImports,      // [in] number of coupler import fields
-    const int NCouplerExports,      // [in] number of coupler export fields
-    const int NOmegaImports,        // [in] number of omega import fields
-    const int NOmegaExports,        // [in] number of omega export fields
+    const MPI_Fint FComm,          // [in] MPI communicator from Fortran
+    const int OcnID,               // [in] mct comp id for ocn mode
+    const char *YamlConfigFile,    // [in] yaml file name for ocean model
+    const char *OcnLogFile,        // [in] log file name for ocean model
+    const int StartType,           // [in] 0=startup, 1=continue, 2=branch
+    const char *CalendarName,      // [in] CIME calendar name
+    const int RunStartYMD,         // [in] run start date in YYYYMMDD
+    const int RunStartTOD,         // [in] run start time in seconds of day
+    const int CouplingTimeStep,    // [in] coupling time step in seconds
+    const int NCouplerImports,     // [in] number of coupler import fields
+    const int NCouplerExports,     // [in] number of coupler export fields
+    const int NOmegaImports,       // [in] number of omega import fields
+    const int NOmegaExports,       // [in] number of omega export fields
     const char *ImportFieldNames,  // [in] array of import field names
     const char *ExportFieldNames,  // [in] array of export field names
     const int *ImportFieldIndices, // [in] array of import field indices

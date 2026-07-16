@@ -267,7 +267,7 @@ contains
 
       ! check if coupler is requesting a restart write
       write_restart = logical( &
-        seq_timemgr_RestartAlarmIsOn(EClock), kind=c_bool)
+                      seq_timemgr_RestartAlarmIsOn(EClock), kind=c_bool)
 
       ! run omega for one coupling interval
       call omega_ocn_run(write_restart)
