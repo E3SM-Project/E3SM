@@ -57,10 +57,10 @@ void omega_ocn_init1(
     const int NCouplerExports,      // [in] number of coupler export fields
     const int NOmegaImports,        // [in] number of omega import fields
     const int NOmegaExports,        // [in] number of omega export fields
-    const char *&ImportFieldNames,  // [in] array of import field names
-    const char *&ExportFieldNames,  // [in] array of export field names
-    const int *&ImportFieldIndices, // [in] array of import field indices
-    const int *&ExportFieldIndices  // [in] array of export field indices
+    const char *ImportFieldNames,  // [in] array of import field names
+    const char *ExportFieldNames,  // [in] array of export field names
+    const int *ImportFieldIndices, // [in] array of import field indices
+    const int *ExportFieldIndices  // [in] array of export field indices
 ) {
 
    // Create the C MPI_Comm from the Fortran one

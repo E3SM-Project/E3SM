@@ -3,6 +3,12 @@ module omega_f2cxx_mod
    implicit none
    public
 
+   ! All type(c_ptr) dummy args below use VALUE: c_loc() already yields the
+   ! address to pass, so VALUE hands that address straight through as a
+   ! plain C/C++ pointer, matching the raw-pointer C++ signatures. None of
+   ! these callees reseat the pointer, so a reference-to-pointer is not
+   ! needed on the C++ side.
+
    interface
       subroutine omega_ocn_init1( &
          f_comm, &
@@ -42,7 +48,7 @@ module omega_f2cxx_mod
          character(kind=c_char), target, intent(in) :: &
             yaml_config_name, ocn_log_name, calendar_name
 
-         type(c_ptr), target, intent(in) :: &
+         type(c_ptr), value, intent(in) :: &
             import_field_names, &
             export_field_names, &
             import_field_indices, &
@@ -57,7 +63,7 @@ module omega_f2cxx_mod
 
          implicit none
 
-         type(c_ptr), target, intent(in) :: &
+         type(c_ptr), value, intent(in) :: &
             cpl_to_ocn_data, ocn_to_cpl_data
 
       end subroutine omega_ocn_init2
