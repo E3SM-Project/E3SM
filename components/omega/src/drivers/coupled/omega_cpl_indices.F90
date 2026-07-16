@@ -30,16 +30,15 @@ contains
 
       type(mct_aVect) :: x2o, o2x
 
-      ! Better to use: mct_avect_nRattr?
-      ! total number of import/export fields in coupler data arrays
-      num_coupler_imports = size(x2o%rAttr, 1)
-      num_coupler_exports = size(x2o%rAttr, 1)
-
       ! Create dummy mct_aVect objects, so that we can inquire about field
       ! indices prior to the omega instance, and therefore the HorzMesh
       ! instance which has the real lsize value, is created.
       call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=1)
       call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=1)
+
+      ! total number of import/export fields in coupler data arrays
+      num_coupler_imports = size(x2o%rAttr, 1)
+      num_coupler_exports = size(o2x%rAttr, 1)
 
       ! Import (x2o) Coupler field names
       import_field_names(1) = "Foxx_taux"
