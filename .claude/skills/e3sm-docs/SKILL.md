@@ -3,7 +3,7 @@ name: e3sm-docs
 description: Use when creating, editing, reviewing, or planning E3SM Markdown/MkDocs documentation under docs/, components/*/docs/, tools/*/docs/, or related mkdocs.yml navigation files.
 ---
 
-# E3SM documentation authoring skill (Claude-compatible copy)
+# E3SM documentation authoring skill
 
 ## Purpose
 
