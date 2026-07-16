@@ -1,7 +1,6 @@
 #include "share/grid/abstract_grid.hpp"
 
 #include "share/field/field_utils.hpp"
-#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_assert.hpp>
 
@@ -199,7 +198,7 @@ bool AbstractGrid::is_unique () const {
     // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
     // since we need to sort dofs in order to call unique, and we don't
     // want to alter the order of gids in this grid.
-    auto dofs = m_dofs_gids.clone();
+    auto dofs = m_dofs_gids.clone(CloneFlags::CopyData);
     auto dofs_h = dofs.get_view<gid_type*,Host>();
 
     std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
@@ -419,76 +418,6 @@ AbstractGrid::delete_geometry_data (const std::string& name)
       "  - geo data name: " + name + "\n");
 
   m_geo_fields.erase(name);
-}
-
-void AbstractGrid::
-read_geometry_data(const std::string& filename,
-                   const std::vector<std::string>& names,
-                   const std::map<std::string,std::string>& dim_to_ncdim)
-{
-  read_geometry_data(filename,names,names,dim_to_ncdim);
-}
-
-void AbstractGrid::
-read_geometry_data(const std::string& filename,
-                   const std::vector<std::string>& names,
-                   const std::vector<std::string>& nc_names,
-                   const std::map<std::string,std::string>& dim_to_ncdim)
-{
-  EKAT_REQUIRE_MSG (names.size()==nc_names.size(),
-      "[AbstractGrid] Error! Input names and nc_names sizes differ.\n"
-      "  - grid name: " + this->name() + "\n"
-      "  - geo data names: " + ekat::join(names,",") + "\n"
-      "  - nc vars names: " + ekat::join(nc_names,",") + "\n");
-  scorpio::register_file(filename,scorpio::Read);
-
-  for (size_t i=0; i<names.size(); ++i) {
-    EKAT_REQUIRE_MSG (has_geometry_data(names[i]),
-        "Error! Cannot read geometry data from file, since it is does not exist.\n"
-        "  - grid name: " + this->name() + "\n"
-        "  - geo data name: " + names[i] + "\n");
-
-    auto f = m_geo_fields.at(names[i]);
-    const auto& fl = f.get_header().get_identifier().get_layout();
-
-    // If one of the field tags corresponds to the partitioned dim, init the decomp
-    if (fl.has_tag(get_partitioned_dim_tag())) {
-      auto t = get_partitioned_dim_tag();
-      std::string dimname = has_special_tag_name(t)
-                          ? get_special_tag_name(t)
-                          : e2str(t);
-      auto gids_h = get_partitioned_dim_gids().get_view<const gid_type*,Host>();
-      auto min_gid = get_global_min_partitioned_dim_gid();
-      std::vector<scorpio::offset_t> offsets(m_num_local_dofs);
-      for (int idof=0; idof<m_num_local_dofs; ++idof) {
-        offsets[idof] = gids_h[idof] - min_gid;
-      }
-      std::string nc_dimname = dim_to_ncdim.count(dimname)==1 ? dim_to_ncdim.at(dimname) : dimname;
-      scorpio::set_dim_decomp(filename,nc_dimname,offsets);
-    }
-
-    switch (f.data_type()) {
-      case DataType::DoubleType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<double,Host>());
-        break;
-      case DataType::FloatType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<float,Host>());
-        break;
-      case DataType::IntType:
-        scorpio::read_var(filename,nc_names[i],f.get_internal_view_data<int,Host>());
-        break;
-      default:
-        EKAT_ERROR_MSG (
-            "Error! Unsupported/unrecognized data type while reading field from file.\n"
-            " - file name : " + filename + "\n"
-            " - field name: " + names[i] + "\n");
-    }
-
-    // Ensure data is up to date on device, since we read on host
-    f.sync_to_dev();
-  }
-
-  scorpio::release_file(filename);
 }
 
 void
@@ -764,21 +693,21 @@ void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
     m_dofs_gids = src.m_dofs_gids;
     m_partitioned_dim_gids = src.m_partitioned_dim_gids;
   } else {
-    m_dofs_gids = src.m_dofs_gids.clone();
-    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone();
+    m_dofs_gids = src.m_dofs_gids.clone(CloneFlags::CopyData);
+    m_partitioned_dim_gids = src.m_partitioned_dim_gids.clone(CloneFlags::CopyData);
   }
 
   if (shallow) {
     m_lid_to_idx = src.m_lid_to_idx;
   } else {
-    m_lid_to_idx = src.m_lid_to_idx.clone();
+    m_lid_to_idx = src.m_lid_to_idx.clone(CloneFlags::CopyData);
   }
 
   for (const auto& name : src.get_geometry_data_names()) {
     if (shallow) {
       m_geo_fields[name] = src.m_geo_fields.at(name);
     } else {
-      m_geo_fields[name] = src.m_geo_fields.at(name).clone();
+      m_geo_fields[name] = src.m_geo_fields.at(name).clone(CloneFlags::CopyData);
     }
   }
 

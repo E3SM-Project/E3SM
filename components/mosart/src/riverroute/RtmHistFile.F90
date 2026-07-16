@@ -49,6 +49,8 @@ module RtmHistFile
   character(len=1), public :: &
        rtmhist_avgflag_pertape(max_tapes) = (/(' ',ni=1,max_tapes)/)   ! namelist: per tape averaging flag
 
+  logical, public :: rtmhist_empty_htapes = .false.   ! namelist: flag indicates no default history fields
+
   ! list of fields to add
   character(len=max_namlen+2), public :: rtmhist_fincl1(max_flds) = ' '       
   character(len=max_namlen+2), public :: rtmhist_fincl2(max_flds) = ' '
@@ -368,7 +370,7 @@ contains
              ! will not be called for field
              avgflag = getflag (fincl(ff,t))
              call htape_addfld (t, f, avgflag)
-          else 
+          else if (.not. rtmhist_empty_htapes) then
              ! find index of field in exclude list
              call list_index (fexcl(1,t), mastername, ff)
 
@@ -688,18 +690,20 @@ contains
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
     call ncd_putatt(lnfid, ncd_global, 'institution_id' , 'E3SM-Project')
     call ncd_putatt(lnfid, ncd_global, 'institution', &
-    'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
-    &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
-    &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
-    &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
-    &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
-    &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
-    &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
-    &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
-    &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+    'LLNL (Lawrence Livermore National Laboratory); &
+    &ANL (Argonne National Laboratory); &
+    &BNL (Brookhaven National Laboratory); &
+    &LANL (Los Alamos National Laboratory); &
+    &LBNL (Lawrence Berkeley National Laboratory); &
+    &ORNL (Oak Ridge National Laboratory); &
+    &PNNL (Pacific Northwest National Laboratory); &
+    &SNL (Sandia National Laboratories). &
+    &Mailing address: LLNL Climate Program, c/o Peter M. Caldwell, &
     &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
              'e3sm-data-support@llnl.gov')
+    call ncd_putatt(lnfid, ncd_global, 'license' ,  &
+             'http://spdx.org/licenses/CC-BY-4.0 (CC-BY-4.0)')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
 
     str = get_filename(frivinp_rtm)
@@ -1400,12 +1404,14 @@ contains
     !================================================
 
        call ncd_inqdlen(ncid,dimid,ntapes,   name='ntapes')
-       call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
-       call ncd_io('locfnhr', locrest(1:ntapes), 'read', ncid )
-       do t = 1,ntapes
-          call strip_null(locrest(t))
-          call strip_null(locfnh(t))
-       end do
+       if (ntapes > 0) then
+          call ncd_io('locfnh',  locfnh(1:ntapes),  'read', ncid )
+          call ncd_io('locfnhr', locrest(1:ntapes), 'read', ncid )
+          do t = 1,ntapes
+            call strip_null(locrest(t))
+            call strip_null(locfnh(t))
+          end do    
+       end if
 
        ! Determine necessary indices - the following is needed if model decomposition 
        ! is different on restart

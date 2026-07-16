@@ -31,8 +31,9 @@ on:
         required: true
         type: choice
         options:
-          - gcc-openmp
-          - gcc-cuda
+          - gnu-openmp
+          - gnu-cuda
+          - oneapi-openmp
           - all
       bless:
         description: 'Generate baselines'
@@ -70,27 +71,27 @@ env:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
-  gcc-openmp:
+  gnu-openmp:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-openmp' ||
+          github.event.inputs.job_to_run == 'gnu-openmp' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl-cpu, gcc]
+    runs-on:  [self-hosted, ghci-snl, gnu]
     strategy:
       fail-fast: false
       matrix:
         build_type: [sp, dbg, fpe, opt]
-    name: gcc-openmp / ${{ matrix.build_type }}
+    name: gnu-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
@@ -101,22 +102,56 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
-          machine: ghci-snl-cpu
+          machine: ghci-snl-gnu
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
-  gcc-cuda:
+  oneapi-openmp:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'gcc-cuda' ||
+          github.event.inputs.job_to_run == 'oneapi-openmp' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl-cuda, cuda, gcc]
+    runs-on:  [self-hosted, ghci-snl, oneapi]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [opt]
+    name: oneapi-openmp / ${{ matrix.build_type }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run tests
+        uses: ./.github/actions/test-all-eamxx
+        with:
+          build_type: ${{ matrix.build_type }}
+          machine: ghci-snl-oneapi
+          generate: ${{ env.generate }}
+          submit: ${{ env.submit }}
+          cmake-configs: Kokkos_ENABLE_OPENMP=ON
+          ekat: ${{ env.ekat }}
+          kokkos_develop: ${{ env.kokkos_dev_test }}
+  gnu-cuda:
+    if: |
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'gnu-cuda' ||
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
+    runs-on:  [self-hosted, ghci-snl, cuda]
     strategy:
       fail-fast: false
       matrix:
@@ -127,10 +162,10 @@ jobs:
             SK: ON
           - build_type: opt
             SK: OFF
-    name: gcc-cuda / ${{ matrix.test.build_type }}
+    name: gnu-cuda / ${{ matrix.test.build_type }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false

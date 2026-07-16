@@ -554,7 +554,7 @@ TEST_CASE ("vertical_remapper") {
             Real tol = 10*std::numeric_limits<Real>::epsilon();
 
             auto check = [&](const Field& computed, Field& expected) {
-              auto rel_diff = computed.clone("rel_diff");
+              auto rel_diff = computed.clone("rel_diff", CloneFlags::CopyData);
               rel_diff.update(expected,1,-1);
               // By construction, expected fields are always > 0, so we can divide
               rel_diff.scale_inv(expected);

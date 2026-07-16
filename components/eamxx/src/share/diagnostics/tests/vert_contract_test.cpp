@@ -76,7 +76,7 @@ TEST_CASE("vert_contract") {
     auto diag_f = diag->get();
 
     // Manual reference: ref(col,cmp) = sum_lev( (dp/g)(col,lev) * f(col,cmp,lev) )
-    auto dp_scaled = dp.clone("dp_scaled");
+    auto dp_scaled = dp.clone("dp_scaled", CloneFlags::CopyData);
     dp_scaled.scale(1 / physics::Constants<Real>::gravit.value);
     auto ref = diag_f.clone("ref");
     vert_contraction(ref, fin, dp_scaled);
@@ -113,7 +113,7 @@ TEST_CASE("vert_contract") {
     //   num(col) = sum_lev( (dp/g)(col,lev) * f(col,lev) )
     //   den(col) = sum_lev( (dp/g)(col,lev) )
     //   ref(col) = num(col) / den(col)
-    auto dp_scaled = dp.clone("dp_scaled");
+    auto dp_scaled = dp.clone("dp_scaled", CloneFlags::CopyData);
     dp_scaled.scale(1 / physics::Constants<Real>::gravit.value);
     auto dp_ones = dp_scaled.clone("ones");
     dp_ones.deep_copy(1);

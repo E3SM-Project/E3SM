@@ -345,6 +345,33 @@ struct PhysicsFunctions
   static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
                                       ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
 
+  //-----------------------------------------------------------------------------------------------
+  // Calculate a characteristic gustiness speed from turbulent kinetic energy (TKE).
+  // This does not (yet) include gustiness sourced from the deep convection parameterization.
+  // INPUTS:
+  // TKE is turbulent kinetic energy in (m/s)^2, i.e. (up^2 + vp^2 + wp^2)/2.
+  // RETURNS:
+  // Gustiness speed in m/s.
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real calculate_gustiness_speed(const Real& tke);
+
+  //-----------------------------------------------------------------------------------------------
+  // Calculate the approximate derivative of current wind speed with respect to magnitude of
+  // surface stress at the previous time step. Specifically, the derivative of the component of
+  // wind speed in the direction of the surface stress.
+  // INPUTS:
+  // taux is the u component of surface stress (Pa)
+  // tauy is the v component of surface stress (Pa)
+  // um_pert_diff is the u component of a response to perturbation of size tau_pert_mag (m/s)
+  // vm_pert_diff is the v component of a response to perturbation of size tau_pert_mag (m/s)
+  // RETURNS:
+  // Sensitivity in m/s/Pa.
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real calculate_wind_speed_sensitivity(const Real& taux, const Real& tauy,
+                                               const Real& um_pert_diff, const Real& vm_pert_diff);
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
@@ -375,7 +402,7 @@ struct PhysicsFunctions
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
-  template<typename ScalarT, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename ScalarT, typename MT = ekat::ManagedMemoryTrait>
   using view_1d = typename KT::template view_1d<ScalarT, MT>;
 
   template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
@@ -483,7 +510,7 @@ struct PhysicsFunctions
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,
            typename InputProviderT,  typename InputProviderQ,
-           typename MT = Kokkos::MemoryTraits<0>>
+           typename MT = ekat::ManagedMemoryTrait>
   KOKKOS_INLINE_FUNCTION
   static void calculate_dz (const MemberType& team,
                             const InputProviderPD& pseudo_density,
@@ -508,7 +535,7 @@ struct PhysicsFunctions
                                      const InputProviderX& vmr,
                                      const view_1d<ScalarT>& mmr);
 
-  template<typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename ScalarT, typename InputProviderOtau, typename MT = ekat::ManagedMemoryTrait>
   KOKKOS_INLINE_FUNCTION
   static void apply_rayleigh_friction (const MemberType& team,
                                        const Real dt,
@@ -525,7 +552,7 @@ struct PhysicsFunctions
   // Note: because this function does an integral it cannot be run just on a single level.  It requires
   // the full column wise integration.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename ScalarT, typename InputProviderZ, typename MT = ekat::ManagedMemoryTrait>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_int (const MemberType& team,
                                const int num_levs,
@@ -539,7 +566,7 @@ struct PhysicsFunctions
   // where
   //   z_int is the vertical layer interface height, [m]
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename ScalarT, typename InputProviderZ, typename MT = ekat::ManagedMemoryTrait>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_mid (const MemberType& team,
                                const int num_levs,

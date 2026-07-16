@@ -5,13 +5,12 @@
 #include "share/remap/abstract_remapper.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/field/field.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_logger.hpp>
 
 namespace scream
 {
-
-class AtmosphereInput;
 
 class DataInterpolation
 {
@@ -54,23 +53,39 @@ public:
 
   void set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger);
 
-  void setup_time_database (const strvec_t& input_files,
-                            const util::TimeLine timeline,
-                            const TimeInterpType interp_type = Linear,
-                            const util::TimeStamp& ref_ts = util::TimeStamp());
+  // Setup time database for LinearHistory time-dependent data interpolation
+  void setup_linear_time_database (const strvec_t& input_files,
+                                   const util::TimeStamp& ref_ts = util::TimeStamp());
 
-  // In case the input files store col/lev dims with exhotic names, the user can provide them here
-  void set_input_files_dimname (const FieldTag t, const std::string& name) { m_input_files_dimnames[t] = name; }
+  // Setup time database for YearlyPeriodic time-dependent data interpolation
+  // year_start_ts allows to select the 12 months window from a multi-year database.
+  // If unset, we pick the first timestamp from the first file
+  void setup_periodic_time_database (const strvec_t& input_files,
+                                     const util::TimeStamp& year_start_ts = util::TimeStamp());
+
+  // In case the input files store dims with exhotic names, the user can provide them here
+  void set_input_files_dimname (const std::string& name, const std::string& nc_name);
+
+  // Setup for time-independent (static) data
+  // time_index = -1: the file has no time dimension (or variables are not
+  //                  time-dependent in the file).
+  // time_index >= 0: select this specific time snapshot from the file.
+  void setup_static_database (const strvec_t& input_files,
+                              int time_index = -1);
 
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
   void create_vert_remapper ();
   void create_vert_remapper (const VertRemapData& data);
 
-  void register_fields_in_remappers ();
+  // For time-dependent data: find the interval containing t0 and load beg/end
+  void init_time_interpolation (const util::TimeStamp& t0,
+                                const TimeInterpType interp_type = Linear);
 
-  void init_data_interval (const util::TimeStamp& t0);
+  // For static (time-independent) data: load data once; no timestamp needed
+  void run ();
 
+  // For time-dependent data
   void run (const util::TimeStamp& ts);
 
   std::shared_ptr<AbstractGrid> get_grid_after_hremap () const { return m_grid_after_hremap; }
@@ -79,8 +94,25 @@ public:
 
 protected:
 
+  void create_reader ();
+  void register_fields_in_remappers ();
   void shift_data_interval ();
   void update_end_fields ();
+
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
+  // Reconstruct 3D source pressure from surface pressure via
+  //   p_data(icol,k) = p_file(icol) * hybm(k) + P0 * hyam(k)
+  // Used for VRemapType::Dynamic3DRef in both static and time-dep paths.
+  void reconstruct_p_from_ps ();
+protected:
+
+  // Common body shared by setup_linear/periodic_time_database.
+  // Reads timestamps from the given files and builds m_time_database.slices/files.
+  void build_time_database_slices (const strvec_t& input_files,
+                                   util::TimeLine timeline,
+                                   const util::TimeStamp& ref_ts);
 
   int get_input_files_dimlen (const std::string& dimname) const;
 
@@ -106,7 +138,7 @@ protected:
 
   // --------------- Internal data ------------- //
 
-  std::shared_ptr<AtmosphereInput> m_reader;
+  std::shared_ptr<FieldReader> m_reader;
 
   std::shared_ptr<const AbstractGrid> m_model_grid;
 
@@ -123,7 +155,7 @@ protected:
 
   // These are inited as the usual "ncol" and "lev" at construction, but the user
   // can reset them in case the input files store funky dimensions
-  std::map<FieldTag,std::string>    m_input_files_dimnames;
+  std::map<std::string,std::string>    m_input_files_dimnames;
 
   // If vertical remap happens, at runtime we may need to access some
   // versions of certain perssure fields. Store them here for convenient access
@@ -140,7 +172,10 @@ protected:
 
   ekat::Comm            m_comm;
 
-  bool                  m_time_db_created   = false;
+  bool                  m_time_dependent    = true;  // false for static (time-indep) data
+  int                   m_static_time_idx   = -1;    // time index for static reads
+
+  bool                  m_input_db_created  = false;
   bool                  m_data_initialized  = false;
 
   bool                  m_fields_have_col_dim = false;

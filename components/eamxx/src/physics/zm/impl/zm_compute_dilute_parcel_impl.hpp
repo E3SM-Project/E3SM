@@ -206,6 +206,12 @@ void Functions<S,D>::compute_dilute_parcel(
     }
   });
 
+  // The loops above run on a single thread (Kokkos::single has no implicit
+  // team barrier). Synchronize so all team threads see the outputs written
+  // here (parcel_temp, parcel_qsat, parcel_vtemp) before they are read by the
+  // caller (e.g. compute_cape_from_parcel).
+  team.team_barrier();
+
   workspace.template release_many_contiguous<7>(
     {&tmix, &qtmix, &qsmix, &smix, &xsh2o, &ds_xsh2o, &ds_freeze});
 }

@@ -1,12 +1,16 @@
 # Invoke this script as
 #  cmake -P CprncTest.cmake src_nc_file tgt_nc_file
+include (${CMAKE_CURRENT_LIST_DIR}/ProcessUtils.cmake)
 
-if (NOT ${CMAKE_ARGC} EQUAL 5)
-  message (FATAL_ERROR "CprncTest should be invoked with 2 arguments (src and tgt nc file).")
+GetScriptPositionalArguments(my_args)
+list(LENGTH my_args arg_count)
+
+if (NOT arg_count EQUAL 2)
+  message (FATAL_ERROR "CprncTest should be invoked with 2 arguments (src and tgt nc file). You passed '${my_args}' ")
 endif()
 
-set (SRC_FILE ${CMAKE_ARGV3})
-set (TGT_FILE ${CMAKE_ARGV4})
+list(GET my_args 0 SRC_FILE)
+list(GET my_args 1 TGT_FILE)
 set (CPRNC @CPRNC_BINARY@)
 if (NOT CPRNC)
   message (FATAL_ERROR "This script was not configured correctly (CPRNC_BINARY was not set).")
@@ -20,10 +24,10 @@ execute_process (
 
 if (NOT cprnc_result EQUAL 0)
   string (CONCAT msg
-          "Command\n"
-          "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'"
-          "returned '${cprnc_result}', and output:\n"
-          "${cprnc_output}")
+    "Command\n"
+    "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'"
+    "returned '${cprnc_result}', and output:\n"
+    "${cprnc_output}")
   message ("${msg}")
   message (FATAL_ERROR "Aborting.")
 endif()
@@ -35,9 +39,9 @@ string (FIND "${cprnc_output}" "IDENTICAL" identical_pos REVERSE)
 
 if (identical_pos EQUAL -1)
   string (CONCAT msg
-          "Command\n"
-          "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'\n"
-          "reported differences between the files. Here's the output from cprnc:\n")
+    "Command\n"
+    "  '${CPRNC} ${SRC_FILE} ${TGT_FILE}'\n"
+    "reported differences between the files. Here's the output from cprnc:\n")
   message ("${msg}")
   message ("${cprnc_output}")
   message (FATAL_ERROR "Aborting.")

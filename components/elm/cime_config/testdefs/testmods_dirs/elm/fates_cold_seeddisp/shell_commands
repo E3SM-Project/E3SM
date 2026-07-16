@@ -1,11 +1,16 @@
 SRCDIR=`./xmlquery SRCROOT --value`
 CASEDIR=`./xmlquery CASEROOT --value`
-FATESROOT=$SRCDIR/src/fates/
-FATESPARAMFILE=$FATESROOT/parameter_files/fates_params_seeddisp_4x5.nc
+FATESDIR=$SRCDIR/components/elm/src/external_models/fates/
 
-ncgen -o $FATESPARAMFILE $FATESROOT/parameter_files/fates_params_default.cdl
+COPY_FATES_PARAMFILE=$CASEDIR/fates_params_local.json
 
-$FATESROOT/tools/modify_fates_paramfile.py --O --fin $FATESPARAMFILE --fout $FATESPARAMFILE --var fates_seed_dispersal_fraction --val 0.2 --allpfts
-$FATESROOT/tools/modify_fates_paramfile.py --O --fin $FATESPARAMFILE --fout $FATESPARAMFILE --var fates_seed_dispersal_max_dist --val 2500000 --allpfts
-$FATESROOT/tools/modify_fates_paramfile.py --O --fin $FATESPARAMFILE --fout $FATESPARAMFILE --var fates_seed_dispersal_pdf_scale --val 1e-05 --allpfts
-$FATESROOT/tools/modify_fates_paramfile.py --O --fin $FATESPARAMFILE --fout $FATESPARAMFILE --var fates_seed_dispersal_pdf_shape --val 0.1 --allpfts
+echo "copying "$FATEDIR/parameter_files/fates_params_default.json" to "$COPY_FATES_PARAMFILE
+
+cp $FATESDIR/parameter_files/fates_params_default.json $COPY_FATES_PARAMFILE
+
+$FATESDIR/tools/modify_fates_paramfile.py --overwrite --fin $COPY_FATES_PARAMFILE --param fates_seed_dispersal_fraction --values 0.2 --indices all
+$FATESDIR/tools/modify_fates_paramfile.py --overwrite --fin $COPY_FATES_PARAMFILE --param fates_seed_dispersal_max_dist --values 2500000 --indices all
+$FATESDIR/tools/modify_fates_paramfile.py --overwrite --fin $COPY_FATES_PARAMFILE --param fates_seed_dispersal_pdf_scale --values 1.e-05 --indices all
+$FATESDIR/tools/modify_fates_paramfile.py --overwrite --fin $COPY_FATES_PARAMFILE --param fates_seed_dispersal_pdf_shape --values 0.1 --indices all
+
+echo "fates_paramfile = '$COPY_FATES_PARAMFILE'" >> $CASEDIR/user_nl_elm

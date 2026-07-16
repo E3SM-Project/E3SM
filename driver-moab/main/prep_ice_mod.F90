@@ -159,7 +159,8 @@ contains
          wav_gnam=wav_gnam            , &
          glc_gnam=glc_gnam)
 
-    wgtIdSr2i = 'scalar_r2i'//C_NULL_CHAR
+    ! C_NULL_CHAR is added at each iMOAB C API call site; keep variable clean for diagnostics.
+    wgtIdSr2i = 'scalar_r2i'
     compute_maps_online_r2i = .false. ! force read from disk
     no_match = .true. ! force to create a new mapper object
 
@@ -308,26 +309,26 @@ contains
                write(logunit,F00) 'Initializing MOAB mapper_Rr2i'
             end if
 
-            appname = "ROF_ICE_COU"//C_NULL_CHAR
+            appname = "ROF_ICE_COU"
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
             idintx = 100*rof(1)%cplcompid + ice(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxri)
+            ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxri)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering ROF-ICE intersection'
               call shr_sys_abort(subname//' ERROR in registering ROF-ICE intersection')
             endif
 
+            mapper_Rr2i%src_mbid = mbrxid
+            mapper_Rr2i%tgt_mbid = mbixid
+            mapper_Rr2i%intx_mbid = mbintxri
             ! If loading map from disk, then load the scalar map as well
             if (.not. compute_maps_online_r2i) then
                type1 = 3 ! this is type of grid
                arearead = 0
-               call moab_map_init_rcfile( mbrxid, mbixid, mbintxri, type1, &
+               call moab_map_init_rcfile( mapper_Rr2i, type1, &
                      'seq_maps.rc', 'rof2ice_rmapname:', 'rof2ice_rmaptype:', samegrid_ro, &
                      arearead, wgtIdSr2i, 'mapper_Rr2i MOAB initialization', esmf_map_flag )
             end if
-            mapper_Rr2i%src_mbid = mbrxid
-            mapper_Rr2i%tgt_mbid = mbixid
-            mapper_Rr2i%intx_mbid = mbintxri
             mapper_Rr2i%src_context = rof(1)%cplcompid
             mapper_Rr2i%intx_context = idintx
             mapper_Rr2i%weight_identifier = wgtIdSr2i

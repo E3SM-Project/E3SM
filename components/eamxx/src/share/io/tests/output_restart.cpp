@@ -2,17 +2,14 @@
 
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include "share/data_managers/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 
-#include "share/field/field_identifier.hpp"
-#include "share/field/field_header.hpp"
-#include "share/field/field.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/field/field.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
 
 #include "share/core/eamxx_types.hpp"
@@ -200,7 +197,7 @@ std::shared_ptr<FieldManager>
 clone_fm(const std::shared_ptr<const FieldManager>& src) {
   auto copy = std::make_shared<FieldManager>(src->get_grid(),RepoState::Closed);
   for (auto it : src->get_repo()) {
-    copy->add_field(it.second->clone());
+    copy->add_field(it.second->clone(CloneFlags::All));
   }
 
   return copy;

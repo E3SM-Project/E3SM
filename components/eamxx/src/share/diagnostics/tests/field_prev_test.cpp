@@ -74,8 +74,7 @@ TEST_CASE("field_prev") {
   tgt_mask.deep_copy(1);
   for (int itest = 2; itest < ntests; itest++) {
     // Save current qc before we advance
-    auto qc_prev = qc.clone();
-    qc_prev.deep_copy(qc);
+    auto qc_prev = qc.clone(CloneFlags::CopyData);
 
     // init_timestep stores the current qc as the "previous" value
     diag->init_timestep(ts);

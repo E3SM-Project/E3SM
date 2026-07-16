@@ -121,8 +121,8 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     endif()
 
     string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
-    if ((SCREAM_MACHINE STREQUAL "ascent" OR SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-      # --fmad=false is causing nondeterminism in RRTMGP on Ascent and pm-gpu,
+    if ((SCREAM_MACHINE STREQUAL "pm-gpu") AND CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+      # --fmad=false is causing nondeterminism in RRTMGP on pm-gpu,
       # perhaps due to an nvcc bug. Provide a FLAGS entry to prevent
       # SetCudaFlags from adding --fmad=false. Use -UNDEBUG as an (inert) entry
       # for FLAGS so that cmake_parse_arguments defines SCF_FLAGS.
@@ -163,7 +163,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_compile_definitions(${dynLibName} PUBLIC EAMXX_HAS_HOMME)
-    target_link_libraries(${dynLibName} PUBLIC scream_share eamxx_io ${hommeLibName})
+    target_link_libraries(${dynLibName} PUBLIC eamxx_field eamxx_grid eamxx_remap eamxx_atm_process eamxx_data_managers eamxx_algorithm ${hommeLibName})
     get_target_property(modulesDir ${hommeLibName} Fortran_MODULE_DIRECTORY)
     set_target_properties(${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
     target_include_directories(${dynLibName} PUBLIC ${modulesDir})

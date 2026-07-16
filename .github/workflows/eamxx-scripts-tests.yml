@@ -37,14 +37,14 @@ env:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 jobs:
-  cpu-gcc:
-    runs-on:  [self-hosted, gcc, ghci-snl-cpu]
+  gnu:
+    runs-on:  [self-hosted, gnu, ghci-snl]
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
@@ -55,8 +55,8 @@ jobs:
         run: |
           cd components/eamxx
           if [ "${{ env.submit }}" == "true" ]; then
-            ./scripts/scripts-ctest-driver -s -m ghci-snl-cpu
+            ./scripts/scripts-ctest-driver -s -m ghci-snl-gnu
           else
-            ./scripts/scripts-tests -f -m ghci-snl-cpu
+            ./scripts/scripts-tests -f -m ghci-snl-gnu
             ./scripts/cime-nml-tests
           fi

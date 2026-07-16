@@ -781,6 +781,7 @@ contains
 
   subroutine perf_barrier(hybrid)
     use hybrid_mod, only : hybrid_t
+    use mpi, only: MPI_Barrier
     implicit none
     type (hybrid_t), intent(in) :: hybrid
     integer :: ierr

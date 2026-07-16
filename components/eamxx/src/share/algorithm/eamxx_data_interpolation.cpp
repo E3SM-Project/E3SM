@@ -6,8 +6,7 @@
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
-#include "share/io/scorpio_input.hpp"
-#include "share/io/eamxx_io_utils.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/physics/physics_constants.hpp"
@@ -38,15 +37,20 @@ DataInterpolation (const std::shared_ptr<const AbstractGrid>& model_grid,
     const auto& fl = f.get_header().get_identifier().get_layout();
     m_fields_have_col_dim |= fl.has_tag(COL);
     m_fields_have_lev_dim |= fl.has_tag(LEV);
-    m_fields_have_lev_dim |= fl.has_tag(ILEV);
+    m_fields_have_ilev_dim |= fl.has_tag(ILEV);
   }
 
-  m_input_files_dimnames[COL] = "ncol";
-  m_input_files_dimnames[LEV] = "lev";
-  m_input_files_dimnames[ILEV] = "ilev";
+  for (auto t : {COL,LEV,ILEV})
+    m_input_files_dimnames[e2str(t)] = e2str(t);
 
   // Initialize logger with a console logger for warnings (logs on all ranks)
   m_logger = console_logger(ekat::logger::LogLevel::warn);
+}
+
+void DataInterpolation::
+set_input_files_dimname (const std::string& name, const std::string& nc_name)
+{
+  m_input_files_dimnames[name] = nc_name;
 }
 
 void DataInterpolation::
@@ -59,7 +63,14 @@ set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger)
 void DataInterpolation::run (const util::TimeStamp& ts)
 {
   EKAT_REQUIRE_MSG (m_data_initialized,
-      "[DataInterpolation] Error! You must call 'init_data_interval' before calling 'run'.\n");
+      "[DataInterpolation] Error! You must initialize the data before calling 'run'.\n");
+  EKAT_REQUIRE_MSG (m_time_dependent,
+      "[DataInterpolation] Error! run(TimeStamp) can only be called for time-dependent data.\n");
+
+  // Read and interpolate fields
+  m_logger->info("[DataInterpolation] Interpolating fields.");
+  m_logger->info(" - ts: " + ts.to_string());
+  m_logger->info(" - interval: [" + m_data_interval.beg.to_string() + ", " + m_data_interval.end.to_string() + "]");
 
   // If we went past the current interval end, we need to update the end state
   if (not m_data_interval.contains(ts)) {
@@ -97,9 +108,9 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     }
   }
 
-  // For Dynamic3D/Dynamic3D profile we also need to compute the source pressure profile
+  // For Dynamic3D/Dynamic3DRef profile we also need to compute the source pressure profile
   // NOTE: this can't be done in the loop above, since p_data is not a "remapped"
-  //       field in the vertical remapper (also, we need to use ad different ptr)
+  //       field in the vertical remapper (also, we need to use a different ptr)
   if (m_vr_type==Dynamic3D) {
     // The pressure field is THE LAST registered in the horiz remappers
     const auto p_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
@@ -113,41 +124,69 @@ void DataInterpolation::run (const util::TimeStamp& ts)
     const auto ps_beg = m_horiz_remapper_beg->get_tgt_field(m_nfields);
     const auto ps_end = m_horiz_remapper_end->get_tgt_field(m_nfields);
 
-    auto p  = m_helper_pressure_fields["p_data"];
     auto ps = m_helper_pressure_fields["p_file"];
     ps.deep_copy(ps_beg);
     ps.update(ps_end,alpha,1-alpha);
 
-    // Reconstruct reference p from ps, hyam, and hybm
-    using KT = KokkosTypes<DefaultDevice>;
-    using ExeSpace = typename KT::ExeSpace;
-    using MemberType = typename KT::MemberType;
-    using TPF = ekat::TeamPolicyFactory<ExeSpace>;
-    using C = scream::physics::Constants<Real>;
-    using PT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-
-    auto ps_v = ps.get_view<const Real*>();
-    auto p_v  = p.get_view<PT**>();
-    auto hyam = m_vert_remapper->get_src_grid()->get_geometry_data("hyam").get_view<const PT*>();
-    auto hybm = m_vert_remapper->get_src_grid()->get_geometry_data("hybm").get_view<const PT*>();
-
-    constexpr Real P0 = C::P0.value;
-
-    const int ncols = ps_v.extent(0);
-    const int num_vert_packs = p_v.extent(1);
-    const auto policy = TPF::get_default_team_policy(ncols, num_vert_packs);
-
-    Kokkos::parallel_for("spa_compute_p_src_loop", policy,
-      KOKKOS_LAMBDA (const MemberType& team) {
-      const int icol = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_vert_packs),
-                           [&](const int k) {
-        p_v(icol,k) = ps_v(icol) * hybm(k)  + P0 * hyam(k);
-      });
-    });
+    reconstruct_p_from_ps();
   }
 
   m_vert_remapper->remap_fwd();
+}
+
+void DataInterpolation::run ()
+{
+  EKAT_REQUIRE_MSG (not m_time_dependent,
+      "[DataInterpolation] Error! run() can only be called for static (time-independent) data.\n");
+
+  // We don't foresee the static reader being called 2+ times, but we'll allow it
+  if (m_data_initialized) {
+    return;
+  }
+
+  register_fields_in_remappers ();
+
+  auto reader_grid = m_horiz_remapper_beg->get_src_grid();
+  auto gids = reader_grid->get_partitioned_dim_gids();
+  m_reader = std::make_shared<FieldReader>();
+  m_reader->set_dim_decomp(gids,reader_grid->get_comm());
+
+  // Assemble the list of fields the reader must load (src fields of hremap_beg)
+  std::vector<Field> fields;
+  for (int i=0; i<m_nfields; ++i) {
+    fields.push_back(m_horiz_remapper_beg->get_src_field(i));
+  }
+  if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
+    fields.push_back(m_horiz_remapper_beg->get_src_field(m_nfields));
+  }
+  m_reader->set_fields(fields);
+  m_reader->set_file_specs(m_time_database.files.front(),m_input_files_dimnames);
+
+  m_logger->info("[DataInterpolation] Reading static (time-independent) fields.");
+  m_logger->info(" - filename: " + m_time_database.files.front());
+  if (m_static_time_idx >= 0) {
+    m_logger->info(" - file time idx: " + std::to_string(m_static_time_idx));
+  }
+  m_reader->read(m_static_time_idx);
+  m_horiz_remapper_beg->remap_fwd();
+
+  for (int i=0; i<m_nfields; ++i) {
+    m_vert_remapper->get_src_field(i).deep_copy(m_horiz_remapper_beg->get_tgt_field(i));
+  }
+
+  // For Dynamic3DRef, p_file (=PS) has been filled by hremap; reconstruct p_data.
+  // For Dynamic3D, p_file==p_data and is filled by hremap directly.
+  // For Static1D, p_data was already loaded in create_vert_remapper.
+  if (m_vr_type==Dynamic3D) {
+    m_helper_pressure_fields["p_data"].deep_copy(m_horiz_remapper_beg->get_tgt_field(m_nfields));
+  } else if (m_vr_type==Dynamic3DRef) {
+    m_helper_pressure_fields["p_file"].deep_copy(m_horiz_remapper_beg->get_tgt_field(m_nfields));
+    reconstruct_p_from_ps();
+  }
+
+  m_vert_remapper->remap_fwd();
+
+  m_data_initialized = true;
 }
 
 void DataInterpolation::shift_data_interval ()
@@ -168,58 +207,43 @@ update_end_fields ()
   for (int i=0; i<m_nfields; ++i) {
     fields.push_back(m_horiz_remapper_end->get_src_field(i));
   }
-
   if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     // We also need to read the src pressure profile
     fields.push_back(m_horiz_remapper_end->get_src_field(m_nfields));
   }
-  m_reader->set_fields(fields);
 
   // If we're also changing the file, must (re)init the scorpio structures
   const auto& slice_beg = m_time_database.slices[m_curr_interval_idx.first];
   const auto& slice_end = m_time_database.slices[m_curr_interval_idx.second];
-  if (m_reader->get_filename()!=slice_end.filename) {
-    m_reader->reset_filename(slice_end.filename);
-  }
+
+  // This triggers opening of a new file at read time ONLY if the filename/fields have changed
+  m_reader->set_file_specs(slice_end.filename,m_input_files_dimnames);
+  m_reader->set_fields(fields);
 
   // Read and interpolate fields
   m_logger->info("[DataInterpolation] Reading end of interval fields.");
   m_logger->info(" - interval: [" + slice_beg.time.to_string() + ", " + slice_end.time.to_string() + "]");
   m_logger->info(" - filename: " + slice_end.filename);
   m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
-  m_reader->read_variables(slice_end.time_idx);
+  m_reader->read(slice_end.time_idx);
   m_horiz_remapper_end->remap_fwd();
 }
 
 void DataInterpolation::
-init_data_interval (const util::TimeStamp& t0)
+init_time_interpolation (const util::TimeStamp& t0,
+                         const TimeInterpType interp_type)
 {
-  EKAT_REQUIRE_MSG (m_vert_remapper!=nullptr,
-      "[DataInterpolation] Error! Cannot call 'init_data_interval' until after remappers creation.\n");
-
   register_fields_in_remappers ();
 
-  // Create a bare reader. Fields and filename are set inside the update_end_fields call
-  strvec_t fnames;
-  for (auto f : m_fields) {
-    fnames.push_back(f.name());
-  }
-
-  // NOTE: Sometimes the original data does not use the same field tags as eamxx.
-  // For these cases, we need to perform a shallow clone of
-  // io_grid because the tags are constant in this object.
-  using namespace ShortFieldTagsNames;
-  auto horiz_interp_src_grid =
-        m_horiz_remapper_beg->get_src_grid()->clone(m_horiz_remapper_beg->get_src_grid()->name(), true);
-  horiz_interp_src_grid->reset_field_tag_name(COL, m_input_files_dimnames[COL]);
-  horiz_interp_src_grid->reset_field_tag_name(LEV, m_input_files_dimnames[LEV]);
-  horiz_interp_src_grid->reset_field_tag_name(ILEV, m_input_files_dimnames[ILEV]);
-
-  m_reader = std::make_shared<AtmosphereInput>(fnames,horiz_interp_src_grid);
+  auto reader_grid = m_horiz_remapper_beg->get_src_grid();
+  auto gids = reader_grid->get_partitioned_dim_gids();
+  m_reader = std::make_shared<FieldReader>();
+  m_reader->set_dim_decomp(gids,reader_grid->get_comm());
 
   // Loop over all stored time slices to find an interval that contains t0
   auto t0_interval = m_time_database.find_interval(t0);
   const auto& t_beg = m_time_database.slices[t0_interval].time;
+  m_time_interp_type = interp_type;
 
   // We need to read in the beg/end fields for the initial interval. However, our generic
   // framework can only load the end slice (since that's what we need at runtime).
@@ -234,13 +258,108 @@ init_data_interval (const util::TimeStamp& t0)
 }
 
 void DataInterpolation::
-setup_time_database (const strvec_t& input_files,
-                     const util::TimeLine timeline,
-                     const TimeInterpType interp_type,
-                     const util::TimeStamp& ref_ts)
+setup_linear_time_database (const strvec_t& input_files,
+                            const util::TimeStamp& ref_ts)
 {
+  build_time_database_slices(input_files,util::TimeLine::Linear,ref_ts);
+}
+
+void DataInterpolation::
+setup_periodic_time_database (const strvec_t& input_files,
+                              const util::TimeStamp& year_start_ts)
+{
+  build_time_database_slices(input_files,util::TimeLine::YearlyPeriodic,{});
+
+  // To avoid bugs at runtime, we want to retain AT MOST one year worth of time slices.
+  // If input start_ts is invalid, we pick the 1st slice in the files
+
+  auto& slices = m_time_database.slices;
+  auto start_ts = year_start_ts.is_valid () ? year_start_ts : slices[0].time;
+
+  // We need to:
+  //  - remove all slices ahead of start_ts by 1yy or more.
+  //  - call LVF the last valid slice in the future after the prev step
+  //  - remove all slices that are more than 1yy in the past compared to LVF
+  auto it_end = slices.begin();
+  auto start_date_p1y = start_ts.get_date();
+  start_date_p1y[0] += 1;
+  util::TimeStamp start_ts_plus_1_year(start_date_p1y,start_ts.get_time());
+  for (; it_end != slices.end();) {
+    if (start_ts_plus_1_year <= it_end->time) {
+      it_end = slices.erase(it_end); // too far in the future
+    } else {
+      ++it_end;
+    }
+  }
+
+  auto last_valid_date = slices.back().time;
+  auto last_valid_date_m1y = last_valid_date.get_date();
+  last_valid_date_m1y[0] -= 1;
+  util::TimeStamp first_valid_past(last_valid_date_m1y, last_valid_date.get_time());
+  it_end = slices.begin();
+  for (; it_end != slices.end();) {
+    if (it_end->time <= first_valid_past) {
+      it_end = slices.erase(it_end); // too far in the past
+    } else {
+      ++it_end;
+    }
+  }
+
+  EKAT_REQUIRE_MSG (slices.size()>=2,
+      "[DataInterpolation] Error! Not enough time slices in the database within 12 months from year_start_ts.\n"
+      " - year_start_ts   : " + start_ts.to_string() + "\n"
+      " - retained slices : " + std::to_string(slices.size()) + "\n");
+
+  // Prune file names in the TimeDatabase that own none of the retained slices
+  std::set<std::string> keep_files;
+  for (const auto& s : slices)
+    keep_files.insert(s.filename);
+
+  for (auto it=m_time_database.files.begin(); it!=m_time_database.files.end(); ) {
+    if (keep_files.count(*it)>0)
+      ++it;
+    else
+      it = m_time_database.files.erase(it);
+  }
+}
+
+void DataInterpolation::
+setup_static_database (const strvec_t& input_files, int time_index)
+{
+  EKAT_REQUIRE_MSG (not m_input_db_created,
+      "[DataInterpolation] Error! Database was already set up.\n");
+  EKAT_REQUIRE_MSG (not input_files.empty(),
+      "[DataInterpolation] Error! Input files list is empty.\n");
+
+  auto file_readable = [] (const std::string& fileName) {
+    std::ifstream file(fileName);
+    return file.good();
+  };
+
+  for (const auto& fname : input_files) {
+    EKAT_REQUIRE_MSG (file_readable(fname),
+        "[DataInterpolation] Error! One of the input files is not readable.\n"
+        " - file: " + fname + "\n");
+  }
+
+  // Populate m_time_database.files so that get_input_files_dimlen works
+  m_time_database.files = input_files;
+
+  m_time_dependent   = false;
+  m_static_time_idx  = time_index;
+  m_input_db_created = true;
+}
+
+void DataInterpolation::
+build_time_database_slices (const strvec_t& input_files,
+                            util::TimeLine timeline,
+                            const util::TimeStamp& ref_ts)
+{
+  EKAT_REQUIRE_MSG (not m_input_db_created,
+      "[DataInterpolation] Error! Database was already set up.\n");
+
   // Log the final list of files, so the user know if something went wrong (e.g. a bad regex)
-  m_logger->debug("Setting up DataInerpolation object. List of input files:");
+  m_logger->debug("Setting up DataInterpolation object. List of input files:");
   for (const auto& fname : input_files) {
     m_logger->debug("  - " + fname);
   }
@@ -252,8 +371,6 @@ setup_time_database (const strvec_t& input_files,
       " - input_files:\n     " + ekat::join(input_files,"\n     ") + "\n");
 
   // We perform a bunch of checks on the input files
-  namespace fs = std::filesystem;
-
   auto file_readable = [] (const std::string& fileName) {
     std::ifstream file(fileName);
     return file.good(); // Check if the file can be opened
@@ -261,11 +378,11 @@ setup_time_database (const strvec_t& input_files,
 
   // Read what time stamps we have in each file
   auto ts2str = [](const util::TimeStamp& t) { return t.to_string(); };
-  std::vector<std::vector<util::TimeStamp>> times;
+  std::vector<std::pair<std::string,std::vector<util::TimeStamp>>> file_times;
   for (const auto& fname : input_files) {
-    EKAT_REQUIRE_MSG (file_readable(input_files.back()),
+    EKAT_REQUIRE_MSG (file_readable(fname),
         "Error! One of the input files is not readable.\n"
-        " - file   : " + input_files.back() + "\n");
+        " - file   : " + fname + "\n");
 
     scorpio::register_file(fname,scorpio::Read);
 
@@ -275,73 +392,122 @@ setup_time_database (const strvec_t& input_files,
         " - file name: " + fname + "\n");
       scorpio::mark_dim_as_time(fname,"time");
     }
-    auto file_times = scorpio::get_all_times(fname);
-    EKAT_REQUIRE_MSG (file_times.size()>0,
+    auto raw_times = scorpio::get_all_times(fname);
+    EKAT_REQUIRE_MSG (raw_times.size()>0,
         "[DataInterpolation] Error! Input file contains no time variable.\n"
         " - file name: " + fname + "\n");
 
     auto time_name  = scorpio::get_time_name(fname);
     auto time_units = scorpio::get_attribute<std::string>(fname,time_name,"units");
-    auto [parsed_ref, time_mult] = parse_cf_time_units(time_units,fname);
+
+    util::TimeStamp parsed_ref;
+    int time_mult;
+    try {
+      std::tie(parsed_ref, time_mult) = parse_cf_time_units(time_units);
+    } catch (std::exception& e) {
+      std::string msg = e.what();
+      msg += " - Filename: " + fname + "\n";
+      throw std::runtime_error(msg);
+    }
     auto t_ref = ref_ts.is_valid() ? ref_ts : parsed_ref;
 
-    times.emplace_back();
-    for (const auto& t : file_times) {
-      times.back().push_back(t_ref + t*time_mult);
+    file_times.emplace_back();
+    file_times.back().first = fname;
+    for (const auto& t : raw_times) {
+      file_times.back().second.push_back(t_ref + t*time_mult);
     }
     scorpio::release_file(fname);
 
     // Ensure time slices are sorted (it would make code messy otherwise)
-    EKAT_REQUIRE_MSG (std::is_sorted(times.back().begin(),times.back().end()),
+    EKAT_REQUIRE_MSG (std::is_sorted(file_times.back().second.begin(),file_times.back().second.end()),
         "[DataInterpolation] Error! One of the input files has time slices not sorted.\n"
         " - file name  : " + fname + "\n"
-        " - time stamps: " + ekat::join(times.back(),ts2str,", ") + "\n");
+        " - time stamps: " + ekat::join(file_times.back().second,ts2str,", ") + "\n");
   }
 
   // Sort the files based on start date
-  auto fileCmp = [](const std::vector<util::TimeStamp>& times1,
-                    const std::vector<util::TimeStamp>& times2)
+  auto fileCmp = [](const auto& x,
+                    const auto& y)
   {
-    return times1.front() < times2.front();
+    return x.second.front() < y.second.front();
   };
-  std::sort(times.begin(),times.end(),fileCmp);
+  std::sort(file_times.begin(),file_times.end(),fileCmp);
 
   // Setup the time database
   m_time_database.timeline = timeline;
-  m_time_database.files = input_files;
+  m_time_database.files.clear();
 
-  int nfiles = input_files.size();
+  int nfiles = file_times.size();
   for (int i=0; i<nfiles; ++i) {
+    const auto& fname = file_times[i].first;
+    const auto& times = file_times[i].second;
+    m_time_database.files.push_back(fname);
     int time_idx = 0;
-    for (const auto& t : times[i]) {
+    for (const auto& t : times) {
       auto& slice = m_time_database.slices.emplace_back();
       slice.time = t;
-      slice.filename = input_files[i];
+      slice.filename = fname;
       slice.time_idx = time_idx;
       ++time_idx;
     }
 
     if (i>0) {
       // Ensure files don't overlap (it would be a mess)
-      const auto& prev = times[i-1];
-      const auto& next = times[i];
+      const auto& prev = file_times[i-1].second;
+      const auto& next = file_times[i].second;
       EKAT_REQUIRE_MSG (prev.back() < next.front(),
           "[DataInterpolation] Error! The input files contain overlapping time slices.\n"
-          " - file1 name : " + input_files[i-1] + "\n"
-          " - file2 name : " + input_files[i] + "\n"
+          " - file1 name : " + file_times[i-1].first + "\n"
+          " - file2 name : " + file_times[i].first + "\n"
           " - file1 times: " + ekat::join(prev,ts2str,", ") + "\n"
           " - file2 times: " + ekat::join(next,ts2str,", ") + "\n");
     }
   }
 
-  // To avoid trouble in our logic of handling time stamps relationshipc,
+  // To avoid trouble in our logic of handling time stamps relationship,
   // we must ensure we have 2+ time slices overall
   EKAT_REQUIRE_MSG (m_time_database.size()>=2,
       "[DataInterpolation] Error! Input file(s) only contain 1 time slice overall.\n");
 
-  m_time_interp_type = interp_type;
+  m_time_dependent   = true;
+  m_input_db_created = true;
+}
 
-  m_time_db_created = true;
+void DataInterpolation::
+reconstruct_p_from_ps ()
+{
+  // Compute p_data(icol,k) = p_file(icol) * hybm(k) + P0 * hyam(k)
+  // where p_file is the surface pressure and hyam/hybm are the hybrid
+  // coordinate coefficients stored in the vert remapper src grid.
+  using KT = KokkosTypes<DefaultDevice>;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename KT::MemberType;
+  using TPF = ekat::TeamPolicyFactory<ExeSpace>;
+  using C = scream::physics::Constants<Real>;
+  using PT = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+
+  auto p  = m_helper_pressure_fields["p_data"];
+  auto ps = m_helper_pressure_fields["p_file"];
+
+  auto ps_v = ps.get_view<const Real*>();
+  auto p_v  = p.get_view<PT**>();
+  auto hyam = m_vert_remapper->get_src_grid()->get_geometry_data("hyam").get_view<const PT*>();
+  auto hybm = m_vert_remapper->get_src_grid()->get_geometry_data("hybm").get_view<const PT*>();
+
+  constexpr Real P0 = C::P0.value;
+
+  const int ncols = ps_v.extent(0);
+  const int num_vert_packs = p_v.extent(1);
+  const auto policy = TPF::get_default_team_policy(ncols, num_vert_packs);
+
+  Kokkos::parallel_for("data_interp_reconstruct_p_from_ps", policy,
+    KOKKOS_LAMBDA (const MemberType& team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_vert_packs),
+                         [&](const int k) {
+      p_v(icol,k) = ps_v(icol) * hybm(k) + P0 * hyam(k);
+    });
+  });
 }
 
 int DataInterpolation::TimeDatabase::
@@ -368,21 +534,17 @@ find_interval (const util::TimeStamp& t) const
     util::TimeInterval t_int (t_beg,t_end,timeline);
     return t_int.contains(t);
   };
-  int beg=0;
-  int end=1;
-  while (end<size()) {
-    if (contains(beg,end,t)) {
+  for (int beg=0; beg<size()-1; ++beg) {
+    if (contains(beg,beg+1,t)) {
       return beg;
     }
-    beg = end;
-    end = get_next_idx(beg);
-  };
+  }
 
   // If we got here, no interval [i,i+1] contains t. If the timeline is Linear,
   // this is an error (in fact, there should have been an error before!).
   // But if the timeline is YearlyPeriodic, then it must be the case that
   // t is in the interval (slices[N],slices[0]).
-  EKAT_REQUIRE_MSG (timeline==util::TimeLine::YearlyPeriodic and contains(size(),0,t),
+  EKAT_REQUIRE_MSG (timeline==util::TimeLine::YearlyPeriodic and contains(size()-1,0,t),
       "[TimeDatabase::find_interval] Error! Could not locate interval containing input timestamp.\n"
       "  - input time : " + t.to_string() + "\n"
       "  - timeline   : " + (timeline==util::TimeLine::Linear ? "linear" : "yearly_periodic") + "\n"
@@ -434,12 +596,12 @@ create_horiz_remappers (const std::string& map_file)
 
   // Create hremap tgt grid
   int nlevs_data = nlevs_model;
-  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
+  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(COL)]) : ncols_model;
 
   if (m_fields_have_lev_dim) {
-    nlevs_data = get_input_files_dimlen (m_input_files_dimnames[LEV]);
+    nlevs_data = get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]);
   } else if (m_fields_have_ilev_dim) {
-    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[ILEV]);
+    nlevs_data = get_input_files_dimlen(m_input_files_dimnames[e2str(ILEV)]) - 1;
   }
 
   m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm(),1);
@@ -448,7 +610,9 @@ create_horiz_remappers (const std::string& map_file)
 
   if (map_file!="") {
     m_horiz_remapper_beg = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
-    m_horiz_remapper_end = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
+    if (m_time_dependent) {
+      m_horiz_remapper_end = std::make_shared<HorizontalRemapper>(m_data_grid,m_grid_after_hremap,map_file);
+    }
   } else {
     // No hremap: 'ncols' from the data must match the model grid (nlev can differ; vremap is not set yet)
     EKAT_REQUIRE_MSG (ncols_data==ncols_model,
@@ -460,7 +624,9 @@ create_horiz_remappers (const std::string& map_file)
     constexpr auto SAT = IDR::SrcAliasTgt;
 
     m_horiz_remapper_beg = std::make_shared<IDR>(m_grid_after_hremap,SAT);
-    m_horiz_remapper_end = std::make_shared<IDR>(m_grid_after_hremap,SAT);
+    if (m_time_dependent) {
+      m_horiz_remapper_end = std::make_shared<IDR>(m_grid_after_hremap,SAT);
+    }
   }
 }
 
@@ -481,23 +647,24 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   int nlevs_model = m_model_grid->get_num_vertical_levels();
 
   // Create hremap tgt grid
-  int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[LEV]) : nlevs_model;
-  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[COL]) : ncols_model;
+  int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]) : nlevs_model;
+  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(COL)]) : ncols_model;
 
   // Create grid for IO and load lat/lon field in IO grid from any data file
   m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm());
-  std::vector<Field> latlon = {
-    m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout()),
-    m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout())
-  };
-  AtmosphereInput latlon_reader (m_time_database.files.front(),m_data_grid,latlon);
-  latlon_reader.read_variables();
+  auto lat  = m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout());
+  auto lon  = m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout());
+  auto gids = m_data_grid->get_partitioned_dim_gids();
+  auto comm = m_data_grid->get_comm();
+  read_fields(m_time_database.files.front(),{lat,lon},gids,comm);
 
   // Create iop remap tgt grid
   m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
   m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
   m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
-  m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  if (m_time_dependent) {
+    m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  }
 }
 
 void DataInterpolation::
@@ -627,19 +794,16 @@ create_vert_remapper (const VertRemapData& data)
       // We read and store hyam/hybm in the vremap src grid
       auto layout = m_grid_after_hremap->get_vertical_layout(LEVP);
       DataType real_t = DataType::RealType;
-      std::vector<Field> fields = {
-        m_grid_after_hremap->create_geometry_data("hyam",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE),
-        m_grid_after_hremap->create_geometry_data("hybm",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE)
-      };
-      AtmosphereInput hvcoord_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
-      hvcoord_reader.read_variables();
+      auto hyam = m_grid_after_hremap->create_geometry_data("hyam",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE);
+      auto hybm = m_grid_after_hremap->create_geometry_data("hybm",layout,ekat::units::none,real_t,SCREAM_PACK_SIZE);
+      read_fields (m_time_database.files.front(),{hyam,hybm});
     } else if (m_vr_type==Static1D) {
       // Can load p now, since it's static
       std::vector<Field> fields = {p_data.alias(data.pname)};
-      AtmosphereInput p_data_reader (m_time_database.files.front(),m_grid_after_hremap,fields,true);
-      p_data_reader.read_variables();
+      auto gids = m_grid_after_hremap->get_partitioned_dim_gids();
+      read_fields(m_time_database.files.front(),fields);
     }
-    vremap->set_source_pressure (m_helper_pressure_fields["p_data"]);
+    vremap->set_source_pressure (p_data);
 
     if (data.pint.is_allocated()) {
       vremap->set_target_pressure(data.pint);
@@ -652,24 +816,34 @@ create_vert_remapper (const VertRemapData& data)
 
 void DataInterpolation::register_fields_in_remappers ()
 {
+  EKAT_REQUIRE_MSG (m_vert_remapper!=nullptr,
+      "[DataInterpolation] Error! Cannot register fields in remappers until after remappers creation.\n");
+
   // Register fields in the remappers. Vertical first, since we only have model-grid fields
   for (int i=0; i<m_nfields; ++i) {
     m_vert_remapper->register_field_from_tgt(m_fields[i]);
   }
   m_vert_remapper->registration_ends();
 
+  // Horiz remapper(s)
   for (int i=0; i<m_nfields; ++i) {
     const auto& f = m_vert_remapper->get_src_field(i);
-    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name()));
-    m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_beg->get_src_grid()->name(), CloneFlags::MatchPacking));
+    if (m_time_dependent) {
+      m_horiz_remapper_end->register_field_from_tgt(f.clone(f.name(), m_horiz_remapper_end->get_src_grid()->name(), CloneFlags::MatchPacking));
+    }
   }
   if (m_vr_type==Dynamic3D or m_vr_type==Dynamic3DRef) {
     const auto& data_p = m_helper_pressure_fields["p_file"];
-    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_beg->get_src_grid()->name()));
-    m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_end->get_src_grid()->name()));
+    m_horiz_remapper_beg->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_beg->get_src_grid()->name(), CloneFlags::MatchPacking));
+    if (m_time_dependent) {
+      m_horiz_remapper_end->register_field_from_tgt(data_p.clone(data_p.name(), m_horiz_remapper_end->get_src_grid()->name(), CloneFlags::MatchPacking));
+    }
   }
   m_horiz_remapper_beg->registration_ends();
-  m_horiz_remapper_end->registration_ends();
+  if (m_time_dependent) {
+    m_horiz_remapper_end->registration_ends();
+  }
 }
 
 } // namespace scream

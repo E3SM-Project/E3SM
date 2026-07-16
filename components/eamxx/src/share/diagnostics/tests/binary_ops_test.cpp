@@ -110,7 +110,7 @@ TEST_CASE("binary_ops") {
 
   // field+field diag
   REQUIRE (plus_diag_f.has_valid_mask());
-  auto tgt_mask = qc.get_valid_mask().clone();
+  auto tgt_mask = qc.get_valid_mask().clone(CloneFlags::CopyData);
   tgt_mask.scale(qv.get_valid_mask());
   REQUIRE (views_are_equal(tgt_mask,plus_diag_f.get_valid_mask()));
 

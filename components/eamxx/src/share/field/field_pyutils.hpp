@@ -77,7 +77,7 @@ pybind11::array create_py_field (const Field& f)
   // element of the field. In case f is a subfield, this is not the same as the
   // internal data pointer of the field.
   py::dtype dt;
-  const void* data;
+  const void* data = nullptr;
   switch (fid.data_type()) {
     case DataType::IntType:
       dt = py::dtype::of<int>();

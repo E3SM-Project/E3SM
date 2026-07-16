@@ -21,6 +21,7 @@ module seq_map_mod
   use seq_comm_mct
   use component_type_mod
   use seq_map_type_mod
+  use seq_nlmap_mod
   use shr_moab_mod
 
   implicit none
@@ -174,19 +175,18 @@ contains
   end subroutine seq_map_init_rcfile
 
 
-  subroutine moab_map_init_rcfile( mbsrc, mbtgt, mbintx, discretization_type, &
+  subroutine moab_map_init_rcfile( mapper, discretization_type, &
                    maprcfile, maprcname, maprctype, samegrid, arearead, map_identifier, &
                    description_string, esmf_map, fallback_map_identifier )
 
     use iMOAB, only: iMOAB_LoadMapFile
+    use iso_c_binding, only: C_NULL_CHAR
     implicit none
     !-----------------------------------------------------
     !
     ! Arguments
     !
-    type(integer)        ,intent(in)            :: mbsrc  ! moab source app id
-    type(integer)        ,intent(in)            :: mbtgt  ! moab target app id
-    type(integer)        ,intent(in)            :: mbintx  ! moab intersection app id, identifing the map from source to target
+    type(seq_map)        ,intent(inout)         :: mapper  ! mapper being initialized (src_mbid, tgt_mbid, intx_mbid must be set)
     type(integer)        ,intent(in)            :: discretization_type ! 1 for SE, 2 for PC, 3 for FV; should be a member data
     ! type(component_type) ,intent(inout)         :: comp_s
     ! type(component_type) ,intent(inout)         :: comp_d
@@ -205,11 +205,15 @@ contains
     !type(mct_gsmap), pointer    :: gsmap_s ! temporary pointers
     !type(mct_gsmap), pointer    :: gsmap_d ! temporary pointers
     integer(IN)                 :: mpicom
-    character(CX)               :: mapfile
+    character(CX)               :: mapfile, nl_mapfile
     character(CX)               :: mapfile_term
     character(CL)               :: maptype
     integer(IN)                 :: mapid
+    character(CL)               :: nlmap_id
+    character(len=128)          :: nl_label
+    logical                     :: nl_found
     integer                     :: ierr
+    integer                     :: null_pos
 
     character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
     !-----------------------------------------------------
@@ -220,35 +224,70 @@ contains
 
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
-   ! --- Initialize Smatp
-   call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
-   if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
+    ! --- Initialize Smatp
+    call shr_mct_queryConfigFile(mpicom,maprcfile,maprcname,mapfile,maprctype,maptype)
+
+    ! if this routine is called, there should be a mapfile present
+    if (mapfile == 'idmap' .or. mapfile == 'idmap_ignore') then
       if (present(fallback_map_identifier)) then
          map_identifier = fallback_map_identifier
-         write(logunit,*) subname,' do not want to load backup identifier - ' // mapfile
-         call shr_sys_abort(subname//' ERROR in not wanting to load backup identifier - ' // mapfile)
+         write(logunit,*) subname,' got idmap. do not want to load backup identifier - ' // maprcname
+         call shr_sys_abort(subname//' ERROR in not wanting to load backup identifier - ' // maprcname)
       else
-         write(logunit,*) subname,' error in loading map file - ' // mapfile
-         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+         write(logunit,*) subname,' got idmap. expecting map file name for - ' // maprcname
+         call shr_sys_abort(subname//' ERROR in finding map file - ' // maprcname)
       end if
-   else
-      mapfile_term = trim(mapfile)//CHAR(0)
-      if (seq_comm_iamroot(CPLID)) then
-         write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile_term)
-      endif
+    endif
 
-      ierr = iMOAB_LoadMapFile( mbsrc, mbtgt, mbintx, discretization_type, &
-                                 discretization_type, arearead, map_identifier, mapfile_term)
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in loading map file - ' // mapfile
-         call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
-      endif
-      if (seq_comm_iamroot(CPLID)) then
-         write(logunit,'(2A,I10,6A)') subname, ': iMOAB appID: ', &
-            mbintx, ', maptype: ', trim(maptype), ', mapfile: ', &
-            trim(mapfile), ', identifier: ', trim(map_identifier)
-         call shr_sys_flush(logunit)
-      endif
+    mapfile_term = trim(mapfile)//CHAR(0)
+    if (seq_comm_iamroot(CPLID)) then
+        write(logunit,*) subname,' reading map file with iMOAB: ', trim(mapfile)
+    endif
+
+    ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
+                                 discretization_type, arearead, trim(map_identifier)//C_NULL_CHAR, mapfile_term)
+    if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in loading map file - ' // mapfile
+       call shr_sys_abort(subname//' ERROR in loading map file - ' // mapfile)
+    endif
+
+    mapper%nl_available = .false.
+    ! Look for an optional nonlinear (high-order) map paired with this one.
+    nl_label = maprcname(1:len(maprcname)-1)//'_nonlinear:'
+    call shr_mct_queryConfigFile(mpicom, maprcfile, trim(nl_label), nl_mapfile, &
+          Label1Found=nl_found)
+    if (nl_found) nl_found = nl_mapfile /= "idmap_ignore"
+
+    if (nl_found) then
+         mapper%nl_available = .true.
+         ! Strip any embedded C_NULL_CHAR from map_identifier before concatenating
+         ! so that diagnostic writes remain clean (null-free). The terminator is
+         ! re-added at each iMOAB C API call site below.
+         null_pos = index(map_identifier, C_NULL_CHAR)
+         if (null_pos > 1) then
+            nlmap_id = 'ho_'//map_identifier(1:null_pos-1)
+         else
+            nlmap_id = 'ho_'//trim(map_identifier)
+         end if
+         mapper%howeight_identifier = nlmap_id
+         mapfile_term = trim(nl_mapfile)//CHAR(0)
+         ierr = iMOAB_LoadMapFile( mapper%src_mbid, mapper%tgt_mbid, mapper%intx_mbid, discretization_type, &
+                                 discretization_type, 0, trim(nlmap_id)//C_NULL_CHAR, mapfile_term)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in loading nlmap file - ' // nl_mapfile
+           call shr_sys_abort(subname//' ERROR in loading nlmap file - ' // nl_mapfile)
+         endif
+    endif
+
+    if (seq_comm_iamroot(CPLID)) then
+       write(logunit,'(2A,I6,4A)') subname,' mapper counter, strategy, mapfile = ', &
+            mapper%counter,' ',trim(mapper%strategy),' ',trim(mapper%mapfile)
+       if (mapper%nl_available) then
+          write(logunit,'(2A,I6,3A)') subname, &
+               ' mapper counter, nlmap_id = ', &
+               mapper%counter,' ',trim(nlmap_id)
+       end if
+       call shr_sys_flush(logunit)
     endif
 
   end subroutine moab_map_init_rcfile
@@ -291,7 +330,7 @@ contains
   !=======================================================================
 
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
-       string, msgtag )
+       string, msgtag, omit_nonlinear  )
 
     use iso_c_binding
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
@@ -313,9 +352,14 @@ contains
     character(len=*),intent(in),optional :: avwtsfld_s
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
+    logical         ,intent(in),optional :: omit_nonlinear
     logical  :: valid_moab_context
     integer  :: ierr, nfields, lsize_src, lsize_tgt, arrsize_tgt, j, arrsize_src
     character(len=CXX) :: fldlist_moab
+    character(len=CXX) :: fldlist_data    ! data fields only (no norm8wt) for nlmap CAAS path
+    character(len=CXX) :: fldlist_caas    ! non-excluded data fields → dual-map CAAS
+    character(len=CXX) :: fldlist_lo_only ! excluded data + norm8wt → low-order projection
+    integer            :: ncaas_fields, nlo_fields  ! field counts for the two sub-lists
     character(len=CXX) :: tagname
     integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     type(mct_list) :: temp_list
@@ -329,6 +373,7 @@ contains
     !
     logical :: lnorm  ! true if normalization is to be done
     logical :: mbnorm ! moab copy of lnorm
+    logical :: use_nonlinear_map
     logical :: mbpresent ! moab logical for presence of norm weight string
     integer(IN),save :: ltag    ! message tag for rearrange
     character(len=*),parameter :: subname = "(seq_map_map) "
@@ -337,6 +382,14 @@ contains
     if (seq_comm_iamroot(CPLID) .and. present(string)) then
        write(logunit,'(A)') subname//' called for '//trim(string)
     endif
+
+    use_nonlinear_map = .false.
+    if (mapper%nl_available) then
+       use_nonlinear_map = .true.
+       if (present(omit_nonlinear)) then
+          if (omit_nonlinear) use_nonlinear_map = .false.
+       end if
+    end if
 
     lnorm = .true.
     if (present(norm)) then
@@ -404,12 +457,18 @@ contains
           if ( nfields /= 0 ) fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
        endif
 
-       if (mbnorm) then
-          fldlist_moab = trim(fldlist_moab)//":norm8wt"//C_NULL_CHAR
-          nfields=nfields + 1
-       else
-          fldlist_moab = trim(fldlist_moab)//C_NULL_CHAR
-       endif
+       ! Snapshot the data-only field list (no norm8wt). Used in the nlmap
+       ! path so the dual-map CAAS only sees real data fields. norm8wt has to
+       ! be mapped LOW-order separately (see Step 5 below) — putting it in the
+       ! CAAS list mishandles it: the high-order map of constant 1.0 is not
+       ! row-sum-1, so the CAAS-clipped result no longer matches MCT's
+       ! mct_sMat_avMult-mapped target norm8wt that the post-divide expects.
+        fldlist_data = trim(fldlist_moab)
+
+        if (mbnorm) then
+           fldlist_moab = trim(fldlist_moab)//":norm8wt"
+           nfields=nfields + 1
+        endif
 
 
 #ifdef MOABDEBUG
@@ -422,9 +481,11 @@ contains
     endif ! valid_moab_context
 
     !=========================================================================
-    ! MOAB PATH: Copy/Rearrange Operations
+    ! MOAB: Copy/Rearrange Operations
     ! For COPY and REARRANGE strategies, MOAB uses point-to-point
     ! communication between MOAB app instances instead of MCT rearranger.
+    ! NOTE: COPY still uses MPI send/recv, which could be optimized for
+    ! monogrid cases.
     !=========================================================================
     if (mapper%copy_only .or. mapper%rearrange_only) then
 
@@ -447,7 +508,7 @@ contains
           !***   fldlist_moab: Colon-delimited list of tag names to send
           !***   mpicom: MPI communicator
           !***   intx_context: Context ID for the intersection/target app
-          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
+          ierr = iMOAB_SendElementTag( mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%intx_context );
           if (ierr .ne. 0) then
              write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
              call shr_sys_flush(logunit)
@@ -459,7 +520,7 @@ contains
           !***   fldlist_moab: Colon-delimited list of tag names to receive
           !***   mpicom: MPI communicator
           !***   src_context: Context ID for the source app
-          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%src_context );
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
              call shr_sys_flush(logunit)
@@ -477,7 +538,7 @@ contains
 
     else
        !=========================================================================
-       ! MOAB PATH: Full Mapping Operations (Strategy 3)
+       ! MOAB: Full Mapping Operations
        ! For full interpolation/regridding between different grids.
        ! This is more complex than copy/rearrange and involves:
        ! 1. Pre-normalization: Multiply source fields by normalization weight
@@ -511,9 +572,9 @@ contains
              !*** After mapping, dividing by the mapped norm8wt gives proper normalization.
              allocate(wghts(lsize_src))
              wghts = 1.0_r8
-             tagname = "norm8wt"//C_NULL_CHAR
+             tagname = "norm8wt"
              !*** MOAB: iMOAB_SetDoubleTagStorage - Set tag values on mesh elements
-             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
+             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(tagname)//C_NULL_CHAR, lsize_src , mapper%tag_entity_type, wghts)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
                 call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
@@ -530,8 +591,8 @@ contains
              !*** This is used for flux-weighted mapping (e.g., area-weighted averages).
              if(mbpresent) then
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get weight field values
-                tagname = avwtsfld_s//C_NULL_CHAR
-                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize_src , mapper%tag_entity_type, wghts)
+                tagname = trim(avwtsfld_s)
+                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, trim(tagname)//C_NULL_CHAR, lsize_src , mapper%tag_entity_type, wghts)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
                    call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
@@ -544,7 +605,7 @@ contains
                 arrsize_src=lsize_src*(nfields)
 
                 !*** MOAB: iMOAB_GetDoubleTagStorage - Get current field values
-                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
+                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_src , mapper%tag_entity_type, targtags)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize_src, mapper%tag_entity_type
                    call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -569,7 +630,7 @@ contains
 #endif
                 !*** MOAB: iMOAB_SetDoubleTagStorage - Store weighted values back to source
                 !*** These weighted values will be sent and mapped to the target grid.
-                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags)
+                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_src , mapper%tag_entity_type, targtags)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
                    call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
@@ -582,7 +643,7 @@ contains
           !*** MOAB: Send source data to intersection/coverage mesh
           !*** For full mapping, data goes to the intersection app (intx_context)
           !*** where projection weights will be applied.
-          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context )
+          ierr = iMOAB_SendElementTag( mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%intx_context )
           if (ierr .ne. 0) then
              write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
              call shr_sys_flush(logunit)
@@ -601,7 +662,7 @@ contains
                 mapper%mbname, trim(fldlist_moab), ' moab step:', num_moab_exports
           endif
 #endif
-          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, trim(fldlist_moab)//C_NULL_CHAR, mapper%mpicom, mapper%src_context )
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
              call shr_sys_flush(logunit)
@@ -634,11 +695,63 @@ contains
           !***   filter_type: 0=no filter, other values for CAAS projection
           !***   weight_identifier: Name of the weight matrix (e.g., "scalar", "flux")
           !***   fldlist_moab: Input and output field names (can be different)
-          filter_type = 0 ! no filter
-          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, mapper%weight_identifier, fldlist_moab, fldlist_moab)
-          if (ierr .ne. 0) then
-             write(logunit,*) subname,' error in applying weights '
-             call shr_sys_abort(subname//' ERROR in applying weights')
+          if(.not.use_nonlinear_map) then
+             filter_type = 0 ! CAAS_NONE: plain low-order projection
+             ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, trim(mapper%weight_identifier)//C_NULL_CHAR, &
+               trim(fldlist_moab)//C_NULL_CHAR, trim(fldlist_moab)//C_NULL_CHAR)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in applying weights '
+                call shr_sys_abort(subname//' ERROR in applying weights')
+             endif
+          else
+             ! Dual-map nonlinear remapping path. To match MCT's
+             ! seq_nlmap_avNormArr exactly we split the data fields by
+             ! whether they appear in the namelist nlmaps_exclude_fields list:
+             !
+             !   (a) NON-EXCLUDED data fields (`fldlist_caas`): high-order
+             !       interpolation with low-order CAAS bounds via the dual-map
+             !       call. filter_type must be != CAAS_NONE for
+             !       ApplyWeightsWithDualMap to actually run (otherwise iMOAB
+             !       falls through to plain high-order without bounds —
+             !       produces OOB values that crash icepack).
+             !   (b) EXCLUDED data fields (`fldlist_lo_only`): low-order map
+             !       only, matching MCT seq_nlmap_avNormArr's behavior at
+             !       lines 691-698 of driver-mct/main/seq_nlmap_mod.F90 — for
+             !       these fields avp_o keeps the low-order mct_sMat_avMult
+             !       result and is NOT overwritten with the nonlinear-fixer
+             !       output. Examples: Faxa_rainc/rainl/snowc/snowl.
+             !   (c) `norm8wt` (when mbnorm): low-order map only, joined into
+             !       the same low-order pass as (b) since both use the same
+             !       weight matrix. Gives target norm8wt = low-order row sum.
+             !       The post-norm divide below then divides data by this
+             !       low-order row-sum, restoring correct normalization at
+             !       partial-coverage cells (matches MCT outer
+             !       seq_map_avNormArr post-divide).
+             call build_nlmap_sublists( fldlist_data, mbnorm, &
+                                        fldlist_caas, ncaas_fields, &
+                                        fldlist_lo_only, nlo_fields )
+
+             if (ncaas_fields > 0) then
+                filter_type = 2 ! CAAS_LOCAL
+                ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
+                       trim(mapper%howeight_identifier)//C_NULL_CHAR, fldlist_caas, fldlist_caas )
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in applying weights (data fields, dual-map CAAS)'
+                   call shr_sys_abort(subname//' ERROR in applying weights (data fields, dual-map CAAS)')
+                endif
+             end if
+
+             if (nlo_fields > 0) then
+                ! Excluded data fields + (optionally) norm8wt — plain low-order.
+                ! iMOAB takes the plain ApplyWeights branch (no dual-map CAAS)
+                filter_type = 0
+                ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, filter_type, &
+                       trim(mapper%weight_identifier)//C_NULL_CHAR, fldlist_lo_only, fldlist_lo_only )
+                if (ierr .ne. 0) then
+                   write(logunit,*) subname,' error in applying weights (excluded fields + norm8wt, low-order)'
+                   call shr_sys_abort(subname//' ERROR in applying weights (excluded fields + norm8wt, low-order)')
+                endif
+             end if
           endif
 
           !*** MOAB: Post-normalization (target side)
@@ -654,11 +767,13 @@ contains
              endif
 
              lsize_tgt = nvise(1) ! number of active cells
-             tagname = "norm8wt"//C_NULL_CHAR
+             tagname = "norm8wt"
              allocate(wghts(lsize_tgt))
+             wghts = 0.0_r8   ! defensive zero-init: iMOAB_GetDoubleTagStorage may leave some entries untouched
+                              ! if the tag was never set on those cells; this avoids reading uninitialised memory below.
 
              !*** MOAB: Get mapped normalization weights on target grid
-             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize_tgt , mapper%tag_entity_type, wghts)
+             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, trim(tagname)//C_NULL_CHAR, lsize_tgt , mapper%tag_entity_type, wghts)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
                 call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
@@ -666,8 +781,9 @@ contains
 
              !*** MOAB: Get mapped field values on target grid
              allocate(targtags(lsize_tgt,nfields))
+             targtags = 0.0_r8   ! defensive zero-init: see above for wghts
              arrsize_tgt=lsize_tgt*(nfields)
-             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
+             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_tgt , mapper%tag_entity_type, targtags)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                 call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -686,7 +802,7 @@ contains
              enddo
 
              !*** MOAB: Store normalized field values back to target mesh
-             ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize_tgt , mapper%tag_entity_type, targtags)
+             ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_tgt , mapper%tag_entity_type, targtags)
              if (ierr .ne. 0) then
                 write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                 call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -704,7 +820,7 @@ contains
                 endif
 #endif
                 !*** MOAB: Restore original values to source mesh
-                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize_src , mapper%tag_entity_type, targtags_ini)
+                ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, trim(fldlist_moab)//C_NULL_CHAR, arrsize_src , mapper%tag_entity_type, targtags_ini)
                 if (ierr .ne. 0) then
                    write(logunit,*) subname,' error setting source tag values ', mapper%mbname
                    call shr_sys_abort(subname//' ERROR setting source tag values') ! serious enough
@@ -713,6 +829,11 @@ contains
              endif
 
           endif ! end normalization
+
+          ! Defensive: targtags_ini is allocated under `if (mbpresent)` at line 596 but the
+          ! matching deallocate at line 820 sits inside `if (mbnorm)`. If a future caller ever
+          ! sets mbpresent=.true. with mbnorm=.false., the array would leak per mapping call.
+          if (allocated(targtags_ini)) deallocate(targtags_ini)
 
        endif
 
@@ -1206,6 +1327,133 @@ contains
        endif
 
   end subroutine seq_map_cart3d
+
+  !=======================================================================
+  ! build_nlmap_sublists -- split a colon-separated tag list into two
+  ! sub-lists for the dual-map nlmap path:
+  !
+  !   fldlist_caas    : data fields NOT in the nlmaps_exclude_fields list,
+  !                     which go through the high-order CAAS dual-map call.
+  !   fldlist_lo_only : data fields IN the exclude list, plus the special
+  !                     "norm8wt" tag when mbnorm is true. These are mapped
+  !                     with the LOW-order weight matrix only — same as MCT
+  !                     seq_nlmap_avNormArr's behavior of leaving avp_o at
+  !                     the mct_sMat_avMult result for excluded fields, and
+  !                     of mapping the norm8wt column via the low-order map.
+  !
+  ! Both output strings are colon-separated, terminated with C_NULL_CHAR
+  ! (so they can be passed straight to iMOAB). The corresponding field
+  ! counts are also returned. The input fldlist must be C_NULL-terminated.
+  !=======================================================================
+  subroutine build_nlmap_sublists(fldlist_in, mbnorm, &
+                                  fldlist_caas, ncaas, &
+                                  fldlist_lo_only, nlo)
+    use iso_c_binding, only : C_NULL_CHAR
+    use seq_nlmap_mod, only : seq_nlmap_field_is_excluded
+
+    character(len=*), intent(in)  :: fldlist_in
+    logical,          intent(in)  :: mbnorm
+    character(len=*), intent(out) :: fldlist_caas
+    integer,          intent(out) :: ncaas
+    character(len=*), intent(out) :: fldlist_lo_only
+    integer,          intent(out) :: nlo
+
+    integer :: i, n, start, ipos
+    character(len=128) :: name
+
+    fldlist_caas    = ''
+    fldlist_lo_only = ''
+    ncaas = 0
+    nlo   = 0
+
+    ! Trim trailing C_NULL_CHAR(s) before parsing.
+    n = len_trim(fldlist_in)
+    do while (n > 0)
+       if (fldlist_in(n:n) /= C_NULL_CHAR) exit
+       n = n - 1
+    end do
+    if (n <= 0) then
+       fldlist_caas    = C_NULL_CHAR
+       fldlist_lo_only = C_NULL_CHAR
+       if (mbnorm) then
+          fldlist_lo_only = 'norm8wt'//C_NULL_CHAR
+          nlo = 1
+       end if
+       return
+    end if
+
+    ! Defense-in-depth: upper-bound buffer-size check. If every input field
+    ! landed in one output list, that list would hold the entire input string
+    ! (n chars including the colons between fields) plus the final
+    ! C_NULL_CHAR -> n+1 chars. fldlist_lo_only additionally may need
+    ! ':norm8wt' (8 chars) appended when mbnorm is true. If either output
+    ! buffer is smaller than that worst case, abort with a clear message
+    ! instead of silently truncating (which would manifest as an opaque
+    ! "tag not found" error downstream in iMOAB).
+    if (len(fldlist_caas) < n + 1) then
+       call shr_sys_abort('(build_nlmap_sublists) ERROR: fldlist_caas buffer too small for input field list')
+    end if
+    if (len(fldlist_lo_only) < n + 1 + merge(8, 0, mbnorm)) then
+       call shr_sys_abort('(build_nlmap_sublists) ERROR: fldlist_lo_only buffer too small for input field list')
+    end if
+
+    ! Walk the colon-separated list.
+    start = 1
+    do i = 1, n+1
+       if (i == n+1 .or. fldlist_in(i:i) == ':') then
+          if (i > start) then
+             name = fldlist_in(start:i-1)
+             if (seq_nlmap_field_is_excluded(name)) then
+                if (nlo > 0) then
+                   ipos = len_trim(fldlist_lo_only)
+                   fldlist_lo_only(ipos+1:ipos+1) = ':'
+                   fldlist_lo_only(ipos+2:) = trim(name)
+                else
+                   fldlist_lo_only = trim(name)
+                end if
+                nlo = nlo + 1
+             else
+                if (ncaas > 0) then
+                   ipos = len_trim(fldlist_caas)
+                   fldlist_caas(ipos+1:ipos+1) = ':'
+                   fldlist_caas(ipos+2:) = trim(name)
+                else
+                   fldlist_caas = trim(name)
+                end if
+                ncaas = ncaas + 1
+             end if
+          end if
+          start = i + 1
+       end if
+    end do
+
+    ! Append norm8wt to the low-order list when normalization is requested.
+    if (mbnorm) then
+       if (nlo > 0) then
+          ipos = len_trim(fldlist_lo_only)
+          fldlist_lo_only(ipos+1:ipos+1) = ':'
+          fldlist_lo_only(ipos+2:) = 'norm8wt'
+       else
+          fldlist_lo_only = 'norm8wt'
+       end if
+       nlo = nlo + 1
+    end if
+
+    ! Null-terminate for iMOAB.
+    if (ncaas > 0) then
+       ipos = len_trim(fldlist_caas)
+       fldlist_caas(ipos+1:ipos+1) = C_NULL_CHAR
+    else
+       fldlist_caas = C_NULL_CHAR
+    end if
+
+    if (nlo > 0) then
+       ipos = len_trim(fldlist_lo_only)
+       fldlist_lo_only(ipos+1:ipos+1) = C_NULL_CHAR
+    else
+       fldlist_lo_only = C_NULL_CHAR
+    end if
+  end subroutine build_nlmap_sublists
 
   !=======================================================================
 

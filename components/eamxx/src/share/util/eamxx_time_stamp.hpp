@@ -179,6 +179,20 @@ struct TimeInterval {
 
 } // namespace util
 
+// Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
+void write_timestamp (const std::string& filename, const std::string& ts_name,
+                      const util::TimeStamp& ts, const bool write_nsteps = false);
+util::TimeStamp read_timestamp (const std::string& filename,
+                                const std::string& ts_name,
+                                const bool read_nsteps = false);
+
+// Parse a CF-compliant time units string of the form "<unit> since <date> [<time>]"
+// and return the reference TimeStamp and multiplier (in seconds) for the given unit.
+// Supported units: seconds, minutes, hours, days.
+// Supported date formats: YYYY-MM-DD, YYYY-MM-DD HH:MM:SS, YYYY-MM-DD-SSSSS
+std::pair<util::TimeStamp,int>
+parse_cf_time_units (const std::string& units_str);
+
 } // namespace scream
 
 #endif // SCREAM_TIME_STAMP_HPP

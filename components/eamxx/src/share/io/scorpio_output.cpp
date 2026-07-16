@@ -1,8 +1,8 @@
 #include "share/io/scorpio_output.hpp"
 
 #include "share/field/field_utils.hpp"
+#include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
-#include "share/io/scorpio_input.hpp"
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -324,8 +324,7 @@ void AtmosphereOutput::restart (const std::string& filename)
     fields.push_back(f.alias(f.name(),fm->get_grid()->name()));
   }
 
-  AtmosphereInput hist_restart (filename, fm->get_grid(), fields);
-  hist_restart.read_variables();
+  read_fields(filename, fields, fm->get_grid()->get_partitioned_dim_gids(), m_comm );
 }
 
 void AtmosphereOutput::init()
@@ -562,9 +561,9 @@ run (const std::string& filename, const util::TimeStamp& ts,
           auto& temp = m_helper_fields.at(helper_name);
           transpose(count,temp);
           temp.sync_to_host();
-          scorpio::write_var(filename,count.name(),temp.get_internal_view_data<int,Host>());
+          scorpio::write_var(filename,count.name(),temp.get_internal_view_data<const int,Host>());
         } else {
-          scorpio::write_var(filename,count.name(),count.get_internal_view_data<int,Host>());
+          scorpio::write_var(filename,count.name(),count.get_internal_view_data<const int,Host>());
         }
         auto func_finish = std::chrono::steady_clock::now();
         auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);
@@ -648,11 +647,11 @@ run (const std::string& filename, const util::TimeStamp& ts,
         auto& temp = m_helper_fields.at(helper_name);
         transpose(f_out,temp);
         temp.sync_to_host();
-        scorpio::write_var(filename,field_name,temp.get_internal_view_data<Real,Host>());
+        scorpio::write_var(filename,field_name,temp.get_internal_view_data<const Real,Host>());
       } else {
         // Bring data to host (only needed for non-transposed output)
         f_out.sync_to_host();
-        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<Real,Host>());
+        scorpio::write_var(filename,field_name,f_out.get_internal_view_data<const Real,Host>());
       }
       auto func_finish = std::chrono::steady_clock::now();
       auto duration_loc = std::chrono::duration_cast<std::chrono::milliseconds>(func_finish - func_start);

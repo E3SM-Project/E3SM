@@ -213,14 +213,17 @@ contains
     ! Print advective and viscious CFL estimates
     call print_cfl(elem,hybrid,1,nelemd)
 
+    ! Initialize reference states before functors so that setup() can read
+    ! nu_scale_top from ref_states (needed by HyperviscosityFunctorImpl).
+    call prim_init_ref_states_views (elem)
+
     ! Initialize the C++ functors in the C++ context
     ! Here we set allocate_buffer=false since the AD
     ! allocates local memory for each process from a
     ! single buffer.
     call prim_init_kokkos_functors (allocate_buffer)
 
-    ! Init ref_states views, and diags views
-    call prim_init_ref_states_views (elem)
+    ! Init diags views
     call prim_init_diags_views (elem)
 
     ! In order to print up to date stuff in F90
