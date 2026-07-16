@@ -277,3 +277,18 @@ for standalone testing instructions.
  text with no markdown or other formatting. Add a line.  The second part should be the full
 description with markdown formatting.
 2. PR description should use imperative tense and start with a verb like 'Fix' or 'Add'
+
+## Documentation skill maintenance
+
+The repository provides an on-demand documentation skill to assist AI tools and humans when
+editing documentation. The canonical skill is intentionally duplicated in two locations for
+compatibility with multiple agent tools:
+
+- `.agents/skills/e3sm-docs/SKILL.md`
+- `.claude/skills/e3sm-docs/SKILL.md`
+
+When making changes to either skill file, update the other copy in the same commit or PR and
+confirm both files are identical, unless a documented tool-specific divergence is required.
+Consider adding a short note to the commit message such as: "sync: update e3sm-docs skill (agents + claude)".
+
+See `.github/instructions/e3sm-docs.instructions.md` for a compact developer-facing reminder.
