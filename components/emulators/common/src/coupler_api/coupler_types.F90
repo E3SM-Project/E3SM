@@ -1,4 +1,4 @@
-module emulator_f_api
+module coupler_types_mod
   use iso_c_binding
   implicit none
 
@@ -26,13 +26,13 @@ module emulator_f_api
      type(c_ptr)    :: area      ! double*
   end type emulator_grid_desc
 
-  type, bind(c) :: emulator_coupling_desc
+  type, bind(c) :: coupling_desc
      type(c_ptr)    :: import_data  ! double*
      type(c_ptr)    :: export_data  ! double*
      integer(c_int) :: num_imports
      integer(c_int) :: num_exports
      integer(c_int) :: field_size
-  end type emulator_coupling_desc
+  end type coupling_desc
 
   public :: create_config, create_grid_desc, create_coupler_desc
 
@@ -97,7 +97,7 @@ contains
       grid%area = c_loc(area)
    end function create_grid_desc
 
-   type(emulator_coupling_desc)&
+   type(coupling_desc)&
       function create_coupler_desc(import_data,export_data,num_imports,&
          num_exports,field_size) result(cpl)
         real(c_double),INTENT(IN), pointer :: import_data(:)
@@ -112,4 +112,4 @@ contains
         cpl%field_size = field_size
      end function create_coupler_desc
 
-end module emulator_f_api
+end module coupler_types_mod

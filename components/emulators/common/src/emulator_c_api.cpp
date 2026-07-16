@@ -13,7 +13,7 @@ void emulator_set_grid_data(void* handle,
 }
 
 void emulator_setup_coupling(void* handle,
-                             EmulatorCouplingDesc* cpl) {
+                             CouplingDesc* cpl) {
   auto* emu = static_cast<emulator::Emulator*>(handle);
   emu->setup_coupling(*cpl);
 }

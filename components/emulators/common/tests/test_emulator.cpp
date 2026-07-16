@@ -24,7 +24,7 @@ public:
 
    // New pure virtuals from Emulator: give simple stub impls
   void set_grid_data(const EmulatorGridDesc&) override {}
-  void setup_coupling(const EmulatorCouplingDesc& ) override {}
+  void setup_coupling(const CouplingDesc& ) override {}
   void init_coupling_indices(const std::string& ,
                              const std::string& ) override {}
 

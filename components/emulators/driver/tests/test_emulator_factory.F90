@@ -1,6 +1,6 @@
 program test_emulator_factory
   use iso_c_binding
-  use emulator_f_api
+  use coupler_types
   use emulator_f2c_api
   use emulator_handle_mod, only : emulator_handle
   use mpi
@@ -9,7 +9,7 @@ program test_emulator_factory
 
   type(emulator_create_cfg)    :: cfg
   type(emulator_grid_desc)     :: grid
-  type(emulator_coupling_desc) :: cpl
+  type(coupling_desc) :: cpl
   type(emulator_handle)        :: emulators(3)
   integer(c_int)               :: dt
   integer                      :: ierr, nprocs
@@ -72,8 +72,8 @@ program test_emulator_factory
          num_local_cols=num_local_cols, num_global_cols=num_global_cols,&
          col_gids=gids_ptr, lat=lat_ptr, lon=lon_ptr, area=area_ptr)
 
-  import_buf(:) = [(real(i*i,kind=c_double), i=1,num_imports*field_size)]
-  export_buf = [(real(i*i,kind=c_double), i=1,num_exports*field_size)]
+   import_buf(:) = [(real(i*i,kind=c_double), i=1,num_imports*field_size)]
+   export_buf = [(real(i*i,kind=c_double), i=1,num_exports*field_size)]
   end block
   imp_ptr => import_buf; exp_ptr => export_buf
   cpl = create_coupler_desc(import_data=imp_ptr,export_data=exp_ptr,&

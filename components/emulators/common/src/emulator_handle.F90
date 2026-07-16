@@ -37,7 +37,7 @@ contains
 
   subroutine setup_coupling(self, cpl)
     class(emulator_handle),         intent(inout) :: self
-    type(emulator_coupling_desc),   intent(in)    :: cpl
+    type(coupling_desc),   intent(in)    :: cpl
     call emulator_setup_coupling(self%h, cpl)
   end subroutine setup_coupling
 

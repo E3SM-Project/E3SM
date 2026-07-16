@@ -1,0 +1,5 @@
+{
+  "venvPath": "/home/me/climate-projects/py12env/",
+  "venv": "py12env",
+  "extraPaths":["/home/me/climate-projects/SPEL"]
+}

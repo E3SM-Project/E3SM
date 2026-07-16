@@ -56,7 +56,7 @@ public:
 
   // New virtuals for grid / coupling
   virtual void set_grid_data(const EmulatorGridDesc& grid) = 0;
-  virtual void setup_coupling(const EmulatorCouplingDesc& cpl) = 0;
+  virtual void setup_coupling(const CouplingDesc& cpl) = 0;
   virtual void init_coupling_indices(const std::string &export_fields,
                              const std::string &import_fields) = 0;
 

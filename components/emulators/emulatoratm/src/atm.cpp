@@ -113,7 +113,7 @@ void EmulatorAtm::init_coupling_indices(
   (void)import_fields;
 }
 
-void EmulatorAtm::setup_coupling(const EmulatorCouplingDesc& cpl) {
+void EmulatorAtm::setup_coupling(const CouplingDesc& cpl) {
   m_import_data = cpl.import_data;
   m_export_data = cpl.export_data;
   m_num_imports = cpl.num_imports;

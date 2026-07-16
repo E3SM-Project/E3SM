@@ -25,8 +25,8 @@ module atm_comp_mct
                                shr_file_setLogUnit
    use shr_sys_mod,      only: shr_sys_flush
    use iso_c_binding
-   use emulator_f_api,  only : emulator_grid_desc, emulator_create_cfg, &
-                               emulator_coupling_desc, &
+   use coupler_types,  only : emulator_grid_desc, emulator_create_cfg, &
+                               coupling_desc, &
                                create_config, create_grid_desc
    use emulator_f2c_api
 
@@ -71,7 +71,7 @@ CONTAINS
       integer(c_int) :: run_type_c
       integer :: shrlogunit
       type(emulator_create_cfg)    :: cfg
-      type(emulator_coupling_desc) :: cpl
+      type(coupling_desc) :: cpl
 
       call seq_cdata_setptrs(cdata, &
          id=ATM_ID, mpicom=mpicom_atm, &

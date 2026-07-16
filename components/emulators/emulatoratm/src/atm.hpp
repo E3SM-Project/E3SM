@@ -71,7 +71,7 @@ public:
   /**
    * @brief Set up coupling buffer pointers from MCT.
    */
-  void setup_coupling(const EmulatorCouplingDesc& cpl) override;
+  void setup_coupling(const CouplingDesc& cpl) override;
 
   // =========================================================================
   // Accessors

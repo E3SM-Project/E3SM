@@ -1,6 +1,6 @@
 module emulator_f2c_api
    use, intrinsic :: iso_c_binding
-   use emulator_f_api, only: emulator_coupling_desc, emulator_grid_desc, emulator_create_cfg
+   use coupler_types, only: coupling_desc, emulator_grid_desc, emulator_create_cfg
    implicit none
 
    public
@@ -19,9 +19,9 @@ module emulator_f2c_api
       end subroutine emulator_set_grid_data
 
       subroutine emulator_setup_coupling(handle, cpl) bind(c)
-         import :: c_ptr, emulator_coupling_desc
+         import :: c_ptr, coupling_desc
          type(c_ptr), value, intent(in) :: handle
-         type(emulator_coupling_desc), intent(in) :: cpl
+         type(coupling_desc), intent(in) :: cpl
       end subroutine emulator_setup_coupling
 
       subroutine emulator_init(handle) bind(c)
