@@ -2969,7 +2969,7 @@
         <command name="load">cmake/3.26.3</command>
         <command name="load">mkl/2022.1.0</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="oneapi-ifx">
         <command name="load">intel/2023.2.1-magic</command>
 	<command name="use">/usr/workspace/e3sm/spack/dane/intel/modules/Core</command>
 	<command name="load">intel-oneapi-runtime/2023.2.0</command>
