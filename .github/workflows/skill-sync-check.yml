@@ -1,0 +1,56 @@
+name: Skill sync check
+
+on:
+  pull_request:
+    paths:
+      - '.agents/skills/**'
+      - '.claude/skills/**'
+      - '.github/instructions/**'
+      - 'AGENTS.md'
+  push:
+    branches: ['**']
+    paths:
+      - '.agents/skills/**'
+      - '.claude/skills/**'
+      - '.github/instructions/**'
+      - 'AGENTS.md'
+
+jobs:
+  compare-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check skill files exist and are identical
+        run: |
+          set -euo pipefail
+          AGENTS_FILE=.agents/skills/e3sm-docs/SKILL.md
+          CLAUDE_FILE=.claude/skills/e3sm-docs/SKILL.md
+
+          echo "Checking for $AGENTS_FILE and $CLAUDE_FILE"
+
+          if [ ! -f "$AGENTS_FILE" ] && [ ! -f "$CLAUDE_FILE" ]; then
+            echo "Both skill files are missing. Expected both to exist." >&2
+            exit 1
+          fi
+
+          if [ ! -f "$AGENTS_FILE" ]; then
+            echo "$AGENTS_FILE is missing" >&2
+            exit 1
+          fi
+
+          if [ ! -f "$CLAUDE_FILE" ]; then
+            echo "$CLAUDE_FILE is missing" >&2
+            exit 1
+          fi
+
+          if ! cmp -s "$AGENTS_FILE" "$CLAUDE_FILE"; then
+            echo "ERROR: Skill files differ: $AGENTS_FILE != $CLAUDE_FILE" >&2
+            echo "--- DIFF ---"
+            diff -u "$CLAUDE_FILE" "$AGENTS_FILE" || true
+            exit 1
+          fi
+
+          echo "Skill files are present and identical."
