@@ -2,6 +2,8 @@
 applyTo: "docs/**/*.md,components/*/docs/**/*.md,tools/*/docs/**/*.md,**/mkdocs.y*ml,.agents/skills/**/SKILL.md,.claude/skills/**/SKILL.md"
 ---
 
+# E3SM documentation instructions
+
 When editing E3SM documentation or the repository's documentation skills, keep the following
 rules in mind:
 
