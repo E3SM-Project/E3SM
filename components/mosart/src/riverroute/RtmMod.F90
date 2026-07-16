@@ -240,6 +240,7 @@ contains
     integer ,pointer  :: gmask(:)             ! global mask
     logical           :: found                ! flag
     logical           :: found_3d             ! flag for 3D dnID detection
+    logical           :: bifurc_ratio_found   ! bifurc_ratio present in the param file
     character(len=256):: fnamer               ! name of netcdf restart file 
     character(len=256):: pnamer               ! full pathname of netcdf restart file
     character(len=256):: locfn                ! local file name
@@ -906,6 +907,7 @@ contains
 
     ! Initialize IBT data with zeros
     ibt_data_global(:,:) = 0.0_r8
+    bifurc_ratio_found   = .false.
 
     ! Read IBT/bifurcation ratio data if bifurcation is enabled
     if (bifurcflag) then
@@ -981,6 +983,7 @@ contains
                 found = .false.
              endif
              if (found) then
+                bifurc_ratio_found = .true.
                 if (masterproc) write(iulog,*) 'Read 3D bifurcation ratios, min=',minval(tempr_3d),' max=',maxval(tempr_3d)
                 do k=1,max_downstream
                 do j=1,rtmlat
@@ -1006,6 +1009,7 @@ contains
                 found = .false.
              endif
              if (found) then
+                bifurc_ratio_found = .true.
                 if (masterproc) write(iulog,*) 'Read 2D unstructured bifurcation ratios, min=',minval(tempr_unstr_3d),' max=',maxval(tempr_unstr_3d)
                 do k=1,max_downstream
                 do j=1,rtmlat  ! For unstructured: j=1 only
@@ -1829,18 +1833,32 @@ contains
                    rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
                 end do
              else
-                ! Ratio Mode: Use ratios from NetCDF or equal splits
+                ! Ratio Mode: Use ratios from NetCDF or equal splits.
+                ! Equal splits are the fallback for a file with NO bifurc_ratio
+                ! variable at all -- NOT a per-element fallback. Testing each
+                ! element with (> 0) instead made an explicit 0.0 ("send nothing
+                ! down this link") unrepresentable: it took the equal-split
+                ! branch, so a declared [1.0, 0.0] became [1.0, 0.5], tripped the
+                ! sum/=1 warning below, and normalized to [0.667, 0.333] -- i.e.
+                ! a third of the flow down a link the file said carried none.
                 ratio_sum = 0.0_r8
                 do k=1,rtmCTL%num_downstream(nr)
-                   if (ibt_data_global(n,k) > 0.0_r8) then
-                      rtmCTL%bifurc_ratio(nr,k) = ibt_data_global(n,k)  ! Use NetCDF ratios
+                   if (bifurc_ratio_found) then
+                      rtmCTL%bifurc_ratio(nr,k) = ibt_data_global(n,k)  ! Use NetCDF ratios, 0.0 included
                    else
                       rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)  ! Equal split
                    endif
                    ratio_sum = ratio_sum + rtmCTL%bifurc_ratio(nr,k)
                 end do
                 ! Validate ratios sum to 1.0 (within tolerance)
-                if (abs(ratio_sum - 1.0_r8) > 1.e-6_r8) then
+                if (ratio_sum <= 1.e-12_r8) then
+                   ! This cell has no ratio data at all (all zero): fall back to
+                   ! equal splits rather than normalizing by zero.
+                   write(iulog,*) 'WARNING: No bifurcation ratios defined for cell nr=',nr,' - using equal splits'
+                   do k=1,rtmCTL%num_downstream(nr)
+                      rtmCTL%bifurc_ratio(nr,k) = 1.0_r8 / real(rtmCTL%num_downstream(nr), r8)
+                   end do
+                else if (abs(ratio_sum - 1.0_r8) > 1.e-6_r8) then
                    write(iulog,*) 'WARNING: Bifurcation ratios do not sum to 1.0 for cell nr=',nr,' sum=',ratio_sum
                    ! Normalize ratios to ensure they sum to 1.0
                    do k=1,rtmCTL%num_downstream(nr)
