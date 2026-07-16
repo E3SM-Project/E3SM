@@ -999,10 +999,12 @@ contains
     ! Add attributes
     !
     if (present(long_name)) then
-       call ncd_putatt(ncid, varid, 'long_name', trim(long_name))
+       if (len_trim(long_name) > 0) then
+          call ncd_putatt(ncid, varid, 'long_name', trim(long_name))
+       end if
     end if
     if (present(standard_name)) then
-       if (standard_name /= ' ') then
+       if (len_trim(standard_name) > 0) then
           call ncd_putatt(ncid, varid, 'standard_name', trim(standard_name))
        end if
     end if
@@ -1036,7 +1038,9 @@ contains
        call ncd_putatt(ncid, varid, 'comment', trim(comment))
     end if
     if (present(units)) then
-       call ncd_putatt(ncid, varid, 'units', trim(units))
+       if (len_trim(units) > 0) then
+          call ncd_putatt(ncid, varid, 'units', trim(units))
+       end if
     end if
     if (present(cell_method)) then
        str = 'time: ' // trim(cell_method)
