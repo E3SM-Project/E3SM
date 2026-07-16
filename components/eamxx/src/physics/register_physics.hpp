@@ -54,10 +54,10 @@
 #include "physics/cld_fraction/cld_frac_net/eamxx_cld_frac_net_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_WATER_TRACERS
-#include "physics/aux_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
+#include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
 #endif
 #ifdef EAMXX_HAS_WATER_ISOTOPES
-#include "physics/aux_tracers/water_isotopes/eamxx_water_isotopes_process_interface.hpp"
+#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_process_interface.hpp"
 #endif
 
 namespace scream {

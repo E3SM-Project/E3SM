@@ -1,7 +1,7 @@
 #ifndef SCREAM_WATER_ISOTOPES_HPP
 #define SCREAM_WATER_ISOTOPES_HPP
 
-#include "physics/aux_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
+#include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
 #include <string>
