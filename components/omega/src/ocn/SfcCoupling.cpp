@@ -148,6 +148,9 @@ void SfcCoupling::clear() {
 // Getter for private member NAccumSteps
 I4 SfcCoupling::getNAccumSteps() const { return NAccumSteps; }
 
+// Getter for private member CouplingAlarm
+Alarm *SfcCoupling::getCouplingAlarm() { return &CouplingAlarm; }
+
 // Create views of the raw coupling data arrays
 void SfcCoupling::attachData(const Real *CplToOcnData, Real *OcnToCplData) {
 

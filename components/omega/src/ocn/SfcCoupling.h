@@ -136,6 +136,8 @@ class SfcCoupling {
    std::map<std::string, int> ImportIdxMap;
    std::map<std::string, int> ExportIdxMap;
 
+   Alarm CouplingAlarm; ///< Alarm for coupling interval
+
  public:
    std::string Name;
 
@@ -150,8 +152,6 @@ class SfcCoupling {
    // Coupling Variable containers
    CplToOcnFields CplToOcn; ///< Coupler to Ocean (x2o)
    OcnToCplFields OcnToCpl; ///< Ocean to Coupler (o2x)
-
-   Alarm CouplingAlarm; ///< Alarm for coupling interval
 
    /// View of Coupler to Ocean (x2o) raw data
    Kokkos::View<const Real **, Kokkos::LayoutStride, Kokkos::HostSpace,
@@ -196,6 +196,9 @@ class SfcCoupling {
    /// Getter for the number of ocean timesteps accumulated over the coupling
    /// interval
    I4 getNAccumSteps() const;
+
+   /// Get a pointer to the coupling alarm
+   Alarm *getCouplingAlarm();
 
    /// Create views of the coupling data arrays
    void attachData(const Real *CplToOcnData, Real *OcnToCplData);

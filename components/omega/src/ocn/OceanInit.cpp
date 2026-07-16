@@ -223,7 +223,7 @@ int ocnInit1(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
    // Advance clock one coupling interval, to be in sync with couplers clock
    if (StartType == StartType::StartUp) {
       SfcCoupling *DefCoupling = SfcCoupling::getDefault();
-      while (!DefCoupling->CouplingAlarm.isRinging()) {
+      while (!DefCoupling->getCouplingAlarm()->isRinging()) {
          ModelClock->advance();
       }
    }
