@@ -23,6 +23,8 @@ time stepping method as well as some time tracking variables, including
 a Clock, TimeStep, StartTime, StopTime (optional) and an EndAlarm (optional).
 The StopTime and EndAlarm are optional, because in coupled E3SM simulations the
 components do not know the StopTime and therefore no EndAlarm can be created.
+It also stores a StepCount, the number of `doStep` calls made on the
+instance since creation.
 Its `doStep` method defines the interface that every time stepper needs to
 implement. In addition to this method, it provides a number of other methods
 that can divided into two groups. The first group is for general time stepper
@@ -41,6 +43,10 @@ TimeStep`. Classes implementing concrete time stepping schemes need to provide
 implementations of this method. As part of the time step, this routine advances
 the Clock associated with the time stepper and returns the current simulation
 time. For the default time stepper, this is advances the primary model clock.
+Each implementation also increments StepCount, a member variable that
+persists on the instance across calls, so it can be used to identify the
+first `doStep` call even when `doStep` is invoked repeatedly across
+separate calls to `ocnRun`, as is done by the coupled driver.
 
 ### Time stepper management methods
 

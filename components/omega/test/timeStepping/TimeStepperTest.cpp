@@ -424,6 +424,13 @@ int testOptionalStopTime(const std::string &Name, TimeStepperType Type) {
                 Name);
    }
 
+   if (Stepper->getStepCount() != 0) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: {}: getStepCount() should be 0 before any "
+                "doStep calls",
+                Name);
+   }
+
    // Verify doStep works without an EndAlarm (coupled run loop never uses it)
    Stepper->attachData(TestTendencies, TestAuxState, DefMesh, DefVCoord,
                        DefHalo);
@@ -431,7 +438,25 @@ int testOptionalStopTime(const std::string &Name, TimeStepperType Type) {
    initState();
    TimeInstant CurTime = TimeStart;
    Stepper->doStep(State, CurTime);
+
+   if (Stepper->getStepCount() != 1) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: {}: getStepCount() should be 1 after one "
+                "doStep call",
+                Name);
+   }
+
+   // Coupled driver calls doStep repeatedly across separate ocnRun
+   // invocations, so StepCount must persist and keep incrementing rather
+   // than reset
    Stepper->doStep(State, CurTime);
+
+   if (Stepper->getStepCount() != 2) {
+      Err++;
+      LOG_ERROR("TimeStepperTest: {}: getStepCount() should be 2 after two "
+                "doStep calls",
+                Name);
+   }
 
    TimeStepper::erase("CoupledTestStepper");
 
