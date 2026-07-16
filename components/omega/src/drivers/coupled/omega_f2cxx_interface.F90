@@ -68,6 +68,16 @@ module omega_f2cxx_mod
 
       end subroutine omega_ocn_init2
 
+      subroutine omega_ocn_run(write_restart) bind(c)
+
+         use, intrinsic :: iso_c_binding, only: c_bool
+
+         implicit none
+
+         logical(kind=c_bool), value, intent(in) :: write_restart
+
+      end subroutine omega_ocn_run
+
       subroutine omega_ocn_finalize() bind(c)
 
          implicit none

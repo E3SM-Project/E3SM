@@ -251,10 +251,27 @@ contains
    end subroutine ocn_init_mct
 
    subroutine ocn_run_mct(EClock, cdata, x2o, o2x)
+
+      use, intrinsic :: iso_c_binding, only: c_bool
+
+      use omega_f2cxx_mod, only: omega_ocn_run
+      use seq_timemgr_mod, only: seq_timemgr_RestartAlarmIsOn
+
       ! !INPUT/OUTPUT PARAMETERS:
       type(ESMF_Clock), intent(inout) :: EClock
       type(seq_cdata), intent(inout) :: cdata
       type(mct_aVect), intent(inout) :: x2o, o2x
+
+      !--- local variables ---
+      logical(kind=c_bool) :: write_restart
+
+      ! check if coupler is requesting a restart write
+      write_restart = logical( &
+        seq_timemgr_RestartAlarmIsOn(EClock), kind=c_bool)
+
+      ! run omega for one coupling interval
+      call omega_ocn_run(write_restart)
+
    end subroutine ocn_run_mct
 
    subroutine ocn_final_mct(EClock, cdata, x2o, o2x)

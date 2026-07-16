@@ -54,6 +54,9 @@ int ocnInit2(const Real *CplToOcnData, ///< [in] coupler import data pointer
 /// Advance the model from starting from CurrTime until EndAlarm rings
 int ocnRun(TimeInstant &CurrTime);
 
+/// Advance the model from CurrTime until the CouplingAlarm rings
+int ocnRun(TimeInstant &CurrTime, bool WriteRestart);
+
 /// Clean up all Omega objects
 int ocnFinalize(const TimeInstant &CurrTime);
 

@@ -116,6 +116,21 @@ void omega_ocn_init2(const double *cpl_to_ocn_data, double *ocn_to_cpl_data) {
    OMEGA::ocnInit2(cpl_to_ocn_data, ocn_to_cpl_data);
 }
 
+int omega_ocn_run(bool WriteRestart) {
+
+   int ErrRun;
+
+   OMEGA::TimeStepper *DefStepper = OMEGA::TimeStepper::getDefault();
+   OMEGA::Clock *ModelClock       = DefStepper->getClock();
+   OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
+
+   // Pacer::start("Run", 0);
+   ErrRun = OMEGA::ocnRun(CurrTime, WriteRestart);
+   // Pacer::stop("Run", 0);
+
+   return ErrRun;
+}
+
 int omega_ocn_finalize() {
 
    int ErrFinalize;
