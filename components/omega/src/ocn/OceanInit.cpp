@@ -155,6 +155,7 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    }
 
    // If reading from restart, reset the current time to the input time
+   SimTimeStr = std::any_cast<std::string>(ReqMeta["SimulationTime"]);
    if (SimTimeStr != " ") {
       TimeInstant NewCurrentTime(SimTimeStr);
       ModelClock->setCurrentTime(NewCurrentTime);
@@ -212,12 +213,23 @@ int ocnInit1(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
    } else if (StartType == StartType::Continue ||
               StartType == StartType::Branch) {
       // read restart if starting from restart
-      ReqMeta["SimulationTime"] = " ";
+      ReqMeta["SimulationTime"] = std::string(" ");
       Error IOError = IOStream::read("RestartRead", ModelClock, ReqMeta);
       if (IOError.isFail()) {
          ABORT_ERROR("Errors encountered reading RestartRead");
       }
-      // TODO: check restat time matches coupler time.
+
+      // Coupler only provides case start time, so on restart get the
+      // simulation time from the restart file
+      std::string SimTimeStr =
+          std::any_cast<std::string>(ReqMeta["SimulationTime"]);
+      if (SimTimeStr == " ") {
+         ABORT_ERROR("RestartRead stream did not provide SimulationTime");
+      }
+
+      // Set the model clock to the simulation time read from the restart file
+      TimeInstant NewCurrentTime(SimTimeStr);
+      ModelClock->setCurrentTime(NewCurrentTime);
    };
 
    // Advance clock one coupling interval, to be in sync with couplers clock
