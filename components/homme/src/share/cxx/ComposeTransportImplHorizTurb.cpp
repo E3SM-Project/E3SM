@@ -13,6 +13,8 @@ namespace Homme {
 
 namespace {
 
+constexpr bool print_tracer_sgs_diffusivity_clipping = true;
+
 KOKKOS_INLINE_FUNCTION
 constexpr Real get_lambda_vis_ct ()
 {
@@ -54,6 +56,40 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
   const Real lambda_vis = get_lambda_vis_ct();
   const auto tu_ne_hv_q = m_tu_ne_hv_q;
   const auto sphere_ops = m_sphere_ops;
+
+  if (print_tracer_sgs_diffusivity_clipping && lambda_vis > 0) {
+    const auto kh_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Kh);
+    const auto dinv_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), dinv);
+    const int rank = Context::singleton().get<Comm>().rank();
+
+    for (int ie = 0; ie < m_data.nelemd; ++ie) {
+      for (int i = 0; i < NP; ++i) {
+        for (int j = 0; j < NP; ++j) {
+          const Real a = dinv_h(ie,0,0,i,j);
+          const Real b = dinv_h(ie,0,1,i,j);
+          const Real c = dinv_h(ie,1,0,i,j);
+          const Real d = dinv_h(ie,1,1,i,j);
+          const Real laplace_metric = get_local_laplace_metric_ct(a, b, c, d,
+                                                                  lambda_vis, scale_factor_inv);
+          if (laplace_metric <= 0) continue;
+
+          const Real max_diffusivity = 2.0 / (dt * laplace_metric);
+          for (int lev = 0; lev < NUM_LEV; ++lev) {
+            const auto kh = kh_h(ie,i,j,lev);
+            for (int s = 0; s < VECTOR_SIZE; ++s) {
+              const int phys_lev = lev * VECTOR_SIZE + s;
+              if (phys_lev >= NUM_PHYSICAL_LEV) continue;
+              if (kh[s] > max_diffusivity) {
+                printf("Warning: rank %d clipped tracer SGS Kh at ie=%d igp=%d jgp=%d lev=%d from %.16e to %.16e.\n",
+                       rank, ie, i, j, phys_lev, kh[s], max_diffusivity);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   for (int it = 0; it < m_data.hv_subcycle_q_sgs; ++it) {
     { // Qtens = Q
       const auto f = KOKKOS_LAMBDA (const int idx) {
