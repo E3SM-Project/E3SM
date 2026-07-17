@@ -121,6 +121,22 @@
     </test_file_names>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="omega" compclass="ocn" exclude_testing="true">
+    <rest_file_extension>r</rest_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
+      <rpointer_content>$CASE.omega.r.$DATENAME.nc</rpointer_content>
+    </rpointer>
+    <!-- TODO: no analysis members yet, so only restarts are archived for
+         now; add hist_file_extension entries once History/Highfreq output
+         should be archived -->
+    <test_file_names>
+      <tfile disposition="copy">rpointer.ocn</tfile>
+      <tfile disposition="copy">casename.omega.r.1976-01-01-00000.nc</tfile>
+    </test_file_names>
+  </comp_archive_spec>
+
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
