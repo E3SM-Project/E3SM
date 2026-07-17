@@ -120,6 +120,8 @@ a template can be:
      at the time specified in the StartTime entry
    - Never if the stream should not be used but you wish to retain the
      entry in the config file (a warning will be output to log file)
+   - OnDemand for streams registered but never written/read automatically;
+     only a forced `IOStream::write`/`read` call triggers them
    - Years for a frequency every Freq years (*not* Freq times per year)
    - Months for a frequency every Freq months (*not* Freq times per month)
    - Days for a frequency every Freq days (*not* Freq times per day)

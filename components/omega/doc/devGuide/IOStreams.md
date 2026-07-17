@@ -62,6 +62,9 @@ outside of this routine, a single-stream write can take place using:
 ```c++
    IOStream::write(StreamName, ModelClock);
 ```
+Streams configured with `FreqUnits: OnDemand` are registered but never fire
+via writeAll; use `IOStream::write(StreamName, ModelClock, true)` to force
+them (eg the coupled driver's coupler-triggered restart writes).
 
 Reading files (eg for initialization, restart or forcing) does not often
 take place all at once, so no readAll interface is provided. Instead, each

@@ -529,6 +529,10 @@ void IOStream::create(const std::string &StreamName, //< [in] name of stream
                      StreamName);
       }
 
+   } else if (IOFreqUnits == "ondemand") { // registered, manual-write only
+
+      // No alarm, no OnStartup/OnShutdown - only fires via forced write/read
+
    } else if (IOFreqUnits == "never") { // special never case
 
       LOG_WARN("Stream {} has IO frequency of never and will be skipped",
