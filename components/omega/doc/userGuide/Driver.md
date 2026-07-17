@@ -37,3 +37,11 @@ simulation. The supported calendar types are:
 | 360 Day | 12 months, 30 days each |
 | Custom | user-defined calendar |
 | No Calendar | tracks elapsed time only |
+
+## Coupled mode
+
+When Omega runs as the `ocn` component of E3SM, `StartTime`, `StopTime`,
+and `RunDuration` are not read from `omega.yml`; the E3SM case's start
+time and the coupler's clock control the simulation instead, and
+`omega/cime_config/buildnml` writes placeholder values for these three options.
+`CalendarType` is still set, from the case's `CALENDAR` XML variable.

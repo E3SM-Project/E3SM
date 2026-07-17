@@ -172,7 +172,8 @@ script that you can run to build Omega:
 ./omega_build.sh
 ```
 
-Note: Until the Omega build is integrated into the E3SM build, specific
-modifications are required to trigger the Omega build within the E3SM
-build process. Please see [Omega Build User Guide](../userGuide/OmegaBuild.md)
-for details.
+When `OMEGA_BUILD_MODE` is `E3SM`, `src/CMakeLists.txt` additionally
+builds an `ocn` library from the sources in `src/drivers/coupled/`
+(the Fortran/C++ bridge and MCT cap), linked against `OmegaLib` and
+`csm_share`. This is the library CIME builds and links into the E3SM
+executable when Omega is used as the ocean component of a coupled case.
