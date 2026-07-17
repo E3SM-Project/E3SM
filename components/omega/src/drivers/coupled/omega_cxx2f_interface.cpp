@@ -201,13 +201,14 @@ void omega_get_lonlat_cell(double *LonCell, double *LatCell) {
 void omega_get_area_cell(double *AreaCell) {
    OMEGA::HorzMesh *HMesh = OMEGA::HorzMesh::getDefault();
 
+   OMEGA::R8 SphereRadius = HMesh->SphereRadius;
+
    // Sync device array back to host mirror
    OMEGA::deepCopy(HMesh->AreaCellH, HMesh->AreaCell);
 
    for (int Cell = 0; Cell < HMesh->NCellsOwned; ++Cell) {
-      // TODO: Use the HMesh->SphereRadius attribute once PR#382 is merged
       AreaCell[Cell] = static_cast<double>(HMesh->AreaCellH[Cell] /
-                                           (OMEGA::REarth * OMEGA::REarth));
+                                           (SphereRadius * SphereRadius));
    }
 }
 
