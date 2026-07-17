@@ -95,7 +95,7 @@ void omega_ocn_init1(
    std::map<std::string, int> ExportIdxMap =
        buildFieldIndexMap(ExportFieldNames, ExportFieldIndices, NOmegaExports);
 
-   // Pacer::start("Init", 0);
+   Pacer::start("Init1", 0);
 
    OMEGA::StartType StartTypeEnum = OMEGA::safeIntToStartType(StartType);
    OMEGA::TimeInitParams TimeParams{StartTime, std::nullopt};
@@ -106,14 +106,16 @@ void omega_ocn_init1(
    OMEGA::ocnInit1(Comm, OcnID, YamlConfigFile, OcnLogFile, StartTypeEnum,
                    TimeParams, CouplingParams);
 
-   // Pacer::stop("Init", 0);
+   Pacer::stop("Init1", 0);
 
    LOG_INFO("ocnInit: Finished initializing ocean model");
    int ErrAll;
 }
 
 void omega_ocn_init2(const double *cpl_to_ocn_data, double *ocn_to_cpl_data) {
+   Pacer::start("Init2", 0);
    OMEGA::ocnInit2(cpl_to_ocn_data, ocn_to_cpl_data);
+   Pacer::stop("Init2", 0);
 }
 
 int omega_ocn_run(bool WriteRestart) {
@@ -124,9 +126,9 @@ int omega_ocn_run(bool WriteRestart) {
    OMEGA::Clock *ModelClock       = DefStepper->getClock();
    OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
 
-   // Pacer::start("Run", 0);
+   Pacer::start("Run", 0);
    ErrRun = OMEGA::ocnRun(CurrTime, WriteRestart);
-   // Pacer::stop("Run", 0);
+   Pacer::stop("Run", 0);
 
    return ErrRun;
 }
@@ -139,14 +141,14 @@ int omega_ocn_finalize() {
    OMEGA::Clock *ModelClock       = DefStepper->getClock();
    OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
 
-   // Pacer::start("Finalize", 0);
+   Pacer::start("Finalize", 0);
    OMEGA::ocnFinalize(CurrTime);
    if (ErrFinalize != 0) {
       LOG_ERROR("Error finalizing OMEGA");
    } else {
       LOG_INFO("OMEGA successfully completed");
    }
-   // Pacer::stop("Finalize", 0);
+   Pacer::stop("Finalize", 0);
 
    // no Pacer::print or Pacer::finalize in coupled mode; cpl will handle it
 
