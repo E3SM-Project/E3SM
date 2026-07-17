@@ -144,6 +144,10 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
                SimTime.getString(4, 4, "-"));
    }
 
+   // Minus 1 because we want to print completed coupling interval
+   const I8 CoupledIntervalCount =
+       DefTimeStepper->getStepCount() / DefSfcCoupling->getNAccumSteps() - 1;
+
    // export o2x fields to coupler at endof coupling interval
    DefSfcCoupling->exportToCoupler();
 
@@ -151,6 +155,9 @@ int ocnRun(TimeInstant &CurrTime, ///< [inout] current sim time
    if (WriteRestart) {
       IOStream::write("RestartWrite", OmegaClock, true);
    }
+
+   LOG_INFO("ocnRun: ------ Completed coupling interval {} ------",
+            CoupledIntervalCount);
 
    return Err;
 
