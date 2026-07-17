@@ -219,12 +219,6 @@ contains
 
       lsize = mct_gsMap_lsize(gsMap_ocn, mpicom_ocn)
 
-      ! TODO: Remove print statement after debugging
-      if (my_task == master_task) then
-         print *, "[omega] gsMap initialization done"
-         print *, "[omega] lsize = ", lsize
-      end if
-
       call ocn_set_domain_mct(lsize, gsMap_ocn, gGrid_ocn)
 
       ! Init import/export mct attribute vectors
@@ -240,13 +234,10 @@ contains
          ocn_c2_glcshelf=.false. &
          )
 
+      ! TODO: Get case config info and add as MetaData to Omega
+
       ! TODO: ifdef HAVE_MOAB
       call omega_ocn_init2(c_loc(x2o%rAttr), c_loc(o2x%rAttr))
-
-      ! TODO: Remove print statement after debugging
-      if (my_task == master_task) then
-         print *, "[omega] omega_ocn_init2 done"
-      end if
 
    end subroutine ocn_init_mct
 
@@ -308,17 +299,9 @@ contains
       ncells_local = omega_get_ncells_local()
       ncells_global = omega_get_ncells_global()
 
-      ! TODO: Remove print statement after debugging
-      print *, "[omega] ncells_local = ", ncells_local
-      print *, "[omega] ncells_global = ", ncells_global
-
       allocate (index_to_cell_id(ncells_local))
 
       call omega_get_index_to_cell_id(index_to_cell_id)
-
-      ! TODO: Remove print statement after debugging
-      print *, "[omega] index_to_cell_id[ 1] =", index_to_cell_id(1)
-      print *, "[omega] index_to_cell_id[-1] =", index_to_cell_id(ncells_local)
 
       call mct_gsMap_init( &
          gsmap_ocn, &
@@ -375,22 +358,8 @@ contains
       call mct_gGrid_importRAttr(ggrid_ocn, "lon", data1, lsize)
       call mct_gGrid_importRAttr(ggrid_ocn, "lat", data2, lsize)
 
-      ! TODO: Remove print statement after debugging
-      if (my_task == master_task) then
-         print *, "[omega] lon[ 1] = ", data1(1)
-         print *, "[omega] lon[-1] = ", data1(lsize)
-         print *, "[omega] lat[ 1] = ", data2(1)
-         print *, "[omega] lat[-1] = ", data2(lsize)
-      end if
-
       call omega_get_area_cell(data1)
       call mct_gGrid_importRAttr(ggrid_ocn, "area", data1, lsize)
-
-      ! TODO: Remove print statement after debugging
-      if (my_task == master_task) then
-         print *, "[omega] area[ 1] = ", data1(1)
-         print *, "[omega] area[-1] = ", data1(lsize)
-      end if
 
       ! mask and frac are both exactly 1, until landIceMask is suported
       data1(:) = real(1.0, kind=c_double)

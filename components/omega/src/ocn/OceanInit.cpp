@@ -195,8 +195,7 @@ int ocnInit1(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
    TimeStepper *DefStepper = TimeStepper::getDefault();
    Clock *ModelClock       = DefStepper->getClock();
 
-   // Now that all fields have been defined, validate all the streams
-   // contents
+   // Now that all fields are defined, validate all stream contents
    bool StreamsValid = IOStream::validateAll();
 
    if (!StreamsValid) {
