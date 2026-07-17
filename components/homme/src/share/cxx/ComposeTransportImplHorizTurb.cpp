@@ -14,6 +14,7 @@ namespace Homme {
 namespace {
 
 constexpr bool print_tracer_sgs_diffusivity_clipping = true;
+constexpr Real tracer_sgs_cfl_target = 1.00;
 
 KOKKOS_INLINE_FUNCTION
 constexpr Real get_lambda_vis_ct ()
@@ -73,7 +74,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
                                                                   lambda_vis, scale_factor_inv);
           if (laplace_metric <= 0) continue;
 
-          const Real max_diffusivity = 2.0 / (dt * laplace_metric);
+          const Real max_diffusivity = 2.0 * tracer_sgs_cfl_target / (dt * laplace_metric);
           for (int lev = 0; lev < NUM_LEV; ++lev) {
             const auto kh = kh_h(ie,i,j,lev);
             for (int s = 0; s < VECTOR_SIZE; ++s) {
@@ -128,7 +129,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
           const Real laplace_metric = get_local_laplace_metric_ct(a, b, c, d,
                                                                   lambda_vis, scale_factor_inv);
           if (laplace_metric > 0) {
-            const Real max_diffusivity = 2.0 / (dt * laplace_metric);
+            const Real max_diffusivity = 2.0 * tracer_sgs_cfl_target / (dt * laplace_metric);
             for (int s = 0; s < VECTOR_SIZE; ++s) {
               const int phys_lev = lev * VECTOR_SIZE + s;
               if (phys_lev < NUM_PHYSICAL_LEV && kh_eff[s] > max_diffusivity) {

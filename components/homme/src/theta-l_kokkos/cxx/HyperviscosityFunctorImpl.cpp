@@ -27,6 +27,7 @@ namespace {
 
 constexpr int max_dynamic_sgs_subcycles = 12;
 constexpr bool print_sgs_diffusivity_clipping = true;
+constexpr Real sgs_clip_cfl_target = 1.00;
 
 constexpr Real get_lambda_vis ()
 {
@@ -844,7 +845,7 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
         const Real d = dinv(kv.ie,1,1,igp,jgp);
         const Real laplace_metric = get_local_laplace_metric(a, b, c, d, lambda_vis, scale_factor_inv);
         if (laplace_metric > 0) {
-          max_diffusivity = 2.0 / (m_data.dt_hvs_sgs * laplace_metric);
+          max_diffusivity = 2.0 * sgs_clip_cfl_target / (m_data.dt_hvs_sgs * laplace_metric);
         }
       }
 
