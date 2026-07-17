@@ -31,52 +31,66 @@ OrderedSafeDumper.add_representer(dict, _dict_representer)
 
 
 # Helper function to build the various sections of the omega streams
-def _build_initial_state_file_name(case):
+def _get_file_name(case, stream):
     """ """
-    # TODO: this will be condtional set based on grid and compset
-    return "OmegaMesh.nc"
+    # TODO: this will be conditional set based on grid and compset. It
+    # also needs to check RUN_TYPE: for "hybrid"/"branch" runs this must
+    # point at the RUN_REFCASE restart file (see mpas-ocean's
+    # cime_config/buildnml, which swaps in run_refcase's restart file
+    # when run_type in ("hybrid", "branch")), not the default IC file.
+
+    din_loc = Path(case.get_value("DIN_LOC_ROOT"))
+    ocn_grid = case.get_value("OCN_GRID")
+
+    if ocn_grid != "oQU240":
+        raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
+
+    # TODO: this will return a different value based on the stream name
+
+    # For now mesh file contains all information needed in single file
+    return str(din_loc /
+               "../polaris/ocean/realistic_global/" /
+               "omega/ocean.QU240km.151209.teos10.nc")
 
 
-def _build_horz_mesh_file_name(case):
-    """ """
-    # TODO: this will be condtional set based on grid
-    return "OmegaMesh.nc"
+def _update_read_io_streams(config, case, stream):
+    """Update the read streams
 
+    RUN_TYPE stays fixed for the life of a case, so it cannot tell us
+    whether *this* job submission should read the initial state or a
+    restart file. CONTINUE_RUN is FALSE only for the very first job of
+    a run (including hybrid/branch runs) and TRUE for every subsequent
+    continuation, so it is the correct flag to gate on here.
+    """
+    continue_run = case.get_value("CONTINUE_RUN")
 
-def _build_initial_state_read_io_stream(case):
-    """Reading initial state only happens for startup runs"""
-    # TODO: do we need to check CONTINUE_RUN here?
-    run_type = case.get_value("RUN_TYPE")
+    # RestartRead has inverse logic compared to InitialState and
+    # InitialVertCoord, so negate the value of continue_run
+    if stream == "RestartRead":
+        continue_run = not continue_run
 
-    file_name = _build_initial_state_file_name(case)
+    config[stream]['Filename'] = _get_file_name(case, stream)
 
-    return {
-        "UsePointerFile": False,
-        "Filename": file_name,
-        "Mode": "read",
-        "Precision": "double",
-        "Freq": 1,
-        "FreqUnits": "OnStartUp" if run_type == "startup" else "Never",
-        "UseStartEnd": False,
-        "Contents": ["State", "Base"],
-    }
+    # Leave `OnstartUp` default for HorzMeshIn stream
+    if stream not in ["HorzMeshIn"]:  # "InitialVertCoord"]:
+        config[stream]["FreqUnits"] = "Never" if continue_run else "OnStartUp"
 
+    # Make sure pointer, with the correct filename, is used by restart reads
+    if stream == "RestartRead":
+        config[stream]["UsePointerFile"] = True
+        config[stream]["PointerFilename"] = "rpointer.ocn"
 
-def _build_restart_read_io_stream(case):
-    """Restart reads happen for any run type that is not startup"""
-    # TODO: do we need to check CONTINUE_RUN here?
-    run_type = case.get_value("RUN_TYPE")
+        # Default.yml sets UseStartEnd/StartTime/EndTime for RestartRead as a
+        # workaround so the standalone driver (whose FreqUnits is always
+        # "OnStartup") can still skip reading a restart on the very first
+        # startup job. The coupled driver already gates this explicitly via
+        # CONTINUE_RUN above, so the UseStartEnd gate must be disabled here:
+        # otherwise it depends on the model clock's StartAlarm/EndAlarm
+        # already reflecting the coupler-provided current time, which is not
+        # guaranteed to be true this early in ocnInit1.
+        config[stream]["UseStartEnd"] = False
 
-    return {
-        "UsePointerFile": True,
-        "PointerFilename": "rpointer.ocn",
-        "Mode": "read",
-        "Precision": "double",
-        "Freq": 1,
-        "FreqUnits": "Never" if run_type == "startup" else "OnStartUp",
-        "UseStartEnd": False,
-        "Contents": ["Restart"],
-    }
+    return config
 
 
 def _build_restart_write_io_stream(case):
@@ -93,7 +107,7 @@ def _build_restart_write_io_stream(case):
         "IfExists": "replace",
         "Precision": "double",
         "Freq": 1,
-        "FreqUnits": "Never",
+        "FreqUnits": "OnDemand",
         "UseStartEnd": False,
         "Contents": ["Restart"],
     }
@@ -103,11 +117,11 @@ def _build_io_streams_config(default_io_streams, case):
     """Build the io_streams section of the omega config file"""
     io_streams = default_io_streams.copy()
 
-    # Add initial state read stream
-    io_streams["InitialState"] = _build_initial_state_read_io_stream(case)
-
-    # Add restart read stream
-    io_streams["RestartRead"] = _build_restart_read_io_stream(case)
+    # Update InitialState, HorzMeshIn, InitialVertCoord, and RestartRead
+    io_streams = _update_read_io_streams(io_streams, case, "InitialState")
+    io_streams = _update_read_io_streams(io_streams, case, "HorzMeshIn")
+    io_streams = _update_read_io_streams(io_streams, case, "InitialVertCoord")
+    io_streams = _update_read_io_streams(io_streams, case, "RestartRead")
 
     # Add restart write stream
     io_streams["RestartWrite"] = _build_restart_write_io_stream(case)
