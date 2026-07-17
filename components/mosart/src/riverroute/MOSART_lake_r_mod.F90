@@ -21,7 +21,7 @@ MODULE mosart_lake_r_mod
     use MOSART_lake_geometry_mod
     implicit none
     
-    real(r8), parameter :: TINYVALUE  = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
+    real(r8), parameter :: myTINYVALUE  = 1.0e-14_r8  ! double precision variable has a significance of about 16 decimal digits
 
     public mosart_lake_r
     
@@ -193,7 +193,7 @@ MODULE mosart_lake_r_mod
                 evap =  lake_evap_r(iunit,dtime,TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit)),F,es,sar)
                 d_evap = evap * dtime                
                 v_evap = d_evap * TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
-                if (v_evap - 0.95_r8 * TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) > TINYVALUE) then ! too little lake storage for lake evap. to occur fully
+                if (v_evap - 0.95_r8 * TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) > myTINYVALUE) then ! too little lake storage for lake evap. to occur fully
                     v_evap = TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) * 0.95_r8
                 end if                
                 if(v_evap < 0._r8) then
@@ -205,7 +205,7 @@ MODULE mosart_lake_r_mod
                 !call mosart_lake_hydro_sub_channel(iunit,nt,dtime)
                 q_in = TLake_r%lake_inflow(iunit) ! + TLake_r%lake_rain(iunit) + TLake_r%lake_snow(iunit)
                 !q_ou = -TLake_r%lake_outflow(iunit)
-                if(q_in*dtime + TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,ngeom+1) > TINYVALUE) then ! too much inflow so the lake will be more than full
+                if(q_in*dtime + TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,ngeom+1) > myTINYVALUE) then ! too much inflow so the lake will be more than full
                     dv_in(TLake_r%d_ns(iunit)) = q_in * dtime
                     TLake_r%lake_spillflow(iunit) = - TLake_r%lake_inflow(iunit)
                     v_spill = -TLake_r%lake_spillflow(iunit) * dtime
@@ -301,7 +301,7 @@ MODULE mosart_lake_r_mod
 
                 call mosart_lake_hydro_main_channel(iunit,nt,dtime)
                 q_ou = -TLake_r%lake_outflow(iunit)
-                if(abs(q_ou) > TINYVALUE) then
+                if(abs(q_ou) > myTINYVALUE) then
                     call av_out_r(TLake_r%d_ns(iunit),q_ou,dtime,iunit,dv_ou,t_out)
                     tmp_tout = tmp_tout + t_out
                 end if                
@@ -386,7 +386,7 @@ MODULE mosart_lake_r_mod
                 if ((TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,ngeom+1))/TLake_r%v_zti(iunit,ngeom+1) > 0.05_r8) then ! storage is too large
                     call over_flow_r(iunit,d_n_n,d_res_sub,t_z_old,dv_in,dv_ou)                        
                 end if
-                if ((TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,1))/TLake_r%v_zti(iunit,ngeom+1) < -TINYVALUE) then ! storage dries up
+                if ((TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,1))/TLake_r%v_zti(iunit,ngeom+1) < -myTINYVALUE) then ! storage dries up
                     call under_flow_r(iunit,d_n_n,d_res_sub,t_z_old,dv_in,dv_ou)                        
                 end if
 
@@ -551,7 +551,7 @@ MODULE mosart_lake_r_mod
 
 
                 ! Lake is too empty/shallow, no need to invoke the energy balance method
-                if(TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) <= TINYVALUE) then    
+                if(TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) <= myTINYVALUE) then    
                     do j = 1, nlayers    
                         if (j<=TLake_r%d_ns(iunit)) then
                             TLake_r%temp_lake(iunit,j) = THeat%Tr(iunit)
@@ -580,7 +580,7 @@ MODULE mosart_lake_r_mod
                 
                 ! Calculation of Surface fluxes and heat source 
                 !    Net shortwave radiation (w/m^2)
-                if (THeat%coszen(iunit)>TINYVALUE) then 
+                if (THeat%coszen(iunit)>myTINYVALUE) then 
                     alb_s = 0.05_r8/(THeat%coszen(iunit) + 0.15_r8)!THeat%albedo(iunit)!
                 else
                     alb_s = 0.06_r8    !0.06_r8
@@ -627,7 +627,7 @@ MODULE mosart_lake_r_mod
     !end if
                 
                 if(TUnit_lake_r%one_layer(iunit) == 1 .or. TLake_r%d_lake(iunit) < 20._r8) then !if high-latitude or shallow lakes, empirical approach
-                    if(THeat%forc_vp(iunit) < TINYVALUE) then
+                    if(THeat%forc_vp(iunit) < myTINYVALUE) then
                         do j = 1, nlayers    
                             if (j<=TLake_r%d_ns(iunit))  then   
                                 TLake_r%temp_lake(iunit,j) = THeat%Tr(iunit)
@@ -714,7 +714,7 @@ MODULE mosart_lake_r_mod
                         phi_x(j) = 0._r8
                     end do
                     
-                    if (sh_net > TINYVALUE .and. TLake_r%d_ns(iunit) >1) then
+                    if (sh_net > myTINYVALUE .and. TLake_r%d_ns(iunit) >1) then
                         k=0
                         top_d=TLake_r%d_lake(iunit)-TLake_r%d_z(iunit,TLake_r%d_ns(iunit)-k)
                         if(top_d < 0.61_r8) then
@@ -750,7 +750,7 @@ MODULE mosart_lake_r_mod
                         do i=1,j
                            phi_z(i)=(sar*TLake_r%a_d(iunit,i+1)*phi_x(i+1)-sar*TLake_r%a_d(iunit,i)*phi_x(i))
                         end do
-                    elseif (sh_net > TINYVALUE .and. TLake_r%d_ns(iunit)==1) then
+                    elseif (sh_net > myTINYVALUE .and. TLake_r%d_ns(iunit)==1) then
                         phi_z(TLake_r%d_ns(iunit))=sh_net*sar*TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
                     else
                         do j=1,TLake_r%d_ns(iunit)
@@ -781,11 +781,11 @@ MODULE mosart_lake_r_mod
                     ! Calculate Richardson number
                         drhodz(j) = (rho_z(j-1)-rho_z(j))/0.5_r8*(TLake_r%dd_z(iunit,j)+TLake_r%dd_z(iunit,j-1))
                         bv_f = max((grav/rho_w)*drhodz(j),0._r8)
-                        if (s_vel <= TINYVALUE) ri = 0._r8
+                        if (s_vel <= myTINYVALUE) ri = 0._r8
                         ri = bv_f/((s_vel/(0.4_r8*TLake_r%d_z(iunit,j)))**2._r8)                
                     ! Calculate Froude number
                         l_vel = q_adv(j)*TUnit_lake_r%Length(iunit)/(sar*TLake_r%a_d(iunit,j)*TLake_r%dd_z(iunit,j))
-                        if (q_adv(j) <= -TINYVALUE .or. drhodz(j) <= -TINYVALUE) then
+                        if (q_adv(j) <= -myTINYVALUE .or. drhodz(j) <= -myTINYVALUE) then
                             Fr(j) = 0._r8
                         else    
                             Fr(j)= (grav*TLake_r%dd_z(iunit,j)*drhodz(j)/rho_w)/l_vel**2._r8
@@ -943,7 +943,7 @@ MODULE mosart_lake_r_mod
 !            end if
                             ! TODO: toplayer temp. does not go above freezing point if it is previously frozen and air temp. is also below
                             if(TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit)) > 273.15_r8 .and. THeat%forc_t(iunit) <= 273.15) then 
-                            if(temp_prev < 273.15_r8 - TINYVALUE) then 
+                            if(temp_prev < 273.15_r8 - myTINYVALUE) then 
                                 TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit)) = 273.15_r8
                             end if
                             end if
@@ -1070,7 +1070,7 @@ MODULE mosart_lake_r_mod
         evap = 0._r8
         d_evap = 0._r8
         v_evap = 0._r8
-        if(TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,1) < TINYVALUE) then
+        if(TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit,1) < myTINYVALUE) then
             evap = 0._r8
             d_evap = 0._r8
             v_evap = 0._r8
@@ -1082,7 +1082,7 @@ MODULE mosart_lake_r_mod
             v_evap   = max(d_evap*sar*TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1),0._r8)
             ! TODO. For now, the layer adjustment should ensure that evaporation occurs most of time
             ! in a extreme dry case, we don't let the lake to completely dry out for numerical stability
-            if (v_evap - 0.95_r8 * TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) > TINYVALUE) then ! too little lake storage for lake evap. to occur fully
+            if (v_evap - 0.95_r8 * TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) > myTINYVALUE) then ! too little lake storage for lake evap. to occur fully
                 !write(unit=12202,fmt="(i10, 2(e14.6))") iunit, v_evap, TLake_r%V_str(iunit)
                 v_evap = TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) * 0.95_r8
             end if
@@ -1090,7 +1090,7 @@ MODULE mosart_lake_r_mod
             if(v_evap < 0._r8) then
                 v_evap = 0._r8
             end if
-            !if(v_evap - (TLake_r%v_zt(iunit, TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit, 1)) > TINYVALUE) then
+            !if(v_evap - (TLake_r%v_zt(iunit, TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit, 1)) > myTINYVALUE) then
             !    v_evap = TLake_r%v_zt(iunit, TLake_r%d_ns(iunit)+1) - TLake_r%v_zti(iunit, 1)
             !end if
                                 
@@ -1196,7 +1196,7 @@ MODULE mosart_lake_r_mod
        real(r8)             :: X       ! local dummy variable
        real(r8)             :: GAMAI   ! *** physical meaning and unit?        
        
-       if(SUMZ < TINYVALUE .or. S < TINYVALUE) then
+       if(SUMZ < myTINYVALUE .or. S < myTINYVALUE) then
            entrain_ = 0._r8
            return
        end if
@@ -1273,7 +1273,7 @@ MODULE mosart_lake_r_mod
             in_v = in_f*dtime
             
             ! calculate entrainment due to plunging            
-            if(QENIN > TINYVALUE) then
+            if(QENIN > myTINYVALUE) then
             do j=d_n,1,-1
                 QE(j) =  ENTRAIN(j,in_v,rho_in,rho_layers(j),TLake_r%dd_z(iunit,j),TUnit%rslp(iunit),HP,QENIN,IHP,TUnit%rwidth(iunit),TUnit%nr(iunit),iunit)
                 if(QE(j)*dtime > 0.95_r8*TLake_r%d_v(iunit,j)) QE(j) = 0.95_r8 * TLake_r%d_v(iunit,j) / dtime
@@ -1288,7 +1288,7 @@ MODULE mosart_lake_r_mod
  !end if
                 
                 TLake_r%d_v(iunit,j) = TLake_r%d_v(iunit,j) - QE(j) * dtime
- !if(iunit == 508 .and. QE(j) > TINYVALUE) then
+ !if(iunit == 508 .and. QE(j) > myTINYVALUE) then
  !    write(unit=9001,fmt="(i4, i4, i4, 4(e14.6))") j, d_n, IHP, TLake_r%d_v(iunit,j), in_f*dtime, QE(j)*dtime, QENIN*dtime
  !end if
             end do
@@ -1568,7 +1568,7 @@ MODULE mosart_lake_r_mod
         ! first determine the effective depth of each layer in the ngeom frame
         n_ngeom = 2
         do ing=2, ngeom+1
-            if((TLake_r%d_lake(iunit) - TLake_r%d_zi(iunit, ing-1) > TINYVALUE) .and. (TLake_r%d_lake(iunit) - TLake_r%d_zi(iunit, ing) <= -TINYVALUE)) then
+            if((TLake_r%d_lake(iunit) - TLake_r%d_zi(iunit, ing-1) > myTINYVALUE) .and. (TLake_r%d_lake(iunit) - TLake_r%d_zi(iunit, ing) <= -myTINYVALUE)) then
                 n_ngeom = ing
                 exit
             end if
@@ -1581,7 +1581,7 @@ MODULE mosart_lake_r_mod
         
         ! now check the layer depth in the nlayer frame, to make each layer no less than dd_in
         do inl=2, TLake_r%d_ns(iunit)+1
-            if(TLake_r%d_z(iunit, inl) - dd_in < - TINYVALUE) then
+            if(TLake_r%d_z(iunit, inl) - dd_in < - myTINYVALUE) then
                 !call layer_merge_r()
             end if
         end do
@@ -1595,13 +1595,13 @@ MODULE mosart_lake_r_mod
                 ztop_nl2 = TLake_r%d_z(iunit, inl+1)
                 ztop_nl1 = TLake_r%d_z(iunit, inl)
                 zbot_nl = TLake_r%d_z(iunit, inl-1)
-                if((ztop_ng - ztop_nl1 < -TINYVALUE) .and. (zbot_ng - zbot_nl > TINYVALUE)) then ! the ngeom layer is complete within the middle of a nlayer layer
+                if((ztop_ng - ztop_nl1 < -myTINYVALUE) .and. (zbot_ng - zbot_nl > myTINYVALUE)) then ! the ngeom layer is complete within the middle of a nlayer layer
                     v_local(ing) = v_local(ing-1) + (TLake_r%v_zti(iunit, ing) - TLake_r%v_zti(iunit, ing-1))
     !                rtmCTL%T_lake(iunit,ing) = TLake_r%temp_lake(iunit, inl)
                     
                     exit
                 end if
-                if((ztop_ng - ztop_nl2 < -TINYVALUE) .and. (ztop_ng - ztop_nl1 > TINYVALUE) .and. (zbot_ng - zbot_nl > TINYVALUE)) then ! the ngeom layer is in the interface of two nlayer layers
+                if((ztop_ng - ztop_nl2 < -myTINYVALUE) .and. (ztop_ng - ztop_nl1 > myTINYVALUE) .and. (zbot_ng - zbot_nl > myTINYVALUE)) then ! the ngeom layer is in the interface of two nlayer layers
                     delta_z = (ztop_ng-ztop_nl1)/(ztop_nl2-ztop_nl1)
                     delta_v2 = delta_z * TLake_r%v_zt(iunit,inl+1)
                     delta_e2 = delta_v2 * TLake_r%temp_lake(iunit, inl+1)
@@ -1613,7 +1613,7 @@ MODULE mosart_lake_r_mod
                     exit
                 end if
                 
-                if((ztop_ng - ztop_nl1 > TINYVALUE) .and. (zbot_ng - zbot_nl < -TINYVALUE)) then ! the ngeom layer is completely including a nlayer layer
+                if((ztop_ng - ztop_nl1 > myTINYVALUE) .and. (zbot_ng - zbot_nl < -myTINYVALUE)) then ! the ngeom layer is completely including a nlayer layer
                     
                     
                     
@@ -1650,7 +1650,7 @@ MODULE mosart_lake_r_mod
         end do
        
 !     Back substitution
-        if(abs(bp(1)) > TINYVALUE) then
+        if(abs(bp(1)) > myTINYVALUE) then
             TLake_r%temp_lake(iunit,1) = rp(1)/bp(1)
         else
             TLake_r%temp_lake(iunit,1) = 273.15_r8
