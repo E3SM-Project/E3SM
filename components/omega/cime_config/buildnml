@@ -42,15 +42,19 @@ def _get_file_name(case, stream):
     din_loc = Path(case.get_value("DIN_LOC_ROOT"))
     ocn_grid = case.get_value("OCN_GRID")
 
-    if ocn_grid != "oQU240":
+    if ocn_grid not in ["oQU240", "EC30to60E2r2"]:
         raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
 
     # TODO: this will return a different value based on the stream name
-
     # For now mesh file contains all information needed in single file
-    return str(din_loc /
-               "../polaris/ocean/realistic_global/" /
-               "omega/ocean.QU240km.151209.teos10.nc")
+    polaris_dir = din_loc / "../polaris/ocean/realistic_global/omega"
+
+    if ocn_grid == "oQU240":
+        return str(polaris_dir / "ocean.QU240km.151209.teos10.nc")
+    elif ocn_grid == "EC30to60E2r2":
+        return str(polaris_dir / "ocean.EC30to60E2r2.200908.teos10.nc")
+    else:
+        raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
 
 
 def _update_read_io_streams(config, case, stream):
@@ -136,7 +140,7 @@ def _build_time_integration_config(default_time_integration, case):
     """Start and stop time are set by the coupler.
        The time step is mesh dependent.
     """
-    # ocn_grid = case.get_value("OCN_GRID")
+    ocn_grid = case.get_value("OCN_GRID")
     calendar = case.get_value("CALENDAR")
 
     time_integration = default_time_integration.copy()
@@ -154,7 +158,10 @@ def _build_time_integration_config(default_time_integration, case):
     # RunDuration is not used in coupled runs
     time_integration["RunDuration"] = "none"
 
-    # TODO: set time step based on grid
+    if ocn_grid == "EC30to60E2r2":
+        time_integration["TimeStepper"] = "RungeKutta4"
+        time_integration["TimeStep"] = "0000_00:01:00"
+
     return time_integration
 
 
