@@ -32,7 +32,8 @@ FME_MPAS_INTERVAL_5D=${FME_MPAS_INTERVAL_5D:-00-00-05_00:00:00}
 # from MPAS_START_TIME (== CIME RUN_STARTDATE on initial runs); on warm
 # restart they read it back from the per-AM accumulator sidecar's
 # `time_reference_date` global attribute. No shell-side plumbing required.
-# Directory containing the gaussian-180x360 SCRIP map files. Defaults to
+# Directory containing the gaussian-grid SCRIP map files (180x360 for
+# ne30pg2, 720x1440 for ne120pg2). Defaults to
 # $DIN_LOC_ROOT/fme so the maps are managed by CIME's inputdata machinery
 # (auto-fetched from the E3SM inputdata server at
 # https://web.lcrc.anl.gov/public/e3sm/inputdata/fme/ on cache miss).
@@ -74,49 +75,60 @@ echo "  CPL: enable=${FME_CPL_ENABLE}, ocn 1D=${FME_CPL_INTERVAL}d, ocn 5D=${FME
 echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
 #
 # ---------------------------------------------------------------------------
-# Map file generation (run once per grid combination, outside the case):
+# Map file generation (run once per grid combination, outside the case).
+# Target Gaussian resolution tracks ATM_GRID (see GAUSS_GRID detection
+# below): ne30pg2 -> 180x360 (~1deg), ne120pg2 -> 720x1440 (~0.25deg).
 #
-# Maps for ne30pg2_r05_IcoswISC30E3r5 -> shifted Gaussian 1-degree (180x360)
-# are stored at: /pscratch/sd/m/mahf708/fme_maps/
+# Maps are stored at: /pscratch/sd/m/mahf708/fme_maps/ and then staged to
+# $DIN_LOC_ROOT/fme (and eventually the E3SM inputdata server) so
+# check_input_data can find/fetch them for real case runs.
 #
-# To regenerate them:
+# To regenerate them (example: ne30pg2_r05_IcoswISC30E3r5 -> 180x360;
+# swap in the ne120pg2/720x1440 values in brackets for that combination):
 #
 #   OUTDIR=/pscratch/sd/m/mahf708/fme_maps
 #   mkdir -p $OUTDIR && cd $OUTDIR
+#   NLAT=180; NLON=360   # [720; 1440 for ne120pg2]
+#   GRIDTAG=180by360     # [720by1440 for ne120pg2]
 #
-#   # 1. Generate Gaussian 180x360 grid
-#   ncremap -g ncremap_gaussian_grid_180_by_360.nc -G latlon=180,360#lat_typ=gss
+#   # 1. Generate Gaussian grid
+#   ncremap -g ncremap_gaussian_grid_${GRIDTAG}.nc -G latlon=${NLAT},${NLON}#lat_typ=gss
 #
 #   # 2. Shift by 0.5 deg in longitude to match offline FV3-side grid
-#   python3 - <<'PYEOF'
+#   python3 - <<PYEOF
 #   import netCDF4 as nc, shutil
-#   shutil.copy2("ncremap_gaussian_grid_180_by_360.nc",
-#                "ncremap_shifted_gaussian_grid_180_by_360.nc")
-#   with nc.Dataset("ncremap_shifted_gaussian_grid_180_by_360.nc", "r+") as ds:
+#   shutil.copy2("ncremap_gaussian_grid_${GRIDTAG}.nc",
+#                "ncremap_shifted_gaussian_grid_${GRIDTAG}.nc")
+#   with nc.Dataset("ncremap_shifted_gaussian_grid_${GRIDTAG}.nc", "r+") as ds:
 #       ds["grid_center_lon"][:] += 0.5
 #       ds["grid_corner_lon"][:] += 0.5
 #   PYEOF
 #
 #   # 3. Generate remapping weights for each source grid
-#   GAUSS=$OUTDIR/ncremap_shifted_gaussian_grid_180_by_360.nc
+#   GAUSS=$OUTDIR/ncremap_shifted_gaussian_grid_${GRIDTAG}.nc
 #
 #   # EAM (ne30pg2); ATM_GRID xmlquery returns ne30np4.pg2, normalized to ne30pg2
+#   # [ne120pg2 source scrip: .../share/meshes/homme/ne120pg2_scrip_*.nc]
 #   ncremap \
 #     -s /global/cfs/cdirs/e3sm/inputdata/share/meshes/homme/ne30pg2_scrip_20200209.nc \
 #     -g $GAUSS \
-#     -m $OUTDIR/map_ne30pg2_to_gaussian_180by360_shifted.nc
+#     -m $OUTDIR/map_ne30pg2_to_gaussian_${GRIDTAG}_shifted.nc
 #
-#   # ELM and MOSART (r05 = 0.5x0.5 regular lat-lon)
+#   # ELM and MOSART (r05 = 0.5x0.5 regular lat-lon). Not needed for
+#   # ne120pg2 land-less (DOCN/no r025 land) configurations.
 #   ncremap \
 #     -s /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/mappingdata/grids/SCRIPgrid_0.5x0.5_nomask_c110308.nc \
 #     -g $GAUSS \
-#     -m $OUTDIR/map_r05_to_gaussian_180by360_shifted.nc
+#     -m $OUTDIR/map_r05_to_gaussian_${GRIDTAG}_shifted.nc
 #
-#   # MPAS-O and MPAS-SI (IcoswISC30E3r5 unstructured mesh)
+#   # MPAS-O and MPAS-SI (IcoswISC30E3r5 unstructured mesh; for
+#   # ne120pg2_r025_RRSwISC6to18E3r5 use the RRSwISC6to18E3r5 mesh instead:
+#   # /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/RRSwISC6to18E3r5/
+#   #   ocean.RRSwISC6to18E3r5.mask.scrip.20240327.nc)
 #   ncremap \
 #     -s /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/IcoswISC30E3r5/ocean.IcoswISC30E3r5.mask.scrip.20231120.nc \
 #     -g $GAUSS \
-#     -m $OUTDIR/map_IcoswISC30E3r5_to_gaussian_180by360_shifted.nc
+#     -m $OUTDIR/map_IcoswISC30E3r5_to_gaussian_${GRIDTAG}_shifted.nc
 #
 # ---------------------------------------------------------------------------
 
@@ -132,9 +144,19 @@ OCN_GRID=$(./xmlquery --value OCN_GRID)
 # Rule: strip npN. (e.g. np4.) from the middle of the name.
 ATM_GRID_NORM=$(echo "$ATM_GRID" | sed 's/np[0-9]*\.//')
 
-# use trintbilin maps
-EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_180by360_shifted_trintbilin.nc"
-OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_180by360_shifted_trintbilin.nc"
+# use trintbilin maps. Target Gaussian grid resolution scales with the atm
+# grid so the remap doesn't discard resolution (180x360 for ne30pg2 ~1deg,
+# 720x1440 for ne120pg2 ~0.25deg).
+if [ "${ATM_GRID_NORM}" = "ne30pg2" ]; then
+  GAUSS_GRID="180by360"
+elif [ "${ATM_GRID_NORM}" = "ne120pg2" ]; then
+  GAUSS_GRID="720by1440"
+else
+  echo "Error: Unsupported ATM_GRID_NORM: ${ATM_GRID_NORM}"
+  exit 1
+fi
+EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
+OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
 
 echo "FME map detection:"
 echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
@@ -241,7 +263,8 @@ fincl1 = 'SOLIN:A', 'PHIS',
 EOF
 
 cat >> user_nl_eam << EOF
-! Horizontal remapping to shifted Gaussian 180x360.
+! Horizontal remapping to shifted Gaussian grid (resolution matches
+! ATM_GRID -- see GAUSS_GRID detection above).
 ! Staging is the responsibility of CIME's check_input_data via
 ! Buildconf/fme.input_data_list (registered earlier in this script).
 horiz_remap_file(1) = '${EAM_MAP}'
