@@ -48,6 +48,9 @@ protected:
   // NOTE: this method will handle weighted and cutoff cases as well
   void apply_tendency (Field &state, const Field &nudge, const Real dt) const;
 
+  // Replace fill values at top/bottom levels with nearest valid values
+  void correct_fill_values (const Field& f) const;
+
 protected:
 
   Field get_field_out_wrap(const std::string& field_name);

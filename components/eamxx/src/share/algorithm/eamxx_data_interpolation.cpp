@@ -7,7 +7,6 @@
 #include "share/grid/point_grid.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/field/field_reader.hpp"
-#include "share/util/eamxx_universal_constants.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/physics/physics_constants.hpp"
 
@@ -165,87 +164,6 @@ void DataInterpolation::shift_data_interval ()
 }
 
 void DataInterpolation::
-correct_masked_values (const Field& f) const
-{
-  using namespace ShortFieldTagsNames;
-  const auto& fl = f.get_header().get_identifier().get_layout();
-
-  const bool has_vert_dim = fl.has_tag(LEV) or fl.has_tag(ILEV) or fl.has_tag(LEVP);
-  if (not fl.has_tag(COL) or not has_vert_dim) {
-    return;
-  }
-  EKAT_REQUIRE_MSG(fl.rank()==2 or fl.rank()==3,
-      "[DataInterpolation] Error! Fill-value correction only supports scalar or vector column fields.\n"
-      " - field name  : " + f.name() + "\n"
-      " - field layout: " + fl.to_string() + "\n");
-  const auto vtag = fl.tag(fl.rank()-1);
-  EKAT_REQUIRE_MSG(vtag==LEV or vtag==ILEV or vtag==LEVP,
-      "[DataInterpolation] Error! Fill-value correction expects the vertical dimension to be last.\n"
-      " - field name  : " + f.name() + "\n"
-      " - field layout: " + fl.to_string() + "\n");
-
-  using KT = KokkosTypes<DefaultDevice>;
-  using RangePolicy = typename KT::RangePolicy;
-
-  constexpr Real fill_value = constants::fill_value<Real>;
-  const auto thresh = std::abs(fill_value)*0.0001;
-
-  const int ncols = fl.dim(COL);
-  const int nlevs = fl.dim(fl.rank()-1);
-
-  if (fl.rank()==2) {
-    const auto v = f.get_view<Real**>();
-    auto lambda = KOKKOS_LAMBDA(const int icol) {
-      int first_good = nlevs;
-      int last_good = -1;
-      for (int k=0; k<nlevs; ++k) {
-        if (Kokkos::abs(v(icol,k)-fill_value)>thresh) {
-          first_good = ekat::impl::min(first_good,k);
-          last_good  = ekat::impl::max(last_good,k);
-        }
-      }
-      EKAT_KERNEL_REQUIRE_MSG (first_good<nlevs and last_good>=0,
-          "[DataInterpolation] Error! Could not locate a non-masked entry in a column.\n");
-
-      for (int k=0; k<first_good; ++k) {
-        v(icol,k) = v(icol,first_good);
-      }
-      for (int k=last_good+1; k<nlevs; ++k) {
-        v(icol,k) = v(icol,last_good);
-      }
-    };
-    Kokkos::parallel_for(RangePolicy(0,ncols),lambda);
-  } else {
-    const auto v = f.get_view<Real***>();
-    const int ncomps = fl.get_vector_dim();
-
-    auto lambda = KOKKOS_LAMBDA(const int idx) {
-      const int icol = idx / ncomps;
-      const int icmp = idx % ncomps;
-
-      int first_good = nlevs;
-      int last_good = -1;
-      for (int k=0; k<nlevs; ++k) {
-        if (Kokkos::abs(v(icol,icmp,k)-fill_value)>thresh) {
-          first_good = ekat::impl::min(first_good,k);
-          last_good  = ekat::impl::max(last_good,k);
-        }
-      }
-      EKAT_KERNEL_REQUIRE_MSG (first_good<nlevs and last_good>=0,
-          "[DataInterpolation] Error! Could not locate a non-masked entry in a column.\n");
-
-      for (int k=0; k<first_good; ++k) {
-        v(icol,icmp,k) = v(icol,icmp,first_good);
-      }
-      for (int k=last_good+1; k<nlevs; ++k) {
-        v(icol,icmp,k) = v(icol,icmp,last_good);
-      }
-    };
-    Kokkos::parallel_for(RangePolicy(0,ncols*ncomps),lambda);
-  }
-}
-
-void DataInterpolation::
 update_end_fields ()
 {
   // First, set the correct fields in the reader
@@ -284,11 +202,6 @@ update_end_fields ()
   m_logger->info(" - filename: " + slice_end.filename);
   m_logger->info(" - file time idx: " + std::to_string(slice_end.time_idx));
   m_reader->read(slice_end.time_idx);
-  if (m_correct_fill_values) {
-    for (int i=0; i<m_nfields; ++i) {
-      correct_masked_values(m_horiz_remapper_end->get_src_field(i));
-    }
-  }
   m_horiz_remapper_end->remap_fwd();
 }
 
@@ -461,6 +374,12 @@ find_interval (const util::TimeStamp& t) const
 {
   EKAT_REQUIRE_MSG (size()>1,
       "[TimeDatabase::find_interval] Error! The database has not been initialized yet.\n");
+
+  // For Linear timeline, if t is before the first data slice, use the first interval.
+  // This handles initialization when the model start time slightly precedes the data.
+  if (timeline == util::TimeLine::Linear and t < slices.front().time) {
+    return 0;
+  }
 
   auto contains = [&](int beg, int end, const util::TimeStamp& t) {
     const auto& t_beg = slices[beg].time;

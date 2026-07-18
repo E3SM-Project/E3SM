@@ -2,6 +2,7 @@
 
 #include "share/field/field_reader.hpp"
 #include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_math_utils.hpp>
@@ -166,7 +167,6 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   m_data_interpolation = std::make_shared<DataInterpolation>(m_grid,nudge_fields);
   m_data_interpolation->set_name("Nudging");
   m_data_interpolation->set_logger(m_atm_logger);
-  m_data_interpolation->set_fill_value_correction(true);
   m_data_interpolation->setup_time_database(m_datafiles,util::TimeLine::Linear,DataInterpolation::Linear);
   m_data_interpolation->create_horiz_remappers(m_refine_remap ? m_refine_remap_file : "");
 
@@ -201,6 +201,8 @@ void Nudging::run_impl (const double dt)
 
   for (const auto& name : m_fields_nudge) {
     auto nudge_field = get_helper_field(name);
+    correct_fill_values(nudge_field);
+
     auto state_field = get_field_out_wrap(name);
 
     if (m_timescale <= 0) {
@@ -214,6 +216,62 @@ void Nudging::run_impl (const double dt)
 // =========================================================================================
 void Nudging::finalize_impl()
 {}
+
+// =========================================================================================
+void Nudging::correct_fill_values (const Field& f) const
+{
+  using namespace ShortFieldTagsNames;
+  const auto& fl = f.get_header().get_identifier().get_layout();
+
+  const bool has_vert_dim = fl.has_tag(LEV) or fl.has_tag(ILEV);
+  if (not fl.has_tag(COL) or not has_vert_dim) {
+    return;
+  }
+
+  using KT = KokkosTypes<DefaultDevice>;
+  using RangePolicy = typename KT::RangePolicy;
+
+  constexpr Real fill_value = constants::fill_value<Real>;
+  const auto thresh = std::abs(fill_value)*0.0001;
+
+  const int ncols = fl.dim(COL);
+  const int nlevs = fl.dim(fl.rank()-1);
+
+  if (fl.rank()==2) {
+    const auto v = f.get_view<Real**>();
+    Kokkos::parallel_for(RangePolicy(0,ncols), KOKKOS_LAMBDA(const int icol) {
+      int first_good = nlevs;
+      int last_good  = -1;
+      for (int k=0; k<nlevs; ++k) {
+        if (Kokkos::abs(v(icol,k)-fill_value)>thresh) {
+          first_good = ekat::impl::min(first_good,k);
+          last_good  = ekat::impl::max(last_good,k);
+        }
+      }
+      if (first_good==nlevs or last_good<0) return; // all fill — skip
+      for (int k=0; k<first_good; ++k)       v(icol,k) = v(icol,first_good);
+      for (int k=last_good+1; k<nlevs; ++k)  v(icol,k) = v(icol,last_good);
+    });
+  } else if (fl.rank()==3) {
+    const auto v = f.get_view<Real***>();
+    const int ncomps = fl.get_vector_dim();
+    Kokkos::parallel_for(RangePolicy(0,ncols*ncomps), KOKKOS_LAMBDA(const int idx) {
+      const int icol = idx / ncomps;
+      const int icmp = idx % ncomps;
+      int first_good = nlevs;
+      int last_good  = -1;
+      for (int k=0; k<nlevs; ++k) {
+        if (Kokkos::abs(v(icol,icmp,k)-fill_value)>thresh) {
+          first_good = ekat::impl::min(first_good,k);
+          last_good  = ekat::impl::max(last_good,k);
+        }
+      }
+      if (first_good==nlevs or last_good<0) return; // all fill — skip
+      for (int k=0; k<first_good; ++k)       v(icol,icmp,k) = v(icol,icmp,first_good);
+      for (int k=last_good+1; k<nlevs; ++k)  v(icol,icmp,k) = v(icol,icmp,last_good);
+    });
+  }
+}
 // =========================================================================================
 Field Nudging::create_helper_field (const std::string& name,
                                              const FieldLayout& layout,
