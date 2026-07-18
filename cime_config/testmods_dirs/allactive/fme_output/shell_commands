@@ -21,6 +21,17 @@ FME_EAM_STORAGE=${FME_EAM_STORAGE:-one_month}
 # mfilt is overridden by calendar rotation when FME_EAM_STORAGE != num_snapshots,
 # so it just acts as an upper safety bound. 1500 > any month-record-count (124 max).
 FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
+# EAM history-tape index for the FME field list. Standalone SamudrACE runs use
+# tape 1 (with empty_htapes, the testmod owning the whole EAM history config).
+# To layer the FME tape ON TOP of a run script that already defines its own EAM
+# tapes (e.g. a respinup/production namelist with tapes 1..6), export
+# FME_EAM_TAPE to the next free index (e.g. 7). In that additive mode the BASE
+# run-script namelist owns empty_htapes and the per-tape arrays (nhtfrq / mfilt
+# / avgflag_pertape / hist_file_storage_type), which must be sized to include a
+# slot for the FME tape; the testmod contributes only the FME field list, its
+# horiz remap, and the non-per-tape derived/vcoarsen/aerocom globals. The hard
+# max is ptapes=17 (cam_history_support.F90).
+FME_EAM_TAPE=${FME_EAM_TAPE:-1}
 # MPAS compute/output interval (MPAS time interval string)
 FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
 # Optional 5-day-mean companion stream interval. Set to 'none' (or empty)
@@ -199,12 +210,29 @@ cat >> user_nl_eam << EOF
 ! (see: github.com/ai2cm/ace/blob/exp/e3sm/scripts/data_process/configs/
 !   e3smv3-coupled-atm-1deg.yaml)
 
+EOF
+
+# Per-tape rotation control (empty_htapes + the per-tape nhtfrq / mfilt /
+# avgflag / storage arrays). In STANDALONE mode (FME_EAM_TAPE=1, the SamudrACE
+# default) the testmod owns the whole EAM history config and writes the FME
+# tape as tape 1. In ADDITIVE mode (FME_EAM_TAPE>1) the FME field list is
+# layered on top of a base run-script namelist that already defines its own
+# tapes 1..N; the base then owns empty_htapes and the per-tape arrays (which
+# MUST include a slot for the FME tape, e.g. nhtfrq(${FME_EAM_TAPE})=...), and
+# the testmod contributes only the FME field tape, its horiz remap, and the
+# (non-per-tape) derived / vcoarsen / aerocom globals below.
+if [ "${FME_EAM_TAPE}" = "1" ]; then
+cat >> user_nl_eam << EOF
 empty_htapes = .true.
 avgflag_pertape = '${FME_EAM_AVGFLAG}'
 nhtfrq = -${FME_EAM_OUTPUT_HOURS}
 mfilt  = ${FME_EAM_MFILT}
 ! Calendar-aligned file rotation (EAMxx-style; one_month = files named %y-%m.nc).
 hist_file_storage_type = '${FME_EAM_STORAGE}'
+EOF
+fi
+
+cat >> user_nl_eam << EOF
 
 ! Enable AEROCOM aerosol-cloud-interaction diagnostics. Required for
 ! aerindex/angstrm/cdnc/lwp/ccn.3bl in fincl1 below. See AGENTS.md
@@ -233,13 +261,13 @@ vcoarsen_avg_flds = 'T','U','V','STW','Q'
 vcoarsen_select_heights = 2.0, 10.0
 vcoarsen_select_height_flds = 'T','U','V','STW','Q'
 
-! Tape 1: ${FME_EAM_OUTPUT_HOURS}-hourly output.
+! Tape ${FME_EAM_TAPE}: ${FME_EAM_OUTPUT_HOURS}-hourly output.
 ! State variables are instantaneous; fluxes/tendencies use :A (time-averaged).
 ! 10 m wind speed and direction are derived offline from Uat10m and Vat10m.
 ! Q is vcoarsened to 8 layers (Q_0..Q_7) like the other state fields, plus
 ! Qat2m from the height-interp path; QREFHT is the standard CAM 2 m
 ! specific humidity diagnostic (kept for cross-comparison with Qat2m).
-fincl1 = 'SOLIN:A', 'PHIS',
+fincl${FME_EAM_TAPE} = 'SOLIN:A', 'PHIS',
           'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
           'PS', 'TS',
           'T_0','T_1','T_2','T_3','T_4','T_5','T_6','T_7',
@@ -267,7 +295,7 @@ cat >> user_nl_eam << EOF
 ! ATM_GRID -- see GAUSS_GRID detection above).
 ! Staging is the responsibility of CIME's check_input_data via
 ! Buildconf/fme.input_data_list (registered earlier in this script).
-horiz_remap_file(1) = '${EAM_MAP}'
+horiz_remap_file(${FME_EAM_TAPE}) = '${EAM_MAP}'
 EOF
 
 # ---------------------------------------------------------------------------
