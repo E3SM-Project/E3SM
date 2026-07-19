@@ -1,4 +1,4 @@
-module coupler_types_mod
+module coupler_types
   use iso_c_binding
   implicit none
 
@@ -12,6 +12,7 @@ module coupler_types_mod
      integer(c_int) :: case_start_tod
      type(c_ptr)    :: input_file  ! C char*
      type(c_ptr)    :: log_file    ! C char*
+     type(c_ptr)    :: calendar    ! C char*
   end type emulator_create_cfg
 
   type, bind(c) :: emulator_grid_desc
@@ -41,7 +42,7 @@ contains
    type(emulator_create_cfg) &
    function create_config(f_comm, comp_id, run_type,&
             start_ymd, start_tod, case_start_ymd, case_start_tod,&
-            input_file, log_file) result(cfg)
+            input_file, log_file, calendar) result(cfg)
       integer(c_int), intent(in) :: f_comm
       integer(c_int), intent(in) :: comp_id
       integer(c_int), intent(in) :: run_type
@@ -51,6 +52,7 @@ contains
       integer(c_int), intent(in), optional :: case_start_tod
       character(kind=c_char), intent(in), target   :: input_file(*)
       character(kind=c_char), intent(in), target   :: log_file(*)
+      character(kind=c_char), intent(in), target   :: calendar(*)
 
       cfg%f_comm=f_comm
       cfg%comp_id=comp_id
@@ -69,6 +71,7 @@ contains
       end if
       cfg%input_file=c_loc(input_file(1))
       cfg%log_file=c_loc(log_file(1))
+      cfg%calendar=c_loc(calendar(1))
 
    end function create_config
 
@@ -112,4 +115,4 @@ contains
         cpl%field_size = field_size
      end function create_coupler_desc
 
-end module coupler_types_mod
+end module coupler_types

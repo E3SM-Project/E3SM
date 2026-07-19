@@ -36,6 +36,7 @@ target_include_directories(emulator_common PUBLIC
 target_include_directories(emulator_common PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/modules
+  ${CMAKE_CURRENT_BINARY_DIR}/coupler_api/modules
 )
 
 target_link_libraries(emulator_common PUBLIC

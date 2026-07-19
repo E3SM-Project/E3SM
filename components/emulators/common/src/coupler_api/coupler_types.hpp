@@ -11,8 +11,12 @@ extern "C" {
 *  - run_type: cold start, restart, etc...
 *  - start_ymd: simulation start date
 *  - start_tod: time of day in seconds
+*  - start_tod: simulation start time of day in seconds
+*  - case_start_ymd: case start date
+*  - case_start_tod: case start time of day in seconds
 *  - input_file: config file (null terminated)
 *  - log_file: emulator log file (null terminated)
+*  - calendar: calendar identifier string
 */
 struct EmulatorCreateConfig {
   int  f_comm;
@@ -24,6 +28,7 @@ struct EmulatorCreateConfig {
   int  case_start_tod;
   const char* input_file;
   const char* log_file;
+  const char* calendar;
 };
 
 /**

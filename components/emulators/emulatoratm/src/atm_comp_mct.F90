@@ -25,7 +25,7 @@ module atm_comp_mct
                                shr_file_setLogUnit
    use shr_sys_mod,      only: shr_sys_flush
    use iso_c_binding
-   use coupler_types,  only : emulator_grid_desc, emulator_create_cfg, &
+   use coupler_types,    only: emulator_grid_desc, emulator_create_cfg, &
                                coupling_desc, &
                                create_config, create_grid_desc
    use emulator_f2c_api
@@ -65,9 +65,11 @@ CONTAINS
       character(CL) :: run_type
       character(kind=c_char, len=256), target :: input_file_c
       character(kind=c_char, len=256), target :: log_file_c
+      character(kind=c_char, len=256), target :: calendar_c
       character(kind=c_char, len=256), target :: import_fields_c
       character(kind=c_char, len=256), target :: export_fields_c
       character(len=256) :: log_file_f
+      character(len=256) :: calendar_f
       integer(c_int) :: run_type_c
       integer :: shrlogunit
       type(emulator_create_cfg)    :: cfg
@@ -119,8 +121,9 @@ CONTAINS
          run_type_c = 0
       endif
 
-      call seq_timemgr_EClockGetData(EClock, &
-         curr_ymd=cur_ymd, curr_tod=cur_tod)
+      call seq_timemgr_EClockGetData(EClock, calendar=calendar_f, &
+         curr_ymd=cur_ymd, curr_tod=cur_tod, &
+         start_ymd=case_start_ymd, start_tod=case_start_tod)
 
       input_file_c = "atm_in"//trim(inst_suffix)//C_NULL_CHAR
 
@@ -130,9 +133,12 @@ CONTAINS
          log_file_c = trim(log_file_f)//C_NULL_CHAR
       endif
 
+      calendar_c = trim(calendar_f)//C_NULL_CHAR
+
       cfg = create_config(f_comm=mpicom_atm, comp_id=ATM_ID, &
             run_type=run_type_c, start_ymd=cur_ymd, start_tod=cur_tod, &
-            input_file=input_file_c, log_file=log_file_c)
+            input_file=input_file_c, log_file=log_file_c, &
+            calendar=calendar_c)
 
       emulators = emulator_create(kind='atm'//C_NULL_CHAR, cfg=cfg)
 

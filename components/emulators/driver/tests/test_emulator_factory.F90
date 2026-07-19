@@ -30,6 +30,7 @@ program test_emulator_factory
   ! expression temporaries.
   character(kind=c_char, len=5),  target :: input_file_c
   character(kind=c_char, len=9),  target :: log_file_c
+  character(kind=c_char, len=64), target :: calendar_c
 
   !----------------------------------------
   ! MPI init (if needed)
@@ -54,9 +55,11 @@ program test_emulator_factory
   !----------------------------------------
   input_file_c = 'test'//c_null_char
   log_file_c   = 'test_log'//c_null_char
+  calendar_c   = '365day'//c_null_char
   cfg = create_config(f_comm=fcomm,comp_id=1_c_int,run_type=0_c_int,&
             start_ymd=20000101_c_int, start_tod=0_c_int,&
-            input_file=input_file_c, log_file=log_file_c)
+            input_file=input_file_c, log_file=log_file_c,&
+            calendar=calendar_c)
   
   block
    integer(c_int) :: grid_type = 0_c_int, i
