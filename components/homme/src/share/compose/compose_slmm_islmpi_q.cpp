@@ -48,11 +48,10 @@ void calc_q (const IslMpi<MT>& cm, const Int& src_lid, const Int& lev,
       }
     }
   } else {
-    // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
-    // pre-divide qdp/dp once per node, then use the same
-    // divide-then-sum calc_q_tgt overload calc_rmt_q_pass2 uses, instead
-    // of the divide-inside-sum overload, so this "own" path is bit-for-bit
-    // identical to the "remote" path regardless of domain decomposition.
+    // NOTE: we used to have a calc_q_tgt overload that took qdp and dp,
+    //       computing qdp/dp on the fly. This was not bit-for-bit identical
+    //       to the "remote" path. Hence, we removed that overload, and
+    //       pre-compute qdp/dp
     const Real* const dp = ed.dp + levos;
     const Real* const qdp0 = ed.qdp + levos;
     for (Int iqo = 0; iqo < qsize; iqo += blocksize) {
@@ -208,11 +207,10 @@ void calc_own_q (IslMpi<MT>& cm, const Int& nets, const Int& nete,
     Real rx[4], ry[4];
     calc_coefs<np,MT>(s2r, local_meshes(slid), alg, slid, tgt_lev,
                       &dep_points(tci, tgt_lev, tgt_k, 0), rx, ry);
-    // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
-    // pre-divide qdp/dp once per node, then use the same
-    // divide-then-sum calc_q_tgt overload calc_rmt_q_pass2 uses, instead
-    // of the divide-inside-sum overload, so this "own" path is bit-for-bit
-    // identical to the "remote" path regardless of domain decomposition.
+    // NOTE: we used to have a calc_q_tgt overload that took qdp and dp,
+    //       computing qdp/dp on the fly. This was not bit-for-bit identical
+    //       to the "remote" path. Hence, we removed that overload, and
+    //       pre-compute qdp/dp
     Real dp[16];
     for (Int k = 0; k < 16; ++k) dp[k] = dp_src(slid, k, tgt_lev);
     // Block for auto-vectorization.
