@@ -29,7 +29,7 @@ module shr_horiz_remap_mod
   !
   !-------------------------------------------------------------------------------------------
 
-  use shr_kind_mod, only: r8 => shr_kind_r8
+  use shr_kind_mod, only: r8 => shr_kind_r8, i8 => shr_kind_i8
 
   implicit none
   private
@@ -155,9 +155,17 @@ CONTAINS
     rd%n_a = n_a
     rd%n_b = n_b
 
-    ! Partition target grid across ranks (contiguous blocks)
-    row_start = myrank * n_b / nprocs + 1
-    row_end   = (myrank + 1) * n_b / nprocs
+    ! Partition target grid across ranks (contiguous blocks).
+    !
+    ! The products must be formed in 64-bit. myrank*n_b overflows a default
+    ! 4-byte integer once myrank > huge(1)/n_b, which wraps row_start negative
+    ! and hands PIO a decomposition full of negative offsets (assertion failure
+    ! inside pio_initdecomp). For the 720x1440 FME target grid (n_b=1036800)
+    ! that threshold is rank 2072 -- i.e. any HR run on more than ~32 nodes of
+    ! 64 ranks. The 180x360 grid (n_b=64800) does not trip until rank 33141,
+    ! which is why LR cases never saw it.
+    row_start = int(int(myrank,     i8) * int(n_b, i8) / int(nprocs, i8)) + 1
+    row_end   = int(int(myrank + 1, i8) * int(n_b, i8) / int(nprocs, i8))
     rd%n_b_local = max(0, row_end - row_start + 1)
     rd%row_start = row_start
 

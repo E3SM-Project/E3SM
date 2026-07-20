@@ -1606,6 +1606,68 @@ These are hard-won lessons. Read before modifying FME code.
     falls back); gotcha #46 proper map-identity sidecar discard; the seaice
     type-encapsulation refactor; the remaining LOW/robustness items.
 
+49. **32-bit overflow in the remap target-grid partition — PIO
+    `pio_initdecomp` assertion abort above ~2072 ranks on the 720x1440
+    grid (FIXED 2026-07-20).** Reported by Jon Wolfe: an HR case on 50
+    nodes died inside `build_iodesc_2d`'s
+    `pio_initdecomp(pio_sys, PIO_REAL, (/nlon, nlat/), idof, iodesc_2d)`,
+    while the identical case on a smaller PE layout ran fine.
+
+    **Root cause** was one line in the *shared* partitioner,
+    `share/util/shr_horiz_remap_mod.F90`:
+
+    ```fortran
+    row_start = myrank * n_b / nprocs + 1     ! all default 4-byte integers
+    row_end   = (myrank + 1) * n_b / nprocs
+    ```
+
+    `myrank * n_b` is evaluated in default integer. It overflows once
+    `myrank > huge(1)/n_b`, wrapping `row_start` negative, which makes
+    every `idof` entry negative and trips the PIO decomposition
+    assertion. The threshold is purely a function of the *target* grid:
+
+    | target grid | n_b       | first bad rank |
+    |-------------|-----------|----------------|
+    | 180x360 (LR)  | 64,800    | 33,141 |
+    | 720x1440 (HR) | 1,036,800 | 2,072  |
+
+    So LR never trips it, and HR trips it the moment you exceed ~32
+    nodes x 64 ranks. Jon at 50 nodes = 3200 ranks was over; the 32-node
+    layout that "worked" was 1024 ranks and under. This is why it looked
+    like a map-file or namelist difference — it was neither, only the
+    rank count.
+
+    **Confirmation**: Jon's debug print of `global_row` for the first
+    local row reproduces *exactly* — all 9 sampled ranks — under
+    `int32(myrank*1036800)/3200 + 1` with nprocs=3200. e.g. rank 2084:
+    `2084*1036800 = 2160691200` wraps to `-2134276096`, `/3200` truncates
+    toward zero to `-666961`, `+1` = `-666960`, which is the value he
+    printed. That arithmetic match is what pins the diagnosis.
+
+    **Fix**: form the products in `i8` and truncate back:
+
+    ```fortran
+    row_start = int(int(myrank,     i8) * int(n_b, i8) / int(nprocs, i8)) + 1
+    row_end   = int(int(myrank + 1, i8) * int(n_b, i8) / int(nprocs, i8))
+    ```
+
+    All operands are non-negative so 64-bit truncation reproduces the
+    intended block partition exactly. **Bit-for-bit for any rank count
+    below the overflow threshold** — every existing LR result, and every
+    HR run at <=2071 ranks, is unchanged. Only the previously-crashing
+    configurations behave differently (they now work).
+
+    **One fix covers all three components.** `shr_horiz_remap_mod.F90` is
+    the single partitioner behind the MPAS-O, MPAS-SI, and EAM remap
+    wrappers; there is no duplicated copy of this arithmetic. Verified by
+    grep — `myrank *` appears nowhere else in the four remap files.
+
+    **Lesson for this codebase**: `n_b`, `n_a`, and `n_s` are all grid
+    dimensions that grow with resolution while `myrank` grows with the
+    PE layout, so any `rank * global_dim` product is an overflow
+    candidate. LR testing cannot catch these; the safe habit is to form
+    such products in `i8` unconditionally.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
