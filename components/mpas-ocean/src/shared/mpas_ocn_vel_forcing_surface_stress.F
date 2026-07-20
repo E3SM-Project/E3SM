@@ -139,6 +139,12 @@ contains
       call mpas_timer_start('vel surface stress')
 
       if (config_use_subgrid_wetting_drying) then
+#ifdef MPAS_OPENACC
+      !$acc update host(sfcStress)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(cell1, cell2, sshMean, wetFraction)
+#endif
          do iEdge = 1, nEdgesOwned
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -149,8 +155,14 @@ contains
                                                  subgridSshEdgeTableRange(:,iEdge), &
                                                  wetFraction)
 
-             sfcStress(iEdge) = wetFraction*sfcStress(iEdge)
-         enddo          
+            sfcStress(iEdge) = wetFraction * sfcStress(iEdge)
+         enddo
+#ifdef MPAS_OPENACC
+      !$acc update device(sfcStress)
+#else
+      !$omp end do
+      !$omp end parallel
+#endif
       endif
 
 #ifdef MPAS_OPENACC
