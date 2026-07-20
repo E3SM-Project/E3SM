@@ -31,6 +31,8 @@ on:
         type: choice
         options:
           - gnu
+          - intel
+          - cuda
           - all
       bless:
         description: 'Generate baselines'
@@ -86,6 +88,106 @@ jobs:
             short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
       fail-fast: false
     name: gnu / ${{ matrix.test.short_name }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run test
+        id: run-tests
+        run: |
+          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
+      - name: Upload log files
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs.${{ matrix.test.short_name }}
+          path: |
+            /tmp/${{ matrix.test.full_name }}*/TestStatus
+            /tmp/${{ matrix.test.full_name }}*/TestStatus.log
+            /tmp/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
+          retention-days: 14
+      - name: Upload nc files
+        if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: outputs.${{ matrix.test.short_name }}
+          path: |
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
+          retention-days: 14
+  intel:
+    if: |
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'intel' ||
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
+    runs-on:  [self-hosted, intel, ghci-snl]
+    strategy:
+      matrix:
+        test:
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_intel.eamxx-prod
+            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+      fail-fast: false
+    name: intel / ${{ matrix.test.short_name }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: recursive
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+      - name: Run test
+        id: run-tests
+        run: |
+          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
+      - name: Upload log files
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs.${{ matrix.test.short_name }}
+          path: |
+            /tmp/${{ matrix.test.full_name }}*/TestStatus
+            /tmp/${{ matrix.test.full_name }}*/TestStatus.log
+            /tmp/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
+          retention-days: 14
+      - name: Upload nc files
+        if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: outputs.${{ matrix.test.short_name }}
+          path: |
+            /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
+          retention-days: 14
+  cuda:
+    if: |
+      ${{
+        github.event_name != 'workflow_dispatch' ||
+        (
+          github.event.inputs.job_to_run == 'cuda' ||
+          github.event.inputs.job_to_run == 'all'
+        )
+      }}
+    runs-on:  [self-hosted, cuda, ghci-snl]
+    strategy:
+      matrix:
+        test:
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_cuda.eamxx-prod
+            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+      fail-fast: false
+    name: cuda / ${{ matrix.test.short_name }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
