@@ -210,5 +210,3 @@ Omega:
       Stream:
         FileFreq: 1
         FileFreqUnits: years
-    CustomGroup:
-       Enable: false
