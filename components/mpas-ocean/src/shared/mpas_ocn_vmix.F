@@ -466,14 +466,39 @@ contains
       integer :: iEdge, k, cell1, cell2, N, Nsurf
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
+      real (kind=RKIND), dimension(:), allocatable :: wetFractionLookup
       real (kind=RKIND) :: A, m
-      real (kind=RKIND) :: wetFraction, sshMean, implicitCd
+      real (kind=RKIND) :: sshMean, implicitCd
 
       err = 0
 
       if(.not.velVmixOn) return
 
       allocate(bTemp(nVertLevels),C(nVertLevels),rTemp(nVertLevels))
+      if (config_use_subgrid_wetting_drying) then
+         allocate(wetFractionLookup(nEdgesOwned))
+#ifdef MPAS_OPENACC
+      !$acc update host(wetFractionLookup, subgridSSH)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(cell1, cell2, sshMean)
+#endif
+         do iEdge = 1, nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+            call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                 subgridWetFractionEdgeTable(:,iEdge), &
+                                                 subgridSshEdgeTableRange(:,iEdge), &
+                                                 wetFractionLookup(iEdge))
+         enddo
+#ifdef MPAS_OPENACC
+      !$acc update device(wetFractionLookup)
+#else
+      !$omp end do
+      !$omp end parallel
+#endif
+      endif
 
 #ifdef MPAS_OPENACC
       !$acc enter data create(bTemp, C, rTemp)
@@ -494,20 +519,13 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
+         implicitCd = implicitBottomDragCoef
+
          ! one active layer
          if (N .eq. Nsurf) then
-           if (config_use_subgrid_wetting_drying) then 
-              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
-    
-              call ocn_subgrid_wet_fraction_lookup(sshMean, &
-                                                   subgridWetFractionEdgeTable(:,iEdge), &
-                                                   subgridSshEdgeTableRange(:,iEdge), &
-                                                   wetFraction)
-              implicitCd = wetFraction * implicitBottomDragCoef
-           else
-              implicitCd = implicitBottomDragCoef
-           endif
-
+            if (config_use_subgrid_wetting_drying) then 
+               implicitCd = implicitCd * wetFractionLookup(iEdge)
+            endif
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitCd) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
@@ -545,7 +563,7 @@ contains
            ! Apply bottom drag boundary condition on the viscous term
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
-               / (1.0_RKIND - A + dt*implicitBottomDragCoef &
+               / (1.0_RKIND - A + dt*implicitCd &
                * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                - m*C(N-1))
            ! second pass: back substitution
@@ -565,9 +583,15 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(bTemp, C, rTemp)
+      if (config_use_subgrid_wetting_drying) then
+         !$acc exit data delete(wetFractionLookup)
+      endif
 #endif
 
       deallocate(bTemp,C,rTemp)
+      if (config_use_subgrid_wetting_drying) then
+         deallocate(wetFractionLookup)
+      endif
 
    !--------------------------------------------------------------------
 
@@ -815,6 +839,7 @@ contains
       real (kind=RKIND) :: implicitCd, bottomDepthDrag, columnThicknessDrag
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
+      real (kind=RKIND), dimension(:), allocatable :: implicitCdLookup
       real (kind=RKIND) :: A, m
 
       ! vegetation_drag
@@ -826,7 +851,7 @@ contains
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
       integer :: iCell
-      real (kind=RKIND) :: wetFraction, sshMean
+      real (kind=RKIND) :: sshMean
       real (kind=RKIND) :: Cd1, Cd2
 
       err = 0
@@ -841,12 +866,38 @@ contains
       call mpas_pool_get_array(forcingPool, 'vegetationManning', vegetationManning)
 
       allocate(bTemp(nVertLevels),C(nVertLevels),rTemp(nVertLevels))
+      if (config_use_subgrid_wetting_drying) then
+         allocate(implicitCdLookup(nEdgesOwned))
+#ifdef MPAS_OPENACC
+      !$acc update host(implicitCdLookup, layerThickEdgeMean, subgridSSH)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(cell1, cell2, sshMean)
+#endif
+         do iEdge = 1, nEdgesOwned
+            columnThicknessDrag = layerThickEdgeMean(1,iEdge)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+            call ocn_subgrid_drag_lookup(sshMean, &
+                                          subgridDragEdgeTable(:,iEdge), &
+                                          subgridSshDragEdgeTableRange(:,iEdge), &
+                                          0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)), &
+                                          columnThicknessDrag, &
+                                          implicitCdLookup(iEdge))
+         enddo
+#ifdef MPAS_OPENACC
+      !$acc update device(implicitCdLookup)
+#else
+      !$omp end do
+      !$omp end parallel
+#endif
+      endif
 
 #ifdef MPAS_OPENACC
       !$acc enter data create(bTemp, C, rTemp)
       !$acc enter data create(ssh, bottomDrag)
 #endif
-
       ! Compute bottomDrag (Manning roughness) induced by vegetation
       if (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
         do iCell = 1, nCellsOwned
@@ -880,7 +931,6 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc enter data create(vegetationManning)
-
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag, vegetationManning, ssh, bottomDepth) &
@@ -897,15 +947,13 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         !if (thickEdgeDragChoice == thickEdgeDragHarMean) then
-         !  columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
-         !                                    (ssh(cell2) + bottomDepth(cell2)) / &
-         !                        (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
-         !else
-         !  columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
-         !endif
-
-         columnThicknessDrag = layerThickEdgeMean(N,iEdge)
+         if (thickEdgeDragChoice == thickEdgeDragHarMean) then
+            columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+                                              (ssh(cell2) + bottomDepth(cell2)) / &
+                                  (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         else
+            columnThicknessDrag = layerThickEdgeMean(N,iEdge)
+         endif
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (config_use_vegetation_drag) then
@@ -918,26 +966,12 @@ contains
 
          ! one active layer
          if (N .eq. Nsurf) then
-           if (config_use_subgrid_wetting_drying) then 
-              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
-    
-              !call ocn_subgrid_wet_fraction_lookup(sshMean, &
-              !                                     subgridWetFractionEdgeTable(:,iEdge), &
-              !                                     subgridSshEdgeTableRange(:,iEdge), &
-              !                                     wetFraction)
-              !implicitCd = wetFraction*implicitCd
-
-              call ocn_subgrid_drag_lookup(sshMean, &
-                                           subgridDragEdgeTable(:,iEdge), &
-                                           subgridSshDragEdgeTableRange(:,iEdge), &
-                                           0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)), &
-                                           columnThicknessDrag, &
-                                           implicitCd)
-           endif
-           
-           normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
-                / (1.0_RKIND + dt*implicitCd &
-                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
+            if (config_use_subgrid_wetting_drying) then
+               implicitCd = implicitCdLookup(iEdge)
+            endif
+            normalVelocity(N,iEdge) = normalVelocity(N,iEdge) &
+               / ( 1.0_RKIND + dt * implicitCd &
+                  * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
            ! tridiagonal matrix algorithm
@@ -989,8 +1023,14 @@ contains
 #ifdef MPAS_OPENACC
       !$acc exit data delete(bTemp, C, rTemp)
       !$acc exit data delete(ssh, bottomDrag, vegetationManning)
+      if (config_use_subgrid_wetting_drying) then
+         !$acc exit data delete(implicitCdLookup)
+      endif
 #endif
       deallocate(bTemp,C,rTemp)
+      if (config_use_subgrid_wetting_drying) then
+         deallocate(implicitCdLookup)
+      endif
 
    !--------------------------------------------------------------------
 
@@ -1069,11 +1109,12 @@ contains
       integer :: iEdge, k, cell1, cell2, N, Nsurf
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp, CdTemp
+      real (kind=RKIND), dimension(:), allocatable :: wetFractionLookup
       real (kind=RKIND) :: A, m
 
       real (kind=RKIND) :: von_karman, von_karman_sq
       real (kind=RKIND) :: kineticEnergyTopOfEdge, zMidEdge
-      real (kind=RKIND) :: wetFraction, sshMean
+      real (kind=RKIND) :: sshMean
       integer :: iCell
 
       err = 0
@@ -1083,6 +1124,30 @@ contains
       if(.not.velVmixOn) return
 
       allocate(bTemp(nVertLevels),C(nVertLevels),rTemp(nVertLevels),CdTemp(nVertLevels))
+      if (config_use_subgrid_wetting_drying) then
+         allocate(wetFractionLookup(nEdgesOwned))
+#ifdef MPAS_OPENACC
+      !$acc update host(wetFractionLookup)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(cell1, cell2, sshMean)
+#endif
+         do iEdge = 1, nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+            call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                                 subgridWetFractionEdgeTable(:,iEdge), &
+                                                 subgridSshEdgeTableRange(:,iEdge), &
+                                                 wetFractionLookup(iEdge))
+         enddo
+#ifdef MPAS_OPENACC
+      !$acc update device(wetFractionLookup)
+#else
+      !$omp end do
+      !$omp end parallel
+#endif
+      endif
 
 #ifdef MPAS_OPENACC
       !$acc enter data create(bTemp, C, rTemp)
@@ -1113,23 +1178,14 @@ contains
                                  (zMidEdge/bottom_roughness)))**2))
          enddo
 
-
          ! one active layer
          if (N .eq. Nsurf) then
-           if (config_use_subgrid_wetting_drying) then
-              sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
-    
-              call ocn_subgrid_wet_fraction_lookup(sshMean, &
-                                                   subgridWetFractionEdgeTable(:,iEdge), &
-                                                   subgridSshEdgeTableRange(:,iEdge), &
-                                                   wetFraction)
-
-                CdTemp(N)= wetFraction*CdTemp(N)
-           endif
-
-           normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
-                / (1.0_RKIND + dt*CdTemp(N) &
-                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
+            if (config_use_subgrid_wetting_drying) then
+               CdTemp(N) = CdTemp(N) * wetFractionLookup(iEdge)
+            endif
+            normalVelocity(N,iEdge) = normalVelocity(N,iEdge) &
+               / ( 1.0_RKIND + dt * CdTemp(N) &
+                  * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
            do k = Nsurf+1, N
               kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2) + &
@@ -1191,8 +1247,14 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(bTemp, C, rTemp)
+      if (config_use_subgrid_wetting_drying) then
+         !$acc exit data delete(wetFractionLookup)
+      endif
 #endif
       deallocate(bTemp,C,rTemp,CdTemp)
+      if (config_use_subgrid_wetting_drying) then
+         deallocate(wetFractionLookup)
+      endif
 
    !--------------------------------------------------------------------
 
@@ -1761,6 +1823,10 @@ contains
 
       if (trim(config_thickness_drag_type) == 'harmonic-mean') then
          thickEdgeDragChoice = thickEdgeDragHarMean
+         if (config_use_subgrid_wetting_drying) then
+            call mpas_log_write('Harmonic mean drag cannot be used with ' //&
+               & 'subgrid wetting and drying', MPAS_LOG_CRIT)
+         endif
       else
          thickEdgeDragChoice = thickEdgeDragCenter
       endif
