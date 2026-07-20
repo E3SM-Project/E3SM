@@ -43,6 +43,7 @@
 #include "HorzMesh.h"
 #include "Logging.h"
 #include "MachEnv.h"
+#include "Pacer.h"
 #include "TimeMgr.h"
 #include "VertCoord.h"
 #include "operators/Ops.h"

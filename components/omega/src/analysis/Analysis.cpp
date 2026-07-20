@@ -58,6 +58,8 @@ std::vector<std::string> parseFreqStr(const std::string &FreqStr) {
 // initialized, as it retrieves pointers to their default instances.
 void Analysis::init() {
 
+   Pacer::start("Analysis:init", 0);
+
    // Register all built-in operators with the factory
    registerAllBaseAnalysisOperators();
 
@@ -72,6 +74,8 @@ void Analysis::init() {
    // Create the default Analysis instance
    Analysis::DefAnalysis =
        create("Default", DefEnv, Mesh, VCoord, OmegaClock, OmegaConfig);
+
+   Pacer::stop("Analysis:init", 0);
 
 } // end init
 
@@ -393,6 +397,8 @@ void Analysis::propagateAlarmsUpstream() {
 // dependencies, using cache validation to avoid redundant work.
 void Analysis::computeAll() {
 
+   Pacer::start("Analysis:computeAll", 0);
+
    TimeInstant CurrentTime = ModelClock->getCurrentTime();
 
    // Check each operator node for ringing alarms
@@ -412,6 +418,8 @@ void Analysis::computeAll() {
          computeRecursive(Node.get(), CurrentTime);
       }
    }
+
+   Pacer::stop("Analysis:computeAll", 0);
 
 } // end computeAll
 
@@ -435,7 +443,10 @@ void Analysis::computeRecursive(OperatorNode *Node,
    }
 
    // Now all inputs are fresh - compute this operator
+   std::string InstanceName = Node->Op->getName();
+   Pacer::start("Analysis:" + InstanceName + ":compute", 1); 
    Node->Op->compute(TimeStamp);
+   Pacer::stop("Analysis:" + InstanceName + ":compute", 1); 
 
 } // end computeRecursive
 
