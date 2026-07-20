@@ -444,9 +444,9 @@ void Analysis::computeRecursive(OperatorNode *Node,
 
    // Now all inputs are fresh - compute this operator
    std::string InstanceName = Node->Op->getName();
-   Pacer::start("Analysis:" + InstanceName + ":compute", 1); 
+   Pacer::start("Analysis:" + InstanceName + ":compute", 1);
    Node->Op->compute(TimeStamp);
-   Pacer::stop("Analysis:" + InstanceName + ":compute", 1); 
+   Pacer::stop("Analysis:" + InstanceName + ":compute", 1);
 
 } // end computeRecursive
 
