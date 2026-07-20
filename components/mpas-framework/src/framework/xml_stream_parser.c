@@ -1893,7 +1893,7 @@ void xml_stream_parser(char *fname, void *manager, int *mpi_comm, int *status)
 				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}
 			else if (strstr(iotype, "netcdf,cdf5") != NULL) {
-				i_iotype = 5;
+				i_iotype = 8;
 				snprintf(msgbuf, MSGSIZE, "        %-20s%s", "I/O type:", "Serial NetCDF (CDF-5, large variable support)");
 				mpas_log_write_c(msgbuf, "MPAS_LOG_OUT");
 			}

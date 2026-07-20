@@ -5876,19 +5876,19 @@
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.6.0</command>
+        <command name="load">PrgEnv-intel/8.7.0</command>
         <command name="rm">intel</command>
-        <command name="load">intel/2023.2.0</command>
+        <command name="load">intel-oneapi/2023.2.0</command>
         <command name="rm">cray-mpich</command>
-        <command name="load">cray-mpich/8.1.32</command>
+        <command name="load">cray-mpich/9.1.0</command>
         <command name="rm">cray-hdf5</command>
         <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
         <command name="rm">cray-parallel-netcdf</command>
         <command name="rm">netcdf</command>
-        <command name="load">cray-netcdf/4.9.0.17</command>
-        <command name="load">cray-hdf5/1.14.3.5</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.17</command>
+        <command name="load">cray-netcdf/4.9.2.3</command>
+        <command name="load">cray-hdf5/1.14.3.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.21</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -5986,18 +5986,20 @@
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.6.0</command>
+        <command name="load">PrgEnv-intel/8.7.0</command>
         <command name="rm">intel</command>
         <command name="rm">intel-classic</command>
-        <command name="load">intel-classic/2023.0.0</command>
+        <command name="load">intel-oneapi/2023.2.0</command>
         <command name="rm">cray-mpich</command>
-        <command name="load">cray-mpich/8.1.32</command>
+        <command name="load">cray-mpich/9.1.0</command>
         <command name="rm">cray-hdf5</command>
         <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">cray-netcdf-hdf5parallel</command>
         <command name="rm">cray-parallel-netcdf</command>
         <command name="rm">netcdf</command>
-        <command name="load">netcdf/4.9.3-intel-classic-2023.0.0-nompi</command>
+        <command name="load">cray-netcdf/4.9.2.3</command>
+        <command name="load">cray-hdf5/1.14.3.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.21</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
