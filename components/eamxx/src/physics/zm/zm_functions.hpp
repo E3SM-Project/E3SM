@@ -115,6 +115,7 @@ struct Functions {
     static inline constexpr Real momcd                     = 0.4;      // pressure gradient term constant for downdrafts
     static inline constexpr Real mse_min_diff              = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
     static inline constexpr Real tpert_limiter             = 2;        // upper limit on temperature perturbation in input state [K]
+    // static inline constexpr Real cta_max_idle_time         = 60;       // time limit to reset jt_prev for the cloud-top-ascent limiter [sec]
     // MCSP parameters
     static inline constexpr Real MCSP_storm_speed_pref     = 600e2;    // pressure level for winds in MCSP calculation Pa]
     static inline constexpr Real MCSP_conv_depth_min       = 700e2;    // pressure thickness of convective heating [Pa]
@@ -168,6 +169,13 @@ struct Functions {
       trig_ull            = params.get<bool>("trig_ull",            true);
       clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
+      // cloud-top ascent limiter
+      use_ascent_limiter  = params.get<bool>("use_ascent_limiter",  true);
+      use_idle_limit      = params.get<bool>("use_idle_limit",      false);
+      max_cld_top_ascent  = params.get<Real>("max_cld_top_ascent",  3.0);
+      max_idle_time       = params.get<Real>("max_idle_time",       600);
+      // max_cta_velocity    = params.get<Real>("max_cta_velocity",    3.0);
+      // max_cta_idle_time   = params.get<Real>("max_cta_idle_time",   60);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
       old_snow            = params.get<bool>("old_snow",            true);
@@ -228,35 +236,43 @@ struct Functions {
       os << std::boolalpha;
       os << "\n";
       os << "ZM deep convection parameter values:\n";
-      os << indent << "tau             : " << tau            << "\n";
-      os << indent << "alfa            : " << alfa           << "\n";
-      os << indent << "ke              : " << ke             << "\n";
-      os << indent << "dmpdz           : " << dmpdz          << "\n";
-      os << indent << "tpert_fix       : " << tpert_fix      << "\n";
-      os << indent << "tpert_fac       : " << tpert_fac      << "\n";
-      os << indent << "tiedke_add      : " << tiedke_add     << "\n";
-      os << indent << "c0_lnd          : " << c0_lnd         << "\n";
-      os << indent << "c0_ocn          : " << c0_ocn         << "\n";
-      os << indent << "num_cin         : " << num_cin        << "\n";
-      os << indent << "limcnv          : " << limcnv         << "\n";
-      os << indent << "mx_bot_lyr_adj  : " << mx_bot_lyr_adj << "\n";
-      os << indent << "trig_dcape      : " << trig_dcape     << "\n";
-      os << indent << "trig_ull        : " << trig_ull       << "\n";
-      os << indent << "clos_dyn_adj    : " << clos_dyn_adj   << "\n";
-      os << indent << "no_deep_pbl     : " << no_deep_pbl    << "\n";
+      os << indent << "tau                : " << tau                << "\n";
+      os << indent << "alfa               : " << alfa               << "\n";
+      os << indent << "ke                 : " << ke                 << "\n";
+      os << indent << "dmpdz              : " << dmpdz              << "\n";
+      os << indent << "tpert_fix          : " << tpert_fix          << "\n";
+      os << indent << "tpert_fac          : " << tpert_fac          << "\n";
+      os << indent << "tiedke_add         : " << tiedke_add         << "\n";
+      os << indent << "c0_lnd             : " << c0_lnd             << "\n";
+      os << indent << "c0_ocn             : " << c0_ocn             << "\n";
+      os << indent << "num_cin            : " << num_cin            << "\n";
+      os << indent << "limcnv             : " << limcnv             << "\n";
+      os << indent << "mx_bot_lyr_adj     : " << mx_bot_lyr_adj     << "\n";
+      os << indent << "trig_dcape         : " << trig_dcape         << "\n";
+      os << indent << "trig_ull           : " << trig_ull           << "\n";
+      os << indent << "clos_dyn_adj       : " << clos_dyn_adj       << "\n";
+      os << indent << "no_deep_pbl        : " << no_deep_pbl        << "\n";
+      // cloud-top ascent limiter
+      os << indent << "use_ascent_limiter : " << use_ascent_limiter << "\n";
+      os << indent << "use_idle_limit     : " << use_idle_limit     << "\n";
+      os << indent << "max_cld_top_ascent : " << max_cld_top_ascent << "\n";
+      os << indent << "max_idle_time      : " << max_idle_time      << "\n";
       // ZM micro parameters
-      os << indent << "zm_microp       : " << zm_microp      << "\n";
-      os << indent << "old_snow        : " << old_snow       << "\n";
+      os << indent << "zm_microp          : " << zm_microp      << "\n";
+      os << indent << "old_snow           : " << old_snow       << "\n";
       // MCSP parameters
-      os << indent << "mcsp_enabled    : " << mcsp_enabled   << "\n";
-      os << indent << "mcsp_t_coeff    : " << mcsp_t_coeff   << "\n";
-      os << indent << "mcsp_q_coeff    : " << mcsp_q_coeff   << "\n";
-      os << indent << "mcsp_u_coeff    : " << mcsp_u_coeff   << "\n";
-      os << indent << "mcsp_v_coeff    : " << mcsp_v_coeff   << "\n";
+      os << indent << "mcsp_enabled       : " << mcsp_enabled   << "\n";
+      os << indent << "mcsp_t_coeff       : " << mcsp_t_coeff   << "\n";
+      os << indent << "mcsp_q_coeff       : " << mcsp_q_coeff   << "\n";
+      os << indent << "mcsp_u_coeff       : " << mcsp_u_coeff   << "\n";
+      os << indent << "mcsp_v_coeff       : " << mcsp_v_coeff   << "\n";
       os << std::endl;
       os.flags(saved_flags);
     }
 
+    bool apply_detr_tend;
+    bool use_fortran_bridge;
+    Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
     Real tau;               // convective adjustment time scale
     Real alfa;              // max downdraft mass flux fraction
     Real ke;                // evaporation efficiency
@@ -267,15 +283,17 @@ struct Functions {
     Real c0_lnd;            // autoconversion coefficient over land
     Real c0_ocn;            // autoconversion coefficient over ocean
     int num_cin;            // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
-    Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
     int limcnv;             // upper pressure interface level to limit deep convection
     int mx_bot_lyr_adj;     // bot layer index adjustment for launch level search
     bool trig_dcape;        // true if to using DCAPE trigger - based on CAPE generation by the dycor
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
-    bool apply_detr_tend;
-    bool use_fortran_bridge;
+    // cloud-top ascent limiter
+    bool use_ascent_limiter;// flag to enable cloud-top ascent limiter
+    bool use_idle_limit;    // flag to enable cloud-top ascent limiter reset time limit
+    Real max_cld_top_ascent;// max cloud-top ascent velocity [m/s]
+    Real max_idle_time;     // 
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
     bool old_snow;          // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
@@ -332,7 +350,8 @@ struct Functions {
     // variables only needed for calling the C++ version of ZM
     view_2d<      Real>   t_prev;   // DCAPE T from previous time step [K]
     view_2d<      Real>   q_prev;   // DCAPE q from previous time step [kg/kg]
-
+    // variables for cloud-top ascent limiter
+    view_1d<      Real>   jt_prev;  // previous top level index of convection (use real type for convience)
     // *************************************************************************
     // TEMPORARY
     // *************************************************************************
@@ -809,6 +828,7 @@ struct Functions {
     const uview_1d<const Real>& landfrac, // land fraction                           []       [ncol]
     const uview_2d<const Real>& t_star, // for DCAPE - prev temperature            [K]      [ncol,pver]
     const uview_2d<const Real>& q_star, // for DCAPE - prev sp. humidity           [kg/kg]  [ncol,pver]
+    const uview_1d<const Real>& jt_prev, // for cloud-top ascent limiter [] [ncol]
     // Outputs
     const uview_1d<Int>& msemax_klev, // level index of max MSE                  [ncol]
     const uview_1d<Int>& jctop, // top-of-deep-convection index            [ncol]
@@ -934,6 +954,7 @@ struct Functions {
     const MemberType& team,
     const Workspace& workspace,
     const ZmRuntimeOpt& runtime_opt,
+    const Real& time_step,
     const Int& pver, // number of mid-point vertical levels
     const Int& pverp, // number of interface vertical levels
     const Int& msg, // number of levels to ignore at model top
@@ -949,6 +970,7 @@ struct Functions {
     const Real& tpert_g, // PBL temperature perturbation
     const Int& jb, // updraft base level
     const Int& lel, // updraft parcel launch level
+    const Real& jt_prev, // previous cloud-top index
     // Outputs
     Int& jt, // updraft plume top
     Int& jlcl, // updraft lifting cond level

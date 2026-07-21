@@ -18,6 +18,7 @@ void Functions<S,D>::zm_cloud_properties(
   const MemberType& team,
   const Workspace& workspace,
   const ZmRuntimeOpt& runtime_opt,
+  const Real& time_step,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
   const Int& msg, // number of levels to ignore at model top
@@ -33,6 +34,7 @@ void Functions<S,D>::zm_cloud_properties(
   const Real& tpert_g, // PBL temperature perturbation
   const Int& jb, // updraft base level
   const Int& lel, // updraft parcel launch level
+  const Real& jt_prev, // previous cloud-top index
   // Outputs
   Int& jt, // updraft plume top
   Int& jlcl, // updraft lifting cond level
@@ -77,8 +79,8 @@ void Functions<S,D>::zm_cloud_properties(
      &gamhat, &q_dnd_sat, &lambda, &fice, &tug, &tmp_frz, &pflxs});
 
   // Scalar locals (captured by reference in Kokkos lambdas)
-  Real c0mask = 0, totpcp = 0, totevp = 0, h_env_min = 1.e6, lambda_max = 0, tot_frz = 0;
-  Int  khighest = 0, klowest = 0;
+  Real c0mask = 0, totpcp = 0, totevp = 0, h_env_min = 1.e6, lambda_max = 0, tot_frz = 0, z_top_max = 0;
+  Int  khighest = 0, klowest = 0, jt_prev_int = 0;
   j0 = msg;
 
   // Land/ocean blend of autoconversion coefficient
@@ -169,6 +171,30 @@ void Functions<S,D>::zm_cloud_properties(
   });
   team.team_barrier();
 
+  // =========================================================================
+  // cloud-top ascent limiter - potentially alters jt
+  if (runtime_opt.use_ascent_limiter){
+    // cast jt_prev value ot local integer
+    jt_prev_int = static_cast<int>(Kokkos::round(jt_prev));
+    // when ZM is not active => jt_prev=-1, so set jt_prev to current cloud base index
+    if (jt_prev_int<0) { jt_prev_int = static_cast<Real>(jb); }
+    // check if new cloud top is higher than previous (or cloud base)
+    if ( jt < jt_prev_int ) {
+      // calculate max cloud top altitude based on assumed max vertical growth rate
+      z_top_max = z_mid(jt_prev_int) + runtime_opt.max_cld_top_ascent * time_step;
+      // check if new jt is above the allowable limit
+      if ( z_mid(jt) > z_top_max ) {
+        // find level between current and previous jt closest to z_top_max
+        for (Int k = jt; k <= jt_prev_int; ++k) {
+          if (z_mid(k) <= z_top_max) {
+            jt = k; break;
+          }
+        }
+      }
+    }
+  } // if use_ascent_limiter
+
+  // =========================================================================
   // Find level of minimum h_env_sat between jt and jb (detrainment onset level)
   using ValLocType = Kokkos::ValLocScalar<Real, Int>;
   ValLocType j0_result;

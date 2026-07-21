@@ -41,6 +41,7 @@ void Functions<S,D>::zm_conv_main(
   const uview_1d<const Real>& landfrac,
   const uview_2d<const Real>& t_star,
   const uview_2d<const Real>& q_star,
+  const uview_1d<const Real>& jt_prev,
   // Outputs
   const uview_1d<Int>& msemax_klev,
   const uview_1d<Int>& jctop,
@@ -356,7 +357,7 @@ void Functions<S,D>::zm_conv_main(
     const Int i = team.league_rank();
     if (!active(i)) return;
     auto ws = wsm.get_workspace(team);
-    zm_cloud_properties(team, ws, runtime_opt,
+    zm_cloud_properties(team, ws, runtime_opt, time_step,
                         pver, pverp, msg, runtime_opt.limcnv,
                         ekat::subview(p_mid, i), ekat::subview(z_mid, i),
                         ekat::subview(z_int, i),
@@ -364,6 +365,7 @@ void Functions<S,D>::zm_conv_main(
                         ekat::subview(s_int, i), ekat::subview(q_mid, i),
                         landfrac(i), tpert(i),
                         msemax_klev(i), lel(i),
+                        jt_prev(i),
                         jt(i), jlcl(i), j0(i), jd(i),
                         ekat::subview(mflx_up, i), ekat::subview(entr_up, i),
                         ekat::subview(detr_up, i), ekat::subview(mflx_dn, i),

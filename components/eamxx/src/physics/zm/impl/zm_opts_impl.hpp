@@ -34,6 +34,7 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.trig_ull            = true;
   s_zm_opts.clos_dyn_adj        = true;
   s_zm_opts.no_deep_pbl         = false;
+  s_zm_opts.max_cld_top_ascent  = 1000.0; // large values effectively disable this for testing
   // ZM micro parameters
   s_zm_opts.zm_microp           = false;
   s_zm_opts.old_snow            = true;

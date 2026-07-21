@@ -81,6 +81,10 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_t_prev",            scalar3d_mid, K,      grid_name);
   add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg,  grid_name);
 
+  // cloud-top index for cloud-top ascent limiter
+  add_field<Computed>("zm_jt_prev",           scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_idle_time",         scalar2d,     s,      grid_name);
+
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
@@ -164,29 +168,31 @@ void ZMDeepConvection::run_impl (const double dt)
   // get fields
 
   // variables not updated by ZM
-  zm_input.phis        = get_field_in("phis")          .get_view<const Real*>();
-  zm_input.landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
-  zm_input.pblh        = get_field_in("pbl_height")    .get_view<const Real*>();
-  zm_input.p_mid       = get_field_in("p_mid")         .get_view<const Real**>();
-  zm_input.p_int       = get_field_in("p_int")         .get_view<const Real**>();
-  zm_input.p_del       = get_field_in("pseudo_density").get_view<const Real**>();
-  zm_input.omega       = get_field_in("omega")         .get_view<const Real**>();
-  zm_input.cldfrac     = get_field_in("cldfrac_tot")   .get_view<const Real**>();
-  zm_input.thl_sec     = get_field_in("thl_sec")       .get_view<const Real**>();
+  zm_input.phis        = get_field_in("phis")           .get_view<const Real*>();
+  zm_input.landfrac    = get_field_in("landfrac")       .get_view<const Real*>();
+  zm_input.pblh        = get_field_in("pbl_height")     .get_view<const Real*>();
+  zm_input.p_mid       = get_field_in("p_mid")          .get_view<const Real**>();
+  zm_input.p_int       = get_field_in("p_int")          .get_view<const Real**>();
+  zm_input.p_del       = get_field_in("pseudo_density") .get_view<const Real**>();
+  zm_input.omega       = get_field_in("omega")          .get_view<const Real**>();
+  zm_input.cldfrac     = get_field_in("cldfrac_tot")    .get_view<const Real**>();
+  zm_input.thl_sec     = get_field_in("thl_sec")        .get_view<const Real**>();
 
   // variables updated by ZM
-  const auto& T_mid    = get_field_out("T_mid")      .get_view<Real**>();
-  const auto& qv       = get_field_out("qv")         .get_view<Real**>();
-  const auto& qc       = get_field_out("qc")         .get_view<Real**>();
-  const auto& qi       = get_field_out("qi")         .get_view<Real**>();
-  const auto& nc       = get_field_out("nc")         .get_view<Real**>();
-  const auto& ni       = get_field_out("ni")         .get_view<Real**>();
+  const auto& T_mid    = get_field_out("T_mid")         .get_view<Real**>();
+  const auto& qv       = get_field_out("qv")            .get_view<Real**>();
+  const auto& qc       = get_field_out("qc")            .get_view<Real**>();
+  const auto& qi       = get_field_out("qi")            .get_view<Real**>();
+  const auto& nc       = get_field_out("nc")            .get_view<Real**>();
+  const auto& ni       = get_field_out("ni")            .get_view<Real**>();
   const auto& winds_f  = get_field_out("horiz_winds"); // (ncol, nwind, nlev)
-  const auto  winds_v  = winds_f.get_view<Real***>();
-  const auto& uwind    = winds_f.get_component(0).get_view<Real**>();
-  const auto& vwind    = winds_f.get_component(1).get_view<Real**>();
-  const auto& t_prev   = get_field_out("zm_t_prev")  .get_view<Real**>();
-  const auto& q_prev   = get_field_out("zm_q_prev")  .get_view<Real**>();
+  const auto  winds_v  = winds_f                        .get_view<Real***>();
+  const auto& uwind    = winds_f.get_component(0)       .get_view<Real**>();
+  const auto& vwind    = winds_f.get_component(1)       .get_view<Real**>();
+  const auto& t_prev   = get_field_out("zm_t_prev")     .get_view<Real**>();
+  const auto& q_prev   = get_field_out("zm_q_prev")     .get_view<Real**>();
+  const auto& jt_prev  = get_field_out("zm_jt_prev")    .get_view<Real*>();
+  const auto& idle_time= get_field_out("zm_idle_time")  .get_view<Real*>();
 
   zm_input.T_mid = T_mid;
   zm_input.qv    = qv;
@@ -194,12 +200,16 @@ void ZMDeepConvection::run_impl (const double dt)
   zm_input.uwind = uwind;
   zm_input.vwind = vwind;
 
-  zm_input.t_prev = t_prev;
-  zm_input.q_prev = q_prev;
+  zm_input.t_prev   = t_prev;
+  zm_input.q_prev   = q_prev;
+  zm_input.jt_prev  = jt_prev;
+  // zm_input.idle_time = idle_time;
 
   if (is_first_step) {
     Kokkos::deep_copy(zm_input.t_prev, zm_input.T_mid);
     Kokkos::deep_copy(zm_input.q_prev, zm_input.qv);
+    Kokkos::deep_copy(zm_input.jt_prev,-1);
+    // Kokkos::deep_copy(zm_input.idle_time,0);
   }
 
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
@@ -332,7 +342,7 @@ void ZMDeepConvection::run_impl (const double dt)
                       zm_input.p_mid, zm_input.p_int, zm_input.p_del,
                       zm_input.phis, zm_input.z_mid, zm_input.z_int,
                       zm_input.pblh, zm_input.tpert, zm_input.landfrac,
-                      zm_input.t_prev, zm_input.q_prev,
+                      zm_input.t_prev, zm_input.q_prev, zm_input.jt_prev,
                       zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
                       zm_output.activity,
                       zm_output.prec, zm_output.tend_out_s, zm_output.tend_out_qv,
@@ -530,12 +540,29 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // update prognostic fields
 
-  // accumulate surface precipitation fluxes
-  Kokkos::parallel_for("zm_update_precip",
+  // accumulate surface precipitation fluxes and other 2D variables
+  Kokkos::parallel_for("zm_update_2D",
     KT::RangePolicy(0, m_ncol), KOKKOS_LAMBDA (const int i) {
     auto prec_liq = loc_zm_output_prec(i) - loc_zm_output_snow(i);
     precip_liq_surf_mass(i) += Kokkos::max(0.0,prec_liq) * PC::RHO_H2O.value * dt;
     precip_ice_surf_mass(i) += loc_zm_output_snow(i) * PC::RHO_H2O.value * dt;
+    // update jt_prev for cloud-top ascent limiter
+    if (zm_opts.use_ascent_limiter) {
+      if (loc_zm_output_activity(i)) {
+        idle_time(i) = 0;
+        jt_prev(i) = loc_zm_output_jt(i);
+      } else {
+        if (zm_opts.use_idle_limit) {
+          idle_time(i) = idle_time(i) + dt;
+          // if (idle_time(i)>ZMC::cta_max_idle_time) {
+          if (idle_time(i)>zm_opts.max_idle_time) {
+            jt_prev(i) = -1;
+          }
+        } else {
+          jt_prev(i) = -1;
+        }
+      }
+    }
   });
 
   // update 3D prognostic variables
@@ -543,7 +570,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_detr_qi = get_field_out("zm_detr_qi").get_view<Real**>();
   const auto& zm_detr_nc = get_field_out("zm_detr_nc").get_view<Real**>();
   const auto& zm_detr_ni = get_field_out("zm_detr_ni").get_view<Real**>();
-  Kokkos::parallel_for("zm_update_prognostic",
+  Kokkos::parallel_for("zm_update_3D",
     KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
     const int k = idx%nlev_mid;
