@@ -1592,7 +1592,7 @@
       <env name="MPICH_CXX">$SHELL{which hipcc}</env>
       <env name="GPUS_PER_NODE">--gpus-per-node=8</env>
       <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
-      <env name="GPU_BIND_ARGS">--gpu-bind=closest --distribution=*:block</env>
+      <env name="GPU_BIND_ARGS">--gpu-bind=closest $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 56 -le $mpn ]; then echo --distribution=*:block; fi;} </env>
     </environment_variables>
 
     <environment_variables BUILD_THREADED="TRUE">
