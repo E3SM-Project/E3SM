@@ -863,15 +863,11 @@ struct UnitWrap::UnitTest<D>::TestP3BackToCellAverage : public UnitWrap::UnitTes
 
 namespace {
 
-TEST_CASE("p3_back_to_cell_average", "[p3_back_to_cell_average]") {
+TEST_CASE("p3_back_to_cell_average_prop", "[p3_back_to_cell_average]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3BackToCellAverage;
 
   T t;
 
-  // Each section runs independently so failures isolate quickly.
-  // Tautological algebra checks (e.g., generic bounds from multiplying by
-  // factors in [0,1]) are intentionally omitted in favor of mapping-focused
-  // and known-answer coverage.
   SECTION("process_location") {
     const auto data = t.setup_parameter_sweep();
     t.run_process_location_checks(data);
@@ -898,10 +894,13 @@ TEST_CASE("p3_back_to_cell_average", "[p3_back_to_cell_average]") {
   SECTION("extreme_values") {
     t.run_extreme_value_checks();
   }
+}
 
-  SECTION("bfb") {
-    t.run_bfb();
-  }
+TEST_CASE("p3_back_to_cell_average_bfb", "[p3_back_to_cell_average]") {
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3BackToCellAverage;
+
+  T t;
+  t.run_bfb();
 }
 
 } // anonymous namespace

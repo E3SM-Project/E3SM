@@ -670,18 +670,20 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_cldliq_immersion_freezing", "[p3_functions]")
+TEST_CASE("p3_cldliq_immersion_freezing_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCldliqImmersionFreezing;
 
   T t;
-  SECTION("properties") {
-    t.run_phys();
-  }
+  t.run_phys();
+}
 
-  SECTION("bfb") {
-    t.run_bfb();
-  }
+TEST_CASE("p3_cldliq_immersion_freezing_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCldliqImmersionFreezing;
+
+  T t;
+  t.run_bfb();
 }
 
 } // namespace
