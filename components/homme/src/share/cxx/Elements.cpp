@@ -12,7 +12,7 @@
 
 namespace Homme {
 
-void Elements::init(const int num_elems, const bool consthv, const bool alloc_gradphis,
+void Elements::init(const int num_elems, const bool alloc_gradphis,
                     const Real scale_factor, const Real laplacian_rigid_factor,
                     const bool alloc_sphere_coords) {
   // Sanity check
@@ -20,7 +20,7 @@ void Elements::init(const int num_elems, const bool consthv, const bool alloc_gr
 
   m_num_elems = num_elems;
 
-  m_geometry.init(num_elems,consthv,alloc_gradphis,
+  m_geometry.init(num_elems,alloc_gradphis,
                   scale_factor,
                   laplacian_rigid_factor < 0 ? 1/scale_factor : laplacian_rigid_factor,
                   alloc_sphere_coords);

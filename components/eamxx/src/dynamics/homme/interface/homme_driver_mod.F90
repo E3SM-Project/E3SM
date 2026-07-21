@@ -183,7 +183,8 @@ contains
   subroutine prim_init_model_f90 () bind(c)
     use prim_driver_mod,   only: prim_init_ref_states_views, &
                                  prim_init_diags_views, prim_init_kokkos_functors, &
-                                 prim_init_state_views, prim_init_tensorvisc
+                                 prim_init_state_views, prim_init_tensorvisc, &
+                                 prim_init_tensorvisc2
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
     use global_norms_mod,  only: dss_hvtensor, print_cfl
@@ -214,6 +215,10 @@ contains
     ! constant, geometry views were already sent to C++ earlier, in
     ! prim_complete_init1_phase_f90 -> prim_init_grid_views).
     call prim_init_tensorvisc (elem)
+
+    ! Same as above, but for tensorVisc_2 (the sponge-layer tensor
+    ! coefficient), which dss_hvtensor also updates.
+    call prim_init_tensorvisc2 (elem)
 
     ! Print advective and viscious CFL estimates
     call print_cfl(elem,hybrid,1,nelemd)

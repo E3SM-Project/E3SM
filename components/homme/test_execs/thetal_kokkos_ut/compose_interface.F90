@@ -85,10 +85,12 @@ contains
          elem_rspheremp, elem_metdet, elem_state_phis
     real (real_kind), target, dimension(np,np,2)   :: elem_gradphis
     real (real_kind), target, dimension(np,np,2,2) :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
+    real (real_kind), target, dimension(np,np,2,2) :: elem_tensorvisc2
     real (real_kind), target, dimension(np,np,3,3) :: elem_vec_sph2cart
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr, elem_spheremp_ptr, &
          elem_rspheremp_ptr, elem_metdet_ptr, elem_metinv_ptr, elem_tensorvisc_ptr, &
          elem_vec_sph2cart_ptr, elem_state_phis_ptr, elem_gradphis_ptr
+    type (c_ptr) :: elem_tensorvisc2_ptr
 
     type (cartesian3D_t) :: sphere_cart
     real (kind=real_kind) :: sphere_cart_vec(3,np,np), sphere_latlon_vec(2,np,np)
@@ -106,6 +108,7 @@ contains
     elem_vec_sph2cart_ptr = c_loc(elem_vec_sph2cart)
     elem_state_phis_ptr   = c_loc(elem_state_phis)
     elem_gradphis_ptr     = c_loc(elem_gradphis)
+    elem_tensorvisc2_ptr  = c_loc(elem_tensorvisc2)
     do ie = 1,nelemd
       elem_D            = elem(ie)%D
       elem_Dinv         = elem(ie)%Dinv
@@ -117,6 +120,7 @@ contains
       elem_state_phis   = elem(ie)%state%phis
       elem_gradphis     = elem(ie)%derived%gradphis
       elem_tensorvisc   = elem(ie)%tensorVisc
+      elem_tensorvisc2  = elem(ie)%tensorVisc_2
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
       do j = 1,np
          do i = 1,np
@@ -131,7 +135,7 @@ contains
       call init_elements_2d_c(ie-1, elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr, &
            elem_spheremp_ptr, elem_rspheremp_ptr, elem_metdet_ptr, elem_metinv_ptr, &
            elem_tensorvisc_ptr, elem_vec_sph2cart_ptr, sphere_cart_vec, &
-           sphere_latlon_vec)
+           sphere_latlon_vec, elem_tensorvisc2_ptr)
       call init_geopotential_c(ie-1, elem_state_phis_ptr, elem_gradphis_ptr)
     enddo
   end subroutine init_geometry_f90
