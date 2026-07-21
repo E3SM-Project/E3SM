@@ -368,21 +368,35 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_upwind", "[p3_functions]")
+TEST_CASE("p3_upwind_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
 
   T t;
   t.run_phys();
+}
+
+TEST_CASE("p3_upwind_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
+
+  T t;
   t.run_bfb();
 }
 
-TEST_CASE("p3_gen_sed", "[p3_functions]")
+TEST_CASE("p3_gen_sed_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
 
   T t;
   t.run_phys();
+}
+
+TEST_CASE("p3_gen_sed_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
+
+  T t;
   t.run_bfb();
 }
 

@@ -133,13 +133,18 @@ void run_bfb()
 
 namespace {
 
-TEST_CASE("p3_cloud_rain_accretion", "[p3_functions]")
+TEST_CASE("p3_cloud_rain_accretion_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCloudRainAccretion;
 
-  T t;
-  t.run_phys();
-  t.run_bfb();
+  T t;  t.run_phys();
+}
+
+TEST_CASE("p3_cloud_rain_accretion_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestCloudRainAccretion;
+
+  T t;  t.run_bfb();
 }
 
 } // namespace
