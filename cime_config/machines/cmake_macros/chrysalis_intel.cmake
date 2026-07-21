@@ -21,6 +21,13 @@ endif()
 string(APPEND CMAKE_CXX_FLAGS " -fp-model precise")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -O0 -g ")
 
+if (COMP_NAME STREQUAL gcam)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-relax")
+  string(APPEND CMAKE_Fortran_FLAGS " -mcmodel=medium")
+  string(APPEND CMAKE_C_FLAGS " -mcmodel=medium")
+  string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
+endif()
+
 set(MPIFC "mpifort")
 set(SCC "icx")
 set(SCXX "icpx")
