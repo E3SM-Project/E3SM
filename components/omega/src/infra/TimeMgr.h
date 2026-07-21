@@ -404,6 +404,8 @@ class Calendar {
                  I8 &Month, ///< [in,out] calendar month for time to be advanced
                  I8 &Day    ///< [in,out] calendar day for time to be advanced
    );
+
+   friend class TimeInterval;
 }; // end class Calendar
 
 /// The TimeInterval class represents an interval of time -- the amount of time
@@ -570,6 +572,15 @@ class TimeInterval {
    // Other utility methods
    /// Check whether a time interval is positive
    bool isPositive(void);
+
+   /// Check if this TimeInterval is evenly divisible by an integer multiple
+   /// of another TimeInterval. Uses calendar relationships when possible
+   /// (e.g., 1 year = 12 months exactly). For calendars with variable month
+   /// lengths, months are only divisible by 1-day intervals or intervals
+   /// divisible into a 1-day interval. Return true if evenly divisible,
+   /// false otherwise.
+   bool isDivisibleBy(const TimeInterval &Divisor ///< [in] divisor interval
+   ) const;
 
    /// commutative multiplication operators need to be defined as
    /// free functions, and therefore need to be given acces to

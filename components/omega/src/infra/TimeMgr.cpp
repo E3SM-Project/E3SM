@@ -3160,6 +3160,192 @@ bool TimeInterval::isPositive(void) {
 } // end TimeInterval::isPositive
 
 //------------------------------------------------------------------------------
+// Check if this TimeInterval is evenly divisible by another TimeInterval
+bool TimeInterval::isDivisibleBy(
+    const TimeInterval &Divisor ///< [in] divisor interval
+) const {
+
+   if (!Calendar::isDefined()) {
+      ABORT_ERROR("TimeInterval::isDivisibleBy: No calendar has been defined. "
+                  "Call Calendar::init() before using time intervals.");
+   }
+
+   // Divisor must be non-zero to avoid modulo-by-zero below.
+   if ((Divisor.IsCalendar && Divisor.CalInterval == 0) ||
+       (!Divisor.IsCalendar && Divisor.Interval.getWhole() == 0 &&
+        Divisor.Interval.getNumer() == 0)) {
+      ABORT_ERROR(
+          "TimeInterval::isDivisibleBy: Divisor interval must be non-zero");
+   }
+
+   // This routine currently checks divisibility in whole seconds for
+   // non-calendar intervals; reject fractional-second intervals explicitly.
+   if ((!IsCalendar && Interval.getNumer() != 0) ||
+       (!Divisor.IsCalendar && Divisor.Interval.getNumer() != 0)) {
+      return false;
+   }
+   // First check for calendar-based relationships that can be handled directly
+   // without converting to seconds (e.g., years and months)
+
+   // Years and Months: Use calendar relationship (1 year = 12 months)
+   if (IsCalendar && Divisor.IsCalendar) {
+      if ((Units == TimeUnits::Years || Units == TimeUnits::Months) &&
+          (Divisor.Units == TimeUnits::Years ||
+           Divisor.Units == TimeUnits::Months)) {
+
+         // Convert both to months for comparison
+         I8 ThisInMonths    = 0;
+         I8 DivisorInMonths = 0;
+
+         if (Units == TimeUnits::Years) {
+            ThisInMonths = CalInterval * MONTHS_PER_YEAR;
+         } else { // Months
+            ThisInMonths = CalInterval;
+         }
+
+         if (Divisor.Units == TimeUnits::Years) {
+            DivisorInMonths = Divisor.CalInterval * MONTHS_PER_YEAR;
+         } else { // Months
+            DivisorInMonths = Divisor.CalInterval;
+         }
+
+         return (ThisInMonths % DivisorInMonths) == 0;
+      }
+   }
+
+   // Special handling for months with day-based intervals
+   // For calendars with variable month lengths (Gregorian, NoLeap, Julian),
+   // months are only evenly divisible by 1-day intervals or intervals
+   // evenly divisible into 1 day.
+   if ((IsCalendar && Units == TimeUnits::Months) ||
+       (Divisor.IsCalendar && Divisor.Units == TimeUnits::Months)) {
+
+      CalendarKind CalKind = Calendar::OmegaCal->getKind();
+      bool HasVariableMonths =
+          (CalKind == CalendarGregorian || CalKind == CalendarNoLeap ||
+           CalKind == CalendarJulian);
+
+      if (HasVariableMonths) {
+         // For variable-month calendars, check if comparing month with
+         // day-based or shorter units
+         bool ComparingMonthWithDayOrShorter =
+             (IsCalendar && Units == TimeUnits::Months &&
+              (Divisor.IsCalendar && (Divisor.Units == TimeUnits::Days ||
+                                      Divisor.Units == TimeUnits::Hours ||
+                                      Divisor.Units == TimeUnits::Minutes ||
+                                      Divisor.Units == TimeUnits::Seconds) ||
+               !Divisor.IsCalendar)) ||
+             (Divisor.IsCalendar && Divisor.Units == TimeUnits::Months &&
+              (IsCalendar &&
+                   (Units == TimeUnits::Days || Units == TimeUnits::Hours ||
+                    Units == TimeUnits::Minutes ||
+                    Units == TimeUnits::Seconds) ||
+               !IsCalendar));
+
+         if (ComparingMonthWithDayOrShorter) {
+            I8 SecsPerDay = Calendar::OmegaCal->SecondsPerDay;
+
+            if (Divisor.IsCalendar && Divisor.Units == TimeUnits::Months) {
+               // Divisor is months, dividend is day-based or shorter
+               // For variable-month calendars, day-based intervals cannot be
+               // evenly divided by months (since months have variable length)
+               return false;
+            } else if (Divisor.IsCalendar && Divisor.Units == TimeUnits::Days) {
+               // Divisor is in days - only 1 day divides all variable-length
+               // months
+               return (Divisor.CalInterval == 1);
+            } else if (Divisor.IsCalendar &&
+                       (Divisor.Units == TimeUnits::Hours ||
+                        Divisor.Units == TimeUnits::Minutes ||
+                        Divisor.Units == TimeUnits::Seconds)) {
+               // Divisor is calendar-based hours/minutes/seconds - convert to
+               // seconds
+               I8 DivisorSec =
+                   Divisor.CalInterval * Calendar::OmegaCal->SecondsPerDay;
+               if (Divisor.Units == TimeUnits::Hours) {
+                  DivisorSec = Divisor.CalInterval * SECONDS_PER_HOUR;
+               } else if (Divisor.Units == TimeUnits::Minutes) {
+                  DivisorSec = Divisor.CalInterval * SECONDS_PER_MINUTE;
+               } else { // Seconds
+                  DivisorSec = Divisor.CalInterval;
+               }
+
+               // Check if it divides evenly into a day
+               if (SecsPerDay % DivisorSec == 0) {
+                  return true;
+               } else {
+                  return false;
+               }
+            } else if (!Divisor.IsCalendar) {
+               // Non-calendar interval in seconds (hours, minutes, seconds)
+               I8 DivisorSec = Divisor.Interval.getWhole();
+
+               // Check if this interval divides evenly into a day
+               if (SecsPerDay % DivisorSec == 0) {
+                  return true;
+               } else {
+                  return false;
+               }
+            }
+         }
+      }
+   }
+
+   // For all other cases, convert both intervals to seconds for comparison
+   I8 ThisInSeconds    = 0;
+   I8 DivisorInSeconds = 0;
+
+   // Convert this interval to seconds
+   if (IsCalendar) {
+      switch (Units) {
+      case TimeUnits::Years:
+         ThisInSeconds = CalInterval * Calendar::OmegaCal->SecondsPerYear;
+         break;
+      case TimeUnits::Months:
+         ThisInSeconds = CalInterval *
+                         (Calendar::OmegaCal->SecondsPerYear / MONTHS_PER_YEAR);
+         break;
+      case TimeUnits::Days:
+         ThisInSeconds = CalInterval * Calendar::OmegaCal->SecondsPerDay;
+         break;
+      default:
+         ABORT_ERROR("TimeInterval::isDivisibleBy: Unknown calendar units");
+      }
+   } else {
+      // Non-calendar interval - get from TimeFrac as seconds
+      ThisInSeconds = Interval.getWhole();
+   }
+
+   // Convert divisor interval to seconds
+   if (Divisor.IsCalendar) {
+      switch (Divisor.Units) {
+      case TimeUnits::Years:
+         DivisorInSeconds =
+             Divisor.CalInterval * Calendar::OmegaCal->SecondsPerYear;
+         break;
+      case TimeUnits::Months:
+         DivisorInSeconds =
+             Divisor.CalInterval *
+             (Calendar::OmegaCal->SecondsPerYear / MONTHS_PER_YEAR);
+         break;
+      case TimeUnits::Days:
+         DivisorInSeconds =
+             Divisor.CalInterval * Calendar::OmegaCal->SecondsPerDay;
+         break;
+      default:
+         ABORT_ERROR("TimeInterval::isDivisibleBy: Unknown calendar units");
+      }
+   } else {
+      // Non-calendar interval - get from TimeFrac as seconds
+      DivisorInSeconds = Divisor.Interval.getWhole();
+   }
+
+   // Check divisibility using integer modulo
+   return (ThisInSeconds % DivisorInSeconds) == 0;
+
+} // end TimeInterval::isDivisibleBy
+
+//------------------------------------------------------------------------------
 // TimeInstant definitions
 //------------------------------------------------------------------------------
 
