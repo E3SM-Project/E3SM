@@ -28,6 +28,15 @@ using HostSpace = Kokkos::HostSpace;
 using HostView1D = mam4::DeviceType::view_1d<Real>::host_mirror_type;
 using HostView5D = mam4::DeviceType::view<Real*****>::host_mirror_type;
 
+using Device     = scream::DefaultDevice;
+using ExecSpace  = Device::execution_space;
+using KT         = ekat::KokkosTypes<ExecSpace>;
+using view_1d    = typename KT::template view_1d<Real>;
+using view_2d    = typename KT::template view_2d<Real>;
+using view_3d    = typename KT::template view_3d<Real>;
+using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
+using MemberType = TeamPolicy::member_type;
+
 inline bool nearly_equal(const Real a, const Real b,
                          const Real rtol = 1e-8,
                          const Real atol = 1e-14) {
@@ -217,4 +226,164 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
     }
   }
 
+}
+
+TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
+          "[mam4][photo][kokkos]") {
+  constexpr int ncol = 1;
+  constexpr int nlev = mam4::nlev;
+  constexpr int nref = 1;
+  using namespace scream;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+  struct ScorpioGuard {
+    explicit ScorpioGuard(const ekat::Comm& comm) : comm_(comm) {
+      scorpio::init_subsystem(comm_);
+    }
+    ~ScorpioGuard() { scorpio::finalize_subsystem(); }
+    const ekat::Comm& comm_;
+  } scorpio_guard(comm);
+
+  const std::string rsf_file =
+      std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc";
+  const std::string xs_long_file =
+      std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc";
+  const std::string input_yaml_file = "table_photo_input_ts_2016289.yaml";
+
+  const YAML::Node root = YAML::LoadFile(input_yaml_file);
+  REQUIRE(root["input"]);
+  REQUIRE(root["input"]["fixed"]);
+  const auto fixed = root["input"]["fixed"];
+
+  const auto photo_table = scream::impl::read_photo_table(rsf_file, xs_long_file);
+  const int work_len = mam4::mo_photo::get_photo_table_work_len(photo_table);
+  const int npht     = mam4::mo_photo::phtcnt;
+
+  REQUIRE(work_len > 0);
+  REQUIRE(npht >= nref);
+
+  // Allocate device views.
+  view_2d work_photo_table("work_photo_table", ncol, work_len);
+  view_2d pmid("pmid",     ncol, nlev);
+  view_2d pdel("pdel",     ncol, nlev);
+  view_2d temper("temper", ncol, nlev);
+  view_2d o3col("o3col",   ncol, nlev);
+  view_1d zen_angle("zen_angle", ncol);
+  view_1d srf_alb("srf_alb",     ncol);
+  view_2d qc("qc",   ncol, nlev);
+  view_2d cld("cld", ncol, nlev);
+  view_3d photo("photo", ncol, nlev, npht);
+
+  Kokkos::deep_copy(work_photo_table, 0.0);
+  Kokkos::deep_copy(photo, 0.0);
+
+  // Read atmospheric-state reference data from YAML.
+  const auto pmid_vals   = read_real_vector(fixed["pmid"]);
+  const auto pdel_vals   = read_real_vector(fixed["pdel"]);
+  const auto temper_vals = read_real_vector(fixed["temper"]);
+  const auto o3col_vals  = read_real_vector(fixed["col_dens_1"]);
+  const auto lwc_vals    = read_real_vector(fixed["lwc"]);
+  const auto cloud_vals  = read_real_vector(fixed["clouds"]);
+  const auto zen_vals    = read_real_vector(fixed["zen_angle"]);
+  const auto alb_vals    = read_real_vector(fixed["srf_alb"]);
+  const auto esfact_vals = read_real_vector(fixed["esfact"]);
+  const auto photo_ref   = read_real_vector(fixed["photos"]);
+
+  REQUIRE(pmid_vals.size()   >= static_cast<std::size_t>(nlev));
+  REQUIRE(pdel_vals.size()   >= static_cast<std::size_t>(nlev));
+  REQUIRE(temper_vals.size() >= static_cast<std::size_t>(nlev));
+  REQUIRE(o3col_vals.size()  >= static_cast<std::size_t>(nlev));
+  REQUIRE(lwc_vals.size()    >= static_cast<std::size_t>(nlev));
+  REQUIRE(cloud_vals.size()  >= static_cast<std::size_t>(nlev));
+  REQUIRE(zen_vals.size()    >= 1);
+  REQUIRE(alb_vals.size()    >= 1);
+  REQUIRE(esfact_vals.size() >= 1);
+
+  const Real zen_val = zen_vals[0];
+  const Real alb_val = alb_vals[0];
+  const Real esfact  = esfact_vals[0];
+
+  // Fill host mirrors and copy to device.
+  auto pmid_h   = Kokkos::create_mirror_view(pmid);
+  auto pdel_h   = Kokkos::create_mirror_view(pdel);
+  auto temper_h = Kokkos::create_mirror_view(temper);
+  auto o3col_h  = Kokkos::create_mirror_view(o3col);
+  auto zen_h    = Kokkos::create_mirror_view(zen_angle);
+  auto alb_h    = Kokkos::create_mirror_view(srf_alb);
+  auto qc_h     = Kokkos::create_mirror_view(qc);
+  auto cld_h    = Kokkos::create_mirror_view(cld);
+
+  for (int k = 0; k < nlev; ++k) {
+    pmid_h(0, k)   = pmid_vals[k];
+    pdel_h(0, k)   = pdel_vals[k];
+    temper_h(0, k) = temper_vals[k];
+    o3col_h(0, k)  = o3col_vals[k];
+    qc_h(0, k)     = lwc_vals[k];
+    cld_h(0, k)    = cloud_vals[k];
+  }
+  zen_h(0) = zen_val;
+  alb_h(0) = alb_val;
+
+  Kokkos::deep_copy(pmid,      pmid_h);
+  Kokkos::deep_copy(pdel,      pdel_h);
+  Kokkos::deep_copy(temper,    temper_h);
+  Kokkos::deep_copy(o3col,     o3col_h);
+  Kokkos::deep_copy(zen_angle, zen_h);
+  Kokkos::deep_copy(srf_alb,   alb_h);
+  Kokkos::deep_copy(qc,        qc_h);
+  Kokkos::deep_copy(cld,       cld_h);
+
+  // Launch one-column photolysis kernel.
+  TeamPolicy policy(ncol, Kokkos::AUTO());
+  Kokkos::parallel_for(
+    "unit_test_table_photo_nlev72", policy,
+    KOKKOS_LAMBDA(const MemberType& team) {
+      const int icol = team.league_rank();
+
+      const auto work_icol = ekat::subview(work_photo_table, icol);
+      mam4::mo_photo::PhotoTableWorkArrays photo_work_arrays;
+      mam4::mo_photo::set_photo_table_work_arrays(photo_table, work_icol,
+                                                  photo_work_arrays);
+      team.team_barrier();
+
+      mam4::mo_photo::table_photo(
+        team,
+        ekat::subview(photo,  icol),
+        ekat::subview(pmid,   icol),
+        ekat::subview(pdel,   icol),
+        ekat::subview(temper, icol),
+        ekat::subview(o3col,  icol),
+        zen_angle(icol), srf_alb(icol),
+        ekat::subview(qc,  icol),
+        ekat::subview(cld, icol),
+        esfact, photo_table, photo_work_arrays);
+    });
+  Kokkos::fence();
+
+  auto photo_h = Kokkos::create_mirror_view_and_copy(HostSpace(), photo);
+
+  SECTION("all_outputs_are_finite") {
+    for (int k = 0; k < nlev; ++k) {
+      for (int j = 0; j < nref; ++j) {
+        INFO("Non-finite output at k=" << k << ", j=" << j
+             << ", value=" << photo_h(0, k, j));
+        REQUIRE(std::isfinite(photo_h(0, k, j)));
+      }
+    }
+  }
+
+  SECTION("compare_against_reference_when_available") {
+    REQUIRE(photo_ref.size() == static_cast<std::size_t>(nlev * nref));
+
+    int count = 0;
+    for (int d2 = 0; d2 < nref; ++d2) {
+      for (int d1 = 0; d1 < nlev; ++d1) {
+        const auto computed = photo_h(0, d1, d2);
+        const auto expected = photo_ref[count++];
+        INFO("Mismatch at level k=" << d1 << ", reaction j=" << d2
+             << ", computed=" << computed << ", expected=" << expected);
+        REQUIRE(nearly_equal(computed, expected, 1e-6));
+      }
+    }
+  }
 }
