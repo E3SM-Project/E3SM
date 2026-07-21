@@ -420,7 +420,7 @@ contains
     use dimensions_mod, only : np
     use quadrature_mod, only : gausslobatto, quadrature_t
 
-    use control_mod, only : hypervis_scaling
+    use control_mod, only : hypervis_scaling, laplace_scaling
     use edge_mod, only : initedgebuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
     use bndry_mod, only : bndry_exchangeV
 
@@ -440,6 +440,12 @@ contains
     !  this block of code will DSS it so the tensor if C0
     !  and also make it bilinear in each element.
     !  Oksana Guba
+    !
+    !  The tensorVisc_2() array (used by the sponge-layer/nu_top tensor
+    !  viscosity, controlled by laplace_scaling) is computed in cube_mod.F90
+    !  in the same way as tensorVisc, and is DSS'd/bilinearized below with
+    !  an independent block, gated on laplace_scaling rather than
+    !  hypervis_scaling (the two controls are independent of one another).
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     if (hypervis_scaling /= 0) then
@@ -476,6 +482,54 @@ contains
               do j=1,np
                 y = gp%points(j)
                 elem(ie)%tensorVisc(i,j,rowind,colind) = 0.25d0*( &
+                (1.0d0-x)*(1.0d0-y)*sw + &
+                (1.0d0-x)*(y+1.0d0)*nw + &
+                (x+1.0d0)*(1.0d0-y)*se + &
+                (x+1.0d0)*(y+1.0d0)*noreast)
+              end do
+            end do
+          end do
+        enddo !rowind
+      enddo !colind
+
+      deallocate(gp%points)
+      deallocate(gp%weights)
+    endif
+
+    if (laplace_scaling /= 0) then
+      call initEdgeBuffer(hybrid%par,edgebuf,elem,1)
+      do rowind=1,2
+        do colind=1,2
+          do ie=nets,nete
+            zeta(:,:,ie) = elem(ie)%tensorVisc_2(:,:,rowind,colind)*elem(ie)%spheremp(:,:)
+            call edgeVpack(edgebuf,zeta(1,1,ie),1,0,ie)
+          end do
+
+          call bndry_exchangeV(hybrid,edgebuf)
+          do ie=nets,nete
+            call edgeVunpack(edgebuf,zeta(1,1,ie),1,0,ie)
+            elem(ie)%tensorVisc_2(:,:,rowind,colind) = zeta(:,:,ie)*elem(ie)%rspheremp(:,:)
+          end do
+        enddo !rowind
+      enddo !colind
+      call FreeEdgeBuffer(edgebuf)
+
+      gp=gausslobatto(np)
+
+      !IF BILINEAR MAP OF V NEEDED
+      do rowind=1,2
+        do colind=1,2
+          ! replace hypervis w/ bilinear based on continuous corner values
+          do ie=nets,nete
+            noreast = elem(ie)%tensorVisc_2(np,np,rowind,colind)
+            nw = elem(ie)%tensorVisc_2(1,np,rowind,colind)
+            se = elem(ie)%tensorVisc_2(np,1,rowind,colind)
+            sw = elem(ie)%tensorVisc_2(1,1,rowind,colind)
+            do i=1,np
+              x = gp%points(i)
+              do j=1,np
+                y = gp%points(j)
+                elem(ie)%tensorVisc_2(i,j,rowind,colind) = 0.25d0*( &
                 (1.0d0-x)*(1.0d0-y)*sw + &
                 (1.0d0-x)*(y+1.0d0)*nw + &
                 (x+1.0d0)*(1.0d0-y)*se + &
