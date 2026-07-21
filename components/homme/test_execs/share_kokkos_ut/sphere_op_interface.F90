@@ -300,7 +300,7 @@ contains
     elem%tensorVisc = tensorVisc
     elem%vec_sphere2cart = vec_sph2cart
 
-    laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
+    laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,tensorVisc)
 
   end subroutine vlaplace_sphere_wk_cartesian_c_callable
 
@@ -346,7 +346,7 @@ contains
     elem%Dinv = dinv
     elem%rmetdet = rmetdet
 
-    laplace = vlaplace_sphere_wk_contra(v,deriv,elem,.false.,nu_ratio)
+    laplace = vlaplace_sphere_wk_contra(v,deriv,elem,nu_ratio)
 
   end subroutine vlaplace_sphere_wk_contra_c_callable
 

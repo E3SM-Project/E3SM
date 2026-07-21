@@ -42,7 +42,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
                                const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom,
-                               const double& hypervis_scaling, const double& dcmip16_mu,
+                               const double& hypervis_scaling, const double& laplace_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const int& prescribed_wind, const int& use_moisture, const int& disable_diagnostics,
                                const int& use_cpstar, const int& transport_alg, const int& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
@@ -115,6 +115,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.hypervis_subcycle             = hypervis_subcycle;
   params.hypervis_subcycle_tom         = hypervis_subcycle_tom;
   params.hypervis_scaling              = hypervis_scaling;
+  params.laplace_scaling               = laplace_scaling;
   params.disable_diagnostics           = (bool)disable_diagnostics;
   params.use_moisture                  = (bool)use_moisture;
   params.use_cpstar                    = (bool)use_cpstar;
@@ -284,8 +285,7 @@ void init_elements_c (const int& num_elems)
   Elements& e = c.create<Elements> ();
   const SimulationParams& params = c.get<SimulationParams>();
 
-  const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv, /* alloc_gradphis = */ true,
+  e.init (num_elems, /* alloc_gradphis = */ true,
           params.scale_factor, params.laplacian_rigid_factor,
           /* alloc_sphere_coords = */ params.transport_alg > 0);
 
@@ -462,15 +462,15 @@ void init_elements_2d_c (const int& ie,
                          CF90Ptr& spheremp, CF90Ptr& rspheremp,
                          CF90Ptr& metdet, CF90Ptr& metinv,
                          CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart,
-                         double* sphere_cart_vec, double* sphere_latlon_vec)
+                         double* sphere_cart_vec, double* sphere_latlon_vec,
+                         CF90Ptr &tensorvisc2)
 {
   auto& c = Context::singleton();
   Elements& e = c.get<Elements> ();
-  const SimulationParams& params = c.get<SimulationParams>();
 
-  const bool consthv = (params.hypervis_scaling==0.0);
   e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,
-                             vec_sph2cart,consthv,sphere_cart_vec,sphere_latlon_vec);
+                             vec_sph2cart,sphere_cart_vec,sphere_latlon_vec,
+                             tensorvisc2);
 }
 
 // Copies just tensorVisc from f90 arrays into the C++ view. Separate from
@@ -481,13 +481,18 @@ void init_tensorvisc_c (const int& ie, CF90Ptr& tensorvisc)
 {
   auto& c = Context::singleton();
   Elements& e = c.get<Elements> ();
-  const SimulationParams& params = c.get<SimulationParams>();
 
-  if (params.hypervis_scaling==0.0) {
-    // consthv: tensorVisc is not used/allocated.
-    return;
-  }
   e.m_geometry.set_tensorvisc(ie,tensorvisc);
+}
+
+// Same as init_tensorvisc_c(), but for tensorVisc_2 (the sponge-layer
+// tensor coefficient), which is likewise recomputed by dss_hvtensor.
+void init_tensorvisc2_c (const int& ie, CF90Ptr& tensorvisc2)
+{
+  auto& c = Context::singleton();
+  Elements& e = c.get<Elements> ();
+
+  e.m_geometry.set_tensorvisc2(ie,tensorvisc2);
 }
 
 void init_geopotential_c (const int& ie,
