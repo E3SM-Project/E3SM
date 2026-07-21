@@ -169,7 +169,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
           if (phys_lev < NUM_PHYSICAL_LEV &&
               phys_lev >= num_tom_sponge_levels) {
             q_new[s] = (Q(ie,q,i,j,lev)[s] * spheremp(ie,i,j)
-                        - dt * kh_eff[s] * Qtens(ie,q,i,j,lev)[s]);
+                        + dt * kh_eff[s] * Qtens(ie,q,i,j,lev)[s]);
           }
         }
         Q(ie,q,i,j,lev) = q_new;
