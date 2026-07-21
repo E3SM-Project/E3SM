@@ -240,7 +240,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '20240619'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC3.0_monthlyClimatology.ARRMwISC3to18E3r1.240710.nc'
-        analysis_mask_file = 'ARRMwISC3to18E3r1_mocBasinsAndTransects240710.nc'
+        analysis_mask_file = 'ARRMwISC3to18E3r1_mocBasinsAndTransects240926.nc'
         ic_date = '241022'
         ic_prefix = 'mpaso.ARRMwISC3to18E3r1.rstFromG-pm'
         if ocn_ic_mode == 'spunup':
@@ -251,7 +251,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '20240805'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         restoring_file = 'sss.PHC3.0_monthlyClimatology.ARRMwISC2p4to18E3r1.240710.nc'
-        analysis_mask_file = 'ARRMwISC2p4to18E3r1_mocBasinsAndTransects240710.nc'
+        analysis_mask_file = 'ARRMwISC2p4to18E3r1_mocBasinsAndTransects240926.nc'
         ic_date = '20250415'
         ic_prefix = 'mpaso.ARRMwISC2p4to18E3r1.rstFromG-pm'
         if ocn_ic_mode == 'spunup':
