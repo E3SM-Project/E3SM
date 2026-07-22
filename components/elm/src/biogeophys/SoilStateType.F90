@@ -683,14 +683,14 @@ contains
                    clay = clay3d(g,ti,1)
                    sand = sand3d(g,ti,1)
                    gravel = grvl3d(g,ti,1)
-                   om_frac = organic3d(g,ti,1)/organic_max 
-                else if (lev <= nlevsoi) then
+                   om_frac = min(organic3d(g,ti,1)/organic_max, 1._r8)
+                else if (lev <= min(nlevbed,nlevsoi)) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                          clay = clay3d(g,ti,j+1)
                          sand = sand3d(g,ti,j+1)
                          gravel = grvl3d(g,ti,j+1)
-                         om_frac = organic3d(g,ti,j+1)/organic_max    
+                         om_frac = min(organic3d(g,ti,j+1)/organic_max, 1._r8)
                       endif
                    end do
                 else
@@ -704,7 +704,7 @@ contains
                    clay = clay3d(g,ti,lev)
                    sand = sand3d(g,ti,lev)
                    gravel = grvl3d(g,ti,lev)
-                   om_frac = (organic3d(g,ti,lev)/organic_max)**2._r8
+                   om_frac = min((organic3d(g,ti,lev)/organic_max), 1._r8)
                 else
                    clay = clay3d(g,ti,nlevsoi)
                    sand = sand3d(g,ti,nlevsoi)
@@ -840,7 +840,7 @@ contains
                 clay    =  this%cellclay_col(c,lev)
                 sand    =  this%cellsand_col(c,lev)
                 gravel  =  this%cellgrvl_col(c,lev)
-                om_frac = (this%cellorg_col(c,lev)/organic_max)**2._r8
+                om_frac =  min((this%cellorg_col(c,lev)/organic_max), 1._r8)
              else
                 clay    = this%cellclay_col(c,nlevsoi)
                 sand    = this%cellsand_col(c,nlevsoi)
