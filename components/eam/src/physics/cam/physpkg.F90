@@ -1494,18 +1494,6 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
           if ( is_end_curr_month() ) then
              phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
-          ! upon restart with cflx_cpl_opt=2, these need to be re-zeroed
-          ! because get_carbon_sfc_fluxes has not been called yet,
-          ! and co2_diags_read_fields has been called to fill them with old values
-          ! there may still be an issue with the timestep-level values, but don't
-          ! zero them yet so that they can be diagnosed
-          call phys_getopts( cflx_cpl_opt_out = cflx_cpl_opt)
-          if ( is_first_restart_step() .and. is_start_curr_month() .and. cflx_cpl_opt == 2) then
-             phys_state(c)%c_mflx_sfc(:ncol) = 0._r8
-             phys_state(c)%c_mflx_ocn(:ncol) = 0._r8
-             phys_state(c)%c_mflx_sff(:ncol) = 0._r8
-             phys_state(c)%c_mflx_lnd(:ncol) = 0._r8
-         end if
        end do
        call co2_diags_store_fields(phys_state, pbuf2d)
     end if
@@ -1915,9 +1903,14 @@ end if ! l_tracer_aero
 
        if (cflx_cpl_opt==1) then
           call cflx_tend( state, cam_in, ztodt, ptend)       
-         call physics_update(state, ptend, ztodt, tend)
-         !!!! todo: delete !!!
-         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysac after clubb_surface'
+          call physics_update(state, ptend, ztodt, tend)
+          if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysac after clubb_surface'
+       elseif (cflx_cpl_opt==2) then
+          ! Apply CO2 tracer fluxes here in tphysac; non-CO2 fluxes were already applied
+          ! in tphysbc (see GH #8201). This avoids duplicate CO2 additions during init.
+          call cflx_tend( state, cam_in, ztodt, ptend, co2_only=.true.)
+          call physics_update(state, ptend, ztodt, tend)
+          if (masterproc) write(iulog,*) 'cflx-log: CO2 surface flux tendencies applied in tphysac after clubb_surface'
        end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )
@@ -1948,12 +1941,10 @@ end if ! l_tracer_aero
     end if ! l_vdiff
     endif
 
-    ! collect surface carbon fluxes, but only if they have been updated by cflx_tend above, (cflx_cpl_opt==1)
-    !    or by vertical_diffusion_tend above (l_vdiff==.true.) or if they are not being updated in tphysbc (cflx_cpl_opt /= 2)
-    ! otherwise, this function is called by tphysbc after cflx_tend() and update_physics()
-    if (cflx_cpl_opt /= 2) then
-       call get_carbon_sfc_fluxes(state, cam_in, ztodt)
-    endif
+    ! collect surface carbon fluxes after cflx_tend (or vertical_diffusion_tend) has been applied.
+    ! For cflx_cpl_opt==2, CO2 fluxes are now applied above in tphysac (not tphysbc), so
+    ! get_carbon_sfc_fluxes is always called here (see GH #8201).
+    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
 
 if (l_rayleigh) then
     !===================================================
@@ -2317,7 +2308,6 @@ subroutine tphysbc (ztodt,               &
     use debug_info,      only: get_debug_chunk, get_debug_macmiciter
     use lnd_infodata,    only: precip_downscaling_method
     use cflx,            only: cflx_tend
-    use co2_diagnostics, only: get_carbon_sfc_fluxes
 
     implicit none
 
@@ -2867,12 +2857,13 @@ end if
        ! on tracers for which cam_in%cflx(:,m) is zero at this point.
 
       !if ( do_clubb_sgs .and. (cflx_cpl_opt==2) ) then
-       if ( cflx_cpl_opt==2 ) then
-          call cflx_tend( state, cam_in, ztodt, ptend)
+       if ( (do_clubb_sgs .or. do_shoc_sgs) .and. (cflx_cpl_opt==2) ) then
+          ! Apply surface fluxes for all tracers EXCEPT CO2; CO2 is applied in tphysac
+          ! to avoid redundant additions during the multi-call init sequence (see GH #8201)
+          call cflx_tend( state, cam_in, ztodt, ptend, skip_co2=.true.)
           call physics_update(state, ptend, ztodt, tend)
-          call get_carbon_sfc_fluxes(state, cam_in, ztodt)
          ! for examining surface cflx update timing - aldivi
-         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies applied in tphysbc.'
+         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies (non-CO2) applied in tphysbc.'
        end if
 
        !========================================================================================
