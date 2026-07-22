@@ -477,13 +477,13 @@ contains
                       if (lev .eq. 1) then
                          clay    = clay3d(g,ti,1)
                          sand    = sand3d(g,ti,1)
-                         om_frac = organic3d(g,ti,1)/organic_max 
+                         om_frac = min(organic3d(g,ti,1)/organic_max, 1._r8)
                       else if (lev <= nlevsoi) then
                          do j = 1,nlevsoifl-1
                             if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                                clay    = clay3d(g,ti,j+1)
                                sand    = sand3d(g,ti,j+1)
-                               om_frac = organic3d(g,ti,j+1)/organic_max    
+                               om_frac = min(organic3d(g,ti,j+1)/organic_max, 1._r8) 
                             endif
                          end do
                       else
@@ -496,7 +496,7 @@ contains
                       if (lev <= nlevsoi) then
                          clay    = clay3d(g,ti,lev)
                          sand    = sand3d(g,ti,lev)
-                         om_frac = (organic3d(g,ti,lev)/organic_max)**2._r8
+                         om_frac = min(organic3d(g,ti,lev)/organic_max, 1._r8)
                       else
                          clay    = clay3d(g,ti,nlevsoi)
                          sand    = sand3d(g,ti,nlevsoi)
