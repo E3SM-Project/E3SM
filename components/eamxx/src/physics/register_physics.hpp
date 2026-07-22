@@ -53,6 +53,12 @@
 #ifdef EAMXX_HAS_CLD_FRAC_NET
 #include "physics/cld_fraction/cld_frac_net/eamxx_cld_frac_net_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_WATER_TRACERS
+#include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
+#endif
+#ifdef EAMXX_HAS_WATER_ISOTOPES
+#include "physics/specialized_tracers/water_isotopes/eamxx_water_isotopes_process_interface.hpp"
+#endif
 
 namespace scream {
 
@@ -105,6 +111,12 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_CLD_FRAC_NET
   proc_factory.register_product("cld_frac_net",&create_atmosphere_process<CldFracNet>);
+#endif
+#ifdef EAMXX_HAS_WATER_TRACERS
+  proc_factory.register_product("water_tracers",&create_atmosphere_process<WaterTracers>);
+#endif
+#ifdef EAMXX_HAS_WATER_ISOTOPES
+  proc_factory.register_product("water_isotopes",&create_atmosphere_process<WaterIsotopes>);
 #endif
 
   // If no physics was enabled, silence compile warning about unused var
