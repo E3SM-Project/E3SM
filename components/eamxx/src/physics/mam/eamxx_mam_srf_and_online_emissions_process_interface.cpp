@@ -20,7 +20,14 @@ using soilErodibilityFunc =
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params) {
-  // FIXME: Do we want to read dust emiss factor from the namelist??
+
+  // FIXME: temporary solution to fix the sp test fails for the PR
+  double dbl_dust_emis_scale_factor = m_params.get<double>("srf_emis_scale_factor_for_dust", 1.0);
+  dust_emis_scale_factor = static_cast<Real>(dbl_dust_emis_scale_factor);
+
+  double dbl_seasalt_emis_scale_factor = m_params.get<double>("srf_emis_scale_factor_for_seasalt", 1.0);
+  seasalt_emis_scale_factor = static_cast<Real>(dbl_seasalt_emis_scale_factor);
+
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
@@ -439,6 +446,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind,
                                  dstflx, mpoly, mprot, mlip, soil_erodibility,
                                  z_mid,
+                                 dust_emis_scale_factor,
+                                 seasalt_emis_scale_factor,
                                  // output
                                  constituent_fluxes);
   Kokkos::fence();

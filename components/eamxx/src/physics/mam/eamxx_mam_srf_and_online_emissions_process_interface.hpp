@@ -44,6 +44,10 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // Constituent fluxes of species in [kg/m2/s]
   view_2d constituent_fluxes_;
 
+  // Runtime scale factors for online emissions from namelist.
+  Real dust_emis_scale_factor;
+  Real seasalt_emis_scale_factor;
+
   // Work array to store fluxes after unit conversions to kg/m2/s
   view_1d fluxes_in_mks_units_;
 
