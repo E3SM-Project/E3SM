@@ -882,7 +882,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- Default settings for DP-EAMxx -->
   <iop_options>
     <doubly_periodic_mode type="logical" doc="Type of intensive observation period. Currently only DP is supported.">true</doubly_periodic_mode>
-    <iop_file type="file" doc="File containing DP level data">UNSET</iop_file>
+    <iop_file type="file" optional="true" doc="File containing DP level data">UNSET</iop_file>
     <target_latitude type="real" doc="Latitude to initialize IC columns.">-999</target_latitude>
     <target_longitude type="real" doc="Longitude to initialize IC columns.">-999</target_longitude>
     <iop_dosubsidence type="logical" doc="Whether or not to compute Eulerian LS vertical advection.">false</iop_dosubsidence>

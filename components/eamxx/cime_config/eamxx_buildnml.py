@@ -44,7 +44,8 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "append")
+#  - optional: if set to true, marks a "file" param where UNSET is a valid/intentional value
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "append", "optional")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):
@@ -218,6 +219,53 @@ def perform_consistency_checks(case, xml):
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
                     " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
+
+    # Check for UNSET required file parameters. After selector evaluation, any
+    # type="file" or type="array(file)" element still holding the sentinel value
+    # "UNSET" and lacking any selector attributes means no entry in
+    # namelist_defaults_eamxx.xml matched the current configuration (e.g. grid+nlev
+    # combination). Catching this here gives a clear, actionable error at buildnml
+    # time instead of an obscure "No such file or directory" from PIO at run time.
+    #
+    # Note: elements where a selector *did* match (e.g. topography_filename set to
+    # UNSET for aquaplanet compsets) retain their selector attributes after
+    # evaluation. We skip those - a deliberate UNSET is not an error.
+    #
+    # Note: elements marked optional="true" are also skipped - UNSET is a valid
+    # value for them (e.g. iop_file, which is only needed for DP/IOP runs).
+    parent_map = {child: parent for parent in xml.iter() for child in parent}
+    unset_params = []
+    file_type_elems = xml.findall('.//*[@type="file"]') + xml.findall('.//*[@type="array(file)"]')
+    for item in file_type_elems:
+        if item.text and item.text.strip() == "UNSET":
+            # Skip params explicitly marked optional: UNSET is valid for them.
+            if item.attrib.get("optional") == "true":
+                continue
+            # If any non-metadata attribute is present, a selector matched and
+            # intentionally set this value to UNSET, so skip it.
+            selector_attribs = [k for k in item.attrib if k not in METADATA_ATTRIBS]
+            if selector_attribs:
+                continue
+            parent = parent_map.get(item)
+            path = "{} -> {}".format(parent.tag, item.tag) if parent is not None else item.tag
+            unset_params.append(path)
+
+    if unset_params:
+        scream_cmake_opts = case.get_value("SCREAM_CMAKE_OPTIONS") or ""
+        nlev_match = re.search(r"SCREAM_NUM_VERTICAL_LEV\s+(\d+)", scream_cmake_opts)
+        nlev = nlev_match.group(1) if nlev_match else "unknown"
+        atm_grid = case.get_value("ATM_GRID") or "unknown"
+        params_str = "\n  ".join(unset_params)
+        expect (False,
+                "The following required file parameter(s) are UNSET for the current "
+                f"configuration (ATM_GRID='{atm_grid}', nlev={nlev}):\n"
+                f"  {params_str}\n"
+                "This typically means no entry exists in namelist_defaults_eamxx.xml "
+                "for this grid + vertical-level combination.\n"
+                f"To fix, add an entry for ATM_GRID='{atm_grid}' with nlev={nlev} "
+                "to namelist_defaults_eamxx.xml, or switch to a supported "
+                "configuration.\n"
+                "See existing entries in namelist_defaults_eamxx.xml for examples.")
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
