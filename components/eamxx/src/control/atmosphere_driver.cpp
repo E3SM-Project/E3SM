@@ -1771,7 +1771,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_grids_manager = nullptr;
 
   // Destroy all the fields manager
-  m_field_mgr->clean_up();
+  m_field_mgr = nullptr;
 
   // Write all timers to file, and possibly finalize gptl
   if (not m_gptl_externally_handled) {
