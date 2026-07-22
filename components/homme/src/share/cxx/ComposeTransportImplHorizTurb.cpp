@@ -13,7 +13,7 @@ namespace Homme {
 
 namespace {
 
-constexpr bool print_tracer_sgs_diffusivity_clipping = true;
+constexpr bool print_tracer_sgs_diffusivity_clipping = false;
 constexpr Real tracer_sgs_cfl_target = 1.00;
 
 KOKKOS_INLINE_FUNCTION
