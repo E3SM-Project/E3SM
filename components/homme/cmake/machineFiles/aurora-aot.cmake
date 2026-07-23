@@ -37,21 +37,19 @@ SET(Kokkos_ENABLE_SYCL ON CACHE BOOL "")
 SET(Kokkos_ENABLE_DEBUG OFF CACHE BOOL "")
 SET(Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "")
 
-SET(CMAKE_CXX_STANDARD 17)
-
 SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 
 #AOT flags
-#SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -Xclang -fsycl-allow-virtual-functions")
-SET(SYCL_COMPILE_FLAGS "-std=c++17 -fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
+#SET(SYCL_COMPILE_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda -Xclang -fsycl-allow-virtual-functions")
+SET(SYCL_COMPILE_FLAGS "-fsycl -fsycl-device-code-split=per_kernel -fno-sycl-id-queries-fit-in-int -fsycl-unnamed-lambda")
 SET(SYCL_LINK_FLAGS "-Wl,--no-relax -flink-huge-device-code -fsycl-max-parallel-link-jobs=32 -fsycl -fsycl-device-code-split=per_kernel -fsycl-targets=intel_gpu_pvc")
 
 SET(ADD_Fortran_FLAGS "-fc=ifx -fpscomp logicals -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
 SET(ADD_C_FLAGS "-O3 -DNDEBUG " CACHE STRING "")
 
-SET(ADD_CXX_FLAGS "-std=c++17 -fp-model=precise -O3 -DNDEBUG ${SYCL_COMPILE_FLAGS}" CACHE STRING "")
+SET(ADD_CXX_FLAGS "-fp-model=precise -O3 -DNDEBUG ${SYCL_COMPILE_FLAGS}" CACHE STRING "")
 SET(ADD_LINKER_FLAGS "-O3 -DNDEBUG ${SYCL_LINK_FLAGS} -fortlib" CACHE STRING "")
 
 set (ENABLE_OPENMP OFF CACHE BOOL "")
