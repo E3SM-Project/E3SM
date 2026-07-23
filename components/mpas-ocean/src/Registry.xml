@@ -382,6 +382,14 @@
 					description="maximum grid scale to scale up buoyancy gradient"
 					possible_values="around 1 degree"
 					/>
+		<nml_option name="config_submesoscale_ice_aware" type="logical" default_value=".false."
+					description="flag to enable the ice-aware MLE for submesoscale eddies"
+					possible_values=".true. or .false."
+					/>
+		<nml_option name="config_submesoscale_ice_aware_crit" type="real" default_value="0.5"
+					description="Criteria for evaluating the efficiency of the ice-aware MLE in submesoscale eddies"
+					possible_values="between 0 and 1"
+					/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false."
@@ -2174,7 +2182,7 @@
 			<var name="SSHinitial" packages="scaledSFWFPKG"/>
 			<var name="SSHfinal" packages="scaledSFWFPKG"/>
 			<var name="nValidTotalfwFluxHistory" packages="scaledSFWFPKG"/>
-			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/> 
+			<var name="SFWFScalingFactor" packages="scaledSFWFPKG"/>
 		</stream>
 
 		<stream name="output"
