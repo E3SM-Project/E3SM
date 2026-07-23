@@ -115,6 +115,8 @@ struct Functions {
     static inline constexpr Real momcd                     = 0.4;      // pressure gradient term constant for downdrafts
     static inline constexpr Real mse_min_diff              = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
     static inline constexpr Real tpert_limiter             = 2;        // upper limit on temperature perturbation in input state [K]
+    static inline constexpr Real deep_cldfrac_max          = 0.6;      // upper limit on diagnosed deep convective cloud fraction
+    static inline constexpr Real deep_cldfrac_min          = 0.0;      // lower limit on diagnosed deep convective cloud fraction
     // MCSP parameters
     static inline constexpr Real MCSP_storm_speed_pref     = 600e2;    // pressure level for winds in MCSP calculation Pa]
     static inline constexpr Real MCSP_conv_depth_min       = 700e2;    // pressure thickness of convective heating [Pa]
@@ -130,6 +132,7 @@ struct Functions {
     static inline constexpr Real dmpdz                     = -0.7e-3;  // default convective entrainment parameter [1/m]
     static inline constexpr Real tiedke_add                = 0.8;      // default Tiedke temperature perturbation addition [K]
     static inline constexpr Real c0                        = 0.0020;   // default autoconversion coefficient
+    static inline constexpr Real cldfrc_dp1                = 0.018;    // default parameter for radiative in-cld water
 
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments. ttrice defines the transition
@@ -150,8 +153,9 @@ struct Functions {
     ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
-      apply_detr_tend     = params.get<bool>("apply_detr_tend",     true);
       use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
+      apply_detr_tend     = params.get<bool>("apply_detr_tend",     true);
+      conv_water_in_rad   = params.get<bool>("conv_water_in_rad",   true);
       upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
       alfa                = params.get<Real>("alfa",                ZMC::alfa);
@@ -168,6 +172,7 @@ struct Functions {
       trig_ull            = params.get<bool>("trig_ull",            true);
       clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
+      cldfrc_dp1          = params.get<Real>("cldfrc_dp1",          ZMC::cldfrc_dp1);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
       old_snow            = params.get<bool>("old_snow",            true);
@@ -228,35 +233,44 @@ struct Functions {
       os << std::boolalpha;
       os << "\n";
       os << "ZM deep convection parameter values:\n";
-      os << indent << "tau             : " << tau            << "\n";
-      os << indent << "alfa            : " << alfa           << "\n";
-      os << indent << "ke              : " << ke             << "\n";
-      os << indent << "dmpdz           : " << dmpdz          << "\n";
-      os << indent << "tpert_fix       : " << tpert_fix      << "\n";
-      os << indent << "tpert_fac       : " << tpert_fac      << "\n";
-      os << indent << "tiedke_add      : " << tiedke_add     << "\n";
-      os << indent << "c0_lnd          : " << c0_lnd         << "\n";
-      os << indent << "c0_ocn          : " << c0_ocn         << "\n";
-      os << indent << "num_cin         : " << num_cin        << "\n";
-      os << indent << "limcnv          : " << limcnv         << "\n";
-      os << indent << "mx_bot_lyr_adj  : " << mx_bot_lyr_adj << "\n";
-      os << indent << "trig_dcape      : " << trig_dcape     << "\n";
-      os << indent << "trig_ull        : " << trig_ull       << "\n";
-      os << indent << "clos_dyn_adj    : " << clos_dyn_adj   << "\n";
-      os << indent << "no_deep_pbl     : " << no_deep_pbl    << "\n";
+      os << indent << "use_fortran_bridge : " << use_fortran_bridge << "\n";
+      os << indent << "apply_detr_tend    : " << apply_detr_tend    << "\n";
+      os << indent << "conv_water_in_rad  : " << conv_water_in_rad  << "\n";
+      os << indent << "upper_limit_pref   : " << upper_limit_pref   << "\n";
+      os << indent << "tau                : " << tau                << "\n";
+      os << indent << "alfa               : " << alfa               << "\n";
+      os << indent << "ke                 : " << ke                 << "\n";
+      os << indent << "dmpdz              : " << dmpdz              << "\n";
+      os << indent << "tpert_fix          : " << tpert_fix          << "\n";
+      os << indent << "tpert_fac          : " << tpert_fac          << "\n";
+      os << indent << "tiedke_add         : " << tiedke_add         << "\n";
+      os << indent << "c0_lnd             : " << c0_lnd             << "\n";
+      os << indent << "c0_ocn             : " << c0_ocn             << "\n";
+      os << indent << "num_cin            : " << num_cin            << "\n";
+      os << indent << "limcnv             : " << limcnv             << "\n";
+      os << indent << "mx_bot_lyr_adj     : " << mx_bot_lyr_adj     << "\n";
+      os << indent << "trig_dcape         : " << trig_dcape         << "\n";
+      os << indent << "trig_ull           : " << trig_ull           << "\n";
+      os << indent << "clos_dyn_adj       : " << clos_dyn_adj       << "\n";
+      os << indent << "no_deep_pbl        : " << no_deep_pbl        << "\n";
+      os << indent << "cldfrc_dp1         : " << cldfrc_dp1         << "\n";
       // ZM micro parameters
-      os << indent << "zm_microp       : " << zm_microp      << "\n";
-      os << indent << "old_snow        : " << old_snow       << "\n";
+      os << indent << "zm_microp          : " << zm_microp          << "\n";
+      os << indent << "old_snow           : " << old_snow           << "\n";
       // MCSP parameters
-      os << indent << "mcsp_enabled    : " << mcsp_enabled   << "\n";
-      os << indent << "mcsp_t_coeff    : " << mcsp_t_coeff   << "\n";
-      os << indent << "mcsp_q_coeff    : " << mcsp_q_coeff   << "\n";
-      os << indent << "mcsp_u_coeff    : " << mcsp_u_coeff   << "\n";
-      os << indent << "mcsp_v_coeff    : " << mcsp_v_coeff   << "\n";
+      os << indent << "mcsp_enabled       : " << mcsp_enabled       << "\n";
+      os << indent << "mcsp_t_coeff       : " << mcsp_t_coeff       << "\n";
+      os << indent << "mcsp_q_coeff       : " << mcsp_q_coeff       << "\n";
+      os << indent << "mcsp_u_coeff       : " << mcsp_u_coeff       << "\n";
+      os << indent << "mcsp_v_coeff       : " << mcsp_v_coeff       << "\n";
       os << std::endl;
       os.flags(saved_flags);
     }
 
+    bool use_fortran_bridge;// flag to use EAM's ZM via fortran brigde
+    bool apply_detr_tend;   // flag to apply ZM liq/ice detrainment tendencies
+    bool conv_water_in_rad; // flag to use ZM in-cloud water for radiation
+    Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
     Real tau;               // convective adjustment time scale
     Real alfa;              // max downdraft mass flux fraction
     Real ke;                // evaporation efficiency
@@ -267,15 +281,13 @@ struct Functions {
     Real c0_lnd;            // autoconversion coefficient over land
     Real c0_ocn;            // autoconversion coefficient over ocean
     int num_cin;            // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
-    Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
     int limcnv;             // upper pressure interface level to limit deep convection
     int mx_bot_lyr_adj;     // bot layer index adjustment for launch level search
     bool trig_dcape;        // true if to using DCAPE trigger - based on CAPE generation by the dycor
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
-    bool apply_detr_tend;
-    bool use_fortran_bridge;
+    Real cldfrc_dp1;        // parameter for radiative in-cld water
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
     bool old_snow;          // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
@@ -439,7 +451,7 @@ struct Functions {
     uview_2d<Real>   flxsnow;        // Convective flux of snow at interfaces   [kg/m2/s]
     uview_2d<Real>   prec_flux;      // output convective prec flux             [kg/m2/s]
     uview_2d<Real>   snow_flux;      // output convective snow flux             [kg/m2/s]
-    uview_2d<Real>   mass_flux;      // output convective mass flux             [mb/s]
+    uview_2d<Real>   mass_flux;      // output convective mass flux             [kg/m2/s] (converted from [mb/s] after zm_conv_main)
     // variables only needed for calling the C++ version of ZM
     uview_1d<Int>    msemax_klev;    // level indices of max MSE
     uview_1d<Int>    jctop;          // top-of-deep-convection indices

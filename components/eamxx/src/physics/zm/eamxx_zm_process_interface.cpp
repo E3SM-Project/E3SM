@@ -81,11 +81,16 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_t_prev",            scalar3d_mid, K,      grid_name);
   add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg,  grid_name);
 
+  // in-cloud water for radiation
+  add_field<Computed>("zm_icw_liq",           scalar3d_mid, kg/kg,  grid_name);
+  add_field<Computed>("zm_icw_ice",           scalar3d_mid, kg/kg,  grid_name);
+  add_field<Computed>("zm_dp_frac",           scalar3d_mid, none,   grid_name);
+
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
-  add_field<Computed>("zm_dcape",             scalar2d,   J/kg/s,   grid_name);
+  add_field<Computed>("zm_dcape",             scalar2d,     J/kg/s, grid_name);
   add_field<Computed>("zm_activity",          scalar2d,     none,   grid_name);
 
   add_field<Computed>("zm_detr_qc",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -287,6 +292,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto loc_zm_output_ql               = zm_output.ql;
   const auto loc_zm_output_rliq             = zm_output.rliq;
   const auto loc_zm_output_dlf              = zm_output.dlf;
+  const auto loc_zm_output_mass_flux        = zm_output.mass_flux;
 
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
@@ -528,6 +534,16 @@ void ZMDeepConvection::run_impl (const double dt)
   }
 
   //----------------------------------------------------------------------------
+  // perform unit conversions
+
+  Kokkos::parallel_for("zm_unit_conversion_int",
+    KT::RangePolicy(0, m_ncol*nlev_int), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_int;
+    const int k = idx%nlev_int;
+    loc_zm_output_mass_flux(i,k) = loc_zm_output_mass_flux(i,k) * ZMF::ZMC::mb_to_pa / PC::gravit.value;
+  });
+
+  //----------------------------------------------------------------------------
   // update prognostic fields
 
   // accumulate surface precipitation fluxes
@@ -543,6 +559,9 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_detr_qi = get_field_out("zm_detr_qi").get_view<Real**>();
   const auto& zm_detr_nc = get_field_out("zm_detr_nc").get_view<Real**>();
   const auto& zm_detr_ni = get_field_out("zm_detr_ni").get_view<Real**>();
+  const auto& zm_icw_liq = get_field_out("zm_icw_liq").get_view<Real**>();
+  const auto& zm_icw_ice = get_field_out("zm_icw_ice").get_view<Real**>();
+  const auto& zm_dp_frac = get_field_out("zm_dp_frac").get_view<Real**>();
   Kokkos::parallel_for("zm_update_prognostic",
     KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
@@ -582,6 +601,14 @@ void ZMDeepConvection::run_impl (const double dt)
     // update "previous" T/qv variabiables for DCAPE
     t_prev(i,k) = T_mid(i,k);
     q_prev(i,k) = qv   (i,k);
+    // update in-cloud water for radiation
+    zm_icw_liq(i,k) = (1 - ice_frac) * loc_zm_output_ql(i,k);
+    zm_icw_ice(i,k) = ice_frac       * loc_zm_output_ql(i,k);
+    // diagnose deep cloud fraction based on the deep convective mass flux
+    // (see "deepcu" calculation in clubb_tend_cam() / clubb_intr.F90)
+    zm_dp_frac(i,k) = zm_opts.cldfrc_dp1 * Kokkos::log( Real(1) + Real(500)*loc_zm_output_mass_flux(i,k+1) );
+    zm_dp_frac(i,k) = Kokkos::min(zm_dp_frac(i,k),ZMF::ZMC::deep_cldfrac_max);
+    zm_dp_frac(i,k) = Kokkos::max(zm_dp_frac(i,k),ZMF::ZMC::deep_cldfrac_min);
   });
 
   //----------------------------------------------------------------------------
@@ -619,7 +646,6 @@ void ZMDeepConvection::run_impl (const double dt)
   });
 
   // 3D interface output
-  const auto loc_zm_output_mass_flux = zm_output.mass_flux;
   const auto& mass_flux_int = get_field_out("zm_mass_flux_int").get_view<Real**>();
   Kokkos::parallel_for("zm_diag_outputs_3D_int",
     KT::RangePolicy(0, m_ncol*nlev_int), KOKKOS_LAMBDA (const int idx) {
