@@ -16,8 +16,7 @@ namespace Homme {
 namespace {
 
 constexpr bool print_tracer_sgs_diffusivity_clipping = false;
-constexpr bool apply_tracer_sgs_global_limiter = true;
-constexpr bool print_tracer_sgs_global_limiter = true;
+constexpr bool apply_tracer_sgs_diagnostic_limiter = true;
 constexpr Real tracer_sgs_cfl_target = 1.00;
 
 KOKKOS_INLINE_FUNCTION
@@ -85,54 +84,47 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     }
   }
 
-  // Preserve the pre-diffusion global maximum independently for each tracer
-  // and physical level. The global-alpha limiter below prevents the SGS
-  // tendency from creating values outside [0, upper_bound].
+  // Diagnostic, non-conservative limiter bounds. Preserve the pre-diffusion
+  // global maximum independently for each tracer and physical level. Include
+  // zero in the admissible interval even if a tracer is initially negative
+  // everywhere at a level.
   ExecViewManaged<Real**> tracer_sgs_upper_bound;
-  ExecViewManaged<Real**> tracer_sgs_alpha;
-  std::vector<Real> upper_bound_values(hv_q * NUM_PHYSICAL_LEV, 0.0);
-  if (apply_tracer_sgs_global_limiter) {
+  if (apply_tracer_sgs_diagnostic_limiter) {
+    const auto Q_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q);
     const int num_bounds = hv_q * NUM_PHYSICAL_LEV;
     std::vector<Real> local_upper_bound(num_bounds, 0.0);
-    tracer_sgs_upper_bound =
-      ExecViewManaged<Real**>("tracer_sgs_upper_bound", hv_q, NUM_PHYSICAL_LEV);
-    Kokkos::deep_copy(tracer_sgs_upper_bound, 0.0);
-    const auto f = KOKKOS_LAMBDA (const int idx) {
-      int ie, q, i, j, lev;
-      idx_ie_q_ij_nlev<num_lev_pack>(hv_q, idx, ie, q, i, j, lev);
-      const auto q_value = Q(ie,q,i,j,lev);
-      for (int s = 0; s < VECTOR_SIZE; ++s) {
-        const int phys_lev = lev * VECTOR_SIZE + s;
-        if (phys_lev < NUM_PHYSICAL_LEV) {
-          Kokkos::atomic_max(&tracer_sgs_upper_bound(q,phys_lev), q_value[s]);
+    std::vector<Real> global_upper_bound(num_bounds, 0.0);
+
+    for (int ie = 0; ie < m_data.nelemd; ++ie) {
+      for (int q = 0; q < hv_q; ++q) {
+        for (int i = 0; i < NP; ++i) {
+          for (int j = 0; j < NP; ++j) {
+            for (int phys_lev = 0; phys_lev < NUM_PHYSICAL_LEV; ++phys_lev) {
+              const int lev = phys_lev / VECTOR_SIZE;
+              const int s = phys_lev % VECTOR_SIZE;
+              const int bound_idx = q * NUM_PHYSICAL_LEV + phys_lev;
+              local_upper_bound[bound_idx] =
+                std::max(local_upper_bound[bound_idx], Q_h(ie,q,i,j,lev)[s]);
+            }
+          }
         }
-      }
-    };
-    launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
-    Kokkos::fence();
-    const auto local_upper_bound_h =
-      Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tracer_sgs_upper_bound);
-    for (int q = 0; q < hv_q; ++q) {
-      for (int phys_lev = 0; phys_lev < NUM_PHYSICAL_LEV; ++phys_lev) {
-        local_upper_bound[q * NUM_PHYSICAL_LEV + phys_lev] =
-          local_upper_bound_h(q,phys_lev);
       }
     }
 
     const auto& comm = Context::singleton().get<Comm>();
-    MPI_Allreduce(local_upper_bound.data(), upper_bound_values.data(), num_bounds,
+    MPI_Allreduce(local_upper_bound.data(), global_upper_bound.data(), num_bounds,
                   MPI_DOUBLE, MPI_MAX, comm.mpi_comm());
 
+    tracer_sgs_upper_bound =
+      ExecViewManaged<Real**>("tracer_sgs_upper_bound", hv_q, NUM_PHYSICAL_LEV);
     auto upper_bound_h = Kokkos::create_mirror_view(tracer_sgs_upper_bound);
     for (int q = 0; q < hv_q; ++q) {
       for (int phys_lev = 0; phys_lev < NUM_PHYSICAL_LEV; ++phys_lev) {
         upper_bound_h(q,phys_lev) =
-          upper_bound_values[q * NUM_PHYSICAL_LEV + phys_lev];
+          global_upper_bound[q * NUM_PHYSICAL_LEV + phys_lev];
       }
     }
     Kokkos::deep_copy(tracer_sgs_upper_bound, upper_bound_h);
-    tracer_sgs_alpha =
-      ExecViewManaged<Real**>("tracer_sgs_alpha", hv_q, NUM_PHYSICAL_LEV);
   }
 
   if (print_tracer_sgs_diffusivity_clipping && lambda_vis > 0) {
@@ -192,95 +184,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
 
     Kokkos::fence();
 
-    if (apply_tracer_sgs_global_limiter) {
-      // Find one alpha in [0,1] for every tracer and physical level. Applying
-      // the same alpha at every horizontal point preserves the global integral
-      // of the assembled tendency relative to the unlimited update. This does
-      // not, by itself, make Kh*Lap(q) a conservative variable-coefficient
-      // diffusion operator.
-      const int num_alpha = hv_q * NUM_PHYSICAL_LEV;
-      std::vector<Real> global_alpha(num_alpha, 1.0);
-      Kokkos::deep_copy(tracer_sgs_alpha, 1.0);
-      const auto f = KOKKOS_LAMBDA (const int idx) {
-        int ie, q, i, j, lev;
-        idx_ie_q_ij_nlev<num_lev_pack>(hv_q, idx, ie, q, i, j, lev);
-        auto kh_eff = Kh(ie,i,j,lev);
-
-        if (lambda_vis > 0) {
-          const Real laplace_metric = get_local_laplace_metric_ct(
-            dinv(ie,0,0,i,j), dinv(ie,0,1,i,j),
-            dinv(ie,1,0,i,j), dinv(ie,1,1,i,j),
-            lambda_vis, scale_factor_inv);
-          if (laplace_metric > 0) {
-            const Real max_diffusivity =
-              2.0 * tracer_sgs_cfl_target / (dt * laplace_metric);
-            for (int s = 0; s < VECTOR_SIZE; ++s) {
-              if (kh_eff[s] > max_diffusivity) kh_eff[s] = max_diffusivity;
-            }
-          }
-        }
-
-        for (int s = 0; s < VECTOR_SIZE; ++s) {
-          const int phys_lev = lev * VECTOR_SIZE + s;
-          if (phys_lev >= num_tom_sponge_levels && phys_lev < NUM_PHYSICAL_LEV) {
-            const Real dq = dt * kh_eff[s] * Qtens(ie,q,i,j,lev)[s]
-                            / spheremp(ie,i,j);
-            const Real q_old = Q(ie,q,i,j,lev)[s];
-            Real alpha = 1.0;
-            if (dq < 0.0) {
-              alpha = q_old / (-dq);
-            } else if (dq > 0.0) {
-              alpha = (tracer_sgs_upper_bound(q,phys_lev) - q_old) / dq;
-            }
-            if (alpha < 0.0) alpha = 0.0;
-            if (alpha > 1.0) alpha = 1.0;
-            Kokkos::atomic_min(&tracer_sgs_alpha(q,phys_lev), alpha);
-          }
-        }
-      };
-      launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
-      Kokkos::fence();
-
-      const auto local_alpha_h =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), tracer_sgs_alpha);
-      std::vector<Real> local_alpha(num_alpha, 1.0);
-      for (int q = 0; q < hv_q; ++q) {
-        for (int phys_lev = 0; phys_lev < NUM_PHYSICAL_LEV; ++phys_lev) {
-          local_alpha[q * NUM_PHYSICAL_LEV + phys_lev] = local_alpha_h(q,phys_lev);
-        }
-      }
-
-      const auto& comm = Context::singleton().get<Comm>();
-      MPI_Allreduce(local_alpha.data(), global_alpha.data(), num_alpha,
-                    MPI_DOUBLE, MPI_MIN, comm.mpi_comm());
-      if (print_tracer_sgs_global_limiter && comm.root()) {
-        Real min_alpha = 1.0;
-        int min_alpha_idx = -1;
-        int num_limited = 0;
-        for (int idx = 0; idx < num_alpha; ++idx) {
-          if (global_alpha[idx] < 1.0) ++num_limited;
-          if (global_alpha[idx] < min_alpha) {
-            min_alpha = global_alpha[idx];
-            min_alpha_idx = idx;
-          }
-        }
-        if (num_limited > 0) {
-          printf("Tracer SGS global limiter subcycle %d: limited %d tracer-levels; minimum alpha=%.16e at q=%d lev=%d.\n",
-                 it + 1, num_limited, min_alpha,
-                 min_alpha_idx / NUM_PHYSICAL_LEV,
-                 min_alpha_idx % NUM_PHYSICAL_LEV);
-        }
-      }
-      auto alpha_h = Kokkos::create_mirror_view(tracer_sgs_alpha);
-      for (int q = 0; q < hv_q; ++q) {
-        for (int phys_lev = 0; phys_lev < NUM_PHYSICAL_LEV; ++phys_lev) {
-          alpha_h(q,phys_lev) = global_alpha[q * NUM_PHYSICAL_LEV + phys_lev];
-        }
-      }
-      Kokkos::deep_copy(tracer_sgs_alpha, alpha_h);
-    }
-
-    { // Compute Q = Q spheremp + alpha dt Kh Qtens. N.B. spheremp is already in
+    { // Compute Q = Q spheremp - dt Kh Qtens. N.B. spheremp is already in
       // Qtens from divergence_sphere_wk.
       const auto f = KOKKOS_LAMBDA (const int idx) {
         int ie, q, i, j, lev;
@@ -310,10 +214,8 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
           const int phys_lev = lev * VECTOR_SIZE + s;
           if (phys_lev < NUM_PHYSICAL_LEV &&
               phys_lev >= num_tom_sponge_levels) {
-            const Real alpha = apply_tracer_sgs_global_limiter
-                             ? tracer_sgs_alpha(q,phys_lev) : 1.0;
             q_new[s] = (Q(ie,q,i,j,lev)[s] * spheremp(ie,i,j)
-                        + alpha * 0.0* dt * kh_eff[s] * Qtens(ie,q,i,j,lev)[s]);
+                        + dt * kh_eff[s] * Qtens(ie,q,i,j,lev)[s]);
           }
         }
         Q(ie,q,i,j,lev) = q_new;
@@ -323,6 +225,25 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     // Halo exchange Q and apply rspheremp.
     Kokkos::fence();
     m_hv_dss_be[1]->exchange(m_geometry.m_rspheremp);
+
+    if (apply_tracer_sgs_diagnostic_limiter) {
+      const auto f = KOKKOS_LAMBDA (const int idx) {
+        int ie, q, i, j, lev;
+        idx_ie_q_ij_nlev<num_lev_pack>(hv_q, idx, ie, q, i, j, lev);
+        auto q_limited = Q(ie,q,i,j,lev);
+        for (int s = 0; s < VECTOR_SIZE; ++s) {
+          const int phys_lev = lev * VECTOR_SIZE + s;
+          if (phys_lev >= num_tom_sponge_levels && phys_lev < NUM_PHYSICAL_LEV) {
+            const Real upper_bound = tracer_sgs_upper_bound(q,phys_lev);
+            if (q_limited[s] < 0.0) q_limited[s] = 0.0;
+            if (q_limited[s] > upper_bound) q_limited[s] = upper_bound;
+          }
+        }
+        Q(ie,q,i,j,lev) = q_limited;
+      };
+      launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
+      Kokkos::fence();
+    }
   }
 }
 
