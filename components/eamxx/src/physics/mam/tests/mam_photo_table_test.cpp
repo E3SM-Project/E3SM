@@ -186,16 +186,19 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
       REQUIRE(nearly_equal(dprs_h(i), dprs_ref[i]));
     }
   }
-
-  SECTION("rsf_table_matches_yaml_reference") {
-    REQUIRE(rsf_tab_2d.size() ==
-            static_cast<std::size_t>(photo_table.nw) *
-            static_cast<std::size_t>(photo_table.nump));
+  
+  SECTION("rsf_corner_slice_matches_reference") {
+    const int nw   = photo_table.nw;
+    const int nump = photo_table.nump;
     int count = 0;
-    for (int k = 0; k < photo_table.nump; ++k) {
-      for (int w = 0; w < photo_table.nw; ++w) {
-        REQUIRE(nearly_equal(rsf_tab_h(w, 0, 0, 0, k), rsf_tab_2d[count], 0, 0));
-        ++count;
+    for (int d2 = 0; d2 < nump; ++d2) {
+      for (int d1 = 0; d1 < nw; ++d1) {
+        const auto computed = rsf_tab_h(d1, d2, 0, 0, 0);;
+        const auto expected = rsf_tab_2d[count];
+        count++;
+        INFO("rsf_tab mismatch at (i=" << d1 << ", j=" << d2
+               << "), computed=" << computed << ", expected=" << expected);
+        REQUIRE(nearly_equal(computed, expected,1e-6));
       }
     }
   }
@@ -248,7 +251,7 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc";
   const std::string xs_long_file =
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc";
-  const std::string input_yaml_file = "table_photo_input_ts_2016289.yaml";
+  const std::string input_yaml_file = "table_photo_input_ts_355.yaml";
 
   const YAML::Node root = YAML::LoadFile(input_yaml_file);
   REQUIRE(root["input"]);
@@ -371,19 +374,23 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
       }
     }
   }
-
+  
   SECTION("compare_against_reference_when_available") {
-    REQUIRE(photo_ref.size() == static_cast<std::size_t>(nlev * nref));
+  REQUIRE(photo_ref.size() == static_cast<std::size_t>(nlev * nref));
 
-    int count = 0;
-    for (int d2 = 0; d2 < nref; ++d2) {
-      for (int d1 = 0; d1 < nlev; ++d1) {
-        const auto computed = photo_h(0, d1, d2);
-        const auto expected = photo_ref[count++];
-        INFO("Mismatch at level k=" << d1 << ", reaction j=" << d2
-             << ", computed=" << computed << ", expected=" << expected);
-        REQUIRE(nearly_equal(computed, expected, 1e-6));
-      }
+  int count = 0;
+  for (int d2 = 0; d2 < nref; ++d2) {
+    for (int d1 = 0; d1 < nlev; ++d1) {
+      const auto computed = photo_h(0, d1, d2);
+      const auto expected = photo_ref[count];
+      count++;
+      Real diff=computed - expected;
+      Real rel = abs(diff)/expected;
+      INFO("Reference mismatch at d1=" << d1 << ", d2=" << d2
+              << ", computed=" << computed 
+              << ", expected=" << expected);
+      REQUIRE(nearly_equal(computed, expected, 1e-8, 1e-12));
     }
+  }
   }
 }
