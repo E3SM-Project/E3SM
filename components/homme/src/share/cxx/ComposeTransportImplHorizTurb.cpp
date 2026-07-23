@@ -13,7 +13,6 @@ namespace Homme {
 
 namespace {
 
-constexpr bool print_tracer_sgs_diffusivity_clipping = false;
 constexpr Real tracer_sgs_cfl_target = 1.00;
 
 KOKKOS_INLINE_FUNCTION
@@ -77,40 +76,6 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
       const int s = phys_lev % VECTOR_SIZE;
       if (is_tom_sponge_level_ct(eta_top, etam_h(lev)[s])) {
         num_tom_sponge_levels = phys_lev + 1;
-      }
-    }
-  }
-
-  if (print_tracer_sgs_diffusivity_clipping && lambda_vis > 0) {
-    const auto kh_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Kh);
-    const auto dinv_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), dinv);
-    const int rank = Context::singleton().get<Comm>().rank();
-
-    for (int ie = 0; ie < m_data.nelemd; ++ie) {
-      for (int i = 0; i < NP; ++i) {
-        for (int j = 0; j < NP; ++j) {
-          const Real a = dinv_h(ie,0,0,i,j);
-          const Real b = dinv_h(ie,0,1,i,j);
-          const Real c = dinv_h(ie,1,0,i,j);
-          const Real d = dinv_h(ie,1,1,i,j);
-          const Real laplace_metric = get_local_laplace_metric_ct(a, b, c, d,
-                                                                  lambda_vis, scale_factor_inv);
-          if (laplace_metric <= 0) continue;
-
-          const Real max_diffusivity = 2.0 * tracer_sgs_cfl_target / (dt * laplace_metric);
-          for (int lev = 0; lev < NUM_LEV; ++lev) {
-            const auto kh = kh_h(ie,i,j,lev);
-            for (int s = 0; s < VECTOR_SIZE; ++s) {
-              const int phys_lev = lev * VECTOR_SIZE + s;
-              if (phys_lev >= NUM_PHYSICAL_LEV) continue;
-              if (phys_lev < num_tom_sponge_levels) continue;
-              if (kh[s] > max_diffusivity) {
-                printf("Warning: rank %d clipped tracer SGS Kh at ie=%d igp=%d jgp=%d lev=%d from %.16e to %.16e.\n",
-                       rank, ie, i, j, phys_lev, kh[s], max_diffusivity);
-              }
-            }
-          }
-        }
       }
     }
   }
