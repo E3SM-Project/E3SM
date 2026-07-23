@@ -146,13 +146,13 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
     REQUIRE(photo_table.numcolo3 == numcolo3_shape);
     REQUIRE(photo_table.numalb == numalb_shape);
 
-    REQUIRE(photo_table.sza.extent(0) == photo_table.numsza);
-    REQUIRE(photo_table.alb.extent(0) == photo_table.numalb);
-    REQUIRE(photo_table.colo3.extent(0) == photo_table.nump);
-    REQUIRE(photo_table.o3rat.extent(0) == photo_table.numcolo3);
-    REQUIRE(photo_table.prs.extent(0) == photo_table.np_xs);
-    REQUIRE(photo_table.lng_indexer.extent(0) == mam4::mo_photo::phtcnt);
-    REQUIRE(photo_table.pht_alias_mult_1.extent(0) == mam4::mo_photo::phtcnt);
+    REQUIRE(photo_table.sza.extent_int(0) == photo_table.numsza);
+    REQUIRE(photo_table.alb.extent_int(0) == photo_table.numalb);
+    REQUIRE(photo_table.colo3.extent_int(0) == photo_table.nump);
+    REQUIRE(photo_table.o3rat.extent_int(0) == photo_table.numcolo3);
+    REQUIRE(photo_table.prs.extent_int(0) == photo_table.np_xs);
+    REQUIRE(photo_table.lng_indexer.extent_int(0) == mam4::mo_photo::phtcnt);
+    REQUIRE(photo_table.pht_alias_mult_1.extent_int(0) == mam4::mo_photo::phtcnt);
   }
 
   SECTION("1d_tables_match_yaml_reference") {
