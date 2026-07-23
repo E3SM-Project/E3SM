@@ -126,7 +126,8 @@ struct ComposeTransportImpl {
   TeamUtils<ExecSpace> m_tu_ne, m_tu_ne_qsize, m_tu_ne_hv_q;
 
   std::shared_ptr<BoundaryExchange>
-    m_qdp_dss_be[Q_NUM_TIME_LEVELS], m_v_dss_be[2], m_hv_dss_be[2];
+    m_qdp_dss_be[Q_NUM_TIME_LEVELS], m_v_dss_be[2], m_hv_dss_be[2],
+    m_horiz_turb_dss_be[2];
 
   ComposeTransportImpl();
   ComposeTransportImpl(const int num_elems);

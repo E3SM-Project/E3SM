@@ -56,7 +56,7 @@ bool is_tom_sponge_level_ct (const Real eta_top, const Real eta_mid)
 
 void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const Real dt_q) {
   const auto dt = dt_q / m_data.hv_subcycle_q_sgs;
-  const auto hv_q = m_data.hv_q;
+  const auto qsize = m_data.qsize;
   const auto Qtens = m_tracers.qtens_biharmonic;
   const auto Q = m_tracers.Q;
   const auto Kh = m_derived.m_turb_diff_heat;
@@ -64,7 +64,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
   const auto spheremp = m_geometry.m_spheremp;
   const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
   const Real lambda_vis = get_lambda_vis_ct();
-  const auto tu_ne_hv_q = m_tu_ne_hv_q;
+  const auto tu_ne_qsize = m_tu_ne_qsize;
   const auto sphere_ops = m_sphere_ops;
   const bool tom_sponge_active = Context::singleton().get<SimulationParams>().nu_top > 0;
   int num_tom_sponge_levels = 0;
@@ -119,25 +119,25 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     { // Qtens = Q
       const auto f = KOKKOS_LAMBDA (const int idx) {
         int ie, q, i, j, lev;
-        idx_ie_q_ij_nlev<num_lev_pack>(hv_q, idx, ie, q, i, j, lev);
+        idx_ie_q_ij_nlev<num_lev_pack>(qsize, idx, ie, q, i, j, lev);
         Qtens(ie,q,i,j,lev) = Q(ie,q,i,j,lev);
       };
-      launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
+      launch_ie_q_ij_nlev<num_lev_pack>(qsize, f);
     }
     // biharmonic_wk_scalar
     const auto laplace_simple_Qtens = [&] () {
       const auto f = KOKKOS_LAMBDA (const MT& team) {
-        KernelVariables kv(team, hv_q, tu_ne_hv_q);
+        KernelVariables kv(team, qsize, tu_ne_qsize);
         const auto Qtens_ie = Homme::subview(Qtens, kv.ie, kv.iq);
         sphere_ops.laplace_simple(kv, Qtens_ie, Qtens_ie);
       };
-      Kokkos::parallel_for(m_tp_ne_hv_q, f);
+      Kokkos::parallel_for(m_tp_ne_qsize, f);
     };
     laplace_simple_Qtens();
     // Assemble the weak Laplacian tendency, but leave its mass weighting in
     // place. The inverse mass matrix is applied once, after the tendency is
     // added to Q below.
-    m_hv_dss_be[0]->exchange();
+    m_horiz_turb_dss_be[0]->exchange();
 
     Kokkos::fence();
 
@@ -145,7 +145,7 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
       // Qtens from divergence_sphere_wk.
       const auto f = KOKKOS_LAMBDA (const int idx) {
         int ie, q, i, j, lev;
-        idx_ie_q_ij_nlev<num_lev_pack>(hv_q, idx, ie, q, i, j, lev);
+        idx_ie_q_ij_nlev<num_lev_pack>(qsize, idx, ie, q, i, j, lev);
         auto kh_eff = Kh(ie,i,j,lev);
 
         if (lambda_vis > 0) {
@@ -177,11 +177,11 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
         }
         Q(ie,q,i,j,lev) = q_new;
       };
-      launch_ie_q_ij_nlev<num_lev_pack>(hv_q, f);
+      launch_ie_q_ij_nlev<num_lev_pack>(qsize, f);
     }
     // Halo exchange Q and apply rspheremp.
     Kokkos::fence();
-    m_hv_dss_be[1]->exchange(m_geometry.m_rspheremp);
+    m_horiz_turb_dss_be[1]->exchange(m_geometry.m_rspheremp);
   }
 }
 
