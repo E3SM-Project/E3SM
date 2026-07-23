@@ -65,6 +65,7 @@ std::vector<int> read_int_vector(const YAML::Node& node) {
 
 TEST_CASE("mam_photo_table_yaml_reference_regression",
           "[mam4][photo][kokkos]") {
+  if constexpr (mam4::nlev != 72) return;
   using namespace scream;
 
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -233,6 +234,7 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
 
 TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
           "[mam4][photo][kokkos]") {
+  if constexpr (mam4::nlev != 72) return;
   constexpr int ncol = 1;
   constexpr int nlev = mam4::nlev;
   constexpr int nref = 1;
