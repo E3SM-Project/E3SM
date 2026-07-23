@@ -70,15 +70,14 @@ def _update_read_io_streams(config, case, stream):
     """
     continue_run = case.get_value("CONTINUE_RUN")
 
-    # RestartRead has inverse logic compared to InitialState and
-    # InitialVertCoord, so negate the value of continue_run
+    # RestartRead has inverse logic to InitialState so negate value
     if stream == "RestartRead":
         continue_run = not continue_run
 
     config[stream]['Filename'] = _get_file_name(case, stream)
 
-    # Leave `OnstartUp` default for HorzMeshIn stream
-    if stream not in ["HorzMeshIn"]:  # "InitialVertCoord"]:
+    # Leave `OnstartUp` default for HorzMeshIn and InitialVertCoord streams
+    if stream not in ["HorzMeshIn", "InitialVertCoord"]:
         config[stream]["FreqUnits"] = "Never" if continue_run else "OnStartUp"
 
     # Make sure pointer, with the correct filename, is used by restart reads
