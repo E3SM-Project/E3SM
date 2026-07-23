@@ -50,9 +50,9 @@ def _get_file_name(case, stream):
     polaris_dir = din_loc / "../polaris/ocean/realistic_global/omega"
 
     if ocn_grid == "oQU240":
-        return str(polaris_dir / "ocean.QU240km.151209.teos10.nc")
+        return str(polaris_dir / "ocean.QU.240km.151209.teos10.260720.nc")
     elif ocn_grid == "EC30to60E2r2":
-        return str(polaris_dir / "ocean.EC30to60E2r2.200908.teos10.nc")
+        return str(polaris_dir / "ocean.EC30to60E2r2.200908.teos10.260720.nc")
     else:
         raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
 
