@@ -47,12 +47,14 @@ def _get_file_name(case, stream):
 
     # TODO: this will return a different value based on the stream name
     # For now mesh file contains all information needed in single file
-    polaris_dir = din_loc / "../polaris/ocean/realistic_global/omega"
+    omega_dir = din_loc / "ocn/omega"
 
     if ocn_grid == "oQU240":
-        return str(polaris_dir / "ocean.QU.240km.151209.teos10.260720.nc")
+        mesh_dir = omega_dir / "oQU240"
+        return str(mesh_dir / "ocean.QU.240km.151209.teos10.260720.nc")
     elif ocn_grid == "EC30to60E2r2":
-        return str(polaris_dir / "ocean.EC30to60E2r2.200908.teos10.260720.nc")
+        mesh_dir = omega_dir / "EC30to60E2r2"
+        return str(mesh_dir / "ocean.EC30to60E2r2.200908.teos10.260720.nc")
     else:
         raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
 
@@ -165,6 +167,33 @@ def _build_time_integration_config(default_time_integration, case):
     return time_integration
 
 
+def build_input_data_list(case, compname):
+    """
+    Add files to omega.input_data_list so they can be automatically downloaded
+    """
+    expect(compname == "omega", compname)
+
+    casebuild = case.get_value("CASEBUILD")
+    input_data_list = []
+
+    # Add the initial state file to the input data list
+    initial_state_file = _get_file_name(case, "InitialState")
+    input_data_list.append(f"initial_state = {initial_state_file}")
+
+    # TODO: For now all information is contained in a single input file
+    # # Add the horizontal mesh file to the input data list
+    # horz_mesh_file = _get_file_name(case, "HorzMeshIn")
+    # input_data_list.append(horz_mesh_file)
+
+    # # Add the initial vertical coordinate file to the input data list
+    # initial_vert_coord_file = _get_file_name(case, "InitialVertCoord")
+    # input_data_list.append(initial_vert_coord_file)
+
+    with open(Path(casebuild) / "omega.input_data_list", "w") as f:
+        for input_file in input_data_list:
+            f.write(f"{input_file}\n")
+
+
 def buildnml(case, caseroot, compname):
     """
     """
@@ -209,6 +238,9 @@ def buildnml(case, caseroot, compname):
         case_docs = case_root / 'CaseDocs'
         if case_docs.exists():
             safe_copy(output_file, case_docs / "omega.yml")
+
+        # needs to be called within buildnml
+        build_input_data_list(case, compname)
 
 
 def _main_func():
