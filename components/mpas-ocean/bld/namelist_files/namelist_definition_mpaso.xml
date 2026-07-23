@@ -548,7 +548,7 @@ Default: Defined in namelist_defaults.xml
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling
 
-Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'
+Valid values: 'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch', 'geometric'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -645,6 +645,46 @@ Default: Defined in namelist_defaults.xml
 factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)
 
 Valid values: small positive values less than equal to one
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_alpha" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Configured GEOMETRIC efficiency
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_eddyDiff" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Eddy diffusivity for the depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_dissipation" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Number of days to dissipate the depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_backgroundEddyEnergy" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Background total depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_geometric_maximumEddyEnergy" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum total depth-integrated parameterized eddy energy
+
+Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
