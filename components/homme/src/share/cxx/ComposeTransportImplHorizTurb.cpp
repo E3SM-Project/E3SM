@@ -134,11 +134,14 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
       Kokkos::parallel_for(m_tp_ne_hv_q, f);
     };
     laplace_simple_Qtens();
-    m_hv_dss_be[0]->exchange(m_geometry.m_rspheremp);
+    // Assemble the weak Laplacian tendency, but leave its mass weighting in
+    // place. The inverse mass matrix is applied once, after the tendency is
+    // added to Q below.
+    m_hv_dss_be[0]->exchange();
 
     Kokkos::fence();
 
-    { // Compute Q = Q spheremp - dt Kh Qtens. N.B. spheremp is already in
+    { // Compute Q = Q spheremp + dt Kh Qtens. N.B. spheremp is already in
       // Qtens from divergence_sphere_wk.
       const auto f = KOKKOS_LAMBDA (const int idx) {
         int ie, q, i, j, lev;
