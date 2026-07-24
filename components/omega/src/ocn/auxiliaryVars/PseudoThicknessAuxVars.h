@@ -69,26 +69,31 @@ class PseudoThicknessAuxVars {
                                            const Array2DReal &NormalVelEdge,
                                            const Real Dt) const {
 
-      // Temporary for stacked shallow water
-      const int KStart = chunkStart(KChunk, MinLayerCell(ICell));
-      const int KLen   = chunkLength(KChunk, KStart, MaxLayerCell(ICell));
+      const I4 KStartCell = chunkStart(KChunk, MinLayerCell(ICell));
+      const I4 KLenCell = chunkLength(KChunk, KStartCell, MaxLayerCell(ICell));
+      const I4 KEndCell = KStartCell + KLenCell - 1;
 
       Real TmpProv[VecLength] = {0.};
 
       Real DtInvAreaCell = Dt / AreaCell(ICell);
       for (int J = 0; J < NEdgesOnCell(ICell); ++J) {
          const I4 JEdge = EdgesOnCell(ICell, J);
+
+         const I4 KStartEdge = Kokkos::max(KStartCell, MinLayerEdgeBot(JEdge));
+         const I4 KEndEdge   = Kokkos::min(KEndCell, MaxLayerEdgeTop(JEdge));
+
          const Real Factor =
              DtInvAreaCell * DvEdge(JEdge) * EdgeSignOnCell(ICell, J);
-         for (int KVec = 0; KVec < KLen; ++KVec) {
-            const int K = KStart + KVec;
+
+         for (int K = KStartEdge; K <= KEndEdge; ++K) {
+            const I4 KVec = K - KStartCell;
             TmpProv[KVec] += Factor * FluxPseudoThickEdge(JEdge, K) *
                              NormalVelEdge(JEdge, K);
          }
       }
 
-      for (int KVec = 0; KVec < KLen; ++KVec) {
-         const int K = KStart + KVec;
+      for (int KVec = 0; KVec < KLenCell; ++KVec) {
+         const int K = KStartCell + KVec;
          ProvPseudoThickness(ICell, K) =
              PseudoThickCell(ICell, K) + TmpProv[KVec];
       }
