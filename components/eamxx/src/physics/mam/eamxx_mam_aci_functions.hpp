@@ -92,7 +92,8 @@ void compute_subgrid_scale_velocities(
 }
 
 void compute_nucleate_ice_tendencies(
-    const mam4::NucleateIce &nucleate_ice, mam4::ThreadTeamPolicy team_policy,
+    mam4::ThreadTeamPolicy team_policy, const mam4::AeroConfig aero_config,
+    const mam4::NucleateIce &nucleate_ice,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
     const mam_coupling::AerosolState &dry_aero, const MAMAci::view_2d wsubice,
     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
@@ -155,12 +156,12 @@ void compute_nucleate_ice_tendencies(
         // grab views from the buffer to store tendencies, not used as all
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);  // not used
-        const mam4::AeroConfig aero_config(nucleate_ice.aero_species);
         const Real t = 0;  // not used
         nucleate_ice.compute_tendencies(aero_config, team, t, dt, atm,
                                         surf, progs, diags, tends);
       });
 }
+
 void store_liquid_cloud_fraction(
     const int ncol,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
@@ -456,8 +457,8 @@ void update_interstitial_aerosols(
 }
 
 void call_hetfrz_compute_tendencies(
-    mam4::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
-    mam_coupling::DryAtmosphere &dry_atm_,
+    mam4::ThreadTeamPolicy team_policy, const mam4::AeroConfig &aero_config,
+    mam4::Hetfrz &hetfrz_, mam_coupling::DryAtmosphere &dry_atm_,
     mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
     const double dt, const int nlev,
     // output
@@ -527,7 +528,7 @@ void call_hetfrz_compute_tendencies(
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
         const Real t = 0;  // not used
-        hetfrz.compute_tendencies(hetfrz.aero_config, team, t, dt, atm, surf,
+        hetfrz.compute_tendencies(aero_config, team, t, dt, atm, surf,
                                   progs, diags, tends);
       });
 }

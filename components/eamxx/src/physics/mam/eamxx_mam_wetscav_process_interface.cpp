@@ -46,7 +46,7 @@ MAMWetscav::create_requests()
   buffer_.set_len_temporary_views(len_temporary_views_);
   buffer_.set_num_scratch(num_2d_scratch_);
 
-  const int nmodes    = mam4::AeroConfig::num_modes(); // Number of modes
+  const int nmodes    = aero_config_.num_modes(); // Number of modes
   constexpr int pcnst = mam4::aero_model::pcnst;
 
   // layout for 3D (2d horiz X 1d vertical) variables at level
@@ -318,17 +318,17 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   view_2d_host scavimptblvol_host("scavimptblvol_host",
                                   mam4::aero_model::nimptblgrow_total,
-                                  mam4::AeroConfig::num_modes());
+                                  aero_config_.num_modes());
   view_2d_host scavimptblnum_host("scavimptblnum_host",
                                   mam4::aero_model::nimptblgrow_total,
-                                  mam4::AeroConfig::num_modes());
+                                  aero_config_.num_modes());
 
-  mam4::wetdep::init_scavimptbl(aero_config_, scavimptblvol_host, scavimptblnum_host);
+  mam4::wetdep::init_scavimptbl(aero_config_.aero_species, scavimptblvol_host, scavimptblnum_host);
 
   scavimptblnum_ = view_2d("scavimptblnum", mam4::aero_model::nimptblgrow_total,
-                           mam4::AeroConfig::num_modes());
+                           aero_config_.num_modes());
   scavimptblvol_ = view_2d("scavimptblvol", mam4::aero_model::nimptblgrow_total,
-                           mam4::AeroConfig::num_modes());
+                           aero_config_.num_modes());
   Kokkos::deep_copy(scavimptblnum_, scavimptblnum_host);
   Kokkos::deep_copy(scavimptblvol_, scavimptblvol_host);
 }

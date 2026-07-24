@@ -11,11 +11,12 @@ namespace scream {
 
 MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
                                          const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
+    : AtmosphereProcess(comm, params), aero_config_() {
       use_prescribed_ozone_   = m_params.get<bool>("use_mam4_precribed_ozone", false);
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+  // FIXME: Read in overridden aerosol species properties.
 }
 // ================================================================
 void MAMGenericInterface::set_aerosol_and_gas_ranges() {

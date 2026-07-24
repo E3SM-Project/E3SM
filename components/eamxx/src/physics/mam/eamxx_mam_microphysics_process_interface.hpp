@@ -98,8 +98,6 @@ class MAMMicrophysics final : public MAMGenericInterface {
     mam4::microphysics::AmicPhysConfig amicphys;
   };
   Config config_;
-  // MAM4 aerosol particle size description
-  mam4::AeroConfig aero_config_;
 
   // photolysis rate table (column-independent)
   mam4::mo_photo::PhotoTableData photo_table_;

@@ -201,10 +201,10 @@ int MAMDryDep::get_len_temporary_views() {
   constexpr int pcnst = mam4::aero_model::pcnst;
   int work_len        = 0;
   // vlc_trb_
-  work_len += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
+  work_len += aero_config_.num_modes() * aerosol_categories_ * ncol_;
   // vlc_grv_, vlc_dry_
   work_len +=
-      2 * mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+      2 * aero_config_.num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // rho_
   work_len += ncol_ * nlev_;
   // qqcw_, dqdt_tmp_, qtracers_, ptend_q_
@@ -223,21 +223,21 @@ void MAMDryDep::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * pcnst;
 
   // Deposition velocity of turbulent dry deposition [m/s]
-  vlc_trb_ = view_3d(work_ptr, mam4::AeroConfig::num_modes(),
+  vlc_trb_ = view_3d(work_ptr, aero_config_.num_modes(),
                      aerosol_categories_, ncol_);
-  work_ptr += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
+  work_ptr += aero_config_.num_modes() * aerosol_categories_ * ncol_;
 
   // Deposition velocity of gravitational settling [m/s]
-  vlc_grv_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
+  vlc_grv_ = view_4d(work_ptr, aero_config_.num_modes(),
                      aerosol_categories_, ncol_, nlev_);
   work_ptr +=
-      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+      aero_config_.num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Deposition velocity, [m/s]
   // Fraction landuse weighted sum of vlc_grv and vlc_trb
-  vlc_dry_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
+  vlc_dry_ = view_4d(work_ptr, aero_config_.num_modes(),
                      aerosol_categories_, ncol_, nlev_);
   work_ptr +=
-      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+      aero_config_.num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Work array to hold the mixing ratios [kg/kg or 1/kg]
   // Packs AerosolState::int_aero_nmr and AerosolState::int_aero_nmr
   // into one array.

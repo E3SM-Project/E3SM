@@ -78,6 +78,10 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   //namelist variables (declared protected so that derived classes can access them)
   bool use_prescribed_ozone_{false};  // use prescribed ozone from MAM4
 
+ protected:
+  // aerosol species properties (available to all MAM processes, for consistency)
+  mam4::AeroConfig aero_config_;
+
  private:
   // The type of subcomponent
   // --------------------------------------------------------------------------

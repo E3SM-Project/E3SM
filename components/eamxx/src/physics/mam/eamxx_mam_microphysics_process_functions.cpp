@@ -564,7 +564,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     auto& dgncur_awet_loc = dgncur_awet_;
     auto& dgncur_a_loc = dgncur_a_;
     auto& wetdens_loc = wetdens_;
-    constexpr int nmodes = mam4::AeroConfig::num_modes();
+    constexpr int nmodes = aero_config_.num_modes();
      Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::modal_aero_amicphys_intr_precompute",
     Kokkos::RangePolicy<>(0, ncol_ * nlev),

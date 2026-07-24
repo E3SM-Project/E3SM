@@ -15,8 +15,7 @@ namespace scream
 {
 
 MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterList &params)
- : MAMGenericInterface(comm, params),
-   aero_config_()
+ : MAMGenericInterface(comm, params)
 {
   const int n_so4_monolayers_pcage =
     m_params.get<int>("mam4_number_so4_monolayers_to_age_carbon_particle",8);
@@ -28,7 +27,6 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
   config_.amicphys.do_rename = m_params.get<bool>("mam4_do_rename");
   config_.amicphys.do_newnuc = m_params.get<bool>("mam4_do_newnuc");
   config_.amicphys.do_coag   = m_params.get<bool>("mam4_do_coag");
-  config_.amicphys.aero_species = aero_config_.aero_species;
   check_fields_intervals_    = m_params.get<bool>("create_fields_interval_checks", false);
 
   // these parameters guide the coupling between parameterizations
@@ -146,7 +144,7 @@ MAMMicrophysics::create_requests()
 
   //----------- Variables from other mam4xx processes ------------
   // Number of modes
-  constexpr int nmodes = mam4::AeroConfig::num_modes();
+  constexpr int nmodes = aero_config_.num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout vector3d_mid_nmodes =
@@ -363,7 +361,7 @@ int MAMMicrophysics::get_len_temporary_views() {
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   constexpr int pcnst              = mam4::pcnst;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  constexpr int nmodes = mam4::AeroConfig::num_modes();
+  constexpr int nmodes = aero_config_.num_modes();
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -395,7 +393,7 @@ void MAMMicrophysics::init_temporary_views() {
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   constexpr int pcnst              = mam4::pcnst;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  constexpr int nmodes = mam4::AeroConfig::num_modes();
+  constexpr int nmodes = aero_config_.num_modes();
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);

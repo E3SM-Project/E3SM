@@ -116,7 +116,7 @@ void MAMAci::create_requests() {
   add_field<Required>("eddy_diff_heat", scalar3d_mid, m2 / s, grid_name);
 
   // Number of modes
-  constexpr int nmodes = mam4::AeroConfig::num_modes();
+  constexpr int nmodes = aero_config_.num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
@@ -532,8 +532,8 @@ void MAMAci::run_impl(const double dt) {
   //  Compute Ice nucleation
   //  NOTE: The Fortran version uses "ast" for cloud fraction which is
   //  equivalent to "cldfrac_tot" in FM. It is part of the "dry_atm_" struct
-  compute_nucleate_ice_tendencies(
-      nucleate_ice_, team_policy, dry_atm_, dry_aero_, wsubice_,
+  compute_nucleate_ice_tendencies(team_policy, aero_config_,
+      nucleate_ice_, dry_atm_, dry_aero_, wsubice_,
       aitken_dry_dia_, nlev_, dt,
       // output
       nihf_, niim_, nidep_, nimey_, naai_hom_,
@@ -589,8 +589,8 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------------------
 
   // Compute hetrozenous freezing
-  call_hetfrz_compute_tendencies(
-      team_policy, hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
+  call_hetfrz_compute_tendencies(team_policy, aero_config_,
+      hetfrz_, dry_atm_, dry_aero_, factnum_, dt, nlev_,
       // ## output to be used by the other processes ##
       hetfrz_immersion_nucleation_tend_, hetfrz_contact_nucleation_tend_,
       hetfrz_deposition_nucleation_tend_,
