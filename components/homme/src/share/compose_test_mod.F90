@@ -157,7 +157,8 @@ contains
 
     type(hybrid_t), intent(in) :: hybrid
     integer, intent(in) :: nets, nete
-    integer :: ok, size, rss_int, share, text, datastack, ie
+    integer :: ok, ie
+    integer(8) :: size, rss_int, share, text, datastack
     real(kind=real_kind) :: rss, rss_min, rss_max, rss_mean
 
     ok = GPTLget_memusage(size, rss_int, share, text, datastack)
