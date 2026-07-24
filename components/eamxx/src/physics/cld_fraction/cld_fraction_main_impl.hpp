@@ -22,7 +22,9 @@ void CldFractionFunctions<S,D>
   const view_2d<Pack>& ice_cld_frac,
   const view_2d<Pack>& tot_cld_frac,
   const view_2d<Pack>& ice_cld_frac_4out,
-  const view_2d<Pack>& tot_cld_frac_4out)
+  const view_2d<Pack>& tot_cld_frac_4out,
+  const bool use_zm_cloud,
+  const view_2d<const Pack>& deep_cld_frac)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF = ekat::TeamPolicyFactory<ExeSpace>;
@@ -48,6 +50,15 @@ void CldFractionFunctions<S,D>
 
     calc_totalfrac(team,nk,oliq_cld_frac,oice_cld_frac,otot_cld_frac);
     calc_totalfrac(team,nk,oliq_cld_frac,oice_cld_frac_4out,otot_cld_frac_4out);
+
+    // Fold the ZM deep convective cloud fraction into the total cloud fraction
+    // seen by downstream processes (incl. radiation). Applied to both the model
+    // total and the "for_analysis" total.
+    if (use_zm_cloud) {
+      const auto odeep_cld_frac = ekat::subview(deep_cld_frac, i);
+      add_deep_frac(team,nk,odeep_cld_frac,otot_cld_frac);
+      add_deep_frac(team,nk,odeep_cld_frac,otot_cld_frac_4out);
+    }
   });
   Kokkos::fence();
 } // main
@@ -92,6 +103,25 @@ void CldFractionFunctions<S,D>
   }); // Kokkos_parallel_for nk_pack
   team.team_barrier();
 } // calc_totalfrac
+/*-----------------------------------------------------------------*/
+template <typename S, typename D>
+KOKKOS_FUNCTION
+void CldFractionFunctions<S,D>
+::add_deep_frac(
+  const MemberType& team,
+  const Int& nk,
+  const uview_1d<const Pack>& deep_cld_frac,
+  const uview_1d<Pack>&       tot_cld_frac)
+{
+  team.team_barrier();
+  const Int nk_pack = ekat::npack<Pack>(nk);
+  Kokkos::parallel_for(
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
+      // Mirror EAM clubb_intr.F90: cloud_frac = min(ast + deepcu, 1)
+      tot_cld_frac(k) = min(tot_cld_frac(k) + deep_cld_frac(k), 1.0);
+  }); // Kokkos_parallel_for nk_pack
+  team.team_barrier();
+} // add_deep_frac
 /*-----------------------------------------------------------------*/
 
 } // namespace cld_fraction

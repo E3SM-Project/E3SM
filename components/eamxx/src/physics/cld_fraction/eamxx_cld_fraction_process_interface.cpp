@@ -41,6 +41,13 @@ void CldFraction::create_requests()
   add_tracer<Required>("qi", m_grid, kg/kg, ps);
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, none, grid_name,ps);
 
+  // When ZM deep convection is active, its diagnosed deep convective cloud
+  // fraction is folded into the total cloud fraction (see run_impl).
+  m_do_zm_deep_cldfrac = m_params.get<bool>("do_zm_deep_cldfrac", false);
+  if (m_do_zm_deep_cldfrac) {
+    add_field<Required>("zm_dp_frac", scalar3d_layout_mid, none, grid_name,ps);
+  }
+
   // Set of fields used strictly as output
   add_field<Computed>("cldfrac_tot", scalar3d_layout_mid, none, grid_name,ps);
   add_field<Computed>("cldfrac_ice", scalar3d_layout_mid, none, grid_name,ps);
@@ -146,8 +153,15 @@ void CldFraction::run_impl (const double /* dt */)
   auto ice_cld_frac_4out_v = ice_cld_frac_4out.get_view<Pack**>();
   auto tot_cld_frac_4out_v = tot_cld_frac_4out.get_view<Pack**>();
 
+  // ZM deep convective cloud fraction (only present/required when enabled).
+  CldFractionFunc::view_2d<const Pack> deep_cld_frac_v;
+  if (m_do_zm_deep_cldfrac) {
+    deep_cld_frac_v = get_field_in("zm_dp_frac").get_view<const Pack**>();
+  }
+
   CldFractionFunc::main(m_num_cols,m_num_levs,m_icecloud_threshold,m_icecloud_for_analysis_threshold,
-    qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v);
+    qi_v,liq_cld_frac_v,ice_cld_frac_v,tot_cld_frac_v,ice_cld_frac_4out_v,tot_cld_frac_4out_v,
+    m_do_zm_deep_cldfrac,deep_cld_frac_v);
 }
 
 // =========================================================================================

@@ -35,16 +35,18 @@ struct CldFractionFunctions
   using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
 
   static void main(
-    const Int nj, 
+    const Int nj,
     const Int nk,
     const Real ice_threshold,
     const Real ice_4out_threshold,
-    const view_2d<const Pack>& qi, 
-    const view_2d<const Pack>& liq_cld_frac, 
-    const view_2d<Pack>& ice_cld_frac, 
+    const view_2d<const Pack>& qi,
+    const view_2d<const Pack>& liq_cld_frac,
+    const view_2d<Pack>& ice_cld_frac,
     const view_2d<Pack>& tot_cld_frac,
-    const view_2d<Pack>& ice_cld_frac_4out, 
-    const view_2d<Pack>& tot_cld_frac_4out);
+    const view_2d<Pack>& ice_cld_frac_4out,
+    const view_2d<Pack>& tot_cld_frac_4out,
+    const bool use_zm_cloud,
+    const view_2d<const Pack>& deep_cld_frac);
 
   KOKKOS_FUNCTION
   static void calc_icefrac( 
@@ -55,11 +57,20 @@ struct CldFractionFunctions
     const uview_1d<Pack>&       ice_cld_frac);
 
   KOKKOS_FUNCTION
-  static void calc_totalfrac( 
+  static void calc_totalfrac(
     const MemberType& team,
     const Int& nk,
     const uview_1d<const Pack>& liq_cld_frac,
     const uview_1d<const Pack>& ice_cld_frac,
+    const uview_1d<Pack>&       tot_cld_frac);
+
+  // Add the deep convective cloud fraction (from ZM) into the total cloud
+  // fraction, following EAM's clubb_intr.F90: cld = min(ast + deepcu, 1).
+  KOKKOS_FUNCTION
+  static void add_deep_frac(
+    const MemberType& team,
+    const Int& nk,
+    const uview_1d<const Pack>& deep_cld_frac,
     const uview_1d<Pack>&       tot_cld_frac);
 
 }; // struct Functions
