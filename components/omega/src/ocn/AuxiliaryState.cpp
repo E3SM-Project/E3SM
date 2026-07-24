@@ -28,7 +28,8 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
       SurfTracerRestAux(stripDefault(Name), Mesh, NTracers),
-      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers) {
+      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers),
+      TimeStep(TimeStep) {
 
    GroupName = "AuxiliaryState";
    if (Name != "Default") {
