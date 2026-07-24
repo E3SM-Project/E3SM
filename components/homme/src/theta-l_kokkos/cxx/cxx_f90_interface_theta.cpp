@@ -57,6 +57,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // options in the C++ build, we will remove some checks
   Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
+  Errors::check_option("init_simulation_params_c","hypervis_subcycle",hypervis_subcycle,0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","hypervis_subcycle_sgs",hypervis_subcycle_sgs,0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","transport_alg",transport_alg,{0,12});
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);

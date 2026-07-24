@@ -49,7 +49,6 @@ public:
                       , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
                       , dt_hvs(-1.0), dt_hvs_sgs(-1.0), dt_hvs_tom(-1.0)
-                      , hypervis_subcycle_sgs_eff(hypervis_subcycle_sgs_in)
                       , consthv(hypervis_scaling_in == 0)
                       , do_3d_turbulence(do_3d_turbulence_in){}
 
@@ -72,7 +71,6 @@ public:
     Real        dt_hvs;
     Real        dt_hvs_sgs;
     Real        dt_hvs_tom;
-    int         hypervis_subcycle_sgs_eff;
 
     Real        eta_ave_w;
 
@@ -119,7 +117,6 @@ public:
   void init_boundary_exchanges();
 
   void run (const int np1, const Real dt, const Real eta_ave_w);
-  int compute_sgs_subcycle_count (const Real dt) const;
 
   void biharmonic_wk_theta () const;
 
