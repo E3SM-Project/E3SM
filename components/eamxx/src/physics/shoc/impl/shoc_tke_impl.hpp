@@ -32,6 +32,7 @@ void Functions<S,D>::shoc_tke(
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
+  const bool&                  alt_eddy_form,
   const uview_1d<const Pack>& wthv_sec,
   const uview_2d<const Pack>& shear_strain3d_components,
   const uview_1d<Pack>&       shear_strain3d,
@@ -54,10 +55,10 @@ void Functions<S,D>::shoc_tke(
   const uview_1d<Pack>&       isotropy)
 {
   // Define temporary variables
-  uview_1d<Pack> sterm_zt, a_diss, sterm, du_dz_m, dv_dz_m, dw_dz_m;
-  workspace.template take_many_contiguous_unsafe<6>(
-    {"sterm_zt", "a_diss", "sterm", "du_dz_m", "dv_dz_m", "dw_dz_m"},
-    {&sterm_zt, &a_diss, &sterm, &du_dz_m, &dv_dz_m, &dw_dz_m});
+  uview_1d<Pack> sterm_zt, a_diss, stab_cor, sterm, du_dz_m, dv_dz_m, dw_dz_m;
+  workspace.template take_many_contiguous_unsafe<7>(
+    {"sterm_zt", "a_diss", "stab_cor", "sterm", "du_dz_m", "dv_dz_m", "dw_dz_m"},
+    {&sterm_zt, &a_diss, &stab_cor, &sterm, &du_dz_m, &dv_dz_m, &dw_dz_m});
 
   // Compute integrated column stability in lower troposphere
   Scalar brunt_int(0);
@@ -107,14 +108,14 @@ void Functions<S,D>::shoc_tke(
   adv_sgs_tke(team,nlev,dtime,shoc_1p5tke,do_3d_turb,shoc_mix,wthv_sec,sterm_zt,tk,brunt,shear_strain3d,tke,a_diss);
 
   // Compute isotropic time scale [s]
-  isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy);
+  isotropic_ts(team,nlev,lambda_low,lambda_high,lambda_slope,lambda_thresh,brunt_int,tke,a_diss,brunt,isotropy,stab_cor);
 
   // Compute eddy diffusivity for heat and momentum
-  eddy_diffusivities(team,nlev,Ckh,Ckm,pblh,zt_grid,tabs,shoc_mix,sterm_zt,isotropy,tke,tkh,tk);
+  eddy_diffusivities(team,nlev,Ckh,Ckm,alt_eddy_form,pblh,zt_grid,tabs,shoc_mix,sterm_zt,isotropy,stab_cor,tke,tkh,tk);
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<6>(
-    {&sterm_zt, &a_diss, &sterm, &du_dz_m, &dv_dz_m, &dw_dz_m});
+  workspace.template release_many_contiguous<7>(
+    {&sterm_zt, &a_diss, &stab_cor, &sterm, &du_dz_m, &dv_dz_m, &dw_dz_m});
 }
 
 } // namespace shoc
