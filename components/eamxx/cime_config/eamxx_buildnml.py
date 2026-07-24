@@ -589,6 +589,43 @@ def write_pretty_xml(filepath, xml):
         fd.write(pretty_xml)
 
 ###############################################################################
+def set_atm_procs_list_derived_defaults(eamxx_group):
+###############################################################################
+    """
+    Set default parameter values that depend on which atm processes are present
+    in the process list (rather than on the compset name). Currently this toggles
+    the ZM deep-convective cloud contributions: the deep cloud fraction merge in
+    cld_fraction (do_zm_deep_cldfrac) and the convective water added to radiation
+    in rrtmgp (do_zm_cloud_in_rad) are enabled iff the 'zm' process is in the
+    list. Any explicit atmchange applied afterwards still takes precedence.
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = '''
+    ... <eamxx>
+    ...   <zm/>
+    ...   <cld_fraction><do_zm_deep_cldfrac>false</do_zm_deep_cldfrac></cld_fraction>
+    ...   <rrtmgp><do_zm_cloud_in_rad>false</do_zm_cloud_in_rad></rrtmgp>
+    ... </eamxx>
+    ... '''
+    >>> root = ET.fromstring(xml)
+    >>> set_atm_procs_list_derived_defaults(root)
+    >>> get_child(find_node(root,"cld_fraction"),"do_zm_deep_cldfrac").text
+    'true'
+    >>> get_child(find_node(root,"rrtmgp"),"do_zm_cloud_in_rad").text
+    'true'
+    >>> root2 = ET.fromstring(xml.replace("<zm/>",""))
+    >>> set_atm_procs_list_derived_defaults(root2)
+    >>> get_child(find_node(root2,"rrtmgp"),"do_zm_cloud_in_rad").text
+    'false'
+    """
+    zm_active = find_node(eamxx_group,"zm") is not None
+    # Map each process to the flag that gates its ZM contribution.
+    proc_flags = {"cld_fraction":"do_zm_deep_cldfrac", "rrtmgp":"do_zm_cloud_in_rad"}
+    for proc_name,flag_name in proc_flags.items():
+        proc = find_node(eamxx_group,proc_name)
+        if proc is not None and has_child(proc,flag_name):
+            get_child(proc,flag_name).text = "true" if zm_active else "false"
+
+###############################################################################
 def _create_raw_xml_file_impl(case, xml, filepath=None):
 ###############################################################################
     """
@@ -769,6 +806,10 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
 
         # Add atm procs node to xml
         xml.append(eamxx_group)
+
+        # Set defaults that depend on which processes are in the list. Done before
+        # applying the atmchange buffer, so explicit user atmchanges still win.
+        set_atm_procs_list_derived_defaults(eamxx_group)
 
         # Apply remaining atm changes
         apply_non_atm_procs_list_changes_from_buffer (case,xml)

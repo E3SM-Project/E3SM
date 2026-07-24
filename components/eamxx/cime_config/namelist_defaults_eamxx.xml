@@ -349,7 +349,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mam4_drydep>
 
     <!-- CLD fraction -->
-    <cld_fraction inherit="atm_proc_base"/>
+    <cld_fraction inherit="atm_proc_base">
+      <!-- Default is set by buildnml based on whether 'zm' is in the atm process list -->
+      <do_zm_deep_cldfrac type="logical" doc="Fold ZM deep convective cloud fraction into the total cloud fraction">false</do_zm_deep_cldfrac>
+    </cld_fraction>
 
     <!-- MAM4xx namelist options -->
 
@@ -619,6 +622,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
       <do_aerosol_rad type="logical" doc="Flag to turn on/off considering aerosols in radiation calculations">true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
+      <!-- Default is set by buildnml based on whether 'zm' is in the atm process list -->
+      <do_zm_cloud_in_rad type="logical" doc="Add ZM deep convective in-cloud water to the cloud water seen by radiation">false</do_zm_cloud_in_rad>
       <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
       <extra_clnclrsky_diag
         type="logical"
