@@ -111,6 +111,8 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
                         "hypervis_subcycle_q should be >= 0.");
   Errors::runtime_check(m_data.hv_subcycle_q_sgs >= 0,
                         "hypervis_subcycle_q_sgs should be >= 0.");
+  Errors::runtime_check(!m_data.do_3d_turbulence || m_data.hv_subcycle_q_sgs > 0,
+                        "hypervis_subcycle_q_sgs should be > 0 when 3D turbulence is enabled.");
 
   m_tp_ne = Homme::get_default_team_policy<ExecSpace>(m_data.nelemd);
   m_tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(m_data.nelemd * m_data.qsize);
@@ -209,6 +211,23 @@ void ComposeTransportImpl::init_boundary_exchanges () {
       be->registration_completed();
     }
   }
+
+  // For horizontal turbulent diffusion applied to all tracers.
+  if (m_data.do_3d_turbulence) {
+    for (int i = 0; i < 2; ++i) {
+      m_horiz_turb_dss_be[i] = std::make_shared<BoundaryExchange>();
+      auto be = m_horiz_turb_dss_be[i];
+      be->set_label(std::string("ComposeTransport-q-HorizTurb-" + std::to_string(i)));
+      be->set_diagnostics_level(sp.internal_diagnostics_level);
+      be->set_buffers_manager(bm_exchange);
+      be->set_num_fields(0, 0, m_data.qsize);
+      if (i == 0)
+        be->register_field(m_tracers.qtens_biharmonic, m_data.qsize, 0);
+      else
+        be->register_field(m_tracers.Q, m_data.qsize, 0);
+      be->registration_completed();
+    }
+  }
 }
 
 void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
@@ -229,14 +248,14 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
     advance_hypervis_scalar(dt);
     Kokkos::fence();
     GPTLstop("compose_hypervis_scalar");
+  }
 
-    // SGS horizontal turbulent diffusion for scalars
-    if (m_data.do_3d_turbulence){
-      GPTLstart("compose_horizturb_scalar");
-      advance_horizontal_turbulent_diffusion_scalar(dt);
-      Kokkos::fence();
-      GPTLstop("compose_horizturb_scalar");
-    }
+  // SGS horizontal turbulent diffusion for all tracers.
+  if (m_data.do_3d_turbulence) {
+    GPTLstart("compose_horizturb_scalar");
+    advance_horizontal_turbulent_diffusion_scalar(dt);
+    Kokkos::fence();
+    GPTLstop("compose_horizturb_scalar");
   }
 
   GPTLstart("compose_cedr_global");
