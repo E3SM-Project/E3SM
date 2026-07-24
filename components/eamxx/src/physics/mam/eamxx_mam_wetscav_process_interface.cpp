@@ -271,11 +271,11 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   }
 
   // Allocate aerosol state tendencies (interstitial aerosols only)
-  for(int imode = 0; imode < mam_coupling::num_aero_modes(); ++imode) {
+  for(int imode = 0; imode < aero_config_.num_modes(); ++imode) {
     set_field_w_scratch_buffer(dry_aero_tends_.int_aero_nmr[imode], buffer_,
                                true);
 
-    for(int ispec = 0; ispec < mam_coupling::num_aero_species(); ++ispec) {
+    for(int ispec = 0; ispec < aero_config_.num_aerosol_ids(); ++ispec) {
       set_field_w_scratch_buffer(dry_aero_tends_.int_aero_mmr[imode][ispec],
                                  buffer_, true);
     }
@@ -419,7 +419,7 @@ void MAMWetscav::run_impl(const double dt) {
   const int nlev = nlev_;
 
   // Zero out tendencies otherwise, they are initialized to junk values
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     Kokkos::deep_copy(dry_aero_tends_.int_aero_nmr[m], 0);
     for(int a = 0; a < mam4::num_species_mode(m); ++a) {
       Kokkos::deep_copy(dry_aero_tends_.int_aero_mmr[m][a], 0);
@@ -496,7 +496,7 @@ void MAMWetscav::run_impl(const double dt) {
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-          for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+          for(int m = 0; m < aero_config_.num_modes(); ++m) {
             const auto n_mode_i       = progs.n_mode_i[m];
             const auto tends_n_mode_i = tends.n_mode_i[m];
             n_mode_i(kk) += tends_n_mode_i(kk) * dt;

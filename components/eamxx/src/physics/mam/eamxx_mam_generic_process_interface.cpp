@@ -26,7 +26,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
   const std::string nmr_label = "nmr";
   const std::string mmr_label = "mmr";
 
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+  for(int mode = 0; mode < aero_config_.num_modes(); ++mode) {
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
     limits_aerosol_gas_tracers_[int_nmr_field_name] =
@@ -37,7 +37,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
     limits_aerosol_gas_tracers_[cld_nmr_field_name] =
         mam_coupling::physical_min_max(nmr_label);
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
@@ -114,7 +114,7 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol() {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+  for(int mode = 0; mode < aero_config_.num_modes(); ++mode) {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
     // NOT advected
@@ -122,7 +122,7 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol() {
         mam_coupling::cld_aero_nmr_field_name(mode);
     add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
       // NOT advected
@@ -153,13 +153,13 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+  for(int mode = 0; mode < aero_config_.num_modes(); ++mode) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
     add_tracer<Updated>(int_nmr_field_name, grid_, n_unit, 1,
                         TracerAdvection::DynamicsOnly);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
@@ -205,14 +205,14 @@ void MAMGenericInterface::populate_cloudborne_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     const std::string cld_nmr_field_name =
         mam_coupling::cld_aero_nmr_field_name(m);
     wet_aero.cld_aero_nmr[m] =
         get_field_out(cld_nmr_field_name).get_view<Real **>();
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const std::string cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
@@ -229,11 +229,11 @@ void MAMGenericInterface::populate_cloudborne_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     dry_aero.cld_aero_nmr[m] = buffer.dry_cld_aero_nmr[m];
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const std::string cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
@@ -287,11 +287,11 @@ void MAMGenericInterface::populate_interstitial_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     dry_aero.int_aero_nmr[m] = buffer.dry_int_aero_nmr[m];
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
@@ -308,13 +308,13 @@ void MAMGenericInterface::populate_interstitial_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(m);
     wet_aero.int_aero_nmr[m] =
         get_field_out(int_nmr_field_name).get_view<Real **>();
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);

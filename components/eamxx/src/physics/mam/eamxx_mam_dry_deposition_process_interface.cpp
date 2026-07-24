@@ -59,7 +59,7 @@ void MAMDryDep::create_requests() {
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
-  const int num_aero_modes       = mam_coupling::num_aero_modes();
+  const int num_aero_modes       = aero_config_.num_modes();
   const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(
       LEV, num_aero_modes, mam_coupling::num_modes_tag_name());
 
@@ -379,7 +379,7 @@ void MAMDryDep::run_impl(const double dt) {
   //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-  compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
+  compute_tendencies(aero_config_, ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
                      aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
@@ -393,11 +393,11 @@ void MAMDryDep::run_impl(const double dt) {
   Kokkos::fence();
 
   // Update the interstitial aerosols using ptend.
-  update_interstitial_mmrs(ptend_q_, dt, ncol_, nlev_,  // inputs
+  update_interstitial_mmrs(aero_config_, ptend_q_, dt, ncol_, nlev_,  // inputs
                            dry_aero_);                  // output
 
   // Update the interstitial aerosols
-  update_cloudborne_mmrs(qqcw_, dt, nlev_,  // inputs
+  update_cloudborne_mmrs(aero_config_, qqcw_, dt, nlev_,  // inputs
                          dry_aero_);        // output
 
   // call post processing to convert dry mixing ratios to wet mixing ratios

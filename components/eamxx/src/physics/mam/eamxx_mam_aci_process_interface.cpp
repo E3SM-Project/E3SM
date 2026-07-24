@@ -220,7 +220,7 @@ int MAMAci::get_len_temporary_views() {
   // coltend_ & coltend_cw_
   work_len += 2 *  ncol_ * nlev_ * mam4::ndrop::ncnst_tot;
   // factnum_, nact_, mact_
-  work_len += 3 * ncol_ * mam_coupling::num_aero_modes() * nlev_;
+  work_len += 3 * ncol_ * aero_config_.num_modes() * nlev_;
   // kvh_int_, w_sec_int_
   work_len += 2 * ncol_ * (nlev_ + 1);
   // state_q_work_
@@ -256,18 +256,18 @@ void MAMAci::init_temporary_views() {
 
   // activation fraction for aerosol number [fraction]
   // Kokkos::resize(factnum_, ncol_, num_aero_modes, nlev_);
-  factnum_ = view_3d(work_ptr, ncol_, mam_coupling::num_aero_modes(), nlev_);
-  work_ptr += ncol_ * mam_coupling::num_aero_modes() * nlev_;
+  factnum_ = view_3d(work_ptr, ncol_, aero_config_.num_modes(), nlev_);
+  work_ptr += ncol_ * aero_config_.num_modes() * nlev_;
 
   // nact : fractional aero. number activation rate [/s]
-  // Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-  nact_ = view_3d(work_ptr, ncol_, nlev_, mam_coupling::num_aero_modes());
-  work_ptr += ncol_ * nlev_ * mam_coupling::num_aero_modes();
+  // Kokkos::resize(nact_, ncol_, nlev_, aero_config_.num_modes());
+  nact_ = view_3d(work_ptr, ncol_, nlev_, aero_config_.num_modes());
+  work_ptr += ncol_ * nlev_ * aero_config_.num_modes();
 
   // mact : fractional aero. mass activation rate [/s]
-  // Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-  mact_ = view_3d(work_ptr, ncol_, nlev_, mam_coupling::num_aero_modes());
-  work_ptr += ncol_ * nlev_ * mam_coupling::num_aero_modes();
+  // Kokkos::resize(mact_, ncol_, nlev_, aero_config_.num_modes());
+  mact_ = view_3d(work_ptr, ncol_, nlev_, aero_config_.num_modes());
+  work_ptr += ncol_ * nlev_ * aero_config_.num_modes();
   // Eddy diffusivity of heat at the interfaces
   // Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
   kvh_int_ = view_2d(work_ptr, ncol_, nlev_ + 1);
@@ -470,14 +470,13 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Initialize the processes
   //---------------------------------------------------------------------------------
 
-  mam4::AeroConfig aero_config;
   // configure the nucleation parameterization
   mam4::NucleateIce::Config nucleate_ice_config;
-  nucleate_ice_.init(aero_config, nucleate_ice_config);
+  nucleate_ice_.init(aero_config_, nucleate_ice_config);
 
   // configure the heterogeneous freezing parameterization
   mam4::Hetfrz::Config hetfrz_config;
-  hetfrz_.init(aero_config, hetfrz_config);
+  hetfrz_.init(aero_config_, hetfrz_config);
 
   //---------------------------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -558,7 +557,7 @@ void MAMAci::run_impl(const double dt) {
   //  aerosols tendencies
   Kokkos::deep_copy(ccn_, 0.0);
   call_function_dropmixnuc(
-      team_policy, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
+      team_policy, aero_config_, dt, dry_atm_, rpdel_, kvh_mid_, kvh_int_, wsub_, cloud_frac_,
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
@@ -602,12 +601,12 @@ void MAMAci::run_impl(const double dt) {
   //---------------------------------------------------------------
 
   // Update cloud borne aerosols
-  update_cloud_borne_aerosols(qqcw_fld_work_,
+  update_cloud_borne_aerosols(aero_config_, qqcw_fld_work_,
                               // output
                               dry_aero_);
 
   // Update interstitial aerosols using tendencies
-  update_interstitial_aerosols(ncol_, ptend_q_, nlev_, dt,
+  update_interstitial_aerosols(aero_config_, ncol_, ptend_q_, nlev_, dt,
                                // output
                                dry_aero_);
 
