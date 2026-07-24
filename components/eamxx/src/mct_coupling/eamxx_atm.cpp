@@ -82,19 +82,19 @@ Atm::Atm()
     : Emulator(EmulatorType::ATM_COMP, -1, "eamxx") {}
 
 void Atm::create_instance(const MPI_Fint f_comm, const int atm_id,
-                               const char* input_yaml_file,
-                               const char* atm_log_file,
-                               const int run_type,
-                               const int run_start_ymd,
-                               const int run_start_tod,
-                               const int case_start_ymd,
-                               const int case_start_tod,
-                               const char* calendar_name) {
-                             /*const char* caseid,
-                               const char* rest_caseid,
-                               const char* hostname,
-                               const char* username,
-                               const char* versionid) {*/
+                          const char* input_yaml_file,
+                          const char* atm_log_file,
+                          const int run_type,
+                          const int run_start_ymd,
+                          const int run_start_tod,
+                          const int case_start_ymd,
+                          const int case_start_tod,
+                          const char* calendar_name) {
+                        /*const char* caseid,
+                          const char* rest_caseid,
+                          const char* hostname,
+                          const char* username,
+                          const char* versionid) {*/
   using namespace scream;
   using namespace scream::control;
 
@@ -177,6 +177,7 @@ void Atm::create_instance(const MPI_Fint f_comm, const int atm_id,
 }
 
 void Atm::set_grid_data(const EmulatorGridDesc& grid) {
+  // FIXME: how much of this is relevant to EAMxx?
   m_nx = grid.nx;
   m_ny = grid.ny;
   m_num_local_cols = grid.num_local_cols;
@@ -198,7 +199,21 @@ void Atm::init_coupling_indices(
 }
 
 void Atm::setup_coupling(const EmulatorCouplingDesc& cpl) {
-  // FIXME: see scream_setup_surface_coupling
+  m_import_data = cpl.import_data;
+  m_export_data = cpl.export_data;
+  m_num_imports = cpl.num_imports;
+  m_num_exports = cpl.num_exports;
+
+  // Call the AD to set up surface coupling.
+  auto& ad = get_ad_nonconst();
+  ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Import,
+                                         num_cpl_imports, num_scream_imports, import_field_size, x2a_ptr,
+                                         names_in[0], import_cpl_indices, import_vector_components,
+                                         import_constant_multiple, do_import_during_init);
+  ad.setup_surface_coupling_data_manager(scream::SurfaceCouplingTransferType::Export,
+                                         num_cpl_exports, num_scream_exports, export_field_size, a2x_ptr,
+                                         names_out[0], export_cpl_indices, export_vector_components,
+                                         export_constant_multiple, do_export_during_init);
 }
 
 int Atm::get_num_local_cols() const {

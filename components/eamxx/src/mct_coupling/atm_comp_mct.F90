@@ -149,6 +149,9 @@ CONTAINS
       ! Setup MCT domain
       call atm_domain_mct(emulators, lsize, gsMap_atm, dom_atm)
 
+      ! FIXME: do we need to register the component with MOAB?
+      ! FIXME: see for example moab_atm_phys_scream
+
       ! Initialize MCT attribute vectors
       call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
       call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
