@@ -83,7 +83,7 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc";
   const std::string xs_long_file =
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc";
-  const std::string input_yaml_file = "jlong_input_ts_355.yaml";
+  const std::string input_yaml_file = std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/jlong_input_ts_355.yaml";
 
   const auto photo_table = scream::impl::read_photo_table(rsf_file, xs_long_file);
   const YAML::Node root = YAML::LoadFile(input_yaml_file);
@@ -253,7 +253,7 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/RSF_GT200nm_v3.0_c080811.nc";
   const std::string xs_long_file =
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc";
-  const std::string input_yaml_file = "table_photo_input_ts_355.yaml";
+  const std::string input_yaml_file = std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/table_photo_input_ts_2016289.yaml";
 
   const YAML::Node root = YAML::LoadFile(input_yaml_file);
   REQUIRE(root["input"]);
