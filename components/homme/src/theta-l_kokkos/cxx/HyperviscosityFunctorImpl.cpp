@@ -60,7 +60,7 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
  : m_num_elems(state.num_elems())
- , m_data (params.hypervis_subcycle,params.hypervis_subcycle_sgs,params.hypervis_subcycle_tom,
+ , m_data (params.hypervis_subcycle,params.horiz_turb_subcycle,params.hypervis_subcycle_tom,
 		       params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
 		       params.nu_p,params.nu_s,params.hypervis_scaling,
                        params.do_3d_turbulence)
@@ -87,7 +87,7 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
   : m_num_elems(num_elems)
-  , m_data (params.hypervis_subcycle,params.hypervis_subcycle_sgs,params.hypervis_subcycle_tom,
+  , m_data (params.hypervis_subcycle,params.horiz_turb_subcycle,params.hypervis_subcycle_tom,
 		        params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
 		        params.nu_p,params.nu_s,params.hypervis_scaling,
                         params.do_3d_turbulence)
@@ -109,7 +109,7 @@ void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
   // Sanity check
   assert(params.params_set);
   assert(m_data.hypervis_subcycle > 0);
-  assert(!m_data.do_3d_turbulence || m_data.hypervis_subcycle_sgs > 0);
+  assert(!m_data.do_3d_turbulence || m_data.horiz_turb_subcycle > 0);
 
   if (m_data.nu_top>0) {
 
@@ -291,7 +291,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     m_data.dt_hvs_tom = -1.0;
   }
   m_data.dt_hvs_sgs = m_data.do_3d_turbulence
-                    ? dt/m_data.hypervis_subcycle_sgs
+                    ? dt/m_data.horiz_turb_subcycle
                     : -1.0;
   m_data.eta_ave_w = eta_ave_w;
 
@@ -338,7 +338,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   // SGS Horizontal turbulent diffusion
   if (m_data.do_3d_turbulence > 0) {
-    for (int icycle = 0; icycle < m_data.hypervis_subcycle_sgs; ++icycle) {
+    for (int icycle = 0; icycle < m_data.horiz_turb_subcycle; ++icycle) {
       // laplace(fields) --> ttens, etc.
       Kokkos::parallel_for(m_policy_sgsturb_laplace, *this);
       Kokkos::fence();
@@ -658,7 +658,7 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
       IntColumn Km_i;
 
       Real max_diffusivity = std::numeric_limits<Real>::max();
-      if (m_data.hypervis_subcycle_sgs > 0 && lambda_vis > 0 && m_data.dt_hvs_sgs > 0) {
+      if (m_data.horiz_turb_subcycle > 0 && lambda_vis > 0 && m_data.dt_hvs_sgs > 0) {
         const auto& dinv = m_geometry.m_dinv;
         const Real a = dinv(kv.ie,0,0,igp,jgp);
         const Real b = dinv(kv.ie,0,1,igp,jgp);
@@ -675,7 +675,7 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
         [&] (const int k) {
           auto km = Km(k);
           auto kh = Kh(k);
-          if (m_data.hypervis_subcycle_sgs > 0) {
+          if (m_data.horiz_turb_subcycle > 0) {
             for (int s = 0; s < VECTOR_SIZE; ++s) {
               if (km[s] > max_diffusivity) km[s] = max_diffusivity;
               if (kh[s] > max_diffusivity) kh[s] = max_diffusivity;

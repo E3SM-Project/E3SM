@@ -222,15 +222,15 @@ def perform_consistency_checks(case, xml):
     ctl_nl = find_node(xml, "ctl_nl")
     if ctl_nl is not None:
         hypervis_subcycle = find_node(ctl_nl, "hypervis_subcycle")
-        hypervis_subcycle_sgs = find_node(ctl_nl, "hypervis_subcycle_sgs")
-        if hypervis_subcycle is not None and hypervis_subcycle_sgs is not None:
-            if int(hypervis_subcycle_sgs.text) == -1:
-                hypervis_subcycle_sgs.text = hypervis_subcycle.text
+        horiz_turb_subcycle = find_node(ctl_nl, "horiz_turb_subcycle")
+        if hypervis_subcycle is not None and horiz_turb_subcycle is not None:
+            if int(horiz_turb_subcycle.text) == -1:
+                horiz_turb_subcycle.text = hypervis_subcycle.text
         hypervis_subcycle_q = find_node(ctl_nl, "hypervis_subcycle_q")
-        hypervis_subcycle_q_sgs = find_node(ctl_nl, "hypervis_subcycle_q_sgs")
-        if hypervis_subcycle_q is not None and hypervis_subcycle_q_sgs is not None:
-            if int(hypervis_subcycle_q_sgs.text) < 0:
-                hypervis_subcycle_q_sgs.text = hypervis_subcycle_q.text
+        horiz_turb_subcycle_q = find_node(ctl_nl, "horiz_turb_subcycle_q")
+        if hypervis_subcycle_q is not None and horiz_turb_subcycle_q is not None:
+            if int(horiz_turb_subcycle_q.text) < 0:
+                horiz_turb_subcycle_q.text = hypervis_subcycle_q.text
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):

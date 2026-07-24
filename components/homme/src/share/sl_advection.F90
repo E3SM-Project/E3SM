@@ -196,7 +196,7 @@ contains
   subroutine sl_get_params(nu_q_out, hv_scaling, hv_q, hv_subcycle_q, hv_subcycle_q_sgs, limiter_option_out, &
        cdr_check, geometry_type, trajectory_nsubstep, trajectory_nvelocity, diagnostics, &
        do_3d_turbulence_out) bind(c)
-    use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, hypervis_subcycle_q_sgs, semi_lagrange_cdr_check, &
+    use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, horiz_turb_subcycle_q, semi_lagrange_cdr_check, &
          nu_q, hypervis_scaling, limiter_option, geometry, semi_lagrange_trajectory_nsubstep, &
          semi_lagrange_trajectory_nvelocity, semi_lagrange_diagnostics, do_3d_turbulence
     use iso_c_binding, only: c_int, c_double, c_bool
@@ -210,7 +210,7 @@ contains
     hv_scaling = hypervis_scaling
     hv_q = semi_lagrange_hv_q
     hv_subcycle_q = hypervis_subcycle_q
-    hv_subcycle_q_sgs = hypervis_subcycle_q_sgs
+    hv_subcycle_q_sgs = horiz_turb_subcycle_q
     limiter_option_out = limiter_option
     cdr_check = 0
     if (semi_lagrange_cdr_check) cdr_check = 1

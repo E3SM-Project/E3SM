@@ -84,7 +84,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use control_mod,   only : limiter_option, rsplit, qsplit, tstep_type, statefreq,   &
                               nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg,  &
-                              hypervis_order, hypervis_subcycle, hypervis_subcycle_sgs,&
+                              hypervis_order, hypervis_subcycle, horiz_turb_subcycle,&
                               hypervis_subcycle_tom,                                    &
                               hypervis_scaling,                                        &
                               ftype, prescribed_wind, use_moisture, disable_diagnostics,   &
@@ -127,7 +127,7 @@ contains
 
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
-                                   hypervis_order, hypervis_subcycle, hypervis_subcycle_sgs,      &
+                                   hypervis_order, hypervis_subcycle, horiz_turb_subcycle,      &
                                    hypervis_subcycle_tom,                                          &
                                    hypervis_scaling,                                              &
                                    dcmip16_mu, ftype, theta_advect_form,                          &

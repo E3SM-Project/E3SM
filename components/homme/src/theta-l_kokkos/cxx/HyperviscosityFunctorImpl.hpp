@@ -38,13 +38,13 @@ class HyperviscosityFunctorImpl
 public:
   struct HyperviscosityData {
     HyperviscosityData(const int hypervis_subcycle_in, 
-                       const int hypervis_subcycle_sgs_in,
+                       const int horiz_turb_subcycle_in,
                        const int hypervis_subcycle_tom_in, 
                        const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
                        const Real hypervis_scaling_in, bool do_3d_turbulence_in)
                       : hypervis_subcycle(hypervis_subcycle_in) 
-                      , hypervis_subcycle_sgs(hypervis_subcycle_sgs_in)
+                      , horiz_turb_subcycle(horiz_turb_subcycle_in)
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
                       , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
@@ -53,7 +53,7 @@ public:
                       , do_3d_turbulence(do_3d_turbulence_in){}
 
     const int   hypervis_subcycle;
-    const int   hypervis_subcycle_sgs;
+    const int   horiz_turb_subcycle;
     const int   hypervis_subcycle_tom;
 
     bool do_3d_turbulence;
