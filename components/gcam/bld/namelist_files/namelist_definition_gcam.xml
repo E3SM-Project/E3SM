@@ -178,6 +178,24 @@ Initial hr values file for scalars
 Initial pft weights values file for scalars
 </entry>
 
+<entry id="base_hdd_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Baseline hdd values file for scaling
+</entry>
+
+<entry id="base_cdd_file"
+	type="char*256"
+	category="gcam"
+	input_pathname="abs"
+	group="gcam_inparm"
+	valid_values="">
+Baseline cdd values file for scaling
+</entry>
+
 <entry id="gcam2elm_co2_mapping_file"
 	type="char*256"
 	category="gcam"
@@ -212,6 +230,15 @@ Mapping file for woodharvest
         group="gcam_inparm"
         valid_values="">
 Mapping file for carbon density
+</entry>
+
+<entry id="gcam2elm_degdays_mapping_file"
+        type="char*256"
+        category="gcam"
+        input_pathname="abs"
+        group="gcam_inparm"
+        valid_values="">
+Mapping file for heating/cooling degree days
 </entry>
 
 
@@ -410,6 +437,13 @@ Directory containing previously saved scalar files (for use when read_scalars = 
 Write scalars to file
 </entry>
 
+<entry id="write_hdd_cdd"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+Write hdd cdd to file
+</entry>
+
 <entry id="write_co2"
 	type="logical"
 	category="gcam"
@@ -429,6 +463,13 @@ Changes in land productivity from elm scale ag yield in gcam
 	category="gcam"
 	group="gcam_inparm">
 Changes in land productivity from elm scale carbon density in gcam
+</entry>
+
+<entry id="elm_ehc_hdd_cdd"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+Heating degree days and Cooling degree days from elm to gcam
 </entry>
 
 <entry id="ehc_eam_co2_emissions"

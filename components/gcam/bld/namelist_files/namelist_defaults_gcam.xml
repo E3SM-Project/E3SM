@@ -74,10 +74,21 @@ for the iac data in the e3sm distribution
 <base_pft_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_20260303_I20TREAMELMCNPRDCTCBCPHSBGC_ne30pg2_f09_oEC60to30v3_PerAvg_2010-2014_pft_wt.csv</base_pft_file>
 <base_pft_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvgMonthly_2010-2014_pft_wt.csv</base_pft_file>
+<base_hdd_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_hdd_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvg_2010-2014_hdd.csv</base_hdd_file>
+<base_cdd_file hgrid="r0125">iac/giac/gcam/gcam_6_0/data/base_r0125_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="r025">iac/giac/gcam/gcam_6_0/data/base_r025_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="r05">iac/giac/gcam/gcam_6_0/data/base_r05_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="0.9x1.25">iac/giac/gcam/gcam_6_0/data/base_f09_annAvg_2010-2014_cdd.csv</base_cdd_file>
+<base_cdd_file hgrid="1.9x2.5">iac/giac/gcam/gcam_6_0/data/base_f19_set_this_in_namelist_annAvg_2010-2014_cdd.csv</base_cdd_file>
 <gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_regional.xml</gcam2elm_co2_mapping_file>
 <gcam2elm_luc_mapping_file>iac/giac/gcam/gcam_6_0/mappings/luc.xml</gcam2elm_luc_mapping_file>
 <gcam2elm_woodharvest_mapping_file>iac/giac/gcam/gcam_6_0/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
 <gcam2elm_cdensity_mapping_file>iac/giac/gcam/gcam_6_0/mappings/cdensity.xml</gcam2elm_cdensity_mapping_file>
+<gcam2elm_degdays_mapping_file>iac/giac/gcam/gcam_6_0/mappings/degree_days.xml</gcam2elm_degdays_mapping_file>
 
 <!-- Grid and mapping and initialization files with relative paths from inputdata directory -->
 <gcam_gridfile hgrid="r125">iac/giac/glm2iac/landuse.timeseries_0.125x0.125_HIST_simyr2015_c241205.nc</gcam_gridfile>
@@ -124,9 +135,11 @@ for the iac data in the e3sm distribution
 <read_scalars>.false.</read_scalars>
 <scalar_source_dir></scalar_source_dir>
 <write_scalars>.true.</write_scalars>
+<write_hdd_cdd>.true.</write_hdd_cdd>
 <write_co2>.false.</write_co2>
 <elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>
 <elm_ehc_carbon_scaling>.true.</elm_ehc_carbon_scaling>
+<elm_ehc_hdd_cdd>.true.</elm_ehc_hdd_cdd>
 <ehc_eam_co2_emissions>.true.</ehc_eam_co2_emissions>
 <gcam_spinup>.true.</gcam_spinup>
 <run_gcam>.true.</run_gcam>
