@@ -110,9 +110,9 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
   Errors::runtime_check(m_data.hv_subcycle_q >= 0,
                         "hypervis_subcycle_q should be >= 0.");
   Errors::runtime_check(m_data.hv_subcycle_q_sgs >= 0,
-                        "hypervis_subcycle_q_sgs should be >= 0.");
+                        "horiz_turb_subcycle_q should be >= 0.");
   Errors::runtime_check(!m_data.do_3d_turbulence || m_data.hv_subcycle_q_sgs > 0,
-                        "hypervis_subcycle_q_sgs should be > 0 when 3D turbulence is enabled.");
+                        "horiz_turb_subcycle_q should be > 0 when 3D turbulence is enabled.");
 
   m_tp_ne = Homme::get_default_team_policy<ExecSpace>(m_data.nelemd);
   m_tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(m_data.nelemd * m_data.qsize);

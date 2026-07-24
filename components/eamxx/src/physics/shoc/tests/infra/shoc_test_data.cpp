@@ -76,7 +76,7 @@ void check_tke(CheckTkeData& d)
 
 void shoc_tke(ShocTkeData& d)
 {
-  shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.shoc_1p5tke, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
+  shoc_tke_host(d.shcol, d.nlev, d.nlevi, d.dtime, d.shoc_1p5tke, d.alt_eddy_form, d.wthv_sec, d.shoc_mix, d.dz_zi, d.dz_zt, d.pres, d.tabs, d.u_wind, d.v_wind, d.brunt, d.zt_grid, d.zi_grid, d.pblh, d.tke, d.tk, d.tkh, d.isotropy);
 }
 
 void compute_shr_prod(ComputeShrProdData& d)
@@ -86,7 +86,7 @@ void compute_shr_prod(ComputeShrProdData& d)
 
 void isotropic_ts(IsotropicTsData& d)
 {
-  isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy);
+  isotropic_ts_host(d.nlev, d.shcol, d.brunt_int, d.tke, d.a_diss, d.brunt, d.isotropy, d.stab_cor);
 }
 
 void adv_sgs_tke(AdvSgsTkeData& d)
@@ -96,7 +96,7 @@ void adv_sgs_tke(AdvSgsTkeData& d)
 
 void eddy_diffusivities(EddyDiffusivitiesData& d)
 {
-  eddy_diffusivities_host(d.nlev, d.shcol, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.tke, d.tkh, d.tk);
+  eddy_diffusivities_host(d.nlev, d.shcol, d.alt_eddy_form, d.pblh, d.zt_grid, d.tabs, d.shoc_mix, d.sterm_zt, d.isotropy, d.stab_cor, d.tke, d.tkh, d.tk);
 }
 
 void shoc_length(ShocLengthData& d)
@@ -2274,7 +2274,7 @@ void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
 }
 
 void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
-                    Real* a_diss, Real* brunt, Real* isotropy)
+                    Real* a_diss, Real* brunt, Real* isotropy, Real* stab_cor)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -2289,9 +2289,9 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
 
   std::vector<view_1d> temp_1d(1); // for 1d array
 
-  static constexpr Int num_arrays = 4;
+  static constexpr Int num_arrays = 5;
   std::vector<view_2d> temp_2d(num_arrays); //for 2d arrays
-  std::vector<const Real*> ptr_array = {tke, a_diss, brunt, isotropy};
+  std::vector<const Real*> ptr_array = {tke, a_diss, brunt, isotropy, stab_cor};
 
   // Sync to device
   ekat::host_to_device({brunt_int}, shcol, temp_1d);
@@ -2305,7 +2305,8 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
     a_diss_d  (temp_2d[1]),
     brunt_d   (temp_2d[2]),
     //output
-    isotropy_d(temp_2d[3]);
+    isotropy_d(temp_2d[3]),
+    stab_cor_d(temp_2d[4]);
 
   const Int nk_pack = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nk_pack);
@@ -2321,6 +2322,7 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
 
       //outputs
       const auto isotropy_s = ekat::subview(isotropy_d, i); //output
+      const auto stab_cor_s = ekat::subview(stab_cor_d, i);
 
       // Hard code these runtime options for F90
       const Real lambda_low = 0.001;
@@ -2328,12 +2330,12 @@ void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
       const Real lambda_slope  = 2.65;
       const Real lambda_thresh = 0.02;
       SHF::isotropic_ts(team, nlev, lambda_low, lambda_high, lambda_slope, lambda_thresh,
-		      brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s);
+		      brunt_int_s, tke_s, a_diss_s, brunt_s, isotropy_s, stab_cor_s);
     });
 
   // Sync back to host
-  std::vector<view_2d> inout_views = {isotropy_d};
-  ekat::device_to_host({isotropy}, shcol, nlev, inout_views);
+  std::vector<view_2d> inout_views = {isotropy_d, stab_cor_d};
+  ekat::device_to_host({isotropy, stab_cor}, shcol, nlev, inout_views);
 
 }
 
@@ -2830,8 +2832,8 @@ void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid
   ekat::device_to_host({dz_zt, dz_zi, rho_zt}, std::vector<int>{shcol, shcol, shcol}, std::vector<int>{nlev, nlevi, nlev}, inout_views);
 }
 
-void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
-                          Real* isotropy, Real* tke, Real* tkh, Real* tk)
+void eddy_diffusivities_host(Int nlev, Int shcol, bool alt_eddy_form, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt,
+                          Real* isotropy, Real* stab_cor, Real* tke, Real* tkh, Real* tk)
 {
   using SHF = Functions<Real, DefaultDevice>;
 
@@ -2845,13 +2847,13 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
   using MemberType = typename SHF::MemberType;
 
   static constexpr Int num_1d_arrays = 1;
-  static constexpr Int num_2d_arrays = 8;
+  static constexpr Int num_2d_arrays = 9;
 
   std::vector<view_1d> temp_1d_d(num_1d_arrays);
   std::vector<view_2d> temp_2d_d(num_2d_arrays);
 
   std::vector<const Real*> ptr_array = {zt_grid,  tabs, shoc_mix, sterm_zt,
-                                        isotropy, tke,  tkh,      tk};
+                                        isotropy, stab_cor, tke,  tkh,      tk};
 
   // Sync to device
   ekat::host_to_device({pblh}, shcol, temp_1d_d);
@@ -2865,9 +2867,10 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     shoc_mix_d(temp_2d_d[2]),
     sterm_zt_d(temp_2d_d[3]),
     isotropy_d(temp_2d_d[4]),
-    tke_d(temp_2d_d[5]),
-    tkh_d(temp_2d_d[6]),
-    tk_d(temp_2d_d[7]);
+    stab_cor_d(temp_2d_d[5]),
+    tke_d(temp_2d_d[6]),
+    tkh_d(temp_2d_d[7]),
+    tk_d(temp_2d_d[8]);
 
   const Int nk_pack = ekat::npack<Pack>(nlev);
   const auto policy = TPF::get_default_team_policy(shcol, nk_pack);
@@ -2881,6 +2884,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     const auto shoc_mix_s = ekat::subview(shoc_mix_d, i);
     const auto sterm_zt_s = ekat::subview(sterm_zt_d, i);
     const auto isotropy_s = ekat::subview(isotropy_d, i);
+    const auto stab_cor_s = ekat::subview(stab_cor_d, i);
     const auto tke_s = ekat::subview(tke_d, i);
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto tk_s = ekat::subview(tk_d, i);
@@ -2889,7 +2893,7 @@ void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Rea
     const Real Ckh = 0.1;
     const Real Ckm = 0.1;
 
-    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, tke_s, tkh_s, tk_s);
+    SHF::eddy_diffusivities(team, nlev, Ckh, Ckm, alt_eddy_form, pblh_s, zt_grid_s, tabs_s, shoc_mix_s, sterm_zt_s, isotropy_s, stab_cor_s, tke_s, tkh_s, tk_s);
   });
 
   // Sync back to host
@@ -3071,7 +3075,7 @@ void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, R
     ekat::device_to_host({pblh}, shcol, out_views);
 }
 
-void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
+void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, bool alt_eddy_form, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* tabs, Real* u_wind, Real* v_wind, Real* brunt, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke, Real* tk,
                 Real* tkh, Real* isotropy)
 {
@@ -3134,7 +3138,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
   const auto policy = TPF::get_default_team_policy(shcol, nlev_packs);
 
   // Local variable workspace
-  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, 6, policy);
+  ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, 7, policy);
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -3172,7 +3176,7 @@ void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke,
     const bool do_3d_turb    = false;
     
     SHF::shoc_tke(team,nlev,nlevi,dtime,lambda_low,lambda_high,lambda_slope,lambda_thresh,
-                  Ckh, Ckm, shoc_1p5tke, do_3d_turb,
+                  Ckh, Ckm, shoc_1p5tke, do_3d_turb, alt_eddy_form,
 		  wthv_sec_s,shear_strain3d_components_s,shear_strain3d_s,shoc_mix_s,dz_zi_s,dz_zt_s,pres_s,
                   tabs_s,u_wind_s,v_wind_s,w_field_s,brunt_s,zt_grid_s,zi_grid_s,pblh_s,
                   workspace,

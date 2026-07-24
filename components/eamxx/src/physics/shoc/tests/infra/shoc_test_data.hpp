@@ -226,7 +226,7 @@ struct ShocTkeData : public ShocTestGridDataBase {
   // Inputs
   Int shcol, nlev, nlevi;
   Real dtime;
-  bool shoc_1p5tke;
+  bool shoc_1p5tke, alt_eddy_form;
   Real *wthv_sec, *shoc_mix, *dz_zi, *dz_zt, *pres, *tabs, *u_wind, *v_wind, *brunt, *pblh;
 
   // Inputs/Outputs
@@ -235,14 +235,16 @@ struct ShocTkeData : public ShocTestGridDataBase {
   // Outputs
   Real *isotropy;
 
-  ShocTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, bool shoc_1p5tke_) :
+  ShocTkeData(Int shcol_, Int nlev_, Int nlevi_, Real dtime_, bool shoc_1p5tke_,
+              bool alt_eddy_form_ = false) :
     ShocTestGridDataBase({{ shcol_, nlev_ }, { shcol_, nlevi_ }, { shcol_ }},
                          {{ &wthv_sec, &shoc_mix, &dz_zt, &pres, &tabs, &u_wind, &v_wind, &brunt, &zt_grid, &tke, &tk, &tkh, &isotropy },
                           { &dz_zi, &zi_grid },
                           { &pblh }}),
-                        shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_), shoc_1p5tke(shoc_1p5tke_) {}
+                        shcol(shcol_), nlev(nlev_), nlevi(nlevi_), dtime(dtime_),
+                        shoc_1p5tke(shoc_1p5tke_), alt_eddy_form(alt_eddy_form_) {}
 
-  PTD_STD_DEF(ShocTkeData, 5, shcol, nlev, nlevi, dtime, shoc_1p5tke);
+  PTD_STD_DEF(ShocTkeData, 6, shcol, nlev, nlevi, dtime, shoc_1p5tke, alt_eddy_form);
 };
 
 struct ComputeShrProdData : public PhysicsTestData {
@@ -265,10 +267,10 @@ struct IsotropicTsData : public PhysicsTestData {
   Real *brunt_int, *tke, *a_diss, *brunt;
 
   // Outputs
-  Real *isotropy;
+  Real *isotropy, *stab_cor;
 
   IsotropicTsData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &brunt_int }, { &tke, &a_diss, &brunt, &isotropy }}), shcol(shcol_), nlev(nlev_) {}
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &brunt_int }, { &tke, &a_diss, &brunt, &isotropy, &stab_cor }}), shcol(shcol_), nlev(nlev_) {}
 
   PTD_STD_DEF(IsotropicTsData, 2, shcol, nlev);
 };
@@ -295,15 +297,17 @@ struct AdvSgsTkeData : public PhysicsTestData {
 struct EddyDiffusivitiesData : public PhysicsTestData {
   // Inputs
   Int shcol, nlev;
-  Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *tke;
+  bool alt_eddy_form;
+  Real *pblh, *zt_grid, *tabs, *shoc_mix, *sterm_zt, *isotropy, *stab_cor, *tke;
 
   // Outputs
   Real *tkh, *tk;
 
-  EddyDiffusivitiesData(Int shcol_, Int nlev_) :
-    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &tke, &tkh, &tk }}), shcol(shcol_), nlev(nlev_) {}
+  EddyDiffusivitiesData(Int shcol_, Int nlev_, bool alt_eddy_form_ = false) :
+    PhysicsTestData({{ shcol_ }, { shcol_, nlev_ }}, {{ &pblh }, { &zt_grid, &tabs, &shoc_mix, &sterm_zt, &isotropy, &stab_cor, &tke, &tkh, &tk }}),
+    shcol(shcol_), nlev(nlev_), alt_eddy_form(alt_eddy_form_) {}
 
-  PTD_STD_DEF(EddyDiffusivitiesData, 2, shcol, nlev);
+  PTD_STD_DEF(EddyDiffusivitiesData, 3, shcol, nlev, alt_eddy_form);
 };
 
 struct ShocLengthData : public ShocTestGridDataBase {
@@ -1104,7 +1108,7 @@ void compute_tmpi_host(Int nlevi, Int shcol, Real dtime, Real *rho_zi, Real *dz_
 void integ_column_stability_host(Int nlev, Int shcol, Real *dz_zt,
                               Real *pres, Real *brunt, Real *brunt_int);
 void isotropic_ts_host(Int nlev, Int shcol, Real* brunt_int, Real* tke,
-                    Real* a_diss, Real* brunt, Real* isotropy);
+                    Real* a_diss, Real* brunt, Real* isotropy, Real* stab_cor);
 void dp_inverse_host(Int nlev, Int shcol, Real *rho_zt, Real *dz_zt, Real *rdp_zt);
 void compute_vertical_shear_terms_host(Int nlev, Int nlevi, Int shcol,
                                        Real* dz_zi, Real* u_wind, Real* v_wind, Real* w_field,
@@ -1136,9 +1140,9 @@ void pblintd_check_pblh_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, 
 
 void pblintd_host(Int shcol, Int nlev, Int nlevi, Int npbl, Real* z, Real* zi, Real* thl, Real* ql, Real* q, Real* u, Real* v, Real* ustar, Real* obklen, Real* kbfs, Real* cldn, Real* pblh);
 void shoc_grid_host(Int shcol, Int nlev, Int nlevi, Real* zt_grid, Real* zi_grid, Real* pdel, Real* dz_zt, Real* dz_zi, Real* rho_zt);
-void eddy_diffusivities_host(Int nlev, Int shcol, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
-                          Real* tke, Real* tkh, Real* tk);
-void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
+void eddy_diffusivities_host(Int nlev, Int shcol, bool alt_eddy_form, Real* pblh, Real* zt_grid, Real* tabs, Real* shoc_mix, Real* sterm_zt, Real* isotropy,
+                          Real* stab_cor, Real* tke, Real* tkh, Real* tk);
+void shoc_tke_host(Int shcol, Int nlev, Int nlevi, Real dtime, bool shoc_1p5tke, bool alt_eddy_form, Real* wthv_sec, Real* shoc_mix, Real* dz_zi, Real* dz_zt, Real* pres,
                 Real* u_wind, Real* v_wind, Real* brunt, Real* obklen, Real* zt_grid, Real* zi_grid, Real* pblh, Real* tke,
                 Real* tk, Real* tkh, Real* isotropy);
 void compute_shoc_temperature_host(Int shcol, Int nlev, Real* thetal, Real* ql, Real* inv_exner, Real* tabs);

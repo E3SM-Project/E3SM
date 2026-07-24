@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <random>
 #include <thread>
 
@@ -247,6 +248,24 @@ struct UnitWrap::UnitTest<D>::TestShocEddyDiff : public UnitWrap::UnitTest<D>::B
           REQUIRE(SDS.tkh[offset] < SDS.tkh[offsets]);
         }
       }
+    }
+
+    // Verify that the alternative formulation is selected when requested.
+    SDS.alt_eddy_form = true;
+    for (Int s = 0; s < shcol; ++s) {
+      const auto offset = s * nlev;
+      SDS.tabs[offset] = 300;
+      SDS.shoc_mix[offset] = 100;
+      SDS.stab_cor[offset] = 0.5;
+      SDS.tke[offset] = 4;
+    }
+    eddy_diffusivities(SDS);
+    for (Int s = 0; s < shcol; ++s) {
+      const auto offset = s * nlev;
+      const Real expected = 0.1 * SDS.stab_cor[offset] *
+                            SDS.shoc_mix[offset] * std::sqrt(SDS.tke[offset]);
+      REQUIRE(SDS.tkh[offset] == Approx(expected));
+      REQUIRE(SDS.tk[offset] == Approx(expected));
     }
 
   }
