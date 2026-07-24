@@ -117,6 +117,8 @@ struct Functions {
     static inline constexpr Real tpert_limiter             = 2;        // upper limit on temperature perturbation in input state [K]
     static inline constexpr Real deep_cldfrac_max          = 0.6;      // upper limit on diagnosed deep convective cloud fraction
     static inline constexpr Real deep_cldfrac_min          = 0.0;      // lower limit on diagnosed deep convective cloud fraction
+    static inline constexpr Real deep_frac_limit           = 0.01;     // min deep cloud fraction below which it is zeroed (EAM frac_limit)
+    static inline constexpr Real deep_icw_limit            = 1.e-12;   // min deep in-cloud water below which deep cloud fraction is zeroed (EAM ic_limit)
     // MCSP parameters
     static inline constexpr Real MCSP_storm_speed_pref     = 600e2;    // pressure level for winds in MCSP calculation Pa]
     static inline constexpr Real MCSP_conv_depth_min       = 700e2;    // pressure thickness of convective heating [Pa]
@@ -155,7 +157,6 @@ struct Functions {
     void load_runtime_options(ekat::ParameterList& params) {
       use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
       apply_detr_tend     = params.get<bool>("apply_detr_tend",     true);
-      conv_water_in_rad   = params.get<bool>("conv_water_in_rad",   true);
       upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
       alfa                = params.get<Real>("alfa",                ZMC::alfa);
@@ -235,7 +236,6 @@ struct Functions {
       os << "ZM deep convection parameter values:\n";
       os << indent << "use_fortran_bridge : " << use_fortran_bridge << "\n";
       os << indent << "apply_detr_tend    : " << apply_detr_tend    << "\n";
-      os << indent << "conv_water_in_rad  : " << conv_water_in_rad  << "\n";
       os << indent << "upper_limit_pref   : " << upper_limit_pref   << "\n";
       os << indent << "tau                : " << tau                << "\n";
       os << indent << "alfa               : " << alfa               << "\n";
@@ -269,7 +269,6 @@ struct Functions {
 
     bool use_fortran_bridge;// flag to use EAM's ZM via fortran brigde
     bool apply_detr_tend;   // flag to apply ZM liq/ice detrainment tendencies
-    bool conv_water_in_rad; // flag to use ZM in-cloud water for radiation
     Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
     Real tau;               // convective adjustment time scale
     Real alfa;              // max downdraft mass flux fraction
@@ -1093,3 +1092,4 @@ struct Functions {
 # include "impl/zm_calc_output_tend_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
+                                                                                                                                                                                                                                            
