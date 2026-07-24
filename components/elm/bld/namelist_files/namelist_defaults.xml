@@ -113,6 +113,12 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Do variable soil thickness -->
 <use_var_soil_thick>.false.</use_var_soil_thick>
 
+<!-- Lat-band control for local ELM snowcapping latent-heat extraction -->
+<convert_ice_to_river_runoff_latband>.false.</convert_ice_to_river_runoff_latband>
+<convert_ice_to_river_runoff_latband_width_degrees>20.0</convert_ice_to_river_runoff_latband_width_degrees>
+<snowcap_latband_diag_write>.false.</snowcap_latband_diag_write>
+<snowcap_latband_diag_nstep>1</snowcap_latband_diag_nstep>
+
 <!-- Do downscaling to topounit -->
 <precip_downscaling_method>ERMM</precip_downscaling_method>
 <!-- Do lake water storage -->

@@ -11,7 +11,7 @@ module rof_comp_mct
   use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel, &
                                 shr_file_getLogUnit, shr_file_getLogLevel, &
                                 shr_file_getUnit, shr_file_setIO
-  use shr_const_mod    , only : SHR_CONST_REARTH
+   use shr_const_mod    , only : SHR_CONST_REARTH
   use shr_taskmap_mod  , only : shr_taskmap_write
   use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
   use seq_comm_mct     , only : info_taskmap_comp
@@ -27,7 +27,9 @@ module rof_comp_mct
                                 inst_index, inst_suffix, inst_name, RtmVarSet, &
                                 wrmflag, heatflag, data_bgc_fluxes_to_ocean_flag, &
                                 inundflag, use_lnd_rof_two_way, use_ocn_rof_two_way, &
-                                sediflag, redirect_negative_qgwl
+                                sediflag, redirect_negative_qgwl, &
+                                convert_ice_to_river_runoff_latband, &
+                                convert_ice_to_river_runoff_latband_width_degrees
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
@@ -841,10 +843,10 @@ contains
     real(r8), intent(inout) :: r2x_r(:,:)  ! Runoff to coupler export state
     !
     ! LOCAL VARIABLES
-    integer :: ni, n, nt, nliq, nfrz
+   integer :: ni, n, nt, nliq, nfrz
     logical,save :: first_time = .true.
     character(len=32), parameter :: sub = 'rof_export_mct'
-    real(R8) :: tmp1
+   real(R8) :: tmp1, rofi_pre, latband_width_deg
     !---------------------------------------------------------------------------
     
     nliq = 0
@@ -871,10 +873,17 @@ contains
        else
           write(iulog,*)'Snow capping will flow out in liquid river runoff'
        endif
+       if (convert_ice_to_river_runoff_latband) then
+          write(iulog,*) 'MOSART will convert rofi to rofl for |lat| <= ', &
+                         convert_ice_to_river_runoff_latband_width_degrees, ' deg'
+       else
+          write(iulog,*) 'MOSART rofi->rofl latitude-band conversion is disabled'
+       end if
        endif
        first_time = .false.
     end if
 
+    latband_width_deg = max(0._r8, convert_ice_to_river_runoff_latband_width_degrees)
     ni = 0
     if ( ice_runoff )then
        ! separate liquid and ice runoff
@@ -909,6 +918,17 @@ contains
              end if
 
           endif
+
+          ! Reclassify frozen runoff as liquid within the lat band so snowcapped ice routes through the river network, not the ocean.
+          if (convert_ice_to_river_runoff_latband) then
+                if (abs(rtmCTL%latc(n)) <= latband_width_deg) then
+                   rofi_pre = r2x_r(index_r2x_Forr_rofi,ni)
+                   if (rofi_pre > 0._r8) then
+                      r2x_r(index_r2x_Forr_rofl,ni) = r2x_r(index_r2x_Forr_rofl,ni) + rofi_pre
+                      r2x_r(index_r2x_Forr_rofi,ni) = 0._r8
+                   end if
+                end if
+             end if
        end do
     else
        ! liquid and ice runoff added to liquid runoff, ice runoff is zero

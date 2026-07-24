@@ -18,6 +18,7 @@ module elm_driver
   use elm_varctl             , only : iac_present
   use elm_varctl             , only : mpi_sync_nstep_freq
   use elm_varctl             , only : nsrest, nsrStartup
+  use elm_varctl             , only : convert_ice_to_river_runoff_latband
   use elm_varctl             , only : fates_radiation_model
   use elm_varctl             , only : finidat
   use elm_time_manager       , only : get_step_size, get_curr_date, get_ref_date, get_nstep, is_beg_curr_day, get_curr_time_string
@@ -51,6 +52,7 @@ module elm_driver
   use LakeHydrologyMod       , only : LakeHydrology
   !
   use AerosolMod             , only : AerosolMasses
+   use SnowHydrologyMod       , only : SnowCappingDiagReset, SnowCappingDiagLog, SnowCapLatentCoolingAndDiag
   use SnowSnicarMod          , only : SnowAge_grain
   use SurfaceAlbedoMod       , only : SurfaceAlbedo
   use UrbanAlbedoMod         , only : UrbanAlbedo
@@ -677,6 +679,8 @@ contains
     ! snow accumulation exceeds 10 mm.
     ! ============================================================================
 
+   if (convert_ice_to_river_runoff_latband) call SnowCappingDiagReset()
+
     !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump)
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
@@ -1256,6 +1260,10 @@ contains
 
        call t_stopf('hydro2 drainage')
 
+       ! Extract latent heat of fusion from snowpack for columns where
+       ! snowcapped ice will be converted to liquid runoff downstream.
+       if (convert_ice_to_river_runoff_latband) call SnowCapLatentCoolingAndDiag(bounds_clump)
+
        if (use_betr) then
           call t_startf('betr drainage')
           call ep_betr%StepWithDrainage(bounds_clump, col_pp)
@@ -1483,6 +1491,7 @@ contains
     if (wrtdia) call mpi_barrier(mpicom,ier)
     call t_startf('wrtdiag')
     call write_diagnostic(bounds_proc, wrtdia, nstep, lnd2atm_vars)
+    if (convert_ice_to_river_runoff_latband) call SnowCappingDiagLog(nstep)
     call t_stopf('wrtdiag')
 
     ! ============================================================================
