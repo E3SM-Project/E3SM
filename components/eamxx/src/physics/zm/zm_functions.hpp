@@ -135,6 +135,8 @@ struct Functions {
     static inline constexpr Real tiedke_add                = 0.8;      // default Tiedke temperature perturbation addition [K]
     static inline constexpr Real c0                        = 0.0020;   // default autoconversion coefficient
     static inline constexpr Real cldfrc_dp1                = 0.018;    // default parameter for radiative in-cld water
+    static inline constexpr Real dlf_tk1                   = 268.15;   // T at/above which detrained condensate (dlf) is assumed to be liquid
+    static inline constexpr Real dlf_tk2                   = 238.15;   // T at/below which detrained condensate (dlf) is assumed to be ice
 
     // Table of saturation vapor pressure values (estbl) from tmin to
     // tmax+1 Kelvin, in one degree increments. ttrice defines the transition
@@ -144,8 +146,6 @@ struct Functions {
     static inline constexpr Real h2otrip = 273.16;
     static inline constexpr Real ttrice  = 20.0;  // transition range from es over H2O to es over ice
 
-    static inline constexpr Real dlf_tk1 = 268.15; // T at/above which detrained condensate (dlf) is assumed to be liquid
-    static inline constexpr Real dlf_tk2 = 238.15; // T at/below which detrained condensate (dlf) is assumed to be ice
   };
 
   //----------------------------------------------------------------------------
@@ -177,6 +177,8 @@ struct Functions {
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
       old_snow            = params.get<bool>("old_snow",            true);
+      dlf_tk1             = params.get<Real>("dlf_tk1",             ZMC::dlf_tk1);
+      dlf_tk2             = params.get<Real>("dlf_tk2",             ZMC::dlf_tk2);
       // MCSP parameters
       mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
       mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff_default);
@@ -257,6 +259,8 @@ struct Functions {
       // ZM micro parameters
       os << indent << "zm_microp          : " << zm_microp          << "\n";
       os << indent << "old_snow           : " << old_snow           << "\n";
+      os << indent << "dlf_tk1            : " << dlf_tk1            << "\n";
+      os << indent << "dlf_tk2            : " << dlf_tk2            << "\n";
       // MCSP parameters
       os << indent << "mcsp_enabled       : " << mcsp_enabled       << "\n";
       os << indent << "mcsp_t_coeff       : " << mcsp_t_coeff       << "\n";
@@ -290,6 +294,8 @@ struct Functions {
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
     bool old_snow;          // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
+    Real dlf_tk1;           // T at/above which detrained condensate (dlf) is assumed to be liquid
+    Real dlf_tk2;           // T at/below which detrained condensate (dlf) is assumed to be ice
     // MCSP parameters
     bool mcsp_enabled;      // flag for mesoscale coherent structure parameterization (MSCP)
     Real mcsp_t_coeff;      // MCSP coefficient for temperature tendencies
@@ -1092,4 +1098,3 @@ struct Functions {
 # include "impl/zm_calc_output_tend_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // ZM_FUNCTIONS_HPP
-                                                                                                                                                                                                                                            
