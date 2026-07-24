@@ -80,6 +80,10 @@ public:
 
   // Whether we use aerosol forcing in radiation
   bool m_do_aerosol_rad;
+
+  // Whether to add ZM deep convective in-cloud water into the cloud water
+  // seen by radiation. Defaults false; enabled (via namelist) when ZM is active.
+  bool m_do_zm_cloud_in_rad;
   // Whether we do extra aerosol forcing calls
   bool m_extra_clnsky_diag;
   bool m_extra_clnclrsky_diag;
@@ -135,7 +139,7 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_ncol        = 8;
-    static constexpr int num_2d_nlay        = 16;
+    static constexpr int num_2d_nlay        = 17;
     static constexpr int num_2d_nlay_p1     = 23;
     static constexpr int num_2d_nswbands    = 2;
     static constexpr int num_3d_nlev_nswbands = 4;
@@ -170,6 +174,9 @@ public:
     ureal2dk tmp2d_k;
     ureal2dk lwp_k;
     ureal2dk iwp_k;
+    // Scratch for combined (stratiform + ZM deep convective) grid-mean cloud
+    // water; reused for liquid then ice. Only used when m_do_zm_cloud_in_rad.
+    ureal2dk zm_q_rad_k;
     ureal2dk sw_heating_k;
     ureal2dk lw_heating_k;
 

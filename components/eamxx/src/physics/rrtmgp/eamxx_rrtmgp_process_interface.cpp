@@ -153,6 +153,16 @@ void RRTMGPRadiation::create_requests() {
   add_field<Required>("eff_radius_qi", scalar3d_mid, micron, grid_name);
   add_field<Required>("qv",scalar3d_mid,kg/kg,grid_name);
   add_field<Required>("surf_lw_flux_up",scalar2d,W/(m*m),grid_name);
+
+  // When ZM deep convection is active, add its convective in-cloud water to the
+  // grid-mean cloud water seen by radiation (see run_impl). These fields are
+  // produced by the ZM process; require them only when the feature is enabled.
+  m_do_zm_cloud_in_rad = m_params.get<bool>("do_zm_cloud_in_rad", false);
+  if (m_do_zm_cloud_in_rad) {
+    add_field<Required>("zm_icw_liq", scalar3d_mid, kg/kg, grid_name);
+    add_field<Required>("zm_icw_ice", scalar3d_mid, kg/kg, grid_name);
+    add_field<Required>("zm_dp_frac", scalar3d_mid, none,  grid_name);
+  }
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
@@ -363,6 +373,8 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.lwp_k.size();
   m_buffer.iwp_k = decltype(m_buffer.iwp_k)(mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.iwp_k.size();
+  m_buffer.zm_q_rad_k = decltype(m_buffer.zm_q_rad_k)(mem, m_col_chunk_size, m_nlay);
+  mem += m_buffer.zm_q_rad_k.size();
   m_buffer.sw_heating_k = decltype(m_buffer.sw_heating_k)(mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.sw_heating_k.size();
   m_buffer.lw_heating_k = decltype(m_buffer.lw_heating_k)(mem, m_col_chunk_size, m_nlay);
@@ -566,6 +578,14 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
   auto d_rei = get_field_in("eff_radius_qi").get_view<const Real**>();
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
+  // ZM deep convective in-cloud water and deep cloud fraction (only present
+  // when m_do_zm_cloud_in_rad). Left empty otherwise; never read in that case.
+  decltype(d_qc) d_zm_icw_liq, d_zm_icw_ice, d_zm_dp_frac;
+  if (m_do_zm_cloud_in_rad) {
+    d_zm_icw_liq      = get_field_in("zm_icw_liq").get_view<const Real**>();
+    d_zm_icw_ice      = get_field_in("zm_icw_ice").get_view<const Real**>();
+    d_zm_dp_frac = get_field_in("zm_dp_frac").get_view<const Real**>();
+  }
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
   auto d_cldfrac_rad = get_field_out("cldfrac_rad").get_view<Real**>();
@@ -982,8 +1002,40 @@ void RRTMGPRadiation::run_impl (const double dt) {
       Kokkos::fence();
 
       // Compute layer cloud mass (per unit area)
-      interface_t::mixing_ratio_to_cloud_mass(qc_k, cldfrac_tot_k, p_del_k, lwp_k);
-      interface_t::mixing_ratio_to_cloud_mass(qi_k, cldfrac_tot_k, p_del_k, iwp_k);
+      if (m_do_zm_cloud_in_rad) {
+        // Add ZM deep convective in-cloud water to the grid-mean cloud water
+        // seen by radiation, without modifying the prognostic qc/qi. Following
+        // EAM's conv_water_4rad: grid-mean total = stratiform grid-mean plus
+        // deep_frac * in-cloud convective. cldfrac_tot_k already includes the
+        // deep contribution (merged upstream in the cld_fraction process), so
+        // mixing_ratio_to_cloud_mass recovers the blended in-cloud value.
+        // Reuse one scratch buffer for liquid, then ice. Trim to the current
+        // chunk's column count so its extent(0) matches the other (trimmed)
+        // inputs to mixing_ratio_to_cloud_mass (which derives ncol from it).
+        auto q_rad_k = Kokkos::subview(m_buffer.zm_q_rad_k, Kokkos::make_pair(0,ncol), Kokkos::ALL);
+        const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          const int icol = i + beg;
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+            q_rad_k(i,k) = d_qc(icol,k) + d_zm_dp_frac(icol,k)*d_zm_icw_liq(icol,k);
+          });
+        });
+        Kokkos::fence();
+        interface_t::mixing_ratio_to_cloud_mass(q_rad_k, cldfrac_tot_k, p_del_k, lwp_k);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          const int icol = i + beg;
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
+            q_rad_k(i,k) = d_qi(icol,k) + d_zm_dp_frac(icol,k)*d_zm_icw_ice(icol,k);
+          });
+        });
+        Kokkos::fence();
+        interface_t::mixing_ratio_to_cloud_mass(q_rad_k, cldfrac_tot_k, p_del_k, iwp_k);
+      } else {
+        interface_t::mixing_ratio_to_cloud_mass(qc_k, cldfrac_tot_k, p_del_k, lwp_k);
+        interface_t::mixing_ratio_to_cloud_mass(qi_k, cldfrac_tot_k, p_del_k, iwp_k);
+      }
       // Convert to g/m2 (needed by RRTMGP)
       {
       const auto policy = TPF::get_default_team_policy(ncol, m_nlay);
