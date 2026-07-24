@@ -36,7 +36,7 @@ void Functions<S,D>
          const     Scalar lambda_high   = lambda_high_in;
          const     Scalar lambda_slope  = lambda_slope_in;
          const     Scalar lambda_thresh = lambda_thresh_in;
-  static constexpr Scalar maxiso        = 20000; // Return to isotropic timescale [s]
+  static constexpr Scalar maxiso        = 5000; // Return to isotropic timescale [s]
 
   const Int nlev_pack = ekat::npack<Pack>(nlev);
 
