@@ -186,6 +186,7 @@ int testAuxState() {
 
    deepCopy(DefAuxState->PseudoThicknessAux.FluxPseudoThickEdge, NAN);
    deepCopy(DefAuxState->PseudoThicknessAux.MeanPseudoThickEdge, NAN);
+   deepCopy(DefAuxState->PseudoThicknessAux.ProvPseudoThickness, NAN);
 
    deepCopy(DefAuxState->VorticityAux.RelVortVertex, NAN);
    deepCopy(DefAuxState->VorticityAux.NormRelVortVertex, NAN);
@@ -241,6 +242,14 @@ int testAuxState() {
    if (!Kokkos::isfinite(MeanPseudoThickSum)) {
       Err++;
       LOG_ERROR("AuxStateTest: MeanPseudoThickEdge FAIL");
+   }
+
+   const Real ProvPseudoThickSum =
+       sum(DefAuxState->PseudoThicknessAux.ProvPseudoThickness, NCellsOwned,
+           VCoord->MinLayerCell, VCoord->MaxLayerCell);
+   if (!Kokkos::isfinite(ProvPseudoThickSum)) {
+      Err++;
+      LOG_ERROR("AuxStateTest: ProvPseudoThickness FAIL");
    }
 
    const Real RelVortVSum =
