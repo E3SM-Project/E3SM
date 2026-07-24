@@ -356,7 +356,7 @@ void call_function_dropmixnuc(
                 qqcw_view(ind_qqcw, klev) =
                     dry_aero.cld_aero_nmr[m](icol, klev);
                 ++ind_qqcw;
-                for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+                for(int a = 0; a < aero_config.num_aerosol_ids(); ++a) {
                   if(dry_aero.cld_aero_mmr[m][a].data()) {
                     qqcw_view(ind_qqcw, klev) =
                         dry_aero.cld_aero_mmr[m][a](icol, klev);
@@ -409,7 +409,7 @@ void update_cloud_borne_aerosols(
   for(int m = 0; m < aero_config.num_modes(); ++m) {
     Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], Kokkos::subview(qqcw_fld_work, Kokkos::ALL(), ind_qqcw, Kokkos::ALL()));
     ++ind_qqcw;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config.num_aerosol_ids(); ++a) {
       if(dry_aero.cld_aero_mmr[m][a].data()) {
         Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], Kokkos::subview(qqcw_fld_work, Kokkos::ALL(), ind_qqcw, Kokkos::ALL()));
         ++ind_qqcw;

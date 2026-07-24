@@ -266,7 +266,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Allocate memory
   //---------------------------------------------------------------------------------
   // Alllocate aerosol-related gas tendencies
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     set_field_w_scratch_buffer(dry_aero_tends_.gas_mmr[g], buffer_, true);
   }
 

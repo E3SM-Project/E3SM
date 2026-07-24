@@ -53,7 +53,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
     }  // end for loop num species
   }
 
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     limits_aerosol_gas_tracers_[std::string(mam_coupling::gas_mmr_name[g])] =
         mam_coupling::physical_min_max(mmr_label);
   }  // end for loop num gases
@@ -196,7 +196,7 @@ void MAMGenericInterface::add_tracers_gases() {
   }
 
   // add other gases as tracers (note that the index of gases starts from 1)
-  for(int g = 1; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 1; g < aero_config_.num_gas_ids(); ++g) {
     add_tracer<Updated>(std::string(mam_coupling::gas_mmr_name[g]), grid_, q_unit);
   }  // end for loop num gases
 }
@@ -263,7 +263,7 @@ void MAMGenericInterface::set_field_w_scratch_buffer(
 // ================================================================
 void MAMGenericInterface::populate_gases_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
 }
@@ -277,7 +277,7 @@ void MAMGenericInterface::set_buffer_scratch_to_zero(
 // ================================================================
 void MAMGenericInterface::populate_gases_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     wet_aero.gas_mmr[g] = get_field_out(std::string(mam_coupling::gas_mmr_name[g])).get_view<Real **>();
   }
 }
