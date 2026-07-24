@@ -609,6 +609,14 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_dp_frac(i,k) = zm_opts.cldfrc_dp1 * Kokkos::log( Real(1) + Real(500)*loc_zm_output_mass_flux(i,k+1) );
     zm_dp_frac(i,k) = Kokkos::min(zm_dp_frac(i,k),ZMF::ZMC::deep_cldfrac_max);
     zm_dp_frac(i,k) = Kokkos::max(zm_dp_frac(i,k),ZMF::ZMC::deep_cldfrac_min);
+    // Zero negligible deep cloud (matches EAM clubb_intr.F90): require both a
+    // minimum cloud fraction and a minimum in-cloud water amount. Weighting the
+    // radiation water contribution by this fraction then keeps the fraction and
+    // water contributions consistent (both vanish together).
+    if (zm_dp_frac(i,k) <= ZMF::ZMC::deep_frac_limit ||
+        loc_zm_output_ql(i,k) < ZMF::ZMC::deep_icw_limit) {
+      zm_dp_frac(i,k) = 0;
+    }
   });
 
   //----------------------------------------------------------------------------
