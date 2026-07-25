@@ -23,7 +23,6 @@ namespace Homme
 
 namespace {
 
-constexpr bool print_sgs_diffusivity_clipping = true;
 constexpr Real sgs_clip_cfl_target = 1.00;
 
 constexpr Real get_lambda_vis ()
