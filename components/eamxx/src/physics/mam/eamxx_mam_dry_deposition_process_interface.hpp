@@ -18,7 +18,6 @@ namespace scream {
 // stores exactly ONE instance of this class in its list of subcomponents.
 class MAMDryDep final : public MAMGenericInterface {
  public:
-  static constexpr int num_aero_modes = mam4::AeroConfig::num_modes();
   static constexpr int aerosol_categories_ =
       mam4::DryDeposition::aerosol_categories;
   static constexpr int n_land_type = mam4::DryDeposition::n_land_type;
