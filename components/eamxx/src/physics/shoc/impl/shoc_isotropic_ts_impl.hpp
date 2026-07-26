@@ -25,8 +25,7 @@ void Functions<S,D>
   const uview_1d<const Pack>& tke,
   const uview_1d<const Pack>& a_diss,
   const uview_1d<const Pack>& brunt,
-  const uview_1d<Pack>&       isotropy,
-  const uview_1d<Pack>&       stab_cor)
+  const uview_1d<Pack>&       isotropy)
 {
 
   //constants from share/physics
@@ -53,10 +52,8 @@ void Functions<S,D>
       const Pack buoy_sgs_save = brunt(k);
       lambda.set(buoy_sgs_save <=0, 0); //set lambda to zero where buoy_sgs_save <=0
 
-      stab_cor(k) = Pack(1)/(Pack(1)+lambda*buoy_sgs_save*ekat::square(tscale));
-
       // Compute the return to isotropic timescale
-      isotropy(k)= ekat::min(Pack(maxiso),tscale*stab_cor(k));
+      isotropy(k)= ekat::min(Pack(maxiso),tscale/(1+lambda*buoy_sgs_save*ekat::square(tscale)));
 
     });
 }
