@@ -21,7 +21,6 @@ void Functions<Real,DefaultDevice>
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
-  const bool&                  alt_eddy_form,
   const view_2d<const Pack>&  wthv_sec,
   const view_3d<const Pack>&  shear_strain3d_components,
   const view_2d<Pack>&        shear_strain3d,
@@ -55,7 +54,7 @@ void Functions<Real,DefaultDevice>
 
     shoc_tke(team, nlev, nlevi, dtime,
              lambda_low, lambda_high, lambda_slope, lambda_thresh,
-             Ckh, Ckm, shoc_1p5tke, do_3d_turb, alt_eddy_form,
+             Ckh, Ckm, shoc_1p5tke, do_3d_turb,
              ekat::subview(wthv_sec, i),
              ekat::subview(shear_strain3d_components, i),
              ekat::subview(shear_strain3d, i),

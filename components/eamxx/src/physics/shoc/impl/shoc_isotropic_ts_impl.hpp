@@ -25,19 +25,18 @@ void Functions<S,D>
   const uview_1d<const Pack>& tke,
   const uview_1d<const Pack>& a_diss,
   const uview_1d<const Pack>& brunt,
-  const uview_1d<Pack>&       isotropy,
-  const uview_1d<Pack>&       stab_cor)
+  const uview_1d<Pack>&       isotropy)
 {
 
   //constants from share/physics
   static constexpr  Scalar ggr = C::gravit.value;
 
   //Declare constants
-         const     Scalar lambda_low    = lambda_low_in; 
-         const     Scalar lambda_high   = lambda_high_in;
-         const     Scalar lambda_slope  = lambda_slope_in;
-         const     Scalar lambda_thresh = lambda_thresh_in;
-  static constexpr Scalar maxiso        = 20000; // Return to isotropic timescale [s]
+  const     Scalar lambda_low    = lambda_low_in;
+  const     Scalar lambda_high   = lambda_high_in;
+  const     Scalar lambda_slope  = lambda_slope_in;
+  const     Scalar lambda_thresh = lambda_thresh_in;
+  static    constexpr Scalar maxiso = scream::shoc::Constants<Real>::maxiso;
 
   const Int nlev_pack = ekat::npack<Pack>(nlev);
 
@@ -53,10 +52,8 @@ void Functions<S,D>
       const Pack buoy_sgs_save = brunt(k);
       lambda.set(buoy_sgs_save <=0, 0); //set lambda to zero where buoy_sgs_save <=0
 
-      stab_cor(k) = Pack(1)/(Pack(1)+lambda*buoy_sgs_save*ekat::square(tscale));
-
       // Compute the return to isotropic timescale
-      isotropy(k)= ekat::min(Pack(maxiso),tscale*stab_cor(k));
+      isotropy(k)= ekat::min(Pack(maxiso),tscale/(1+lambda*buoy_sgs_save*ekat::square(tscale)));
 
     });
 }
