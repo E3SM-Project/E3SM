@@ -80,6 +80,8 @@ void SHOCMacrophysics::create_requests()
     const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
     add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
     add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
+    add_field<Computed>("tkh_horiz", scalar3d_mid, m2/s, grid_name, ps);
+    add_field<Computed>("tk_horiz",  scalar3d_mid, m2/s, grid_name, ps);
   }
 
   // Input/Output variables
@@ -557,6 +559,26 @@ void SHOCMacrophysics::run_impl (const double dt)
                  , temporaries
 #endif
                  );
+
+  if (runtime_options.do_3d_turb) {
+    const auto tke       = get_field_out("tke").get_view<const Pack**>();
+    const auto tkh_horiz = get_field_out("tkh_horiz").get_view<Pack**>();
+    const auto tk_horiz  = get_field_out("tk_horiz").get_view<Pack**>();
+    const auto dx        = input.dx;
+    const auto dy        = input.dy;
+    const auto Ckh       = runtime_options.Ckh;
+    const auto Ckm       = runtime_options.Ckm;
+    const auto nlev      = m_num_levs;
+    Kokkos::parallel_for("horizontal_eddy_diffusivities", default_policy,
+                         KOKKOS_LAMBDA (const KT::MemberType& team) {
+      const int icol = team.league_rank();
+      SHF::horizontal_eddy_diffusivities(
+          team, nlev, Ckh, Ckm, dx(icol), dy(icol),
+          ekat::subview(tke,icol), ekat::subview(tkh_horiz,icol),
+          ekat::subview(tk_horiz,icol));
+    });
+    Kokkos::fence();
+  }
 
   // Postprocessing of SHOC outputs
   Kokkos::parallel_for("shoc_postprocess",
