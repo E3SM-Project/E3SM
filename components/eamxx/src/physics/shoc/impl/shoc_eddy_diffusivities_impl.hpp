@@ -62,8 +62,8 @@ KOKKOS_FUNCTION
 void Functions<S,D>::horizontal_eddy_diffusivities(
   const MemberType&            team,
   const Int&                   nlev,
-  const Scalar&                Ckh,
-  const Scalar&                Ckm,
+  const Scalar&                Ckh_horiz,
+  const Scalar&                Ckm_horiz,
   const Scalar&                grid_dx,
   const Scalar&                grid_dy,
   const uview_1d<const Pack>& tke,
@@ -74,8 +74,8 @@ void Functions<S,D>::horizontal_eddy_diffusivities(
   const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     const Pack velocity_scale = ekat::sqrt(tke(k));
-    tkh_horiz(k) = Ckh*horiz_length*velocity_scale;
-    tk_horiz(k)  = Ckm*horiz_length*velocity_scale;
+    tkh_horiz(k) = Ckh_horiz*horiz_length*velocity_scale;
+    tk_horiz(k)  = Ckm_horiz*horiz_length*velocity_scale;
   });
 }
 

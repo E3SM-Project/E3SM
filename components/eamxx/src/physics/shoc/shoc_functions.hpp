@@ -78,6 +78,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     Scalar c_diag_3rd_mom;
     Scalar Ckh;
     Scalar Ckm;
+    Scalar Ckh_horiz;
+    Scalar Ckm_horiz;
     bool shoc_1p5tke;
     bool extra_diags;
     bool do_3d_turb;
@@ -899,8 +901,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   KOKKOS_FUNCTION
   static void horizontal_eddy_diffusivities(
-      const MemberType &team, const Int &nlev, const Scalar &Ckh,
-      const Scalar &Ckm, const Scalar &grid_dx, const Scalar &grid_dy,
+      const MemberType &team, const Int &nlev, const Scalar &Ckh_horiz,
+      const Scalar &Ckm_horiz, const Scalar &grid_dx, const Scalar &grid_dy,
       const uview_1d<const Pack> &tke, const uview_1d<Pack> &tkh_horiz,
       const uview_1d<Pack> &tk_horiz);
 
