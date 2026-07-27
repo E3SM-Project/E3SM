@@ -78,13 +78,13 @@ void ZMDeepConvection::create_requests ()
   add_field <Updated>("precip_ice_surf_mass", scalar2d,     kg/m2,  grid_name, "ACCUMULATED");
 
   // T/qv from previous time step for DCAPE
-  add_field<Computed>("zm_t_prev",            scalar3d_mid, K,      grid_name);
-  add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg,  grid_name);
+  add_field<Computed>("zm_t_prev",            scalar3d_mid, K,      grid_name, pack_size);
+  add_field<Computed>("zm_q_prev",            scalar3d_mid, kg/kg,  grid_name, pack_size);
 
   // in-cloud water for radiation
-  add_field<Computed>("zm_icw_liq",           scalar3d_mid, kg/kg,  grid_name);
-  add_field<Computed>("zm_icw_ice",           scalar3d_mid, kg/kg,  grid_name);
-  add_field<Computed>("zm_dp_frac",           scalar3d_mid, none,   grid_name);
+  add_field<Computed>("zm_icw_liq",           scalar3d_mid, kg/kg,  grid_name, pack_size);
+  add_field<Computed>("zm_icw_ice",           scalar3d_mid, kg/kg,  grid_name, pack_size);
+  add_field<Computed>("zm_dp_frac",           scalar3d_mid, none,   grid_name, pack_size);
 
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
