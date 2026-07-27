@@ -282,6 +282,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
+  runtime_options.Ckh_horiz     = m_params.get<double>("coeff_kh_horiz", 0.1);
+  runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz", 0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
@@ -565,14 +567,14 @@ void SHOCMacrophysics::run_impl (const double dt)
     const auto tk_horiz  = get_field_out("tk_horiz").get_view<Pack**>();
     const auto dx        = input.dx;
     const auto dy        = input.dy;
-    const auto Ckh       = runtime_options.Ckh;
-    const auto Ckm       = runtime_options.Ckm;
+    const auto Ckh_horiz = runtime_options.Ckh_horiz;
+    const auto Ckm_horiz = runtime_options.Ckm_horiz;
     const auto nlev      = m_num_levs;
     Kokkos::parallel_for("horizontal_eddy_diffusivities", default_policy,
                          KOKKOS_LAMBDA (const KT::MemberType& team) {
       const int icol = team.league_rank();
       SHF::horizontal_eddy_diffusivities(
-          team, nlev, Ckh, Ckm, dx(icol), dy(icol),
+          team, nlev, Ckh_horiz, Ckm_horiz, dx(icol), dy(icol),
           ekat::subview(tke,icol), ekat::subview(tkh_horiz,icol),
           ekat::subview(tk_horiz,icol));
     });
