@@ -1,6 +1,6 @@
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
 from spel.scripts.fortran_parser.spel_ast import (
@@ -190,36 +190,47 @@ def main():
     for field, components in field_to_component_map.items():
         f_entry = decode_field(field,components)
         if f_entry:
-            metadata = metadata_map[field]
-            to_yaml.append(YAML_Entry(metadata=metadata,field=f_entry))
+            metadata = metadata_map.get(field)
+            if not metadata:
+                print(f"Skipping {field}")
+                continue
+            to_yaml.append(YAML_Entry(attributes=metadata,field=f_entry))
 
+    export(CouplingTable(fields=to_yaml),fn="coupling_fields.yaml")
 
 @dataclass
 class FieldEntry:
     kind: str
     name: str
     merge_type: str
-    sources: str
+    sources:list[str] = field(default_factory=list)
     destinations: list[str] = field(default_factory=list)
 
 
 @dataclass
 class YAML_Entry:
-    metadata: MetadataEntry
     field: FieldEntry
+    attributes: MetadataEntry
 
+@dataclass
+class CouplingTable:
+    """
+    This is the dataclass that will be written to the yaml file
+    What other metadata does it need?
+    """
+    fields: list[YAML_Entry] = field(default_factory=list)
 
 ABBREV_TO_COMPONENT_MAP = {
     "a": "atm",
     "l": "lnd",
-    "o": "ocean",
+    "o": "ocn",
     "i": "ice",
     "x": "cpl",
     "g": "glc",
     "r": "rof",
     "w": "wav",
     "z": "iac",
-    "f":"atm",
+    "f": "atm",
 }
 
 
@@ -262,11 +273,21 @@ def decode_field(field_name: str, structures: list[str]) -> Optional[FieldEntry]
     return FieldEntry(
         kind=kind,
         name=field_name.split('_')[-1],
-        sources=source,
+        sources=[source],
         destinations=dests,
         merge_type=merge_type,
     )
 
+
+def export(table: CouplingTable, fn):
+    import yaml
+    with open(fn,'w') as ofile:
+        yaml.safe_dump(
+            asdict(table),
+            ofile,
+            sort_keys=False,
+            default_flow_style=False,
+        )
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,2631 @@
+fields:
+- field:
+    kind: state
+    name: z
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+  attributes:
+    attname: sa_z
+    longname: height at the lowest model level
+    stdname: height
+    units: m
+- field:
+    kind: state
+    name: topo
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+  attributes:
+    attname: sa_topo
+    longname: surface height
+    stdname: height
+    units: m
+- field:
+    kind: state
+    name: u
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+  attributes:
+    attname: sa_u
+    longname: zonal wind at the lowest model level
+    stdname: eastward_wind
+    units: m s-1
+- field:
+    kind: state
+    name: v
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+  attributes:
+    attname: sa_v
+    longname: meridional wind at the lowest model level
+    stdname: northward_wind
+    units: m s-1
+- field:
+    kind: state
+    name: tbot
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+  attributes:
+    attname: sa_tbot
+    longname: temperature at the lowest model level
+    stdname: air_temperature
+    units: k
+- field:
+    kind: state
+    name: ptem
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+  attributes:
+    attname: sa_ptem
+    longname: potential temperature at the lowest model level
+    stdname: air_potential_temperature
+    units: k
+- field:
+    kind: state
+    name: shum
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+  attributes:
+    attname: sa_shum
+    longname: specific humidity at the lowest model level
+    stdname: specific_humidity
+    units: kg kg-1
+- field:
+    kind: state
+    name: pbot
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+    - ice
+    - ocn
+  attributes:
+    attname: sa_pbot
+    longname: pressure at the lowest model level
+    stdname: air_pressure
+    units: pa
+- field:
+    kind: state
+    name: dens
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - ice
+  attributes:
+    attname: sa_dens
+    longname: density at the lowest model level
+    stdname: air_density
+    units: kg m-3
+- field:
+    kind: state
+    name: uovern
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - lnd
+  attributes:
+    attname: sa_uovern
+    longname: froude number
+    stdname: froude number
+    units: unitless
+- field:
+    kind: flux
+    name: rainc
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_rainc
+    longname: convective precipitation rate
+    stdname: convective_precipitation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rainl
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_rainl
+    longname: large-scale (stable) precipitation rate
+    stdname: large_scale_precipitation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rain
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_rain
+    longname: water flux due to rain
+    stdname: rainfall_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: snowc
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_snowc
+    longname: convective snow rate (water equivalent)
+    stdname: convective_snowfall_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: snowl
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_snowl
+    longname: large-scale (stable) snow rate (water equivalent)
+    stdname: large_scale_snowfall_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: snow
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_snow
+    longname: water flux due to snow
+    stdname: surface_snow_melt_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: prec
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_prec
+    longname: water flux (rain+snow)
+    stdname: precipitation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: lwdn
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_lwdn
+    longname: downward longwave heat flux
+    stdname: downwelling_longwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: swndr
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_swndr
+    longname: direct near-infrared incident solar radiation
+    stdname: surface_downward_direct_shortwave_flux_due_to_near_infrared_radiation
+    units: w m-2
+- field:
+    kind: flux
+    name: swvdr
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_swvdr
+    longname: direct visible incident solar radiation
+    stdname: surface_downward_direct_shortwave_flux_due_to_visible_radiation
+    units: w m-2
+- field:
+    kind: flux
+    name: swndf
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_swndf
+    longname: diffuse near-infrared incident solar radiation
+    stdname: surface_downward_diffuse_shortwave_flux_due_to_near_infrared_radiation
+    units: w m-2
+- field:
+    kind: flux
+    name: swvdf
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_swvdf
+    longname: diffuse visible incident solar radiation
+    stdname: surface_downward_diffuse_shortwave_flux_due_to_visible_radiation
+    units: w m-2
+- field:
+    kind: flux
+    name: swnet
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_swnet
+    longname: net shortwave radiation
+    stdname: surface_net_shortwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: swnet
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_swnet
+    longname: net shortwave radiation
+    stdname: surface_net_shortwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: swnet
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_swnet
+    longname: net shortwave radiation
+    stdname: surface_net_shortwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: swpen
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_swpen
+    longname: net shortwave radiation penetrating into ice and ocean
+    stdname: net_downward_shortwave_flux_in_sea_ice_due_to_penetration
+    units: w m-2
+- field:
+    kind: flux
+    name: swnet
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_swnet
+    longname: net shortwave radiation
+    stdname: surface_net_shortwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: bcphidry
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_bcphidry
+    longname: hydrophylic black carbon dry deposition flux
+    stdname: dry_deposition_flux_of_hydrophylic_black_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: bcphodry
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_bcphodry
+    longname: hydrophobic black carbon dry deposition flux
+    stdname: dry_deposition_flux_of_hydrophobic_black_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: bcphiwet
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_bcphiwet
+    longname: hydrophylic black carbon wet deposition flux
+    stdname: wet_deposition_flux_of_hydrophylic_black_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: ocphidry
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_ocphidry
+    longname: hydrophylic organic carbon dry deposition flux
+    stdname: dry_deposition_flux_of_hydrophylic_organic_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: ocphodry
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_ocphodry
+    longname: hydrophobic organic carbon dry deposition flux
+    stdname: dry_deposition_flux_of_hydrophobic_organic_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: ocphiwet
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_ocphiwet
+    longname: hydrophylic organic carbon wet deposition flux
+    stdname: wet_deposition_flux_of_hydrophylic_organic_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstwet1
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstwet1
+    longname: dust wet deposition flux (size 1)
+    stdname: wet_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstwet2
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstwet2
+    longname: dust wet deposition flux (size 2)
+    stdname: wet_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstwet3
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstwet3
+    longname: dust wet deposition flux (size 3)
+    stdname: wet_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstwet4
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstwet4
+    longname: dust wet deposition flux (size 4)
+    stdname: wet_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstdry1
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstdry1
+    longname: dust dry deposition flux (size 1)
+    stdname: dry_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstdry2
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstdry2
+    longname: dust dry deposition flux (size 2)
+    stdname: dry_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstdry3
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstdry3
+    longname: dust dry deposition flux (size 3)
+    stdname: dry_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: dstdry4
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - cpl
+  attributes:
+    attname: faxa_dstdry4
+    longname: dust dry deposition flux (size 4)
+    stdname: dry_deposition_flux_of_dust
+    units: kg m-2 s-1
+- field:
+    kind: state
+    name: lfrac
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - atm
+  attributes:
+    attname: sf_lfrac
+    longname: surface land fraction
+    stdname: land_area_fraction
+    units: '1'
+- field:
+    kind: state
+    name: ifrac
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - atm
+  attributes:
+    attname: sf_ifrac
+    longname: surface ice fraction
+    stdname: sea_ice_area_fraction
+    units: '1'
+- field:
+    kind: state
+    name: ofrac
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - atm
+  attributes:
+    attname: sf_ofrac
+    longname: surface ocean fraction
+    stdname: sea_area_fraction
+    units: '1'
+- field:
+    kind: state
+    name: avsdr
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_avsdr
+    longname: direct albedo (visible radiation)
+    stdname: surface_direct_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdr
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_avsdr
+    longname: direct albedo (visible radiation)
+    stdname: surface_direct_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdr
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_avsdr
+    longname: direct albedo (visible radiation)
+    stdname: surface_direct_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdr
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_avsdr
+    longname: direct albedo (visible radiation)
+    stdname: surface_direct_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidr
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_anidr
+    longname: direct albedo (near-infrared radiation)
+    stdname: surface_direct_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidr
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_anidr
+    longname: direct albedo (near-infrared radiation)
+    stdname: surface_direct_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidr
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_anidr
+    longname: direct albedo (near-infrared radiation)
+    stdname: surface_direct_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidr
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_anidr
+    longname: direct albedo (near-infrared radiation)
+    stdname: surface_direct_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdf
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_avsdf
+    longname: diffuse albedo (visible radiation)
+    stdname: surface_diffuse_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdf
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_avsdf
+    longname: diffuse albedo (visible radiation)
+    stdname: surface_diffuse_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdf
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_avsdf
+    longname: diffuse albedo (visible radiation)
+    stdname: surface_diffuse_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: avsdf
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_avsdf
+    longname: diffuse albedo (visible radiation)
+    stdname: surface_diffuse_albedo_due_to_visible_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidf
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_anidf
+    longname: diffuse albedo (near-infrared radiation)
+    stdname: surface_diffuse_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidf
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_anidf
+    longname: diffuse albedo (near-infrared radiation)
+    stdname: surface_diffuse_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidf
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_anidf
+    longname: diffuse albedo (near-infrared radiation)
+    stdname: surface_diffuse_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: anidf
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_anidf
+    longname: diffuse albedo (near-infrared radiation)
+    stdname: surface_diffuse_albedo_due_to_near_infrared_radiation
+    units: '1'
+- field:
+    kind: state
+    name: tref
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_tref
+    longname: reference temperature at 2 meters
+    stdname: air_temperature
+    units: k
+- field:
+    kind: state
+    name: tref
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_tref
+    longname: reference temperature at 2 meters
+    stdname: air_temperature
+    units: k
+- field:
+    kind: state
+    name: tref
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_tref
+    longname: reference temperature at 2 meters
+    stdname: air_temperature
+    units: k
+- field:
+    kind: state
+    name: tref
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_tref
+    longname: reference temperature at 2 meters
+    stdname: air_temperature
+    units: k
+- field:
+    kind: state
+    name: qref
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_qref
+    longname: reference specific humidity at 2 meters
+    stdname: specific_humidity
+    units: kg kg-1
+- field:
+    kind: state
+    name: qref
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_qref
+    longname: reference specific humidity at 2 meters
+    stdname: specific_humidity
+    units: kg kg-1
+- field:
+    kind: state
+    name: qref
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_qref
+    longname: reference specific humidity at 2 meters
+    stdname: specific_humidity
+    units: kg kg-1
+- field:
+    kind: state
+    name: qref
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_qref
+    longname: reference specific humidity at 2 meters
+    stdname: specific_humidity
+    units: kg kg-1
+- field:
+    kind: state
+    name: t
+    merge_type: direct
+    sources:
+    - lnd
+    destinations: []
+  attributes:
+    attname: sl_t
+    longname: surface temperature
+    stdname: surface_temperature
+    units: k
+- field:
+    kind: state
+    name: t
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_t
+    longname: surface temperature
+    stdname: surface_temperature
+    units: k
+- field:
+    kind: state
+    name: t
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - atm
+    - ice
+  attributes:
+    attname: so_t
+    longname: surface temperature
+    stdname: surface_temperature
+    units: k
+- field:
+    kind: state
+    name: t
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: sx_t
+    longname: surface temperature
+    stdname: surface_temperature
+    units: k
+- field:
+    kind: state
+    name: fv
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - atm
+  attributes:
+    attname: sl_fv
+    longname: surface fraction velocity in land
+    stdname: fraction_velocity
+    units: m s-1
+- field:
+    kind: state
+    name: ram1
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - atm
+  attributes:
+    attname: sl_ram1
+    longname: aerodynamic resistance
+    stdname: aerodynamic_resistance
+    units: s/m
+- field:
+    kind: state
+    name: snowh
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - atm
+  attributes:
+    attname: sl_snowh
+    longname: surface snow water equivalent
+    stdname: surface_snow_water_equivalent
+    units: m
+- field:
+    kind: state
+    name: snowh
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - atm
+  attributes:
+    attname: si_snowh
+    longname: surface snow depth
+    stdname: surface_snow_thickness
+    units: m
+- field:
+    kind: state
+    name: ssq
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+    - atm
+  attributes:
+    attname: so_ssq
+    longname: surface saturation specific humidity in ocean
+    stdname: specific_humidity_at_saturation
+    units: kg kg-1
+- field:
+    kind: state
+    name: re
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+    - atm
+  attributes:
+    attname: so_re
+    longname: square of exch. coeff (tracers)
+    stdname: ''
+    units: ''
+- field:
+    kind: flux
+    name: taux
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_taux
+    longname: zonal surface stress
+    stdname: surface_downward_eastward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: taux
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_taux
+    longname: zonal surface stress
+    stdname: surface_downward_eastward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: taux
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_taux
+    longname: zonal surface stress
+    stdname: surface_downward_eastward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: taux
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: faxx_taux
+    longname: zonal surface stress
+    stdname: surface_downward_eastward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: taux
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_taux
+    longname: zonal surface stress
+    stdname: surface_downward_eastward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: taux
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_taux
+    longname: zonal surface stress
+    stdname: surface_downward_eastward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: tauy
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_tauy
+    longname: meridional surface stress
+    stdname: surface_downward_northward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: tauy
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_tauy
+    longname: meridional surface stress
+    stdname: surface_downward_northward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: tauy
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_tauy
+    longname: meridional surface stress
+    stdname: surface_downward_northward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: tauy
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: faxx_tauy
+    longname: meridional surface stress
+    stdname: surface_downward_northward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: tauy
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_tauy
+    longname: meridional surface stress
+    stdname: surface_downward_northward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: tauy
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_tauy
+    longname: meridional surface stress
+    stdname: surface_downward_northward_stress
+    units: n m-2
+- field:
+    kind: flux
+    name: lat
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_lat
+    longname: surface latent heat flux
+    stdname: surface_upward_latent_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lat
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_lat
+    longname: surface latent heat flux
+    stdname: surface_upward_latent_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lat
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_lat
+    longname: surface latent heat flux
+    stdname: surface_upward_latent_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lat
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: faxx_lat
+    longname: surface latent heat flux
+    stdname: surface_upward_latent_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lat
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_lat
+    longname: surface latent heat flux
+    stdname: surface_upward_latent_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: sen
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_sen
+    longname: sensible heat flux
+    stdname: surface_upward_sensible_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: sen
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_sen
+    longname: sensible heat flux
+    stdname: surface_upward_sensible_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: sen
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_sen
+    longname: sensible heat flux
+    stdname: surface_upward_sensible_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: sen
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: faxx_sen
+    longname: sensible heat flux
+    stdname: surface_upward_sensible_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: sen
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_sen
+    longname: sensible heat flux
+    stdname: surface_upward_sensible_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lwup
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_lwup
+    longname: surface upward longwave heat flux
+    stdname: surface_net_upward_longwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lwup
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_lwup
+    longname: surface upward longwave heat flux
+    stdname: surface_net_upward_longwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lwup
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_lwup
+    longname: surface upward longwave heat flux
+    stdname: surface_net_upward_longwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lwup
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: faxx_lwup
+    longname: surface upward longwave heat flux
+    stdname: surface_net_upward_longwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: lwup
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_lwup
+    longname: surface upward longwave heat flux
+    stdname: surface_net_upward_longwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: evap
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_evap
+    longname: evaporation water flux
+    stdname: water_evaporation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: evap
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_evap
+    longname: evaporation water flux
+    stdname: water_evaporation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: evap
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ice
+  attributes:
+    attname: faii_evap
+    longname: evaporation water flux
+    stdname: water_evaporation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: evap
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: faxx_evap
+    longname: evaporation water flux
+    stdname: water_evaporation_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: wslake
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_wslake
+    longname: lake water storage flux
+    stdname: lake_water_storage_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: flxdst1
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_flxdst1
+    longname: dust flux (particle bin number 1)
+    stdname: dust_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: flxdst2
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_flxdst2
+    longname: dust flux (particle bin number 2)
+    stdname: dust_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: flxdst3
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_flxdst3
+    longname: dust flux (particle bin number 3)
+    stdname: dust_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: flxdst4
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - lnd
+  attributes:
+    attname: fall_flxdst4
+    longname: dust flux (particle bin number 4)
+    stdname: dust_flux
+    units: kg m-2 s-1
+- field:
+    kind: state
+    name: pslv
+    merge_type: direct
+    sources:
+    - atm
+    destinations:
+    - ocn
+  attributes:
+    attname: sa_pslv
+    longname: sea level pressure
+    stdname: air_pressure_at_sea_level
+    units: pa
+- field:
+    kind: state
+    name: duu10n
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+    - ocn
+  attributes:
+    attname: so_duu10n
+    longname: wind speed squared at 10 meters
+    stdname: square_of_wind_speed
+    units: m2 s-2
+- field:
+    kind: state
+    name: ustar
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+    - atm
+  attributes:
+    attname: so_ustar
+    longname: surface fraction velocity in ocean
+    stdname: fraction_velocity
+    units: m s-1
+- field:
+    kind: flux
+    name: h2otemp
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: faoo_h2otemp
+    longname: water temperature heat flux from ocean
+    stdname: water_temperature_heat_flux
+    units: w m-2
+- field:
+    kind: state
+    name: ifrac
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: si_ifrac
+    longname: fractional ice coverage wrt ocean
+    stdname: sea_ice_area_fraction
+    units: '1'
+- field:
+    kind: state
+    name: bpress
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: si_bpress
+    longname: sea ice basal pressure
+    stdname: cice_basal_pressure
+    units: pa
+- field:
+    kind: flux
+    name: q
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: fioo_q
+    longname: ocean melt and freeze potential
+    stdname: surface_snow_and_ice_melt_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: frazil
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: fioo_frazil
+    longname: ocean frazil production
+    stdname: ocean_frazil_ice_production
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: melth
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_melth
+    longname: heat flux from melting
+    stdname: surface_snow_melt_heat_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: meltw
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_meltw
+    longname: water flux due to melting
+    stdname: surface_snow_melt_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: salt
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_salt
+    longname: salt flux
+    stdname: virtual_salt_flux_into_sea_water
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: bcphi
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_bcphi
+    longname: hydrophylic black carbon deposition flux
+    stdname: deposition_flux_of_hydrophylic_black_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: bcpho
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_bcpho
+    longname: hydrophobic black carbon deposition flux
+    stdname: deposition_flux_of_hydrophobic_black_carbon
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: flxdst
+    merge_type: direct
+    sources:
+    - ice
+    destinations:
+    - ocn
+  attributes:
+    attname: fioi_flxdst
+    longname: dust flux
+    stdname: dust_flux
+    units: kg m-2 s-1
+- field:
+    kind: state
+    name: s
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ice
+  attributes:
+    attname: so_s
+    longname: sea surface salinity
+    stdname: sea_surface_salinity
+    units: g kg-1
+- field:
+    kind: state
+    name: u
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ice
+  attributes:
+    attname: so_u
+    longname: zonal sea water velocity
+    stdname: eastward_sea_water_velocity
+    units: m s-1
+- field:
+    kind: state
+    name: dhdx
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ice
+  attributes:
+    attname: so_dhdx
+    longname: zonal sea surface slope
+    stdname: sea_surface_eastward_slope
+    units: m m-1
+- field:
+    kind: state
+    name: ssh
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - rof
+  attributes:
+    attname: so_ssh
+    longname: sea surface height
+    stdname: sea_surface_height
+    units: m
+- field:
+    kind: state
+    name: dhdy
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ice
+  attributes:
+    attname: so_dhdy
+    longname: meridional sea surface slope
+    stdname: sea_surface_northward_slope
+    units: m m-1
+- field:
+    kind: state
+    name: bldepth
+    merge_type: direct
+    sources:
+    - ocn
+    destinations: []
+  attributes:
+    attname: so_bldepth
+    longname: ocean boundary layer depth
+    stdname: ocean_boundary_layer_depth
+    units: m
+- field:
+    kind: state
+    name: fswpen
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_fswpen
+    longname: fraction of sw penetrating surface layer for diurnal cycle
+    stdname: fraction of sw penetrating surface layer for diurnal cycle
+    units: '1'
+- field:
+    kind: state
+    name: ithick
+    merge_type: direct
+    sources:
+    - ice
+    destinations: []
+  attributes:
+    attname: si_ithick
+    longname: sea ice thickness
+    stdname: sea_ice_thickness
+    units: m
+- field:
+    kind: flux
+    name: rofsur
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_rofsur
+    longname: water flux from land (liquid surface)
+    stdname: water_flux_into_runoff_surface
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofgwl
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_rofgwl
+    longname: water flux from land (liquid glacier, wetland, and lake)
+    stdname: water_flux_into_runoff_from_gwl
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofsub
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_rofsub
+    longname: water flux from land (liquid subsurface)
+    stdname: water_flux_into_runoff_subsurface
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofdto
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_rofdto
+    longname: water flux from land direct to ocean
+    stdname: water_flux_direct_to_ocean
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_rofi
+    longname: water flux from land (frozen)
+    stdname: frozen_water_flux_into_runoff
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: demand
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_demand
+    longname: water flux total demand in land from rof
+    stdname: water_flux_total_demand_from_runoff
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: tqsur
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_tqsur
+    longname: temperature of surface runoff
+    stdname: temperature_of_surface_runoff
+    units: kelvin
+- field:
+    kind: flux
+    name: tqsub
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - rof
+  attributes:
+    attname: flrl_tqsub
+    longname: temperature of subsurface runoff
+    stdname: temperature_of_subsurface_runoff
+    units: kelvin
+- field:
+    kind: flux
+    name: rofl
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: forr_rofl
+    longname: water flux due to runoff (liquid)
+    stdname: water_flux_into_sea_water
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofl
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_rofl
+    longname: water flux due to runoff (liquid)
+    stdname: water_flux_into_sea_water
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: forr_rofi
+    longname: water flux due to runoff (frozen)
+    stdname: frozen_water_flux_into_sea_water
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: foxx_rofi
+    longname: water flux due to runoff (frozen)
+    stdname: frozen_water_flux_into_sea_water
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: firr_rofi
+    longname: water flux due to runoff (frozen)
+    stdname: frozen_water_flux_into_sea_ice
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - cpl
+  attributes:
+    attname: fixx_rofi
+    longname: water flux due to runoff (frozen)
+    stdname: frozen_water_flux_into_sea_ice
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: flood
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: flrr_flood
+    longname: waterrflux due to flooding
+    stdname: flooding_water_flux
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: volr
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: flrr_volr
+    longname: river channel total water volume
+    stdname: rtm_volr
+    units: m
+- field:
+    kind: flux
+    name: volrmch
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: flrr_volrmch
+    longname: river channel main channel water volume
+    stdname: rtm_volrmch
+    units: m
+- field:
+    kind: flux
+    name: supply
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: flrr_supply
+    longname: river model supply for land use
+    stdname: rtm_supply
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: deficit
+    merge_type: direct
+    sources:
+    - rof
+    destinations:
+    - rof
+  attributes:
+    attname: flrr_deficit
+    longname: river model supply deficit
+    stdname: rtm_deficit
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: swdn
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_swdn
+    longname: downward solar radiation
+    stdname: surface_downward_shortwave_flux
+    units: w m-2
+- field:
+    kind: flux
+    name: swup
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - ocn
+  attributes:
+    attname: faox_swup
+    longname: upward solar radiation
+    stdname: surface_upward_shortwave_flux
+    units: w m-2
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_tbulk_diurn
+    longname: atm/ocn flux temperature bulk
+    stdname: aoflux_tbulk
+    units: k
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_tskin_diurn
+    longname: atm/ocn flux temperature skin
+    stdname: aoflux_tskin
+    units: k
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_tskin_night_diurn
+    longname: atm/ocn flux temperature skin at night
+    stdname: aoflux_tskin_night
+    units: k
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_tskin_day_diurn
+    longname: atm/ocn flux temperature skin at day
+    stdname: aoflux_tskin_day
+    units: k
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_cskin_diurn
+    longname: atm/ocn flux cool skin
+    stdname: aoflux_cskin
+    units: k
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_cskin_night_diurn
+    longname: atm/ocn flux cool skin at night
+    stdname: aoflux_cskin_night
+    units: k
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_warm_diurn
+    longname: atm/ocn flux warming
+    stdname: aoflux_warm
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_salt_diurn
+    longname: atm/ocn flux salting
+    stdname: aoflux_salt
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_speed_diurn
+    longname: atm/ocn flux speed
+    stdname: aoflux_speed
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_regime_diurn
+    longname: atm/ocn flux regime
+    stdname: aoflux_regime
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_warmmax_diurn
+    longname: atm/ocn flux warming dialy max
+    stdname: aoflux_warmmax
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_windmax_diurn
+    longname: atm/ocn flux wind daily max
+    stdname: aoflux_windmax
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_qsolavg_diurn
+    longname: atm/ocn flux q-solar daily avg
+    stdname: aoflux_qsolavg
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_windavg_diurn
+    longname: atm/ocn flux wind daily avg
+    stdname: aoflux_windavg
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_warmmaxinc_diurn
+    longname: atm/ocn flux daily max increment
+    stdname: aoflux_warmmaxinc
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_windmaxinc_diurn
+    longname: atm/ocn flux wind daily max increment
+    stdname: aoflux_windmaxinc
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_qsolinc_diurn
+    longname: atm/ocn flux q-solar increment
+    stdname: aoflux_qsolinc
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_windinc_diurn
+    longname: atm/ocn flux wind increment
+    stdname: aoflux_windinc
+    units: unitless
+- field:
+    kind: state
+    name: diurn
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - ocn
+  attributes:
+    attname: so_ninc_diurn
+    longname: atm/ocn flux increment counter
+    stdname: aoflux_ninc
+    units: unitless
+- field:
+    kind: flux
+    name: rofl
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - glc
+  attributes:
+    attname: fogg_rofl
+    longname: glc liquid runoff flux to ocean
+    stdname: glacier_liquid_runoff_flux_to_ocean
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - glc
+  attributes:
+    attname: fogg_rofi
+    longname: glc frozen runoff flux to ocean
+    stdname: glacier_frozen_runoff_flux_to_ocean
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: rofi
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - glc
+  attributes:
+    attname: figg_rofi
+    longname: glc frozen runoff_iceberg flux to ice
+    stdname: glacier_frozen_runoff_flux_to_seaice
+    units: kg m-2 s-1
+- field:
+    kind: state
+    name: icemask
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - lnd
+    - lnd
+    - ocn
+  attributes:
+    attname: sg_icemask
+    longname: ice sheet grid coverage on global grid
+    stdname: ice_sheet_grid_mask
+    units: '1'
+- field:
+    kind: state
+    name: fluxes
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - lnd
+    - lnd
+  attributes:
+    attname: sg_icemask_coupled_fluxes
+    longname: ice sheet mask where we are potentially sending non-zero fluxes
+    stdname: icemask_coupled_fluxes
+    units: '1'
+- field:
+    kind: flux
+    name: qice
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - glc
+  attributes:
+    attname: flgl_qice
+    longname: new glacier ice flux
+    stdname: ice_flux_out_of_glacier
+    units: kg m-2 s-1
+- field:
+    kind: state
+    name: tsrf
+    merge_type: direct
+    sources:
+    - lnd
+    destinations:
+    - glc
+    - glc
+  attributes:
+    attname: sl_tsrf
+    longname: surface temperature of glacier
+    stdname: surface_temperature
+    units: deg c
+- field:
+    kind: state
+    name: covered
+    merge_type: direct
+    sources:
+    - glc
+    destinations: []
+  attributes:
+    attname: sg_ice_covered
+    longname: fraction of glacier area
+    stdname: glacier_area_fraction
+    units: '1'
+- field:
+    kind: state
+    name: topo
+    merge_type: direct
+    sources:
+    - glc
+    destinations: []
+  attributes:
+    attname: sg_topo
+    longname: surface height of glacier
+    stdname: height
+    units: m
+- field:
+    kind: flux
+    name: hflx
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - glc
+  attributes:
+    attname: flgg_hflx
+    longname: downward heat flux from glacier interior
+    stdname: downward_heat_flux_in_glacier
+    units: w m-2
+- field:
+    kind: state
+    name: blt
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - glc
+    - glc
+  attributes:
+    attname: so_blt
+    longname: ice shelf boundary layer ocean temperature
+    stdname: ice_shelf_boundary_layer_ocean_temperature
+    units: c
+- field:
+    kind: state
+    name: bls
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - glc
+    - glc
+  attributes:
+    attname: so_bls
+    longname: ice shelf boundary layer ocean salinity
+    stdname: ice_shelf_boundary_layer_ocean_salinity
+    units: psu
+- field:
+    kind: state
+    name: htv
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - glc
+    - glc
+  attributes:
+    attname: so_htv
+    longname: ice shelf ocean heat transfer velocity
+    stdname: ice_shelf_ocean_heat_transfer_velocity
+    units: m/s
+- field:
+    kind: state
+    name: stv
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - glc
+    - glc
+  attributes:
+    attname: so_stv
+    longname: ice shelf ocean salinity transfer velocity
+    stdname: ice_shelf_ocean_salinity_transfer_velocity
+    units: m/s
+- field:
+    kind: state
+    name: rhoeff
+    merge_type: direct
+    sources:
+    - ocn
+    destinations:
+    - glc
+    - glc
+  attributes:
+    attname: so_rhoeff
+    longname: ocean effective pressure
+    stdname: ocean_effective_pressure
+    units: pa
+- field:
+    kind: flux
+    name: qicelo
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - glc
+  attributes:
+    attname: fogx_qicelo
+    longname: subshelf liquid flux for ocean
+    stdname: subshelf_liquid_flux_for_ocean
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: qiceho
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - glc
+  attributes:
+    attname: fogx_qiceho
+    longname: subshelf heat flux for the ocean
+    stdname: subshelf_heat_flux_for_the_ocean
+    units: w m-2
+- field:
+    kind: state
+    name: blit
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_blit
+    longname: boundary layer interface temperature for ocean
+    stdname: boundary_layer_interface_temperature_for_ocean
+    units: c
+- field:
+    kind: state
+    name: blis
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_blis
+    longname: boundary layer interface salinity for ocean
+    stdname: boundary_layer_interface_salinity_for_ocean
+    units: psu
+- field:
+    kind: state
+    name: lithop
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_lithop
+    longname: ice sheet lithostatic pressure
+    stdname: ice_sheet_lithostatic_pressure
+    units: pa
+- field:
+    kind: state
+    name: grounded
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_icemask_grounded
+    longname: grounded ice mask
+    stdname: grounded_ice_mask
+    units: unitless
+- field:
+    kind: state
+    name: floating
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_icemask_floating
+    longname: floating ice mask
+    stdname: floating_ice_mask
+    units: unitless
+- field:
+    kind: state
+    name: tbot
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_tbot
+    longname: bottom layer ice temperature
+    stdname: bottom_layer_ice_temperature
+    units: c
+- field:
+    kind: state
+    name: dztbot
+    merge_type: direct
+    sources:
+    - glc
+    destinations:
+    - ocn
+  attributes:
+    attname: sg_dztbot
+    longname: bottom layer ice layer half thickness
+    stdname: bottom_layer_ice_layer_half_thickness
+    units: m
+- field:
+    kind: flux
+    name: qiceli
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - glc
+  attributes:
+    attname: fogx_qiceli
+    longname: subshelf mass flux for ice sheet
+    stdname: subshelf_mass_flux_for_ice_sheet
+    units: kg m-2 s-1
+- field:
+    kind: flux
+    name: qicehi
+    merge_type: by_name
+    sources:
+    - cpl
+    destinations:
+    - glc
+  attributes:
+    attname: fogx_qicehi
+    longname: subshelf heat flux for ice sheet
+    stdname: subshelf_heat_flux_for_ice_sheet
+    units: w m-2
