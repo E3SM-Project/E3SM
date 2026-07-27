@@ -301,6 +301,9 @@ subroutine hycoef_read(File)
    ierr = pio_get_var(File, hyam_desc, hyam)
    ierr = pio_get_var(File, hybm_desc, hybm)
 
+   ! Make sure hybi(1) is zero, in order to be consistent with pressure calculations in the SE dycore.
+   if (hybi(1) .ne. 0._r8) call endrun(routine//':ERROR: hybi(1) is non-zero.')
+
 #if ( defined OFFLINE_DYN )
    ! make sure top interface is non zero for fv dycore
    if (hyai(1) .eq. 0._r8) then
