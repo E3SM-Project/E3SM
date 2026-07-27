@@ -8,7 +8,8 @@
 #include "share/core/eamxx_types.hpp"
 
 #include <mam4xx/mam4.hpp>
-#include <yaml-cpp/yaml.h>
+#include <ekat_yaml.hpp>
+#include <ekat_parameter_list.hpp>
 
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
@@ -43,22 +44,11 @@ inline bool nearly_equal(const Real a, const Real b,
   return std::abs(a - b) <= atol + rtol * std::abs(b);
 }
 
-std::vector<Real> read_real_vector(const YAML::Node& node) {
-  std::vector<Real> vals;
-  vals.reserve(node.size());
-  for (std::size_t i = 0; i < node.size(); ++i) {
-    vals.push_back(node[i].as<Real>());
-  }
-  return vals;
-}
-
-std::vector<int> read_int_vector(const YAML::Node& node) {
-  std::vector<int> vals;
-  vals.reserve(node.size());
-  for (std::size_t i = 0; i < node.size(); ++i) {
-    vals.push_back(node[i].as<int>());
-  }
-  return vals;
+// Read a double-valued sequence from a ParameterList and convert to Real.
+std::vector<Real> get_real_vec(const ekat::ParameterList& pl,
+                               const std::string& key) {
+  const auto& dv = pl.get<std::vector<double>>(key);
+  return std::vector<Real>(dv.begin(), dv.end());
 }
 
 }  // namespace
@@ -86,10 +76,10 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
   const std::string input_yaml_file = std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/jlong_input_ts_355.yaml";
 
   const auto photo_table = scream::impl::read_photo_table(rsf_file, xs_long_file);
-  const YAML::Node root = YAML::LoadFile(input_yaml_file);
-  REQUIRE(root["input"]);
-  REQUIRE(root["input"]["fixed"]);
-  const auto fixed = root["input"]["fixed"];
+  const auto root = ekat::parse_yaml_file(input_yaml_file);
+  REQUIRE(root.isSublist("input"));
+  REQUIRE(root.sublist("input").isSublist("fixed"));
+  const auto& fixed = root.sublist("input").sublist("fixed");
 
   REQUIRE(photo_table.nw > 0);
   REQUIRE(photo_table.numj == 1);
@@ -111,9 +101,9 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
   auto pht_alias_mult_h =
       Kokkos::create_mirror_view_and_copy(HostSpace(), photo_table.pht_alias_mult_1);
 
-  const auto nw_ref       = read_int_vector(fixed["nw"])[0];
-  const auto numj_ref     = read_int_vector(fixed["numj"])[0];
-  const auto shape_ref    = read_int_vector(fixed["shape_of_rsf_tab"]);
+  const auto nw_ref       = fixed.get<std::vector<int>>("nw")[0];
+  const auto numj_ref     = fixed.get<std::vector<int>>("numj")[0];
+  const auto shape_ref    = fixed.get<std::vector<int>>("shape_of_rsf_tab");
   REQUIRE(shape_ref.size() == 5);
   const int nw_shape       = shape_ref[0];
   const int nump_shape     = shape_ref[1];
@@ -121,21 +111,22 @@ TEST_CASE("mam_photo_table_yaml_reference_regression",
   const int numcolo3_shape = shape_ref[3];
   const int numalb_shape   = shape_ref[4];
 
-  const auto sza_ref       = read_real_vector(fixed["sza"]);
-  const auto del_sza_ref   = read_real_vector(fixed["del_sza"]);
-  const auto alb_ref       = read_real_vector(fixed["alb"]);
-  const auto del_alb_ref   = read_real_vector(fixed["del_alb"]);
-  const auto colo3_ref     = read_real_vector(fixed["colo3"]);
-  const auto o3rat_ref     = read_real_vector(fixed["o3rat"]);
-  const auto del_o3rat_ref = read_real_vector(fixed["del_o3rat"]);
-  const YAML::Node press_node = fixed["press"] ? fixed["press"] : fixed["pm"];
-  REQUIRE(press_node);
-  const auto press_ref = read_real_vector(press_node);
-  const auto etfphot_ref   = read_real_vector(fixed["etfphot"]);
-  const auto prs_ref       = read_real_vector(fixed["prs"]);
-  const auto dprs_ref      = read_real_vector(fixed["dprs"]);
-  const auto rsf_tab_2d    = read_real_vector(fixed["rsf_tab_2d"]);
-  const auto xsqy_2d       = read_real_vector(fixed["xsqy_2d"]);
+  const auto sza_ref       = get_real_vec(fixed, "sza");
+  const auto del_sza_ref   = get_real_vec(fixed, "del_sza");
+  const auto alb_ref       = get_real_vec(fixed, "alb");
+  const auto del_alb_ref   = get_real_vec(fixed, "del_alb");
+  const auto colo3_ref     = get_real_vec(fixed, "colo3");
+  const auto o3rat_ref     = get_real_vec(fixed, "o3rat");
+  const auto del_o3rat_ref = get_real_vec(fixed, "del_o3rat");
+  const auto press_ref     = fixed.isParameter("press") ?
+                               get_real_vec(fixed, "press") :
+                               get_real_vec(fixed, "pm");
+  REQUIRE(!press_ref.empty());
+  const auto etfphot_ref   = get_real_vec(fixed, "etfphot");
+  const auto prs_ref       = get_real_vec(fixed, "prs");
+  const auto dprs_ref      = get_real_vec(fixed, "dprs");
+  const auto rsf_tab_2d    = get_real_vec(fixed, "rsf_tab_2d");
+  const auto xsqy_2d       = get_real_vec(fixed, "xsqy_2d");
 
   SECTION("dimensions_match_expected_shapes") {
     REQUIRE(photo_table.nw == nw_ref);
@@ -255,10 +246,10 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
       std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/temp_prs_GT200nm_JPL10_c130206.nc";
   const std::string input_yaml_file = std::string(SCREAM_DATA_DIR) + "/mam4xx/photolysis/table_photo_input_ts_355.yaml";
 
-  const YAML::Node root = YAML::LoadFile(input_yaml_file);
-  REQUIRE(root["input"]);
-  REQUIRE(root["input"]["fixed"]);
-  const auto fixed = root["input"]["fixed"];
+  const auto root = ekat::parse_yaml_file(input_yaml_file);
+  REQUIRE(root.isSublist("input"));
+  REQUIRE(root.sublist("input").isSublist("fixed"));
+  const auto& fixed = root.sublist("input").sublist("fixed");
 
   const auto photo_table = scream::impl::read_photo_table(rsf_file, xs_long_file);
   const int work_len = mam4::mo_photo::get_photo_table_work_len(photo_table);
@@ -282,17 +273,17 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
   Kokkos::deep_copy(work_photo_table, 0.0);
   Kokkos::deep_copy(photo, 0.0);
 
-  // Read atmospheric-state reference data from YAML.
-  const auto pmid_vals   = read_real_vector(fixed["pmid"]);
-  const auto pdel_vals   = read_real_vector(fixed["pdel"]);
-  const auto temper_vals = read_real_vector(fixed["temper"]);
-  const auto o3col_vals  = read_real_vector(fixed["col_dens_1"]);
-  const auto lwc_vals    = read_real_vector(fixed["lwc"]);
-  const auto cloud_vals  = read_real_vector(fixed["clouds"]);
-  const auto zen_vals    = read_real_vector(fixed["zen_angle"]);
-  const auto alb_vals    = read_real_vector(fixed["srf_alb"]);
-  const auto esfact_vals = read_real_vector(fixed["esfact"]);
-  const auto photo_ref   = read_real_vector(fixed["photos"]);
+  // Read atmospheric-state reference data from ParameterList.
+  const auto pmid_vals   = get_real_vec(fixed, "pmid");
+  const auto pdel_vals   = get_real_vec(fixed, "pdel");
+  const auto temper_vals = get_real_vec(fixed, "temper");
+  const auto o3col_vals  = get_real_vec(fixed, "col_dens_1");
+  const auto lwc_vals    = get_real_vec(fixed, "lwc");
+  const auto cloud_vals  = get_real_vec(fixed, "clouds");
+  const auto zen_vals    = get_real_vec(fixed, "zen_angle");
+  const auto alb_vals    = get_real_vec(fixed, "srf_alb");
+  const auto esfact_vals = get_real_vec(fixed, "esfact");
+  const auto photo_ref   = get_real_vec(fixed, "photos");
 
   REQUIRE(pmid_vals.size()   >= static_cast<std::size_t>(nlev));
   REQUIRE(pdel_vals.size()   >= static_cast<std::size_t>(nlev));
@@ -386,8 +377,6 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
       const auto computed = photo_h(0, d1, d2);
       const auto expected = photo_ref[count];
       count++;
-      Real diff=computed - expected;
-      Real rel = abs(diff)/expected;
       INFO("Reference mismatch at d1=" << d1 << ", d2=" << d2
               << ", computed=" << computed 
               << ", expected=" << expected);
