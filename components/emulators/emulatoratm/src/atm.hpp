@@ -65,8 +65,8 @@ public:
   /**
    * @brief Initialize coupling field indices from MCT field lists.
    */
-  void init_coupling_indices(const std::string &export_fields,
-                             const std::string &import_fields) override;
+  void init_coupling_indices(const std::vector<std::string> &export_fields,
+                             const std::vector<std::string> &import_fields) override;
 
   /**
    * @brief Set up coupling buffer pointers from MCT.

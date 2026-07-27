@@ -4,6 +4,24 @@
 
 #include <cstring>
 #include <iostream>
+#include <string>
+#include <sstream>
+#include <vector>
+
+namespace {
+
+std::vector<std::string> split_string(const std::string &original, const char delimiter) {
+  std::vector<std::string> pieces;
+  std::stringstream ss(original);
+  std::string item;
+  while (std::getline(ss, item, delimiter)) {
+    pieces.push_back(item);
+  }
+  return pieces;
+}
+
+}
+
 extern "C" {
 
 void emulator_set_grid_data(void* handle,
@@ -49,9 +67,15 @@ void emulator_destroy(void* handle) {
     delete emu;
   }
 }
+
 void emulator_init_coupling_indices(void* handle, const char* import_fields, const char* export_fields){
   auto* emu = static_cast<emulator::Emulator*>(handle);
-  emu->init_coupling_indices(std::string(export_fields), std::string(import_fields));
+  // The {import,export}_fields hold N state fields and M flux fields in a string thus:
+  // "S_{state1}:S_{state2}:...:S_{stateN}:F_{flux1}:F_{flux2}:...:F_{fluxM}"
+  // We break these fields into individual tokens and pass them to the emulator.
+  std::vector<std::string> import_fields_v = split_string(import_fields, ':'),
+                           export_fields_v = split_string(export_fields, ':');
+  emu->init_coupling_indices(export_fields_v, import_fields_v);
 }
 
 int emulator_get_num_local_cols(void* handle) {

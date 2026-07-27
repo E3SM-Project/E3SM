@@ -7,6 +7,7 @@
 #define E3SM_EMULATOR_HPP
 
 #include <string>
+#include <vector>
 #include "emulator_c_api.hpp"
 
 namespace emulator {
@@ -57,8 +58,8 @@ public:
   // New virtuals for grid / coupling
   virtual void set_grid_data(const EmulatorGridDesc& grid) = 0;
   virtual void setup_coupling(const CouplingDesc& cpl) = 0;
-  virtual void init_coupling_indices(const std::string &export_fields,
-                             const std::string &import_fields) = 0;
+  virtual void init_coupling_indices(const std::vector<std::string> &export_fields,
+                                     const std::vector<std::string> &import_fields) = 0;
 
 
   // Optionally: virtual accessors if Fortran needs them
