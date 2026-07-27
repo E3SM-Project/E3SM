@@ -111,7 +111,7 @@ end subroutine
 ! This combines functionality of:
 ! - physics_update()      [see physics_update_mod.F90]
 ! - physics_update_main() [see physics_types.F90]
-subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
+subroutine zm_physics_update( ncol, dt, state_zm, state_zi, &
                               state_p_mid, state_p_int, state_p_del, &
                               state_t, state_qv, ptend_s, ptend_q)
   use zm_eamxx_bridge_physconst, only: cpair
@@ -120,7 +120,7 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
   ! Arguments
   integer,                        intent(in   ) :: ncol             ! number of local columns
   real(r8),                       intent(in   ) :: dt               ! time step
-  real(r8), dimension(ncol),      intent(in   ) :: state_phis       ! input state surface geopotential height
+  ! real(r8), dimension(ncol),      intent(in   ) :: state_phis       ! input state surface geopotential height
   real(r8), dimension(ncol,pver), intent(inout) :: state_zm         ! input state altitude at mid-levels
   real(r8), dimension(ncol,pverp),intent(inout) :: state_zi         ! input state altitude at interfaces
   real(r8), dimension(ncol,pver), intent(in   ) :: state_p_mid      ! input state mid-point pressure
@@ -144,7 +144,7 @@ subroutine zm_physics_update( ncol, dt, state_phis, state_zm, state_zi, &
     end do
   end do
 
-  call zm_geopotential_t( ncol, state_p_int, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
+  call zm_geopotential_t( ncol, state_p_mid, state_p_del, state_t, state_qv, state_zi, state_zm )
 
   ! skip DSE update for EAMxx
   ! do i = 1,ncol
@@ -159,7 +159,7 @@ end subroutine zm_physics_update
 !===================================================================================================
 
 ! copied and modified from geopotential.F90
-subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
+subroutine zm_geopotential_t( ncol, pmid, pdel, t, q, zi, zm )
   use zm_eamxx_bridge_physconst, only: zvir, rair, gravit
   use zm_eamxx_bridge_params, only: pverp, pver
   !-----------------------------------------------------------------------
@@ -168,7 +168,6 @@ subroutine zm_geopotential_t( ncol, pint, pmid, pdel, t, q, zi, zm )
   !-----------------------------------------------------------------------------
   ! Arguments
   integer,                        intent(in   ) :: ncol    ! Number of columns
-  real(r8), dimension(ncol,pverp),intent(in   ) :: pint    ! Interface pressures
   real(r8), dimension(ncol,pver), intent(in   ) :: pmid    ! Midpoint pressures
   real(r8), dimension(ncol,pver), intent(in   ) :: pdel    ! layer thickness
   real(r8), dimension(ncol,pver), intent(in   ) :: t       ! temperature
