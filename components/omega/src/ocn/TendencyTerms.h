@@ -351,7 +351,7 @@ class BottomDragOnEdge {
       // other tendency terms, which are chunked over [MinLayerEdgeBot,
       // MaxLayerEdgeTop] and so skip such edges automatically, bottom drag
       // indexes the bottom layer directly and must exclude them explicitly.
-      if (KBot < 0 || KBot >= NVertLayers)
+      if (KBot < 0)
          return;
 
       const I4 JCell0 = CellsOnEdge(IEdge, 0);
