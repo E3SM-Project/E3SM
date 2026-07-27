@@ -1,3 +1,4 @@
+#include <cmath>
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/physical_limits.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
@@ -12,12 +13,52 @@ namespace scream {
 MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
                                          const ekat::ParameterList &params)
     : AtmosphereProcess(comm, params), aero_config_() {
-      use_prescribed_ozone_   = m_params.get<bool>("use_mam4_precribed_ozone", false);
+  use_prescribed_ozone_   = m_params.get<bool>("use_mam4_precribed_ozone", false);
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
-  // FIXME: Read in overridden aerosol species properties.
+  if (m_params.isSublist("mam4_aero_species")) {
+    override_aerosol_species_properties(m_params.sublist("mam4_aero_species"));
+  }
 }
+
+namespace {
+  void override_single_species_properties(const ekat::ParameterList &single_species_params,
+                                          mam4::AeroSpecies &species) {
+    if (single_species_params.isParameter("molecular_weight")) {
+      EKAT_REQUIRE(single_species_params.isType<double>("molecular_weight"));
+      double mw = single_species_params.get<double>("molecular_weight");
+      species.molecular_weight = mw;
+    }
+    if (single_species_params.isParameter("density")) {
+      EKAT_REQUIRE(single_species_params.isType<double>("density"));
+      double rho = single_species_params.get<double>("density");
+      species.density = rho;
+    }
+    if (single_species_params.isParameter("hygroscopicity")) {
+      EKAT_REQUIRE(single_species_params.isType<double>("hygroscopicity"));
+      double hygro = single_species_params.get<double>("hygroscopicity");
+      species.hygroscopicity = hygro;
+    }
+  }
+}
+
+void MAMGenericInterface::override_aerosol_species_properties(const ekat::ParameterList &all_species_params) {
+  // NOTE: For now, we allow changing aerosol species parameters, but not adding new species.
+  mam4::AeroSpeciesHostView aero_species_h = Kokkos::create_mirror_view(aero_config_.aero_species);
+  Kokkos::deep_copy(aero_species_h, aero_config_.aero_species);
+
+  for (size_t i = 0; i < aero_species_h.size(); ++i) {
+    const std::string name = mam4::aero_id_short_name(mam4::AeroId(i));
+    if (all_species_params.isSublist(name)) {
+      const ekat::ParameterList &single_species_params = all_species_params.sublist(name);
+      override_single_species_properties(single_species_params, aero_species_h[i]);
+    }
+  }
+
+  Kokkos::deep_copy(aero_config_.aero_species, aero_species_h);
+}
+
 // ================================================================
 void MAMGenericInterface::set_aerosol_and_gas_ranges() {
   // NOTE: Using only one range for all num variables.

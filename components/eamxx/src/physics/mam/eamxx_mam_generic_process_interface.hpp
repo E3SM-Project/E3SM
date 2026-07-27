@@ -83,6 +83,9 @@ class MAMGenericInterface : public scream::AtmosphereProcess {
   mam4::AeroConfig aero_config_;
 
  private:
+  // Called at construction time
+  void override_aerosol_species_properties(const ekat::ParameterList &all_species_params);
+
   // The type of subcomponent
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
