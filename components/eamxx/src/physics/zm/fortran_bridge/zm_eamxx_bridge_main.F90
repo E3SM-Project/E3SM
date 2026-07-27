@@ -299,7 +299,7 @@ subroutine zm_eamxx_bridge_run_c( ncol, dtime, is_first_step, &
   ! apply tendencies from zm_conv_main() & MCSP to local copy of state variables
 
   call zm_physics_update( ncol, dtime, &
-                          state_phis, local_state_zm, local_state_zi, &
+                          local_state_zm, local_state_zi, &
                           state_p_mid, state_p_int, state_p_del, &
                           local_state_t, local_state_qv, &
                           output_tend_s, output_tend_q)
