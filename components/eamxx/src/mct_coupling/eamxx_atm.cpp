@@ -190,10 +190,8 @@ void Atm::set_grid_data(const EmulatorGridDesc& grid) {
 }
 
 void Atm::init_coupling_indices(
-    const std::string &export_fields,
-    const std::string &import_fields) {
-  // TODO: Parse colon-separated MCT field lists and populate
-  // m_coupling_idx with index positions.
+    const std::vector<std::string> &export_fields,
+    const std::vector<std::string> &import_fields) {
   (void)export_fields;
   (void)import_fields;
 }
