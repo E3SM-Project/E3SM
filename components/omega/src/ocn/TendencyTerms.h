@@ -346,6 +346,14 @@ class BottomDragOnEdge {
                                    const Array2DReal &PseudoThickEdge) const {
       const I4 KBot = MaxLayerEdgeTop(IEdge);
 
+      // Land edges and the outermost edges of the halo have no active layer
+      // on both sides, and MaxLayerEdgeTop is set to -1 for them. Unlike the
+      // other tendency terms, which are chunked over [MinLayerEdgeBot,
+      // MaxLayerEdgeTop] and so skip such edges automatically, bottom drag
+      // indexes the bottom layer directly and must exclude them explicitly.
+      if (KBot < 0 || KBot >= NVertLayers)
+         return;
+
       const I4 JCell0 = CellsOnEdge(IEdge, 0);
       const I4 JCell1 = CellsOnEdge(IEdge, 1);
 

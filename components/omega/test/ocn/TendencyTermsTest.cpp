@@ -844,6 +844,117 @@ int testBottomDrag(int NVertLayers, Real RTol) {
    return Err;
 } // end testBottomDrag
 
+/// Bottom drag must leave edges with no active layer on both sides alone.
+///
+/// VertCoord sets MaxLayerEdgeTop to -1 on land edges and on the outermost
+/// edges of the halo, and Tendencies applies bottom drag with a flat loop over
+/// all edges rather than over the chunked vertical range that the other
+/// tendency terms use. Without an explicit guard the functor indexes the
+/// bottom layer at -1, reading and writing outside the intended row: for a
+/// LayoutRight array Tend(IEdge, -1) aliases Tend(IEdge - 1, NVertLayers - 1),
+/// so an inactive edge silently corrupts its neighbor's deepest layer.
+///
+/// Mark a subset of edges inactive, then compare a pass over all edges against
+/// a reference pass over only the active ones. The two must agree exactly.
+int testBottomDragInactiveEdges(int NVertLayers) {
+
+   int Err = 0;
+   TestSetup Setup;
+
+   const auto Mesh   = HorzMesh::getDefault();
+   const auto VCoord = VertCoord::getDefault();
+
+   const Real Coeff = 1.123456789;
+
+   // Set input arrays
+   Array2DReal NormalVelEdge("NormalVelEdge", Mesh->NEdgesSize, NVertLayers);
+
+   Err += setVectorEdge(
+       KOKKOS_LAMBDA(Real(&VecField)[2], Real X, Real Y) {
+          VecField[0] = Setup.vectorX(X, Y);
+          VecField[1] = Setup.vectorY(X, Y);
+       },
+       NormalVelEdge, EdgeComponent::Normal, Geom, Mesh);
+
+   Array2DReal KECell("KECell", Mesh->NCellsSize, NVertLayers);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) {
+          return Setup.scalarA(X, Y) * Setup.scalarA(X, Y) / 2;
+       },
+       KECell, Geom, Mesh, OnCell);
+
+   Array2DReal PseudoThickEdge("PseudoThickEdge", Mesh->NEdgesSize,
+                               NVertLayers);
+
+   Err += setScalar(
+       KOKKOS_LAMBDA(Real X, Real Y) { return Setup.scalarB(X, Y); },
+       PseudoThickEdge, Geom, Mesh, OnEdge);
+
+   // Save the layer indices so they can be restored for the later tests
+   Array1DI4 SavedMaxLayerEdgeTop("SavedMaxLayerEdgeTop", Mesh->NEdgesSize);
+   deepCopy(SavedMaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+
+   // Mark every third edge inactive, the way VertCoord marks land edges and
+   // the outermost edges of the halo
+   OMEGA_SCOPE(LocMaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
+   parallelFor(
+       {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
+          if (IEdge % 3 == 0)
+             LocMaxLayerEdgeTop(IEdge) = -1;
+       });
+
+   // The functor keeps a shallow copy of MaxLayerEdgeTop, so construct it
+   // after the array has been modified to make the intent clear
+   BottomDragOnEdge BottomDragOnE(Mesh, VCoord);
+   BottomDragOnE.Coeff = Coeff;
+
+   // Reference: only the active edges contribute
+   Array2DReal RefBottomDrag("RefBottomDrag", Mesh->NEdgesSize, NVertLayers);
+   deepCopy(RefBottomDrag, 0);
+   parallelFor(
+       {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
+          if (LocMaxLayerEdgeTop(IEdge) >= 0)
+             BottomDragOnE(RefBottomDrag, IEdge, NormalVelEdge, KECell,
+                           PseudoThickEdge);
+       });
+
+   // What Tendencies actually does: loop over every edge unconditionally
+   Array2DReal NumBottomDrag("NumBottomDrag", Mesh->NEdgesSize, NVertLayers);
+   deepCopy(NumBottomDrag, 0);
+   parallelFor(
+       {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
+          BottomDragOnE(NumBottomDrag, IEdge, NormalVelEdge, KECell,
+                        PseudoThickEdge);
+       });
+
+   // Restore the layer indices before checking, so that returning early on
+   // failure cannot leave the vertical coordinate modified for later tests
+   deepCopy(VCoord->MaxLayerEdgeTop, SavedMaxLayerEdgeTop);
+
+   I4 NumBad = 0;
+   parallelReduce(
+       {Mesh->NEdgesAll, NVertLayers},
+       KOKKOS_LAMBDA(int IEdge, int K, I4 &Accum) {
+          const Real Num = NumBottomDrag(IEdge, K);
+          const Real Ref = RefBottomDrag(IEdge, K);
+          if (Num != Ref or Kokkos::isnan(Num) or Kokkos::isinf(Num))
+             Accum += 1;
+       },
+       NumBad);
+
+   if (NumBad > 0) {
+      LOG_ERROR("TendencyTermsTest: BottomDragInactiveEdges FAIL, {} entries "
+                "differ from the active-edge-only result",
+                NumBad);
+      Err += 1;
+   } else {
+      LOG_INFO("TendencyTermsTest: BottomDragInactiveEdges PASS");
+   }
+
+   return Err;
+} // end testBottomDragInactiveEdges
+
 int testTracerHorzAdvOnCell(int NVertLayers, int NTracers, Real RTol) {
 
    I4 Err = 0;
@@ -1214,6 +1325,8 @@ int tendencyTermsTest(const std::string &MeshFile = DefaultMeshFile) {
    Err += testSfcStressForcing(NVertLayers);
 
    Err += testBottomDrag(NVertLayers, RTol);
+
+   Err += testBottomDragInactiveEdges(NVertLayers);
 
    Err += testTracerHorzAdvOnCell(NVertLayers, NTracers, RTol);
 
