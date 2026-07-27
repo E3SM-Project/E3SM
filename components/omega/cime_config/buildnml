@@ -14,6 +14,7 @@ from CIME.utils import SharedArea, expect, safe_copy
 
 nan_time_instant_str = "9999-12-31_00:00:00"
 
+omega_supported_grids = ["oQU240", "EC30to60E2r2"]
 
 # YAML representer to preserve order of dicts when dumping to yaml
 class OrderedSafeDumper(yaml.SafeDumper):
@@ -30,6 +31,116 @@ OrderedSafeDumper.add_representer(dict, _dict_representer)
 # end of YAML representer related code
 
 
+def buildnml(case, caseroot, compname):
+    """
+    Build the omega.yml config file based on case configuration
+
+    Additionally, writes an omega.input_data_list file so that any required
+    data missing from DIN_LOC_ROOT/ocn/omega will be automatically downloaded.
+
+    Parameters
+    ----------
+    case : Case
+        The case object containing the configuration for the current run.
+    caseroot : str
+        The root directory of the case.
+    compname : str
+        The name of the component (should be "omega" for this function).
+    """
+    expect(compname == "omega", compname)
+
+    run_dir = Path(case.get_value("RUNDIR"))
+    case_root = Path(case.get_value("CASEROOT"))
+    omega_root = Path(case.get_value("SRCROOT")) / "components/omega"
+
+    path_to_default_config = omega_root / "configs/Default.yml"
+
+    config = _build_omega_config(path_to_default_config, case)
+
+    # write yaml file and copy to CaseDocs within a SharedArea context so that
+    # correct file permissions are set
+    with SharedArea():
+
+        output_file = run_dir / "omega.yml"
+
+        # write the updated yaml file to the run directory
+        with open(output_file, "w") as file:
+            yaml.dump(config, file, Dumper=OrderedSafeDumper)
+
+        # archive yaml file in CaseDocs
+        case_docs = case_root / 'CaseDocs'
+        if case_docs.exists():
+            safe_copy(output_file, case_docs / "omega.yml")
+
+        # needs to be called within buildnml
+        build_input_data_list(case, compname)
+
+
+def build_input_data_list(case, compname):
+    """
+    Add files to omega.input_data_list so they can be automatically downloaded
+    """
+    expect(compname == "omega", compname)
+
+    casebuild = case.get_value("CASEBUILD")
+    input_data_list = []
+
+    # Add the initial state file to the input data list
+    initial_state_file = _get_file_name(case, "InitialState")
+    input_data_list.append(f"initial_state = {initial_state_file}")
+
+    # TODO: For now all information is contained in a single input file
+    # # Add the horizontal mesh file to the input data list
+    # horz_mesh_file = _get_file_name(case, "HorzMeshIn")
+    # input_data_list.append(horz_mesh_file)
+
+    # # Add the initial vertical coordinate file to the input data list
+    # initial_vert_coord_file = _get_file_name(case, "InitialVertCoord")
+    # input_data_list.append(initial_vert_coord_file)
+
+    with open(Path(casebuild) / "omega.input_data_list", "w") as f:
+        for input_file in input_data_list:
+            f.write(f"{input_file}\n")
+
+
+def _build_omega_config(path_to_default, case):
+    """
+    Build the omega config file based on case configuration
+
+    Parameters
+    ----------
+    path_to_default : str
+        Path to the default omega config file.
+    case : Case
+        The case object containing the configuration for the current run.
+
+    Returns
+    -------
+    dict
+        The updated omega config dictionary.
+    """
+    with open(path_to_default, "r") as file:
+        default_config = yaml.load(file, Loader=yaml.SafeLoader)
+        # unpack the Omega section of the default config
+        default_config = default_config["Omega"]
+
+    # start with a copy of the default config, unpack the Omega section
+    config = default_config.copy()
+
+    # update the TimeIntegration section of the config
+    config["TimeIntegration"] = _build_time_integration_config(
+        default_config["TimeIntegration"], case
+    )
+
+    # update the IOStreams section of the config
+    config["IOStreams"] = _build_io_streams_config(
+        default_config["IOStreams"], case
+    )
+
+    # repack everything withn a top-level Omega section
+    return {"Omega": config}
+
+
 # Helper function to build the various sections of the omega streams
 def _get_file_name(case, stream):
     """ """
@@ -42,7 +153,7 @@ def _get_file_name(case, stream):
     din_loc = Path(case.get_value("DIN_LOC_ROOT"))
     ocn_grid = case.get_value("OCN_GRID")
 
-    if ocn_grid not in ["oQU240", "EC30to60E2r2"]:
+    if ocn_grid not in omega_supported_grids:
         raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
 
     # TODO: this will return a different value based on the stream name
@@ -146,11 +257,13 @@ def _build_time_integration_config(default_time_integration, case):
 
     time_integration = default_time_integration.copy()
 
-    # conver from CIME calendar to Omega calendar names
+    # convert from CIME calendar to Omega calendar names
     if calendar == "NO_LEAP":
         time_integration["CalendarType"] = "No Leap"
     elif calendar == "GREGORIAN":
         time_integration["CalendarType"] = "Gregorian"
+    else:
+        raise ValueError(f"Unsupported calendar type: {calendar}")
 
     # Set start and stop time to invalid values in order to make clear to users
     # these values come from the coupler at runtime
@@ -164,82 +277,6 @@ def _build_time_integration_config(default_time_integration, case):
         time_integration["TimeStep"] = "0000_00:01:00"
 
     return time_integration
-
-
-def build_input_data_list(case, compname):
-    """
-    Add files to omega.input_data_list so they can be automatically downloaded
-    """
-    expect(compname == "omega", compname)
-
-    casebuild = case.get_value("CASEBUILD")
-    input_data_list = []
-
-    # Add the initial state file to the input data list
-    initial_state_file = _get_file_name(case, "InitialState")
-    input_data_list.append(f"initial_state = {initial_state_file}")
-
-    # TODO: For now all information is contained in a single input file
-    # # Add the horizontal mesh file to the input data list
-    # horz_mesh_file = _get_file_name(case, "HorzMeshIn")
-    # input_data_list.append(horz_mesh_file)
-
-    # # Add the initial vertical coordinate file to the input data list
-    # initial_vert_coord_file = _get_file_name(case, "InitialVertCoord")
-    # input_data_list.append(initial_vert_coord_file)
-
-    with open(Path(casebuild) / "omega.input_data_list", "w") as f:
-        for input_file in input_data_list:
-            f.write(f"{input_file}\n")
-
-
-def buildnml(case, caseroot, compname):
-    """
-    """
-    expect(compname == "omega", compname)
-
-    run_dir = Path(case.get_value("RUNDIR"))
-    case_root = Path(case.get_value("CASEROOT"))
-    omega_root = Path(case.get_value("SRCROOT")) / "components/omega"
-
-    with open(omega_root / "configs/Default.yml", "r") as file:
-        default_config = yaml.load(file, Loader=yaml.SafeLoader)
-        # unpack the Omega section of the default config
-        default_config = default_config["Omega"]
-
-    # start with a copy of the default config, unpack the Omega section
-    config = default_config.copy()
-
-    # update the TimeIntegration section of the config
-    config["TimeIntegration"] = _build_time_integration_config(
-        default_config["TimeIntegration"], case
-    )
-
-    # update the IOStreams section of the config
-    config["IOStreams"] = _build_io_streams_config(
-        default_config["IOStreams"], case
-    )
-
-    # repack everything withn a top-level Omega section
-    config = {"Omega": config}
-
-    # write yaml file and copy to CaseDocs within a SharedArea context so that
-    # correct file permissions are set
-    with SharedArea():
-
-        output_file = run_dir / "omega.yml"
-
-        # write the updated yaml file to the run directory
-        with open(output_file, "w") as file:
-            yaml.dump(config, file, Dumper=OrderedSafeDumper)
-
-        # archive yaml file in CaseDocs
-        case_docs = case_root / 'CaseDocs'
-        if case_docs.exists():
-            safe_copy(output_file, case_docs / "omega.yml")
-
-        # needs to be called within buildnml
-        build_input_data_list(case, compname)
 
 
 def _main_func():
