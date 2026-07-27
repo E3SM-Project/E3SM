@@ -623,9 +623,12 @@ run (const std::string& filename, const util::TimeStamp& ts,
     if (is_write_step) {
       // NOTE: we don't divide by the avg cnt for checkpoint output
       if (output_step and m_avg_type==OutputAvgType::Average) {
-        // Even if m_track_avg_cnt=true, this field may not need it
-        if (m_track_avg_cnt) {
-          auto avg_count = m_field_to_avg_count.at(field_name);
+        // Even if m_track_avg_cnt=true, this field may not need it.
+        // Note: a missing entry is safe ONLY for fields that cannot contain
+        // fill values; the may_be_filled check above guarantees that.
+        auto avg_count_it = m_field_to_avg_count.find(field_name);
+        if (m_track_avg_cnt and avg_count_it!=m_field_to_avg_count.end()) {
+          auto avg_count = avg_count_it->second;
 
           f_out.scale_inv(avg_count);
 
