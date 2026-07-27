@@ -271,7 +271,7 @@ struct Functions {
       os.flags(saved_flags);
     }
 
-    bool use_fortran_bridge;// flag to use EAM's ZM via fortran brigde
+    bool use_fortran_bridge;// flag to use EAM's ZM via fortran bridge
     bool apply_detr_tend;   // flag to apply ZM liq/ice detrainment tendencies
     Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
     Real tau;               // convective adjustment time scale
