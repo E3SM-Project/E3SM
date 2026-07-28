@@ -7,6 +7,23 @@ set(EXTERNALS_ROOT "${E3SM_ROOT}/externals")
 
 option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
 
+# MPI is what turns InferenceContext from a serial stub into a real
+# description of the component's ranks.  Without it everything still builds
+# and the unit tests still run; the context just reports rank 0 of 1.
+set(EMULATOR_ENABLE_MPI AUTO CACHE STRING
+  "Use MPI in the inference context: AUTO, ON or OFF")
+
+if(EMULATOR_ENABLE_MPI STREQUAL "AUTO")
+  find_package(MPI QUIET COMPONENTS CXX)
+  set(EMULATOR_HAVE_MPI ${MPI_CXX_FOUND})
+elseif(EMULATOR_ENABLE_MPI)
+  find_package(MPI REQUIRED COMPONENTS CXX)
+  set(EMULATOR_HAVE_MPI TRUE)
+else()
+  set(EMULATOR_HAVE_MPI FALSE)
+endif()
+message(STATUS "Emulator inference: MPI=${EMULATOR_HAVE_MPI}")
+
 # When built standalone (i.e. this is the top-level project), default to
 # standalone mode so we don't try to compile Fortran sources (the project
 # only declares CXX).  When included from the full E3SM build Fortran

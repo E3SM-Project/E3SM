@@ -30,4 +30,8 @@ target_link_libraries(test_inference_stub_backend PRIVATE emulator_common)
 target_include_directories(test_inference_stub_backend PRIVATE ${CATCH2_INCLUDE_DIR})
 add_test(NAME inference_stub_backend_tests COMMAND test_inference_stub_backend)
 
-
+# Test for InferenceContext
+add_executable(test_inference_context test_inference_context.cpp)
+target_link_libraries(test_inference_context PRIVATE emulator_common)
+target_include_directories(test_inference_context PRIVATE ${CATCH2_INCLUDE_DIR})
+add_test(NAME inference_context_tests COMMAND test_inference_context)
