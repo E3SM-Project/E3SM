@@ -63,6 +63,8 @@ template <> struct PrecisionTolerance<double> {
 
 }  // namespace mam_photo_table
 
+using namespace mam_photo_table;
+
 TEST_CASE("mam_photo_table_yaml_reference_regression",
           "[mam4][photo][kokkos]") {
   if constexpr (mam4::nlev != 72) return;
