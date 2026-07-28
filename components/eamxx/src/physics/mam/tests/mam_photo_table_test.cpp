@@ -22,12 +22,10 @@ mam4::mo_photo::PhotoTableData read_photo_table(
 }  // namespace impl
 }  // namespace scream
 
-namespace {
+namespace mam_photo_table {
 
 using Real = scream::Real;
 using HostSpace = Kokkos::HostSpace;
-using HostView1D = mam4::DeviceType::view_1d<Real>::host_mirror_type;
-using HostView5D = mam4::DeviceType::view<Real*****>::host_mirror_type;
 
 using Device     = scream::DefaultDevice;
 using ExecSpace  = Device::execution_space;
@@ -51,7 +49,19 @@ std::vector<Real> get_real_vec(const ekat::ParameterList& pl,
   return std::vector<Real>(dv.begin(), dv.end());
 }
 
-}  // namespace
+template <typename T> struct PrecisionTolerance;
+
+template <> struct PrecisionTolerance<float> {
+  static constexpr float relative_tol = 1e-5f; // Single precision tolerance
+  static constexpr float absolute_tol = 1e-8f; // Single precision tolerance
+};
+
+template <> struct PrecisionTolerance<double> {
+  static constexpr double relative_tol = 1e-8; // Double precision tolerance
+  static constexpr double absolute_tol = 1e-12; // Double precision tolerance
+};
+
+}  // namespace mam_photo_table
 
 TEST_CASE("mam_photo_table_yaml_reference_regression",
           "[mam4][photo][kokkos]") {
@@ -370,6 +380,8 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
   
   SECTION("compare_against_reference_when_available") {
   REQUIRE(photo_ref.size() == static_cast<std::size_t>(nlev * nref));
+  constexpr Real relative_tol = PrecisionTolerance<Real>::relative_tol;
+  constexpr Real absolute_tol = PrecisionTolerance<Real>::absolute_tol;
 
   int count = 0;
   for (int d2 = 0; d2 < nref; ++d2) {
@@ -380,7 +392,7 @@ TEST_CASE("mam_photo_table_kernel_single_column_nlev72_regression",
       INFO("Reference mismatch at d1=" << d1 << ", d2=" << d2
               << ", computed=" << computed 
               << ", expected=" << expected);
-      REQUIRE(nearly_equal(computed, expected, 1e-8, 1e-12));
+      REQUIRE(nearly_equal(computed, expected, relative_tol, absolute_tol));
     }
   }
   }
