@@ -9,6 +9,7 @@ set(EMULATOR_COMMON_CXX_SOURCES
   inference/tensor.cpp
   inference/inference_config.cpp
   inference/inference_context.cpp
+  inference/inference_backend.cpp
   inference/stub_inference_backend.cpp
   inference/create_inference_backend.cpp
 )

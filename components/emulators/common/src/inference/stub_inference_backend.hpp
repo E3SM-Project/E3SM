@@ -1,5 +1,5 @@
 /**
- * @file stub_backend.hpp
+ * @file stub_inference_backend.hpp
  * @brief Stub inference backend for testing without ML dependencies.
  */
 
@@ -12,28 +12,30 @@ namespace emulator {
 namespace inference {
 
 /**
- * @brief Stub backend for testing without actual inference.
+ * @brief Backend that runs no model, for CI and component bring-up.
  *
- * Leaves outputs unchanged. Useful for testing the data pipeline
- * without actual model inference.
+ * Leaves outputs unchanged, so it exercises every code path around a model
+ * -- configuration, the context, tensor wrapping, the component's pack and
+ * unpack -- with nothing installed.
  *
  * @see InferenceBackend for the base interface
  */
 class StubBackend : public InferenceBackend {
 public:
-  explicit StubBackend(const InferenceConfig &config)
-      : InferenceBackend(config) {}
+  StubBackend(const InferenceConfig &config, const InferenceContext &context)
+      : InferenceBackend(config, context) {}
   ~StubBackend() override = default;
-
-  /// @copydoc InferenceBackend::infer
-  bool infer(const double *inputs, double *outputs,
-             int batch_size = 1) override;
-
-  /// @copydoc InferenceBackend::finalize
-  void finalize() override;
 
   /// @copydoc InferenceBackend::name
   std::string name() const override { return "Stub"; }
+
+protected:
+  void init_impl() override {}
+  bool infer_impl(const TensorMap &inputs, TensorMap &outputs) override;
+  void final_impl() override {}
+
+private:
+  int m_calls = 0;
 };
 
 } // namespace inference

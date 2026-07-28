@@ -9,55 +9,77 @@
 #include <string>
 
 #include "inference_config.hpp"
+#include "inference_context.hpp"
+#include "tensor.hpp"
 
 namespace emulator {
 namespace inference {
 
 /**
- * @brief Enumeration of available inference backend types.
- */
-enum class BackendType {
-  STUB, ///< No-op backend for testing (no ML dependencies)
-};
-
-/**
  * @brief Abstract interface for inference backends.
  *
- * Provides a unified API for running neural network inference.
- * All backends:
- * - Accept input as a flat array [batch_size * input_channels]
- * - Produce output as a flat array [batch_size * output_channels]
+ * A backend evaluates a model given named input tensors and named output
+ * tensors.  Whether that involves MPI collectives is a property of the
+ * *model*, not of this interface: a column-local network needs none, while
+ * a global model shards one sample across the component's ranks and its
+ * `infer` is therefore collective -- every rank must call it the same
+ * number of times, in the same order.  The context is what tells the model
+ * which of those two worlds it is in.
  *
- * Backends are fully configured on construction (config is passed
- * to the constructor). No separate initialization step is needed.
+ * Lifecycle: construct, initialize() once, infer() per step, finalize().
+ * Both ends are idempotent, because a component may finalize explicitly and
+ * then be destroyed.
  */
 class InferenceBackend {
 public:
-  explicit InferenceBackend(const InferenceConfig &config) : m_config(config) {}
+  InferenceBackend(const InferenceConfig &config,
+                   const InferenceContext &context)
+      : m_config(config), m_context(context) {}
   virtual ~InferenceBackend() = default;
 
-  /**
-   * @brief Run inference on input data.
-   * @param inputs  Input data array [batch_size * input_channels]
-   * @param outputs Output data array [batch_size * output_channels]
-   * @param batch_size Number of samples in the batch
-   * @return true if inference succeeded
-   */
-  virtual bool infer(const double *inputs, double *outputs,
-                     int batch_size = 1) = 0;
+  /// @brief Load the model.
+  void initialize();
 
   /**
-   * @brief Release resources and finalize the backend.
+   * @brief Evaluate the model.
+   * @param inputs  Named input tensors (usually const views of E3SM memory)
+   * @param outputs Named output tensors (usually writable views of E3SM
+   *                memory); written in place
+   * @return true on success
    */
-  virtual void finalize() = 0;
+  bool infer(const TensorMap &inputs, TensorMap &outputs);
 
   /**
-   * @brief Get the human-readable name of this backend.
+   * @brief Flat-array convenience overload, for code that thinks in arrays.
+   *
+   * Wraps both buffers as `[batch_size, channels]` tensors named by
+   * `config.inputs[0]` / `config.outputs[0]` (defaulting to "input" and
+   * "output") using `input_channels` / `output_channels`.
    */
+  bool infer(const double *inputs, double *outputs, int batch_size = 1);
+
+  /// @brief Release the model and any resources.
+  void finalize();
+
+  /// @brief Human-readable name of this backend.
   virtual std::string name() const = 0;
 
+  bool is_initialized() const { return m_initialized; }
+  const InferenceContext &context() const { return m_context; }
+
 protected:
-  InferenceConfig m_config; ///< Backend configuration
+  /// @brief Load the model.  Called once, from initialize().
+  virtual void init_impl() = 0;
+
+  /// @brief Evaluate the model.  Called from infer(), after validation.
+  virtual bool infer_impl(const TensorMap &inputs, TensorMap &outputs) = 0;
+
+  /// @brief Release the model.  Called once, from finalize().
+  virtual void final_impl() = 0;
+
+  InferenceConfig m_config;   ///< Backend configuration
+  InferenceContext m_context; ///< Ranks and decomposition from the coupler
+  bool m_initialized = false;
 };
 
 } // namespace inference
