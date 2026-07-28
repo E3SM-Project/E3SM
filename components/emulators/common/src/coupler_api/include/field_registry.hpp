@@ -6,8 +6,12 @@
 namespace e3sm::coupler {
 
 enum class FieldRole {
-  Source,
-  Consumer,
+  Import,
+  Export,
+  // is this needed? there are fields that every component sends to the coupler
+  // which merges them, and then each component has the merged state available
+  // next timestep?
+  ImportExport,
 };
 
 enum class MergeType {
@@ -16,14 +20,14 @@ enum class MergeType {
 };
 
 /**
-  * @brief (C++ version) Attributes of Field to be registered
-  * Fields:
-  * - component: component that defines it
-  * - name: name of field
-  * - long_name: long name for field
-  * - standard_name: standardized name for field
-  * - units: units
-*/
+ * @brief (C++ version) Attributes of Field to be registered
+ * Fields:
+ * - component: component that defines it
+ * - name: name of field
+ * - long_name: long name for field
+ * - standard_name: standardized name for field
+ * - units: units
+ */
 struct RegisteredFieldAttributes {
   std::string component;
   std::string name;
@@ -35,6 +39,8 @@ struct RegisteredFieldAttributes {
 struct RegisteredField {
   FieldRole role;
   RegisteredFieldAttributes attributes;
+  // TODO: Figure out how to register or couple fields that are downscaled or
+  // otherwise transformed
 
   // TODO: Does this need to be generic or do we only have doubles?
   double* data = nullptr;
@@ -50,7 +56,6 @@ struct CouplingRoute {
 class FieldRegistry {
 public:
   void register_field(RegisteredField field);
-
 
 private:
   struct RegistryKey {

@@ -8,10 +8,11 @@
 
 namespace {
 e3sm::coupler::FieldRole set_role(std::string role) {
+  // will likey make this a fortran/c enum
   if (role == "source") {
-    return e3sm::coupler::FieldRole::Source;
+    return e3sm::coupler::FieldRole::Export;
   } else if (role == "destination") {
-    return e3sm::coupler::FieldRole::Consumer;
+    return e3sm::coupler::FieldRole::Import;
   } else {
     throw std::invalid_argument("Incorrect Role specified for Coupler Field");
   }
