@@ -36,6 +36,7 @@ module coupler_types
   end type coupling_desc
 
   public :: create_config, create_grid_desc, create_coupler_desc
+  public :: coupling_desc, emulator_grid_desc, emulator_create_cfg
 
 contains
 

@@ -29,17 +29,16 @@ set_target_properties(emulator_common PROPERTIES
 
 target_include_directories(emulator_common PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/inference
-  ${CMAKE_CURRENT_SOURCE_DIR}/coupler_api
 )
 
 target_include_directories(emulator_common PUBLIC
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}/modules
-  ${CMAKE_CURRENT_BINARY_DIR}/coupler_api/modules
 )
 
 target_link_libraries(emulator_common PUBLIC
-  coupler_api
+  E3SM::coupler_api
 )
 

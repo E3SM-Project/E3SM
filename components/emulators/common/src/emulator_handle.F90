@@ -1,6 +1,22 @@
 module emulator_handle_mod
   use, intrinsic :: iso_c_binding
-  use emulator_f2c_api
+   use coupler_types, only: coupling_desc, emulator_grid_desc, emulator_create_cfg
+
+   use emulator_f2c_api, only: &
+      emulator_set_grid_data, &
+      emulator_setup_coupling, &
+      emulator_init, &
+      emulator_run, &
+      emulator_finalize, &
+      emulator_print_info, &
+      emulator_init_coupling_indices, &
+      emulator_get_num_local_cols, &
+      emulator_get_num_global_cols, &
+      emulator_get_nx, &
+      emulator_get_ny, &
+      emulator_get_local_col_gids, &
+      emulator_get_cols_latlon, &
+      emulator_get_cols_area
   implicit none
 
   type :: emulator_handle

@@ -5,7 +5,7 @@
 #ifndef EMULATOR_C_API
 #define EMULATOR_C_API
 
-#include "coupler_api/coupler_types.hpp"
+#include "coupler_types.hpp"
 
 extern "C" {
 

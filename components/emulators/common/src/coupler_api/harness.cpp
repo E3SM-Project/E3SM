@@ -1,3 +1,0 @@
-namespace coupler_api {
-
-}

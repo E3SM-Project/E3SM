@@ -1,6 +1,7 @@
-#ifndef COUPLER_TYPES
-#define COUPLER_TYPES
+#ifndef COUPLER_TYPES_HPP
+#define COUPLER_TYPES_HPP
 
+#include <cstddef>
 extern "C" {
 /**
 * @brief Configuration parameters for creating emulator instance.
@@ -82,23 +83,46 @@ struct CouplingStringList {
 };
 
 /**
-  * @brief Description of Field designated for the coupler
+  * @brief Metadata of Field that may be coupled
   * Fields:
   * - longname: long name for field
   * - stdname: standardized name for field
   * - attrname: name for lookup in attribute vector
-  * - units: physical units of field
+*/
+struct FieldAttributes{
+  const char* name;
+  const char* long_name;
+  const char* standard_name;
+  const char* units;
+} ;
+
+/**
+ * @brief Fortran/C struct to create RegisteredField entry
+ * Fields:
+ * - component
+ * - attributes
+ * - size
+ * - data
+ **/
+struct RegisteredFieldDesc {
+  const char* role;
+  const char* component;
+  FieldAttributes attributes;
+  size_t size;
+  double* data;
+};
+
+/**
+  * @brief Description of How Field is Coupled
+  * Fields:
+  * - merged_type: method to merge data from multiple sources
   * - source: component that computes field
   * - destination: component that receives field
 */
 struct CouplingFieldDesc {
-  const char* longname;
-  const char* stdname;
-  const char* attrname;
-  const char* units;
   const char* merge_type;
   CouplingStringList sources;
-  CouplingStringList destination;
+  CouplingStringList destinations;
 };
 
 } //extern "C"

@@ -1,6 +1,6 @@
 add_library(coupler_api
   coupler_types.F90
-  coupler_types.hpp
+  field_registry.cpp
 )
 
 set(_coupler_api_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/modules")
@@ -12,6 +12,7 @@ set_target_properties(coupler_api PROPERTIES
 target_include_directories(coupler_api
   PUBLIC
     $<BUILD_INTERFACE:${_coupler_api_mod_dir}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 target_compile_features(coupler_api

@@ -9,17 +9,17 @@ set(EMULATORATM_CXX_SOURCES
 # emulator_driver. In STANDALONE_MODE the symbol comes from
 # emulator_driver/src/emulator_factory.cpp instead.
 # TODO: get rid of this hacky workaround?!
-if(NOT STANDALONE_MODE)
-  list(APPEND EMULATORATM_CXX_SOURCES src/atm_factory.cpp)
-endif()
+# if(NOT STANDALONE_MODE)
+#   list(APPEND EMULATORATM_CXX_SOURCES src/atm_factory.cpp)
+# endif()
 
 set(EMULATORATM_CXX_HEADERS
   src/atm.hpp
 )
 
-set(EMULATORATM_F90_SOURCES
-  src/atm_comp_mct.F90
-)
+# set(EMULATORATM_F90_SOURCES
+#   src/atm_comp_mct.F90
+# )
 
 if(STANDALONE_MODE)
   # Build only C++ sources in standalone mode
