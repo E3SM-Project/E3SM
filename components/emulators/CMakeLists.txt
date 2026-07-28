@@ -22,7 +22,23 @@ elseif(EMULATOR_ENABLE_MPI)
 else()
   set(EMULATOR_HAVE_MPI FALSE)
 endif()
-message(STATUS "Emulator inference: MPI=${EMULATOR_HAVE_MPI}")
+# The embedded-Python backend is opt-in: emulator_common builds, and its
+# tests pass, with no ML dependency installed at all.
+option(EMULATOR_ENABLE_PYTHON
+  "Build the embedded-Python inference backend (needs the Python dev headers, \
+plus numpy at run time)" OFF)
+
+if(EMULATOR_ENABLE_PYTHON)
+  # Development is the embedding half: headers and libpython.
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+endif()
+
+# The python emulators that ship with E3SM.  Baked into the backend as a
+# sys.path entry so a run does not have to set PYTHONPATH.
+set(EMULATOR_PYTHON_PACKAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common/python")
+
+message(STATUS "Emulator inference: MPI=${EMULATOR_HAVE_MPI} "
+  "python=${EMULATOR_ENABLE_PYTHON}")
 
 # When built standalone (i.e. this is the top-level project), default to
 # standalone mode so we don't try to compile Fortran sources (the project

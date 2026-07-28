@@ -28,11 +28,14 @@ fi
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 
-# Configure (only if needed)
-if [ ! -f "CMakeCache.txt" ]; then
-    print_status "Configuring CMake..."
-        cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_EMULATOR_TESTS=ON -DSTANDALONE_MODE=ON
-fi
+# Configure, every time.  The feature flags below are cached, so configuring
+# only when the build directory is new would silently keep whatever the
+# previous run left behind: `./test` followed by `./test --python` would not
+# enable Python at all, and the reverse would keep it enabled. Reconfiguring
+# an up-to-date build directory costs a second and changes nothing else.
+print_status "Configuring CMake..."
+cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_EMULATOR_TESTS=ON \
+      -DSTANDALONE_MODE=ON -DEMULATOR_ENABLE_PYTHON=${ENABLE_PYTHON}
 
 # Build
 print_status "Building..."

@@ -35,3 +35,13 @@ add_executable(test_inference_context test_inference_context.cpp)
 target_link_libraries(test_inference_context PRIVATE emulator_common)
 target_include_directories(test_inference_context PRIVATE ${CATCH2_INCLUDE_DIR})
 add_test(NAME inference_context_tests COMMAND test_inference_context)
+
+# Test for the embedded-Python backend
+if(EMULATOR_ENABLE_PYTHON)
+  add_executable(test_inference_python_backend test_inference_python_backend.cpp)
+  target_link_libraries(test_inference_python_backend PRIVATE emulator_common)
+  target_include_directories(test_inference_python_backend PRIVATE ${CATCH2_INCLUDE_DIR})
+  target_compile_definitions(test_inference_python_backend PRIVATE
+    EMULATOR_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+  add_test(NAME inference_python_backend_tests COMMAND test_inference_python_backend)
+endif()

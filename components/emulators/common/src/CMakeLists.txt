@@ -14,6 +14,13 @@ set(EMULATOR_COMMON_CXX_SOURCES
   inference/create_inference_backend.cpp
 )
 
+if(EMULATOR_ENABLE_PYTHON)
+  list(APPEND EMULATOR_COMMON_CXX_SOURCES
+    inference/python_interpreter.cpp
+    inference/python_inference_backend.cpp
+  )
+endif()
+
 set(EMULATOR_COMMON_F90_SOURCES
   emulator_f2c_api.F90
   emulator_handle.F90
@@ -49,4 +56,13 @@ target_link_libraries(emulator_common PUBLIC
 if(EMULATOR_HAVE_MPI)
   target_compile_definitions(emulator_common PUBLIC EMULATOR_HAVE_MPI)
   target_link_libraries(emulator_common PUBLIC MPI::MPI_CXX)
+endif()
+
+if(EMULATOR_ENABLE_PYTHON)
+  target_compile_definitions(emulator_common PUBLIC EMULATOR_ENABLE_PYTHON)
+  target_link_libraries(emulator_common PUBLIC Python3::Python)
+  # Where the emulator python package lives, so a run does not have to set
+  # PYTHONPATH.  Anything the user names in `inference.python_path` still wins.
+  target_compile_definitions(emulator_common PRIVATE
+    EMULATOR_PYTHON_PACKAGE_DIR="${EMULATOR_PYTHON_PACKAGE_DIR}")
 endif()

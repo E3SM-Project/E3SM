@@ -13,11 +13,19 @@
 #include "inference_error.hpp"
 #include "stub_inference_backend.hpp"
 
+#ifdef EMULATOR_ENABLE_PYTHON
+#include "python_inference_backend.hpp"
+#endif
+
 namespace emulator {
 namespace inference {
 
 std::vector<std::string> available_backends() {
-  return {"stub"};
+  std::vector<std::string> names{"stub"};
+#ifdef EMULATOR_ENABLE_PYTHON
+  names.push_back("python");
+#endif
+  return names;
 }
 
 std::shared_ptr<InferenceBackend>
@@ -27,6 +35,15 @@ create_backend(const InferenceConfig &config, const InferenceContext &context) {
   if (config.backend.empty() || config.backend == "stub" ||
       config.backend == "none") {
     backend = std::make_shared<StubBackend>(config, context);
+  } else if (config.backend == "python") {
+#ifdef EMULATOR_ENABLE_PYTHON
+    backend = std::make_shared<PythonBackend>(config, context);
+#else
+    EMULATOR_INFER_REQUIRE(
+        false, "The 'python' inference backend was not built. Reconfigure "
+               "with -DEMULATOR_ENABLE_PYTHON=ON (it needs the Python "
+               "development headers, plus numpy at run time).");
+#endif
   } else {
     std::string names;
     for (const auto &n : available_backends()) {
