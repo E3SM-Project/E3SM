@@ -7,6 +7,7 @@ set(EMULATOR_COMMON_CXX_SOURCES
   emulator.cpp
   emulator_c_api.cpp
   inference/tensor.cpp
+  inference/inference_config.cpp
   inference/stub_inference_backend.cpp
   inference/create_inference_backend.cpp
 )

@@ -8,6 +8,8 @@
 
 #include <string>
 
+#include "inference_config.hpp"
+
 namespace emulator {
 namespace inference {
 
@@ -16,15 +18,6 @@ namespace inference {
  */
 enum class BackendType {
   STUB, ///< No-op backend for testing (no ML dependencies)
-};
-
-/**
- * @brief Minimal configuration for inference backends.
- */
-struct InferenceConfig {
-  int input_channels = 0;  ///< Number of input features per grid point
-  int output_channels = 0; ///< Number of output features per grid point
-  bool verbose = false;    ///< Enable verbose output (for debugging)
 };
 
 /**
