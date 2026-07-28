@@ -123,6 +123,17 @@ TEST_CASE("A module with no factory is reported", "[python]") {
   REQUIRE_THROWS_AS(create_backend(config, InferenceContext()), InferenceError);
 }
 
+TEST_CASE("The shipped package is importable without PYTHONPATH", "[python]") {
+  // e3sm_emulator.bridge is the default module, reached through the sys.path
+  // entry baked in at configure time.  Asking it for an emulator that does
+  // not exist proves the import worked without proving anything about torch.
+  InferenceConfig config;
+  config.backend = "python";
+  config.set("emulator", "no_such_emulator");
+  REQUIRE_THROWS_WITH(create_backend(config, InferenceContext()),
+                      Catch::Contains("Unknown emulator"));
+}
+
 TEST_CASE("An error inside the model surfaces with its traceback", "[python]") {
   auto config = fixture_config("emulator_fixture_broken.txt");
   config.set("python_module", "emulator_broken");

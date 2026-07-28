@@ -45,3 +45,24 @@ if(EMULATOR_ENABLE_PYTHON)
     EMULATOR_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
   add_test(NAME inference_python_backend_tests COMMAND test_inference_python_backend)
 endif()
+
+# The python package is pure numpy, so it is tested where it is written
+# rather than through the C++ bridge: this runs with no MPI, no launcher and
+# no torch, which is what makes it worth having in CI.
+if(Python3_EXECUTABLE AND NOT EMULATOR_NUMPY_MISSING)
+  add_test(NAME inference_python_package_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/python/test_e3sm_emulator.py)
+  set_tests_properties(inference_python_package_tests PROPERTIES
+    ENVIRONMENT
+      "PYTHONPATH=${EMULATOR_PYTHON_PACKAGE_DIR}:${CMAKE_CURRENT_SOURCE_DIR}/python")
+endif()
+
+if(Python3_EXECUTABLE AND NOT EMULATOR_NUMPY_MISSING)
+  add_test(NAME inference_example_tests
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/python/test_example.py)
+  set_tests_properties(inference_example_tests PROPERTIES
+    ENVIRONMENT
+      "PYTHONPATH=${EMULATOR_PYTHON_PACKAGE_DIR}:${CMAKE_CURRENT_SOURCE_DIR}/python")
+endif()

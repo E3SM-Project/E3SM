@@ -40,6 +40,22 @@ set(EMULATOR_PYTHON_PACKAGE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common/python")
 message(STATUS "Emulator inference: MPI=${EMULATOR_HAVE_MPI} "
   "python=${EMULATOR_ENABLE_PYTHON}")
 
+# The python package's own unit tests need an interpreter with numpy and
+# nothing else, whether or not the embedded backend was built.
+if(BUILD_EMULATOR_TESTS)
+  if(NOT Python3_EXECUTABLE)
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+  endif()
+  if(Python3_EXECUTABLE)
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+      RESULT_VARIABLE EMULATOR_NUMPY_MISSING OUTPUT_QUIET ERROR_QUIET)
+    if(EMULATOR_NUMPY_MISSING)
+      message(STATUS "Emulator inference: no numpy in ${Python3_EXECUTABLE}, "
+        "skipping the python package tests")
+    endif()
+  endif()
+endif()
+
 # When built standalone (i.e. this is the top-level project), default to
 # standalone mode so we don't try to compile Fortran sources (the project
 # only declares CXX).  When included from the full E3SM build Fortran
