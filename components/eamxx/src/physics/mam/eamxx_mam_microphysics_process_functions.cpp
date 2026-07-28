@@ -433,7 +433,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
       //Find tropopause (or quit simulation if not found) as extinction should be
       // applied only above tropopause */
-      const int ilev_tropp = mam4::aer_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
+      const int ilev_tropp = mam4::aero_rad_props::tropopause_or_quit(atm.pressure, atm.interface_pressure,
           atm.temperature,  atm.height, ekat::subview(dry_atm.z_iface, icol));
 
       Kokkos::parallel_for(
