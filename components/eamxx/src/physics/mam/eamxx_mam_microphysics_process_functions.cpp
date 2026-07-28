@@ -414,10 +414,10 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     if (config_.compute_gas_phase_chemistry) {
 
     view_3d gas_phase_chemistry_dvmrdt;
-    view_int_2d gas_phase_chemistry_fail_cnt;
+    view_2d gas_phase_chemistry_fail_cnt;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
-      gas_phase_chemistry_fail_cnt = get_field_out("mam4_gas_phase_chemistry_fail_cnt").get_view<int **>();
+      gas_phase_chemistry_fail_cnt = get_field_out("mam4_gas_phase_chemistry_fail_cnt").get_view<Real **>();
     }
 
     Kokkos::parallel_for(
@@ -454,7 +454,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         // out
         vmr_kk, fail_cnt);
         if (gas_phase_chemistry_fail_cnt.size())
-          gas_phase_chemistry_fail_cnt(icol, kk) = fail_cnt;
+          gas_phase_chemistry_fail_cnt(icol, kk) = Real(fail_cnt);
       });
 
     });
