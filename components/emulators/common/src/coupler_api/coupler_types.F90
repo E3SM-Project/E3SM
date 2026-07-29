@@ -46,7 +46,7 @@ module coupler_types
    type, bind(c) :: registered_field_desc
       type(c_ptr) role; 
       type(c_ptr) component; 
-      type(c_ptr) attributes; 
+      type(field_attributes) attributes; 
       integer(c_size_t) size; 
       type(c_ptr) data; ! double*
    end type
@@ -76,35 +76,45 @@ contains
       function create_config(f_comm, comp_id, run_type, &
                              start_ymd, start_tod, case_start_ymd, case_start_tod, &
                              input_file, log_file, calendar) result(cfg)
-      integer(c_int), intent(in) :: f_comm
-      integer(c_int), intent(in) :: comp_id
-      integer(c_int), intent(in) :: run_type
-      integer(c_int), intent(in) :: start_ymd
-      integer(c_int), intent(in) :: start_tod
-      integer(c_int), intent(in), optional :: case_start_ymd
-      integer(c_int), intent(in), optional :: case_start_tod
-      character(kind=c_char), intent(in), target   :: input_file(*)
-      character(kind=c_char), intent(in), target   :: log_file(*)
-      character(kind=c_char), intent(in), target   :: calendar(*)
+      integer, intent(in) :: f_comm
+      integer, intent(in) :: comp_id
+      integer, intent(in) :: run_type
+      integer, intent(in) :: start_ymd
+      integer, intent(in) :: start_tod
+      integer, intent(in), optional :: case_start_ymd
+      integer, intent(in), optional :: case_start_tod
+      character(len=*), intent(in)  :: input_file
+      character(len=*), intent(in)  :: log_file
+      character(len=*), intent(in)  :: calendar
 
-      cfg%f_comm = f_comm
-      cfg%comp_id = comp_id
-      cfg%run_type = run_type
-      cfg%start_ymd = start_ymd
-      cfg%start_tod = start_tod
+      ! local c versions
+      character(kind=c_char), allocatable, target :: input_file_c(:)
+      character(kind=c_char), allocatable, target :: log_file_c(:)
+      character(kind=c_char), allocatable, target  :: calendar_c(:)
+
+      call to_c_string(input_file, input_file_c)
+      call to_c_string(log_file, log_file_c)
+      call to_c_string(calendar, calendar_c)
+
+      cfg%f_comm = int(f_comm, c_int)
+      cfg%comp_id = int(comp_id, c_int)
+      cfg%run_type = int(run_type, c_int)
+      cfg%start_ymd = int(start_ymd, c_int)
+      cfg%start_tod = int(start_tod, c_int)
+
       if (present(case_start_ymd)) then
-         cfg%case_start_ymd = case_start_ymd
+         cfg%case_start_ymd = int(case_start_ymd, c_int)
       else
-         cfg%case_start_ymd = -1
+         cfg%case_start_ymd = -1_c_int
       end if
       if (present(case_start_tod)) then
-         cfg%case_start_tod = case_start_tod
+         cfg%case_start_tod = int(case_start_tod, c_int)
       else
-         cfg%case_start_tod = -1
+         cfg%case_start_tod = -1_c_int
       end if
-      cfg%input_file = c_loc(input_file(1))
-      cfg%log_file = c_loc(log_file(1))
-      cfg%calendar = c_loc(calendar(1))
+      cfg%input_file = c_loc(input_file_c(1))
+      cfg%log_file = c_loc(log_file_c(1))
+      cfg%calendar = c_loc(calendar_c(1))
 
    end function create_config
 
@@ -112,21 +122,22 @@ contains
       function create_grid_desc( &
       grid_type, nx, ny, num_local_cols, num_global_cols, &
       col_gids, lat, lon, area) result(grid)
-      integer(c_int), intent(in) :: grid_type
-      integer(c_int), intent(in) :: nx
-      integer(c_int), intent(in) :: ny
-      integer(c_int), intent(in) :: num_local_cols
-      integer(c_int), intent(in) :: num_global_cols
-      integer(c_int), intent(in), pointer :: col_gids(:)
+      integer, intent(in) :: grid_type
+      integer, intent(in) :: nx
+      integer, intent(in) :: ny
+      integer, intent(in) :: num_local_cols
+      integer, intent(in) :: num_global_cols
+      integer, intent(in), pointer :: col_gids(:)
       real(c_double), intent(in), pointer :: lat(:)
       real(c_double), intent(in), pointer :: lon(:)
       real(c_double), intent(in), pointer :: area(:)
 
-      grid%grid_type = grid_type
-      grid%nx = nx
-      grid%ny = ny
-      grid%num_local_cols = num_local_cols
-      grid%num_global_cols = num_global_cols
+      grid%grid_type = int(grid_type, c_int)
+      grid%nx = int(nx, c_int)
+      grid%ny = int(ny, c_int)
+      grid%num_local_cols = int(num_local_cols, c_int)
+      grid%num_global_cols = int(num_global_cols, c_int)
+
       grid%col_gids = c_loc(col_gids)
       grid%lat = c_loc(lat)
       grid%lon = c_loc(lon)
@@ -138,14 +149,15 @@ contains
                                    num_exports, field_size) result(cpl)
       real(c_double), INTENT(IN), pointer :: import_data(:)
       real(c_double), INTENT(IN), pointer :: export_data(:)
-      integer(c_int) :: num_imports
-      integer(c_int) :: num_exports
-      integer(c_int) :: field_size
+      integer :: num_imports
+      integer :: num_exports
+      integer :: field_size
       cpl%import_data = c_loc(import_data)
       cpl%export_data = c_loc(export_data)
-      cpl%num_imports = num_imports
-      cpl%num_exports = num_exports
-      cpl%field_size = field_size
+
+      cpl%num_imports = int(num_imports, c_int)
+      cpl%num_exports = int(num_exports, c_int)
+      cpl%field_size = int(field_size, c_int)
    end function create_coupler_desc
 
    type(field_attributes) &
@@ -176,21 +188,19 @@ contains
       function make_registered_field_desc(role, component, attributes, size, data) result(desc)
       character(len=*), intent(in) :: role
       character(len=*), intent(in) :: component
-      character(len=*), intent(in) :: attributes
+      type(field_attributes):: attributes
       integer, intent(in) :: size
       real(c_double), pointer, intent(in) :: data(:) ! double*
       !! local c versions of strings
       character(kind=c_char), allocatable, target :: role_c(:)
       character(kind=c_char), allocatable, target :: component_c(:)
-      character(kind=c_char), allocatable, target :: attributes_c(:)
 
       call to_c_string(role, role_c)
       call to_c_string(component, component_c)
-      call to_c_string(attributes, attributes_c)
 
       desc%role = c_loc(role_c(1))
       desc%component = c_loc(component_c(1))
-      desc%attributes = c_loc(attributes_c(1))
+      desc%attributes =  attributes
 
       desc%size = int(size, c_size_t); 
       desc%data = c_loc(data(1)); 

@@ -1,6 +1,7 @@
 add_library(coupler_api
   coupler_types.F90
   field_registry.cpp
+  field_registry_c_api.cpp
 )
 
 set(_coupler_api_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/modules")

@@ -56,6 +56,8 @@ struct CouplingRoute {
 class FieldRegistry {
 public:
   void register_field(RegisteredField field);
+  const RegisteredField& get(std::string component, std::string field_name) const;
+  bool contains(std::string component, std:: string field_name);
 
 private:
   struct RegistryKey {

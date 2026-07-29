@@ -14,9 +14,9 @@ program test_emulator_factory
   integer(c_int)               :: dt
   integer                      :: ierr, nprocs
   integer(c_int)               :: fcomm
-  integer(c_int), parameter    :: nx = 1_c_int, ny = 1_c_int
-  integer(c_int), parameter    :: ncols = 1_c_int
-  integer(c_int), parameter :: num_global_cols = 1_c_int
+  integer(c_int), parameter    :: nx = 1, ny = 1
+  integer(c_int), parameter    :: ncols = 1
+  integer(c_int), parameter :: num_global_cols = 1
 
   integer(c_int) :: num_local_cols, field_size, num_imports, num_exports
   integer(c_int), allocatable, target:: col_gids(:)
@@ -24,13 +24,6 @@ program test_emulator_factory
   real(c_double), allocatable, target:: import_buf(:), export_buf(:)
   real(c_double), pointer :: lat_ptr(:),lon_ptr(:), imp_ptr(:), exp_ptr(:),area_ptr(:)
   integer(c_int), pointer :: gids_ptr(:)
-
-  ! Null-terminated C strings whose storage persists beyond create_config.
-  ! Using named target variables avoids dangling pointers from string
-  ! expression temporaries.
-  character(kind=c_char, len=5),  target :: input_file_c
-  character(kind=c_char, len=9),  target :: log_file_c
-  character(kind=c_char, len=64), target :: calendar_c
 
   !----------------------------------------
   ! MPI init (if needed)
@@ -44,25 +37,26 @@ program test_emulator_factory
   call mpi_comm_size(fcomm, nprocs, ierr)
 
    num_local_cols = num_global_cols/nprocs
-   num_imports = 1_c_int
-   num_exports = 1_c_int
-   field_size = 1_c_int
+   num_imports = 1
+   num_exports = 1
+   field_size = 1
 
    allocate(lat(num_local_cols), lon(num_local_cols), col_gids(num_local_cols))
    allocate(area(num_local_cols),import_buf(num_imports*field_size), export_buf(num_exports*field_size))
   !----------------------------------------
   ! create config
   !----------------------------------------
-  input_file_c = 'test'//c_null_char
-  log_file_c   = 'test_log'//c_null_char
-  calendar_c   = '365day'//c_null_char
-  cfg = create_config(f_comm=fcomm,comp_id=1_c_int,run_type=0_c_int,&
-            start_ymd=20000101_c_int, start_tod=0_c_int,&
-            input_file=input_file_c, log_file=log_file_c,&
-            calendar=calendar_c)
+  ! input_file_c = 'test'//c_null_char
+  ! log_file_c   = 'test_log'//c_null_char
+  ! calendar_c   = '365day'//c_null_char
+
+  cfg = create_config(f_comm=fcomm,comp_id=1,run_type=0,&
+            start_ymd=20000101, start_tod=0,&
+            input_file="test", log_file="test_log",&
+            calendar="365day")
   
   block
-   integer(c_int) :: grid_type = 0_c_int, i
+   integer(c_int) :: grid_type = 0, i
    lat = [(real(i,kind=c_double), i=1,num_local_cols)]
    lon = lat
    area = lat

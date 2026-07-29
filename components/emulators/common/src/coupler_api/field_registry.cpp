@@ -32,5 +32,8 @@ void FieldRegistry::register_field(RegisteredField field) {
   return;
 }
 
+const RegisteredField& FieldRegistry::get(std::string component, std::string field_name){
+
+}
 
 } // namespace e3sm::coupler

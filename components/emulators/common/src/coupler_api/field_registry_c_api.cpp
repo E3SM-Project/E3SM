@@ -1,5 +1,3 @@
-#ifndef FIELD_REGISTRY_C_API_HPP
-#define FIELD_REGISTRY_C_API_HPP
 
 #include "coupler_types.hpp"
 #include "field_registry.hpp"
@@ -23,8 +21,8 @@ e3sm::coupler::FieldRole set_role(std::string role) {
 extern "C" {
 
 void field_registry_register(void* handle, const RegisteredFieldDesc* desc) {
-  auto* registry = static_cast<e3sm::coupler::FieldRegistry*>(handle);
 
+  auto* registry = static_cast<e3sm::coupler::FieldRegistry*>(handle);
   e3sm::coupler::RegisteredField field{
       .role = set_role(desc->role),
       .attributes =
@@ -41,6 +39,6 @@ void field_registry_register(void* handle, const RegisteredFieldDesc* desc) {
   registry->register_field(std::move(field));
 }
 
+
 }
 
-#endif

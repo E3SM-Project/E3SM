@@ -25,8 +25,8 @@ public:
    // New pure virtuals from Emulator: give simple stub impls
   void set_grid_data(const EmulatorGridDesc&) override {}
   void setup_coupling(const CouplingDesc& ) override {}
-  void init_coupling_indices(const std::string& ,
-                             const std::string& ) override {}
+  void init_coupling_indices(const std::vector<std::string> &export_fields,
+                                     const std::vector<std::string> &import_fields ) override {}
 
   int get_num_local_cols()  const override { return 0; }
   int get_num_global_cols() const override { return 0; }
