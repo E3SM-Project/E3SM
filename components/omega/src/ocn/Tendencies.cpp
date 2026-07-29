@@ -238,13 +238,50 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
        Err,
        "Tendencies: SfcStressForcingTendencyEnable not found in TendConfig");
 
-   Err += TendConfig.get("BottomDragTendencyEnable", this->BottomDrag.Enabled);
+   Config BottomDragConfig("BottomDragTendency");
+   Err += TendConfig.get(BottomDragConfig);
    CHECK_ERROR_ABORT(
-       Err, "Tendencies: BottomDragTendencyEnable not found in TendConfig");
+       Err, "Tendencies: BottomDragTendency group not found in TendConfig");
 
-   Err += TendConfig.get("BottomDragCoeff", this->BottomDrag.Coeff);
-   CHECK_ERROR_ABORT(Err,
-                     "Tendencies: BottomDragCoeff not found in TendConfig");
+   bool BottomDragTendencyEnabled = false;
+   Err += BottomDragConfig.get("Enable", BottomDragTendencyEnabled);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: BottomDragTendency Enable not found in TendConfig");
+
+   std::string BottomDragMode;
+   Err += BottomDragConfig.get("Mode", BottomDragMode);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: BottomDragTendency Mode not found in TendConfig");
+
+   std::string BottomDragType;
+   Err += BottomDragConfig.get("Type", BottomDragType);
+   CHECK_ERROR_ABORT(
+       Err, "Tendencies: BottomDragTendency Type not found in TendConfig");
+
+   Real BottomDragCoeff = 0.0_Real;
+   Err += BottomDragConfig.get("BottomDragCoeff", BottomDragCoeff);
+   CHECK_ERROR_ABORT(Err, "Tendencies: BottomDragTendency BottomDragCoeff not "
+                          "found in TendConfig");
+
+   if (BottomDragType != "Constant" && BottomDragType != "constant") {
+      ABORT_ERROR("Tendencies: BottomDragTendency Type should be one of "
+                  " 'Constant' but got {}:",
+                  BottomDragType);
+   }
+
+   this->ExplicitBottomDrag.Coeff              = BottomDragCoeff;
+   this->VMix->VelVertMixSetup.BottomDragCoeff = BottomDragCoeff;
+
+   if (BottomDragTendencyEnabled) {
+      if (BottomDragMode == "Explicit" || BottomDragMode == "explicit") {
+         this->ExplicitBottomDrag.Enabled = true;
+      } else if (BottomDragMode == "Implicit" || BottomDragMode == "implicit") {
+         this->VMix->VelVertMixSetup.ImplicitBottomDragEnabled = true;
+      } else {
+         ABORT_ERROR("Tendencies: BottomDragTendency Mode must be Explicit or "
+                     "Implicit");
+      }
+   }
 
    if (this->TracerDiffusion.Enabled) {
       Err += TendConfig.get("EddyDiff2", this->TracerDiffusion.EddyDiff2);
@@ -326,6 +363,12 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
                          this->VMix->VelVertMixSetup.Enabled);
    CHECK_ERROR_ABORT(
        Err, "Tendencies: VelVertMixTendencyEnable not found in TendConfig");
+
+   if (this->VMix->VelVertMixSetup.ImplicitBottomDragEnabled &&
+       !this->VMix->VelVertMixSetup.Enabled) {
+      ABORT_ERROR("Tendencies: BottomDragTendency Mode Implicit requires "
+                  "VelVertMixTendencyEnable to be true");
+   }
 
    Err += TendConfig.get("TracerVertMixTendencyEnable",
                          this->VMix->TracerVertMixSetup.Enabled);
@@ -417,7 +460,7 @@ Tendencies::Tendencies(const std::string &Name_, ///< [in] Name for tendencies
       PseudoThicknessFluxDiv(Mesh, VCoord), PotentialVortHAdv(Mesh, VCoord),
       KEGrad(Mesh, VCoord), SSHGrad(Mesh, VCoord),
       VelocityDiffusion(Mesh, VCoord), VelocityHyperDiff(Mesh, VCoord),
-      SfcStressForcing(Mesh, VCoord), BottomDrag(Mesh, VCoord),
+      SfcStressForcing(Mesh, VCoord), ExplicitBottomDrag(Mesh, VCoord),
       TracerDiffusion(Mesh, VCoord), TracerHyperDiff(Mesh, VCoord),
       TracerHorzAdv(Mesh, VCoord), SurfaceTracerRestoring(Mesh),
       CustomThicknessTend(InCustomThicknessTend),
@@ -540,7 +583,7 @@ void Tendencies::computeVelocityTendenciesOnly(
    OMEGA_SCOPE(LocVelocityDiffusion, VelocityDiffusion);
    OMEGA_SCOPE(LocVelocityHyperDiff, VelocityHyperDiff);
    OMEGA_SCOPE(LocSfcStressForcing, SfcStressForcing);
-   OMEGA_SCOPE(LocBottomDrag, BottomDrag);
+   OMEGA_SCOPE(LocExplicitBottomDrag, ExplicitBottomDrag);
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
    OMEGA_SCOPE(LocSshCell, VCoord->SshCell);
@@ -679,15 +722,15 @@ void Tendencies::computeVelocityTendenciesOnly(
       Pacer::stop("Tend:sfcStressForcing", 2);
    }
 
-   // Compute bottom drag
-   if (LocBottomDrag.Enabled) {
-      Pacer::start("Tend:bottomDrag", 2);
+   // Compute explicit bottom drag
+   if (LocExplicitBottomDrag.Enabled) {
+      Pacer::start("Tend:explicitBottomDrag", 2);
       parallelFor(
           {Mesh->NEdgesAll}, KOKKOS_LAMBDA(int IEdge) {
-             LocBottomDrag(LocNormalVelocityTend, IEdge, NormVelEdge, KECell,
-                           MeanPseudoThickEdge);
+             LocExplicitBottomDrag(LocNormalVelocityTend, IEdge, NormVelEdge,
+                                   KECell, MeanPseudoThickEdge);
           });
-      Pacer::stop("Tend:bottomDrag", 2);
+      Pacer::stop("Tend:explicitBottomDrag", 2);
    }
 
    if (CustomVelocityTend) {

@@ -232,12 +232,15 @@ class OneTwoOneFilter {
 class VelVertMixSetupOnEdge {
  public:
    bool Enabled;
+   bool ImplicitBottomDragEnabled;
+   Real BottomDragCoeff;
    Real LocRhoSw;
 
    VelVertMixSetupOnEdge(const HorzMesh *Mesh, const VertCoord *VCoord);
 
    KOKKOS_FUNCTION void operator()(I4 IEdge, I4 K, I4 KMin, I4 KMax, Real DT,
                                    const Array2DReal &SpecVol,
+                                   const Array2DReal &KineticEnergyCell,
                                    const Array2DReal &PseudoThickCell,
                                    const Array2DReal &VertVisc,
                                    const Array2DReal &NormalVelEdge, Real &G,
@@ -271,7 +274,7 @@ class VelVertMixSetupOnEdge {
       //
       //   G_k = [DT * VertVisc_k^top / (Rho_0 * SpecVol_k^top)]
       //         / PseudoThick_k^top
-      //   H_k = PseudoThick_k
+      //   H_k = PseudoThick_k, plus implicit bottom-drag contribution
       //   X_k = PseudoThick_k * NormVel_k
 
       // Fill values
@@ -289,6 +292,17 @@ class VelVertMixSetupOnEdge {
 
       // Unknown is NormVel^{n+1}.
       X = PseudoThickEdgeK * NormalVelEdge(IEdge, K);
+
+      // Implicit bottom drag boundary condition (applied at the lowest layer)
+      // sqrt(2.0*(0.5*KECell0 + 0.5*KECell1)) = sqrt(KECell0 + KECell1)
+      if (ImplicitBottomDragEnabled && K == KMax) {
+         const Real SpecVolEdgeK =
+             0.5_Real * (SpecVol(JCell0, K) + SpecVol(JCell1, K));
+         const Real VelNormEdge = Kokkos::sqrt(KineticEnergyCell(JCell0, K) +
+                                               KineticEnergyCell(JCell1, K));
+
+         H += DT * BottomDragCoeff * VelNormEdge / (LocRhoSw * SpecVolEdgeK);
+      }
 
       if (K < KMax) {
          const Real PseudoThickEdgeKp1 =
