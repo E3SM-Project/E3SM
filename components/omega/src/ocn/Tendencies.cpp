@@ -269,8 +269,6 @@ void Tendencies::readConfig(Config *OmegaConfig ///< [in] Omega config
                   BottomDragType);
    }
 
-   this->ExplicitBottomDrag.Enabled                      = false;
-   this->VMix->VelVertMixSetup.ImplicitBottomDragEnabled = false;
    this->ExplicitBottomDrag.Coeff                        = BottomDragCoeff;
    this->VMix->VelVertMixSetup.BottomDragCoeff           = BottomDragCoeff;
 
