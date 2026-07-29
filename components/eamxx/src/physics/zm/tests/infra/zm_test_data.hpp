@@ -384,7 +384,7 @@ struct ZmConvMcspTendData : public PhysicsTestData {
   Real *ptend_s, *ptend_q, *ptend_u, *ptend_v;
 
   // Outputs
-  Real *mcsp_dt_out, *mcsp_dq_out, *mcsp_du_out, *mcsp_dv_out, *mcsp_freq, *mcsp_shear, *zm_depth;
+  Real *mcsp_ds_out, *mcsp_dq_out, *mcsp_du_out, *mcsp_dv_out, *mcsp_freq, *mcsp_shear, *zm_depth;
 
   ZmConvMcspTendData(Int pcols_, Int ncol_, Int pver_, Int pverp_, Real ztodt_) :
     PhysicsTestData({
@@ -394,7 +394,7 @@ struct ZmConvMcspTendData : public PhysicsTestData {
       {pcols_}
     },
     {
-      {&state_pmid, &state_pdel, &state_s, &state_q, &state_u, &state_v, &ptend_zm_s, &ptend_zm_q, &ptend_s, &ptend_q, &ptend_u, &ptend_v, &mcsp_dt_out, &mcsp_dq_out, &mcsp_du_out, &mcsp_dv_out},
+      {&state_pmid, &state_pdel, &state_s, &state_q, &state_u, &state_v, &ptend_zm_s, &ptend_zm_q, &ptend_s, &ptend_q, &ptend_u, &ptend_v, &mcsp_ds_out, &mcsp_dq_out, &mcsp_du_out, &mcsp_dv_out},
       {&state_pint},
       {&mcsp_freq, &mcsp_shear, &zm_depth}
     },

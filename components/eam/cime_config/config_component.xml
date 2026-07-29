@@ -120,6 +120,7 @@
       <value compset="1850(?:SOI)?_EAM.*CHEMUCI.*LINOZ.*MAM5"  >1850_eam_chemUCI-Linoz-mam5</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"          >1950_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="1950(?:SOI)?.*CMIP7_EAM"          >1950_eam_CMIP7_chemUCI-Linoz-mam5-vbs</value>
+      <value compset="1950(?:SOI)?.*CMIP7_EAM" grid="a%ne120np4.pg2">1950_eam_CMIP7-HR_chemUCI-Linoz-mam5-vbs</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"          >2010_eam_CMIP6_chemUCI-Linoz-mam5-vbs</value>
       <value compset="2010(?:SOI)?.*CMIP7_EAM"          >2010_eam_CMIP7_chemUCI-Linoz-mam5-vbs</value>

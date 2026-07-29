@@ -48,7 +48,6 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def buildlib(bldroot, installpath, case):
 ###############################################################################
     srcroot   = case.get_value("SRCROOT")
-    gmake_cmd = case.get_value("GMAKE")
     gmake_j   = case.get_value("GMAKE_J")
 
     gptl_dir = os.environ.get("GPTL_ROOT")
@@ -68,8 +67,8 @@ def buildlib(bldroot, installpath, case):
     cmake_cmd = f"cmake {stdargs} -DCOMP_NAME=gptl -DGPTL_DIR={gptl_dir} -DCMAKE_INSTALL_PREFIX={installpath} {gptl_dir}"
     config_if_not_configured("gptl", libdir, cmake_cmd, logger)
 
-    run_bld_cmd_ensure_logging(f"{gmake_cmd} -j {gmake_j}", logger, from_dir=libdir)
-    run_bld_cmd_ensure_logging(f"{gmake_cmd} install", logger, from_dir=libdir)
+    run_bld_cmd_ensure_logging(f"cmake --build . -v -j {gmake_j}", logger, from_dir=libdir)
+    run_bld_cmd_ensure_logging(f"cmake --install .", logger, from_dir=libdir)
 
 ###############################################################################
 def _main(argv, documentation):

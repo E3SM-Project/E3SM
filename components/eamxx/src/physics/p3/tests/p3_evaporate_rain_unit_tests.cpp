@@ -271,7 +271,7 @@ namespace {
     t.run_property();
   }
 
-  TEST_CASE("p3_evaporate_rain_test", "p3_unit_tests")
+  TEST_CASE("p3_evaporate_rain_bfb", "p3_unit_tests")
   {
     using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestEvapSublPrecip;
 

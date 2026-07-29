@@ -7,11 +7,11 @@
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 
 #include "share/io/eamxx_output_manager.hpp"
-#include "share/io/scorpio_input.hpp"
 
-#include "share/field/field_utils.hpp"
 #include "share/data_managers/grids_manager.hpp"
 #include "share/data_managers/field_manager.hpp"
+#include "share/field/field_reader.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -158,13 +158,12 @@ TEST_CASE("dyn_grid_io")
 
   // AtmosphereInput expects a FM on a single grid, create
   // a phys FM and add fields.
-  auto fm_phys = std::make_shared<FieldManager>(phys_grid);
+  std::vector<Field> fields_phys;
+  auto phys_gids = phys_grid->get_partitioned_dim_gids();
   for (auto& f_it : fm->get_repo(phys_grid->name())) {
-    fm_phys->add_field(*f_it.second);
+    fields_phys.push_back(*f_it.second);
   }
-  AtmosphereInput input (in_params,fm_phys);
-  input.read_variables();
-  input.finalize();
+  read_fields (filename,fields_phys,phys_gids,comm);
 
   // Compare against ctrl fields
   for (const auto& fn : fnames) {

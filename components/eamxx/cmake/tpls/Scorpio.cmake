@@ -45,6 +45,9 @@ macro (CreateScorpioTargets)
     # This is the default, but just in case scorpio changes it
     option (PIO_ENABLE_FORTRAN "Enable the Fortran library builds" ON)
 
+    # Use malloc (instead of the custom bget) for mallocs
+    option (PIO_USE_MALLOC "Use native malloc (instead of bget package)" ON)
+
     add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
 
     set (SCORPIO_Fortran_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/externals/scorpio/src/flib CACHE INTERNAL "SCORPIO Fortran include dirs")

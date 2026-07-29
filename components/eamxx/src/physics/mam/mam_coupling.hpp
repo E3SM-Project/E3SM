@@ -416,7 +416,7 @@ inline size_t init_buffer(const ATMBufferManager &buffer_manager,
     mem += view_2d_min_mid_ptrs[i]->size();
   }
 
-  uview_2d *view_2d_min_scratch_ptrs[buffer.num_2d_scratch];
+  uview_2d *view_2d_min_scratch_ptrs[Buffer::max_num_2d_scratch];
   for(int i = 0; i < buffer.num_2d_scratch; ++i) {
     view_2d_min_scratch_ptrs[i]  = &buffer.scratch[i];
     *view_2d_min_scratch_ptrs[i] = view_2d(mem, ncol, nlev);

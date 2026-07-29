@@ -205,12 +205,14 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
 #endif
+    use mpi
     character(len=*), intent(in) :: NLFilename  ! namelist filename
 #else
   subroutine readnl(par)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
 #endif
+    use mpi
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -1194,6 +1196,9 @@ end if
        write(iulog,*)"readnl: hv_theta_thresh   = ",hv_theta_thresh
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
+       endif
+       if (theta_advect_form==2 .and. pgrad_correction /= 0) then
+          call abortmp("theta_advect_form=2 (splitform) should not be used with pgrad_correction/=0")
        endif
        
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg

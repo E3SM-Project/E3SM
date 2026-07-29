@@ -20,7 +20,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   const ZmRuntimeOpt& runtime_opt,
   const Int& pver, // number of mid-point vertical levels
   const Int& pverp, // number of interface vertical levels
-  const Real& ztodt, // 2x physics time step
+  const Real& ztodt, // physics time step
   const Int& jctop, // cloud top level indices
   const uview_1d<const Real>& state_pmid, // physics state mid-point pressure
   const uview_1d<const Real>& state_pint, // physics state interface pressure
@@ -37,7 +37,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   const uview_1d<Real>& ptend_u, // output tendency of u-wind
   const uview_1d<Real>& ptend_v, // output tendency of v-wind
   // Outputs
-  const uview_1d<Real>& mcsp_dt_out, // final MCSP tendency for DSE
+  const uview_1d<Real>& mcsp_ds_out, // final MCSP tendency for DSE
   const uview_1d<Real>& mcsp_dq_out, // final MCSP tendency for qv
   const uview_1d<Real>& mcsp_du_out, // final MCSP tendency for u wind
   const uview_1d<Real>& mcsp_dv_out, // final MCSP tendency for v wind
@@ -78,7 +78,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
     mcsp_tend_q(k) = 0;
     mcsp_tend_u(k) = 0;
     mcsp_tend_v(k) = 0;
-    mcsp_dt_out(k) = 0;
+    mcsp_ds_out(k) = 0;
     mcsp_dq_out(k) = 0;
     mcsp_du_out(k) = 0;
     mcsp_dv_out(k) = 0;
@@ -177,7 +177,7 @@ void Functions<S,D>::zm_conv_mcsp_tend(
   Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, jctop, pver),
     [&] (const Int& k, bool& local_freq) {
       // subtract mass weighted average tendencies for energy/mass conservation
-      mcsp_dt_out(k) = mcsp_tend_s(k) - mcsp_avg_tend_s;
+      mcsp_ds_out(k) = mcsp_tend_s(k) - mcsp_avg_tend_s;
       mcsp_dq_out(k) = mcsp_tend_q(k) - mcsp_avg_tend_q;
       mcsp_du_out(k) = mcsp_tend_u(k);
       mcsp_dv_out(k) = mcsp_tend_v(k);
@@ -185,17 +185,17 @@ void Functions<S,D>::zm_conv_mcsp_tend(
       // make sure kinetic energy correction is added to DSE tendency
       // to conserve total energy whenever momentum tendencies are calculated
       if (do_mcsp_u || do_mcsp_v) {
-        mcsp_dt_out(k) = mcsp_dt_out(k) - mcsp_avg_tend_k;
+        mcsp_ds_out(k) = mcsp_ds_out(k) - mcsp_avg_tend_k;
       }
 
       // update output tendencies
-      if (do_mcsp_t) ptend_s(k) = ptend_s(k) + mcsp_dt_out(k);
+      if (do_mcsp_t) ptend_s(k) = ptend_s(k) + mcsp_ds_out(k);
       if (do_mcsp_q) ptend_q(k) = ptend_q(k) + mcsp_dq_out(k);
       if (do_mcsp_u) ptend_u(k) = ptend_u(k) + mcsp_du_out(k);
       if (do_mcsp_v) ptend_v(k) = ptend_v(k) + mcsp_dv_out(k);
 
       // adjust units for diagnostic outputs
-      if (do_mcsp_t) mcsp_dt_out(k) = mcsp_dt_out(k) / PC::Cpair.value;
+      if (do_mcsp_t) mcsp_ds_out(k) = mcsp_ds_out(k) / PC::Cpair.value;
 
       // update frequency if MCSP contributes any tendency in the column
       if (std::abs(mcsp_tend_s(k)) > 0 || std::abs(mcsp_tend_q(k)) > 0 ||

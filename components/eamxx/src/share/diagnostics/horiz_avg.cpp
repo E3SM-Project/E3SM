@@ -59,7 +59,7 @@ void HorizAvg::initialize_impl()
     // the area sum, and set weight = area/sum(area), so that we avoid
     // one loop at runtime.
     // NOTE: clone m_area, since the field from the grid is read-only
-    m_area = m_area.clone("scaled_area");
+    m_area = m_area.clone("scaled_area", CloneFlags::CopyData);
 
     m_denom = m_area.subfield(COL,0).clone(); // This should create a 0d field
     m_ones = m_area.clone("ones");

@@ -32,6 +32,14 @@ def buildlib(bldroot, installpath, case):
     for item in it:
         cmake_args_dict[item] = next(it)
 
+    if case.get_value("EXTRA_DEBUG"):
+        expect(case.get_value("DEBUG"), "EXTRA_DEBUG is On but DEBUG is Off? Makes no sense.")
+
+        # Extension point for EXTRA_DEBUG if we want to change additional cmake
+        # settings. The comments below provide an example.
+        # cmake_args_dict["SCREAM_FPE"] = "True"
+        # cmake_args_dict["SCREAM_PACK_SIZE"] = "1"
+
     cmake_args = ""
     for k,v in cmake_args_dict.items():
         cmake_args += f" -D{k}={v}"

@@ -30,21 +30,6 @@ endfunction(CreateADUnitTest)
 #                       The string _np${GEN_TEST_NRANKS}_omp1 will be attached to this
 
 function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BASE_NAME)
-  # Get names of src and tgt files
-  set (SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE})
-  set (TGT_FILE ${SCREAM_BASELINES_DIR}/data/${OUT_FILE})
-
-  # Add comparison test using the CprncTest.cmake scritp shipped by EAMxx
-  add_test (
-    NAME ${TEST_BASE_NAME}_baseline_cmp
-    COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-  set_tests_properties(
-    ${TEST_BASE_NAME}_baseline_cmp
-    PROPERTIES
-    LABELS baseline_cmp
-    FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
-
   # Add the test that generated the baseline to the baseline_gen label, so scripts/test-all-eamxx
   # can run it when it has to generate baselines
   if (TEST ${TEST_BASE_NAME}_np${GEN_TEST_NRANKS})
@@ -61,12 +46,31 @@ function (CreateBaselineTest TEST_BASE_NAME GEN_TEST_NRANKS OUT_FILE FIXTURES_BA
   endif()
   set_tests_properties (${GEN_TEST_FULL_NAME} PROPERTIES LABELS baseline_gen)
 
-  # test-all-eamxx will read this file to get the list of baseline nc files to
-  # copy into the baseline dir
-  file (APPEND ${SCREAM_TEST_OUTPUT_DIR}/baseline_list
-    "${SRC_FILE}\n"
-  )
+  # Get names of src and tgt files
+  set (SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE})
+  set (TGT_FILE ${SCREAM_BASELINES_DIR}/data/${OUT_FILE})
 
+  # If generating, add test that copies files into baseline dir. Otherwise,add cprnc test
+  if (SCREAM_ONLY_GENERATE_BASELINES)
+    add_test (NAME ${TEST_BASE_NAME}_baseline_gen
+      COMMAND ${CMAKE_COMMAND} -E copy "${SRC_FILE}" "${TGT_FILE}"
+    )
+    set_tests_properties(
+      ${TEST_BASE_NAME}_baseline_gen
+      PROPERTIES
+      LABELS "baseline_gen"
+      FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
+  else()
+    add_test (
+      NAME ${TEST_BASE_NAME}_baseline_cmp
+      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+      set_tests_properties(
+        ${TEST_BASE_NAME}_baseline_cmp
+        PROPERTIES
+        LABELS "baseline_cmp;baseline_gen"
+        FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_np${TEST_RANK_END}_omp1)
+  endif()
 endfunction()
 
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})

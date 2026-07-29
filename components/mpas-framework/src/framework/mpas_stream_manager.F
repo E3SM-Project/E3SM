@@ -4337,7 +4337,10 @@ module mpas_stream_manager
                         call mpas_writeStreamAtt(stream % stream, itr % memberName, intAtt, syncVal=.false., ierr=local_ierr)
                     else if ( itr % dataType == MPAS_POOL_CHARACTER ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, charAtt)
-                        call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, syncVal=.false., ierr=local_ierr)
+                        local_ierr = MPAS_STREAM_NOERR
+                        if (len_trim(charAtt) > 0) then
+                            call mpas_writeStreamAtt(stream % stream, itr % memberName, charAtt, syncVal=.false., ierr=local_ierr)
+                        end if
                     else if ( itr % dataType == MPAS_POOL_LOGICAL ) then
                         call mpas_pool_get_config(stream % att_pool, itr % memberName, logAtt)
                         if (logAtt) then

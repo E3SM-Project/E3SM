@@ -988,6 +988,7 @@ CONTAINS
       mct_field = mct_string_toChar(mctOStr)
       tagname = trim(mct_field)//C_NULL_CHAR
       call moab_set_tag_from_av(tagname, o2x, index_list, mpoid, data, lsize)
+      call mct_string_clean(mctOStr) ! mct_list_get allocates a new string each iteration; free it here to avoid a per-timestep leak
     enddo
     call mct_list_clean(temp_list)
     deallocate(data)

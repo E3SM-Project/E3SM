@@ -91,8 +91,7 @@ TEST_CASE("atm_backtend") {
   qc.get_header().get_tracking().update_time_stamp(ts);
   for (int itest = 2; itest < ntests; itest++) {
     // Save current qc before advancing
-    auto qc_old = qc.clone();
-    qc_old.deep_copy(qc);
+    auto qc_old = qc.clone(CloneFlags::CopyData);
     qc_old.sync_to_host();
 
     // init_timestep: FieldPrev stores current qc; FieldOverDt saves start ts
@@ -116,11 +115,11 @@ TEST_CASE("atm_backtend") {
     auto qc_old_v = qc_old.get_view<Real**, Host>();
     auto res_v    = result.get_view<Real**, Host>();
 
-    auto manual = qc.clone();
+    auto manual = qc.clone(CloneFlags::CopyData);
     manual.update(qc_old,-1,1);
     manual.scale(1/a_day);
 
-    auto diff = result.clone();
+    auto diff = result.clone(CloneFlags::CopyData);
     diff.update(manual,-1,1);
     REQUIRE_THAT (inf_norm(diff).as<Real>(), Catch::WithinAbs(0,tol));
   }

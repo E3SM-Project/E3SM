@@ -1254,6 +1254,8 @@ CONTAINS
    end do
 
    deallocate(varid_x2a, varid_a2x)
+   deallocate(tmp)
+   call mct_list_clean(temp_list)
 
    call pio_freedecomp(File,iodesc)
    call cam_pio_closefile(file)
@@ -1468,9 +1470,9 @@ CONTAINS
     call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
          infodata=infodata)
 
-    appname="ATM_PHYS"//C_NULL_CHAR
+    appname="ATM_PHYS"
     ATM_PHYS = 200 + ATMID !
-    ierr = iMOAB_RegisterApplication(appname, mpicom_atm, ATM_PHYS, mphaid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_atm, ATM_PHYS, mphaid)
     if (ierr > 0 )  &
        call endrun('Error: cannot register moab app for atm physics')
     if(masterproc) then

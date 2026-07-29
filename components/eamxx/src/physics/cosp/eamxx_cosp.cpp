@@ -158,6 +158,14 @@ void Cosp::initialize_impl (const RunType /* run_type */)
   auto cosp_prs_bnds_f = m_grid->create_geometry_data("cosp_prs_bnds", cosp_prs_bnds_layout, Pa);
   auto cosp_cth_bnds_f = m_grid->create_geometry_data("cosp_cth_bnds", cosp_cth_bnds_layout, m);
 
+  // In IO, make the output of this geo data conditional to vars using it being present in the stream
+  cosp_tau_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_tau"));
+  cosp_prs_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_prs"));
+  cosp_cth_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_cth"));
+  cosp_tau_bnds_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_tau"));
+  cosp_prs_bnds_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_prs"));
+  cosp_cth_bnds_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("cosp_cth"));
+
   // Retrieve bin centers and edges from the Fortran COSP interface (mod_cosp_config).
   // The F90 arrays for edges have shape (2, nbins) in Fortran column-major order, so the
   // flat memory layout is [lower_0, upper_0, lower_1, upper_1, ...], which maps directly
@@ -205,7 +213,7 @@ void Cosp::run_impl (const double dt)
   // Make sure cosp frequency is multiple of rad frequency?
 
   // Compare frequency in steps with current timestep
-  auto update_cosp = cosp_do(cosp_freq_in_steps, end_of_step_ts().get_num_steps());
+  auto update_cosp = cosp_do(cosp_freq_in_steps, start_of_step_ts().get_num_steps());
 
   // Call COSP wrapper routines
   if (update_cosp) {

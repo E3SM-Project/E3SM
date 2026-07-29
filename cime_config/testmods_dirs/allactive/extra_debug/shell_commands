@@ -1,0 +1,2 @@
+./xmlchange DEBUG=TRUE
+./xmlchange EXTRA_DEBUG=TRUE

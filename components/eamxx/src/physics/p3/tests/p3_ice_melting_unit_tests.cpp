@@ -121,7 +121,7 @@ void ice_melting_bfb() {
 
 namespace {
 
-TEST_CASE("p3_ice_melting_test", "[p3_ice_melting_test]") {
+TEST_CASE("p3_ice_melting_bfb", "[p3_ice_melting_test]") {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3IceMelting;
 
   T t;

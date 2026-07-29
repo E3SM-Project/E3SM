@@ -11,6 +11,7 @@ target_include_directories (eamxx_utils PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/modu
 
 target_link_libraries (eamxx_utils PUBLIC
   eamxx_core
+  eamxx_scorpio_interface
   csm_share # for shr_reprosum_mod
   ekat::Logging
   ekat::Pack)

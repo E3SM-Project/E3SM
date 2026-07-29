@@ -226,6 +226,7 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
+  integer, public            :: fates_lu_transition_logic = -9          ! controls logic around transition between land use classes
   logical, public            :: use_fates_managed_fire = .false.        ! true => turn on managed fire
   character(len=256), public :: fates_harvest_mode = ''                 ! five different harvest modes; see namelist_definitions
   character(len=256), public :: fates_photosynth_acclimation = ''       ! nonacclimating, kumarathunge2019
@@ -244,6 +245,7 @@ module elm_varctl
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
+  logical, public            :: use_fates_dbh_init = .false.            ! true => initialize cohorts from dbh (nocomp only)
   logical, public            :: use_fates_nocomp = .false.              ! true => no competition mode
   logical, public            :: use_fates_sp = .false.                  ! true => FATES satellite phenology mode
   logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode
@@ -253,9 +255,8 @@ module elm_varctl
   character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
-  integer, public            :: fates_parteh_mode = -9                  ! 1 => carbon only
-                                                                        ! 2 => C+N+P (not enabled yet)
-                                                                        ! no others enabled
+  character(len=256), public :: fates_parteh_mode = ''                  ! carbon_onoly => carbon only
+                                                                        ! cnp => Carbon+Nitrogen+Phosphorus
   integer, public            :: fates_seeddisp_cadence = iundef         ! 0 => no seed dispersal across gridcells
                                                                         ! 1, 2, 3  => daily, monthly, or yearly seed dispersal
 
