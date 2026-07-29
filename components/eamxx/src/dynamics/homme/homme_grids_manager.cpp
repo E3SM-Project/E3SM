@@ -1,7 +1,6 @@
 #include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
-#include "dynamics/homme/physics_dynamics_remapper.hpp"
 
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
@@ -14,7 +13,6 @@
 #include "share/field/field_reader.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/remap/inverse_remapper.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/physics/physics_constants.hpp"
 
