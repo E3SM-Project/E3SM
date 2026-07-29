@@ -1174,6 +1174,16 @@
 
     <!--=====================================================================-->
     <!-- INCITE 2026 CONUS-RRM -->
+    <model_grid alias="conus1024x2v1pg2_conus1024x2v1pg2">
+      <grid name="atm">ne0np4_conus1024x2v1.pg2</grid>
+      <grid name="lnd">ne0np4_conus1024x2v1.pg2</grid>
+      <grid name="ocnice">ne0np4_conus1024x2v1.pg2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>RRSwISC6to18E3r5</mask>
+    </model_grid>
+
     <model_grid alias="conus1024x2v1pg2_RRSwISC6to18E3r5">
       <grid name="atm">ne0np4_conus1024x2v1.pg2</grid>
       <grid name="lnd">ne0np4_conus1024x2v1.pg2</grid>
