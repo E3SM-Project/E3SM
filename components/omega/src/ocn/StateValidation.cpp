@@ -287,11 +287,20 @@ void validateOceanState(const OceanState *State, const AuxiliaryState *AuxState,
           std::to_string(NaNs) + " NaNs and " + std::to_string(OOBs) +
           " OOBs." + "See critical messages above for details.");
    } else if ((NaNs + OOBs) > 0) {
-      LOG_CRITICAL(
-          "StateValidation: Ocean state validation failed with {} "
-          "NaNs and {} OOBs. AbortOnOOB and AbortOnNan are both false; "
-          "continuing after logging.",
-          NaNs, OOBs);
+      // Only report the flags that are actually suppressing an abort, i.e.
+      // those corresponding to the issues that were detected
+      std::string Flags;
+      if (NaNs > 0) {
+         Flags = "AbortOnNan is false";
+      }
+      if (OOBs > 0) {
+         if (!Flags.empty())
+            Flags += " and ";
+         Flags += "AbortOnOOB is false";
+      }
+      LOG_CRITICAL("StateValidation: Ocean state validation failed with {} "
+                   "NaNs and {} OOBs. {}; continuing after logging.",
+                   NaNs, OOBs, Flags);
    }
 }
 
