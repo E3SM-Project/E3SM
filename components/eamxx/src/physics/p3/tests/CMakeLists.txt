@@ -46,27 +46,11 @@ else ()
   set (FORCE_RUN_DIFF_FAILS "")
 endif()
 
-# All tests should understand the same baseline args
-if (SCREAM_ENABLE_BASELINE_TESTS)
-  if (SCREAM_ONLY_GENERATE_BASELINES)
-    set(BASELINE_FILE_ARG "-g -b ${SCREAM_BASELINES_DIR}/data")
-    # We don't want to do thread spreads when generating. That
-    # could cause race conditions in the file system.
-    set(P3_THREADS "${SCREAM_TEST_MAX_THREADS}")
-  else()
-    set(BASELINE_FILE_ARG "-c -b ${SCREAM_BASELINES_DIR}/data")
-    set(P3_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
-  endif()
-else()
-  set(BASELINE_FILE_ARG "-n") # no baselines
-  set(P3_THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC})
-endif()
-
 CreateUnitTest(p3_tests
   SOURCES ${P3_TESTS_SRCS}
   LIBS p3 p3_test_infra
-  EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-  THREADS ${P3_THREADS}
+  EXE_ARGS "--args ${SCREAM_BASELINE_FILE_ARG}"
+  THREADS ${SCREAM_BASELINE_TEST_THREADS}
   LABELS "p3;physics;baseline_gen;baseline_cmp")
 
 # Make sure that a diff in the two implementation triggers a failed test (in debug only)
@@ -75,7 +59,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateUnitTest(p3_tests_fail
     SOURCES p3_rain_sed_unit_tests.cpp
     LIBS p3 p3_test_infra
-    EXE_ARGS "--args ${BASELINE_FILE_ARG}"
+    EXE_ARGS "--args ${SCREAM_BASELINE_FILE_ARG}"
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     LABELS p3 physics fail
     ${FORCE_RUN_DIFF_FAILS}
@@ -92,8 +76,8 @@ if (NOT SCREAM_P3_SMALL_KERNELS AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(p3_sk_tests
     SOURCES p3_main_unit_tests.cpp
     LIBS p3_sk p3_test_infra
-    EXE_ARGS "--args ${BASELINE_FILE_ARG}"
-    THREADS ${P3_THREADS}
+    EXE_ARGS "--args ${SCREAM_BASELINE_FILE_ARG}"
+    THREADS ${SCREAM_BASELINE_TEST_THREADS}
     LABELS p3_sk physics baseline_cmp
   )
 endif()
@@ -104,7 +88,7 @@ CreateUnitTest(p3_run_and_cmp
   LIBS p3 p3_test_infra
   EXCLUDE_MAIN_CPP
   THREADS ${SCREAM_TEST_MAX_THREADS}
-  EXE_ARGS "${BASELINE_FILE_ARG}"
+  EXE_ARGS "${SCREAM_BASELINE_FILE_ARG}"
   LABELS p3 physics baseline_gen baseline_cmp
 )
 
@@ -119,7 +103,7 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     LIBS p3 p3_test_infra
     COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
     THREADS ${SCREAM_TEST_MAX_THREADS}
-    EXE_ARGS "${BASELINE_FILE_ARG}"
+    EXE_ARGS "${SCREAM_BASELINE_FILE_ARG}"
     LABELS p3 physics fail
     EXCLUDE_MAIN_CPP
     ${FORCE_RUN_DIFF_FAILS}

@@ -40,13 +40,13 @@
 		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
 	</packages>
 	<var_struct name="conservationCheckAM" time_levs="1" packages="conservationCheckAMPKG">
-		<var name="performConservationPrecompute" type="integer" dimensions="" units=""
+		<var name="performConservationPrecompute" type="integer" dimensions="" units="1"
 			description="Perform the conservation precompute" default_value="1"
 		/>
-		<var name="nAccumulate" type="integer" dimensions="" units=""
+		<var name="nAccumulate" type="integer" dimensions="" units="1"
 			description="Number of time-steps accumulated" default_value="1"
 		/>
-		<var name="cellInHemisphere" type="integer" dimensions="nHemispheres nCells" units=""
+		<var name="cellInHemisphere" type="integer" dimensions="nHemispheres nCells" units="1"
 			description="Hemisphere flag"
 		/>
 	</var_struct>
@@ -307,7 +307,7 @@
 		<var name="relativeErrorBounds"
 		     type="real"
 		     dimensions="Time"
-		     units=""
+		     units="1"
 		     description="accumulated relative error bounds"
 		/>
 		<var name="initialCarbon"

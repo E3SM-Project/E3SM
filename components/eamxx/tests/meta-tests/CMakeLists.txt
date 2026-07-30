@@ -24,6 +24,14 @@ EkatCreateUnitTest(test_fail
   LABELS fail
 )
 
+EkatCreateUnitTest(baseline_test
+  SOURCES baseline_test.cpp
+  EXCLUDE_MAIN_CPP
+  THREADS ${SCREAM_TEST_MAX_THREADS}
+  EXE_ARGS "${SCREAM_BASELINE_FILE_ARG}"
+  LABELS baseline_gen baseline_cmp
+)
+
 # Tests to ensure the testing infrastructure is correctly spreading
 # concurrent tests across the available resources
 if (SCREAM_TEST_MAX_TOTAL_THREADS GREATER_EQUAL 16)

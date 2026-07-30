@@ -183,7 +183,7 @@ void print_field_hyperslab (const Field& f,
               for (int l=0; l<layout.dim(3); ++l) {
                 dims_str[dims_left[3]] = std::to_string(l);
                 out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
-                for (int m=0; m<layout.dim(3); ++m) {
+                for (int m=0; m<layout.dim(4); ++m) {
                   if (m%max_per_line==0) {
                     out << "\n    ";
                   }

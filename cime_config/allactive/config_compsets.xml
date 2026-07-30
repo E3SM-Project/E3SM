@@ -569,9 +569,9 @@
   <entry id="RUN_STARTDATE">
     <values>
       <value  compset="20TR_EAM">1850-01-01</value>
-      <value  compset="SSP585.*_EAM">2015-01-01</value>
-      <value  compset="SSP370.*_EAM">2015-01-01</value>
-      <value  compset="SSP245.*_EAM">2015-01-01</value>
+      <value  compset="SSP585[^_]*_EAM">2015-01-01</value>
+      <value  compset="SSP370[^_]*_EAM">2015-01-01</value>
+      <value  compset="SSP245[^_]*_EAM">2015-01-01</value>
     </values>
   </entry>
 

@@ -271,6 +271,8 @@ void RRTMGPRadiation::create_requests() {
       scorpio::release_file(fname);
 
       bounds.sync_to_dev();
+      // Only output this geo data when the associated dim is present in the output file
+      bounds.get_header().set_extra_data("io_output_if_dim_exists", prefix + "band");
       m_grid->set_geometry_data(bounds);
     }
 
@@ -285,6 +287,8 @@ void RRTMGPRadiation::create_requests() {
         bands_h(i) = (bounds_h(i,0) + bounds_h(i,1)) / 2;
       }
       bands.sync_to_dev();
+      // Only output this geo data when the associated dim is present in the output file
+      bands.get_header().set_extra_data("io_output_if_dim_exists", prefix + "band");
       m_grid->set_geometry_data(bands);
     }
   }
@@ -614,8 +618,6 @@ void RRTMGPRadiation::run_impl (const double dt) {
   auto d_dtau105 = get_field_out("dtau105").get_view<Real**>();
   auto d_sunlit = get_field_out("sunlit_mask").get_view<int*>();
 
-  Kokkos::deep_copy(d_dtau067,0.0);
-  Kokkos::deep_copy(d_dtau105,0.0);
   // Outputs for AeroCom cloud-top diagnostics
   auto d_T_mid_at_cldtop = get_field_out("T_mid_at_cldtop").get_view<Real *>();
   auto d_p_mid_at_cldtop = get_field_out("p_mid_at_cldtop").get_view<Real *>();

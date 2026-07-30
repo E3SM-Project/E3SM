@@ -20,7 +20,14 @@ using soilErodibilityFunc =
 MAMSrfOnlineEmiss::MAMSrfOnlineEmiss(const ekat::Comm &comm,
                                      const ekat::ParameterList &params)
     : MAMGenericInterface(comm, params) {
-  // FIXME: Do we want to read dust emiss factor from the namelist??
+
+  // FIXME: temporary solution to fix the sp test fails for the PR
+  double dbl_dust_emis_scale_factor = m_params.get<double>("srf_emis_scale_factor_for_dust", 1.0);
+  dust_emis_scale_factor = static_cast<Real>(dbl_dust_emis_scale_factor);
+
+  double dbl_seasalt_emis_scale_factor = m_params.get<double>("srf_emis_scale_factor_for_seasalt", 1.0);
+  seasalt_emis_scale_factor = static_cast<Real>(dbl_seasalt_emis_scale_factor);
+
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants.
    */
@@ -296,6 +303,9 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   set_ranges_process(ranges_emissions);
   add_interval_checks();
 
+  // Get dust emission scheme from namelist
+  auto dust_emis_scheme = m_params.get<int>("dust_emis_scheme", 1);
+
   // ---------------------------------------------------------------
   // Input fields read in from IC file, namelist or other processes
   // ---------------------------------------------------------------
@@ -336,11 +346,18 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Read Soil erodibility data
   //-----------------------------------------------------------------
-  // This data is time-independent, we read all data here for the
-  // entire simulation
-  soilErodibilityFunc::update_soil_erodibility_data_from_file(
-      serod_dataReader_, *serod_horizInterp_,
-      soil_erodibility_);  // output
+  if (dust_emis_scheme == 1) {
+    // This data is time-independent, we read all data here for the
+    // entire simulation   
+    soilErodibilityFunc::update_soil_erodibility_data_from_file(
+        serod_dataReader_, *serod_horizInterp_,
+        soil_erodibility_);  // output
+  } else if (dust_emis_scheme == 2) {
+    // For dust emission scheme 2, override soil erodibility to 1
+    auto soil_erod_ones = view_1d("soil_erod_ones", ncol_);
+    Kokkos::deep_copy(soil_erod_ones, 1.0);
+    soil_erodibility_ = soil_erod_ones;
+  }
 
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
@@ -429,6 +446,8 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   compute_online_dust_nacl_emiss(ncol_, nlev_, ocnfrac, sst, u_wind, v_wind,
                                  dstflx, mpoly, mprot, mlip, soil_erodibility,
                                  z_mid,
+                                 dust_emis_scale_factor,
+                                 seasalt_emis_scale_factor,
                                  // output
                                  constituent_fluxes);
   Kokkos::fence();

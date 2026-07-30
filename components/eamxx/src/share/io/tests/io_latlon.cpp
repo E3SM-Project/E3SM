@@ -1,9 +1,9 @@
 #include <catch2/catch.hpp>
 #include <memory>
 
-#include "share/io/scorpio_input.hpp"
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/grid/point_grid.hpp"
+#include "share/field/field_reader.hpp"
 
 #include <ekat_test_utils.hpp>
 
@@ -14,18 +14,25 @@ namespace scream {
 inline std::shared_ptr<AbstractGrid>
 create_grid(const ekat::Comm& comm, const std::string& map_file, const std::string& name, bool src)
 {
+  auto COL = FieldTag::Column;
+
   // Note: map files are 1-based, so create pt grid with 1-based gids
   auto deg = ekat::units::none.rename("degrees");
   std::string suffix = src ? "_a" : "_b";
   int ncols = scorpio::get_dimlen(map_file,"n"+suffix);
   auto grid = create_point_grid(name,ncols,1,comm,1);
-
   auto lat = grid->create_geometry_data("lat",grid->get_2d_scalar_layout(),deg);
   auto lon = grid->create_geometry_data("lon",grid->get_2d_scalar_layout(),deg);
-  auto io_grid = grid->clone(grid->name(),true);
-  io_grid->reset_field_tag_name(FieldTag::Column,"n"+suffix);
-  AtmosphereInput reader(map_file,io_grid,std::vector<Field>{lat.alias("yc"+suffix),lon.alias("xc"+suffix)});
-  reader.read_variables();
+
+  // Use temp fields for IO, so we can rename ncol to n_SUFFIX, and lat/lon to yc/xc_SUFFIX
+  std::map<FieldTag,std::string> io_dims = {
+    {COL,"n"+suffix}
+  };
+  auto io_gids = grid->get_partitioned_dim_gids().alias("gids",io_dims);
+  auto io_lat  = lat.alias("yc"+suffix,io_dims);
+  auto io_lon  = lon.alias("xc"+suffix,io_dims);
+  read_fields(map_file,{io_lat,io_lon},io_gids,comm);
+
   return grid;
 }
 

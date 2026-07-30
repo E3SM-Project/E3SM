@@ -84,8 +84,9 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
                                          4, 4, ncols, import_data.data(), import_names[0], import_cpl_indices.data(),
                                          import_vec_comps.data(), import_constant_multiple.data(), do_import_during_init.data());
   ad.initialize_fields ();
-  ad.initialize_output_managers ();
   ad.initialize_atm_procs ();
+  ad.reset_accumulated_fields();
+  ad.initialize_output_managers ();
 
   if (atm_comm.am_i_root()) {
     printf("Start time stepping loop...       [  0%%]\n");

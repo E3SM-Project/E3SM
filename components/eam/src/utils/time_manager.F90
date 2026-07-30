@@ -42,6 +42,7 @@ module time_manager
       timemgr_get_calendar_cf,  &! return cf standard for calendar type
       is_end_curr_day,          &! return true on last timestep in current day
       is_end_curr_month,        &! return true on last timestep in current month
+      is_start_curr_month,      &! return true on first timestep in current month
       is_last_step,             &! return true on last timestep
       is_perpetual,             &! return true if perpetual calendar is in use
       timemgr_init_restart,     &! initialize the pio(netcdf) restart file for writting
@@ -1134,6 +1135,23 @@ logical function is_end_curr_month()
    is_end_curr_month = (day == 1  .and.  tod == 0)
 
 end function is_end_curr_month
+!=========================================================================================
+
+logical function is_start_curr_month()
+! Return true if current timestep is first of the current month
+! Based on is_end_curr_month in time_manager.F90
+
+   ! Local variables
+   integer :: &
+      yr,   &! year
+      mon,  &! month
+      day,  &! day of month
+      tod    ! time of day (seconds past 00Z)
+   !--------------------------------------------------------------------------------------
+
+   call get_prev_date(yr, mon, day, tod)
+   is_start_curr_month = (day == 1  .and.  tod == 0)
+end function is_start_curr_month
 !=========================================================================================
 
 logical function is_first_step()

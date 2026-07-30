@@ -204,10 +204,9 @@ auto Field::get_ND_view () const
       num_values = fl.dim(i)==0 ? 0 : num_values/fl.dim(i);
     }
   }
-  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
+  auto ptr = get_internal_view_data<T,HD>();
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
-
   return ret_type (ptr,kl);
 }
 
@@ -235,8 +234,8 @@ auto Field::get_ND_view () const
     num_values /= fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
-  auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
+  auto ptr = get_internal_view_data<T,HD>();
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
   return ret_type (ptr,kl);
 }

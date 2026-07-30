@@ -1,0 +1,13 @@
+SRCDIR=`./xmlquery SRCROOT --value`
+CASEDIR=`./xmlquery CASEROOT --value`
+FATESDIR=$SRCDIR/components/elm/src/external_models/fates/
+
+COPY_FATES_PARAMFILE=$CASEDIR/fates_params_local.json
+
+echo "copying "$FATEDIR/parameter_files/fates_params_default.json" to "$COPY_FATES_PARAMFILE
+
+cp $FATESDIR/parameter_files/fates_params_default.json $COPY_FATES_PARAMFILE
+
+$FATESDIR/tools/modify_fates_paramfile.py --overwrite --fin $COPY_FATES_PARAMFILE --param fates_recruit_init_dbh --values 5 --indices all
+
+echo "fates_paramfile = '$COPY_FATES_PARAMFILE'" >> $CASEDIR/user_nl_elm

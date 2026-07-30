@@ -106,6 +106,12 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <compset>
+      <alias>F2010xx-ZM-CICE</alias> <!-- Coupled land-atm compset (using EAmxx+ZM), 2010 initial conditions -->
+      <lname>2010_SCREAM%ZM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
   <entries>
 
     <entry id="RUN_STARTDATE">

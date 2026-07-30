@@ -4,11 +4,14 @@
 #include "share/physics/physics_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/core/eamxx_types.hpp"
+#include "share/grid/abstract_grid.hpp"
 
 #include <ekat_pack_kokkos.hpp>
 #include <ekat_workspace.hpp>
 #include <ekat_reduction_utils.hpp>
 #include <ekat_math_utils.hpp>
+
+#include <iostream>
 
 namespace scream {
 namespace zm {
@@ -25,7 +28,7 @@ struct Functions {
   using Scalar = ScalarT;
   using Device = DeviceT;
 
-  using Pack     = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
+  using Pack    = ekat::Pack<Scalar,SCREAM_PACK_SIZE>;
   using IntPack = ekat::Pack<Int,SCREAM_PACK_SIZE>;
 
   using PF  = scream::PhysicsFunctions<DefaultDevice>;
@@ -59,102 +62,85 @@ struct Functions {
   // ---------- ZM constants ---------
   //
   struct ZMC {
+    static constexpr int nwind = 2;  // number of wind components in tmp_winds
     // This value is slightly high, but it seems to be the value for the
     // steam point of water originally (and most frequently) used in the
     // Goff & Gratch scheme.
-    static inline constexpr Real tboil = 373.16;
-
-    static inline constexpr Real omeps = 1 - PC::ep_2.value;
-
-    static inline constexpr Real pref = 1000;
-
-    static inline constexpr Real cpwv = 1.810e3; // specific heat of water vapor (J/K/kg)
-
-    static inline constexpr Int LOOPMAX = 100; // Max number of iteration loops for invert_entropy
-
-    static inline constexpr Real tol_coeff = 0.001; // tolerance coefficient
-
-    static inline constexpr Real tol_eps   = 3.e-8; // small value for tolerance calculation
-
-    static inline constexpr Real half = 0.5; // Useful for bfb with fortran
-
-    static inline constexpr Real small = 1.e-36; // a small number to avoid division by zero
-
-    static inline constexpr Real cdifr_min = 1.e-6; // minimum layer difference for geometric averaging
-
-    static inline constexpr Real maxc_factor = 1.e-12; // Small numerical regularization constant used in the maximum cloud fraction
-
-    static inline constexpr Real flux_factor = 1.e-12; // Small numerical regularization constant used in convective flux related calculations
-
-    static inline constexpr Real mbsth = 1.e-15; // threshold below which we treat the mass fluxes as zero (in mb/s)
-
-    static inline constexpr Real lcl_pressure_threshold = 600.0; // if LCL pressure is lower => no convection and cape is zero
-
-    static inline constexpr Int nit_lheat = 2; // Number of iterations for condensation/freezing loop
-
-    static inline constexpr Real lwmax = 1.e-3; // maximum condensate that can be held in cloud before rainout
-
-    static inline constexpr Real ull_upper_launch_pressure = 600.0; // upper search limit for unrestricted launch level (ULL)
-
-    static inline constexpr Real MCSP_storm_speed_pref = 600e2; // pressure level for winds in MCSP calculation [Pa]
-
-    static inline constexpr Real MCSP_conv_depth_min = 700e2; // pressure thickness of convective heating [Pa]
-
-    static inline constexpr Real MCSP_shear_min = 3.0;   // min shear value for MCSP to be active
-
-    static inline constexpr Real MCSP_shear_max = 200.0; // max shear value for MCSP to be active
-
-    static inline constexpr Real cape_threshold_old = 70.;     // threshold value of cape for deep convection (old value before DCAPE)
-
-    static inline constexpr Real cape_threshold_new = 0.;      // threshold value of cape for deep convection
-
-    static inline constexpr Real dcape_threshold    = 0.;      // threshold value of dcape for deep convection
-
-    static inline constexpr Real interp_diff_min    = 1.E-6;   // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
-
-    static inline constexpr Real omsm               = 0.99999; // to prevent problems due to round off error
-
-    static inline constexpr Real small_conv         = 1.e-20;  // small number to limit blowup when normalizing by mass flux
-
-    static inline constexpr Real beta               = 0;       // proportion of liquid water from layer below used in closure
-    static inline constexpr Real mu_min             = 0.02;    // minimum updraft mass flux threshold [mb/s]
-    static inline constexpr Real hu_diff_min        = -2000;   // updraft MSE undershoot threshold for cloud top determination [J/kg]
-    static inline constexpr Real lambda_limit_min   = 0;       // minimum fractional entrainment limiter [1/m]
-    static inline constexpr Real lambda_limit_max   = 0.0002;  // maximum fractional entrainment limiter [1/m]
-    static inline constexpr Real lambda_threshold   = 1.e-6;   // threshold for moving detrainment level downward
-    static inline constexpr Real pergro_rhd_threshold  = -1.e-4;  // MSE relative difference threshold for perturbation growth test
-    static inline constexpr Real pergro_perturbation   = 8.64e-11; // perturbation magnitude added to avoid div-by-zero in pergro test
-    static inline constexpr Real momcu             = 0.4;      // pressure gradient term constant for updrafts
-    static inline constexpr Real momcd             = 0.4;      // pressure gradient term constant for downdrafts
-
-    static inline constexpr Real zvir              = 0.608;    // virtual temperature factor (Rv/Rd - 1)
-    static inline constexpr Real lcl_coeff_a       = 2840;     // Bolton (1980) LCL temperature formula coefficient A
-    static inline constexpr Real lcl_coeff_b       = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
-    static inline constexpr Real lcl_coeff_c       = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
-    static inline constexpr Real pa_to_mb          = 0.01;     // Pa to mb conversion factor
-    static inline constexpr Real mb_to_pa          = 100;      // mb to Pa conversion factor
-    static inline constexpr Real mse_min_diff      = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
-    static inline constexpr Real tpert_limiter     = 2;        // upper limit on temperature perturbation in input state [K]
-
+    static inline constexpr Real tboil            = 373.16;
+    static inline constexpr Real pref             = 1000;     // reference pressure [hPa]
+    static inline constexpr Real cpwv             = 1.810e3;  // specific heat of water vapor (J/K/kg)
+    // iteration limits
+    static inline constexpr Int LOOPMAX           = 100;      // Max number of iteration loops for invert_entropy
+    static inline constexpr Int nit_lheat         = 2;        // Number of iterations for condensation/freezing loop
+    // miscellaneous tolerance values
+    static inline constexpr Real omeps            = 1 - PC::ep_2.value;
+    static inline constexpr Real omsm             = 0.99999;  // to prevent problems due to round off error
+    static inline constexpr Real tol_coeff        = 0.001;    // tolerance coefficient
+    static inline constexpr Real tol_eps          = 3.e-8;    // small value for tolerance calculation
+    static inline constexpr Real half             = 0.5;      // Useful for bfb with fortran
+    static inline constexpr Real small            = 1.e-36;   // a small number to avoid division by zero
+    static inline constexpr Real cdifr_min        = 1.e-6;    // minimum layer difference for geometric averaging
+    static inline constexpr Real maxc_factor      = 1.e-12;   // Small numerical regularization constant used in the maximum cloud fraction
+    static inline constexpr Real flux_factor      = 1.e-12;   // Small numerical regularization constant used in convective flux related calculations
+    static inline constexpr Real mbsth            = 1.e-15;   // threshold below which we treat the mass fluxes as zero (in mb/s)
+    static inline constexpr Real small_conv       = 1.e-20;   // small number to limit blowup when normalizing by mass flux
+    static inline constexpr Real interp_diff_min  = 1.E-6;    // minimum threshold for interpolation method - see eq (4.109), (4.118), (4.119)
+    // conversion factors
+    static inline constexpr Real zvir             = 0.608;    // virtual temperature factor (Rv/Rd - 1) - matches hardcoded 0.608 literal in Fortran zm_closure
+    static inline constexpr Real lcl_coeff_a      = 2840;     // Bolton (1980) LCL temperature formula coefficient A
+    static inline constexpr Real lcl_coeff_b      = 3.5;      // Bolton (1980) LCL temperature formula coefficient B
+    static inline constexpr Real lcl_coeff_c      = 4.805;    // Bolton (1980) LCL temperature formula coefficient C
+    static inline constexpr Real pa_to_mb         = 0.01;     // Pa to mb conversion factor
+    static inline constexpr Real mb_to_pa         = 100;      // mb to Pa conversion factor
+    static inline constexpr Real cld_liq_radius   =  8.e-6;   // assumed liq hydrometeor radius for nc tendency [m]
+    static inline constexpr Real cld_ice_radius   = 14.e-6;   // assumed ice hydrometeor radius for ni tendency [m]
+    static inline constexpr Real cld_liq_density  =  997.0;   // assumed liq hydrometeor density for nc tendency [kg/m3]
+    static inline constexpr Real cld_ice_density  =  500.0;   // assumed ice hydrometeor density for ni tendency [kg/m3]
+    // other ZM parameters and thresholds
+    static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
+    static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
+    static inline constexpr Real ull_upper_launch_pressure = 600.0;    // upper search limit for unrestricted launch level (ULL)
+    static inline constexpr Real cape_threshold_old        = 70.;      // threshold value of cape for deep convection (old value before DCAPE)
+    static inline constexpr Real cape_threshold_new        = 0.;       // threshold value of cape for deep convection
+    static inline constexpr Real dcape_threshold           = 0.;       // threshold value of dcape for deep convection
+    static inline constexpr Real beta                      = 0;        // proportion of liquid water from layer below used in closure
+    static inline constexpr Real mu_min                    = 0.02;     // minimum updraft mass flux threshold [mb/s]
+    static inline constexpr Real hu_diff_min               = -2000;    // updraft MSE undershoot threshold for cloud top determination [J/kg]
+    static inline constexpr Real lambda_limit_min          = 0;        // minimum fractional entrainment limiter [1/m]
+    static inline constexpr Real lambda_limit_max          = 0.0002;   // maximum fractional entrainment limiter [1/m]
+    static inline constexpr Real lambda_threshold          = 1.e-6;    // threshold for moving detrainment level downward
+    static inline constexpr Real pergro_rhd_threshold      = -1.e-4;   // MSE relative difference threshold for perturbation growth test
+    static inline constexpr Real pergro_perturbation       = 8.64e-11; // perturbation magnitude added to avoid div-by-zero in pergro test
+    static inline constexpr Real momcu                     = 0.4;      // pressure gradient term constant for updrafts
+    static inline constexpr Real momcd                     = 0.4;      // pressure gradient term constant for downdrafts
+    static inline constexpr Real mse_min_diff              = 100;      // min MSE buoyancy difference for Taylor series in entrainment [J/kg]
+    static inline constexpr Real tpert_limiter             = 2;        // upper limit on temperature perturbation in input state [K]
+    // MCSP parameters
+    static inline constexpr Real MCSP_storm_speed_pref     = 600e2;    // pressure level for winds in MCSP calculation Pa]
+    static inline constexpr Real MCSP_conv_depth_min       = 700e2;    // pressure thickness of convective heating [Pa]
+    static inline constexpr Real MCSP_shear_min            = 3.0;      // min shear value for MCSP to be active
+    static inline constexpr Real MCSP_shear_max            = 200.0;    // max shear value for MCSP to be active
+    static inline constexpr Real MCSP_t_coeff_default      = 0.3;      // default MCSP temperature coefficient
+    static inline constexpr Real MCSP_q_coeff_default      = 0.0;      // default MCSP sp. humidity coefficient
+    static inline constexpr Real MCSP_u_coeff_default      = 0.0;      // default MCSP U-wind coefficient
+    static inline constexpr Real MCSP_v_coeff_default      = 0.0;      // default MCSP V-wind coefficient
     // Default values for ZmRuntimeOpt fields
-    static inline constexpr Real alfa              = 0.14;     // default downdraft proportionality factor
-    static inline constexpr Real ke                = 2.5E-6;   // default evaporation efficiency
-    static inline constexpr Real dmpdz             = -0.7e-3;  // default convective entrainment parameter [1/m]
-    static inline constexpr Real tiedke_add        = 0.8;      // default Tiedke temperature perturbation addition [K]
-    static inline constexpr Real c0                = 0.0020;   // default autoconversion coefficient
-    static inline constexpr Real accr_fac          = 1.5;      // default accretion factor
-    static inline constexpr Real mcsp_t_coeff      = 0.3;      // default MCSP temperature coefficient
+    static inline constexpr Real alfa                      = 0.14;     // default downdraft proportionality factor
+    static inline constexpr Real ke                        = 2.5E-6;   // default evaporation efficiency
+    static inline constexpr Real dmpdz                     = -0.7e-3;  // default convective entrainment parameter [1/m]
+    static inline constexpr Real tiedke_add                = 0.8;      // default Tiedke temperature perturbation addition [K]
+    static inline constexpr Real c0                        = 0.0020;   // default autoconversion coefficient
 
     // Table of saturation vapor pressure values (estbl) from tmin to
-    // tmax+1 Kelvin, in one degree increments.  ttrice defines the
-    // transition region, estbl contains a combination of ice & water
-    // values.
-    static inline constexpr Real tmin = 127.16;
-    static inline constexpr Real tmax = 375.16;
-
+    // tmax+1 Kelvin, in one degree increments. ttrice defines the transition
+    // region, estbl contains a combination of ice & water values.
+    static inline constexpr Real tmin    = 127.16;
+    static inline constexpr Real tmax    = 375.16;
     static inline constexpr Real h2otrip = 273.16;
+    static inline constexpr Real ttrice  = 20.0;  // transition range from es over H2O to es over ice
 
-    static inline constexpr Real ttrice = 20.0;  // transition range from es over H2O to es over ice
+    static inline constexpr Real dlf_tk1 = 268.15; // T at/above which detrained condensate (dlf) is assumed to be liquid
+    static inline constexpr Real dlf_tk2 = 238.15; // T at/below which detrained condensate (dlf) is assumed to be ice
   };
 
   //----------------------------------------------------------------------------
@@ -164,39 +150,145 @@ struct Functions {
     ZmRuntimeOpt() = default;
 
     void load_runtime_options(ekat::ParameterList& params) {
-      apply_tendencies = params.get<bool>("apply_tendencies", apply_tendencies);
+      apply_detr_tend     = params.get<bool>("apply_detr_tend",     true);
+      use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
+      upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
+      tau                 = params.get<Real>("tau",                 3600);
+      alfa                = params.get<Real>("alfa",                ZMC::alfa);
+      ke                  = params.get<Real>("ke",                  ZMC::ke);
+      dmpdz               = params.get<Real>("dmpdz",               ZMC::dmpdz);
+      tpert_fix           = params.get<bool>("tpert_fix",           true);
+      tpert_fac           = params.get<Real>("tpert_fac",           2);
+      tiedke_add          = params.get<Real>("tiedke_add",          ZMC::tiedke_add);
+      c0_lnd              = params.get<Real>("c0_lnd",              ZMC::c0);
+      c0_ocn              = params.get<Real>("c0_ocn",              ZMC::c0);
+      num_cin             = params.get<int>("num_cin",              1);
+      mx_bot_lyr_adj      = params.get<int>("mx_bot_lyr_adj",       1);
+      trig_dcape          = params.get<bool>("trig_dcape",          true);
+      trig_ull            = params.get<bool>("trig_ull",            true);
+      clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
+      no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
+      // ZM micro parameters
+      zm_microp           = params.get<bool>("zm_microp",           false);
+      old_snow            = params.get<bool>("old_snow",            true);
+      // MCSP parameters
+      mcsp_enabled        = params.get<bool>("mcsp_enabled",        true);
+      mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff_default);
+      mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff_default);
+      mcsp_u_coeff        = params.get<Real>("mcsp_u_coeff",        ZMC::MCSP_u_coeff_default);
+      mcsp_v_coeff        = params.get<Real>("mcsp_v_coeff",        ZMC::MCSP_v_coeff_default);
+
+      // determine SVP table size (add two to make the table slightly too big, just in case)
+      plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
+
+      // Build the table in a local view first. Referencing the data member
+      // 'estbl' directly inside the lambda would capture 'this' (a host
+      // pointer), causing an illegal device-memory access on GPU.
+      view_1d<Real> estbl_tmp("estbl",plenest);
+      Kokkos::parallel_for(Kokkos::RangePolicy<typename KT::ExeSpace>(0, plenest), KOKKOS_LAMBDA(const int i) {
+        estbl_tmp(i) = svp_trans(ZMC::tmin + i);
+      });
+      estbl = estbl_tmp;
     }
 
-    Real tau;           // convective adjustment time scale
-    Real alfa;          // max downdraft mass flux fraction
-    Real ke;            // evaporation efficiency
-    Real dmpdz;         // fractional mass entrainment rate [1/m]
-    bool tpert_fix;     // flag to disable using applying tpert to PBL-rooted convection
-    Real tpert_fac;     // tunable temperature perturbation factor
-    Real tiedke_add;    // tunable temperature perturbation
-    Real c0_lnd;        // autoconversion coefficient over land
-    Real c0_ocn;        // autoconversion coefficient over ocean
-    int num_cin;        // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
-    int limcnv;         // upper pressure interface level to limit deep convection
-    int mx_bot_lyr_adj; // bot layer index adjustment for launch level search
-    bool trig_dcape;    // true if to using DCAPE trigger - based on CAPE generation by the dycor
-    bool trig_ull;      // true if to using the "unrestricted launch level" (ULL) mode
-    bool clos_dyn_adj;  // flag for mass flux adjustment to CAPE closure
-    bool no_deep_pbl;   // flag to eliminate deep convection within PBL
-    bool apply_tendencies;
+    void set_limcnv(std::shared_ptr<const AbstractGrid> grid) {
+      EKAT_REQUIRE_MSG(upper_limit_pref > 0,
+      "Error! ZmRuntimeOpt::set_limcnv: upper_limit_pref must be positive [Pa], but got "
+      << upper_limit_pref << "\n");
+      EKAT_REQUIRE_MSG(upper_limit_pref < PC::P0.value,
+      "Error! ZmRuntimeOpt::set_limcnv: upper_limit_pref must be less than the reference surface pressure, but got "
+      << upper_limit_pref << "\n");
+      // Determine upper limit level index of deep convection based on the reference pressure profile
+      const auto nlev   = grid->get_num_vertical_levels();
+      const auto hyai_h = grid->get_geometry_data("hyai").get_view<const Real*, Host>();
+      const auto hybi_h = grid->get_geometry_data("hybi").get_view<const Real*, Host>();
+      const auto ps0 = PC::P0.value;
+      limcnv = -1;
+      if (ps0*hyai_h(0) + ps0*hybi_h(0) >= upper_limit_pref) {
+        limcnv = 0;
+      } else {
+        for (int k = 0; k < nlev; ++k) {
+          Real pk0 = ps0*hyai_h(k)   + ps0*hybi_h(k);
+          Real pk1 = ps0*hyai_h(k+1) + ps0*hybi_h(k+1);
+          if (pk0 < upper_limit_pref && pk1 >= upper_limit_pref) {
+            limcnv = k;
+            break;
+          }
+        }
+        if (limcnv == -1) { limcnv = nlev+1; }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // print parameter values for the log file (C++ analog of zm_param_print)
+    void print(std::ostream& os = std::cout) const {
+      const std::string indent = "  ";
+      // preserve and restore the stream's formatting flags
+      const std::ios::fmtflags saved_flags = os.flags();
+      os << std::boolalpha;
+      os << "\n";
+      os << "ZM deep convection parameter values:\n";
+      os << indent << "tau             : " << tau            << "\n";
+      os << indent << "alfa            : " << alfa           << "\n";
+      os << indent << "ke              : " << ke             << "\n";
+      os << indent << "dmpdz           : " << dmpdz          << "\n";
+      os << indent << "tpert_fix       : " << tpert_fix      << "\n";
+      os << indent << "tpert_fac       : " << tpert_fac      << "\n";
+      os << indent << "tiedke_add      : " << tiedke_add     << "\n";
+      os << indent << "c0_lnd          : " << c0_lnd         << "\n";
+      os << indent << "c0_ocn          : " << c0_ocn         << "\n";
+      os << indent << "num_cin         : " << num_cin        << "\n";
+      os << indent << "limcnv          : " << limcnv         << "\n";
+      os << indent << "mx_bot_lyr_adj  : " << mx_bot_lyr_adj << "\n";
+      os << indent << "trig_dcape      : " << trig_dcape     << "\n";
+      os << indent << "trig_ull        : " << trig_ull       << "\n";
+      os << indent << "clos_dyn_adj    : " << clos_dyn_adj   << "\n";
+      os << indent << "no_deep_pbl     : " << no_deep_pbl    << "\n";
+      // ZM micro parameters
+      os << indent << "zm_microp       : " << zm_microp      << "\n";
+      os << indent << "old_snow        : " << old_snow       << "\n";
+      // MCSP parameters
+      os << indent << "mcsp_enabled    : " << mcsp_enabled   << "\n";
+      os << indent << "mcsp_t_coeff    : " << mcsp_t_coeff   << "\n";
+      os << indent << "mcsp_q_coeff    : " << mcsp_q_coeff   << "\n";
+      os << indent << "mcsp_u_coeff    : " << mcsp_u_coeff   << "\n";
+      os << indent << "mcsp_v_coeff    : " << mcsp_v_coeff   << "\n";
+      os << std::endl;
+      os.flags(saved_flags);
+    }
+
+    Real tau;               // convective adjustment time scale
+    Real alfa;              // max downdraft mass flux fraction
+    Real ke;                // evaporation efficiency
+    Real dmpdz;             // fractional mass entrainment rate [1/m]
+    bool tpert_fix;         // flag to disable using applying tpert to PBL-rooted convection
+    Real tpert_fac;         // tunable temperature perturbation factor
+    Real tiedke_add;        // tunable temperature perturbation
+    Real c0_lnd;            // autoconversion coefficient over land
+    Real c0_ocn;            // autoconversion coefficient over ocean
+    int num_cin;            // num of neg buoyancy regions allowed before the conv top and CAPE calc are completed
+    Real upper_limit_pref;  // pressure limit above which deep convection is not allowed [Pa] (used to set limcnv)
+    int limcnv;             // upper pressure interface level to limit deep convection
+    int mx_bot_lyr_adj;     // bot layer index adjustment for launch level search
+    bool trig_dcape;        // true if to using DCAPE trigger - based on CAPE generation by the dycor
+    bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
+    bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
+    bool no_deep_pbl;       // flag to eliminate deep convection within PBL
+    bool apply_detr_tend;
+    bool use_fortran_bridge;
     // ZM micro parameters
-    bool zm_microp;     // switch for convective microphysics
-    bool old_snow;      // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
-    Real auto_fac;      // ZM microphysics enhancement factor for droplet-rain autoconversion
-    Real accr_fac;      // ZM microphysics enhancement factor for droplet-rain accretion
-    Real micro_dcs;     // ZM microphysics size threshold for cloud ice to snow autoconversion [m]
+    bool zm_microp;         // switch for convective microphysics
+    bool old_snow;          // switch to calculate snow prod in zm_conv_evap() (old treatment before zm_microp was implemented)
     // MCSP parameters
-    bool mcsp_enabled;  // flag for mesoscale coherent structure parameterization (MSCP)
-    Real mcsp_t_coeff;  // MCSP coefficient for temperature tendencies
-    Real mcsp_q_coeff;  // MCSP coefficient for specific humidity tendencies
-    Real mcsp_u_coeff;  // MCSP coefficient for zonal momentum tendencies
-    Real mcsp_v_coeff;  // MCSP coefficient for meridional momentum tendencies
-    view_1d<Real> estbl; // table values of saturation vapor pressure
+    bool mcsp_enabled;      // flag for mesoscale coherent structure parameterization (MSCP)
+    Real mcsp_t_coeff;      // MCSP coefficient for temperature tendencies
+    Real mcsp_q_coeff;      // MCSP coefficient for specific humidity tendencies
+    Real mcsp_u_coeff;      // MCSP coefficient for zonal momentum tendencies
+    Real mcsp_v_coeff;      // MCSP coefficient for meridional momentum tendencies
+    // saturation vapor pressure (svp) table
+    Int plenest;            // saturation vapor pressure table size
+    view_1d<Real> estbl;    // saturation vapor pressure table values
+
   };
 
   // -----------------------------------------------------------------------------------------------
@@ -204,35 +296,42 @@ struct Functions {
   struct ZmInputState {
     ZmInputState() = default;
     // -------------------------------------------------------------------------
-    Real dtime;                     // model phsyics time step [s]
-    bool is_first_step;             // flag for first call
-
     // variable counters for device-side only
     static constexpr int num_1d_intgr = 0;  // number of 1D integer views
     static constexpr int num_1d_scalr = 1;  // number of 1D scalar views
-    static constexpr int num_2d_midlv = 2;  // number of 2D mid-point views
+    static constexpr int num_2d_midlv = 5;  // number of 2D mid-point views
     static constexpr int num_2d_intfc = 1;  // number of 2D interface views
+    static constexpr int num_3d_midlv = 1;  // number of 3D mid-point views (ncol,nwind,nlev)
+    static constexpr int num_f_midlv  = 11; // number of fortran-bridge (LayoutLeft) 2D mid-point views
+    static constexpr int num_f_intfc  = 2;  // number of fortran-bridge (LayoutLeft) 2D interface views
 
     uview_1d<     Scalar> tpert;    // PBL top temperature perturb. [K]
-    uview_2d<     Pack>  z_mid;    // mid-point level altitude     [m]
-    uview_2d<     Pack>  z_del;    // altitude thickness           [m]
-    uview_2d<     Pack>  z_int;    // interface level altitude     [m]
-
+    uview_2d<     Real>   z_mid;    // mid-point level altitude     [m]
+    uview_2d<     Real>   z_del;    // altitude thickness           [m]
+    uview_2d<     Real>   z_int;    // interface level altitude     [m]
     // variables we get from the field manager
     view_1d<const Scalar> phis;     // surface geopotential height  [m2/s]
-    view_2d<const Pack>  p_mid;    // mid-point level pressure     [Pa]
-    view_2d<const Pack>  p_int;    // interface level pressure     [Pa]
-    view_2d<const Pack>  p_del;    // pressure thickness           [Pa]
-    view_2d<      Pack>  T_mid;    // temperature                  [K]
-    view_2d<      Pack>  qv;       // water vapor mixing ratio     [kg kg-1]
-    view_2d<const Pack>  qc;       // cloud liquid water           [kg kg-1]
-    view_2d<      Pack>  uwind;    // zonal wind                   [m/s]
-    view_2d<      Pack>  vwind;    // meridional wind              [m/s]
-    view_2d<const Pack>  omega;    // vertical pressure velocity   [Pa/s]
-    view_2d<const Pack>  cldfrac;  // total cloud fraction         [frac]
     view_1d<const Scalar> pblh;     // PBL height                   [m]
     view_1d<const Scalar> landfrac; // land area fraction           [frac]
-    view_2d<const Pack>  thl_sec;  // thetal variance from SHOC    [K^2]
+    view_2d<const Real>   p_mid;    // mid-point level pressure     [Pa]
+    view_2d<const Real>   p_int;    // interface level pressure     [Pa]
+    view_2d<const Real>   p_del;    // pressure thickness           [Pa]
+    view_2d<      Real>   T_mid;    // temperature                  [K]
+    view_2d<      Real>   qv;       // water vapor mixing ratio     [kg/kg]
+    view_2d<const Real>   qc;       // cloud liquid water           [kg/kg]
+    view_2d<      Real>   uwind;    // zonal wind                   [m/s]
+    view_2d<      Real>   vwind;    // meridional wind              [m/s]
+    view_2d<const Real>   omega;    // vertical pressure velocity   [Pa/s]
+    view_2d<const Real>   cldfrac;  // total cloud fraction         [frac]
+    view_2d<const Real>   thl_sec;  // thetal variance from SHOC    [K^2]
+    // intermediate state variables updated with intermediate tendencies
+    uview_2d<     Real>   tmp_s_mid;// dry static energy            [J]
+    uview_2d<     Real>   tmp_T_mid;// temperature                  [K]
+    uview_2d<     Real>   tmp_qv;   // water vapor mixing ratio     [kg/kg]
+    uview_3d<     Real>   tmp_winds;// horizontal winds (ncol,nwind,nlev) [m/s]
+    // variables only needed for calling the C++ version of ZM
+    view_2d<      Real>   t_prev;   // DCAPE T from previous time step [K]
+    view_2d<      Real>   q_prev;   // DCAPE q from previous time step [kg/kg]
 
     // *************************************************************************
     // TEMPORARY
@@ -247,12 +346,13 @@ struct Functions {
     uview_2dl<Real> f_vwind;
     uview_2dl<Real> f_omega;
     uview_2dl<Real> f_cldfrac;
+    uview_2dl<Real> f_t_prev;
+    uview_2dl<Real> f_q_prev;
     uview_2dl<Real> f_z_int;
     uview_2dl<Real> f_p_int;
     // *************************************************************************
     // TEMPORARY
     // *************************************************************************
-
     // host mirror versions of ZM interface variables
     view_1dh<Scalar> h_phis;
     view_1dh<Scalar> h_pblh;
@@ -267,8 +367,32 @@ struct Functions {
     view_2dh<Real>   h_vwind;
     view_2dh<Real>   h_omega;
     view_2dh<Real>   h_cldfrac;
+    view_2dh<Real>   h_t_prev;
+    view_2dh<Real>   h_q_prev;
     view_2dh<Real>   h_z_int;
     view_2dh<Real>   h_p_int;
+
+    // -------------------------------------------------------------------------
+    // allocate host mirror input variables (only needed for fortran bridge)
+    void init_host_mirrors(int ncol, int nlev) {
+      h_phis     = view_1dh<Scalar>("zm_input.h_phis",     ncol);
+      h_pblh     = view_1dh<Scalar>("zm_input.h_pblh",     ncol);
+      h_tpert    = view_1dh<Scalar>("zm_input.h_tpert",    ncol);
+      h_landfrac = view_1dh<Scalar>("zm_input.h_landfrac", ncol);
+      h_z_mid    = view_2dh<Real>  ("zm_input.h_z_mid",    ncol, nlev);
+      h_p_mid    = view_2dh<Real>  ("zm_input.h_p_mid",    ncol, nlev);
+      h_p_del    = view_2dh<Real>  ("zm_input.h_p_del",    ncol, nlev);
+      h_T_mid    = view_2dh<Real>  ("zm_input.h_T_mid",    ncol, nlev);
+      h_qv       = view_2dh<Real>  ("zm_input.h_qv",       ncol, nlev);
+      h_uwind    = view_2dh<Real>  ("zm_input.h_uwind",    ncol, nlev);
+      h_vwind    = view_2dh<Real>  ("zm_input.h_vwind",    ncol, nlev);
+      h_omega    = view_2dh<Real>  ("zm_input.h_omega",    ncol, nlev);
+      h_cldfrac  = view_2dh<Real>  ("zm_input.h_cldfrac",  ncol, nlev);
+      h_t_prev   = view_2dh<Real>  ("zm_input.h_t_prev",   ncol, nlev);
+      h_q_prev   = view_2dh<Real>  ("zm_input.h_q_prev",   ncol, nlev);
+      h_z_int    = view_2dh<Real>  ("zm_input.h_z_int",    ncol, nlev+1);
+      h_p_int    = view_2dh<Real>  ("zm_input.h_p_int",    ncol, nlev+1);
+    }
 
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
@@ -285,24 +409,67 @@ struct Functions {
     ZmOutputTend() = default;
 
     // variable counters for device-side only
-    static constexpr int num_1d_intgr = 1;  // number of 1D integer views
-    static constexpr int num_1d_scalr = 3;  // number of 1D scalar views
-    static constexpr int num_2d_midlv = 6;  // number of 2D mid-point views
-    static constexpr int num_2d_intfc = 3;  // number of 2D interface views
+    static constexpr int num_1d_intgr =  5; // number of 1D integer views
+    static constexpr int num_1d_scalr =  6; // number of 1D scalar views
+    static constexpr int num_2d_midlv = 24; // number of 2D mid-point views
+    static constexpr int num_2d_intfc =  3; // number of 2D interface views
+    static constexpr int num_3d_midlv =  1; // number of 3D mid-point views (ncol,nwind,nlev)
+    static constexpr int num_f_midlv  = 13; // number of fortran-bridge (LayoutLeft) 2D mid-point views
+    static constexpr int num_f_intfc  =  3; // number of fortran-bridge (LayoutLeft) 2D interface views
 
     uview_1d<Int>    activity;       // integer deep convection activity flag
     uview_1d<Scalar> prec;           // surface precipitation                   [m/s]
     uview_1d<Scalar> snow;           // surface snow                            [m/s]
-    uview_1d<Scalar> cape;           // convective available potential energy   [J]
-    uview_2d<Pack>  tend_t;         // output tendency of temperature          [K/s]
-    uview_2d<Pack>  tend_qv;        // output tendency of water vapor          [kg/kg/s]
-    uview_2d<Pack>  tend_u;         // output tendency of zonal wind           [m/s/s]
-    uview_2d<Pack>  tend_v;         // output tendency of meridional wind      [m/s/s]
-    uview_2d<Pack>  rain_prod;      // rain production rate                    [?]
-    uview_2d<Pack>  snow_prod;      // snow production rate                    [?]
-    uview_2d<Pack>  prec_flux;      // output convective precipitation flux    [?]
-    uview_2d<Pack>  snow_flux;      // output convective precipitation flux    [?]
-    uview_2d<Pack>  mass_flux;      // output convective mass flux             [?]
+    uview_1d<Scalar> cape;           // convective available potential energy   [J/kg]
+    uview_2d<Real>   tend_out_t;     // output tendency of temperature          [K/s]
+    uview_2d<Real>   tend_out_s;     // output tendency of dry static energy    [J/s]
+    uview_2d<Real>   tend_out_qv;    // output tendency of water vapor          [kg/kg/s]
+    uview_2d<Real>   tend_out_u;     // output tendency of zonal wind           [m/s/s]
+    uview_2d<Real>   tend_out_v;     // output tendency of meridional wind      [m/s/s]
+    uview_2d<Real>   tend_tmp_s;     // temporary tendency of dry static energy [J/s]
+    uview_2d<Real>   tend_tmp_qv;    // temporary tendency of water vapor       [kg/kg/s]
+    uview_3d<Real>   tend_tmp_winds; // temporary wind tendency (ncol,nwind,nlev) - used by MCSP and momentum transport [m/s/s]
+    uview_2d<Real>   tend_s_snwprd;  // Heating rate of snow production         [J/kg/s]
+    uview_2d<Real>   tend_s_snwevmlt;// Heating rate of snow evap/melt          [J/kg/s]
+    uview_2d<Real>   rain_prod;      // rain production rate                    [kg/kg/s]
+    uview_2d<Real>   snow_prod;      // snow production rate                    [kg/kg/s]
+    uview_2d<Real>   ntprprd;        // net precip production in layer          [kg/kg/s]
+    uview_2d<Real>   ntsnprd;        // net snow production in layer            [kg/kg/s]
+    uview_2d<Real>   flxprec;        // Convective flux of prec at interfaces   [kg/m2/s]
+    uview_2d<Real>   flxsnow;        // Convective flux of snow at interfaces   [kg/m2/s]
+    uview_2d<Real>   prec_flux;      // output convective prec flux             [kg/m2/s]
+    uview_2d<Real>   snow_flux;      // output convective snow flux             [kg/m2/s]
+    uview_2d<Real>   mass_flux;      // output convective mass flux             [mb/s]
+    // variables only needed for calling the C++ version of ZM
+    uview_1d<Int>    msemax_klev;    // level indices of max MSE
+    uview_1d<Int>    jctop;          // top-of-deep-convection indices
+    uview_1d<Int>    jcbot;          // base of cloud indices
+    uview_1d<Int>    jt;             // top level index of convection
+    Int              ktm = 0;        // highest cloud-top level index over active columns
+    Int              kbm = 0;        // highest cloud-base level index over active columns
+    uview_1d<Scalar> dcape;          // CAPE generated by dycor (dCAPE)         [J/kg/s]
+    uview_2d<Real>   zdu;            // detraining mass flux                    [1/s]
+    uview_2d<Real>   mflx_up;        // updraft mass flux                       [mb/s]
+    uview_2d<Real>   entr_up;        // updraft entrainment                     [1/s]
+    uview_2d<Real>   detr_up;        // updraft detrainment                     [1/s]
+    uview_2d<Real>   mflx_dn;        // downdraft mass flux                     [mb/s]
+    uview_2d<Real>   entr_dn;        // downdraft entrainment                   [1/s]
+    uview_2d<Real>   p_del_mb;       // layer thickness                         [mb]
+    uview_1d<Scalar> dsubcld;        // thickness between lcl and msemax_klev   [mb]
+    uview_2d<Real>   ql;             // cloud liquid water for chem/wetdep      [?]
+    uview_1d<Scalar> rliq;           // reserved liquid (not yet in cldliq) for energy integrals
+    uview_2d<Real>   dlf;            // detrainment rate of cloud liquid water  [kg/kg/s]
+    // MCSP diagnostic outputs
+    view_2d<Real>    mcsp_ds_out;    // MCSP tendency for DSE
+    view_2d<Real>    mcsp_dq_out;    // MCSP tendency for qv
+    view_2d<Real>    mcsp_du_out;    // MCSP tendency for u wind
+    view_2d<Real>    mcsp_dv_out;    // MCSP tendency for v wind
+    view_1d<Real>    mcsp_freq;      // MSCP frequency for output
+    view_1d<Real>    mcsp_shear;     // MCSP shear used to check against threshold
+    view_1d<Real>    zm_depth;       // MCSP pressure depth of ZM heating
+    // ZM evap diagnostic outputs
+    view_2d<Real>    evap_ds_out;    // zm_conv_evap output tendency
+    view_2d<Real>    evap_dq_out;    // zm_conv_evap output tendency
 
     // *************************************************************************
     // TEMPORARY
@@ -314,9 +481,16 @@ struct Functions {
     uview_2dl<Real>  f_tend_v;
     uview_2dl<Real>  f_rain_prod;
     uview_2dl<Real>  f_snow_prod;
+    uview_2dl<Real>  f_dlf;
     uview_2dl<Real>  f_prec_flux;
     uview_2dl<Real>  f_snow_flux;
     uview_2dl<Real>  f_mass_flux;
+    uview_2dl<Real>  f_mcsp_ds_out;
+    uview_2dl<Real>  f_mcsp_dq_out;
+    uview_2dl<Real>  f_mcsp_du_out;
+    uview_2dl<Real>  f_mcsp_dv_out;
+    uview_2dl<Real>  f_evap_ds_out;
+    uview_2dl<Real>  f_evap_dq_out;
     // *************************************************************************
     // TEMPORARY
     // *************************************************************************
@@ -326,15 +500,55 @@ struct Functions {
     view_1dh<Scalar> h_prec;
     view_1dh<Scalar> h_snow;
     view_1dh<Scalar> h_cape;
+    view_1dh<Scalar> h_dcape;
     view_2dh<Real>   h_tend_t;
     view_2dh<Real>   h_tend_qv;
     view_2dh<Real>   h_tend_u;
     view_2dh<Real>   h_tend_v;
     view_2dh<Real>   h_rain_prod;
     view_2dh<Real>   h_snow_prod;
+    view_2dh<Real>   h_dlf;
     view_2dh<Real>   h_prec_flux;
     view_2dh<Real>   h_snow_flux;
     view_2dh<Real>   h_mass_flux;
+    view_1dh<Scalar> h_mcsp_freq;
+    view_1dh<Scalar> h_mcsp_shear;
+    view_1dh<Scalar> h_zm_depth;
+    view_2dh<Real>   h_mcsp_ds_out;
+    view_2dh<Real>   h_mcsp_dq_out;
+    view_2dh<Real>   h_mcsp_du_out;
+    view_2dh<Real>   h_mcsp_dv_out;
+    view_2dh<Real>   h_evap_ds_out;
+    view_2dh<Real>   h_evap_dq_out;
+
+    // -------------------------------------------------------------------------
+    // allocate host mirror output variables (only needed for fortran bridge)
+    void init_host_mirrors(int ncol, int nlev) {
+      h_activity    = view_1dh<Int>   ("zm_output.h_activity",    ncol);
+      h_prec        = view_1dh<Scalar>("zm_output.h_prec",        ncol);
+      h_snow        = view_1dh<Scalar>("zm_output.h_snow",        ncol);
+      h_cape        = view_1dh<Scalar>("zm_output.h_cape",        ncol);
+      h_dcape       = view_1dh<Scalar>("zm_output.h_dcape",       ncol);
+      h_tend_t      = view_2dh<Real>  ("zm_output.h_tend_t",      ncol, nlev);
+      h_tend_qv     = view_2dh<Real>  ("zm_output.h_tend_qv",     ncol, nlev);
+      h_tend_u      = view_2dh<Real>  ("zm_output.h_tend_u",      ncol, nlev);
+      h_tend_v      = view_2dh<Real>  ("zm_output.h_tend_v",      ncol, nlev);
+      h_rain_prod   = view_2dh<Real>  ("zm_output.h_rain_prod",   ncol, nlev);
+      h_snow_prod   = view_2dh<Real>  ("zm_output.h_snow_prod",   ncol, nlev);
+      h_dlf         = view_2dh<Real>  ("zm_output.h_dlf",         ncol, nlev);
+      h_prec_flux   = view_2dh<Real>  ("zm_output.h_prec_flux",   ncol, nlev+1);
+      h_snow_flux   = view_2dh<Real>  ("zm_output.h_snow_flux",   ncol, nlev+1);
+      h_mass_flux   = view_2dh<Real>  ("zm_output.h_mass_flux",   ncol, nlev+1);
+      h_mcsp_freq   = view_1dh<Scalar>("zm_output.h_mcsp_freq",   ncol);
+      h_mcsp_shear  = view_1dh<Scalar>("zm_output.h_mcsp_shear",  ncol);
+      h_zm_depth    = view_1dh<Scalar>("zm_output.h_zm_depth",    ncol);
+      h_mcsp_ds_out = view_2dh<Real>  ("zm_output.h_mcsp_ds_out", ncol, nlev);
+      h_mcsp_dq_out = view_2dh<Real>  ("zm_output.h_mcsp_dq_out", ncol, nlev);
+      h_mcsp_du_out = view_2dh<Real>  ("zm_output.h_mcsp_du_out", ncol, nlev);
+      h_mcsp_dv_out = view_2dh<Real>  ("zm_output.h_mcsp_dv_out", ncol, nlev);
+      h_evap_ds_out = view_2dh<Real>  ("zm_output.h_evap_ds_out", ncol, nlev);
+      h_evap_dq_out = view_2dh<Real>  ("zm_output.h_evap_dq_out", ncol, nlev);
+    }
 
     // -------------------------------------------------------------------------
     // transpose method for fortran bridging
@@ -342,26 +556,21 @@ struct Functions {
     void transpose(int ncol, int nlev_mid);
 
     // -------------------------------------------------------------------------
-    void init(int ncol, int nlev_mid);
+    void init_all(int ncol, int nlev_mid); // initialize all variables in struct
+    void init_tmp(int ncol, int nlev_mid); // initialize temporary tendencies variables only
   };
 
   // -----------------------------------------------------------------------------------------------
 
-  struct ZmOutputDiag {
-    ZmOutputDiag() = default;
-  };
-
-
   //
   // --------- Init/Finalize Functions ---------
   //
-  static void zm_common_init();
+  static void zm_opts_init();
 
   static void zm_finalize() {
-    s_common_init.estbl = view_1d<Real>();
+    // release Kokkos Views held by the static structs
+    s_zm_opts.estbl = view_1d<Real>();
   }
-
-  // static Int zm_main()
 
   //
   // --------- Functions ---------
@@ -385,136 +594,6 @@ struct Functions {
     const Real& tk,    // temperature              [K]
     const Real& p,     // pressure                 [mb]
     const Real& qtot); // total water mixing ratio [kg/kg]
-
-  KOKKOS_INLINE_FUNCTION
-  static Real goffgratch_svp_water(
-    // Inputs
-    const Real& t)    // Temperature                  [K]
-  {
-    // GoffGratch_svp_water
-    static constexpr Real magic1 = -7.90298;
-    static constexpr Real magic2 = 5.02808;
-    static constexpr Real magic3 = 1.3816e-7;
-    static constexpr Real magic4 = 11.344;
-    static constexpr Real magic5 = 8.1328e-3;
-    static constexpr Real magic6 = -3.49149;
-    static constexpr Real magic7 = 1013.246;
-    return std::pow(10, magic1*(ZMC::tboil/t-1) +
-                    magic2*std::log10(ZMC::tboil/t) -
-                    magic3*(std::pow(10, magic4*(1 - t/ZMC::tboil)) - 1) +
-                    magic5*(std::pow(10, magic6*(ZMC::tboil/t-1)) - 1) +
-                    std::log10(magic7))*100;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static Real goffgratch_svp_ice(
-    // Inputs
-    const Real& t)    // Temperature                  [K]
-  {
-    // good down to -100 C
-    static constexpr Real magic1 = -9.09718;
-    static constexpr Real magic2 = 3.56654;
-    static constexpr Real magic3 = 0.876793;
-    static constexpr Real magic4 = 6.1071;
-
-    return std::pow(10, magic1*(ZMC::h2otrip/t - 1) -
-                    magic2*std::log10(ZMC::h2otrip/t) +
-                    magic3*(1 - t/ZMC::h2otrip) +
-                    std::log10(magic4))*100;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static Real svp_trans(
-    // Inputs
-    const Real& t)    // Temperature                  [K]
-  {
-    Real es;
-
-    //
-    // Water
-    //
-    if (t >= (PC::Tmelt.value - ZMC::ttrice)) {
-      es = goffgratch_svp_water(t);
-    }
-    else {
-      es = 0;
-    }
-
-    //
-    // Ice
-    //
-    if (t < PC::Tmelt.value) {
-
-      const Real esice = goffgratch_svp_ice(t);
-
-      Real weight;
-      if ( (PC::Tmelt.value - t) > ZMC::ttrice ) {
-        weight = 1;
-      }
-      else {
-        weight = (PC::Tmelt.value - t)/ZMC::ttrice;
-      }
-
-      es = weight*esice + (1 - weight)*es;
-    }
-    return es;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static void qsat_hPa(
-    // Inputs
-    const Real& t,    // Temperature                  [K]
-    const Real& p,    // Pressure                     [hPa]
-    // Outputs
-    Real& es,         // Saturation vapor pressure    [hPa]
-    Real& qm)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
-  {
-    es = goffgratch_svp_water(t);
-
-    // If pressure is less than SVP, set qs to maximum of 1.
-    if ( (p*100 - es) <= 0 ) {
-      qm = 1;
-    }
-    else {
-      qm = PC::ep_2.value*es / (p*100 - ZMC::omeps*es);
-    }
-
-    // Ensures returned es is consistent with limiters on qs.
-    es = Kokkos::min(es, p*100);
-
-    es = es*0.01;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  static void qsat(
-    // Inputs
-    const Real& t,    // Temperature                  [K]
-    const Real& p,    // Pressure                     [Pa]
-    const ZmRuntimeOpt& runtime_opt,
-    // Outputs
-    Real& es,         // Saturation vapor pressure    [Pa]
-    Real& qs)         // Saturation mass mixing ratio [kg/kg] (vapor mass over dry mass)
-  {
-    constexpr Real mmin = 0.0;
-    constexpr Real tmin = ZMC::tmin;
-    constexpr Real tmax = ZMC::tmax;
-    const Real t_tmp = Kokkos::max(Kokkos::min(t, tmax) - tmin, mmin);     // Number of table entries above tmin
-    const Int i = int(t_tmp);                        // Corresponding index.
-    const Real weight = t_tmp - Kokkos::trunc(t_tmp);// Fractional part of t_tmp (for interpolation).
-    es = (1 - weight)*runtime_opt.estbl(i) + weight*runtime_opt.estbl(i+1);
-
-    // If pressure is less than SVP, set qs to maximum of 1.
-    if ( (p - es) < 0 ) {
-      qs = 1;
-    }
-    else {
-      qs = PC::ep_2.value*es / (p - ZMC::omeps*es);
-    }
-
-    // Ensures returned es is consistent with limiters on qs.
-    es = Kokkos::min(es, p);
-  }
-
 
   KOKKOS_FUNCTION
   static void zm_transport_tracer(
@@ -549,7 +628,8 @@ struct Functions {
     const Workspace& workspace,
     const Int& pver, // number of mid-point levels
     const Int& pverp, // number of interface levels
-    const uview_2d<const Real>& wind_in, // input Momentum array
+    const Real& dt, // time step in seconds : 2*delta_t
+    const uview_2d<const Real>& wind_mid, // input Momentum array (nwind, pver)
     const Int& nwind, // number of tracers to transport
     const uview_1d<const Real>& mu, // mass flux up
     const uview_1d<const Real>& md, // mass flux down
@@ -559,18 +639,15 @@ struct Functions {
     const uview_1d<const Real>& dp, // gathered pressure delta between interfaces
     const Int& jt, // index of cloud top for each column
     const Int& mx, // index of cloud top for each column
-    const Int& ideep, // gathering array
-    const Int& il1g, // gathered min ncol index
-    const Int& il2g, // gathered max ncol index
-    const Real& dt, // time step in seconds : 2*delta_t
     const Int& ktm, // Highest top level for any column
     const Int& kbm, // Highest bottom level for any column
-    // Outputs
+    // Outputs (all wind arrays are (nwind, pver))
     const uview_2d<Real>& wind_tend, // output momentum tendency
-    const uview_2d<Real>& pguall, // apparent force from  updraft PG
-    const uview_2d<Real>& pgdall, // apparent force from  downdraft PG
-    const uview_2d<Real>& icwu, // in-cloud winds in updraft
-    const uview_2d<Real>& icwd, // in-cloud winds in downdraft
+    // unused diagnostics - commented out but kept for easy restoration
+    // const uview_2d<Real>& pguall, // apparent force from  updraft PG
+    // const uview_2d<Real>& pgdall, // apparent force from  downdraft PG
+    // const uview_2d<Real>& icwu, // in-cloud winds in updraft
+    // const uview_2d<Real>& icwd, // in-cloud winds in downdraft
     const uview_1d<Real>& seten); // dry static energy tendency);
 
   KOKKOS_FUNCTION
@@ -702,7 +779,7 @@ struct Functions {
     const uview_1d<Real>& ptend_u, // output tendency of u-wind
     const uview_1d<Real>& ptend_v, // output tendency of v-wind
     // Outputs
-    const uview_1d<Real>& mcsp_dt_out, // final MCSP tendency for DSE
+    const uview_1d<Real>& mcsp_ds_out, // final MCSP tendency for DSE
     const uview_1d<Real>& mcsp_dq_out, // final MCSP tendency for qv
     const uview_1d<Real>& mcsp_du_out, // final MCSP tendency for u wind
     const uview_1d<Real>& mcsp_dv_out, // final MCSP tendency for v wind
@@ -710,42 +787,7 @@ struct Functions {
     Real& mcsp_shear, // shear used to check against threshold
     Real& zm_depth); // pressure depth of ZM heating
 
-
-  KOKKOS_INLINE_FUNCTION
-  static bool is_conv_active(
-    // Inputs
-    const ZmRuntimeOpt& runtime_opt,
-    const bool& is_first_step,       // flag for first step of run
-    const Real& cape,                // conv. avail. potential energy     [J]
-    const Real& dcape,               // CAPE generated by dycor (dCAPE)   [J]
-    // Outputs
-    Real& cape_threshold_loc)        // cape threshold
-  {
-    // set local threshold to be used for zm_closure()
-    if ( runtime_opt.trig_dcape && !is_first_step ) {
-      cape_threshold_loc = ZMC::cape_threshold_new;
-    }
-    else {
-      cape_threshold_loc = ZMC::cape_threshold_old;
-    }
-
-    //--------------------------------------------------------------------------
-    // determine if column is active
-    if ( runtime_opt.trig_dcape && ! is_first_step ) {
-      if ( cape > cape_threshold_loc && dcape > ZMC::dcape_threshold ) {
-        return true;
-      }
-    }
-    else {
-      if (cape > cape_threshold_loc) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  static view_1d<bool> zm_conv_main(
+  static void zm_conv_main(
     // Inputs
     const ZmRuntimeOpt& runtime_opt,
     const Int& ncol, // number of columns
@@ -772,6 +814,7 @@ struct Functions {
     const uview_1d<Int>& jctop, // top-of-deep-convection index            [ncol]
     const uview_1d<Int>& jcbot, // base of cloud index                     [ncol]
     const uview_1d<Int>& jt, // top level index of convection           [ncol]
+    const uview_1d<Int>& active, // deep convection activity flag (1/0)     [ncol]
     const uview_1d<Real>& prec, // output precipitation                    [m/s]    [ncol]
     const uview_2d<Real>& heat, // dry static energy tendency              [W/kg]   [ncol,pver]
     const uview_2d<Real>& qtnd, // specific humidity tendency              [kg/kg/s][ncol,pver]
@@ -790,7 +833,9 @@ struct Functions {
     const uview_2d<Real>& ql, // cloud liquid water for chem/wetdep      [?]      [ncol,pver]
     const uview_1d<Real>& rliq, // reserved liquid (not yet in cldliq)     []       [ncol]
     const uview_2d<Real>& rprd, // rain production rate                    [kg/kg/s][ncol,pver]
-    const uview_2d<Real>& dlf); // detrainment rate of cloud liquid water  [kg/kg/s][ncol,pver]
+    const uview_2d<Real>& dlf, // detrainment rate of cloud liquid water  [kg/kg/s][ncol,pver]
+    Int& ktm, // highest cloud-top level index over active columns
+    Int& kbm); // highest cloud-base level index over active columns
 
   KOKKOS_FUNCTION
   static void zm_conv_evap(
@@ -1000,7 +1045,12 @@ struct Functions {
   //
   // --------- Members ---------
   //
-  inline static ZmRuntimeOpt s_common_init;
+  inline static ZmRuntimeOpt s_zm_opts;
+
+  //
+  // inline functions were moved to an impl, so include them here
+  //
+  #include "impl/zm_inline_functions.hpp"
 
 }; // struct Functions
 
@@ -1008,10 +1058,10 @@ struct Functions {
 } // namespace scream
 
 #if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) \
-                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
+                              && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 # include "impl/zm_input_state_impl.hpp"
 # include "impl/zm_output_tend_impl.hpp"
-# include "impl/zm_common_init_impl.hpp"
+# include "impl/zm_opts_impl.hpp"
 # include "impl/zm_invert_entropy_impl.hpp"
 # include "impl/zm_entropy_impl.hpp"
 # include "impl/zm_transport_tracer_impl.hpp"

@@ -48,7 +48,7 @@ module elm_initializeMod
   public :: initialize1  ! Phase one initialization
   public :: initialize2  ! Phase two initialization
   !-----------------------------------------------------------------------
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
   private :: elm_moab_interface_init   ! create the full MOAB mesh representation of ELM domain
 
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags to be set in MOAB
@@ -77,7 +77,7 @@ contains
     use pftvarcon                 , only: pftconrd
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     use decompInitMod             , only: decompInit_moab
 #endif
     use domainMod                 , only: domain_check, ldomain, domain_init
@@ -201,7 +201,7 @@ contains
     ! and enable ghost halo-layers for each task to describe shared entities.
     ! Now let us create that MOAB app that represents the full ELM mesh
     ! ------------------------------------------------------------------------
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     call elm_moab_interface_init()
 #endif
 
@@ -210,7 +210,7 @@ contains
     ! ------------------------------------------------------------------------
 
     select case (trim(domain_decomp_type))
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     case ("moab")
       call decompInit_moab(ni, nj, amask)
       deallocate(amask)
@@ -1268,7 +1268,7 @@ contains
 
   end subroutine elm_petsc_init
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
   subroutine elm_moab_interface_init()!(bounds)
     use elm_varctl  ,  only : fatmlndfrc  ! for messages and domain file name
     use MOABGridType, only : elm_moab_initialize, elm_moab_load_grid_file

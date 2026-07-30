@@ -66,16 +66,18 @@ struct UnitWrap::UnitTest<D>::TestZmTransportMomentum : public UnitWrap::UnitTes
         ZmTransportMomentumData& d_baseline = baseline_data[i];
         ZmTransportMomentumData& d_test = test_data[i];
         REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.wind_tend));
-        REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.pguall));
-        REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.pgdall));
-        REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.icwu));
-        REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.icwd));
+        // unused diagnostics - commented out but kept for easy restoration
+        // REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.pguall));
+        // REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.pgdall));
+        // REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.icwu));
+        // REQUIRE(d_baseline.total(d_baseline.wind_tend) == d_test.total(d_test.icwd));
         for (Int k = 0; k < d_baseline.total(d_baseline.wind_tend); ++k) {
           REQUIRE(d_baseline.wind_tend[k] == d_test.wind_tend[k]);
-          REQUIRE(d_baseline.pguall[k] == d_test.pguall[k]);
-          REQUIRE(d_baseline.pgdall[k] == d_test.pgdall[k]);
-          REQUIRE(d_baseline.icwu[k] == d_test.icwu[k]);
-          REQUIRE(d_baseline.icwd[k] == d_test.icwd[k]);
+          // unused diagnostics - commented out but kept for easy restoration
+          // REQUIRE(d_baseline.pguall[k] == d_test.pguall[k]);
+          // REQUIRE(d_baseline.pgdall[k] == d_test.pgdall[k]);
+          // REQUIRE(d_baseline.icwu[k] == d_test.icwu[k]);
+          // REQUIRE(d_baseline.icwd[k] == d_test.icwd[k]);
         }
         REQUIRE(d_baseline.total(d_baseline.seten) == d_test.total(d_test.seten));
         for (Int k = 0; k < d_baseline.total(d_baseline.seten); ++k) {
