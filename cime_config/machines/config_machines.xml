@@ -2639,6 +2639,8 @@
     </environment_variables>
     <environment_variables compiler="intel" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel-oneapi-compilers-2025.2.0; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="METIS_ROOT">$SHELL{if [ -z "$METIS_ROOT" ]; then echo /lcrc/soft/climate/polaris/chrysalis/spack/dev_polaris_1.0.0/var/spack/environments/spack_env_oneapi-ifx_openmpi/.spack-env/view/; else echo "$METIS_ROOT"; fi}</env>
+      <env name="PARMETIS_ROOT">$SHELL{if [ -z "$PARMETIS_ROOT" ]; then echo /lcrc/soft/climate/polaris/chrysalis/spack/dev_polaris_1.0.0/var/spack/environments/spack_env_oneapi-ifx_openmpi/.spack-env/view/; else echo "$PARMETIS_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel-classic" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel; else echo "$MOAB_ROOT"; fi}</env>
