@@ -232,6 +232,9 @@ void SfcCoupling::exportToCoupler() {
    auto AvgSfcVelocityMerid_ = OcnToCpl.AvgSfcVelocityMeridH;
    auto InstSshCellH_        = OcnToCpl.InstSshCellH;
 
+   // Initalize all o2x fields to 0.0 for next coupling interval
+   deepCopy(OcnToCplView_, 0.0_Real);
+
    /// TODO: Shouldn't be making direct calls to Kokkos here.
    auto Policy = Kokkos::RangePolicy<HostExecSpace, Kokkos::IndexType<int>>(
        0, NCellsOwned);
