@@ -68,6 +68,11 @@ if (NOT TARGET pioc)
 
 	option(PIO_ENABLE_TOOLS "" OFF)
 
+	# Locally shadow ADIOS2_FOUND, which leaks in from E3SM's top-level
+	# find_package. Workaround for scorpio/src/clib/CMakeLists.txt:498, which
+	# should test WITH_ADIOS2 (OFF here) instead of ADIOS2_FOUND.
+	set(ADIOS2_FOUND FALSE)
+
 	add_subdirectory(
 	  ${E3SM_EXTERNALS_ROOT}/scorpio
 	  ${CMAKE_CURRENT_BINARY_DIR}/scorpio
