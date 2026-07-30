@@ -237,7 +237,7 @@ def main():
 
   # Get ocn mask on ocn grid
   omask = get_mask(ds,opts,suffix='_a')
-  ofrac = xr.zeros_like(ds['area_a'])
+  ofrac = xr.ones_like(ds['omask'])
 
   ds_out = xr.Dataset()
 
