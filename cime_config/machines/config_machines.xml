@@ -2416,7 +2416,8 @@
       <env name="NETCDF_INCLUDES">$ENV{SEMS_NETCDF_ROOT}/include</env>
       <env name="NETCDF_LIBS">$ENV{SEMS_NETCDF_ROOT}/lib</env>
       <env name="OMP_STACKSIZE">64M</env>
-    </environment_variables>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /gpfs/odiazib/installs; else echo "$MOAB_ROOT"; fi}</env>  
+   </environment_variables>
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
