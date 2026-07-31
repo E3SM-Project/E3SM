@@ -282,10 +282,6 @@ void read_avg_type (const std::string& avg_type, const int seed, const ekat::Com
     auto filename = get_filename(window_start);
 
     // Each file must hold exactly one snapshot (one per month).
-    // Before the bug fix, setup_file used next_write_ts (end of window) instead
-    // of last_write_ts (start of window), so the file's time_idx was set to the
-    // wrong month. This caused snapshot_fits to return true for an extra month,
-    // leaving the file open and allowing multiple snapshots to accumulate.
     REQUIRE(scorpio::get_dimlen(filename,"time")==1);
 
     read_fields(filename,fields,gids,comm);
