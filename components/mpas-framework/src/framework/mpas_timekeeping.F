@@ -1499,9 +1499,6 @@ module mpas_timekeeping
          end if
 
          call mpas_split_string(timeSubString, ":", subStrings)
-         !call mpas_log_write('timeString ' // trim(timeSubString))
-         
-
 
          if (size(subStrings) == 3) then
             read(subStrings(1),*) hour
