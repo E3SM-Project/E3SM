@@ -79,7 +79,7 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    CurTracerArray = Tracers::getAll(CurLevel);
    if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
       VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
-                            State->CurTimeIndex);
+                            CurLevel);
    }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);

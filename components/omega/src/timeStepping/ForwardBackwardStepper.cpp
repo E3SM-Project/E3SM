@@ -95,7 +95,7 @@ void ForwardBackwardStepper::doStep(
    CurTracerArray = Tracers::getAll(VelCurLevel);
    if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
       VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
-                            State->CurTimeIndex);
+                            VelCurLevel);
    }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), 0);

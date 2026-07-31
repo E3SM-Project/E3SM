@@ -441,8 +441,9 @@ void VertMix::applyVelVertMixImplicit(
    OMEGA_SCOPE(MinLayerEdgeBot, VCoord->MinLayerEdgeBot);
    OMEGA_SCOPE(MaxLayerEdgeTop, VCoord->MaxLayerEdgeTop);
 
-   const Array2DReal &NormalVelEdge   = State->NormalVelocity[VelTimeLevel];
-   const Array2DReal &PseudoThickCell = State->PseudoThickness[ThickTimeLevel];
+   const Array2DReal &NormalVelEdge = State->getNormalVelocity(VelTimeLevel);
+   const Array2DReal &PseudoThickCell =
+       State->getPseudoThickness(ThickTimeLevel);
 
    // Compute velocity vertical mixing
    if (LocVelVertMixSetup.Enabled) {
@@ -546,7 +547,8 @@ void VertMix::applyTracerVertMixImplicit(
    OMEGA_SCOPE(MinLayerCell, VCoord->MinLayerCell);
    OMEGA_SCOPE(MaxLayerCell, VCoord->MaxLayerCell);
 
-   const Array2DReal &PseudoThickCell = State->PseudoThickness[ThickTimeLevel];
+   const Array2DReal &PseudoThickCell =
+       State->getPseudoThickness(ThickTimeLevel);
 
    if (LocTracerVertMixSetup.Enabled) {
       Pacer::start("Tend:tracerVertMix", 1);
