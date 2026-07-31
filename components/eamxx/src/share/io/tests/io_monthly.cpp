@@ -195,6 +195,111 @@ void read (const int seed, const ekat::Comm& comm)
   }
 }
 
+// Write 12 months of data using the given averaging type with monthly storage.
+// This tests that the timestamp index in the file is taken from last_write_ts
+// (start of the averaging window) rather than next_write_ts (end of window)
+// for non-Instant averaging types.
+void write_avg_type (const std::string& avg_type, const int seed, const ekat::Comm& comm)
+{
+  auto gm = get_gm(comm);
+  auto grid = gm->get_grid("point_grid");
+
+  auto t0 = get_t0();
+  const int dt = 86400*30; // 30 days
+
+  auto fm = get_fm(grid,t0,seed);
+  std::vector<std::string> fnames;
+  for (auto it : fm->get_repo()) {
+    fnames.push_back(it.second->name());
+  }
+
+  ekat::ParameterList om_pl;
+  om_pl.set("filename_prefix",std::string("io_monthly_avg"));
+  om_pl.set("field_names",fnames);
+  om_pl.set("averaging_type", avg_type);
+  om_pl.set("file_max_storage_type",std::string("one_month"));
+  om_pl.set("floating_point_precision",std::string("single"));
+  auto& ctrl_pl = om_pl.sublist("output_control");
+  ctrl_pl.set("frequency_units",std::string("nsteps"));
+  ctrl_pl.set("frequency",1);
+  ctrl_pl.set("save_grid_data",false);
+
+  OutputManager om;
+  om.initialize(comm,om_pl,t0,false);
+  om.setup(fm,gm->get_grid_names());
+
+  // Run 12 steps: one per month
+  const int nsteps = 12;
+  auto t = t0;
+  for (int n=0; n<nsteps; ++n) {
+    om.init_timestep(t,dt);
+    t += dt;
+    for (const auto& name : fnames) {
+      auto f = fm->get_field(name);
+      add(f,1);
+    }
+    om.run(t);
+  }
+  om.finalize();
+}
+
+// Verify that for AVERAGE/MIN/MAX averaging with monthly storage:
+//  - 12 separate files were created (one per month)
+//  - each file contains exactly 1 time snapshot
+//  - each file contains the correct averaged/min/max data
+void read_avg_type (const std::string& avg_type, const int seed, const ekat::Comm& comm)
+{
+  auto t0 = get_t0();
+  int dt = 86400*30;
+
+  auto gm = get_gm(comm);
+  auto grid = gm->get_grid("point_grid");
+  auto gids = grid->get_partitioned_dim_gids();
+
+  auto fm0 = get_fm(grid,t0,seed);
+  std::vector<Field> fields;
+  for (auto it : fm0->get_repo()) {
+    fields.push_back(it.second->clone());
+  }
+
+  // For non-Instant averaging, the filename is derived from last_write_ts
+  // (the start of the averaging window). With freq=1 nstep, the n-th window
+  // starts at t0 + n*dt and ends at t0 + (n+1)*dt.
+  // So the n-th output file is named using the timestamp t0 + n*dt.
+  std::string casename = "io_monthly_avg";
+  auto get_filename = [&](const util::TimeStamp& t) {
+    auto t_str = t.to_string().substr(0,7); // YYYY-MM
+    std::string fname = casename
+                      + "." + avg_type + ".nsteps_x1"
+                      + ".np" + std::to_string(comm.size())
+                      + "." + t_str
+                      + ".nc";
+    return fname;
+  };
+
+  for (int n=0; n<12; ++n) {
+    auto window_start = t0 + n*dt;
+    auto filename = get_filename(window_start);
+
+    // Each file must hold exactly one snapshot (one per month).
+    // Before the bug fix, setup_file used next_write_ts (end of window) instead
+    // of last_write_ts (start of window), so the file's time_idx was set to the
+    // wrong month. This caused snapshot_fits to return true for an extra month,
+    // leaving the file open and allowing multiple snapshots to accumulate.
+    REQUIRE(scorpio::get_dimlen(filename,"time")==1);
+
+    read_fields(filename,fields,gids,comm);
+
+    // With 1 sample per averaging window, AVERAGE=MIN=MAX equals the single sample.
+    // At window n (0-indexed), the field was incremented n+1 times before the write.
+    for (const auto& f : fields) {
+      auto f0 = fm0->get_field(f.name()).clone(CloneFlags::CopyData);
+      add(f0,n+1);
+      REQUIRE(views_are_equal(f,f0));
+    }
+  }
+}
+
 TEST_CASE ("io_monthly") {
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
@@ -202,13 +307,30 @@ TEST_CASE ("io_monthly") {
   auto seed = get_random_test_seed(&comm);
 
   if (comm.am_i_root()) {
-    std::cout << "   -> Testing output with one file per month ...\n";
+    std::cout << "   -> Testing monthly output with INSTANT averaging ...\n";
   }
   write(seed,comm);
   read (seed,comm);
   if (comm.am_i_root()) {
-    std::cout << "   -> Testing output with one file per month ... PASS\n";
+    std::cout << "   -> Testing monthly output with INSTANT averaging ... PASS\n";
   }
+
+  // Test that for AVERAGE/MIN/MAX averaging with monthly storage, each month's
+  // output goes into a separate correctly-named file (one snapshot per file).
+  // This tests the fix for the timestamp handling bug in setup_file, where
+  // set_time_idx now uses last_write_ts instead of next_write_ts for non-Instant
+  // averaging types.
+  for (const auto& avg_type : {"AVERAGE","MIN","MAX"}) {
+    if (comm.am_i_root()) {
+      std::cout << "   -> Testing monthly output with " << avg_type << " averaging ...\n";
+    }
+    write_avg_type(avg_type,seed,comm);
+    read_avg_type (avg_type,seed,comm);
+    if (comm.am_i_root()) {
+      std::cout << "   -> Testing monthly output with " << avg_type << " averaging ... PASS\n";
+    }
+  }
+
   scorpio::finalize_subsystem();
 }
 
