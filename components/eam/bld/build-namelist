@@ -1495,7 +1495,7 @@ if ($aer_model eq 'mam' ) {
             [qw(so4_c7 bc_c7 pom_c7 soa_c7 ncl_c7 mom_c7)],
             );
 
-        @mode_num_src  = qw(A A A A A A);
+        @mode_num_src  = qw(A A A A A A A);
         @mode_spec_src = (
             [qw(A A A A A A A)],
             [qw(A A A A)],
@@ -1535,7 +1535,7 @@ if ($aer_model eq 'mam' ) {
             [qw(so4_c7 bc_c7 pom_c7 soa_c7 ncl_c7 mom_c7)],
             );
 
-        @mode_num_src  = qw(A A A A A A);
+        @mode_num_src  = qw(A A A A A A A);
         @mode_spec_src = (
             [qw(A A A A A A A)],
             [qw(A A A A)],

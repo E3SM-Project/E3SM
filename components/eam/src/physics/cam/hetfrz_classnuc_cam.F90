@@ -1753,7 +1753,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 
       if (as_bc > 0._r8) then
          bc_num_imm = bc_num_imm + as_bc/(as_so4+as_bc+as_pom+as_soa+as_ss+as_mom)  &
-                    * aer_cb(ii,kk,num_acarbon)*1.0e-6_r8 ! #/cm^3 
+                    * aer_cb(ii,kk,num_abb)*1.0e-6_r8 ! #/cm^3 
       end if      
 
       dmc_imm = aer_cb(ii,kk,dst_coarse)
