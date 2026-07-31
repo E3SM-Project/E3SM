@@ -928,7 +928,9 @@ setup_file (      IOFileSpecs& filespecs,
 
   filespecs.is_open = true;
   if (filespecs.storage.type!=NumSnaps) {
-    filespecs.storage.set_time_idx(control.next_write_ts);
+    // We want the next write timestamp for instant, but the last write timestamp for average/min/max,
+    // since the latter is the start of the averaging window, and its control hasn't progressed yet
+    filespecs.storage.set_time_idx(m_avg_type==OutputAvgType::Instant ? control.next_write_ts : control.last_write_ts);
   }
 
   m_resume_output_file = false;
