@@ -437,6 +437,13 @@ Directory containing previously saved scalar files (for use when read_scalars = 
 Write scalars to file
 </entry>
 
+<entry id="read_hdd_cdd"
+        type="logical"
+        category="gcam"
+        group="gcam_inparm">
+If FALSE, hdd/cdd are calculated from t_ref2m
+</entry>
+
 <entry id="write_hdd_cdd"
         type="logical"
         category="gcam"
