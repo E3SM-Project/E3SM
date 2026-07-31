@@ -3477,6 +3477,7 @@
         <command name="load">netcdf-fortran/4.6.2</command>
         <command name="load">moab/5.6.0</command>
         <command name="load">mpich-config/collective-tuning/1024</command>
+        <command name="load">py-pyyaml/6.0.3</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3526,9 +3527,13 @@
         <env name="FI_LOG_LEVEL">warn</env>
         <env name="RLIMITS">--rlimits CORE</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx" mpilib="default">
-      <env name="METIS_ROOT">$SHELL{if [ -z "$METIS_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/polaris/aurora/spack/dev_polaris_1.1.0/var/spack/environments/spack_env_oneapi-ifx_mpich/.spack-env/view/; else echo "$METIS_ROOT"; fi}</env>
-      <env name="PARMETIS_ROOT">$SHELL{if [ -z "$PARMETIS_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/polaris/aurora/spack/dev_polaris_1.1.0/var/spack/environments/spack_env_oneapi-ifx_mpich/.spack-env/view/; else echo "$PARMETIS_ROOT"; fi}</env>
+    <environment_variables compiler="oneapi-ifx" mpilib="mpich">
+      <env name="METIS_ROOT">$SHELL{if [ -z "$METIS_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/polaris/aurora/spack/dev_polaris_1.0.0/var/spack/environments/spack_env_oneapi-ifx_mpich/.spack-env/view/; else echo "$METIS_ROOT"; fi}</env>
+      <env name="PARMETIS_ROOT">$SHELL{if [ -z "$PARMETIS_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/polaris/aurora/spack/dev_polaris_1.0.0/var/spack/environments/spack_env_oneapi-ifx_mpich/.spack-env/view/; else echo "$PARMETIS_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="oneapi-ifxgpu" mpilib="mpich">
+      <env name="METIS_ROOT">$SHELL{if [ -z "$METIS_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/polaris/aurora/spack/dev_polaris_1.0.0/var/spack/environments/spack_env_oneapi-ifxgpu_mpich/.spack-env/view/; else echo "$METIS_ROOT"; fi}</env>
+      <env name="PARMETIS_ROOT">$SHELL{if [ -z "$PARMETIS_ROOT" ]; then echo /lus/flare/projects/E3SM_Dec/soft/polaris/aurora/spack/dev_polaris_1.0.0/var/spack/environments/spack_env_oneapi-ifxgpu_mpich/.spack-env/view/; else echo "$PARMETIS_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits DEBUG="TRUE">
         <resource name="RLIMIT_CORE">-1</resource>

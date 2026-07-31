@@ -642,6 +642,7 @@
       <directives>
         <directive> -l select={{ num_nodes }} </directive>
         <directive> -l filesystems=home:flare </directive>
+        <directive> -V </directive>
       </directives>
       <queues>
         <queue walltimemax="01:00:00"  nodemin="1"    nodemax="2"     strict="true" default="true">debug</queue>
