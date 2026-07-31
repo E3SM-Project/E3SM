@@ -339,7 +339,6 @@ cell:do iCell = 1,nCellsSolve
       ! Evaluate wet layerThickness average
       !---------------------------------------------------------------
         call ocn_init_grid_average(nSubgridCell, subgridBathymetryValues, subgridSshValues, subgridAreas, layerThickness(1,iCell))
-!        call ocn_init_wet_average_ssh(nSubgridCell, subgridBathymetryValues, subgridSshValues, subgridAreas, ssh(iCell))!{{{
 
         call ocn_subgrid_ssh_lookup(layerThickness(1,iCell),&
                                     subgridWetVolumeCellTable(:,iCell),&
@@ -347,12 +346,6 @@ cell:do iCell = 1,nCellsSolve
                                     bottomDepth(iCell),&
                                     subgridCellBathymetryMin(iCell),&
                                     ssh(iCell))
-
-!            call ocn_subgrid_layer_thickness_lookup(ssh(iCell), &
-!                                           subgridWetVolumeCellTable(:,iCell), &
-!                                           subgridSshCellTableRange(:,iCell),&
-!                                           bottomDepth(iCell),&
-!                                           LayerThickness(1,iCell))
 
        call ocn_subgrid_ssh_lookup( config_drying_min_cell_height, & 
                                      subgridWetVolumeCellTable(:,iCell), &
@@ -363,9 +356,7 @@ cell:do iCell = 1,nCellsSolve
 
                              
        if ( ssh(iCell) < subgridSshCellTableRange(3,iCell) ) then
-          ssh(iCell) = subgridSshCellTableRange(3,iCell) ;  
-
-!          LayerThickness(1,iCell) = config_drying_min_cell_height ; 
+          ssh(iCell) = subgridSshCellTableRange(3,iCell)
        end if 
 
     end do cell
@@ -887,35 +878,6 @@ vertex: do iVertex = 1,nVerticesSolve
 
       area = 0.5_RKIND*(x(2)*y(3) - y(2)*x(3) - x(1)*y(3) + y(1)*x(3) + x(1)*y(2) - y(1)*x(2))
 
-      !xv = cosd( lat ).*cosd( lon ) ;
-      !yv = cosd( lat ).*sind( lon ) ;
-      !zv = sind( lat ) ;
-
-      !avec = [ xv(:,1) yv(:,1) zv(:,1) ] ;
-      !bvec = [ xv(:,2) yv(:,2) zv(:,2) ] ;
-      !cvec = [ xv(:,3) yv(:,3) zv(:,3) ] ;
-
-      !axb = cross_product( avec, bvec ) ;
-      !cp = atan( sqrt(sum(axb.*axb ,2))./sum(avec.*bvec, 2)) ;
-
-      !axb = cross_product( avec, cvec ) ;
-      !bp = atan( sqrt(sum(axb.*axb,2))./sum(avec.*cvec,2 ) ) ;
-
-      !axb = cross_product( bvec, cvec ) ;
-      !ap = atan( sqrt(sum(axb.*axb,2))./sum(bvec.*cvec,2) ) ;
-
-
-      !A = (cos(ap) - cos(bp).*cos(cp))./( sin(bp).*sin(cp) ) ;
-      !B = (cos(bp) - cos(cp).*cos(ap))./( sin(cp).*sin(ap) ) ;
-      !C = (cos(cp) - cos(ap).*cos(bp))./( sin(ap).*sin(bp) ) ;
-
-      !A = acos( A ) ;
-      !B = acos( B ) ;
-      !C = acos( C ) ;
-
-      !% 3. Return area
-      !dA = A + B + C - pi ;
-
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_tri_area!}}}
@@ -1322,12 +1284,6 @@ vertex: do iVertex = 1,nVerticesSolve
 
        if ( config_topography_latlon_degrees .and. &
               config_topography_source == 'latlon_file' ) then
-          !do i = 1,nLonTopo
-          !   if (topoLon % array(i) < 0.0) then
-          !      topoLon % array(i) = topoLon % array(i) + 360.0_RKIND
-          !   end if
-          !end do
-
           topoLat % array(:) = topoLat % array(:) * pii / 180.0_RKIND
           topoLon % array(:) = topoLon % array(:) * pii / 180.0_RKIND
        end if
@@ -1387,7 +1343,6 @@ vertex: do iVertex = 1,nVerticesSolve
       ix(1) = bisection_index(x, topoLon%array, nLonTopo)
       ix(2) = bisection_index(y, topoLat%array, nLatTopo)
 
-      !PRINT*, ix(1), ix(2)
       if ((ix(1) > 0) .and. (ix(2) > 0)) then
 
         dx = (/ topoLon%array(ix(1)+1) - topoLon%array(ix(1)), &
@@ -1411,7 +1366,6 @@ vertex: do iVertex = 1,nVerticesSolve
         f(4) = ( xc(1) - xv(2) )*( xc(2) - yv(1) )/(-den) ;
 
         depth = sum( bath*f ) ;
-        !depth = -1.0_RKIND*depth
 
         if ((bath(1) /= bath(1)) .or. (bath(2) /= bath(2)) .or. (bath(3) /= bath(3)) .or. (bath(4) /= bath(4))) then
             call extrapolate_topography( )
@@ -1437,7 +1391,6 @@ vertex: do iVertex = 1,nVerticesSolve
       subroutine extrapolate_topography(  )
         implicit none 
 
-        ! depth = -1e10
         if ( adjustl(trim(config_subgrid_topography_extrapolation_method)) == 'constant' ) then
           depth = config_subgrid_topography_extrapolation_constant_value ;       
         else
@@ -1507,7 +1460,6 @@ vertex: do iVertex = 1,nVerticesSolve
       ix(1) = bisection_index(x, lulcLon%array, nLonDrag)
       ix(2) = bisection_index(y, lulcLat%array, nLatDrag)
 
-      !PRINT*, ix(1), ix(2)
       if ((ix(1) > 0) .and. (ix(2) > 0)) then
 
         f(1) = lulcData%array(ix(1),ix(2))  ;

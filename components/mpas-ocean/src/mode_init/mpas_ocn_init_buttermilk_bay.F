@@ -218,8 +218,6 @@ contains
 
     xshift = xMin
     yshift = (3.0_RKIND*yMin + dcEdgeMin*sin(pi/3.0_RKIND))/3.0_RKIND
-    ! print*, "xMin, yMin = ", xMin, yMin, dcEdgeMin
-    ! print*, "xshift, yshift = ", xshift, yshift
 
     !***********************************************************************
     !
@@ -463,16 +461,8 @@ contains
                                         bottomDepth(iCell),&
                                         subgridCellBathymetryMin(iCell),&
                                         ssh(iCell))
-            !call ocn_subgrid_layer_thickness_lookup(ssh(iCell), &
-            !                               subgridWetVolumeCellTable(:,iCell), &
-            !                               subgridSshCellTableRange(:,iCell),&
-            !                               bottomDepth(iCell),&
-            !                               LayerThickness(1,iCell))
-
           else
             ! Initial condition for a standard run
-            !call ocn_init_subgrid_interpolate_topo(xCell(iCell), yCell(iCell), bottomDepth(iCell))
-
             ssh(iCell) = -bottomDepth(iCell) ;
             do k = 1, maxLevelCell(iCell)
               !
@@ -520,9 +510,6 @@ contains
            .and.  (xCell(iCell) + dcEdgeMin/2.0_RKIND) < 3072.0_RKIND ) then
               tidalInputMask(iCell) = 1.0_RKIND
           end if
-        ! spread it over multiple cells
-        ! if (yCell(iCell) > (25.0e3 - 3*dcEdgeMinGlobal)) then
-        !  tidalInputMask(iCell) = exp(-((yCell(iCell)-25.0e3)/dcEdgeMinGlobal)**2.0)
        end if
      end do
 
