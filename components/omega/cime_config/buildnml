@@ -273,8 +273,12 @@ def _build_time_integration_config(default_time_integration, case):
     # RunDuration is not used in coupled runs
     time_integration["RunDuration"] = "none"
 
-    if ocn_grid == "EC30to60E2r2":
-        time_integration["TimeStepper"] = "RungeKutta4"
+    # All meshes use RK4 timestepping (for now)
+    time_integration["TimeStepper"] = "RungeKutta4"
+
+    if ocn_grid == "oQU240":
+        time_integration["TimeStep"] = "0000_00:05:00"
+    elif ocn_grid == "EC30to60E2r2":
         time_integration["TimeStep"] = "0000_00:01:00"
 
     return time_integration
