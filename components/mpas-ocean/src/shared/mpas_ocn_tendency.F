@@ -537,6 +537,7 @@ contains
       !$omp do schedule(runtime)
 #endif
          do iEdge = 1, nEdgesAll
+            ! Handle dry/drying edges for outgoing edge fluxes
             if ( layerThickEdgeFlux(k,iEdge) <= hCrit ) then
                tendVel(k,iEdge) = 0.0_RKIND
             elseif ( (layerThickEdgeFlux(k,iEdge) > hCrit) .and. &
