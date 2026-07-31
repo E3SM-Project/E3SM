@@ -96,6 +96,13 @@ void ForwardBackwardStepper::doStep(
    if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
       VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
                             VelCurLevel);
+
+      // Re-exchange halos after vertical mixing
+      Pacer::timingBarrier("ForwardBackward:vMixHaloExchBarrier", 3, Comm);
+      Pacer::start("ForwardBackward:vMixHaloExch", 3);
+      State->exchangeHalo(VelCurLevel);
+      Tracers::exchangeHalo(VelCurLevel);
+      Pacer::stop("ForwardBackward:vMixHaloExch", 3);
    }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), 0);
