@@ -4,6 +4,7 @@
 #include "control/surface_coupling_utils.hpp"
 #include "share/data_managers/field_manager.hpp"
 #include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/model_init.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/io/eamxx_output_manager.hpp"
@@ -203,6 +204,7 @@ protected:
   std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
 
   std::shared_ptr<IOPDataManager>           m_iop_data_manager;
+  std::shared_ptr<ModelInit>                m_model_init;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;

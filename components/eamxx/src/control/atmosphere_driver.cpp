@@ -609,23 +609,36 @@ void AtmosphereDriver::create_fields()
   }
 
   // Now go through the input fields/groups to the atm proc group,
-  // and mark them as part of the RESTART group.
+  // and mark them as part of the RESTART/STARTUP groups.
   // Skip fields in the ACCUMULATED group, since those are reset to 0
   // at the beginning of each atm step, so there is no need to read
   // them from the IC or restart file.
+  auto is_topography_field = [] (const std::string& name) {
+    return name=="phis" or name=="sgh" or name=="sgh30";
+  };
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
+    const auto& fname = fid.name();
     const auto& fgroups = f.get_header().get_tracking().get_groups_names();
     if (not ekat::contains(fgroups, "ACCUMULATED")) {
       m_field_mgr->add_to_group(fid, "RESTART");
+      m_field_mgr->add_to_group(fid, "STARTUP");
+      if (is_topography_field(fname)) {
+        m_field_mgr->add_to_group(fid, "TOPOGRAPHY");
+      }
     }
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_monolithic_field) {
       const auto& mf = *g.m_monolithic_field;
+      const auto& mfn = mf.get_header().get_identifier().name();
       const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
       if (not ekat::contains(mfgroups, "ACCUMULATED")) {
         m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
+        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "STARTUP");
+        if (is_topography_field(mfn)) {
+          m_field_mgr->add_to_group(mf.get_header().get_identifier(), "TOPOGRAPHY");
+        }
       }
     } else {
       for (const auto& fn : g.m_info->m_fields_names) {
@@ -633,6 +646,10 @@ void AtmosphereDriver::create_fields()
         const auto& fgroups = field.get_header().get_tracking().get_groups_names();
         if (not ekat::contains(fgroups, "ACCUMULATED")) {
           m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
+          m_field_mgr->add_to_group(fn, g.grid_name(), "STARTUP");
+          if (is_topography_field(fn)) {
+            m_field_mgr->add_to_group(fn, g.grid_name(), "TOPOGRAPHY");
+          }
         }
       }
     }
@@ -876,11 +893,24 @@ initialize_fields ()
   }
 
   // Initialize fields
-  if (m_run_type==RunType::Restart) {
-    restart_model ();
-  } else {
-    set_initial_conditions ();
+  register_default_model_init();
+  if (m_model_init==nullptr) {
+    auto model_init_type = std::string("default");
+    const auto gm_type = m_atm_params.sublist("grids_manager").get<std::string>("type");
+    if (gm_type=="homme") {
+      model_init_type = "homme";
+    }
+    if (m_atm_params.isSublist("model_init")) {
+      auto& mi_pl = m_atm_params.sublist("model_init");
+      model_init_type = mi_pl.get<std::string>("type",model_init_type);
+    }
+    m_model_init = ModelInitFactory::instance().create(model_init_type,m_atm_params);
   }
+  m_model_init->run({
+      m_run_type,
+      [this] () { restart_model(); },
+      [this] () { set_initial_conditions(); }
+  });
 
   // Now that IC have been read, add U/V subfields of horiz_winds,
   // as well as U/V component of surf_mom_flux
@@ -1170,37 +1200,20 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   };
 
-  // First the individual input fields...
-  m_atm_logger->debug("    [EAMxx] Processing input fields ...");
-  for (const auto& f : m_atm_process_group->get_fields_in()) {
-    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
-    // each atm step, so there is no need to read them from the IC file.
-    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-    if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      process_ic_field (f);
+  // Process all startup fields from the FM startup groups.
+  m_atm_logger->debug("    [EAMxx] Processing startup groups ...");
+  for (const auto& it : m_grids_manager->get_repo()) {
+    const auto& grid = it.second;
+    const auto& grid_name = grid->name();
+    if (not m_field_mgr->has_group("STARTUP",grid_name)) {
+      continue;
+    }
+    const auto& startup_fnames = m_field_mgr->get_group_info("STARTUP",grid_name).m_fields_names;
+    for (const auto& fn : startup_fnames) {
+      process_ic_field(m_field_mgr->get_field(fn,grid_name));
     }
   }
-  m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
-
-  // ...then the input groups
-  m_atm_logger->debug("    [EAMxx] Processing input groups ...");
-  for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      const auto& mf = *g.m_monolithic_field;
-      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
-        process_ic_field(mf);
-      }
-    }
-    for (auto it : g.m_individual_fields) {
-      const auto& f = *it.second;
-      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(fgroups, "ACCUMULATED")) {
-        process_ic_field(f);
-      }
-    }
-  }
-  m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
+  m_atm_logger->debug("    [EAMxx] Processing startup groups ... done!");
 
   // Some fields might be the subfield of a group's monolithic field. In that case,
   // we only need to init one: either the monolithic field, or all the individual subfields.
@@ -1759,6 +1772,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
   // Destroy iop
   m_iop_data_manager = nullptr;
+  m_model_init = nullptr;
 
   // Destroy the buffer manager
   m_memory_buffer = nullptr;
