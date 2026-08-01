@@ -26,6 +26,7 @@
 #include "OceanState.h"
 #include "PGrad.h"
 #include "Pacer.h"
+#include "SfcCoupling.h"
 #include "Tendencies.h"
 #include "TimeMgr.h"
 #include "TimeStepper.h"
@@ -37,6 +38,20 @@
 #include "mpi.h"
 
 namespace OMEGA {
+
+// Convienvence converter of an int to a StartType enum, with error checking
+StartType safeIntToStartType(int val) {
+   switch (val) {
+   case 0:
+      return StartType::StartUp;
+   case 1:
+      return StartType::Continue;
+   case 2:
+      return StartType::Branch;
+   default:
+      ABORT_ERROR("Invalid start type value: {}", val);
+   }
+}
 
 namespace Timing {
 // Flag to determine if timing info should be printed from all ranks
@@ -140,42 +155,106 @@ int ocnInit(MPI_Comm Comm ///< [in] ocean MPI communicator
    }
 
    // If reading from restart, reset the current time to the input time
+   SimTimeStr = std::any_cast<std::string>(ReqMeta["SimulationTime"]);
    if (SimTimeStr != " ") {
       TimeInstant NewCurrentTime(SimTimeStr);
       ModelClock->setCurrentTime(NewCurrentTime);
    }
 
-   // Update Halos and Host arrays with new state, auxiliary state, and tracer
-   // fields
-
-   OceanState *DefState = OceanState::getDefault();
-   I4 CurTimeLevel      = 0;
-   DefState->exchangeHalo(CurTimeLevel);
-
-   // Enforce layer masks on state and tracer variables: fully-inactive layers
-   // get FillValueReal, boundary layers get 0, active layers keep their
-   // IC/restart value.
-   DefState->applyLayerMasks(CurTimeLevel);
-
-   DefState->copyToHost(CurTimeLevel);
-   VertCoord::getDefault()->initSurfacePressure(Halo::getDefault());
-
-   Forcing *DefForcing = Forcing::getDefault();
-   DefForcing->exchangeHalo();
-
-   AuxiliaryState *DefAuxState = AuxiliaryState::getDefault();
-   DefAuxState->exchangeHalo();
-
-   // Now update tracers - assume using same time level index
-   Err = Tracers::exchangeHalo(CurTimeLevel);
-   if (Err != 0) {
-      ABORT_ERROR("Error updating tracer halo after restart");
-   }
-   Tracers::copyToHost(CurTimeLevel);
+   // Update Halo/Host arrays with new state, auxiliary state, and tracer fields
+   Err = initUpdateHaloAndHostArrays();
 
    return Err;
-
 } // end ocnInit
+
+int ocnInit1(MPI_Comm Comm,                 ///< [in] ocean MPI communicator
+             const int OcnId,               ///< [in] mct comp id for ocean
+             const std::string &ConfigFile, ///< [in] path to yaml config file
+             const std::string &LogFile,    ///< [in] path to log file
+             const StartType StartType,     ///< [in] simulation start type
+             const TimeInitParams &TimeParams, ///< [in] simulation start time
+             const CouplingInitParams &CouplingParams ///< [in] coupler info
+) {
+
+   I4 Err = 0; // return error code
+
+   MachEnv *DefEnv = MachEnv::getDefault();
+
+   // Read config file into Config object
+   Config("Omega");
+   Config::readAll(ConfigFile);
+   Config *OmegaConfig = Config::getOmegaConfig();
+
+   readTimingConfig();
+
+   // initialize remaining Omega modules
+   Err = initOmegaModules(Comm, TimeParams, CouplingParams);
+   if (Err != 0)
+      ABORT_ERROR("ocnInit: Error initializing Omega modules");
+
+   TimeStepper *DefStepper = TimeStepper::getDefault();
+   Clock *ModelClock       = DefStepper->getClock();
+
+   // Now that all fields are defined, validate all stream contents
+   bool StreamsValid = IOStream::validateAll();
+
+   if (!StreamsValid) {
+      ABORT_ERROR("ocnInit: Error validating IO Streams");
+   }
+
+   Metadata ReqMeta;
+   if (StartType == StartType::StartUp) {
+      // read from initial state if this is starting a new simulation
+      Error IOError = IOStream::read("InitialState", ModelClock, ReqMeta);
+      if (IOError.isFail()) {
+         ABORT_ERROR("Errors encountered reading InitialState");
+      }
+   } else if (StartType == StartType::Continue ||
+              StartType == StartType::Branch) {
+      // read restart if starting from restart
+      ReqMeta["SimulationTime"] = std::string(" ");
+      Error IOError = IOStream::read("RestartRead", ModelClock, ReqMeta);
+      if (IOError.isFail()) {
+         ABORT_ERROR("Errors encountered reading RestartRead");
+      }
+
+      // Coupler only provides case start time, so on restart get the
+      // simulation time from the restart file
+      std::string SimTimeStr =
+          std::any_cast<std::string>(ReqMeta["SimulationTime"]);
+      if (SimTimeStr == " ") {
+         ABORT_ERROR("RestartRead stream did not provide SimulationTime");
+      }
+
+      // Set the model clock to the simulation time read from the restart file
+      TimeInstant NewCurrentTime(SimTimeStr);
+      ModelClock->setCurrentTime(NewCurrentTime);
+   };
+
+   // Advance clock one coupling interval, to be in sync with couplers clock
+   if (StartType == StartType::StartUp) {
+      SfcCoupling *DefCoupling = SfcCoupling::getDefault();
+      while (!DefCoupling->getCouplingAlarm()->isRinging()) {
+         ModelClock->advance();
+      }
+   }
+
+   return Err;
+} // end ocnInit1
+
+// Coupled init phase 2: attach the coupler's MCT buffers and exchange the
+// initial coupled state; split from ocnInit1 since these buffers don't exist
+// until the coupler has sized/allocated them using Omega's decomposition
+int ocnInit2(const Real *CplToOcnData, Real *OcnToCplData) {
+   SfcCoupling *DefCoupling = SfcCoupling::getDefault();
+   DefCoupling->attachData(CplToOcnData, OcnToCplData);
+
+   DefCoupling->exportToCoupler();
+   DefCoupling->importFromCoupler();
+   DefCoupling->applyImportFields(Forcing::getDefault());
+
+   return initUpdateHaloAndHostArrays();
+} // end ocnInit2
 
 // Call init routines for remaining Omega modules
 // Internal helper — all module init after TimeStepper::init1 is called.
@@ -241,12 +320,49 @@ int initOmegaModules(MPI_Comm Comm) {
    return initOmegaModulesImpl(Comm);
 }
 
-int initOmegaModules(MPI_Comm Comm, const TimeInitParams &TParams) {
+int initOmegaModules(MPI_Comm Comm, const TimeInitParams &TParams,
+                     const CouplingInitParams &CParams) {
+   int Err = 0;
    // Initialize time stepper (phase 1) using coupler provided time parameters
    // Calendar should have already been initalized
    TimeStepper::init1(TParams);
-   return initOmegaModulesImpl(Comm);
+   Err = initOmegaModulesImpl(Comm);
+   SfcCoupling::init(CParams);
+
+   return Err;
 }
+
+int initUpdateHaloAndHostArrays() {
+   // Update Halo/Host arrays with new state, auxiliary state, and tracer fields
+   int Err = 0;
+
+   OceanState *DefState = OceanState::getDefault();
+   I4 CurTimeLevel      = 0;
+   DefState->exchangeHalo(CurTimeLevel);
+
+   // Enforce layer masks on state and tracer variables: fully-inactive layers
+   // get FillValueReal, boundary layers get 0, active layers keep their
+   // IC/restart value.
+   DefState->applyLayerMasks(CurTimeLevel);
+
+   DefState->copyToHost(CurTimeLevel);
+   VertCoord::getDefault()->initSurfacePressure(Halo::getDefault());
+
+   Forcing *DefForcing = Forcing::getDefault();
+   DefForcing->exchangeHalo();
+
+   AuxiliaryState *DefAuxState = AuxiliaryState::getDefault();
+   DefAuxState->exchangeHalo();
+
+   // Now update tracers - assume using same time level index
+   Err = Tracers::exchangeHalo(CurTimeLevel);
+   if (Err != 0) {
+      ABORT_ERROR("Error updating tracer halo");
+   }
+   Tracers::copyToHost(CurTimeLevel);
+
+   return Err;
+} // end initUpdateHaloAndHostArrays
 
 } // end namespace OMEGA
 //===----------------------------------------------------------------------===//

@@ -194,6 +194,9 @@ class TimeStepper {
    void changeTimeStep(const TimeInterval &TimeStepIn ///< [in] new time step
    );
 
+   /// Get number of doStep calls made on this instance
+   I8 getStepCount() const;
+
    // these should be protected, they are public only because of CUDA
    // limitations
 
@@ -320,6 +323,9 @@ class TimeStepper {
    /// Clock for this time stepper
    /// For the default time stepper, this is the model clock
    std::unique_ptr<Clock> StepClock;
+
+   /// Number of doStep calls made on this instance since creation
+   mutable I8 StepCount = 0;
 
    // Pointers to objects needed by every time stepper
    Tendencies *Tend;         /// Ptr to tendency terms

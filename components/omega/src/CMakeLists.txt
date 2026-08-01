@@ -107,6 +107,39 @@ if(OMEGA_BUILD_TEST AND NOT OMEGA_SINGLE_PRECISION)
 endif()
 
 
+# build Omega as an E3SM component
+if("${OMEGA_BUILD_MODE}" STREQUAL "E3SM")
+
+    set(OCN_SRC
+      drivers/coupled/ocn_comp_mct.F90
+      drivers/coupled/omega_cxx2f_interface.cpp
+      drivers/coupled/omega_f2cxx_interface.F90
+      drivers/coupled/omega_cpl_indices.F90
+    )
+
+    # create ocn lib
+    add_library(ocn ${OCN_SRC})
+
+    # Set f90 compiled modules dir
+    set_target_properties(
+      ocn
+      PROPERTIES
+      Fortran_MODULE_DIRECTORY
+      ${CMAKE_BINARY_DIR}/cmake/ocn
+    )
+    target_include_directories(ocn PUBLIC ${CMAKE_BINARY_DIR}/cmake/ocn)
+
+    # Link libraries
+    target_link_libraries(
+      ocn
+      PRIVATE
+      ${OMEGA_LIB_NAME}
+      OmegaLibFlags
+      csm_share
+    )
+
+endif()
+
 # build Omega executable
 if(OMEGA_BUILD_EXECUTABLE)
 

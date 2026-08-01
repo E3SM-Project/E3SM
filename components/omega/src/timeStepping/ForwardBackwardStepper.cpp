@@ -103,6 +103,7 @@ void ForwardBackwardStepper::doStep(
    // Advance the clock and update the simulation time
    StepClock->advance();
    SimTime = StepClock->getCurrentTime();
+   ++StepCount;
 }
 
 } // namespace OMEGA

@@ -1,0 +1,296 @@
+#!/usr/bin/env python3
+
+"""
+Namelist creator for E3SM's omega component
+"""
+
+import sys
+from pathlib import Path
+
+import yaml
+from CIME.buildnml import parse_input
+from CIME.case import Case
+from CIME.utils import SharedArea, expect, safe_copy
+
+nan_time_instant_str = "9999-12-31_00:00:00"
+
+omega_supported_grids = ["oQU240", "EC30to60E2r2"]
+
+
+# YAML representer to preserve order of dicts when dumping to yaml
+class OrderedSafeDumper(yaml.SafeDumper):
+    pass
+
+
+def _dict_representer(dumper, data):
+    return dumper.represent_mapping(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
+    )
+
+
+OrderedSafeDumper.add_representer(dict, _dict_representer)
+# end of YAML representer related code
+
+
+def buildnml(case, caseroot, compname):
+    """
+    Build the omega.yml config file based on case configuration
+
+    Additionally, writes an omega.input_data_list file so that any required
+    data missing from DIN_LOC_ROOT/ocn/omega will be automatically downloaded.
+
+    Parameters
+    ----------
+    case : Case
+        The case object containing the configuration for the current run.
+    caseroot : str
+        The root directory of the case.
+    compname : str
+        The name of the component (should be "omega" for this function).
+    """
+    expect(compname == "omega", compname)
+
+    run_dir = Path(case.get_value("RUNDIR"))
+    case_root = Path(case.get_value("CASEROOT"))
+    omega_root = Path(case.get_value("SRCROOT")) / "components/omega"
+
+    path_to_default_config = omega_root / "configs/Default.yml"
+
+    config = _build_omega_config(path_to_default_config, case)
+
+    # write yaml file and copy to CaseDocs within a SharedArea context so that
+    # correct file permissions are set
+    with SharedArea():
+
+        output_file = run_dir / "omega.yml"
+
+        # write the updated yaml file to the run directory
+        with open(output_file, "w") as file:
+            yaml.dump(config, file, Dumper=OrderedSafeDumper)
+
+        # archive yaml file in CaseDocs
+        case_docs = case_root / 'CaseDocs'
+        if case_docs.exists():
+            safe_copy(output_file, case_docs / "omega.yml")
+
+        # needs to be called within buildnml
+        build_input_data_list(case, compname)
+
+
+def build_input_data_list(case, compname):
+    """
+    Add files to omega.input_data_list so they can be automatically downloaded
+    """
+    expect(compname == "omega", compname)
+
+    casebuild = case.get_value("CASEBUILD")
+    input_data_list = []
+
+    # Add the initial state file to the input data list
+    initial_state_file = _get_file_name(case, "InitialState")
+    input_data_list.append(f"initial_state = {initial_state_file}")
+
+    # TODO: For now all information is contained in a single input file
+    # # Add the horizontal mesh file to the input data list
+    # horz_mesh_file = _get_file_name(case, "HorzMeshIn")
+    # input_data_list.append(horz_mesh_file)
+
+    # # Add the initial vertical coordinate file to the input data list
+    # initial_vert_coord_file = _get_file_name(case, "InitialVertCoord")
+    # input_data_list.append(initial_vert_coord_file)
+
+    with open(Path(casebuild) / "omega.input_data_list", "w") as f:
+        for input_file in input_data_list:
+            f.write(f"{input_file}\n")
+
+
+def _build_omega_config(path_to_default, case):
+    """
+    Build the omega config file based on case configuration
+
+    Parameters
+    ----------
+    path_to_default : str
+        Path to the default omega config file.
+    case : Case
+        The case object containing the configuration for the current run.
+
+    Returns
+    -------
+    dict
+        The updated omega config dictionary.
+    """
+    with open(path_to_default, "r") as file:
+        default_config = yaml.load(file, Loader=yaml.SafeLoader)
+        # unpack the Omega section of the default config
+        default_config = default_config["Omega"]
+
+    # start with a copy of the default config, unpack the Omega section
+    config = default_config.copy()
+
+    # update the TimeIntegration section of the config
+    config["TimeIntegration"] = _build_time_integration_config(
+        default_config["TimeIntegration"], case
+    )
+
+    # update the IOStreams section of the config
+    config["IOStreams"] = _build_io_streams_config(
+        default_config["IOStreams"], case
+    )
+
+    # repack everything withn a top-level Omega section
+    return {"Omega": config}
+
+
+# Helper function to build the various sections of the omega streams
+def _get_file_name(case, stream):
+    """ """
+    # TODO: this will be conditional set based on grid and compset. It
+    # also needs to check RUN_TYPE: for "hybrid"/"branch" runs this must
+    # point at the RUN_REFCASE restart file (see mpas-ocean's
+    # cime_config/buildnml, which swaps in run_refcase's restart file
+    # when run_type in ("hybrid", "branch")), not the default IC file.
+
+    din_loc = Path(case.get_value("DIN_LOC_ROOT"))
+    ocn_grid = case.get_value("OCN_GRID")
+
+    if ocn_grid not in omega_supported_grids:
+        raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
+
+    # TODO: this will return a different value based on the stream name
+    # For now mesh file contains all information needed in single file
+    omega_dir = din_loc / "ocn/omega"
+
+    if ocn_grid == "oQU240":
+        mesh_dir = omega_dir / "oQU240"
+        return str(mesh_dir / "ocean.QU.240km.151209.teos10.260720.nc")
+    elif ocn_grid == "EC30to60E2r2":
+        mesh_dir = omega_dir / "EC30to60E2r2"
+        return str(mesh_dir / "ocean.EC30to60E2r2.200908.teos10.260720.nc")
+    else:
+        raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
+
+
+def _update_read_io_streams(config, case, stream):
+    """Update the read streams
+
+    RUN_TYPE stays fixed for the life of a case, so it cannot tell us
+    whether *this* job submission should read the initial state or a
+    restart file. CONTINUE_RUN is FALSE only for the very first job of
+    a run (including hybrid/branch runs) and TRUE for every subsequent
+    continuation, so it is the correct flag to gate on here.
+    """
+    continue_run = case.get_value("CONTINUE_RUN")
+
+    # RestartRead has inverse logic to InitialState so negate value
+    if stream == "RestartRead":
+        continue_run = not continue_run
+
+    config[stream]['Filename'] = _get_file_name(case, stream)
+
+    # Leave `OnstartUp` default for HorzMeshIn and InitialVertCoord streams
+    if stream not in ["HorzMeshIn", "InitialVertCoord"]:
+        config[stream]["FreqUnits"] = "Never" if continue_run else "OnStartUp"
+
+    # Make sure pointer, with the correct filename, is used by restart reads
+    if stream == "RestartRead":
+        config[stream]["UsePointerFile"] = True
+        config[stream]["PointerFilename"] = "rpointer.ocn"
+
+        # Default.yml sets UseStartEnd/StartTime/EndTime for RestartRead as a
+        # workaround so the standalone driver (whose FreqUnits is always
+        # "OnStartup") can still skip reading a restart on the very first
+        # startup job. The coupled driver already gates this explicitly via
+        # CONTINUE_RUN above, so the UseStartEnd gate must be disabled here:
+        # otherwise it depends on the model clock's StartAlarm/EndAlarm
+        # already reflecting the coupler-provided current time, which is not
+        # guaranteed to be true this early in ocnInit1.
+        config[stream]["UseStartEnd"] = False
+
+    return config
+
+
+def _build_restart_write_io_stream(case):
+    """Coupler dictates when to write restart files, so we just need to set up
+       the stream here.
+    """
+    case_name = case.get_value("CASE")
+
+    return {
+        "UsePointerFile": True,
+        "PointerFilename": "rpointer.ocn",
+        "Filename": f"{case_name}.omega.r.$Y-$M-$D_$h.$m.$s",
+        "Mode": "write",
+        "IfExists": "replace",
+        "Precision": "double",
+        "Freq": 1,
+        "FreqUnits": "OnDemand",
+        "UseStartEnd": False,
+        "Contents": ["Restart"],
+    }
+
+
+def _build_io_streams_config(default_io_streams, case):
+    """Build the io_streams section of the omega config file"""
+    io_streams = default_io_streams.copy()
+
+    # Update InitialState, HorzMeshIn, InitialVertCoord, and RestartRead
+    io_streams = _update_read_io_streams(io_streams, case, "InitialState")
+    io_streams = _update_read_io_streams(io_streams, case, "HorzMeshIn")
+    io_streams = _update_read_io_streams(io_streams, case, "InitialVertCoord")
+    io_streams = _update_read_io_streams(io_streams, case, "RestartRead")
+
+    # Add restart write stream
+    io_streams["RestartWrite"] = _build_restart_write_io_stream(case)
+
+    # Never read forcing stream in coupled runs
+    io_streams["Forcing"]["FreqUnits"] = "Never"
+
+    return io_streams
+
+
+def _build_time_integration_config(default_time_integration, case):
+    """Start and stop time are set by the coupler.
+       The time step is mesh dependent.
+    """
+    ocn_grid = case.get_value("OCN_GRID")
+    calendar = case.get_value("CALENDAR")
+
+    time_integration = default_time_integration.copy()
+
+    # convert from CIME calendar to Omega calendar names
+    if calendar == "NO_LEAP":
+        time_integration["CalendarType"] = "No Leap"
+    elif calendar == "GREGORIAN":
+        time_integration["CalendarType"] = "Gregorian"
+    else:
+        raise ValueError(f"Unsupported calendar type: {calendar}")
+
+    # Set start and stop time to invalid values in order to make clear to users
+    # these values come from the coupler at runtime
+    time_integration["StartTime"] = nan_time_instant_str
+    time_integration["StopTime"] = nan_time_instant_str
+    # RunDuration is not used in coupled runs
+    time_integration["RunDuration"] = "none"
+
+    # All meshes use RK4 timestepping (for now)
+    time_integration["TimeStepper"] = "RungeKutta4"
+
+    if ocn_grid == "oQU240":
+        time_integration["TimeStep"] = "0000_00:05:00"
+    elif ocn_grid == "EC30to60E2r2":
+        time_integration["TimeStep"] = "0000_00:01:00"
+
+    return time_integration
+
+
+def _main_func():
+    """
+    """
+    caseroot = parse_input(sys.argv)
+    with Case(caseroot) as case:
+        buildnml(case, caseroot, "omega")
+
+
+if __name__ == "__main__":
+    _main_func()

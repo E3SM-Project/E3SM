@@ -68,6 +68,11 @@ if (NOT TARGET pioc)
 
 	option(PIO_ENABLE_TOOLS "" OFF)
 
+	# Locally shadow ADIOS2_FOUND, which leaks in from E3SM's top-level
+	# find_package. Workaround for scorpio/src/clib/CMakeLists.txt:498, which
+	# should test WITH_ADIOS2 (OFF here) instead of ADIOS2_FOUND.
+	set(ADIOS2_FOUND FALSE)
+
 	add_subdirectory(
 	  ${E3SM_EXTERNALS_ROOT}/scorpio
 	  ${CMAKE_CURRENT_BINARY_DIR}/scorpio
@@ -135,6 +140,9 @@ endif()
 
 # Add the cpptrace library
 if (NOT TARGET cpptrace::cpptrace)
+	# Unset PACKAGE_VERSION before adding cpptrace to prevent ADIOS2's
+	# PACKAGE_VERSION (e.g. 2.10.2) from leaking into libdwarf's configure_file
+	unset(PACKAGE_VERSION)
 	option(CPPTRACE_INHERIT_HOST_STANDARD "" ON)
 	add_subdirectory(
 	  ${OMEGA_SOURCE_DIR}/external/cpptrace

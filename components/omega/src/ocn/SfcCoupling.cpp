@@ -148,6 +148,9 @@ void SfcCoupling::clear() {
 // Getter for private member NAccumSteps
 I4 SfcCoupling::getNAccumSteps() const { return NAccumSteps; }
 
+// Getter for private member CouplingAlarm
+Alarm *SfcCoupling::getCouplingAlarm() { return &CouplingAlarm; }
+
 // Create views of the raw coupling data arrays
 void SfcCoupling::attachData(const Real *CplToOcnData, Real *OcnToCplData) {
 
@@ -228,6 +231,9 @@ void SfcCoupling::exportToCoupler() {
    auto AvgSfcVelocityZonal_ = OcnToCpl.AvgSfcVelocityZonalH;
    auto AvgSfcVelocityMerid_ = OcnToCpl.AvgSfcVelocityMeridH;
    auto InstSshCellH_        = OcnToCpl.InstSshCellH;
+
+   // Initalize all o2x fields to 0.0 for next coupling interval
+   deepCopy(OcnToCplView_, 0.0_Real);
 
    /// TODO: Shouldn't be making direct calls to Kokkos here.
    auto Policy = Kokkos::RangePolicy<HostExecSpace, Kokkos::IndexType<int>>(

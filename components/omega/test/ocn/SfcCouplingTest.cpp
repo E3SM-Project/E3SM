@@ -271,7 +271,7 @@ int testUpdateExportFields(const I4 NSteps) {
    Tracers::getIndex(TempIdx, "Temperature");
    Tracers::getIndex(SalinIdx, "Salinity");
 
-   while (!DefCoupling->CouplingAlarm.isRinging()) {
+   while (!DefCoupling->getCouplingAlarm()->isRinging()) {
       Real CurrStep = static_cast<Real>(DefCoupling->getNAccumSteps());
 
       HostArray2DReal TempH  = Tracers::getHostByIndex(0, TempIdx);
