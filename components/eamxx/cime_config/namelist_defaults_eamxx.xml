@@ -187,6 +187,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <moisture>moist</moisture>
+      <!-- This value is synchronized with ctl_nl::do_3d_turbulence by
+           eamxx_buildnml.py and forwarded by the driver to SHOC. -->
+      <do_3d_turbulence_homme type="logical" locked="true">false</do_3d_turbulence_homme>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
       <enable_column_conservation_checks>false</enable_column_conservation_checks>

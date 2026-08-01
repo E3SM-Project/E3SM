@@ -163,6 +163,15 @@ def perform_consistency_checks(case, xml):
     CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
      For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    >>> turbulence_xml = ET.fromstring('''
+    ... <params>
+    ...   <homme><do_3d_turbulence_homme>false</do_3d_turbulence_homme></homme>
+    ...   <ctl_nl><do_3d_turbulence>true</do_3d_turbulence></ctl_nl>
+    ... </params>
+    ... ''')
+    >>> perform_consistency_checks(MockCase({}), turbulence_xml)
+    >>> find_node(find_node(turbulence_xml, "homme"), "do_3d_turbulence_homme").text
+    'true'
     """
 
     # RRTMGP can be supercycled. Restarts cannot fall in the middle
@@ -221,6 +230,18 @@ def perform_consistency_checks(case, xml):
 
     ctl_nl = find_node(xml, "ctl_nl")
     if ctl_nl is not None:
+        # HOMME reads do_3d_turbulence from ctl_nl, while the atmosphere
+        # driver needs the same value in HOMME's process parameters in order
+        # to forward it to SHOC. Keep the process parameter as a locked mirror
+        # so ctl_nl remains the single user-facing source of truth.
+        homme = find_node(xml, "homme")
+        do_3d_turbulence = find_node(ctl_nl, "do_3d_turbulence")
+        if homme is not None and do_3d_turbulence is not None:
+            homme_do_3d_turbulence = find_node(homme, "do_3d_turbulence_homme")
+            expect(homme_do_3d_turbulence is not None,
+                   "Missing locked homme::do_3d_turbulence_homme mirror")
+            homme_do_3d_turbulence.text = do_3d_turbulence.text
+
         hypervis_subcycle = find_node(ctl_nl, "hypervis_subcycle")
         horiz_turb_subcycle = find_node(ctl_nl, "horiz_turb_subcycle")
         if hypervis_subcycle is not None and horiz_turb_subcycle is not None:
