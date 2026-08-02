@@ -523,6 +523,14 @@ add_omega_test(
     "-n;8"
 )
 
+add_omega_test(
+    VERTCOORD_SINGLE_PRECISION_TEST
+    testVertCoordSinglePrecision.exe
+    ocn/VertCoordTest.cpp
+    "-n;8"
+    single_precision
+)
+
 ##################
 # Fill Value test
 ##################
