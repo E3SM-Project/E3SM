@@ -65,6 +65,25 @@ LOG_TRACE("The value of MyInt is: {}", MyInt);
 
 By default, the logfile will be created in the build directory.
 
+## Log file name
+
+By default Omega writes its log messages to `omega.log` in the directory it is
+run from. A different name or path can be requested at run time with the
+`OMEGA_LOG_FILE` environment variable:
+
+```bash
+export OMEGA_LOG_FILE=mylogs/run1.log
+```
+
+When more than one MPI rank writes a log (see `OMEGA_LOG_TASKS`), the rank
+number is inserted into the name, so `omega.log` becomes `omega_0.log`,
+`omega_1.log` and so on. The log file is truncated when Omega starts, so it
+always contains only the messages from the current run.
+
+The Omega unit tests use this variable to give each test its own log file,
+`test/logs/<TEST_NAME>.log` in the build directory, rather than a single
+shared log for the whole test suite.
+
 ## E3SM Component Build
 
 T.B.D.

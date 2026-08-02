@@ -6,8 +6,10 @@ Omega includes an error handling facility that checks for potential errors
 and responds to those errors when encountered.
 It uses the [Logging](#omega-dev-logging) facility for writing the error
 messages so its behavior follows that of Logging. In particular, the error
-messages will be output to a single log file (omega.log) unless the option
-to write a log file for each MPI task is enabled at build time. Each message
+messages will be output to a single log file (omega.log by default, see the
+`OMEGA_LOG_FILE` environment variable) unless logging on more than one MPI
+task is requested with `OMEGA_LOG_TASKS`, in which case each logging task
+writes its own file. Each message
 will have the format
 ```
 [*level] [file:line number] error message
