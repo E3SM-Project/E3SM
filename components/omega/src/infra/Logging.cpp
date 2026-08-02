@@ -13,6 +13,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -151,6 +152,42 @@ static std::string getLogTaskSelector() {
 }
 
 //------------------------------------------------------------------------------
+// Determine the log file name to use when the caller does not supply one.
+// The OMEGA_LOG_FILE environment variable takes precedence so that a harness
+// (eg CTest, which gives each unit test its own log) can name the file at run
+// time; otherwise the built-in default name is used.
+static std::string getDefaultLogFilePath() {
+   const char *Env = std::getenv("OMEGA_LOG_FILE");
+   if (Env != nullptr && Env[0] != '\0')
+      return std::string(Env);
+   return OmegaDefaultLogfile;
+}
+
+//------------------------------------------------------------------------------
+// Insert the MPI task id into a log file name so that each logging rank gets
+// its own file, eg omega.log -> omega_3.log. When the name has no extension,
+// the task id is simply appended.
+static std::string addTaskIdToPath(const std::string &LogFilePath,
+                                   OMEGA::I4 TaskId) {
+
+   const std::string Suffix = "_" + std::to_string(TaskId);
+
+   std::size_t DotPos = LogFilePath.find_last_of('.');
+   std::size_t SepPos = LogFilePath.find_last_of("\\/");
+
+   // only treat a dot as an extension when it is part of the file name and
+   // not part of a directory in the path
+   bool HasExtension = (DotPos != std::string::npos) &&
+                       (SepPos == std::string::npos || DotPos > SepPos);
+
+   if (HasExtension)
+      return LogFilePath.substr(0, DotPos) + Suffix +
+             LogFilePath.substr(DotPos);
+
+   return LogFilePath + Suffix;
+}
+
+//------------------------------------------------------------------------------
 // Resolve which sub-communicator ranks should log from the runtime selector,
 // emitting master-rank diagnostics for invalid or empty selections. Sets
 // NumLogging to the count of selected ranks that exist in this communicator.
@@ -248,18 +285,24 @@ int initLogging(
 
    if (ThisTaskLogs) {
       try {
-         std::size_t dotPos = LogFilePath.find_last_of('.');
-
          // create log file name/path and set default (*) logger. When more than
          // one rank logs, append the rank id to keep per-rank files distinct.
-         if (NumLogging > 1 && dotPos != std::string::npos) {
+         // An empty path means the caller wants the default name, which may be
+         // supplied by the environment.
+         NewLogFilePath =
+             LogFilePath.empty() ? getDefaultLogFilePath() : LogFilePath;
 
-            NewLogFilePath = LogFilePath.substr(0, dotPos) + "_" +
-                             std::to_string(TaskId) +
-                             LogFilePath.substr(dotPos);
-         } else {
-            NewLogFilePath = LogFilePath;
-         }
+         if (NumLogging > 1)
+            NewLogFilePath = addTaskIdToPath(NewLogFilePath, TaskId);
+
+         // Start the run with an empty log file so that it only ever holds
+         // messages from this run. Both the spdlog sink created below and the
+         // stdout/stderr stream opened at the end of this function append to
+         // the file, so that their writes interleave correctly rather than
+         // overwriting each other; the file is therefore truncated here, ahead
+         // of both, rather than by either of them.
+         std::ofstream Truncate(NewLogFilePath, std::ios::trunc);
+         Truncate.close();
 
          // Create default logger
          spdlog::set_default_logger(
@@ -293,6 +336,18 @@ int initLogging(
       // Set the stdout and stderr buffers to the file streambuffer
       std::cout.rdbuf(LogFileStream.rdbuf());
       std::cerr.rdbuf(LogFileStream.rdbuf());
+
+      // Open the log with a banner giving the file and the time it was
+      // opened, so the log can always be tied to the run that wrote it
+      std::time_t Now = std::time(nullptr);
+      char TimeStr[64];
+      if (std::strftime(TimeStr, sizeof(TimeStr), "%Y-%m-%d %H:%M:%S",
+                        std::localtime(&Now)) == 0)
+         TimeStr[0] = '\0';
+      spdlog::info(fmt::runtime("----- Omega log " + NewLogFilePath +
+                                " opened " + std::string(TimeStr) +
+                                " on task " + std::to_string(TaskId) +
+                                " -----"));
    }
 
    return RetVal;

@@ -1,5 +1,10 @@
 # Omega Unit Tests
 
+# Directory holding one log file per test, created here so that it exists
+# before any test runs
+set(OMEGA_TEST_LOG_DIR logs)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${OMEGA_TEST_LOG_DIR})
+
 #####################
 # Omega Test Function
 #####################
@@ -69,7 +74,17 @@ function(add_omega_test test_name exe_name source_files mpi_args)
     )
   endif()
 
-  set_tests_properties(${test_name} PROPERTIES LABELS "${OMEGA_ARCH};Omega-0")
+  # Give each test its own log file (relative to the test working directory,
+  # which is this binary directory) so that the log of a test can be read on
+  # its own rather than mixed in with every other test's messages. The name
+  # comes from the test rather than the source file because several tests
+  # share a source file.
+  set_tests_properties(
+    ${test_name}
+    PROPERTIES
+    LABELS "${OMEGA_ARCH};Omega-0"
+    ENVIRONMENT "OMEGA_LOG_FILE=${OMEGA_TEST_LOG_DIR}/${test_name}.log"
+  )
 
 endfunction()
 

@@ -157,6 +157,15 @@
 /// An invalid selector logs a warning on the master rank and falls back to
 /// master-rank-only logging.
 
+/// Log file naming
+/// When no log file name is supplied to initLogging, the name is taken from
+/// the OMEGA_LOG_FILE environment variable if it is set and non-empty, and
+/// from OmegaDefaultLogfile otherwise. This lets a harness (in particular the
+/// CTest harness, which gives every unit test its own file) name the log
+/// without recompiling. A name passed explicitly to initLogging always wins.
+/// The log file is truncated when it is opened, so it always holds exactly
+/// the messages from the current run.
+
 namespace OMEGA {
 
 // To prevent some circular dependencies between MachEnv and Logging
@@ -167,10 +176,10 @@ const std::string OmegaDefaultLogfile = "omega.log"; ///< Default log filename
 static std::ofstream LogFileStream;                  ///< Default log iostream
 
 /// Initializes Omega logging, including setting up which tasks will log
-/// and add redirection of stdout/stderr to log file
-int initLogging(
-    const OMEGA::MachEnv *DefEnv, ///< [in] MachEnv with MPI task info
-    std::string const &LogFilePath = OmegaDefaultLogfile ///< [in] file name
+/// and add redirection of stdout/stderr to log file. An empty LogFilePath
+/// selects the default name (see the log file naming notes above).
+int initLogging(const OMEGA::MachEnv *DefEnv, ///< [in] MachEnv w/ MPI task info
+                std::string const &LogFilePath = "" ///< [in] file name
 );
 
 /// Alternative Logging initialization using a pre-defined custom Logger
