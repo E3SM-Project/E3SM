@@ -485,25 +485,32 @@ int main(int argc, char *argv[]) {
       HostArray2DR8 NewR8Vrtx("NewR8Vrtx", NVerticesSize, NVertLayers);
 
       // Read non-distributed variables
-      Err = IO::readNDVar(&NewI4Scalar, "ScalarI4", InFileID, VarIDScalarI4);
+      Err = IO::readNDVar(&NewI4Scalar, IO::IOTypeI4, "ScalarI4", InFileID,
+                          VarIDScalarI4);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read scalar I4 NDVar")
 
-      Err = IO::readNDVar(&NewI8Scalar, "ScalarI8", InFileID, VarIDScalarI8);
+      Err = IO::readNDVar(&NewI8Scalar, IO::IOTypeI8, "ScalarI8", InFileID,
+                          VarIDScalarI8);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read scalar I8 NDVar")
 
-      Err = IO::readNDVar(&NewR4Scalar, "ScalarR4", InFileID, VarIDScalarR4);
+      Err = IO::readNDVar(&NewR4Scalar, IO::IOTypeR4, "ScalarR4", InFileID,
+                          VarIDScalarR4);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read scalar R4 NDVar")
 
-      Err = IO::readNDVar(&NewR8Scalar, "ScalarR8", InFileID, VarIDScalarR8);
+      Err = IO::readNDVar(&NewR8Scalar, IO::IOTypeR8, "ScalarR8", InFileID,
+                          VarIDScalarR8);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read scalar R8 NDVar")
 
-      Err = IO::readNDVar(NewI4Vert.data(), "I4Vert", InFileID, VarIDI4Vert);
+      Err = IO::readNDVar(NewI4Vert.data(), IO::IOTypeI4, "I4Vert", InFileID,
+                          VarIDI4Vert);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read I4 vertical NDVar")
 
-      Err = IO::readNDVar(NewI8Vert.data(), "I8Vert", InFileID, VarIDI8Vert);
+      Err = IO::readNDVar(NewI8Vert.data(), IO::IOTypeI8, "I8Vert", InFileID,
+                          VarIDI8Vert);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read I8 vertical NDVar")
 
-      Err = IO::readNDVar(NewR4Vert.data(), "R4Vert", InFileID, VarIDR4Vert);
+      Err = IO::readNDVar(NewR4Vert.data(), IO::IOTypeR4, "R4Vert", InFileID,
+                          VarIDR4Vert);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R4 vertical NDVar")
 
       // Read non-distributed variables into buffers whose type differs from
@@ -521,18 +528,20 @@ int main(int argc, char *argv[]) {
       std::vector<R4> NewR4FromR8(2 * NVertLayers, GuardR4);
       std::vector<R8> NewR8FromR4(2 * NVertLayers, GuardR8);
 
-      Err = IO::readNDVar(NewR4FromR8.data(), "R8Vert", InFileID, VarIDR8Vert);
+      Err = IO::readNDVar(NewR4FromR8.data(), IO::IOTypeR4, "R8Vert", InFileID,
+                          VarIDR8Vert);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R8 vertical NDVar as R4")
 
-      Err = IO::readNDVar(NewR8FromR4.data(), "R4Vert", InFileID, VarIDR4Vert);
+      Err = IO::readNDVar(NewR8FromR4.data(), IO::IOTypeR8, "R4Vert", InFileID,
+                          VarIDR4Vert);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R4 vertical NDVar as R8")
 
       // Read R8 data as two time slices
-      Err = IO::readNDVar(NewR8Vert.data(), "R8Time", InFileID, VarIDR8Time, 0,
-                          &DimLengths);
+      Err = IO::readNDVar(NewR8Vert.data(), IO::IOTypeR8, "R8Time", InFileID,
+                          VarIDR8Time, 0, &DimLengths);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R8 NDVar time slice 0")
-      Err = IO::readNDVar(NewR8Time.data(), "R8Time", InFileID, VarIDR8Time, 1,
-                          &DimLengths);
+      Err = IO::readNDVar(NewR8Time.data(), IO::IOTypeR8, "R8Time", InFileID,
+                          VarIDR8Time, 1, &DimLengths);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R8 NDVar time slice 1")
 
       // Read distributed arrays

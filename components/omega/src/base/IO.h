@@ -324,12 +324,16 @@ Error readArray(void *Array,                ///< [out] array to be read
 /// Reads a non-distributed variable. We use a void pointer here to create
 /// a generic interface for all types. Arrays are assumed to be in contiguous
 /// storage so the arrays of any dimension are treated as a 1-d array with
-/// the full local size. The routine returns the variable as well as the id
-/// assigned to the variable should that be needed later. For time-dependent
-/// variables, the optional frame and dimension length information must be
-/// provided. An error code is also returned so that the calling routine can
-/// re-try the read on failure (eg due to name changes).
+/// the full local size. The data type of the destination array must be
+/// supplied; it need not match the type of the variable as stored in the
+/// file and the values are converted on read. The routine returns the
+/// variable as well as the id assigned to the variable should that be needed
+/// later. For time-dependent variables, the optional frame and dimension
+/// length information must be provided. An error code is also returned so
+/// that the calling routine can re-try the read on failure (eg due to name
+/// changes).
 Error readNDVar(void *Variable,             ///< [out] variable to be read
+                IODataType VarType,         ///< [in] data type of variable
                 const std::string &VarName, ///< [in] name of variable to read
                 int FileID,                 ///< [in] ID of open file for read
                 int &VarID,     ///< [out] variable ID in case metadata needed
