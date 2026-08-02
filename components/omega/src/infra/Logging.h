@@ -173,7 +173,6 @@ class MachEnv;
 
 // Public variables used for logging
 const std::string OmegaDefaultLogfile = "omega.log"; ///< Default log filename
-static std::ofstream LogFileStream;                  ///< Default log iostream
 
 /// Initializes Omega logging, including setting up which tasks will log
 /// and add redirection of stdout/stderr to log file. An empty LogFilePath

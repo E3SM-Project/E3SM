@@ -24,6 +24,11 @@
 
 namespace OMEGA {
 
+// Stream that holds the log file to which stdout and stderr are redirected.
+// It must outlive the redirect, so it has static storage duration here rather
+// than being a local of initLogging.
+static std::ofstream LogFileStream;
+
 //------------------------------------------------------------------------------
 // Utility function to create a log message with prefix
 std::string
