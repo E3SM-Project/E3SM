@@ -271,6 +271,11 @@ int main(int argc, char *argv[]) {
           IO::defineVar(OutFileID, "I8Vert", IO::IOTypeI8, 1, VertDimIDs);
       int VarIDR4Vert =
           IO::defineVar(OutFileID, "R4Vert", IO::IOTypeR4, 1, VertDimIDs);
+      // A double-precision counterpart of R4Vert, used below to check that
+      // a non-distributed variable can be read into a buffer whose type
+      // differs from the type stored in the file
+      int VarIDR8Vert =
+          IO::defineVar(OutFileID, "R8Vert", IO::IOTypeR8, 1, VertDimIDs);
       int VarIDR8Time =
           IO::defineVar(OutFileID, "R8Time", IO::IOTypeR8, 2, TimeDimIDs);
       int VarIDCellI4 =
@@ -328,6 +333,7 @@ int main(int argc, char *argv[]) {
       IO::writeNDVar(RefI4Vert.data(), OutFileID, VarIDI4Vert);
       IO::writeNDVar(RefI8Vert.data(), OutFileID, VarIDI8Vert);
       IO::writeNDVar(RefR4Vert.data(), OutFileID, VarIDR4Vert);
+      IO::writeNDVar(RefR8Vert.data(), OutFileID, VarIDR8Vert);
       // Write R8 arrays as two time slices - the first frame here with
       // the second frame written after re-open
       std::vector<int> DimLengths(1);
@@ -500,6 +506,27 @@ int main(int argc, char *argv[]) {
       Err = IO::readNDVar(NewR4Vert.data(), "R4Vert", InFileID, VarIDR4Vert);
       CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R4 vertical NDVar")
 
+      // Read non-distributed variables into buffers whose type differs from
+      // the type of the variable stored in the file. Mesh and initial state
+      // files are written in double precision, but the arrays they are read
+      // into are single precision in an OMEGA_SINGLE_PRECISION build, so the
+      // read must convert rather than assume the two types match. The buffers
+      // are allocated at twice the length needed and the unused half is set
+      // to a guard value; a read that fills eight bytes per element into a
+      // four-byte buffer then shows up as an overwritten guard instead of as
+      // an out-of-bounds write.
+      const R4 GuardR4 = -1.234e30;
+      const R8 GuardR8 = -1.23456789e30;
+
+      std::vector<R4> NewR4FromR8(2 * NVertLayers, GuardR4);
+      std::vector<R8> NewR8FromR4(2 * NVertLayers, GuardR8);
+
+      Err = IO::readNDVar(NewR4FromR8.data(), "R8Vert", InFileID, VarIDR8Vert);
+      CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R8 vertical NDVar as R4")
+
+      Err = IO::readNDVar(NewR8FromR4.data(), "R4Vert", InFileID, VarIDR4Vert);
+      CHECK_ERROR_ABORT(Err, "IOTest: Failed to read R4 vertical NDVar as R8")
+
       // Read R8 data as two time slices
       Err = IO::readNDVar(NewR8Vert.data(), "R8Time", InFileID, VarIDR8Time, 0,
                           &DimLengths);
@@ -593,6 +620,31 @@ int main(int argc, char *argv[]) {
          ABORT_ERROR("IOTest: read/write vert R8 vector test frame 0 FAIL");
       if (Err5 > 0)
          ABORT_ERROR("IOTest: read/write vert R8 vector test frame 1 FAIL");
+
+      // Check the cross-type reads. The values must be converted from the
+      // type in the file to the type of the destination buffer and nothing
+      // may be written past the end of the data, which the guard values in
+      // the second half of each buffer detect.
+      int ErrR4FromR8 = 0;
+      int ErrR8FromR4 = 0;
+
+      for (int k = 0; k < NVertLayers; ++k) {
+         if (NewR4FromR8[k] != static_cast<R4>(RefR8Vert(k)))
+            ErrR4FromR8++;
+         if (NewR8FromR4[k] != static_cast<R8>(RefR4Vert(k)))
+            ErrR8FromR4++;
+      }
+      for (int k = NVertLayers; k < 2 * NVertLayers; ++k) {
+         if (NewR4FromR8[k] != GuardR4)
+            ErrR4FromR8++;
+         if (NewR8FromR4[k] != GuardR8)
+            ErrR8FromR4++;
+      }
+
+      if (ErrR4FromR8 > 0)
+         ABORT_ERROR("IOTest: read vert R8 variable into R4 buffer FAIL");
+      if (ErrR8FromR4 > 0)
+         ABORT_ERROR("IOTest: read vert R4 variable into R8 buffer FAIL");
 
       Err1 = 0;
       Err2 = 0;
