@@ -772,6 +772,7 @@ Error readArray(void *Array,                // [out] array to be read
 // All arrays are assumed to be in contiguous storage. Returns an error code so
 // that the calling routine can re-try on failure.
 Error readNDVar(void *Variable,             // [out] array to be read
+                IODataType VarType,         // [in] data type of the array
                 const std::string &VarName, // [in] name of variable to read
                 int FileID,                 // [in] ID of open file to read from
                 int &VarID, // [out] Id assigned to variable for later use
@@ -789,6 +790,13 @@ Error readNDVar(void *Variable,             // [out] array to be read
                    "IO::readArray: Error finding varid for variable {}",
                    VarName);
 
+   // The type-specific PIO read routines are used here rather than the
+   // generic PIOc_get_var/PIOc_get_vara. The generic forms fill the buffer
+   // using the type of the variable as stored in the file, so reading a
+   // double variable into a single-precision array would write eight bytes
+   // per element into four-byte slots and run off the end of the buffer.
+   // Passing the type of the destination array instead lets PIO convert.
+
    if (Frame >= 0) { // time dependent field so must use get_vara
 
       int NDims = DimLengths->size();
@@ -801,8 +809,30 @@ Error readNDVar(void *Variable,             // [out] array to be read
          Count[IDim] = DimLengths->at(IDim - 1);
       }
 
-      PIOErr =
-          PIOc_get_vara(FileID, VarID, Start.data(), Count.data(), Variable);
+      switch (VarType) {
+      case IOTypeI4:
+         PIOErr = PIOc_get_vara_int(FileID, VarID, Start.data(), Count.data(),
+                                    static_cast<int *>(Variable));
+         break;
+      case IOTypeI8:
+         PIOErr =
+             PIOc_get_vara_longlong(FileID, VarID, Start.data(), Count.data(),
+                                    static_cast<long long *>(Variable));
+         break;
+      case IOTypeR4:
+         PIOErr = PIOc_get_vara_float(FileID, VarID, Start.data(), Count.data(),
+                                      static_cast<R4 *>(Variable));
+         break;
+      case IOTypeR8:
+         PIOErr =
+             PIOc_get_vara_double(FileID, VarID, Start.data(), Count.data(),
+                                  static_cast<R8 *>(Variable));
+         break;
+      default:
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "IO::readNDVar: Unsupported data type for variable {}",
+                      VarName);
+      }
       if (PIOErr != PIO_NOERR)
          RETURN_ERROR(Err, ErrorCode::Fail,
                       "IO::readNDVar: Error in PIO get_vara for variable {}",
@@ -811,7 +841,27 @@ Error readNDVar(void *Variable,             // [out] array to be read
    } else { // Not a time-dependent field, can use default get_var
 
       // PIO get call to read non-distributed array
-      PIOErr = PIOc_get_var(FileID, VarID, Variable);
+      switch (VarType) {
+      case IOTypeI4:
+         PIOErr = PIOc_get_var_int(FileID, VarID, static_cast<int *>(Variable));
+         break;
+      case IOTypeI8:
+         PIOErr = PIOc_get_var_longlong(FileID, VarID,
+                                        static_cast<long long *>(Variable));
+         break;
+      case IOTypeR4:
+         PIOErr =
+             PIOc_get_var_float(FileID, VarID, static_cast<R4 *>(Variable));
+         break;
+      case IOTypeR8:
+         PIOErr =
+             PIOc_get_var_double(FileID, VarID, static_cast<R8 *>(Variable));
+         break;
+      default:
+         RETURN_ERROR(Err, ErrorCode::Fail,
+                      "IO::readNDVar: Unsupported data type for variable {}",
+                      VarName);
+      }
       if (PIOErr != PIO_NOERR)
          RETURN_ERROR(Err, ErrorCode::Fail,
                       "IO::readNDVar: Error in PIO get_var for variable {}",

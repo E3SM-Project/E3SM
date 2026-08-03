@@ -119,11 +119,21 @@ IO::writeArray(&Array, Size, &FillValue,   FileID, DecompID, VarID, Frame);
 For arrays or scalars that are not distributed, the non-distributed variable
 interface must be used:
 ```c++
-Error Err = IO::readNDVar(&Array, VariableName, FileID, VarID);
+Error Err = IO::readNDVar(&Array, VarType, VariableName, FileID, VarID);
 IO::writeNDVar(&Array, FileID, VarID);
 ```
-with arguments similar to the distributed array calls above. Note that
-when defining dimensions for these fields, the dimensions must be
+with arguments similar to the distributed array calls above. The read
+requires a VarType argument giving the data type of the destination array
+(``IO::IOTypeI4``, ``IOTypeI8``, ``IOTypeR4`` or ``IOTypeR8``). This need
+not be the type the variable has in the file and the values are converted
+on read. Supplying it is required rather than optional: without it the
+underlying SCORPIO call fills the destination using the type stored in the
+file, so reading a double variable into a single-precision array would
+write eight bytes per element into four-byte slots and run off the end of
+the array. Distributed reads get the same information from the
+decomposition, so ``readArray`` needs no equivalent argument.
+
+Note that when defining dimensions for these fields, the dimensions must be
 non-distributed. For scalars, the number of dimensions should be zero.
 Multiple time slices can be also be read/written for non-distributed fields,
 but require two additional arguments. As in the distributed array, the
@@ -131,7 +141,8 @@ Frame (index of the time slice) must be provided. In addition, a vector
 ``std::vector<int> DimLengths`` containing the length of the non-time
 dimensions must be provided:
 ```c++
-Error Err = IO::readNDVar(&Array, VariableName, FileID, VarID, Frame, DimLengths);
+Error Err = IO::readNDVar(&Array, VarType, VariableName, FileID, VarID, Frame,
+                          DimLengths);
 IO::writeNDVar(&Array, FileID, VarID, Frame, DimLengths);
 ```
 Note that the full arrays in this case are written so if any masking or
