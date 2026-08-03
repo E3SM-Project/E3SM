@@ -24,8 +24,8 @@ protected:
   template<typename T>
   using strmap_t = std::map<std::string,T>;
 
-  // Gather fields to be inited, grouping them by grid
-  strmap_t<strmap_t<Field>>
+  // Gather fields to be inited
+  std::vector<Field>
   gather_fields (const std::shared_ptr<FieldsManager>& fm,
                  const RunType run_type);
   
@@ -34,6 +34,7 @@ protected:
   // If user sets fields to a constant in input param list,
   // init fields and remove them from the map(s)
   void set_constant_fields (strmap_t<strmap_t<Field>>& fields);
+  strmap_t<double> parse_constant_fields ();
 
   ekat::ParameterList             m_params;
 };
