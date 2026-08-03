@@ -3325,6 +3325,13 @@ contains
        end if
 
        !----------------------------------------------------------
+       !| Budget with new fractions
+       !----------------------------------------------------------
+       if (do_budgets) then
+          call cime_run_calc_budgets2()
+       endif
+
+       !----------------------------------------------------------
        !| RUN ATM MODEL
        !----------------------------------------------------------
        if (atm_present .and. atmrun_alarm) then
@@ -3367,14 +3374,6 @@ contains
        !----------------------------------------------------------
        if (atm_present .and. atmrun_alarm) then
           call cime_run_atm_recv_post
-       endif
-
-
-       !----------------------------------------------------------
-       !| Budget with new fractions
-       !----------------------------------------------------------
-       if (do_budgets) then
-          call cime_run_calc_budgets2()
        endif
 
        !----------------------------------------------------------
