@@ -1928,7 +1928,7 @@ subroutine zm_closure(pcols, ncol, pver, pverp, msg, cape_threshold_in, &
    real(r8), dimension(pcols,pver), intent(in ) :: s_mid             ! ambient dry static energy (normalized)
    real(r8), dimension(pcols,pver), intent(in ) :: q_mid             ! ambient specific humidity
    real(r8), dimension(pcols,pver), intent(in ) :: qs                ! ambient saturation specific humidity
-   real(r8), dimension(pcols,pver), intent(in ) :: ql                ! ambient liquid water mixing ratio
+   real(r8), dimension(pcols,pver), intent(in ) :: ql                ! in-cloud liquid water mixing ratio
    real(r8), dimension(pcols,pver), intent(in ) :: s_int             ! env. normalized dry static energy at intrfcs
    real(r8), dimension(pcols,pver), intent(in ) :: q_int             ! environment specific humidity at interfaces
    real(r8), dimension(pcols),      intent(in ) :: t_pcl_lcl         ! parcel temperature at LCL
