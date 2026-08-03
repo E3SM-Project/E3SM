@@ -86,14 +86,6 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_icw_ice",           scalar3d_mid, kg/kg,  grid_name, pack_size);
   add_field<Computed>("zm_dp_frac",           scalar3d_mid, none,   grid_name, pack_size);
 
-  // Vertically integrated ZM in-cloud water, weighted by the deep cloud fraction
-  // to give the grid-mean contribution - i.e. the amount of water that ZM adds to
-  // the water seen by radiation. These are meant to be combined with the standard
-  // LiqWaterPath / IceWaterPath diagnostics (which are unaffected by ZM) via the
-  // binary op diagnostic, ex: "LiqWaterPath_plus_zm_icw_liq_path"
-  add_field<Computed>("zm_icw_liq_path",      scalar2d,     kg/m2,  grid_name);
-  add_field<Computed>("zm_icw_ice_path",      scalar2d,     kg/m2,  grid_name);
-
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
@@ -625,27 +617,6 @@ void ZMDeepConvection::run_impl (const double dt)
         loc_zm_output_ql(i,k) < ZMF::ZMC::deep_icw_limit) {
       zm_dp_frac(i,k) = 0;
     }
-  });
-
-  //----------------------------------------------------------------------------
-  // Vertically integrate the ZM in-cloud water to obtain the contribution to the
-  // liquid and ice water path. The dp_frac weighting is applied here so that this
-  // is consistent with the grid-mean water that RRTMGP sees when the ZM in-cloud
-  // water is included in radiation (see eamxx_rrtmgp_process_interface.cpp)
-
-  const auto& zm_icw_liq_path = get_field_out("zm_icw_liq_path").get_view<Real*>();
-  const auto& zm_icw_ice_path = get_field_out("zm_icw_ice_path").get_view<Real*>();
-  const auto loc_p_del = zm_input.p_del;
-  Kokkos::parallel_for("zm_icw_path", team_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlev_mid),
-                            [&] (const int& k, Real& lsum) {
-      lsum += zm_dp_frac(i,k) * zm_icw_liq(i,k) * loc_p_del(i,k) / PC::gravit.value;
-    }, zm_icw_liq_path(i));
-    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nlev_mid),
-                            [&] (const int& k, Real& lsum) {
-      lsum += zm_dp_frac(i,k) * zm_icw_ice(i,k) * loc_p_del(i,k) / PC::gravit.value;
-    }, zm_icw_ice_path(i));
   });
 
   //----------------------------------------------------------------------------
