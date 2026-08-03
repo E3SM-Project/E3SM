@@ -473,6 +473,23 @@ void init_elements_2d_c (const int& ie,
                              vec_sph2cart,consthv,sphere_cart_vec,sphere_latlon_vec);
 }
 
+// Copies just tensorVisc from f90 arrays into the C++ view. Separate from
+// init_elements_2d_c() so that it can be called again, after dss_hvtensor
+// has updated tensorVisc, without re-copying the other (constant) geometry
+// fields.
+void init_tensorvisc_c (const int& ie, CF90Ptr& tensorvisc)
+{
+  auto& c = Context::singleton();
+  Elements& e = c.get<Elements> ();
+  const SimulationParams& params = c.get<SimulationParams>();
+
+  if (params.hypervis_scaling==0.0) {
+    // consthv: tensorVisc is not used/allocated.
+    return;
+  }
+  e.m_geometry.set_tensorvisc(ie,tensorvisc);
+}
+
 void init_geopotential_c (const int& ie,
                           CF90Ptr& phis, CF90Ptr& gradphis)
 {
