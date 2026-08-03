@@ -1975,7 +1975,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <lght_no_prd_factor hgrid="ne120np4"> 0.325D0    </lght_no_prd_factor>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
 <nucleate_ice_subgrid phys="default" clubb_sgs="1" microphys="p3" >1.35D0</nucleate_ice_subgrid>
-<nucleate_ice_subgrid phys="default" clubb_sgs="1" microphys="p3" hgrid="ne120np4">1.45D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid phys="default" clubb_sgs="1" microphys="p3" hgrid="ne120np4">1.40D0</nucleate_ice_subgrid>
 <sscav_tuning phys="default" microphys="p3">.false.</sscav_tuning>
 <p3_mincdnc phys="default" microphys="p3"> 20.D6      </p3_mincdnc>
 <p3_wbf_coeff phys="default" clubb_sgs="1" microphys="p3"> 1.0      </p3_wbf_coeff>
@@ -1996,7 +1996,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_C6thlb phys="default"> 7.50       </clubb_C6thlb>
 <clubb_C6thlc phys="default"> 0.50       </clubb_C6thlc>
 <clubb_C8 phys="default"> 5.2        </clubb_C8>
-<clubb_C8 phys="default" hgrid="ne120np4"> 5.0        </clubb_C8>
 <clubb_c_K10 phys="default"> 0.35       </clubb_c_K10>
 <clubb_c_K10h phys="default"> 0.35       </clubb_c_K10h>
 <clubb_gamma_coef phys="default"> 0.12D0     </clubb_gamma_coef>
