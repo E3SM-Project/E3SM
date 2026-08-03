@@ -3,12 +3,14 @@ set(SCREAM_CONTROL_SOURCES
   atmosphere_surface_coupling_importer.cpp
   atmosphere_surface_coupling_exporter.cpp
   surface_coupling_utils.cpp
+  default_model_init.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS
   atmosphere_driver.hpp
   atmosphere_surface_coupling.hpp
   surface_coupling_utils.hpp
+  default_model_init.hpp
 )
 
 add_library(scream_control ${SCREAM_CONTROL_SOURCES})

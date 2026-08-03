@@ -169,18 +169,11 @@ public:
 
   const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
 
-#ifndef KOKKOS_ENABLE_CUDA
-  // Cuda requires methods enclosing __device__ lambda's to be public
-protected:
-#endif
-  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
 protected:
 
   void report_res_dep_memory_footprint () const;
 
   void create_logger ();
-  void set_initial_conditions ();
-  void restart_model ();
 
   void register_groups ();
 
@@ -252,7 +245,8 @@ protected:
 
   // Current simulation casename
   std::string m_casename;
-  // maps grid name to a vector of its initialized fields
+
+  // Fields that were initialized during initialize_fields(); used for DAG output.
   strmap_t<strvec_t> m_fields_inited;
 };
 
