@@ -56,19 +56,21 @@ struct CouplingRoute {
 class FieldRegistry {
 public:
   void register_field(RegisteredField field);
-  const RegisteredField& get(std::string component, std::string field_name) const;
-  bool contains(std::string component, std:: string field_name);
+  const RegisteredField& get(const std::string &component,
+                             const std::string &field_name) const;
+  bool contains(const std::string &component, const std::string &field_name) const;
 
 private:
   struct RegistryKey {
     std::string component;
     std::string field_name;
 
-    // maybe this can be = default?
-    bool operator==(const RegistryKey& other) const = default;
+    bool operator==(const RegistryKey& other) const {
+      return component == other.component && field_name == other.field_name;
+    }
   };
   // taken from cpp reference
-  struct MyHash {
+  struct RegistryKeyHash {
     std::size_t operator()(const RegistryKey& key) const noexcept {
       std::size_t h1 = std::hash<std::string>{}(key.component);
       std::size_t h2 = std::hash<std::string>{}(key.field_name);
@@ -76,7 +78,7 @@ private:
     }
   };
 
-  std::unordered_map<RegistryKey, RegisteredField, MyHash> fields_;
+  std::unordered_map<RegistryKey, RegisteredField, RegistryKeyHash> fields_;
 };
 
 } // namespace e3sm::coupler

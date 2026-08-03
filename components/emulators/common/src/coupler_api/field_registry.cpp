@@ -1,4 +1,4 @@
-#include "field_registry.hpp"
+#include <field_registry.hpp>
 #include <stdexcept>
 
 namespace e3sm::coupler {
@@ -32,8 +32,16 @@ void FieldRegistry::register_field(RegisteredField field) {
   return;
 }
 
-const RegisteredField& FieldRegistry::get(std::string component, std::string field_name){
+const RegisteredField& FieldRegistry::get(const std::string &component,
+                                          const std::string &field_name) const {
+  RegistryKey key{component, field_name};
+  return fields_.find(key)->second;
+}
 
+bool FieldRegistry::contains(const std::string &component,
+                             const std::string &field_name) const {
+  RegistryKey key{component, field_name};
+  return fields_.contains(key);
 }
 
 } // namespace e3sm::coupler
