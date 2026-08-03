@@ -35,7 +35,7 @@ void Functions<S,D>::zm_closure(
   const uview_1d<const Real>& s_mid, // ambient dry static energy (normalized)
   const uview_1d<const Real>& q_mid, // ambient specific humidity
   const uview_1d<const Real>& qs, // ambient saturation specific humidity
-  const uview_1d<const Real>& ql, // ambient liquid water mixing ratio
+  const uview_1d<const Real>& ql, // in-cloud liquid water mixing ratio
   const uview_1d<const Real>& s_int, // env. normalized dry static energy at intrfcs
   const uview_1d<const Real>& q_int, // environment specific humidity at interfaces
   const Real& t_pcl_lcl, // parcel temperature at LCL
