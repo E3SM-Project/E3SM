@@ -213,6 +213,9 @@ MAMMicrophysics::create_requests()
   // - extfrc: 3D instantaneous forcing rate [kg/m³/s]
   add_field<Computed>("mam4_external_forcing", vector3d_extcnt, kg / m3 / s, grid_name);
 
+  // Solar zenith angle [rad] computed each time step
+  add_field<Computed>("mam4_zenith_angle", scalar2d, none, grid_name);
+
   // Diagnostic fields for aerosol microphysics
 
   // Flag to indicate if we want to compute extra diagnostics
@@ -843,6 +846,10 @@ void MAMMicrophysics::run_impl(const double dt) {
       acos_cosine_zenith_host_(i) = acos(temp);
     }
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
+
+    // Save zenith angle to the field manager
+    auto zenith_angle_fm = get_field_out("mam4_zenith_angle").get_view<Real *>();
+    Kokkos::deep_copy(zenith_angle_fm, acos_cosine_zenith_);
   }
 
   constexpr int num_gas_aerosol_constituents = mam_coupling::gas_pcnst();
