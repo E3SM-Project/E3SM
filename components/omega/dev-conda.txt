@@ -19,9 +19,8 @@ include-what-you-use
 fprettify
 
 # python linting
-isort
+ruff
 flynt
-flake8
 mypy
 
 # documentation

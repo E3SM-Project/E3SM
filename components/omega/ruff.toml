@@ -1,0 +1,30 @@
+# Max width of GitHub code review is 79 characters
+line-length = 79
+
+[lint]
+# E501 - max line-length
+# E4 - whitespace
+# E7 - multiple-statements
+# E9 - trailing-whitespace
+# F - Enable Pyflakes
+# B - Enable flake8-bugbear
+# W - Enable pycodestyle
+# I - imports
+# C901 - complex-structure
+select = ["E501", "E4", "E7", "E9", "F", "B", "W", "I", "C901"]
+
+[lint.per-file-ignores]
+"**/__init__.py" = ["F401"]
+"**/cime_config/buildlib_cmake" = ["E402", "F403"]
+
+[format]
+# Omega's python is mostly double quoted, unlike Polaris and other E3SM python
+# packages
+quote-style = "double"
+
+[lint.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds 18.
+max-complexity = 18
+
+[lint.pydocstyle]
+convention = "numpy"

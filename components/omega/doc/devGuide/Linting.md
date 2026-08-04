@@ -54,18 +54,20 @@ You can specify one more more files instead of `--all-files`.
 ## Linting Python Code
 
 The tools used to lint python code include
-[isort](https://pycqa.github.io/isort/) for sorting imports,
 [flynt](https://github.com/ikamensh/flynt) for enforcing string formatting
-with f-strings,
-[flake8](https://flake8.pycqa.org/en/latest/) for enforcing the
-[PEP8](https://peps.python.org/pep-0008/) style guide for python, and
+with f-strings, [ruff](https://docs.astral.sh/ruff/) for sorting imports and
+enforcing the [PEP8](https://peps.python.org/pep-0008/) style guide for python
+(`ruff-check`) as well as for formatting the code (`ruff-format`), and
 [mypy](https://mypy-lang.org/) for performing variable type checking.
+
+`ruff` is configured in `components/omega/ruff.toml` and `mypy` in
+`components/omega/mypy.cfg`.
 
 You can run these tools individually if you need to:
 ```bash
-pre-commit run isort --all-files
 pre-commit run flynt --all-files
-pre-commit run flake8 --all-files
+pre-commit run ruff-check --all-files
+pre-commit run ruff-format --all-files
 pre-commit run mypy --all-files
 ```
 You can specify one more more files instead of `--all-files`.

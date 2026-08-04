@@ -16,13 +16,6 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
-  # Can run individually with `pre-commit run isort --all-files`
-  - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
-    hooks:
-      - id: isort
-        args: ["--settings-file=components/omega/python_lint.cfg"]
-
   # Can run individually with `flynt [file]` or `flynt [source]`
   - repo: https://github.com/ikamensh/flynt
     rev: 1.0.6
@@ -31,22 +24,24 @@ repos:
         args: ["--fail-on-change", "--verbose", "--line-length=79"]
         require_serial: true
 
-  # Can run individually with `pre-commit run flake8 --all-files`
-  # Need to use flake8 GitHub mirror due to CentOS git issue with GitLab
-  # https://github.com/pre-commit/pre-commit/issues/1206
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.3.0
+  # Can run individually with `pre-commit run ruff-check --all-files` or
+  # `pre-commit run ruff-format --all-files`.  Both are configured in
+  # components/omega/ruff.toml
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.1
     hooks:
-      - id: flake8
-        args: ["--config=components/omega/python_lint.cfg"]
-        additional_dependencies: [flake8-isort]
+      # Run the linter.
+      - id: ruff-check
+        args: ["--fix"]
+      # Run the formatter.
+      - id: ruff-format
 
   # Can run individually with `pre-commit run mypy --all-files`
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.18.2
     hooks:
       - id: mypy
-        args: ["--config=components/omega/python_lint.cfg", "--show-error-codes"]
+        args: ["--config=components/omega/mypy.cfg", "--show-error-codes"]
         verbose: true
         additional_dependencies: ['types-requests']
         exclude: ^components/omega/cime_config/build.*
