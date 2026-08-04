@@ -420,10 +420,15 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
       gas_phase_chemistry_fail_cnt = get_field_out("mam4_gas_phase_chemistry_fail_cnt").get_view<Real **>();
     }
 
+    const auto& col_latitudes  = col_latitudes_;
+    const auto& col_longitudes = col_longitudes_;
+
     Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::gas_phase_chemistry", policy,
     KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int icol     = team.league_rank();   // column index
+      const Real col_lat = col_latitudes(icol);
+      const Real col_lon = col_longitudes(icol);
       const auto atm = mam_coupling::atmosphere_for_column(dry_atm, icol);
       const auto &photo_rates_icol = ekat::subview(photo_rates, icol);
       const auto invariants_icol = ekat::subview(invariants, icol);
@@ -450,7 +455,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         mam4::microphysics::gas_phase_chemistry(
         // in
         temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
-        het_rates_k.data(),
+        het_rates_k.data(), col_lat, col_lon, kk,
         // out
         vmr_kk, fail_cnt);
         if (gas_phase_chemistry_fail_cnt.size())

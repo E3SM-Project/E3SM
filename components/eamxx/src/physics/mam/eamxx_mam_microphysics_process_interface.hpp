@@ -106,6 +106,7 @@ class MAMMicrophysics final : public MAMGenericInterface {
 
   // column areas, latitudes, longitudes
   const_view_1d col_latitudes_;
+  const_view_1d col_longitudes_;
 
   // surface albedo: shortwave, direct
   const_view_1d d_sfc_alb_dir_vis_;

@@ -88,7 +88,8 @@ MAMMicrophysics::create_requests()
   buffer_.set_num_scratch(num_2d_scratch_);
 
   // get column geometry and locations
-  col_latitudes_ = grid_->get_geometry_data("lat").get_view<const Real *>();
+  col_latitudes_  = grid_->get_geometry_data("lat").get_view<const Real *>();
+  col_longitudes_ = grid_->get_geometry_data("lon").get_view<const Real *>();
 
   // define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
