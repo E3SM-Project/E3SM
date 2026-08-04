@@ -576,6 +576,10 @@ void ZMDeepConvection::run_impl (const double dt)
       qi (i,k)     += zm_detr_qi(i,k) * dt;
       nc (i,k)     += zm_detr_nc(i,k) * dt;
       ni (i,k)     += zm_detr_ni(i,k) * dt;
+      // latent heat of fusion released when detrained condensate, which is
+      // liquid-only in ZM without zm_microp, is partitioned into ice
+      // (mirrors EAM: ptend%s = dlf * ice_frac * latice in clubb_intr.F90)
+      T_mid(i,k)   += zm_detr_qi(i,k) * PC::LatIce.value / PC::CP.value * dt;
     }
     winds_v(i,0,k) += loc_zm_output_tend_out_u (i,k) * dt;
     winds_v(i,1,k) += loc_zm_output_tend_out_v (i,k) * dt;
