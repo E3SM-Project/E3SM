@@ -1,5 +1,6 @@
 #include "AuxiliaryState.h"
 #include "Config.h"
+#include "Error.h"
 #include "Field.h"
 #include "Logging.h"
 #include "Pacer.h"
@@ -28,7 +29,8 @@ AuxiliaryState::AuxiliaryState(const std::string &Name, const HorzMesh *Mesh,
       VorticityAux(stripDefault(Name), Mesh, VCoord),
       VelocityDel2Aux(stripDefault(Name), Mesh, VCoord),
       SurfTracerRestAux(stripDefault(Name), Mesh, NTracers),
-      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers) {
+      TracerAux(stripDefault(Name), Mesh, VCoord, NTracers),
+      TimeStep(TimeStep) {
 
    GroupName = "AuxiliaryState";
    if (Name != "Default") {
@@ -128,6 +130,10 @@ void AuxiliaryState::computeMomAux(const OceanState *State,
    TimeStep.get(TimeStepSeconds, TimeUnits::Seconds);
    R8 ProjDtSeconds;
    ProjDt.get(ProjDtSeconds, TimeUnits::Seconds);
+
+   // Sanity checks for the time steps
+   OMEGA_REQUIRE(TimeStepSeconds > 0, "TimeStepSeconds has to be positive");
+   OMEGA_REQUIRE(ProjDtSeconds > 0, "ProjDtSeconds has to be positive");
 
    Pacer::start("AuxState:computeMomAux", 1);
 
