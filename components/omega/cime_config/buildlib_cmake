@@ -18,15 +18,14 @@ logger = logging.getLogger(__name__)  # noqa: F405
 
 
 def buildlib(bldroot, installpath, case):
-    """
-    """
+    """ """
     print("building omega")
 
-    metis_root = os.environ['METIS_ROOT']
-    parmetis_root = os.environ['PARMETIS_ROOT']
+    metis_root = os.environ["METIS_ROOT"]
+    parmetis_root = os.environ["PARMETIS_ROOT"]
 
     cmake_args = (
-        f' -DOMEGA_BUILD_MODE=E3SM'
+        f" -DOMEGA_BUILD_MODE=E3SM"
         f' -DOMEGA_METIS_ROOT="{metis_root}"'
         f' -DOMEGA_PARMETIS_ROOT="{parmetis_root}"'
     )
@@ -37,12 +36,11 @@ def buildlib(bldroot, installpath, case):
 
 
 def _main(argv, documentation):
-    """
-    """
+    """ """
     caseroot, libroot, bldroot = parse_input(sys.argv)
     with Case(caseroot, read_only=False) as case:
         buildlib(bldroot, libroot, case)
 
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
     _main(sys.argv, __doc__)

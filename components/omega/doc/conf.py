@@ -16,14 +16,14 @@ author = "E3SM Development Team"
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-if 'DOCS_VERSION' in os.environ:
-    version = os.environ.get('DOCS_VERSION')
+if "DOCS_VERSION" in os.environ:
+    version = os.environ.get("DOCS_VERSION")
     release = version
 else:
     # The short X.Y.Z version.
-    version = 'develop'
+    version = "develop"
     # The full version, including alpha/beta/rc tags.
-    release = 'develop'
+    release = "develop"
 
 master_doc = "index"
 language = "en"
@@ -48,26 +48,27 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md",
-                    "**/README.md"]
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+    "**/README.md",
+]
 
 intersphinx_mapping = {
-    'matplotlib': ('http://matplotlib.org/stable', None),
-    'numpy': ('https://numpy.org/doc/stable', None),
-    'polaris': ('https://e3sm-project.github.io/polaris/main', None),
-    'python': ('https://docs.python.org', None),
-    'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
+    "matplotlib": ("http://matplotlib.org/stable", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "polaris": ("https://e3sm-project.github.io/polaris/main", None),
+    "python": ("https://docs.python.org", None),
+    "scipy": ("http://docs.scipy.org/doc/scipy/reference", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master", None),
-    'xarray': ('http://xarray.pydata.org/en/stable', None)
+    "xarray": ("http://xarray.pydata.org/en/stable", None),
 }
 
 # -- MyST settings ---------------------------------------------------
 
-myst_enable_extensions = [
-    'colon_fence',
-    'deflist',
-    'dollarmath'
-]
+myst_enable_extensions = ["colon_fence", "deflist", "dollarmath"]
 math_number_all = True
 math_numfig = False
 myst_dmath_allow_labels = True
@@ -76,12 +77,12 @@ myst_heading_anchors = 3
 myst_footnote_transition = True
 myst_dmath_double_inline = True
 myst_enable_checkboxes = True
-suppress_warnings = ['myst.header']
+suppress_warnings = ["myst.header"]
 myst_heading_start_level = 1
 
 # -- HTML output -------------------------------------------------
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
