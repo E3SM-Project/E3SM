@@ -13,17 +13,15 @@
 #include <stdexcept>
 #include <iostream>
 
-using namespace std;
-
 namespace emulator {
 
-Emulator::Emulator(EmulatorType type, MPI_Comm comm, int id, const string &name)
+Emulator::Emulator(EmulatorType type, MPI_Comm comm, int id, const std::string &name)
     : m_type(type), m_comm(comm), m_component_id(id), m_moab_app_id(-1), m_name(name), m_initialized(false),
       m_step_count(0) {}
 
 void Emulator::initialize() {
   if (m_initialized) {
-    throw runtime_error("Emulator already initialized");
+    throw std::runtime_error("Emulator already initialized");
   }
   init_impl();
   m_initialized = true;
@@ -31,7 +29,7 @@ void Emulator::initialize() {
 
 void Emulator::run(int dt) {
   if (!m_initialized) {
-    throw runtime_error("Emulator::run() called before initialize()");
+    throw std::runtime_error("Emulator::run() called before initialize()");
   }
   run_impl(dt);
   m_step_count++;
@@ -46,7 +44,7 @@ void Emulator::finalize() {
 }
 
 
-static string to_string(EmulatorType t) {
+static std::string to_string(EmulatorType t) {
   switch (t) {
   case EmulatorType::ATM: return "ATM";
   case EmulatorType::OCN: return "OCN";
@@ -56,11 +54,11 @@ static string to_string(EmulatorType t) {
   }
 }
 
-void Emulator::print_info(ostream& os) const {
+void Emulator::print_info(std::ostream& os) const {
   os << "Emulator '" << m_name << "'\n";
   os << "  type          : " << to_string(m_type) << "\n";
   os << "  id            : " << m_component_id << "\n";
-  os << "  initialized   : " << boolalpha << m_initialized << "\n";
+  os << "  initialized   : " << std::boolalpha << m_initialized << "\n";
   os << "  step_count    : " << m_step_count << "\n";
 
   // Grid summary via virtual getters
@@ -96,7 +94,7 @@ void create_global_id_tag(const Emulator &e) {
     MPI_Abort(e.comm(), err);
   }
 
-  vector<int> gids(num_local_cols);
+  std::vector<int> gids(num_local_cols);
   e.get_local_col_gids(gids.data());
   int ent_type = 0; // entity type (vertex)
   err = iMOAB_SetIntTagStorage(&app_id, "GLOBAL_ID", &num_local_cols, &ent_type, gids.data());
@@ -132,18 +130,18 @@ void create_seq_flds_dom_fields_tag(const Emulator &e) {
 
 //----------------------------- pardon the mess! -------------------------------------
 template <typename T>
-ErrCode set_tag_storage(const Emulator &e, const string &name, int ent_type,
-                        vector<T> &data) { return 1; }
+ErrCode set_tag_storage(const Emulator &e, const std::string &name, int ent_type,
+                        std::vector<T> &data) { return 1; }
 template <>
-ErrCode set_tag_storage<int>(const Emulator &e, const string &name, int ent_type,
-                             vector<int> &data) {
+ErrCode set_tag_storage<int>(const Emulator &e, const std::string &name, int ent_type,
+                             std::vector<int> &data) {
   int len = data.size();
   int app_id = e.moab_app_id();
   return iMOAB_SetIntTagStorage(&app_id, name.c_str(), &len, &ent_type, data.data());
 }
 template <>
-ErrCode set_tag_storage<double>(const Emulator &e, const string &name, int ent_type,
-                                vector<double> &data) {
+ErrCode set_tag_storage<double>(const Emulator &e, const std::string &name, int ent_type,
+                                std::vector<double> &data) {
   int len = data.size();
   int app_id = e.moab_app_id();
   return iMOAB_SetDoubleTagStorage(&app_id, name.c_str(), &len, &ent_type, data.data());
@@ -151,7 +149,7 @@ ErrCode set_tag_storage<double>(const Emulator &e, const string &name, int ent_t
 //----------------------------- //////////////// -------------------------------------
 
 template <typename T>
-void create_tag(const Emulator &e, const string &name, int type, vector<T> &data) {
+void create_tag(const Emulator &e, const std::string &name, int type, std::vector<T> &data) {
   ErrCode err = set_tag_storage(e, name, type, data); // ^^^^
   if (err) {
     fprintf(stderr, "Error: failed to create %s tag\n", name.c_str());
@@ -182,11 +180,11 @@ void create_seq_flds_a2x_fields(const Emulator &e) {
 }
 
 void create_moab_vertices(const Emulator & e,
-                          const vector<double> &lat,
-                          const vector<double> &lon) {
+                          const std::vector<double> &lat,
+                          const std::vector<double> &lon) {
 
   int num_local_cols = e.get_num_local_cols();
-  vector<double> moab_vertex_coords(3 * num_local_cols);
+  std::vector<double> moab_vertex_coords(3 * num_local_cols);
   for (size_t i = 0; i < num_local_cols; ++i) {
     double lat_v = lat[i] * M_PI/180.0;
     double lon_v = lon[i] * M_PI/180.0;
@@ -208,8 +206,8 @@ void create_moab_vertices(const Emulator & e,
 
 #ifdef MOABDEBUG
 void write_mesh(const Emulator &e) {
-  string filename = e.name() + ".h5m";
-  string options = "PARALLEL=WRITE_PART";
+  std::string filename = e.name() + ".h5m";
+  std::string options = "PARALLEL=WRITE_PART";
   ErrCode err = iMOAB_WriteMesh(e.moab_app_id(), filename.c_str(), options.c_str());
   if (err) {
     fpritnf(stderr, "Error: fail to write mesh file %s\n", filename.c_str());
@@ -235,7 +233,7 @@ void Emulator::register_with_moab() {
   }
 
   int num_local_cols = get_num_local_cols();
-  vector<double> data1(num_local_cols), data2(num_local_cols);
+  std::vector<double> data1(num_local_cols), data2(num_local_cols);
 
   create_global_id_tag(*this); // "GLOBAL_ID"
   create_seq_flds_dom_fields_tag(*this);
