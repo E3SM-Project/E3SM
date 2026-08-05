@@ -154,7 +154,8 @@ def _get_file_name(case, stream):
     ocn_grid = case.get_value("OCN_GRID")
 
     if ocn_grid not in omega_supported_grids:
-        raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
+        msg = f"Unsupported OCN_GRID: {ocn_grid}"
+        raise ValueError(msg)
 
     # TODO: this will return a different value based on the stream name
     # For now mesh file contains all information needed in single file
@@ -167,7 +168,8 @@ def _get_file_name(case, stream):
         mesh_dir = omega_dir / "EC30to60E2r2"
         return str(mesh_dir / "ocean.EC30to60E2r2.200908.teos10.260720.nc")
     else:
-        raise ValueError(f"Unsupported OCN_GRID: {ocn_grid}")
+        msg = f"Unsupported OCN_GRID: {ocn_grid}"
+        raise ValueError(msg)
 
 
 def _update_read_io_streams(config, case, stream):
@@ -263,7 +265,8 @@ def _build_time_integration_config(default_time_integration, case):
     elif calendar == "GREGORIAN":
         time_integration["CalendarType"] = "Gregorian"
     else:
-        raise ValueError(f"Unsupported calendar type: {calendar}")
+        msg = f"Unsupported calendar type: {calendar}"
+        raise ValueError(msg)
 
     # Set start and stop time to invalid values in order to make clear to users
     # these values come from the coupler at runtime
