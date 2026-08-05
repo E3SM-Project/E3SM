@@ -40,6 +40,12 @@ if(BUILD_EMULATOR_TESTS)
 endif()
 
 if (STANDALONE_MODE)
+  find_package(MPI COMPONENTS C)
+  if (NOT MPI_FOUND)
+    message(FATAL_ERROR "MPI is required for Standalone Mode, but it couldn't be found!")
+  endif()
+  link_libraries(MPI::MPI_C)
+
   # Fetch MOAB so we don't have to have it preinstalled
   add_library(MOAB STATIC IMPORTED GLOBAL)
   set_target_properties(MOAB PROPERTIES IMPORTED_LOCATION ${PROJECT_BINARY_DIR}/lib/libMOAB.a)
