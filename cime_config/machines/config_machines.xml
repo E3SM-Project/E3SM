@@ -572,6 +572,229 @@
     </resource_limits>
   </machine>
 
+  <machine MACH="vista-gh">
+    <DESC>vista at TACC https://docs.tacc.utexas.edu/hpc/vista  gh (grace-hopper) GH200 Superchip -- Grace CPU (72 cores) and 1 NVIDIA H100 GPU</DESC>
+    <NODENAME_REGEX>.*vista.*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>CDA24017</PROJECT>
+    <SAVE_TIMING_DIR>$ENV{WORK}</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{WORK}/e3sm_scratch/vista-gh</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>$ENV{WORK}/www/$ENV{USER}</CIME_HTML_ROOT>
+    <DIN_LOC_ROOT>$ENV{WORK}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{WORK}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{WORK}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{WORK}/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>72</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnu">144</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="nvidia">144</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnu">144</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="nvidia">144</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>ibrun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/apps/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module -q</cmd_path>
+      <cmd_path lang="csh">module -q</cmd_path>
+
+      <modules>
+	<command name="unload">netcdf</command>
+	<command name="unload">pnetcdf</command>
+	<command name="unload">hdf5</command>
+	<command name="unload">gcc</command>
+	<command name="unload">nvidia</command>
+	<command name="unload">cuda</command>
+	<command name="unload">perftools-base</command>
+	<command name="unload">perftools</command>
+	<command name="unload">darshan</command>
+      </modules>
+
+      <modules compiler="gnu.*">
+	<command name="load">gcc/13.2.0</command>
+	<command name="load">openmpi/5.0.5</command>
+      </modules>
+
+      <modules compiler="nvidia.*">
+	<command name="load">nvidia/24.7</command>
+	<command name="load">openmpi/5.0.8</command>
+      </modules>
+
+      <modules compiler="gnugpu">
+	<command name="load">gcc/13.2.0</command>
+	<command name="load">cuda/12.6</command>
+	<command name="load">openmpi/5.0.5</command>
+      </modules>
+
+      <modules compiler="nvidiagpu">
+	<command name="load">cuda/12.6</command>
+	<command name="load">openmpi/5.0.8</command>
+      </modules>
+
+      <modules>
+	<command name="load">ucx/1.19.1</command>
+	<command name="load">netcdf/4.9.2</command>
+	<command name="load">pnetcdf/1.13.0</command>
+	<command name="load">cmake</command>
+      </modules>
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+
+    <environment_variables>
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="NETCDF_PATH">$ENV{TACC_NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{TACC_PNETCDF_DIR}</env>
+      <env name="LD_LIBRARY_PATH">/opt/apps/gcc/14.2.0/lib64:$ENV{LD_LIBRARY_PATH}</env> <!-- for pnetcdf which has gcc version issues-->
+    </environment_variables>
+
+    <environment_variables compiler="gnu">
+      <env name="IBRUN_TASKS_PER_NODE">144</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia">
+      <env name="IBRUN_TASKS_PER_NODE">144</env>
+    </environment_variables>
+    <environment_variables compiler="gnugpu">
+      <env name="IBRUN_TASKS_PER_NODE">1</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="MPICH_CXX">$SHELL{which nvcc}</env>
+    </environment_variables>
+    <environment_variables compiler="nvidiagpu">
+      <env name="IBRUN_TASKS_PER_NODE">1</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="MPICH_CXX">$SHELL{which nvcc}</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
+  <machine MACH="vista-gg">
+    <DESC>vista at TACC https://docs.tacc.utexas.edu/hpc/vista (gg -- grace-grace)  CPU-only: NVIDIA Grace CPU Superchip (72x2 or 144 cores) </DESC>
+    <NODENAME_REGEX>.*vista.*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu,nvidia</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <PROJECT>CDA24017</PROJECT>
+    <SAVE_TIMING_DIR>$ENV{WORK}</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{WORK}/e3sm_scratch/vista-gg</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>$ENV{WORK}/www/$ENV{USER}</CIME_HTML_ROOT>
+    <DIN_LOC_ROOT>$ENV{WORK}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{WORK}/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{WORK}/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$ENV{WORK}/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>2</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>288</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>144</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>ibrun</executable>
+      <arguments>
+	<arg name="label"> --label</arg>
+	<arg name="num_tasks"> -n {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/apps/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module -q</cmd_path>
+      <cmd_path lang="csh">module -q</cmd_path>
+
+      <modules>
+	<command name="unload">netcdf</command>
+	<command name="unload">pnetcdf</command>
+	<command name="unload">hdf5</command>
+	<command name="unload">gcc</command>
+	<command name="unload">nvidia</command>
+	<command name="unload">cuda</command>
+	<command name="unload">perftools-base</command>
+	<command name="unload">perftools</command>
+	<command name="unload">darshan</command>
+      </modules>
+
+      <modules compiler="gnu">
+	<command name="unload">gcc</command>
+	<command name="load">gcc/15.1.0</command>
+	<command name="load">openmpi/5.0.5</command>
+      </modules>
+
+      <modules compiler="nvidia">
+	<command name="load">nvidia/25.5</command>
+	<command name="load">openmpi/5.0.8</command>
+      </modules>
+
+      <modules>
+	<command name="load">ucx/1.19.1</command> <!-- note: encountered hangs with newer versions -->
+	<command name="load">netcdf/4.9.2</command>
+	<command name="load">pnetcdf/1.13.0</command>
+	<command name="load">cmake</command>
+      </modules>
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
+
+    <environment_variables>
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="NETCDF_PATH">$ENV{TACC_NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{TACC_PNETCDF_DIR}</env>
+      <env name="SLURM_LABELIO">1</env>
+      <env name="OMPI_MCA_orte_tag_output">1</env>
+    </environment_variables>
+
+    <environment_variables compiler="gnu">
+      <env name="IBRUN_TASKS_PER_NODE">144</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia">
+      <env name="IBRUN_TASKS_PER_NODE">144</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
   <machine MACH="muller-cpu">
     <DESC>Muller CPU-only nodes on internal NERSC machine, similar to pm-cpu (very small)</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:muller</NODENAME_REGEX>
