@@ -213,12 +213,6 @@ void MAMSrfOnlineEmiss::create_requests() {
   // Register sector fields in FM for surface emissions.
   // DataInterpolation is set up in initialize_impl.
   //--------------------------------------------------------------------
-  for(const srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    for(const auto &sector_name : ispec_srf.sectors) {
-      add_field<Computed>("srf_emiss_" + ispec_srf.species_name + "_" + sector_name,
-                          scalar2d, none, grid_name);
-    }
-  }
 
   // -------------------------------------------------------------
   // Setup to enable reading soil erodibility file
@@ -329,15 +323,18 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Setup data interpolation for surface emissions.
   //--------------------------------------------------------------------
   {
+    using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
+    const FieldLayout scalar2d = grid_->get_2d_scalar_layout();
     const auto srf_map_file    = m_params.get<std::string>("srf_remap_file", "");
     const auto srf_time_interp = DataInterpolation::Linear;
     for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
       std::vector<Field> srf_fields;
       srf_fields.reserve(ispec_srf.sectors.size());
       for(const auto &sector_name : ispec_srf.sectors) {
-        srf_fields.push_back(
-          get_field_out("srf_emiss_" + ispec_srf.species_name + "_" + sector_name)
-          .alias(sector_name));
+        Field field(FieldIdentifier(sector_name, scalar2d, none, grid_->name()));
+        field.allocate_view();
+        srf_fields.push_back(field);
       }
       ispec_srf.emiss_sector_fields_ = srf_fields;
 
