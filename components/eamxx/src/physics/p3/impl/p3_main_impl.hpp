@@ -102,7 +102,9 @@ Int Functions<S,D>
   constexpr bool   debug_ABORT  = false;
 
   const bool do_ice_production = runtime_options.do_ice_production;
-
+//<shanyp 20260804
+//  const bool p3_condevap = runtime_options.p3_condevap;
+//shanyp 20260804>
   // we do not want to measure init stuff
   auto start = std::chrono::steady_clock::now();
 

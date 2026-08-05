@@ -126,6 +126,9 @@ void Functions<S,D>
   const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
   const bool use_separate_ice_liq_frac = runtime_options.use_separate_ice_liq_frac;
   const bool extra_p3_diags = runtime_options.extra_p3_diags;
+//[shanyp 20260804
+  const bool p3_condevap = runtime_options.p3_condevap;
+//shanyp 20260804]
 
   team.team_barrier();
   hydrometeorsPresent = false;
@@ -391,7 +394,8 @@ void Functions<S,D>
       calc_liq_relaxation_timescale(
         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
-
+//[shanyp 20260804
+      if(p3_condevap) {
 //[shanyp 20251216
 ////      if(qv(k)/qv_sat_l(k)
 //      c1=100.; // CCN number concentration
@@ -449,7 +453,8 @@ void Functions<S,D>
          revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
          epsr, epsc, not_skip_micro);
 //shanyp 20251120]
-
+     }
+//shanyp 20260804]
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
 		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,

@@ -269,6 +269,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
       <!--[shanyp 20260402 -->
       <shoc_nocond type="logical" doc="turn off condensation in SHOC, should only be used with 1.5 TKE option">false</shoc_nocond>
+      <!--[shanyp 20260804 -->
+      <p3_condevap type="logical" doc="the switch of prognostic supersaturation treatment in P3">false</p3_condevap>
+      <!-- shanyp 20260804]-->
       <!--shanyp 20260402] -->
     </shoc>
 

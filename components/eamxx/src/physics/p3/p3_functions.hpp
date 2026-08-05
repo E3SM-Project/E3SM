@@ -132,7 +132,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_hetfrz_classnuc                    = false;
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
-
+// <shanyp 20260804
+    bool p3_condevap;
+// shanyp 20260804>
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
     {
@@ -174,6 +176,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       use_separate_ice_liq_frac =
           params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
+//<shanyp 20260804
+      p3_condevap = params.get<bool>("p3_condevap",p3_condevap);
+//shanyp 20260804>
     }
   };
 
