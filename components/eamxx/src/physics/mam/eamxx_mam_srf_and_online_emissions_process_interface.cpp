@@ -310,14 +310,21 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Output fields
   // ---------------------------------------------------------------
   // Constituent fluxes of species in [kg/m2/s]
-  constituent_fluxes_ = get_field_out("constituent_fluxes").get_view<Real **>();
+  constituent_fluxes_ = get_field_out("constituent_fluxes");
 
   // ---------------------------------------------------------------
   // Allocate memory for local and work arrays
   // ---------------------------------------------------------------
 
-  // Work array to store fluxes after unit conversions to kg/m2/s
-  fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
+  // Work field to store fluxes after unit conversions to kg/m2/s
+  {
+    using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
+    const FieldLayout scalar2d = grid_->get_2d_scalar_layout();
+    Field field(FieldIdentifier("fluxes_in_mks_units", scalar2d, kg / pow(m,2) / s, grid_->name()));
+    field.allocate_view();
+    fluxes_in_mks_units_ = field;
+  }
 
   //--------------------------------------------------------------------
   // Setup data interpolation for surface emissions.
@@ -399,7 +406,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   Kokkos::fence();
 
   // Constituent fluxes [kg/m^2/s]
-  auto constituent_fluxes = this->constituent_fluxes_;
+  auto constituent_fluxes = constituent_fluxes_.get_view<Real **>();
 
   // Zero out constituent fluxes only for gasses and aerosols
   init_fluxes(ncol_,                // in
@@ -479,23 +486,15 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     const int species_index = spcIndex_in_pcnst_.at(ispec_srf.species_name);
 
     // modify units from molecules/cm2/s to kg/m2/s
-    auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-    Kokkos::deep_copy(fluxes_in_mks_units, 0.0);
-        for(const auto &sector_field : ispec_srf.emiss_sector_fields_) {
-            const auto sector_flux = sector_field.get_view<const Real *>();
-            Kokkos::parallel_for(
-                    "srf_emis_sector_sum", ncol_, KOKKOS_LAMBDA(int icol) {
-                        fluxes_in_mks_units(icol) += sector_flux(icol);
-                    });
-        }
+    fluxes_in_mks_units_.deep_copy(0.0);
+    for(const auto &sector_field : ispec_srf.emiss_sector_fields_) {
+        fluxes_in_mks_units_.update(sector_field, 1, 1);
+    }
 
         const Real mfactor = amufac * ispec_srf.scale_factor *
                                                  mam4::gas_chemistry::adv_mass[species_index - offset_];
-    Kokkos::parallel_for(
-        "srf_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-                    constituent_fluxes(icol, species_index) =
-                            fluxes_in_mks_units(icol) * mfactor;
-        });
+    fluxes_in_mks_units_.scale(mfactor);
+    constituent_fluxes_.get_component(species_index).deep_copy(fluxes_in_mks_units_);
   }  // for loop for species
   Kokkos::fence();
 }  // run_impl ends
