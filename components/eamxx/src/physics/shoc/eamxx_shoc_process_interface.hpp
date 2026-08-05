@@ -468,6 +468,7 @@ protected:
 #endif
 
   void initialize_impl (const RunType run_type);
+  void run_impl        (const double dt);
 
   // Update flux (if necessary)
   void check_flux_state_consistency(const double dt);
@@ -477,7 +478,6 @@ protected:
 
 protected:
 
-  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // SHOC updates the 'tracers' group.
