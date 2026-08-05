@@ -11,7 +11,8 @@ line-length = 79
 # W - Enable pycodestyle
 # I - imports
 # C901 - complex-structure
-select = ["E501", "E4", "E7", "E9", "F", "B", "W", "I", "C901"]
+# EM -  Enable flake8-errmsg
+select = ["E501", "E4", "E7", "E9", "F", "B", "W", "I", "C901", "EM"]
 
 [lint.per-file-ignores]
 "**/__init__.py" = ["F401"]
