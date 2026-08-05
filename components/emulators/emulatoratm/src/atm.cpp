@@ -19,7 +19,7 @@
 namespace emulator {
 
 EmulatorAtm::EmulatorAtm()
-    : Emulator(EmulatorType::ATM_COMP, -1, "emulatoratm") {}
+    : Emulator(EmulatorType::ATM, MPI_COMM_SELF, -1, "emulatoratm") {}
 
 void EmulatorAtm::create_instance(int comm, int comp_id,
                                   const std::string &input_file,
@@ -27,7 +27,7 @@ void EmulatorAtm::create_instance(int comm, int comp_id,
                                   int run_type, int start_ymd,
                                   int start_tod) {
   m_comm = comm;
-  m_id = comp_id;  // set base class ID
+  m_component_id = comp_id;  // set base class ID
   m_input_file = input_file;
   m_log_file = log_file;
   m_run_type = run_type;
