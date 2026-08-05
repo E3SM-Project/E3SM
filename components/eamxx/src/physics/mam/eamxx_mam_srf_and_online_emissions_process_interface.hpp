@@ -42,14 +42,14 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   const_view_2d dust_fluxes_;
 
   // Constituent fluxes of species in [kg/m2/s]
-  view_2d constituent_fluxes_;
+  Field constituent_fluxes_;
 
   // Runtime scale factors for online emissions from namelist.
   Real dust_emis_scale_factor;
   Real seasalt_emis_scale_factor;
 
-  // Work array to store fluxes after unit conversions to kg/m2/s
-  view_1d fluxes_in_mks_units_;
+  // Work field to store fluxes after unit conversions to kg/m2/s
+  Field fluxes_in_mks_units_;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
