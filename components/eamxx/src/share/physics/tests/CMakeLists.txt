@@ -17,6 +17,7 @@ endif()
 
 CreateUnitTest(physics_saturation_run_and_cmp
   SOURCES physics_saturation_run_and_cmp.cpp
+  EXCLUDE_MAIN_CPP
   LIBS eamxx_physics_share
   EXE_ARGS "${SCREAM_BASELINE_FILE_ARG}"
   THREADS ${SCREAM_BASELINE_TEST_THREADS}
