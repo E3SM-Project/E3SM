@@ -77,7 +77,8 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_self_attraction_loading.o \
 	   mpas_ocn_vertical_advection.o \
            mpas_ocn_stokes_drift.o \
-           mpas_ocn_manufactured_solution.o
+           mpas_ocn_manufactured_solution.o \
+           mpas_ocn_fme_horiz_remap.o
 
 all: $(OBJS)
 

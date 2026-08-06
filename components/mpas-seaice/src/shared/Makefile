@@ -26,7 +26,8 @@ OBJS = 	mpas_seaice_time_integration.o \
 	mpas_seaice_error.o \
 	mpas_seaice_mesh_pool.o \
 	mpas_seaice_prescribed.o \
-	mpas_seaice_special_boundaries.o
+	mpas_seaice_special_boundaries.o \
+	mpas_seaice_fme_horiz_remap.o
 
 all: $(OBJS)
 

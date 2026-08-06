@@ -1440,6 +1440,248 @@
     </values>
   </entry>
 
+  <!-- ============================================================== -->
+  <!-- Coupler-native FME output (as-exchanged merged forcing x2o/...) -->
+  <!-- ============================================================== -->
+
+  <entry id="cpl_fme_x2o_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the ocean merged-forcing (x2o) 1-day
+      mean remapped lat-lon stream. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_ocn_map">
+    <type>char*256</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: SCRIP/ESMF map file remapping the ocean
+      (IcoswISC30E3r5) mesh to the lat-lon output grid. Must be a non-negative
+      map (first-order conservative or bilinear); negative-weight maps are
+      refused (AGENTS.md gotcha #47). default: empty (stream stays disabled)
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_ocn_interval">
+    <type>real</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: averaging/output window for the ocean 1-day
+      stream, in days. default: 1.0
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_x2o_5d_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the ocean merged-forcing (x2o) 5-day
+      mean remapped lat-lon companion stream. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_ocn_5d_interval">
+    <type>real</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: averaging/output window for the ocean 5-day
+      companion stream, in days. default: 5.0
+    </desc>
+    <values>
+      <value>5.0</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_xao_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the atm-ocean bulk-flux (xao / Faox_*)
+      1-day mean remapped lat-lon stream (ocean grid, shared map). The xao
+      fluxes are recomputed every atm step and have no native accumulator, so
+      this stream averages coupling-cadence snapshots. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_xao_5d_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the atm-ocean bulk-flux (xao) 5-day
+      mean companion stream. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_x2i_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the sea-ice merged-import (x2i) 1-day
+      mean remapped lat-lon stream. Sea-ice shares the ocean mesh (same map
+      file). x2i has no native accumulator, so this averages coupling-cadence
+      snapshots. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_x2i_5d_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the sea-ice merged-import (x2i) 5-day
+      mean companion stream. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_atm_map">
+    <type>char*256</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: map file remapping the ATM grid (ne30pg2) to
+      the lat-lon output grid, used by the x2a stream. Same map EAM uses for
+      its FME tape. Must be non-negative (gotcha #47). default: empty.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_o2x_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the ocean-export (o2x: SST/SSS/currents/
+      SSH/...) 1-day mean stream -- the as-exchanged ocean state (Samudra's
+      prognostic outputs). Ocean grid, shared map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_o2x_5d_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the ocean-export (o2x) 5-day mean
+      companion stream. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_i2x_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the sea-ice-export (i2x: ice fraction,
+      albedos, ice-&gt;atm/ocn fluxes) 1-day mean stream. Ice grid (= ocean
+      mesh), shared map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_i2x_5d_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the sea-ice-export (i2x) 5-day mean
+      companion stream. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_x2a_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the atm-import (x2a: SST, ice fraction,
+      merged surface state/fluxes the atmosphere sees) time-mean stream -- the
+      atmospheric lower-boundary forcing (ACE inputs). Output cadence is
+      cpl_fme_atm_interval (default 6 h). ATM grid -> requires
+      cpl_fme_atm_map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_a2x_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the atm-export (a2x: the surface state
+      and downwelling/precip flux densities the atmosphere sends to the coupler)
+      time-mean stream -- the atmospheric forcing OUT of the atm (ACE outputs).
+      Output cadence is cpl_fme_atm_interval (default 6 h). ATM grid ->
+      requires cpl_fme_atm_map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_atm_interval">
+    <type>real</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: averaging/output window for the atm streams
+      (x2a and a2x), in days. Must be a multiple of (and no finer than) the
+      coupling step, since sampling happens once per ocean coupling window.
+      default: 0.25 (6 hours)
+    </desc>
+    <values>
+      <value>0.25</value>
+    </values>
+  </entry>
+
   <entry id="histavg_atm">
     <type>logical</type>
     <category>history</category>

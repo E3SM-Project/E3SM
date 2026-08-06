@@ -36,6 +36,7 @@ module seaice_analysis_driver
    use seaice_pointwise_stats
    use seaice_unit_conversion
    use seaice_ice_shelves
+   use seaice_fme_derived_fields
 !   use seaice_TEM_PLATE
 
    implicit none
@@ -62,7 +63,8 @@ module seaice_analysis_driver
              seaice_analysis_compute, &
              seaice_analysis_write, &
              seaice_analysis_restart, &
-             seaice_analysis_finalize
+             seaice_analysis_finalize, &
+             seaice_analysis_fme_write_restart
 
    !--------------------------------------------------------------------
    !
@@ -168,6 +170,8 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsCustom', 1)
+      call mpas_pool_add_config(analysisMemberList, 'fmeSeaiceDerivedFields', 1)
 !     call mpas_pool_add_config(analysisMemberList, 'temPlate', 1)
 
       ! DON'T EDIT BELOW HERE
@@ -855,6 +859,36 @@ contains
 
 !***********************************************************************
 !
+!  routine seaice_analysis_fme_write_restart
+!
+!> \brief Persist FME analysis-member accumulator state on a coupler-driven
+!>        restart write. Mirror of `ocn_analysis_fme_write_restart` for the
+!>        single sea-ice FME AM (`fmeSeaiceDerivedFields`).
+!
+!-----------------------------------------------------------------------
+
+   subroutine seaice_analysis_fme_write_restart(domain, err)!{{{
+      type(domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+      integer :: err_tmp
+      logical, pointer :: enable_si
+
+      err = 0
+      err_tmp = 0
+
+      call mpas_pool_get_config(domain % configs, &
+           'config_AM_fmeSeaiceDerivedFields_enable', enable_si)
+      if (associated(enable_si)) then
+         if (enable_si) then
+            call seaice_fme_derived_fields_write_restart(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
+      end if
+
+   end subroutine seaice_analysis_fme_write_restart!}}}
+
+!***********************************************************************
+!
 !  routine seaice_analysis_write
 !
 !> \brief   Driver for MPAS-Seaice analysis output
@@ -1114,6 +1148,8 @@ contains
          call seaice_bootstrap_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call seaice_bootstrap_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeSeaiceDerivedFields' ) then
+         call seaice_bootstrap_fme_derived_fields(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call seaice_bootstrap_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1186,6 +1222,8 @@ contains
          call seaice_init_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call seaice_init_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeSeaiceDerivedFields' ) then
+         call seaice_init_fme_derived_fields(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call seaice_init_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1253,6 +1291,8 @@ contains
          call seaice_precompute_ice_shelves(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'icePresent' ) then
          call seaice_precompute_ice_present(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeSeaiceDerivedFields' ) then
+         call seaice_precompute_fme_derived_fields(domain, '', timeLevel, err_tmp)
       !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
       !   call seaice_precompute_time_series_stats(domain, timeSeriesDailyTAG, timeLevel, err_tmp)
       !else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
@@ -1334,6 +1374,8 @@ contains
          call seaice_compute_time_series_stats(domain, timeLevel, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call seaice_compute_time_series_stats(domain, timeLevel, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeSeaiceDerivedFields' ) then
+         call seaice_compute_fme_derived_fields(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call seaice_compute_surface_area_weighted_averages(domain, '', timeLevel, err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1406,6 +1448,8 @@ contains
          call seaice_restart_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call seaice_restart_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeSeaiceDerivedFields' ) then
+         call seaice_restart_fme_derived_fields(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call seaice_restart_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then
@@ -1478,6 +1522,8 @@ contains
          call seaice_finalize_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call seaice_finalize_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'fmeSeaiceDerivedFields' ) then
+         call seaice_finalize_fme_derived_fields(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'surfaceAreaWeightedAverages' ) then
 !        call seaice_finalize_surface_area_weighted_averages(domain, '', err_tmp)
 !     else if ( analysisMemberName(1:nameLength) == 'TEMPLATE' ) then

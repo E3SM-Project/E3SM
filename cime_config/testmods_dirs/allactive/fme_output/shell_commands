@@ -1,0 +1,480 @@
+#!/bin/bash
+# FME (Full Model Emulation) online output processing testmod
+#
+# Production configuration for ACE/Samudra coupled model emulation training
+# data generation. Enables online horizontal remapping, vertical coarsening,
+# derived diagnostics, and column-integrated fields.
+#
+# ---------------------------------------------------------------------------
+# Runtime-configurable parameters (override via environment variables)
+# ---------------------------------------------------------------------------
+# EAM output frequency in hours (negative = hours in EAM convention)
+FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
+# EAM averaging flag: 'I' = instantaneous (default), fluxes use per-field :A
+FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-I}
+# EAM file rotation policy. With 'one_month', files are rotated exactly at
+# calendar-month boundaries (28-31 days x 4 records/file, depending on month)
+# regardless of mfilt. Names are %y-%m.nc. Set FME_EAM_STORAGE=num_snapshots
+# (and FME_EAM_MFILT to a finite value) for legacy mfilt-based rotation.
+# Other valid values: 'one_year' (one file per calendar year, ~22 GB each).
+FME_EAM_STORAGE=${FME_EAM_STORAGE:-one_month}
+# mfilt is overridden by calendar rotation when FME_EAM_STORAGE != num_snapshots,
+# so it just acts as an upper safety bound. 1500 > any month-record-count (124 max).
+FME_EAM_MFILT=${FME_EAM_MFILT:-1500}
+# EAM history-tape index for the FME field list. Standalone SamudrACE runs use
+# tape 1 (with empty_htapes, the testmod owning the whole EAM history config).
+# To layer the FME tape ON TOP of a run script that already defines its own EAM
+# tapes (e.g. a respinup/production namelist with tapes 1..6), export
+# FME_EAM_TAPE to the next free index (e.g. 7). In that additive mode the BASE
+# run-script namelist owns empty_htapes and the per-tape arrays (nhtfrq / mfilt
+# / avgflag_pertape / hist_file_storage_type), which must be sized to include a
+# slot for the FME tape; the testmod contributes only the FME field list, its
+# horiz remap, and the non-per-tape derived/vcoarsen/aerocom globals. The hard
+# max is ptapes=17 (cam_history_support.F90).
+FME_EAM_TAPE=${FME_EAM_TAPE:-1}
+# MPAS compute/output interval (MPAS time interval string)
+FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
+# Optional 5-day-mean companion stream interval. Set to 'none' (or empty)
+# to disable. When set, each FME AM writes a parallel *5D.YYYY-MM.remapped.nc
+# file alongside the primary 1-day stream, sharing per-step samples.
+FME_MPAS_INTERVAL_5D=${FME_MPAS_INTERVAL_5D:-00-00-05_00:00:00}
+# NOTE: the CF time-coordinate epoch is auto-discovered at runtime by the
+# MPAS FME AMs (see AGENTS.md gotcha #39). On cold start the AMs read it
+# from MPAS_START_TIME (== CIME RUN_STARTDATE on initial runs); on warm
+# restart they read it back from the per-AM accumulator sidecar's
+# `time_reference_date` global attribute. No shell-side plumbing required.
+# Directory containing the gaussian-grid SCRIP map files (180x360 for
+# ne30pg2, 720x1440 for ne120pg2). Defaults to
+# $DIN_LOC_ROOT/fme so the maps are managed by CIME's inputdata machinery
+# (auto-fetched from the E3SM inputdata server at
+# https://web.lcrc.anl.gov/public/e3sm/inputdata/fme/ on cache miss).
+# Override only if you keep maps in a non-DIN_LOC_ROOT location.
+FME_MAPS_DIR=${FME_MAPS_DIR:-$(./xmlquery --value DIN_LOC_ROOT)/fme}
+
+# Coupler-native FME output (as-exchanged merged forcing x2o/x2i/xao).
+# Emits the post-coupler forcing each component actually integrates -- the one
+# quantity no component history tape can provide. Phase 1 ships the ocean
+# merged-forcing (x2o) stream only (daily + 5-day means); xao/x2i follow.
+# Set FME_CPL_ENABLE=FALSE to turn it off (e.g. to isolate a component issue).
+# Imports (cpl->component, what each component integrates):
+#   x2o = ocean merged forcing (the prize); x2i = sea-ice import;
+#   x2a = atm import (ACE boundary forcing IN, ATM grid).
+# Exports (component->cpl, what each component produces):
+#   o2x = ocean state out (Samudra outputs); i2x = sea-ice export;
+#   a2x = atm export (ACE forcing OUT, ATM grid).
+# Coupler-computed: xao = atm-ocean bulk fluxes (Faox_*).
+# x2i/o2x/i2x/xao share the ocean mesh map; x2a/a2x use the ATM (EAM) map.
+# The atm streams (x2a, a2x) run at a configurable sub-daily cadence
+# (FME_CPL_ATM_INTERVAL, default 6 h); the ocean/ice streams have 1D + 5D means.
+FME_CPL_ENABLE=${FME_CPL_ENABLE:-.true.}         # x2o ocean merged forcing
+FME_CPL_XAO_ENABLE=${FME_CPL_XAO_ENABLE:-.true.} # xao atm-ocean fluxes
+FME_CPL_ICE_ENABLE=${FME_CPL_ICE_ENABLE:-.true.} # x2i sea-ice import
+FME_CPL_O2X_ENABLE=${FME_CPL_O2X_ENABLE:-.true.} # o2x ocean export
+FME_CPL_I2X_ENABLE=${FME_CPL_I2X_ENABLE:-.true.} # i2x sea-ice export
+FME_CPL_X2A_ENABLE=${FME_CPL_X2A_ENABLE:-.true.} # x2a atm import (ATM grid)
+FME_CPL_A2X_ENABLE=${FME_CPL_A2X_ENABLE:-.true.} # a2x atm export (ATM grid)
+FME_CPL_INTERVAL=${FME_CPL_INTERVAL:-1.0}        # 1D mean window (days)
+FME_CPL_INTERVAL_5D=${FME_CPL_INTERVAL_5D:-5.0}  # 5D mean window (days)
+FME_CPL_ATM_INTERVAL=${FME_CPL_ATM_INTERVAL:-0.25} # atm x2a/a2x window (days; 6 h)
+# Set FME_CPL_5D_ENABLE=.false. to skip ALL 5-day companion streams.
+FME_CPL_5D_ENABLE=${FME_CPL_5D_ENABLE:-.true.}
+
+echo "FME output configuration:"
+echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
+echo "  MPAS: interval=${FME_MPAS_INTERVAL}, 5D companion=${FME_MPAS_INTERVAL_5D}"
+echo "  CPL: enable=${FME_CPL_ENABLE}, ocn 1D=${FME_CPL_INTERVAL}d, ocn 5D=${FME_CPL_INTERVAL_5D}d (5D enable=${FME_CPL_5D_ENABLE})"
+echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
+#
+# ---------------------------------------------------------------------------
+# Map file generation (run once per grid combination, outside the case).
+# Target Gaussian resolution tracks ATM_GRID (see GAUSS_GRID detection
+# below): ne30pg2 -> 180x360 (~1deg), ne120pg2 -> 720x1440 (~0.25deg).
+#
+# Maps are stored at: /pscratch/sd/m/mahf708/fme_maps/ and then staged to
+# $DIN_LOC_ROOT/fme (and eventually the E3SM inputdata server) so
+# check_input_data can find/fetch them for real case runs.
+#
+# To regenerate them (example: ne30pg2_r05_IcoswISC30E3r5 -> 180x360;
+# swap in the ne120pg2/720x1440 values in brackets for that combination):
+#
+#   OUTDIR=/pscratch/sd/m/mahf708/fme_maps
+#   mkdir -p $OUTDIR && cd $OUTDIR
+#   NLAT=180; NLON=360   # [720; 1440 for ne120pg2]
+#   GRIDTAG=180by360     # [720by1440 for ne120pg2]
+#
+#   # 1. Generate Gaussian grid
+#   ncremap -g ncremap_gaussian_grid_${GRIDTAG}.nc -G latlon=${NLAT},${NLON}#lat_typ=gss
+#
+#   # 2. Shift by 0.5 deg in longitude to match offline FV3-side grid
+#   python3 - <<PYEOF
+#   import netCDF4 as nc, shutil
+#   shutil.copy2("ncremap_gaussian_grid_${GRIDTAG}.nc",
+#                "ncremap_shifted_gaussian_grid_${GRIDTAG}.nc")
+#   with nc.Dataset("ncremap_shifted_gaussian_grid_${GRIDTAG}.nc", "r+") as ds:
+#       ds["grid_center_lon"][:] += 0.5
+#       ds["grid_corner_lon"][:] += 0.5
+#   PYEOF
+#
+#   # 3. Generate remapping weights for each source grid
+#   GAUSS=$OUTDIR/ncremap_shifted_gaussian_grid_${GRIDTAG}.nc
+#
+#   # EAM (ne30pg2); ATM_GRID xmlquery returns ne30np4.pg2, normalized to ne30pg2
+#   # [ne120pg2 source scrip: .../share/meshes/homme/ne120pg2_scrip_*.nc]
+#   ncremap \
+#     -s /global/cfs/cdirs/e3sm/inputdata/share/meshes/homme/ne30pg2_scrip_20200209.nc \
+#     -g $GAUSS \
+#     -m $OUTDIR/map_ne30pg2_to_gaussian_${GRIDTAG}_shifted.nc
+#
+#   # ELM and MOSART (r05 = 0.5x0.5 regular lat-lon). Not needed for
+#   # ne120pg2 land-less (DOCN/no r025 land) configurations.
+#   ncremap \
+#     -s /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/mappingdata/grids/SCRIPgrid_0.5x0.5_nomask_c110308.nc \
+#     -g $GAUSS \
+#     -m $OUTDIR/map_r05_to_gaussian_${GRIDTAG}_shifted.nc
+#
+#   # MPAS-O and MPAS-SI (IcoswISC30E3r5 unstructured mesh; for
+#   # ne120pg2_r025_RRSwISC6to18E3r5 use the RRSwISC6to18E3r5 mesh instead:
+#   # /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/RRSwISC6to18E3r5/
+#   #   ocean.RRSwISC6to18E3r5.mask.scrip.20240327.nc)
+#   ncremap \
+#     -s /global/cfs/cdirs/e3sm/inputdata/ocn/mpas-o/IcoswISC30E3r5/ocean.IcoswISC30E3r5.mask.scrip.20231120.nc \
+#     -g $GAUSS \
+#     -m $OUTDIR/map_IcoswISC30E3r5_to_gaussian_${GRIDTAG}_shifted.nc
+#
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Detect map files for this case's resolution
+# ---------------------------------------------------------------------------
+
+# Read grid names from the case XML
+ATM_GRID=$(./xmlquery --value ATM_GRID)
+OCN_GRID=$(./xmlquery --value OCN_GRID)
+
+# Normalize ATM_GRID: CIME reports ne30np4.pg2; map files use ne30pg2 convention.
+# Rule: strip npN. (e.g. np4.) from the middle of the name.
+ATM_GRID_NORM=$(echo "$ATM_GRID" | sed 's/np[0-9]*\.//')
+
+# use trintbilin maps. Target Gaussian grid resolution scales with the atm
+# grid so the remap doesn't discard resolution (180x360 for ne30pg2 ~1deg,
+# 720x1440 for ne120pg2 ~0.25deg).
+if [ "${ATM_GRID_NORM}" = "ne30pg2" ]; then
+  GAUSS_GRID="180by360"
+elif [ "${ATM_GRID_NORM}" = "ne120pg2" ]; then
+  GAUSS_GRID="720by1440"
+else
+  echo "Error: Unsupported ATM_GRID_NORM: ${ATM_GRID_NORM}"
+  exit 1
+fi
+EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
+OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
+
+echo "FME map detection:"
+echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
+echo "  OCN_GRID=${OCN_GRID}"
+echo "  EAM map : ${EAM_MAP} $([ -f "${EAM_MAP}" ] && echo '[cached]' || echo '[will be staged by check_input_data]')"
+echo "  OCN map : ${OCN_MAP} $([ -f "${OCN_MAP}" ] && echo '[cached]' || echo '[will be staged by check_input_data]')"
+
+# ---------------------------------------------------------------------------
+# Register maps with CIME's inputdata machinery
+# ---------------------------------------------------------------------------
+# A dedicated Buildconf/fme.input_data_list file (rather than appending to
+# cpl.input_data_list) avoids being clobbered by component buildnmls. CIME's
+# check_input_data globs Buildconf/*.input_data_list, so this file is read by
+# `./check_input_data --download`, which is invoked implicitly by case.submit
+# and pulls any missing entries from the configured inputdata server.
+mkdir -p Buildconf
+cat > Buildconf/fme.input_data_list << EOF
+fme_map_eam = ${EAM_MAP}
+fme_map_ocn = ${OCN_MAP}
+EOF
+
+# ---------------------------------------------------------------------------
+# EAM namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_eam << EOF
+! FME (Full Model Emulation) online output processing -- EAM
+!
+! Production configuration for ACE/Samudra training data generation.
+!
+! Vertical coarsening by level index ranges, dp-weighted within each range.
+! ACE L80 coarsening indices (0-based level boundaries, 8 output layers):
+!   layer 0: levels [0, 25)    -- upper stratosphere/mesosphere
+!   layer 1: levels [25, 38)   -- lower stratosphere
+!   layer 2: levels [38, 46)   -- tropopause region
+!   layer 3: levels [46, 52)   -- upper troposphere
+!   layer 4: levels [52, 56)   -- mid troposphere
+!   layer 5: levels [56, 61)   -- lower-mid troposphere
+!   layer 6: levels [61, 69)   -- lower troposphere
+!   layer 7: levels [69, 80)   -- boundary layer
+! (see: github.com/ai2cm/ace/blob/exp/e3sm/scripts/data_process/configs/
+!   e3smv3-coupled-atm-1deg.yaml)
+
+EOF
+
+# Per-tape rotation control (empty_htapes + the per-tape nhtfrq / mfilt /
+# avgflag / storage arrays). In STANDALONE mode (FME_EAM_TAPE=1, the SamudrACE
+# default) the testmod owns the whole EAM history config and writes the FME
+# tape as tape 1. In ADDITIVE mode (FME_EAM_TAPE>1) the FME field list is
+# layered on top of a base run-script namelist that already defines its own
+# tapes 1..N; the base then owns empty_htapes and the per-tape arrays (which
+# MUST include a slot for the FME tape, e.g. nhtfrq(${FME_EAM_TAPE})=...), and
+# the testmod contributes only the FME field tape, its horiz remap, and the
+# (non-per-tape) derived / vcoarsen / aerocom globals below.
+if [ "${FME_EAM_TAPE}" = "1" ]; then
+cat >> user_nl_eam << EOF
+empty_htapes = .true.
+avgflag_pertape = '${FME_EAM_AVGFLAG}'
+nhtfrq = -${FME_EAM_OUTPUT_HOURS}
+mfilt  = ${FME_EAM_MFILT}
+! Calendar-aligned file rotation (EAMxx-style; one_month = files named %y-%m.nc).
+hist_file_storage_type = '${FME_EAM_STORAGE}'
+EOF
+fi
+
+cat >> user_nl_eam << EOF
+
+! Enable AEROCOM aerosol-cloud-interaction diagnostics. Required for
+! aerindex/angstrm/cdnc/lwp/ccn.3bl in fincl1 below. See AGENTS.md
+! gotcha #43.
+do_aerocom_ind3 = .true.
+
+! Derived fields (computed at full resolution before vcoarsen).
+! STW -> specific_total_water in ACE naming.
+!
+! NOTE: eam_derived's validator only accepts state vars / constituents /
+! pbuf fields / earlier derived fields (validate_field_name in
+! eam_derived.F90:801). PRECSC/PRECSL are addfld-only diagnostics with
+! no state/pbuf backing, so PRECST = PRECSC+PRECSL was added directly
+! via addfld/outfld in cam_diagnostics.F90 instead -- 'PRECST:A' in
+! fincl1 below references that native field, NOT a derived expression.
+derived_fld_defs = 'STW=Q+CLDICE+CLDLIQ+RAINQM'
+
+! Vertical coarsening: 8 dp-weighted layers by level index boundaries.
+! 9 boundaries define 8 layers (0-based EAM level indices, top to bottom).
+vcoarsen_level_bounds = 0, 25, 38, 46, 52, 56, 61, 69, 80
+vcoarsen_avg_flds = 'T','U','V','STW','Q'
+
+! Height-above-surface linear interpolation (m AGL) for ACE 2 m / 10 m fields.
+! state%zm is height-above-surface at level midpoints; targets below the
+! lowest midpoint collapse to the lowest level (no extrapolation).
+vcoarsen_select_heights = 2.0, 10.0
+vcoarsen_select_height_flds = 'T','U','V','STW','Q'
+
+! Tape ${FME_EAM_TAPE}: ${FME_EAM_OUTPUT_HOURS}-hourly output.
+! State variables are instantaneous; fluxes/tendencies use :A (time-averaged).
+! 10 m wind speed and direction are derived offline from Uat10m and Vat10m.
+! Q is vcoarsened to 8 layers (Q_0..Q_7) like the other state fields, plus
+! Qat2m from the height-interp path; QREFHT is the standard CAM 2 m
+! specific humidity diagnostic (kept for cross-comparison with Qat2m).
+fincl${FME_EAM_TAPE} = 'SOLIN:A', 'PHIS',
+          'LANDFRAC', 'OCNFRAC', 'ICEFRAC',
+          'PS', 'TS',
+          'T_0','T_1','T_2','T_3','T_4','T_5','T_6','T_7',
+          'STW_0', 'STW_1','STW_2','STW_3','STW_4','STW_5','STW_6','STW_7',
+          'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
+          'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
+          'Q_0','Q_1','Q_2','Q_3','Q_4','Q_5','Q_6','Q_7',
+          'Tat2m', 'STWat2m','Qat2m',
+          'Uat10m', 'Vat10m',
+          'TREFHT', 'QREFHT',
+          'FLUT:A', 'FLNT:A', 'FSNTOA:A', 'FSUTOA:A',
+          'FLDS:A', 'FLUS:A', 'FSDS:A', 'FSUS:A', 'FSNS:A', 'FLNS:A',
+          'LHFLX:A','SHFLX:A',
+          'TAUX:A', 'TAUY:A',
+          'PRECT:A', 'PRECST:A',
+          'DTENDTTW:A',
+          'AODVISall', 'aerindexall', 'ccn.3bl', 'colccn.3',
+          'cdnc', 'lwp', 'lcc'
+
+
+EOF
+
+cat >> user_nl_eam << EOF
+! Horizontal remapping to shifted Gaussian grid (resolution matches
+! ATM_GRID -- see GAUSS_GRID detection above).
+! Staging is the responsibility of CIME's check_input_data via
+! Buildconf/fme.input_data_list (registered earlier in this script).
+horiz_remap_file(${FME_EAM_TAPE}) = '${EAM_MAP}'
+EOF
+
+# ---------------------------------------------------------------------------
+# Coupler (driver-mct) namelist: coupler-native FME output.
+# Emits the merged, post-coupler forcing each component actually integrates --
+# x2o (ocean), xao (atm-ocean bulk fluxes), x2i (sea-ice import) -- remapped to
+# the same lat-lon grid as the MPAS FME tape, as monthly files
+# ($case.cpl.fme.{ocn,xao,ice}{1D,5D}.YYYY-MM.nc). Reuses the ocean remap (no
+# new map files; sea-ice shares the ocean mesh) and a source-space accumulator
+# persisted across restart via a per-stream sidecar. See AGENTS.md PLAN
+# section "Coupler-Native FME Output".
+# ---------------------------------------------------------------------------
+# Derive the per-bundle 5-day enables from the global 5D toggle (ocean-mesh
+# bundles only; the atm streams use a single configurable sub-daily cadence).
+FME_CPL_OCN5D=.false.; FME_CPL_XAO5D=.false.; FME_CPL_ICE5D=.false.
+FME_CPL_O2X5D=.false.; FME_CPL_I2X5D=.false.
+if [ "${FME_CPL_5D_ENABLE}" = ".true." ]; then
+  FME_CPL_OCN5D=${FME_CPL_ENABLE}
+  FME_CPL_XAO5D=${FME_CPL_XAO_ENABLE}
+  FME_CPL_ICE5D=${FME_CPL_ICE_ENABLE}
+  FME_CPL_O2X5D=${FME_CPL_O2X_ENABLE}
+  FME_CPL_I2X5D=${FME_CPL_I2X_ENABLE}
+fi
+cat >> user_nl_cpl << EOF
+cpl_fme_ocn_map         = '${OCN_MAP}'
+cpl_fme_atm_map         = '${EAM_MAP}'
+cpl_fme_ocn_interval    = ${FME_CPL_INTERVAL}
+cpl_fme_ocn_5d_interval = ${FME_CPL_INTERVAL_5D}
+cpl_fme_atm_interval    = ${FME_CPL_ATM_INTERVAL}
+cpl_fme_x2o_enable      = ${FME_CPL_ENABLE}
+cpl_fme_x2o_5d_enable   = ${FME_CPL_OCN5D}
+cpl_fme_xao_enable      = ${FME_CPL_XAO_ENABLE}
+cpl_fme_xao_5d_enable   = ${FME_CPL_XAO5D}
+cpl_fme_x2i_enable      = ${FME_CPL_ICE_ENABLE}
+cpl_fme_x2i_5d_enable   = ${FME_CPL_ICE5D}
+cpl_fme_o2x_enable      = ${FME_CPL_O2X_ENABLE}
+cpl_fme_o2x_5d_enable   = ${FME_CPL_O2X5D}
+cpl_fme_i2x_enable      = ${FME_CPL_I2X_ENABLE}
+cpl_fme_i2x_5d_enable   = ${FME_CPL_I2X5D}
+cpl_fme_x2a_enable      = ${FME_CPL_X2A_ENABLE}
+cpl_fme_a2x_enable      = ${FME_CPL_A2X_ENABLE}
+EOF
+
+# ---------------------------------------------------------------------------
+# ELM namelist: stub for now
+# ---------------------------------------------------------------------------
+cat >> user_nl_elm << 'EOF'
+hist_empty_htapes = .true.
+
+EOF
+
+# ---------------------------------------------------------------------------
+# MOSART namelist: stub for now
+# ---------------------------------------------------------------------------
+cat >> user_nl_mosart << 'EOF'
+rtmhist_empty_htapes = .true.
+EOF
+
+# ---------------------------------------------------------------------------
+# MPAS-Ocean namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_mpaso << EOF
+!----------------------------------------------------------------------------------
+! FME online output -- MPAS-Ocean
+!
+! ACE needs: sst, ssh (zos), and depth-coarsened temperature (thetao),
+! salinity (so), velocityZonal (uo), velocityMeridional (vo) at 19 layers.
+!----------------------------------------------------------------------------------
+
+config_AM_fmeDepthCoarsening_enable = .true.
+config_AM_fmeDepthCoarsening_compute_interval = 'dt'
+! compute_on_startup=.false. is REQUIRED for warm-restart BFB.
+!
+! compute_on_startup runs the AM compute exactly once at MPAS_NOW
+! before timestepping. For a cold start MPAS_NOW = start_time;
+! for a warm restart MPAS_NOW = restart_time. With time_averaging
+! enabled, the startup compute pushes one sample into the
+! accumulator at that wall-clock instant — sample(start_time) on
+! cold runs, sample(restart_time) on warm runs.
+!
+! Phase-1 of an ERS test does cold + write-restart-mid-run + keep-running.
+! Phase-2 reads the restart and continues. The daily-average window
+! that straddles the restart point is computed once in phase-1 from
+! pure timestep samples (the startup sample lives in the *first*
+! window of phase-1, far away) and once in phase-2 with an extra
+! sample(restart_time) injected on top of the same timestep samples.
+! Result: phase-2's record for that window differs from phase-1's
+! by ~1/N (e.g. ~2% with daily output and 30-min coupling).
+! That's the source of the ~1e-4 RMS difference seen in the ERS
+! cprnc summary before this flag was set.
+!
+! Disabling compute_on_startup makes both phases skip that initial
+! sample. Cost: the very first averaged record of a cold run loses
+! one sample out of ~N (e.g. day-1 has 48 samples instead of 49 for
+! daily/30-min). All subsequent records are unaffected. For a
+! 100-yr SamudrACE tape that's 1 mildly-biased record out of
+! ~36500. The startup sample carries no special information
+! anyway (it's just the model's IC, which already lives in the
+! restart files).
+config_AM_fmeDepthCoarsening_compute_on_startup = .false.
+config_AM_fmeDepthCoarsening_time_averaging = .true.
+! Samudra training spec (Confluence p3ai/6154289880, "case run options for
+! v3 LR piControl SamudrACE") requires BOTH 1D-avg AND 1D-instant for the
+! four 3D ocean state vars (temperature, salinity, velocityZonal,
+! velocityMeridional). DO NOT turn this off without re-checking the spec
+! with the SamudrACE team -- ~900 GB savings over a 100-yr run is real but
+! the cost of regenerating a non-conforming tape is much higher.
+config_AM_fmeDepthCoarsening_write_instantaneous_companion = .true.
+config_AM_fmeDepthCoarsening_stream_output_interval = '${FME_MPAS_INTERVAL}'
+! 5-day-mean companion stream (averaged-only, no _inst). Disabled when
+! FME_MPAS_INTERVAL_5D='none'.
+config_AM_fmeDepthCoarsening_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
+! 19 depth layers matching ACE ocean interface levels
+config_AM_fmeDepthCoarsening_depth_bounds = '0,20,30,40,50,80,110,140,170,230,410,530,1020,1080,1720,1980,2820,3380,4620,6380'
+config_AM_fmeDepthCoarsening_fields = 'temperature,salinity,velocityZonal,velocityMeridional'
+
+config_AM_fmeDerivedFields_enable = .true.
+config_AM_fmeDerivedFields_compute_interval = 'dt'
+config_AM_fmeDerivedFields_compute_on_startup = .false.
+config_AM_fmeDerivedFields_time_averaging = .true.
+config_AM_fmeDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
+config_AM_fmeDerivedFields_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
+
+! fmeVerticalReduce disabled: oceanHeatContent / freshwaterContent /
+! kineticEnergy are not requested by SamudrACE (Confluence p3ai/6154289880).
+config_AM_fmeVerticalReduce_enable = .false.
+
+! Disable non-FME analysis members. The SamudrACE training tape only
+! consumes the fmeDepthCoarsening + fmeDerivedFields remapped files;
+! globalStats, timeSeriesStats*, highFrequencyOutput,
+! meridionalHeatTransport, and oceanHeatContent are pure storage
+! overhead for this configuration. Disabling them also keeps the ERS
+! restart comparison clean (timeSeriesStatsDaily isn't BFB across
+! restart in this branch — separate issue, not blocking FME).
+config_AM_globalStats_enable               = .false.
+config_AM_timeSeriesStatsMonthly_enable    = .false.
+config_AM_timeSeriesStatsMonthlyMin_enable = .false.
+config_AM_timeSeriesStatsMonthlyMax_enable = .false.
+config_AM_highFrequencyOutput_enable       = .false.
+config_AM_meridionalHeatTransport_enable   = .false.
+config_AM_oceanHeatContent_enable          = .false.
+EOF
+
+cat >> user_nl_mpaso << EOF
+config_AM_fmeDepthCoarsening_output_stream = 'none'
+config_AM_fmeDepthCoarsening_horiz_remap_file = '${OCN_MAP}'
+config_AM_fmeDerivedFields_output_stream = 'none'
+config_AM_fmeDerivedFields_horiz_remap_file = '${OCN_MAP}'
+! Native streams are gated to output_interval="none" in buildnml so only
+! the .remapped.nc files are produced for the SamudrACE training tape.
+config_AM_fmeDepthCoarsening_write_on_startup = .false.
+config_AM_fmeDerivedFields_write_on_startup = .false.
+EOF
+
+# ---------------------------------------------------------------------------
+# MPAS-SeaIce namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_mpassi << EOF
+!----------------------------------------------------------------------------------
+! FME online output -- MPAS-Sea-Ice
+!
+! ACE needs: iceAreaTotal (ocean_sea_ice_fraction), iceVolumeTotal (sea_ice_volume).
+!----------------------------------------------------------------------------------
+
+config_AM_fmeSeaiceDerivedFields_enable = .true.
+config_AM_fmeSeaiceDerivedFields_compute_interval = 'dt'
+config_AM_fmeSeaiceDerivedFields_compute_on_startup = .false.
+config_AM_fmeSeaiceDerivedFields_time_averaging = .true.
+config_AM_fmeSeaiceDerivedFields_stream_output_interval = '${FME_MPAS_INTERVAL}'
+config_AM_fmeSeaiceDerivedFields_stream_output_interval_5D = '${FME_MPAS_INTERVAL_5D}'
+
+! Disable non-FME sea-ice analysis members (storage overhead only;
+! see comment in user_nl_mpaso block above).
+config_AM_regionalStatistics_enable     = .false.
+config_AM_timeSeriesStatsDaily_enable   = .false.
+config_AM_timeSeriesStatsMonthly_enable = .false.
+EOF
+
+cat >> user_nl_mpassi << EOF
+config_AM_fmeSeaiceDerivedFields_output_stream = 'none'
+config_AM_fmeSeaiceDerivedFields_horiz_remap_file = '${OCN_MAP}'
+EOF

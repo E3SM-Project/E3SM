@@ -1,0 +1,122 @@
+	<dims>
+		<dim name="nFmeDepthLevels" definition="25"
+			 description="Fixed maximum number of coarsened depth levels for FME depth coarsening. Samudra uses 19 levels; set to 25 to allow headroom."
+		/>
+	</dims>
+	<nml_record name="AM_fmeDepthCoarsening" mode="forward;analysis">
+		<nml_option name="config_AM_fmeDepthCoarsening_enable" type="logical" default_value=".false."
+			description="If true, ocean analysis member fmeDepthCoarsening is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_compute_interval" type="character" default_value="output_interval"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_output_stream" type="character" default_value="fmeDepthCoarseningOutput"
+			description="Name of the stream that the fmeDepthCoarsening analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_compute_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_write_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_depth_bounds" type="character" default_value="none"
+			description="Comma-separated depth boundaries in meters for coarsened depth levels."
+			possible_values="Comma-separated list of depth values in meters or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_fields" type="character" default_value="none"
+			description="Comma-separated tracer names to coarsen in the vertical."
+			possible_values="Comma-separated list of tracer field names or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_horiz_remap_file" type="character" default_value="none"
+			description="Path to ESMF/TempestRemap weight file for horizontal remapping depth-coarsened fields to lat-lon grid. Each depth level is output as a separate 2D variable (e.g., temperatureCoarsened_0, temperatureCoarsened_1, ...)."
+			possible_values="Any valid file path or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_stream_output_interval" type="character" default_value="00-00-01_00:00:00"
+			description="Output interval for the fmeDepthCoarsening stream. Format: YY-MM-DD_HH:MM:SS"
+			possible_values="Any valid MPAS time interval string"
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_time_averaging" type="logical" default_value=".false."
+			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_write_instantaneous_companion" type="logical" default_value=".false."
+			description="If true (and time_averaging is also true), the remapped output stream also includes instantaneous companion variables suffixed _inst. Each averaged variable BASE has an instantaneous twin BASE_inst sampled at the output trigger. No effect when time_averaging is false."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDepthCoarsening_stream_output_interval_5D" type="character" default_value="none"
+			description="Optional output interval for an additional 5-day-average companion stream (fmeDepthCoarseningOutput5D). Same fields as the primary stream, accumulated from the same per-step samples but written at this longer cadence to a separate file. Set to 'none' or empty to disable. Requires time_averaging=.true.; 5D path is averaged-only (no _inst companions)."
+			possible_values="Any valid MPAS time interval string or 'none'"
+		/>
+	</nml_record>
+	<packages>
+		<package name="fmeDepthCoarseningAMPKG" description="This package includes variables required for the fmeDepthCoarsening analysis member."/>
+	</packages>
+	<var_struct name="fmeDepthCoarseningAM" time_levs="1" packages="fmeDepthCoarseningAMPKG">
+		<var name="temperatureCoarsened" type="real" dimensions="nFmeDepthLevels nCells Time" units="degC"
+			missing_value="FILLVAL" missing_value_mask="maxLevelCell"
+			description="Depth-coarsened temperature field"
+		/>
+		<var name="salinityCoarsened" type="real" dimensions="nFmeDepthLevels nCells Time" units="PSU"
+			missing_value="FILLVAL" missing_value_mask="maxLevelCell"
+			description="Depth-coarsened salinity field"
+		/>
+		<var name="velocityZonalCoarsened" type="real" dimensions="nFmeDepthLevels nCells Time" units="m s^-1"
+			missing_value="FILLVAL" missing_value_mask="maxLevelCell"
+			description="Depth-coarsened zonal velocity field"
+		/>
+		<var name="velocityMeridionalCoarsened" type="real" dimensions="nFmeDepthLevels nCells Time" units="m s^-1"
+			missing_value="FILLVAL" missing_value_mask="maxLevelCell"
+			description="Depth-coarsened meridional velocity field"
+		/>
+		<var name="layerThicknessCoarsened" type="real" dimensions="nFmeDepthLevels nCells Time" units="m"
+			missing_value="FILLVAL" missing_value_mask="maxLevelCell"
+			description="Depth-coarsened layer thickness"
+		/>
+	</var_struct>
+	<streams>
+		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
+		<stream name="fmeDepthCoarseningOutput" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDepthCoarsening.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDepthCoarseningAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="temperatureCoarsened"/>
+			<var name="salinityCoarsened"/>
+			<var name="velocityZonalCoarsened"/>
+			<var name="velocityMeridionalCoarsened"/>
+			<var name="layerThicknessCoarsened"/>
+		</stream>
+		<!-- 5-day-average companion stream. Same fields and Registry binding
+		     as the primary stream; only the cadence and filename differ.
+		     buildnml emits this as output_interval="none" so the native
+		     ne30 file is not written; the AM uses it solely to query the
+		     filename template for the .remapped.nc output. -->
+		<stream name="fmeDepthCoarseningOutput5D" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDepthCoarsening5D.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-05_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDepthCoarseningAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="temperatureCoarsened"/>
+			<var name="salinityCoarsened"/>
+			<var name="velocityZonalCoarsened"/>
+			<var name="velocityMeridionalCoarsened"/>
+			<var name="layerThicknessCoarsened"/>
+		</stream>
+	</streams>

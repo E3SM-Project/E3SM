@@ -22,8 +22,10 @@ list(APPEND share_sources
   shr_precip_mod.F90
   shr_string_mod.F90
   shr_timer_mod.F90
+  shr_vcoarsen_mod.F90
   shr_vmath_mod.F90
-  shr_wv_sat_mod.F90)
+  shr_wv_sat_mod.F90
+  shr_derived_mod.F90)
 
 # Build a separate list containing the mct wrapper and its dependencies. That
 # way, this list can be easily included in unit test builds that link to mct,
@@ -38,7 +40,8 @@ list(APPEND share_mct_sources
 # way, this list can be easily included in unit test builds that include PIO or
 # a stub of PIO, but excluded from builds that do not include PIO.
 list(APPEND share_pio_sources
-  shr_pio_mod.F90)
+  shr_pio_mod.F90
+  shr_horiz_remap_mod.F90)
 
 sourcelist_to_parent(share_sources)
 sourcelist_to_parent(share_mct_sources)

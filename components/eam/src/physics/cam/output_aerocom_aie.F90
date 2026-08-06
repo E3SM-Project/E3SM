@@ -134,6 +134,12 @@ CONTAINS
 
    call addfld ('angstrm', horiz_only  ,'A' ,  '#', 'Angstrom coefficient', flag_xyfill=.true.)
    call addfld ('aerindex', horiz_only ,'A' ,  '#', 'Aerosol Index (Angstrom coefficient * AOD)', flag_xyfill=.true.)
+   ! Day+night unmasked companions. The aerindex/angstrm computation in
+   ! radiation.F90 runs for all 1:ncol; the nighttime fill loop there is
+   ! cosmetic only. *all variants snapshot the arrays before that fill.
+   ! See AGENTS.md gotcha #43.
+   call addfld ('angstrmall',  horiz_only ,'A' ,  '#', 'Angstrom coefficient (day+night)',                  flag_xyfill=.true.)
+   call addfld ('aerindexall', horiz_only ,'A' ,  '#', 'Aerosol Index (Angstrom coefficient * AOD, day+night)', flag_xyfill=.true.)
    call addfld ('cdr', horiz_only  ,'A'   ,   'meter', &
                'Grid-cell mean droplet effective radius at top of liquid water clouds',  flag_xyfill=.true.)
    call addfld ('cdnc', horiz_only ,'A'    ,  '#/m3', &

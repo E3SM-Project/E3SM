@@ -35,3 +35,6 @@
 #include "Registry_sediment_transport.xml"
 #include "Registry_harmonic_analysis.xml"
 #include "Registry_conservation_check.xml"
+#include "Registry_fme_depth_coarsening.xml"
+#include "Registry_fme_derived_fields.xml"
+#include "Registry_fme_vertical_reduce.xml"
