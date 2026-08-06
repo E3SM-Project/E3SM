@@ -568,6 +568,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      integer :: j, l, c, fc, t                   ! indices
+     ! (urbpoi / lakpoi used for CLM-consistent fractional melt compaction gate)
      ! parameters
      real(r8), parameter :: c2 = 23.e-3_r8       ! [m3/kg]
      real(r8), parameter :: c3 = 2.777e-6_r8     ! [1/s]
@@ -605,6 +606,8 @@ contains
           snl          => col_pp%snl                          , & ! Input:  [integer (:)    ] number of snow layers
           n_melt       => col_pp%n_melt                       , & ! Input:  [real(r8) (:)   ] SCA shape parameter
           ltype        => lun_pp%itype                        , & ! Input:  [integer (:)    ] landunit type
+          urbpoi       => lun_pp%urbpoi                       , & ! Input:  [logical (:)    ] true => landunit is an urban point
+          lakpoi       => lun_pp%lakpoi                       , & ! Input:  [logical (:)    ] true => landunit is a lake point
 
           forc_wind    => top_as_inst%windbot                 , & ! Input:  [real(r8) (:) ]  atmospheric wind speed (m/s)
           t_soisno     => col_es%t_soisno    , & ! Input:  [real(r8) (:,:) ] soil temperature (Kelvin)
@@ -703,9 +706,13 @@ contains
                    endif
 
                    ! Compaction occurring during melt
+                   ! Port of CLM fractional-snow melt compaction fix: use the
+                   ! fractional ddz3 form for all non-lake, non-urban columns when
+                   ! subgridflag is on (includes glacier and wetland).
 
                    if (imelt(c,j) == 1) then
-                      if(subgridflag==1 .and. (ltype(col_pp%landunit(c)) == istsoil .or. ltype(col_pp%landunit(c)) == istcrop)) then
+                      l = col_pp%landunit(c)
+                      if (subgridflag == 1 .and. (.not. lakpoi(l) .and. .not. urbpoi(l))) then
                          ! first term is delta mass over mass
                          ddz3 = max(0._r8,min(1._r8,(swe_old(c,j) - wx)/wx))
 
