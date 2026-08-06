@@ -81,3 +81,8 @@ License
 The E3SM model is available under a BSD 3-clause license.
 Please see [LICENSE](LICENSE) for details.
 
+
+## Community resources
+
+- Unofficial, community-maintained AI-agent skill for onboarding new users (not an official E3SM-Project resource): [earth-space-ai/e3sm-skill](https://github.com/earth-space-ai/e3sm-skill). It restructures the existing E3SM documentation for AI coding agents and defers to this repository as the source of truth.
+
