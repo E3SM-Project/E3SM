@@ -237,7 +237,7 @@ def perform_consistency_checks(case, xml):
     unset_params = []
     file_type_elems = xml.findall('.//*[@type="file"]') + xml.findall('.//*[@type="array(file)"]')
     for item in file_type_elems:
-        if item.text and item.text.strip() == "UNSET":
+        if item.text is None or not item.text.strip() or item.text.strip() == "UNSET":
             # Skip params explicitly marked optional: UNSET is valid for them.
             if item.attrib.get("optional") == "true":
                 continue
@@ -249,6 +249,16 @@ def perform_consistency_checks(case, xml):
             parent = parent_map.get(item)
             path = "{} -> {}".format(parent.tag, item.tag) if parent is not None else item.tag
             unset_params.append(path)
+
+    enable_iop = find_node(xml, "enable_iop")
+    iop_file = find_node(xml, "iop_file")
+    iop_enabled = (enable_iop is not None and enable_iop.text is not None
+                   and enable_iop.text.strip().lower() == "true")
+    iop_file_unset = (iop_file is None or iop_file.text is None
+                      or not iop_file.text.strip()
+                      or iop_file.text.strip() == "UNSET")
+    expect(not iop_enabled or not iop_file_unset,
+           "The iop_file parameter must be set when enable_iop is true.")
 
     if unset_params:
         scream_cmake_opts = case.get_value("SCREAM_CMAKE_OPTIONS") or ""
