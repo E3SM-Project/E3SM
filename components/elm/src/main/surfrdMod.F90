@@ -1247,7 +1247,9 @@ contains
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
     !call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname,ntpu)
+!LXu@09/2024+++
     call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
+!LXu@09/2024---
 
     ! If no irrigation, merge irrigated CFTs with rainfed
     

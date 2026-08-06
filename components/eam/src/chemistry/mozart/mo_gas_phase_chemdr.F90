@@ -55,10 +55,6 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(rxt_tag_cnt)   :: tag_names
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
-!LXu@07/2021+++
-  real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
-  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
-!LXu@07/2021---
 
   real(r8), parameter :: low_limit = 0.1_r8  ! lower limit factor for dry deposition
   integer,  parameter :: srf_emit_nlayer = 3 ! number of layers adding surface emission
@@ -219,7 +215,7 @@ contains
     do n = 1,phtcnt
        WRITE(UNIT=string, FMT='(I3.3)') n
        pht_names(n) = 'J_' // trim(string)
-<       call addfld(      pht_names(n),              (/ 'lev' /), 'I', '/s', 'photolysis rate' )
+       call addfld(      pht_names(n),              (/ 'lev' /), 'I', '/s', 'photolysis rate' )
        call addfld( trim(pht_names(n))//"_nocloud", (/ 'lev' /), 'I', '/s', 'photolysis rate (cloud free)' )
        call addfld( trim(pht_names(n))//"_aerosol", (/ 'lev' /), 'I', '/s', 'photolysis rate (including aerosols)' )
        call addfld( trim(pht_names(n))//"_lookup", (/ 'lev' /), 'I', '/s', 'photolysis rate (lookup table: diagnostic)' )
@@ -665,6 +661,8 @@ contains
     ! initialize to NaN to hopefully catch user defined rxts that go unset
     reaction_rates(:,:,:) = nan
 
+!LXu@09/2024
+    vmr = 0._r8
     delt_inverse = 1._r8 / delt
     !-----------------------------------------------------------------------      
     !        ... Get chunck latitudes and longitudes
@@ -1371,6 +1369,9 @@ contains
       call outfld( 'O3_CHML_other_rxns', wrk6(:,:), ncol, lchnk )
       call outfld( 'O3_CHML_rainout', wrk7(:,:), ncol, lchnk )
 !LXu@09/2021---
+     if (masterproc) then
+         write(iulog,*) 'Finish outputs for O3 CHMP and CHML'
+     end if	 
 
 !LXu@07/2021+++
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
@@ -1687,19 +1688,20 @@ contains
     endif
 
     call t_startf('aero_model_gasaerexch')
-#if (defined MODAL_AERO_5MODE | defined MODAL_AERO_4MODE_MOM | defined MODAL_AERO_4MODE | defined MODAL_AERO_9MODE | defined MODAL_AERO_7MODE)  
+#if (defined MODAL_AERO_5MODE | defined MODAL_AERO_4MODE_MOM | defined MODAL_AERO_4MODE_MOM_PO4 | defined MODAL_AERO_4MODE | defined MODAL_AERO_9MODE | defined MODAL_AERO_7MODE)  
        call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum,                               &
                                 zm,  qh2o, cwat_liq, cldfr, ncldwtr,                              &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,        &
                                 vmr0, vmr, pbuf, troplev)
-#else
-       ! this option is for non modal aerosol
-       call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
-                                tfld, pmid, pdel, mbar, relhum,                               &
-                                zm,  qh2o, cwat_liq, cldfr, ncldwtr,                              &
-                                invariants(:,:,indexm), invariants, del_h2so4_gasprod,        &
-                                vmr0, vmr, pbuf)
+!the build errors becuase of troplev not showing up in the 2nd option which is declared in subroutine aero_model_gasaerexch
+!#else
+!       ! this option is for non modal aerosol
+!       call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
+!                                tfld, pmid, pdel, mbar, relhum,                               &
+!                                zm,  qh2o, cwat_liq, cldfr, ncldwtr,                              &
+!                                invariants(:,:,indexm), invariants, del_h2so4_gasprod,        &
+!                                vmr0, vmr, pbuf)
 #endif 
     call t_stopf('aero_model_gasaerexch')
 !

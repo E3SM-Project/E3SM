@@ -46,6 +46,8 @@ module TopounitDataType
     ! Accumulated fields
     real(r8), pointer :: rh24h      (:) => null() ! 24-hour running mean of relative humidity at atmospheric forcing height (%)
     real(r8), pointer :: wind24h    (:) => null() ! 24-hour running mean of horizontal wind at atmospheric forcing height (m/s)
+!LXu@03/26
+!    real(r8), pointer :: rh30d      (:)     => null() ! 30-day mean relative humidity (%)
   contains
     procedure, public :: Init  => init_top_as
     procedure, public :: Clean => clean_top_as
@@ -132,6 +134,10 @@ module TopounitDataType
       allocate(this%rh24h  (begt:endt)) ; this%rh24h     (:) = spval
       allocate(this%wind24h(begt:endt)) ; this%wind24h   (:) = spval
     end if
+!LXu@03/26
+!    if (use_cn) then
+!      allocate(this%rh30d  (begt:endt)) ; this%rh30d     (:) = spval
+!    end if
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of top_as
@@ -211,6 +217,9 @@ module TopounitDataType
       deallocate(this%rh24h)
       deallocate(this%wind24h)
     end if
+!    if (use_cn) then
+!      deallocate(this%rh30d)
+!    end if
   end subroutine clean_top_as
 
   !-----------------------------------------------------------------------
@@ -237,6 +246,11 @@ module TopounitDataType
              desc='24hr running mean of wind', accum_type='runmean', accum_period=-1, &
               subgrid_type='topounit', numlev=1, init_value=0._r8)
     end if
+!    if (use_cn) then
+!        call init_accum_field (name='RH30D', units='%', &
+!             desc='30-day running mean of relative humidity', accum_type='runmean', accum_period=-30, &
+!              subgrid_type='topounit', numlev=1, init_value=100._r8)
+!    end if
   end subroutine init_acc_buffer_top_as
 
   !-----------------------------------------------------------------------
@@ -282,6 +296,10 @@ module TopounitDataType
         call extract_accum_field ('WIND24H', rbufslt, nstep)
        this%wind24h(begt:endt) = rbufslt(begt:endt)
     end if
+!    if (use_cn) then
+!        call extract_accum_field ('RH30D', rbufslt, nstep)
+!       this%rh30d(begt:endt) = rbufslt(begt:endt)
+!    end if
 
     deallocate(rbufslt)
   end subroutine init_acc_vars_top_as
@@ -326,6 +344,10 @@ module TopounitDataType
         call update_accum_field  ('RH24H', rbufslt, nstep)
         call extract_accum_field ('RH24H', this%rh24h, nstep)
      end if
+!     if (use_cn) then
+!        call update_accum_field  ('RH30D', rbufslt, nstep)
+!        call extract_accum_field ('RH30D', this%rh30d, nstep)
+!     end if
 
      ! Accumulate 24-hour running mean of wind speed
      do t = begt,endt
@@ -358,6 +380,7 @@ module TopounitDataType
     if (use_cn) then
       allocate(this%prec10d  (begt:endt)) ; this%prec10d   (:) = spval
       allocate(this%prec60d  (begt:endt)) ; this%prec60d   (:) = spval
+!      allocate(this%rh30d    (begt:endt)) ; this%rh30d     (:) = spval
     end if
     allocate(this%fsd24h   (begt:endt))          ; this%fsd24h    (:) = spval
     allocate(this%fsd240h  (begt:endt))          ; this%fsd240h   (:) = spval
@@ -407,6 +430,7 @@ module TopounitDataType
     if (use_cn) then
       deallocate(this%prec10d)
       deallocate(this%prec60d)
+!      deallocate(this%rh30d)
     end if
     deallocate(this%fsd24h)
     deallocate(this%fsd240h)
@@ -437,6 +461,10 @@ module TopounitDataType
        call init_accum_field (name='PREC60D', units='MM H2O/S', &
           desc='60-day running mean of total precipitation', accum_type='runmean', accum_period=-60, &
            subgrid_type='topounit', numlev=1, init_value=0._r8)
+!LXu@03/26
+!       call init_accum_field (name='RH30D', units='%', &
+!          desc='30-day running mean of relative humidity', accum_type='runmean', accum_period=-30, &
+!           subgrid_type='topounit', numlev=1, init_value=100._r8)
     end if
     ! Accumulator flux variables used by FATES
     if (use_fates) then
@@ -516,6 +544,9 @@ module TopounitDataType
 
         call extract_accum_field ('PREC60D', rbufslt, nstep)
        this%prec60d(begt:endt) = rbufslt(begt:endt)
+
+!        call extract_accum_field ('RH30D', rbufslt, nstep)
+!       this%rh30d(begt:endt) = rbufslt(begt:endt)
     end if
 
     if (use_fates) then
@@ -588,6 +619,10 @@ module TopounitDataType
        ! Accumulate and extract PREC10D (accumulates total precipitation as 10-day running mean)
        call update_accum_field  ('PREC10D', rbufslt, nstep)
        call extract_accum_field ('PREC10D', this%prec10d, nstep)
+
+!       ! Accumulate and extract RH30D (accumulates relative humidity as 30-day running mean)
+!       call update_accum_field  ('RH30D', rbufslt, nstep)
+!       call extract_accum_field ('RH30D', this%rh30d, nstep)
     end if
 
     if (use_fates) then

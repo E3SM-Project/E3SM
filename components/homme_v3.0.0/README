@@ -1,0 +1,101 @@
+This it he High Order Method Modeling Environment (HOMME) used by
+the Energy Exascale Earth System Model (E3SM) 
+
+MT 2017/10/7   First version of this README
+
+The HOMME software distributed with E3SM includes the dycores used by
+the E3SM model, standalone drivers for these dycores, and a version
+for the 2D shallow water equations.  
+
+The source code for the common infrastructure for all models is in
+homme/src/share.  The CMake and source code specifc to each model is in
+homme/src/<model_name>
+
+The 2D models:  
+
+src/sweqx   spectral element shallow water equations
+src/swim    fully implicit version of sweqx
+
+The 2D model can run a veriaty of shallow water test cases and prescribed
+velocity tracer transport test cases. The shallow water test can be run
+with "nlev" vertical layers, with no coupling between the layers.  
+The transport test cases are solved within the shallow water system by 
+treating the height field as a tracer, with each vertical layer advecting
+a different test tracer.
+
+The 3D models:
+
+src/preqx        original hydrostatic primitive equation model
+src/preqx_acc    preqx with openACC acceleration
+src/prim         Fully implicit version of preqx
+src/theta-l      nonhydrostatic model with SB81 vertical discretization
+
+For instructions on building and configuring, see README.cmake
+
+HOMME has a large regression test suite.  For instructions on running and adding
+new tests, see homme/test/reg_test/README
+
+
+================================================================================
+MultiModel Framework
+================================================================================
+
+The multimodel framework defines a standard interface for each 3D model and
+uses a Fortran module based inheritance system.  
+
+Each model needs to provide:
+
+element_state.F90             Three model specific strucs in the "elem" struct:
+                              state variables, derived variables, and diagnostics
+
+element_ops.F90               Interface routines for accessing the elem struct, 
+                              including various getter, setter and initialization
+                              routines
+
+prim_advance_mod.F90          Code to take a single dycore step
+
+prim_state_mod.F90            stdout diagnostics
+
+
+Inheritence Model:
+
+In addition to the interface routines defined above, models need to
+provide several base class wrapper modules.
+
+All files of the form "_base.F90" are considered base classes.  If a model
+will use the routines in these base classes, it should create a wrapper function
+of the same name, but with the _mod extension. All source code accesses routines
+in these classes through these wrapper modules.
+
+As an example: 
+
+src/share/edge_mod_base.F90      Element edge pack and unpack routines
+src/sweqx/edge_mod.F90           interface only code
+src/preqx/edge_mod.F90           interface only code
+src/preqx_acc/edge_mod.F90       openACC versions of some routines
+
+To use the routines in the base class unchanged, the wrapper
+module contains only interface related statements.  To replace a
+routine with a version specific to that particular model, the new code
+is included in the wrapper module.
+
+Current list of base classses:
+
+These are base classes only so src/preqx_acc can provide openACC versions
+  src/share/bndry_mod_base.F90          Boundary exchange
+  src/share/edge_mod_base.F90           Element boundary pack/unpack routines
+  src/share/derivative_mod_base.F90     Local element derivatives
+  src/share/viscosity_base.F90          biharmonic and other global derivatives
+
+src/share/prim_driver_base.F90        All SB81 models use this unchanged
+
+src/share/prim_advection_base.F90     Eulerian 3D advection code
+                                      src/preqx_acc has openACC version
+                                      src/prex has a experimental semi-lagrange version
+
+src/share/vertremap_base.F90          Vertical remap low level routines
+                                      Each model inherits this and adds a routine
+                                      to remap all its state variables
+
+src/preqx/share/viscosity_preqx_base.F90  hyper-viscosity shared by preqx, preqx_acc
+

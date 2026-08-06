@@ -256,7 +256,9 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer"),
+#        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer"),
+#LXu@07/26
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer","e3sm_cryo_developer", "e3sm_gcam_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.f19_g16_rx1.A",

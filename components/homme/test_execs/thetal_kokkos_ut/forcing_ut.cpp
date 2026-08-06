@@ -60,7 +60,8 @@ TEST_CASE("forcing", "forcing") {
   // Init everything through singleton, which is what happens in normal runs
   auto& c = Context::singleton();
   auto& p = c.create<SimulationParams>();
-
+  p.dt_remap_factor = 1;
+ 
   auto& hv = c.create<HybridVCoord>();
   hv.random_init(seed);
 
@@ -159,13 +160,13 @@ TEST_CASE("forcing", "forcing") {
     std::cout << "Testing tracers forcing.\n";
     for (const bool hydrostatic : {true,false}) {
       std::cout << " -> hydrostatic mode: " << (hydrostatic ? "true" : "false") << "\n";
-      for (const MoistDry moisture : {MoistDry::DRY,MoistDry::MOIST}) {
-        std::cout << "   -> moisture: " << (moisture==MoistDry::MOIST ? "moist" : "dry") << "\n";
+      for (const bool use_moisture: {false,true}) {
+        std::cout << "   -> moisture: " << (use_moisture ? "moist" : "dry") << "\n";
         for (const bool adjustment : {true,false}) {
           std::cout << "     -> adjustment: " << (adjustment ? "true" : "false") << "\n";
 
           // Reset state, tracers, and forcing to the original random values
-          state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
+          state.randomize(seed, hv);
           tracers.randomize(seed,-1e-3,1e-3);
           forcing.randomize(seed);
 
@@ -199,8 +200,8 @@ TEST_CASE("forcing", "forcing") {
           ff.init_buffers(fbm);
 
           // Run tracers forcing (cxx and f90)
-          ff.tracers_forcing(dt,np1,np1_qdp,adjustment,moisture);
-          tracers_forcing_f90(dt,np1+1,np1_qdp+1,hydrostatic,moisture==MoistDry::MOIST,adjustment);
+          ff.tracers_forcing(dt,np1,np1_qdp,adjustment,use_moisture);
+          tracers_forcing_f90(dt,np1+1,np1_qdp+1,hydrostatic,use_moisture,adjustment);
 
           // Compare answers
           Kokkos::deep_copy(h_dp,state.m_dp3d);
@@ -289,7 +290,7 @@ TEST_CASE("forcing", "forcing") {
     // Reset state and forcing to the original random values
     std::cout << "Testing dynamics forcing.\n";
 
-    state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
+    state.randomize(seed, hv);
     forcing.randomize(seed);
 
     // Sync views

@@ -56,7 +56,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_lwup       ! upward longwave heat flux
   integer, public ::index_l2x_Fall_evap       ! evaporation     water flux
   integer, public ::index_l2x_Fall_swnet      ! heat flux       shortwave net       
-  integer, public ::index_l2x_Fall_fco2_lnd   ! co2 flux **For testing set to 0
+  integer, public ::index_l2x_Fall_fco2_lnd   ! co2 flux from land
   integer, public ::index_l2x_Fall_flxdst1    ! dust flux size bin 1    
   integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
@@ -66,6 +66,7 @@ module elm_cpl_indices
 !LXu@01/20++++++
   integer, public ::index_l2x_Fall_flxfire    ! Fire fluxes
   integer, public ::index_l2x_Sl_ztopfire     ! Top of fire emissions (m)
+  integer, public ::index_l2x_Fall_fco2_fire  ! fire co2 flux from land
 !LXu@01/20------
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes

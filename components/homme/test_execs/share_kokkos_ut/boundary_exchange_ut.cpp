@@ -11,6 +11,7 @@
 
 #include <random>
 #include <iomanip>
+#include <iostream>
 
 using namespace Homme;
 

@@ -41,14 +41,18 @@ public co2_diags_store_fields
 public co2_diags_read_fields
 
 ! Number of CO2 tracers
-integer, parameter :: ncnst = 4      ! number of CO2 constituents
+!integer, parameter :: ncnst = 4      ! number of CO2 constituents
+integer, parameter :: ncnst = 5      ! number of CO2 constituents
 
 character(len=7), dimension(ncnst), parameter :: & ! constituent names
-     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
+     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_NEE', 'CO2_FRE', 'CO2    '/)
+!     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
 
 integer :: co2_ocn_glo_ind ! global index of 'CO2_OCN'
 integer :: co2_fff_glo_ind ! global index of 'CO2_FFF'
-integer :: co2_lnd_glo_ind ! global index of 'CO2_LND'
+!integer :: co2_lnd_glo_ind ! global index of 'CO2_LND'
+integer :: co2_nee_glo_ind ! global index of 'CO2_LND'
+integer :: co2_fre_glo_ind ! global index of 'CO2_LND'
 integer :: co2_glo_ind     ! global index of 'CO2'
 
 !----- formats -----
@@ -215,7 +219,8 @@ contains
       real(r8) :: sfc_flux(pcols)           ! surface carbon flux
       real(r8) :: sfc_flux_ocn(pcols)       ! surface ocean carbon flux
       real(r8) :: sfc_flux_fff(pcols)       ! surface fossil fuel carbon flux
-      real(r8) :: sfc_flux_lnd(pcols)       ! surface land carbon flux
+!      real(r8) :: sfc_flux_lnd(pcols)       ! surface land carbon flux
+      real(r8) :: sfc_flux_lnd(pcols)       ! surface NEE carbon flux
       !------------------------------------------------------------------------
 
       if ( .not. co2_transport() ) return
@@ -227,10 +232,14 @@ contains
             co2_ocn_glo_ind = c_i(m)
          case ('CO2_FFF')
             co2_fff_glo_ind = c_i(m)
-         case ('CO2_LND')
-            co2_lnd_glo_ind = c_i(m)
+!         case ('CO2_LND')
+!            co2_lnd_glo_ind = c_i(m)
+         case ('CO2_NEE')
+            co2_nee_glo_ind = c_i(m)
+         case ('CO2_FRE')
+            co2_fre_glo_ind = c_i(m)
          case ('CO2')
-            co2_glo_ind     = c_i(m)
+            co2_glo_ind = c_i(m)
          end select
       end do
 
@@ -248,7 +257,8 @@ contains
          sfc_flux(i)     = sfc_flux(i)     + cam_in%cflx(i,co2_glo_ind)
          sfc_flux_ocn(i) = sfc_flux_ocn(i) + cam_in%cflx(i,co2_ocn_glo_ind)
          sfc_flux_fff(i) = sfc_flux_fff(i) + cam_in%cflx(i,co2_fff_glo_ind)
-         sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_lnd_glo_ind)
+!         sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_lnd_glo_ind)
+         sfc_flux_lnd(i) = sfc_flux_lnd(i) + cam_in%cflx(i,co2_nee_glo_ind)
       end do
 
       ! put in state
@@ -380,7 +390,9 @@ contains
       real(r8) :: flux_mon_glob(f_mon_num_var)
       real(r8) :: flux_run_glob(f_run_num_var)
       real(r8) :: gtc_curr, gtc_init, gtc_mnst, gtc_prev, gtc_delta
-      real(r8) :: gtc_flux_sfc, gtc_flux_air
+!LXu@06/26
+!      real(r8) :: gtc_flux_sfc, gtc_flux_air
+      real(r8) :: gtc_flux_sfc, gtc_flux_air, gtc_flux_sff, gtc_flux_lnd, gtc_flux_ocn
       real(r8) :: gtc_mflx_sfc, gtc_mflx_air, gtc_mflx_sff, gtc_mflx_lnd, gtc_mflx_ocn
       real(r8) :: gtc_iflx_sfc, gtc_iflx_air, gtc_iflx_sff, gtc_iflx_lnd, gtc_iflx_ocn
       real(r8) :: gtc_flux_tot, gtc_mflx_tot, gtc_iflx_tot
@@ -433,16 +445,24 @@ contains
            ( co2_print_diags_monthly .and. is_end_curr_month() ) .or. & 
            ( co2_print_diags_total .and. is_last_step() ) ) then
          call gmean(tc, tc_glob, c_num_var)
+      else
+         tc_glob(:) = 1.e36
       end if
 
       if ( co2_print_diags_timestep) then
          call gmean(flux_ts,  flux_ts_glob,  f_ts_num_var)
+      else
+         flux_ts_glob(:) = 0._r8	 
       end if
       if ( co2_print_diags_monthly .and. is_end_curr_month() ) then
          call gmean(flux_mon, flux_mon_glob, f_mon_num_var)
+      else
+         flux_mon_glob(:) = 0._r8
       end if
       if ( co2_print_diags_total .and. is_last_step() ) then
          call gmean(flux_run, flux_run_glob, f_run_num_var)
+      else
+         flux_run_glob(:) = 0._r8
       end if
 
       ! assign global means to readable variables
@@ -453,6 +473,10 @@ contains
 
       gtc_flux_sfc = flux_ts_glob(1)
       gtc_flux_air = flux_ts_glob(2)
+!LXu@06/26
+      gtc_flux_sff = flux_ts_glob(3)
+      gtc_flux_lnd = flux_ts_glob(4)
+      gtc_flux_ocn = flux_ts_glob(5)
 
       gtc_mflx_sfc = flux_mon_glob(1)
       gtc_mflx_air = flux_mon_glob(2)
@@ -496,6 +520,18 @@ contains
          write(iulog,C_FA0 ) 'kgCO2/m2/s', 'kgCO2/m2'
 
          write(iulog, '(71("-"),"|",20("-"))')
+
+         write(iulog,C_FF) 'Sfc Fssl Fuel Flux', gtc_flux_sff, gtc_flux_sff * dtime
+         write(iulog,C_FF) 'NEE   Surface Flux', gtc_flux_lnd, gtc_flux_lnd * dtime
+         write(iulog,C_FF) 'Ocean Surface Flux', gtc_flux_ocn, gtc_flux_ocn * dtime
+
+         write(iulog, '(71("-"),"|",26("-"))')
+
+         write(iulog,C_FF) '   *SUM*', &
+                 (gtc_flux_sff + gtc_flux_lnd + gtc_flux_ocn), &
+                 (gtc_flux_sff + gtc_flux_lnd + gtc_flux_ocn) * dtime
+
+         write(iulog, '(71("-"),"|",26("-"))')
 
          write(iulog,C_FF) 'Surface  Emissions', gtc_flux_sfc, gtc_flux_sfc * dtime
          write(iulog,C_FF) 'Aircraft Emissions', gtc_flux_air, gtc_flux_air * dtime
@@ -563,7 +599,7 @@ contains
 
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_iflx_sff / total_seconds, gtc_iflx_sff
-            write(iulog,C_FF) 'Accumulated Land  Surface Flux', gtc_iflx_lnd / total_seconds, gtc_iflx_lnd
+	    write(iulog,C_FF) 'Accumulated NEE   Surface Flux', gtc_iflx_lnd / total_seconds, gtc_iflx_lnd
             write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_iflx_ocn / total_seconds, gtc_iflx_ocn
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) '   *SUM*', &
@@ -631,7 +667,7 @@ contains
 
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_mflx_sff / seconds_in_month, gtc_mflx_sff
-            write(iulog,C_FF) 'Accumulated Land  Surface Flux', gtc_mflx_lnd / seconds_in_month, gtc_mflx_lnd
+            write(iulog,C_FF) 'Accumulated NEE  Surface Flux',  gtc_mflx_lnd / seconds_in_month, gtc_mflx_lnd
             write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_mflx_ocn / seconds_in_month, gtc_mflx_ocn
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) '   *SUM*', &

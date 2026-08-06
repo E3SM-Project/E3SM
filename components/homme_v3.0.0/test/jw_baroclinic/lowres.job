@@ -1,0 +1,224 @@
+#!/bin/tcsh -f
+#
+#  This script will configure, build and run HOMME using the
+#  Jablownowski and Williamson baroclinic instability test case
+#  with a user specified number of tracers.
+#
+#  This script contains configurations for ne16, ne30, ne60, ne120, ne240
+#  The remap timestep and viscosity coefficients are scaled with resolution
+#  all other subcycling parameters are set to mimic that
+#  used by CAM5 1/4 degree.  So the relative performance, per timstep
+#  of the different components should be similar. (but for lower resolutions
+#  this will not be the most efficient choices)
+#
+#
+#SBATCH --job-name baro
+#SBATCH --account=FY150001
+#SBATCH -N 6
+#SBATCH --time=0:30:00
+#
+#  set paths to source code, build directory and run directory
+#
+set wdir =  ~/scratch1/preqx             # run directory
+set HOMME = ~/codes/acme-dev/components/homme                # HOMME svn checkout     
+set input = $HOMME/test/jw_baroclinic    # input files for test case
+set vdir = $HOMME/test/vcoord            # vertical coordinate files
+set bld = $wdir/bld                      # cmake/build directory
+
+set MACH = $HOMME/cmake/machineFiles/skybridge.cmake
+#set MACH = $HOMME/cmake/machineFiles/titan.cmake
+#set MACH = $HOMME/cmake/machineFiles/titan-cuda.cmake    # CMAKE file for Titan GPU support
+#set MACH = $HOMME/cmake/machineFiles/darwin.cmake
+setenv CRAY_CUDA_PROXY 1
+
+
+#
+#  mpi run command
+#
+set NCPU = 4
+#setenv OMP_NUM_THREADS 4
+setenv OMP_NUM_THREADS 1
+
+if ( ${?SLURM_NNODES} ) then   # redsky
+    set NCPU = $SLURM_NNODES
+    @ NCPU *= 16
+    @ NCPU /= $OMP_NUM_THREADS
+endif
+if ( ${?PBS_NUM_NODES} ) then  # titan, other PBS based systems?
+    set NCPU = $PBS_NUM_NODES
+    @ NCPU *= $PBS_NUM_PPN
+    @ NCPU /= $OMP_NUM_THREADS
+endif
+
+
+
+echo using NCPU=$NCPU   NTHREADS=$OMP_NUM_THREADS
+set mpirun = "mpirun -np $NCPU"
+#set mpirun = "mpirun -npernode 32 -np $NCPU"
+#set mpirun = "mpirun -loadbalance -np $NCPU"
+#set mpirun = "aprun -n $NCPU -d $OMP_NUM_THREADS "
+
+
+
+# Test case: JW Baroclinic instability 
+# default is no rotation, with u perturbation
+set u_perturb = 1
+set rotate = 0
+
+                  # number of elemnets:  6*ne*ne
+set ne = 4        # horizontal resolution   4,16,30,60,120,240
+set qsize = 4     # use 4 tracers for testing
+
+# CAM4
+#set nlev=26       # vertical resolution
+#set qsize = 4     # number of passive tracers
+
+# simulate CAM5:
+#set nlev=30
+#set qsize=25
+
+# simulate ACME v1
+# NE=120, nlev=72, qsize=35
+set nlev=72
+#set qsize=35
+
+ set namelist = jw_baroclinic.nl  # CAM-style, vertically lagrangian
+#set namelist = jw_baroclinic_eulerian.nl
+               
+
+#
+#  BUILD PREQX
+#
+mkdir -p $bld
+cd $bld
+set exe = $bld/src/preqx/preqx
+set build = 1  # set to 1 to force build
+# rm $bld/CMakeCache.txt    # remove this file to force re-configure
+if (! -f CMakeCache.txt) then
+   rm -rf CMakeFiles CMakeCache.txt src
+   #rm -rf utils/pio  utils/timing utils/cprnc   # may also need to do this
+   echo "running CMAKE to configure the model"
+
+   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   -DBUILD_HOMME_SWEQX=FALSE                     \
+   -DPREQX_USE_ENERGY=TRUE  $HOMME
+
+   make -j4 clean
+endif
+if ( ! -f $exe) set build = 1   # no exe, force build
+if ( $build == 1 ) then
+   make -j4 preqx
+   if ($status) exit
+endif
+
+
+
+
+#
+#  run each different resolution in a different directory
+#
+set name = jw-ne${ne}-nlev${nlev}-qsize${qsize}
+set run = $wdir/$name
+set mesh_file = /dev/null
+set hypervis_scaling = 0
+
+
+if ( $ne == 0 ) then
+    # CAM defaults
+    set mesh_file="/ascldap/users/mataylo/codes/mapping/grids/wpacific_v2.g"
+    #set mesh_file="/ascldap/users/mataylo/codes/mapping/grids/mountain_10_x8.g"
+    set tstep=75
+    set hypervis_scaling = 3.2  
+    set hypervis_subcycle=4
+    set nu = 8.0e-8
+endif
+
+if ( $ne == 4 ) then
+   set tstep=900
+   set nu=5e17
+   set nu_div = 12.5e17
+   set rsplit = 2
+   set hypervis_subcycle=2
+endif
+if ( $ne == 11 ) then
+   set tstep=900
+   set nu=2e16
+   set nu_div = 5e16
+   set rsplit = 2
+   set hypervis_subcycle=3
+endif
+if ( $ne == 16 ) then
+   set tstep=600
+   set nu=7e15
+   set nu_div=17.5e15
+   set rsplit = 3
+   set hypervis_subcycle=3
+endif
+
+
+# diagnostics printed to stdout
+set sfreq = 8   # number of hours
+@ sfreq *= 3600
+@ sfreq /= $tstep
+
+
+
+
+
+mkdir -p $run/movies
+cd $run
+
+
+# default: assume pure sigma levels:
+set vfile_mid     = "./sabm-$nlev.ascii"
+set vfile_int     = "./sabi-$nlev.ascii"
+cp $vdir/sab?-*.ascii  $run   
+
+# special cases:
+# copy vertical level files to run directory
+if ( $nlev == 26 ) then
+   set vfile_mid     = "./camm-26.ascii"
+   set vfile_int     = "./cami-26.ascii"
+   cp $vdir/cam*26.ascii  $run   
+endif
+if ( $nlev == 30 ) then
+   set vfile_mid     = "./camm-30.ascii"
+   set vfile_int     = "./cami-30.ascii"
+   cp $vdir/cam*30.ascii  $run   
+endif
+if ( $nlev == 60 ) then
+   set vfile_mid     = "./aspL60_mid.ascii"
+   set vfile_int     = "./aspL60_int.ascii"
+   cp $vdir/aspL60_*.ascii $run
+endif
+if ( $nlev == 72 ) then
+   set vfile_mid     = "./acme-72m.ascii"
+   set vfile_int     = "./acme-72i.ascii"
+   cp $vdir/acme-72?.ascii $run
+endif
+
+
+#  create a new namelist from original ne16 template:
+sed s/ne=.\*/ne=$ne/ $input/$namelist |\
+sed s/tstep=.\*/tstep=$tstep/ | \
+sed s/rsplit=.\*/rsplit=$rsplit/ | \
+sed s/nu=.\*/nu=$nu/ | \
+sed s/nu_div=.\*/nu_div=$nu_div/ | \
+sed s/nu_p=.\*/nu_p=$nu/ | \
+sed s/nu_q=.\*/nu_q=$nu/ | \
+sed s/NThreads.\*/NThreads=$OMP_NUM_THREADS/ | \
+sed s/statefreq.\*/statefreq=$sfreq/ |\
+sed s/hypervis_scaling.\*/hypervis_scaling=$hypervis_scaling/ |\
+sed s/hypervis_subcycle.\*/hypervis_subcycle=$hypervis_subcycle/ |\
+sed s/u_perturb.\*/"u_perturb = $u_perturb"/   |\
+sed s/rotate_grid.\*/"rotate_grid = $rotate"/  |\
+sed s:mesh_file.\*:mesh_file="'$mesh_file'": | \
+sed s:vfile_mid.\*:"vfile_mid = '$vfile_mid'":  |\
+sed s:vfile_int.\*:"vfile_int = '$vfile_int'":  |\
+sed s/qsize.\*/"qsize = $qsize"/  > input.nl
+
+
+date
+$mpirun $exe  < input.nl
+date
+

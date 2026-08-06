@@ -3538,7 +3538,9 @@ do_newnuc_if_block50: &
          ! convert sat vapor conc from ug/m^3 to mol/m^3 then to mol/liter
          tmpa = (c0_soa_298(ll)*1.0e-6_r8/mw_gas(igas)) * 1.0e-3_r8  
          ! calc sat vapor pressure (atm) from molar-conc and temp [ 0.082056 = gas constant in (atm/deg-K/(mol/liter)) ]
-         p0_soa_298(ll) = 0.082056_r8*tmpa*temp  
+!         p0_soa_298(ll) = 0.082056_r8*tmpa*temp  
+!Fix a bug in VBS SOA gas-aerosol partition calculation, https://github.com/E3SM-Project/E3SM/pull/6502/files  
+         p0_soa_298(ll) = 0.082056_r8*tmpa*290.0_r8 
       end do
 
 ! calc soa gas saturation molar-mixing-ratio at local temp and air-pressure

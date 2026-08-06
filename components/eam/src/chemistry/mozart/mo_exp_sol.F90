@@ -96,11 +96,6 @@ contains
     real(r8), dimension(ncol,pver) :: wrk
     real(r8), dimension(ncol,pver,gas_pcnst) :: base_sol_reset
 
-    chem_prod(:,:,:) = 0._r8
-    chem_loss(:,:,:) = 0._r8
-    chemmp_prod(:,:,:) = 0._r8
-    chemmp_loss(:,:,:) = 0._r8
-
 !added by LXu@09/2021+++
     real(r8), dimension(ncol,pver,clscnt1) :: &
          ind_prd01, &
@@ -116,10 +111,15 @@ contains
          loss01, &
          loss02, &
          loss03
-	 
     real(r8), dimension(ncol,pver) :: wrk1,wrk2,wrk3,wrk4,wrk5,wrk6,wrk7,wrk8,wrk9,wrk10
 !added by LXu@09/2021---
 !    if (masterproc) write(iulog,*) 'mo_exp_sol write ',clscnt1, extcnt, gas_pcnst, clsmap, rxntot
+
+    chem_prod(:,:,:) = 0._r8
+    chem_loss(:,:,:) = 0._r8
+    chemmp_prod(:,:,:) = 0._r8
+    chemmp_loss(:,:,:) = 0._r8
+
     !-----------------------------------------------------------------------      
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
@@ -214,9 +214,18 @@ contains
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver
+!                if (base_sol(i,k,l) < 1.0e-30_r8) then
+!                      base_sol(i,k,l) = 1.0e-30_r8
+!                endif
                 chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
-                chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
-                base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
+!                chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
+!                base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
+!                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+!LXu@09/2024
+                if (base_sol(i,k,l).ne.0._r8) then
+                   chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
+                   base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
+                endif
              end do
           end do
        end if
@@ -299,7 +308,12 @@ contains
            do k = ltrop(i)+1,pver
               chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
               chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
-           end do
+!              chemmp_loss(i,k,l) = -loss(i,k,m)
+!LXu@09/2024
+!             if (base_sol_reset(i,k,l).ne.0._r8) then
+!                 chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
+!              endif
+          end do
         end do
       endif 
 

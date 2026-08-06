@@ -103,6 +103,16 @@ module CNStateType
      real(r8) , pointer :: cropf_col                   (:)     ! col crop fraction in veg column (0-1)
      real(r8) , pointer :: baf_crop_col                (:)     ! col baf for cropland(/sec)
      real(r8) , pointer :: baf_peatf_col               (:)     ! col baf for peatland (/sec)
+!LXu@01/26+++
+     real(r8) , pointer :: baf_ncropf_col              (:)     ! col baf for non-cropland(/sec)
+     real(r8) , pointer :: baf_deforestf_col           (:)     ! col baf for deforestation (/sec)
+     real(r8) , pointer :: baf_brl_forest_col          (:)     ! col baf for non-cropland(/sec)
+     real(r8) , pointer :: baf_tmp_forest_col          (:)     ! col baf for non-cropland(/sec)
+     real(r8) , pointer :: baf_trp_forest_col          (:)     ! col baf for non-cropland(/sec)
+     real(r8) , pointer :: baf_tmp_grass_col           (:)     ! col baf for non-cropland(/sec)
+     real(r8) , pointer :: baf_tmp_shrub_col           (:)     ! col baf for non-cropland(/sec)
+     real(r8) , pointer :: baf_savanna_col             (:)     ! col baf for non-cropland(/sec)
+!LXu@01/26---
      real(r8) , pointer :: fbac_col                    (:)     ! col total burned area out of conversion (/sec)
      real(r8) , pointer :: fbac1_col                   (:)     ! col burned area out of conversion region due to land use fire (/sec)
      real(r8) , pointer :: wtlf_col                    (:)     ! col fractional coverage of non-crop Patches (0-1)
@@ -288,6 +298,16 @@ contains
     allocate(this%cropf_col           (begc:endc))                   ; this%cropf_col           (:)   = spval
     allocate(this%baf_crop_col        (begc:endc))                   ; this%baf_crop_col        (:)   = spval
     allocate(this%baf_peatf_col       (begc:endc))                   ; this%baf_peatf_col       (:)   = spval
+!LXu@01/26+++
+    allocate(this%baf_ncropf_col      (begc:endc))                   ; this%baf_ncropf_col      (:)   = spval
+    allocate(this%baf_deforestf_col   (begc:endc))                   ; this%baf_deforestf_col   (:)   = spval
+    allocate(this%baf_brl_forest_col   (begc:endc))                  ; this%baf_brl_forest_col  (:)   = spval
+    allocate(this%baf_tmp_forest_col   (begc:endc))                  ; this%baf_tmp_forest_col  (:)   = spval
+    allocate(this%baf_trp_forest_col   (begc:endc))                  ; this%baf_trp_forest_col  (:)   = spval
+    allocate(this%baf_tmp_grass_col    (begc:endc))                  ; this%baf_tmp_grass_col   (:)   = spval
+    allocate(this%baf_tmp_shrub_col    (begc:endc))                  ; this%baf_tmp_shrub_col   (:)   = spval
+    allocate(this%baf_savanna_col      (begc:endc))                  ; this%baf_savanna_col     (:)   = spval
+!LXu@01/26---
     allocate(this%fbac_col            (begc:endc))                   ; this%fbac_col            (:)   = spval
     allocate(this%fbac1_col           (begc:endc))                   ; this%fbac1_col           (:)   = spval
     allocate(this%wtlf_col            (begc:endc))                   ; this%wtlf_col            (:)   = spval
@@ -510,6 +530,52 @@ contains
     call hist_addfld1d (fname='BAF_PEATF',  units='proportion/sec', &
          avgflag='A', long_name='fractional area burned in peatland', &
          ptr_col=this%baf_peatf_col)
+!LXu@01/26+++ 
+    this%cropf_col(begc:endc) = spval
+    call hist_addfld1d (fname='CROPF_COL',  units='proportion/sec', &
+         avgflag='A', long_name='col crop fraction in veg column (0-1)', &
+         ptr_col=this%cropf_col)
+
+    this%baf_ncropf_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_NCROPF',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned for non-crops', &
+         ptr_col=this%baf_ncropf_col)
+
+    this%baf_deforestf_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_DEFORESTF',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in deforestation', &
+         ptr_col=this%baf_deforestf_col)
+
+    this%baf_brl_forest_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_BRL_FOREST',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in boreal forest', &
+         ptr_col=this%baf_brl_forest_col)
+
+    this%baf_tmp_forest_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_TMP_FOREST',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in temperate forest', &
+         ptr_col=this%baf_tmp_forest_col)
+
+    this%baf_trp_forest_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_TRP_FOREST',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in tropical forest', &
+         ptr_col=this%baf_trp_forest_col)
+
+    this%baf_tmp_grass_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_TMP_GRASS',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in tempeate grassland', &
+         ptr_col=this%baf_tmp_grass_col)
+
+    this%baf_tmp_shrub_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_TMP_SHRUB',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in temperate shrubland', &
+         ptr_col=this%baf_tmp_shrub_col)
+
+    this%baf_savanna_col(begc:endc) = spval
+    call hist_addfld1d (fname='BAF_SAVANNA',  units='proportion/sec', &
+         avgflag='A', long_name='fractional area burned in savanna', &
+         ptr_col=this%baf_savanna_col)
+ !LXu@01/26--- 
  
     this%annavg_t2m_patch(begp:endp) = spval
     call hist_addfld1d (fname='ANNAVG_T2M', units='K', &
@@ -1006,6 +1072,16 @@ contains
           this%nfire_col          (c) = spval
           this%baf_crop_col       (c) = spval
           this%baf_peatf_col      (c) = spval
+!LXu@01/26+++
+          this%baf_ncropf_col     (c) = spval
+          this%baf_deforestf_col  (c) = spval
+          this%baf_brl_forest_col  (c) = spval
+          this%baf_tmp_forest_col  (c) = spval
+          this%baf_trp_forest_col  (c) = spval
+          this%baf_tmp_grass_col  (c) = spval
+          this%baf_tmp_shrub_col  (c) = spval
+          this%baf_savanna_col  (c) = spval
+!LXu@01/26---
           this%fbac_col           (c) = spval
           this%fbac1_col          (c) = spval
           this%farea_burned_col   (c) = spval
@@ -1027,6 +1103,16 @@ contains
           ! fire related variables 
           this%baf_crop_col(c)       = 0._r8 
           this%baf_peatf_col(c)      = 0._r8 
+!LXu@01/26
+          this%baf_ncropf_col(c)     = 0._r8 
+          this%baf_deforestf_col(c)  = 0._r8 
+          this%baf_brl_forest_col(c)  = 0._r8 
+          this%baf_tmp_forest_col(c)  = 0._r8 
+          this%baf_trp_forest_col(c)  = 0._r8 
+          this%baf_tmp_grass_col(c)  = 0._r8 
+          this%baf_tmp_shrub_col(c)  = 0._r8 
+          this%baf_savanna_col(c)  = 0._r8 
+!LXu@01/26
           this%fbac_col(c)           = 0._r8 
           this%fbac1_col(c)          = 0._r8 
           this%farea_burned_col(c)   = 0._r8 

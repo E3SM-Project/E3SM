@@ -3,7 +3,9 @@ module modal_aero_wateruptake
 !   RCE 07.04.13:  Adapted from MIRAGE2 code
 
 use shr_kind_mod,     only: r8 => shr_kind_r8
-use physconst,        only: pi, rhoh2o
+!LXu@07/2025
+!use physconst,        only: pi, rhoh2o
+use physconst,        only: pi, rhoh2o, rair
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state
 use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
@@ -11,7 +13,8 @@ use physics_buffer,   only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_id
 use wv_saturation,    only: qsat_water
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
                             rad_cnst_get_mode_props, rad_cnst_get_mode_num
-use cam_history,      only: addfld, add_default, outfld
+!use cam_history,      only: addfld, add_default, outfld
+use cam_history,      only: addfld, add_default, outfld, horiz_only
 use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
@@ -163,6 +166,10 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    end do
 
+   !LXu@07/2025, add PM2.5 diagnostic 
+   call addfld('PM25',     (/ 'lev' /), 'A', 'kg/m3', 'PM2.5 concentration')
+   call addfld('PM25_SRF', horiz_only,  'A', 'kg/m3', 'surface PM2.5 concentration')
+
    ! Add total aerosol water
    if (history_aerosol .and. .not. history_verbose) then
       call addfld('aero_water', (/ 'lev' /), 'A', 'kg/kg', &
@@ -264,6 +271,11 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8) :: qs(pcols)             ! saturation specific humidity
    real(r8) :: cldn_thresh
    real(r8) :: aerosol_water(pcols,pver) !sum of aerosol water (wat_a1 + wat_a2 + wat_a3 + wat_a4)
+!LXu@07/2025
+   real(r8) :: pm25(pcols,pver)      ! PM2.5 diagnostics     
+   real(r8) :: rhoair(pcols,pver) 
+   real(r8), allocatable :: alnsg_nmodes(:)
+
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
    logical :: compute_wetdens
@@ -303,6 +315,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    allocate(wtpct(pcols,pver,nmodes)) 
    allocate(so4dryvol(pcols,pver,nmodes))
    allocate(sulfeq(pcols,pver,nmodes))
+   allocate(alnsg_nmodes(nmodes))
 
    !initialize to an invalid value
    naer(:,:,:)    = huge(1.0_r8)
@@ -435,6 +448,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       end do ! l = 1, nspec
 
       alnsg = log(sigmag)
+      alnsg_nmodes(m) = log(sigmag)
 
       do k = top_lev, pver
          do i = 1, ncol
@@ -529,6 +543,8 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                rh(i,k) = (rh(i,k) - cldn(i,k)) / (1.0_r8 - cldn(i,k))  ! RH of clear portion
             end if
             rh(i,k) = max(rh(i,k), 0.0_r8)
+!LXu@07/2025
+            rhoair(i,k) = pmid(i,k)/(rair*t(i,k))	    
          end do ! i = 1, ncol
       end do ! k = top_lev, pver
 
@@ -577,6 +593,8 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    if (.not.present(list_idx_in)) then
 
+!LXu@07/2025
+      pm25(:,:)=0._r8
       aerosol_water(:ncol,:) = 0._r8
       do m = 1, nmodes
          ! output to history
@@ -584,15 +602,29 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          call outfld( 'wat_a'//trnum(3:3),  qaerwat(:,:,m),     pcols, lchnk)
          call outfld( 'dgnd_a'//trnum(2:3), dgncur_a(:,:,m),    pcols, lchnk)
          call outfld( 'dgnw_a'//trnum(2:3), dgncur_awet(:,:,m), pcols, lchnk)
+
+!LXu@07/2025
+         ! calculate PM2.5 diagnostics -- dgncur_a is zero above top_lev
+         do k = top_lev, pver
+            do i=1,ncol
+               pm25(i,k) = pm25(i,k)+maer(i,k,m)*(1._r8-(0.5_r8 - 0.5_r8*erf(log(2.5e-6_r8/dgncur_a(i,k,m))/ &
+                                                 (2._r8**0.5_r8*alnsg_nmodes(m)))))*rhoair(i,k)
+            end do
+         end do
+
          if (history_aerosol .and. .not. history_verbose) &
          aerosol_water(:ncol,:) = aerosol_water(:ncol,:) + qaerwat(:ncol,:,m)
       end do ! m = 1, nmodes
+
+      call outfld('PM25',     pm25(:,:),    pcols, lchnk)
+      call outfld('PM25_SRF', pm25(:,pver), pcols, lchnk)
 
       if (history_aerosol .and. .not. history_verbose) &
          call outfld( 'aero_water',  aerosol_water(:ncol,:),    ncol, lchnk)
 
    end if
-
+   deallocate(alnsg_nmodes)
+   
 end subroutine modal_aero_wateruptake_dr
 
 !===============================================================================

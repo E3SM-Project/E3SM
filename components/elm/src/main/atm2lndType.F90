@@ -145,6 +145,8 @@ module atm2lndType
      real(r8) , pointer :: wind24_patch                 (:)   => null() ! patch 24-hour running mean of wind
      real(r8) , pointer :: t_mo_patch                   (:)   => null() ! patch 30-day average temperature (Kelvin)
      real(r8) , pointer :: t_mo_min_patch               (:)   => null() ! patch annual min of t_mo (Kelvin)
+!LXu@03/26
+!     real(r8) , pointer :: rh30_patch                   (:)   => null() ! patch 30-day running mean of relative humidity 
 
    contains
 
@@ -296,6 +298,7 @@ contains
     allocate(this%prec10_patch                  (begp:endp))        ; this%prec10_patch                  (:)   = nan
     allocate(this%prec60_patch                  (begp:endp))        ; this%prec60_patch                  (:)   = nan
     allocate(this%prec365_patch                 (begp:endp))        ; this%prec365_patch                 (:)   = nan
+!    allocate(this%rh30_patch                    (begp:endp))        ; this%rh30_patch                    (:)   = nan
     if (use_fates) then
        allocate(this%prec24_patch               (begp:endp))        ; this%prec24_patch                  (:)   = nan
        allocate(this%rh24_patch                 (begp:endp))        ; this%rh24_patch                    (:)   = nan
@@ -546,6 +549,10 @@ contains
        call init_accum_field (name='PREC60', units='MM H2O/S', &
             desc='60-day running mean of total precipitation', accum_type='runmean', accum_period=-60, &
             subgrid_type='pft', numlev=1, init_value=0._r8)
+
+!       call init_accum_field (name='RH30', units='%', &
+!            desc='30-day running mean of relative humidity',   accum_type='runmean', accum_period=-30, &
+!            subgrid_type='pft', numlev=1, init_value=100._r8)
     end if
 
     if ( use_fates ) then
@@ -620,6 +627,9 @@ contains
 
        call extract_accum_field ('PREC60', rbufslp, nstep)
        this%prec60_patch(begp:endp) = rbufslp(begp:endp)
+
+!       call extract_accum_field ('RH30', rbufslp, nstep)
+!       this%rh30_patch(begp:endp) = rbufslp(begp:endp)
     end if
 
     if (use_fates) then
@@ -702,6 +712,7 @@ contains
        ! Accumulate and extract PREC10 (accumulates total precipitation as 10-day running mean)
        call update_accum_field  ('PREC10', rbufslp, nstep)
        call extract_accum_field ('PREC10', this%prec10_patch, nstep)
+
     end if
 
     if (use_fates) then
@@ -724,6 +735,17 @@ contains
        call update_accum_field  ('RH24', rbufslp, nstep)
        call extract_accum_field ('RH24', this%rh24_patch, nstep)
     end if
+!LXu@03/26
+!    if (use_cn) then
+!       do p = bounds%begp,bounds%endp
+!          c = veg_pp%column(p)
+!          g = veg_pp%gridcell(p)
+!          rbufslp(p) = this%forc_rh_grc(g) 
+!       end do
+!       ! Accumulate and extrac RH30 (accumulates relative humidity as 30-day running mean)
+!       call update_accum_field  ('RH30', rbufslp, nstep)
+!       call extract_accum_field ('RH30', this%rh30_patch, nstep)
+!    end if
 
     deallocate(rbufslp)
 

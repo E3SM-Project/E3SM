@@ -92,7 +92,8 @@ module cam_cpl_indices
   integer :: index_x2a_Sx_u10withgusts ! 10m wind with gusts
 !LXu@02/20+++++
   integer :: index_x2a_Fall_flxfire    ! Fire emissions fluxes   
-  integer :: index_x2a_Sl_ztopfire   ! Fire emissions fluxes top of vert distribution  
+  integer :: index_x2a_Sl_ztopfire     ! Fire emissions fluxes top of vert distribution  
+  integer :: index_x2a_Fall_fco2_fire  ! fire co2 flux from land   
 !LXu@02/2-----
 
 contains
@@ -147,6 +148,8 @@ contains
     index_x2a_Fall_flxdst3  = mct_avect_indexra(x2a,'Fall_flxdst3')
     index_x2a_Fall_flxdst4  = mct_avect_indexra(x2a,'Fall_flxdst4')
     index_x2a_Fall_fco2_lnd = mct_avect_indexra(x2a,'Fall_fco2_lnd',perrWith='quiet')
+!LXu@6/26
+    index_x2a_Fall_fco2_fire = mct_avect_indexra(x2a,'Fall_fco2_fire',perrWith='quiet')
     index_x2a_Faoo_fco2_ocn = mct_avect_indexra(x2a,'Faoo_fco2_ocn',perrWith='quiet')
     index_x2a_Faoo_fdms_ocn = mct_avect_indexra(x2a,'Faoo_fdms_ocn',perrWith='quiet')
     index_x2a_Faoo_h2otemp  = mct_avect_indexra(x2a,'Faoo_h2otemp',perrWith='quiet')

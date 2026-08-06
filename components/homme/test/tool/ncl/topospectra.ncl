@@ -81,22 +81,27 @@ end setvalues
   fnames =  systemfunc(\
 ;+"ls ~/scratch1/topodata/fv0.9x1.25-default-PHIS-new-SGH-SGH30.nc; "\
 ; "ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4.latlon.nc; "\
-;"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4.latlon.nc; "\
-"ls ~/scratch1/topodata/ne256/USGS-gtopo30_ne256np4.latlon.nc; "\
+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4.latlon.nc; "\
+;"ls ~/scratch1/topodata/ne256/USGS-gtopo30_ne256np4.latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne30/ne30pg4_c2t_topo.latlon.nc;"\
 ;+"ls ~/scratch1/topodata/fv_0.9x1.25_nc3000_Nsw042_Nrs008_Co060_Fi001_ZR_sgh30_24km_GRNL_c170103.nc;"\
 ;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x4.latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4_224xdel2_latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne120/USGS-gtopo30_ne120np4_384xdel2_latlon.nc; "\
-;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx3t.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x6t.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x6t-halo3.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x6t-halo1.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x6t-halo0.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x6t-lhalo0.latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4_x4p2.latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx2t.latlon.nc; "\
-+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx1t.latlon.nc; "\
-+"ls ~/scratch1/topodata/ne256/USGS-gtopo30_ne256np4pg2_fx1t.latlon.nc; "\
-+"ls ~/scratch1/topodata/ne256/USGS-gtopo30_ne256np4pg2_fx2t.latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx1t.latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne256/USGS-gtopo30_ne256np4pg2_fx1t.latlon.nc; "\
+;+"ls ~/scratch1/topodata/ne256/USGS-gtopo30_ne256np4pg2_fx2t.latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_fx3.5t.latlon.nc; "\
 ;+"ls ~/scratch1/topodata/ne30np4_nc3000_Co060_Fi001_PF_nullRR_Nsw042_20171020.latlon.nc;"\
 ;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_x8.latlon.nc; "\
-;+"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.latlon.nc; "\
++"ls ~/scratch1/topodata/ne30/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.latlon.nc; "\
 );
 
 legend_labels = (/"0x","fx1t-ne30","fx1t","fx2t"/) 
@@ -116,9 +121,31 @@ res                     = True
 
 field = "PHIS"
 res@cnLevelSelectionMode = "ManualLevels"
-res@cnMinLevelValF = -500
-res@cnMaxLevelValF = 55000
-res@cnLevelSpacingF = 1000
+res@cnMinLevelValF = -500.
+res@cnMaxLevelValF = 55000.
+res@cnLevelSpacingF = 1000.
+; plot oscillations in ocean
+  ;res@cnMinLevelValF=0
+  ;res@cnMaxLevelValF=.01
+  ;res3.cnMaxLevelCount = 100
+  ;res@cnLevelSpacingF=.001  
+  ;res3.cnLineThicknessF = 1.5
+
+;res@mpMinLatF = 0. 
+;res@mpMaxLatF = 40. 
+;res@mpMinLonF = -180.
+;res@mpMaxLonF = -120.
+res@mpMinLatF = -10. 
+res@mpMaxLatF = 50. 
+res@mpMinLonF = -180.
+res@mpMaxLonF = -100.
+
+  res@cnLevelSelectionMode = "ExplicitLevels" ; set explicit contour levels
+  ;res@cnLevels = (/ 0.0, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, .005, .001, .01, .05, .1, .2, .3, .4, .6, .8, 1.0, 100, 6000  /)
+  ; 0.0001 to 10000, log spacing
+  di=1/sqrt(10d0)
+  res@cnLevels = 1e5 * di^(/19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1/)
+  print("log levels="+res@cnLevels)
 plot_spectra=True
 
 
@@ -196,7 +223,9 @@ do fn=0,fcnt-1
     exit
   end if
   
-  gsn_define_colormap(wks,"BlAqGrYeOrReVi200")
+;  gsn_define_colormap(wks,"BlAqGrYeOrReVi200")
+  gsn_define_colormap(wks,"MPL_viridis")
+
   res@gsnMaximize         = True         ; Maximize size of plot in frame
   res@gsnPaperOrientation = "portrait"
   res@gsnSpreadColors     = True         ; Use full colormap, but start
@@ -210,6 +239,9 @@ do fn=0,fcnt-1
   res@lbBoxLinesOn        = False        ; Turn of labelbar box lines.
   res@mpOutlineOn          = True
   res@mpFillOn             = False
+
+
+
   
   varmin = 1.e9
   varmax = -1.
@@ -220,6 +252,7 @@ do fn=0,fcnt-1
   print ("min/max = "+min(var(:,:))+", "+max(var(:,:)) )
       
   res@tiMainString        = f1name
+  res@tiMainFontHeightF = 0.025/2
   contour = gsn_csm_contour_map(wks,var(:,:),res)     ; Draw a contour plot.  ;
   print("Contour complete: "+res@tiMainString)
       

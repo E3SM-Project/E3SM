@@ -40,16 +40,17 @@ enum class ComparisonOp {
 
 // =================== Run parameters enums ====================== //
 
+//todo-repo-unification Remove this enum in favor of bool
+// SimulationParams::use_moisture once we change EAMxx to use
+// use_moisture. Search "todo-repo-unification" for other bits of code to
+// remove.
+enum class MoistDry { MOIST, DRY };
+
 enum class ForcingAlg : int {
   FORCING_OFF =-1,
   FORCING_0   = 0, 
   FORCING_1   = 1, // Unsupported
   FORCING_2   = 2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
-};
-
-enum class MoistDry {
-  MOIST,
-  DRY
 };
 
 enum class AdvectionForm {

@@ -47,7 +47,8 @@ module lnd2atmType
      real(r8), pointer :: eflx_lwrad_out_grc (:)   => null() ! IR (longwave) radiation (W/m**2)
      real(r8), pointer :: qflx_evap_tot_grc  (:)   => null() ! qflx_evap_soi + qflx_evap_can + qflx_tran_veg
      real(r8), pointer :: fsa_grc            (:)   => null() ! solar rad absorbed (total) (W/m**2)
-     real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
+!     real(r8), pointer :: nee_grc            (:)   => null() ! net CO2 flux (kg CO2/m**2/s) [+ to atm]
+     real(r8), pointer :: nee_grc            (:)   => null() ! net ecosystem exchange, fire-free by convention (kg CO2/m**2/s) [+ to atm]
      real(r8), pointer :: nem_grc            (:)   => null() ! gridcell average net methane correction to CO2 flux (g C/m^2/s)
      real(r8), pointer :: ram1_grc           (:)   => null() ! aerodynamical resistance (s/m)
      real(r8), pointer :: fv_grc             (:)   => null() ! friction velocity (m/s) (for dust model)
@@ -59,6 +60,7 @@ module lnd2atmType
 !LXu@02/20++++++
      real(r8), pointer :: fireflx_grc        (:,:) => null() ! Wild Fire Emissions
      real(r8), pointer :: fireztop_grc       (:)   => null() ! Wild Fire Emissions vertical distribution top
+     real(r8), pointer :: fire_co2_grc       (:)   => null() ! fire CO2 flux (kg CO2/m**2/s) [+ to atm]
 !LXu@02/20------
      ! lnd->rof
      real(r8), pointer :: qflx_rofliq_grc      (:) => null() ! rof liq forcing
@@ -177,6 +179,7 @@ contains
        allocate(this%fireflx_grc(begg:endg,1:shr_fire_emis_mechcomps_n));  this%fireflx_grc(:,:) = ival
        allocate(this%fireztop_grc(begg:endg))                           ;  this%fireztop_grc(:)  = ival
     endif
+    allocate(this%fire_co2_grc         (begg:endg))            ; this%fire_co2_grc         (:) =ival
 !LXu@02/20------
     if ( n_drydep > 0 .and. drydep_method == DD_XLND )then
        allocate(this%ddvel_grc(begg:endg,1:n_drydep));   this%ddvel_grc(:,:)=ival
@@ -236,6 +239,12 @@ contains
             avgflag='A', long_name='Gridcell net adjustment to NEE passed to atm. for methane production', &
             ptr_lnd=this%nem_grc)
     end if
+
+!LXu@06/26
+       this%fire_co2_grc(begg:endg) = 0.0_r8
+       call hist_addfld1d (fname='FCO2_FRE', units='kgCO2/m2/s', &
+            avgflag='A', long_name='Gridcell fire CO2 flux to atmosphere', &
+            ptr_lnd=this%fire_co2_grc)
 
     if (shr_fan_to_atm) then
        this%flux_nh3_grc(begg:endg) = 0.0_r8

@@ -961,7 +961,6 @@ contains
        call add_default( 'Mass_po4', 1, ' ' )
 #endif
 !LXu@08/2018---
-    endif
 
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
 !LXu@07/2021+++

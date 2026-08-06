@@ -15,6 +15,8 @@ module srf_field_check
   logical, public, protected :: active_Fall_flxvoc  = .false.
   logical, public, protected :: active_Fall_flxfire = .false.
   logical, public, protected :: active_Fall_fco2_lnd = .false.
+!LXu@6/26
+  logical, public, protected :: active_Fall_fco2_fire = .false.
   logical, public, protected :: active_Faoo_fco2_ocn = .false.
 
   ! output from atm
@@ -28,6 +30,7 @@ module srf_field_check
   public :: set_active_Fall_flxvoc
   public :: set_active_Fall_flxfire
   public :: set_active_Fall_fco2_lnd
+  public :: set_active_Fall_fco2_fire !LXu@6/26
   public :: set_active_Faoo_fco2_ocn
   public :: set_active_Faxa_nhx
   public :: set_active_Faxa_noy
@@ -70,6 +73,12 @@ contains
     logical, intent(in) :: is_active
     active_Fall_fco2_lnd = is_active
   end subroutine set_active_Fall_fco2_lnd
+
+!LXu@06/26
+  subroutine set_active_Fall_fco2_fire(is_active)
+    logical, intent(in) :: is_active
+    active_Fall_fco2_fire = is_active
+  end subroutine set_active_Fall_fco2_fire
 
   subroutine set_active_Faoo_fco2_ocn(is_active)
     logical, intent(in) :: is_active

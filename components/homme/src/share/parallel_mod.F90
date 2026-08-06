@@ -274,6 +274,7 @@ contains
 #endif
 #endif
     character*(*) string
+    call flush(iulog)
 #ifdef CAM
     call endrun(string)
 #else

@@ -2604,7 +2604,6 @@ do_lphase2_conditional: &
                                     airdens, invariants, del_h2so4_gasprod,  &
                                     vmr0, vmr, pbuf,                         &
                                     troplev                                   ) 
-
     use time_manager,          only : get_nstep
     use modal_aero_amicphys,   only : modal_aero_amicphys_intr
     use modal_aero_coag,       only : modal_aero_coag_sub
@@ -2641,7 +2640,6 @@ do_lphase2_conditional: &
     real(r8), intent(inout) :: vmr(:,:,:)         ! mixing ratios ( vmr )
     type(physics_buffer_desc), pointer :: pbuf(:)
     integer,  intent(in)  ::  troplev(pcols)   ! tropopause level
-    
     ! local vars 
     
     integer :: n, m

@@ -128,6 +128,10 @@ int get_thread_id_within_team_gpu (const TeamMember& team) {
   // Can't use team.team_rank() here because vector direction also uses physical
   // threads but TeamMember types don't expose that information.
   return blockDim.x * threadIdx.y + threadIdx.x;
+#elif defined(__SYCL_DEVICE_ONLY__)
+  auto item = team.item();
+  return static_cast<int>(item.get_local_range(1) * item.get_local_id(0)
+                          + item.get_local_id(1));
 #else
   assert(0);
   return -1;
@@ -138,6 +142,9 @@ template <typename TeamMember> KOKKOS_FORCEINLINE_FUNCTION
 int get_team_nthr_gpu (const TeamMember& team) {
 #if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
   return blockDim.x * blockDim.y;
+#elif defined __SYCL_DEVICE_ONLY__
+  auto item = team.item();
+  return static_cast<int>(item.get_local_range(0) * item.get_local_range(1));
 #else
   assert(0);
   return -1;
@@ -161,6 +168,16 @@ KOKKOS_FORCEINLINE_FUNCTION
 int get_team_nthr (const Kokkos::Impl::HIPTeamMember& team)
 { return get_team_nthr_gpu(team); }
 #endif // KOKKOS_ENABLE_HIP
+
+#ifdef KOKKOS_ENABLE_SYCL
+KOKKOS_FORCEINLINE_FUNCTION
+int get_thread_id_within_team (const Kokkos::Impl::SYCLTeamMember& team)
+{ return get_thread_id_within_team_gpu(team); }
+KOKKOS_FORCEINLINE_FUNCTION
+int get_team_nthr (const Kokkos::Impl::SYCLTeamMember& team)
+{ return get_team_nthr_gpu(team); }
+#endif // KOKKOS_ENABLE_SYCL
+
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& min (const T& a, const T& b) { return a < b ? a : b; }
 
@@ -634,7 +651,7 @@ void bfb (const TeamMember& team,
   const auto f = [&] (const int& j) {
     impl::bfb_thomas_solve(dl, d, du, Kokkos::subview(X , Kokkos::ALL(), j));
   };
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nrhs), f);
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nrhs), f);
 }
 
 template <typename TeamMember, typename TridiagDiag, typename DataArray>
@@ -664,7 +681,7 @@ void bfb (const TeamMember& team,
                            subview(du, ALL(), j),
                            subview(X , ALL(), j));
   };
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nrhs), f);
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nrhs), f);
 }
 
 } // namespace tridiag

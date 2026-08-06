@@ -185,6 +185,11 @@ contains
     real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
     ! The following converts g of C to kg of CO2
     real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+
+    ! Emission factors of CO2 and Dry matter ratio
+    real(r8), parameter :: emf_CO2 = 1577.498_r8  ! Emission factor of CO2 (g/kg-dry matter)
+    real(r8), parameter :: dmr = 0.481_r8 ! dry matter ratio, converting carbon to dry matter (kg/kg)
+    
     !------------------------------------------------------------------------
     associate( &
       t_ref2m     => veg_es%t_ref2m , &
@@ -213,6 +218,9 @@ contains
       eflx_lh_tot_grc => lnd2atm_vars%eflx_lh_tot_grc      , &
       nee             => col_cf%nee, &
       nee_grc         => lnd2atm_vars%nee_grc   , &
+!LXu
+      fire_closs      => col_cf%fire_closs         , &
+      fire_co2_grc    => lnd2atm_vars%fire_co2_grc , &
       velocity_patch  => drydepvel_vars%velocity_patch , &
       ddvel_grc       => lnd2atm_vars%ddvel_grc        , &
       flx_mss_vrt_dst_patch => dust_vars%flx_mss_vrt_dst_patch, &
@@ -326,6 +334,11 @@ contains
             nee    (bounds%begc:bounds%endc)   , &
             nee_grc(bounds%begg:bounds%endg)   , &
             c2l_scale_type= unity, l2g_scale_type=unity)
+!LXu@06/26
+       call c2g(bounds, &
+            fire_closs  (bounds%begc:bounds%endc)   , &
+            fire_co2_grc(bounds%begg:bounds%endg)   , &
+            c2l_scale_type= unity, l2g_scale_type=unity)
 
        if (use_lch4) then
           if (.not. ch4offline) then
@@ -340,10 +353,15 @@ contains
        ! Convert from gC/m2/s to kgCO2/m2/s
        do g = bounds%begg,bounds%endg
           nee_grc(g) = nee_grc(g)*convertgC2kgCO2
+!LXu@06/26
+	  fire_co2_grc(g) = fire_co2_grc(g) * convertgC2kgCO2
+!	  fire_co2_grc(g) = (fire_co2_grc(g)/dmr *1.0e-3_r8) * (emf_CO2 *1.0e-3_r8) ! convert gC/m2/sec to kg species/m2/sec)
        end do
     else
        do g = bounds%begg,bounds%endg
           nee_grc(g) = 0._r8
+!LXu@06/26
+	  fire_co2_grc(g) = 0._r8
        end do
     end if
 

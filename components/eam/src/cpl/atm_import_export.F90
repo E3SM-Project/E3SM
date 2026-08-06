@@ -149,6 +149,11 @@ contains
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
+!LXu@06/26          
+	  if (index_x2a_Fall_fco2_fire /= 0) then
+             cam_in(c)%fco2_fire(i) = -x2a(index_x2a_Fall_fco2_fire,ig)
+          end if
+
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
           end if
@@ -221,11 +226,22 @@ contains
              else
                 cam_in(c)%cflx(i,c_i(3)) = 0._r8
              end if
-             
+
+!LXu@6/26   ! co2 flux from land fire
+             if (index_x2a_Fall_fco2_fire /= 0) then
+                cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%fco2_fire(i)
+             else
+                cam_in(c)%cflx(i,c_i(4)) = 0._r8
+             end if             
+!original             ! merged co2 flux
+!             cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
+!                                        cam_in(c)%cflx(i,c_i(2)) + &
+!                                        cam_in(c)%cflx(i,c_i(3))
              ! merged co2 flux
              cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
                                         cam_in(c)%cflx(i,c_i(2)) + &
-                                        cam_in(c)%cflx(i,c_i(3))
+                                        cam_in(c)%cflx(i,c_i(3))+ &
+                                        cam_in(c)%cflx(i,c_i(4))
           end do
        end do
     end if

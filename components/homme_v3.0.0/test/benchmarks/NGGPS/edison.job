@@ -1,0 +1,159 @@
+#!/bin/tcsh 
+#
+#  This script will configure, build and run HOMME using the
+#  NGGPS benchmark problem
+#
+#  128 levels
+#  10 tracers
+#    
+#  ne4  ultra-low-res for testing
+#  ne30 (1 degree) 
+#  ne120 (1/4 degree)
+#
+#
+#
+#SBATCH --job-name nggpsbench
+#SBATCH -N 4
+#SBATCH --time=0:15:00
+#XSBATCH --account=FY150001
+#XSBATCH -p ec
+#
+#  set paths to source code, build directory and run directory
+#
+set wdir =  ~/scratch1/nggpsbench           # run directory
+set HOMME = `pwd`/../../..               # /path/to/acme/components/homme
+set MACH = $HOMME/cmake/machineFiles/edison.cmake
+
+#
+#  Which problem?  tiny, ne30 or ne120 configuration
+#
+# use 4 nodes
+set namelist = nggps-tiny.nl ; set name = tiny      
+
+# good Edison nodes:  64  128  256 512 1024 2048  4096  5462
+# elem/node         6144 3072 1536 768  384  192   96    71/72
+#
+# good KNL nodes: 9145  6144  3072 2048 1024 512 256 128 64
+# ele/node        42/43  64   128   192
+# elem/core        0/1    1     2     3    6  12  24  48 96    (  using 64 cores/node )
+#set namelist = nggps-ne256.nl  ; set name = ne256
+
+
+
+    
+#
+#  mpi run command
+#
+#setenv OMP_NUM_THREADS 4
+setenv OMP_NUM_THREADS 1
+setenv OMP_STACKSIZE 64M     #  Edison has 64GB per node
+setenv PER_NODE  24          # 24 or 48 for hyperthreading
+
+setenv KMP_AFFINITY granularity=core,scatter
+set bind = --cpu_bind=core
+#setenv KMP_AFFINITY granularity=thread,scatter
+#set bind = --cpu_bind=thread
+
+# compute number of MPI tasks
+if (! ${?SLURM_NNODES} ) then 
+  # not running in batch system.  set some defaults so this script
+  # will work on a workstation
+  set SLURM_NNODES=1
+  set PER_NODE=4
+endif
+set NNODES =  $SLURM_NNODES
+
+if ($#argv >= 1) then
+   # override number of nodes with $1
+   set NNODES =  $1
+endif
+
+set NMPI = $NNODES
+@ NMPI *= $PER_NODE
+@ NMPI /= $OMP_NUM_THREADS
+
+# compute number of MPI tasks per node
+set NMPI_PER_NODE = $PER_NODE
+@ NMPI_PER_NODE /= $OMP_NUM_THREADS
+
+# number of virtual cores per MPI task
+set VC_PER_MPI = 48
+@ VC_PER_MPI /= $NMPI_PER_NODE
+
+echo NODES =            $NNODES
+echo NMPI_PER_NODE =    $PER_NODE
+echo NTHREADS_PER_MPI = $OMP_NUM_THREADS
+# note: in tests on 4K nodes,the --bcase and --compress options were much slower. DONT USE:
+#set mpirun = "srun --bcast=/tmp/${SLURM_JOB_ID} --compress=lz4 -n $NMPI -N $NNODES -c $VC_PER_MPI $bind"
+set mpirun = "srun -n $NMPI -N $NNODES -c $VC_PER_MPI $bind"
+echo mpi commnand:
+echo $mpirun
+
+
+
+
+set input = $HOMME/test/benchmarks/NGGPS  # input files for test case
+set vdir = $HOMME/test/vcoord               # vertical coordinate files
+set bld = $wdir/bld
+set run = $wdir/run-$NNODES-$OMP_NUM_THREADS-$$
+set nlev = 128
+set qsize = 10
+
+#
+#  BUILD PREQX
+#  rm $bld/CMakeCache.txt to force re-configure
+#
+mkdir -p $bld
+cd $bld
+set exe = $bld/src/preqx/preqx
+set build = 1  # set to 1 to force build
+# rm $bld/CMakeCache.txt    # remove this file to force re-configure
+if (! -f CMakeCache.txt) then
+   rm -rf CMakeFiles CMakeCache.txt src
+   echo "running CMAKE to configure the model"
+
+   cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+   -DBUILD_HOMME_SWEQX=FALSE  -DPREQX_USE_PIO=TRUE             \
+   -DPREQX_USE_ENERGY=FALSE  $HOMME
+
+   if ($status) exit
+   make -j4 clean
+endif
+if ( ! -f $exe) then
+   make -j4 preqx
+   if ($status) exit
+endif
+
+#
+#  Run the code
+#
+mkdir -p $run/movies
+cd $run
+
+
+# copy all vertical levels to run directory
+rsync -a  $vdir/sab?-128.ascii  $run   
+
+# namelist has to be called input.nl for perf settings to be read
+\rm -f input.nl
+\cp -f $input/$namelist input.nl
+
+date
+$mpirun $exe  < input.nl
+date
+if (-f  HommeTime  ) then
+   # save timings from run
+   set timingfile = $name.nodes${NNODES}.HommeTime
+   set summary    = $name.nodes${NNODES}.summary
+   mv HommeTime $timingfile
+   # total run time (not counting init)
+   grep -a prim_main_loop $timingfile | head -1 | tee $summary
+
+   # breakdown dyn, tracers, remap.  about 97% of the cost:
+   grep -a prim_step_dyn  $timingfile | head -1 | tee -a $summary
+   grep -a PAT_remap      $timingfile | head -1 | tee -a $summary
+   grep -a vertical_remap $timingfile | head -1 | tee -a $summary
+   echo "run parameters:" >> $summary
+   cat input.nl >> $summary
+endif
+

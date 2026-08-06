@@ -183,7 +183,7 @@ struct Session {
     p.qsize = qsize;
     p.hypervis_scaling = 0;
     p.transport_alg = 0;
-    p.moisture = MoistDry::MOIST;
+    p.use_moisture = true;
     p.theta_hydrostatic_mode = false;
     p.scale_factor = is_sphere ? PhysicalConstants::rearth0 : 1;
     p.laplacian_rigid_factor = is_sphere ? 1/p.scale_factor : 0;
@@ -725,7 +725,7 @@ static void test_get_temperature (Session& s) {
       const auto& sp = c.get<SimulationParams>();
       EquationOfState eos; eos.init(theta_hydrostatic_mode, s.h);
       ElementOps ops; ops.init(s.h);
-      const bool use_moisture = sp.moisture == MoistDry::MOIST;
+      const bool use_moisture = sp.use_moisture;
       const auto state = c.get<ElementsState>();
       const auto tracers = c.get<Tracers>();
       const auto dp3d = state.m_dp3d;

@@ -1,0 +1,49 @@
+# CMake initial cache file
+#
+# This machine file works with either Intel or gnu
+# (selected by which modules are loaded)
+# 
+#
+# Perlmutter generic MPI enabled compiler wrappers:
+SET (CMAKE_Fortran_COMPILER ftn   CACHE FILEPATH "")
+SET (CMAKE_C_COMPILER       cc    CACHE FILEPATH "")
+SET (CMAKE_CXX_COMPILER     CC    CACHE FILEPATH "")
+
+
+# Set kokkos arch, to get correct avx flags
+SET (Kokkos_ARCH_ZEN2 ON CACHE BOOL "")
+
+SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
+
+EXECUTE_PROCESS(COMMAND nf-config --prefix
+  RESULT_VARIABLE NFCONFIG_RESULT
+  OUTPUT_VARIABLE NFCONFIG_OUTPUT
+  ERROR_VARIABLE  NFCONFIG_ERROR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+SET (NetCDF_Fortran_PATH "${NFCONFIG_OUTPUT}" CACHE STRING "")
+
+EXECUTE_PROCESS(COMMAND nc-config --prefix
+  RESULT_VARIABLE NCCONFIG_RESULT
+  OUTPUT_VARIABLE NCCONFIG_OUTPUT
+  ERROR_VARIABLE  NCCONFIG_ERROR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
+
+SET (USE_QUEUING FALSE CACHE BOOL "")
+# for standalone HOMME builds:
+SET(CPRNC_DIR /global/cfs/cdirs/e3sm/tools/cprnc CACHE FILEPATH "")
+
+SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
+IF(DEFINED ENV{MKLROOT})
+  SET (HOMME_USE_MKL "TRUE" CACHE FILEPATH "")
+  # turn on additional intel compiler flags
+  SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
+  SET (ADD_C_FLAGS       "-traceback" CACHE STRING "")
+  SET (ADD_CXX_FLAGS     "-traceback" CACHE STRING "")
+ENDIF()
+
+
+SET(USE_MPIEXEC "srun" CACHE STRING "")
+SET(USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")

@@ -126,8 +126,14 @@ contains
     use elm_varcon           , only: secspday, spval
     use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
-    use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
-    use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
+!    use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
+!    use pftvarcon            , only: nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree, nbrdlf_evr_shrub
+    use pftvarcon,             only : nbrdlf_evr_shrub, nbrdlf_dcd_tmp_shrub, nbrdlf_dcd_brl_shrub
+    use pftvarcon,             only : nc3_arctic_grass, nc3_nonarctic_grass, nc4_grass, nc3crop
+    use pftvarcon,             only : ndllf_evr_tmp_tree, ndllf_evr_brl_tree
+    use pftvarcon,             only : ndllf_dcd_brl_tree, nbrdlf_evr_tmp_tree
+    use pftvarcon,             only : nbrdlf_dcd_tmp_tree, nbrdlf_dcd_brl_tree
+    use pftvarcon,             only : nbrdlf_evr_trp_tree, nbrdlf_dcd_trp_tree
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -148,12 +154,19 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8), parameter  :: lfuel=75._r8    ! lower threshold of fuel mass (gC/m2) for ignition, Li et al.(2014)
-    real(r8), parameter  :: ufuel=1050._r8  ! upper threshold of fuel mass(gC/m2) for ignition
+!    real(r8), parameter  :: ufuel=1050._r8  ! upper threshold of fuel mass(gC/m2) for ignition
+!LXu@03/26
+    real(r8), parameter  :: ufuel=650._r8  ! upper threshold of fuel mass(gC/m2) for ignition LXu@05/04/26
     real(r8), parameter  :: g0=0.05_r8      ! g(W) when W=0 m/s
+!    real(r8), parameter  :: g0=0.1_r8      ! g(W) when W=0 m/s, LXu@01/26
     !
     ! a1 parameter for cropland fire in (Li et. al., 2014), but changed from
     ! /timestep to /hr
-    real(r8), parameter :: cropfire_a1 = 0.3_r8
+!    real(r8), parameter :: cropfire_a1 = 0.3_r8 !Original value
+!    real(r8), parameter :: cropfire_a1 = 0.6_r8 !LXu@03/26
+!    real(r8), parameter :: cropfire_a1 =  1.2_r8 !LXu@03/26
+!    real(r8), parameter :: cropfire_a1 = 3._r8 !LXu@05/01/26
+    real(r8), parameter :: cropfire_a1 = 1.95_r8 !LXu@05/06/26
     !
     ! c parameter for peatland fire in Li et. al. (2013)
     ! boreal peat fires (was different in paper),changed from /timestep to /hr
@@ -166,6 +179,7 @@ contains
     real(r8) :: m        ! top-layer soil moisture (proportion)
     real(r8) :: cli      ! effect of climate on deforestation fires (0-1)
     real(r8), parameter ::cli_scale = 0.035_r8   !global constant for deforestation fires (/d)
+!    real(r8), parameter ::cli_scale = 0.0175_r8   !global constant for deforestation fires (/d)
     real(r8) :: cri      ! thresholds used for cli, (mm/d), see Eq.(7) in Li et al.(2013)
     real(r8) :: fb       ! availability of fuel for regs A and C
     real(r8) :: fhd      ! impact of hd on agricultural fire
@@ -180,8 +194,15 @@ contains
     real(r8) :: hdmlf    ! human density
     real(r8) :: btran_col(bounds%begc:bounds%endc)
     logical  :: transient_landcover  ! whether this run has any prescribed transient landcover
+!LXu@03/26
+!    real(r8) :: deforest_emiss_factor    ! deforest_emiss_factor
+!    real(r8) :: arh, arh30 !combustability of fuel related to RH and RH30
+!    real(r8) :: afuel    !weight for arh and arh30
+    
     !-----------------------------------------------------------------------
 
+!LXu@03/26
+!         rh30               =>    top_as%rh30d                              , & ! Input:  [real(r8) (:)     ]  30-day running mean of relative humidity, %
     associate(                                                                &
          is_cwd             =>    decomp_cascade_con%is_cwd                 , & ! Input:  [logical  (:)     ]  TRUE => pool is a cwd pool
 
@@ -213,6 +234,16 @@ contains
          abm_lf             =>    cnstate_vars%abm_lf_col                   , & ! Input:  [integer  (:)     ]  prescribed crop fire time
          baf_crop           =>    cnstate_vars%baf_crop_col                 , & ! Output: [real(r8) (:)     ]  burned area fraction for cropland (/sec)
          baf_peatf          =>    cnstate_vars%baf_peatf_col                , & ! Output: [real(r8) (:)     ]  burned area fraction for peatland (/sec)
+!LXu@01/26+++
+         baf_ncropf         =>    cnstate_vars%baf_ncropf_col               , & ! Output: [real(r8) (:)     ]  burned area fraction for non-cropland (/sec)
+         baf_deforestf      =>    cnstate_vars%baf_deforestf_col            , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+         baf_brl_forest     =>    cnstate_vars%baf_brl_forest_col           , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+         baf_tmp_forest     =>    cnstate_vars%baf_tmp_forest_col           , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+         baf_trp_forest     =>    cnstate_vars%baf_trp_forest_col           , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+         baf_tmp_grass      =>    cnstate_vars%baf_tmp_grass_col            , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+         baf_tmp_shrub      =>    cnstate_vars%baf_tmp_shrub_col            , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+         baf_savanna        =>    cnstate_vars%baf_savanna_col              , & ! Output: [real(r8) (:)     ]  burned area fraction for deforestation (/sec)
+!LXu@01/26---
          burndate           =>    cnstate_vars%burndate_patch               , & ! Output: [integer  (:)     ]  burn date for crop
          fbac               =>    cnstate_vars%fbac_col                     , & ! Output: [real(r8) (:)     ]  total burned area out of conversion (/sec)
          fbac1              =>    cnstate_vars%fbac1_col                    , & ! Output: [real(r8) (:)     ]  burned area out of conversion region due to land use fire
@@ -257,6 +288,7 @@ contains
       transient_landcover = run_has_transient_landcover()
 
       !pft to column average
+
       call p2c(bounds, num_soilc, filter_soilc, &
            totvegc(bounds%begp:bounds%endp), &
            totvegc_col(bounds%begc:bounds%endc))
@@ -284,6 +316,16 @@ contains
            farea_burned(c) = 0._r8
            baf_crop(c)     = 0._r8
            baf_peatf(c)    = 0._r8
+!LXu@01/26+++
+           baf_ncropf(c)     = 0._r8
+           baf_deforestf(c)  = 0._r8
+           baf_brl_forest(c)  = 0._r8
+           baf_tmp_forest(c)  = 0._r8
+           baf_trp_forest(c)  = 0._r8
+           baf_tmp_grass(c)  = 0._r8
+           baf_tmp_shrub(c)  = 0._r8
+           baf_savanna(c)  = 0._r8
+!LXu@01/26---
            fbac(c)         = 0._r8
            fbac1(c)        = 0._r8
            cropf_col(c)    = 0._r8
@@ -402,44 +444,80 @@ contains
                     ! all these constants are in Li et al. BG (2012a,b;2013)
 
                     if( hdmlf  >  0.1_r8 )then
-                       ! For NOT bare-soil
+                       !w For NOT bare-soil
                        if( veg_pp%itype(p)  /=  noveg )then
                           ! For shrub and grass (crop already excluded above)
                           if( veg_pp%itype(p)  >=  nbrdlf_evr_shrub )then      !for shurb and grass
+			  ! fire occurrence
                              lgdp_col(c)  = lgdp_col(c) + (0.1_r8 + 0.9_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
                                   (gdp_lf(c)/8._r8)**0.5_r8))*veg_pp%wtcol(p) &
-                                  /(1.0_r8 - cropf_col(c))
-                             lgdp1_col(c) = lgdp1_col(c) + (0.2_r8 + 0.8_r8*   &
+                                  /(1.0_r8 - cropf_col(c)) 
+			  ! fire spread
+!org                             lgdp1_col(c) = lgdp1_col(c) + (0.2_r8 + 0.8_r8*   &
+                             lgdp1_col(c) = lgdp1_col(c) + (0.1_r8 + 0.9_r8*   &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (gdp_lf(c)/7._r8)))*veg_pp%wtcol(p)/lfwt(c)
-                             lpop_col(c)  = lpop_col(c) + (0.2_r8 + 0.8_r8*    &
+                                  (gdp_lf(c)/7._r8)))*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+!                                  (gdp_lf(c)/7._r8)))*veg_pp%wtcol(p)/lfwt(c)
+!                             lpop_col(c)  = lpop_col(c) + (0.2_r8 + 0.8_r8*    &
+                             lpop_col(c)  = lpop_col(c) + (0.1_r8 + 0.9_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (hdmlf/450._r8)**0.5_r8))*veg_pp%wtcol(p)/lfwt(c)
+                                  (hdmlf/450._r8)**0.5_r8))*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+!                                  (hdmlf/450._r8)**0.5_r8))*veg_pp%wtcol(p)/lfwt(c)
                           else   ! for trees
+			  ! fire occurrence
                              if( gdp_lf(c)  >  20._r8 )then
                                 lgdp_col(c)  =lgdp_col(c)+0.39_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                              else
-                                lgdp_col(c) = lgdp_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+                                 if( gdp_lf(c)  >  8._r8 ) then
+                                     lgdp_col(c) = lgdp_col(c)+0.79_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+				 else
+                                     lgdp_col(c) = lgdp_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+				 end if    
                              end if
+			  ! fire spread
                              if( gdp_lf(c)  >  20._r8 )then
-                                lgdp1_col(c) = lgdp1_col(c)+0.62_r8*veg_pp%wtcol(p)/lfwt(c)
+!                                lgdp1_col(c) = lgdp1_col(c)+0.62_r8*veg_pp%wtcol(p)/lfwt(c)
+!org                                lgdp1_col(c) = lgdp1_col(c)+0.62_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+                                lgdp1_col(c) = lgdp1_col(c)+0.56_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+!                                lgdp1_col(c) = lgdp1_col(c)+0.50_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                              else
                                 if( gdp_lf(c)  >  8._r8 ) then
-                                   lgdp1_col(c)=lgdp1_col(c)+0.83_r8*veg_pp%wtcol(p)/lfwt(c)
+!                                   lgdp1_col(c)=lgdp1_col(c)+0.83_r8*veg_pp%wtcol(p)/lfwt(c)
+!org                                   lgdp1_col(c)=lgdp1_col(c)+0.83_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+                                   lgdp1_col(c)=lgdp1_col(c)+0.75_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+!                                   lgdp1_col(c)=lgdp1_col(c)+0.70_r8*veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                                 else
-                                   lgdp1_col(c)=lgdp1_col(c)+veg_pp%wtcol(p)/lfwt(c)
+!                                   lgdp1_col(c)=lgdp1_col(c)+veg_pp%wtcol(p)/lfwt(c)
+                                   lgdp1_col(c)=lgdp1_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                                 end if
                              end if
-                             lpop_col(c) = lpop_col(c) + (0.4_r8 + 0.6_r8*    &
+!LXu@03/26,CLM5
+!                	     if( gdp_lf(c)  >  20._r8 )then
+!                		lgdp_col(c) =lgdp_col(c)+0.39_r8*veg_pp%wtcol(p)/(1._r8 - cropf_col(c))
+!                		lgdp1_col(c) =lgdp1_col(c)+0.62_r8*veg_pp%wtcol(p)/(1._r8 - cropf_col(c)) 
+!                	     else
+!                		if( gdp_lf(c) > 8._r8 )then
+!                        	   lgdp_col(c)=lgdp_col(c)+0.79_r8*veg_pp%wtcol(p)/(1._r8 - cropf_col(c))
+!                        	   lgdp1_col(c)=lgdp1_col(c)+0.83_r8*veg_pp%wtcol(p)/(1._r8 - cropf_col(c))
+!                		else
+!                        	   lgdp_col(c) = lgdp_col(c)+veg_pp%wtcol(p)/(1._r8 - cropf_col(c))
+!                        	   lgdp1_col(c)=lgdp1_col(c)+veg_pp%wtcol(p)/(1._r8 - cropf_col(c))
+!                		end if
+!                	     end if
+!org                             lpop_col(c) = lpop_col(c) + (0.4_r8 + 0.6_r8*    &
+                             lpop_col(c) = lpop_col(c) + (0.3_r8 + 0.7_r8*    &
                                   exp(-1._r8*SHR_CONST_PI* &
-                                  (hdmlf/125._r8)))*veg_pp%wtcol(p)/lfwt(c)
+                                  (hdmlf/125._r8)))*veg_pp%wtcol(p)/(1._r8 - cropf_col(c))
+!                                  (hdmlf/125._r8)))*veg_pp%wtcol(p)/lfwt(c)
                           end if
                        end if
                     else
                        lgdp_col(c)  = lgdp_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
-                       lgdp1_col(c) = lgdp1_col(c)+veg_pp%wtcol(p)/lfwt(c)
-                       lpop_col(c)  = lpop_col(c)+veg_pp%wtcol(p)/lfwt(c)
+!                       lgdp1_col(c) = lgdp1_col(c)+veg_pp%wtcol(p)/lfwt(c)
+!                       lpop_col(c)  = lpop_col(c)+veg_pp%wtcol(p)/lfwt(c)
+                       lgdp1_col(c) = lgdp1_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
+                       lpop_col(c)  = lpop_col(c)+veg_pp%wtcol(p)/(1.0_r8 - cropf_col(c))
                     end if
                  end if
 
@@ -494,12 +572,20 @@ contains
               if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
                    kmo == abm_lf(c) .and. forc_rain(t)+forc_snow(t) == 0._r8  .and. &
                    burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
+!LXu@03/26,CLM5
+!              if( forc_t(t)  >=  SHR_CONST_TKFRZ .and. veg_pp%itype(p)  >  nc4_grass .and.  &
+!                   kmo == abm_lf(c) .and.  &
+!                   burndate(p) >= 999 .and. veg_pp%wtcol(p)  >  0._r8 )then ! catch  crop burn time
 
                  ! calculate human density impact on ag. fire
-                 fhd = 0.04_r8+0.96_r8*exp(-1._r8*SHR_CONST_PI*(hdmlf/350._r8)**0.5_r8)
+!org                 fhd = 0.04_r8+0.96_r8*exp(-1._r8*SHR_CONST_PI*(hdmlf/350._r8)**0.5_r8)
+!LXu@05/04/2026
+                 fhd = 0.08_r8+0.92_r8*exp(-1._r8*SHR_CONST_PI*(hdmlf/350._r8)**0.5_r8)
 
                  ! calculate impact of GDP on ag. fire
-                 fgdp = 0.01_r8+0.99_r8*exp(-1._r8*SHR_CONST_PI*(gdp_lf(c)/10._r8))
+!org                 fgdp = 0.01_r8+0.99_r8*exp(-1._r8*SHR_CONST_PI*(gdp_lf(c)/10._r8))
+!LXu@05/04/2026
+                 fgdp = 0.05_r8+0.95_r8*exp(-1._r8*SHR_CONST_PI*(gdp_lf(c)/10._r8))
 
                  ! calculate burned area
                  fb   = max(0.0_r8,min(1.0_r8,(fuelc_crop(c)-lfuel)/(ufuel-lfuel)))
@@ -530,6 +616,8 @@ contains
                 max(0._r8,min(1._r8,(tsoi17(c)-SHR_CONST_TKFRZ)/10._r8))*peatf_lf(c)* &
                 (1._r8-fsat(c))
         end if
+!added by LXu@03/2026 force burned area from the peat fires as zeros.
+	baf_peatf(c) = 0._r8
      end do
      !
      ! calculate other fires
@@ -555,32 +643,55 @@ contains
         g = col_pp%gridcell(c)
         t = col_pp%topounit(c)
         hdmlf=forc_hdm(g)
+        baf_ncropf(c)=0._r8
+        baf_deforestf(c)=0._r8
+!LXu@03/26
+         nfire(c)=0._r8	
         if( cropf_col(c)  <  1.0 )then
+
+           fuelc(c) = totlitc(c)+totvegc_col(c)-rootc_col(c)-fuelc_crop(c)*cropf_col(c)
+           if (spinup_state == 1) fuelc(c) = fuelc(c) + ((spinup_mortality_factor - 1._r8)*deadstemc_col(c))
+           do j = 1, nlevdecomp
+             if (spinup_state == 1 .and. kyr < 40) then
+               fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
+                 decomp_cascade_con%spinup_factor(i_cwd)
+             else if (spinup_state == 1 .and. kyr >= 40) then
+               fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
+                 decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c,j)
+             else
+               fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
+             end if
+           end do
+           fuelc(c) = fuelc(c)/(1._r8-cropf_col(c))
+           fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
+
            if (trotr1_col(c)+trotr2_col(c)>0.6_r8) then
               farea_burned(c)=min(1.0_r8,baf_crop(c)+baf_peatf(c))
            else
-              fuelc(c) = totlitc(c)+totvegc_col(c)-rootc_col(c)-fuelc_crop(c)*cropf_col(c)
-              if (spinup_state == 1) fuelc(c) = fuelc(c) + ((spinup_mortality_factor - 1._r8)*deadstemc_col(c))
-              do j = 1, nlevdecomp
-                if (spinup_state == 1 .and. kyr < 40) then
-                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
-                    decomp_cascade_con%spinup_factor(i_cwd)
-                else if (spinup_state == 1 .and. kyr >= 40) then
-                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) *dzsoi_decomp(j) * &
-                    decomp_cascade_con%spinup_factor(i_cwd) / cnstate_vars%scalaravg_col(c,j)
-                else
-                  fuelc(c) = fuelc(c)+decomp_cpools_vr(c,j,i_cwd) * dzsoi_decomp(j)
-                end if
-              end do
-              fuelc(c) = fuelc(c)/(1._r8-cropf_col(c))
-              fb       = max(0.0_r8,min(1.0_r8,(fuelc(c)-lfuel)/(ufuel-lfuel)))
-              m        = max(0._r8,wf(c))
+             !trotr1_col(c)+trotr2_col(c)<=0.6_r8
+              m        = max(0._r8,wf(c)) !wf is soil water related to soil moisture
               fire_m   = exp(-SHR_CONST_PI *(m/0.69_r8)**2)*(1.0_r8 - max(0._r8, &
                    min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8))))*  &
                    min(1._r8,exp(SHR_CONST_PI*(forc_t(t)-SHR_CONST_TKFRZ)/10._r8))
-              lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8
+
+!              afuel  =min(1._r8,max(0._r8,(fuelc(c)-2500._r8)/(5000._r8-2500._r8)))
+!              arh=1._r8-max(0._r8, min(1._r8,(forc_rh(t)-30._r8)/(80._r8-30._r8)))
+!              arh30=1._r8-max(0.7_r8, min(1._r8,rh30(t)/90._r8))
+!              if (forc_rh(t) < 80._r8.and. wtlf(c) > 0._r8 .and. tsoi17(c)> SHR_CONST_TKFRZ)then
+!                fire_m   = max(0._r8,((afuel*arh30+(1._r8-afuel)*arh)**1.5_r8) &
+!                             *((1._r8-btran_col(c)/wtlf(c))**0.5_r8))
+!              else
+!                fire_m   = 0._r8
+!              end if
+		   
+              lh       = 0.0035_r8*6.8_r8*hdmlf**(0.43_r8)/30._r8/24._r8 !eq(5) in Li et al. 2012, bg
               fs       = 1._r8-(0.01_r8+0.98_r8*exp(-0.025_r8*hdmlf))
               ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8*cos(3._r8*grc_pp%lat(g)))*0.25_r8)*(1._r8-fs)*(1._r8-cropf_col(c))
+!LXu@03/26
+!              ig       = (lh+forc_lnfm(g)/(5.16_r8+2.16_r8* &
+!                     cos(SHR_CONST_PI/180._r8*3*min(60._r8,abs(grc_pp%latdeg(g)))))*0.22_r8)  &
+!                         *(1._r8-fs)*(1._r8-cropf_col(c))
+
               nfire(c) = ig/secsphr*fb*fire_m*lgdp_col(c) !fire counts/km2/sec
               Lb_lf    = 1._r8+10.0_r8*(1._r8-EXP(-0.06_r8*forc_wind(t)))
               if ( wtlf(c) > 0.0_r8 )then
@@ -590,11 +701,19 @@ contains
               else
                  spread_m = 0.0_r8
               end if
+!LXu@03/2026
+!              spread_m = fire_m**0.5_r8
               farea_burned(c) = min(1._r8,(g0*spread_m*fsr_col(c)* &
                    fd_col(c)/1000._r8)**2*lgdp1_col(c)* &
                    lpop_col(c)*nfire(c)*SHR_CONST_PI*Lb_lf+ &
                    baf_crop(c)+baf_peatf(c))  ! fraction (0-1) per sec
+!              baf_ncropf(c)=min(1._r8,(g0*spread_m*fsr_col(c)* &
+!                   fd_col(c)/1000._r8)**2*lgdp1_col(c)* &
+!                   lpop_col(c)*nfire(c)*SHR_CONST_PI*Lb_lf)
+              baf_ncropf(c)=min(1._r8,max(0._r8,farea_burned(c)-baf_crop(c)-baf_peatf(c)))
+
            end if
+
            !
            ! if landuse change data is used, calculate deforestation fires and
            ! add it in the total of burned area fraction
@@ -605,15 +724,26 @@ contains
                       dtrotr_col(c) <=0._r8 )then
                     fbac1(c)        = 0._r8
                     farea_burned(c) = baf_crop(c)+baf_peatf(c)
-                 else
+                    baf_deforestf(c) = 0._r8
+                else
                     cri = (4.0_r8*trotr1_col(c)+1.8_r8*trotr2_col(c))/(trotr1_col(c)+trotr2_col(c))
-                    cli = (max(0._r8,min(1._r8,(cri-prec60(t)*secspday)/cri))**0.5)* &
+                   cli = (max(0._r8,min(1._r8,(cri-prec60(t)*secspday)/cri))**0.5)* &
                          (max(0._r8,min(1._r8,(cri-prec10(t)*secspday)/cri))**0.5)* &
-                         max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)*dayspyr*secspday/dt-0.001_r8))* &
-                         max(0._r8,min(1._r8,(0.25_r8-(forc_rain(t)+forc_snow(t))*secsphr)/0.25_r8))
-                    farea_burned(c) = cli*(cli_scale/secspday)+baf_crop(c)+baf_peatf(c)
+                          max(0.0005_r8,min(1._r8,19._r8*dtrotr_col(c)/dt*dayspyr*secspday-0.001_r8))* &
+                          max(0._r8,min(1._r8,(0.25_r8-(forc_rain(t)+forc_snow(t))*secsphr)/0.25_r8))
+
+! Li et al. 2021
+!                    cli = (max(0._r8,min(1._r8,(cri-prec60(t)*secspday)/cri))**0.5)* &
+!                         (max(0._r8,min(1._r8,(cri-prec10(t)*secspday)/cri))**0.5)* &
+!                         (15._r8*min(0.0016_r8,dtrotr_col(c)/dt*dayspyr*secspday)+0.009_r8)* &
+!                         max(0._r8,min(1._r8,(0.25_r8-(forc_rain(c)+forc_snow(c))*secsphr)/0.25_r8))
+
+                    ! cli_scale = 0.035                           
+                    farea_burned(c) = fb*cli*(cli_scale/secspday)+baf_crop(c)+baf_peatf(c)
                     ! burned area out of conversion region due to land use fire
-                    fbac1(c) = max(0._r8,cli*(cli_scale/secspday) - 2.0_r8*lfc(c)/dt)
+                    fbac1(c) = max(0._r8,fb*cli*(cli_scale/secspday) - 2.0_r8*lfc(c)/dt)
+!                    baf_deforestf(c) = fbac1(c)
+                    baf_deforestf(c) = fb*cli*(cli_scale/secspday)
                  end if
                  ! total burned area out of conversion
                  fbac(c) = fbac1(c)+baf_crop(c)+baf_peatf(c)
@@ -624,6 +754,7 @@ contains
 
         else
            farea_burned(c) = min(1._r8,baf_crop(c)+baf_peatf(c))
+!           baf_deforestf(c) = 0._r8
         end if
 
         if (use_nofire) then
@@ -632,6 +763,14 @@ contains
            farea_burned(c) = 0._r8
            baf_crop(c)     = 0._r8
            baf_peatf(c)    = 0._r8
+           baf_ncropf(c)     = 0._r8
+           baf_deforestf(c)    = 0._r8
+           baf_brl_forest(c)    = 0._r8
+           baf_tmp_forest(c)    = 0._r8
+           baf_trp_forest(c)    = 0._r8
+           baf_tmp_grass(c)    = 0._r8
+           baf_tmp_shrub(c)    = 0._r8
+           baf_savanna(c)    = 0._r8
            fbac(c)         = 0._r8
            fbac1(c)        = 0._r8
            ! with NOFIRE, tree carbon is still removed in landuse change regions by the
@@ -639,6 +778,64 @@ contains
         end if
 
      end do  ! end of column loop
+
+! diagnose baf for each forest/shrub/grass PFT type
+     do fc = 1, num_soilc
+        c = filter_soilc(fc)
+	baf_brl_forest(c)=0._r8
+        baf_tmp_forest(c)=0._r8
+        baf_trp_forest(c)=0._r8
+        baf_tmp_grass(c)=0._r8
+        baf_tmp_shrub(c)=0._r8
+        baf_savanna(c)=0._r8
+     end do	
+
+     do pi = 1,max_patch_per_col
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           g = col_pp%gridcell(c)
+           if( lfwt(c)  /=  0.0_r8 )then
+           if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
+!boreal forest
+              if (veg_pp%itype(p) == ndllf_evr_brl_tree  &
+	     .or. veg_pp%itype(p) == ndllf_dcd_brl_tree  &
+	     .or. veg_pp%itype(p) == nbrdlf_dcd_brl_tree &    
+	     .or. veg_pp%itype(p) == nbrdlf_dcd_brl_shrub  &
+	     .or. veg_pp%itype(p) == nc3_arctic_grass ) then
+	          baf_brl_forest(c) = baf_brl_forest(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+      	      end if
+! temperate forest
+              if (veg_pp%itype(p) == ndllf_evr_tmp_tree   &
+	     .or. veg_pp%itype(p) == nbrdlf_evr_tmp_tree  &
+	     .or. veg_pp%itype(p) == nbrdlf_dcd_tmp_tree ) then    
+                  baf_tmp_forest(c) = baf_tmp_forest(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+	      end if
+! tropical forest-broad leaf tree only
+              if (veg_pp%itype(p) == nbrdlf_evr_trp_tree ) then    
+                  baf_trp_forest(c) = baf_trp_forest(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+	      end if
+!temperate shrub
+              if (veg_pp%itype(p) == nbrdlf_evr_shrub .or. veg_pp%itype(p) == nbrdlf_dcd_tmp_shrub) then    
+                  baf_tmp_shrub(c) = baf_tmp_shrub(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+	      end if
+!svanna
+              if (veg_pp%itype(p) == nc4_grass .or. veg_pp%itype(p) == nbrdlf_dcd_trp_tree) then    
+                  baf_savanna(c) = baf_savanna(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+	      end if
+!temperate grass
+              if (veg_pp%itype(p) == nc3_nonarctic_grass )then
+                  if(grc_pp%latdeg(g) < -23._r8 .or. grc_pp%latdeg(g) > 23._r8 )then
+                     baf_tmp_grass(c) = baf_tmp_grass(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+		  else
+                     baf_savanna(c) = baf_savanna(c) + baf_ncropf(c)*veg_pp%wtcol(p)/lfwt(c)
+	          end if
+	      end if
+
+          end if
+	  end if
+        end do
+     end do
 
    end associate
 
@@ -687,6 +884,7 @@ contains
    real(r8):: cc_other_sc, wt_col, baf_crop_sc,lprof_pj,fr_prof_pj,cr_prof_pj,st_prof_pj
 
    logical           :: transient_landcover  ! whether this run has any prescribed transient landcover
+   real(r8) :: deforest_emiss_factor    ! deforest_emiss_factor
 
    !-----------------------------------------------------------------------
 
@@ -720,6 +918,10 @@ contains
         fbac                                =>    cnstate_vars%fbac_col                , & ! Input:  [real(r8) (:)     ]  total burned area out of conversion (/sec)
         baf_crop                            =>    cnstate_vars%baf_crop_col            , & ! Input:  [real(r8) (:)     ]  BAF for cropland
         baf_peatf                           =>    cnstate_vars%baf_peatf_col           , & ! Input:  [real(r8) (:)     ]  BAF for peatlabd
+!LXu@02/26+++
+!        baf_ncropf                          =>    cnstate_vars%baf_ncropf_col            , & ! Input:  [real(r8) (:)     ]  BAF for non-crop lands
+!        baf_deforestf                       =>    cnstate_vars%baf_deforestf_col           , & ! Input:  [real(r8) (:)     ]  BAF for doforestations
+!LXu@02/26---
         trotr1_col                          =>    cnstate_vars%trotr1_col              , & ! Input:  [real(r8) (:)     ]  pft weight of BET on the gridcell (0-1)
         trotr2_col                          =>    cnstate_vars%trotr2_col              , & ! Input:  [real(r8) (:)     ]  pft weight of BDT on the gridcell (0-1)
         dtrotr_col                          =>    cnstate_vars%dtrotr_col              , & ! Input:  [real(r8) (:)     ]  ann. decreased frac. coverage of BET+BDT (0-1) on GC
@@ -969,8 +1171,10 @@ contains
            ! For non-crop (bare-soil and natural vegetation)
            if (transient_landcover) then    !true when landuse data is used
               f = (fbac(c)-baf_crop(c))/(1.0_r8-cropf_col(c))
+	      deforest_emiss_factor = 1._r8
            else
               f = (farea_burned(c)-baf_crop(c))/(1.0_r8-cropf_col(c))
+	      deforest_emiss_factor = 1._r8
            end if
         else
            ! For crops
@@ -987,27 +1191,27 @@ contains
 
         cc_other_sc = cc_other(itype)
 
-        m_leafc_to_fire(p)               =  leafc(p)              * f * cc_leaf(itype)
-        m_leafc_storage_to_fire(p)       =  leafc_storage(p)      * f * cc_other_sc
-        m_leafc_xfer_to_fire(p)          =  leafc_xfer(p)         * f * cc_other_sc
-        m_livestemc_to_fire(p)           =  livestemc(p)          * f * cc_lstem(itype)
-        m_livestemc_storage_to_fire(p)   =  livestemc_storage(p)  * f * cc_other_sc
-        m_livestemc_xfer_to_fire(p)      =  livestemc_xfer(p)     * f * cc_other_sc
-        m_deadstemc_to_fire(p)           =  deadstemc(p)          * m_veg * f * cc_dstem(itype)
-        m_deadstemc_storage_to_fire(p)   =  deadstemc_storage(p)  * f * cc_other_sc
-        m_deadstemc_xfer_to_fire(p)      =  deadstemc_xfer(p)     * f * cc_other_sc
-        m_frootc_to_fire(p)              =  frootc(p)             * f * 0._r8
-        m_frootc_storage_to_fire(p)      =  frootc_storage(p)     * f * cc_other_sc
-        m_frootc_xfer_to_fire(p)         =  frootc_xfer(p)        * f * cc_other_sc
-        m_livecrootc_to_fire(p)          =  livecrootc(p)         * f * 0._r8
-        m_livecrootc_storage_to_fire(p)  =  livecrootc_storage(p) * f * cc_other_sc
-        m_livecrootc_xfer_to_fire(p)     =  livecrootc_xfer(p)    * f * cc_other_sc
-        m_deadcrootc_to_fire(p)          =  deadcrootc(p)         * m_veg * f * 0._r8
-        m_deadcrootc_storage_to_fire(p)  =  deadcrootc_storage(p) * f*  cc_other_sc
-        m_deadcrootc_xfer_to_fire(p)     =  deadcrootc_xfer(p)    * f * cc_other_sc
-        m_gresp_storage_to_fire(p)       =  gresp_storage(p)      * f * cc_other_sc
-        m_gresp_xfer_to_fire(p)          =  gresp_xfer(p)         * f * cc_other_sc
-        m_cpool_to_fire(p)               =  cpool(p)              * f * cc_other_sc
+        m_leafc_to_fire(p)               =  leafc(p)              * f * cc_leaf(itype) * deforest_emiss_factor
+        m_leafc_storage_to_fire(p)       =  leafc_storage(p)      * f * cc_other_sc * deforest_emiss_factor
+        m_leafc_xfer_to_fire(p)          =  leafc_xfer(p)         * f * cc_other_sc * deforest_emiss_factor
+        m_livestemc_to_fire(p)           =  livestemc(p)          * f * cc_lstem(itype) * deforest_emiss_factor
+        m_livestemc_storage_to_fire(p)   =  livestemc_storage(p)  * f * cc_other_sc * deforest_emiss_factor
+        m_livestemc_xfer_to_fire(p)      =  livestemc_xfer(p)     * f * cc_other_sc * deforest_emiss_factor
+        m_deadstemc_to_fire(p)           =  deadstemc(p)          * m_veg * f * cc_dstem(itype) * deforest_emiss_factor
+        m_deadstemc_storage_to_fire(p)   =  deadstemc_storage(p)  * f * cc_other_sc * deforest_emiss_factor
+        m_deadstemc_xfer_to_fire(p)      =  deadstemc_xfer(p)     * f * cc_other_sc * deforest_emiss_factor
+        m_frootc_to_fire(p)              =  frootc(p)             * f * 0._r8 * deforest_emiss_factor
+        m_frootc_storage_to_fire(p)      =  frootc_storage(p)     * f * cc_other_sc * deforest_emiss_factor
+        m_frootc_xfer_to_fire(p)         =  frootc_xfer(p)        * f * cc_other_sc * deforest_emiss_factor
+        m_livecrootc_to_fire(p)          =  livecrootc(p)         * f * 0._r8 * deforest_emiss_factor
+        m_livecrootc_storage_to_fire(p)  =  livecrootc_storage(p) * f * cc_other_sc * deforest_emiss_factor
+        m_livecrootc_xfer_to_fire(p)     =  livecrootc_xfer(p)    * f * cc_other_sc * deforest_emiss_factor
+        m_deadcrootc_to_fire(p)          =  deadcrootc(p)         * m_veg * f * 0._r8 * deforest_emiss_factor
+        m_deadcrootc_storage_to_fire(p)  =  deadcrootc_storage(p) * f*  cc_other_sc * deforest_emiss_factor
+        m_deadcrootc_xfer_to_fire(p)     =  deadcrootc_xfer(p)    * f * cc_other_sc * deforest_emiss_factor
+        m_gresp_storage_to_fire(p)       =  gresp_storage(p)      * f * cc_other_sc * deforest_emiss_factor
+        m_gresp_xfer_to_fire(p)          =  gresp_xfer(p)         * f * cc_other_sc * deforest_emiss_factor
+        m_cpool_to_fire(p)               =  cpool(p)              * f * cc_other_sc * deforest_emiss_factor
 
         ! nitrogen fluxes
         m_leafn_to_fire(p)               =  leafn(p)              * f * cc_leaf(itype)
@@ -1059,63 +1263,63 @@ contains
         ! carbon pools
         m_leafc_to_litter_fire(p)                   =  leafc(p) * f * &
              (1._r8 - cc_leaf(itype)) * &
-             fm_leaf(itype)
+             fm_leaf(itype) * deforest_emiss_factor
         m_leafc_storage_to_litter_fire(p)           =  leafc_storage(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_leafc_xfer_to_litter_fire(p)              =  leafc_xfer(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_livestemc_to_litter_fire(p)               =  livestemc(p) * f * &
              (1._r8 - cc_lstem(itype)) * &
-             fm_droot(itype)
+             fm_droot(itype) * deforest_emiss_factor
         m_livestemc_storage_to_litter_fire(p)       =  livestemc_storage(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_livestemc_xfer_to_litter_fire(p)          =  livestemc_xfer(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_livestemc_to_deadstemc_fire(p)            =  livestemc(p) * f * &
              (1._r8 - cc_lstem(itype)) * &
-             (fm_lstem(itype)-fm_droot(itype))
+             (fm_lstem(itype)-fm_droot(itype)) * deforest_emiss_factor
         m_deadstemc_to_litter_fire(p)               =  deadstemc(p) * m_veg * f * &
              (1._r8 - cc_dstem(itype)) * &
-             fm_droot(itype)
+             fm_droot(itype) * deforest_emiss_factor
         m_deadstemc_storage_to_litter_fire(p)       =  deadstemc_storage(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_deadstemc_xfer_to_litter_fire(p)          =  deadstemc_xfer(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_frootc_to_litter_fire(p)                  =  frootc(p)             * f * &
-             fm_root(itype)
+             fm_root(itype) * deforest_emiss_factor
         m_frootc_storage_to_litter_fire(p)          =  frootc_storage(p)     * f * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_frootc_xfer_to_litter_fire(p)             =  frootc_xfer(p)        * f * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_livecrootc_to_litter_fire(p)              =  livecrootc(p)         * f * &
-             fm_droot(itype)
+             fm_droot(itype) * deforest_emiss_factor
         m_livecrootc_storage_to_litter_fire(p)      =  livecrootc_storage(p) * f * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_livecrootc_xfer_to_litter_fire(p)         =  livecrootc_xfer(p)    * f * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_livecrootc_to_deadcrootc_fire(p)          =  livecrootc(p)         * f * &
-             (fm_lroot(itype)-fm_droot(itype))
+             (fm_lroot(itype)-fm_droot(itype)) * deforest_emiss_factor
         m_deadcrootc_to_litter_fire(p)              =  deadcrootc(p)   * m_veg * f * &
-             fm_droot(itype)
+             fm_droot(itype) * deforest_emiss_factor
         m_deadcrootc_storage_to_litter_fire(p)      =  deadcrootc_storage(p) * f * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_deadcrootc_xfer_to_litter_fire(p)         =  deadcrootc_xfer(p)    * f * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_gresp_storage_to_litter_fire(p)           =  gresp_storage(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_gresp_xfer_to_litter_fire(p)              =  gresp_xfer(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
         m_cpool_to_litter_fire(p)                   =  cpool(p) * f * &
              (1._r8 - cc_other_sc) * &
-             fm_other(itype)
+             fm_other(itype) * deforest_emiss_factor
 
         ! nitrogen pools
         m_leafn_to_litter_fire(p)                  =  leafn(p) * f * &

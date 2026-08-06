@@ -1,0 +1,39 @@
+#ifndef HOMMEXX_CONFIG_H
+#define HOMMEXX_CONFIG_H
+
+// Identifies whether this is a cuda/hip build. This symbol is visible only in
+// the C++ code. Use HOMMEXX_ENABLE_GPU_F90 in F90 code when doing BFB-testing
+// builds.
+#cmakedefine HOMMEXX_ENABLE_GPU
+
+// Whether the CUDA exec space has been selected
+#cmakedefine HOMMEXX_CUDA_SPACE
+
+// Whether the OpenMP exec space has been selected
+#cmakedefine HOMMEXX_OPENMP_SPACE
+
+// Whether the Threads exec space has been selected
+#cmakedefine HOMMEXX_THREADS_SPACE
+
+// Whether the Serial exec space has been selected
+#cmakedefine HOMMEXX_SERIAL_SPACE
+
+// Whether the Default Kokkos exec space has been selected
+#cmakedefine HOMMEXX_DEFAULT_SPACE
+
+// Whether the debug parts of cxx code should be compiled or not
+#cmakedefine HOMMEXX_DEBUG
+
+// Whether the MPI operations have to be performed directly on the device
+#cmakedefine01 HOMMEXX_MPI_ON_DEVICE
+
+#cmakedefine HOMMEXX_CUDA_SHARE_BUFFER
+
+// Minimum and maximum number of warps to provide to a team
+#cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}
+#cmakedefine HOMMEXX_CUDA_MAX_WARP_PER_TEAM ${HOMMEXX_CUDA_MAX_WARP_PER_TEAM}
+
+// User-defined VECTOR_SIZE
+#define HOMMEXX_VECTOR_SIZE ${HOMMEXX_VECTOR_SIZE}
+
+#endif // HOMMEXX_CONFIG_H

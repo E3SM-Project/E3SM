@@ -572,11 +572,12 @@ contains
     character(len=64) :: event
     real(r8) :: dt
     integer :: c13, c14
-    c13 = 0
-    c14 = 1
 !LXu@02/20+++++
     type(fireemis_type),         intent(inout) :: fireemis_vars
 !LXu@02/20-----
+
+    c13 = 0
+    c14 = 1
     !-----------------------------------------------------------------------
     dt = dtime_mod
     ! Call the main CN routines
@@ -846,6 +847,8 @@ contains
 
 !LXu@02/20+++++
 !            ! fire carbon emissions when use_cn = True
+!       call CNFireEmisUpdate(bounds, num_soilp,filter_soilp, &
+!               carbonflux_vars, cnstate_vars, fireemis_vars )
        call CNFireEmisUpdate(bounds, num_soilp,filter_soilp, &
                cnstate_vars, fireemis_vars )
 !LXu@02/20-----

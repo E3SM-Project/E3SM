@@ -89,11 +89,6 @@ logical           :: history_aero_optics  = .false.    ! output the aerosol
 logical           ::  is_output_interactive_volc = .false.    ! output the stratosphere optics
 logical           :: history_eddy         = .false.    ! output the eddy variables
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
-!LXu@07/2021+++
-logical           :: history_gaschmbudget = .false.    ! output gas chemistry tracer concentrations and tendencies
-logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies                                                       ! temperature, water vapor, cloud ice and cloud
-!LXu@07/2021---
-                                                       ! liquid budgets.
 logical           :: history_gaschmbudget = .false.    ! output gas chemistry tracer concentrations and tendencies
 logical           :: history_gaschmbudget_2D = .false. ! output 2D gas chemistry tracer concentrations and tendencies
 logical           :: history_gaschmbudget_2D_levels = .false. ! output 2D gas chemistry tracer concentrations and tendencies within certain layers

@@ -60,8 +60,10 @@ public:
     // tol is on dx, not (a,b), so adjust slightly.
     if ( ! info.success || err > 1e4*tol_) {
       jinfo.nfails++;
+#ifndef KOKKOS_ENABLE_SYCL
       printf("calc_sphere_to_ref ei %d i %d j %d: nits %d re %1.1e\n",
              ei, i, j, info.n_iterations, err);
+#endif
     }
     jinfo.sum_nits += info.n_iterations;
     jinfo.max_nits = max(jinfo.max_nits, info.n_iterations);
@@ -75,7 +77,7 @@ public:
   }
 
   KOKKOS_INLINE_FUNCTION
-  void join (volatile value_type& dst, volatile value_type const& src) const {
+  void join (value_type& dst, value_type const& src) const {
     dst.max_nits = max(dst.max_nits, src.max_nits);
     dst.sum_nits += src.sum_nits;
     dst.nfails += src.nfails;

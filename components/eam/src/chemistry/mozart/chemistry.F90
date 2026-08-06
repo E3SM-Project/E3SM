@@ -1179,7 +1179,7 @@ end function chem_is_active
     enddo
 
     ! fire surface emissions if not elevated forcing
-    if (masterproc) write(iulog,*) 'call fire_emissions_srf or not? ',  index_x2a_Fall_flxfire, shr_fire_emis_mechcomps_n
+!    if (masterproc) write(iulog,*) 'call fire_emissions_srf or not? ',  index_x2a_Fall_flxfire, shr_fire_emis_mechcomps_n
 
     if ( index_x2a_Fall_flxfire>0 .and. shr_fire_emis_mechcomps_n>0 ) then
 	if (masterproc) write(iulog,*) 'fire_emissions_srf: start ++++' 
@@ -1549,57 +1549,6 @@ end function chem_is_active
     call pbuf_get_field(pbuf, ndx_nevapr,     nevapr, start=(/1,1/),         kount=(/ncol,pver/))
     call pbuf_get_field(pbuf, ndx_cldtop,     cldtop )
 
-!LXu@07/21+++++
-!-----------------------------------------------------------------------
-! output gas concentration and tendency
-!-----------------------------------------------------------------------
-    if (history_gaschmbudget .or. history_gaschmbudget_2D) then
-      do m = 1,pcnst
-         n = map2chm(m)
-         if (n > 0 .and. (.not. any( aer_species == n ))) then
-           ftem(:ncol,:) = state%q(:ncol,:,m)*state%pdeldry(:ncol,:)*rga
-
-           if (history_gaschmbudget) then
-             call outfld(trim(solsym(n))//'_MSB', ftem, pcols, lchnk )
-
-             gas_ac_idx = pbuf_get_index(gas_ac_name(n))
-             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
-             if (nstep == 0) then
-                Diff(:ncol,:) = 0.0_r8
-                !if (masterproc) then
-                !  write(iulog,*) 'chem_timestep_tend: m = ',m,' n = ',n,' gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-                !end if
-
-             else
-                Diff(:ncol,:) = (ftem(:ncol,:) - gas_ac(:ncol,:))/dt
-             end if
-             call outfld(trim(solsym(n))//'_TDO', Diff, pcols, lchnk )
-           end if
-           !
-           if (history_gaschmbudget_2D) then
-             do k=2,pver
-               ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-             end do
-             call outfld(trim(solsym(n))//'_2DMSB', ftem(:ncol,1), pcols, lchnk )
-
-             gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
-             call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
-             if( nstep == 0 ) then
-                Diff(:ncol,1) = 0.0_r8
-                !if (masterproc) then
-                !  write(iulog,*) 'chem_timestep_tend: m = ',m,' n = ',n,' gas_ac_name_2D=',gas_ac_name_2D(n),'solsym=',solsym(n),' cnst_name=',trim(cnst_name(m))
-                !end if
-
-             else
-                Diff(:ncol,1) = (ftem(:ncol,1) - gas_ac_2D(:ncol))/dt
-             end if
-             call outfld(trim(solsym(n))//'_2DTDO', Diff(:ncol,1), pcols, lchnk )
-           end if
-         end if
-      end do
-    end if
-!LXu@07/21-----
-
 !-----------------------------------------------------------------------
 ! output gas concentration and tendency
 !-----------------------------------------------------------------------
@@ -1755,26 +1704,7 @@ end function chem_is_active
     end do
 
     call t_startf( 'chemdr' )
-!LXu@02/20+++++
-!original
-!    call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
-!                          state%phis, state%zm, state%zi, calday, &
-!                          state%t, state%pmid, state%pdel, state%pint, &
-!                          cldw, tropLev, ncldwtr, state%u, state%v, &
-!                          chem_dt, state%ps, xactive_prates, &
-!                          fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
-!                          cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
-!                          chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf)
-! add cam_in%fireflx, cam_in%fireztop by LXu
-!    call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
-!                          state%phis, state%zm, state%zi, calday, &
-!                          state%t, state%pmid, state%pdel, state%pint, &
-!                          cldw, tropLev, ncldwtr, state%u, state%v, &
-!                          chem_dt, state%ps, xactive_prates, &
-!                          fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
-!                          cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
-!                          chem_name, drydepflx, cam_in%cflx, cam_in%fireflx, cam_in%fireztop, ptend%q, pbuf)
-!LXu@07/2021
+
     call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
                           state%phis, state%zm, state%zi, calday, &
                           state%t, state%pmid, state%pdel, state%pdeldry, state%pint, &

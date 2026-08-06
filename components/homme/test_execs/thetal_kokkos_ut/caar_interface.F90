@@ -32,11 +32,12 @@ contains
   end subroutine init_caar_f90
 
   subroutine run_caar_f90 (nm1, n0, np1, dt, eta_ave_w, scale1, scale2, scale3, &
-                           hydrostatic, adv_conservative, rsplit_in,            &
+                           hydrostatic, adv_conservative, rsplit_in, pgrad,     &
                            dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr,    &
                            vn0_ptr, etadot_dpdn_ptr, omega_p_ptr) bind(c)
     use iso_c_binding,          only: c_ptr, c_f_pointer, c_int, c_bool
-    use control_mod,            only: theta_hydrostatic_mode, theta_advect_form, rsplit
+    use control_mod,            only: pgrad_correction, rsplit
+    use control_mod,            only: theta_hydrostatic_mode, theta_advect_form
     use dimensions_mod,         only: nelemd, nlev, nlevp, np
     use prim_advance_mod,       only: compute_andor_apply_rhs
     use thetal_test_interface,  only: deriv, hvcoord
@@ -46,7 +47,7 @@ contains
     ! Input(s)
     !
     real (kind=real_kind), intent(in) :: dt, eta_ave_w, scale1, scale2, scale3
-    integer (kind=c_int),  intent(in) :: nm1, n0, np1, rsplit_in
+    integer (kind=c_int),  intent(in) :: nm1, n0, np1, pgrad, rsplit_in
     logical (kind=c_bool), intent(in) :: hydrostatic, adv_conservative
     type (c_ptr),          intent(in) :: dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr
     type (c_ptr),          intent(in) :: vn0_ptr, etadot_dpdn_ptr, omega_p_ptr
@@ -87,6 +88,7 @@ contains
     enddo
 
     ! set control variables
+    pgrad_correction = pgrad
     rsplit = rsplit_in
     theta_hydrostatic_mode = hydrostatic
     if (adv_conservative) then

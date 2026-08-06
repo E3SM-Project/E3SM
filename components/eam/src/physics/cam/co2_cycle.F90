@@ -7,7 +7,8 @@ module co2_cycle
 ! CO2 was used in radiation calculation.
 !
 ! Purpose:
-! Provides distributions of CO2_LND, CO2_OCN, CO2_FF, CO2
+! Provides distributions of CO2_LND, CO2_OCN, CO2_FF, CO2 (old)
+! Provides distributions of CO2_NEE, CO2_OCN, CO2_FF, CO2_FRE, CO2, LXu@06/2026
 ! Read co2 flux from ocn and fossil fuel.
 ! Get  co2 flux from lnd through coupler. 
 !
@@ -68,14 +69,18 @@ character(len=cl) :: co2flux_fuel_file = 'unset' ! co2 flux from fossil fuel
 
 !-----------------------------------------------------------------------
 ! new constituents
-integer, parameter :: ncnst = 4                      ! number of constituents implemented
+!integer, parameter :: ncnst = 4                      ! number of constituents implemented
+integer, parameter :: ncnst = 5                      ! number of constituents implemented
 
 character(len=7), dimension(ncnst), parameter :: & ! constituent names
-     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
+     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_NEE', 'CO2_FRE', 'CO2    '/)
+!     c_names = (/'CO2_OCN', 'CO2_FFF', 'CO2_LND', 'CO2    '/)
 
 integer :: co2_ocn_glo_ind ! global index of 'CO2_OCN'
 integer :: co2_fff_glo_ind ! global index of 'CO2_FFF'
-integer :: co2_lnd_glo_ind ! global index of 'CO2_LND'
+!integer :: co2_lnd_glo_ind ! global index of 'CO2_LND'
+integer :: co2_nee_glo_ind ! global index of 'CO2_NEE'
+integer :: co2_fre_glo_ind ! global index of 'CO2_FRE'
 integer :: co2_glo_ind     ! global index of 'CO2'
 
 integer, dimension(ncnst) :: c_i                   ! global index
@@ -196,8 +201,12 @@ subroutine co2_register
         co2_ocn_glo_ind = c_i(idx)
      case ('CO2_FFF')
         co2_fff_glo_ind = c_i(idx)
-     case ('CO2_LND')
-        co2_lnd_glo_ind = c_i(idx)
+!     case ('CO2_LND')
+!        co2_lnd_glo_ind = c_i(idx)
+     case ('CO2_NEE')
+        co2_nee_glo_ind = c_i(idx)
+     case ('CO2_FRE')
+        co2_fre_glo_ind = c_i(idx)
      case ('CO2')
         co2_glo_ind     = c_i(idx)
      end select
@@ -396,7 +405,11 @@ subroutine co2_init_cnst(name, q, gcid)
       q = chem_surfvals_get('CO2MMR')
    case ('CO2_FFF')
       q = chem_surfvals_get('CO2MMR')
-   case ('CO2_LND')
+!   case ('CO2_LND')
+!      q = chem_surfvals_get('CO2MMR')
+   case ('CO2_NEE')
+      q = chem_surfvals_get('CO2MMR')
+   case ('CO2_FRE')
       q = chem_surfvals_get('CO2MMR')
    case ('CO2')
       q = chem_surfvals_get('CO2MMR')

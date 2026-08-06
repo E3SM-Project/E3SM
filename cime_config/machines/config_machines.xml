@@ -22,7 +22,7 @@
     - the settings for MPILIBS should reflect the supported mpi libraries
       as a comma separated string
 
-   The default settings for COMPILERS and MPILIBS is blank (in config_machines.xml)
+   The default settings for COMPILERS and MPILIBSF is blank (in config_machines.xml)
 
    Normally variable substitutions are not made until the case scripts are run, however variables
    of the form $ENV{VARIABLE_NAME} are substituted in create_newcase from the environment
@@ -180,12 +180,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
@@ -200,12 +200,15 @@
         <command name="unload">PrgEnv-nvidia</command>
         <command name="unload">PrgEnv-cray</command>
         <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">gcc-native</command>
         <command name="unload">intel</command>
         <command name="unload">intel-oneapi</command>
         <command name="unload">nvidia</command>
         <command name="unload">aocc</command>
         <command name="unload">cudatoolkit</command>
         <command name="unload">climate-utils</command>
+        <command name="unload">cray-libsci</command>
+        <command name="unload">matlab</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
         <command name="unload">perftools-base</command>
@@ -214,14 +217,14 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/11.2.0</command>
-        <command name="load">cray-libsci/23.02.1.1</command>
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/14</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/8.3.3</command>
-        <command name="load">intel/2023.1.0</command>
+        <command name="load">PrgEnv-intel/8.6.0</command>
+        <command name="load">intel/2025.3</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -238,13 +241,20 @@
 
       <modules>
         <command name="load">craype-accel-host</command>
-        <command name="load">craype/2.7.20</command>
-        <command name="load">cray-mpich/8.1.25</command>
-        <command name="load">cray-hdf5-parallel/1.12.2.3</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.3</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.3</command>
-        <command name="load">cmake/3.24.3</command>
-        <command name="load">evp-patch</command>
+        <command name="load">craype/2.7.35</command>
+        <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+
+      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
+        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+      </modules>
+      <modules DEBUG="FALSE">
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -256,32 +266,41 @@
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
-      <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
     </environment_variables>
     <environment_variables compiler="intel" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/intel-2023.1.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <!---env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
+      <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
+      <!env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
+      <env name="H5Z_BLOSC2_ROOT">$SHELL{if [ -z "$H5Z_BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-blosc2/2.0.0/intel-2024.1.0; else echo "$H5Z_BLOSC2_ROOT"; fi}</env>
+      <env name="MGARD_ROOT">$SHELL{if [ -z "$MGARD_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/mgard/1.5.2/intel-2023.2.0; else echo "$MGARD_ROOT"; fi}</env>
+      <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/intel-2023.2.0; else echo "$SZ_ROOT"; fi}</env>
+      <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/intel-2023.2.0; else echo "$ZFP_ROOT"; fi}</env>
+      <env name="H5Z_ZFP_ROOT">$SHELL{if [ -z "$H5Z_ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/h5z-zfp/1.1.1/intel-2024.1.0; else echo "$H5Z_ZFP_ROOT"; fi}</env-->
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/nvidia-22.7; else echo "$ADIOS2_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia">
-      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$BLAS_ROOT"; fi}</env>
-      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo /opt/nvidia/hpc_sdk/Linux_x86_64/22.7/compilers; else echo "$LAPACK_ROOT"; fi}</env>
+      <env name="BLAS_ROOT">$SHELL{if [ -z "$BLAS_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$BLAS_ROOT"; fi}</env>
+      <env name="LAPACK_ROOT">$SHELL{if [ -z "$LAPACK_ROOT" ]; then echo $NVIDIA_PATH/compilers; else echo "$LAPACK_ROOT"; fi}</env>
       <env name="BLA_VENDOR">NVHPC</env>
     </environment_variables>
     <environment_variables compiler="intel">
@@ -289,6 +308,12 @@
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.9.1/cray-mpich-8.1.25/aocc-4.0.0; else echo "$ADIOS2_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="intel">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -566,7 +591,6 @@
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
-      <env name="FI_CXI_RX_MATCH_MODE">software</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/albany-e3sm-serial-release-gcc; else echo "$Albany_ROOT"; fi}</env>
       <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/mali_tpls/trilinos-e3sm-serial-release-gcc; else echo "$Trilinos_ROOT"; fi}</env>
@@ -871,7 +895,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
-      <env name="FI_CXI_RX_MATCH_MODE">software</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>

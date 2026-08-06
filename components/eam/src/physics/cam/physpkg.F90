@@ -1853,6 +1853,13 @@ end if ! l_tracer_aero
        if (cflx_cpl_opt==1) then
           call cflx_tend( state, cam_in, ztodt, ptend)       
           call physics_update(state, ptend, ztodt, tend)
+!LXu@6/26
+       elseif (cflx_cpl_opt==2) then
+          ! Apply CO2 tracer fluxes here in tphysac; non-CO2 fluxes were already applied
+          ! in tphysbc (see GH #8201). This avoids duplicate CO2 additions during init.
+          call cflx_tend( state, cam_in, ztodt, ptend, co2_only=.true.)
+          call physics_update(state, ptend, ztodt, tend)
+          if (masterproc) write(iulog,*) 'cflx-log: CO2 surface flux tendencies applied in tphysac after clubb_surface'
        end if
 
        call cnd_diag_checkpoint( diag, 'CFLXAPP', state, pbuf, cam_in, cam_out )
@@ -2758,9 +2765,19 @@ end if
        ! on tracers for which cam_in%cflx(:,m) is zero at this point.
 
       !if ( do_clubb_sgs .and. (cflx_cpl_opt==2) ) then
-       if ( cflx_cpl_opt==2 ) then
-          call cflx_tend( state, cam_in, ztodt, ptend)
+      ! if ( cflx_cpl_opt==2 ) then
+!LXu@08/26
+       ! For cflx_cpl_opt==2, pre-apply non-CO2 surface fluxes here only when
+       ! CLUBB/SHOC is active. If vertical diffusion runs, it applies
+       ! constituent surface fluxes in tphysac.
+       if ( (do_clubb_sgs .or. do_shoc_sgs) .and. cflx_cpl_opt==2 ) then
+          ! Apply surface fluxes for all tracers EXCEPT CO2; CO2 is applied in tphysac
+          ! to avoid redundant additions during the multi-call init sequence (see GH #8201)
+          call cflx_tend( state, cam_in, ztodt, ptend, skip_co2=.true.) 
+          !call cflx_tend( state, cam_in, ztodt, ptend)
           call physics_update(state, ptend, ztodt, tend)
+         ! for examining surface cflx update timing - aldivi
+         if (masterproc) write(iulog,*) 'cflx-log: surface flux tendencies (non-CO2) applied in tphysbc.'
        end if
 
        !========================================================================================

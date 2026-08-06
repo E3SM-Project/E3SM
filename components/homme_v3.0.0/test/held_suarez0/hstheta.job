@@ -1,0 +1,222 @@
+#!/bin/tcsh -f 
+#
+#  Held-Suzrez job "reference" submission script  (Mark Taylor 2008)
+#  updated to CMAKE, 2015
+#
+#  directories
+#        $HOMME        homme root directory 
+#        $wdir         run and data output directory
+#
+#  files 
+#       explicit26.nl.sed   namelist template used by this script
+#                           to construct "input.nl" read by HOMME
+#
+#
+# ne30: 12 nodes, 2h  (20 nodes, 1.5h)
+# ne120: 80 nodes 20h?   (run for 400days, output after 200 days?)
+#
+#SBATCH --job-name debug
+#XXSBATCH -p batch,short
+#XXSBATCH --account=FY150001
+#SBATCH -p acme-centos6
+#SBATCH --account=condo
+#SBATCH -N 20
+#SBATCH --time=2:00:00
+
+set nlev=26
+set ndays = 1600
+set nmax =  5       # no. of timesteps.  ignored, unless ndays=0
+set rfreq = 400     # no. of days, or n. of timesteps if ndays=0
+
+# 0 = normal, 1=restart
+set runtype = 0
+
+set ne = 30
+set NPTS = 4
+set qsize = 0         # number of tracers
+set topo = ''
+set toponame = ''
+if ( $ne == 8 ) then
+   # 3.75 degree     
+   set tstep = 900
+   set nu = 2e16
+endif
+if ( $ne == 15 ) then
+    # 2 degree  anvil 38 nodes, 1600 days: 5min 
+    # tbird 100 nodes, 1200days: 90min
+    set tstep = 600
+    set nu = 1e16
+ endif
+ if ( $ne == 16 ) then
+    # 2 degree  anvil 38 nodes, 1600 days: 5min 
+    # tbird 100 nodes, 1200days: 90min
+    set tstep = 600
+    set nu = 7e15    # turn on subcycling for larger values
+    #set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne16np4_16xconsistentSGH.c20160612.nc'
+ endif
+ if ( $ne == 30 ) then
+    # 1 degree    H model, 20 nodes, 30min for 1600days
+    set tstep = 300  # H model
+    set nu = 1e15       # 1.5e15 crashed, 1.6e15 ran
+    set nu_div = 1e15
+
+    set topo = '/home/ccsm-data/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+    #set topo = '/projects/ccsm/inputdata/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc'
+    #set topo = '/lcrc/group/acme/taylorm/topodata/ne30/USGS-gtopo30_ne30np4_8xdel2.nc'
+    set toponame = 16xdel2-H-TOMsplit
+ endif
+ if ( $ne == 60 ) then
+    # 0.5 degree     tbird 200 nodes, 560 days: 20h
+    #                encanto 25 nodes,  1 days: 5min
+    #                encanto 50 nodes, 2h: crashed at 65 days
+    set tstep = 150        # dynamics timestep      
+    set nu = 1e14   
+ endif
+ if ( $ne == 120 ) then
+    # 0.25 degree 
+    set tstep = 75        # dynamics timestep   
+    #set nu = 1.1e13
+    set nu = 1.5e13
+    set topo = '/lcrc/group/acme/taylorm/topodata/ne120/USGS-gtopo30_ne120np4_384xdel2_latlon.nc'
+    set toponame = 384xdel2-H
+ endif
+ if ( $ne == 240 ) then
+    # 0.25 degree   encanto 225 nodes 1 day: 1h?   150 nodes 1 day: 74min
+    #                                                        30day: 37h.  
+    set tstep = 40        # dynamics timestep   
+    set nu = 1.6e12
+ endif
+
+
+ # number of hours between calls to prim_printstate
+ set sfreq = 24
+ @ sfreq *= 3600
+ @ sfreq /= $tstep
+
+# set sfreq = 1
+
+
+ if ( $ndays == 0 ) then
+   set sfreq = $nmax
+ endif
+
+
+ set HOMME = ~/codes/acme/components/homme
+ set wdir = ~/scratch1/preqx
+
+ set MACH = $HOMME/cmake/machineFiles/anvil.cmake
+ set input = $HOMME/test/held_suarez0
+ set bld = $wdir/bld
+ #set exe = preqx
+ set exe = theta-l
+
+ set name = hs${toponame}-$exe-ne${ne}-nu${nu}-${nu_div}
+ echo $name
+
+ mkdir -p $bld
+ cd $bld
+ #rm $bld/CMakeCache.txt    # remove this file to force re-configure
+ if (! -f CMakeCache.txt) then
+    echo "running CMAKE to configure the model"
+
+    cmake -C $MACH -DQSIZE_D=$qsize -DPREQX_PLEV=$nlev -DPREQX_NP=4  \
+    -DBUILD_HOMME_SWDGX=FALSE                     \
+    -DBUILD_HOMME_SWEQX=FALSE                     \
+    -DBUILD_HOMME_PRIMDGX=FALSE                   \
+    -DPREQX_USE_ENERGY=TRUE  $HOMME
+    if ($status) exit
+    make -j4 clean
+    exit
+ endif
+ #if (! -f $bld/src/$exe/$exe ) then
+    make -j4 $exe
+    if ($status) exit
+ #endif
+
+ # setup the work directory
+ mkdir $wdir/vcoord
+ cp -f $HOMME/test/vcoord/*.ascii $wdir/vcoord
+
+
+ set wdir = $wdir/$name
+ mkdir $wdir
+ mkdir $wdir/movies
+ mkdir $wdir/restart
+
+
+
+ set rname = R0001
+ if ( 1 == $runtype ) then
+    cd $wdir/restart
+    set rname = `ls -t R*[0-9] | head -1 `
+    echo $rname
+ endif
+
+ if ( 0 == $ndays ) then
+    set RUNLEN = "nmax = $nmax"
+    echo RUNNING $nmax timesteps
+ else
+    set RUNLEN = "ndays = $ndays"
+    echo RUNNING $ndays DAYS
+ endif
+
+ cd $input
+ rm -f $wdir/input.nl
+ sed s/NE/$ne/ explicit${nlev}.nl.sed | sed s/TSTEP/$tstep/ | sed s/SFREQ/$sfreq/ |\
+ sed s/R0001/$rname/ | sed s/RUNTYPE/$runtype/ |\
+ sed s/NU1/$nu/ |\
+ sed s/NU2/$nu_div/ |\
+sed s:infilenames.\*:"infilenames = '$topo'": |\
+sed s/\ndays.\*/"$RUNLEN"/ |\
+sed s/restartfreq.\*/"restartfreq = $rfreq"/ |\
+sed s/\qsize.\*/"qsize = $qsize"/ > $wdir/input.nl
+
+
+cd $wdir
+
+
+cat  $wdir/input.nl
+
+
+############################################################
+# run the code
+############################################################
+date
+set echo
+srun -K -c 1 -N $SLURM_NNODES   $bld/src/$exe/$exe < $wdir/input.nl 
+date
+
+# save timing data
+mv HommeTime HommeTime.$$
+
+############################################################
+# extract average cost per timestep, for benchmark results
+############################################################
+unset echo
+# extract prim_run time 
+if ( $ndays > 0 ) then
+   # user specified days, not nmax
+   @ nmax = $ndays * 24 * 3600  / $tstep
+endif 
+
+set rtime = `head -100 HommeTime.$$ | grep prim_run | head -1 | awk '{print $7}' - `
+set time_per_timestep = `python -c "print($rtime / $nmax)" `
+echo "time for $nmax timesteps = $rtime seconds"
+exit
+
+# compute SYPD:  
+# number of timesteps per year:  360*24*3600/tstep
+# timesteps per second:           (1/$time_per_timestep)
+# years per second:     :  (1/$time_per_timestep) /  (360*24*3600/tstep)
+#                          $tstep / ( $time_per_timestep 360*24*3600 )
+# cost per day:            $tstep / ( $time_per_timestep 360 )
+#set SYPD = `echo "scale=8; $tstep / ( $time_per_timestep * 360 )" | bc `
+set SYPD = `python -c "print($tstep / ( $time_per_timestep * 360 ))" `
+echo "NCPU=$NCPU SYPD = $SYPD"
+
+# time average the h3 file:
+# takes a long time, so do this on the front end:
+#if ( -f movies/held_suarez03.nc ) then
+#  ncwa -O -v zeta -a time movies/held_suarez03.nc  movies/held_suarez03-ave.nc 
+#  ncwa -A -v omega -a time movies/held_suarez03.nc  movies/held_suarez03-ave.nc 
+#endif
