@@ -18,10 +18,17 @@ module accumulMod
   !   continuously accumulated. The trigger value "-99999." resets
   !   the accumulation to zero.
   !
+  ! Inactive / zero-weight subgrid elements are skipped during update,
+  ! following the CLM (ctsm5.4.042) active-element accumulator fix.
+  !
   ! !USES:
   use shr_kind_mod, only: r8 => shr_kind_r8
   use shr_sys_mod , only: shr_sys_abort
   use elm_varctl  , only: iulog
+  use TopounitType   , only : top_pp
+  use LandunitType   , only : lun_pp
+  use ColumnType     , only : col_pp
+  use VegetationType , only : veg_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -56,8 +63,11 @@ module accumulMod
      integer            :: end1d    !subgrid type ending index
      integer            :: num1d    !total subgrid points
      integer            :: numlev   !number of vertical levels in field
+     logical, pointer   :: active(:) => null() ! whether each point is active (null => all active)
+     logical, pointer   :: active_storage(:) => null() ! owned storage when no type-level active flag exists
      real(r8)           :: initval  !initial value of accumulated field
-     real(r8), pointer  :: val(:,:) !accumulated field
+     real(r8), pointer  :: val(:,:) => null() !accumulated field
+     integer , pointer  :: nsteps(:,:) => null() ! active accumulation step counts since last reset
      integer            :: period   !field accumulation period (in model time steps)
   end type accum_field
 
@@ -154,22 +164,30 @@ contains
        beg1d = begg
        end1d = endg
        num1d = numg
+       ! Gridcells have no type-level active flag; treat all as active.
+       allocate(accum(nf)%active_storage(beg1d:end1d))
+       accum(nf)%active_storage(:) = .true.
+       accum(nf)%active => accum(nf)%active_storage
     case ('topounit')
        beg1d = begt
        end1d = endt
        num1d = numt
+       accum(nf)%active => top_pp%active
     case ('landunit')
        beg1d = begl
        end1d = endl
        num1d = numl
+       accum(nf)%active => lun_pp%active
     case ('column')
        beg1d = begc
        end1d = endc
        num1d = numc
+       accum(nf)%active => col_pp%active
     case ('pft')
        beg1d = begp
        end1d = endp
        num1d = nump
+       accum(nf)%active => veg_pp%active
     case default
        write(iulog,*)'ACCUMULINIT: unknown subgrid type ',subgrid_type
        call shr_sys_abort ()
@@ -190,7 +208,10 @@ contains
     ! Allocate and initialize accumulation field
 
     allocate(accum(nf)%val(beg1d:end1d,numlev))
-    accum(nf)%val(beg1d:end1d,numlev) = init_value
+    accum(nf)%val(beg1d:end1d,1:numlev) = init_value
+
+    allocate(accum(nf)%nsteps(beg1d:end1d,numlev))
+    accum(nf)%nsteps(beg1d:end1d,1:numlev) = 0
 
   end subroutine init_accum_field
 
@@ -378,6 +399,7 @@ contains
     ! !DESCRIPTION:
     ! Accumulate single level field over specified time interval.
     ! The appropriate field is accumulated in the array [accval].
+    ! Values of 'field' are ignored at inactive points.
     !
     ! !ARGUMENTS:
     implicit none
@@ -389,6 +411,7 @@ contains
     integer :: i,k,nf              !indices
     integer :: accper              !temporary accumulation period
     integer :: beg,end             !subgrid beginning,ending indices
+    logical :: time_to_reset
     !------------------------------------------------------------------------
 
     ! find field index. return if "name" is not on list
@@ -433,33 +456,54 @@ contains
     if (accum(nf)%acctype == 'timeavg') then
 
        !time average field reset every accumulation period
-       !normalize at end of accumulation period
+       !normalize at end of accumulation period using active-point nsteps
 
-       if ((mod(nstep,accum(nf)%period) == 1 .or. accum(nf)%period == 1) .and. (nstep /= 0))then
-          accum(nf)%val(beg:end,1) = 0._r8
-       end if
-       accum(nf)%val(beg:end,1) =  accum(nf)%val(beg:end,1) + field(beg:end)
-       if (mod(nstep,accum(nf)%period) == 0) then
-          accum(nf)%val(beg:end,1) = accum(nf)%val(beg:end,1) / accum(nf)%period
-       endif
+       time_to_reset = (mod(nstep,accum(nf)%period) == 1 .or. accum(nf)%period == 1) .and. (nstep /= 0)
+       do k = beg,end
+          if (accum(nf)%active(k)) then
+             if (time_to_reset) then
+                accum(nf)%val(k,1) = 0._r8
+                accum(nf)%nsteps(k,1) = 0
+             end if
+             accum(nf)%val(k,1) = accum(nf)%val(k,1) + field(k)
+             accum(nf)%nsteps(k,1) = accum(nf)%nsteps(k,1) + 1
+             if (mod(nstep,accum(nf)%period) == 0) then
+                if (accum(nf)%nsteps(k,1) > 0) then
+                   accum(nf)%val(k,1) = accum(nf)%val(k,1) / real(accum(nf)%nsteps(k,1),r8)
+                else
+                   accum(nf)%val(k,1) = accum(nf)%initval
+                end if
+             end if
+          end if
+       end do
 
     else if (accum(nf)%acctype == 'runmean') then
 
-       !running mean - reset accumulation period until greater than nstep
+       !running mean - only update active points; cap nsteps at period
 
-       accper = min (nstep,accum(nf)%period)
-       accum(nf)%val(beg:end,1) = ((accper-1)*accum(nf)%val(beg:end,1) + field(beg:end)) / accper
+       do k = beg,end
+          if (accum(nf)%active(k)) then
+             accum(nf)%nsteps(k,1) = min(accum(nf)%nsteps(k,1) + 1, accum(nf)%period)
+             accper = accum(nf)%nsteps(k,1)
+             accum(nf)%val(k,1) = ((accper-1)*accum(nf)%val(k,1) + field(k)) / real(accper,r8)
+          end if
+       end do
 
     else if (accum(nf)%acctype == 'runaccum') then
 
        !running accumulation field reset at trigger -99999
 
        do k = beg,end
-          if (nint(field(k)) == -99999) then
-             accum(nf)%val(k,1) = 0._r8
+          if (accum(nf)%active(k)) then
+             if (nint(field(k)) == -99999) then
+                accum(nf)%val(k,1) = 0._r8
+                accum(nf)%nsteps(k,1) = 0
+             else
+                accum(nf)%val(k,1) = min(max(accum(nf)%val(k,1) + field(k), 0._r8), 99999._r8)
+                accum(nf)%nsteps(k,1) = accum(nf)%nsteps(k,1) + 1
+             end if
           end if
        end do
-       accum(nf)%val(beg:end,1) = min(max(accum(nf)%val(beg:end,1) + field(beg:end), 0._r8), 99999._r8)
 
     end if
 
@@ -470,6 +514,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Accumulate multi level field over specified time interval.
+    ! Values of 'field' are ignored at inactive points.
     !
     ! !ARGUMENTS:
     implicit none
@@ -482,6 +527,7 @@ contains
     integer :: accper              !temporary accumulation period
     integer :: beg,end             !subgrid beginning,ending indices
     integer :: numlev              !number of vertical levels
+    logical :: time_to_reset
     !------------------------------------------------------------------------
 
     ! find field index. return if "name" is not on list
@@ -532,38 +578,54 @@ contains
 
     if (accum(nf)%acctype == 'timeavg') then
 
-       !time average field reset every accumulation period
-       !normalize at end of accumulation period
-
-       if ((mod(nstep,accum(nf)%period) == 1 .or. accum(nf)%period == 1) .and. (nstep /= 0))then
-          accum(nf)%val(beg:end,1:numlev) = 0._r8
-       endif
-       accum(nf)%val(beg:end,1:numlev) =  accum(nf)%val(beg:end,1:numlev) + field(beg:end,1:numlev)
-       if (mod(nstep,accum(nf)%period) == 0) then
-          accum(nf)%val(beg:end,1:numlev) = accum(nf)%val(beg:end,1:numlev) / accum(nf)%period
-       endif
-
-    else if (accum(nf)%acctype == 'runmean') then
-
-       !running mean - reset accumulation period until greater than nstep
-
-       accper = min (nstep,accum(nf)%period)
-       accum(nf)%val(beg:end,1:numlev) = &
-            ((accper-1)*accum(nf)%val(beg:end,1:numlev) + field(beg:end,1:numlev)) / accper
-
-    else if (accum(nf)%acctype == 'runaccum') then
-
-       !running accumulation field reset at trigger -99999
-
+       time_to_reset = (mod(nstep,accum(nf)%period) == 1 .or. accum(nf)%period == 1) .and. (nstep /= 0)
        do j = 1,numlev
           do k = beg,end
-             if (nint(field(k,j)) == -99999) then
-                accum(nf)%val(k,j) = 0._r8
+             if (accum(nf)%active(k)) then
+                if (time_to_reset) then
+                   accum(nf)%val(k,j) = 0._r8
+                   accum(nf)%nsteps(k,j) = 0
+                end if
+                accum(nf)%val(k,j) = accum(nf)%val(k,j) + field(k,j)
+                accum(nf)%nsteps(k,j) = accum(nf)%nsteps(k,j) + 1
+                if (mod(nstep,accum(nf)%period) == 0) then
+                   if (accum(nf)%nsteps(k,j) > 0) then
+                      accum(nf)%val(k,j) = accum(nf)%val(k,j) / real(accum(nf)%nsteps(k,j),r8)
+                   else
+                      accum(nf)%val(k,j) = accum(nf)%initval
+                   end if
+                end if
              end if
           end do
        end do
-       accum(nf)%val(beg:end,1:numlev) = &
-            min(max(accum(nf)%val(beg:end,1:numlev) + field(beg:end,1:numlev), 0._r8), 99999._r8)
+
+    else if (accum(nf)%acctype == 'runmean') then
+
+       do j = 1,numlev
+          do k = beg,end
+             if (accum(nf)%active(k)) then
+                accum(nf)%nsteps(k,j) = min(accum(nf)%nsteps(k,j) + 1, accum(nf)%period)
+                accper = accum(nf)%nsteps(k,j)
+                accum(nf)%val(k,j) = ((accper-1)*accum(nf)%val(k,j) + field(k,j)) / real(accper,r8)
+             end if
+          end do
+       end do
+
+    else if (accum(nf)%acctype == 'runaccum') then
+
+       do j = 1,numlev
+          do k = beg,end
+             if (accum(nf)%active(k)) then
+                if (nint(field(k,j)) == -99999) then
+                   accum(nf)%val(k,j) = 0._r8
+                   accum(nf)%nsteps(k,j) = 0
+                else
+                   accum(nf)%val(k,j) = min(max(accum(nf)%val(k,j) + field(k,j), 0._r8), 99999._r8)
+                   accum(nf)%nsteps(k,j) = accum(nf)%nsteps(k,j) + 1
+                end if
+             end if
+          end do
+       end do
 
     end if
 
@@ -610,6 +672,26 @@ contains
                long_name=accum(nf)%desc, units=accum(nf)%units, &
                interpinic_flag='interp', &
                data=accum(nf)%val, readvar=readvar)
+       end if
+
+       varname = trim(accum(nf)%name) // '_NSTEPS'
+       if (accum(nf)%numlev == 1) then
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_int, &
+               dim1name=accum(nf)%type1d, &
+               long_name='number of accumulated steps for '//trim(accum(nf)%name), &
+               units='-', &
+               interpinic_flag='interp', &
+               data=accum(nf)%nsteps, readvar=readvar)
+       else
+          call restartvar(ncid=ncid, flag=flag, varname=varname, xtype=ncd_int, &
+               dim1name=accum(nf)%type1d, dim2name=accum(nf)%type2d, &
+               long_name='number of accumulated steps for '//trim(accum(nf)%name), &
+               units='-', &
+               interpinic_flag='interp', &
+               data=accum(nf)%nsteps, readvar=readvar)
+       end if
+       if (flag == 'read' .and. .not. readvar) then
+          accum(nf)%nsteps(accum(nf)%beg1d:accum(nf)%end1d,1:accum(nf)%numlev) = 0
        end if
 
        varname = trim(accum(nf)%name) // '_PERIOD'
