@@ -287,8 +287,6 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       m_params.get<std::string>("marine_organics_file");
   const auto marine_map_file = m_params.get<std::string>("srf_remap_file", "");
 
-     std::cout << "MAMSrfOnlineEmiss: get_field_out marine_organics_data_files "
-             << std::endl;
    const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};           
   morg_fields_={};
@@ -298,34 +296,14 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
         get_field_out("morg_" + field_name).alias(field_name));
   }
 
-  std::cout << "MAMSrfOnlineEmiss: before DataInterpolation ctor for marine organics"
-            << std::endl;
   morg_data_interp_ = std::make_shared<DataInterpolation>(grid_, morg_fields_);
-  std::cout << "MAMSrfOnlineEmiss: after DataInterpolation ctor for marine organics"
-            << std::endl;
-  std::cout << "MAMSrfOnlineEmiss: before set_logger (marine organics)"
-            << std::endl;
   morg_data_interp_->set_logger(m_atm_logger);
-  std::cout << "MAMSrfOnlineEmiss: after set_logger (marine organics)"
-            << std::endl;
-  std::cout << "MAMSrfOnlineEmiss: before setup_periodic_time_database (marine organics)"
-            << std::endl;
   morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
-  std::cout << "MAMSrfOnlineEmiss: after setup_periodic_time_database (marine organics)"
-            << std::endl;
-  std::cout << "MAMSrfOnlineEmiss: before create_horiz_remappers (marine organics)"
-            << std::endl;
   morg_data_interp_->create_horiz_remappers(
       marine_map_file == "none" ? "" : marine_map_file);
-  std::cout << "MAMSrfOnlineEmiss: after create_horiz_remappers (marine organics)"
-            << std::endl;
   DataInterpolation::VertRemapData remap_data;
   remap_data.vr_type = DataInterpolation::None;
-  std::cout << "MAMSrfOnlineEmiss: before create_vert_remapper (marine organics)"
-            << std::endl;
   morg_data_interp_->create_vert_remapper(remap_data);
-  std::cout << "MAMSrfOnlineEmiss: after create_vert_remapper (marine organics)"
-            << std::endl;
   //--------------------------------------------------------------------
   // Setup data interpolation for surface emissions.
   //--------------------------------------------------------------------
@@ -376,40 +354,16 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
     std::vector<Field> soil_erod_fields = {
         get_field_out("soil_erodibility").alias(soil_erod_fld_name)};
-    std::cout << "MAMSrfOnlineEmiss: before DataInterpolation ctor for soil erodibility"
-              << std::endl;
     auto soil_erod_data_interp =
         std::make_shared<DataInterpolation>(grid_, soil_erod_fields);
-    std::cout << "MAMSrfOnlineEmiss: after DataInterpolation ctor for soil erodibility"
-              << std::endl;
-    std::cout << "MAMSrfOnlineEmiss: before set_logger (soil erodibility)"
-              << std::endl;
     soil_erod_data_interp->set_logger(m_atm_logger);
-    std::cout << "MAMSrfOnlineEmiss: after set_logger (soil erodibility)"
-              << std::endl;
-    std::cout << "MAMSrfOnlineEmiss: before setup_static_database (soil erodibility)"
-              << std::endl;
     soil_erod_data_interp->setup_static_database({soil_erodibility_data_file});
-    std::cout << "MAMSrfOnlineEmiss: after setup_static_database (soil erodibility)"
-              << std::endl;
-    std::cout << "MAMSrfOnlineEmiss: before create_horiz_remappers (soil erodibility)"
-              << std::endl;
     soil_erod_data_interp->create_horiz_remappers(
         srf_map_file == "none" ? "" : srf_map_file);
-    std::cout << "MAMSrfOnlineEmiss: after create_horiz_remappers (soil erodibility)"
-              << std::endl;
     DataInterpolation::VertRemapData remap_data;
     remap_data.vr_type = DataInterpolation::None;
-    std::cout << "MAMSrfOnlineEmiss: before create_vert_remapper (soil erodibility)"
-              << std::endl;
     soil_erod_data_interp->create_vert_remapper(remap_data);
-    std::cout << "MAMSrfOnlineEmiss: after create_vert_remapper (soil erodibility)"
-              << std::endl;
-    std::cout << "MAMSrfOnlineEmiss: before run static interpolation (soil erodibility)"
-              << std::endl;
     soil_erod_data_interp->run();
-    std::cout << "MAMSrfOnlineEmiss: after run static interpolation (soil erodibility)"
-              << std::endl;
 
     soil_erodibility_ = get_field_out("soil_erodibility").get_view<const Real *>();
   } else if (dust_emis_scheme == 2) {
@@ -422,12 +376,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
-  std::cout << "MAMSrfOnlineEmiss: before init_time_interpolation (marine organics)"
-            << std::endl;
   morg_data_interp_->init_time_interpolation(start_of_step_ts(),
                                              DataInterpolation::Linear);
-  std::cout << "MAMSrfOnlineEmiss: after init_time_interpolation (marine organics)"
-            << std::endl;
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -462,9 +412,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   // --- Interpolate marine organics data --
-  std::cout << "MAMSrfOnlineEmiss: before run(ts) (marine organics)" << std::endl;
   morg_data_interp_->run(ts);
-  std::cout << "MAMSrfOnlineEmiss: after run(ts) (marine organics)" << std::endl;
 
   // Marine organics emission data read from the file (order is important here)
   const const_view_1d mpoly = morg_fields_[0].get_view<const Real *>();
