@@ -381,7 +381,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,   &
         alz    = log(zbot(n)/zref)
         cp     = loc_cpdair*(1.0_R8 + loc_cpvir*ssq)
 
-        if (use_ocn_atm_flux_reg .eq. .false.) then 
+        if (.not. use_ocn_atm_flux_reg) then 
             !------------------------------------------------------------
             ! first estimate of Z/L and ustar, tstar and qstar
             !------------------------------------------------------------
