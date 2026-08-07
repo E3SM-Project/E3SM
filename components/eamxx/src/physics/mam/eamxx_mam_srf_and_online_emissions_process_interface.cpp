@@ -411,7 +411,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     std::cout << "MAMSrfOnlineEmiss: after run static interpolation (soil erodibility)"
               << std::endl;
 
-    soil_erodibility_ = soil_erodibility_field_.get_view<const Real *>();
+    soil_erodibility_ = get_field_out("soil_erodibility").get_view<const Real *>();
   } else if (dust_emis_scheme == 2) {
     // For dust emission scheme 2, override soil erodibility to 1
     auto soil_erod_ones = view_1d("soil_erod_ones", ncol_);
