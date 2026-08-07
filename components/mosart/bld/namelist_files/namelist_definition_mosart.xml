@@ -68,6 +68,24 @@ otherwise ice runoff will be zero and all runoff directed to liquid
 stream.
 </entry>
 
+<entry id="convert_ice_to_river_runoff_latband"
+       type="logical"
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., convert frozen runoff (rofi) to liquid runoff (rofl) for cells
+within a symmetric latitude band.
+</entry>
+
+<entry id="convert_ice_to_river_runoff_latband_width_degrees"
+       type="real"
+       category="mosart"
+       group="mosart_inparm">
+Default: 20.0
+Half-width of symmetric latitude band (degrees) used when
+convert_ice_to_river_runoff_latband is true.
+</entry>
+
 <entry id="rtm_mode"
        type="char*256"
        category="rtm"

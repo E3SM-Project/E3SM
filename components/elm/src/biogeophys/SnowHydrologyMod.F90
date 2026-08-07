@@ -16,13 +16,19 @@ module SnowHydrologyMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use decompMod       , only : bounds_type
+   use spmdMod         , only : masterproc, mpicom, MPI_REAL8, MPI_INTEGER, MPI_SUM, MPI_MAX
   use abortutils      , only : endrun
   use elm_varpar      , only : nlevsno
-  use elm_varctl      , only : iulog, use_extrasnowlayers, use_firn_percolation_and_compaction
-  use elm_varcon      , only : namec, h2osno_max
+   use elm_varctl      , only : iulog, use_extrasnowlayers, use_firn_percolation_and_compaction, &
+                                                convert_ice_to_river_runoff_latband, &
+                                                convert_ice_to_river_runoff_latband_width_degrees, &
+                                                snowcap_latband_diag_write, snowcap_latband_diag_nstep
+   use elm_varcon      , only : namec, h2osno_max, cpice, cpliq, hfus
   use atm2lndType     , only : atm2lnd_type
   use AerosolType     , only : aerosol_type
   use TopounitDataType, only : topounit_atmospheric_state
+   use TopounitType    , only : top_pp
+   use GridcellType    , only : grc_pp
   use LandunitType    , only : lun_pp
   use ColumnType      , only : col_pp
   use ColumnDataType  , only : col_es, col_ef, col_ws, col_wf
@@ -44,6 +50,9 @@ module SnowHydrologyMod
   public :: InitSnowLayers             ! Initialize cold-start snow layer thickness  
   public :: NewSnowBulkDensity         ! Compute bulk density of any newly-fallen snow
   public :: SnowCapping                ! Remove snow mass for capped columns
+  public :: SnowCapLatentCoolingAndDiag ! Extract latent heat and accumulate diagnostics for snowcapped ice
+   public :: SnowCappingDiagReset       ! Reset per-land-step snowcapping diagnostics
+   public :: SnowCappingDiagLog         ! Log per-land-step and cumulative snowcapping diagnostics
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: Combo            ! Returns the combined variables: dz, t, wliq, wice.
@@ -78,6 +87,21 @@ module SnowHydrologyMod
   !$acc declare copyin(scvng_fct_mlt_dst2 )
   !$acc declare copyin(scvng_fct_mlt_dst3 )
   !$acc declare copyin(scvng_fct_mlt_dst4 )
+
+   ! Lat-band snowcapping diagnostics (local task accumulators).
+   real(r8) :: snowcap_diag_step_latent_energy_j = 0._r8
+   real(r8) :: snowcap_diag_step_ice_mass_kg = 0._r8
+   real(r8) :: snowcap_diag_step_temp_area_sum = 0._r8
+   real(r8) :: snowcap_diag_step_area_m2 = 0._r8
+   real(r8) :: snowcap_diag_step_max_cooling_k = 0._r8
+   integer  :: snowcap_diag_step_cols = 0
+
+   real(r8) :: snowcap_diag_cum_latent_energy_j = 0._r8
+   real(r8) :: snowcap_diag_cum_ice_mass_kg = 0._r8
+   integer  :: snowcap_diag_cum_cols = 0
+   real(r8) :: snowcap_diag_cum_temp_area_sum = 0._r8
+   real(r8) :: snowcap_diag_cum_area_m2 = 0._r8
+   real(r8) :: snowcap_diag_cum_max_cooling_k = 0._r8
 
   !-----------------------------------------------------------------------
   !H. Wang ++
@@ -2264,7 +2288,7 @@ contains
      real(r8)   :: icefrac                          ! fraction of ice mass w.r.t. total mass [unitless]
      real(r8)   :: frac_adjust                      ! fraction of mass remaining after capping
      real(r8)   :: rho                              ! partial density of ice (not scaled with frac_sno) [kg/m3]
-     integer    :: fc, c                            ! counters
+     integer    :: fc, c, j                         ! counters
      ! Always keep at least this fraction of the bottom snow layer when doing snow capping
      ! This needs to be slightly greater than 0 to avoid roundoff problems
      real(r8), parameter :: min_snow_to_keep = 1.e-9  ! fraction of bottom snow layer to keep with capping
@@ -2350,6 +2374,242 @@ contains
 
      end associate
    end subroutine SnowCapping
+
+   !-----------------------------------------------------------------------
+   subroutine SnowCapLatentCoolingAndDiag(bounds)
+     !
+     ! !DESCRIPTION:
+     ! Extract latent heat of fusion from the snowpack for columns where
+     ! snowcapped ice (qflx_snwcp_ice) will be converted to liquid runoff
+     ! downstream.  Called after all sources of qflx_snwcp_ice have been
+     ! accumulated (CanopyHydrology, SoilHydrology excess-ice, and
+     ! SnowCapping when firn is enabled) so that the cooling is applied
+     ! once per time step regardless of configuration.
+     !
+     ! An optional latitude-band gate restricts the cooling to columns
+     ! equatorward of convert_ice_to_river_runoff_latband_width_degrees.
+     !
+     ! !ARGUMENTS:
+     type(bounds_type), intent(in) :: bounds
+     !
+     ! !LOCAL VARIABLES:
+     real(r8)   :: dtime                            ! land model time step (sec)
+     integer    :: c, j, g, k, n_active             ! counters
+     real(r8)   :: e_cooling                        ! column energy removed [J/m2]
+     real(r8)   :: c_layer                          ! layer heat capacity [J/m2/K]
+     real(r8)   :: wsum, wraw                       ! weight sum and layer weight [-]
+     real(r8)   :: lat_abs_deg                      ! absolute gridcell latitude [deg]
+     real(r8)   :: area_col_m2                      ! column area [m2]
+     real(r8)   :: delta_t_layer                    ! layer temperature change [K]
+     real(r8)   :: delta_t_col_mean                 ! column-mean snow temperature change [K]
+     real(r8)   :: cooling_col_max                  ! max cooling in column [K]
+     real(r8)   :: step_latent_energy_loc           ! local per-call latent energy [J]
+     real(r8)   :: step_ice_mass_loc                ! local per-call snowcapped ice mass [kg]
+     real(r8)   :: step_temp_area_sum_loc           ! local per-call area-weighted dT sum [K m2]
+     real(r8)   :: step_area_m2_loc                 ! local per-call affected area [m2]
+     real(r8)   :: step_max_cooling_loc             ! local per-call max cooling [K]
+     integer    :: step_cols_loc                    ! local per-call affected column count
+     logical    :: apply_cooling                    ! whether to cool snowpack in this column
+     real(r8), parameter :: tiny_heatcap = 1.e-14_r8  ! minimum layer heat capacity [J/m2/K]
+     logical,  parameter :: snowcap_surface_weighted_cooling = .false.
+     !-----------------------------------------------------------------------
+
+     associate( &
+       snl            => col_pp%snl              , & ! Input:  [integer  (:)   ] number of snow layers
+       qflx_snwcp_ice => col_wf%qflx_snwcp_ice  , & ! Input:  [real(r8) (:)   ] excess solid h2o due to snow capping (mm H2O /s) [+]
+       t_soisno       => col_es%t_soisno         , & ! In/Out: [real(r8) (:,:) ] snow/soil temperature (K)
+       h2osoi_ice     => col_ws%h2osoi_ice       , & ! Input:  [real(r8) (:,:) ] ice lens (kg/m2)
+       h2osoi_liq     => col_ws%h2osoi_liq         & ! Input:  [real(r8) (:,:) ] liquid water (kg/m2)
+     )
+
+     dtime = dtime_mod
+
+     step_latent_energy_loc = 0._r8
+     step_ice_mass_loc      = 0._r8
+     step_temp_area_sum_loc = 0._r8
+     step_area_m2_loc       = 0._r8
+     step_max_cooling_loc   = 0._r8
+     step_cols_loc          = 0
+
+     do c = bounds%begc, bounds%endc
+
+        ! Skip columns with no snowcapped ice flux or no snow layers
+        if (qflx_snwcp_ice(c) <= 0._r8) cycle
+        if (snl(c) >= 0) cycle
+
+        ! Latitude-band gate: only extract latent heat locally when the
+        ! lat-band feature is active and this column is within the band.
+        ! When disabled, snowcapped ice goes to the ocean as ice runoff
+        ! and the ocean handles the latent heat — no local cooling needed.
+        apply_cooling = .false.
+        if (convert_ice_to_river_runoff_latband) then
+           g = col_pp%gridcell(c)
+           lat_abs_deg = abs(grc_pp%lat(g)) * 180._r8 / (4._r8 * atan(1._r8))
+           apply_cooling = lat_abs_deg <= max(0._r8, convert_ice_to_river_runoff_latband_width_degrees)
+        end if
+        if (.not. apply_cooling) cycle
+
+        e_cooling = qflx_snwcp_ice(c) * dtime * hfus
+        if (e_cooling <= 0._r8) cycle
+
+        ! Count active snow layers (those with meaningful heat capacity)
+        n_active = 0
+        do j = snl(c)+1, 0
+           c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
+           if (c_layer > tiny_heatcap) n_active = n_active + 1
+        end do
+        if (n_active == 0) cycle
+
+        ! Compute weight sum for distributing cooling across layers
+        wsum = 0._r8
+        k = 0
+        do j = snl(c)+1, 0
+           c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
+           if (c_layer > tiny_heatcap) then
+              k = k + 1
+              if (snowcap_surface_weighted_cooling) then
+                 wraw = real(n_active-k+1, r8)
+              else
+                 wraw = 1._r8
+              end if
+              wsum = wsum + wraw
+           end if
+        end do
+        if (wsum <= 0._r8) cycle
+
+        ! Distribute cooling through snow layers
+        k = 0
+        delta_t_col_mean = 0._r8
+        cooling_col_max  = 0._r8
+        do j = snl(c)+1, 0
+           c_layer = cpice*h2osoi_ice(c,j) + cpliq*h2osoi_liq(c,j)
+           if (c_layer > tiny_heatcap) then
+              k = k + 1
+              if (snowcap_surface_weighted_cooling) then
+                 wraw = real(n_active-k+1, r8)
+              else
+                 wraw = 1._r8
+              end if
+              delta_t_layer = (e_cooling * (wraw/wsum)) / c_layer
+              t_soisno(c,j) = t_soisno(c,j) - delta_t_layer
+              delta_t_col_mean = delta_t_col_mean + delta_t_layer
+              cooling_col_max = max(cooling_col_max, delta_t_layer)
+           end if
+        end do
+        delta_t_col_mean = delta_t_col_mean / real(n_active, r8)
+
+        ! Accumulate diagnostics
+        g = col_pp%gridcell(c)
+        area_col_m2 = grc_pp%area(g) * 1.e6_r8 * col_pp%wtgcell(c)
+        if (area_col_m2 > 0._r8) then
+           step_latent_energy_loc = step_latent_energy_loc + e_cooling * area_col_m2
+           step_ice_mass_loc      = step_ice_mass_loc + qflx_snwcp_ice(c) * dtime * area_col_m2
+           step_temp_area_sum_loc = step_temp_area_sum_loc + delta_t_col_mean * area_col_m2
+           step_area_m2_loc       = step_area_m2_loc + area_col_m2
+           step_max_cooling_loc   = max(step_max_cooling_loc, cooling_col_max)
+           step_cols_loc          = step_cols_loc + 1
+        end if
+
+     end do
+
+     !$omp atomic update
+     snowcap_diag_step_latent_energy_j = snowcap_diag_step_latent_energy_j + step_latent_energy_loc
+     !$omp atomic update
+     snowcap_diag_step_ice_mass_kg = snowcap_diag_step_ice_mass_kg + step_ice_mass_loc
+     !$omp atomic update
+     snowcap_diag_step_temp_area_sum = snowcap_diag_step_temp_area_sum + step_temp_area_sum_loc
+     !$omp atomic update
+     snowcap_diag_step_area_m2 = snowcap_diag_step_area_m2 + step_area_m2_loc
+     !$omp atomic update
+     snowcap_diag_step_cols = snowcap_diag_step_cols + step_cols_loc
+     !$omp critical (snowcap_diag_max_update)
+     snowcap_diag_step_max_cooling_k = max(snowcap_diag_step_max_cooling_k, step_max_cooling_loc)
+     !$omp end critical (snowcap_diag_max_update)
+
+     end associate
+   end subroutine SnowCapLatentCoolingAndDiag
+
+    !-----------------------------------------------------------------------
+    subroutine SnowCappingDiagReset()
+
+       snowcap_diag_step_latent_energy_j = 0._r8
+       snowcap_diag_step_ice_mass_kg = 0._r8
+       snowcap_diag_step_temp_area_sum = 0._r8
+       snowcap_diag_step_area_m2 = 0._r8
+       snowcap_diag_step_max_cooling_k = 0._r8
+       snowcap_diag_step_cols = 0
+
+    end subroutine SnowCappingDiagReset
+
+    !-----------------------------------------------------------------------
+    subroutine SnowCappingDiagLog(nstep)
+
+       integer, intent(in) :: nstep
+
+       integer  :: nfreq, ier
+       integer  :: g_step_cols, g_cum_cols
+       real(r8) :: g_step_latent_energy_j, g_step_ice_mass_kg
+       real(r8) :: g_step_temp_area_sum, g_step_area_m2, g_step_max_cooling_k
+       real(r8) :: g_cum_latent_energy_j, g_cum_ice_mass_kg
+       real(r8) :: g_cum_temp_area_sum, g_cum_area_m2, g_cum_max_cooling_k
+       real(r8) :: step_mean_cooling_k, cum_mean_cooling_k
+
+       if (.not. snowcap_latband_diag_write) return
+
+       nfreq = max(1, snowcap_latband_diag_nstep)
+       if (mod(nstep, nfreq) /= 0) return
+
+       call mpi_allreduce(snowcap_diag_step_latent_energy_j, g_step_latent_energy_j, 1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_step_ice_mass_kg,      g_step_ice_mass_kg,      1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_step_temp_area_sum,    g_step_temp_area_sum,    1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_step_area_m2,          g_step_area_m2,          1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_step_max_cooling_k,    g_step_max_cooling_k,    1, MPI_REAL8, MPI_MAX, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_step_cols,             g_step_cols,              1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+
+      snowcap_diag_cum_latent_energy_j = snowcap_diag_cum_latent_energy_j + snowcap_diag_step_latent_energy_j
+      snowcap_diag_cum_ice_mass_kg = snowcap_diag_cum_ice_mass_kg + snowcap_diag_step_ice_mass_kg
+      snowcap_diag_cum_temp_area_sum = snowcap_diag_cum_temp_area_sum + snowcap_diag_step_temp_area_sum
+      snowcap_diag_cum_area_m2 = snowcap_diag_cum_area_m2 + snowcap_diag_step_area_m2
+       snowcap_diag_cum_max_cooling_k = max(snowcap_diag_cum_max_cooling_k, g_step_max_cooling_k)
+      snowcap_diag_cum_cols = snowcap_diag_cum_cols + snowcap_diag_step_cols
+
+       call mpi_allreduce(snowcap_diag_cum_latent_energy_j, g_cum_latent_energy_j, 1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_cum_ice_mass_kg,      g_cum_ice_mass_kg,      1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_cum_temp_area_sum,    g_cum_temp_area_sum,    1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_cum_area_m2,          g_cum_area_m2,          1, MPI_REAL8, MPI_SUM, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_cum_max_cooling_k,    g_cum_max_cooling_k,    1, MPI_REAL8, MPI_MAX, mpicom, ier)
+       call mpi_allreduce(snowcap_diag_cum_cols,             g_cum_cols,              1, MPI_INTEGER, MPI_SUM, mpicom, ier)
+
+       if (g_step_area_m2 > 0._r8) then
+          step_mean_cooling_k = g_step_temp_area_sum / g_step_area_m2
+       else
+          step_mean_cooling_k = 0._r8
+       end if
+
+       if (g_cum_area_m2 > 0._r8) then
+          cum_mean_cooling_k = g_cum_temp_area_sum / g_cum_area_m2
+       else
+          cum_mean_cooling_k = 0._r8
+       end if
+
+       if (masterproc) then
+          write(iulog,'(a,i10,a,1pe12.4,a,1pe12.4,a,1pe12.4,a,1pe12.4,a,i10)') &
+                  'SNOWCAP_LATBAND_DIAG step=', nstep, &
+                  ' step_ice_mass_kg=', g_step_ice_mass_kg, &
+                  ' step_latent_energy_j=', g_step_latent_energy_j, &
+                  ' step_mean_cooling_k=', step_mean_cooling_k, &
+                  ' step_max_cooling_k=', g_step_max_cooling_k, &
+                  ' step_cols=', g_step_cols
+          write(iulog,'(a,i10,a,1pe12.4,a,1pe12.4,a,1pe12.4,a,1pe12.4,a,i10)') &
+                  'SNOWCAP_LATBAND_DIAG_CUM step=', nstep, &
+                  ' cum_ice_mass_kg=', g_cum_ice_mass_kg, &
+                  ' cum_latent_energy_j=', g_cum_latent_energy_j, &
+                  ' cum_mean_cooling_k=', cum_mean_cooling_k, &
+                  ' cum_max_cooling_k=', g_cum_max_cooling_k, &
+                  ' cum_cols=', g_cum_cols
+       end if
+
+    end subroutine SnowCappingDiagLog
    
    !-----------------------------------------------------------------------
    subroutine NewSnowBulkDensity(bounds, num_c, filter_c, top_as_inst, bifall)

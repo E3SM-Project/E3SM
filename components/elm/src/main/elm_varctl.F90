@@ -393,6 +393,10 @@ module elm_varctl
   logical, public :: use_snicar_ad       = .true.
   logical, public :: use_extrasnowlayers = .false.
   logical, public :: use_firn_percolation_and_compaction  = .false.
+  logical, public :: convert_ice_to_river_runoff_latband = .false.
+  real(r8), public :: convert_ice_to_river_runoff_latband_width_degrees = 20.0_r8
+  logical, public :: snowcap_latband_diag_write = .false.
+  integer, public :: snowcap_latband_diag_nstep = 1
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.

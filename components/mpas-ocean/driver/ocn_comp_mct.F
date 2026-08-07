@@ -995,7 +995,7 @@ contains
     endif
 
 
-    itimestep = 0
+   itimestep = 0
 
     ! Reset all output alarms, to prevent intial time step from writing any output, unless it's ringing.
     call mpas_stream_mgr_reset_alarms(domain_ptr % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)

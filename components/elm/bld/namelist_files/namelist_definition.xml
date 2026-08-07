@@ -869,6 +869,30 @@ with the standard 5 snow layers.
 This option also controls snow-capping and related snow-water flux handling paths.
 </entry>
 
+<entry id="convert_ice_to_river_runoff_latband" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, extract snowcapping latent heat locally in ELM only within the
+latitude band specified by convert_ice_to_river_runoff_latband_width_degrees.
+Outside that band, latent heat remains in the default downstream treatment.
+</entry>
+
+<entry id="convert_ice_to_river_runoff_latband_width_degrees" type="real" category="physics"
+       group="elm_inparm" valid_values="" value="20.0">
+Half-width of latitude band in degrees for local ELM latent-heat extraction
+when convert_ice_to_river_runoff_latband is TRUE.
+</entry>
+
+<entry id="snowcap_latband_diag_write" type="logical" category="history"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, write per-land-timestep snowcapping diagnostics in the active
+ice-to-river lat band to the ELM log.
+</entry>
+
+<entry id="snowcap_latband_diag_nstep" type="integer" category="history"
+       group="elm_inparm" valid_values="">
+Write frequency (in land-model timesteps) for snowcapping lat-band diagnostics.
+</entry>
+
 <entry id="use_T_rho_dependent_snowthk" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to use new snow thermal conductivity that relies on snow temperature and density. 
