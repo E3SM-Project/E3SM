@@ -1,5 +1,6 @@
 #ifndef EDP_TOKENS_HPP
 #define EDP_TOKENS_HPP
+
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -9,12 +10,12 @@ namespace edp {
 enum class TokenTypes {
   EndofFile,
   Illegal,
-  Newline,
 
   Identifier,
   Integer,
   Float,
   String,
+
   // Operators
   Assign,
   Plus,
@@ -66,4 +67,5 @@ std::string binary_op_to_string(const TokenTypes type);
 std::string unary_op_to_string(const TokenTypes type) ;
 
 } // namespace edp
+
 #endif

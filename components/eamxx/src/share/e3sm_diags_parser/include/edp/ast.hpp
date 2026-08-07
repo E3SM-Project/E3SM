@@ -1,5 +1,6 @@
 #ifndef EDP_AST_HPP
 #define EDP_AST_HPP
+
 #include <edp/tokens.hpp>
 #include <concepts>
 #include <memory>

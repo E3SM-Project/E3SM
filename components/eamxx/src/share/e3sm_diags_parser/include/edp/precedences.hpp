@@ -1,4 +1,5 @@
-#pragma once // becoming lazy
+#ifndef EDP_PRECEDENCES_HPP
+#define EDP_PRECEDENCES_HPP
 
 #include <edp/tokens.hpp>
 namespace edp::parser {
@@ -15,3 +16,5 @@ enum class Precedence {
 };
 Precedence token_precedence(TokenTypes type);
 } // namespace edp::parser
+
+#endif

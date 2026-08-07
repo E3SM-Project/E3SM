@@ -46,7 +46,7 @@ void Parser::next_token() {
 ast::ExprPtr Parser::parse_expression(Precedence prec) {
   const auto prefix = prefix_parse_fns_.find(cur_token_.type);
   if (prefix == prefix_parse_fns_.end()) {
-    throw("Unexpected Prefix Token " + to_string(cur_token_));
+    throw std::runtime_error("Unexpected Prefix Token " + to_string(cur_token_));
   }
   const auto fn = prefix->second;
   auto left_expr = (this->*fn)();

@@ -25,8 +25,7 @@ private:
 
   std::string read_identifier();
   std::string read_number();
-  std::string read_to_delim(char ch);
-  void check_precision();
+  bool read_to_delim(char ch, std::string& out);
 
   char peek_char() const;
   void read_char();
