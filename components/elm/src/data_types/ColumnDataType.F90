@@ -205,6 +205,7 @@ module ColumnDataType
     real(r8), pointer :: prod100c             (:)    => null() ! (gC/m2) wood product C pool, 100-year lifespan
     real(r8), pointer :: totprodc             (:)    => null() ! (gC/m2) total wood product C
     real(r8), pointer :: dyn_cbal_adjustments (:)    => null() ! (gC/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: dyn_nonconserved_cflux (:)  => null() ! (gC/m2) carbon lost from shrinking special-landunit columns / thrown away by growing special-landunit columns during dynamic column area adjustments
     real(r8), pointer :: totpftc              (:)    => null() ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
     real(r8), pointer :: decomp_cpools_1m     (:,:)  => null() ! (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
     real(r8), pointer :: decomp_cpools        (:,:)  => null() ! (gC/m2)  decomposing (litter, cwd, soil) c pools
@@ -284,6 +285,7 @@ module ColumnDataType
     real(r8), pointer :: prod100n                 (:)     => null() ! (gN/m2) wood product N pool, 100-year lifespan
     real(r8), pointer :: totprodn                 (:)     => null() ! (gN/m2) total wood product N
     real(r8), pointer :: dyn_nbal_adjustments     (:)     => null() ! (gN/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: dyn_nonconserved_nflux   (:)     => null() ! (gN/m2) nitrogen lost from shrinking special-landunit columns / thrown away by growing special-landunit columns during dynamic column area adjustments
     real(r8), pointer :: tan_g1                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G1
     real(r8), pointer :: tan_g2                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G2
     real(r8), pointer :: tan_g3                   (:)     => null() ! (gN/m2) total ammoniacal N in FAN pool G2
@@ -357,6 +359,7 @@ module ColumnDataType
     real(r8), pointer :: prod100p                 (:)      => null() ! (gP/m2) wood product P pool, 100-year lifespan
     real(r8), pointer :: totprodp                 (:)      => null() ! (gP/m2) total wood product P
     real(r8), pointer :: dyn_pbal_adjustments     (:)      => null() ! (gP/m2) adjustments to each column made in this timestep via dynamic column area adjustments
+    real(r8), pointer :: dyn_nonconserved_pflux   (:)      => null() ! (gP/m2) phosphorus lost from shrinking special-landunit columns / thrown away by growing special-landunit columns during dynamic column area adjustments
     real(r8), pointer :: decomp_ppools            (:,:)    => null() ! (gP/m2)  decomposing (litter, cwd, soil) P pools
     real(r8), pointer :: decomp_ppools_1m         (:,:)    => null() ! (gP/m2)  diagnostic: decomposing (litter, cwd, soil) P pools to 1 meter
     real(r8), pointer :: sminp                    (:)      => null() ! (gP/m2) soil mineral P
@@ -375,6 +378,7 @@ module ColumnDataType
     real(r8), pointer :: totcolp                  (:)      => null() ! (gP/m2) total column phosphorus, incl veg
     real(r8), pointer :: totvegp                  (:)      => null() ! (gP/m2) total vegetation phosphorus (p2c)
     real(r8), pointer :: totpftp                  (:)      => null() ! (gP/m2) total pft-level phosphorus (p2c)
+    real(r8), pointer :: plant_p_buffer           (:)      => null() ! (gP/m2) col-level abstract P storage (p2c)
     real(r8), pointer :: begpb                    (:)      => null() ! phosphorus mass, beginning of time step (gP/m**2)
     real(r8), pointer :: endpb                    (:)      => null() ! phosphorus mass, end of time step (gP/m**2)
     real(r8), pointer :: errpb                    (:)      => null() ! phosphorus balance error for the timestep (gP/m**2)
@@ -2158,6 +2162,7 @@ contains
     allocate(this%prod100c             (begc:endc))     ; this%prod100c             (:)     = spval
     allocate(this%totprodc             (begc:endc))     ; this%totprodc             (:)     = spval
     allocate(this%dyn_cbal_adjustments (begc:endc))     ; this%dyn_cbal_adjustments (:)     = spval
+    allocate(this%dyn_nonconserved_cflux (begc:endc))   ; this%dyn_nonconserved_cflux (:)   = spval
     allocate(this%totpftc              (begc:endc))     ; this%totpftc              (:)     = spval
     allocate(this%cwdc                 (begc:endc))     ; this%cwdc                 (:)     = spval
     allocate(this%ctrunc               (begc:endc))     ; this%ctrunc               (:)     = spval
@@ -3380,6 +3385,7 @@ contains
     allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = spval
     allocate(this%totprodn              (begc:endc))                     ; this%totprodn              (:)   = spval
     allocate(this%dyn_nbal_adjustments  (begc:endc))                     ; this%dyn_nbal_adjustments  (:)   = spval
+    allocate(this%dyn_nonconserved_nflux(begc:endc))                     ; this%dyn_nonconserved_nflux(:)   = spval
     allocate(this%tan_g1                (begc:endc))                     ; this%tan_g1                (:)   = spval
     allocate(this%tan_g2                (begc:endc))                     ; this%tan_g2                (:)   = spval
     allocate(this%tan_g3                (begc:endc))                     ; this%tan_g3                (:)   = spval
@@ -4634,6 +4640,7 @@ contains
     allocate(this%prod100p             (begc:endc))                   ; this%prod100p             (:)   = spval
     allocate(this%totprodp             (begc:endc))                   ; this%totprodp             (:)   = spval
     allocate(this%dyn_pbal_adjustments (begc:endc))                   ; this%dyn_pbal_adjustments (:)   = spval
+    allocate(this%dyn_nonconserved_pflux (begc:endc))                 ; this%dyn_nonconserved_pflux (:) = spval
     allocate(this%totlitp              (begc:endc))                   ; this%totlitp              (:)   = spval
     allocate(this%totsomp              (begc:endc))                   ; this%totsomp              (:)   = spval
     allocate(this%totlitp_1m           (begc:endc))                   ; this%totlitp_1m           (:)   = spval
@@ -4644,6 +4651,7 @@ contains
     allocate(this%decomp_ppools_1m     (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_1m     (:,:) = spval
     allocate(this%totpftp              (begc:endc))                   ; this%totpftp              (:)   = spval
     allocate(this%totvegp              (begc:endc))                   ; this%totvegp              (:)   = spval
+    allocate(this%plant_p_buffer       (begc:endc))                   ; this%plant_p_buffer       (:)   = spval
     allocate(this%decomp_ppools_vr     (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)); this%decomp_ppools_vr(:,:,:)= spval
     allocate(this%begpb                (begc:endc))                   ; this%begpb                (:)   = spval
     allocate(this%endpb                (begc:endc))                   ; this%endpb                (:)   = spval
@@ -5576,7 +5584,8 @@ contains
            this%solutionp(c) + &
            this%labilep(c) + &
            this%secondp(c) + &
-           this%ptrunc(c)
+           this%ptrunc(c) + &
+           this%plant_p_buffer(c)
 
        ! if we are using the crop model, then we need to add the cropseedc deficit
        if (use_crop) then 
@@ -5606,6 +5615,7 @@ contains
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
+       this%plant_p_buffer(c) = 0._r8
        this%totpftp(c) = 0._r8
        this%totvegp(c) = 0._r8
        this%cropseedp_deficit(c) = 0._r8

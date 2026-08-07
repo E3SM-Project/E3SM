@@ -868,7 +868,7 @@ contains
        this%cinputs(g)                   = 0._r8
        this%coutputs(g)                  = 0._r8
     end do
-    
+
   end subroutine grc_cf_init
   
   !-----------------------------------------------------------------------
@@ -1025,7 +1025,7 @@ contains
        this%ninputs(g)                   = 0._r8
        this%noutputs(g)                  = 0._r8
     end do
-    
+
   end subroutine grc_nf_init
   
   !-----------------------------------------------------------------------
@@ -1172,7 +1172,7 @@ contains
        this%pinputs(g)                   = 0._r8
        this%poutputs(g)                  = 0._r8
     end do
-  
+
   end subroutine grc_pf_init
 
   !-----------------------------------------------------------------------
@@ -1196,7 +1196,7 @@ contains
        this%dwt_prod10p_gain(g)      = 0._r8
        this%dwt_prod100p_gain(g)     = 0._r8
     end do
-  
+
   end subroutine grc_pf_zerodwt
   
   !------------------------------------------------------------------------
