@@ -340,7 +340,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer", "e3sm_gcam_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480_rx1.A",
@@ -1142,8 +1142,8 @@ _TESTS = {
     "e3sm_gcam_developer" : {
         "time"  : "1:00:00",
         "tests" : (
-            "SMS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
-            "ERS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "SMS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
             )
     },
 }
