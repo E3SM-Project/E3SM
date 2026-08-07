@@ -296,6 +296,16 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
+    <!-- Water tracers -->
+    <water_tracers inherit="atm_proc_base">
+      <tracer_count type="integer" doc="Number of water tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+    </water_tracers>
+
+    <!-- Water isotopes (subclass of water tracers with fractionation physics) -->
+    <water_isotopes inherit="atm_proc_base">
+      <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+    </water_isotopes>
+    
     <!-- Gravity Wave Drag -->
     <gw inherit="atm_proc_base">
       <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
