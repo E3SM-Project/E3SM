@@ -1,4 +1,4 @@
-#include <catch2/catch_test_macros.hpp>
+#include "edp_catch.hpp"
 
 #include <edp/lexer.hpp>
 #include <edp/tokens.hpp>

@@ -1,9 +1,9 @@
+#include "edp_catch.hpp"
+
 #include <edp/ast.hpp>
-#include "catch2/catch_message.hpp"
 #include <edp/lexer.hpp>
 #include <edp/parser.hpp>
 #include <edp/tokens.hpp>
-#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
 namespace edp {
