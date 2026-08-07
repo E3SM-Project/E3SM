@@ -164,6 +164,53 @@ TEST_CASE("lexer: a second decimal point ends the number", "[lexer]")
                         });
 }
 
+TEST_CASE("lexer: identifiers may contain digits", "[lexer]")
+{
+  check_tokens("bc_a1 so4_a2 O3 num_a1", {
+                                             {TokenTypes::Identifier, "bc_a1"},
+                                             {TokenTypes::Identifier, "so4_a2"},
+                                             {TokenTypes::Identifier, "O3"},
+                                             {TokenTypes::Identifier, "num_a1"},
+                                             k_eof,
+                                         });
+  check_tokens("_a1", {{TokenTypes::Identifier, "_a1"}, k_eof});
+  check_tokens("dst_a3_at_lev_10", {{TokenTypes::Identifier, "dst_a3_at_lev_10"}, k_eof});
+}
+
+TEST_CASE("lexer: an identifier cannot start with a digit", "[lexer]")
+{
+  check_tokens("2x", {
+                         {TokenTypes::Integer, "2"},
+                         {TokenTypes::Identifier, "x"},
+                         k_eof,
+                     });
+  check_tokens("500hPa", {
+                             {TokenTypes::Integer, "500"},
+                             {TokenTypes::Identifier, "hPa"},
+                             k_eof,
+                         });
+}
+
+TEST_CASE("lexer: digits do not break member access", "[lexer]")
+{
+  check_tokens("bc_a1.mean", {
+                                 {TokenTypes::Identifier, "bc_a1"},
+                                 {TokenTypes::Dot, "."},
+                                 {TokenTypes::Identifier, "mean"},
+                                 k_eof,
+                             });
+}
+
+TEST_CASE("lexer: a keyword with a digit appended is an identifier", "[lexer]")
+{
+  check_tokens("and2 or1 not3", {
+                                    {TokenTypes::Identifier, "and2"},
+                                    {TokenTypes::Identifier, "or1"},
+                                    {TokenTypes::Identifier, "not3"},
+                                    k_eof,
+                                });
+}
+
 TEST_CASE("lexer: keywords are case-insensitive, normalized but not identifiers", "[lexer]")
 {
   check_tokens("AND or Not  NOT android nothing", {

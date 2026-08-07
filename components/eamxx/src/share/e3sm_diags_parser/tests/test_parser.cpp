@@ -47,6 +47,16 @@ TEST_CASE("parser: bare literals and identifiers", "[parser]") {
   check_parse("'col'", "'col'");
 }
 
+
+TEST_CASE("parser: field names containing digits", "[parser]") {
+  check_parse("bc_a1", "bc_a1");
+  check_parse("O3", "O3");
+  check_parse("bc_a1 + so4_a2", "(bc_a1+so4_a2)");
+  check_parse("O3.mean(dim='lev')", "O3.mean((dim='lev'))");
+  check_parse("bc_a1.interp(plev=500, units='hPa')",
+              "bc_a1.interp((plev=500), (units='hPa'))");
+}
+
 TEST_CASE("parser: simple infix expressions", "[parser]") {
   check_parse("x + 1", "(x+1)");
   check_parse("x * y", "(x*y)");

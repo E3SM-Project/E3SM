@@ -6,12 +6,19 @@
 
 namespace {
 
-bool is_valid_identifier(const char ch) {
+bool is_numeric(const char ch) {
+  return std::isdigit(static_cast<unsigned char>(ch));
+}
+
+// Python identifier rules: the first character may be a letter or an
+// underscore, but NOT a digit; every subsequent character may additionally be
+// a digit.
+bool is_identifier_start(const char ch) {
   return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
 }
 
-bool is_numeric(const char ch) {
-  return std::isdigit(static_cast<unsigned char>(ch));
+bool is_identifier_char(const char ch) {
+  return is_identifier_start(ch) || is_numeric(ch);
 }
 
 } // namespace
@@ -108,7 +115,7 @@ std::string Lexer::read_number() {
 
 std::string Lexer::read_identifier() {
   auto start_pos = position_;
-  while (is_valid_identifier(current_char_)) {
+  while (is_identifier_char(current_char_)) {
     read_char();
   }
   auto length = position_ - start_pos;
@@ -215,7 +222,7 @@ Token Lexer::next_token() {
   }
   default: {
 
-    if (is_valid_identifier(current_char_)) {
+    if (is_identifier_start(current_char_)) {
       return identifier_lookup({TokenTypes::Identifier, read_identifier()});
     } else if (is_numeric(current_char_)) {
       auto number = read_number();
