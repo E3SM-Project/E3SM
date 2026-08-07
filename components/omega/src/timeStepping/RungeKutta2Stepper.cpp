@@ -79,7 +79,14 @@ void RungeKutta2Stepper::doStep(OceanState *State,   // model state
    CurTracerArray = Tracers::getAll(CurLevel);
    if (VMix->VelVertMixSetup.Enabled or VMix->TracerVertMixSetup.Enabled) {
       VMix->VertMixImplicit(State, AuxState, CurTracerArray, NTracers,
-                            State->CurTimeIndex);
+                            CurLevel);
+
+      // Re-exchange halos after vertical mixing
+      Pacer::timingBarrier("RK2:vMixHaloExchBarrier", 3, Comm);
+      Pacer::start("RK2:vMixHaloExch", 3);
+      State->exchangeHalo(CurLevel);
+      Tracers::exchangeHalo(CurLevel);
+      Pacer::stop("RK2:vMixHaloExch", 3);
    }
 
    validateOceanState(State, AuxState, VertCoord::getDefault(), CurLevel);
