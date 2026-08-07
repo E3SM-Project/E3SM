@@ -23,8 +23,32 @@ file, serves as a pivotal component for initializing the Omega logging system.
 
 The function establishes the default logger configuration, ensuring that
 logging messages are effectively saved to a designated file. The path to
-this file is determined by utilizing the `OMEGA_LOG_FILEPATH` macro, which
-allows users to specify the desired file location for logging purposes.
+this file can be passed as the second argument to `OMEGA::initLogging`. When
+it is omitted, the path comes from the `OMEGA_LOG_FILE` environment variable
+if that is set and non-empty, and from `OMEGA::OmegaDefaultLogfile`
+(`omega.log`) otherwise. The log file is truncated when it is opened, so it
+holds only the messages from the current run.
+
+## Log files in the unit tests
+
+Every unit test driver calls `OMEGA::initLogging(DefEnv)` without a file name,
+so without any further arrangement all of the tests would write to a single
+`omega.log` in the build's `test` directory, with nothing to say which test
+wrote which line. To avoid this, `test/CMakeLists.txt` sets `OMEGA_LOG_FILE`
+per test in `add_omega_test`, so that each test writes to
+`test/logs/<TEST_NAME>.log`. Note that the name comes from the CTest test
+name rather than the source file, because several tests are built from the
+same source (for example `TEND_PLANE_TEST` and
+`TEND_PLANE_SINGLE_PRECISION_TEST` both come from `TendencyTermsTest.cpp`).
+
+A new test added with `add_omega_test` gets its own log file automatically. A
+test driver that hard-codes a log file name would opt out of this, so pass no
+file name to `initLogging` unless the test manages its own log files, as
+`LoggingTest` does.
+
+The environment variable relies on the MPI launcher passing its environment
+to the ranks it starts, which is true of `srun`. If a launcher does not, the
+tests fall back to writing `omega.log`.
 
 ## Creating Logging Macros
 

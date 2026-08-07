@@ -313,6 +313,9 @@ macro(init_standalone_build)
   set(_CtestScript ${OMEGA_BUILD_DIR}/omega_ctest.sh)
   file(WRITE ${_CtestScript}  "#!/usr/bin/env bash\n\n")
   file(APPEND ${_CtestScript} "source ./omega_env.sh\n\n")
+  # each test truncates its own log on startup, so this only removes logs left
+  # behind by tests that are no longer run
+  file(APPEND ${_CtestScript} "rm -f test/logs/*.log\n\n")
   if(OMEGA_DEBUG)
     file(APPEND ${_CtestScript} "ctest --output-on-failure --verbose $* # --rerun-failed\n\n")
   else()
