@@ -83,6 +83,18 @@ interface
     real (kind=c_double), intent(in) :: sphere_cart_vec(3,np,np), sphere_latlon_vec(2,np,np)
   end subroutine init_elements_2d_c
 
+  ! Copies just tensorVisc from f90 arrays into the C++ view. Used to
+  ! (re)populate tensorVisc after dss_hvtensor has updated it, without
+  ! touching the other (constant) geometry fields.
+  subroutine init_tensorvisc_c (ie, tensorvisc_ptr) bind(c)
+    use iso_c_binding, only: c_int, c_ptr
+    !
+    ! Inputs
+    !
+    integer (kind=c_int), intent(in) :: ie
+    type (c_ptr) , intent(in) :: tensorvisc_ptr
+  end subroutine init_tensorvisc_c
+
   ! Copies geopotential from f90 arrays to C++ views
   subroutine init_geopotential_c (ie, phis_ptr, gradphis_ptr) bind(c)
     use iso_c_binding, only: c_int, c_ptr
