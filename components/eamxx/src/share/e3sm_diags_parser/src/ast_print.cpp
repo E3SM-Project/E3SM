@@ -1,6 +1,7 @@
 #include <edp/ast.hpp>
 #include <edp/tokens.hpp>
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <span>
 
@@ -48,6 +49,11 @@ std::string ToStringVisitor::operator()(const PrefixExpression& expr) const {
 };
 
 std::string ToStringVisitor::operator()(const InfixExpression& expr) const {
+  // '.' binds at Call, the tightest level, so wrapping it adds noise without
+  // disambiguating anything...
+  if (expr.op == TokenTypes::Dot) {
+    return to_string(*expr.left) + "." + to_string(*expr.right);
+  }
   return "(" + to_string(*expr.left) + binary_op_to_string(expr.op) +
          to_string(*expr.right) + ")";
 };
@@ -66,7 +72,12 @@ std::string ToStringVisitor::operator()(const IntegerLiteral& expr) const {
   return std::to_string(expr.value);
 };
 std::string ToStringVisitor::operator()(const FloatLiteral& expr) const {
-  return std::format("{:e}", expr.value);
+  auto result = std::format("{}", expr.value);
+  if (std::isfinite(expr.value) &&
+      result.find_first_of(".eE") == std::string::npos) {
+    result += ".0";
+  }
+  return result;
 };
 
 } // namespace

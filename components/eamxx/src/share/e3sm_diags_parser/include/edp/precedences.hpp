@@ -11,10 +11,13 @@ enum class Precedence {
   Sum,
   Product,
   Prefix,
+  Exponent,
   Bounds,
   Call,
 };
+
 Precedence token_precedence(TokenTypes type);
+Precedence cur_precedence(TokenTypes type);
 } // namespace edp::parser
 
 #endif

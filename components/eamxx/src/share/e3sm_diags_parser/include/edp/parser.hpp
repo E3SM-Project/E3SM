@@ -61,7 +61,6 @@ private:
   bool peek_token_is(TokenTypes expected_type);
 
   bool expect_peek_and_advance(TokenTypes expected_type);
-  Precedence cur_precedence();
   Precedence peek_precedence();
 
   ast::ExprPtr parse_expression(Precedence prec);
