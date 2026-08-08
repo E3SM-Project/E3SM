@@ -144,11 +144,18 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
 {
   EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
       "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
-  auto& group = m_field_group_info[group_name];
-  if (not group) {
-    group = std::make_shared<FieldGroupInfo>(group_name);
+  auto& info = m_field_group_info[group_name];
+  auto& group = m_field_groups[grid_name][group_name];
+  if (not info) {
+    info = std::make_shared<FieldGroupInfo>(group_name);
+    EKAT_REQUIRE_MSG (group==nullptr,
+        "Error! FieldGroupInfo was not present, but a FieldGroup was present.\n"
+        "   field name: " + field_name + "\n"
+        "   grid name : " + grid_name + "\n"
+        "   group name: " + group_name + "\n");
   }
-  EKAT_REQUIRE_MSG (not group->m_monolithic_allocation,
+
+  EKAT_REQUIRE_MSG (not info->m_monolithic_allocation,
       "Error! Cannot add fields to a group that has a monolithic allocation.\n"
       "   field name: " + field_name + "\n"
       "   group name: " + group_name + "\n");
@@ -159,15 +166,56 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
       "   grid name:  " + grid_name + "\n"
       "   group name: " + group_name + "\n");
 
-  if (not ekat::contains(group->m_fields_names, field_name)) {
-    group->m_fields_names.push_back(field_name);
-  }
-  if (not ekat::contains(group->m_grid_registered[field_name], grid_name)) {
-    group->m_grid_registered[field_name].push_back(grid_name);
+  if (not group)
+    group = std::make_shared<FieldGroup>(info);
+
+  if (not ekat::contains(info->m_fields_names, field_name))
+    info->m_fields_names.push_back(field_name);
+
+  if (not ekat::contains(info->m_grid_registered[field_name], grid_name)) {
+    info->m_grid_registered[field_name].push_back(grid_name);
+    group->m_individual_fields[field_name] = m_fields[grid_name][field_name];
   }
 
   auto& ft = get_field(field_name, grid_name).get_header().get_tracking();
   ft.add_group(group_name);
+}
+
+void FieldManager::
+remove_from_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name)
+{
+  EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
+      "[FieldManager::remove_from_group] Error! You cannot call 'remove_from_group' until after 'registration_ends' has been called.\n");
+
+  auto& info = m_field_group_info[group_name];
+  EKAT_REQUIRE_MSG (info!=nullptr,
+      "[FieldManager::remove_from_group] Error! Group name not found.\n"
+      " - group name: " + group_name + "\n");
+
+  EKAT_REQUIRE_MSG (not info->m_monolithic_allocation,
+      "Error! Cannot remove fields from a group that has a monolithic allocation.\n"
+      "   field name: " + field_name + "\n"
+      "   group name: " + group_name + "\n");
+
+  EKAT_REQUIRE_MSG (has_field(field_name, grid_name),
+      "Error! Cannot remove field from group, since the field is not present on this grid in this FieldManager.\n"
+      "   field name: " + field_name + "\n"
+      "   grid name:  " + grid_name + "\n"
+      "   group name: " + group_name + "\n");
+
+  auto it1 = ekat::find(info->m_fields_names,field_name);
+  if (it1!=info->m_fields_names.end())
+    info->m_fields_names.erase(it1);
+
+  auto it2 = ekat::find(info->m_grid_registered[field_name], grid_name);
+  if (it2!=info->m_grid_registered[field_name].end())
+    info->m_grid_registered[field_name].erase(it2);
+
+  auto& group = m_field_groups[grid_name][field_name];
+  group->m_individual_fields.erase(field_name);
+
+  auto& ft = get_field(field_name, grid_name).get_header().get_tracking();
+  ft.remove_group(group_name);
 }
 
 bool FieldManager::

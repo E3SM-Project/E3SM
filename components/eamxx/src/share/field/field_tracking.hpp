@@ -47,8 +47,10 @@ public:
   void add_provider (const std::string& provider) { m_providers.insert(provider); }
   void add_customer (const std::string& customer) { m_customers.insert(customer); }
 
-  // Add group name to the list of groups we belong to
+  // Manipulate/query list of groups the field belongs to
   void add_group (const std::string& group) { m_groups.insert(group); }
+  void remove_group (const std::string& group) { m_groups.erase(group); }
+  bool has_group (const std::string& group) const { return m_groups.count(group)>0; }
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
   // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.

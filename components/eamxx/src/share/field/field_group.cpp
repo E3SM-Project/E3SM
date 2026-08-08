@@ -9,6 +9,13 @@ FieldGroup::FieldGroup (const std::string& name)
 }
 
 FieldGroup::
+FieldGroup (const std::shared_ptr<FieldGroupInfo>& info)
+ : m_info (info)
+{
+  // Nothing to do here
+}
+
+FieldGroup::
 FieldGroup (const FieldGroupInfo& info)
  : m_info (new FieldGroupInfo(info))
 {
