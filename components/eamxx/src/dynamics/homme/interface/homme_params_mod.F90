@@ -112,7 +112,7 @@ contains
   end function get_homme_int_param_f90
 
   function get_homme_real_param_f90 (param_name_c) result(param_value) bind(c)
-    use control_mod,    only: nu, nu_div, nu_p, nu_q, nu_s, hypervis_scaling
+    use control_mod,    only: nu, nu_div, nu_p, nu_q, nu_s, hypervis_scaling, laplace_scaling
     use time_mod,       only: tstep
     !
     ! Input(s)
@@ -140,6 +140,8 @@ contains
         param_value = nu_s
       case("hypervis_scaling")
         param_value = hypervis_scaling
+      case("laplace_scaling")
+        param_value = laplace_scaling
       case("dt")
         param_value = tstep
       case default
