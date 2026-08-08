@@ -54,7 +54,13 @@ public:
 
   // Add a request, spelled as it is in the output yaml: either 'expr' or
   // 'name:=expr'. 'write' is false for entries in the 'aliases' section.
-  void add (const std::string& request, const bool write = true);
+  // Returns the name the request was registered under, which is NOT simply the
+  // text before ':=' (whitespace around it is dropped), so callers should use
+  // this rather than splitting the request themselves.
+  std::string add (const std::string& request, const bool write = true);
+
+  // The expression a registered name stands for.
+  const std::string& expr_of (const std::string& registered) const;
 
   // Build every request that was added.
   void build ();

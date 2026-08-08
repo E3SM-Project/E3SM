@@ -1,5 +1,7 @@
 #include "share/io/eamxx_diag_bank.hpp"
 
+#include "share/io/eamxx_legacy_diag_names.hpp"
+
 #include <ekat_assert.hpp>
 #include <ekat_string_utils.hpp>
 
@@ -9,12 +11,39 @@ namespace scream {
 
 namespace {
 
+// ekat::split does not trim, so ' a := b ' would otherwise register a field
+// whose name literally starts and ends with a space. Whitespace is meaningless
+// on both sides of ':=', so drop it.
+std::string trim (const std::string& s)
+{
+  const auto beg = s.find_first_not_of(" \t");
+  if (beg==std::string::npos) return "";
+  const auto end = s.find_last_not_of(" \t");
+  return s.substr(beg,end-beg+1);
+}
+
 // The bare names an expression bottoms out in. Any of them may be another
 // request, which then has to be built first.
 void collect_leaves (const DiagSpec& s, std::vector<std::string>& out)
 {
   if (s.is_leaf()) {
     out.push_back(s.names.canonical);
+
+    // A legacy name keeps its operands hidden until it is translated, so look
+    // through it: 'new_stuff_horiz_avg' depends on 'new_stuff', and we cannot
+    // see that until the name is desugared. Without this, the dependency is
+    // only discovered while walking the tree, by which time it is too late to
+    // build it, and the request would have to be listed first to work.
+    // NOTE: the translation strips one suffix at a time, so this terminates.
+    const auto expr = legacy_to_expr(s.names.canonical);
+    if (expr!=s.names.canonical) {
+      try {
+        collect_leaves(lower_to_diag_spec(expr),out);
+      } catch (...) {
+        // Not a valid expression after all. Say nothing here: the walk will
+        // report it properly, with the full context.
+      }
+    }
   }
   for (const auto& c : s.children) {
     collect_leaves(c,out);
@@ -42,7 +71,7 @@ DiagBank (const std::shared_ptr<const AbstractGrid>& grid,
   EKAT_REQUIRE_MSG (grid, "[DiagBank] Error! Invalid grid pointer.\n");
 }
 
-void DiagBank::add (const std::string& request, const bool write)
+std::string DiagBank::add (const std::string& request, const bool write)
 {
   const auto tokens = ekat::split(request,":=");
   EKAT_REQUIRE_MSG (tokens.size()==1 or tokens.size()==2,
@@ -52,16 +81,16 @@ void DiagBank::add (const std::string& request, const bool write)
   Request r;
   std::string registered;
   if (tokens.size()==2) {
-    EKAT_REQUIRE_MSG (not tokens[0].empty() and not tokens[1].empty(),
+    registered = trim(tokens[0]);
+    r.expr     = trim(tokens[1]);
+    EKAT_REQUIRE_MSG (not registered.empty() and not r.expr.empty(),
         "Error! Invalid diagnostic request. Should be 'name:=expr'.\n"
         " - request: " + request + "\n");
-    registered = tokens[0];
-    r.expr     = tokens[1];
   } else {
     // No name given, so the request doubles as its own name. This is what makes
     // the legacy names work unchanged: they are already legal nc var names.
-    registered = request;
-    r.expr     = request;
+    registered = trim(request);
+    r.expr     = registered;
   }
   r.write = write;
 
@@ -73,6 +102,17 @@ void DiagBank::add (const std::string& request, const bool write)
 
   m_requests[registered] = r;
   m_added.push_back(registered);
+
+  return registered;
+}
+
+const std::string& DiagBank::expr_of (const std::string& registered) const
+{
+  auto it = m_requests.find(registered);
+  EKAT_REQUIRE_MSG (it!=m_requests.end(),
+      "Error! No diagnostic was requested under this name.\n"
+      " - name: " + registered + "\n");
+  return it->second.expr;
 }
 
 void DiagBank::build ()

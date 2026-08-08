@@ -98,6 +98,17 @@ TEST_CASE("diag_bank")
     REQUIRE (std::dynamic_pointer_cast<FieldAtLevel>(bank.eval_order()[0])!=nullptr);
   }
 
+  SECTION ("a legacy name can consume an aliased request, in any order") {
+    DiagBank bank(grid,*fm);
+    bank.add("nsa_havg:=new_stuff_at_lev_3");  // legacy name over an alias...
+    bank.add("new_stuff:=T_mid");              // ...defined after it
+    bank.build();
+
+    REQUIRE (bank.eval_order().size()==1);
+    REQUIRE (std::dynamic_pointer_cast<FieldAtLevel>(bank.eval_order()[0])!=nullptr);
+    REQUIRE (bank.field("nsa_havg").name()=="nsa_havg");
+  }
+
   SECTION ("a shared sub-expression is built once and evaluated once") {
     DiagBank bank(grid,*fm);
     bank.add("a:=T_mid.at(lev=3).prev()");
@@ -122,6 +133,15 @@ TEST_CASE("diag_bank")
       d->compute(t0);
     }
     REQUIRE (bank.field("d2").get_header().get_tracking().get_time_stamp().is_valid());
+  }
+
+  SECTION ("whitespace around := is not part of the name") {
+    DiagBank bank(grid,*fm);
+    bank.add("  spaced  :=  T_mid.at(lev=3)  ");
+    bank.build();
+
+    // Without trimming, the nc variable would literally be named 'spaced  '.
+    REQUIRE (bank.field("spaced").name()=="spaced");
   }
 
   SECTION ("bad requests are rejected") {

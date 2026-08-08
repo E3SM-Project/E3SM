@@ -1141,15 +1141,16 @@ process_requested_fields()
   }
 
   for (auto& name : m_fields_names) {
-    bank.add(name);
-
-    // A request may rename what it asks for, via 'alias:=expr'. From here on
-    // the field is known by the name it was registered under.
-    const auto tokens = ekat::split(name,":=");
-    if (tokens.size()==2) {
-      m_alias_to_orig[tokens[0]] = tokens[1];
-      name = tokens[0];
+    // A request may rename what it asks for, via 'alias:=expr'. The bank owns
+    // that syntax (including dropping whitespace around ':='), so take the
+    // registered name from it rather than splitting the string again here.
+    const bool is_alias = name.find(":=")!=std::string::npos;
+    const auto registered = bank.add(name);
+    if (is_alias) {
+      m_alias_to_orig[registered] = bank.expr_of(registered);
     }
+    // From here on, the field is known by the name it was registered under.
+    name = registered;
   }
 
   EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
