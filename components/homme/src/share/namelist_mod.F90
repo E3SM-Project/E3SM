@@ -317,6 +317,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
       hypervis_scaling, &
+      laplace_scaling, &
       smooth_phis_numcycle, &
       smooth_phis_p2filt, &
       smooth_phis_nudt, &
@@ -816,6 +817,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(laplace_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)

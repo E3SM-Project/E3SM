@@ -915,6 +915,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
+    <laplace_scaling>0.0</laplace_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
