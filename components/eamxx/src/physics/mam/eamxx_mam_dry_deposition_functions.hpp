@@ -13,6 +13,7 @@ namespace scream {
 namespace {
 void compute_tendencies(
     // inputs
+    const mam4::AeroConfig &aero_config,
     const int ncol, const int nlev, const double dt,
     const MAMDryDep::const_view_1d obklen,
     const MAMDryDep::const_view_1d surfric,
@@ -41,14 +42,14 @@ void compute_tendencies(
 {
   using TPF = ekat::TeamPolicyFactory<MAMDryDep::KT::ExeSpace>;
 
-  static constexpr int num_aero_modes = mam_coupling::num_aero_modes();
+  static constexpr int num_aero_modes = aero_config.num_modes();
   const auto policy = TPF::get_default_team_policy(ncol, nlev);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         static constexpr int num_aero_species =
-            mam_coupling::num_aero_species();
+            aero_config.num_aerosol_ids();
 
         const int icol = team.league_rank();
         // Parallel loop over all the levels to populate qtracers array using
@@ -92,7 +93,7 @@ void compute_tendencies(
           fraction_landuse[i] = fraction_landuse_(icol, i);
         }
 
-        static constexpr int nmodes = mam4::AeroConfig::num_modes();
+        static constexpr int nmodes = aero_config.num_modes();
         mam4::ColumnView vlc_dry[nmodes][MAMDryDep::aerosol_categories_];
         mam4::ColumnView vlc_grv[nmodes][MAMDryDep::aerosol_categories_];
         Real vlc_trb[nmodes][MAMDryDep::aerosol_categories_];
@@ -115,7 +116,7 @@ void compute_tendencies(
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
           for(int m = 0; m < nmodes; ++m) {
             qqcw[mam4::ConvProc::numptrcw_amode(m)][kk] = progs.n_mode_c[m][kk];
-            for(int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
+            for(int a = 0; a < aero_config.num_aerosol_ids(); ++a)
               if(-1 < mam4::ConvProc::lmassptrcw_amode(a, m))
                 qqcw[mam4::ConvProc::lmassptrcw_amode(a, m)][kk] =
                     progs.q_aero_c[m][a][kk];
@@ -141,14 +142,15 @@ void compute_tendencies(
 }  // Compute_tendencies ends
 
 // Update interstitial aerosols using ptend_q tendencies
-void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
+void update_interstitial_mmrs(const mam4::AeroConfig &aero_config,
+                              const MAMDryDep::view_3d ptend_q, const double dt,
                               const int ncol, const int nlev,
                               // output
                               const mam_coupling::AerosolState dry_aero) {
   using TPF = ekat::TeamPolicyFactory<MAMDryDep::KT::ExeSpace>;
 
   const auto policy = TPF::get_default_team_policy(ncol, nlev);
-  static constexpr int nmodes = mam4::AeroConfig::num_modes();
+  static constexpr int nmodes = aero_config.num_modes();
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         const int icol = team.league_rank();
@@ -156,7 +158,7 @@ void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
           for(int m = 0; m < nmodes; ++m) {
             dry_aero.int_aero_nmr[m](icol, kk) +=
                 ptend_q(icol, kk, mam4::ConvProc::numptrcw_amode(m)) * dt;
-            for(int a = 0; a < mam4::AeroConfig::num_aerosol_ids(); ++a)
+            for(int a = 0; a < aero_config.num_aerosol_ids(); ++a)
               if(-1 < mam4::ConvProc::lmassptrcw_amode(a, m))
                 dry_aero.int_aero_mmr[m][a](icol, kk) +=
                     ptend_q(icol, kk, mam4::ConvProc::lmassptrcw_amode(a, m)) *
@@ -167,14 +169,15 @@ void update_interstitial_mmrs(const MAMDryDep::view_3d ptend_q, const double dt,
 }  // Update interstitial aerosols ends
 
 // Update cloud borne aerosols using qqcw
-void update_cloudborne_mmrs(const MAMDryDep::view_3d qqcw, const double dt,
+void update_cloudborne_mmrs(const mam4::AeroConfig &aero_config,
+                            const MAMDryDep::view_3d qqcw, const double dt,
                             const int nlev_,
                             // output
                             const mam_coupling::AerosolState dry_aero) {
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config.num_modes(); ++m) {
     Kokkos::deep_copy(dry_aero.cld_aero_nmr[m],
                       ekat::subview(qqcw, mam4::ConvProc::numptrcw_amode(m)));
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config.num_aerosol_ids(); ++a) {
       if(dry_aero.cld_aero_mmr[m][a].data()) {
         Kokkos::deep_copy(
             dry_aero.cld_aero_mmr[m][a],
