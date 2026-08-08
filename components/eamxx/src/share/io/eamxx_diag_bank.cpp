@@ -26,8 +26,18 @@ void collect_leaves (const DiagSpec& s, std::vector<std::string>& out)
 DiagBank::
 DiagBank (const std::shared_ptr<const AbstractGrid>& grid,
           const FieldManager& fm)
+ : DiagBank(grid,fm,m_own_repo)
+{
+  // Nothing else to do
+}
+
+DiagBank::
+DiagBank (const std::shared_ptr<const AbstractGrid>& grid,
+          const FieldManager& fm,
+          std::map<std::string,diag_ptr_t>& repo)
  : m_grid(grid)
  , m_fm(fm)
+ , m_repo(repo)
 {
   EKAT_REQUIRE_MSG (grid, "[DiagBank] Error! Invalid grid pointer.\n");
 }
@@ -92,7 +102,9 @@ const Field& DiagBank::build_one (const std::string& registered)
   std::vector<std::string> leaves;
   collect_leaves(spec,leaves);
   for (const auto& l : leaves) {
-    if (m_requests.count(l)==1 and m_entries.count(l)==0) {
+    // Skip the request's own name: 'T_mid' asks for the field T_mid, and
+    // 'foo:=foo' renames it. Neither is a request depending on itself.
+    if (l!=registered and m_requests.count(l)==1 and m_entries.count(l)==0) {
       build_one(l);
     }
   }
@@ -109,7 +121,11 @@ const Field& DiagBank::build_one (const std::string& registered)
 
   m_building.erase(registered);
   m_known[registered]   = tree.top;
-  m_entries[registered] = Entry{tree.top,r.write};
+
+  // If the request bottomed out on a model field, no diag was built for it, and
+  // this entry is nothing but a rename.
+  const auto diag = tree.eval_order.empty() ? nullptr : tree.eval_order.back();
+  m_entries[registered] = Entry{tree.top,r.write,diag};
 
   return m_entries[registered].field;
 }

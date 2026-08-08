@@ -1,5 +1,7 @@
 #include "share/io/eamxx_diag_tree.hpp"
 
+#include "share/io/eamxx_legacy_diag_names.hpp"
+
 #include <ekat_assert.hpp>
 
 #include <algorithm>
@@ -27,6 +29,19 @@ Field build (const DiagSpec& s,
     // field wins over a diagnostic of the same name, as it always has.
     if (fm.has_field(cname)) {
       return fm.get_field(cname);
+    }
+    // Not a field, and not a diag registered under this very name: it may be a
+    // legacy mangled name. Translating it here, rather than up front, is what
+    // preserves the rule above at every level of the expression -- a model
+    // field called 'foo_prev' was already returned above, and never gets here.
+    if (not DiagnosticFactory::instance().has_product(cname)) {
+      const auto expr = legacy_to_expr(cname);
+      if (expr!=cname) {
+        const auto sub = lower_to_diag_spec(expr,cname);
+        // Alias back to the legacy name: that is what the parent's params, and
+        // hence the consuming diag's input list, refer to it as.
+        return build(sub,grid,fm,repo,known,order).alias(cname);
+      }
     }
   }
 
@@ -66,19 +81,19 @@ Field build (const DiagSpec& s,
   auto diag = factory.create(key,grid->get_comm(),params,grid);
 
   // Wire the inputs. Most of them are the operands we just built, but a diag may
-  // also need inputs that never appear in the expression (e.g. a dp-weighted
-  // vertical average needs 'pseudo_density'); those come from the model.
+  // also need inputs that never appear in the expression. Those are often model
+  // fields (a dp-weighted vertical average needs 'pseudo_density'), but they can
+  // be diagnostics in their own right (FieldAtHeight needs 'height_mid'), so
+  // resolve them exactly as a leaf of the expression would be resolved.
+  // NOTE: this recursion happens before the diag is added to 'order', so an
+  //       implicit input still ends up ahead of the diag that consumes it.
   for (const auto& in_name : diag->get_input_fields_names()) {
     auto it = operands.find(in_name);
     if (it!=operands.end()) {
       diag->set_input_field(it->second);
     } else {
-      EKAT_REQUIRE_MSG (fm.has_field(in_name),
-          "Error! Missing input for a diagnostic.\n"
-          " - diagnostic: " + key + "\n"
-          " - expression: " + cname + "\n"
-          " - input     : " + in_name + "\n");
-      diag->set_input_field(fm.get_field(in_name));
+      const auto dep = build(lower_to_diag_spec(in_name,in_name),grid,fm,repo,known,order);
+      diag->set_input_field(dep.alias(in_name));
     }
   }
 

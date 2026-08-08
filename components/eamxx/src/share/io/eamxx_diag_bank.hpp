@@ -36,10 +36,21 @@ public:
   struct Entry {
     Field field;   // named after the request's registered name
     bool  write;
+
+    // The diag this entry's field comes from, or null if the request resolved
+    // to a model field (i.e. it was just a rename). Callers need it to tell a
+    // renamed field from a computed one.
+    diag_ptr_t diag;
   };
 
   DiagBank (const std::shared_ptr<const AbstractGrid>& grid,
             const FieldManager& fm);
+
+  // Same, but reusing a repo owned by the caller, so that diags can be shared
+  // with other banks (e.g. across output streams).
+  DiagBank (const std::shared_ptr<const AbstractGrid>& grid,
+            const FieldManager& fm,
+            std::map<std::string,diag_ptr_t>& repo);
 
   // Add a request, spelled as it is in the output yaml: either 'expr' or
   // 'name:=expr'. 'write' is false for entries in the 'aliases' section.
@@ -72,7 +83,8 @@ private:
 
   std::map<std::string,Entry>      m_entries;    // registered -> field
   std::map<std::string,Field>      m_known;      // registered -> field, for the walk
-  std::map<std::string,diag_ptr_t> m_repo;       // canonical  -> diag, for reuse
+  std::map<std::string,diag_ptr_t> m_own_repo;   // used when the caller has none
+  std::map<std::string,diag_ptr_t>& m_repo;      // canonical  -> diag, for reuse
   std::vector<diag_ptr_t>          m_eval_order;
   std::set<std::string>            m_building;   // to catch cycles
 };

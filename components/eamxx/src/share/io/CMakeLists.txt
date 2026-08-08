@@ -13,6 +13,7 @@ add_library(eamxx_io
   eamxx_diag_spec.cpp
   eamxx_diag_tree.cpp
   eamxx_diag_bank.cpp
+  eamxx_legacy_diag_names.cpp
 )
 
 target_link_libraries(eamxx_io PUBLIC

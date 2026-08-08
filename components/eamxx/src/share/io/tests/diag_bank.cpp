@@ -50,6 +50,19 @@ TEST_CASE("diag_bank")
     REQUIRE (bank.entries().at("T_mid.at(lev=3)").write);
   }
 
+  SECTION ("a plain model field is a valid request") {
+    DiagBank bank(grid,*fm);
+    bank.add("T_mid");            // asks for the field itself...
+    bank.add("temp:=T_mid");      // ...and this one just renames it
+    bank.build();
+
+    REQUIRE (bank.eval_order().empty());          // no diag needed for either
+    REQUIRE (bank.entries().at("T_mid").diag==nullptr);
+    REQUIRE (bank.field("T_mid").name()=="T_mid");
+    REQUIRE (bank.field("temp").name()=="temp");
+    REQUIRE (bank.field("temp").is_aliasing(bank.field("T_mid")));
+  }
+
   SECTION (":= gives a request a name of its own") {
     DiagBank bank(grid,*fm);
     bank.add("T3:=T_mid.at(lev=3)");
