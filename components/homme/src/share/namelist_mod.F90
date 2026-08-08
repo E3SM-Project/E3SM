@@ -317,6 +317,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
       hypervis_scaling, &
+      laplace_scaling, &
       smooth_phis_numcycle, &
       smooth_phis_p2filt, &
       smooth_phis_nudt, &
