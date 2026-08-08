@@ -218,6 +218,8 @@
 <config_submesoscale_Ce>0.08</config_submesoscale_Ce>
 <config_submesoscale_Lfmin>1000.0</config_submesoscale_Lfmin>
 <config_submesoscale_ds_max>100000.0</config_submesoscale_ds_max>
+<config_submesoscale_ice_aware>.false.</config_submesoscale_ice_aware>
+<config_submesoscale_ice_aware_crit>0.5</config_submesoscale_ice_aware_crit>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
