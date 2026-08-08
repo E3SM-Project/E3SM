@@ -111,6 +111,11 @@
   <lname>20TRSOI%CMIP7_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>WCYCL20TR1950-CMIP7</alias>
+  <lname>20TR1950SOI%CMIP7_EAM_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- Compsets for historical single forcing experiments, two aliases each with WCYCL20TR or hist as prefix -->
 
 <compset>
