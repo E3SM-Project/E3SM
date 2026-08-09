@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <config_pes>
   <grid name=".*ne30.*">
-        <mach name="pm-cpu">
+        <mach name="pm-cpu|muller-cpu|alvarez-cpu">
         <pes pesize="any" compset=".*_ELM%CNPRDCTCBCPHSWFMCROP_.*">
-        <comment>ELM BGC-Crop 128-core per node configuration for NERSC Perlmutter CPU</comment>
+        <comment>ELM BGC-Crop 8 node configuration for pm-cpu</comment>
         <ntasks>
           <ntasks_atm>-8</ntasks_atm>
           <ntasks_lnd>-8</ntasks_lnd>
