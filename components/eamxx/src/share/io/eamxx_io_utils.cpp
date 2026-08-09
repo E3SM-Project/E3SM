@@ -107,6 +107,16 @@ std::shared_ptr<AbstractDiagnostic>
 create_diagnostic (const std::string& diag_field_name,
                    const std::shared_ptr<const AbstractGrid>& grid)
 {
+  // A field computed by a diag that produces several of them is just a bare
+  // name, with no expression structure to lower. Resolve it first, so that the
+  // legacy translation below never gets a chance to read structure into it.
+  const auto provider = DiagOutputsRegistry::instance().provider_of(diag_field_name);
+  if (not provider.empty()) {
+    ekat::ParameterList params(diag_field_name);
+    params.set("grid_name",grid->name());
+    return DiagnosticFactory::instance().create(provider,grid->get_comm(),params,grid);
+  }
+
   // Translate a legacy mangled name (if that is what this is), parse it, and
   // lower it into the arguments the factory needs. See eamxx_diag_spec.hpp.
   // NOTE: this creates the diagnostic ALONE: its inputs are not set, and any

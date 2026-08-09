@@ -1029,22 +1029,25 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get();
     if (computable) {
       diag->compute(ts);
     }
 
-    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+    // One diag may compute several fields, and every one of them is as computed
+    // (or as missing) as the diag itself, so check and fill them all.
+    for (auto d : diag->get_outputs()) {
+      const bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
-    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
-      "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get().name() + "\n");
+      EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - diag name: " + d.name() + "\n");
 
-    if (not computed) {
-      // The diag was either not computable or it may have failed to compute
-      // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+      if (not computed) {
+        // The diag was either not computable or it may have failed to compute
+        // (e.g., t=0 output with a flux-like diag).
+        // If we're allowing invalid fields, then we should simply set diag=fill_value
+        d.deep_copy(constants::fill_value<float>);
+      }
     }
   }
 }

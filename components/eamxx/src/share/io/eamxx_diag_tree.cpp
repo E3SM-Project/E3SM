@@ -10,6 +10,27 @@ namespace scream {
 
 namespace {
 
+// The factory key to build 'name' with, when 'name' is a bare leaf. Usually the
+// name itself, but a diag computing several fields is registered under none of
+// the names it produces, so ask the registry for it. Returns 'name' unchanged if
+// nothing claims it, so that the caller reports the failure as it always has.
+std::string leaf_factory_key (const std::string& name)
+{
+  if (DiagnosticFactory::instance().has_product(name)) {
+    return name;
+  }
+  const auto provider = DiagOutputsRegistry::instance().provider_of(name);
+  return provider.empty() ? name : provider;
+}
+
+// The output of 'd' that this sub-expression asked for. Only a diag computing
+// several fields is asked by name; anything else names its single output
+// however it likes, and 'cname' is merely what we call it here.
+Field diag_output (const diag_ptr_t& d, const std::string& cname)
+{
+  return d->has_output(cname) ? d->get(cname) : d->get();
+}
+
 Field build (const DiagSpec& s,
              const std::shared_ptr<const AbstractGrid>& grid,
              const FieldManager& fm,
@@ -30,11 +51,12 @@ Field build (const DiagSpec& s,
     if (fm.has_field(cname)) {
       return fm.get_field(cname);
     }
-    // Not a field, and not a diag registered under this very name: it may be a
-    // legacy mangled name. Translating it here, rather than up front, is what
-    // preserves the rule above at every level of the expression -- a model
-    // field called 'foo_prev' was already returned above, and never gets here.
-    if (not DiagnosticFactory::instance().has_product(cname)) {
+    // Not a field, and not a name any diag computes: it may be a legacy mangled
+    // name. Translating it here, rather than up front, is what preserves the
+    // rule above at every level of the expression -- a model field called
+    // 'foo_prev' was already returned above, and never gets here.
+    if (not DiagnosticFactory::instance().has_product(cname) and
+        DiagOutputsRegistry::instance().provider_of(cname).empty()) {
       const auto expr = legacy_to_expr(cname);
       if (expr!=cname) {
         const auto sub = lower_to_diag_spec(expr,cname);
@@ -56,7 +78,7 @@ Field build (const DiagSpec& s,
   // Already built for this very sub-expression? Reuse it.
   if (auto it=repo.find(cname); it!=repo.end()) {
     add_to_order(it->second);
-    return it->second->get().alias(cname);
+    return diag_output(it->second,cname).alias(cname);
   }
 
   // Operands first: this is what puts 'order' in dependency order.
@@ -65,7 +87,7 @@ Field build (const DiagSpec& s,
     operands[c.names.canonical] = build(c,grid,fm,repo,known,order);
   }
 
-  const std::string key = s.is_leaf() ? cname : s.factory_key;
+  const std::string key = s.is_leaf() ? leaf_factory_key(cname) : s.factory_key;
   auto& factory = DiagnosticFactory::instance();
   EKAT_REQUIRE_MSG (factory.has_product(key),
       "Error! Unrecognized diagnostic.\n"
@@ -99,13 +121,25 @@ Field build (const DiagSpec& s,
 
   diag->initialize();
   repo[cname] = diag;
+
+  // A diag computing several fields must be found again when a *sibling* output
+  // is requested, or a second instance would be built and would recompute the
+  // whole suite. The canonical name above only covers the one output that
+  // happened to be asked for first.
+  const auto out_names = diag->get_output_names();
+  if (out_names.size()>1) {
+    for (const auto& o : out_names) {
+      repo[o] = diag;
+    }
+  }
+
   add_to_order(diag);
 
   // The diag names its own output field, following the legacy convention. The
   // tree refers to sub-expressions by canonical name instead, so alias it.
   // Aliasing shares the data, the tracking, and the extra data, so a mask or a
   // timestamp set on the diag field is still visible through the alias.
-  return diag->get().alias(cname);
+  return diag_output(diag,cname).alias(cname);
 }
 
 } // anonymous namespace
