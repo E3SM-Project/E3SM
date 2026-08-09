@@ -21,7 +21,7 @@ module global_norms_mod
 
   public :: print_cfl
   public :: dss_hvtensor
-  public :: test_global_integral
+  public :: print_mesh_stats
   public :: global_integral
   public :: wrap_repro_sum
 
@@ -97,14 +97,14 @@ contains
   end function global_integral
 
   ! ================================
-  ! test_global_integral:
+  ! print_mesh_stats:
   !
   ! test that the global integral of 
   ! the area of the sphere is 1.
   !
   ! ================================
 
-  subroutine test_global_integral(elem,hybrid,nets,nete,mindxout)
+  subroutine print_mesh_stats(elem,hybrid,nets,nete,mindxout)
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
@@ -225,7 +225,7 @@ contains
         mindxout=1000_real_kind*min_len
     end if
 
-  end subroutine test_global_integral
+  end subroutine print_mesh_stats
 
 
 !------------------------------------------------------------------------------------
@@ -249,7 +249,7 @@ contains
 #ifdef MODEL_THETA_L
     use element_state, only : nu_scale_top
 #endif
-    use dimensions_mod, only : np
+    use dimensions_mod, only : np, qsize
     use quadrature_mod, only : gausslobatto, quadrature_t
 
     use reduction_mod, only : ParallelMin,ParallelMax
@@ -257,6 +257,9 @@ contains
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top,  &
                             hypervis_scaling, laplace_scaling, dcmip16_mu,dcmip16_mu_s
     use control_mod, only : tstep_type
+    use control_mod, only : dt_remap_factor, dt_tracer_factor, transport_alg, &
+                            hypervis_subcycle, hypervis_subcycle_q, hypervis_subcycle_tom
+    use time_mod,    only : tstep
 
     type(element_t)      , intent(inout) :: elem(:)
     integer              , intent(in) :: nets,nete
@@ -267,6 +270,8 @@ contains
     real (kind=real_kind) :: max_normDinv  ! used for CFL
     real (kind=real_kind) :: normDinv_hypervis, normDinv_laplace
     real (kind=real_kind) :: lambda_max, lambda_vis, min_gw, lambda, nu_div_actual, nu_top_actual
+    real (kind=real_kind) :: dt_dyn_vis     ! viscosity timestep used in dynamics
+    real (kind=real_kind) :: dt_tracer_vis  ! viscosity timestep used in tracers
     integer :: ie
     type (quadrature_t)    :: gp
 
@@ -400,6 +405,40 @@ contains
            1.0d0/(dcmip16_mu_s*((scale_factor_inv*max_normDinv)**2)*lambda_vis),'s'
 
       write(iulog,*) 'tstep_type = ',tstep_type
+
+       ! compute timestep seen by viscosity operator:
+       dt_dyn_vis = tstep
+       if (dt_tracer_factor>1 .and. tstep_type == 1) then
+          ! tstep_type==1: RK2 followed by LF.  internal LF stages apply viscosity at 2*dt
+          dt_dyn_vis = 2*tstep
+       endif
+       dt_tracer_vis=tstep*dt_tracer_factor
+
+       ! compute actual viscosity timesteps with subcycling
+       dt_tracer_vis = dt_tracer_vis/hypervis_subcycle_q
+       dt_dyn_vis = dt_dyn_vis/hypervis_subcycle
+
+       ! print out the timestep sizes actually used by the model
+       write(iulog,'(a,2f9.2)')        "dt_remap: (0=disabled)   ",tstep*dt_remap_factor
+       if (transport_alg > 0) then
+          if (qsize>0) then
+              write(iulog,'(a,2f9.2)') "dt_tracer (SL):          ",tstep*dt_tracer_factor
+          endif
+       elseif (transport_alg == 0) then
+          if (qsize>0) then
+             write(iulog,'(a,2f9.2)')  "dt_tracer (EUL), per RK stage: ", &
+                 tstep*dt_tracer_factor,(tstep*dt_tracer_factor)/2
+          end if
+       endif
+       write(iulog,'(a,2f9.2)')        "dt_dyn:                  ",tstep
+       write(iulog,'(a,2f9.2)')        "dt_dyn (viscosity):      ",dt_dyn_vis
+       write(iulog,'(a,2f9.2)')        "dt_tracer (viscosity):   ",dt_tracer_vis
+       if (hypervis_subcycle_tom==0) then
+          ! applied with hyperviscosity
+          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",dt_dyn_vis
+       else
+          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom
+       endif
     end if
 
   end subroutine print_cfl
