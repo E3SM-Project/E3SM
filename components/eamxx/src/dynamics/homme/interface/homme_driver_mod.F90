@@ -186,8 +186,8 @@ contains
                                  prim_init_state_views, prim_init_tensorvisc
     use prim_state_mod,    only: prim_printstate
     use model_init_mod,    only: model_init2
-    use global_norms_mod,  only: dss_hvtensor, print_cfl
-    use control_mod,       only: disable_diagnostics
+    use global_norms_mod,  only: dss_hvtensor, print_cfl, print_mesh_stats
+    use control_mod,       only: disable_diagnostics, topology
     use dimensions_mod,    only: nelemd
     use homme_context_mod, only: is_model_inited, is_data_structures_inited, &
                                  elem, hybrid, hvcoord, deriv, tl
@@ -215,7 +215,14 @@ contains
     ! prim_complete_init1_phase_f90 -> prim_init_grid_views).
     call prim_init_tensorvisc (elem)
 
-    ! Print advective and viscious CFL estimates
+    ! Print mesh statistics (element area, norm(Dinv), distortion, etc.),
+    ! same diagnostics printed by EAM's prim_init2 (prim_driver_base.F90).
+    if (topology == "cube" .OR. topology == "plane") then
+       call print_mesh_stats(elem, hybrid, 1, nelemd)
+    end if
+
+    ! Print advective and viscious CFL estimates, plus dt_dyn/dt_tracer/
+    ! dt_remap timestep-size diagnostics (all printed inside print_cfl)
     call print_cfl(elem,hybrid,1,nelemd)
 
     ! Initialize reference states before functors so that setup() can read
