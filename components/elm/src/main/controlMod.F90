@@ -360,6 +360,8 @@ contains
 
     namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
 
+    namelist /elm_inparm/ squareomfrac
+
     namelist /elm_inparm/ use_hydrstress
 
     namelist /elm_inparm/ domain_decomp_type
