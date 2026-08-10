@@ -1123,6 +1123,16 @@ process_requested_fields()
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag_field.name();
     }
+    else if (m_avg_type!=OutputAvgType::Instant and
+             (diag_field.has_valid_mask() or diag_field.get_header().may_be_filled())) {
+      // Same rule check_for_avg_cnt applies to model fields: a field that may
+      // hold fill values needs its own avg count, or averaging would divide by
+      // the raw nsteps and bias the result low wherever it was filled. The
+      // special cases above predate may_be_filled() and are kept as they are,
+      // since they name their avg count differently.
+      m_track_avg_cnt = true;
+      diag_avg_cnt_name = "_" + diag_field.name();
+    }
 
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {

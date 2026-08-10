@@ -477,4 +477,65 @@ TEST_CASE ("sync_subfields") {
   }
 }
 
+TEST_CASE ("sync_aliased_subfield") {
+  // An alias of a non-contiguous subfield is itself non-contiguous, so it must
+  // carry over the contiguous helper field that host/device syncs go through.
+  // Without it, sync_to_host/dev dereferenced a null helper and segfaulted.
+  // Only reproduces where host and device do not share a memory space.
+
+  using namespace scream;
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using FID = FieldIdentifier;
+  using FL  = FieldLayout;
+
+  constexpr int ncols = 10;
+  constexpr int ndims = 4;
+  constexpr int nlevs = 8;
+  constexpr int icmp  = 2;
+
+  FID fid ("V",FL({COL,CMP,LEV},{ncols,ndims,nlevs}),none,"the_grid");
+  Field f (fid);
+  f.allocate_view();
+  f.deep_copy(0.0);
+
+  auto sf = f.get_component(icmp);
+  REQUIRE (sf.get_header().get_alloc_properties().contiguous()==false);
+
+  // This is what the diagnostics machinery does to an input field it got from
+  // the field manager: rename it to the name the diag knows it by.
+  auto sf_alias = sf.alias("V_cmp");
+  REQUIRE (sf_alias.get_header().get_alloc_properties().contiguous()==false);
+
+  sf.deep_copy(1.0);
+  sf_alias.sync_to_host();
+
+  auto sf_alias_h = sf_alias.get_view<const Real**,Host>();
+  for (int i=0; i<ncols; ++i) {
+    for (int k=0; k<nlevs; ++k) {
+      REQUIRE (sf_alias_h(i,k)==1.0);
+    }
+  }
+
+  // ...and back the other way
+  auto sf_alias_nc_h = sf_alias.get_view<Real**,Host>();
+  for (int i=0; i<ncols; ++i) {
+    for (int k=0; k<nlevs; ++k) {
+      sf_alias_nc_h(i,k) = 2.0;
+    }
+  }
+  sf_alias.sync_to_dev();
+
+  // The parent's other components must not have been clobbered by the sync
+  auto f_h = f.get_view<const Real***,Host>();
+  f.sync_to_host();
+  for (int i=0; i<ncols; ++i) {
+    for (int c=0; c<ndims; ++c) {
+      for (int k=0; k<nlevs; ++k) {
+        REQUIRE (f_h(i,c,k)==(c==icmp ? 2.0 : 0.0));
+      }
+    }
+  }
+}
+
 } // anonymous namespace

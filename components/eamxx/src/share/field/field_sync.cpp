@@ -100,6 +100,11 @@ void Field::sync_views_impl () const {
         EKAT_ERROR_MSG ("Error! Unsupported field rank in Field::sync_to_host.\n");
     }
   } else {
+    // A non-contiguous field syncs through a contiguous helper, which is set up
+    // when the field is created. Without it there is nothing to sync through.
+    EKAT_REQUIRE_MSG (m_contiguous_field!=nullptr,
+        "Error! Non-contiguous field is missing its contiguous helper field.\n"
+        " - field name: " + name() + "\n");
     auto sync_helper = [this] () {
       if constexpr (To==Host) m_contiguous_field->sync_to_host();
       else                    m_contiguous_field->sync_to_dev();
