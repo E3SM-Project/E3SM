@@ -150,6 +150,10 @@ protected:
   // Timestamp of the last diag evaluation
   util::TimeStamp m_last_eval_ts;
 
+  // Timestamp compute() was called with. Set before compute_impl() runs, so a
+  // diag that needs to know when it is being evaluated can read it there.
+  util::TimeStamp m_current_ts;
+
   // Input fields
   std::list<std::string>        m_field_in_names;
   std::map<std::string,Field>   m_fields_in;

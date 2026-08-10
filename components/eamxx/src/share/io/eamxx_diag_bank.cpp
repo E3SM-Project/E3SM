@@ -149,7 +149,7 @@ const Field& DiagBank::build_one (const std::string& registered)
     }
   }
 
-  const auto tree = build_diag_tree(spec,m_grid,m_fm,m_repo,m_known);
+  const auto tree = build_diag_tree(spec,m_grid,m_fm,m_repo,m_known,m_diag_params);
 
   // A diag shared with an earlier request is already in the order, ahead of
   // everything that consumes it, so it must not be added again.

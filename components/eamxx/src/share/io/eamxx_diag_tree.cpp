@@ -1,5 +1,6 @@
 #include "share/io/eamxx_diag_tree.hpp"
 
+#include "share/io/eamxx_io_utils.hpp"
 #include "share/io/eamxx_legacy_diag_names.hpp"
 
 #include <ekat_assert.hpp>
@@ -32,11 +33,45 @@ Field diag_output (const diag_ptr_t& d, const std::string& cname)
   return d->has_output(cname) ? d->get(cname) : d->get();
 }
 
+// A diag is built once and shared by everything that asks for it, including
+// other output streams. If a later request configures it differently from how
+// it was built, the options it gave would simply be ignored, so say so instead.
+void check_diag_params_match (AbstractDiagnostic& diag,
+                              const std::string& key,
+                              const std::string& cname,
+                              const ekat::ParameterList& diag_params)
+{
+  if (not diag_params.isSublist(key)) {
+    return;
+  }
+  const auto& wanted = diag_params.sublist(key);
+
+  // What the diag actually got built with, restricted to the options at hand.
+  ekat::ParameterList got (wanted.name());
+  for (const auto& name : wanted.param_names()) {
+    if (diag.get_params().isParameter(name)) {
+      overlay_params(got,diag.get_params(),{name});
+    }
+  }
+
+  const auto wanted_sig = params_signature(wanted);
+  const auto got_sig    = params_signature(got);
+  EKAT_REQUIRE_MSG (wanted_sig==got_sig,
+      "Error! A diagnostic was already built with different options.\n"
+      " - diag      : " + key + "\n"
+      " - expression: " + cname + "\n"
+      " - requested here : " + wanted_sig + "\n"
+      " - built earlier with: " + got_sig + "\n"
+      " - note: one diagnostic is shared by every output stream that asks for it,\n"
+      "         so all of them must give it the same 'diag_params' options.\n");
+}
+
 Field build (const DiagSpec& s,
              const std::shared_ptr<const AbstractGrid>& grid,
              const FieldManager& fm,
              std::map<std::string,diag_ptr_t>& repo,
              const std::map<std::string,Field>& known,
+             const ekat::ParameterList& diag_params,
              std::vector<diag_ptr_t>& order)
 {
   const auto& cname = s.names.canonical;
@@ -63,7 +98,7 @@ Field build (const DiagSpec& s,
         const auto sub = lower_to_diag_spec(expr,cname);
         // Alias back to the legacy name: that is what the parent's params, and
         // hence the consuming diag's input list, refer to it as.
-        return build(sub,grid,fm,repo,known,order).alias(cname);
+        return build(sub,grid,fm,repo,known,diag_params,order).alias(cname);
       }
     }
   }
@@ -76,8 +111,11 @@ Field build (const DiagSpec& s,
     }
   };
 
+  const std::string key = s.is_leaf() ? leaf_factory_key(cname) : s.factory_key;
+
   // Already built for this very sub-expression? Reuse it.
   if (auto it=repo.find(cname); it!=repo.end()) {
+    check_diag_params_match(*it->second,key,cname,diag_params);
     add_to_order(it->second);
     return diag_output(it->second,cname).alias(cname);
   }
@@ -85,10 +123,9 @@ Field build (const DiagSpec& s,
   // Operands first: this is what puts 'order' in dependency order.
   std::map<std::string,Field> operands;
   for (const auto& c : s.children) {
-    operands[c.names.canonical] = build(c,grid,fm,repo,known,order);
+    operands[c.names.canonical] = build(c,grid,fm,repo,known,diag_params,order);
   }
 
-  const std::string key = s.is_leaf() ? leaf_factory_key(cname) : s.factory_key;
   auto& factory = DiagnosticFactory::instance();
   EKAT_REQUIRE_MSG (factory.has_product(key),
       "Error! Unrecognized diagnostic.\n"
@@ -101,6 +138,15 @@ Field build (const DiagSpec& s,
   // not care about it simply never read the parameter.
   auto params = s.params;
   params.set<std::string>("grid_name",grid->name());
+
+  // Options given in the output yaml for this kind of diag, if any. They are
+  // overlaid last, so a knob set there wins over what the expression lowered
+  // to. This is how a diag gets settings that its expression has no syntax for
+  // (e.g. how often COSP should actually run).
+  if (diag_params.isSublist(key)) {
+    overlay_params(params,diag_params.sublist(key));
+  }
+
   auto diag = factory.create(key,grid->get_comm(),params,grid);
 
   // Wire the inputs. Most of them are the operands we just built, but a diag may
@@ -121,7 +167,7 @@ Field build (const DiagSpec& s,
       // that field, which sends the reader looking in the wrong place.
       Field dep;
       try {
-        dep = build(lower_to_diag_spec(in_name,in_name),grid,fm,repo,known,order);
+        dep = build(lower_to_diag_spec(in_name,in_name),grid,fm,repo,known,diag_params,order);
       } catch (const std::exception& e) {
         EKAT_ERROR_MSG (
             "Error! Could not resolve an input of a diagnostic.\n"
@@ -167,10 +213,11 @@ DiagTree build_diag_tree (const DiagSpec& spec,
                           const std::shared_ptr<const AbstractGrid>& grid,
                           const FieldManager& fm,
                           std::map<std::string,diag_ptr_t>& repo,
-                          const std::map<std::string,Field>& known)
+                          const std::map<std::string,Field>& known,
+                          const ekat::ParameterList& diag_params)
 {
   DiagTree tree;
-  auto f = build(spec,grid,fm,repo,known,tree.eval_order);
+  auto f = build(spec,grid,fm,repo,known,diag_params,tree.eval_order);
 
   // Unlike the canonical name, the registered one is what the FieldManager and
   // the output file will know this by.

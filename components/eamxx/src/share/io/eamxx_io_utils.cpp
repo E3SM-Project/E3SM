@@ -9,8 +9,11 @@
 
 #include <ekat_string_utils.hpp>
 
+#include <algorithm>
 #include <fstream>
 #include <regex>
+#include <type_traits>
+#include <vector>
 
 namespace scream {
 
@@ -132,6 +135,71 @@ create_diagnostic (const std::string& diag_field_name,
   const auto& key = spec.factory_key.empty() ? diag_field_name : spec.factory_key;
 
   return DiagnosticFactory::instance().create(key,grid->get_comm(),params,grid);
+}
+
+namespace {
+
+// Apply 'f' to the parameter 'name' of 'src', as whichever of the supported
+// types it actually holds. Returns false if it holds none of them.
+template<typename Func>
+bool visit_param (const ekat::ParameterList& src, const std::string& name, Func&& f)
+{
+  using strvec_t = std::vector<std::string>;
+  if      (src.isType<bool>       (name)) { f(src.get<bool>       (name)); }
+  else if (src.isType<int>        (name)) { f(src.get<int>        (name)); }
+  else if (src.isType<double>     (name)) { f(src.get<double>     (name)); }
+  else if (src.isType<std::string>(name)) { f(src.get<std::string>(name)); }
+  else if (src.isType<strvec_t>   (name)) { f(src.get<strvec_t>   (name)); }
+  else { return false; }
+  return true;
+}
+
+} // anonymous namespace
+
+void overlay_params (ekat::ParameterList& dst, const ekat::ParameterList& src,
+                     const std::vector<std::string>& only)
+{
+  for (const auto& name : only) {
+    if (not src.isParameter(name)) {
+      continue;
+    }
+    const bool ok = visit_param(src,name,
+        [&](const auto& v) { dst.set(name,v); });
+    EKAT_REQUIRE_MSG (ok,
+        "Error! Unsupported parameter type in a diagnostic options list.\n"
+        " - list     : " + src.name() + "\n"
+        " - parameter: " + name + "\n"
+        " - note: supported types are bool, int, double, string, and list of strings.\n");
+  }
+}
+
+void overlay_params (ekat::ParameterList& dst, const ekat::ParameterList& src)
+{
+  overlay_params(dst,src,src.param_names());
+}
+
+std::string params_signature (const ekat::ParameterList& params)
+{
+  // param_names() order is unspecified, so sort for a stable rendering.
+  auto names = params.param_names();
+  std::sort(names.begin(),names.end());
+
+  std::string sig;
+  for (const auto& name : names) {
+    sig += name + "=";
+    visit_param(params,name,[&](const auto& v) {
+      using T = std::decay_t<decltype(v)>;
+      if constexpr (std::is_same_v<T,std::string>) {
+        sig += v;
+      } else if constexpr (std::is_same_v<T,std::vector<std::string>>) {
+        sig += ekat::join(v,",");
+      } else {
+        sig += std::to_string(v);
+      }
+    });
+    sig += ";";
+  }
+  return sig;
 }
 
 } // namespace scream

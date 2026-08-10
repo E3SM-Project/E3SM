@@ -19,9 +19,11 @@ namespace scream
  * input. The two must NOT both be active in one run: COSP keeps global state in
  * its Fortran modules, which both would initialize.
  *
- * NOTE: the process throttled itself with 'cosp_frequency'. A diagnostic has no
- *       step counter, and the output stream decides when it is evaluated, so
- *       that knob is gone: COSP now runs whenever the stream asks for it.
+ * COSP is expensive, so -- like the process before it -- it throttles itself,
+ * via 'cosp_frequency' and 'cosp_frequency_units'. Between runs the output
+ * fields simply keep the values of the last one, which is what the process did
+ * too. A diagnostic has no yaml section of its own, so these come from the
+ * 'diag_params: Cosp:' sublist of the output yaml (see build_diag_tree).
  */
 class CospDiag : public AbstractDiagnostic
 {
@@ -51,6 +53,18 @@ protected:
   // Create the coordinate vars for the tau/prs/cth dimensions, unless the grid
   // already carries them.
   void create_cosp_geometry_data () const;
+
+  // Whether COSP should actually run at the timestamp we are being computed at.
+  // Always true the first time, so that the outputs are never left unset.
+  bool cosp_do () const;
+
+  // How often to run COSP, and in what units ('steps' or 'hours')
+  Int                         m_cosp_frequency;
+  ekat::CaseInsensitiveString m_cosp_frequency_units;
+
+  // Timestamp of the last COSP run, and whether there was one at all
+  util::TimeStamp m_last_cosp_ts;
+  bool            m_cosp_ran = false;
 
   // Field dimensions
   Int m_num_cols;

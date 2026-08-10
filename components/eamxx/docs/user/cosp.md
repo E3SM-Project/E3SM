@@ -19,18 +19,41 @@ COSP computes all four in a single pass, so asking for one costs the same as
 asking for all four, and asking for them across several output streams still runs
 COSP only once per timestep.
 
+## Controlling how often COSP runs
+
+COSP is expensive, and an averaged output stream would otherwise evaluate it
+every timestep. It therefore throttles itself, with the same two knobs it had as
+a process, given in the `diag_params` section of the output yaml:
+
+```yaml
+diag_params:
+  Cosp:
+    cosp_frequency: 1
+    cosp_frequency_units: hours   # 'hours' or 'steps'
+    cosp_subcolumns: 10
+```
+
+Between runs the COSP fields keep the values of the last run, exactly as they
+did when COSP was a process. The defaults are `cosp_frequency: 1` and
+`cosp_frequency_units: steps`, i.e. every timestep, so setting them is worth it
+for anything but a short run.
+
+`diag_params` is keyed by the *diagnostic* name (`Cosp`), not by the name of any
+field it computes, since one COSP pass produces all four. For the same reason,
+one COSP diagnostic is shared by every output stream that asks for its fields:
+if more than one stream configures it, they must all configure it identically,
+and it is an error if they do not.
+
 !!! note "Changed in this version"
 
     COSP used to be an atmosphere process, turned on with
     `./atmchange physics::atm_procs_list="...,cosp"` and configured with
     `physics::cosp::cosp_frequency` / `cosp_frequency_units` / `cosp_subcolumns`.
-    Those settings no longer exist. Output yamls that simply list the COSP field
-    names keep working unchanged; only the `atm_procs_list` entry has to go.
-
-    COSP now runs whenever an output stream evaluates it, rather than on its own
-    `cosp_frequency`. For `INSTANT` output that is the stream's output frequency;
-    for averaged output it is every timestep. Subcolumn sampling is fixed at 10
-    subcolumns (`SCOPS`/`PREC_SCOPS`), the former default.
+    Output yamls that simply list the COSP field names keep working unchanged,
+    and the `atm_procs_list` entry has to go. The three settings move to the
+    `diag_params: Cosp:` section of the output yaml, keeping their names,
+    meanings, and defaults; `cosp_frequency: 0` ("never run COSP") is the one
+    thing that no longer means anything, and is now an error.
 
 Output streams need to be added manually.
 A minimal example:

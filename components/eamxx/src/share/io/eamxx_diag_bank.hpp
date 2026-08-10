@@ -52,6 +52,12 @@ public:
             const FieldManager& fm,
             std::map<std::string,diag_ptr_t>& repo);
 
+  // Per-diagnostic options, keyed by factory key. See build_diag_tree().
+  // Must be set before build(), and applies to every diag built by this bank.
+  void set_diag_params (const ekat::ParameterList& diag_params) {
+    m_diag_params = diag_params;
+  }
+
   // Add a request, spelled as it is in the output yaml: either 'expr' or
   // 'name:=expr'. 'write' is false for entries in the 'aliases' section.
   // Returns the name the request was registered under, which is NOT simply the
@@ -90,6 +96,7 @@ private:
   std::map<std::string,Entry>      m_entries;    // registered -> field
   std::map<std::string,Field>      m_known;      // registered -> field, for the walk
   std::map<std::string,diag_ptr_t> m_own_repo;   // used when the caller has none
+  ekat::ParameterList              m_diag_params {"diag_params"};
   std::map<std::string,diag_ptr_t>& m_repo;      // canonical  -> diag, for reuse
   std::vector<diag_ptr_t>          m_eval_order;
   std::set<std::string>            m_building;   // to catch cycles

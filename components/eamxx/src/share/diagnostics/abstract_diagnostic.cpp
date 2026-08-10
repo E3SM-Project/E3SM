@@ -126,6 +126,11 @@ void AbstractDiagnostic::compute (const util::TimeStamp& ts)
     return;
   }
 
+  // Make the timestamp being computed at available to compute_impl(), for the
+  // diags that need to know *when* they are being evaluated (e.g. one that
+  // throttles itself to run less often than it is asked to).
+  m_current_ts = ts;
+
   compute_impl ();
 
   // Update timestamp info. One compute_impl() call produces all the outputs,

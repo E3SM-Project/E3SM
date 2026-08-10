@@ -4,6 +4,13 @@ filename_prefix: eamxx_output.decadal.1hourlyAVG_native.h
 iotype: pnetcdf
 averaging_type: average
 max_snapshots_per_file: 1 # only one snapshot per file
+# COSP is expensive, so run it hourly rather than every step. One COSP diag is
+# shared by every stream asking for its fields, so all of them must say the same
+# thing here (see eamxx_output.decadal.hourlyAVG_coarse.yaml).
+diag_params:
+  Cosp:
+    cosp_frequency: 1
+    cosp_frequency_units: hours
 fields:
   physics_pg2:
     field_names:

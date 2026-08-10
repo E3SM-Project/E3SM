@@ -48,12 +48,18 @@ struct DiagTree {
  *  - 'known' are fields the caller has already built and given a name to, and
  *    is consulted before 'fm'. This is what lets an expression refer to another
  *    expression by the name it was registered under.
+ *  - 'diag_params' holds per-diagnostic options, in a sublist named after the
+ *    factory key of the diag they configure (e.g. a sublist 'Cosp' configures
+ *    every diag built as 'Cosp'). They are overlaid on top of what the
+ *    expression lowered to, so an option given here wins. A diag whose key
+ *    has no sublist here is built exactly as before.
  */
 DiagTree build_diag_tree (const DiagSpec& spec,
                           const std::shared_ptr<const AbstractGrid>& grid,
                           const FieldManager& fm,
                           std::map<std::string,diag_ptr_t>& repo,
-                          const std::map<std::string,Field>& known = {});
+                          const std::map<std::string,Field>& known = {},
+                          const ekat::ParameterList& diag_params = ekat::ParameterList("diag_params"));
 
 } // namespace scream
 

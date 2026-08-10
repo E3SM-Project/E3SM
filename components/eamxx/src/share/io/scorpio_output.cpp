@@ -116,6 +116,22 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
 
   auto gm = field_mgr->get_grids_manager();
 
+  // Per-diag options, in a sublist named after the diag they configure. E.g.
+  //
+  //   diag_params:
+  //     Cosp:
+  //       cosp_frequency: 1
+  //       cosp_frequency_units: hours
+  //
+  // These reach the diag through the DiagBank, and are how a diag is given a
+  // setting that its expression has no syntax for. Diags are shared across
+  // output streams, so two streams that configure the same diag differently
+  // would end up with whichever one happened to be built first; check for that
+  // here instead, and say so.
+  if (params.isSublist("diag_params")) {
+    m_diag_params = params.sublist("diag_params");
+  }
+
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
   m_avg_type    = str2avg(avg_type);
@@ -1146,6 +1162,7 @@ process_requested_fields()
   // NOTE: the bank is given the static diag repo, so that two output streams
   //       asking for the same thing share one diagnostic, as they always have.
   DiagBank bank (fm_grid,*fm_model,m_diag_repo);
+  bank.set_diag_params(m_diag_params);
 
   // The 'aliases' yaml section declares intermediates: they must exist, so that
   // other requests can refer to them, but they are not written to file.

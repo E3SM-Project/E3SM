@@ -240,6 +240,12 @@ protected:
 
   static strmap_t<diag_ptr_type> m_diag_repo;
 
+  // Per-diag options from this stream's yaml ('diag_params' sublist), keyed by
+  // diag factory key. Diags are shared across streams via the static repo
+  // above; build_diag_tree() is what checks that two streams asking for the
+  // same diag do not configure it differently.
+  ekat::ParameterList m_diag_params {"diag_params"};
+
   // Field aliasing support
   strmap_t<std::string> m_alias_to_orig; // Map from alias names to original names (used to set io attribute)
 

@@ -9,6 +9,8 @@
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
+#include <cstdint>
+
 namespace scream
 {
 
@@ -29,6 +31,24 @@ CospDiag (const ekat::Comm& comm, const ekat::ParameterList& params,
   // in practice this is the default. It is still read from the params, so that
   // it works if a caller ever does supply them.
   m_num_subcols = m_params.get<Int>("cosp_subcolumns", 10);
+
+  // How often to actually run COSP. Same knobs, same defaults, as the process
+  // had; they now come from the 'diag_params: Cosp:' sublist of the output yaml.
+  m_cosp_frequency       = m_params.get<Int>("cosp_frequency", 1);
+  m_cosp_frequency_units = m_params.get<std::string>("cosp_frequency_units", "steps");
+  EKAT_REQUIRE_MSG (m_cosp_frequency_units=="steps" or m_cosp_frequency_units=="hours",
+      "Error! Unsupported cosp_frequency_units.\n"
+      " - input units  : " + m_cosp_frequency_units + "\n"
+      " - valid choices: steps, hours\n");
+  // The process took 0 to mean 'never run COSP', which left its output fields
+  // at whatever they were initialized to. As a diagnostic that cannot mean
+  // anything: the fields are only computed because someone asked for them.
+  EKAT_REQUIRE_MSG (m_cosp_frequency>0,
+      "Error! cosp_frequency must be positive.\n"
+      " - input: " + std::to_string(m_cosp_frequency) + "\n"
+      " - note: a COSP field is computed only because an output stream asks for\n"
+      "         it, so there is no meaning to asking COSP to never run. Drop the\n"
+      "         COSP fields from the output yaml instead.\n");
 
   m_num_cols = m_grid->get_num_local_dofs();
   m_num_levs = m_grid->get_num_vertical_levels();
@@ -188,8 +208,38 @@ void CospDiag::create_cosp_geometry_data () const
 }
 
 // =========================================================================================
+bool CospDiag::cosp_do () const
+{
+  // Never skip the first one: unlike the process, which ran inside the model
+  // timestep and could leave its outputs alone until it was ready, a diag is
+  // computed because something is about to write it. Skipping here would write
+  // whatever the freshly allocated views happen to hold.
+  if (not m_cosp_ran) {
+    return true;
+  }
+
+  if (m_cosp_frequency_units=="steps") {
+    // Same rule the process used: run when the step count divides evenly.
+    return (m_current_ts.get_num_steps() % m_cosp_frequency) == 0;
+  }
+
+  // 'hours': the process converted to steps using dt, which required dt to
+  // divide an hour evenly. Comparing elapsed time directly gives the same
+  // answer whenever that held, and stays meaningful when it does not.
+  return (m_current_ts - m_last_cosp_ts) >= static_cast<std::int64_t>(3600)*m_cosp_frequency;
+}
+
+// =========================================================================================
 void CospDiag::compute_impl ()
 {
+  // COSP is expensive, so it may be asked for more often than it should run.
+  // In between, the outputs keep the values of the last run.
+  if (not cosp_do()) {
+    return;
+  }
+  m_cosp_ran     = true;
+  m_last_cosp_ts = m_current_ts;
+
   // Get fields from the input map; note that we get host views because this
   // interface serves primarily as a wrapper to a c++ to f90 bridge for the COSP
   // all then need to be copied to layoutLeft views to permute the indices for
