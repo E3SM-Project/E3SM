@@ -22,6 +22,7 @@ module prim_driver_mod
   public :: prim_run_subcycle
   public :: prim_init_elements_views
   public :: prim_init_grid_views
+  public :: prim_init_tensorvisc
   public :: prim_init_geopotential_views
   public :: prim_init_state_views
   public :: prim_init_ref_states_views
@@ -92,7 +93,8 @@ contains
                               dcmip16_mu, theta_advect_form, test_case,                &
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
                               pgrad_correction, dp3d_thresh, vtheta_thresh,            &
-                              internal_diagnostics_level, do_3d_turbulence
+                              internal_diagnostics_level, do_3d_turbulence,            &
+                              tom_sponge_start
     !
     ! Input(s)
     !
@@ -143,7 +145,8 @@ contains
                                    nsplit,                                                        &
                                    pgrad_correction,                                              &
                                    dp3d_thresh, vtheta_thresh, internal_diagnostics_level,        &
-                                   do_3d_turbulence_int)
+                                   do_3d_turbulence_int,                                          &
+                                   tom_sponge_start)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -236,6 +239,34 @@ contains
     enddo
   end subroutine prim_init_grid_views
 
+  ! Copies just tensorVisc into the C++ ElementsGeometry. This is used to
+  ! (re)populate tensorVisc after dss_hvtensor() has updated it, without
+  ! re-copying the other (constant) geometry fields that prim_init_grid_views
+  ! already sent to C++ earlier.
+  subroutine prim_init_tensorvisc (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use theta_f2c_mod, only : init_tensorvisc_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    real (kind=real_kind), target, dimension(np,np,2,2) :: elem_tensorvisc
+    type (c_ptr) :: elem_tensorvisc_ptr
+
+    integer :: ie
+
+    elem_tensorvisc_ptr = c_loc(elem_tensorvisc)
+
+    do ie=1,nelemd
+      elem_tensorvisc = elem(ie)%tensorVisc
+      call init_tensorvisc_c (ie-1, elem_tensorvisc_ptr)
+    enddo
+  end subroutine prim_init_tensorvisc
+
   subroutine prim_init_geopotential_views (elem)
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
@@ -298,7 +329,7 @@ contains
   subroutine prim_init_ref_states_views (elem)
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
-    use element_state, onlY : elem_theta_ref, elem_dp_ref, elem_phi_ref
+    use element_state, onlY : elem_theta_ref, elem_dp_ref, elem_phi_ref, nu_scale_top
     use theta_f2c_mod, only : init_reference_states_c
     !
     ! Input(s)
@@ -308,11 +339,14 @@ contains
     ! Local(s)
     !
     type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
+    type (c_ptr) :: nu_scale_top_ptr
 
     elem_theta_ref_ptr = c_loc(elem_theta_ref)
     elem_dp_ref_ptr    = c_loc(elem_dp_ref)
     elem_phi_ref_ptr   = c_loc(elem_phi_ref)
-    call init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr)
+    nu_scale_top_ptr   = c_loc(nu_scale_top)
+    call init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, &
+                                  elem_phi_ref_ptr, nu_scale_top_ptr)
   end subroutine prim_init_ref_states_views
 
   subroutine prim_init_diags_views (elem)
@@ -361,7 +395,7 @@ contains
 
     ! Initialize the 3d states views in C++
     call prim_init_state_views (elem)
-
+    
     ! Initialize the reference states in C++
     call prim_init_ref_states_views (elem)
 

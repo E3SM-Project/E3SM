@@ -42,7 +42,7 @@ set(ZM_SRCS
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND ZM_SRCS
-    eti/zm_common_init.cpp
+    eti/zm_opts.cpp
     eti/zm_input_state.cpp
     eti/zm_output_tend.cpp
     eti/zm_invert_entropy.cpp

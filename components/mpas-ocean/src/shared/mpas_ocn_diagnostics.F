@@ -603,7 +603,7 @@ contains
 !  routine ocn_relativeVorticity_circulation
 !
 !> \brief   Computes relative vorticity and circulation
-!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler
+!> \author  Mark Petersen, Doug Jacobsen, Todd Ringler, Darren Engwirda
 !> \date    November 2013
 !> \details
 !>  Computes relative vorticity and circulation
@@ -643,7 +643,7 @@ contains
 
       integer :: iVertex, iEdge, i, k
 
-      real (kind=RKIND) :: invAreaTri1, r_tmp
+      real (kind=RKIND) :: invAreaTri1, r_tmp, wall_slip_factor
 
       err = 0
 
@@ -663,24 +663,36 @@ contains
       !$omp end do
 #endif
 
+      ! no-slip = 0.0
+      ! free-slip = 1.0
+      ! partial-slip in-between
+      wall_slip_factor = config_wall_slip_factor
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc          present(circulation, relativeVorticity, areaTriangle, edgesOnVertex, &
-      !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, edgeSignOnVertex, &
-      !$acc                  minLevelVertexTop) &
-      !$acc          private(invAreaTri1, iVertex, iEdge, k, r_tmp)
+      !$acc          present(circulation, relativeVorticity, edgesOnVertex, &
+      !$acc                  maxLevelVertexBot, dcEdge, normalVelocity, &
+      !$acc                  minLevelVertexTop, areaTriangle, edgeSignOnVertex) &
+      !$acc          private(invAreaTri1, i, iEdge, k, r_tmp)
 #else
-      !$omp do schedule(runtime) private(invAreaTri1, i, iEdge, k, r_tmp)
+      !$omp do schedule(runtime) &
+      !$omp          private(invAreaTri1, i, iEdge, k, r_tmp)
 #endif
       do iVertex = 1, nVerticesAll
          invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
-         do i = 1, vertexDegree
-            iEdge = edgesOnVertex(i, iVertex)
-            do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
-              r_tmp = dcEdge(iEdge) * normalVelocity(k, iEdge)
-              circulation(k, iVertex) = circulation(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp
-              relativeVorticity(k, iVertex) = relativeVorticity(k, iVertex) + edgeSignOnVertex(i, iVertex) * r_tmp * invAreaTri1
+         do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
+            do i = 1, vertexDegree
+               iEdge = edgesOnVertex(i, iVertex)
+               r_tmp = edgeSignOnVertex(i, iVertex) * &
+                       dcEdge(iEdge) * normalVelocity(k, iEdge)
+               circulation(k, iVertex) = circulation(k, iVertex) + r_tmp
             end do
+            ! no-slip: curl(u) unchanged
+            ! free-slip: curl(u) = 0.0
+            ! partial-slip: curl(u) reduced
+            circulation(k, iVertex) = circulation(k, iVertex) * &
+               (1.0_RKIND - wall_slip_factor * boundaryVertex(k, iVertex))
+            relativeVorticity(k, iVertex) = circulation(k, iVertex) * invAreaTri1
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -805,6 +817,12 @@ contains
 #ifdef MPAS_OPENACC
          !$acc exit data copyout(wctEdge) delete(baroclinicThickness, deltaSSH, btrVelocity)
 #endif
+
+      case (thickEdgeFluxConstant)
+         do iEdge = 1, nEdgesAll
+            if ( maxLevelEdgeTop(iEdge) == 0 ) cycle
+            wctEdge(iEdge) = baroclinicThickness(iEdge)
+         end do
 
       case default
          ! Should have been caught on init
@@ -1335,11 +1353,11 @@ contains
          cell1, cell2                ! neighbor cell   addresses
 
       real(kind=RKIND) :: &
-         invAreaTri1,          &! 1/triangle area
          invAreaCell1,         &! 1/cell area
          invLength,            &! 1/length
          layerThicknessVertex, &! layer thickness at vertex
-         apvm_scale_factor      ! scale factor for APVM form
+         apvm_scale_factor,    &! scale factor for APVM form
+         areaDual               ! unmaksed dual-cell overlap
 
       ! Local arrays
       ! normalizedPlanetaryVorticityVertex: earth's rotational rate
@@ -1379,25 +1397,29 @@ contains
       !$acc    present(normalizedRelativeVorticityVertex, &
       !$acc            normalizedPlanetaryVorticityVertex, &
       !$acc            relativeVorticity, fVertex, layerThickness, &
-      !$acc            areaTriangle, kiteAreasOnVertex, cellsOnVertex, &
-      !$acc            maxLevelVertexBot) &
-      !$acc    private(i, k, iCell, invAreaTri1, layerThicknessVertex)
+      !$acc            kiteAreasOnVertex, cellsOnVertex, &
+      !$acc            minLevelVertexTop, maxLevelVertexBot) &
+      !$acc    private(i, k, iCell, areaDual, layerThicknessVertex)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(i, k, iCell, invAreaTri1, layerThicknessVertex)
+      !$omp    private(i, k, iCell, areaDual, layerThicknessVertex)
 #endif
       do iVertex = 1, nVertices
-         invAreaTri1 = 1.0_RKIND / areaTriangle(iVertex)
-         do k = 1, maxLevelVertexBot(iVertex)
+         normalizedRelativeVorticityVertex(:,iVertex) = 0.0_RKIND
+         normalizedPlanetaryVorticityVertex(:,iVertex) = 0.0_RKIND
+         do k = minLevelVertexTop(iVertex), maxLevelVertexBot(iVertex)
             layerThicknessVertex = 0.0_RKIND
+            areaDual = 0.0_RKIND  ! only the unmasked kites
             do i = 1, vertexDegree
                iCell = cellsOnVertex(i,iVertex)
                layerThicknessVertex = layerThicknessVertex &
                                     + layerThickness(k,iCell) &
                                     * kiteAreasOnVertex(i,iVertex)
+               areaDual = areaDual + cellMask(k,iCell) &
+                                    * kiteAreasOnVertex(i,iVertex)
             end do
-            layerThicknessVertex = layerThicknessVertex*invAreaTri1
+            layerThicknessVertex = layerThicknessVertex/areaDual
             if (layerThicknessVertex == 0) cycle
 
             normalizedRelativeVorticityVertex(k,iVertex) = &

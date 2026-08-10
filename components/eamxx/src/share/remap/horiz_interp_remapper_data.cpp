@@ -1,5 +1,6 @@
 #include "horiz_interp_remapper_data.hpp"
 
+#include "share/field/field_reader.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
@@ -154,8 +155,12 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
        const std::string& map_file)
 {
   std::filesystem::path p(map_file);
+
   // The "1" stands for "build from 1 grid"
   start_timer ("HRemap1 " + p.filename().string() + " bld");
+
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   EKAT_REQUIRE_MSG (grid,
       "[HorizRemapperDataRepo::build_data_from_src] Error! Invalid src grid pointer.\n");
@@ -190,15 +195,15 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   // Only read the lat/lon/area vars if they are present. If one is present, we assume they all are
   if (scorpio::has_var(map_file,"yc"+suffix)) {
-    auto deg = ekat::units::none.rename("deg");
+    std::map<FieldTag,std::string> tag_rename = { {COL,"n"+suffix} };
+    auto deg = none.rename("deg");
 
-    gen_grid->create_geometry_data("lat", gen_grid->get_2d_scalar_layout(),deg);
-    gen_grid->create_geometry_data("lon", gen_grid->get_2d_scalar_layout(),deg);
-    gen_grid->create_geometry_data("area",gen_grid->get_2d_scalar_layout(),ekat::units::sr);
-    gen_grid->read_geometry_data(map_file,
-                                 {"lat","lon","area"},
-                                 {"yc"+suffix,"xc"+suffix,"area"+suffix},
-                                 {{"ncol","n"+suffix}});
+    const auto& layout2d = gen_grid->get_2d_scalar_layout();
+    auto lat  = gen_grid->create_geometry_data("lat", layout2d,deg).alias("yc"+suffix,tag_rename);
+    auto lon  = gen_grid->create_geometry_data("lon", layout2d,deg).alias("xc"+suffix,tag_rename);
+    auto area = gen_grid->create_geometry_data("area",layout2d,sr ).alias("area"+suffix,tag_rename);
+    auto gids = gen_grid->get_partitioned_dim_gids().alias("gids",tag_rename);
+    read_fields(map_file,{lat,lon,area},gids,comm);
 
     // If this is a remap TO a lat-lon grid, setup some geo data that our output classes
     // will use to write to file using (lat,lon) layout rather than (ncol)
@@ -224,21 +229,27 @@ read_mat_triplets (const std::string& map_file)
 {
   using gid_type = AbstractGrid::gid_type;
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   const auto& comm = m_src_grid->get_comm();
 
   // Split the triplets evenly across ranks, and read them
   int n_s = scorpio::get_dimlen(map_file,"n_s");
   auto io_grid = create_point_grid("remap_data_io_grid",n_s,0,comm);
-  io_grid->reset_field_tag_name(COL,"n_s");
 
-  auto row_h = io_grid->create_geometry_data<gid_type>("row",io_grid->get_2d_scalar_layout()).get_view<const gid_type*,Host>();
-  auto col_h = io_grid->create_geometry_data<gid_type>("col",io_grid->get_2d_scalar_layout()).get_view<const gid_type*,Host>();
-  auto S_h   = io_grid->create_geometry_data<Real>("S",  io_grid->get_2d_scalar_layout()).get_view<const Real*,Host>();
-  io_grid->read_geometry_data(map_file,{"row","col","S"});
+  auto fl = io_grid->get_2d_scalar_layout().rename_dim(0,"n_s");
+  auto gids = io_grid->get_partitioned_dim_gids().alias("gids",{{COL,"n_s"}});
+
+  Field row(FieldIdentifier("row",fl,none,"",DataType::IntType),true);
+  Field col(FieldIdentifier("col",fl,none,"",DataType::IntType),true);
+  Field S  (FieldIdentifier("S",fl,none,""),true);
+  read_fields(map_file,{row,col,S},gids,comm);
 
   int nlweights = io_grid->get_num_local_dofs();
 
+  auto row_h = row.get_view<const gid_type*,Host>();
+  auto col_h = col.get_view<const gid_type*,Host>();
+  auto S_h   = S.get_view<const Real*,Host>();
   std::vector<Triplet> triplets;
   for (int i=0; i<nlweights; ++i) {
     triplets.emplace_back(row_h[i],col_h[i],S_h[i]);
@@ -388,10 +399,11 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
                   const std::string& map_file)
 {
   using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
 
   // Add lat/lon to the temp grid, and read from map file
-  auto nondim = ekat::units::none;
-  ekat::units::Units deg(nondim,"degrees");
+  auto degN = none.rename("degrees_north");
+  auto degE = none.rename("degrees_east");
 
   // Declare lat/lon and read them from the map file.
   // WARNING: the vars/dims names are different from what eamxx uses
@@ -417,8 +429,8 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   // Re-create lat/lon geometry data with only lat (or lon) dim
   grid->delete_geometry_data("lat");
   grid->delete_geometry_data("lon");
-  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),deg);
-  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),deg);
+  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),degN);
+  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),degE);
   
   auto lat_h = lat.get_view<Real*,Host>();
   auto lon_h = lon.get_view<Real*,Host>();
@@ -428,8 +440,8 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   lon.sync_to_dev();
 
   auto scalar2d = grid->get_2d_scalar_layout();
-  auto lat_idx = grid->create_geometry_data("lat_idx",scalar2d,nondim,DataType::IntType);
-  auto lon_idx = grid->create_geometry_data("lon_idx",scalar2d,nondim,DataType::IntType);
+  auto lat_idx = grid->create_geometry_data("lat_idx",scalar2d,none,DataType::IntType);
+  auto lon_idx = grid->create_geometry_data("lon_idx",scalar2d,none,DataType::IntType);
   lat_idx.get_header().set_extra_data("save_as_geo_data",false);
   lon_idx.get_header().set_extra_data("save_as_geo_data",false);
 

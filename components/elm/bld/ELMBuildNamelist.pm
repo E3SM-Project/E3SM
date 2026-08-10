@@ -821,6 +821,7 @@ sub setup_cmdl_fates_mode {
                      "use_fates_ed_prescribed_phys",
                      "use_fates_fixed_biogeog",
                      "use_fates_inventory_init",
+		     "use_fates_dbh_init",
                      "use_fates_luh",
                      "use_fates_lupft",
                      "use_fates_nocomp",
@@ -841,7 +842,8 @@ sub setup_cmdl_fates_mode {
                      "fates_regeneration_model",
                      "fates_hydro_solver",
                      "fates_radiation_model",
-                     "fates_electron_transport_model");
+                     "fates_electron_transport_model",
+                     "fates_lu_transition_logic");
 
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
@@ -899,6 +901,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_inventory_init";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_dbh_init";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -3438,6 +3444,7 @@ sub setup_logic_fates {
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
                    "use_fates_inventory_init",
+		   "use_fates_dbh_init",
                    "use_fates_lupft",
                    "use_fates_planthydro",
                    "use_fates_potentialveg",
@@ -3453,7 +3460,8 @@ sub setup_logic_fates {
                    "fates_regeneration_model",
                    "fates_hydro_solver",
                    "fates_radiation_model",
-	                 "fates_electron_transport_model");
+	               "fates_electron_transport_model",
+                   "fates_lu_transition_logic");
 
     foreach my $var (@list) {
        add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,'use_fates'=>$nl_flags->{'use_fates'},
@@ -3464,6 +3472,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
+                                                                                      'fates_lu_transition_logic'=>$nl->get_value('fates_lu_transition_logic'),
                                                                                       'fates_harvest_mode'=>remove_leading_and_trailing_quotes($nl->get_value('fates_harvest_mode')) );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp', 'use_fates'=>$nl_flags->{'use_fates'},
 	                                                                              'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
@@ -3500,6 +3509,15 @@ sub setup_logic_fates {
           }
        }
     }
+
+    # Make sure that dbh initialization is only active if FATES is in no-comp mode
+    my $var = "use_fates_dbh_init";
+    if ( defined($nl->get_value($var))  ) {
+	if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
+	    fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
+	}
+    }
+    
     # make sure that fates landuse x pft mode has the necessary run mode configurations
     # and add the necessary landuse x pft static mapping data default if not defined
     my $var = "use_fates_lupft";

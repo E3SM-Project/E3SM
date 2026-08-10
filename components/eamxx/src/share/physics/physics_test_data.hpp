@@ -483,30 +483,34 @@ struct UnitBase
     m_test_name(Catch::getResultCapture().getCurrentTestName()),
     m_baseline_action(NONE)
   {
-    auto& ts = ekat::TestSession::get();
-    if (ts.flags["c"]) {
-      m_baseline_action = COMPARE;
-    }
-    else if (ts.flags["g"]) {
-      m_baseline_action = GENERATE;
-    }
-    else if (ts.flags["n"]) {
-      m_baseline_action = NONE;
-    }
-    m_baseline_path = ts.params["b"];
+    const bool is_bfb = (m_test_name.size() >= 3 &&
+                         m_test_name.substr(m_test_name.size() - 3) == "bfb");
+    if (is_bfb) {
+      auto& ts = ekat::TestSession::get();
+      if (ts.flags["c"]) {
+        m_baseline_action = COMPARE;
+      }
+      else if (ts.flags["g"]) {
+        m_baseline_action = GENERATE;
+      }
+      else if (ts.flags["n"]) {
+        m_baseline_action = NONE;
+      }
+      m_baseline_path = ts.params["b"];
 
-    EKAT_REQUIRE_MSG( !(m_baseline_action != NONE && m_baseline_path == ""),
-                      "Unit test flags problem: baseline actions were requested but no baseline path was provided");
+      EKAT_REQUIRE_MSG( !(m_baseline_action != NONE && m_baseline_path == ""),
+                        "Unit test flags problem: baseline actions were requested but no baseline path was provided");
 
-    std::string baseline_name = m_baseline_path + "/" + m_test_name;
+      std::string baseline_name = m_baseline_path + "/" + m_test_name;
 
-    if (m_baseline_action == COMPARE) {
-      m_ifile.open(baseline_name,std::ios::binary);
-      EKAT_REQUIRE_MSG(m_ifile.good(), "Missing baselines: " + baseline_name + "\n");
-    }
-    else if (m_baseline_action == GENERATE) {
-      m_ofile.open(baseline_name,std::ios::binary);
-      EKAT_REQUIRE_MSG(m_ofile.good(), "Coult not open baseline file for write: " + baseline_name + "\n");
+      if (m_baseline_action == COMPARE) {
+        m_ifile.open(baseline_name,std::ios::binary);
+        EKAT_REQUIRE_MSG(m_ifile.good(), "Missing baselines: " + baseline_name + "\n");
+      }
+      else if (m_baseline_action == GENERATE) {
+        m_ofile.open(baseline_name,std::ios::binary);
+        EKAT_REQUIRE_MSG(m_ofile.good(), "Could not open baseline file for write: " + baseline_name + "\n");
+      }
     }
   }
 

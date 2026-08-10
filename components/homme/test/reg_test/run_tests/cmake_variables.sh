@@ -44,3 +44,6 @@ HOMME_Submission_Header=@HOMME_SUBMISSION_HEADER@
 
 # Machine
 HOMME_MACHINE=@HOMME_MACHINE@
+
+# Per-test timeout in seconds for runTestsStd() (0 = no limit)
+HOMME_TESTING_TIMELIMIT=@HOMME_TESTING_TIMELIMIT@

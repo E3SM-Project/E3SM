@@ -53,6 +53,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_ed_st3
    use elm_varctl        , only : use_fates_ed_prescribed_phys
    use elm_varctl        , only : use_fates_inventory_init
+   use elm_varctl        , only : use_fates_dbh_init
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
@@ -69,6 +70,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : fates_hydro_solver
    use elm_varctl        , only : fates_radiation_model
    use elm_varctl        , only : fates_electron_transport_model
+   use elm_varctl        , only : fates_lu_transition_logic
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -93,6 +95,7 @@ module ELMFatesInterfaceMod
    use elm_varpar        , only : surfpft_lb, surfpft_ub
    use elm_varpar        , only : natpft_size, max_patch_per_col, maxpatch_urb
    use elm_varpar        , only : numcft, maxpatch_urb
+   use elm_varpar        , only : elmfates_carbon_only, elmfates_cnp
    use PhotosynthesisType , only : photosyns_type
    Use TopounitDataType  , only : topounit_atmospheric_flux, topounit_atmospheric_state
    use atm2lndType       , only : atm2lnd_type
@@ -134,7 +137,7 @@ module ELMFatesInterfaceMod
    use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
 
    ! Used FATES Modules
-   use FatesConstantsMod     , only : ifalse
+   use FatesConstantsMod     , only : ifalse,itrue
    use FatesConstantsMod     , only : fates_check_param_set
    use FatesInterfaceMod     , only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
@@ -156,6 +159,8 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
    use FatesIOVariableKindMod, only : group_dyna_simple, group_dyna_complx
    use PRTGenericMod         , only : num_elements
+   use PRTGenericMod         , only : fates_carbon_only => carbon_only
+   use PRTGenericMod         , only : fates_carbon_nitrogen_phosphorus => carbon_nitrogen_phosphorus
    use FatesPatchMod         , only : fates_patch_type
    use FatesDispersalMod     , only : lneighbors, dispersal_type, IsItDispersalTime
    use FatesInterfaceTypesMod, only : hlm_stepsize, hlm_current_day
@@ -176,7 +181,6 @@ module ELMFatesInterfaceMod
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
    use FatesSoilBGCFluxMod   , only : UnPackNutrientAquisitionBCs
    use FatesSoilBGCFluxMod   , only : FluxIntoLitterPools
-   use PRTGenericMod, only : prt_cnp_flex_allom_hyp
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
@@ -328,6 +332,7 @@ contains
     integer                                        :: pass_use_sp
     integer                                        :: pass_use_luh2
     integer                                        :: pass_masterproc
+    integer                                        :: pass_parteh_mode
     logical                                        :: verbose_output
 
 
@@ -376,7 +381,24 @@ contains
        end if
        call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
 
-       call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
+       if(trim(fates_parteh_mode)==trim(elmfates_carbon_only))then
+           pass_parteh_mode = fates_carbon_only
+        elseif(trim(fates_parteh_mode)==trim(elmfates_cnp))then
+           ! FATES has NO carbon_nitrogen mode. It cycles
+           ! either carbon alone, or carbon with both nutrients
+           ! If we want to couple nitrogen, we tell FATES
+           ! to use synthetic uptake conditions for phosphorus, which
+           ! most likely will be ample so that P stores in plants
+           ! are saturated and non-limiting
+           pass_parteh_mode = fates_carbon_nitrogen_phosphorus
+        else
+           write(iulog,*) 'FATES coupling mode must be either'
+           write(iulog,*) trim(elmfates_carbon_only),' or '
+           write(iulog,*) trim(elmfates_cnp)
+           write(iulog,*) 'you specified: ',trim(fates_parteh_mode)
+           call endrun(msg=errMsg(sourcefile, __LINE__))
+        end if
+        call set_fates_ctrlparms('parteh_mode',ival=pass_parteh_mode)
        
     end if
 
@@ -585,6 +607,7 @@ contains
 
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
+        call set_fates_ctrlparms('fates_lu_transition_logic',ival=fates_lu_transition_logic)
 
         if ( use_fates_potentialveg ) then
            pass_use_potentialveg = 1
@@ -707,6 +730,8 @@ contains
 
         call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
 
+        call set_fates_ctrlparms('use_dbh_init',ival=merge(itrue,ifalse,use_fates_dbh_init))
+        
         ! Check through FATES parameters to see if all have been set
         call set_fates_ctrlparms('check_allset')
 
@@ -1463,8 +1488,7 @@ contains
          ! side we have prepped these arrays, which may be zero fluxes in the case of
          ! prescribed FATES nutrient mode, we can send the fluxes into the source pools
 
-         select case(fates_parteh_mode)
-         case (prt_cnp_flex_allom_hyp )
+         if (trim(fates_parteh_mode)==trim(elmfates_cnp)) then
 
             col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
                  col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
@@ -1503,7 +1527,7 @@ contains
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
-         end select
+         end if
 
       end do
 
@@ -1803,9 +1827,6 @@ contains
       ! I think that is it...
       ! ---------------------------------------------------------------------------------
 
-      ! Set the FATES global time and date variables
-      call GetAndSetTime
-
       if(.not.initialized) then
 
          initialized=.true.
@@ -1869,7 +1890,8 @@ contains
          do nc = 1, nclumps
             if (this%fates(nc)%nsites>0) then
                call this%fates_restart%set_restart_vectors(nc,this%fates(nc)%nsites, &
-                                                           this%fates(nc)%sites)
+                    this%fates(nc)%sites, &
+                    this%fates(nc)%bc_in)
             end if
          end do
          !$OMP END PARALLEL DO
@@ -1938,6 +1960,14 @@ contains
 
       if(flag=='read')then
 
+         ! pass time to FATES internal variables
+         ! since this routine is called on 'define','write','read'
+         ! and the first two can be called whenever, calling this outside 'read'
+         ! will change the time that has been previously set in dynamics_driver
+         ! Set the FATES global time and date variables
+         call GetAndSetTime
+
+
          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,s)
          do nc = 1, nclumps
             if (this%fates(nc)%nsites>0) then
@@ -1952,7 +1982,7 @@ contains
                     this%fates(nc)%bc_out)
 
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
-                    this%fates(nc)%sites )
+                    this%fates(nc)%sites, this%fates(nc)%bc_in )
 
 
 
@@ -3922,7 +3952,7 @@ end subroutine wrap_update_hifrq_hist
 
    ! Land use name arrays
    character(len=10), parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
-                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range'] !need to move 'frac_surf' to a different variable
+                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_range','frac_pastr'] !need to move 'frac_surf' to a different variable
 
    character(len=*), parameter :: subname = 'GetLandusePFTData'
 

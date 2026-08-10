@@ -9,6 +9,7 @@ on:
       # first, yes to these
       - '.github/workflows/eamxx-v1-testing.yml'
       - 'cime_config/machine/config_machines.xml'
+      - 'cime_config/machine/cmake_macros/ghci-snl*.cmake'
       - 'components/eamxx/**'
       - 'components/homme/**'
       - 'components/eam/src/physics/rrtmgp/**'
@@ -29,7 +30,7 @@ on:
         required: true
         type: choice
         options:
-          - cpu-gcc
+          - gnu
           - all
       bless:
         description: 'Generate baselines'
@@ -42,7 +43,7 @@ on:
 
 defaults:
   run:
-    shell: bash --login {0}
+    shell: bash -leo pipefail {0}
 
 concurrency:
   # Two runs are in the same group if they are testing the same git ref
@@ -60,56 +61,40 @@ env:
   flags: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
 
 jobs:
-  cpu-gcc:
+  gnu:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'cpu-gcc' || 
+          github.event.inputs.job_to_run == 'gnu' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, gcc, ghci-snl-cpu]
+    runs-on:  [self-hosted, gnu, ghci-snl]
     strategy:
       matrix:
         test:
-          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl-cpu_gnu.eamxx-output-preset-2--eamxx-L72
+          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci-snl_gnu.eamxx-output-preset-2--eamxx-L72
             short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2
-          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl-cpu_gnu.eamxx-dpxx-arm97
+          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci-snl_gnu.eamxx-dpxx-arm97
             short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97
-          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-small_kernels--eamxx-output-preset-5
+          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_gnu.eamxx-small_kernels--eamxx-output-preset-5
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
-          - full_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci-snl-cpu_gnu.eamxx-L72
+          - full_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci-snl_gnu.eamxx-L72
             short_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl-cpu_gnu.eamxx-prod
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_gnu.eamxx-prod
             short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
       fail-fast: false
-    name: cpu-gcc / ${{ matrix.test.short_name }}
+    name: gnu / ${{ matrix.test.short_name }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           show-progress: false
           submodules: recursive
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
-      - name: Set CA certificates env var
-        run: |
-          # Ensure the operating system is Linux
-          if [ "$(uname)" != "Linux" ]; then
-            echo "This action only supports Linux."
-            exit 1
-          fi
-          # Set env var to be used in upload-artifacts phase
-          if [ -f /etc/debian_version ]; then
-            echo "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
-          elif [ -f /etc/redhat-release ] || [ -f /etc/centos-release ] || [ -f /etc/fedora-release ]; then
-            echo "NODE_EXTRA_CA_CERTS=/etc/pki/tls/certs/ca-bundle.crt" >> $GITHUB_ENV
-          else
-            echo "Unsupported Linux distribution"
-            exit 1
-          fi
       - name: Run test
         id: run-tests
         run: |
@@ -126,8 +111,6 @@ jobs:
             /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
             /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
           retention-days: 14
-        env:
-          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}
       - name: Upload nc files
         if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
         uses: actions/upload-artifact@v7
@@ -136,5 +119,3 @@ jobs:
           path: |
             /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
-        env:
-          NODE_EXTRA_CA_CERTS: ${{ env.NODE_EXTRA_CA_CERTS }}

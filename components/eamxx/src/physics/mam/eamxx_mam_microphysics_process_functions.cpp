@@ -412,13 +412,6 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     Kokkos::deep_copy(vmr0,vmr);
 
     if (config_.compute_gas_phase_chemistry) {
-    // NOTE: Making copies of clsmap_4 and permute_4 to fix undefined arrays on
-    // the device.
-    int clsmap_4[num_gas_aerosol_constituents], permute_4[num_gas_aerosol_constituents];
-    for(int i = 0; i < num_gas_aerosol_constituents; ++i) {
-      clsmap_4[i]              = mam4::gas_chemistry::clsmap_4[i];
-      permute_4[i]             = mam4::gas_chemistry::permute_4[i];
-    }
 
     view_3d gas_phase_chemistry_dvmrdt;
     if (extra_mam4_aero_microphys_diags_) {
@@ -449,7 +442,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         mam4::microphysics::gas_phase_chemistry(
         // in
         temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
-        clsmap_4, permute_4, het_rates_k.data(),
+        het_rates_k.data(),
         // out
         vmr_kk);
       });

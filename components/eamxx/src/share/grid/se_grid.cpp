@@ -140,7 +140,7 @@ std::shared_ptr<AbstractGrid> SEGrid::clone (const std::string& clone_name, cons
     if (shallow) {
       grid->m_cg_dofs_gids = m_cg_dofs_gids;
     } else {
-      grid->m_cg_dofs_gids = m_cg_dofs_gids.clone();
+      grid->m_cg_dofs_gids = m_cg_dofs_gids.clone(CloneFlags::CopyData);
     }
   }
 

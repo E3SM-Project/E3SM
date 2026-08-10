@@ -36,7 +36,7 @@ TEST_CASE ("update") {
   randomize_uniform (f_int, seed++, 0, 100);
 
   SECTION ("data_type_checks") {
-    Field f2 = f_int.clone();
+    Field f2 = f_int.clone(CloneFlags::CopyData);
 
     // Coeffs have wrong data type (precision loss casting to field's data type)
     REQUIRE_THROWS (f2.update (f_int,1.0,1.0));
@@ -67,7 +67,7 @@ TEST_CASE ("update") {
   SECTION ("scale") {
     SECTION ("real") {
       Field f1 = f_real.clone();
-      Field f2 = f_real.clone();
+      Field f2 = f_real.clone(CloneFlags::CopyData);
 
       // x=2, x*y = 2*y
       f1.deep_copy(2.0);
@@ -96,13 +96,13 @@ TEST_CASE ("update") {
       one.deep_copy(1.0);
       two.deep_copy(2.0);
 
-      Field f1 = one.clone();
-      Field f2 = two.clone();
+      Field f1 = one.clone(CloneFlags::CopyData);
+      Field f2 = two.clone(CloneFlags::CopyData);
       f1.max(f2);
       REQUIRE (views_are_equal(f1, f2));
 
-      Field f3 = one.clone();
-      Field f4 = two.clone();
+      Field f3 = one.clone(CloneFlags::CopyData);
+      Field f4 = two.clone(CloneFlags::CopyData);
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
 
@@ -120,13 +120,13 @@ TEST_CASE ("update") {
       one.deep_copy(1);
       two.deep_copy(2);
 
-      Field f1 = one.clone();
-      Field f2 = two.clone();
+      Field f1 = one.clone(CloneFlags::CopyData);
+      Field f2 = two.clone(CloneFlags::CopyData);
       f1.max(f2);
       REQUIRE (views_are_equal(f1, f2));
 
-      Field f3 = one.clone();
-      Field f4 = two.clone();
+      Field f3 = one.clone(CloneFlags::CopyData);
+      Field f4 = two.clone(CloneFlags::CopyData);
       f4.min(f3);
       REQUIRE (views_are_equal(f3, f4));
 
@@ -141,8 +141,8 @@ TEST_CASE ("update") {
 
   SECTION ("scale_inv") {
     SECTION ("real") {
-      Field f1 = f_real.clone();
-      Field f2 = f_real.clone();
+      Field f1 = f_real.clone(CloneFlags::CopyData);
+      Field f2 = f_real.clone(CloneFlags::CopyData);
       Field f3 = f_real.clone();
 
       f3.deep_copy(2.0);
@@ -165,8 +165,8 @@ TEST_CASE ("update") {
 
   SECTION ("update") {
     SECTION ("real") {
-      Field f2 = f_real.clone();
-      Field f3 = f_real.clone();
+      Field f2 = f_real.clone(CloneFlags::CopyData);
+      Field f3 = f_real.clone(CloneFlags::CopyData);
 
       // x+x == 2*x
       f2.update(f_real,1,1);
@@ -200,8 +200,8 @@ TEST_CASE ("update") {
     }
 
     SECTION ("int") {
-      Field f2 = f_int.clone();
-      Field f3 = f_int.clone();
+      Field f2 = f_int.clone(CloneFlags::CopyData);
+      Field f3 = f_int.clone(CloneFlags::CopyData);
 
       // x+x == 2*x
       f2.update(f_int,1,1);

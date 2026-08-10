@@ -83,7 +83,7 @@ void run()
     const auto& qv_v = qv_f.get_view<Pack**>();
 
     // Run diagnostic and compare with manual calculation
-    Field rh_f = T_mid_f.clone();
+    Field rh_f = T_mid_f.clone(CloneFlags::MatchPacking);
     rh_f.deep_copy(0);
     const auto& rh_v = rh_f.get_view<Pack**>();
     auto manual = KOKKOS_LAMBDA(const int icol, const int jpack) {

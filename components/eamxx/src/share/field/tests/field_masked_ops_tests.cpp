@@ -154,10 +154,10 @@ TEST_CASE ("masked_ops") {
   SECTION ("masked_scale_scalar") {
     auto mask = make_col_mask(f_real, f_int, ncol);
 
-    auto f2 = f_real.clone();   // starts as a copy of f_real
+    auto f2 = f_real.clone(CloneFlags::CopyData);   // starts as a copy of f_real
     f2.scale(2, mask);        // only masked cols multiplied by 2
 
-    auto f_ref = f_real.clone();
+    auto f_ref = f_real.clone(CloneFlags::CopyData);
     f_ref.scale(2);           // reference: 2*f_real everywhere
 
     for (int icol = 0; icol < ncol; ++icol) {
@@ -171,12 +171,12 @@ TEST_CASE ("masked_ops") {
   SECTION ("masked_scale_field") {
     auto mask = make_col_mask(f_real, f_int, ncol);
 
-    auto f2     = f_real.clone();
+    auto f2     = f_real.clone(CloneFlags::CopyData);
     auto f_twos = f_real.clone();
     f_twos.deep_copy(2);
     f2.scale(f_twos, mask);
 
-    auto f_ref = f_real.clone();
+    auto f_ref = f_real.clone(CloneFlags::CopyData);
     f_ref.scale(2);
 
     for (int icol = 0; icol < ncol; ++icol) {
@@ -191,12 +191,12 @@ TEST_CASE ("masked_ops") {
     auto mask = make_col_mask(f_real, f_int, ncol);
 
     // Integer scale by field of twos, only on masked cols
-    auto f2     = f_int.clone();
+    auto f2     = f_int.clone(CloneFlags::CopyData);
     auto f_twos = f_int.clone();
     f_twos.deep_copy(2);
     f2.scale(f_twos, mask);
 
-    auto f_ref = f_int.clone();
+    auto f_ref = f_int.clone(CloneFlags::CopyData);
     f_ref.scale(f_twos);
 
     for (int icol = 0; icol < ncol; ++icol) {
@@ -210,12 +210,12 @@ TEST_CASE ("masked_ops") {
   SECTION ("masked_scale_inv") {
     auto mask = make_col_mask(f_real, f_int, ncol);
 
-    auto f2     = f_real.clone();
+    auto f2     = f_real.clone(CloneFlags::CopyData);
     auto f_twos = f_real.clone();
     f_twos.deep_copy(2);
     f2.scale_inv(f_twos, mask);
 
-    auto f_ref = f_real.clone();
+    auto f_ref = f_real.clone(CloneFlags::CopyData);
     f_ref.scale(0.5);   // f_real/2
 
     for (int icol = 0; icol < ncol; ++icol) {
@@ -323,7 +323,7 @@ TEST_CASE ("masked_ops") {
     REQUIRE(views_are_equal(dst, ref));
 
     // scale with zero mask: f should remain unchanged
-    auto f2 = f_real.clone();
+    auto f2 = f_real.clone(CloneFlags::CopyData);
     f2.scale(10, mask);
     REQUIRE(views_are_equal(f2, f_real));
 

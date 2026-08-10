@@ -229,7 +229,7 @@ void ZonalAvg::initialize_impl()
     compute_zonal_sum(m_zonal_area,m_ones,m_area,m_bin_to_cols,&m_comm);
 
     // Create a copy of area which is scaled by 1 / zonal area
-    m_scaled_area = m_area.clone("scaled_area");
+    m_scaled_area = m_area.clone("scaled_area", CloneFlags::CopyData);
     auto zonal_area_view  = m_zonal_area.get_view<const Real *>();
     auto scaled_area_view = m_scaled_area.get_view<Real *>();
     Kokkos::parallel_for("scale_area_by_zonal_area_" + field.name(),

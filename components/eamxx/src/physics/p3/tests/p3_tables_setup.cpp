@@ -6,9 +6,14 @@
 int main(int argc, char** argv) {
   using P3F = scream::p3::Functions<scream::Real, ekat::DefaultDevice>;
 
+  MPI_Init(&argc, &argv);
   scream::initialize_eamxx_session(argc, argv);
-  P3F::p3_init(/* write_tables = */ true, /* masterproc */ true);
+  {
+    ekat::Comm comm(MPI_COMM_WORLD);
+    P3F::p3_init(/* write_tables = */ true, &comm);
+  }
   scream::finalize_eamxx_session();
+  MPI_Finalize();
 
   return 0;
 }

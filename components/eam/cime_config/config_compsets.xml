@@ -361,6 +361,7 @@
     <entry id="RUN_STARTDATE">
       <values>
         <value  compset="20TR_EAM">1850-01-01</value>
+        <value  compset="SSP\d+[^_]*_EAM">2015-01-01</value>
         <value  compset="AMIP_EAM">1979-01-01</value>
         <value  compset="HIST_EAM">1850-01-01</value>
         <value  compset="7905_EAM">1979-01-01</value>

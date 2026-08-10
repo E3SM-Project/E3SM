@@ -32,7 +32,7 @@ module tracer_data
                            pio_put_att, pio_put_var, &
                            pio_get_var, pio_get_att, pio_nowrite, pio_inq_dimlen, &
                            pio_inq_vardimid, pio_inq_dimlen, pio_closefile, &
-                           pio_inquire_variable
+                           pio_inquire_variable, pio_inq_varndims
 
   implicit none
 
@@ -1669,6 +1669,7 @@ contains
     type(var_desc_t),  intent(in), optional :: vid_srf
     integer :: cnt_srf(2)
     integer :: strt_srf(2)
+    integer :: srf_ndims
     !!
     type(interp_type) :: lat_wgts
     real(r8) :: to_lats(pcols), to_lons(pcols), wrk(pcols)
@@ -1716,7 +1717,14 @@ contains
                 if (present(vid_srf)) then
                 !!padding for clim terms
                 allocate(wrksrf(cnt(1)), stat=ierr )
-                ierr = pio_get_var( fid, vid_srf, strt_srf, cnt_srf, wrksrf )
+                !! Use only as many start/count elements as the variable has dims
+                !! to avoid PIO warnings when the surface variable is 1D.
+                ierr = pio_inq_varndims(fid, vid_srf, srf_ndims)
+                if (srf_ndims >= 2) then
+                  ierr = pio_get_var( fid, vid_srf, strt_srf, cnt_srf, wrksrf )
+                else
+                  ierr = pio_get_var( fid, vid_srf, strt_srf(1:1), cnt_srf(1:1), wrksrf )
+                end if
                 !!surface padding
                 wrk2d(:,file%nlev)=wrksrf
                 deallocate(wrksrf)
@@ -1774,6 +1782,7 @@ contains
     integer :: c, k, ierr, ncols
     integer :: cnt_srf(2)
     integer :: strt_srf(2)
+    integer :: srf_ndims
     !!
     nullify(wrk_in)
     allocate( wrk(cnt(1)), stat=ierr )
@@ -1789,7 +1798,14 @@ contains
     !!
     !for surface variable with the dimension of (time,lat) or (time,1)
     !for (time) it is also set like (time,1)
-        ierr = pio_get_var( fid, vid, strt_srf, cnt_srf, wrk )
+    !! Use only as many start/count elements as the variable has dims
+    !! to avoid PIO warnings when the surface variable is 1D.
+        ierr = pio_inq_varndims(fid, vid, srf_ndims)
+        if (srf_ndims >= 2) then
+          ierr = pio_get_var( fid, vid, strt_srf, cnt_srf, wrk )
+        else
+          ierr = pio_get_var( fid, vid, strt_srf(1:1), cnt_srf(1:1), wrk )
+        end if
         !!
         if(associated(wrk_in)) then
                 wrk_in = reshape( wrk(:),(/file%nlat/))

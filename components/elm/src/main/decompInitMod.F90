@@ -28,7 +28,7 @@ module decompInitMod
   implicit none
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
   public decompInit_moab         ! initializes lnd grid decomposition using MOAB partitioners
 #endif
   public decompInit_lnd          ! initializes lnd grid decomposition into clumps and processors
@@ -45,7 +45,7 @@ module decompInitMod
 
 contains
 !------------------------------------------------------------------------------
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
   subroutine decompInit_moab(lni,lnj,amask)
     !
     ! !DESCRIPTION:
@@ -2333,7 +2333,7 @@ contains
     use elm_varctl           , only : lateral_connectivity
     use subgridMod           , only : subgrid_get_gcellinfo
 
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     use MOABGridType
     use iso_c_binding
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
@@ -2373,7 +2373,7 @@ contains
     integer                      :: g, moab_idx
     integer                      :: ierr
     character(len=1024)          :: tagname
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
     !integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
 #endif
     character(len=32), parameter :: subname = 'decompInit_ghosts'
@@ -2424,7 +2424,7 @@ contains
 
     else
 
-#if defined(HAVE_MOAB)
+#if defined(MOAB_LATERAL)
 
       call get_proc_bounds(begg, endg)
 
@@ -2621,7 +2621,7 @@ contains
 
 #else
          call endrun(msg='ERROR ' // trim(subname) //': decompInit_ghosts requires '//&
-              'either MOAB or PETSc, but the code was compiled without -DHAVE_MOAB or -DUSE_PETSC_LIB')
+              'either MOAB or PETSc, but the code was compiled without -DMOAB_LATERAL or -DUSE_PETSC_LIB')
 
 #endif
 

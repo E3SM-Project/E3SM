@@ -89,7 +89,15 @@ void Functions<S,D>::gw_drag_prof(
   //------------------------------------------------------------------------
   // Compute the stress profiles and diffusivities
   //------------------------------------------------------------------------
-  gwd_compute_stress_profiles_and_diffusivities(
+  // NOTE: calling the _serial variant rather than the parallel
+  // gwd_compute_stress_profiles_and_diffusivities(). On the current
+  // Kokkos/CUDA stack the parallel version hangs (team threads are lost
+  // progressively over the serial outer k-loop's many team_barriers /
+  // parallel_reduce syncs); the _serial variant runs the whole k-loop
+  // serially-redundantly on every team thread and avoids the hang.
+  // See the comment block at the top of the _serial implementation for
+  // details and how to revert when the underlying stack issue is fixed.
+  gwd_compute_stress_profiles_and_diffusivities_serial(
     team, workspace, init, pver, pgwv,
     src_level, ubi, c, rhoi,
     ni, kvtt, t, ti, piln, tau);

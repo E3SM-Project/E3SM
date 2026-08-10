@@ -10,7 +10,7 @@ target_link_libraries(eamxx_algorithm PUBLIC
   eamxx_field
   eamxx_remap
   eamxx_data_managers
-  eamxx_io)
+  )
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

@@ -164,7 +164,7 @@ class VALG(TestProperty):
         )
         if tas is not None:
             # If a stored suppression file exists for this machine, use it
-            persistent_supp_file = tas.get_root_dir() / "scripts" / "jenkins" / "valgrind" / f"{tas.get_machine().name}.supp"
+            persistent_supp_file = tas.get_root_dir() / "scripts" / "setup" / "valgrind" / f"{tas.get_machine().name}.supp"
             if persistent_supp_file.exists():
                 self.cmake_args.append( ("EKAT_VALGRIND_SUPPRESSION_FILE", str(persistent_supp_file)) )
 

@@ -16,10 +16,10 @@ namespace Homme {
 struct CaarFunctorImpl;
 
 class Elements;
-class Tracers;
+struct Tracers;
 class ReferenceElement;
 class SphereOperators;
-class SimulationParams;
+struct SimulationParams;
 class HybridVCoord;
 
 class MpiBuffersManager;

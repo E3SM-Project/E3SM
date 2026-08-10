@@ -214,11 +214,11 @@ void run(std::mt19937_64& engine)
     // Test 2: If the cell-wise mass is scaled by constant alpha then the water
     //         path should also be scaled by alpha.
     {
-      Field vwp_copy_f = diags["vwp"]->get().clone();
-      Field lwp_copy_f = diags["lwp"]->get().clone();
-      Field iwp_copy_f = diags["iwp"]->get().clone();
-      Field mwp_copy_f = diags["mwp"]->get().clone();
-      Field rwp_copy_f = diags["rwp"]->get().clone();
+      Field vwp_copy_f = diags["vwp"]->get().clone(CloneFlags::CopyData);
+      Field lwp_copy_f = diags["lwp"]->get().clone(CloneFlags::CopyData);
+      Field iwp_copy_f = diags["iwp"]->get().clone(CloneFlags::CopyData);
+      Field mwp_copy_f = diags["mwp"]->get().clone(CloneFlags::CopyData);
+      Field rwp_copy_f = diags["rwp"]->get().clone(CloneFlags::CopyData);
       const auto& vwp_copy_v = vwp_copy_f.get_view<Real*>();
       const auto& lwp_copy_v = lwp_copy_f.get_view<Real*>();
       const auto& iwp_copy_v = iwp_copy_f.get_view<Real*>();
