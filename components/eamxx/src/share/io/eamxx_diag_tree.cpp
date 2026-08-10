@@ -5,6 +5,7 @@
 #include <ekat_assert.hpp>
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace scream {
 
@@ -114,7 +115,25 @@ Field build (const DiagSpec& s,
     if (it!=operands.end()) {
       diag->set_input_field(it->second);
     } else {
-      const auto dep = build(lower_to_diag_spec(in_name,in_name),grid,fm,repo,known,order);
+      // Report a failure here in terms of the diag that wanted the input, not
+      // in terms of the recursion. Otherwise a diag needing a field the model
+      // does not compute is reported as an unrecognized *diagnostic* named after
+      // that field, which sends the reader looking in the wrong place.
+      Field dep;
+      try {
+        dep = build(lower_to_diag_spec(in_name,in_name),grid,fm,repo,known,order);
+      } catch (const std::exception& e) {
+        EKAT_ERROR_MSG (
+            "Error! Could not resolve an input of a diagnostic.\n"
+            " - diag      : " + diag->name() + "\n"
+            " - input     : " + in_name + "\n"
+            " - expression: " + cname + "\n"
+            " - note: the diag needs this field, but it is neither computed by the\n"
+            "         model nor obtainable as a diagnostic. Note that a field only\n"
+            "         exists if some atm process asks for it, so a diagnostic can\n"
+            "         need an input that no process in this run provides.\n"
+            " - underlying error:\n" + std::string(e.what()) + "\n");
+      }
       diag->set_input_field(dep.alias(in_name));
     }
   }

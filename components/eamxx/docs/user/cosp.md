@@ -6,40 +6,31 @@ Currently, minimal outputs from the ISCCP, MODIS, and MISR simulators have been 
 
 ## Running with COSP
 
-Turning COSP on simply requires adding the `cosp` process to `atm_procs_list`
-via `atmchange` in a case directory:
+COSP is a *diagnostic*, not an atmosphere process. There is nothing to add to
+`atm_procs_list`: asking for any of the fields it computes in an output stream is
+what runs it. Those fields are
 
-```shell
-./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
-```
+- `isccp_cldtot`
+- `isccp_ctptau`
+- `modis_ctptau`
+- `misr_cthtau`
 
-Additionally, the frequency at which COSP is run can be configured via `atmchange`:
+COSP computes all four in a single pass, so asking for one costs the same as
+asking for all four, and asking for them across several output streams still runs
+COSP only once per timestep.
 
-```shell
-./atmchange physics::cosp::cosp_frequency_units="steps"
-./atmchange physics::cosp::cosp_frequency=1
-```
+!!! note "Changed in this version"
 
-COSP can be run with or without subcolumn sampling.
-This is configured by changing the `cosp_subcolumns` namelist variable via `atmchange`.
-A value of 1 implies *no* subcolumn sampling, while values greater than 1
-specify the number
-of subcolumns to use for subcolumn sampling (assuming maximum-random overlap).
-E.g.,
+    COSP used to be an atmosphere process, turned on with
+    `./atmchange physics::atm_procs_list="...,cosp"` and configured with
+    `physics::cosp::cosp_frequency` / `cosp_frequency_units` / `cosp_subcolumns`.
+    Those settings no longer exist. Output yamls that simply list the COSP field
+    names keep working unchanged; only the `atm_procs_list` entry has to go.
 
-```shell
-./atmchange physics::cosp:cosp_subcolumns=1
-```
-
-would disable subcolumn sampling, while
-
-```shell
-./atmchange physics::cosp::cosp_subcolumns=10
-```
-
-would use 10 subcolumns for the COSP internal subcolumn sampling using `SCOPS`/`PREC_SCOPS`.
-The default for high resolution cases (e.g., `ne1024`) should be to *not* use
-subcolumns, while lower resolutions (e.g., `ne30`) should enable subcolumn sampling.
+    COSP now runs whenever an output stream evaluates it, rather than on its own
+    `cosp_frequency`. For `INSTANT` output that is the stream's output frequency;
+    for averaged output it is every timestep. Subcolumn sampling is fixed at 10
+    subcolumns (`SCOPS`/`PREC_SCOPS`), the former default.
 
 Output streams need to be added manually.
 A minimal example:

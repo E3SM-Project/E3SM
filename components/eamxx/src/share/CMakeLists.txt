@@ -56,6 +56,14 @@ target_link_libraries(scream_share INTERFACE
   eamxx_io
   eamxx_algorithm)
 
+# The COSP diagnostic is a library of its own (it needs COSP's fortran), so it is
+# not reachable through eamxx_diagnostics. Put it here, so that whoever links the
+# share catch-all gets it -- and, with it, EAMXX_HAS_COSP_DIAG, which is what
+# register_diagnostics() keys off.
+if (TARGET eamxx_cosp_diag)
+  target_link_libraries(scream_share INTERFACE eamxx_cosp_diag)
+endif()
+
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML
 # file that we use to validate our own fields against it. This target is only
