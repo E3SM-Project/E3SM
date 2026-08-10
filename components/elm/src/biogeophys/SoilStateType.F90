@@ -691,7 +691,7 @@ contains
                    if (squareomfrac) then
                       om_frac = (organic3d(g,ti,1)/organic_max)**2._r8
                    else
-                      om_frac = min(organic3d(g,ti,1)/organic_max, 1._r8)
+                      om_frac = max(0.0_r8, min(organic3d(g,ti,1)/organic_max, 1._r8))
                    endif
                 else if (lev <= min(nlevbed,nlevsoi)) then
                    do j = 1,nlevsoifl-1
@@ -702,7 +702,7 @@ contains
                          if (squareomfrac) then
                             om_frac = (organic3d(g,ti,j+1)/organic_max)**2._r8
                          else
-                            om_frac = min(organic3d(g,ti,j+1)/organic_max, 1._r8)
+                            om_frac = max(0.0_r8, min(organic3d(g,ti,j+1)/organic_max, 1._r8))
                          endif
                       endif
                    end do
@@ -720,7 +720,7 @@ contains
                    if (squareomfrac) then
                       om_frac = (organic3d(g,ti,lev)/organic_max)**2._r8
                    else
-                      om_frac = min((organic3d(g,ti,lev)/organic_max), 1._r8)
+                      om_frac = max(0.0_r8, min((organic3d(g,ti,lev)/organic_max), 1._r8))
                    endif
                 else
                    clay = clay3d(g,ti,nlevsoi)
@@ -860,7 +860,7 @@ contains
                 if (squareomfrac) then
                    om_frac = (this%cellorg_col(c,lev)/organic_max)**2._r8
                 else
-                   om_frac = min((this%cellorg_col(c,lev)/organic_max), 1._r8)
+                   om_frac = max(0.0_r8, min((this%cellorg_col(c,lev)/organic_max), 1._r8))
                 endif
              else
                 clay    = this%cellclay_col(c,nlevsoi)
