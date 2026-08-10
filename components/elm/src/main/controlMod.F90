@@ -46,7 +46,7 @@ module controlMod
   use elm_varpar              , only: elmfates_carbon_only
   use elm_varpar              , only: elmfates_cnp
   use elm_varctl, only: nu_com, use_dynroot, use_fan, fan_mode, fan_to_bgc_veg, &
-                        use_var_soil_thick, use_lake_wat_storage, &
+                        use_var_soil_thick, use_lake_wat_storage, squareomfrac, &
                         forest_fert_exp, ECA_Pconst_RGspin, NFIX_PTASE_plant, &
                         use_pheno_flux_limiter, startdate_add_temperature, &
                         startdate_add_co2, add_temperature, add_co2, &
@@ -1124,6 +1124,7 @@ contains
     write(iulog,*) '    use_lch4 = ', use_lch4
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
+    write(iulog,*) '    squareomfrac = ', squareomfrac
     write(iulog,*) '    use_lake_wat_storage = ', use_lake_wat_storage
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
