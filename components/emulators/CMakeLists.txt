@@ -4,7 +4,7 @@ project(emulators LANGUAGES C CXX Fortran)
 include(FetchContent)
 set(
     FETCHCONTENT_BASE_DIR
-    "${CMAKE_SOURCE_DIR}/.cmake-deps"
+    "${CMAKE_CURRENT_SOURCE_DIR}/downloads"
     CACHE PATH "FetchContent dependency cache"
     FORCE
 )
