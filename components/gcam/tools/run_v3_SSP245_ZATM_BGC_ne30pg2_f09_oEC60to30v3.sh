@@ -70,18 +70,21 @@ if [ "${MACHINE}" == "chrysalis" ]; then
    readonly CASE_ROOT="/lcrc/group/e3sm/$USER/e3sm_scratch/${CASE_NAME}"
    readonly MACH_QUEUE='compute'
    readonly MACH_QUEUE_DEBUG='debug'
+   readonly WALLTIME_DEBUG='4:00:00'
 fi
 if [ "${MACHINE}" == "compy" ]; then
    readonly din_loc_root=/compyfs/inputdata
    readonly CASE_ROOT="/compyfs/${USER}/e3sm_scratch/${CASE_NAME}"
    readonly MACH_QUEUE='slurm'
    readonly MACH_QUEUE_DEBUG='short'
+   readonly WALLTIME_DEBUG='0:30:00'
 fi
 if [ "${MACHINE}" == "pm-cpu" ]; then
    din_loc_root=/global/cfs/cdirs/e3sm/inputdata
    readonly CASE_ROOT="${SCRATCH}/e3sm_scratch/${CASE_NAME}"
    readonly MACH_QUEUE='regular'
    readonly MACH_QUEUE_DEBUG='debug'
+   readonly WALLTIME_DEBUG='0:30:00'
 fi
 
 # Sub-directories
@@ -131,8 +134,8 @@ if [ "${run}" != "production" ]; then
   readonly REST_N=${STOP_N}
   readonly RESUBMIT=${resubmit}
   readonly DO_SHORT_TERM_ARCHIVING=false
-  
-  readonly WALLTIME="4:00:00"
+
+  readonly WALLTIME=${WALLTIME_DEBUG:-0:30:00}
   readonly RUN_QUEUE=${MACH_QUEUE_DEBUG}
 else
 
