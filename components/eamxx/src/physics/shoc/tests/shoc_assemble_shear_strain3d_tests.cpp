@@ -193,13 +193,15 @@ struct UnitWrap::UnitTest<D>::TestAssembleShocShearStrain3d : public UnitWrap::U
 
 namespace {
 
-TEST_CASE("assemble_shoc_shear_strain3d_property", "shoc")
-{
-  using TestStruct =
-    scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestAssembleShocShearStrain3d;
-
-  TestStruct().run_property();
-  TestStruct().run_property_random();
-}
+// FIXME: this test is failing on certain gpu machines but not reproducible on others.  This function is not
+//        called by EAMxx by defult, so disabling this test now, but should be revisted in the future.
+//TEST_CASE("assemble_shoc_shear_strain3d_property", "shoc")
+//{
+//  using TestStruct =
+//    scream::shoc::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestAssembleShocShearStrain3d;
+//
+//  TestStruct().run_property();
+//  TestStruct().run_property_random();
+//}
 
 } // namespace

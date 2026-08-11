@@ -6,6 +6,9 @@ module parallel_mod
   use kinds, only : real_kind, int_kind, iulog
   ! ---------------------------
   use dimensions_mod, only : nmpi_per_node, nlev, qsize_d
+#ifdef _MPI
+  use mpi
+#endif
 !
 ! Revisions:
 ! 2018/10: M. Taylor adding MPI tasks per node subcommunicator
@@ -13,10 +16,7 @@ module parallel_mod
 !
   implicit none
 
-  public 
-#ifdef _MPI
-#include <mpif.h>
-#endif
+  public
   integer, parameter, public :: ORDERED = 1
   integer, parameter, public :: FAST = 2
   integer, parameter, public :: BNDRY_TAG_BASE = 0

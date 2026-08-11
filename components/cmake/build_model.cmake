@@ -263,6 +263,13 @@ macro(build_model COMP_CLASS COMP_NAME)
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
 
+    # driver-mct/main sources (e.g. cime_comp_mod.F90) use netcdf directly, but
+    # the component libraries only link netcdf PRIVATEly (via csm_share), so
+    # its usage requirements (e.g. include dirs for netcdf.mod) do not
+    # propagate up to this exe target. Find/link it explicitly here too.
+    find_package(NETCDF REQUIRED)
+    target_link_libraries(${TARGET_NAME} netcdf)
+
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
         target_link_libraries(${TARGET_NAME} ${ITEM})
@@ -327,6 +334,10 @@ macro(build_model COMP_CLASS COMP_NAME)
         if (USE_PETSC)
           target_link_libraries(${TARGET_NAME} PRIVATE "${PETSC_LIBRARIES}")
           target_include_directories(${TARGET_NAME} PRIVATE "${PETSC_INCLUDES}")
+        endif()
+        if (USE_MOAB)
+          target_link_libraries(${TARGET_NAME} PRIVATE ${MOAB_LIBRARIES})
+          target_include_directories(${TARGET_NAME} PRIVATE ${MOAB_INCLUDE_DIRS})
         endif()
       endif()
       if (COMP_NAME STREQUAL "ww3")

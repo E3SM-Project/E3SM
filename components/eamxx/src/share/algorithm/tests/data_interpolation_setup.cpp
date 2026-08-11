@@ -29,10 +29,12 @@ TEST_CASE ("data_interpolation_setup")
   auto p_grid = grid->clone("pressure_grid",true);
   p_grid->reset_vertical_configuration(nlevs, AbstractGrid::VKind::Pressure);
 
-  // Create and setup two files, so we can test both YearlyPeriodic and LinearHistory
+  // Create and setup four files (one every 6 months)
   std::vector<std::string> files = {
     "data_interpolation_0",
-    "data_interpolation_1"
+    "data_interpolation_1",
+    "data_interpolation_2",
+    "data_interpolation_3"
   };
 
   for (auto use_p_grid : {true, false}) {
@@ -50,7 +52,6 @@ TEST_CASE ("data_interpolation_setup")
 
       std::string ilev = use_p_grid ? "lev" : "ilev";
 
-      scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
       scorpio::define_var(fname+suffix,"s2d",  {"ncol"},             "real", true);
       scorpio::define_var(fname+suffix,"v2d",  {"ncol","dim2"},      "real", true);
       scorpio::define_var(fname+suffix,"s3d_m",{"ncol","lev"},       "real", true);
@@ -80,9 +81,8 @@ TEST_CASE ("data_interpolation_setup")
     // Loop over time, and add 30 to the value for the first 6 months,
     // and subtract 30 for the last 6 months. This guarantees that the data
     // is indeed periodic. We'll write at the 15th of each month
-    // Generate three files:
-    //   - one to be used for yearly-periodic interp
-    //   - two to be used for linear-hystory interp
+    // Generate 18 months of data starting in July.
+    // Files 0 and 1 cover the original 12 months; file 2 adds 6 extra months.
     util::TimeStamp time = get_first_slice_time ();
 
     // We keep pressures fields NOT time-dep, so we write outside the loop. Also write hyam/hybm here
@@ -104,16 +104,16 @@ TEST_CASE ("data_interpolation_setup")
     }
 
     int nfields = fields.size() - 1; // Don't handle p1d, since it's done above
-    for (int mm=0; mm<12; ++mm) {
+    for (int mm=0; mm<num_data_months; ++mm) {
       std::string file_name = "data_interpolation_" + std::to_string(mm/6) + suffix;
 
-      // We start the files with July
-      int mm_index = mm+6;
+      // We start the files with June
       scorpio::update_time(file_name,time.days_from(t_ref));
       for (int i=0; i<nfields; ++i) {
         auto& f = fields[i];
         f.deep_copy(base_fields[i]);
-        f.update(ones[i],delta_data[ mm_index % 12],1.0);
+        auto delta = delta_data[mm];
+        f.update(ones[i],delta,1.0);
         f.sync_to_host();
         scorpio::write_var(file_name,f.name(),f.get_internal_view_data<Real,Host>());
       }
@@ -175,6 +175,70 @@ TEST_CASE ("data_interpolation_setup")
   scorpio::write_var(filename,"S",  S.data());
 
   scorpio::release_file(filename);
+
+  // Write static (time-independent) test files.
+  // These files have NO time dimension; all fields are stored as constants
+  // (base field values, no delta offset).
+  for (auto use_p_grid : {true, false}) {
+    std::string suffix = use_p_grid ? "_no_ilev.nc" : ".nc";
+    std::string fname = "data_interpolation_static" + suffix;
+
+    scorpio::register_file(fname, scorpio::Write);
+
+    scorpio::define_dim(fname, "ncol", ngcols);
+    scorpio::define_dim(fname, "lev",  nlevs);
+    scorpio::define_dim(fname, "dim2", ncmps);
+    if (not use_p_grid) {
+      scorpio::define_dim(fname, "ilev", nlevs+1);
+    }
+
+    std::string ilev = use_p_grid ? "lev" : "ilev";
+
+    // All fields are NOT time-dependent (last arg = false)
+    scorpio::define_var(fname, "s2d",   {"ncol"},             "real", false);
+    scorpio::define_var(fname, "v2d",   {"ncol","dim2"},      "real", false);
+    scorpio::define_var(fname, "s3d_m", {"ncol","lev"},       "real", false);
+    scorpio::define_var(fname, "v3d_m", {"ncol","dim2","lev"},"real", false);
+    scorpio::define_var(fname, "s3d_i", {"ncol",ilev},        "real", false);
+    scorpio::define_var(fname, "v3d_i", {"ncol","dim2",ilev}, "real", false);
+    scorpio::define_var(fname, "p1d",   {"lev"},              "real", false);
+    scorpio::define_var(fname, "p2d",   {"ncol"},             "real", false);
+    scorpio::define_var(fname, "p3d",   {"ncol","lev"},       "real", false);
+    scorpio::define_var(fname, "hyam",  {"lev"},              "real", false);
+    scorpio::define_var(fname, "hybm",  {"lev"},              "real", false);
+
+    scorpio::enddef(fname);
+
+    // Write base field values (no time offset / delta)
+    auto field_grid = use_p_grid ? p_grid : grid;
+    auto base_fields = create_fields(field_grid, true, false);
+
+    auto p1d  = base_fields[6];
+    auto p3d  = base_fields[2].alias("p3d");
+    auto p2d  = base_fields[0].alias("p2d");
+    auto hybm = p1d.alias("hybm");
+    auto hyam = hybm.clone("hyam");
+    hyam.deep_copy(0);
+
+    p1d.sync_to_host();
+    p2d.sync_to_host();
+    p3d.sync_to_host();
+    hyam.sync_to_host();
+
+    int nf_static = 6; // s2d, v2d, s3d_m, v3d_m, s3d_i, v3d_i
+    for (int i=0; i<nf_static; ++i) {
+      base_fields[i].sync_to_host();
+      scorpio::write_var(fname, base_fields[i].name(),
+                         base_fields[i].get_internal_view_data<Real,Host>());
+    }
+    scorpio::write_var(fname, p1d.name(),  p1d.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, p2d.name(),  p2d.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, p3d.name(),  p3d.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, hyam.name(), hyam.get_internal_view_data<Real,Host>());
+    scorpio::write_var(fname, hybm.name(), hybm.get_internal_view_data<Real,Host>());
+
+    scorpio::release_file(fname);
+  }
 
   scorpio::finalize_subsystem();
 }

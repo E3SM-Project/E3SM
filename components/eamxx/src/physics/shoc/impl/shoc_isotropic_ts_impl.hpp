@@ -32,11 +32,11 @@ void Functions<S,D>
   static constexpr  Scalar ggr = C::gravit.value;
 
   //Declare constants
-  const     Scalar lambda_low    = lambda_low_in;
-  const     Scalar lambda_high   = lambda_high_in;
-  const     Scalar lambda_slope  = lambda_slope_in;
-  const     Scalar lambda_thresh = lambda_thresh_in;
-  static    constexpr Scalar maxiso = scream::shoc::Constants<Real>::maxiso;
+         const     Scalar lambda_low    = lambda_low_in; 
+         const     Scalar lambda_high   = lambda_high_in;
+         const     Scalar lambda_slope  = lambda_slope_in;
+         const     Scalar lambda_thresh = lambda_thresh_in;
+  static constexpr Scalar maxiso        = 20000; // Return to isotropic timescale [s]
 
   const Int nlev_pack = ekat::npack<Pack>(nlev);
 

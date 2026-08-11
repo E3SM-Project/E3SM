@@ -1,8 +1,11 @@
 #ifndef SOIL_ERODIBILITY_HPP
 #define SOIL_ERODIBILITY_HPP
 
-// For AtmosphereInput
-#include "share/io/scorpio_input.hpp"
+#include "share/remap/abstract_remapper.hpp"
+#include "share/field/field_reader.hpp"
+#include "share/core/eamxx_types.hpp"
+
+#include <memory>
 
 namespace scream {
 namespace soil_erodibility {
@@ -19,12 +22,12 @@ struct soilErodibilityFunctions {
       const std::string &soilErodibility_data_file, const std::string &map_file,
       const std::string &field_name, const std::string &dim_name1);
 
-  static std::shared_ptr<AtmosphereInput> create_data_reader(
+  static std::shared_ptr<FieldReader> create_data_reader(
       const std::shared_ptr<AbstractRemapper> &horiz_remapper,
       const std::string &data_file);
 
   static void update_soil_erodibility_data_from_file(
-      std::shared_ptr<AtmosphereInput> &scorpio_reader,
+      std::shared_ptr<FieldReader> &reader,
       AbstractRemapper &horiz_interp, const_view_1d &input);
 
   static void init_soil_erodibility_file_read(
@@ -33,7 +36,7 @@ struct soilErodibilityFunctions {
       const std::string &data_file, const std::string &mapping_file,
       // output
       std::shared_ptr<AbstractRemapper> &SoilErodibilityHorizInterp,
-      std::shared_ptr<AtmosphereInput> &SoilErodibilityDataReader);
+      std::shared_ptr<FieldReader> &SoilErodibilityDataReader);
 
 };  // struct soilErodilityFunctions
 

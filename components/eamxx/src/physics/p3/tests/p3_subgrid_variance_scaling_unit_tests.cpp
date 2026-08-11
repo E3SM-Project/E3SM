@@ -193,12 +193,18 @@ struct UnitWrap::UnitTest<D>::TestP3SubgridVarianceScaling : public UnitWrap::Un
 
 namespace {
 
-TEST_CASE("p3_subgrid_variance_scaling_test", "[p3_subgrid_variance_scaling_test]"){
+TEST_CASE("p3_subgrid_variance_scaling_property", "[p3_subgrid_variance_scaling_test]"){
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling;
+
+  T t;
+  t.run_property_tests();
+}
+
+TEST_CASE("p3_subgrid_variance_scaling_bfb", "[p3_subgrid_variance_scaling_test]"){
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3SubgridVarianceScaling;
 
   T t;
   t.run_bfb_tests();
-  t.run_property_tests();
 }
 
 } // namespace

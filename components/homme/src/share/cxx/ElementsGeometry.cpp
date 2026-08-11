@@ -74,6 +74,14 @@ set_elem_data (const int ie,
   // Check input
   assert (ie>=0 && ie<m_num_elems);
 
+  // tensorVisc is handled separately by set_tensorvisc(), since (for the
+  // theta-l_kokkos dycore) it is the only field here that is computed AFTER
+  // dss_hvtensor runs; the other fields are constant and are fine to set
+  // here, early (before dss_hvtensor runs).
+  if (!consthv) {
+    set_tensorvisc(ie, tensorvisc);
+  }
+
   using ScalarView   = ExecViewUnmanaged<Real [NP][NP]>;
   using TensorView   = ExecViewUnmanaged<Real [2][2][NP][NP]>;
   using Tensor33View = ExecViewUnmanaged<Real [3][3][NP][NP]>;
@@ -90,11 +98,7 @@ set_elem_data (const int ie,
   TensorView::host_mirror_type h_d         = Kokkos::create_mirror_view(Homme::subview(m_d,ie));
   TensorView::host_mirror_type h_dinv      = Kokkos::create_mirror_view(Homme::subview(m_dinv,ie));
 
-  TensorView::host_mirror_type h_tensorvisc;
   Tensor33View::host_mirror_type h_vec_sph2cart;
-  if( !consthv ){
-    h_tensorvisc   = Kokkos::create_mirror_view(Homme::subview(m_tensorvisc,ie));
-  }
   h_vec_sph2cart = Kokkos::create_mirror_view(Homme::subview(m_vec_sph2cart,ie));
 
   ScalarViewF90 h_fcor_f90         (fcor);
@@ -104,7 +108,6 @@ set_elem_data (const int ie,
   TensorViewF90 h_metinv_f90       (metinv);
   TensorViewF90 h_d_f90            (D);
   TensorViewF90 h_dinv_f90         (Dinv);
-  TensorViewF90 h_tensorvisc_f90   (tensorvisc);
   Tensor33ViewF90 h_vec_sph2cart_f90 (vec_sph2cart);
   
   // 2d scalars
@@ -130,17 +133,6 @@ set_elem_data (const int ie,
     }
   }
   
-  if(!consthv) {
-    for (int idim = 0; idim < 2; ++idim) {
-      for (int jdim = 0; jdim < 2; ++jdim) {
-        for (int igp = 0; igp < NP; ++igp) {
-          for (int jgp = 0; jgp < NP; ++jgp) {
-            h_tensorvisc   (idim,jdim,igp,jgp) = h_tensorvisc_f90   (idim,jdim,igp,jgp);
-          }
-        }
-      }
-    }
-  }//end if consthv
   for (int idim = 0; idim < 3; ++idim) {
     for (int jdim = 0; jdim < 3; ++jdim) {
       for (int igp = 0; igp < NP; ++igp) {
@@ -158,9 +150,6 @@ set_elem_data (const int ie,
   Kokkos::deep_copy(Homme::subview(m_rspheremp,ie), h_rspheremp);
   Kokkos::deep_copy(Homme::subview(m_d,ie), h_d);
   Kokkos::deep_copy(Homme::subview(m_dinv,ie), h_dinv);
-  if( !consthv ) {
-    Kokkos::deep_copy(Homme::subview(m_tensorvisc,ie), h_tensorvisc);
-  }
   Kokkos::deep_copy(Homme::subview(m_vec_sph2cart,ie), h_vec_sph2cart);
 
   if (sphere_cart && m_sphere_cart.size() != 0) {
@@ -171,6 +160,34 @@ set_elem_data (const int ie,
     const auto fsl = HostViewUnmanaged<const Real [NP][NP][2]>(sphere_latlon);
     Kokkos::deep_copy(Homme::subview(m_sphere_latlon, ie), fsl);
   }
+}
+
+void ElementsGeometry::
+set_tensorvisc (const int ie, CF90Ptr& tensorvisc) {
+  // Check geometry was inited
+  assert (m_num_elems>0);
+
+  // Check input
+  assert (ie>=0 && ie<m_num_elems);
+
+  using TensorView    = ExecViewUnmanaged<Real [2][2][NP][NP]>;
+  using TensorViewF90 = HostViewUnmanaged<const Real [2][2][NP][NP]>;
+
+  TensorView::host_mirror_type h_tensorvisc =
+    Kokkos::create_mirror_view(Homme::subview(m_tensorvisc,ie));
+  TensorViewF90 h_tensorvisc_f90 (tensorvisc);
+
+  for (int idim = 0; idim < 2; ++idim) {
+    for (int jdim = 0; jdim < 2; ++jdim) {
+      for (int igp = 0; igp < NP; ++igp) {
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          h_tensorvisc (idim,jdim,igp,jgp) = h_tensorvisc_f90 (idim,jdim,igp,jgp);
+        }
+      }
+    }
+  }
+
+  Kokkos::deep_copy(Homme::subview(m_tensorvisc,ie), h_tensorvisc);
 }
 
 void ElementsGeometry::

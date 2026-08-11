@@ -1,4 +1,4 @@
-#ifdef HAVE_MOAB
+#ifdef MOAB_LATERAL
 ! Only build the module if MOAB is enabled
 module MOABGridType
 
@@ -137,9 +137,9 @@ contains
 
     ! next define MOAB app for the ghosted one
     ! We do this so that coupling does not have to deal with halos
-    appname="MOAB_ELM_GHOSTED"//C_NULL_CHAR
+    appname="MOAB_ELM_GHOSTED"
     LNDGHOSTID = 55120 ! this is arbitrary (but needs to be unique)
-    ierr = iMOAB_RegisterApplication(appname, mpicom, LNDGHOSTID, mlndghostid)
+    ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom, LNDGHOSTID, mlndghostid)
     if (ierr > 0 )  &
          call endrun('Error: cannot register ELM-MOAB halo application')
     if(masterproc) then

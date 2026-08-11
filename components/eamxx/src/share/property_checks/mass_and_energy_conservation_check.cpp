@@ -341,7 +341,7 @@ void MassAndEnergyConservationCheck::global_fixer(const bool air_sea_surface_wat
 
   auto field_view_s1 = field_version_s1.get_view<Real*>();
 
-  auto area = m_grid->get_geometry_data("area").clone();
+  auto area = m_grid->get_geometry_data("area");
   auto area_view = area.get_view<const Real*>();
 
   //reprosum vars

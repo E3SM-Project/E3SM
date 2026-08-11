@@ -23,6 +23,7 @@ add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/ma
 add_library(mam
   readfiles/vertical_remapper_mam4.cpp
   readfiles/vertical_remapper_exo_coldens.cpp
+  readfiles/vertical_remapper_elevated_emissions_mam4.cpp
   eamxx_mam_generic_process_interface.cpp
   eamxx_mam_microphysics_process_interface.cpp
   eamxx_mam_microphysics_process_functions.cpp
@@ -36,11 +37,11 @@ add_library(mam
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
 target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx)
 
-#if (NOT SCREAM_LIB_ONLY)
-#  add_subdirectory(tests)
-#endif()
-
 if (TARGET eamxx_physics)
   # Add this library to eamxx_physics
   target_link_libraries(eamxx_physics INTERFACE mam)
+endif()
+
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
 endif()

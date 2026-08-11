@@ -67,15 +67,15 @@ void Functions<S,D>::horizontal_eddy_diffusivities(
   const Scalar&                grid_dx,
   const Scalar&                grid_dy,
   const uview_1d<const Pack>& tke,
-  const uview_1d<Pack>&       tkh_horiz,
-  const uview_1d<Pack>&       tk_horiz)
+  const uview_1d<Pack>&       eddy_diff_heat_horiz,
+  const uview_1d<Pack>&       eddy_diff_mom_horiz)
 {
   const Scalar horiz_length = std::sqrt(grid_dx*grid_dy);
   const Int nlev_pack = ekat::npack<Pack>(nlev);
   Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     const Pack velocity_scale = ekat::sqrt(tke(k));
-    tkh_horiz(k) = Ckh_horiz*horiz_length*velocity_scale;
-    tk_horiz(k)  = Ckm_horiz*horiz_length*velocity_scale;
+    eddy_diff_heat_horiz(k) = Ckh_horiz*horiz_length*velocity_scale;
+    eddy_diff_mom_horiz(k)  = Ckm_horiz*horiz_length*velocity_scale;
   });
 }
 

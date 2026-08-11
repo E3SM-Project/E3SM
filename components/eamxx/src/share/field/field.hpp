@@ -26,6 +26,15 @@ enum HostOrDevice {
 #endif
 };
 
+// Used to specify different behavior in the clone operation
+namespace CloneFlags {
+  constexpr int None          = 0;
+  constexpr int MatchPacking  = 1 << 0; // Preserves allocation properties
+  constexpr int CopyTimeStamp = 1 << 1; // Copies current timestamp
+  constexpr int CopyData      = 1 << 2; // Copies the data
+  constexpr int All           = MatchPacking | CopyTimeStamp | CopyData;
+}
+
 // ======================== FIELD ======================== //
 
 // A field is composed of metadata info (the header) and a pointer to a view.
@@ -48,21 +57,21 @@ public:
   using data_nd_t = typename ekat::DataND<T,N>::type;
 
   // Types of device and host views given data type and memory traits
-  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, typename MT = ekat::ManagedMemoryTrait>
   using view_dev_t = typename kt_dev::template view<DT,MT>;
-  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, typename MT = ekat::ManagedMemoryTrait>
   using view_host_t = typename kt_host::template view<DT,MT>;
 
   // Analogue of the above, but with LayoutStride
-  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, typename MT = ekat::ManagedMemoryTrait>
   using strided_view_dev_t = typename kt_dev::template sview<DT,MT>;
-  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, typename MT = ekat::ManagedMemoryTrait>
   using strided_view_host_t = typename kt_host::template sview<DT,MT>;
 
 private:
   // A bare DualView-like struct. This is an impl detail, so don't expose it.
   // NOTE: we could use DualView, but all we need is a container-like struct.
-  template<typename DT, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, typename MT = ekat::ManagedMemoryTrait>
   struct dual_view_t {
     view_dev_t<DT,MT>   d_view;
     view_host_t<DT,MT>  h_view;
@@ -79,10 +88,10 @@ private:
 public:
 
   // Type of a view given data type, HostOrDevice enum, and memory traits
-  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, HostOrDevice HD, typename MT = ekat::ManagedMemoryTrait>
   using get_view_type = std::conditional_t<HD==Device,view_dev_t<DT,MT>,view_host_t<DT,MT>>;
 
-  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryTraits<0>>
+  template<typename DT, HostOrDevice HD, typename MT = ekat::ManagedMemoryTrait>
   using get_strided_view_type = std::conditional_t<HD==Device,strided_view_dev_t<DT,MT>,strided_view_host_t<DT,MT>>;
 
   // Field stack classes types
@@ -109,16 +118,21 @@ public:
 
   bool is_read_only () const { return m_is_read_only; }
 
-  // Creates a deep copy version of this field.
-  // It is created with a pristine header (no providers/customers)
-  Field clone () const;
-  Field clone (const std::string& name) const;
-  Field clone (const std::string& name, const std::string& grid_name) const;
+  // Creates a new field with a pristine header (no providers/customers).
+  // Clone behavior is controlled by flags: by default (CloneFlags::None),
+  // timestamp, packing, and data are not copied.
+  // Use CopyTimeStamp/CopyData/MatchPacking to copy the current
+  // timestamp and/or packing and/or field data into the clone.
+  Field clone (const int flags = CloneFlags::None) const;
+  Field clone (const std::string& name, const int flags = CloneFlags::None) const;
+  Field clone (const std::string& name, const std::string& grid_name, const int flags = CloneFlags::None) const;
 
   Field alias (const std::string& name) const;
   Field alias (const std::string& name, const std::string& grid_name) const;
   Field alias (const std::string& name, const std::map<FieldTag,std::string>& tag_names) const;
   Field alias (const std::string& name, const std::string& grid_name, const std::map<FieldTag,std::string>& tag_names) const;
+  Field alias (const std::string& name, const std::map<std::string,std::string>& tag_names) const;
+  Field alias (const std::string& name, const std::string& grid_name, const std::map<std::string,std::string>& tag_names) const;
 
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
@@ -161,13 +175,13 @@ public:
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data () const {
     // Check that the scalar type is correct
-    using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
-                       or std::is_same<nonconst_ST,char>::value),
+    using scalar_t = typename ekat::ScalarTraits<ST>::scalar_type;
+    EKAT_REQUIRE_MSG (field_valid_data_types().has_t<scalar_t>() and
+                      get_data_type<scalar_t>()==m_header->get_identifier().data_type(),
         "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
         " - field name: " + name() + "\n"
-        " - field data type: " + e2str(data_type()) + "\n"
-        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
+        " - field data type: " + e2str(data_type()) + "\n");
+
     EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<ST>::value,
         "Error! Cannot get a non-const raw pointer to the field data if the field is read-only.\n"
         " - field name: " + name() + "\n");
@@ -185,14 +199,13 @@ public:
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data_unsafe () const {
     // Check that the scalar type is correct
-    using nonconst_ST = typename std::remove_const<ST>::type;
-    EKAT_REQUIRE_MSG ((std::is_same<nonconst_ST,char>::value or std::is_same<nonconst_ST,void>::value or
-                       (field_valid_data_types().has_t<nonconst_ST>() and
-                        get_data_type<nonconst_ST>()==m_header->get_identifier().data_type())),
-        "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
-        " - field name: " + name() + "\n"
-        " - field data type: " + e2str(data_type()) + "\n"
-        " - requested type : " + e2str(field_valid_data_types().at<nonconst_ST>()) + "\n");
+    using scalar_t = typename ekat::ScalarTraits<ST>::scalar_type;
+    EKAT_REQUIRE_MSG (field_valid_data_types().has_t<scalar_t>() and
+                      get_data_type<scalar_t>()==m_header->get_identifier().data_type(),
+      "Error! Attempt to access raw field pointer with the wrong scalar type.\n"
+      " - field name: " + name() + "\n"
+      " - field data type: " + e2str(data_type()) + "\n"
+      " - requested type : " + e2str(field_valid_data_types().at<scalar_t>()) + "\n");
 
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }

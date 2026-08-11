@@ -27,6 +27,13 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LABELS io diagnostics
   )
 
+  ## Test conditional geo data output (io_output_if_dim_exists feature)
+  CreateUnitTest(io_cond_geo
+    SOURCES io_cond_geo.cpp
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   ## Test basic output (no packs, no diags, all avg types, all freq units)
   CreateUnitTest(io_basic
     SOURCES io_basic.cpp
@@ -141,13 +148,6 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   CreateUnitTest(io_horiz_sampling
     SOURCES io_horiz_sampling.cpp
     LIBS eamxx_io LABELS io remap
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-  )
-
-  ## Test single-column reader
-  CreateUnitTest(io_scm_reader
-    SOURCES io_scm_reader.cpp
-    LIBS eamxx_io LABELS io
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 

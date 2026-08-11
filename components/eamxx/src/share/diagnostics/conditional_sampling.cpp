@@ -153,15 +153,14 @@ void ConditionalSampling::initialize_impl()
 {
   if (m_diag_is_mask) {
     if (m_lhs_is_lev) {
-      m_diagnostic_output = m_lev_mask.clone(m_diag_name);
+      m_diagnostic_output = m_lev_mask.alias(m_diag_name);
     } else {
       auto dfid = m_fields_in.at(m_condition_lhs).get_header().get_identifier().clone(m_diag_name);
       dfid.reset_dtype(DataType::IntType).reset_units(ekat::units::none);
       m_diagnostic_output = Field(dfid,true);
     }
   } else {
-    auto xfid = m_fields_in.at(m_input_f).get_header().get_identifier();
-    m_diagnostic_output = Field(xfid.clone(m_diag_name),true);
+    m_diagnostic_output = m_fields_in.at(m_input_f).clone(m_diag_name);
     m_diagnostic_output.create_valid_mask();
   }
 

@@ -51,6 +51,10 @@ void Functions<Real,DefaultDevice>
     const Int i = team.league_rank();
 
     auto workspace       = workspace_mgr.get_workspace(team);
+    uview_2d<const Pack> shear_strain3d_components_s;
+    if (do_3d_turb) {
+      shear_strain3d_components_s = ekat::subview(shear_strain3d_components, i);
+    }
 
     shoc_tke(team, nlev, nlevi, dtime,
              lambda_low, lambda_high, lambda_slope, lambda_thresh,

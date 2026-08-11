@@ -6,6 +6,8 @@ namespace scream::impl {
 using mam4::mo_photo::phtcnt;
 
 using HostView1D    = mam4::DeviceType::view_1d<Real>::host_mirror_type;
+using HostView5D   = mam4::DeviceType::view<Real*****>::host_mirror_type;
+using HostView3D   = mam4::DeviceType::view<Real***>::host_mirror_type;
 using HostViewInt1D = mam4::DeviceType::view_1d<int>::host_mirror_type;
 
 //-------------------------------------------------------------------------
@@ -19,29 +21,33 @@ std::vector<Real> populate_etfphot_from_e3sm_case() {
   // We obtained these values from an e3sm simulations.
   // We should only use this function on Host.
   std::vector<Real> etfphot_data = {
-      7.5691227E+11, 8.6525905E+11, 1.0355749E+12, 1.1846288E+12, 2.1524405E+12,
-      3.2362584E+12, 3.7289849E+12, 4.4204330E+12, 4.6835350E+12, 6.1217728E+12,
-      4.5575051E+12, 5.3491446E+12, 4.7016063E+12, 5.4281722E+12, 4.5023968E+12,
-      6.8931981E+12, 6.2012647E+12, 6.1430771E+12, 5.7820385E+12, 7.6770646E+12,
-      1.3966509E+13, 1.2105348E+13, 2.8588980E+13, 3.2160821E+13, 2.4978066E+13,
-      2.7825401E+13, 2.3276451E+13, 3.6343684E+13, 6.1787886E+13, 7.8009914E+13,
-      7.6440824E+13, 7.6291458E+13, 9.4645085E+13, 1.0124628E+14, 1.0354111E+14,
-      1.0999650E+14, 1.0889946E+14, 1.1381912E+14, 1.3490042E+14, 1.5941519E+14,
-      1.4983265E+14, 1.5184267E+14, 1.5991420E+14, 1.6976697E+14, 1.8771840E+14,
-      1.6434367E+14, 1.8371960E+14, 2.1966369E+14, 1.9617879E+14, 2.2399700E+14,
-      1.8429912E+14, 2.0129736E+14, 2.0541588E+14, 2.4334962E+14, 3.5077122E+14,
-      3.4517894E+14, 3.5749668E+14, 3.6624304E+14, 3.4975113E+14, 3.5566025E+14,
-      4.2825273E+14, 4.8406375E+14, 4.9511159E+14, 5.2695368E+14, 5.2401611E+14,
-      5.0877746E+14, 4.8780853E+14};
+      0.75691227453241626E+012, 0.86525904597344678E+012, 0.10355748678445210E+013, 0.11846288453143215E+013, 0.21524405047611838E+013,
+      0.32362583636383438E+013, 0.37289849127086353E+013, 0.44204330229059023E+013, 0.46835350139683008E+013, 0.61217728454045146E+013,
+      0.45575051094967529E+013, 0.53491446243876533E+013, 0.47016062694342764E+013, 0.54281722298247529E+013, 0.45023968313414365E+013,
+      0.68931981401230361E+013, 0.62012647462481055E+013, 0.61430770669364131E+013, 0.57820384729408037E+013, 0.76770646262530391E+013,
+      0.13966508541416857E+014, 0.12105347510143980E+014, 0.28588979654418141E+014, 0.32160820948665508E+014, 0.24978065543030500E+014,
+      0.27825400776036188E+014, 0.23276451219415352E+014, 0.36343683716296695E+014, 0.61787885646314477E+014, 0.78009914475741344E+014,
+      0.76440824240882500E+014, 0.76291457600771391E+014, 0.94645085080390984E+014, 0.10124627769922270E+015, 0.10354111421691689E+015,
+      0.10999649606948711E+015, 0.10889946060495367E+015, 0.11381912455165878E+015, 0.13490042469475880E+015, 0.15941519351184984E+015,
+      0.14983265369952531E+015, 0.15184267258496494E+015, 0.15991419729740088E+015, 0.16976696691694741E+015, 0.18771840486614825E+015,
+      0.16434366552645634E+015, 0.18371960453616509E+015, 0.21966368981040753E+015, 0.19617878628663241E+015, 0.22399700059898819E+015,
+      0.18429911731380941E+015, 0.20129735694980109E+015, 0.20541588491339825E+015, 0.24334961879677731E+015, 0.35077121778312700E+015,
+      0.34517894220011569E+015, 0.35749668154179594E+015, 0.36624304237331069E+015, 0.34975112547690056E+015, 0.35566025203681831E+015,
+      0.42825273260963562E+015, 0.48406375456076200E+015, 0.49511158653410975E+015, 0.52695367706176038E+015, 0.52401610578239200E+015,
+      0.50877746346978994E+015, 0.48780852943692825E+015};
   return etfphot_data;
 }
 
 // This version uses eamxx_scorpio_interface to read netcdf files.
 mam4::mo_photo::PhotoTableData read_photo_table(
-    const std::string &rsf_file, const std::string &xs_long_file) {
-  // set up the lng_indexer and pht_alias_mult_1 views based on our
-  // (hardwired) chemical mechanism
-  HostViewInt1D lng_indexer_h("lng_indexer", phtcnt);
+    const std::string &rsf_file, const std::string &xs_long_file,
+    const std::vector<std::string> &rxt_names, const int numj,
+    const HostViewInt1D &lng_indexer_h) {
+
+  EKAT_REQUIRE_MSG(numj > 0, "Error: read_photo_table requires numj > 0.\n");
+  EKAT_REQUIRE_MSG(lng_indexer_h.extent_int(0) == phtcnt,
+                   "Error: read_photo_table requires lng_indexer_h sized by phtcnt.\n");
+
 
   int nw, nump, numsza, numcolo3, numalb, nt, np_xs;  // table dimensions
   scorpio::register_file(rsf_file, scorpio::Read);
@@ -56,15 +62,13 @@ mam4::mo_photo::PhotoTableData read_photo_table(
   nw    = scorpio::get_dimlen(xs_long_file, "numwl");
   np_xs = scorpio::get_dimlen(xs_long_file, "numprs");
 
-  // FIXME: hard-coded for only one photo reaction.
-  std::string rxt_names[1] = {"jh2o2"};
-  int numj                 = 1;
-  lng_indexer_h(0)         = 0;
   // allocate the photolysis table
   auto table = mam4::mo_photo::create_photo_table_data(
       nw, nt, np_xs, numj, nump, numsza, numcolo3, numalb);
 
   // allocate host views for table data
+  HostView5D l_rsf_tab_h("rsf_tab_h",numalb,numcolo3,numsza,nump,nw);
+  HostView3D l_xsqy_h("xsqy_h",np_xs,nt,nw);
   auto rsf_tab_h = Kokkos::create_mirror_view(table.rsf_tab);
   auto xsqy_h    = Kokkos::create_mirror_view(table.xsqy);
   auto sza_h     = Kokkos::create_mirror_view(table.sza);
@@ -72,8 +76,8 @@ mam4::mo_photo::PhotoTableData read_photo_table(
   auto press_h   = Kokkos::create_mirror_view(table.press);
   auto colo3_h   = Kokkos::create_mirror_view(table.colo3);
   auto o3rat_h   = Kokkos::create_mirror_view(table.o3rat);
-  // auto etfphot_h = Kokkos::create_mirror_view(table.etfphot);
   auto prs_h = Kokkos::create_mirror_view(table.prs);
+  
 
   // read file data into our host views
   scorpio::read_var(rsf_file, "pm", press_h.data());
@@ -81,17 +85,19 @@ mam4::mo_photo::PhotoTableData read_photo_table(
   scorpio::read_var(rsf_file, "alb", alb_h.data());
   scorpio::read_var(rsf_file, "colo3fact", o3rat_h.data());
   scorpio::read_var(rsf_file, "colo3", colo3_h.data());
-  // it produces an error.
-  scorpio::read_var(rsf_file, "RSF", rsf_tab_h.data());
+  scorpio::read_var(rsf_file, "RSF", l_rsf_tab_h.data());
   scorpio::read_var(xs_long_file, "pressure", prs_h.data());
 
   // read xsqy data (using lng_indexer_h for the first index)
-  // FIXME: hard-coded for only one photo reaction.
-  for(int m = 0; m < phtcnt; ++m) {
-    auto xsqy_ndx_h = ekat::subview(xsqy_h, m);
-    scorpio::read_var(xs_long_file, rxt_names[m], xsqy_h.data());
+  using policy_t3 = Kokkos::MDRangePolicy<Kokkos::Rank<3>, Kokkos::DefaultHostExecutionSpace>;
+  for(int m = 0; m < numj; ++m) {
+    scorpio::read_var(xs_long_file, rxt_names[m], l_xsqy_h.data());
+    Kokkos::parallel_for("xsqy_h", 
+    policy_t3({0, 0, 0}, {xsqy_h.extent(1), xsqy_h.extent(2), xsqy_h.extent(3)}),
+    [&](const int i, const int j, const int k) {
+        xsqy_h(m, i, j, k) = l_xsqy_h(k,j,i);
+  });
   }
-
   // populate etfphot by rebinning solar data
   HostView1D wc_h("wc", nw), wlintv_h("wlintv", nw), we_h("we", nw + 1);
 
@@ -105,6 +111,16 @@ mam4::mo_photo::PhotoTableData read_photo_table(
   // FIXME: etfphot_data is hard-coded.
   auto etfphot_data = populate_etfphot_from_e3sm_case();
   auto etfphot_h    = HostView1D((Real *)etfphot_data.data(), nw);
+
+  using policy_t = Kokkos::MDRangePolicy<Kokkos::Rank<4>, Kokkos::DefaultHostExecutionSpace>;
+  
+  Kokkos::parallel_for("scale_rsf_tab", 
+    policy_t({0, 0, 0, 0}, {rsf_tab_h.extent(1), rsf_tab_h.extent(2), rsf_tab_h.extent(3), rsf_tab_h.extent(4)}),
+    [&](const int l, const int i, const int j, const int k) {
+      for (int w = 0; w < nw; ++w) {
+        rsf_tab_h(w,l, i, j, k) = l_rsf_tab_h(k,j,i,l,w)*wlintv_h(w);
+      }
+  });
 
   scorpio::release_file(rsf_file);
   scorpio::release_file(xs_long_file);
@@ -146,6 +162,17 @@ mam4::mo_photo::PhotoTableData read_photo_table(
       });
 
   return table;
+}
+
+// MAM4xx E3SM v2 photolysis table reader.
+mam4::mo_photo::PhotoTableData read_photo_table(
+    const std::string &rsf_file, const std::string &xs_long_file) {
+  
+  HostViewInt1D lng_indexer_h("lng_indexer", phtcnt);
+  std::vector<std::string> rxt_names = {"jh2o2"};
+  int numj                 = 1;
+  lng_indexer_h(0)         = 0;
+  return read_photo_table(rsf_file, xs_long_file, rxt_names, numj, lng_indexer_h);
 }
 
 }  // namespace scream::impl

@@ -161,7 +161,7 @@ extern int GPTLbarrier (int, const char *);
 
 extern int GPTLreset (void);
 extern int GPTLfinalize (void);
-extern int GPTLget_memusage (int *, int *, int *, int *, int *);
+extern int GPTLget_memusage (long long *, long long *, long long *, long long *, long long *);
 extern int GPTLprint_memusage (const char *);
 extern int GPTLenable (void);
 extern int GPTLdisable (void);

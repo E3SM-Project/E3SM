@@ -71,13 +71,12 @@ void VertContract::initialize_impl()
   auto w_units = none;
   // set up the weighting field
   if (m_weighting_method == "dp") {
-    m_weight = m_fields_in.at("pseudo_density").clone("vert_contract_wts");
+    m_weight = m_fields_in.at("pseudo_density").clone("vert_contract_wts", CloneFlags::CopyData);
     constexpr auto g_units = physics::Constants<Real>::gravit.units;
     w_units = m_weight.get_header().get_identifier().get_units() / g_units;
   } else if (m_weighting_method == "dz") {
     // TODO: for some reason the dz field keeps getting set to 0
     // TODO: as a workaround, just calculate dz here (sigh...)
-    // m_weight = get_field_in("dz").clone("vert_contract_wts");
     m_weight = m_fields_in.at("pseudo_density").clone("vert_contract_wts");
     w_units = m;
   } else {

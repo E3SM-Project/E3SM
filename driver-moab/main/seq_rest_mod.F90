@@ -164,8 +164,9 @@ contains
 subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
-    use iMOAB,            only: iMOAB_GetGlobalInfo
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
+    use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh is cells (pg2/FV) or a point cloud (np4)
+    use iMOAB,            only: iMOAB_GetGlobalInfo
 
     implicit none
 
@@ -185,7 +186,8 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     integer (in), pointer   :: l2racc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
-    integer (in)   ::  ierr, ngv
+    integer (in)   :: ngv, nge ! global num vertices / elements from iMOAB_GetGlobalInfo
+    integer (in)   ::  ierr
 
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2racc_om
@@ -245,13 +247,22 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
         endif
         if (lnd_present) then
              if(samegrid_al) then
-                ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
+                ! land is on the atm mesh; max global land id comes from atm.
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
+                ! (pg2/FV) stores it on elements.  Pick the matching count.
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
+                if (atm_pg_active) then
+                   nx_lnd = nge ! atm mesh is cells
+                else
+                   nx_lnd = ngv ! atm mesh is a point cloud
+                endif
                 call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                    'afrac:lfrac:lfrin', nx=nx_lnd)
              else if(samegrid_lr) then
-               ! nx for land will be from global nb rof
-               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
+               ! land is on the rof mesh; max global land id comes from rof.
+               ! The rof mesh is cell-based, so use the global element count.
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
+               nx_lnd = nge
                call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                   'afrac:lfrac:lfrin', nx=nx_lnd)
              else ! is this ever true  ?
@@ -264,14 +275,23 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              l2racc_lm_cnt => prep_rof_get_l2racc_lm_cnt()
              p_l2racc_lm => prep_rof_get_l2racc_lm()
              if(samegrid_al) then
-                ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
+                ! land is on the atm mesh; max global land id comes from atm.
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
+                ! (pg2/FV) stores it on elements.  Pick the matching count.
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
+                if (atm_pg_active) then
+                   nx_lnd = nge ! atm mesh is cells
+                else
+                   nx_lnd = ngv ! atm mesh is a point cloud
+                endif
                 call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  matrix = p_l2racc_lm, nx=nx_lnd)
              else if(samegrid_lr) then
-               ! nx for land will be from global nb rof
-               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
+               ! land is on the rof mesh; max global land id comes from rof.
+               ! The rof mesh is cell-based, so use the global element count.
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
+               nx_lnd = nge
                call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                 trim(tagname), &
                 matrix = p_l2racc_lm, nx=nx_lnd)
@@ -406,8 +426,9 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                tag, samegrid_al, samegrid_lr, rest_file)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
-    use iMOAB,            only: iMOAB_GetGlobalInfo
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
+    use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh is cells (pg2/FV) or a point cloud (np4)
+    use iMOAB,            only: iMOAB_GetGlobalInfo
 
     implicit none
 
@@ -455,7 +476,9 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     integer (in), pointer   :: l2racc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
-    integer (in)   ::  ierr, ngv
+    integer (in)   :: lnd_nx, lnd_ny ! global land grid dims (from infodata), for non-samegrid land restart I/O
+    integer (in)   :: ngv, nge ! global num vertices / elements from iMOAB_GetGlobalInfo
+    integer (in)   ::  ierr
 
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2racc_om
@@ -501,6 +524,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
          iac_prognostic=iac_prognostic,      &
          ocn_c2_glcshelf=ocn_c2_glcshelf,    &
          do_bgc_budgets=do_bgc_budgets,      &
+         lnd_nx=lnd_nx, lnd_ny=lnd_ny,       &
          case_name=case_name,                &
          model_doi_url=model_doi_url)
 
@@ -624,21 +648,35 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
           if (lnd_present) then
              if(samegrid_al) then
-                ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
+                ! land is on the atm mesh; max global land id comes from atm.
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
+                ! (pg2/FV) stores it on elements.  Pick the matching count.
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
+                if (atm_pg_active) then
+                   nx_lnd = nge ! atm mesh is cells
+                else
+                   nx_lnd = ngv ! atm mesh is a point cloud
+                endif
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                   whead=whead, wdata=wdata, nx=nx_lnd)
              else if(samegrid_lr) then
-               ! nx for land will be from global nb atmosphere
-               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
+               ! land is on the rof mesh; max global land id comes from rof.
+               ! The rof mesh is cell-based, so use the global element count.
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
+               nx_lnd = nge
                call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                  whead=whead, wdata=wdata, nx=nx_lnd)
              else
+                ! land on its own (masked) grid, distinct from atm and rof: size the
+                ! PIO global dim from the land grid dims in infodata, exactly as the
+                ! cpl.hi history write does (seq_hist_mod). mblxid's num_global_elems
+                ! is the packed active-cell count and is smaller than the max land
+                ! GLOBAL_ID, which would scramble lfrac/lfrin on restart.
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-                  whead=whead, wdata=wdata)
+                  whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny)
              endif
           endif
           if (lnd_present .and. rof_prognostic) then
@@ -646,21 +684,31 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              l2racc_lm_cnt => prep_rof_get_l2racc_lm_cnt()
              p_l2racc_lm => prep_rof_get_l2racc_lm()
              if(samegrid_al) then
-                ! nx for land will be from global nb atmosphere
-                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nx_lnd) ! max id for land will come from atm
+                ! land is on the atm mesh; max global land id comes from atm.
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
+                ! (pg2/FV) stores it on elements.  Pick the matching count.
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
+                if (atm_pg_active) then
+                   nx_lnd = nge ! atm mesh is cells
+                else
+                   nx_lnd = ngv ! atm mesh is a point cloud
+                endif
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
                  whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
              else if(samegrid_lr) then
-               ! nx for land will be from global nb atmosphere
-               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nx_lnd) ! max id for land will come from rof
+               ! land is on the rof mesh; max global land id comes from rof.
+               ! The rof mesh is cell-based, so use the global element count.
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
+               nx_lnd = nge
                call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                 trim(tagname), &
                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
              else
+                ! land on its own (masked) grid: size PIO global dim from infodata land dims
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2racc_lm )
+                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=lnd_nx, ny=lnd_ny )
              endif
              call seq_io_write(rest_file, l2racc_lm_cnt, 'l2racc_lx_cnt', &
                  whead=whead, wdata=wdata)

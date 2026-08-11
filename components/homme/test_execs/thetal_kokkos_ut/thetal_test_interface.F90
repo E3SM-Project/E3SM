@@ -1,6 +1,6 @@
 module thetal_test_interface
 
-  use iso_c_binding,  only: c_int, c_bool, c_double, c_ptr, c_f_pointer
+  use iso_c_binding,  only: c_int, c_bool, c_double, c_ptr, c_f_pointer, c_loc
   use derivative_mod, only: derivative_t
   use element_mod,    only: element_t
   use kinds,          only: real_kind
@@ -256,6 +256,7 @@ contains
   subroutine initialize_reference_states_f90(phis_ptr, dp_ref_ptr, theta_ref_ptr, phi_ref_ptr) bind(c)
     use element_ops,    only: initialize_reference_states
     use dimensions_mod, only: nelemd, nlev, nlevp, np
+    use element_state,  only: nu_scale_top
     use theta_f2c_mod,  only : init_reference_states_c
     !
     ! Inputs
@@ -266,6 +267,7 @@ contains
     !
     real (kind=real_kind), dimension(:,:,:),  pointer :: phis
     real (kind=real_kind), dimension(:,:,:,:),  pointer :: dp_ref, theta_ref, phi_ref
+    type (c_ptr) :: nu_scale_top_ptr
     integer :: ie
 
     call c_f_pointer(phis_ptr,      phis,      [np,np,      nelemd])
@@ -283,7 +285,8 @@ contains
     end do
 
     ! Initialize reference states in C++
-    call init_reference_states_c(dp_ref_ptr,theta_ref_ptr,phi_ref_ptr)
+    nu_scale_top_ptr = c_loc(nu_scale_top)
+    call init_reference_states_c(theta_ref_ptr,dp_ref_ptr,phi_ref_ptr,nu_scale_top_ptr)
 
   end subroutine initialize_reference_states_f90
 

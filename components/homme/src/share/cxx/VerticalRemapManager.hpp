@@ -11,7 +11,7 @@
 
 namespace Homme {
 
-class FunctorsBuffersManager;
+struct FunctorsBuffersManager;
 
 namespace Remap { class Remapper; }
 
