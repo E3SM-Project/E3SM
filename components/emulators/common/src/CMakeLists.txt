@@ -1,5 +1,4 @@
 # Common source library
-cmake_minimum_required(VERSION 3.16)
 
 add_subdirectory(coupler_api)
 
@@ -40,5 +39,8 @@ target_include_directories(emulator_common PUBLIC
 
 target_link_libraries(emulator_common PUBLIC
   E3SM::coupler_api
+
+  PRIVATE
+  ekat::YamlParser
 )
 

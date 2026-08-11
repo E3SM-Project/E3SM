@@ -1,5 +1,5 @@
-#ifndef COUPLER_API_FIELD_REGISTRY_HPP
-#define COUPLER_API_FIELD_REGISTRY_HPP
+#ifndef E3SM_COUPLER_API_FIELD_REGISTRY_HPP
+#define E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -29,7 +29,6 @@ enum class MergeType {
  * - units: units
  */
 struct RegisteredFieldAttributes {
-  std::string component;
   std::string name;
   std::string long_name;
   std::string standard_name;
@@ -38,6 +37,7 @@ struct RegisteredFieldAttributes {
 
 struct RegisteredField {
   FieldRole role;
+  std::string component;
   RegisteredFieldAttributes attributes;
   // TODO: Figure out how to register or couple fields that are downscaled or
   // otherwise transformed
@@ -47,18 +47,50 @@ struct RegisteredField {
   std::size_t size = 0;
 };
 
+
+/**
+ * @brief Holds yaml entries for active coupled fields
+ * Fields:
+ * - merge_type
+ * - id: unique label for coupled field
+ * - attributes: Field metadata
+ * - sources: list of component sources
+ * - destinations: list of component destinations
+ */
+struct CoupledFieldEntry{
+  std::string id;
+  MergeType merge_type;
+  RegisteredFieldAttributes attributes;
+  std::vector<std::string> sources;
+  std::vector<std::string> destinations;
+};
+
+/**
+ * @brief Description of how a variable is coupled between components
+ * Fields:
+ *  - merge_type:  Enum for how multiple sources are merged
+ *  - sources: fields that contribute to the same coupled state/flux
+ *  - destinations: fields that consume the coupled state/flux
+ */
 struct CouplingRoute {
   MergeType merge_type;
   std::vector<const RegisteredField*> sources;
   std::vector<const RegisteredField*> destinations;
 };
 
+/**
+ * @brief Registry that tells the coupler what fields are available to be
+ * coupled Fields:
+ * - fields_: unordered map with key = (component name, field name) to each
+ * RegisteredField
+ */
 class FieldRegistry {
 public:
   void register_field(RegisteredField field);
-  const RegisteredField& get(const std::string &component,
-                             const std::string &field_name) const;
-  bool contains(const std::string &component, const std::string &field_name) const;
+  const RegisteredField& get(const std::string& component,
+                             const std::string& field_name) const;
+  bool contains(const std::string& component,
+                const std::string& field_name) const;
 
 private:
   struct RegistryKey {

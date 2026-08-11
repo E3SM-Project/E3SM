@@ -5,7 +5,7 @@ namespace e3sm::coupler {
 
 void FieldRegistry::register_field(RegisteredField field) {
 
-  if (field.attributes.component.empty()) {
+  if (field.component.empty()) {
     throw std::invalid_argument(
         "Attempting to register field with no Component");
   }
@@ -22,7 +22,7 @@ void FieldRegistry::register_field(RegisteredField field) {
     throw std::invalid_argument("Attempting to Register field with nullptr");
   }
 
-  RegistryKey key{field.attributes.component, field.attributes.name};
+  RegistryKey key{field.component, field.attributes.name};
   auto [it, inserted] = fields_.emplace(std::move(key), std::move(field));
 
   if (!inserted) {

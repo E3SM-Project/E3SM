@@ -41,6 +41,26 @@ class MetadataEntry:
     units: str
 
 
+@dataclass
+class FieldEntry:
+    kind: str
+    name: str
+    merge_type: str
+    attributes: MetadataEntry
+    sources: list[str] = field(default_factory=list)
+    destinations: list[str] = field(default_factory=list)
+
+
+@dataclass
+class CouplingTable:
+    """
+    This is the dataclass that will be written to the yaml file
+    What other metadata does it need?
+    """
+
+    fields: dict[str,FieldEntry] = field(default_factory=dict)
+
+
 def check_expression_statement(
     expr: Expression,
     vtable: VariableStack,
@@ -120,7 +140,7 @@ def get_metadata(
     ), f"Unexpected number of arguments to metadata_set:\n{expr}"
     arg = expr.args[0]
     assert isinstance(arg, Identifier), str(expr)
-    attname = get_arg_value(arg, vtable) 
+    attname = get_arg_value(arg, vtable)
 
     arg = expr.args[1]
     longname = get_arg_value(arg, vtable)
@@ -148,7 +168,7 @@ def main():
 
     variable_table: VariableStack = defaultdict(list)
     field_to_component_map: dict[str, list[str]] = defaultdict(list)
-    metadata_map: dict[str,MetadataEntry] = {}
+    metadata_map: dict[str, MetadataEntry] = {}
 
     def walk(stmts: list[Statement]):
         for stmt in stmts:
@@ -186,39 +206,18 @@ def main():
     pprint(field_to_component_map)
     # pprint(metadata_map)
 
-    to_yaml: list[YAML_Entry] = []
+    to_yaml: dict[str,FieldEntry] = {}
     for field, components in field_to_component_map.items():
-        f_entry = decode_field(field,components)
+        metadata = metadata_map.get(field)
+        if metadata is None:
+            print(f"Skipping {field}")
+            continue
+        f_entry = decode_field(field, metadata, components)
         if f_entry:
-            metadata = metadata_map.get(field)
-            if not metadata:
-                print(f"Skipping {field}")
-                continue
-            to_yaml.append(YAML_Entry(attributes=metadata,field=f_entry))
+            to_yaml[f_entry.name] = f_entry
 
-    export(CouplingTable(fields=to_yaml),fn="coupling_fields.yaml")
+    export(CouplingTable(fields=to_yaml), fn="coupling_fields.yaml")
 
-@dataclass
-class FieldEntry:
-    kind: str
-    name: str
-    merge_type: str
-    sources:list[str] = field(default_factory=list)
-    destinations: list[str] = field(default_factory=list)
-
-
-@dataclass
-class YAML_Entry:
-    field: FieldEntry
-    attributes: MetadataEntry
-
-@dataclass
-class CouplingTable:
-    """
-    This is the dataclass that will be written to the yaml file
-    What other metadata does it need?
-    """
-    fields: list[YAML_Entry] = field(default_factory=list)
 
 ABBREV_TO_COMPONENT_MAP = {
     "a": "atm",
@@ -246,22 +245,26 @@ def get_state_destinations(source: str, structures: list[str]) -> list[str]:
     return dests
 
 
-def decode_field(field_name: str, structures: list[str]) -> Optional[FieldEntry]:
-    if field_name[0] == "s" and '_' in field_name:
-        kind = 'state'
-    elif field_name[0] == "f" and '_' in field_name: 
+def decode_field(
+    field_name: str, attributes: MetadataEntry, structures: list[str]
+) -> Optional[FieldEntry]:
+    if field_name[0] == "s" and "_" in field_name:
+        kind = "state"
+    elif field_name[0] == "f" and "_" in field_name:
         kind = "flux"
-    else: 
+    else:
         return None
 
     if kind == "state":
         assert field_name[2] == "_"
-        source = ABBREV_TO_COMPONENT_MAP.get(field_name[1] )
+        source = ABBREV_TO_COMPONENT_MAP.get(field_name[1])
         if not source:
             sys.exit(f"Error incorrect state field {field_name}")
         dests = get_state_destinations(source, structures)
-    elif kind == 'flux':
-        assert field_name[0] == "f" and field_name[4] == "_", f"Malformed Flux field {field_name}"
+    elif kind == "flux":
+        assert (
+            field_name[0] == "f" and field_name[4] == "_"
+        ), f"Malformed Flux field {field_name}"
         source = ABBREV_TO_COMPONENT_MAP[field_name[3]]
         dests = [ABBREV_TO_COMPONENT_MAP[field_name[2]]]
 
@@ -272,7 +275,8 @@ def decode_field(field_name: str, structures: list[str]) -> Optional[FieldEntry]
 
     return FieldEntry(
         kind=kind,
-        name=field_name.split('_')[-1],
+        name=field_name.split("_")[-1],
+        attributes=attributes,
         sources=[source],
         destinations=dests,
         merge_type=merge_type,
@@ -281,13 +285,15 @@ def decode_field(field_name: str, structures: list[str]) -> Optional[FieldEntry]
 
 def export(table: CouplingTable, fn):
     import yaml
-    with open(fn,'w') as ofile:
+
+    with open(fn, "w") as ofile:
         yaml.safe_dump(
             asdict(table),
             ofile,
             sort_keys=False,
             default_flow_style=False,
         )
+
 
 if __name__ == "__main__":
     main()

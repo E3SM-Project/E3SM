@@ -16,6 +16,8 @@ target_include_directories(coupler_api
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
+target_link_libraries(coupler_api PRIVATE ekat::YamlParser)
+
 target_compile_features(coupler_api
   PUBLIC
     cxx_std_20

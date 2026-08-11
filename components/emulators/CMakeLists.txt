@@ -1,33 +1,39 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(emulators LANGUAGES CXX Fortran)
 
-# Path to externals (relative to this file)
-get_filename_component(E3SM_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
-set(EXTERNALS_ROOT "${E3SM_ROOT}/externals")
-
+include(FetchContent)
 option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
 
-# When built standalone (i.e. this is the top-level project), default to
-# standalone mode so we don't try to compile Fortran sources (the project
-# only declares CXX).  When included from the full E3SM build Fortran
-# is already enabled by the parent project.
-# if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-#   set(STANDALONE_MODE ON CACHE BOOL "Standalone build (CXX only, no Fortran)" FORCE)
-# endif()
+# ------------------------------------------------------------------------------
+# EKAT
+# ------------------------------------------------------------------------------
+
+# Build only EKAT Core + YAML parser.
+#
+# Core is always enabled. All other optional EKAT packages default to OFF,
+# so we only need to explicitly enable the YAML parser.
+set(EKAT_ENABLE_ALL_PACKAGES OFF CACHE BOOL "" FORCE)
+set(EKAT_ENABLE_YAML_PARSER ON CACHE BOOL "" FORCE)
+
+set(EKAT_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(EKAT_ENABLE_FORTRAN OFF CACHE BOOL "" FORCE)
+set(EKAT_ENABLE_MPI OFF CACHE BOOL "" FORCE) # unexpected ekat is not parser mpi.h correctly?
+
+FetchContent_Declare(
+    ekat
+    GIT_REPOSITORY https://github.com/E3SM-Project/EKAT.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(ekat)
 
 if(BUILD_EMULATOR_TESTS)
-  # Catch2 from ekat
-  set(CATCH2_INCLUDE_DIR "${EXTERNALS_ROOT}/ekat/extern/Catch2/single_include")
-
-  # Verify Catch2 exists
-  if(NOT EXISTS "${CATCH2_INCLUDE_DIR}/catch2/catch.hpp")
-    message(FATAL_ERROR "Catch2 not found at ${CATCH2_INCLUDE_DIR}. "
-      "Make sure externals/ekat is available.")
-  endif()
-
   # Enable testing at the top level
   enable_testing()
 endif()
+
+
 
 # Add subdirectories
 add_subdirectory(common)

@@ -20,7 +20,7 @@ e3sm::coupler::FieldRole set_role(std::string role) {
 
 extern "C" {
 
-void field_registry_register(void* handle, const RegisteredFieldDesc* desc) {
+void register_field(void* handle, const RegisteredFieldDesc* desc) {
 
   auto* registry = static_cast<e3sm::coupler::FieldRegistry*>(handle);
   e3sm::coupler::RegisteredField field{
