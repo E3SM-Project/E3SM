@@ -19,6 +19,7 @@ add_library(emulator_common
   ${EMULATOR_COMMON_F90_SOURCES}
 )
 
+target_link_libraries(emulator_common PUBLIC MOAB)
 target_compile_features(emulator_common PUBLIC cxx_std_20)
 
 # Place generated Fortran .mod files in a predictable directory so that
