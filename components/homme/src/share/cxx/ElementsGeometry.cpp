@@ -97,6 +97,7 @@ set_elem_data (const int ie,
   TensorView::host_mirror_type h_metinv    = Kokkos::create_mirror_view(Homme::subview(m_metinv,ie));
   TensorView::host_mirror_type h_d         = Kokkos::create_mirror_view(Homme::subview(m_d,ie));
   TensorView::host_mirror_type h_dinv      = Kokkos::create_mirror_view(Homme::subview(m_dinv,ie));
+
   Tensor33View::host_mirror_type h_vec_sph2cart;
   h_vec_sph2cart = Kokkos::create_mirror_view(Homme::subview(m_vec_sph2cart,ie));
 

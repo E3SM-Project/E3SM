@@ -924,7 +924,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <horiz_turb_subcycle>1</horiz_turb_subcycle>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
-    <horiz_turb_subcycle_q>-1</horiz_turb_subcycle_q>
+    <horiz_turb_subcycle_q>1</horiz_turb_subcycle_q>
     <nu>3.4e-08</nu>
     <nu COMPSET=".*DP-EAMxx">0.216784</nu>
     <nu_top>UNSET</nu_top>
