@@ -19,9 +19,7 @@ void Functions<Real,DefaultDevice>
   const view_2d<const Pack>& qw_sec,
   const Scalar&               dtime,
   const bool&                 extra_diags,
-//[shanyp 20260403
-  const bool&                 shoc_nocond,
-//shanyp 20260403]
+  const bool&                 shoc_enable_condensation,
   const view_2d<const Pack>& wthl_sec,
   const view_2d<const Pack>& w_sec,
   const view_2d<const Pack>& wqw_sec,
@@ -58,9 +56,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(qw_sec, i),
       dtime,
       extra_diags,
-//[shanyp 20260403
-      shoc_nocond,
-//shanyp 20260403]
+      shoc_enable_condensation,
       ekat::subview(wthl_sec, i),
       ekat::subview(w_sec, i),
       ekat::subview(wqw_sec, i),

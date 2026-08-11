@@ -132,9 +132,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_hetfrz_classnuc                    = false;
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
-// <shanyp 20260804
-    bool p3_condevap;
-// shanyp 20260804>
+    bool p3_super_sat;
+    bool p3_WBFoff;
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
     {
@@ -176,9 +175,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       use_separate_ice_liq_frac =
           params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
-//<shanyp 20260804
-      p3_condevap = params.get<bool>("p3_condevap",p3_condevap);
-//shanyp 20260804>
+      p3_super_sat = params.get<bool>("p3_super_sat",p3_super_sat);
+      p3_WBFoff = params.get<bool>("p3_WBFoff",p3_WBFoff);
     }
   };
 
@@ -222,9 +220,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Pack> cld_frac_l;
     // Rain cloud fraction
     view_2d<const Pack> cld_frac_r;
-//[shanyp 20251120
     view_2d<const Pack> omega_mp;
-//shanyp 20251120]
+    view_2d<const Pack> tke_mp;
     // Pressure [Pa]
     view_2d<const Pack> pres;
     // Vertical grid spacing [m]
@@ -873,8 +870,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                                          const Pack &qv_sat_i, const Pack &epsi, const Pack &abi,
                                          const Pack &qv, const Scalar &inv_dt, Pack &qidep,
                                          Pack &qi2qv_sublim_tend, Pack &ni_sublim_tend,
-                                         Pack &qiberg, const Mask &context = Mask(true));
-
+                                         Pack &qiberg, const P3Runtime &runtime_options, const Mask &context = Mask(true));
   KOKKOS_FUNCTION
   static void ice_relaxation_timescale(const Pack &rho, const Pack &temp, const Pack &rhofaci,
                                        const Pack &table_val_qi2qr_melting,
@@ -1043,11 +1039,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Pack> &cld_frac_i, const uview_1d<const Pack> &cld_frac_l,
       const uview_1d<const Pack> &cld_frac_r, const uview_1d<const Pack> &qv_prev,
       const uview_1d<const Pack> &t_prev, 
-//[shanyp 20251120
-//[shanyp 20260216
       const uview_1d<const Pack>& oomega_mp, 
-//shanyp 20260216]
-//shanyp 20251120]
+      const uview_1d<const Pack>& otke_mp,
       const uview_1d<Pack> &T_atm, const uview_1d<Pack> &rho,
       const uview_1d<Pack> &inv_rho, const uview_1d<Pack> &qv_sat_l,
       const uview_1d<Pack> &qv_sat_i, const uview_1d<Pack> &qv_supersat_i,
@@ -1091,10 +1084,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<const Pack> &ni_activated, const uview_2d<const Pack> &inv_qc_relvar,
       const uview_2d<const Pack> &cld_frac_i, const uview_2d<const Pack> &cld_frac_l,
       const uview_2d<const Pack> &cld_frac_r, const uview_2d<const Pack> &qv_prev,
-//[shanyp 20260402
-//      const uview_2d<const Pack> &t_prev, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
-      const uview_2d<const Pack> &t_prev, const uview_2d<const Pack> &oomega_mp, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
-//shanyp 20260402]
+      const uview_2d<const Pack> &t_prev, const uview_2d<const Pack> &oomega_mp, const uview_2d<const Pack> &otke_mp, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
       const uview_2d<Pack> &inv_rho, const uview_2d<Pack> &qv_sat_l,
       const uview_2d<Pack> &qv_sat_i, const uview_2d<Pack> &qv_supersat_i,
       const uview_2d<Pack> &rhofacr, const uview_2d<Pack> &rhofaci, const uview_2d<Pack> &acn,
