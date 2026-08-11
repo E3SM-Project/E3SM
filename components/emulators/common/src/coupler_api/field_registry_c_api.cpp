@@ -25,9 +25,9 @@ void register_field(void* handle, const RegisteredFieldDesc* desc) {
   auto* registry = static_cast<e3sm::coupler::FieldRegistry*>(handle);
   e3sm::coupler::RegisteredField field{
       .role = set_role(desc->role),
+      .component = desc->component,
       .attributes =
           {
-              .component = desc->component,
               .name = desc->attributes.name,
               .long_name = desc->attributes.long_name,
               .standard_name = desc->attributes.standard_name,
@@ -38,7 +38,4 @@ void register_field(void* handle, const RegisteredFieldDesc* desc) {
 
   registry->register_field(std::move(field));
 }
-
-
 }
-

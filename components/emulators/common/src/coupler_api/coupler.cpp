@@ -37,8 +37,8 @@ namespace e3sm::coupler {
  * @throws std::runtime_error If the configuration file does not exist or
  *         cannot be parsed.
  */
-std::vector<CoupledFieldEntry>
-read_coupling_fields_from_yaml(const std::string& filename) {
+const std::vector<CoupledFieldEntry>
+Coupler::read_coupling_fields_from_yaml(const std::string& filename) {
 
   if (!std::filesystem::exists(filename)) {
     throw std::runtime_error("Coupling configuration file not found: " +
@@ -93,5 +93,33 @@ read_coupling_fields_from_yaml(const std::string& filename) {
         .destinations = std::move(destinations),
     });
   }
+  return entries;
+}
+
+std::string to_string(const CoupledFieldEntry& entry) {
+  std::ostringstream out;
+
+  out << entry.id << ":\n";
+  out << "  merge_type: " << to_string(entry.merge_type) << '\n';
+
+  out << "  sources:";
+  for (const auto& source : entry.sources) {
+    out << ' ' << source;
+  }
+  out << '\n';
+
+  out << "  destinations:";
+  for (const auto& destination : entry.destinations) {
+    out << ' ' << destination;
+  }
+  out << '\n';
+
+  out << "  attributes:\n";
+  out << "    attname: " << entry.attributes.name << '\n';
+  out << "    longname: " << entry.attributes.long_name << '\n';
+  out << "    stdname: " << entry.attributes.standard_name << '\n';
+  out << "    units: " << entry.attributes.units << '\n';
+
+  return out.str();
 }
 } // namespace e3sm::coupler

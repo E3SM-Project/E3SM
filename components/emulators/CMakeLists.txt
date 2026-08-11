@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.18)
 project(emulators LANGUAGES CXX Fortran)
 
 include(FetchContent)
+set(
+    FETCHCONTENT_BASE_DIR
+    "${CMAKE_SOURCE_DIR}/.cmake-deps"
+    CACHE PATH "FetchContent dependency cache"
+    FORCE
+)
 option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
 
 # ------------------------------------------------------------------------------

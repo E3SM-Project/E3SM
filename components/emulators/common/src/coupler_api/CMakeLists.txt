@@ -2,6 +2,7 @@ add_library(coupler_api
   coupler_types.F90
   field_registry.cpp
   field_registry_c_api.cpp
+  coupler.cpp
 )
 
 set(_coupler_api_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/modules")
@@ -24,3 +25,6 @@ target_compile_features(coupler_api
 )
 
 add_library(E3SM::coupler_api ALIAS coupler_api)
+if(BUILD_EMULATOR_TESTS)
+  add_subdirectory(tests)
+endif()

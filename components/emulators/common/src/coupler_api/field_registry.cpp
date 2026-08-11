@@ -44,4 +44,12 @@ bool FieldRegistry::contains(const std::string &component,
   return fields_.contains(key);
 }
 
+std::string to_string(const MergeType merge_type) {
+  switch (merge_type) {
+  case MergeType::Direct:
+    return "Direct";
+  case MergeType::ScaledByFraction:
+    return "ScaledByFraction";
+  }
+}
 } // namespace e3sm::coupler

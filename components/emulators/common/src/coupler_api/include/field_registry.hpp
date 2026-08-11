@@ -1,5 +1,6 @@
 #ifndef E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #define E3SM_COUPLER_API_FIELD_REGISTRY_HPP
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -18,6 +19,8 @@ enum class MergeType {
   Direct,
   ScaledByFraction,
 };
+
+std::string to_string(const MergeType merge_type);
 
 /**
  * @brief (C++ version) Attributes of Field to be registered
@@ -47,24 +50,6 @@ struct RegisteredField {
   std::size_t size = 0;
 };
 
-
-/**
- * @brief Holds yaml entries for active coupled fields
- * Fields:
- * - merge_type
- * - id: unique label for coupled field
- * - attributes: Field metadata
- * - sources: list of component sources
- * - destinations: list of component destinations
- */
-struct CoupledFieldEntry{
-  std::string id;
-  MergeType merge_type;
-  RegisteredFieldAttributes attributes;
-  std::vector<std::string> sources;
-  std::vector<std::string> destinations;
-};
-
 /**
  * @brief Description of how a variable is coupled between components
  * Fields:
@@ -86,6 +71,8 @@ struct CouplingRoute {
  */
 class FieldRegistry {
 public:
+  FieldRegistry() = default;
+
   void register_field(RegisteredField field);
   const RegisteredField& get(const std::string& component,
                              const std::string& field_name) const;

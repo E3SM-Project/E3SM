@@ -20,23 +20,5 @@ target_link_libraries(test_inference_stub_backend PRIVATE emulator_common Catch2
 add_test(NAME inference_stub_backend_tests COMMAND test_inference_stub_backend)
 
 
-add_executable(test_ekat_yaml
-    test_yaml_fields.cpp
-)
-
-target_link_libraries(test_ekat_yaml
-    PRIVATE
-        ekat::YamlParser
-        Catch2
-)
-target_compile_definitions(test_ekat_yaml
-    PRIVATE
-        TEST_FIELDS_YAML="${CMAKE_CURRENT_SOURCE_DIR}/test_fields.yaml"
-)
-
-add_test(
-    NAME test_ekat_yaml
-    COMMAND test_ekat_yaml
-)
 
 
