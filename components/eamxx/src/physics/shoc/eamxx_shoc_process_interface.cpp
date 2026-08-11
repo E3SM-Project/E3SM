@@ -308,10 +308,10 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     runtime_options.do_3d_turb
       ? get_field_out("tke_shear_strain3d").get_view<Pack**>()
       : view_2d(m_dummy_shear_strain3d);
-  const auto shear_strain3d_components =
-    runtime_options.do_3d_turb
-      ? get_field_in("tke_shear_strain3d_components").get_view<const Pack***>()
-      : view_3d_const(m_dummy_shear_strain3d_components);
+  view_3d_const shear_strain3d_components;
+  if (runtime_options.do_3d_turb) {
+    shear_strain3d_components = get_field_in("tke_shear_strain3d_components").get_view<const Pack***>();
+  }
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
   const auto& qv                  = get_field_out("qv").get_view<Pack**>();
