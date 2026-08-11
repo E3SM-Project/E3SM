@@ -116,7 +116,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.nu_top                        = nu_top;
   params.hypervis_order                = hypervis_order;
   params.hypervis_subcycle             = hypervis_subcycle;
-  params.horiz_turb_subcycle         = horiz_turb_subcycle;
+  params.horiz_turb_subcycle           = horiz_turb_subcycle;
   params.hypervis_subcycle_tom         = hypervis_subcycle_tom;
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = (bool)disable_diagnostics;

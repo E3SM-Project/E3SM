@@ -917,8 +917,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
   static void horizontal_eddy_diffusivities(
       const MemberType &team, const Int &nlev, const Scalar &Ckh_horiz,
       const Scalar &Ckm_horiz, const Scalar &grid_dx, const Scalar &grid_dy,
-      const uview_1d<const Pack> &tke, const uview_1d<Pack> &tkh_horiz,
-      const uview_1d<Pack> &tk_horiz);
+      const uview_1d<const Pack> &tke, const uview_1d<Pack> &eddy_diff_heat_horiz,
+      const uview_1d<Pack> &eddy_diff_mom_horiz);
 
   KOKKOS_FUNCTION
   static void shoc_tke(const MemberType &team, const Int &nlev, const Int &nlevi,
