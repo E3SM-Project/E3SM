@@ -12,9 +12,9 @@ namespace test {
 // Concrete implementation for testing
 class TestEmulator : public Emulator {
 public:
-  TestEmulator(EmulatorType type = EmulatorType::ATM_COMP, 
+  TestEmulator(EmulatorType type = EmulatorType::ATM, 
                int id = -1, const std::string &name = "")
-      : Emulator(type, id, name) {}
+      : Emulator(type,0, id, name) {}
 
   // Track calls for verification
   bool init_called = false;
@@ -50,7 +50,7 @@ protected:
 class TestOcnEmulator : public Emulator {
 public:
   TestOcnEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::OCN_COMP, id, name) {}
+      : Emulator(EmulatorType::OCN, 0, id, name) {}
 
 protected:
   void init_impl() override {}
@@ -61,7 +61,7 @@ protected:
 class TestIceEmulator : public Emulator {
 public:
   TestIceEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::ICE_COMP, id, name) {}
+      : Emulator(EmulatorType::ICE, 0,id, name) {}
 
 protected:
   void init_impl() override {}
@@ -72,7 +72,7 @@ protected:
 class TestLndEmulator : public Emulator {
 public:
   TestLndEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::LND_COMP, id, name) {}
+      : Emulator(EmulatorType::LND,0, id, name) {}
 
 protected:
   void init_impl() override {}
@@ -82,7 +82,7 @@ protected:
 
 TEST_CASE("Emulator construction", "[emulator]") {
   TestEmulator emu;
-  REQUIRE(emu.type() == EmulatorType::ATM_COMP);
+  REQUIRE(emu.type() == EmulatorType::ATM);
   REQUIRE(emu.id() == -1);
   REQUIRE(emu.name().empty());
   REQUIRE_FALSE(emu.is_initialized());
@@ -90,26 +90,26 @@ TEST_CASE("Emulator construction", "[emulator]") {
 }
 
 TEST_CASE("Emulator construction with args", "[emulator]") {
-  TestEmulator emu(EmulatorType::ATM_COMP, 42, "test_atm");
+  TestEmulator emu(EmulatorType::ATM, 42, "test_atm");
   REQUIRE(emu.id() == 42);
   REQUIRE(emu.name() == "test_atm");
 }
 
 TEST_CASE("Emulator different types", "[emulator]") {
 
-  TestEmulator atm(EmulatorType::ATM_COMP);
-  TestEmulator ocn(EmulatorType::OCN_COMP);
-  TestEmulator ice(EmulatorType::ICE_COMP);
-  TestEmulator lnd(EmulatorType::LND_COMP);
+  TestEmulator atm(EmulatorType::ATM);
+  TestEmulator ocn(EmulatorType::OCN);
+  TestEmulator ice(EmulatorType::ICE);
+  TestEmulator lnd(EmulatorType::LND);
 
-  REQUIRE(atm.type() == EmulatorType::ATM_COMP);
-  REQUIRE(ocn.type() == EmulatorType::OCN_COMP);
-  REQUIRE(ice.type() == EmulatorType::ICE_COMP);
-  REQUIRE(lnd.type() == EmulatorType::LND_COMP);
+  REQUIRE(atm.type() == EmulatorType::ATM);
+  REQUIRE(ocn.type() == EmulatorType::OCN);
+  REQUIRE(ice.type() == EmulatorType::ICE);
+  REQUIRE(lnd.type() == EmulatorType::LND);
 }
 
 TEST_CASE("Emulator lifecycle", "[emulator]") {
-  TestEmulator emu(EmulatorType::ATM_COMP, 1, "test");
+  TestEmulator emu(EmulatorType::ATM, 1, "test");
 
   SECTION("initialize calls init_impl") {
     REQUIRE_FALSE(emu.init_called);
@@ -141,7 +141,7 @@ TEST_CASE("Emulator lifecycle", "[emulator]") {
 }
 
 TEST_CASE("Emulator error handling", "[emulator]") {
-  TestEmulator emu(EmulatorType::ATM_COMP,1, "test");
+  TestEmulator emu(EmulatorType::ATM,1, "test");
 
   SECTION("run before initialize throws") {
     REQUIRE_THROWS_AS(emu.run(100), std::runtime_error);
@@ -178,10 +178,10 @@ TEST_CASE("Emulator with EmulatorRegistry", "[emulator][integration]") {
   reg.clean_up();
 
   // Create emulator via registry with name
-  auto &emu = reg.create<TestEmulator>("test_emu", EmulatorType::ATM_COMP, 99, "registry_test");
+  auto &emu = reg.create<TestEmulator>("test_emu", EmulatorType::ATM, 99, "registry_test");
 
   REQUIRE(reg.has("test_emu"));
-  REQUIRE(emu.type() == EmulatorType::ATM_COMP);
+  REQUIRE(emu.type() == EmulatorType::ATM);
   REQUIRE(emu.id() == 99);
 
   // Use emulator from registry
