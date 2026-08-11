@@ -85,7 +85,7 @@ contains
          elem_rspheremp, elem_metdet, elem_state_phis
     real (real_kind), target, dimension(np,np,2)   :: elem_gradphis
     real (real_kind), target, dimension(np,np,2,2) :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
-    real (real_kind), target, dimension(np,np,3,2) :: elem_vec_sph2cart
+    real (real_kind), target, dimension(np,np,3,3) :: elem_vec_sph2cart
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr, elem_spheremp_ptr, &
          elem_rspheremp_ptr, elem_metdet_ptr, elem_metinv_ptr, elem_tensorvisc_ptr, &
          elem_vec_sph2cart_ptr, elem_state_phis_ptr, elem_gradphis_ptr
