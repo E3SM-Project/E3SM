@@ -157,8 +157,128 @@
 					description="Surface flux of sediment class 3 (river + ice-ocean coupling)"
 				/>
 			</var_array>
+			<var_array name="sedimentTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="sedimentTracersPKG">
+				<var name="sediment1SurfaceFluxRunoff" array_group="sedimentSurfaceFluxRunoffFluxGRP" units="m s^-1"
+			 description="Flux of sediment1 through the ocean surface due to river runoff. Positive into ocean."
+				/>
+				<var name="sediment2SurfaceFluxRunoff" array_group="sedimentSurfaceFluxRunoffFluxGRP" units="m s^-1"
+			 description="Flux of sediment2 through the ocean surface due to river runoff. Positive into ocean."
+				/>
+				<var name="sediment3SurfaceFluxRunoff" array_group="sedimentSurfaceFluxRunoffFluxGRP" units="m s^-1"
+			 description="Flux of sediment3 through the ocean surface due to river runoff. Positive into ocean."
+				/>
+			</var_array>
+			<var_array name="sedimentTracersSurfaceFluxSubglacialRunoff" type="real" dimensions="nCells Time" packages="sedimentTracersPKG">
+				<var name="sediment1SurfaceFluxSubglacialRunoff" array_group="sedimentSurfaceFluxSubglacialRunoffFluxGRP" units="m s^-1"
+			 description="Flux of sediment1 through the ocean surface due to subglacial runoff. Positive into ocean."
+				/>
+				<var name="sediment2SurfaceFluxSubglacialRunoff" array_group="sedimentSurfaceFluxSubglacialRunoffFluxGRP" units="m s^-1"
+			 description="Flux of sediment2 through the ocean surface due to subglacial runoff. Positive into ocean."
+				/>
+				<var name="sediment3SurfaceFluxSubglacialRunoff" array_group="sedimentSurfaceFluxSubglacialRunoffFluxGRP" units="m s^-1"
+			 description="Flux of sediment3 through the ocean surface due to subglacial runoff. Positive into ocean."
+				/>
+			</var_array>
+			<var_array name="sedimentTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="sedimentTracersPKG">
+				<var name="sediment1SurfaceFluxRemoved" array_group="sedimentSurfaceFluxRemovedFluxGRP" units="m s^-1"
+			 description="Flux of sediment1 that is ignored coming into the ocean. Positive into ocean."
+				/>
+				<var name="sediment2SurfaceFluxRemoved" array_group="sedimentSurfaceFluxRemovedFluxGRP" units="m s^-1"
+			 description="Flux of sediment2 that is ignored coming into the ocean. Positive into ocean."
+				/>
+				<var name="sediment3SurfaceFluxRemoved" array_group="sedimentSurfaceFluxRemovedFluxGRP" units="m s^-1"
+			 description="Flux of sediment3 that is ignored coming into the ocean. Positive into ocean."
+				/>
+			</var_array>
 		</var_struct>
 
+		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
+			<var_array name="sedimentTracersPistonVelocity" type="real" dimensions="nCells Time" packages="sedimentTracersSurfaceRestoringPKG">
+				<var name="sediment1PistonVelocity" array_group="sedimentPVGRP" units="m s^-1"
+			 description="A non-negative field controlling the rate at which sediment1 is restored to sediment1SurfaceRestoringValue"
+				/>
+				<var name="sediment2PistonVelocity" array_group="sedimentPVGRP" units="m s^-1"
+			 description="A non-negative field controlling the rate at which sediment2 is restored to sediment2SurfaceRestoringValue"
+				/>
+				<var name="sediment3PistonVelocity" array_group="sedimentPVGRP" units="m s^-1"
+			 description="A non-negative field controlling the rate at which sediment3 is restored to sediment3SurfaceRestoringValue"
+				/>
+			</var_array>
+			<var_array name="sedimentTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="sedimentTracersSurfaceRestoringPKG">
+				<var name="sediment1SurfaceRestoringValue" array_group="sedimentSRVGRP" units="C"
+			 description="sediment1 is restored toward this field at a rate controlled by sediment1PistonVelocity."
+				/>
+				<var name="sediment2SurfaceRestoringValue" array_group="sedimentSRVGRP" units="C"
+			 description="sediment2 is restored toward this field at a rate controlled by sediment2PistonVelocity."
+				/>
+				<var name="sediment3SurfaceRestoringValue" array_group="sedimentSRVGRP" units="C"
+			 description="sediment3 is restored toward this field at a rate controlled by sediment3PistonVelocity."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersInteriorRestoringFields" time_levs="1">
+			<var_array name="sedimentTracersInteriorRestoringRate" type="real" dimensions="nVertLevels nCells Time" packages="sedimentTracersInteriorRestoringPKG">
+				<var name="sediment1InteriorRestoringRate" array_group="sedimentIRRGRP" units="{s}^-1"
+				 description="A non-negative field controlling the rate at which sediment1 is restored to sediment1InteriorRestoringValue"
+				/>
+				<var name="sediment2InteriorRestoringRate" array_group="sedimentIRRGRP" units="{s}^-1"
+				 description="A non-negative field controlling the rate at which sediment2 is restored to sediment2InteriorRestoringValue"
+				/>
+				<var name="sediment3InteriorRestoringRate" array_group="sedimentIRRGRP" units="{s}^-1"
+				 description="A non-negative field controlling the rate at which sediment3 is restored to sediment3InteriorRestoringValue"
+				/>
+			</var_array>
+			<var_array name="sedimentTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="sedimentTracersInteriorRestoringPKG">
+				<var name="sediment1InteriorRestoringValue" array_group="sedimentIRVGRP" units="C"
+				 description="sediment1 is restored toward this field at a rate controlled by sediment1InteriorRestoringRate."
+				/>
+				<var name="sediment2InteriorRestoringValue" array_group="sedimentIRVGRP" units="C"
+				 description="sediment2 is restored toward this field at a rate controlled by sediment2InteriorRestoringRate."
+				/>
+				<var name="sediment3InteriorRestoringValue" array_group="sedimentIRVGRP" units="C"
+				 description="sediment3 is restored toward this field at a rate controlled by sediment3InteriorRestoringRate."
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersExponentialDecayFields" time_levs="1">
+			<var_array name="sedimentTracersExponentialDecayRate" type="real" dimensions="Time" packages="sedimentTracersExponentialDecayPKG">
+				<var name="sediment1ExponentialDecayRate" array_group="sedimentGRP" units="s^-1"
+			 description="A non-negative field controlling the exponential decay of sediment1"
+				/>
+				<var name="sediment2ExponentialDecayRate" array_group="sedimentGRP" units="s^-1"
+			 description="A non-negative field controlling the exponential decay of sediment2"
+				/>
+				<var name="sediment3ExponentialDecayRate" array_group="sedimentGRP" units="s^-1"
+			 description="A non-negative field controlling the exponential decay of sediment3"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersIdealAgeFields" time_levs="1">
+			<var_array name="sedimentTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="sedimentTracersIdealAgePKG">
+				<var name="sediment1IdealAgeMask" array_group="sedimentGRP"
+			 description="In top layer, sediment1 is reset to sediment1 * sediment1IdealAgeMask, valid values of sediment1IdealAgeMask or 0 and 1"
+				/>
+				<var name="sediment2IdealAgeMask" array_group="sedimentGRP"
+			 description="In top layer, sediment2 is reset to sediment2 * sediment2IdealAgeMask, valid values of sediment2IdealAgeMask or 0 and 1"
+				/>
+				<var name="sediment3IdealAgeMask" array_group="sedimentGRP"
+			 description="In top layer, sediment3 is reset to sediment3 * sediment3IdealAgeMask, valid values of sediment3IdealAgeMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
+		<var_struct name="tracersTTDFields" time_levs="1">
+			<var_array name="sedimentTracersTTDMask" type="real" dimensions="nCells Time" packages="sedimentTracersTTDPKG">
+				<var name="sediment1TTDMask" array_group="sedimentGRP"
+			 description="In top layer, sediment1 is reset to TTDMask, valid values of sediment1TTDMask or 0 and 1"
+				/>
+				<var name="sediment2TTDMask" array_group="sedimentGRP"
+			 description="In top layer, sediment2 is reset to TTDMask, valid values of sediment2TTDMask or 0 and 1"
+				/>
+				<var name="sediment3TTDMask" array_group="sedimentGRP"
+			 description="In top layer, sediment3 is reset to TTDMask, valid values of sediment3TTDMask or 0 and 1"
+				/>
+			</var_array>
+		</var_struct>
 		<var_struct name="sedimentAuxiliary" time_levs="1" packages="sedimentTracersPKG">
 			<var name="bottomStressCellSediment" type="real" dimensions="nCells Time"
 				units="N m^{-2}"
