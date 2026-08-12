@@ -90,7 +90,7 @@ void MAMAci::create_requests() {
   // NOTE: Advected by dynamics only, ACI vertically mixes nc
   // Updates to nc from ACI are applied in P3 microphysics
   add_tracer<Required>("nc", grid_, n_unit, 1, TracerAdvection::DynamicsOnly);
-  
+
   constexpr auto m2 = pow(m, 2);
   constexpr auto s2 = pow(s, 2);
 
@@ -236,12 +236,12 @@ void MAMAci::init_temporary_views() {
   // NOTE:  activation fraction fluxes are defined as
   // fluxn = [flux of activated aero. number into cloud[#/m^2/s]]
   //        / [aero. number conc. in updraft, just below cloudbase [#/m^3]]
-  ccn_ = view_3d(work_ptr, ncol_, nlev_, mam4::ndrop::psat);
+  ccn_ = view_3d(work_ptr, ncol_, mam4::ndrop::psat, nlev_);
   work_ptr += ncol_ * nlev_ * mam4::ndrop::psat;
 
-  raercol_cw_ = view_4d(work_ptr, ncol_, nlev_, 2, mam4::ndrop::ncnst_tot);
+  raercol_cw_ = view_4d(work_ptr, ncol_, 2, mam4::ndrop::ncnst_tot, nlev_);
   work_ptr += raercol_cw_.size();
-  raercol_ = view_4d(work_ptr, ncol_, nlev_, 2, mam4::ndrop::ncnst_tot);
+  raercol_ = view_4d(work_ptr, ncol_, 2, mam4::ndrop::ncnst_tot, nlev_);
   work_ptr += raercol_.size();
 
   qqcw_fld_work_ = view_3d(work_ptr, ncol_, mam4::ndrop::ncnst_tot, nlev_);
@@ -261,12 +261,12 @@ void MAMAci::init_temporary_views() {
 
   // nact : fractional aero. number activation rate [/s]
   // Kokkos::resize(nact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-  nact_ = view_3d(work_ptr, ncol_, nlev_, mam_coupling::num_aero_modes());
+  nact_ = view_3d(work_ptr, ncol_, mam_coupling::num_aero_modes(), nlev_);
   work_ptr += ncol_ * nlev_ * mam_coupling::num_aero_modes();
 
   // mact : fractional aero. mass activation rate [/s]
   // Kokkos::resize(mact_, ncol_, nlev_, mam_coupling::num_aero_modes());
-  mact_ = view_3d(work_ptr, ncol_, nlev_, mam_coupling::num_aero_modes());
+  mact_ = view_3d(work_ptr, ncol_, mam_coupling::num_aero_modes(), nlev_);
   work_ptr += ncol_ * nlev_ * mam_coupling::num_aero_modes();
   // Eddy diffusivity of heat at the interfaces
   // Kokkos::resize(kvh_int_, ncol_, nlev_ + 1);
@@ -279,7 +279,7 @@ void MAMAci::init_temporary_views() {
   work_ptr += ncol_ * (nlev_ + 1);
   // state_q_work_ =
   //     view_3d("state_q_work_", ncol_, nlev_, mam4::aero_model::pcnst);
-  state_q_work_ = view_3d(work_ptr, ncol_, nlev_, mam4::aero_model::pcnst);
+  state_q_work_ = view_3d(work_ptr, ncol_, mam4::aero_model::pcnst, nlev_);
   work_ptr += ncol_ * nlev_ * mam4::aero_model::pcnst;
 
   /// error check
@@ -570,17 +570,17 @@ void MAMAci::run_impl(const double dt) {
   Kokkos::fence();  // wait for ptend_q_ to be computed.
 
   Kokkos::deep_copy(ccn_0p02_,
-                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 0));
+                    Kokkos::subview(ccn_, Kokkos::ALL(), 0, Kokkos::ALL()));
   Kokkos::deep_copy(ccn_0p05_,
-                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 1));
+                    Kokkos::subview(ccn_, Kokkos::ALL(), 1, Kokkos::ALL()));
   Kokkos::deep_copy(ccn_0p1_,
-                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 2));
+                    Kokkos::subview(ccn_, Kokkos::ALL(), 2, Kokkos::ALL()));
   Kokkos::deep_copy(ccn_0p2_,
-                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 3));
+                    Kokkos::subview(ccn_, Kokkos::ALL(), 3, Kokkos::ALL()));
   Kokkos::deep_copy(ccn_0p5_,
-                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 4));
+                    Kokkos::subview(ccn_, Kokkos::ALL(), 4, Kokkos::ALL()));
   Kokkos::deep_copy(ccn_1p0_,
-                    Kokkos::subview(ccn_, Kokkos::ALL(), Kokkos::ALL(), 5));
+                    Kokkos::subview(ccn_, Kokkos::ALL(), 5, Kokkos::ALL()));
 
   //---------------------------------------------------------------------------
   //  NOTE: DO NOT UPDATE cloud borne aerosols using the qqcw_fld_work_ array
