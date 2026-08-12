@@ -531,7 +531,7 @@ void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
   if (m_atm_process_group->has_process("homme")) {
     auto homme_process = m_atm_process_group->get_process_nonconst("homme");
     const bool do_3d_turbulence =
-        homme_process->get_params().get<bool>("do_3d_turbulence_homme");
+        homme_process->get_params().get<bool>("do_3d_turbulence_homme", false);
 
     auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
     shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
