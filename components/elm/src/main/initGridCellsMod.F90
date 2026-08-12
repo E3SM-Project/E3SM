@@ -546,10 +546,7 @@ contains
              ! Currently assume that each landunit only has only one column
              ! and that each column has its own pft
 
-            call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8, is_lake=is_lake_col)
-            call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
-
-             call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8)
+             call add_column(ci=ci, li=li, ctype=ltype, wtlunit=1.0_r8, is_lake=is_lake_col)
              call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
           endif
 
