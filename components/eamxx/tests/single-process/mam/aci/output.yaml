@@ -57,6 +57,9 @@ fields:
       - num_c4
       - eddy_diff_heat
       - nc_nuceat_tend
+      - ndrop_nsubmix
+      - ndrop_sum_nsubmix
+      - ndrop_max_nsubmix
       - ni_activated
       
 output_control:

@@ -11,6 +11,15 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   target_compile_definitions(mam_photo_table_test PRIVATE
     SCREAM_DATA_DIR="${SCREAM_DATA_DIR}"
   )
+
+  CreateUnitTest(mam_ndrop_nsubmix_test
+    SOURCES mam_ndrop_nsubmix_test.cpp
+    LIBS mam
+    LABELS "mam;physics"
+    MPI_RANKS 1
+    THREADS 1
+  )
+
   # Ensure test input files are present in the data dir
   GetInputFile(scream/mam4xx/photolysis/table_photo_input_ts_355.yaml)
   GetInputFile(scream/mam4xx/photolysis/jlong_input_ts_355.yaml)

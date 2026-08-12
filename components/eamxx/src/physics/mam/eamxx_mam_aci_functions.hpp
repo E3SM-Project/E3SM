@@ -7,6 +7,43 @@
 
 namespace scream {
 
+namespace detail {
+
+static constexpr Real max_exact_ndrop_nsubmix_aggregate = 16777216;
+
+KOKKOS_INLINE_FUNCTION
+bool can_accumulate_ndrop_nsubmix(const int nsubmix, const bool reset,
+                                  const Real sum) {
+  if(nsubmix <= 0) {
+    return false;
+  }
+  if(nsubmix > 16777216) {
+    return false;
+  }
+  const Real count = static_cast<Real>(nsubmix);
+  return reset ||
+         (sum >= 0 && sum <= max_exact_ndrop_nsubmix_aggregate - count);
+}
+
+KOKKOS_INLINE_FUNCTION
+void accumulate_ndrop_nsubmix(const int nsubmix, const bool reset,
+                              Real &latest, Real &sum, Real &maximum) {
+  EKAT_KERNEL_REQUIRE_MSG(
+      can_accumulate_ndrop_nsubmix(nsubmix, reset, sum),
+      "ndrop nsubmix is invalid or exceeds the exact integer output range");
+  const Real count = static_cast<Real>(nsubmix);
+  latest = count;
+  if(reset) {
+    sum     = count;
+    maximum = count;
+  } else {
+    sum += count;
+    maximum = count > maximum ? count : maximum;
+  }
+}
+
+}  // namespace detail
+
 namespace {
 
 void compute_w0_and_rho(const int ncol,
@@ -204,6 +241,10 @@ void call_function_dropmixnuc(
     MAMAci::view_3d coltend_cw, MAMAci::view_2d qcld,
     MAMAci::view_2d ndropcol, MAMAci::view_2d ndropmix, MAMAci::view_2d nsource,
     MAMAci::view_2d wtke, MAMAci::view_3d ccn,
+    mam_coupling::view_1d ndrop_nsubmix,
+    mam_coupling::view_1d ndrop_sum_nsubmix,
+    mam_coupling::view_1d ndrop_max_nsubmix,
+    const bool reset_ndrop_nsubmix_accumulators,
 
     // ## outputs to be used by other processes ##
     // qqcw_fld_work should be directly assigned to the cloud borne aerosols
@@ -350,6 +391,7 @@ void call_function_dropmixnuc(
               }
             });
         team.team_barrier();
+        int nsubmix = 0;
         mam4::ndrop::dropmixnuc(
             team, dt, ekat::subview(T_mid, icol), ekat::subview(p_mid, icol),
             ekat::subview(p_int, icol), ekat::subview(pdel, icol),
@@ -366,8 +408,8 @@ void call_function_dropmixnuc(
             ptend_q_view, ekat::subview(tendnd, icol),
             ekat::subview(factnum, icol), ekat::subview(ndropcol, icol),
             ekat::subview(ndropmix, icol), ekat::subview(nsource, icol),
-            ekat::subview(wtke, icol), ekat::subview(ccn, icol), coltend_view,
-            coltend_cw_view, top_lev,
+            nsubmix, ekat::subview(wtke, icol), ekat::subview(ccn, icol),
+            coltend_view, coltend_cw_view, top_lev,
             // work arrays
             raercol_cw_view, raercol_view, ekat::subview(nact, icol),
             ekat::subview(mact, icol), ekat::subview(eddy_diff, icol),
@@ -378,6 +420,13 @@ void call_function_dropmixnuc(
             ekat::subview(srcn, icol), ekat::subview(source, icol),
             ekat::subview(dz, icol), ekat::subview(csbot_cscen, icol),
             ekat::subview(raertend, icol), ekat::subview(qqcwtend, icol));
+
+        Kokkos::single(Kokkos::PerTeam(team), [&]() {
+          detail::accumulate_ndrop_nsubmix(
+              nsubmix, reset_ndrop_nsubmix_accumulators,
+              ndrop_nsubmix(icol), ndrop_sum_nsubmix(icol),
+              ndrop_max_nsubmix(icol));
+        });
       });
 }
 
