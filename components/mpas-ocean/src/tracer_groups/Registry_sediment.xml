@@ -93,7 +93,7 @@
 
 	<packages>
 		<package name="sedimentTracersPKG" description="This package includes variables required to compute bulk restoring on the sedimentTracers group."/>
-		<package name="sedimentTracersSurfaceRestoringsPKG" description="This package includes variables required to compute surface restoring on the sedimentTracers group."/>
+		<package name="sedimentTracersSurfaceRestoringPKG" description="This package includes variables required to compute surface restoring on the sedimentTracers group."/>
 		<package name="sedimentTracersInteriorRestoringPKG" description="This package includes variables required to compute interior restoring on the sedimentTracers group."/>
 		<package name="sedimentTracersExponentialDecayPKG" description="This package includes variables required to compute exponential decay on the sedimentTracers group."/>
 		<package name="sedimentTracersIdealAgePKG" description="This package includes variables required to compute ideal age forcing on the sedimentTracers group."/>
