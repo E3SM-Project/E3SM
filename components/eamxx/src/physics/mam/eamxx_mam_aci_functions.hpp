@@ -274,22 +274,11 @@ void call_function_dropmixnuc(
   const int ntot_amode        = mam_coupling::num_aero_modes();
   const int maxd_aspectype    = mam4::ndrop::maxd_aspectype;
   const int nspec_max         = mam4::ndrop::nspec_max;
-  int nspec_amode[ntot_amode] = {};
-  int lspectype_amode[maxd_aspectype][ntot_amode] = {};
-  int lmassptr_amode[maxd_aspectype][ntot_amode]  = {};
-  int numptr_amode[ntot_amode]                    = {};
-  int mam_idx[ntot_amode][nspec_max]              = {};
-  int mam_cnst_idx[ntot_amode][nspec_max]         = {};
 
-  Real specdens_amode[maxd_aspectype] = {};
-  Real spechygro[maxd_aspectype]      = {};
   Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
        num2vol_ratio_min_nmodes[ntot_amode] = {},
        num2vol_ratio_max_nmodes[ntot_amode] = {};
   Real aten                                 = 0;
-  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
-                                   numptr_amode, specdens_amode, spechygro,
-                                   mam_idx, mam_cnst_idx);
   mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten, num2vol_ratio_min_nmodes,
                           num2vol_ratio_max_nmodes);
   //---------------------------------------------------------------------------
@@ -330,35 +319,27 @@ void call_function_dropmixnuc(
         // Construct state_q (interstitial) and qqcw (cloud borne) arrays
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(
-            Kokkos::TeamVectorRange(team, pver), [&](int klev) {
-              Real state_q_at_lev_col[mam4::aero_model::pcnst] = {};
-
-              // get state_q at a grid cell (col,lev)
-              // NOTE: The order of species in state_q_at_lev_col
-              // is the same as in E3SM state%q array
-              mam4::utils::extract_stateq_from_prognostics(
-                  progs_at_col, atm, state_q_at_lev_col, klev);
-
+            Kokkos::TeamVectorRange(team, pver), [&](int k) {
               // get the start index for aerosols species in the state_q array
               const int istart = mam4::utils::aero_start_ind();
               for (int m = 0, s = istart; m < mam4::AeroConfig::num_modes(); ++m, ++s) {
                 for (int a = 0; a < mam4::num_species_mode(m); ++a, ++s) 
-                  state_q_work_loc(icol, klev, s) = progs_at_col.q_aero_i[m][a](klev);
-                state_q_work_loc(icol, klev, s) = progs_at_col.n_mode_i[m](klev);
+                  state_q_work_loc(icol, s, k) = progs_at_col.q_aero_i[m][a](k);
+                state_q_work_loc(icol, s, k) = progs_at_col.n_mode_i[m](k);
               }
 
               // get qqcw at a grid cell (col,lev)
-              // NOTE: The layout for qqcw array is based on mam_idx in
+              // NOTE: The layout for qqcw array is based on 
               // dropmixnuc. To mimic that, we are using the following for-loops
               int ind_qqcw = 0;
               for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
-                qqcw_view(ind_qqcw, klev) =
-                    dry_aero.cld_aero_nmr[m](icol, klev);
+                qqcw_view(ind_qqcw, k) =
+                    dry_aero.cld_aero_nmr[m](icol, k);
                 ++ind_qqcw;
                 for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
                   if(dry_aero.cld_aero_mmr[m][a].data()) {
-                    qqcw_view(ind_qqcw, klev) =
-                        dry_aero.cld_aero_mmr[m][a](icol, klev);
+                    qqcw_view(ind_qqcw, k) =
+                        dry_aero.cld_aero_mmr[m][a](icol, k);
                     ++ind_qqcw;
                   }
                 }
@@ -372,11 +353,13 @@ void call_function_dropmixnuc(
             // in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
             ekat::subview(zm, icol), ekat::subview(state_q_work_loc, icol),
             ekat::subview(nc, icol), ekat::subview(kvh_int, icol),  // kvh[kk+1]
-            ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode,
-            spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
-            num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
-            alogsig, aten, mam_idx, mam_cnst_idx,
-            local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
+            ekat::subview(cloud_frac, icol), 
+	    num2vol_ratio_min_nmodes,
+            num2vol_ratio_max_nmodes, 
+	    exp45logsig,
+            alogsig, 
+	    aten, 
+            true, ekat::subview(qcld, icol),  // out
             ekat::subview(wsub, icol),                                  // in
             ekat::subview(cloud_frac_prev, icol),                       // in
             qqcw_view,                                                  // inout
@@ -436,8 +419,8 @@ void update_interstitial_aerosols(
         Kokkos::parallel_for(
             "MAMAci::run_impl::update_interstitial_aerosols_mmr",
             Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, nlev}),
-            KOKKOS_LAMBDA(const int icol, const int kk) {
-              aero_mmr(icol, kk) += ptend_q(icol, s_idx, kk) * dt;
+            KOKKOS_LAMBDA(const int icol, const int k) {
+              aero_mmr(icol, k) += ptend_q(icol, s_idx, k) * dt;
             });
         // update index for the next species (only if aero_mmr.data() is True)
         ++s_idx;
@@ -448,8 +431,8 @@ void update_interstitial_aerosols(
     Kokkos::parallel_for(
         "MAMAci::run_impl::update_interstitial_aerosols_nmr",
         Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, nlev}),
-        KOKKOS_LAMBDA(const int icol, const int kk) {
-          aero_nmr(icol, kk) += ptend_q(icol, s_idx, kk) * dt; 
+        KOKKOS_LAMBDA(const int icol, const int k) {
+          aero_nmr(icol, k) += ptend_q(icol, s_idx, k) * dt; 
 	});
     ++s_idx;  // update index for the next species
   }
@@ -513,9 +496,9 @@ void call_hetfrz_compute_tendencies(
         // assign cloud fraction
         constexpr auto pver = mam4::ndrop::pver;
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0u, pver),
-                             [&](int klev) {
-                               diags.hetfrz(mam4::Diagnostics::stratiform_cloud_fraction, klev) =
-                                   atm.cloud_fraction(klev);
+                             [&](int k) {
+                               diags.hetfrz(mam4::Diagnostics::stratiform_cloud_fraction, k) =
+                                   atm.cloud_fraction(k);
                              });
         //-------------------------------------------------------------
         // Heterogeneous freezing
