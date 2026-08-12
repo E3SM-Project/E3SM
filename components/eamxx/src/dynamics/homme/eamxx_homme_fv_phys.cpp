@@ -247,8 +247,8 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
 
   const auto& params = c.get<Homme::SimulationParams>();
   if (params.do_3d_turbulence) {
-    const auto Km_phys = get_field_in("eddy_diff_mom",gn).get_view<const Real**>();
-    const auto Kh_phys = get_field_in("eddy_diff_heat",gn).get_view<const Real**>();
+    const auto Km_phys = get_field_in("eddy_diff_mom_horiz",gn).get_view<const Real**>();
+    const auto Kh_phys = get_field_in("eddy_diff_heat_horiz",gn).get_view<const Real**>();
     const auto Km = Homme::GllFvRemap::CPhys2T(Km_phys.data(), nelem, npg, nlev);
     const auto Kh = Homme::GllFvRemap::CPhys2T(Kh_phys.data(), nelem, npg, nlev);
     gfr.run_fv_phys_to_dyn(time_idx, T, uv, q, &Km, &Kh);
