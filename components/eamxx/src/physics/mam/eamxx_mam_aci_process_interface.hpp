@@ -46,6 +46,9 @@ class MAMAci final : public MAMGenericInterface {
   Real wsubmin_;                   // Minimum subgrid vertical velocity
   bool enable_aero_vertical_mix_;  // To enable vertical mixing of aerosols
   int top_lev_;                    // Top level for MAM4xx
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  bool reset_ndrop_nsubmix_accumulators_ = true;
+#endif
 
   //------------------------------------------------------------------------
   // END: ACI runtime ( or namelist) options
@@ -103,6 +106,11 @@ class MAMAci final : public MAMGenericInterface {
   view_3d ccn_;
   view_3d coltend_; 
   view_3d coltend_cw_; 
+#ifdef MAM4XX_EVAL_DIAGNOSTICS
+  view_1d ndrop_nsubmix_;
+  view_1d ndrop_sum_nsubmix_;
+  view_1d ndrop_max_nsubmix_;
+#endif
 
   // raercol_cw_ and raercol_ are work-array views for dropmixnuc whose
   // storage is allocated from the temporary buffer in init_temporary_views().
