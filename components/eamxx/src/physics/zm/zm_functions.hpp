@@ -175,9 +175,7 @@ struct Functions {
       mcsp_t_coeff        = params.get<Real>("mcsp_t_coeff",        ZMC::MCSP_t_coeff_default);
       mcsp_q_coeff        = params.get<Real>("mcsp_q_coeff",        ZMC::MCSP_q_coeff_default);
       mcsp_mom_coeff      = params.get<Real>("mcsp_mom_coeff",      ZMC::MCSP_mom_coeff_default);
-      // new-feature toggle: eamxx defaults ON (vector shear); Fortran/EAM defaults
-      // OFF to preserve bit-for-bit E3SMv3 (zonal-only shear that gates T/q)
-      mcsp_use_full_shear = params.get<bool>("mcsp_use_full_shear", true);
+      mcsp_use_full_shear = params.get<bool>("mcsp_use_full_shear", false);
 
       // determine SVP table size (add two to make the table slightly too big, just in case)
       plenest = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
