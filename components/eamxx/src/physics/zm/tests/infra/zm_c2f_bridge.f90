@@ -171,14 +171,14 @@ subroutine compute_cape_from_parcel_bridge_f(pcols, ncol, pver, pverp, num_cin, 
   call compute_cape_from_parcel(pcols, ncol, pver, pverp, num_cin, num_msg, temperature, tv, sp_humidity, pint, msemax_klev, lcl_pmid, lcl_klev, zm_const, zm_param, parcel_qsat, parcel_temp, parcel_vtemp, eql_klev, cape)
 end subroutine compute_cape_from_parcel_bridge_f
 
-subroutine zm_conv_mcsp_calculate_shear_bridge_f(pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear) bind(C)
+subroutine zm_conv_mcsp_calculate_shear_bridge_f(pcols, ncol, pver, state_pmid, state_u, state_v, shear_u, shear_v) bind(C)
   use zm_conv_mcsp, only : zm_conv_mcsp_calculate_shear
 
   integer(kind=c_int) , value, intent(in) :: pcols, ncol, pver
   real(kind=c_real) , intent(in), dimension(pcols, pver) :: state_pmid, state_u, state_v
-  real(kind=c_real) , intent(out), dimension(pcols) :: mcsp_shear
+  real(kind=c_real) , intent(out), dimension(pcols) :: shear_u, shear_v
 
-  call zm_conv_mcsp_calculate_shear(pcols, ncol, pver, state_pmid, state_u, state_v, mcsp_shear)
+  call zm_conv_mcsp_calculate_shear(pcols, ncol, pver, state_pmid, state_u, state_v, shear_u, shear_v)
 end subroutine zm_conv_mcsp_calculate_shear_bridge_f
 
 subroutine zm_conv_mcsp_tend_bridge_f(pcols, ncol, pver, pverp, ztodt, jctop, state_pmid, state_pint, state_pdel, state_s, state_q, state_u, state_v, ptend_zm_s, ptend_zm_q, ptend_s, ptend_q, ptend_u, ptend_v, mcsp_ds_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, mcsp_freq, mcsp_shear, zm_depth) bind(C)
