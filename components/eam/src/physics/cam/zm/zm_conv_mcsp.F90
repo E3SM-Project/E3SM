@@ -44,7 +44,9 @@ module zm_conv_mcsp
 
    public :: zm_conv_mcsp_init ! Initialize MCSP output fields
    public :: zm_conv_mcsp_tend ! Perform MCSP tendency calculations
+#endif
    public :: zm_conv_mcsp_hist ! Write diagnostic quantities to history files
+#endif
 #ifdef SCREAM_CONFIG_IS_CMAKE
    public :: zm_conv_mcsp_calculate_shear ! just for testing
 #endif
@@ -383,15 +385,14 @@ end subroutine zm_conv_mcsp_tend
 
 !===================================================================================================
 
+#ifndef SCREAM_CONFIG_IS_CMAKE
 subroutine zm_conv_mcsp_hist( lchnk, pcols, pver, &
                               mcsp_dt_out, mcsp_dq_out, mcsp_du_out, mcsp_dv_out, &
                               mcsp_freq, mcsp_shear, zm_depth )
    !----------------------------------------------------------------------------
    ! Purpose: write diagnostic quantities to history files
    !----------------------------------------------------------------------------
-#ifndef SCREAM_CONFIG_IS_CMAKE
    use cam_history,      only: outfld
-#endif
    !----------------------------------------------------------------------------
    ! Arguments
    integer,                         intent(in) :: lchnk           ! chunk identifier
@@ -405,7 +406,6 @@ subroutine zm_conv_mcsp_hist( lchnk, pcols, pver, &
    real(r8), dimension(pcols),      intent(in) :: mcsp_shear      ! shear used to check against threshold
    real(r8), dimension(pcols),      intent(in) :: zm_depth        ! pressure depth of ZM heating
    !----------------------------------------------------------------------------
-#ifndef SCREAM_CONFIG_IS_CMAKE
    ! write out MCSP diagnostic history fields
    call outfld('MCSP_DT',       mcsp_dt_out, pcols, lchnk )
    call outfld('MCSP_DQ',       mcsp_dq_out, pcols, lchnk )
@@ -414,11 +414,11 @@ subroutine zm_conv_mcsp_hist( lchnk, pcols, pver, &
    call outfld('MCSP_freq',     mcsp_freq,   pcols, lchnk )
    call outfld('MCSP_shear',    mcsp_shear,  pcols, lchnk )
    call outfld('MCSP_zm_depth', zm_depth,    pcols, lchnk )
-#endif
    !----------------------------------------------------------------------------
    return
 
 end subroutine zm_conv_mcsp_hist
+#endif
 
 !===================================================================================================
 
