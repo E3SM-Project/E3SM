@@ -581,8 +581,6 @@ void HommeDynamics::run_impl (const double dt)
     if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
       compute_local_strain_components3d();
-    } else if (params.do_3d_turbulence) {
-      m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
