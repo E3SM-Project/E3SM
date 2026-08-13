@@ -44,7 +44,7 @@ module zm_conv_mcsp
 
    public :: zm_conv_mcsp_init ! Initialize MCSP output fields
    public :: zm_conv_mcsp_tend ! Perform MCSP tendency calculations
-#endif
+#ifndef SCREAM_CONFIG_IS_CMAKE
    public :: zm_conv_mcsp_hist ! Write diagnostic quantities to history files
 #endif
 #ifdef SCREAM_CONFIG_IS_CMAKE
