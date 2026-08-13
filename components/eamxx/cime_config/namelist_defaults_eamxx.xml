@@ -292,7 +292,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_t_coeff        type="real"    doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
       <mcsp_q_coeff        type="real"    doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
       <mcsp_mom_coeff      type="real"    doc="MCSP momentum coefficient"       >0.0</mcsp_mom_coeff>
-      <mcsp_use_full_shear type="logical" doc="MCSP flag to use full shear vector instead of zonal-only" >true</mcsp_use_full_shear>
+      <mcsp_use_full_shear type="logical" doc="MCSP flag to use full shear vector instead of zonal-only" >false</mcsp_use_full_shear>
     </zm>
 
     <!-- Water tracers -->
