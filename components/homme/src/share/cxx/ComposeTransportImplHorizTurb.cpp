@@ -18,6 +18,7 @@ constexpr Real tracer_sgs_cfl_target = 1.00;
 KOKKOS_INLINE_FUNCTION
 constexpr Real get_lambda_vis_ct ()
 {
+  // Element-order-dependent stability factor for the discrete Laplacian.
   switch (NP) {
   case 2: return 12.0;
   case 3: return 30.0;
@@ -33,6 +34,8 @@ KOKKOS_INLINE_FUNCTION
 Real get_local_laplace_metric_ct (const Real a, const Real b, const Real c, const Real d,
                                   const Real lambda_vis, const Real scale_factor_inv)
 {
+  // Estimate the largest mapped Laplacian eigenvalue at this GLL point so the
+  // local SGS diffusivity can be compared against a CFL limit.
   const Real s11 = a*a + c*c;
   const Real s22 = b*b + d*d;
   const Real s12 = a*b + c*d;
@@ -98,6 +101,8 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
           const Real laplace_metric = get_local_laplace_metric_ct(a, b, c, d,
                                                                   lambda_vis, scale_factor_inv);
           if (laplace_metric > 0) {
+            // Clip the tracer diffusivity so the local explicit SGS update
+            // stays within the target CFL bound on this element/GLL point.
             const Real max_diffusivity = 2.0 * tracer_sgs_cfl_target / (dt * laplace_metric);
             for (int s = 0; s < VECTOR_SIZE; ++s) {
               const int phys_lev = lev * VECTOR_SIZE + s;

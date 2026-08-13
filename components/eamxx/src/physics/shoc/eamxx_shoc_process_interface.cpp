@@ -588,6 +588,7 @@ void SHOCMacrophysics::run_impl (const double dt)
                  );
 
   if (runtime_options.do_3d_turb) {
+    // If doing 3d turbulence, then compute the horizontal eddy diffusivities to pass to HOMME.
     const auto tke       = get_field_out("tke").get_view<const Pack**>();
     const auto eddy_diff_heat_horiz = get_field_out("eddy_diff_heat_horiz").get_view<Pack**>();
     const auto eddy_diff_mom_horiz  = get_field_out("eddy_diff_mom_horiz").get_view<Pack**>();

@@ -27,6 +27,7 @@ constexpr Real sgs_clip_cfl_target = 1.00;
 
 constexpr Real get_lambda_vis ()
 {
+  // Element-order-dependent stability factor for the discrete Laplacian.
   switch (NP) {
   case 2: return 12.0;
   case 3: return 30.0;
@@ -42,6 +43,8 @@ KOKKOS_INLINE_FUNCTION
 Real get_local_laplace_metric (const Real a, const Real b, const Real c, const Real d,
                                const Real lambda_vis, const Real scale_factor_inv)
 {
+  // Estimate the largest mapped Laplacian eigenvalue at this GLL point so the
+  // local SGS diffusivity can be compared against a CFL limit.
   const Real s11 = a*a + c*c;
   const Real s22 = b*b + d*d;
   const Real s12 = a*b + c*d;
@@ -689,6 +692,8 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
         const Real d = dinv(kv.ie,1,1,igp,jgp);
         const Real laplace_metric = get_local_laplace_metric(a, b, c, d, lambda_vis, scale_factor_inv);
         if (laplace_metric > 0) {
+          // Convert the local Laplacian metric into the largest midpoint
+          // diffusivity allowed by the explicit SGS CFL target.
           max_diffusivity = 2.0 * sgs_clip_cfl_target / (m_data.dt_hvs_sgs * laplace_metric);
         }
       }
@@ -699,6 +704,8 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
           auto km = Km(k);
           auto kh = Kh(k);
           if (m_data.horiz_turb_subcycle > 0) {
+            // Clip momentum and heat diffusivities before applying the SGS
+            // Laplacian tendency at this element/GLL point.
             for (int s = 0; s < VECTOR_SIZE; ++s) {
               if (km[s] > max_diffusivity) km[s] = max_diffusivity;
               if (kh[s] > max_diffusivity) kh[s] = max_diffusivity;
