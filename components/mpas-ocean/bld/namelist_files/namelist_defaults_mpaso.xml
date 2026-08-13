@@ -59,6 +59,7 @@
 <config_dt ocn_grid="SOwISC12to30E3r4">'00:10:00'</config_dt>
 <config_dt ocn_grid="u01.oi6to18.lr6to10">'00:05:00'</config_dt>
 <config_dt ocn_grid="u02.oi30.lr10">'00:30:00'</config_dt>
+<config_dt ocn_grid="u03.oi240.lr240">'01:00:00'</config_dt>
 <config_time_integrator>'split_explicit_ab2'</config_time_integrator>
 <config_number_of_time_levels>2</config_number_of_time_levels>
 
@@ -96,6 +97,7 @@
 <config_hmix_scaleWithMesh ocn_grid="SOwISC12to30E3r4">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="u01.oi6to18.lr6to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="u02.oi30.lr10">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="u03.oi240.lr240">.false.</config_hmix_scaleWithMesh>
 <config_maxMeshDensity>-1.0</config_maxMeshDensity>
 <config_hmix_use_ref_cell_width>.false.</config_hmix_use_ref_cell_width>
 <config_hmix_ref_cell_width>30.0e3</config_hmix_ref_cell_width>
@@ -177,6 +179,7 @@
 <config_mom_del4 ocn_grid="SOwISC12to30E3r4">1.18e10</config_mom_del4>
 <config_mom_del4 ocn_grid="u01.oi6to18.lr6to10">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="u02.oi30.lr10">1.2e11</config_mom_del4>
+<config_mom_del4 ocn_grid="u03.oi240.lr240">2.0e14</config_mom_del4>
 <config_mom_del4_div_factor>1.0</config_mom_del4_div_factor>
 <config_mom_del4_div_factor ocn_grid="RRSwISC6to18E3r5">10.0</config_mom_del4_div_factor>
 <config_mom_del4_div_factor ocn_grid="u01.oi6to18.lr6to10">10.0</config_mom_del4_div_factor>
@@ -685,6 +688,7 @@
 <config_btr_dt ocn_grid="SOwISC12to30E3r4">'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="u01.oi6to18.lr6to10">'0000_00:00:05'</config_btr_dt>
 <config_btr_dt ocn_grid="u02.oi30.lr10">'0000_00:01:00'</config_btr_dt>
+<config_btr_dt ocn_grid="u03.oi240.lr240">'0000_00:03:00'</config_btr_dt>
 <config_n_btr_cor_iter>2</config_n_btr_cor_iter>
 <config_vel_correction>.true.</config_vel_correction>
 <config_btr_subcycle_loop_factor>2</config_btr_subcycle_loop_factor>
@@ -1290,6 +1294,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="SOwISC12to30E3r4">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="u01.oi6to18.lr6to10">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="u02.oi30.lr10">.true.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="u03.oi240.lr240">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_compute_interval>'0000-00-00_01:00:00'</config_AM_mocStreamfunction_compute_interval>
 <config_AM_mocStreamfunction_output_stream>'mocStreamfunctionOutput'</config_AM_mocStreamfunction_output_stream>
 <config_AM_mocStreamfunction_compute_on_startup>.true.</config_AM_mocStreamfunction_compute_on_startup>
