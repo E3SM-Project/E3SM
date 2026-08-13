@@ -35,6 +35,7 @@
 <config_dt ice_grid="SOwISC12to30E3r4">1800.0</config_dt>
 <config_dt ice_grid="u01.oi6to18.lr6to10">900.0</config_dt>
 <config_dt ice_grid="u02.oi30.lr10">1800.0</config_dt>
+<config_dt ice_grid="u03.oi240.lr240">7200.0</config_dt>
 <config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
@@ -185,6 +186,7 @@
 <config_dynamics_subcycle_number ice_grid="SOwISC12to30E3r4">1</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="u01.oi6to18.lr6to10">2</config_dynamics_subcycle_number>
 <config_dynamics_subcycle_number ice_grid="u02.oi30.lr10">1</config_dynamics_subcycle_number>
+<config_dynamics_subcycle_number ice_grid="u03.oi240.lr240">1</config_dynamics_subcycle_number>
 <config_rotate_cartesian_grid>true</config_rotate_cartesian_grid>
 <config_include_metric_terms>true</config_include_metric_terms>
 <config_elastic_subcycle_number>120</config_elastic_subcycle_number>
