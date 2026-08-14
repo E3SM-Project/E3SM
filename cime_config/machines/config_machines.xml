@@ -4339,13 +4339,14 @@
       <modules>
         <command name="purge"/>
         <command name="load">miniforge3/24.11.3-0</command>
+        <command name="load">Core/25.05</command>
       </modules>
       
       <modules compiler="gnu" mpilib="openmpi">
         <command name="load">DefApps</command>
         <command name="load">cmake/3.30.5</command>
-        <command name="load">gcc/12.4.0</command>
-        <command name="load">openmpi/5.0.5</command>
+        <!-- command name="load">gcc/12.4.0</command -->  <!-- here cause lmod infinite load, and DefApps is enough -->
+        <!-- command name="load">openmpi/5.0.5</command -->
         <command name="load">netlib-lapack/3.11.0</command>
         <command name="load">hdf5/1.14.5-mpi</command>
         <command name="load">netcdf-c/4.9.2-mpi-h5f</command>
@@ -4357,8 +4358,8 @@
       <modules compiler="gnu" mpilib="openmpi-amanzitpls">
         <command name="load">DefApps</command>
         <command name="load">cmake/3.30.5</command>
-        <command name="load">gcc/12.4.0</command>
-        <command name="load">openmpi/5.0.5</command>
+        <!-- command name="load">gcc/12.4.0</command -->  <!-- here cause lmod infinite load, and DefApps is enough -->
+        <!-- command name="load">openmpi/5.0.5</command -->
         <command name="load">openblas/0.3.28</command>
         <command name="use">-a /projects/hpcl-cli185/proj-shared/ccsi-apps/ats-dev/modulefiles</command>
         <command name="load">ats/tpls-0.98.13+master/pathfinder/openblas-0.3.28-openmpi-5.0.5-gcc-12.4.0/opt</command>
@@ -4366,8 +4367,6 @@
       </modules>
 
       <modules compiler="gnu" mpilib="mpi-serial">
-        <command name="load">miniforge3/24.11.3-0</command>
-        <command name="load">Core/25.05</command>
         <command name="load">cmake/3.30.5</command>
         <command name="load">wget/1.24.5</command>
         <command name="load">gcc/12.4.0</command>
