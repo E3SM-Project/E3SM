@@ -31,7 +31,7 @@ MODULE MOSART_physics_mod
   use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
   use MOSARTinund_Core_MOD, only: ChnlFPexchg
   ! TEMPORARY ERS DIAGNOSTIC -- remove before merge.
-  use RtmFingerprint, only : rtm_fp, rtm_fp2
+  use RtmFingerprint, only : rtm_fp, rtm_fp2, rtm_fp_dam, rtm_fp_dump
   use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice, nt_nmud, nt_nsan, KW, DW
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
@@ -201,6 +201,12 @@ MODULE MOSART_physics_mod
        endif
        if (wrmflag) then
           call rtm_fp('A_in_supply', StorWater%supply, m)
+       endif
+       ! Per-cell dump of erout entering the subcycle. Pairs with F_tl1_erout
+       ! from the previous Euler call, so the two dumps bracket the tail and
+       ! name the cell whichever side the divergence falls on.
+       if (m == 1) then
+          call rtm_fp_dump('A_in_erout', TRunoff%erout(:,nt_nliq))
        endif
        ! ---- end TEMPORARY ERS DIAGNOSTIC ----
 
@@ -762,6 +768,26 @@ MODULE MOSART_physics_mod
     ! assume in this case wr is not changed. The storage in reservoir handles it.
     !------------------
 
+    ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+    ! State at the TOP of the Euler tail, i.e. immediately after the subcycle
+    ! loop closed. The fingerprints inside the subcycle loop are all identical
+    ! between the base and rest legs at the first divergence (nstep 54), yet
+    ! erout is already different at the top of the NEXT Euler call -- so the
+    ! divergence is born somewhere in this tail. These D_* / F_* marks bracket
+    ! it. Dam-dimensioned WRM state is covered too (rtm_fp_dam), since it had
+    ! no coverage at all previously and is exactly what the extraction reads.
+    call rtm_fp2('D_tl0_erout', TRunoff%erout, nt_nliq)
+    if (wrmflag) then
+       call rtm_fp('D_tl0_supply',  StorWater%supply)
+       call rtm_fp('D_tl0_demand',  StorWater%demand)
+       call rtm_fp_dam('D_tl0_storage',   StorWater%storage,     WRMUnit%damID)
+       call rtm_fp_dam('D_tl0_release',   StorWater%release,     WRMUnit%damID)
+       call rtm_fp_dam('D_tl0_stormth',   WRMUnit%StorMthStOp,   WRMUnit%damID)
+       call rtm_fp_dam('D_tl0_actstage',  &
+            real(StorWater%active_stage, r8), WRMUnit%damID)
+    endif
+    ! ---- end TEMPORARY ERS DIAGNOSTIC ----
+
     if (wrmflag) then
        if (ctlSubwWRM%RegulationFlag>0) then
           ! compute the erowm_reg terms and adjust the flow diagnostic
@@ -777,9 +803,25 @@ MODULE MOSART_physics_mod
 !             endif
 !          enddo
 !          call t_stopf('mosartr_wrm_Reg')
+          ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+          ! After the erowm_regi loop, immediately BEFORE the extraction.
+          call rtm_fp2('D_pre_erout', TRunoff%erout, nt_nliq)
+          call rtm_fp_dump('D_pre_erout', TRunoff%erout(:,nt_nliq))
+          ! ---- end TEMPORARY ERS DIAGNOSTIC ----
+
           if (ctlSubwWRM%ExtractionFlag > 0 ) then
              call t_startf('mosartr_wrm_ERFlow')
              call ExtractionRegulatedFlow(localDeltaT)
+             ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+             ! Immediately AFTER the extraction. If D_pre matches but D_pst
+             ! differs, the divergence is inside ExtractionRegulatedFlow --
+             ! which writes TRunoff%erout and nothing else, consistent with
+             ! wr/yr staying identical at the first divergence.
+             call rtm_fp2('D_pst_erout', TRunoff%erout, nt_nliq)
+             call rtm_fp('D_pst_supply', StorWater%supply)
+             call rtm_fp('D_pst_demand', StorWater%demand)
+             call rtm_fp_dump('D_pst_erout', TRunoff%erout(:,nt_nliq))
+             ! ---- end TEMPORARY ERS DIAGNOSTIC ----
              ! a simple treatment after extracting water from the regulated streamflow. Assuming the extraction won't change the water temperature in the release
              ! but the heat flux will be changed due to changing streamflow
              if (heatflag) then
@@ -811,6 +853,19 @@ MODULE MOSART_physics_mod
        endif
        call t_stopf('mosartr_wrm_estrfdef')
     endif
+
+    ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+    ! Final state leaving Euler. This is what the NEXT Euler call sees as
+    ! A_in_erout, so F_tl1_erout here must equal A_in_erout on the next call.
+    call rtm_fp2('F_tl1_erout', TRunoff%erout, nt_nliq)
+    call rtm_fp_dump('F_tl1_erout', TRunoff%erout(:,nt_nliq))
+    if (wrmflag) then
+       call rtm_fp('F_tl1_supply', StorWater%supply)
+       call rtm_fp('F_tl1_demand', StorWater%demand)
+       call rtm_fp_dam('F_tl1_storage', StorWater%storage, WRMUnit%damID)
+       call rtm_fp_dam('F_tl1_release', StorWater%release, WRMUnit%damID)
+    endif
+    ! ---- end TEMPORARY ERS DIAGNOSTIC ----
 
   end subroutine Euler
 

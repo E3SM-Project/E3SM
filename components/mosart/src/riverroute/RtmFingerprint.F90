@@ -34,7 +34,7 @@ module RtmFingerprint
 
   use shr_kind_mod  , only : r8 => shr_kind_r8, i8 => shr_kind_i8
   use RtmVar        , only : iulog
-  use RtmSpmd       , only : masterproc, mpicom_rof, npes
+  use RtmSpmd       , only : masterproc, mpicom_rof, npes, iam
   use RunoffMod     , only : rtmCTL
   use RtmTimeManager, only : get_nstep, get_curr_date
   use mpi
@@ -42,11 +42,33 @@ module RtmFingerprint
   implicit none
   private
 
-  public :: rtm_fp     ! fingerprint a 1-d real(r8) array
-  public :: rtm_fp2    ! fingerprint one tracer slice of a 2-d real(r8) array
-  public :: rtm_fp_tag ! emit a bare marker line (no field)
+  public :: rtm_fp      ! fingerprint a 1-d real(r8) array
+  public :: rtm_fp2     ! fingerprint one tracer slice of a 2-d real(r8) array
+  public :: rtm_fp_tag  ! emit a bare marker line (no field)
+  public :: rtm_fp_dam  ! fingerprint a dam-dimensioned array (bypasses cell guard)
+  public :: rtm_fp_dump ! dump per-cell values to a side file, to NAME the cell
 
   logical, public :: rtm_fp_on = .true.   ! master switch
+
+  ! --- per-cell dump control (rtm_fp_dump) ---
+  ! The dump is expensive and verbose, so it is restricted to a narrow nstep
+  ! window bracketing the first known divergence. Widen only if needed.
+  !
+  ! Sizing: ~60k nonzero cells x 28 bytes x 4 labels x 3 Euler calls is
+  ! ~20 MB per nstep per leg, so a 3-nstep window costs ~120 MB for both
+  ! legs. Disk quota has already broken one build in this case directory --
+  ! check quota before widening this window.
+  !
+  ! The window must bracket the FIRST divergence, which differs by build:
+  !   debug     build: first divergence at nstep 54 -> window 53..55
+  !   optimized build: first divergence at nstep 51 -> window 50..52
+  integer, public :: rtm_fp_dump_lo = 53  ! first nstep to dump (inclusive)
+  integer, public :: rtm_fp_dump_hi = 55  ! last  nstep to dump (inclusive)
+
+  ! The two ERS legs share one RUNDIR, so dump filenames must not collide.
+  ! The legs are distinguished by the first nstep each one ever sees (base
+  ! starts at 0, rest starts at the restart nstep), captured on first use.
+  integer, save :: fp_nstep0 = -1
 
 contains
 
@@ -152,6 +174,113 @@ contains
     if (.not. rtm_fp_on) return
     call rtm_fp(label, arr(:,nt), cycle)
   end subroutine rtm_fp2
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_dam(label, arr, gidx, cycle)
+    ! Emit a global bitwise fingerprint of a DAM-dimensioned array.
+    !
+    ! rtm_fp() deliberately refuses arrays that are not cell-dimensioned, so
+    ! the entire WRM dam state (LocalNumDam) has no coverage. This variant
+    ! takes the global dam ID array explicitly (WRMUnit%damID) for the
+    ! index-mixed hash, which keeps the result decomposition independent
+    ! without RtmFingerprint having to depend on WRM_type_mod.
+    !
+    ! Note LocalNumDam may be 0 on some ranks; the local reduction then
+    ! contributes identity (0) to the XOR, which is correct.
+    character(len=*), intent(in) :: label
+    real(r8), intent(in) :: arr(:)
+    integer,  intent(in) :: gidx(:)
+    integer, optional, intent(in) :: cycle
+
+    integer(i8) :: xorloc(2), nnzloc(1), xorglb(2), nnzglb(1)
+    integer(i8) :: nloc(1), nglb(1)
+    integer     :: ier, mycycle
+
+    if (.not. rtm_fp_on) return
+
+    mycycle = 0
+    if (present(cycle)) mycycle = cycle
+
+    if (size(arr) /= size(gidx)) then
+       if (masterproc) write(iulog,'(a,a)') &
+            'RTMFP WARNING: dam size mismatch, skipping fld=', trim(label)
+       return
+    endif
+
+    call rtm_fp_reduce(arr, gidx, xorloc, nnzloc)
+    nloc(1) = int(size(arr), i8)
+
+    call mpi_allreduce(xorloc, xorglb, 2, MPI_INTEGER8, MPI_BXOR, mpicom_rof, ier)
+    call mpi_allreduce(nnzloc, nnzglb, 1, MPI_INTEGER8, MPI_SUM,  mpicom_rof, ier)
+    call mpi_allreduce(nloc,   nglb,   1, MPI_INTEGER8, MPI_SUM,  mpicom_rof, ier)
+
+    if (masterproc) then
+       call rtm_fp_hdr(label, mycycle)
+       write(iulog,'(a,a24,a,z16.16,a,z16.16,a,i10,a,i10)') &
+            'RTMFP   fld=', adjustl(label), ' xor=0x', xorglb(1), &
+            ' hash=0x', xorglb(2), ' nnz=', nnzglb(1), ' ndam=', nglb(1)
+    endif
+  end subroutine rtm_fp_dam
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_dump(label, arr)
+    ! Dump per-cell (global index, raw bit pattern, value) to a side file so
+    ! the divergent CELL can be named, not just the divergent array.
+    !
+    ! The global fingerprints answer "which array, which timestep". They
+    ! cannot answer "which cell" or "how many cells", because they are
+    ! aggregates. This does.
+    !
+    ! Each rank writes its own file (no MPI-IO, no collective ordering), and
+    ! only within [rtm_fp_dump_lo, rtm_fp_dump_hi]. Cells whose value is
+    ! exactly zero are skipped -- they are the large majority and cannot
+    ! differ. Post-process with:
+    !
+    !   cat fpdump.<leg>.<nstep>.<label>.*.txt | sort -k1,1n > leg.txt
+    !   diff base.txt rest.txt
+    !
+    ! which yields the offending global indices directly.
+    character(len=*), intent(in) :: label
+    real(r8), intent(in) :: arr(:)
+
+    integer            :: i, nstep, unitn
+    integer(i8)        :: bits
+    character(len=256) :: fname
+    character(len=8)   :: leg
+
+    if (.not. rtm_fp_on) return
+
+    nstep = get_nstep()
+    if (fp_nstep0 < 0) fp_nstep0 = nstep     ! first nstep this leg ever sees
+
+    if (nstep < rtm_fp_dump_lo .or. nstep > rtm_fp_dump_hi) return
+    if (size(arr) /= size(rtmCTL%gindex)) then
+       if (masterproc) write(iulog,'(a,a)') &
+            'RTMFP WARNING: dump size mismatch, skipping fld=', trim(label)
+       return
+    endif
+
+    ! Both ERS legs share one RUNDIR; tag by the leg's starting nstep so the
+    ! base (starts at 0) and rest (starts at the restart nstep) never collide.
+    write(leg,'(a,i5.5)') 'n', fp_nstep0
+    write(fname,'(a,a,a,i5.5,a,a,a,i5.5,a)') &
+         'fpdump.', trim(leg), '.', nstep, '.', trim(label), '.', iam, '.txt'
+
+    open(newunit=unitn, file=trim(fname), status='unknown', &
+         position='append', action='write')
+    do i = 1, size(arr)
+       if (arr(i) == 0._r8) cycle
+       bits = transfer(arr(i), bits)
+       ! gindex first so a plain numeric sort collates across ranks. Only the
+       ! raw bit pattern is written -- it is the exact value, and a decimal
+       ! copy alongside it would nearly double the file size for nothing.
+       ! Recover the value afterwards only for the few cells that differ.
+       write(unitn,'(i10,1x,z16.16)') rtmCTL%gindex(i), bits
+    end do
+    close(unitn)
+  end subroutine rtm_fp_dump
 
 !-----------------------------------------------------------------------
 
