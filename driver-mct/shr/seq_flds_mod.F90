@@ -1611,7 +1611,7 @@ contains
     attname  = 'Fioo_frazils'
     call metadata_set(attname, longname, stdname, units)
 
-    ! Ocean frazil head flux
+    ! Ocean frazil heat flux
     call seq_flds_add(o2x_fluxes,"Fioo_frazilh")
     call seq_flds_add(x2i_fluxes,"Fioo_frazilh")
     longname = 'Ocean frazil heat flux'

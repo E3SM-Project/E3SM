@@ -1617,11 +1617,11 @@ contains
     attname  = 'Fioo_frazil'
     call metadata_set(attname, longname, stdname, units)
 
-    ! Ocean frazil salt production
+    ! Ocean frazil salt flux
     call seq_flds_add(o2x_fluxes,"Fioo_frazils")
     call seq_flds_add(x2i_fluxes,"Fioo_frazils")
-    longname = 'Ocean frazil salt production'
-    stdname  = 'ocean_frazil_salt_production'
+    longname = 'Ocean frazil salt flux'
+    stdname  = 'ocean_frazil_salt_flux'
     units    = 'kg m-2 s-1'
     attname  = 'Fioo_frazils'
     call metadata_set(attname, longname, stdname, units)

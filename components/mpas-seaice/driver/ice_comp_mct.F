@@ -2424,6 +2424,7 @@ contains
 
            freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
 
+           frazilMassFlux(i)           = 0.0_RKIND
            frazilSaltFlux(i)           = 0.0_RKIND
            frazilEnthalpyFlux(i)       = 0.0_RKIND
            frazilMassAdjust(i)         = 0.0_RKIND

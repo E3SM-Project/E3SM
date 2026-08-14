@@ -2267,10 +2267,10 @@ contains
                         -dataGpr(nf,icar,ip)+dataGpr(nf,icxs,ip)+ &
                         dataGpr(nf,icxr,ip)-dataGpr(nf,icas,ip)
                 enddo
-                write(logunit,FA1)    '   *SUM*'   ,sum(dataGpr(f_s:f_s_end,ica,ip)),sum(dataGpr(f_s:f_s_end,icl,ip)), &
-                     sum(dataGpr(f_s:f_s_end,icn,ip)),sum(dataGpr(f_s:f_s_end,ics,ip)),sum(dataGpr(f_s:f_s_end,ico,ip)), &
-                     sum(dataGpr(f_s:f_s_end,ica,ip))+sum(dataGpr(f_s:f_s_end,icl,ip))+ &
-                     sum(dataGpr(f_s:f_s_end,icn,ip))+sum(dataGpr(f_s:f_s_end,ics,ip))+sum(dataGpr(f_s:f_s_end,ico,ip))
+                write(logunit,FA1)    '   *SUM*',-sum(dataGpr(f_s:f_s_end,icar,ip)),sum(dataGpr(f_s:f_s_end,icxs,ip)), &
+                    sum(dataGpr(f_s:f_s_end,icxr,ip)),-sum(dataGpr(f_s:f_s_end,icas,ip)), &
+                    -sum(dataGpr(f_s:f_s_end,icar,ip))+sum(dataGpr(f_s:f_s_end,icxs,ip))+ &
+                    sum(dataGpr(f_s:f_s_end,icxr,ip))-sum(dataGpr(f_s:f_s_end,icas,ip))
                 write(logunit,*) ' '
              enddo
           endif   ! plev
