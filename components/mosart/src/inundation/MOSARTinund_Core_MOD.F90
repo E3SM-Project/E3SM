@@ -312,9 +312,18 @@ MODULE MOSARTinund_Core_MOD
         
           ! if ( wr + wf > wr_bf ) :
           if (w_over .gt. 0._r8) then
-            ! ---------------------------------  
+            ! ---------------------------------
             ! Calculate: (1) Flooded fraction in the computation unit (including channel area); (2) The difference between final water level and banktop elevation :
-            ! --------------------------------- 
+            ! ---------------------------------
+            ! Defensive initialization: if w_over does not fall within any bracketing
+            ! interval of the elevation profile (i.e. the loop below never hits "exit"),
+            ! hf and ff_unit would otherwise be used uninitialized. Uninitialized stack
+            ! values differ between a fresh (restart) process and a continuous process,
+            ! breaking exact restart in a machine/build-dependent way. Default to the
+            ! carried-in floodplain state (restored bit-exactly from the restart file),
+            ! which is deterministic across both legs.
+            hf      = TRunoff%hf_ini(iu)
+            ff_unit = TRunoff%ffunit_ini(iu)
             do j = 2, TUnit%npt_eprof3(iu) - 1    ! Note: j starts from 2 .
               if (TUnit%s_eprof3(iu, j) < w_over .and. w_over <= TUnit%s_eprof3(iu, j+1)) then
                 ! Water volume above the level of point " j " :
