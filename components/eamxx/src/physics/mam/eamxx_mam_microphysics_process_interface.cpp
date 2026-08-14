@@ -144,7 +144,7 @@ MAMMicrophysics::create_requests()
 
   //----------- Variables from other mam4xx processes ------------
   // Number of modes
-  constexpr int nmodes = aero_config_.num_modes();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout vector3d_mid_nmodes =
@@ -361,7 +361,7 @@ int MAMMicrophysics::get_len_temporary_views() {
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   constexpr int pcnst              = mam4::pcnst;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  constexpr int nmodes = aero_config_.num_modes();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
   int work_len              = 0;
   // work_photo_table_
   work_len += ncol_ * photo_table_len;
@@ -393,7 +393,7 @@ void MAMMicrophysics::init_temporary_views() {
   constexpr int extcnt      = mam4::gas_chemistry::extcnt;
   constexpr int pcnst              = mam4::pcnst;
   constexpr int gas_pcnst = mam_coupling::gas_pcnst();
-  constexpr int nmodes = aero_config_.num_modes();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
   auto work_ptr             = (Real *)buffer_.temporary_views.data();
 
   work_photo_table_ = view_2d(work_ptr, ncol_, photo_table_len);

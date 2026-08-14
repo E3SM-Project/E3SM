@@ -272,7 +272,7 @@ void call_function_dropmixnuc(
   //---------------------------------------------------------------------------
   // ## Initialize the ndrop class.
   //---------------------------------------------------------------------------
-  const int ntot_amode = AeroConfig::num_modes();
+  const int ntot_amode = mam4::AeroConfig::num_modes();
   Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
        num2vol_ratio_min_nmodes[ntot_amode] = {},
        num2vol_ratio_max_nmodes[ntot_amode] = {};

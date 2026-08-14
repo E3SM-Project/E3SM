@@ -42,14 +42,14 @@ void compute_tendencies(
 {
   using TPF = ekat::TeamPolicyFactory<MAMDryDep::KT::ExeSpace>;
 
-  static constexpr int num_aero_modes = AeroConfig::num_modes();
+  static constexpr int num_aero_modes = mam4::AeroConfig::num_modes();
   const auto policy = TPF::get_default_team_policy(ncol, nlev);
 
   // Parallel loop over all the columns
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         static constexpr int num_aero_species =
-            AeroConfig::num_aerosol_ids();
+            mam4::AeroConfig::num_aerosol_ids();
 
         const int icol = team.league_rank();
         // Parallel loop over all the levels to populate qtracers array using
@@ -93,7 +93,7 @@ void compute_tendencies(
           fraction_landuse[i] = fraction_landuse_(icol, i);
         }
 
-        static constexpr int nmodes = AeroConfig::num_modes();
+        static constexpr int nmodes = mam4::AeroConfig::num_modes();
         mam4::ColumnView vlc_dry[nmodes][MAMDryDep::aerosol_categories_];
         mam4::ColumnView vlc_grv[nmodes][MAMDryDep::aerosol_categories_];
         Real vlc_trb[nmodes][MAMDryDep::aerosol_categories_];
@@ -150,7 +150,7 @@ void update_interstitial_mmrs(const mam4::AeroConfig &aero_config,
   using TPF = ekat::TeamPolicyFactory<MAMDryDep::KT::ExeSpace>;
 
   const auto policy = TPF::get_default_team_policy(ncol, nlev);
-  static constexpr int nmodes = AeroConfig::num_modes();
+  static constexpr int nmodes = mam4::AeroConfig::num_modes();
   Kokkos::parallel_for(
       policy, KOKKOS_LAMBDA(const MAMDryDep::KT::MemberType &team) {
         const int icol = team.league_rank();

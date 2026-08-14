@@ -161,7 +161,7 @@ void MAMOptics::initialize_impl(const RunType run_type) {
   add_interval_checks();
   // populate the wet and dry atmosphere states with views from fields and
   // the buffer
-  constexpr int ntot_amode = aero_config_.num_modes();
+  constexpr int ntot_amode = mam4::AeroConfig::num_modes();
 
   populate_wet_atm(wet_atm_);
   populate_dry_atm(dry_atm_, buffer_);
