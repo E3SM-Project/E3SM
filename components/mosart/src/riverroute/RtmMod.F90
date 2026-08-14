@@ -51,6 +51,8 @@ module RtmMod
   use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
   use MOSARTinund_PreProcs_MOD, only : calc_chnlMannCoe, preprocess_elevProf
+  ! TEMPORARY ERS DIAGNOSTIC -- remove before merge.
+  use RtmFingerprint, only : rtm_fp, rtm_fp2, rtm_fp_tag
   use MOSARTinund_Core_MOD    , only : MOSARTinund_simulate, ManningEq, ChnlFPexchg
   use MOSART_Budgets_mod, only: MOSART_WaterBudget_Extraction, MOSART_WaterBudget_Print, MOSART_WaterBudget_Reset
   use RtmIO
@@ -1902,6 +1904,31 @@ contains
            call WRM_computeRelease()
         endif
 
+       ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+       ! State immediately after the restart file has been read and copied into
+       ! TRunoff. In the restarted leg this is the day-6 saved state; in the
+       ! continuous leg this is the day-0 initial state, so these will differ
+       ! by design. The value is in confirming WHICH fields are populated here,
+       ! and comparing against the end-of-day-6 fingerprint from the base leg.
+       call rtm_fp2('R_rst_wr',    TRunoff%wr,    nt_nliq)
+       call rtm_fp2('R_rst_wt',    TRunoff%wt,    nt_nliq)
+       call rtm_fp2('R_rst_wh',    TRunoff%wh,    nt_nliq)
+       call rtm_fp2('R_rst_yr',    TRunoff%yr,    nt_nliq)
+       call rtm_fp2('R_rst_mr',    TRunoff%mr,    nt_nliq)
+       call rtm_fp2('R_rst_pr',    TRunoff%pr,    nt_nliq)
+       call rtm_fp2('R_rst_rr',    TRunoff%rr,    nt_nliq)
+       call rtm_fp2('R_rst_erout', TRunoff%erout, nt_nliq)
+       if (inundflag .and. Tctl%OPT_inund .eq. 1) then
+          call rtm_fp('R_rst_wf_ini',     TRunoff%wf_ini)
+          call rtm_fp('R_rst_hf_ini',     TRunoff%hf_ini)
+          call rtm_fp('R_rst_ff_ini',     TRunoff%ff_ini)
+          call rtm_fp('R_rst_ffunit_ini', TRunoff%ffunit_ini)
+       endif
+       if (wrmflag) then
+          call rtm_fp('R_rst_supply', StorWater%supply)
+       endif
+       ! ---- end TEMPORARY ERS DIAGNOSTIC ----
+
     else
 !       do nt = 1,nt_rtm
 !       do nr = rtmCTL%begr,rtmCTL%endr
@@ -2926,6 +2953,30 @@ contains
       rtmCTL%inundffunit(:) = TRunoff%ffunit_ini(:)
     end if
 
+    ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+    ! End-of-coupling-period state, i.e. exactly what a restart file written
+    ! now would contain. In the base leg the day-6 instance of this must match
+    ! the rest leg's 'R_rst_*' fingerprints; any mismatch is a restart
+    ! write/read round-trip defect.
+    call rtm_fp2('E_end_wr',    rtmCTL%wr,    nt_nliq)
+    call rtm_fp2('E_end_wt',    rtmCTL%wt,    nt_nliq)
+    call rtm_fp2('E_end_wh',    rtmCTL%wh,    nt_nliq)
+    call rtm_fp2('E_end_yr',    rtmCTL%yr,    nt_nliq)
+    call rtm_fp2('E_end_mr',    rtmCTL%mr,    nt_nliq)
+    call rtm_fp2('E_end_pr',    rtmCTL%pr,    nt_nliq)
+    call rtm_fp2('E_end_rr',    rtmCTL%rr,    nt_nliq)
+    call rtm_fp2('E_end_erout', rtmCTL%erout, nt_nliq)
+    if (inundflag .and. Tctl%OPT_inund .eq. 1) then
+       call rtm_fp('E_end_wf_ini',     rtmCTL%inundwf)
+       call rtm_fp('E_end_hf_ini',     rtmCTL%inundhf)
+       call rtm_fp('E_end_ff_ini',     rtmCTL%inundff)
+       call rtm_fp('E_end_ffunit_ini', rtmCTL%inundffunit)
+    endif
+    if (wrmflag) then
+       call rtm_fp('E_end_supply', StorWater%supply)
+    endif
+    ! ---- end TEMPORARY ERS DIAGNOSTIC ----
+
     if (heatflag) then
       rtmCTL%Tqsur   = THeat%Tqsur
       rtmCTL%Tqsub   = THeat%Tqsub
@@ -3943,10 +3994,11 @@ contains
   ! !OTHER LOCAL VARIABLES:
   !EOP
   type(file_desc_t)  :: ncid       ! pio file desc
-  type(var_desc_t)   :: vardesc    ! pio variable desc 
+  type(var_desc_t)   :: vardesc    ! pio variable desc
   type(io_desc_t)    :: iodesc_dbl ! pio io desc
   type(io_desc_t)    :: iodesc_int ! pio io desc
   logical            :: readvar    ! If variable exists or not
+  integer            :: nv_fp      ! TEMPORARY ERS DIAGNOSTIC loop index (remove before merge)
   integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
   integer :: ndims                 ! number of dimensions in the input
   integer :: dids(2)               ! variable dimension ids 
@@ -4439,6 +4491,33 @@ contains
 
           ! Pre-process elevation-profile parameters :
           call preprocess_elevProf ( )
+
+          ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+          ! These tables are recomputed at init in BOTH legs and are never in
+          ! the restart file, so they MUST be bit-identical between the
+          ! continuous and restarted legs. Verify rather than assume: they are
+          ! direct inputs to ChnlFPexchg, and any difference here (e.g. from
+          ! frac/area/mask differing, or a sqrt/divide on a slightly different
+          ! input) would produce exactly the observed 1-ULP wr error.
+          call rtm_fp('S_tab_wr_bf',      TUnit%wr_bf)
+          call rtm_fp('S_tab_a_chnl',     TUnit%a_chnl)
+          call rtm_fp('S_tab_e_chnl',     TUnit%e_chnl)
+          call rtm_fp('S_tab_rdepth',     TUnit%rdepth)
+          call rtm_fp('S_tab_rwidth',     TUnit%rwidth)
+          call rtm_fp('S_tab_rlen',       TUnit%rlen)
+          call rtm_fp('S_tab_area',       TUnit%area)
+          call rtm_fp('S_tab_frac',       TUnit%frac)
+          do nv_fp = 1, 13
+             call rtm_fp('S_tab_a_eprof3', TUnit%a_eprof3(:,nv_fp), nv_fp)
+             call rtm_fp('S_tab_e_eprof3', TUnit%e_eprof3(:,nv_fp), nv_fp)
+             call rtm_fp('S_tab_s_eprof3', TUnit%s_eprof3(:,nv_fp), nv_fp)
+             call rtm_fp('S_tab_alfa3',    TUnit%alfa3(:,nv_fp),    nv_fp)
+             call rtm_fp('S_tab_p3',       TUnit%p3(:,nv_fp),       nv_fp)
+             call rtm_fp('S_tab_q3',       TUnit%q3(:,nv_fp),       nv_fp)
+          enddo
+          ! npt_eprof3 is integer; fingerprint via a real copy.
+          call rtm_fp('S_tab_npt_eprof3', real(TUnit%npt_eprof3, r8))
+          ! ---- end TEMPORARY ERS DIAGNOSTIC ----
        endif
 
      end if  ! inundflag

@@ -30,6 +30,8 @@ MODULE MOSART_physics_mod
                              estimate_returnflow_deficit
   use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
   use MOSARTinund_Core_MOD, only: ChnlFPexchg
+  ! TEMPORARY ERS DIAGNOSTIC -- remove before merge.
+  use RtmFingerprint, only : rtm_fp, rtm_fp2
   use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice, nt_nmud, nt_nsan, KW, DW
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
@@ -174,6 +176,33 @@ MODULE MOSART_physics_mod
 
     ! subcycling within MOSART begins
     do m=1,Tctl%DLevelH2R
+
+       ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+       ! State entering this subcycle. If the base and rest legs already differ
+       ! here on the first post-restart subcycle, the divergence is in restart
+       ! round-trip / init, not in the physics below.
+       call rtm_fp2('A_in_wr',      TRunoff%wr,      nt_nliq, m)
+       call rtm_fp2('A_in_wt',      TRunoff%wt,      nt_nliq, m)
+       call rtm_fp2('A_in_wh',      TRunoff%wh,      nt_nliq, m)
+       call rtm_fp2('A_in_yr',      TRunoff%yr,      nt_nliq, m)
+       call rtm_fp2('A_in_yt',      TRunoff%yt,      nt_nliq, m)
+       call rtm_fp2('A_in_mr',      TRunoff%mr,      nt_nliq, m)
+       call rtm_fp2('A_in_pr',      TRunoff%pr,      nt_nliq, m)
+       call rtm_fp2('A_in_rr',      TRunoff%rr,      nt_nliq, m)
+       call rtm_fp2('A_in_erout',   TRunoff%erout,   nt_nliq, m)
+       call rtm_fp2('A_in_qsur',    TRunoff%qsur,    nt_nliq, m)
+       call rtm_fp2('A_in_qsub',    TRunoff%qsub,    nt_nliq, m)
+       call rtm_fp2('A_in_qgwl',    TRunoff%qgwl,    nt_nliq, m)
+       if (inundflag) then
+          call rtm_fp('A_in_wf_ini',     TRunoff%wf_ini,     m)
+          call rtm_fp('A_in_hf_ini',     TRunoff%hf_ini,     m)
+          call rtm_fp('A_in_ff_ini',     TRunoff%ff_ini,     m)
+          call rtm_fp('A_in_ffunit_ini', TRunoff%ffunit_ini, m)
+       endif
+       if (wrmflag) then
+          call rtm_fp('A_in_supply', StorWater%supply, m)
+       endif
+       ! ---- end TEMPORARY ERS DIAGNOSTIC ----
 
        !------------------
        ! subnetwork
@@ -656,9 +685,31 @@ MODULE MOSART_physics_mod
        end do ! iunit
        endif  ! euler_calc     
 
+       ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+       ! State after subnetwork + main-channel routing, BEFORE the inundation
+       ! channel/floodplain exchange. Splits "routing diverged" from
+       ! "exchange diverged".
+       call rtm_fp2('B_rtg_wr',    TRunoff%wr,      nt_nliq, m)
+       call rtm_fp2('B_rtg_wt',    TRunoff%wt,      nt_nliq, m)
+       call rtm_fp2('B_rtg_yr',    TRunoff%yr,      nt_nliq, m)
+       call rtm_fp2('B_rtg_erout', TRunoff%erout,   nt_nliq, m)
+       call rtm_fp2('B_rtg_erUp',  TRunoff%eroutUp, nt_nliq, m)
+       ! ---- end TEMPORARY ERS DIAGNOSTIC ----
+
        if (inundflag) then
-            ! Channel -- floodplain exchange computation :      
+            ! Channel -- floodplain exchange computation :
               call ChnlFPexchg ( )
+            ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+            ! Direct outputs of ChnlFPexchg, before they are folded into the
+            ! saved *_ini / wr / yr state below.
+              call rtm_fp('C_exc_wr_exchg',  TRunoff%wr_exchg,  m)
+              call rtm_fp('C_exc_yr_exchg',  TRunoff%yr_exchg,  m)
+              call rtm_fp('C_exc_wf_exchg',  TRunoff%wf_exchg,  m)
+              call rtm_fp('C_exc_hf_exchg',  TRunoff%hf_exchg,  m)
+              call rtm_fp('C_exc_ff_unit',   TRunoff%ff_unit,   m)
+              call rtm_fp('C_exc_ff_fp',     TRunoff%ff_fp,     m)
+              call rtm_fp('C_exc_netchange', TRunoff%netchange, m)
+            ! ---- end TEMPORARY ERS DIAGNOSTIC ----
             ! update variables after channel-floodplain exchanges
             ! Floodplain water volume :
               TRunoff%wf_ini = TRunoff%wf_exchg
