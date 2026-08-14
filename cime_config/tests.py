@@ -340,7 +340,7 @@ _TESTS = {
         },
 
     "e3sm_developer" : {
-        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer"),
+        "inherit" : ("e3sm_land_developer", "e3sm_atm_developer", "e3sm_ice_developer", "e3sm_cryo_developer", "e3sm_gcam_developer"),
         "time"    : "0:45:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480_rx1.A",
@@ -396,7 +396,7 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_Vmct_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA1p5-WW3.ww3-jra_1958",
+            "SMS_Vmct_D_Ln3.TL319_IcoswISC30E3r5_wQU225Icos30E3r5.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             )
         },
 
@@ -406,6 +406,7 @@ _TESTS = {
         "tests"   : (
             "SMS_Ld3.ne120pg2_r025_RRSwISC6to18E3r5.WCYCL1850NS.eam-cosplite",
             "SMS.T62_SOwISC12to30E3r3.GMPAS-IAF",
+            "SMS_Ld3.ne30pg2_r05_SOwISC12to30E3r3.CRYO1850-CMIP7",
             )
         },
 
@@ -435,6 +436,7 @@ _TESTS = {
             "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP370.allactive-wcprodssp",
             "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.WCYCLSSP585.allactive-wcprodssp",
             "SMS_Ld1_P512.northamericax4v1pg2_r025_IcoswISC30E3r5.WCYCL1850.allactive-wcprodrrm_1850",
+            "SMS_Vmct_D_Ld1.TL319_IcoswISC30E3r5_wQU225Icos30E3r5.GMPAS-JRA1p5-WW3.ww3-jra_1958",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850",
             "SMS_D_Ld1.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-CMIP7",
             )
@@ -1140,8 +1142,8 @@ _TESTS = {
     "e3sm_gcam_developer" : {
         "time"  : "1:00:00",
         "tests" : (
-            "SMS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
-            "ERS.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "SMS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
+            "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
             )
     },
 }

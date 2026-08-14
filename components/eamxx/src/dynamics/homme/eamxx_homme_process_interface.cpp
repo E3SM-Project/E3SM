@@ -176,8 +176,12 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("p_dry_int",          pg_scalar3d_int, Pa,    pgn,N);
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
-  add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
-  add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
+  if (params.do_3d_turbulence) {
+    add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
+    add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
+    auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
+    add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, 1/s, pgn,N);
+  }
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
   add_group<Updated>("tracers",pgn,N, MonolithicAlloc::Required);
@@ -212,8 +216,14 @@ void HommeDynamics::create_requests ()
   create_helper_field("phis_dyn",     {EL,       GP,GP},     {nelem,      NP,NP         }, dgn);
   create_helper_field("omega_dyn",    {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
-  create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
-  create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
+  if (params.do_3d_turbulence) {
+    create_helper_field("Km_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
+    create_helper_field("Kh_dyn",       {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
+    create_helper_field("grad_Ux_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+    create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+    create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
+    create_helper_field("shear_strain3d_components_dyn", {EL,CMP,GP,GP,LEV}, {nelem,6,NP,NP,nlev_mid}, dgn);
+  }
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
   // but only one is really needed for restart. Therefore, we create "dynamic" subfields for
@@ -272,6 +282,8 @@ void HommeDynamics::create_requests ()
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
   using namespace Homme;
+  constexpr int num_turb3d_scratch_buffers = 8;
+  constexpr int np2 = HOMMEXX_NP*HOMMEXX_NP;
 
   auto& c       = Context::singleton();
   auto& params  = c.get<SimulationParams>();
@@ -314,7 +326,13 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   }
   fv_phys_requested_buffer_size_in_bytes();
 
-  return fbm.allocated_size()*sizeof(Real);
+  size_t requested_bytes = fbm.allocated_size()*sizeof(Real);
+  if (params.do_3d_turbulence) {
+    const size_t ncols = num_elems*np2;
+    requested_bytes += num_turb3d_scratch_buffers*sizeof(Real)*ncols*NUM_PHYSICAL_LEV;
+  }
+
+  return requested_bytes;
 }
 
 void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
@@ -325,14 +343,36 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   using namespace Homme;
   auto& c = Context::singleton();
   auto& fbm  = c.get<FunctorsBuffersManager>();
+  const auto& params = c.get<SimulationParams>();
 
   // Reset Homme buffer to use AD buffer memory.
   // Internally, homme will actually initialize its own buffers.
   EKAT_REQUIRE(buffer_manager.allocated_bytes()%sizeof(Real)==0); // Sanity check
 
+  const int fbm_size = fbm.allocated_size();
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-  fbm.allocate(mem, buffer_manager.allocated_bytes()/sizeof(Real));
-  mem += fbm.allocated_size();
+  fbm.allocate(mem, fbm_size);
+  mem += fbm_size;
+
+  if (params.do_3d_turbulence) {
+    constexpr int np2 = HOMMEXX_NP*HOMMEXX_NP;
+    const int ncols = c.get<Elements>().num_elems()*np2;
+    const int scratch_col_size = ncols*NUM_PHYSICAL_LEV;
+
+    auto assign_scratch = [&](HommeDynamics::fixed_view_2d_phys& view) {
+      view = HommeDynamics::fixed_view_2d_phys(mem, ncols);
+      mem += scratch_col_size;
+    };
+
+    assign_scratch(m_w_mid_row_all);
+    assign_scratch(m_w_mid_col_all);
+    assign_scratch(m_dsdx_Ux_all);
+    assign_scratch(m_dsdy_Ux_all);
+    assign_scratch(m_dsdx_Uy_all);
+    assign_scratch(m_dsdy_Uy_all);
+    assign_scratch(m_dsdx_Uz_all);
+    assign_scratch(m_dsdy_Uz_all);
+  }
 
   size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
@@ -351,6 +391,15 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // Grab handles of some Homme data structure
   const auto& c       = Homme::Context::singleton();
   const auto& params  = c.get<Homme::SimulationParams>();
+
+  // The first fv_phys D->P remap during initialization happens before the
+  // dycore has computed these diagnostic components, so start from a benign
+  // value. Homme overwrites them after each dynamics step when 3D turbulence is
+  // enabled.
+  if (params.do_3d_turbulence) {
+    m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0);
+    get_field_out("tke_shear_strain3d_components").deep_copy(0);
+  }
 
   // Complete Homme prim_init1_xyz sequence
   prim_complete_init1_phase_f90 ();
@@ -426,9 +475,14 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",pgn).m_monolithic_field);
     m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
-    // Remap SHOC eddy diffusivities from physics grid to dynamics grid
-    m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
-    m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
+    if (params.do_3d_turbulence) {
+      // Remap SHOC eddy diffusivities from physics grid to dynamics grid.
+      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
+      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
+
+      // Remap horizontal/local strain tensor components from dynamics to physics grid.
+      m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
+    }
 
     m_p2d_remapper->registration_ends();
     m_d2p_remapper->registration_ends();
@@ -521,6 +575,14 @@ void HommeDynamics::run_impl (const double dt)
     for (int subiter=0; subiter<nsplit; ++subiter) {
       Kokkos::fence();
       prim_run_f90(/* nsplit_iteration = */ subiter+1);
+    }
+
+    // This is where we will compute the strain term needed for Shear Production of TKE
+    if (params.do_3d_turbulence){
+      compute_horizontal_derivs_of_car_velocity();
+      compute_local_strain_components3d();
+    } else if (params.do_3d_turbulence) {
+      m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
@@ -943,15 +1005,17 @@ void HommeDynamics::init_homme_views () {
   // by EAMxx, so we set FM(3)=0 right away
   m_helper_fields.at("FM_dyn").get_component(2).deep_copy(0);
 
-  // SGS Eddy diffusivity for momentum
-  auto Km_in = m_helper_fields.at("Km_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
-  using turb_type_mom = std::remove_reference<decltype(derived.m_turb_diff_mom)>::type;
-  derived.m_turb_diff_mom = turb_type_mom(Km_in.data(), nelem);
+  if (params.do_3d_turbulence) {
+    // SGS Eddy diffusivity for momentum
+    auto Km_in = m_helper_fields.at("Km_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+    using turb_type_mom = std::remove_reference<decltype(derived.m_turb_diff_mom)>::type;
+    derived.m_turb_diff_mom = turb_type_mom(Km_in.data(), nelem);
 
-  // SGS Eddy diffusivity for heat
-  auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
-  using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
-  derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
+    // SGS Eddy diffusivity for heat
+    auto Kh_in = m_helper_fields.at("Kh_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+    using turb_type_heat = std::remove_reference<decltype(derived.m_turb_diff_heat)>::type;
+    derived.m_turb_diff_heat = turb_type_heat(Kh_in.data(), nelem);
+  }
 
 }
 

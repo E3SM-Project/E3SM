@@ -135,7 +135,7 @@ def buildlib(bldroot, installpath, case):
         if case.get_value("EXTRA_DEBUG"):
             ekat_cmake_options += " -DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=On"
 
-    gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} -DCMAKE_CXX_STANDARD=17 {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
+    gen_makefile_cmd = f"cmake {kokkos_options} {cc} {cxx} {ekat_cmake_options} -DCMAKE_INSTALL_PREFIX={installpath} {ekat_dir}"
 
     # When later we use find_package to get kokkos in CMake, the folder
     # install_sharedpath/kokkos (which is bldroot here) gets picked over

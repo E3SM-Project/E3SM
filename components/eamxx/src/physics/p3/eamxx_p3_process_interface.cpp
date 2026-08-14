@@ -286,9 +286,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
 
-  // Initialize p3
+  // Initialize p3. Pass our comm so that only the root rank reads the
+  // lookup table files from disk, broadcasting the data to the other
+  // ranks, rather than having every rank hit the (often shared/parallel)
+  // filesystem independently (see E3SM issue #6654 / #6833).
   lookup_tables = P3F::p3_init(/* write_tables = */ false,
-                               this->get_comm().am_i_root());
+                               &this->get_comm());
 
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these

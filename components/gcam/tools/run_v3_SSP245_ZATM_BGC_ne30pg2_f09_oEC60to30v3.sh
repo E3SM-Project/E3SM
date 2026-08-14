@@ -58,7 +58,10 @@ readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3"
-readonly CASE_NAME="${COMPSET}_${RESOLUTION}_${MYDATE}"
+readonly RESABBREV="n30p2_f09_EC30"
+readonly CONFIG="TER_DEG_FDBK" # CONTROL, TER_FDBK, TER_DEG_FDBK, TER_DEG_FDBK_READ
+readonly REFINIYEAR=2015
+readonly CASE_NAME="${COMPSET}_${CONFIG}_INI${REFINIYEAR}_${MYDATE}_${RESABBREV}"
 # readonly CASE_GROUP="E3SM_GCAM"
 
 # set the machine inputdata directory, scratch directory, and queue names
@@ -67,18 +70,21 @@ if [ "${MACHINE}" == "chrysalis" ]; then
    readonly CASE_ROOT="/lcrc/group/e3sm/$USER/e3sm_scratch/${CASE_NAME}"
    readonly MACH_QUEUE='compute'
    readonly MACH_QUEUE_DEBUG='debug'
+   readonly WALLTIME_DEBUG='4:00:00'
 fi
 if [ "${MACHINE}" == "compy" ]; then
    readonly din_loc_root=/compyfs/inputdata
    readonly CASE_ROOT="/compyfs/${USER}/e3sm_scratch/${CASE_NAME}"
    readonly MACH_QUEUE='slurm'
    readonly MACH_QUEUE_DEBUG='short'
+   readonly WALLTIME_DEBUG='0:30:00'
 fi
 if [ "${MACHINE}" == "pm-cpu" ]; then
    din_loc_root=/global/cfs/cdirs/e3sm/inputdata
    readonly CASE_ROOT="${SCRATCH}/e3sm_scratch/${CASE_NAME}"
    readonly MACH_QUEUE='regular'
    readonly MACH_QUEUE_DEBUG='debug'
+   readonly WALLTIME_DEBUG='0:30:00'
 fi
 
 # Sub-directories
@@ -94,7 +100,7 @@ readonly START_DATE="2015-01-01"
 
 # Additional options for 'branch' and 'hybrid'
 readonly GET_REFCASE=TRUE
-readonly RUN_REFCASE="20260303_I20TREAMELMCNPRDCTCBCPHSBGC_${RESOLUTION}" 
+readonly RUN_REFCASE="20260624_I20TREAMELMCNPRDCTCBCPHSBGC_${RESOLUTION}"
 readonly RUN_REFDATE="2015-01-01"
 readonly RUN_REFDIR="$din_loc_root/e3sm_init/${RUN_REFCASE}/${RUN_REFDATE}-00000"
 readonly MPASSI_CONFIG_START=2015-01-01_0
@@ -128,8 +134,8 @@ if [ "${run}" != "production" ]; then
   readonly REST_N=${STOP_N}
   readonly RESUBMIT=${resubmit}
   readonly DO_SHORT_TERM_ARCHIVING=false
-  
-  readonly WALLTIME="4:00:00"
+
+  readonly WALLTIME=${WALLTIME_DEBUG:-0:30:00}
   readonly RUN_QUEUE=${MACH_QUEUE_DEBUG}
 else
 
@@ -200,7 +206,6 @@ cat << EOF >> user_nl_eam
  co2_print_diags_timestep               = .true.
  co2_print_diags_monthly                = .true.
  co2_print_diags_total                  = .true.
- cflx_cpl_opt=1 
  
  ncdata		= '${ncd_string}'
 EOF
@@ -218,6 +223,7 @@ EOF
 cat << EOF >> user_nl_gcam
 !read_scalars = .true.
 !scalar_source_dir = ''
+!read_hdd_cdd = .true.
 EOF
 
 cat << EOF >> user_nl_cpl
@@ -446,8 +452,8 @@ modify_pe_layout() {
          ./xmlchange NTASKS_ATM=$(($ppn * $nnodes))
          ./xmlchange NTASKS_CPL=$(($ppn * $nnodes))
          ./xmlchange NTASKS_LND=$(($ppn * $nnodes))
-         ./xmlchange NTASKS_ICE=256
-         ./xmlchange NTASKS_OCN=256
+         ./xmlchange NTASKS_ICE=$(($ppn * $nnodes))
+         ./xmlchange NTASKS_OCN=$(($ppn * $nnodes))
          ./xmlchange NTASKS_ROF=1
     else
         echo 'ERROR: $PELAYOUT = '${PELAYOUT}' but no layout exists for this setting.'

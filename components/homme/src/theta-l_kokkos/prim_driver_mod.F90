@@ -22,6 +22,7 @@ module prim_driver_mod
   public :: prim_run_subcycle
   public :: prim_init_elements_views
   public :: prim_init_grid_views
+  public :: prim_init_tensorvisc
   public :: prim_init_geopotential_views
   public :: prim_init_state_views
   public :: prim_init_ref_states_views
@@ -176,7 +177,7 @@ contains
     real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
     real (kind=real_kind), target, dimension(np,np)         :: elem_fcor, elem_spheremp
     real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet
-    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+    real (kind=real_kind), target, dimension(np,np,3,3)     :: elem_vec_sph2cart
 
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
     type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr
@@ -235,6 +236,34 @@ contains
                                sphere_cart_vec, sphere_latlon_vec)
     enddo
   end subroutine prim_init_grid_views
+
+  ! Copies just tensorVisc into the C++ ElementsGeometry. This is used to
+  ! (re)populate tensorVisc after dss_hvtensor() has updated it, without
+  ! re-copying the other (constant) geometry fields that prim_init_grid_views
+  ! already sent to C++ earlier.
+  subroutine prim_init_tensorvisc (elem)
+    use iso_c_binding, only : c_ptr, c_loc
+    use element_mod,   only : element_t
+    use theta_f2c_mod, only : init_tensorvisc_c
+    !
+    ! Input(s)
+    !
+    type (element_t), intent(in) :: elem (:)
+    !
+    ! Local(s)
+    !
+    real (kind=real_kind), target, dimension(np,np,2,2) :: elem_tensorvisc
+    type (c_ptr) :: elem_tensorvisc_ptr
+
+    integer :: ie
+
+    elem_tensorvisc_ptr = c_loc(elem_tensorvisc)
+
+    do ie=1,nelemd
+      elem_tensorvisc = elem(ie)%tensorVisc
+      call init_tensorvisc_c (ie-1, elem_tensorvisc_ptr)
+    enddo
+  end subroutine prim_init_tensorvisc
 
   subroutine prim_init_geopotential_views (elem)
     use iso_c_binding, only : c_ptr, c_loc

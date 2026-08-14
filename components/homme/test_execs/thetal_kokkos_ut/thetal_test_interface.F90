@@ -210,7 +210,7 @@ contains
       scalar2d(:,:,ie)     = elem(ie)%rspheremp
     enddo
 
-    call c_f_pointer(sph2c_ptr, tensor2d, [np,np,3,2,nelemd])
+    call c_f_pointer(sph2c_ptr, tensor2d, [np,np,3,3,nelemd])
     call c_f_pointer(mdet_ptr,  scalar2d, [np,np,    nelemd])
     do ie=1,nelemd
       tensor2d(:,:,:,:,ie) = elem(ie)%vec_sphere2cart

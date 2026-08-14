@@ -272,28 +272,13 @@ void call_function_dropmixnuc(
   //---------------------------------------------------------------------------
   // ## Initialize the ndrop class.
   //---------------------------------------------------------------------------
-  const int ntot_amode        = aero_config.num_modes();
-  const int maxd_aspectype    = mam4::ndrop::maxd_aspectype;
-  const int nspec_max         = mam4::ndrop::nspec_max;
-  int nspec_amode[ntot_amode] = {};
-  int lspectype_amode[maxd_aspectype][ntot_amode] = {};
-  int lmassptr_amode[maxd_aspectype][ntot_amode]  = {};
-  int numptr_amode[ntot_amode]                    = {};
-  int mam_idx[ntot_amode][nspec_max]              = {};
-  int mam_cnst_idx[ntot_amode][nspec_max]         = {};
-
-  Real specdens_amode[maxd_aspectype] = {};
-  Real spechygro[maxd_aspectype]      = {};
+  const int ntot_amode = mam_coupling::num_aero_modes();
   Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
        num2vol_ratio_min_nmodes[ntot_amode] = {},
        num2vol_ratio_max_nmodes[ntot_amode] = {};
-  Real aten                                 = 0;
-  mam4::ndrop::get_e3sm_parameters(nspec_amode, lspectype_amode, lmassptr_amode,
-                                   numptr_amode, specdens_amode, spechygro,
-                                   mam_idx, mam_cnst_idx);
+  Real aten = 0;
   mam4::ndrop::ndrop_init(exp45logsig, alogsig, aten, num2vol_ratio_min_nmodes,
                           num2vol_ratio_max_nmodes);
-  //---------------------------------------------------------------------------
   //---------------------------------------------------------------------------
   const bool local_enable_aero_vertical_mix = enable_aero_vertical_mix;
   Kokkos::parallel_for(
@@ -373,10 +358,8 @@ void call_function_dropmixnuc(
             // in zm[kk] - zm[kk+1], for pver zm[kk-1] - zm[kk]
             ekat::subview(zm, icol), ekat::subview(state_q_work_loc, icol),
             ekat::subview(nc, icol), ekat::subview(kvh_int, icol),  // kvh[kk+1]
-            ekat::subview(cloud_frac, icol), lspectype_amode, specdens_amode,
-            spechygro, lmassptr_amode, num2vol_ratio_min_nmodes,
-            num2vol_ratio_max_nmodes, numptr_amode, nspec_amode, exp45logsig,
-            alogsig, aten, mam_idx, mam_cnst_idx,
+            ekat::subview(cloud_frac, icol), num2vol_ratio_min_nmodes,
+            num2vol_ratio_max_nmodes, exp45logsig, alogsig, aten,
             local_enable_aero_vertical_mix, ekat::subview(qcld, icol),  // out
             ekat::subview(wsub, icol),                                  // in
             ekat::subview(cloud_frac_prev, icol),                       // in

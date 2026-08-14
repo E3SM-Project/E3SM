@@ -177,6 +177,10 @@ contains
     elem%vec_sphere2cart(:,:,1,2) = -SIN(elem%spherep(:,:)%lat)*COS(elem%spherep(:,:)%lon)
     elem%vec_sphere2cart(:,:,2,2) = -SIN(elem%spherep(:,:)%lat)*SIN(elem%spherep(:,:)%lon)
     elem%vec_sphere2cart(:,:,3,2) =  COS(elem%spherep(:,:)%lat)
+    ! Radial (vertical) direction
+    elem%vec_sphere2cart(:,:,1,3) = COS(elem%spherep(:,:)%lat) * COS(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,2,3) = COS(elem%spherep(:,:)%lat) * SIN(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,3,3) = SIN(elem%spherep(:,:)%lat)
 
   end subroutine coordinates_atomic
 

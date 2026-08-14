@@ -1019,7 +1019,7 @@ public:
   KOKKOS_INLINE_FUNCTION void
   vlaplace_sphere_wk_cartesian (const KernelVariables &kv,
                                 const ExecViewUnmanaged<const Real [2][2][NP][NP]>&          tensorVisc,
-                                const ExecViewUnmanaged<const Real [2][3][NP][NP]>&          vec_sph2cart,
+                                const ExecViewUnmanaged<const Real [3][3][NP][NP]>&          vec_sph2cart,
                                 const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& vector,
                                 const ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_OUT]>& laplace) const
   {

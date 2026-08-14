@@ -31,7 +31,7 @@ public:
   ExecViewManaged<Real * [2][2][NP][NP]>  m_metinv;
   ExecViewManaged<Real * [NP][NP]>        m_metdet;
   ExecViewManaged<Real * [2][2][NP][NP]>  m_tensorvisc;
-  ExecViewManaged<Real * [2][3][NP][NP]>  m_vec_sph2cart;
+  ExecViewManaged<Real * [3][3][NP][NP]>  m_vec_sph2cart;
 
   // Prescribed surface geopotential height at eta = 1
   ExecViewManaged<Real *    [NP][NP]> m_phis;
@@ -72,6 +72,14 @@ public:
                       CF90Ptr& tensorvisc,
                       CF90Ptr& vec_sph2cart, const bool consthv,
                       const Real* sphere_cart = nullptr, const Real* sphere_latlon = nullptr);
+
+  // Fill (or refresh) just the tensorVisc view for one element. This is
+  // separate from set_elem_data() because tensorVisc is the only field in
+  // prim_init_grid_views's payload that is computed AFTER dss_hvtensor runs;
+  // all other geometry fields (D, Dinv, fcor, spheremp, rspheremp, metdet,
+  // metinv, vec_sph2cart, sphere_cart/latlon) are constant and are copied
+  // once, early, by set_elem_data().
+  void set_tensorvisc (const int ie, CF90Ptr& tensorvisc);
 
   void set_phis (const int ie, CF90Ptr& phis);
 
