@@ -116,7 +116,7 @@ void MAMAci::create_requests() {
   add_field<Required>("eddy_diff_heat", scalar3d_mid, m2 / s, grid_name);
 
   // Number of modes
-  constexpr int nmodes = aero_config_.num_modes();
+  constexpr int nmodes = mam4::AeroConfig::num_modes();
 
   // layout for 3D (ncol, nmodes, nlevs)
   FieldLayout scalar3d_mid_nmodes =
