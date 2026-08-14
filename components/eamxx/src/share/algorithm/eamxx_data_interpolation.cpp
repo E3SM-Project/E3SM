@@ -5,6 +5,7 @@
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
+#include "share/data_managers/IOPDataManager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
@@ -674,6 +675,26 @@ create_horiz_remappers (const Real iop_lat, const Real iop_lon)
   m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
   if (m_time_dependent) {
     m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+  }
+}
+
+void DataInterpolation::
+create_horiz_remappers (const std::string& map_file,
+                        const std::shared_ptr<IOPDataManager>& iop_data_manager)
+{
+  // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
+  if (iop_data_manager!=nullptr) {
+    EKAT_REQUIRE_MSG(map_file == "" || map_file=="none",
+      "[DataInterpolation] Error! Cannot define map_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data to model data.\n");
+
+    // TODO: expose tgt lat/lon in IOPDataManager, to avoid injecting knowledge
+    // of its parameter list structure in other places
+    Real iop_lat = iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = iop_data_manager->get_params().get<Real>("target_longitude");
+    create_horiz_remappers(iop_lat, iop_lon);
+  } else {
+    create_horiz_remappers(map_file=="none" ? "" : map_file);
   }
 }
 

@@ -12,6 +12,9 @@
 namespace scream
 {
 
+// Forward declaration
+class IOPDataManager;
+
 class DataInterpolation
 {
 public:
@@ -75,6 +78,8 @@ public:
 
   void create_horiz_remappers (const std::string& map_file = "");
   void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
+  void create_horiz_remappers (const std::string& map_file,
+                               const std::shared_ptr<IOPDataManager>& iop_data_manager);
   void create_vert_remapper ();
   void create_vert_remapper (const VertRemapData& data);
 
