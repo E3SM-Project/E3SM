@@ -21,15 +21,15 @@ void get_ptr_and_strides (std::vector<ssize_t>& strides, const void*& p, const F
     case 1:
       {
         auto v = f.get_view<const T*,HD>();
-        strides[0] = v.stride_0()*sizeof(T);
+        strides[0] = v.stride(0)*sizeof(T);
         p = v.data();
         break;
       }
     case 2:
       {
         auto v = f.get_view<const T**,HD>();
-        strides[0] = v.stride_0()*sizeof(T);
-        strides[1] = v.stride_1()*sizeof(T);
+        strides[0] = v.stride(0)*sizeof(T);
+        strides[1] = v.stride(1)*sizeof(T);
         p = v.data();
         break;
       }
@@ -37,9 +37,9 @@ void get_ptr_and_strides (std::vector<ssize_t>& strides, const void*& p, const F
     case 3:
       {
         auto v = f.get_view<const T***,HD>();
-        strides[0] = v.stride_0()*sizeof(T);
-        strides[1] = v.stride_1()*sizeof(T);
-        strides[2] = v.stride_2()*sizeof(T);
+        strides[0] = v.stride(0)*sizeof(T);
+        strides[1] = v.stride(1)*sizeof(T);
+        strides[2] = v.stride(2)*sizeof(T);
         p = v.data();
         break;
       }
