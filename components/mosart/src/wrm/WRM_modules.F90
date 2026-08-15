@@ -22,7 +22,9 @@ MODULE WRM_modules
   use mct_mod
   use perf_mod       , only : t_startf, t_stopf
   ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
-  use RtmFingerprint , only : rtm_fp, rtm_fp_dam, rtm_fp_rep, rtm_fp_part
+  use RtmFingerprint , only : rtm_fp, rtm_fp_dam, rtm_fp_rep, rtm_fp_part, &
+                              rtm_fp_gather
+  use shr_reprosum_mod, only : shr_reprosum_calc
      
   implicit none
   private
@@ -742,10 +744,38 @@ MODULE WRM_modules
      real(r8),allocatable :: flow_vol(:)    ! dam storage amount
      real(r8),allocatable :: dam_uptake(:)  ! dam uptake from gridcells locally
      real(r8),allocatable :: dam_uptake_sum(:)  ! dam uptake from gridcells sum over all pes
+     !--- Sparse packing for the reproducible sum of dam_uptake. Each individual
+     !--- cell-level 'supply' contribution is handed to shr_reprosum_calc
+     !--- separately, rather than pre-summed into dam_uptake(gdam) first. See the
+     !--- comment at the shr_reprosum_calc call for why the pre-summed form is
+     !--- insufficient.
+     real(r8),allocatable :: uptake_pack(:,:)   ! (nsummands, NDam) individual contributions
+     integer ,allocatable :: nctb(:)            ! per-dam upper bound on this rank's contributions
+     integer ,allocatable :: idx_ct(:)          ! per-dam running slot index while packing
+     integer :: max_nctb                        ! max over dams of nctb, = nsummands
+     ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+     ! The old, non-reproducible MPI_ALLREDUCE result, kept alongside the
+     ! reproducible one only so the two can be fingerprinted and compared.
+     real(r8),allocatable :: dam_uptake_mpi(:)
      real(r8),allocatable :: fracsum(:)     ! sum of dam fraction on gridcells
-     real(r8) :: demand, demand_orig, supply, budget_term(4),budget_sum(4),budget
+     real(r8) :: demand, demand_orig, supply, budget_sum(4),budget
+     real(r8),allocatable :: budget_2d(:,:) ! (ncells,4) cell values for shr_reprosum_calc
      real(r8) :: flow_vol_ratio = 0.9_r8    ! amount of erout for flow_vol
      logical  :: check_local_budget = .false.
+     ! The dam uptake MUST be summed reproducibly. shr_mpi_sum is a plain
+     ! MPI_ALLREDUCE, which is bit-reproducible only for a fixed reduction tree;
+     ! MPI is free to pick a different tree, and a different tree is a
+     ! different rounding of the same addends. shr_reprosum_calc is invariant to
+     ! both the order and the grouping of the summands -- but only over the
+     ! summands it is actually handed, which is why the cell-level contributions
+     ! are sparse-packed rather than pre-summed. See the call site.
+     !
+     ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE (the flag only; the reprosum
+     ! call itself IS for merge)
+     ! .false. => also compute the old shr_mpi_sum result and fingerprint both,
+     ! so the two can be compared. Set .true. once the comparison is done: the
+     ! extra allreduce is pure cost.
+     logical  :: skip_mpisum_uptake = .false.
      character(len=*),parameter :: subname='(ExtractionRegulatedFlow)'
 
      call t_startf('moswrm_ERFlow')
@@ -755,15 +785,41 @@ MODULE WRM_modules
      endr = rtmCTL%endr
 
      if (check_local_budget) then
-        budget_term = 0._r8
+        ! Keep the individual cell values, not just the running total: the sum
+        ! below is reproducible only over summands reprosum actually sees, and a
+        ! pre-summed scalar per rank stays decomposition-dependent.
+        allocate(budget_2d(endr-begr+1,4))
+        budget_2d = 0._r8
         do iunit = begr,endr
-           budget_term(1) = budget_term(1) + Trunoff%erout(iunit,nt_nliq)*theDeltaT
-           budget_term(3) = budget_term(3) + StorWater%supply(iunit)
+           budget_2d(iunit-begr+1,1) = Trunoff%erout(iunit,nt_nliq)*theDeltaT
+           budget_2d(iunit-begr+1,3) = StorWater%supply(iunit)
         enddo
      endif
 
      allocate(dam_uptake(ctlSubwWRM%NDam))
      allocate(dam_uptake_sum(ctlSubwWRM%NDam))
+
+     !---------------------------
+     ! Count, per dam, an upper bound on the number of separate contributions
+     ! this rank can make to it: one per (gridcell, dependency-slot) pair that
+     ! names that dam. This sets nsummands for the sparse-packed reproducible
+     ! sum below. It depends only on the static WRM dependency lists, so it is
+     ! the same on every iteration.
+     !---------------------------
+
+     allocate(nctb(ctlSubwWRM%NDam))
+     allocate(idx_ct(ctlSubwWRM%NDam))
+     nctb = 0
+     do iunit = begr, endr
+        do mdam = 1,WRMUnit%myDamNum(iunit)
+           gdam = WRMUnit%myDam(mdam,iunit)
+           nctb(gdam) = nctb(gdam) + 1
+        enddo
+     enddo
+     max_nctb = max(1, maxval(nctb))
+     allocate(uptake_pack(max_nctb,ctlSubwWRM%NDam))
+     ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+     allocate(dam_uptake_mpi(ctlSubwWRM%NDam))
      allocate(fracsum(begr:endr))
      allocate(flow_vol(ctlSubwWRM%LocalNumDam)) 
 
@@ -898,7 +954,9 @@ MODULE WRM_modules
         ! from each dam in this array.
         !---------------------------
 
-        dam_uptake = 0._r8
+        dam_uptake  = 0._r8
+        uptake_pack = 0._r8
+        idx_ct      = 0
 
         !---------------------------
         ! 1st case, provide full demand to gridcell
@@ -919,6 +977,8 @@ MODULE WRM_modules
 ! changed from max to min NV
                        supply = min(demand_orig / float(cnt), StorWater%demand(iunit))
                        dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       idx_ct(gdam) = idx_ct(gdam) + 1
+                       uptake_pack(idx_ct(gdam),gdam) = supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
                     endif
@@ -960,6 +1020,8 @@ MODULE WRM_modules
 !first max changed to min NV
                        supply = min(demand_orig*aVect_wdG%rAttr(1,gdam)/fracsum(iunit), StorWater%demand(iunit))
                        dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       idx_ct(gdam) = idx_ct(gdam) + 1
+                       uptake_pack(idx_ct(gdam),gdam) = supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
                     enddo
@@ -979,6 +1041,8 @@ MODULE WRM_modules
 !first max changed to min NV
                        supply = min(demand_orig*aVect_wdG%rAttr(1,gdam), StorWater%demand(iunit))
                        dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       idx_ct(gdam) = idx_ct(gdam) + 1
+                       uptake_pack(idx_ct(gdam),gdam) = supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
                     enddo
@@ -1007,19 +1071,71 @@ MODULE WRM_modules
         ! Reduce the flow_vol by the amount of water provided to the gridcells
         !---------------------------
 
+        ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+        ! Step 1: raw cross-rank gather of the INPUT, at exactly one event.
+        ! Every checksum has a blind spot; rtm_fp_part's is a cross-rank index
+        ! swap, which is precisely the "total conserved, attribution moved"
+        ! signature under investigation. So compare the raw bits from all 128
+        ! ranks once, at the first divergent (nstep, iter) event, instead of
+        ! adding a fourth checksum and hoping.
+        call rtm_fp_gather('G_it_uptakeloc_raw', dam_uptake, iter)
+
+        !---------------------------
+        ! Sum reproducibly, with SPARSE PACKING. Each of the NDam dam indices is
+        ! its own "field" (nflds = NDam), and every individual cell-level
+        ! contribution to that dam is a separate summand.
+        !
+        ! Handing reprosum ONE pre-summed value per rank -- i.e. dam_uptake(gdam),
+        ! which the loops above accumulate with += -- is NOT sufficient. It makes
+        ! the result invariant to the order in which RANKS are combined, but the
+        ! local subtotal itself was formed by ordinary floating-point addition in
+        ! gridcell order, so it changes with the decomposition. Reprosum can only
+        ! deliver order- and grouping-invariance over summands it actually sees.
+        ! This is the exact mistake made in the negative-runoff quick-fix: commit
+        ! 8cb9508 pre-summed one scalar per rank and failed PEM; commit a28ca9c
+        ! fixed it by sparse-packing the cell-level values, which is the pattern
+        ! at RtmMod.F90:2490 and the pattern followed here.
+        !
+        ! uptake_pack(:,gdam) holds this rank's individual 'supply' amounts for
+        ! dam gdam, one per slot, zero-padded to max_nctb. Zeros are harmless
+        ! summands.
+        !---------------------------
+
+        ! nctb is an upper bound because all three cases iterate the same
+        ! (gridcell, slot) pairs under a guard, so idx_ct can never exceed it.
+        ! Assert rather than trust: a silent overflow would corrupt the sum.
+        if (any(idx_ct > nctb)) then
+           write(iulog,*) subname,' ERROR uptake_pack slot overflow ', &
+                          maxval(idx_ct), max_nctb
+           call shr_sys_abort(subname//' ERROR uptake_pack slot overflow')
+        endif
+
         call t_startf('moswrm_ERFlow_sum')
         dam_uptake_sum = 0._r8
-        call shr_mpi_sum(dam_uptake,dam_uptake_sum,mpicom_rof,'wrm dam_uptake',all=.true.)
+        call shr_reprosum_calc(uptake_pack, dam_uptake_sum, max_nctb, max_nctb, &
+                               ctlSubwWRM%NDam, commid=mpicom_rof)
         call t_stopf('moswrm_ERFlow_sum')
+
+        ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+        ! Compute the OLD, non-reproducible sum from the SAME input purely so
+        ! the two can be compared. Read the run this way:
+        !   uptakempi differs, uptakesum matches -> the reduction was the
+        !     mechanism, and ERS should now pass.
+        !   both differ -> the inputs really do differ; go to the raw gather.
+        if (.not. skip_mpisum_uptake) then
+           dam_uptake_mpi = 0._r8
+           call shr_mpi_sum(dam_uptake,dam_uptake_mpi,mpicom_rof,'wrm dam_uptake',all=.true.)
+           call rtm_fp_rep('G_it_uptakempi', dam_uptake_mpi, iter)
+        endif
 
         ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
         ! dam_uptake_sum is the smoking gun. The routine's net effect on erout
         ! is exactly erout_final = erout_initial + dam_uptake_sum(damID)/dt, so
         ! identical erout in + different erout out REQUIRES this array to
-        ! differ. It is global-indexed and replicated (shr_mpi_sum all=.true.),
-        ! hence invisible to rtm_fp / rtm_fp_dam, which reduce over local
-        ! cells/dams only. Fingerprint it directly, before and after the
-        ! flow_vol update, both tagged by iteration.
+        ! differ. It is global-indexed and replicated on every rank, hence
+        ! invisible to rtm_fp / rtm_fp_dam, which reduce over local cells/dams
+        ! only. Fingerprint it directly, before and after the flow_vol update,
+        ! both tagged by iteration.
         ! dam_uptake is a rank-LOCAL PARTIAL array over the global dam index --
         ! full extent allocated everywhere, only this rank's contributions
         ! written. It is NOT replicated, so rtm_fp_rep is the wrong probe: it
@@ -1075,15 +1191,27 @@ MODULE WRM_modules
      deallocate(flow_vol)
      deallocate(dam_uptake)
      deallocate(dam_uptake_sum)
+     deallocate(uptake_pack)
+     deallocate(nctb)
+     deallocate(idx_ct)
+     ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+     deallocate(dam_uptake_mpi)
      deallocate(fracsum)
 
      if (check_local_budget) then
         do iunit = begr,endr
-           budget_term(2) = budget_term(2) + Trunoff%erout(iunit,nt_nliq)*theDeltaT
-           budget_term(4) = budget_term(4) + StorWater%supply(iunit)
+           budget_2d(iunit-begr+1,2) = Trunoff%erout(iunit,nt_nliq)*theDeltaT
+           budget_2d(iunit-begr+1,4) = StorWater%supply(iunit)
         enddo
 
-        call shr_mpi_sum(budget_term,budget_sum,mpicom_rof,subname,all=.false.)
+        ! Reproducible sum -- the result is tested against a 0.001 m3 tolerance
+        ! and aborts the run, so an order-dependent rounding here could make the
+        ! abort itself decomposition-dependent. Cell-level summands, one field per
+        ! budget term, so this is invariant to decomposition as well as to rank
+        ! order.
+        call shr_reprosum_calc(budget_2d, budget_sum, endr-begr+1, endr-begr+1, &
+                               4, commid=mpicom_rof)
+        deallocate(budget_2d)
 
         if (masterproc) then
            budget = budget_sum(2) - budget_sum(1) - budget_sum(4) + budget_sum(3)

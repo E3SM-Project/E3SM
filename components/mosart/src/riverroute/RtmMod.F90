@@ -191,7 +191,9 @@ contains
     real(r8) :: deg2rad                       ! pi/180
     real(r8) :: dx,dx1,dx2,dx3                ! lon dist. betn grid cells (m)
     real(r8) :: dy                            ! lat dist. betn grid cells (m)
-    real(r8) :: lrtmarea                      ! tmp local sum of area
+    real(r8),allocatable :: lrtmarea_2d(:,:)  ! (ncells,1) cell values for shr_reprosum_calc
+    real(r8) :: totarea_gsum(1)               ! reproducible global sum of area
+    integer  :: nlocal_r                      ! local cell count = nsummands
     real(r8),allocatable :: tempr(:,:)        ! temporary buffer
     integer ,allocatable :: itempr(:,:)       ! temporary buffer
     integer ,allocatable :: idxocn(:)         ! downstream ocean outlet cell
@@ -1451,7 +1453,6 @@ contains
     endif
 
     ! Determine runoff datatype variables
-    lrtmarea = 0.0_r8
     cnt = 0
     do nr = rtmCTL%begr,rtmCTL%endr
        rtmCTL%gindex(nr) = rgdc2glo(nr)
@@ -1472,7 +1473,6 @@ contains
 
        rtmCTL%outletg(nr) = idxocn(n)
        rtmCTL%area(nr) = area_global(n)
-       lrtmarea = lrtmarea + rtmCTL%area(nr)
        if (dnID_global(n) <= 0) then
           rtmCTL%dsig(nr) = 0
        else
@@ -1526,7 +1526,18 @@ contains
       deallocate (PN_global ,DIC_global)
       deallocate (Fe_global)
     end if
-    call shr_mpi_sum(lrtmarea,rtmCTL%totarea,mpicom_rof,'mosart totarea',all=.true.)
+    ! Reproducible sum. Pass the individual CELL values, not the pre-summed
+    ! area values: reprosum is invariant only over the summands it actually sees, so
+    ! handing it one pre-summed scalar per rank would leave the local subtotal --
+    ! formed by ordinary FP addition in gridcell order -- decomposition-dependent.
+    ! Same pattern as the qgwl sum below.
+    nlocal_r = rtmCTL%endr - rtmCTL%begr + 1
+    allocate(lrtmarea_2d(nlocal_r,1))
+    lrtmarea_2d(:,1) = rtmCTL%area(rtmCTL%begr:rtmCTL%endr)
+    call shr_reprosum_calc(lrtmarea_2d, totarea_gsum, nlocal_r, nlocal_r, 1, &
+                           commid=mpicom_rof)
+    rtmCTL%totarea = totarea_gsum(1)
+    deallocate(lrtmarea_2d)
     if (masterproc) write(iulog,*) subname,'  earth area ',4.0_r8*shr_const_pi*1.0e6_r8*re*re
     if (masterproc) write(iulog,*) subname,' MOSART area ',rtmCTL%totarea
     if (minval(rtmCTL%mask) < 1) then
@@ -2146,6 +2157,8 @@ contains
     integer, parameter :: budget_terms_total = 80
     real(r8) :: budget_terms (budget_terms_total,nt_rtm)    ! local budget sums
     real(r8) :: budget_global(budget_terms_total,nt_rtm)    ! global budget sums
+    real(r8) :: budget_2d(1,budget_terms_total*nt_rtm)      ! (1,nflds) buffer for shr_reprosum_calc
+    real(r8) :: budget_gsum(budget_terms_total*nt_rtm)      ! reproducible global sums, flattened
 
     real(r8) :: budget_glb_inund(budget_terms_total, nt_rtm)! Global values.
     real(r8) :: budget_diff                 ! Percentage difference between water volume change and flux difference (%).
@@ -2291,12 +2304,15 @@ contains
     real(r8) :: net_global_qgwl, scaling_factor
     real(r8), allocatable :: qgwl_correction_local(:)
     real(r8) :: qgwl_to_redistribute
-    real(r8) :: local_total_outlet_discharge, global_total_outlet_discharge
-    real(r8) :: outlet_discharge_local(1,1), outlet_discharge_global(1)
+    real(r8) :: global_total_outlet_discharge
+    real(r8), allocatable :: outlet_discharge_local(:,:)  ! sparse-packed outlet values
+    real(r8) :: outlet_discharge_global(1)
+    integer  :: n_outlet, idx_outlet                      ! packed count / running index
     real(r8) :: qgwl_to_discharge_ratio_percent
     real(r8) :: conservation_error
-    real(r8) :: local_correction_sum, global_correction_sum
-    real(r8) :: correction_local(1,1), correction_global(1)
+    real(r8) :: global_correction_sum
+    real(r8), allocatable :: correction_local(:,:)  ! cell-level correction values
+    real(r8) :: correction_global(1)
     real(r8) :: correction_ratio
     character(len=*),parameter :: subname = '(Rtmrun) '
 !-----------------------------------------------------------------------
@@ -3084,18 +3100,33 @@ contains
       if (abs(qgwl_to_redistribute) > 1.0e-15_r8) then ! Only proceed if there's something to redistribute
          call t_startf('mosartr_qgwl_redir_dist')
 
-         ! Calculate total discharge from all outlets globally using reprosum
-         local_total_outlet_discharge = 0.0_r8
+         ! Calculate total discharge from all outlets globally using reprosum.
+         ! SPARSE PACK the individual outlet-cell values rather than passing one
+         ! pre-summed scalar per rank: reprosum is invariant only over the
+         ! summands it actually sees, so a local subtotal formed by ordinary FP
+         ! addition in gridcell order stays decomposition-dependent. This is the
+         ! same correction 8cb9508 -> a28ca9c made for the qgwl sum above, and it
+         ! matters here because global_total_outlet_discharge sets
+         ! correction_ratio, which scales rtmCTL%runoff below.
+         n_outlet = 0
+         do nr = rtmCTL%begr, rtmCTL%endr
+            if (rtmCTL%mask(nr) == 3) n_outlet = n_outlet + 1   ! Outlet cell
+         enddo
+         allocate(outlet_discharge_local(max(1,n_outlet),1))
+         outlet_discharge_local(:,:) = 0.0_r8
+         idx_outlet = 0
          do nr = rtmCTL%begr, rtmCTL%endr
             if (rtmCTL%mask(nr) == 3) then ! Outlet cell
-               local_total_outlet_discharge = local_total_outlet_discharge + rtmCTL%runoffocn(nr, nt_nliq)
+               idx_outlet = idx_outlet + 1
+               outlet_discharge_local(idx_outlet,1) = rtmCTL%runoffocn(nr, nt_nliq)
             endif
          enddo
 
          ! Use reproducible sum for bit-for-bit reproducibility across PE layouts
-         outlet_discharge_local(1,1) = local_total_outlet_discharge
-         call shr_reprosum_calc(outlet_discharge_local, outlet_discharge_global, 1, 1, 1, commid=mpicom_rof)
+         call shr_reprosum_calc(outlet_discharge_local, outlet_discharge_global, &
+                                max(1,n_outlet), max(1,n_outlet), 1, commid=mpicom_rof)
          global_total_outlet_discharge = outlet_discharge_global(1)
+         deallocate(outlet_discharge_local)
 
          ! Print diagnostic on master
          if (masterproc) then
@@ -3202,16 +3233,16 @@ contains
    ! Conservation check: verify that corrections were applied correctly
    if (redirect_negative_qgwl_flag) then
       if (abs(qgwl_to_redistribute) > 1.0e-15_r8) then
-          ! Sum up all the corrections that were applied
-          local_correction_sum = 0.0_r8
-          do nr = rtmCTL%begr, rtmCTL%endr
-              local_correction_sum = local_correction_sum + qgwl_correction_local(nr)
-          enddo
-
-          ! Use reprosum for bit-for-bit reproducibility
-          correction_local(1,1) = local_correction_sum
-          call shr_reprosum_calc(correction_local, correction_global, 1, 1, 1, commid=mpicom_rof)
+          ! Use reprosum for bit-for-bit reproducibility. Pass the individual
+          ! cell values, not a pre-summed scalar per rank -- reprosum is
+          ! invariant only over the summands it actually sees.
+          allocate(correction_local(rtmCTL%endr-rtmCTL%begr+1,1))
+          correction_local(:,1) = qgwl_correction_local(rtmCTL%begr:rtmCTL%endr)
+          call shr_reprosum_calc(correction_local, correction_global, &
+                                 rtmCTL%endr-rtmCTL%begr+1, &
+                                 rtmCTL%endr-rtmCTL%begr+1, 1, commid=mpicom_rof)
           global_correction_sum = correction_global(1)
+          deallocate(correction_local)
 
           ! Check if total corrections match what we intended to redistribute
           if (masterproc) then
@@ -3462,8 +3493,26 @@ contains
        ! convert terms from m3 to million m3
        budget_terms(:,:) = budget_terms(:,:) * 1.0e-6_r8
 
-       ! global sum
-       call shr_mpi_sum(budget_terms,budget_global,mpicom_rof,'mosart global budget',all=.false.)
+       ! global sum -- reproducible across RANK ORDER. Each of the
+       ! budget_terms_total*nt_rtm terms is its own field with one local summand
+       ! per rank, so nsummands = dsummands = 1. Unlike shr_mpi_sum(all=.false.)
+       ! this leaves the result on every rank, which is a harmless superset.
+       !
+       ! NOTE, and read this before copying the pattern: because the summand
+       ! handed over is the already-accumulated budget_terms(:,:), this is
+       ! invariant to the order in which ranks are combined but NOT to the
+       ! decomposition -- each local subtotal was built by ordinary FP addition
+       ! over gridcells at dozens of sites above. Full invariance would require
+       ! sparse-packing every individual contribution, as the qgwl sum does at
+       ! line 2490 and the WRM dam_uptake sum does. That is deliberately not done
+       ! here: these terms are diagnostic print-only, and packing ~80 terms x
+       ! dozens of accumulation sites is a large refactor with no effect on any
+       ! prognostic field. Do NOT reuse this call as the template for a sum that
+       ! feeds physics or a bit-for-bit comparison.
+       budget_2d(1,:) = reshape(budget_terms, (/budget_terms_total*nt_rtm/))
+       call shr_reprosum_calc(budget_2d, budget_gsum, 1, 1, &
+                              budget_terms_total*nt_rtm, commid=mpicom_rof)
+       budget_global = reshape(budget_gsum, (/budget_terms_total,nt_rtm/))
 
        
        ! write budget
@@ -4037,7 +4086,10 @@ contains
   type(mct_aVect) :: avtmp, avtmpG ! temporary avects
   type(mct_aVect) :: avsrc, avdst  ! temporary
   type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
-  real(r8):: areatot_prev, areatot_tmp, areatot_new
+  real(r8):: areatot_prev, areatot_new
+  real(r8),allocatable :: areatot_2d(:,:)  ! (ncells,1) cell values for shr_reprosum_calc
+  real(r8):: areatot_gsum(1)        ! reproducible global sum of areatotal2
+  integer :: nlocal_a               ! local cell count = nsummands
   real(r8):: hlen_max, rlen_min
   integer :: tcnt
   character(len=16384) :: rList             ! list of fields for SM multiply
@@ -5083,13 +5135,22 @@ contains
      ! add avdst to areatot and compute new global sum
      cnt = 0
      areatot_prev = areatot_new
-     areatot_tmp = 0._r8
      do nr = rtmCTL%begr,rtmCTL%endr
         cnt = cnt + 1
         Tunit%areatotal2(nr) = Tunit%areatotal2(nr) + avdst_upstrm%rAttr(1,cnt)
-        areatot_tmp = areatot_tmp + Tunit%areatotal2(nr)
      enddo
-     call shr_mpi_sum(areatot_tmp, areatot_new, mpicom_rof, 'areatot_new', all=.true.)
+     ! Reproducible sum -- this one is compared for EXACT equality against
+     ! areatot_prev to terminate the loop, so an order-dependent rounding here
+     ! would make the convergence test itself decomposition-dependent.
+     ! Pass the individual cell values, not a pre-summed local scalar: reprosum
+     ! is invariant only over the summands it actually sees.
+     nlocal_a = rtmCTL%endr - rtmCTL%begr + 1
+     allocate(areatot_2d(nlocal_a,1))
+     areatot_2d(:,1) = Tunit%areatotal2(rtmCTL%begr:rtmCTL%endr)
+     call shr_reprosum_calc(areatot_2d, areatot_gsum, nlocal_a, nlocal_a, 1, &
+                            commid=mpicom_rof)
+     areatot_new = areatot_gsum(1)
+     deallocate(areatot_2d)
 
   enddo
 

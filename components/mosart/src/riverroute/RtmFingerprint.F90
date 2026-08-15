@@ -51,6 +51,7 @@ module RtmFingerprint
   public :: rtm_fp_int  ! fingerprint a 1-d INTEGER array
   public :: rtm_fp_int2 ! fingerprint a 2-d INTEGER array, e.g. WRMUnit%myDam
   public :: rtm_fp_dump ! dump per-cell values to a side file, to NAME the cell
+  public :: rtm_fp_gather ! gather a rank-local PARTIAL array from ALL ranks raw
 
   logical, public :: rtm_fp_on = .true.   ! master switch
 
@@ -66,8 +67,22 @@ module RtmFingerprint
   ! The window must bracket the FIRST divergence, which differs by build:
   !   debug     build: first divergence at nstep 54 -> window 53..55
   !   optimized build: first divergence at nstep 51 -> window 50..52
-  integer, public :: rtm_fp_dump_lo = 53  ! first nstep to dump (inclusive)
-  integer, public :: rtm_fp_dump_hi = 55  ! last  nstep to dump (inclusive)
+  integer, public :: rtm_fp_dump_lo = 48  ! first nstep to dump (inclusive)
+  integer, public :: rtm_fp_dump_hi = 50  ! last  nstep to dump (inclusive)
+
+  ! --- raw cross-rank gather control (rtm_fp_gather) ---
+  ! Every fingerprint is a checksum, and every checksum has a blind spot. The
+  ! one that matters here is a cross-rank index swap: rank A moves a value from
+  ! dam index i to j while rank B moves an equal value from j to i. The raw
+  ! XOR, the index-mixed hash and the rank-mixed hash are ALL unchanged by
+  ! that, which is exactly the "attribution changes while the total is
+  ! conserved" scenario under investigation. Only the raw bits from every rank
+  ! settle it.
+  !
+  ! Sizing: npes x NDam x 8 bytes = 128 x 4246 x 8 ~ 4.3 MB per call, so this
+  ! is restricted to ONE (nstep, iter) event, not a window.
+  integer, public :: rtm_fp_gather_nstep = 49  ! the only nstep to gather at
+  integer, public :: rtm_fp_gather_iter  = 1   ! the only iteration to gather at
 
   ! The two ERS legs share one RUNDIR, so dump filenames must not collide.
   ! The legs are distinguished by the first nstep each one ever sees (base
@@ -292,8 +307,8 @@ contains
     ! G_it_uptakeloc came out nnz=0 on all 792 records and carried no
     ! information.
     !
-    ! Three accumulators are emitted because plain XOR has two blind spots that
-    ! both bite here:
+    ! Four accumulators are emitted because plain XOR has blind spots that all
+    ! bite here:
     !   xor   -- raw XOR of the value bits. Blind to permutation, and two ranks
     !            contributing the SAME value to the SAME dam cancel to zero.
     !   hash  -- bits mixed with the global slot index. Fixes permutation.
@@ -301,6 +316,15 @@ contains
     !            contributions-on-different-ranks cancellation, which is not
     !            hypothetical: identical demand at mirrored gridcells is exactly
     !            the kind of symmetry this model produces.
+    !   xrhash-- bits mixed with slot AND rank TOGETHER. This closes a blind spot
+    !            the first three share: if rank A moves a value from dam index
+    !            i to j while rank B moves an equal value from j to i, then the
+    !            per-index totals, the per-rank totals, and the raw XOR are all
+    !            unchanged, and only a joint (slot,rank) mix detects it. That
+    !            cross-rank index swap is exactly the "attribution changes while
+    !            the total is conserved" scenario under investigation, so a
+    !            clean uptakeloc without this accumulator does NOT exclude a
+    !            permuted input.
     ! nnz is SUMMED across ranks, so it counts total nonzero contributions
     ! rather than distinct dams -- a direct check that the array is populated.
     character(len=*), intent(in) :: label
@@ -308,7 +332,7 @@ contains
     integer, optional, intent(in) :: cycle
 
     integer     :: i, ier, mycycle
-    integer(i8) :: bits, xorloc(3), nnzloc(1), xorglb(3), nnzglb(1)
+    integer(i8) :: bits, xorloc(4), nnzloc(1), xorglb(4), nnzglb(1)
 
     if (.not. rtm_fp_on) return
 
@@ -322,19 +346,22 @@ contains
        xorloc(1) = ieor(xorloc(1), bits)
        xorloc(2) = ieor(xorloc(2), bits * (2_i8 * int(i, i8) + 1_i8))
        xorloc(3) = ieor(xorloc(3), bits * (2_i8 * int(iam, i8) + 1_i8))
+       xorloc(4) = ieor(xorloc(4), bits * (2_i8 * int(i,   i8) + 1_i8) &
+                                        * (2_i8 * int(iam, i8) + 1_i8))
        if (arr(i) /= 0._r8) nnzloc(1) = nnzloc(1) + 1_i8
     end do
 
     ! XOR across ranks: order independent, and zero contributes identity, so
     ! ranks that touch no dam drop out cleanly.
-    call mpi_allreduce(xorloc, xorglb, 3, MPI_INTEGER8, MPI_BXOR, mpicom_rof, ier)
+    call mpi_allreduce(xorloc, xorglb, 4, MPI_INTEGER8, MPI_BXOR, mpicom_rof, ier)
     call mpi_allreduce(nnzloc, nnzglb, 1, MPI_INTEGER8, MPI_SUM,  mpicom_rof, ier)
 
     if (masterproc) then
        call rtm_fp_hdr(label, mycycle)
-       write(iulog,'(a,a24,a,z16.16,a,z16.16,a,z16.16,a,i10)') &
+       write(iulog,'(a,a24,a,z16.16,a,z16.16,a,z16.16,a,z16.16,a,i10)') &
             'RTMFP   fld=', adjustl(label), ' xor=0x', xorglb(1), &
-            ' hash=0x', xorglb(2), ' rhash=0x', xorglb(3), ' nnz=', nnzglb(1)
+            ' hash=0x', xorglb(2), ' rhash=0x', xorglb(3), &
+            ' xrhash=0x', xorglb(4), ' nnz=', nnzglb(1)
     endif
   end subroutine rtm_fp_part
 
@@ -519,6 +546,90 @@ contains
     end do
     close(unitn)
   end subroutine rtm_fp_dump
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_gather(label, arr, iter)
+    ! Gather the RAW bits of a rank-local PARTIAL global-indexed array from
+    ! every rank onto masterproc and write them to a side file, so the two ERS
+    ! legs can be compared exactly rather than by checksum.
+    !
+    ! Why this exists: rtm_fp_part's three accumulators (plain XOR, index-mixed,
+    ! rank-mixed) share a blind spot -- a cross-rank index swap leaves all three
+    ! unchanged. Since the observed signature IS a conserved total with moved
+    ! attribution, a clean rtm_fp_part does not exclude a permuted input. Raw
+    ! bits from all ranks do.
+    !
+    ! Fires at exactly ONE (nstep, iter) event, the FIRST time it is reached,
+    ! because the cost is npes x size(arr) x 8 bytes (~4.3 MB at 128 ranks and
+    ! 4246 dams) and there are 3 Euler calls per nstep.
+    !
+    ! File format, one line per (rank, index) with a nonzero value:
+    !     <rank> <index> <raw bits, hex>
+    ! Post-process with:
+    !     sort -k1,1n -k2,2n fpgather.<leg>.<label>.txt > leg.txt
+    !     diff base.txt rest.txt
+    ! which names the rank AND the dam index directly.
+    character(len=*), intent(in) :: label
+    real(r8), intent(in) :: arr(:)
+    integer, intent(in)  :: iter
+
+    integer     :: i, ip, n, ier, nstep, unitn
+    integer(i8) :: bits
+    integer(i8), allocatable :: sendbuf(:), recvbuf(:)
+    logical, save :: done = .false.
+    character(len=256) :: fname
+    character(len=8)   :: leg
+
+    if (.not. rtm_fp_on) return
+    if (done) return
+
+    nstep = get_nstep()
+    if (fp_nstep0 < 0) fp_nstep0 = nstep     ! first nstep this leg ever sees
+
+    if (nstep /= rtm_fp_gather_nstep) return
+    if (iter  /= rtm_fp_gather_iter)  return
+    done = .true.                            ! one event only, ever
+
+    n = size(arr)
+    allocate(sendbuf(n))
+    do i = 1, n
+       sendbuf(i) = transfer(arr(i), bits)
+    end do
+
+    ! Only masterproc needs a receive buffer, but allocating it everywhere
+    ! keeps the call simple and costs nothing on the ranks that pass a
+    ! zero-length slice.
+    if (masterproc) then
+       allocate(recvbuf(n*npes))
+    else
+       allocate(recvbuf(1))
+    endif
+
+    call mpi_gather(sendbuf, n, MPI_INTEGER8, recvbuf, n, MPI_INTEGER8, &
+                    0, mpicom_rof, ier)
+
+    if (masterproc) then
+       write(leg,'(a,i5.5)') 'n', fp_nstep0
+       write(fname,'(a,a,a,a,a,i2.2,a,i5.5,a)') &
+            'fpgather.', trim(leg), '.', trim(label), '.iter', iter, &
+            '.nstep', nstep, '.txt'
+       open(newunit=unitn, file=trim(fname), status='unknown', &
+            action='write')
+       do ip = 0, npes-1
+          do i = 1, n
+             if (recvbuf(ip*n + i) == 0_i8) cycle   ! zeros are the vast majority
+             write(unitn,'(i6,1x,i8,1x,z16.16)') ip, i, recvbuf(ip*n + i)
+          end do
+       end do
+       close(unitn)
+       write(iulog,'(a,a,a,a)') 'RTMFP   gather fld=', trim(label), &
+            ' written to ', trim(fname)
+    endif
+
+    deallocate(sendbuf)
+    deallocate(recvbuf)
+  end subroutine rtm_fp_gather
 
 !-----------------------------------------------------------------------
 
