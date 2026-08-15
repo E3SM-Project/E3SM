@@ -4991,6 +4991,8 @@ module VegetationDataType
     integer  :: fp       ! lake filter indices
     !-----------------------------------------------------------------------
     associate( &
+     plant_p_buffer_patch  => this%plant_p_buffer  , &
+     plant_p_buffer_col    => col_ps%plant_p_buffer , &
      totvegp_patch  => this%totvegp   , &
      totvegp_col    => col_ps%totvegp, &
      totpftp_patch  => this%totpftp   , &
@@ -5049,6 +5051,10 @@ module VegetationDataType
            this%ptrunc(p)
 
    end do
+
+   call p2c(bounds, num_soilc, filter_soilc, &
+        plant_p_buffer_patch(bounds%begp:bounds%endp)  , &
+        plant_p_buffer_col(bounds%begc:bounds%endc))
 
    call p2c(bounds, num_soilc, filter_soilc, &
         totvegp_patch(bounds%begp:bounds%endp)  , &
