@@ -16,8 +16,9 @@ module dynSubgridAdjustmentsMod
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use decompMod              , only : bounds_type
   use elm_varpar             , only : ndecomp_pools, nlevdecomp
-  use elm_varctl             , only : use_crop
+  use elm_varctl             , only : use_crop, use_fan
   use elm_varcon             , only : dzsoi_decomp
+  use ColumnType             , only : col_pp
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
   use dynPatchStateUpdaterMod, only : update_patch_state, update_patch_state_partition_flux_by_type
   use dynColumnStateUpdaterMod,only : column_state_updater_type, update_column_state_no_special_handling
@@ -408,6 +409,7 @@ contains
     integer         :: l, j, c
     integer         :: begc, endc
     real(r8)        :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)        :: scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) !never persists across calls: each call's contribution is immediately broadcast into the column-level dyn_nonconserved_cflux
     !-----------------------------------------------------------------------
     associate(&
       decomp_cpools_vr    => col_cs%decomp_cpools_vr , &
@@ -420,64 +422,100 @@ contains
     endc = bounds%endc
 
     col_cs%dyn_cbal_adjustments(begc:endc) = 0._r8
+    col_cs%dyn_nonconserved_cflux(begc:endc) = 0._r8
 
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
+          scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
           call update_column_state_no_special_handling( column_state_updater , &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
                var         = decomp_cpools_vr(begc:endc, j, l),     &
+               scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
                adjustment  = adjustment_one_level(begc:endc))
 
           col_cs%dyn_cbal_adjustments(begc:endc) = &
                col_cs%dyn_cbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+          do c = begc, endc
+             col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
+
        end do
     end do
 
     do j = 1, nlevdecomp
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling( column_state_updater , &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = ctrunc_vr(begc:endc,j),     &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
 
        col_cs%dyn_cbal_adjustments(begc:endc) = &
             col_cs%dyn_cbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+       do c = begc, endc
+          col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+               scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
+
     end do
 
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod1c(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_cs%dyn_cbal_adjustments(begc:endc) = &
          col_cs%dyn_cbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod10c(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_cs%dyn_cbal_adjustments(begc:endc) = &
          col_cs%dyn_cbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod100c(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_cs%dyn_cbal_adjustments(begc:endc) = &
          col_cs%dyn_cbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
+
+    do c = begc, endc
+       col_cs%dyn_nonconserved_cflux(c) = col_cs%dyn_nonconserved_cflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
 
     end associate
   end subroutine dyn_col_cs_Adjustments
@@ -836,6 +874,7 @@ contains
     integer                     :: l, j, c
     integer                     :: begc, endc
     real(r8)                    :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)                    :: scope_crossing_mass_grc_1call(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
     associate(&
       decomp_npools_vr    => col_ns%decomp_npools_vr , &
@@ -875,300 +914,474 @@ contains
     begc = bounds%begc
     endc = bounds%endc
     col_ns%dyn_nbal_adjustments(begc:endc) = 0._r8
+    col_ns%dyn_nonconserved_nflux(begc:endc) = 0._r8
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
+          scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
           call update_column_state_no_special_handling(column_state_updater, &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
                var         = decomp_npools_vr(begc:endc, j, l),     &
+               scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
                adjustment  = adjustment_one_level(begc:endc))
 
           col_ns%dyn_nbal_adjustments(begc:endc) = &
                col_ns%dyn_nbal_adjustments(begc:endc) + &
                adjustment_one_level(begc:endc) * dzsoi_decomp(j)
      
+          do c = begc, endc
+             col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        end do
     end do
 
     do j = 1, nlevdecomp
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling(column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = ntrunc_vr(begc:endc,j),     &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
 
        col_ns%dyn_nbal_adjustments(begc:endc) = &
             col_ns%dyn_nbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
-       call update_column_state_no_special_handling(column_state_updater, &
-           bounds      = bounds                          , &
-           clump_index = clump_index                     , &
-           var         = sminn_vr(begc:endc, j), &
-           adjustment  = adjustment_one_level(begc:endc))
+       do c = begc, endc
+          col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+               scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
 
-       col_ns%dyn_nbal_adjustments(begc:endc) = &
-           col_ns%dyn_nbal_adjustments(begc:endc) + &
-           adjustment_one_level(begc:endc) * dzsoi_decomp(j)
-
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling(column_state_updater, &
             bounds      = bounds                          , &
             clump_index = clump_index                     , &
             var         = smin_nh4_vr(begc:endc, j) , &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
 
+       do c = begc, endc
+          col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+               scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
+
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling(column_state_updater, &
             bounds      = bounds                          , &
             clump_index = clump_index                     , &
             var         = smin_no3_vr(begc:endc, j) , &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+       do c = begc, endc
+          col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+               scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+       end do
+
+       ! sminn_vr is purely a derived diagnostic total
+       ! It should not be redistributed independently
+       ! Derive it directly here for every column, after smin_nh4_vr/smin_no3_vr's redistribution.
+       do c = begc, endc
+          sminn_vr(c,j) = smin_nh4_vr(c,j) + smin_no3_vr(c,j)
+       end do
     end do
 
+    ! plant_n_buffer_col is purely diagnostic: it is overwritten every timestep by
+    ! p2c(plant_n_buffer_patch) in veg_ns_summary, which runs after this adjustment.
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = plant_n_buffer(begc:endc),     &
          adjustment  = adjustment_one_level(begc:endc))
 
+    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
-         col_ns%dyn_nbal_adjustments(begc:endc) + &
-         adjustment_one_level(begc:endc)
+          col_ns%dyn_nbal_adjustments(begc:endc) + &
+          adjustment_one_level(begc:endc)
 
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod1n(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
-    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
           col_ns%dyn_nbal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
     
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod10n(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
+    
     col_ns%dyn_nbal_adjustments(begc:endc) = &
           col_ns%dyn_nbal_adjustments(begc:endc) + &
           adjustment_one_level(begc:endc)
-    
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod100n(begc:endc),     &
-         adjustment  = adjustment_one_level(begc:endc))
-
-    
-    col_ns%dyn_nbal_adjustments(begc:endc) = &
-          col_ns%dyn_nbal_adjustments(begc:endc) + &
-          adjustment_one_level(begc:endc)
-
-    call update_column_state_no_special_handling(column_state_updater, &
-         bounds      = bounds,                                         &
-         clump_index = clump_index,                                    &
-         var         = fan_totn(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    ! fan_totn is purely a derived diagnostic total
+    ! It should not be redistributed independently
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_g1(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_g2(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_g3(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_s0(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_s1(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_s2(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_s3(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_f1(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_f2(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_f3(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = tan_f4(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = fert_u1(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = fert_u2(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_u_grz(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_a_grz(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_r_grz(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_u_app(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_a_app(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_r_app(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    ! manure_tan_stored: not scope-crossing-tracked - unlike the 20 pools above
+    ! since it is not one of the terms that sums into fan_totn
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
@@ -1179,15 +1392,53 @@ contains
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = manure_n_stored(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ns%dyn_nbal_adjustments(begc:endc) = &
          col_ns%dyn_nbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
+
+    do c = begc, endc
+       col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    if (use_fan) then
+       ! Derive fan_totn fresh from its 20 constituents
+       do c = begc, endc
+          fan_totn(c) = tan_g1(c) + tan_g2(c) + tan_g3(c) + &
+               manure_u_grz(c) + manure_a_grz(c) + manure_r_grz(c) + &
+               tan_s0(c) + tan_s1(c) + tan_s2(c) + tan_s3(c) + &
+               manure_u_app(c) + manure_a_app(c) + manure_r_app(c) + &
+               tan_f1(c) + tan_f2(c) + tan_f3(c) + tan_f4(c) + &
+               fert_u1(c) + fert_u2(c) + &
+               manure_n_stored(c)
+       end do
+    else
+       ! fan_totn is 0 on soil/crop columns and is redistributed directly instead of deriving it
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
+       call update_column_state_no_special_handling(column_state_updater, &
+            bounds      = bounds,                                         &
+            clump_index = clump_index,                                    &
+            var         = fan_totn(begc:endc),     &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
+            adjustment  = adjustment_one_level(begc:endc))
+
+       col_ns%dyn_nbal_adjustments(begc:endc) = &
+            col_ns%dyn_nbal_adjustments(begc:endc) + &
+            adjustment_one_level(begc:endc)
+
+       do c = begc, endc
+          col_ns%dyn_nonconserved_nflux(c) = col_ns%dyn_nonconserved_nflux(c) + &
+               scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+       end do
+    end if
 
     call update_column_state_no_special_handling(column_state_updater, &
          bounds      = bounds,                                         &
@@ -1554,9 +1805,10 @@ contains
     type(column_phosphorus_state)   , intent(inout) :: col_ps
     !
     ! !LOCAL VARIABLES:
-    integer           :: l, j
+    integer           :: l, j, c
     integer           :: begc, endc
     real(r8)          :: adjustment_one_level(bounds%begc:bounds%endc)
+    real(r8)          :: scope_crossing_mass_grc_1call(bounds%begg:bounds%endg)
     !-----------------------------------------------------------------------
     associate(&
       decomp_ppools_vr    => col_ps%decomp_ppools_vr , &
@@ -1566,6 +1818,7 @@ contains
       secondp_vr          => col_ps%secondp_vr , &
       occlp_vr            => col_ps%occlp_vr , &
       primp_vr            => col_ps%primp_vr , &
+      plant_p_buffer      => col_ps%plant_p_buffer, &
       prod1p              => col_ps%prod1p  , &
       prod10p             => col_ps%prod10p , &
       prod100p            => col_ps%prod100p &
@@ -1575,14 +1828,23 @@ contains
     endc = bounds%endc
 
     col_ps%dyn_pbal_adjustments(begc:endc) = 0._r8
+    col_ps%dyn_nonconserved_pflux(begc:endc) = 0._r8
+
     do l = 1, ndecomp_pools
        do j = 1, nlevdecomp
 
+          scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
           call update_column_state_no_special_handling( column_state_updater, &
                bounds      = bounds,                                         &
                clump_index = clump_index,                                    &
                var         = decomp_ppools_vr(begc:endc, j, l),     &
+               scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
                adjustment  = adjustment_one_level(begc:endc) )
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
           col_ps%dyn_pbal_adjustments(begc:endc) =      &
                col_ps%dyn_pbal_adjustments(begc:endc) + &
@@ -1592,47 +1854,76 @@ contains
     end do
 
     do j = 1, nlevdecomp
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = ptrunc_vr(begc:endc,j),                &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = solutionp_vr(begc:endc,j),             &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = labilep_vr(begc:endc,j),               &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
            col_ps%dyn_pbal_adjustments(begc:endc) + &
            adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
        !!
+       scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
             var         = secondp_vr(begc:endc,j),               &
+            scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
             adjustment  = adjustment_one_level(begc:endc))
+
+          do c = begc, endc
+             col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+                  scope_crossing_mass_grc_1call(col_pp%gridcell(c)) * dzsoi_decomp(j)
+          end do
 
        col_ps%dyn_pbal_adjustments(begc:endc) =      &
             col_ps%dyn_pbal_adjustments(begc:endc) + &
             adjustment_one_level(begc:endc) * dzsoi_decomp(j)
 
+       ! occlp_vr/primp_vr: not scope-crossing-tracked as excluded from totcolp's formula
        call update_column_state_no_special_handling( column_state_updater, &
             bounds      = bounds,                                         &
             clump_index = clump_index,                                    &
@@ -1646,35 +1937,69 @@ contains
             adjustment  = adjustment_one_level(begc:endc))
 
     end do
+
+    ! plant_p_buffer_col is purely diagnostic: it is overwritten every timestep by
+    ! p2c(plant_p_buffer_patch) in veg_ps_summary, which runs after this adjustment. 
+    call update_column_state_no_special_handling(column_state_updater, &
+         bounds      = bounds,                                         &
+         clump_index = clump_index,                                    &
+         var         = plant_p_buffer(begc:endc),     &
+         adjustment  = adjustment_one_level(begc:endc))
+
+    col_ps%dyn_pbal_adjustments(begc:endc) = &
+         col_ps%dyn_pbal_adjustments(begc:endc) + &
+         adjustment_one_level(begc:endc)
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod1p(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
    col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod10p(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
 
+    do c = begc, endc
+       col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
+
+    scope_crossing_mass_grc_1call(bounds%begg:bounds%endg) = 0._r8
     call update_column_state_no_special_handling( column_state_updater, &
          bounds      = bounds,                                         &
          clump_index = clump_index,                                    &
          var         = prod100p(begc:endc),     &
+         scope_crossing_mass_grc = scope_crossing_mass_grc_1call(bounds%begg:bounds%endg), &
          adjustment  = adjustment_one_level(begc:endc))
 
     col_ps%dyn_pbal_adjustments(begc:endc) = &
          col_ps%dyn_pbal_adjustments(begc:endc) + &
          adjustment_one_level(begc:endc)
+
+    do c = begc, endc
+       col_ps%dyn_nonconserved_pflux(c) = col_ps%dyn_nonconserved_pflux(c) + &
+            scope_crossing_mass_grc_1call(col_pp%gridcell(c))
+    end do
 
     end associate
 
