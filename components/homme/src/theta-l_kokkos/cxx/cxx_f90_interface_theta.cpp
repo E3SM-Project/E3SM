@@ -268,6 +268,18 @@ void cxx_push_results_to_f90_tl(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_s
 
   // The freshly remapped tracer mass is in np1_qdp (see update_q in
   // prim_run_subcycle_c); Fortran reads the level TimeLevel_Qdp gives it.
+  //
+  // Those two always coincide: each tracer step flips the qdp parity, both here
+  // (TimeLevel::update_tracers_levels, keyed on nstep/qsplit) and in f90
+  // (TimeLevel_Qdp, keyed on nstep/dt_tracer_factor, with dt_tracer_factor ==
+  // qsplit), so the last np1_qdp written is the n0_qdp the advanced nstep asks
+  // for. push_qdp still takes the pair separately -- the qdp levels rotate
+  // before the vertical remap and the dynamics levels after it, so the two
+  // conventions are not interchangeable in general -- and this pins the
+  // invariant down instead of leaving it to a comment.
+  Errors::runtime_check(qdp_dst == tl.np1_qdp,
+                        "cxx_push_results_to_f90_tl: Fortran n0_qdp disagrees with C++ TimeLevel::np1_qdp");
+
   c.get<Tracers>().push_qdp(elem_state_Qdp_ptr, tl.np1_qdp, qdp_dst);
 
   push_results_to_f90_tl_free(elem_state_ps_v_ptr, elem_Q_ptr, elem_derived_omega_p_ptr);

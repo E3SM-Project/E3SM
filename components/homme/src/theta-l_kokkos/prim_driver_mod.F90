@@ -442,7 +442,7 @@ contains
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
-#ifdef CAM
+#if defined(CAM) && !defined(SCREAM)
     use theta_f2c_mod,  only : cxx_push_results_to_f90_tl
 #endif
     use theta_f2c_mod,  only : push_forcing_to_c, sync_diagnostics_to_host_c
@@ -537,7 +537,7 @@ contains
       elem_state_ps_v_ptr      = c_loc(elem_state_ps_v)
       elem_derived_omega_p_ptr = c_loc(elem_derived_omega_p)
 
-#ifdef CAM
+#if defined(CAM) && !defined(SCREAM)
       ! CAM reads only n0 / n0_qdp after a step, so copy back just those levels.
       ! Recompute the qdp levels first: those from before prim_run_subcycle_c
       ! are stale, since tl%nstep has since advanced. n0_qdp is the level that
@@ -547,7 +547,7 @@ contains
 
       ! Copy cxx arrays back to f90 structures
       call t_startf('push_to_f90')
-#ifdef CAM
+#if defined(CAM) && !defined(SCREAM)
       call cxx_push_results_to_f90_tl(elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                       elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                       elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr,   &
@@ -629,12 +629,16 @@ contains
     integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter
     logical,              intent(in) :: compute_diagnostics
 
-    logical                          :: push_to_f, time_for_homme_output
+    logical                          :: push_to_f
+    ! The CAM branch below no longer consumes this, and computing it there would
+    ! be a dead read of nextOutputStep, which a CAM build never assigns. Declaring
+    ! it under the same guard as its only assignment keeps the CAM build free of
+    ! unused-variable warnings. Other configurations keep the original behavior.
+#ifndef CAM
+    logical                          :: time_for_homme_output
+#endif
 
     push_to_f = .false.
-    ! The CAM branch below no longer consumes this, and computing it there would
-    ! be a dead read of nextOutputStep, which a CAM build never assigns. Other
-    ! configurations keep the original behavior.
 #ifndef CAM
     time_for_homme_output = &
          (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics)
