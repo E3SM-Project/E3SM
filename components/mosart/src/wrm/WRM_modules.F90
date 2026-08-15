@@ -22,7 +22,7 @@ MODULE WRM_modules
   use mct_mod
   use perf_mod       , only : t_startf, t_stopf
   ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
-  use RtmFingerprint , only : rtm_fp, rtm_fp_dam, rtm_fp_rep
+  use RtmFingerprint , only : rtm_fp, rtm_fp_dam, rtm_fp_rep, rtm_fp_part
      
   implicit none
   private
@@ -774,17 +774,7 @@ MODULE WRM_modules
 
      do idam = 1,ctlSubwWRM%LocalNumDam
         iunit = WRMUnit%icell(idam)
-        ! erout is negative for downstream flow, so -erout is the outgoing
-        ! volume and flow_vol is normally >= 0. If the channel is in reverse
-        ! flow (erout > 0) this would go NEGATIVE, and line ~837 below would
-        ! then form a negative dam "fraction" flow_vol/demand. Every downstream
-        ! branch (the '> 1.0' tests, fracsum, the min() prorations) assumes a
-        ! non-negative fraction, so a negative one silently inverts the
-        ! attribution of uptake among dams. Clamp at zero: no outgoing flow
-        ! means no water available for extraction, which is the physical
-        ! reading and leaves erout untouched for that dam.
-        flow_vol(idam) = max(0._r8, &
-             flow_vol_ratio * ( -Trunoff%erout(iunit,nt_nliq) * theDeltaT ))
+        flow_vol(idam) = flow_vol_ratio * ( -Trunoff%erout(iunit,nt_nliq) * theDeltaT )
 !NV minimum flow remains in erout
         Trunoff%erout(iunit,nt_nliq) = Trunoff%erout(iunit,nt_nliq) + &
              flow_vol(idam) / theDeltaT
@@ -914,15 +904,7 @@ MODULE WRM_modules
         ! 1st case, provide full demand to gridcell
         !---------------------------
 
-        ! The guard here must use the SAME comparison as the two inner tests
-        ! below (both '> 1.0'). With '>= 1.0' here, a dam fraction of exactly
-        ! 1.0 enters case 1, but then no gridcell can satisfy the inner '> 1.0'
-        ! test, so cnt stays 0 everywhere, no supply is delivered, and cases 2
-        ! and 3 are skipped for this iteration entirely. That wasted iteration
-        ! leaves a different residual flow_vol -- and hence a different
-        ! dam_uptake_sum -- while the total water delivered to gridcells is
-        ! unchanged, which is invisible to any cell-dimensioned diagnostic.
-        if (maxval(aVect_wdG%rAttr(1,:)) > 1.0_r8) then
+        if (maxval(aVect_wdG%rAttr(1,:)) >= 1.0_r8) then
            do iunit = begr, endr
               cnt = 0
               do mdam = 1,WRMUnit%myDamNum(iunit)
@@ -1038,8 +1020,15 @@ MODULE WRM_modules
         ! hence invisible to rtm_fp / rtm_fp_dam, which reduce over local
         ! cells/dams only. Fingerprint it directly, before and after the
         ! flow_vol update, both tagged by iteration.
-        call rtm_fp_rep('G_it_uptakeloc', dam_uptake,     iter)
-        call rtm_fp_rep('G_it_uptakesum', dam_uptake_sum, iter)
+        ! dam_uptake is a rank-LOCAL PARTIAL array over the global dam index --
+        ! full extent allocated everywhere, only this rank's contributions
+        ! written. It is NOT replicated, so rtm_fp_rep is the wrong probe: it
+        ! hashes masterproc's copy alone, which is how the previous run reported
+        ! nnz=0 on all 792 records and measured nothing. rtm_fp_part reduces
+        ! across ranks and additionally rank-mixes, so two ranks contributing an
+        ! equal amount to the same dam cannot cancel to zero.
+        call rtm_fp_part('G_it_uptakeloc', dam_uptake,     iter)
+        call rtm_fp_rep ('G_it_uptakesum', dam_uptake_sum, iter)
 
         do idam = 1,ctlSubwWRM%LocalNumDam
            gdam = WRMUnit%damID(idam)

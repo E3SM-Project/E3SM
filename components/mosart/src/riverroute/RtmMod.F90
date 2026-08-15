@@ -52,7 +52,7 @@ module RtmMod
   use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
   use MOSARTinund_PreProcs_MOD, only : calc_chnlMannCoe, preprocess_elevProf
   ! TEMPORARY ERS DIAGNOSTIC -- remove before merge.
-  use RtmFingerprint, only : rtm_fp, rtm_fp2, rtm_fp_tag
+  use RtmFingerprint, only : rtm_fp, rtm_fp2, rtm_fp_tag, rtm_fp_int, rtm_fp_int2
   use MOSARTinund_Core_MOD    , only : MOSARTinund_simulate, ManningEq, ChnlFPexchg
   use MOSART_Budgets_mod, only: MOSART_WaterBudget_Extraction, MOSART_WaterBudget_Print, MOSART_WaterBudget_Reset
   use RtmIO
@@ -1847,6 +1847,32 @@ contains
           call WRM_init()
        endif
        call t_stopf('mosarti_wrm_init')
+
+       ! ---- TEMPORARY ERS DIAGNOSTIC (remove before merge) ----
+       ! The WRM integer dependency arrays are the ONLY inputs to the dam-uptake
+       ! attribution in ExtractionRegulatedFlow that no probe has ever touched,
+       ! because every other entry point in RtmFingerprint takes real(r8).
+       !
+       ! They are built at init in both legs (never restarted) by scanning
+       ! gridID_from_Dam and matching against rtmCTL%gindex
+       ! (WRM_subw_IO_mod.F90:307-335), appending each hit in discovery order.
+       ! myDam's per-gridcell ORDER sets the order in which uptake is attributed
+       ! across all three cases, so a permuted list moves water between dams
+       ! while leaving every real-valued field bit-identical -- exactly the
+       ! observed signature (identical gridcell supply, differing
+       ! dam_uptake_sum). myDam is also resized in place as it grows, so its
+       ! first dimension is not guaranteed equal between legs; nslot= reports it.
+       !
+       ! icell holds LOCAL gridcell indices, which are not comparable across
+       ! decompositions, so grdID -- the same mapping already expressed globally
+       ! -- is fingerprinted instead, and doubles as the index for the
+       ! dam-dimensioned arrays.
+       call rtm_fp_int ('S_wrm_damID',    WRMUnit%damID,    WRMUnit%grdID)
+       call rtm_fp_int ('S_wrm_grdID',    WRMUnit%grdID,    WRMUnit%grdID)
+       call rtm_fp_int ('S_wrm_myDamNum', WRMUnit%myDamNum, rtmCTL%gindex)
+       call rtm_fp_int ('S_wrm_isDam',    WRMUnit%isDam,    rtmCTL%gindex)
+       call rtm_fp_int2('S_wrm_myDam',    WRMUnit%myDam,    rtmCTL%gindex)
+       ! ---- end TEMPORARY ERS DIAGNOSTIC ----
 
     end if
     if (wrmflag .and. heatflag .and. rstraflag) then

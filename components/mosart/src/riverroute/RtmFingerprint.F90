@@ -47,6 +47,9 @@ module RtmFingerprint
   public :: rtm_fp_tag  ! emit a bare marker line (no field)
   public :: rtm_fp_dam  ! fingerprint a dam-dimensioned array (bypasses cell guard)
   public :: rtm_fp_rep  ! fingerprint an array already replicated on every rank
+  public :: rtm_fp_part ! fingerprint a rank-LOCAL PARTIAL array over a global index
+  public :: rtm_fp_int  ! fingerprint a 1-d INTEGER array
+  public :: rtm_fp_int2 ! fingerprint a 2-d INTEGER array, e.g. WRMUnit%myDam
   public :: rtm_fp_dump ! dump per-cell values to a side file, to NAME the cell
 
   logical, public :: rtm_fp_on = .true.   ! master switch
@@ -274,6 +277,189 @@ contains
          'RTMFP   fld=', adjustl(label), ' xor=0x', xr(1), &
          ' hash=0x', xr(2), ' nnz=', nnz, ' nrep=', int(size(arr), i8)
   end subroutine rtm_fp_rep
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_part(label, arr, cycle)
+    ! Emit a bitwise fingerprint of a rank-LOCAL PARTIAL array laid out over a
+    ! GLOBAL index -- the canonical case being dam_uptake(NDam) BEFORE its
+    ! shr_mpi_sum. Every rank allocates the full global extent but writes only
+    ! the entries its own gridcells contribute to, leaving the rest zero.
+    !
+    ! This is the probe that rtm_fp_rep must NOT be used for, and was: rtm_fp_rep
+    ! hashes masterproc's copy alone, which for a partial array measures one
+    ! rank's contribution and silently discards the other 127. That is how
+    ! G_it_uptakeloc came out nnz=0 on all 792 records and carried no
+    ! information.
+    !
+    ! Three accumulators are emitted because plain XOR has two blind spots that
+    ! both bite here:
+    !   xor   -- raw XOR of the value bits. Blind to permutation, and two ranks
+    !            contributing the SAME value to the SAME dam cancel to zero.
+    !   hash  -- bits mixed with the global slot index. Fixes permutation.
+    !   rhash -- bits mixed with an odd function of the RANK. Fixes the equal-
+    !            contributions-on-different-ranks cancellation, which is not
+    !            hypothetical: identical demand at mirrored gridcells is exactly
+    !            the kind of symmetry this model produces.
+    ! nnz is SUMMED across ranks, so it counts total nonzero contributions
+    ! rather than distinct dams -- a direct check that the array is populated.
+    character(len=*), intent(in) :: label
+    real(r8), intent(in) :: arr(:)
+    integer, optional, intent(in) :: cycle
+
+    integer     :: i, ier, mycycle
+    integer(i8) :: bits, xorloc(3), nnzloc(1), xorglb(3), nnzglb(1)
+
+    if (.not. rtm_fp_on) return
+
+    mycycle = 0
+    if (present(cycle)) mycycle = cycle
+
+    xorloc = 0_i8
+    nnzloc = 0_i8
+    do i = 1, size(arr)
+       bits      = transfer(arr(i), bits)
+       xorloc(1) = ieor(xorloc(1), bits)
+       xorloc(2) = ieor(xorloc(2), bits * (2_i8 * int(i, i8) + 1_i8))
+       xorloc(3) = ieor(xorloc(3), bits * (2_i8 * int(iam, i8) + 1_i8))
+       if (arr(i) /= 0._r8) nnzloc(1) = nnzloc(1) + 1_i8
+    end do
+
+    ! XOR across ranks: order independent, and zero contributes identity, so
+    ! ranks that touch no dam drop out cleanly.
+    call mpi_allreduce(xorloc, xorglb, 3, MPI_INTEGER8, MPI_BXOR, mpicom_rof, ier)
+    call mpi_allreduce(nnzloc, nnzglb, 1, MPI_INTEGER8, MPI_SUM,  mpicom_rof, ier)
+
+    if (masterproc) then
+       call rtm_fp_hdr(label, mycycle)
+       write(iulog,'(a,a24,a,z16.16,a,z16.16,a,z16.16,a,i10)') &
+            'RTMFP   fld=', adjustl(label), ' xor=0x', xorglb(1), &
+            ' hash=0x', xorglb(2), ' rhash=0x', xorglb(3), ' nnz=', nnzglb(1)
+    endif
+  end subroutine rtm_fp_part
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_int(label, iarr, gidx, cycle)
+    ! Emit a bitwise fingerprint of a 1-d INTEGER array.
+    !
+    ! Every other probe in this module takes real(r8), so the WRM integer
+    ! dependency arrays -- WRMUnit%myDamNum, %icell, %damID -- have never been
+    ! fingerprinted at all. They are the only inputs to the dam-uptake
+    ! attribution that no probe has touched. A permuted or differently-built
+    ! dependency list changes which dam receives which gridcell's uptake while
+    ! leaving every real-valued field bit-identical, which is precisely the
+    ! signature under investigation.
+    !
+    ! gidx supplies the GLOBAL index for the mixed hash, so the result is
+    ! decomposition independent. Pass rtmCTL%gindex for cell-dimensioned arrays
+    ! and WRMUnit%damID for dam-dimensioned ones. For arrays whose VALUES are
+    ! local indices (WRMUnit%icell), map the values through rtmCTL%gindex at the
+    ! call site -- a raw local index is not comparable across decompositions.
+    !
+    ! No TRANSFER: integers are already exact, so the value is used directly.
+    ! Zero values contribute identity, which is what we want for the zero
+    ! padding in myDam.
+    character(len=*), intent(in) :: label
+    integer, intent(in) :: iarr(:)
+    integer, intent(in) :: gidx(:)
+    integer, optional, intent(in) :: cycle
+
+    integer     :: i, ier, mycycle
+    integer(i8) :: v, xorloc(2), nnzloc(1), xorglb(2), nnzglb(1)
+
+    if (.not. rtm_fp_on) return
+
+    mycycle = 0
+    if (present(cycle)) mycycle = cycle
+
+    if (size(iarr) /= size(gidx)) then
+       if (masterproc) write(iulog,'(a,a)') &
+            'RTMFP WARNING: int size mismatch, skipping fld=', trim(label)
+       return
+    endif
+
+    xorloc = 0_i8
+    nnzloc = 0_i8
+    do i = 1, size(iarr)
+       v         = int(iarr(i), i8)
+       xorloc(1) = ieor(xorloc(1), v)
+       xorloc(2) = ieor(xorloc(2), v * (2_i8 * int(gidx(i), i8) + 1_i8))
+       if (iarr(i) /= 0) nnzloc(1) = nnzloc(1) + 1_i8
+    end do
+
+    call mpi_allreduce(xorloc, xorglb, 2, MPI_INTEGER8, MPI_BXOR, mpicom_rof, ier)
+    call mpi_allreduce(nnzloc, nnzglb, 1, MPI_INTEGER8, MPI_SUM,  mpicom_rof, ier)
+
+    if (masterproc) then
+       call rtm_fp_hdr(label, mycycle)
+       write(iulog,'(a,a24,a,z16.16,a,z16.16,a,i10)') &
+            'RTMFP   fld=', adjustl(label), ' xor=0x', xorglb(1), &
+            ' hash=0x', xorglb(2), ' nnz=', nnzglb(1)
+    endif
+  end subroutine rtm_fp_int
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_int2(label, iarr, gidx, cycle)
+    ! Emit a bitwise fingerprint of a 2-d INTEGER array laid out as
+    ! (slot, cell) -- specifically WRMUnit%myDam(mdn, begr:endr), the list of
+    ! dams each gridcell depends on.
+    !
+    ! This is the single most interesting uninstrumented quantity in the
+    ! investigation. myDam is built in WRM_subw_IO_mod.F90:307-335 by scanning
+    ! gridID_from_Dam and matching against rtmCTL%gindex, appending each hit in
+    ! discovery order. The ORDER of dams within a gridcell's list determines the
+    ! order in which uptake is attributed in all three cases of
+    ! ExtractionRegulatedFlow, and the array is resized in place as it grows.
+    !
+    ! The hash therefore mixes BOTH the slot position k and the global cell
+    ! index, so a list that holds the same dams in a different order produces a
+    ! different hash. Plain XOR alone would be blind to exactly that.
+    character(len=*), intent(in) :: label
+    integer, intent(in) :: iarr(:,:)
+    integer, intent(in) :: gidx(:)
+    integer, optional, intent(in) :: cycle
+
+    integer     :: i, k, ier, mycycle
+    integer(i8) :: v, xorloc(2), nnzloc(1), xorglb(2), nnzglb(1)
+
+    if (.not. rtm_fp_on) return
+
+    mycycle = 0
+    if (present(cycle)) mycycle = cycle
+
+    if (size(iarr,2) /= size(gidx)) then
+       if (masterproc) write(iulog,'(a,a)') &
+            'RTMFP WARNING: int2 size mismatch, skipping fld=', trim(label)
+       return
+    endif
+
+    xorloc = 0_i8
+    nnzloc = 0_i8
+    do i = 1, size(iarr,2)
+       do k = 1, size(iarr,1)
+          v         = int(iarr(k,i), i8)
+          xorloc(1) = ieor(xorloc(1), v)
+          ! Mix slot AND global cell index: catches reordering within a cell's
+          ! list, which is the whole point of this probe.
+          xorloc(2) = ieor(xorloc(2), v * (2_i8 * int(k, i8) + 1_i8) &
+                                        * (2_i8 * int(gidx(i), i8) + 1_i8))
+          if (iarr(k,i) /= 0) nnzloc(1) = nnzloc(1) + 1_i8
+       end do
+    end do
+
+    call mpi_allreduce(xorloc, xorglb, 2, MPI_INTEGER8, MPI_BXOR, mpicom_rof, ier)
+    call mpi_allreduce(nnzloc, nnzglb, 1, MPI_INTEGER8, MPI_SUM,  mpicom_rof, ier)
+
+    if (masterproc) then
+       call rtm_fp_hdr(label, mycycle)
+       write(iulog,'(a,a24,a,z16.16,a,z16.16,a,i10,a,i10)') &
+            'RTMFP   fld=', adjustl(label), ' xor=0x', xorglb(1), &
+            ' hash=0x', xorglb(2), ' nnz=', nnzglb(1), ' nslot=', &
+            int(size(iarr,1), i8)
+    endif
+  end subroutine rtm_fp_int2
 
 !-----------------------------------------------------------------------
 
