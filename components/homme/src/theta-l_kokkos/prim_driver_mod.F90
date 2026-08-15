@@ -441,7 +441,10 @@ contains
     use parallel_mod,   only : abortmp
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
-    use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90_tl
+    use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
+#ifdef CAM
+    use theta_f2c_mod,  only : cxx_push_results_to_f90_tl
+#endif
     use theta_f2c_mod,  only : push_forcing_to_c, sync_diagnostics_to_host_c
     !
     ! Inputs
@@ -534,17 +537,27 @@ contains
       elem_state_ps_v_ptr      = c_loc(elem_state_ps_v)
       elem_derived_omega_p_ptr = c_loc(elem_derived_omega_p)
 
-      ! Recompute the qdp time levels: the ones from before prim_run_subcycle_c
+#ifdef CAM
+      ! CAM reads only n0 / n0_qdp after a step, so copy back just those levels.
+      ! Recompute the qdp levels first: those from before prim_run_subcycle_c
       ! are stale, since tl%nstep has since advanced. n0_qdp is the level that
       ! every f90 reader of elem_state_Qdp will index with.
       call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
+#endif
 
       ! Copy cxx arrays back to f90 structures
       call t_startf('push_to_f90')
+#ifdef CAM
       call cxx_push_results_to_f90_tl(elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                       elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                       elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr,   &
                                       tl%n0, n0_qdp)
+#else
+      ! EAMxx may use current and previous timelevels for statefreq diagnostics, so keep the all-time-levels copy
+      call cxx_push_results_to_f90(elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
+                                   elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
+                                   elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr)
+#endif
       call t_stopf('push_to_f90')
     endif
 
@@ -619,10 +632,10 @@ contains
     logical                          :: push_to_f, time_for_homme_output
 
     push_to_f = .false.
-    ! Only the standalone branch below consumes this. Computing it in a CAM or
-    ! SCREAM build would be a dead read of nextOutputStep, which those builds
-    ! never assign.
-#if !defined(HOMMEXX_BENCHMARK_NOFORCING) && !defined(SCREAM) && !defined(CAM)
+    ! The CAM branch below no longer consumes this, and computing it there would
+    ! be a dead read of nextOutputStep, which a CAM build never assigns. Other
+    ! configurations keep the original behavior.
+#ifndef CAM
     time_for_homme_output = &
          (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics)
 #endif
