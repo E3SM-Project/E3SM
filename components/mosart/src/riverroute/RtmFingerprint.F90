@@ -46,6 +46,7 @@ module RtmFingerprint
   public :: rtm_fp2     ! fingerprint one tracer slice of a 2-d real(r8) array
   public :: rtm_fp_tag  ! emit a bare marker line (no field)
   public :: rtm_fp_dam  ! fingerprint a dam-dimensioned array (bypasses cell guard)
+  public :: rtm_fp_rep  ! fingerprint an array already replicated on every rank
   public :: rtm_fp_dump ! dump per-cell values to a side file, to NAME the cell
 
   logical, public :: rtm_fp_on = .true.   ! master switch
@@ -222,6 +223,57 @@ contains
             ' hash=0x', xorglb(2), ' nnz=', nnzglb(1), ' ndam=', nglb(1)
     endif
   end subroutine rtm_fp_dam
+
+!-----------------------------------------------------------------------
+
+  subroutine rtm_fp_rep(label, arr, cycle)
+    ! Emit a bitwise fingerprint of an array that is ALREADY REPLICATED
+    ! identically on every rank -- e.g. the output of shr_mpi_sum(...,all=.true.)
+    ! or of mct_aVect_bcast. Such arrays are global in the dam index, not
+    ! decomposed, so there is nothing to reduce across ranks: masterproc simply
+    ! hashes its own copy.
+    !
+    ! This closes the last blind spot in the diagnostic. rtm_fp/rtm_fp_dam are
+    ! reductions over LOCAL cells/dams, so a quantity that is global-indexed and
+    ! replicated (dam_uptake_sum, aVect_wdG%rAttr) is invisible to them: two runs
+    ! can deliver an identical total to identical gridcells while ATTRIBUTING it
+    ! to different dams, and every cell-dimensioned fingerprint stays equal.
+    ! That is exactly the failure mode under investigation.
+    !
+    ! The index used for the mixed hash is the array's own position, which is
+    ! the GLOBAL dam index for these arrays -- already decomposition
+    ! independent, precisely because the array is replicated.
+    character(len=*), intent(in) :: label
+    real(r8), intent(in) :: arr(:)
+    integer, optional, intent(in) :: cycle
+
+    integer     :: i, mycycle
+    integer(i8) :: bits, mixed, xr(2), nnz
+
+    if (.not. rtm_fp_on) return
+
+    mycycle = 0
+    if (present(cycle)) mycycle = cycle
+
+    ! No MPI here: every rank holds the same data, so a reduction would only
+    ! XOR npes identical copies together (and silently vanish for even npes).
+    if (.not. masterproc) return
+
+    xr  = 0_i8
+    nnz = 0_i8
+    do i = 1, size(arr)
+       bits  = transfer(arr(i), bits)
+       xr(1) = ieor(xr(1), bits)
+       mixed = bits * (2_i8 * int(i, i8) + 1_i8)
+       xr(2) = ieor(xr(2), mixed)
+       if (arr(i) /= 0._r8) nnz = nnz + 1_i8
+    end do
+
+    call rtm_fp_hdr(label, mycycle)
+    write(iulog,'(a,a24,a,z16.16,a,z16.16,a,i10,a,i10)') &
+         'RTMFP   fld=', adjustl(label), ' xor=0x', xr(1), &
+         ' hash=0x', xr(2), ' nnz=', nnz, ' nrep=', int(size(arr), i8)
+  end subroutine rtm_fp_rep
 
 !-----------------------------------------------------------------------
 

@@ -21,6 +21,8 @@ MODULE WRM_modules
   use rof_cpl_indices, only : nt_nliq
   use mct_mod
   use perf_mod       , only : t_startf, t_stopf
+  ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+  use RtmFingerprint , only : rtm_fp, rtm_fp_dam, rtm_fp_rep
      
   implicit none
   private
@@ -772,7 +774,17 @@ MODULE WRM_modules
 
      do idam = 1,ctlSubwWRM%LocalNumDam
         iunit = WRMUnit%icell(idam)
-        flow_vol(idam) = flow_vol_ratio * ( -Trunoff%erout(iunit,nt_nliq) * theDeltaT )
+        ! erout is negative for downstream flow, so -erout is the outgoing
+        ! volume and flow_vol is normally >= 0. If the channel is in reverse
+        ! flow (erout > 0) this would go NEGATIVE, and line ~837 below would
+        ! then form a negative dam "fraction" flow_vol/demand. Every downstream
+        ! branch (the '> 1.0' tests, fracsum, the min() prorations) assumes a
+        ! non-negative fraction, so a negative one silently inverts the
+        ! attribution of uptake among dams. Clamp at zero: no outgoing flow
+        ! means no water available for extraction, which is the physical
+        ! reading and leaves erout untouched for that dam.
+        flow_vol(idam) = max(0._r8, &
+             flow_vol_ratio * ( -Trunoff%erout(iunit,nt_nliq) * theDeltaT ))
 !NV minimum flow remains in erout
         Trunoff%erout(iunit,nt_nliq) = Trunoff%erout(iunit,nt_nliq) + &
              flow_vol(idam) / theDeltaT
@@ -867,6 +879,17 @@ MODULE WRM_modules
         call mct_aVect_bcast(aVect_wdG,mastertask,mpicom_rof)
         call t_stopf('moswrm_ERFlow_bcast')
 
+        ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+        ! aVect_wdG is now replicated on every rank and indexed by GLOBAL dam
+        ! id. This is the quantity every case-1/2/3 branch below keys off, and
+        ! it is the first place a per-dam (as opposed to per-cell) difference
+        ! can appear. Tagged with the iteration number so the fixed 3-iteration
+        ! loop can be read apart.
+        call rtm_fp_rep('G_it_wdG',      aVect_wdG%rAttr(1,:), iter)
+        call rtm_fp_dam('G_it_flowvol',  flow_vol, WRMUnit%damID, iter)
+        call rtm_fp('G_it_demand',       StorWater%demand, iter)
+        call rtm_fp('G_it_supply',       StorWater%supply, iter)
+
         !---------------------------
         ! Covert dam flow_vol to gridcell supply.  In doing so, reduce the flow_vol
         ! at the dam, reduce the demand at the gridcell, and increase the supply at
@@ -891,7 +914,15 @@ MODULE WRM_modules
         ! 1st case, provide full demand to gridcell
         !---------------------------
 
-        if (maxval(aVect_wdG%rAttr(1,:)) >= 1.0_r8) then
+        ! The guard here must use the SAME comparison as the two inner tests
+        ! below (both '> 1.0'). With '>= 1.0' here, a dam fraction of exactly
+        ! 1.0 enters case 1, but then no gridcell can satisfy the inner '> 1.0'
+        ! test, so cnt stays 0 everywhere, no supply is delivered, and cases 2
+        ! and 3 are skipped for this iteration entirely. That wasted iteration
+        ! leaves a different residual flow_vol -- and hence a different
+        ! dam_uptake_sum -- while the total water delivered to gridcells is
+        ! unchanged, which is invisible to any cell-dimensioned diagnostic.
+        if (maxval(aVect_wdG%rAttr(1,:)) > 1.0_r8) then
            do iunit = begr, endr
               cnt = 0
               do mdam = 1,WRMUnit%myDamNum(iunit)
@@ -999,10 +1030,24 @@ MODULE WRM_modules
         call shr_mpi_sum(dam_uptake,dam_uptake_sum,mpicom_rof,'wrm dam_uptake',all=.true.)
         call t_stopf('moswrm_ERFlow_sum')
 
+        ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+        ! dam_uptake_sum is the smoking gun. The routine's net effect on erout
+        ! is exactly erout_final = erout_initial + dam_uptake_sum(damID)/dt, so
+        ! identical erout in + different erout out REQUIRES this array to
+        ! differ. It is global-indexed and replicated (shr_mpi_sum all=.true.),
+        ! hence invisible to rtm_fp / rtm_fp_dam, which reduce over local
+        ! cells/dams only. Fingerprint it directly, before and after the
+        ! flow_vol update, both tagged by iteration.
+        call rtm_fp_rep('G_it_uptakeloc', dam_uptake,     iter)
+        call rtm_fp_rep('G_it_uptakesum', dam_uptake_sum, iter)
+
         do idam = 1,ctlSubwWRM%LocalNumDam
            gdam = WRMUnit%damID(idam)
            flow_vol(idam) = flow_vol(idam) - dam_uptake_sum(gdam)
         enddo
+
+        ! TEMPORARY ERS DIAGNOSTIC -- NOT FOR MERGE
+        call rtm_fp_dam('G_it_flowvol2', flow_vol, WRMUnit%damID, iter)
 
 !---------------------------
 !add more iteration to a max of say 4-5 - 10 and/or add constraint stop when
