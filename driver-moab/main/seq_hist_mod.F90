@@ -439,7 +439,8 @@ contains
   !===============================================================================
 
   subroutine seq_hist_writeavg(infodata, EClock_d, &
-       atm, lnd, ice, ocn, rof, glc, wav, iac, write_now, cpl_inst_tag)
+       atm, lnd, ice, ocn, rof, glc, wav, iac, write_now, cpl_inst_tag, &
+       rof_coupled_now)
 
     implicit none
 
@@ -455,6 +456,7 @@ contains
     type (component_type)   ,  intent(in) :: iac(:)
     logical                 ,  intent(in) :: write_now  ! write or accumulate
     character(len=*)        ,  intent(in) :: cpl_inst_tag
+    logical                 ,  intent(in) :: rof_coupled_now ! .true. if rof coupled this step
 
     integer(IN)           :: curr_ymd     ! Current date YYYYMMDD
     integer(IN)           :: curr_tod     ! Current time-of-day (s)
@@ -492,11 +494,13 @@ contains
     character(len=18) :: date_str
 
     logical        , save  :: first_call = .true. ! flags 1st call of this routine
+    logical        , save  :: rof_coupled = .false. ! .true. once rof has coupled at least once
 
     integer(IN)   :: numpts, nflds, ii
     real(r8), allocatable :: tag_data(:)
     real(r8), allocatable, target :: matrix_data(:,:)
     real(r8), dimension(:,:), pointer :: p_matrix
+    real(r8), dimension(:,:), pointer :: p_x2l_lm ! land merge snapshot of x2l
     type(mct_list) :: temp_list
     type(mct_string) :: mctOStr
     character(CL) :: model_doi_url
@@ -669,7 +673,12 @@ contains
        first_call = .false.
     endif
 
-    if (.not.write_now) then
+    ! Latch whether rof has coupled at least once. Until then the x2r MOAB tags
+    ! have never been written, so x2r must contribute zero to the average (this
+    ! matches driver-mct, where the x2r attribute vector is zero-filled at alloc).
+    rof_coupled = rof_coupled .or. rof_coupled_now
+
+    if (.not.write_now) then ! accumulate values in buffer
        cnt = cnt + 1
        allocate(tag_data(max(mbGetnCells(mbaxid),mbGetnCells(mblxid), &
                              mbGetnCells(mbrxid),mbGetnCells(mboxid), &
@@ -709,16 +718,18 @@ contains
              enddo
           enddo
           call mct_list_clean(temp_list)
-          call mct_list_init(temp_list, seq_flds_x2l_fields)
-          nflds = mct_list_nitem(temp_list)
-          do iidx = 1, num_inst_lnd
-             do ii = 1, nflds
-                call mct_list_get(mctOStr, ii, temp_list)
-                call mbGetCellTagVals(mblxid, mct_string_toChar(mctOStr), tag_data, numpts)
-                x2l_lx_avg(iidx)%data(:,ii) = x2l_lx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+          ! Accumulate x2l from the x2l_lm snapshot taken during the land merge,
+          ! not from the live MOAB tag.  Fields mapped into x2l later in the same
+          ! step (e.g. Flrr_volr, mapped in cime_run_rof_recv_post after the land
+          ! merge has already run) would otherwise be picked up a step early and
+          ! counted one extra time relative to driver-mct.  This is the same
+          ! source the instantaneous history uses.
+          if (lnd_prognostic) then
+             do iidx = 1, num_inst_lnd
+                p_x2l_lm => prep_lnd_get_x2l_lm()
+                x2l_lx_avg(iidx)%data(:,:) = x2l_lx_avg(iidx)%data(:,:) + p_x2l_lm(:,:)
              enddo
-          enddo
-          call mct_list_clean(temp_list)
+          endif
        endif
        if (rof_present .and. histavg_rof) then
           numpts = mbGetnCells(mbrxid)
@@ -732,16 +743,19 @@ contains
              enddo
           enddo
           call mct_list_clean(temp_list)
-          call mct_list_init(temp_list, seq_flds_x2r_fields)
-          nflds = mct_list_nitem(temp_list)
-          do iidx = 1, num_inst_rof
-             do ii = 1, nflds
-                call mct_list_get(mctOStr, ii, temp_list)
-                call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
-                x2r_rx_avg(iidx)%data(:,ii) = x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+          ! x2r tags are unwritten until rof first couples; add zero until then
+          if (rof_coupled) then
+             call mct_list_init(temp_list, seq_flds_x2r_fields)
+             nflds = mct_list_nitem(temp_list)
+             do iidx = 1, num_inst_rof
+                do ii = 1, nflds
+                   call mct_list_get(mctOStr, ii, temp_list)
+                   call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                   x2r_rx_avg(iidx)%data(:,ii) = x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
+                enddo
              enddo
-          enddo
-          call mct_list_clean(temp_list)
+             call mct_list_clean(temp_list)
+          endif
        endif
        if (ocn_present .and. histavg_ocn) then
           numpts = mbGetnCells(mboxid)
@@ -817,7 +831,7 @@ contains
        endif
        deallocate(tag_data)
 
-    else
+    else  ! accumulate one more slice, make average, write
 
        cnt = cnt + 1
        tbnds(2) = curr_time
@@ -859,16 +873,16 @@ contains
              enddo
           enddo
           call mct_list_clean(temp_list)
-          call mct_list_init(temp_list, seq_flds_x2l_fields)
-          nflds = mct_list_nitem(temp_list)
+          ! See the comment in the accumulate branch: x2l comes from the land
+          ! merge snapshot, not the live MOAB tag.
           do iidx = 1, num_inst_lnd
-             do ii = 1, nflds
-                call mct_list_get(mctOStr, ii, temp_list)
-                call mbGetCellTagVals(mblxid, mct_string_toChar(mctOStr), tag_data, numpts)
-                x2l_lx_avg(iidx)%data(:,ii) = (x2l_lx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
-             enddo
+             if (lnd_prognostic) then
+                p_x2l_lm => prep_lnd_get_x2l_lm()
+                x2l_lx_avg(iidx)%data(:,:) = (x2l_lx_avg(iidx)%data(:,:) + p_x2l_lm(:,:)) / (cnt * 1.0_r8)
+             else
+                x2l_lx_avg(iidx)%data(:,:) = x2l_lx_avg(iidx)%data(:,:) / (cnt * 1.0_r8)
+             endif
           enddo
-          call mct_list_clean(temp_list)
        endif
        if (rof_present .and. histavg_rof) then
           numpts = mbGetnCells(mbrxid)
@@ -886,9 +900,15 @@ contains
           nflds = mct_list_nitem(temp_list)
           do iidx = 1, num_inst_rof
              do ii = 1, nflds
-                call mct_list_get(mctOStr, ii, temp_list)
-                call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
-                x2r_rx_avg(iidx)%data(:,ii) = (x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+                if (rof_coupled) then
+                   ! rof has coupled: fold in this step's x2r sample, then average
+                   call mct_list_get(mctOStr, ii, temp_list)
+                   call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                   x2r_rx_avg(iidx)%data(:,ii) = (x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
+                else
+                   ! rof never coupled this window: buffer is a sum of zeros; just average
+                   x2r_rx_avg(iidx)%data(:,ii) = x2r_rx_avg(iidx)%data(:,ii) / (cnt * 1.0_r8)
+                endif
              enddo
           enddo
           call mct_list_clean(temp_list)
@@ -1028,6 +1048,7 @@ contains
                      trim(seq_flds_x2a_fields), nx=atm_nx, ny=atm_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
                 matrix_data = a2x_ax_avg(1)%data
+                p_matrix => matrix_data
                 call seq_io_write(hist_file, mbaxid, 'a2xavg', &
                      trim(seq_flds_a2x_fields), nx=atm_nx, ny=atm_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
@@ -1042,6 +1063,7 @@ contains
                      trim(seq_flds_l2x_fields), nx=lnd_nx, ny=lnd_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
                 matrix_data = x2l_lx_avg(1)%data
+                p_matrix => matrix_data
                 call seq_io_write(hist_file, mblxid, 'x2lavg', &
                      trim(seq_flds_x2l_fields), nx=lnd_nx, ny=lnd_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
@@ -1056,6 +1078,7 @@ contains
                      trim(seq_flds_r2x_fields), nx=rof_nx, ny=rof_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
                 matrix_data = x2r_rx_avg(1)%data
+                p_matrix => matrix_data
                 call seq_io_write(hist_file, mbrxid, 'x2ravg', &
                      trim(seq_flds_x2r_fields), nx=rof_nx, ny=rof_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
@@ -1070,6 +1093,7 @@ contains
                      trim(seq_flds_o2x_fields), nx=ocn_nx, ny=ocn_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
                 matrix_data = x2o_ox_avg(1)%data
+                p_matrix => matrix_data
                 call seq_io_write(hist_file, mboxid, 'x2oavg', &
                      trim(seq_flds_x2o_fields), nx=ocn_nx, ny=ocn_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
@@ -1084,6 +1108,7 @@ contains
                      trim(seq_flds_i2x_fields), nx=ice_nx, ny=ice_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
                 matrix_data = x2i_ix_avg(1)%data
+                p_matrix => matrix_data
                 call seq_io_write(hist_file, mbixid, 'x2iavg', &
                      trim(seq_flds_x2i_fields), nx=ice_nx, ny=ice_ny, nt=1, &
                      whead=whead, wdata=wdata, matrix=p_matrix)
@@ -1151,8 +1176,8 @@ contains
           cnt = 0
           tbnds(1) = curr_time
 
-       endif
-    endif
+       endif  ! if CPL task
+    endif ! end of average and write block
 
   end subroutine seq_hist_writeavg
 

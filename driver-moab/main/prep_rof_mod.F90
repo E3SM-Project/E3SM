@@ -1396,13 +1396,16 @@ subroutine prep_rof_accum_ocn_moab(timer)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from rof instance ')
     endif
-   ! fill the r2x_rm, etc double array fields nflds
-    tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
-    arrsize = nflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm)
-    if (ierr .ne. 0) then
-      call shr_sys_abort(subname//' error in getting x2r_rm array ')
-    endif
+   ! Zero-initialize x2r_rm rather than reading back the existing x2r tag.
+   ! This merge is the only writer of the x2r tag on mbrxid, and it explicitly
+   ! sets every field it computes below.  Fields that are not computed for this
+   ! configuration (e.g. So_ssh when ocn_rof_two_way is off, or the disabled
+   ! coszen_str) must be zero to match driver-mct, whose x2r attribute vector is
+   ! zero-filled at allocation.  Reading the tag back instead would carry the
+   ! MOAB define-time default (garbage) into those unset fields, contaminating
+   ! the coupler average-history file (the instantaneous history is unaffected
+   ! because seq_io_write_moab_tags scrubs MOAB defaults on output).
+    x2r_rm(:,:) = 0.0_R8
     ! a2x_rm (lsize, naflds))
 
     if (rof_heat) then
