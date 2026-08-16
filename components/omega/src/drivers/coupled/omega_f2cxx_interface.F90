@@ -27,7 +27,9 @@ module omega_f2cxx_mod
          import_field_names, &
          export_field_names, &
          import_field_indices, &
-         export_field_indices) bind(c)
+         export_field_indices, &
+         cpl_x2o_field_names, &
+         cpl_o2x_field_names) bind(c)
 
          use, intrinsic :: iso_c_binding, only: c_int, c_char, c_ptr
 
@@ -52,7 +54,9 @@ module omega_f2cxx_mod
             import_field_names, &
             export_field_names, &
             import_field_indices, &
-            export_field_indices
+            export_field_indices, &
+            cpl_x2o_field_names, &
+            cpl_o2x_field_names
 
       end subroutine omega_ocn_init1
 
@@ -83,26 +87,6 @@ module omega_f2cxx_mod
          implicit none
 
       end subroutine omega_ocn_finalize
-
-      function omega_get_layout_mct() result(layout_mct) bind(c)
-
-         use, intrinsic :: iso_c_binding, only: c_int
-
-         implicit none
-
-         integer(kind=c_int) :: layout_mct
-
-      end function omega_get_layout_mct
-
-      function omega_get_layout_moab() result(layout_moab) bind(c)
-
-         use, intrinsic :: iso_c_binding, only: c_int
-
-         implicit none
-
-         integer(kind=c_int) :: layout_moab
-
-      end function omega_get_layout_moab
 
       function omega_get_ncells_local() result(ncells_local) bind(c)
 

@@ -19,12 +19,20 @@ module omega_cpl_indices
       import_field_indices(num_omega_imports), &
       export_field_indices(num_omega_exports)
 
+   ! Full CIME x2o/o2x field-name lists (colon-separated), needed by the
+   ! MOAB bridge to define coupler tags covering every field CIME expects
+   ! on this app, not just the fields Omega currently imports/exports.
+   character(len=:, kind=c_char), public, allocatable, target :: &
+      cpl_x2o_field_names, &
+      cpl_o2x_field_names
+
    public :: omega_set_cpl_indices
 
 contains
 
    subroutine omega_set_cpl_indices()
 
+      use, intrinsic :: iso_c_binding, only: c_null_char
       use mct_mod, only: mct_aVect, mct_aVect_init, mct_aVect_clean
       use seq_flds_mod, only: seq_flds_o2x_fields, seq_flds_x2o_fields
 
@@ -35,6 +43,10 @@ contains
       ! instance which has the real lsize value, is created.
       call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=1)
       call mct_aVect_init(o2x, rList=seq_flds_o2x_fields, lsize=1)
+
+      ! full CIME field lists, for the MOAB bridge's tag definitions
+      cpl_x2o_field_names = trim(seq_flds_x2o_fields)//c_null_char
+      cpl_o2x_field_names = trim(seq_flds_o2x_fields)//c_null_char
 
       ! total number of import/export fields in coupler data arrays
       num_coupler_imports = size(x2o%rAttr, 1)

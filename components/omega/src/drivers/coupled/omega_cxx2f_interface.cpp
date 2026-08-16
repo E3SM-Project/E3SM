@@ -3,6 +3,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include "DataTypes.h"
+#include "Decomp.h"
 #include "Logging.h"
 #include "MachEnv.h"
 #include "OceanDriver.h"
@@ -12,6 +13,11 @@
 #include "TimeMgr.h"
 #include "TimeStepper.h"
 #include <mpi.h>
+#include <vector>
+
+#ifdef HAVE_MOAB
+#include "MoabInterface.h"
+#endif
 
 // helper C++ functions
 namespace {
@@ -39,6 +45,17 @@ std::map<std::string, int> buildFieldIndexMap(const char *FieldNames,
    }
    return FieldIdx;
 }
+
+#ifdef HAVE_MOAB
+// Coupling buffers for the MOAB path: attached once (by address) to
+// SfcCoupling in omega_ocn_init2, refilled from/drained to MOAB tag storage
+// around each omega_ocn_run call.
+int MoabNCouplerImports = 0;
+int MoabNCouplerExports = 0;
+std::vector<OMEGA::Real> MoabCplToOcn;
+std::vector<OMEGA::Real> MoabOcnToCpl;
+#endif
+
 } // namespace
 
 extern "C" {
@@ -60,7 +77,9 @@ void omega_ocn_init1(
     const char *ImportFieldNames,  // [in] array of import field names
     const char *ExportFieldNames,  // [in] array of export field names
     const int *ImportFieldIndices, // [in] array of import field indices
-    const int *ExportFieldIndices  // [in] array of export field indices
+    const int *ExportFieldIndices, // [in] array of export field indices
+    const char *Cpl2OcnFieldNames, // [in] full CIME x2o field list (MOAB)
+    const char *Ocn2CplFieldNames  // [in] full CIME o2x field list (MOAB)
 ) {
 
    // Create the C MPI_Comm from the Fortran one
@@ -101,7 +120,12 @@ void omega_ocn_init1(
    OMEGA::TimeInitParams TimeParams{StartTime, std::nullopt};
    OMEGA::CouplingInitParams CouplingParams{
        NCouplerImports, NCouplerExports,  ImportIdxMap,
-       ExportIdxMap,    CouplingInterval, OMEGA::CouplingLayout::MCT};
+       ExportIdxMap,    CouplingInterval,
+#ifdef HAVE_MOAB
+       OMEGA::CouplingLayout::MOAB};
+#else
+       OMEGA::CouplingLayout::MCT};
+#endif
 
    OMEGA::ocnInit1(Comm, OcnID, YamlConfigFile, OcnLogFile, StartTypeEnum,
                    TimeParams, CouplingParams);
@@ -110,11 +134,35 @@ void omega_ocn_init1(
 
    LOG_INFO("ocnInit: Finished initializing ocean model");
    int ErrAll;
+
+#ifdef HAVE_MOAB
+   // Decomp/HorzMesh exist by now (built inside OMEGA::ocnInit1 above), so
+   // the MOAB mesh can be constructed from them.
+   MoabNCouplerImports = NCouplerImports;
+   MoabNCouplerExports = NCouplerExports;
+   int MoabPid          = OMEGA::moabInit(Comm, OcnID);
+   OMEGA::moabDefineTagStorage(MoabPid, Cpl2OcnFieldNames, Ocn2CplFieldNames);
+#endif
 }
 
 void omega_ocn_init2(const double *cpl_to_ocn_data, double *ocn_to_cpl_data) {
    Pacer::start("Init2", 0);
+#ifdef HAVE_MOAB
+   // The MCT attribute-vector pointers above are meaningless under MOAB;
+   // attach Omega's own buffers instead, filled from MOAB tag storage.
+   // These are refilled/drained in place (same memory address) by
+   // omega_ocn_run on every subsequent coupling interval.
+   const int NCellsOwned = static_cast<int>(OMEGA::Decomp::getDefault()->NCellsOwned);
+   MoabCplToOcn.assign(static_cast<size_t>(MoabNCouplerImports) * NCellsOwned,
+                       0);
+   MoabOcnToCpl.assign(static_cast<size_t>(MoabNCouplerExports) * NCellsOwned,
+                       0);
+   OMEGA::moabImportTagStorage(MoabCplToOcn.data(),
+                               static_cast<int>(MoabCplToOcn.size()));
+   OMEGA::ocnInit2(MoabCplToOcn.data(), MoabOcnToCpl.data());
+#else
    OMEGA::ocnInit2(cpl_to_ocn_data, ocn_to_cpl_data);
+#endif
    Pacer::stop("Init2", 0);
 }
 
@@ -127,7 +175,15 @@ int omega_ocn_run(bool WriteRestart) {
    OMEGA::TimeInstant CurrTime    = ModelClock->getCurrentTime();
 
    Pacer::start("Run", 0);
+#ifdef HAVE_MOAB
+   OMEGA::moabImportTagStorage(MoabCplToOcn.data(),
+                               static_cast<int>(MoabCplToOcn.size()));
+#endif
    ErrRun = OMEGA::ocnRun(CurrTime, WriteRestart);
+#ifdef HAVE_MOAB
+   OMEGA::moabExportTagStorage(MoabOcnToCpl.data(),
+                               static_cast<int>(MoabOcnToCpl.size()));
+#endif
    Pacer::stop("Run", 0);
 
    return ErrRun;
@@ -156,14 +212,6 @@ int omega_ocn_finalize() {
    Kokkos::finalize();
 
    return ErrFinalize;
-}
-
-int omega_get_layout_mct() {
-   return static_cast<int>(OMEGA::CouplingLayout::MCT);
-}
-
-int omega_get_layout_moab() {
-   return static_cast<int>(OMEGA::CouplingLayout::MOAB);
 }
 
 int omega_get_ncells_local() {
