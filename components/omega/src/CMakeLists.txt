@@ -117,6 +117,16 @@ if("${OMEGA_BUILD_MODE}" STREQUAL "E3SM")
       drivers/coupled/omega_cpl_indices.F90
     )
 
+    # MOAB is optional: only present when COMP_INTERFACE=moab (buildlib_cmake
+    # passes OMEGA_MOAB_ROOT in that case). The non-MOAB build must be
+    # unaffected when it isn't found.
+    if(OMEGA_MOAB_ROOT)
+      find_package(MOAB CONFIG PATHS ${OMEGA_MOAB_ROOT} NO_DEFAULT_PATH)
+    endif()
+    if(MOAB_FOUND)
+      list(APPEND OCN_SRC drivers/coupled/MoabInterface.cpp)
+    endif()
+
     # create ocn lib
     add_library(ocn ${OCN_SRC})
 
@@ -137,6 +147,12 @@ if("${OMEGA_BUILD_MODE}" STREQUAL "E3SM")
       OmegaLibFlags
       csm_share
     )
+
+    if(MOAB_FOUND)
+      target_compile_definitions(ocn PRIVATE HAVE_MOAB)
+      target_include_directories(ocn PRIVATE ${MOAB_INCLUDE_DIRS})
+      target_link_libraries(ocn PRIVATE ${MOAB_LIBRARIES})
+    endif()
 
 endif()
 
