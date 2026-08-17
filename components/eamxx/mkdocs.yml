@@ -55,6 +55,7 @@ nav:
   - 'Technical Guide':
     - 'Overview': 'technical/index.md'
     - 'Physics':
+      - 'SHOC-HOMME 3D turbulence coupling': 'technical/physics/shoc_3d_turbulence.md'
       - 'P3':
         - 'Autoconversion': 'technical/physics/p3/autoconversion.md'
         - 'Back to Cell Average': 'technical/physics/p3/back_to_cell_average.md'
