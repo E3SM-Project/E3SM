@@ -56,9 +56,11 @@ For example:
 ./atmchange shoc::coeff_km_horiz=0.1
 ```
 
-Note that 0.1 represents the default values for coeff_kh_horiz and coeff_km_horiz.
-While these are tunable parameters, early testing suggests that valuess of 0.1 are optimal
-to retain appropriate isotropic and anisotropic turbulence behavior as resolution changes.  
-While an exhaustive analysis of these parameters has yet to be performed, setting these values 
-much greater than 1.0 appears to significantly reduce the effective resolution of the model 
-and should be avoided.  
+The default values of `coeff_kh_horiz` and `coeff_km_horiz` are both `0.1`.
+These parameters are tunable, but early testing suggests that `0.1` provides a
+good balance for preserving isotropic and anisotropic turbulence behavior as
+resolution changes.
+
+A more exhaustive parameter study is still needed. At present, values much
+larger than `1.0` appear to reduce the model's effective resolution
+substantially and should generally be avoided.
