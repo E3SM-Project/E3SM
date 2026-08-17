@@ -362,7 +362,13 @@ void init_functors_c (const int& allocate_buffer)
 #ifdef HOMME_ENABLE_COMPOSE
   else                           c.create_if_not_there<ComposeTransport>();
 #endif
-  auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
+  // Pass (num_elems, params) so that, like caar above, this uses the
+  // lazy-construction path (is_setup=false), forcing the setup_needed()/
+  // setup() call below to actually run. That setup() call is what copies
+  // nu_scale_top/nu_scale_top_ilev_pack_lim from the Fortran-initialized
+  // ref states (needed when tom_sponge_start>0); the no-args constructor
+  // sets is_setup=true immediately, silently skipping that copy.
+  auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>(elems.num_elems(), params);
   auto& ff      = c.create_if_not_there<ForcingFunctor>();
   auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),tracers.num_tracers(),
                                                       params.theta_hydrostatic_mode);
