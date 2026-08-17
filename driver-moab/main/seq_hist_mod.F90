@@ -691,6 +691,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 a2x_ax_avg(iidx)%data(:,ii) = a2x_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -701,6 +702,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 x2a_ax_avg(iidx)%data(:,ii) = x2a_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -714,6 +716,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mblxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 l2x_lx_avg(iidx)%data(:,ii) = l2x_lx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -739,6 +742,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 r2x_rx_avg(iidx)%data(:,ii) = r2x_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -751,6 +755,7 @@ contains
                 do ii = 1, nflds
                    call mct_list_get(mctOStr, ii, temp_list)
                    call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                   call mct_string_clean(mctOStr)
                    x2r_rx_avg(iidx)%data(:,ii) = x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)
                 enddo
              enddo
@@ -765,6 +770,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 o2x_ox_avg(iidx)%data(:,ii) = o2x_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -775,6 +781,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 x2o_ox_avg(iidx)%data(:,ii) = x2o_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -788,6 +795,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 i2x_ix_avg(iidx)%data(:,ii) = i2x_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -798,6 +806,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 x2i_ix_avg(iidx)%data(:,ii) = x2i_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -811,6 +820,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbofxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 xao_ox_avg(iidx)%data(:,ii) = xao_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -824,6 +834,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 xao_ax_avg(iidx)%data(:,ii) = xao_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)
              enddo
           enddo
@@ -846,6 +857,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 a2x_ax_avg(iidx)%data(:,ii) = (a2x_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -856,6 +868,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 x2a_ax_avg(iidx)%data(:,ii) = (x2a_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -869,6 +882,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mblxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 l2x_lx_avg(iidx)%data(:,ii) = (l2x_lx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -892,6 +906,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 r2x_rx_avg(iidx)%data(:,ii) = (r2x_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -904,6 +919,7 @@ contains
                    ! rof has coupled: fold in this step's x2r sample, then average
                    call mct_list_get(mctOStr, ii, temp_list)
                    call mbGetCellTagVals(mbrxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                   call mct_string_clean(mctOStr)
                    x2r_rx_avg(iidx)%data(:,ii) = (x2r_rx_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
                 else
                    ! rof never coupled this window: buffer is a sum of zeros; just average
@@ -921,6 +937,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 o2x_ox_avg(iidx)%data(:,ii) = (o2x_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -931,6 +948,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mboxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 x2o_ox_avg(iidx)%data(:,ii) = (x2o_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -944,6 +962,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 i2x_ix_avg(iidx)%data(:,ii) = (i2x_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -954,6 +973,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbixid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 x2i_ix_avg(iidx)%data(:,ii) = (x2i_ix_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -967,6 +987,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbofxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 xao_ox_avg(iidx)%data(:,ii) = (xao_ox_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -980,6 +1001,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbaxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 xao_ax_avg(iidx)%data(:,ii) = (xao_ax_avg(iidx)%data(:,ii) + tag_data(1:numpts)) / (cnt * 1.0_r8)
              enddo
           enddo
@@ -1381,6 +1403,7 @@ contains
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
                 call mct_string_clean(mctOStr)
+                call mct_string_clean(mctOStr)
                 avavg(found)%data(:,ii) = (avavg(found)%data(:,ii) + tag_data(:)) / (avcnt(found) * 1.0_r8)
              enddo
           else
@@ -1388,6 +1411,7 @@ contains
              do ii = 1, nflds
                 call mct_list_get(mctOStr, ii, temp_list)
                 call mbGetCellTagVals(mbxid, mct_string_toChar(mctOStr), tag_data, numpts)
+                call mct_string_clean(mctOStr)
                 call mct_string_clean(mctOStr)
                 avavg(found)%data(:,ii) = avavg(found)%data(:,ii) + tag_data(:)
              enddo
