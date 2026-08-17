@@ -287,10 +287,10 @@ class GHCISNLCuda(Machine):
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
 
 ###############################################################################
-class LLNLIntel(Machine):
+class LLNLIntelClassic(Machine):
 ###############################################################################
     @classmethod
-    def setup_llnl_intel(cls,name):
+    def setup_llnl_intel_classic(cls,name):
         super().setup_base(name)
 
         cls.env_setup = ["module --force purge",
@@ -301,28 +301,28 @@ class LLNLIntel(Machine):
 
 
 ###############################################################################
-class RubyIntel(LLNLIntel):
+class RubyIntelClassic(LLNLIntelClassic):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_llnl_intel("ruby-intel")
+        super().setup_llnl_intel_classic("ruby-intel-classic")
 
 ###############################################################################
-class DaneIntel(LLNLIntel):
+class DaneIntelClassic(LLNLIntelClassic):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_llnl_intel("dane-intel")
+        super().setup_llnl_intel_classic("dane-intel-classic")
 
 ###############################################################################
-class QuartzIntel(LLNLIntel):
+class QuartzIntelClassic(LLNLIntelClassic):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_llnl_intel("quartz-intel")
+        super().setup_llnl_intel_classic("quartz-intel-classic")
 
         cls.env_setup = ["module --force purge",
                          "module use --append /usr/workspace/e3sm/install/quartz/modulefiles",
