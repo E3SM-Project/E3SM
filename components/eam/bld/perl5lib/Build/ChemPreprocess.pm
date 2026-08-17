@@ -308,7 +308,7 @@ sub build_chem_preproc
     if ($fc_type) {
 
 	if    ($fc_type eq 'pgi')       { $cmplr = 'pgf90'; }
-	elsif ($fc_type eq 'intel')     { $cmplr = 'ifort'; }
+	elsif ($fc_type eq 'intel-classic')     { $cmplr = 'ifort'; }
 	elsif ($fc_type eq 'gnu')       { $cmplr = 'gfortran'; }
 	elsif ($fc_type eq 'xlf')       { $cmplr = 'xlf95'; }
 
@@ -571,7 +571,7 @@ print $fh <<"EOF";
 
      Version Options
         model   = cam
-        machine = intel
+        machine = intel-classic
         architecture = hybrid
         vec_ftns  = on
         multitask = on

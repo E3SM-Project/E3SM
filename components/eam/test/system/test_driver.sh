@@ -149,7 +149,7 @@ else
   module load pnetcdf/1.3.0
   module load mkl/11.0.1
   module load perlmods
-  export CFG_STRING="-cc mpicc -fc mpif90 -fc_type intel "
+  export CFG_STRING="-cc mpicc -fc mpif90 -fc_type intel-classic "
 fi
 
 export MAKE_CMD="gmake -j $gmake_j"
@@ -226,7 +226,7 @@ else
   module load pnetcdf/1.3.0
   module load mkl/11.0.1
   module load perlmods
-  export CFG_STRING="-cc mpicc -fc mpif90 -fc_type intel "
+  export CFG_STRING="-cc mpicc -fc mpif90 -fc_type intel-classic "
 fi
 
 
@@ -329,7 +329,7 @@ if [ "\$CAM_FC" = "INTEL" ]; then
     export LIB_MPI=\${mpi}/lib64
     export LD_LIBRARY_PATH=\${LIB_MPI}:\${LD_LIBRARY_PATH}
     export PATH=\${INTEL}/bin:\${mpi}/bin:\${PATH}
-    export CFG_STRING=" -cc mpicc -fc_type intel -fc mpif90 -cppdefs -DNO_MPI2 -cppdefs -DNO_MPIMOD "
+    export CFG_STRING=" -cc mpicc -fc_type intel-classic -fc mpif90 -cppdefs -DNO_MPI2 -cppdefs -DNO_MPIMOD "
     input_file="tests_posttag_goldbach"
     export CCSM_MACH="goldbach_intel"
 elif [ "\$CAM_FC" = "NAG" ]; then
@@ -420,7 +420,7 @@ export CAM_RESTART_TASKS=8
 . /opt/modules/default/init/sh
 module load cray-netcdf
 
-export CFG_STRING="-fc ftn -cc cc -fc_type intel "
+export CFG_STRING="-fc ftn -cc cc -fc_type intel-classic "
 export CCSM_MACH="edison_intel"
 module list
 

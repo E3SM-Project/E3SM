@@ -24,7 +24,7 @@ mkdir -p ../output
 module unload PrgEnv-pgi
 module unload PrgEnv-cray
 module unload PrgEnv-gnu
-module unload PrgEnv-intel
+module unload PrgEnv-intel-classic
 
 #module load PrgEnv-pgi
 #gmake COMPILER=pgf95 DEBUG=TRUE EXENAME=cam_chempp
@@ -32,7 +32,7 @@ module unload PrgEnv-intel
 #module load PrgEnv-pgi
 #gmake COMPILER=gfortran DEBUG=TRUE EXENAME=cam_chempp
 
-#module load PrgEnv-intel
+#module load PrgEnv-intel-classic
 #gmake COMPILER=ifort DEBUG=TRUE EXENAME=cam_chempp
 
 #module load PrgEnv-cray

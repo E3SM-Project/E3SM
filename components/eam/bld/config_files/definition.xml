@@ -235,7 +235,7 @@ User specified C compiler options to append to Makefile defaults.
 <entry id="fc" value="">
 User specified Fortran compiler overrides Makefile default.
 </entry>
-<entry id="fc_type" valid_values="pgi,intel,gnu,pathscale,xlf,nag" value="">
+<entry id="fc_type" valid_values="pgi,intel-classic,gnu,pathscale,xlf,nag" value="">
 Type of Fortran compiler.  Used when -fc specifies a generic wrapper script
 such as mpif90 or ftn.
 </entry>

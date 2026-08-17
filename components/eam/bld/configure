@@ -236,7 +236,7 @@ OPTIONS
      -cosp_libdir <dir> Directory containing COSP library.
      -esmf_libdir <dir> Directory containing ESMF library and esmf.mk file.
      -fc <name>         User specified Fortran compiler.  Overrides Makefile default.
-     -fc_type <name>    Type of Fortran compiler [pgi | intel | gnu | pathscale
+     -fc_type <name>    Type of Fortran compiler [pgi | intel-classic | gnu | pathscale
                         | xlf | nag].  This argument is used in conjunction
                         with the -fc argument when the name of the fortran
                         compiler refers to a wrapper script (e.g., mpif90
@@ -1633,7 +1633,7 @@ else {
 # section of the Makefile.
 
 if    ($fc =~ /pgf/)    { $fc_type = 'pgi'; }
-elsif ($fc =~ /ifort/)  { $fc_type = 'intel'; }
+elsif ($fc =~ /ifort/)  { $fc_type = 'intel-classic'; }
 elsif ($fc =~ /^nag/)    { $fc_type = 'nag'; }
 elsif ($fc =~ /path/)   { $fc_type = 'pathscale'; }
 elsif ($fc =~ /gfort/)  { $fc_type = 'gnu'; }
@@ -1677,7 +1677,7 @@ if ($cc eq '') {
 
 	# Set default C compiler based on fc_type
 	if    ($fc_type eq 'pgi')       { $cc = 'pgcc'; }
-	elsif ($fc_type eq 'intel')     { $cc = 'icc'; }
+	elsif ($fc_type eq 'intel-classic')     { $cc = 'icc'; }
         elsif ($fc_type eq 'nag')       { $cc = 'gcc'; }
 	elsif ($fc_type eq 'pathscale') { $cc = 'pathcc'; }
 	elsif ($fc_type eq 'gnu')       { $cc = 'gcc'; }

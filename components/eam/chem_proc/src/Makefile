@@ -110,8 +110,8 @@ endif
 #------------------------------------------------------------------------
 FC := $(COMPILER)
 
-# if compiler is intel, change to ifort
-ifeq ($(COMPILER),intel)
+# if compiler is intel-classic, change to ifort
+ifeq ($(COMPILER),intel-classic)
   FC := ifort
 endif
 

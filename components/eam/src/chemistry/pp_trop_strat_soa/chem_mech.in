@@ -660,7 +660,7 @@
    SIMULATION PARAMETERS
 
     Version Options
-        machine = intel
+        machine = intel-classic
         model   = cam
         model_architecture = SCALAR
         architecture = hybrid

@@ -102,7 +102,7 @@ CHEMISTRY
 
      Version Options
         model   = cam
-        machine = intel
+        machine = intel-classic
         architecture = hybrid
         vec_ftns  = on
         multitask = on
