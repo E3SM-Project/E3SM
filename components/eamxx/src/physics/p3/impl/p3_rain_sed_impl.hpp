@@ -137,20 +137,29 @@ void Functions<S,D>
 	});
 
       // AaronDonahue, precip_liq_flux output
-      kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
-      kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
-      ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Pack::n);
-      Kokkos::parallel_for(
-       Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
-        const int pk = kmin + pk_;
-        const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
-        const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-        auto index_pack = range_pack-1;
-        const auto lt_zero = index_pack < 0;
-        index_pack.set(lt_zero, 0);
-        const auto flux_qx_pk = index(sflux_qx, index_pack);
-        precip_liq_flux(pk).set(range_mask, precip_liq_flux(pk) + flux_qx_pk);
-      });
+       // The flux diagnostic is cell-centered.  The +1 offset can produce
+       // nk when the sedimentation interval reaches the bottom cell, but nk
+       // is outside the valid scalar and packed extents.
+       kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
+       kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
+       if (kmin_scalar < 0) kmin_scalar = 0;
+       if (kmax_scalar >= nk) kmax_scalar = nk-1;
+       if (kmin_scalar <= kmax_scalar) {
+         ekat::impl::set_min_max(kmin_scalar, kmax_scalar, kmin, kmax, Pack::n);
+         Kokkos::parallel_for(
+          Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
+           const int pk = kmin + pk_;
+           const auto range_pack = ekat::range<IntPack>(pk*Pack::n);
+           const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
+           auto index_pack = range_pack-1;
+           const auto lt_zero = index_pack < 0;
+           index_pack.set(lt_zero, 0);
+           const auto gt_top = index_pack >= nk;
+           index_pack.set(gt_top, nk-1);
+           const auto flux_qx_pk = index(sflux_qx, index_pack);
+           precip_liq_flux(pk).set(range_mask, precip_liq_flux(pk) + flux_qx_pk);
+         });
+       }
     }
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {

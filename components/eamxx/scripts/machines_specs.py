@@ -141,10 +141,10 @@ class Aurora(Machine):
 class PM(CrayMachine):
 ###############################################################################
     @classmethod
-    def setup_pm(cls,partition):
+    def setup_pm(cls,partition,machine_name=None):
         expect (partition in ['cpu', 'gpu'], "Unknown Perlmutter partition")
 
-        super().setup_cray("pm-"+partition)
+        super().setup_cray(machine_name or "pm-"+partition)
 
         compiler = "gnu" if partition=="cpu" else "gnugpu"
 
@@ -166,6 +166,14 @@ class PMCPU(PM):
         super().setup_pm("cpu")
 
 ###############################################################################
+class AlvarezCPU(PMCPU):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_pm("cpu", "alvarez-cpu")
+
+###############################################################################
 class PMGPU(PM):
 ###############################################################################
     concrete = True
@@ -175,6 +183,15 @@ class PMGPU(PM):
 
         cls.num_run_res = 4 # four gpus
         cls.gpu_arch = "cuda"
+
+###############################################################################
+class AlvarezGPU(PMGPU):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup()
+        cls.name = "alvarez-gpu"
 
 ###############################################################################
 class Polaris(CrayMachine):
@@ -238,6 +255,22 @@ class Lychee(Machine):
         #cls.batch = "bsub -I -q rhel8 -n 4 -gpu num=4"
 
         cls.num_run_res = 4 # four gpus
+        cls.gpu_arch = "cuda"
+
+###############################################################################
+class VistaGH(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("vista-gh")
+        compiler = "gnugpu"
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
+        account = os.environ.get("EAMXX_VISTA_ACCOUNT")
+        cls.batch = "salloc --partition gh-dev --time 00:30:00 --nodes=1"
+        if account:
+            cls.batch = f"salloc --account {account} --partition gh-dev --time 00:30:00 --nodes=1"
+        cls.num_run_res = 1
         cls.gpu_arch = "cuda"
 
 ###############################################################################

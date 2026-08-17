@@ -43,11 +43,15 @@ void Functions<S,D>
     // sgs_var_coef = subgrid_variance_scaling(inv_qc_relvar, 2);
     sgs_var_coef = 1;
 
-    qc2qi_hetero_freeze_tend.set(qc_not_small_and_t_freezing,
-               sgs_var_coef * CONS6 * cdist1 * tgamma(7+mu_c) * expAimmDt *
-               square(inv_lamc3));
-    nc2ni_immers_freeze_tend.set(qc_not_small_and_t_freezing,
-               CONS5 * cdist1 * tgamma(sp(4.0)+mu_c) * expAimmDt * inv_lamc3);
+     // Evaluate the small inverse-lambda factors before the large exponential
+     // and gamma factors.  The original ordering can overflow in SP even when
+     // the final product is representable.
+     const Pack exp_lamc3 = expAimmDt * square(inv_lamc3);
+     const Pack exp_lamc = expAimmDt * inv_lamc3;
+     qc2qi_hetero_freeze_tend.set(qc_not_small_and_t_freezing,
+                sgs_var_coef * CONS6 * cdist1 * tgamma(7+mu_c) * exp_lamc3);
+     nc2ni_immers_freeze_tend.set(qc_not_small_and_t_freezing,
+                CONS5 * cdist1 * tgamma(sp(4.0)+mu_c) * exp_lamc);
   }
 }
 

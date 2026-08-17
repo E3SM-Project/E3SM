@@ -7,6 +7,10 @@
 #include "share/core/eamxx_types.hpp"
 
 #include <chrono>
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <limits>
 #include <vector>
 
 namespace {
@@ -47,7 +51,8 @@ using P3F  = Functions<Real, DefaultDevice>;
 }
 
 struct Baseline {
-  Baseline (const Int nsteps, const Real dt, const Int ncol, const Int nlev, const Int repeat, const std::string predict_nc, const std::string prescribed_CCN)
+  Baseline (const Int nsteps, const Int warmup, const Real dt, const Int ncol, const Int nlev, const Int repeat, const std::string predict_nc, const std::string prescribed_CCN)
+    : warmup_(warmup)
   {
     //If predict_nc="both", start looping at i_start=0 (false) and end after i_start=1 (true)
     //otherwise, modify start and end to only loop over case of interest. Test that predict_nc
@@ -78,9 +83,11 @@ struct Baseline {
 
     Int nerr = 0;
 
-    Int total_duration_microsec = 0;
-
     for (auto ps : params_) {
+      Int total_duration_microsec = 0;
+      std::vector<std::vector<double>> step_samples(ps.nsteps);
+      std::vector<double> call_samples;
+
       // Run reference p3 on this set of parameters.
       for (Int r = -1; r < ps.repeat; ++r) {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
@@ -96,11 +103,16 @@ struct Baseline {
                     << std::endl;
         }
 
+        if (r != -1 && ps.repeat > 0) {
+          for (Int it=0; it<warmup_; ++it) p3_main_wrap(*d);
+        }
         for (int it=0; it<ps.nsteps; it++) {
           Int current_microsec = p3_main_wrap(*d);
 
           if (r != -1 && ps.repeat > 0) { // do not count the "cold" run
             total_duration_microsec += current_microsec;
+            step_samples[it].push_back(1e-6 * current_microsec);
+            call_samples.push_back(1e-6 * current_microsec);
           }
 
           if (ps.repeat == 0) {
@@ -112,7 +124,16 @@ struct Baseline {
       if (ps.repeat > 0) {
         const double report_time = (1e-6*total_duration_microsec) / ps.repeat;
 
+        printf("Timing summary: warmup=%d measured_steps=%d samples=%zu\n",
+               warmup_, ps.nsteps, call_samples.size());
         printf("Time = %1.3e seconds\n", report_time);
+        print_stats("Measured steps", call_samples);
+        if (!step_samples.empty()) print_stats("First measured step", step_samples.front());
+        for (int it=0; it<ps.nsteps; it++) {
+          char label[32];
+          snprintf(label, sizeof(label), "Step %d", it+1);
+          print_stats(label, step_samples[it]);
+        }
       }
     }
     return nerr;
@@ -180,6 +201,26 @@ private:
   }
 
   std::vector<ParamSet> params_;
+  Int warmup_;
+
+  static void print_stats (const char* label, const std::vector<double>& samples) {
+    if (samples.empty()) return;
+    double sum = 0, min_value = std::numeric_limits<double>::max(), max_value = 0;
+    for (const auto value : samples) {
+      sum += value;
+      min_value = std::min(min_value, value);
+      max_value = std::max(max_value, value);
+    }
+    const double mean = sum / samples.size();
+    double variance = 0;
+    for (const auto value : samples) {
+      const double delta = value - mean;
+      variance += delta * delta;
+    }
+    variance /= samples.size();
+    printf("%s: mean=%1.6e min=%1.6e max=%1.6e stddev=%1.6e seconds\n",
+           label, mean, min_value, max_value, std::sqrt(variance));
+  }
 
   static void write (std::ofstream& ofile, const P3Data::Ptr& d) {
     P3DataIterator fdi(d);
@@ -217,6 +258,7 @@ private:
 #endif
     }
   }
+
 };
 
 void expect_another_arg (int i, int argc) {
@@ -238,6 +280,7 @@ int main (int argc, char** argv) {
       "  -b <baseline_path>  Path to directory containing baselines.\n"
       "  -t <tol>            Tolerance for relative error. Default 0.\n"
       "  -s <steps>          Number of timesteps. Default=6.\n"
+      "  -w <steps>          Warmup timesteps before measured timing steps. Default=0.\n"
       "  -dt <seconds>       Length of timestep. Default=300.\n"
       "  -i <cols>           Number of columns. Default=3.\n"
       "  -k <nlev>           Number of vertical levels. Default=72.\n"
@@ -250,6 +293,7 @@ int main (int argc, char** argv) {
   bool generate = false, no_baseline = true;
   scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int timesteps = 6;
+  Int warmup = 0;
   Int dt = 300;
   Int ncol = 3;
   Int nlev = 72;
@@ -275,6 +319,12 @@ int main (int argc, char** argv) {
       expect_another_arg(i, argc);
       ++i;
       timesteps = std::atoi(argv[i]);
+    }
+    if (ekat::argv_matches(argv[i], "-w", "--warmup")) {
+      expect_another_arg(i, argc);
+      ++i;
+      warmup = std::atoi(argv[i]);
+      EKAT_REQUIRE_MSG(warmup >= 0, "Warmup steps must be non-negative");
     }
     if (ekat::argv_matches(argv[i], "-dt", "--dt")) {
       expect_another_arg(i, argc);
@@ -321,7 +371,7 @@ int main (int argc, char** argv) {
 
   scream::initialize_eamxx_session(argc, argv);
   {
-    Baseline bln(timesteps, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
+    Baseline bln(timesteps, warmup, static_cast<Real>(dt), ncol, nlev, repeat, predict_nc, prescribed_ccn);
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
       nerr += bln.generate_baseline(baseline_fn);
