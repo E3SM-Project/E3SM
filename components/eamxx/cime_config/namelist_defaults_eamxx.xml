@@ -748,6 +748,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sgs_buoy_flux     >0.0</sgs_buoy_flux>
     <eddy_diff_mom     >0.0</eddy_diff_mom>
     <eddy_diff_heat    >0.0</eddy_diff_heat>
+    <eddy_diff_mom_horiz>0.0</eddy_diff_mom_horiz>
+    <eddy_diff_heat_horiz>0.0</eddy_diff_heat_horiz>
     <T_prev_micro_step >0.0</T_prev_micro_step>
     <qv_prev_micro_step>0.0</qv_prev_micro_step>
     <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
