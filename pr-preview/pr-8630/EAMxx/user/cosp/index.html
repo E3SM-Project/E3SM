@@ -4936,10 +4936,10 @@ Currently, minimal outputs from the ISCCP, MODIS, and MISR simulators have been 
 <h2 id="running-with-cosp">Running with COSP</h2>
 <p>Turning COSP on simply requires adding the <code>cosp</code> process to <code>atm_procs_list</code>
 via <code>atmchange</code> in a case directory:</p>
-<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::atm_procs_list<span class="o">=</span><span class="s2">&quot;mac_aero_mic,rrtmgp,cosp&quot;</span>
+<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::atm_procs_list<span class="o">=</span><span class="s2">"mac_aero_mic,rrtmgp,cosp"</span>
 </code></pre></div>
 <p>Additionally, the frequency at which COSP is run can be configured via <code>atmchange</code>:</p>
-<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::cosp::cosp_frequency_units<span class="o">=</span><span class="s2">&quot;steps&quot;</span>
+<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::cosp::cosp_frequency_units<span class="o">=</span><span class="s2">"steps"</span>
 ./atmchange<span class="w"> </span>physics::cosp::cosp_frequency<span class="o">=</span><span class="m">1</span>
 </code></pre></div>
 <p>COSP can be run with or without subcolumn sampling.

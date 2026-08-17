@@ -4827,30 +4827,30 @@ please feel free to submit a PR.</p>
 <span class="n">pyeamxx</span><span class="o">.</span><span class="n">init</span><span class="p">()</span>
 
 <span class="n">dt</span> <span class="o">=</span> <span class="mi">1800</span>
-<span class="n">t0_str</span> <span class="o">=</span> <span class="s2">&quot;2020-10-10-00000&quot;</span>
+<span class="n">t0_str</span> <span class="o">=</span> <span class="s2">"2020-10-10-00000"</span>
 
-<span class="n">ic_file</span> <span class="o">=</span> <span class="s2">&quot;/lcrc/group/e3sm/public_html/inputdata/atm/scream/init/screami_unit_tests_ne2np4L72_20220822.nc&quot;</span>
+<span class="n">ic_file</span> <span class="o">=</span> <span class="s2">"/lcrc/group/e3sm/public_html/inputdata/atm/scream/init/screami_unit_tests_ne2np4L72_20220822.nc"</span>
 <span class="n">ncols</span> <span class="o">=</span> <span class="mi">218</span>
 <span class="n">nlevs</span> <span class="o">=</span> <span class="mi">72</span>
 <span class="n">pyeamxx</span><span class="o">.</span><span class="n">create_grids_manager</span><span class="p">(</span><span class="n">ncols</span><span class="p">,</span><span class="n">nlevs</span><span class="p">,</span> <span class="n">ic_file</span><span class="p">)</span>
 
 <span class="n">rad_dict</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;column_chunk_size&quot;</span><span class="p">:</span> <span class="mi">123</span><span class="p">,</span>
-    <span class="s2">&quot;active_gases&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;h2o&quot;</span><span class="p">,</span> <span class="s2">&quot;co2&quot;</span><span class="p">,</span> <span class="s2">&quot;o3&quot;</span><span class="p">,</span> <span class="s2">&quot;n2o&quot;</span><span class="p">,</span> <span class="s2">&quot;co&quot;</span> <span class="p">,</span> <span class="s2">&quot;ch4&quot;</span><span class="p">,</span> <span class="s2">&quot;o2&quot;</span><span class="p">,</span> <span class="s2">&quot;n2&quot;</span><span class="p">],</span>
-    <span class="s2">&quot;orbital_year&quot;</span><span class="p">:</span> <span class="mi">1990</span><span class="p">,</span>
-    <span class="s2">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;info&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;do_aerosol_rad&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_coefficients_file_sw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-data-sw-g112-210809.nc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_coefficients_file_lw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-data-lw-g128-210809.nc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_cloud_optics_file_sw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;rrtmgp_cloud_optics_file_lw&quot;</span><span class="p">:</span> <span class="s2">&quot;/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc&quot;</span><span class="p">,</span>
+    <span class="s2">"column_chunk_size"</span><span class="p">:</span> <span class="mi">123</span><span class="p">,</span>
+    <span class="s2">"active_gases"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"h2o"</span><span class="p">,</span> <span class="s2">"co2"</span><span class="p">,</span> <span class="s2">"o3"</span><span class="p">,</span> <span class="s2">"n2o"</span><span class="p">,</span> <span class="s2">"co"</span> <span class="p">,</span> <span class="s2">"ch4"</span><span class="p">,</span> <span class="s2">"o2"</span><span class="p">,</span> <span class="s2">"n2"</span><span class="p">],</span>
+    <span class="s2">"orbital_year"</span><span class="p">:</span> <span class="mi">1990</span><span class="p">,</span>
+    <span class="s2">"log_level"</span><span class="p">:</span> <span class="s2">"info"</span><span class="p">,</span>
+    <span class="s2">"do_aerosol_rad"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">"rrtmgp_coefficients_file_sw"</span><span class="p">:</span> <span class="s2">"/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-data-sw-g112-210809.nc"</span><span class="p">,</span>
+    <span class="s2">"rrtmgp_coefficients_file_lw"</span><span class="p">:</span> <span class="s2">"/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-data-lw-g128-210809.nc"</span><span class="p">,</span>
+    <span class="s2">"rrtmgp_cloud_optics_file_sw"</span><span class="p">:</span> <span class="s2">"/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc"</span><span class="p">,</span>
+    <span class="s2">"rrtmgp_cloud_optics_file_lw"</span><span class="p">:</span> <span class="s2">"/lcrc/group/e3sm/data/inputdata/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc"</span><span class="p">,</span>
 <span class="p">}</span>
 
-<span class="n">rad</span> <span class="o">=</span> <span class="n">pyeamxx</span><span class="o">.</span><span class="n">AtmProc</span><span class="p">(</span><span class="n">rad_dict</span><span class="p">,</span> <span class="s1">&#39;RRTMGP&#39;</span><span class="p">)</span>
+<span class="n">rad</span> <span class="o">=</span> <span class="n">pyeamxx</span><span class="o">.</span><span class="n">AtmProc</span><span class="p">(</span><span class="n">rad_dict</span><span class="p">,</span> <span class="s1">'RRTMGP'</span><span class="p">)</span>
 <span class="n">rad</span><span class="o">.</span><span class="n">read_ic</span><span class="p">(</span><span class="n">ic_file</span><span class="p">)</span>
 <span class="n">rad</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">t0_str</span><span class="p">)</span>
 
-<span class="n">t</span> <span class="o">=</span> <span class="n">rad</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="s2">&quot;T_mid&quot;</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">rad</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="s2">"T_mid"</span><span class="p">)</span>
 <span class="n">tm</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">tm</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">],</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

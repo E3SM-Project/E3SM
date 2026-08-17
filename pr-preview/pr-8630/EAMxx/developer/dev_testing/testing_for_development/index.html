@@ -5206,7 +5206,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <div class="highlight"><pre><span></span><code><span class="cp">#ifndef EAMXX_MAM_INJECT_ASH_HPP</span>
 <span class="cp">#define EAMXX_MAM_INJECT_ASH_HPP</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;share/atm_process/atmosphere_process.hpp&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"share/atm_process/atmosphere_process.hpp"</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="w"> </span><span class="p">{</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MAMInjectAsh</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">AtmosphereProcess</span><span class="w"> </span><span class="p">{</span>
@@ -5215,7 +5215,7 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <span class="w">  </span><span class="n">AtmosphereProcessType</span><span class="w"> </span><span class="nf">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">AtmosphereProcessType</span><span class="o">::</span><span class="n">Physics</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">name</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&quot;MAMInjectAsh&quot;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">name</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">"MAMInjectAsh"</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="kt">void</span>
 <span class="w">  </span><span class="nf">create_requests</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
 
@@ -5234,8 +5234,8 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ash_source_calculation.hpp&quot;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;eamxx_inject_ash_process_interface.hpp&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"ash_source_calculation.hpp"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"eamxx_inject_ash_process_interface.hpp"</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="w"> </span><span class="p">{</span>
 
@@ -5246,18 +5246,18 @@ be the <code>eamxx_inject_ash_process_interface.&lt;x&gt;pp</code> files, locate
 <span class="p">}</span>
 <span class="kt">void</span><span class="w"> </span><span class="n">MAMInjectAsh</span><span class="o">::</span><span class="n">create_requests</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ekat</span><span class="o">::</span><span class="n">units</span><span class="o">::</span><span class="n">kg</span><span class="p">;</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">&quot;physics&quot;</span><span class="p">);</span>
-<span class="w">  </span><span class="n">add_tracer</span><span class="o">&lt;</span><span class="n">Updated</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">grid</span><span class="p">,</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">kg</span><span class="p">);</span>
-<span class="w">  </span><span class="n">lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">&quot;lat&quot;</span><span class="p">);</span>
-<span class="w">  </span><span class="n">lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">&quot;lon&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">grid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">m_grids_manager</span><span class="o">-&gt;</span><span class="n">get_grid</span><span class="p">(</span><span class="s">"physics"</span><span class="p">);</span>
+<span class="w">  </span><span class="n">add_tracer</span><span class="o">&lt;</span><span class="n">Updated</span><span class="o">&gt;</span><span class="p">(</span><span class="s">"ash"</span><span class="p">,</span><span class="w"> </span><span class="n">grid</span><span class="p">,</span><span class="w"> </span><span class="n">kg</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">kg</span><span class="p">);</span>
+<span class="w">  </span><span class="n">lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">"lat"</span><span class="p">);</span>
+<span class="w">  </span><span class="n">lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grid</span><span class="o">-&gt;</span><span class="n">get_geometry_data</span><span class="p">(</span><span class="s">"lon"</span><span class="p">);</span>
 <span class="p">}</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">MAM_AshInjection</span><span class="o">::</span><span class="n">initialize_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">RunType</span><span class="w"> </span><span class="n">run_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">source_mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_field_out</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">).</span><span class="n">clone</span><span class="p">(</span><span class="s">&quot;source_mask&quot;</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">MAM_AshInjection::initialize_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">RunType</span><span class="w"> </span><span class="n">run_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">source_mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_field_out</span><span class="p">(</span><span class="s">"ash"</span><span class="p">).</span><span class="n">clone</span><span class="p">(</span><span class="s">"source_mask"</span><span class="p">);</span>
 <span class="w">  </span><span class="p">[...]</span><span class="w"> </span><span class="c1">// set source_mask=1 only on area of interest, using lat/lon field</span>
 <span class="p">}</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">MAM_AshInjection</span><span class="o">::</span><span class="n">run_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">MAM_AshInjection::run_impl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">end_of_step_ts</span><span class="p">();</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">ash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_field_out</span><span class="p">(</span><span class="s">&quot;ash&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">ash</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_field_out</span><span class="p">(</span><span class="s">"ash"</span><span class="p">);</span>
 <span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">rate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">compute_ash_injection_rate</span><span class="p">(</span>
 <span class="w">      </span><span class="n">t</span><span class="p">);</span><span class="w"> </span><span class="c1">// defined in ash_source_calculation.hpp header</span>
 <span class="w">  </span><span class="n">ash</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="n">source_mask</span><span class="p">,</span><span class="w"> </span><span class="n">rate</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span>
@@ -5416,7 +5416,7 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 <span class="w">  </span><span class="nt">&lt;input_variable&gt; </span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
 <span class="c1"># The parameters for I/O control</span>
 <span class="nt">scorpio</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">output_yaml_files</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;output.yaml&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">output_yaml_files</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"output.yaml"</span><span class="p p-Indicator">]</span>
 <span class="nn">...</span>
 </code></pre></div>
 </div>
@@ -5449,12 +5449,12 @@ though <a href="https://www.unidata.ucar.edu/software/netcdf/">NetCDF</a> can al
 <div class="tabbed-set tabbed-alternate" data-tabs="4:1"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">src/physics/mam/tests/ash_injection.cpp</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;catch2/catch.hpp&quot;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ash_source_calculation.hpp&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">"catch2/catch.hpp"</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">"ash_source_calculation.hpp"</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="p">{</span>
 <span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">scream</span><span class="p">;</span>
-<span class="n">TEST_CASE</span><span class="p">(</span><span class="s">&quot;verify compute_ash_injection_rate&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;mam&quot;</span><span class="p">)</span>
+<span class="n">TEST_CASE</span><span class="p">(</span><span class="s">"verify compute_ash_injection_rate"</span><span class="p">,</span><span class="w"> </span><span class="s">"mam"</span><span class="p">)</span>
 <span class="p">{</span>
 <span class="w">  </span><span class="c1">// initialize the data and test variables</span>
 <span class="w">  </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0e-12</span><span class="p">;</span>
@@ -5510,30 +5510,30 @@ both CPU and GPU build configurations.</p>
 <div class="copy highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 
 <span class="c1"># machine-related variables</span>
-<span class="nv">machine_name</span><span class="o">=</span><span class="s2">&quot;bingo-pajama&quot;</span>
+<span class="nv">machine_name</span><span class="o">=</span><span class="s2">"bingo-pajama"</span>
 <span class="nv">total_ncores</span><span class="o">=</span><span class="m">64</span>
-<span class="nv">id_cpu</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">machine_name</span><span class="si">}</span><span class="s2">-cpu&quot;</span>
-<span class="nv">id_gpu</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">machine_name</span><span class="si">}</span><span class="s2">-gpu&quot;</span>
+<span class="nv">id_cpu</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">machine_name</span><span class="si">}</span><span class="s2">-cpu"</span>
+<span class="nv">id_gpu</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">machine_name</span><span class="si">}</span><span class="s2">-gpu"</span>
 
 <span class="c1"># name of log file for conveniently capturing output</span>
-<span class="nv">outfile_prefix</span><span class="o">=</span><span class="s2">&quot;ash_injection_buildNtest&quot;</span>
-<span class="nv">ofile_cpu</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">outfile_prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">${</span><span class="nv">id_cpu</span><span class="si">}</span><span class="s2">.log&quot;</span>
-<span class="nv">ofile_gpu</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">outfile_prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">${</span><span class="nv">id_gpu</span><span class="si">}</span><span class="s2">.log&quot;</span>
+<span class="nv">outfile_prefix</span><span class="o">=</span><span class="s2">"ash_injection_buildNtest"</span>
+<span class="nv">ofile_cpu</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">outfile_prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">${</span><span class="nv">id_cpu</span><span class="si">}</span><span class="s2">.log"</span>
+<span class="nv">ofile_gpu</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">outfile_prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">${</span><span class="nv">id_gpu</span><span class="si">}</span><span class="s2">.log"</span>
 
 <span class="c1"># parallelism variables</span>
 <span class="nv">make_ncores</span><span class="o">=</span><span class="m">60</span>
 <span class="nv">test_ncores</span><span class="o">=</span><span class="m">60</span>
-<span class="nv">pbuild</span><span class="o">=</span><span class="s2">&quot;-p --make-parallel-level </span><span class="si">${</span><span class="nv">make_ncores</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">ptest</span><span class="o">=</span><span class="s2">&quot;--ctest-parallel-level </span><span class="si">${</span><span class="nv">test_ncores</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">pbuild</span><span class="o">=</span><span class="s2">"-p --make-parallel-level </span><span class="si">${</span><span class="nv">make_ncores</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">ptest</span><span class="o">=</span><span class="s2">"--ctest-parallel-level </span><span class="si">${</span><span class="nv">test_ncores</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># flags to assist with testing/debugging</span>
-<span class="nv">vflag</span><span class="o">=</span><span class="s2">&quot;--extra-verbose&quot;</span>
+<span class="nv">vflag</span><span class="o">=</span><span class="s2">"--extra-verbose"</span>
 <span class="c1"># limit test configuration to double-precision debug</span>
-<span class="nv">test_config</span><span class="o">=</span><span class="s2">&quot;-t dbg&quot;</span>
-<span class="nv">bl_loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/eamxx-baselines&quot;</span>
+<span class="nv">test_config</span><span class="o">=</span><span class="s2">"-t dbg"</span>
+<span class="nv">bl_loc</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/eamxx-baselines"</span>
 
 <span class="c1"># navigate to the root directory of eamxx</span>
-<span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">cd</span><span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">"</span>
 <span class="c1"># switch to the master branch</span>
 git<span class="w"> </span>checkout<span class="w"> </span>master
 <span class="c1"># pull so we are at the latest commit (origin/HEAD)</span>
@@ -5543,47 +5543,47 @@ git<span class="w"> </span>submodule<span class="w"> </span>sync<span class="w">
 <span class="w">  </span>git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive<span class="w"> </span>--progress
 
 <span class="c1"># flags common to all tests</span>
-<span class="nv">base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">pbuild</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">vflag</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">test_config</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">base_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">pbuild</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">vflag</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">test_config</span><span class="si">}</span><span class="s2">"</span>
 <span class="c1"># flags common to this stage of tests</span>
-<span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --baseline-dir </span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2"> --generate&quot;</span>
+<span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --baseline-dir </span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2"> --generate"</span>
 <span class="c1"># general test flags per architecture</span>
-<span class="nv">cpu_flags</span><span class="o">=</span><span class="s2">&quot;--work-dir </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">id_cpu</span><span class="si">}</span><span class="s2"> --local </span><span class="si">${</span><span class="nv">id_cpu</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">ptest</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">gpu_flags</span><span class="o">=</span><span class="s2">&quot;--work-dir </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">id_gpu</span><span class="si">}</span><span class="s2"> --local </span><span class="si">${</span><span class="nv">id_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">cpu_flags</span><span class="o">=</span><span class="s2">"--work-dir </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">id_cpu</span><span class="si">}</span><span class="s2"> --local </span><span class="si">${</span><span class="nv">id_cpu</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">ptest</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">gpu_flags</span><span class="o">=</span><span class="s2">"--work-dir </span><span class="si">${</span><span class="nv">PWD</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">id_gpu</span><span class="si">}</span><span class="s2"> --local </span><span class="si">${</span><span class="nv">id_gpu</span><span class="si">}</span><span class="s2">"</span>
 <span class="c1"># specific flags for this test per architecture</span>
-<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># generate baselines for cpu and gpu</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
 ./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
 ./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span>
 
-<span class="c1"># Verify the &#39;compute_ash_injection_rate()&#39; function works as expected by</span>
+<span class="c1"># Verify the 'compute_ash_injection_rate()' function works as expected by</span>
 running<span class="w"> </span>only<span class="w"> </span>that<span class="w"> </span><span class="nb">test</span>
-<span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*compute_ash_injection_rate_test[^\s]*&quot;</span>
-<span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">test_choice</span><span class="o">=</span><span class="s2">"[^\s]*compute_ash_injection_rate_test[^\s]*"</span>
+<span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># run verification tests</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="c1"># now that we&#39;re running tests that may fail, use &#39;tee&#39; to</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="c1"># now that we're running tests that may fail, use 'tee' to</span>
 <span class="c1"># duplicate stdout and stderr to file so debugging is slightly easier</span>
-./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># Validate the Ash-Injection process generates the solutions we expect</span>
-<span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*mam4_ash_injection_standalone[^\s]*&quot;</span>
-<span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nv">test_choice</span><span class="o">=</span><span class="s2">"[^\s]*mam4_ash_injection_standalone[^\s]*"</span>
+<span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">"</span>
 <span class="c1"># run single-process verification tests</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># validate all the processes that interact with ash_injection generate</span>
 <span class="c1"># expected solutions</span>
@@ -5596,29 +5596,29 @@ running<span class="w"> </span>only<span class="w"> </span>that<span class="w"> 
 <span class="w">                           </span>homme_shoc_cld_spa_p3_rrtmgp_mam4_ash_injection
 <span class="w">                           </span><span class="o">)</span>
 <span class="k">for</span><span class="w"> </span>tchoice<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="si">${</span><span class="nv">ash_injection_multiproc_tests</span><span class="p">[@]</span><span class="si">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*</span><span class="si">${</span><span class="nv">tchoice</span><span class="si">}</span><span class="s2">[^\s]*&quot;</span>
-<span class="w">  </span><span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="w">  </span><span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="w">  </span><span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">  </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">"[^\s]*</span><span class="si">${</span><span class="nv">tchoice</span><span class="si">}</span><span class="s2">[^\s]*"</span>
+<span class="w">  </span><span class="nv">test_base_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> --limit-test-regex </span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">"</span>
+<span class="w">  </span><span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="w">  </span><span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">test_base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">"</span>
 <span class="w">  </span><span class="c1"># run single-process verification tests</span>
-<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="w">  </span>./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="w">  </span>./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="w">  </span>./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">"</span>
+<span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="w">  </span>./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">"</span>
 <span class="k">done</span>
-<span class="c1"># NOTE: just setting &#39;test_choice=&quot;[^\s]*_mam4_ash_injection^\s]*&quot;&#39; would</span>
+<span class="c1"># NOTE: just setting 'test_choice="[^\s]*_mam4_ash_injection^\s]*"' would</span>
 <span class="c1">#       also do the trick in this case</span>
 
 <span class="c1"># run full eamxx test suite against pre-Ash-Injection baselines for all</span>
-<span class="c1"># test configurations (not just &#39;dbg&#39;)</span>
-<span class="nv">base_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">pbuild</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">vflag</span><span class="si">}</span><span class="s2"> --baseline-dir </span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="c1"># test configurations (not just 'dbg')</span>
+<span class="nv">base_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">pbuild</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">vflag</span><span class="si">}</span><span class="s2"> --baseline-dir </span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">cpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">cpu_flags</span><span class="si">}</span><span class="s2">"</span>
+<span class="nv">gpu_test_flags</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">base_flags</span><span class="si">}</span><span class="s2"> </span><span class="si">${</span><span class="nv">gpu_flags</span><span class="si">}</span><span class="s2">"</span>
 <span class="c1"># run the full suite of eamxx baseline tests</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">&quot;</span>
-./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">cpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_cpu</span><span class="si">}</span><span class="s2">"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"TEST FLAGS = </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="s2">"</span>
+./scripts/test-all-eamxx<span class="w"> </span><span class="si">${</span><span class="nv">gpu_test_flags</span><span class="si">}</span><span class="w"> </span><span class="p">|&amp;</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">ofile_gpu</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div>
 </details>
 <h3 id="testing-modifications-to-existing-code">Testing Modifications to Existing Code</h3>

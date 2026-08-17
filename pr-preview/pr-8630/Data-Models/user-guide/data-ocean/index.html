@@ -5030,7 +5030,7 @@
 <p>Example compsets that use this capability are <code>F2010</code> and <code>F20TR</code>. These compsets use the <code>_DOCN%DOM_</code> compset modifier, which sets the <code>DOCN_MODE</code> variable in <code>env_run.xml</code>  to "prescribed".</p>
 <p>Several additional XML variables need to be set in order to use this capability, which are set to defaults for common configurations, such as <code>F2010</code> at <code>ne30pg2</code> atmospheric resolution.</p>
 <div class="highlight"><pre><span></span><code>SSTICE_DATA_FILENAME  Prescribed SST and ice coverage data file name
-SSTICE_GRID_FILENAME  Grid file in &quot;domain&quot; format corresponding to SSTICE_DATA_FILENAME
+SSTICE_GRID_FILENAME  Grid file in "domain" format corresponding to SSTICE_DATA_FILENAME
 SSTICE_YEAR_ALIGN     The model year that corresponds to SSTICE_YEAR_START on the data file
 SSTICE_YEAR_START     The first year of data to use from SSTICE_DATA_FILENAME
 SSTICE_YEAR_END       The last year of data to use from SSTICE_DATA_FILENAME
@@ -5078,7 +5078,7 @@ AQP10   = Control+15N
 <div class="highlight"><pre><span></span><code>orb_eccen = 0
 orb_obliq = 0
 orb_mvelp = 0
-orb_mode = &quot;fixed_parameters&quot;
+orb_mode = "fixed_parameters"
 </code></pre></div></p>
 </div>
 <p>The basic RCE compsets use the <code>_DOCN%AQPCONST_</code> modifier to produce a globally constant SST value, which is set by the <code>DOCN_AQPCONST_VALUE</code> variable in <code>env_run.xml</code>. The "FRCE-MW" compsets were designed for RCEMIP-II to produce a "mock walker-cell" configuration, in which sinusoidal SST variations are applied to promote a coherent large-scale circulation.</p>

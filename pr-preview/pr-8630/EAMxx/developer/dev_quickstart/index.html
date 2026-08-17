@@ -5151,8 +5151,8 @@ on the various capabilities and options of <code>test-all-eamxx</code> in
 including the following, we assume the commands are run from the root
 directory of EAMxx. That is, if one begins in the root E3SM directory,
 assume that each code snippet begins with an implicit</p>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">eamxx_root</span><span class="o">=</span><span class="s2">&quot;&lt;some/file/path&gt;/E3SM/components/eamxx&quot;</span>
-$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">&quot;</span>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">eamxx_root</span><span class="o">=</span><span class="s2">"&lt;some/file/path&gt;/E3SM/components/eamxx"</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div>
 </div>
 <details class="example">
@@ -5184,7 +5184,7 @@ or that it will not bog down your system.</li>
 <span class="w">    </span><span class="c1"># if running multiple test configurations, this will launch those build</span>
 <span class="w">    </span><span class="c1"># stacks in parallel \</span>
 <span class="w">    </span>--parallel<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="c1"># will compile using M threads (equivalent to a manual &#39;make -jM&#39;) \</span>
+<span class="w">    </span><span class="c1"># will compile using M threads (equivalent to a manual 'make -jM') \</span>
 <span class="w">    </span>--make-parallel-level<span class="w"> </span>&lt;M&gt;<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="c1"># will run tests of the same configuration using N threads \</span>
 <span class="w">    </span>--ctest-parallel-level<span class="w"> </span>&lt;N&gt;<span class="w"> </span><span class="se">\</span>
@@ -5196,14 +5196,14 @@ or that it will not bog down your system.</li>
 specific modifications, so there is no need to run the full suite of EAMxx tests.
 So, we may restrict the tests that will be run by using an appropriate
 <a href="https://en.wikipedia.org/wiki/Regular_expression">regular expression</a> ("regex").<sup id="fnref:regex-tool"><a class="footnote-ref" href="#fn:regex-tool">6</a></sup></p>
-<div class="copy highlight"><pre><span></span><code><span class="c1"># This example regex will match the exact substring &quot;ash_injection&quot;.</span>
-<span class="c1"># That is, it will match &quot;ash_injection_validate_test&quot;,</span>
-<span class="c1"># &quot;test_suite_ash_injection&quot;, and &quot;test_ash_injection_quick&quot; but not</span>
-<span class="c1"># &quot;ash_in_jection_test&quot; or &quot;ash_injector_test&quot;.</span>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># This example regex will match the exact substring "ash_injection".</span>
+<span class="c1"># That is, it will match "ash_injection_validate_test",</span>
+<span class="c1"># "test_suite_ash_injection", and "test_ash_injection_quick" but not</span>
+<span class="c1"># "ash_in_jection_test" or "ash_injector_test".</span>
 
-$<span class="w"> </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*ash_injection[^\s]*&quot;</span>
+$<span class="w"> </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">"[^\s]*ash_injection[^\s]*"</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--limit-test-regex<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">    </span>--limit-test-regex<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div>
 </details>
 <details class="success">
@@ -5220,28 +5220,28 @@ involving processes that interact with <strong>Ash-Injection</strong> may give d
 answers for perfectly good reasons.
 Regardless, we would like to establish that our modifications do not cause
 any unexpected interactions, so all remaining baseline tests should pass.</p>
-<div class="copy highlight"><pre><span></span><code><span class="c1"># For simplicity, we&#39;ll assume we begin at the most up-to-date</span>
+<div class="copy highlight"><pre><span></span><code><span class="c1"># For simplicity, we'll assume we begin at the most up-to-date</span>
 <span class="c1"># commit on origin/master</span>
-$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">&quot;</span>
+$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">eamxx_root</span><span class="si">}</span><span class="s2">"</span>
 $<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>master
-$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">bl_loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/eamxx-baselines&quot;</span>
+$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">bl_loc</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/eamxx-baselines"</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="c1"># set the location where we will save the baseline files we are about</span>
 <span class="w">    </span><span class="c1"># to generate \</span>
-<span class="w">    </span>--baseline-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--baseline-dir<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="c1"># this flag indicates we will generate new baselines \</span>
 <span class="w">    </span>--generate
-<span class="o">[</span><span class="s2">&quot;one eternity later...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"one eternity later..."</span><span class="o">]</span>
 <span class="c1"># create a new branch to develop from</span>
 $<span class="w"> </span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>jane_dev/eamxx/ash_injection_proc
-<span class="o">[</span><span class="s2">&quot;write all the code...&quot;</span><span class="o">]</span>
-<span class="c1"># Note: the presence of the &#39;--baseline-dir&#39; flag indicates we will</span>
+<span class="o">[</span><span class="s2">"write all the code..."</span><span class="o">]</span>
+<span class="c1"># Note: the presence of the '--baseline-dir' flag indicates we will</span>
 <span class="c1"># compare test results to the latest baselines found in that directory</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span><span class="c1"># set the location where we saved the previous baselines \</span>
-<span class="w">    </span>--baseline-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="o">[</span><span class="s2">&quot;mam4_ash_injection_standalone test fails... no baseline! (so do the others)&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;homme_standalone test passes! (so do other non-associated tests)&quot;</span><span class="o">]</span>
+<span class="w">    </span>--baseline-dir<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">bl_loc</span><span class="si">}</span><span class="s2">"</span>
+<span class="o">[</span><span class="s2">"mam4_ash_injection_standalone test fails... no baseline! (so do the others)"</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"homme_standalone test passes! (so do other non-associated tests)"</span><span class="o">]</span>
 </code></pre></div>
 </details>
 <details class="tip">
@@ -5258,12 +5258,12 @@ of options to rerun tests quickly and avoid configure or build costs.</p>
 </ul>
 </li>
 </ul>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">&quot;[^\s]*ash_injection[^\s]*&quot;</span>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nv">test_choice</span><span class="o">=</span><span class="s2">"[^\s]*ash_injection[^\s]*"</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--limit-test-regex<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="o">[</span><span class="s2">&quot;tests run...&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;modify ash_injection_test.cpp...&quot;</span><span class="o">]</span>
-<span class="c1"># no need to reconfigure--let&#39;s be quick!</span>
+<span class="w">    </span>--limit-test-regex<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">test_choice</span><span class="si">}</span><span class="s2">"</span>
+<span class="o">[</span><span class="s2">"tests run..."</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"modify ash_injection_test.cpp..."</span><span class="o">]</span>
+<span class="c1"># no need to reconfigure--let's be quick!</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--quick-rerun
 </code></pre></div>
@@ -5280,8 +5280,8 @@ $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;req
 </ul>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># run all of the eamxx tests</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;tests run...&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;ash_injection-related tests fail... so much output, though :(&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"tests run..."</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"ash_injection-related tests fail... so much output, though :("</span><span class="o">]</span>
 <span class="c1"># no need to reconfigure or rebuild--rerun to make the output easier to parse.</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--quick-rerun
@@ -5304,22 +5304,22 @@ separate build directories for each architecture.</p>
 $<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="si">${</span><span class="nv">total_cores</span><span class="si">}</span>
 <span class="m">100</span>
 
-$<span class="w"> </span><span class="nv">build_loc_cpu</span><span class="o">=</span><span class="s2">&quot;ctest-cpu-build&quot;</span>
+$<span class="w"> </span><span class="nv">build_loc_cpu</span><span class="o">=</span><span class="s2">"ctest-cpu-build"</span>
 $<span class="w"> </span><span class="nv">build_threads_cpu</span><span class="o">=</span><span class="m">20</span>
 $<span class="w"> </span><span class="nv">test_threads_cpu</span><span class="o">=</span><span class="m">20</span>
-$<span class="w"> </span><span class="nv">build_loc_gpu</span><span class="o">=</span><span class="s2">&quot;ctest-gpu-build&quot;</span>
+$<span class="w"> </span><span class="nv">build_loc_gpu</span><span class="o">=</span><span class="s2">"ctest-gpu-build"</span>
 $<span class="w"> </span><span class="nv">build_threads_gpu</span><span class="o">=</span><span class="m">40</span>
 
 <span class="c1"># Launch the cpu build/test</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--work-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_loc_cpu</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_threads_cpu</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--ctest-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">test_threads_cpu</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">    </span>--work-dir<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">build_loc_cpu</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">build_threads_cpu</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--ctest-parallel-level<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">test_threads_cpu</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># launch the gpu build/test</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>&lt;required-args&gt;<span class="w"> </span><span class="o">[</span>optional-args<span class="o">]</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--work-dir<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_loc_gpu</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">build_threads_gpu</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">    </span>--work-dir<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">build_loc_gpu</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--make-parallel-level<span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">build_threads_gpu</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div>
 </details>
 <h3 id="testing-on-supported-machines">Testing on Supported Machines</h3>
@@ -5332,11 +5332,11 @@ and efficiently<sup id="fnref:mach-file"><a class="footnote-ref" href="#fn:mach-
 <details class="example">
 <summary>Example: Running on Perlmutter</summary>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># run tests on cpu</span>
-<span class="o">[</span><span class="s2">&quot;start interactive session on cpu node (see below)...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"start interactive session on cpu node (see below)..."</span><span class="o">]</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-cpu
-<span class="o">[</span><span class="s2">&quot;test runs...&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;logout from cpu node...&quot;</span><span class="o">]</span>
-<span class="o">[</span><span class="s2">&quot;start interactive session on gpu node...&quot;</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"test runs..."</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"logout from cpu node..."</span><span class="o">]</span>
+<span class="o">[</span><span class="s2">"start interactive session on gpu node..."</span><span class="o">]</span>
 $<span class="w"> </span>./scripts/test-all-eamxx<span class="w"> </span>--machine<span class="w"> </span>pm-gpu
 </code></pre></div>
 </details>
@@ -5396,34 +5396,34 @@ things as:</p>
 <div class="copy highlight"><span class="filename">${eamxx_root}/scripts/machine_specs.py:[L58-L88]</span><pre><span></span><code><span class="c1">###############################################################################</span>
 class<span class="w"> </span>Machine<span class="o">(</span>object<span class="o">)</span>:
 <span class="c1">###############################################################################</span>
-<span class="w">    </span><span class="s2">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="s2">"""</span>
 <span class="s2">    Parent class for objects describing a machine to use for EAMxx</span>
 <span class="s2">    standalone testing.</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
 <span class="w">    </span><span class="nv">concrete</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>False
-<span class="w">    </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<span class="w">    </span><span class="nv">mach_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
+<span class="w">    </span><span class="nv">mach_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
 <span class="w">    </span><span class="nv">env_setup</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[]</span>
-<span class="w">    </span><span class="nv">gpu_arch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
+<span class="w">    </span><span class="nv">gpu_arch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"none"</span>
 <span class="w">    </span><span class="nv">num_bld_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
 <span class="w">    </span><span class="nv">num_run_res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>-1
-<span class="w">    </span><span class="nv">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
-<span class="w">    </span><span class="nv">cxx_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicxx&quot;</span>
-<span class="w">    </span><span class="nv">c_compiler</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpicc&quot;</span>
-<span class="w">    </span><span class="nv">ftn_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mpifort&quot;</span>
-<span class="w">    </span><span class="nv">baselines_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&quot;</span>
+<span class="w">    </span><span class="nv">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
+<span class="w">    </span><span class="nv">cxx_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mpicxx"</span>
+<span class="w">    </span><span class="nv">c_compiler</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">"mpicc"</span>
+<span class="w">    </span><span class="nv">ftn_compiler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"mpifort"</span>
+<span class="w">    </span><span class="nv">baselines_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">""</span>
 
 <span class="w">    </span>@classmethod
 <span class="w">    </span>def<span class="w"> </span>setup_base<span class="o">(</span>cls,name,num_bld_res<span class="o">=</span>-1,num_run_res<span class="o">=</span>-1<span class="o">)</span>:
 <span class="w">        </span>cls.name<span class="w"> </span><span class="o">=</span><span class="w"> </span>name
-<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>pathlib.Path<span class="o">(</span>EAMXX_DIR<span class="o">)</span><span class="w"> </span>/<span class="w"> </span><span class="s2">&quot;cmake&quot;</span><span class="w"> </span>/
-<span class="w">                        </span><span class="s2">&quot;machine-files&quot;</span><span class="w"> </span>/<span class="w"> </span><span class="o">(</span>cls.name<span class="w"> </span>+<span class="w"> </span><span class="s2">&quot;.cmake&quot;</span><span class="o">)</span>
+<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>pathlib.Path<span class="o">(</span>EAMXX_DIR<span class="o">)</span><span class="w"> </span>/<span class="w"> </span><span class="s2">"cmake"</span><span class="w"> </span>/
+<span class="w">                        </span><span class="s2">"machine-files"</span><span class="w"> </span>/<span class="w"> </span><span class="o">(</span>cls.name<span class="w"> </span>+<span class="w"> </span><span class="s2">".cmake"</span><span class="o">)</span>
 <span class="w">        </span>cls.num_bld_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_bld_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_bld_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
 <span class="w">        </span>cls.num_run_res<span class="w"> </span><span class="o">=</span><span class="w"> </span>num_run_res<span class="w"> </span><span class="k">if</span><span class="w"> </span>num_run_res<span class="w"> </span>&gt;<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span>get_available_cpu_count<span class="o">()</span>
 
 <span class="w">    </span>@classmethod
 <span class="w">    </span>def<span class="w"> </span>uses_gpu<span class="w"> </span><span class="o">(</span>cls<span class="o">)</span>:
-<span class="w">        </span><span class="k">return</span><span class="w"> </span>cls.gpu_arch!<span class="o">=</span><span class="s2">&quot;none&quot;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span>cls.gpu_arch!<span class="o">=</span><span class="s2">"none"</span>
 
 <span class="c1">###############################################################################</span>
 </code></pre></div>
@@ -5436,44 +5436,44 @@ class<span class="w"> </span>Local<span class="o">(</span>Machine<span class="o"
 <span class="w">    </span>@classmethod
 <span class="w">    </span>def<span class="w"> </span>setup<span class="o">(</span>cls<span class="o">)</span>:
 <span class="w">        </span><span class="c1"># NOTE: do not change this line because `test-all-eamxx -l`</span>
-<span class="w">        </span><span class="c1"># specifically looks for a machine named &quot;local&quot;.</span>
-<span class="w">        </span>super<span class="o">()</span>.setup_base<span class="o">(</span><span class="s2">&quot;local&quot;</span><span class="o">)</span>
+<span class="w">        </span><span class="c1"># specifically looks for a machine named "local".</span>
+<span class="w">        </span>super<span class="o">()</span>.setup_base<span class="o">(</span><span class="s2">"local"</span><span class="o">)</span>
 
 <span class="w">        </span><span class="c1"># NOTE: these are run by the shell (likely bash), so must have</span>
 <span class="w">        </span><span class="c1">#       shell syntax, and can use shell environment variables</span>
 <span class="w">        </span><span class="c1">#       (e.g, $HOME or ~)</span>
 <span class="w">        </span>cls.env_setup<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span>
 <span class="w">                         </span><span class="c1"># source my personal .bashrc </span>
-<span class="w">                         </span><span class="s2">&quot;. ~/.bashrc&quot;</span>,
+<span class="w">                         </span><span class="s2">". ~/.bashrc"</span>,
 <span class="w">                         </span><span class="c1"># source a custom script to setup my eamxx</span>
 <span class="w">                         </span><span class="c1"># environment</span>
-<span class="w">                         </span><span class="s2">&quot;source </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/.cime/eamxx-setup.sh&quot;</span>
+<span class="w">                         </span><span class="s2">"source </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span><span class="s2">/.cime/eamxx-setup.sh"</span>
 <span class="w">                         </span><span class="o">]</span>
 
 <span class="w">        </span><span class="c1"># define the python-variable home directory for use below</span>
-<span class="w">        </span><span class="nv">home_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;/home/arthur_dent&quot;</span>
+<span class="w">        </span><span class="nv">home_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"/home/arthur_dent"</span>
 
 <span class="w">        </span><span class="c1"># NOTE: the syntax used in the python strings below is called</span>
-<span class="w">        </span><span class="c1">#       &quot;formatted string literals&quot; or more commonly &quot;f-strings&quot;</span>
+<span class="w">        </span><span class="c1">#       "formatted string literals" or more commonly "f-strings"</span>
 
 <span class="w">        </span><span class="c1"># provide the path to my baselines directory</span>
-<span class="w">        </span>cls.baselines_dir<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/eamxx-baselines&quot;</span>
+<span class="w">        </span>cls.baselines_dir<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{home_dir}/eamxx-baselines"</span>
 
 <span class="w">        </span><span class="c1"># provide the path to a custom cmake file, used to pass build</span>
 <span class="w">        </span><span class="c1"># variables directly to cmake</span>
-<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/.cime/eamxx_mach_file.cmake&quot;</span>
+<span class="w">        </span>cls.mach_file<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{home_dir}/.cime/eamxx_mach_file.cmake"</span>
 
 <span class="w">        </span><span class="c1"># set a couple of environment variables that are used in the</span>
 <span class="w">        </span><span class="c1"># setup script and/or eamxx_mach_file.cmake</span>
 <span class="w">        </span><span class="c1"># path to directory containing personally-built libraries</span>
-<span class="w">        </span><span class="nv">tpl_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{home_dir}/TPLs&quot;</span>
+<span class="w">        </span><span class="nv">tpl_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{home_dir}/TPLs"</span>
 <span class="w">        </span><span class="c1"># path to personally-built openmpi compilers</span>
-<span class="w">        </span><span class="nv">mpi_bindir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{tpl_path}/openmpi-4.1.2/install/bin&quot;</span>
+<span class="w">        </span><span class="nv">mpi_bindir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{tpl_path}/openmpi-4.1.2/install/bin"</span>
 
 <span class="w">        </span><span class="c1"># specific paths to </span>
-<span class="w">        </span>cls.cxx_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicxx&quot;</span>
-<span class="w">        </span>cls.c_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpicc&quot;</span>
-<span class="w">        </span>cls.ftn_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">&quot;{mpi_bindir}/mpifort&quot;</span>
+<span class="w">        </span>cls.cxx_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{mpi_bindir}/mpicxx"</span>
+<span class="w">        </span>cls.c_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{mpi_bindir}/mpicc"</span>
+<span class="w">        </span>cls.ftn_compiler<span class="w"> </span><span class="o">=</span><span class="w"> </span>f<span class="s2">"{mpi_bindir}/mpifort"</span>
 
 <span class="c1">###############################################################################</span>
 </code></pre></div>

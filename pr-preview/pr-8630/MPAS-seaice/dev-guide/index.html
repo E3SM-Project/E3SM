@@ -5292,7 +5292,7 @@ git pull consortium main
 </code></pre></div>
 <p>Fix conflicts if needed, then</p>
 <div class="highlight"><pre><span></span><code>git add ...
-git commit -m &quot;update from cice-consortium main&quot;
+git commit -m "update from cice-consortium main"
 </code></pre></div>
 <p>Continue testing. When satisfied,</p>
 <div class="highlight"><pre><span></span><code>git push origin branch
@@ -5316,37 +5316,37 @@ config_AM_thicknesses_write_on_startup = {.true.}
 <div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s qcbaseline -f git@github.com:E3SM-Project/E3SM
 </code></pre></div>
 <p>Edit <code>~/E3SM-Polar/code/qcbaseline/components/mpas-seaice/cime_config/buildnml</code> to change:</p>
-<div class="highlight"><pre><span></span><code>lines.append(&#39;        output_interval=&quot;none&quot;&gt;&#39;)
+<div class="highlight"><pre><span></span><code>lines.append('        output_interval="none"&gt;')
 </code></pre></div>
 <p>to</p>
-<div class="highlight"><pre><span></span><code>lines.append(&#39;        output_interval=&quot;00-00-01_00:00:00&quot;&gt;&#39;)
+<div class="highlight"><pre><span></span><code>lines.append('        output_interval="00-00-01_00:00:00"&gt;')
 </code></pre></div>
 <p>for <code>stream name=“output”</code> and add</p>
-<div class="highlight"><pre><span></span><code>lines.append(&#39;    &lt;var name=&quot;iceThicknessCell&quot;/&gt;&#39;)
+<div class="highlight"><pre><span></span><code>lines.append('    &lt;var name="iceThicknessCell"/&gt;')
 </code></pre></div>
 <p>a few lines below that:</p>
-<div class="highlight"><pre><span></span><code>            lines.append(&#39;&lt;stream name=&quot;output&quot;&#39;)
-            lines.append(&#39;        type=&quot;output&quot;&#39;)
-            lines.append(&#39;        io_type=&quot;{}&quot;&#39;.format(ice_pio_typename))
-            lines.append(&#39;        filename_template=&quot;{}.mpassi{}.hist.$Y-$M-$D_$
-S.nc&quot;&#39;.format(casename, inst_string))
-            lines.append(&#39;        filename_interval=&quot;00-01-00_00:00:00&quot;&#39;)
-            lines.append(&#39;        clobber_mode=&quot;truncate&quot;&#39;)
-            lines.append(&#39;        reference_time=&quot;01-01-01_00:00:00&quot;&#39;)
--           lines.append(&#39;        output_interval=&quot;none&quot;&gt;&#39;)
-+           lines.append(&#39;        output_interval=&quot;00-00-01_00:00:00&quot;&gt;&#39;)
-            lines.append(&#39;&#39;)
-            lines.append(&#39;    &lt;stream name=&quot;mesh&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;xtime&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;daysSinceStartOfSim&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;iceAreaCell&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;iceVolumeCell&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;snowVolumeCell&quot;/&gt;&#39;)
-+           lines.append(&#39;    &lt;var name=&quot;iceThicknessCell&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;uVelocityGeo&quot;/&gt;&#39;)
-            lines.append(&#39;    &lt;var name=&quot;vVelocityGeo&quot;/&gt;&#39;)
-            lines.append(&#39;&#39;)
-            lines.append(&#39;&lt;/stream&gt;&#39;)
+<div class="highlight"><pre><span></span><code>            lines.append('&lt;stream name="output"')
+            lines.append('        type="output"')
+            lines.append('        io_type="{}"'.format(ice_pio_typename))
+            lines.append('        filename_template="{}.mpassi{}.hist.$Y-$M-$D_$
+S.nc"'.format(casename, inst_string))
+            lines.append('        filename_interval="00-01-00_00:00:00"')
+            lines.append('        clobber_mode="truncate"')
+            lines.append('        reference_time="01-01-01_00:00:00"')
+-           lines.append('        output_interval="none"&gt;')
++           lines.append('        output_interval="00-00-01_00:00:00"&gt;')
+            lines.append('')
+            lines.append('    &lt;stream name="mesh"/&gt;')
+            lines.append('    &lt;var name="xtime"/&gt;')
+            lines.append('    &lt;var name="daysSinceStartOfSim"/&gt;')
+            lines.append('    &lt;var name="iceAreaCell"/&gt;')
+            lines.append('    &lt;var name="iceVolumeCell"/&gt;')
+            lines.append('    &lt;var name="snowVolumeCell"/&gt;')
++           lines.append('    &lt;var name="iceThicknessCell"/&gt;')
+            lines.append('    &lt;var name="uVelocityGeo"/&gt;')
+            lines.append('    &lt;var name="vVelocityGeo"/&gt;')
+            lines.append('')
+            lines.append('&lt;/stream&gt;')
 </code></pre></div>
 <p>Build and run baseline case for 5 years (60 months):</p>
 <div class="highlight"><pre><span></span><code>./E3SM-Polar-Developer.sh -s qcbaseline -k qcbase.nlk -e -d60 -nb

@@ -5092,19 +5092,19 @@ from the internal field name:</p>
 <h2 id="yaml-configuration-examples">YAML Configuration Examples</h2>
 <h3 id="basic-usage">Basic Usage</h3>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># Alias LWP for LiqWaterPath</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SWP:=SolidWaterPath&quot;</span><span class="w">        </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T:=T_mid&quot;</span><span class="w">                   </span><span class="c1"># Alias T for T_mid</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;qv&quot;</span><span class="w">                         </span><span class="c1"># Regular field name (no alias)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:=LiqWaterPath"</span><span class="w">          </span><span class="c1"># Alias LWP for LiqWaterPath</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"SWP:=SolidWaterPath"</span><span class="w">        </span><span class="c1"># Alias SWP for SolidWaterPath  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"T:=T_mid"</span><span class="w">                   </span><span class="c1"># Alias T for T_mid</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"qv"</span><span class="w">                         </span><span class="c1"># Regular field name (no alias)</span>
 </code></pre></div>
 <h3 id="mixed-usage">Mixed Usage</h3>
 <p>You can mix aliased and non-aliased fields in the same configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;T_mid&quot;</span><span class="w">                        </span><span class="c1"># Regular field name</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">            </span><span class="c1"># Aliased field</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;p_mid&quot;</span><span class="w">                        </span><span class="c1"># Regular field name  </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;temp:=T_mid&quot;</span><span class="w">                  </span><span class="c1"># Aliased field</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;surf_temp:=temp_at_model_bot&quot;</span><span class="w"> </span><span class="c1"># Alias of diagnostic of an alias</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"T_mid"</span><span class="w">                        </span><span class="c1"># Regular field name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:=LiqWaterPath"</span><span class="w">            </span><span class="c1"># Aliased field</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"p_mid"</span><span class="w">                        </span><span class="c1"># Regular field name  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"temp:=T_mid"</span><span class="w">                  </span><span class="c1"># Aliased field</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"surf_temp:=temp_at_model_bot"</span><span class="w"> </span><span class="c1"># Alias of diagnostic of an alias</span>
 </code></pre></div>
 <h2 id="output-behavior">Output Behavior</h2>
 <p>When using aliases:</p>
@@ -5136,9 +5136,9 @@ Declare such fields in an <code>aliases</code> subsection of the per-grid block:
 <div class="highlight"><pre><span></span><code><span class="nt">fields</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">physics_pg2</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">aliases</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiag:=T_mid_times_p_mid&quot;</span><span class="w">       </span><span class="c1"># computed but NOT written to NC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MyDiag:=T_mid_times_p_mid"</span><span class="w">       </span><span class="c1"># computed but NOT written to NC</span>
 <span class="w">    </span><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;MyDiagSqrd:=MyDiag_times_MyDiag&quot;</span><span class="w"> </span><span class="c1"># uses MyDiag; IS written to NC</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MyDiagSqrd:=MyDiag_times_MyDiag"</span><span class="w"> </span><span class="c1"># uses MyDiag; IS written to NC</span>
 </code></pre></div>
 <p><code>MyDiag</code> is created and registered in the internal field manager so that
 <code>MyDiagSqrd</code> can depend on it, but it does not appear in the output file.
@@ -5155,13 +5155,13 @@ resolved with the same composable-diagnostic parser.</p>
 <p>Currently, a field can be requested only once in a single stream,
 but we do allow requesting the same field again but with an alias</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LiqWaterPath&quot;</span><span class="w">          </span><span class="c1"># OK: a known diag field</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=&quot;</span><span class="w">                 </span><span class="c1"># Error: empty field name</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;:=LiqWaterPath&quot;</span><span class="w">        </span><span class="c1"># Error: empty alias name  </span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">     </span><span class="c1"># OK: an alias</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;liq_w_path:=Field2&quot;</span><span class="w">    </span><span class="c1"># OK: another alias, but different name</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=LiqWaterPath&quot;</span><span class="w">     </span><span class="c1"># Error: duplicate field LWP (even if the same as before)</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;LWP:=T_mid&quot;</span><span class="w">            </span><span class="c1"># Error: duplicate field LWP</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LiqWaterPath"</span><span class="w">          </span><span class="c1"># OK: a known diag field</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:="</span><span class="w">                 </span><span class="c1"># Error: empty field name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">":=LiqWaterPath"</span><span class="w">        </span><span class="c1"># Error: empty alias name  </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:=LiqWaterPath"</span><span class="w">     </span><span class="c1"># OK: an alias</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"liq_w_path:=Field2"</span><span class="w">    </span><span class="c1"># OK: another alias, but different name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:=LiqWaterPath"</span><span class="w">     </span><span class="c1"># Error: duplicate field LWP (even if the same as before)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LWP:=T_mid"</span><span class="w">            </span><span class="c1"># Error: duplicate field LWP</span>
 </code></pre></div>
 
 

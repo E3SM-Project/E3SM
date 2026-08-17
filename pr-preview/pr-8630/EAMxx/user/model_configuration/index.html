@@ -5230,13 +5230,13 @@ a list of valid values for the parameter (when applicable), or all of the above:
 $<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--type
 <span class="w">    </span>namelist_defaults::driver_options::atm_log_level:<span class="w"> </span>string
 $<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--valid-values
-<span class="w">    </span>namelist_defaults::driver_options::atm_log_level:<span class="w"> </span><span class="o">[</span><span class="s1">&#39;trace&#39;</span>,<span class="w"> </span><span class="s1">&#39;debug&#39;</span>,<span class="w"> </span><span class="s1">&#39;info&#39;</span>,
-<span class="w">                                                       </span><span class="s1">&#39;warn&#39;</span>,<span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="o">]</span>
+<span class="w">    </span>namelist_defaults::driver_options::atm_log_level:<span class="w"> </span><span class="o">[</span><span class="s1">'trace'</span>,<span class="w"> </span><span class="s1">'debug'</span>,<span class="w"> </span><span class="s1">'info'</span>,
+<span class="w">                                                       </span><span class="s1">'warn'</span>,<span class="w"> </span><span class="s1">'error'</span><span class="o">]</span>
 $<span class="w"> </span>./atmquery<span class="w"> </span>atm_log_level<span class="w"> </span>--full
 <span class="w">    </span>namelist_defaults::driver_options::atm_log_level
 <span class="w">        </span>value:<span class="w"> </span>info
 <span class="w">        </span>type:<span class="w"> </span>string
-<span class="w">        </span>valid<span class="w"> </span>values:<span class="w"> </span><span class="o">[</span><span class="s1">&#39;trace&#39;</span>,<span class="w"> </span><span class="s1">&#39;debug&#39;</span>,<span class="w"> </span><span class="s1">&#39;info&#39;</span>,<span class="w"> </span><span class="s1">&#39;warn&#39;</span>,<span class="w"> </span><span class="s1">&#39;error&#39;</span><span class="o">]</span>
+<span class="w">        </span>valid<span class="w"> </span>values:<span class="w"> </span><span class="o">[</span><span class="s1">'trace'</span>,<span class="w"> </span><span class="s1">'debug'</span>,<span class="w"> </span><span class="s1">'info'</span>,<span class="w"> </span><span class="s1">'warn'</span>,<span class="w"> </span><span class="s1">'error'</span><span class="o">]</span>
 </code></pre></div>
 <p>Finally, the option <code>--listall</code> can be used to list the whole content of the
 XML file, which will be displayed with each node indented in its parent scope:</p>
@@ -5342,7 +5342,7 @@ $<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"
 <div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--type<span class="w"> </span>se_ne
 <span class="w">    </span>namelist_defaults::ctl_nl::se_ne:<span class="w"> </span>integer
 $<span class="w"> </span>./atmchange<span class="w"> </span><span class="nv">se_ne</span><span class="o">=</span>hello
-ERROR:<span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>refine<span class="w"> </span><span class="s1">&#39;hello&#39;</span><span class="w"> </span>as<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="s1">&#39;integer&#39;</span>:
+ERROR:<span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>refine<span class="w"> </span><span class="s1">'hello'</span><span class="w"> </span>as<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="s1">'integer'</span>:
 </code></pre></div>
 <p>There are three main types supported: integer, float, string, logical.
 When passing a string to <code>atmchange</code>, the script will try to interpret it
