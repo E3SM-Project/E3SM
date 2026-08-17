@@ -800,7 +800,6 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
           Km_clip(k) = km;
           Kh_clip(k) = kh;
         });
-      kv.team_barrier();
 
       if (m_process_nh_vars) {
         wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
