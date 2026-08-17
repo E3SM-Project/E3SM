@@ -60,7 +60,7 @@ void Functions<Real,DefaultDevice>
              lambda_low, lambda_high, lambda_slope, lambda_thresh,
              Ckh, Ckm, shoc_1p5tke, do_3d_turb,
              ekat::subview(wthv_sec, i),
-             ekat::subview(shear_strain3d_components, i),
+             shear_strain3d_components_s,
              ekat::subview(shear_strain3d, i),
              ekat::subview(shoc_mix, i),
              ekat::subview(dz_zi, i),
