@@ -55,7 +55,7 @@ struct SimulationParams
   double    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
-  int       horiz_turb_subcycle;
+  int       horiz_turb_subcycle = 1;
   int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   // Scaling exponent for the sponge-layer (nu_top) tensor viscosity, mirroring
