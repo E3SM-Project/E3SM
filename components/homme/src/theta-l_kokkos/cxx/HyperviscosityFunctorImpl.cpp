@@ -25,6 +25,7 @@ namespace {
 
 constexpr Real sgs_clip_cfl_target = 1.00;
 
+KOKKOS_INLINE_FUNCTION
 constexpr Real get_lambda_vis ()
 {
   // Element-order-dependent stability factor for the discrete Laplacian.
