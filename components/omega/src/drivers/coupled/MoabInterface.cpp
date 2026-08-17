@@ -164,11 +164,15 @@ void createMesh(int LocalPid, int OcnID) {
          } else {
             Compact = It->second;
          }
-         Connectivity[Offset + Edge] = Compact;
+         // iMOAB_CreateElements indexes into the just-created vertex range
+         // as connectivity[j] + firstVertex - 1, i.e. it expects 1-based
+         // indices; Compact itself stays 0-based everywhere else (it also
+         // indexes Coords/CompactToLocal directly).
+         Connectivity[Offset + Edge] = Compact + 1;
          LastCompact                 = Compact;
       }
       for (I4 Edge = NEdges; Edge < MaxEdges; ++Edge)
-         Connectivity[Offset + Edge] = LastCompact;
+         Connectivity[Offset + Edge] = LastCompact + 1;
       Offset += MaxEdges;
    }
 
