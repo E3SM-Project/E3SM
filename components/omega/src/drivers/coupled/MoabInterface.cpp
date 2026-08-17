@@ -234,11 +234,16 @@ void createMesh(int LocalPid, int OcnID) {
    checkMoabErr(Err, "iMOAB_UpdateMeshInfo");
 }
 
-// Defines and sets the domain tags (lon/lat/area/mask/frac) that the
+// Defines and sets the domain tags (lon/lat/area/aream/mask/frac) that the
 // coupler-side mapper reads for the offline weight file's area-weighted
 // interpolation. Values are computed the same way as the MCT path's
 // ocn_set_domain_mct (via omega_get_lonlat_cell/omega_get_area_cell in
-// omega_cxx2f_interface.cpp) so both drivers see identical numbers.
+// omega_cxx2f_interface.cpp) so both drivers see identical numbers. aream
+// is given a placeholder, same as ocn_set_domain_mct does for MCT: the
+// coupler computes the real value from the mapping file and pushes it back
+// down onto this tag (component_init_areacor_moab's 'x2c' exchange), but
+// the tag must already exist here for that exchange to have somewhere to
+// write it, and for its combined "area:aream:mask" read to succeed.
 void setDomainTags(int LocalPid) {
 
    HorzMesh *DefMesh    = HorzMesh::getDefault();
@@ -252,6 +257,7 @@ void setDomainTags(int LocalPid) {
 
    std::vector<double> Lon(NCellsOwned), Lat(NCellsOwned), Area(NCellsOwned);
    std::vector<double> MaskFrac(NCellsOwned, 1.0);
+   std::vector<double> AreaM(NCellsOwned, -9999.0);
    for (I4 Cell = 0; Cell < NCellsOwned; ++Cell) {
       Lon[Cell]  = static_cast<double>(DefMesh->LonCellH[Cell] * Rad2Deg);
       Lat[Cell]  = static_cast<double>(DefMesh->LatCellH[Cell] * Rad2Deg);
@@ -261,6 +267,7 @@ void setDomainTags(int LocalPid) {
    defineAndSetElemDoubleTag(LocalPid, "lon", NCellsOwned, Lon.data());
    defineAndSetElemDoubleTag(LocalPid, "lat", NCellsOwned, Lat.data());
    defineAndSetElemDoubleTag(LocalPid, "area", NCellsOwned, Area.data());
+   defineAndSetElemDoubleTag(LocalPid, "aream", NCellsOwned, AreaM.data());
    defineAndSetElemDoubleTag(LocalPid, "mask", NCellsOwned, MaskFrac.data());
    defineAndSetElemDoubleTag(LocalPid, "frac", NCellsOwned, MaskFrac.data());
 }
