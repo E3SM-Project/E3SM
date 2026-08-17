@@ -360,7 +360,7 @@
     <DESC>Perlmutter GPU nodes at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel-classic</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intel-classicgpu,intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -462,7 +462,7 @@
         <command name="load">gcc-native-mixed/14</command>
       </modules>
 
-      <modules compiler="intelgpu">
+      <modules compiler="intel-classicgpu">
         <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
@@ -530,7 +530,7 @@
     <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intel-classicgpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
@@ -539,7 +539,7 @@
     <environment_variables compiler="nvidiagpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intel-classicgpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel-classic" DEBUG="TRUE">
@@ -1008,7 +1008,7 @@
     <DESC>Muller GPU nodes on internal machine at NERSC. similar to pm-gpu</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:muller</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel-classic</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intel-classicgpu,intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -1110,7 +1110,7 @@
         <command name="load">gcc-native-mixed/14</command>
       </modules>
 
-      <modules compiler="intelgpu">
+      <modules compiler="intel-classicgpu">
         <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
@@ -1178,13 +1178,13 @@
     <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intel-classicgpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intel-classicgpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel-classic" DEBUG="TRUE">
@@ -1430,7 +1430,7 @@
     <DESC>Alvarez GPU nodes -- internal test machine at NERSC. similar to pm-gpu</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:alvarez</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel-classic</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intel-classicgpu,intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -1532,7 +1532,7 @@
         <command name="load">gcc-native-mixed/14</command>
       </modules>
 
-      <modules compiler="intelgpu">
+      <modules compiler="intel-classicgpu">
         <command name="load">cudatoolkit/12.9</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
@@ -1600,13 +1600,13 @@
     <environment_variables compiler="nvidiagpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intel-classicgpu">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intel-classicgpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel-classic" DEBUG="TRUE">
