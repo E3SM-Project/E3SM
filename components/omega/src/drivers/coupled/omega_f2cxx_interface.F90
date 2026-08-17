@@ -88,6 +88,16 @@ module omega_f2cxx_mod
 
       end subroutine omega_ocn_finalize
 
+      function omega_get_moab_pid() result(moab_pid) bind(c)
+
+         use, intrinsic :: iso_c_binding, only: c_int
+
+         implicit none
+
+         integer(kind=c_int) :: moab_pid
+
+      end function omega_get_moab_pid
+
       function omega_get_ncells_local() result(ncells_local) bind(c)
 
          use, intrinsic :: iso_c_binding, only: c_int

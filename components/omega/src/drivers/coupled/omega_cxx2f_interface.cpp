@@ -54,6 +54,12 @@ int MoabNCouplerImports = 0;
 int MoabNCouplerExports = 0;
 std::vector<OMEGA::Real> MoabCplToOcn;
 std::vector<OMEGA::Real> MoabOcnToCpl;
+
+// The ocean's own MOAB application id, returned by moabInit. The Fortran
+// cap must copy this into seq_comm_mct's mpoid module variable, since that
+// is what the coupler-side migration/mapping code reads to find the
+// ocean's mesh.
+int MoabPid = -1;
 #endif
 
 } // namespace
@@ -140,10 +146,14 @@ void omega_ocn_init1(
    // the MOAB mesh can be constructed from them.
    MoabNCouplerImports = NCouplerImports;
    MoabNCouplerExports = NCouplerExports;
-   int MoabPid          = OMEGA::moabInit(Comm, OcnID);
+   MoabPid              = OMEGA::moabInit(Comm, OcnID);
    OMEGA::moabDefineTagStorage(MoabPid, Cpl2OcnFieldNames, Ocn2CplFieldNames);
 #endif
 }
+
+#ifdef HAVE_MOAB
+int omega_get_moab_pid() { return MoabPid; }
+#endif
 
 void omega_ocn_init2(const double *cpl_to_ocn_data, double *ocn_to_cpl_data) {
    Pacer::start("Init2", 0);

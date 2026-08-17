@@ -46,6 +46,10 @@ contains
       use omega_f2cxx_mod, only: &
          omega_ocn_init1, &
          omega_ocn_init2
+#ifdef HAVE_MOAB
+      use omega_f2cxx_mod, only: omega_get_moab_pid
+      use seq_comm_mct, only: mpoid
+#endif
 
       use omega_cpl_indices, only: &
          num_coupler_imports, &
@@ -206,6 +210,12 @@ contains
          c_loc(cpl_x2o_field_names), &
          c_loc(cpl_o2x_field_names) &
          )
+
+#ifdef HAVE_MOAB
+      ! tell the coupler-side migration/mapping code (cplcomp_exchange_mod,
+      ! prep_ocn_mod) which MOAB app id is this ocean instance's own mesh
+      mpoid = omega_get_moab_pid()
+#endif
 
       !-------------------------------------------------------------------------
       ! initialize MCT gsmap, domain, and attribute vectors
