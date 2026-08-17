@@ -6,6 +6,7 @@ nav:
     - 'Overview': 'user/index.md'
     - 'EAMxx case basics': 'user/eamxx_cases.md'
     - 'Model Configuration': 'user/model_configuration.md'
+    - 'SHOC-HOMME 3D turbulence': 'user/shoc_homme_3d_turbulence.md'
     - 'Nudging': 'user/nudging.md'
     - 'Extra radiation calls': 'user/clean_clear_sky.md'
     - 'COSP': 'user/cosp.md'
