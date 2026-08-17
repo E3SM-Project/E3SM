@@ -77,7 +77,6 @@ public:
                               int time_index = -1);
 
   void create_horiz_remappers (const std::string& map_file = "");
-  void create_horiz_remappers (const Real iop_lat, const Real iop_lon);
   void create_horiz_remappers (const std::string& map_file,
                                const std::shared_ptr<IOPDataManager>& iop_data_manager);
   void create_vert_remapper ();
