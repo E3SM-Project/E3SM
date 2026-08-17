@@ -59,7 +59,7 @@
   <machine MACH="miller">
     <DESC> ORNL AF cluster 800-node AMD Epyc 2-sockets 64-cores per node</DESC>
     <OS>CNL</OS>
-    <COMPILERS>gnu,cray,intel</COMPILERS>
+    <COMPILERS>gnu,cray,intel-classic</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <PROJECT>nwp501</PROJECT>
     <SAVE_TIMING_DIR>/lustre/storm/nwp501/proj-shared/e3sm</SAVE_TIMING_DIR>
@@ -148,7 +148,7 @@
     <DESC>Perlmutter CPU-only nodes at NERSC.  Phase2 only: Each node has 2 AMD EPYC 7713 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
+    <COMPILERS>intel-classic,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -223,7 +223,7 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
         <command name="unload">cray-libsci</command>
@@ -288,7 +288,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="intel" mpilib="mpich">
+    <environment_variables compiler="intel-classic" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
@@ -325,7 +325,7 @@
     <environment_variables compiler="nvidia" DEBUG="TRUE">
       <env name="NVCOMPILER_TERM">trace</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
@@ -336,10 +336,10 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/aocc-4.1.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/aocc-4.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="TRUE">
+    <environment_variables compiler="intel-classic" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="FALSE">
+    <environment_variables compiler="intel-classic" DEBUG="FALSE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
@@ -360,7 +360,7 @@
     <DESC>Perlmutter GPU nodes at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) (256GB) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -381,11 +381,11 @@
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="gnu">128</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="nvidia">128</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intel">128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intel-classic">128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnu">64</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidia">64</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intel">64</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intel-classic">64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -475,7 +475,7 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">craype-accel-host</command>
       </modules>
 
@@ -542,10 +542,10 @@
     <environment_variables compiler="intelgpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="TRUE">
+    <environment_variables compiler="intel-classic" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="FALSE">
+    <environment_variables compiler="intel-classic" DEBUG="FALSE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
@@ -799,7 +799,7 @@
     <DESC>Muller CPU-only nodes on internal NERSC machine, similar to pm-cpu (very small)</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:muller</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
+    <COMPILERS>intel-classic,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -874,7 +874,7 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
         <command name="unload">cray-libsci</command>
@@ -938,7 +938,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="intel" mpilib="mpich">
+    <environment_variables compiler="intel-classic" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
@@ -973,7 +973,7 @@
     <environment_variables compiler="nvidia" DEBUG="TRUE">
       <env name="NVCOMPILER_TERM">trace</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
@@ -984,10 +984,10 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/aocc-4.1.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/aocc-4.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="TRUE">
+    <environment_variables compiler="intel-classic" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="FALSE">
+    <environment_variables compiler="intel-classic" DEBUG="FALSE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
@@ -1008,7 +1008,7 @@
     <DESC>Muller GPU nodes on internal machine at NERSC. similar to pm-gpu</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:muller</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -1029,11 +1029,11 @@
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="gnu">128</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="nvidia">128</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intel">128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intel-classic">128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnu">64</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidia">64</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intel">64</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intel-classic">64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -1123,7 +1123,7 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">craype-accel-host</command>
       </modules>
 
@@ -1187,10 +1187,10 @@
     <environment_variables compiler="intelgpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="TRUE">
+    <environment_variables compiler="intel-classic" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="FALSE">
+    <environment_variables compiler="intel-classic" DEBUG="FALSE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
@@ -1221,7 +1221,7 @@
     <DESC>Alvarez CPU nodes -- internal test machine at NERSC, very similar to pm-cpu. each node has 2 AMD EPYC 7713 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:alvarez</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
+    <COMPILERS>intel-classic,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -1296,7 +1296,7 @@
         <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/8.6.0</command>
         <command name="load">intel/2025.3</command>
         <command name="unload">cray-libsci</command>
@@ -1360,7 +1360,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="intel" mpilib="mpich">
+    <environment_variables compiler="intel-classic" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/intel-2023.2.0/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/adios2/2.10.2/cray-mpich-8.1.28/intel-2023.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/c-blosc2/2.15.2/intel-2023.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
@@ -1395,7 +1395,7 @@
     <environment_variables compiler="nvidia" DEBUG="TRUE">
       <env name="NVCOMPILER_TERM">trace</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="BLA_VENDOR">Intel10_64_dyn</env>
     </environment_variables>
     <environment_variables compiler="amdclang" mpilib="mpich">
@@ -1406,10 +1406,10 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/aocc-4.1.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/aocc-4.1.0; else echo "$ZFP_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="TRUE">
+    <environment_variables compiler="intel-classic" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="FALSE">
+    <environment_variables compiler="intel-classic" DEBUG="FALSE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
@@ -1430,7 +1430,7 @@
     <DESC>Alvarez GPU nodes -- internal test machine at NERSC. similar to pm-gpu</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:alvarez</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
+    <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -1451,11 +1451,11 @@
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="gnu">128</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="nvidia">128</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="intel">128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intel-classic">128</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>4</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnu">64</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="nvidia">64</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="intel">64</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intel-classic">64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -1545,7 +1545,7 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">craype-accel-host</command>
       </modules>
 
@@ -1609,10 +1609,10 @@
     <environment_variables compiler="intelgpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="TRUE">
+    <environment_variables compiler="intel-classic" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
-    <environment_variables compiler="intel" DEBUG="FALSE">
+    <environment_variables compiler="intel-classic" DEBUG="FALSE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu">
@@ -1989,7 +1989,7 @@
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>gnu,intel</COMPILERS>
+    <COMPILERS>gnu,intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <SAVE_TIMING_DIR>/sems-data-store/ACME/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -2033,7 +2033,7 @@
       <modules compiler="gnu">
         <command name="load">sems-gcc/7.3.0</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">sems-intel/16.0.3</command>
       </modules>
       <modules mpilib="mpi-serial">
@@ -2416,7 +2416,7 @@
     <NODENAME_REGEX>(skybridge|chama)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>fy210162</PROJECT>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
@@ -2490,7 +2490,7 @@
     <NODENAME_REGEX>(boca)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>fy210162</PROJECT>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
@@ -2561,7 +2561,7 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install-master/intel</env>
     </environment_variables>
   </machine>
@@ -2572,7 +2572,7 @@
     <NODENAME_REGEX>(flight)</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>fy210162</PROJECT>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
@@ -2645,7 +2645,7 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="PNETCDF_PATH">$ENV{SEMS_NETCDF_ROOT}</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install-master/intel</env>
     </environment_variables>
   </machine>
@@ -2656,7 +2656,7 @@
     <NODENAME_REGEX>ghost-login</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <PROJECT>fy210162</PROJECT>
 
@@ -3152,7 +3152,7 @@
   <machine MACH="dane">
     <DESC>LLNL Linux Cluster, 112 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx</COMPILERS>
+    <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/dane</CIME_OUTPUT_ROOT>
@@ -3194,7 +3194,7 @@
         <command name="load">cmake/3.26.3</command>
         <command name="load">mkl/2022.1.0</command>
       </modules>
-      <modules compiler="oneapi-ifx">
+      <modules compiler="intel">
         <command name="load">intel/2023.2.1-magic</command>
 	<command name="use">/usr/workspace/e3sm/spack/dane/intel/modules/Core</command>
 	<command name="load">intel-oneapi-runtime/2023.2.0</command>
@@ -3212,7 +3212,7 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
       <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_C_PATH}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_PATH}</env>
@@ -3319,7 +3319,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
+    <COMPILERS>intel,intelgpu,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
@@ -3333,11 +3333,11 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">96</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intel">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">48</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intel">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intelgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -3390,7 +3390,7 @@
       <env name="I_MPI_PIN_ORDER">spread</env>
       <env name="I_MPI_PIN_CELL">unit</env>
     </environment_variables>
-    <environment_variables compiler="intel" mpilib="openmpi">
+    <environment_variables compiler="intel-classic" mpilib="openmpi">
       <env name="OMPI_CC">icc</env>
       <env name="OMPI_CXX">icpc</env>
       <env name="OMPI_FC">ifort</env>
@@ -3411,14 +3411,14 @@
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifxgpu">
+    <environment_variables compiler="intelgpu">
       <env name="SYCL_DEVICE_FILTER">opencl</env>
       <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
       <env name="SYCL_CACHE_PERSISTENT">0</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="GATOR_DISABLE">0</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
       <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
     </environment_variables>
@@ -3534,7 +3534,7 @@
     <DESC>ANL Sunspot Test and Development System (TDS), batch system is pbspro</DESC>
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
+    <COMPILERS>intel,intelgpu,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
@@ -3551,9 +3551,9 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intelgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
@@ -3579,7 +3579,7 @@
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
-        <modules compiler="oneapi-ifxgpu">
+        <modules compiler="intelgpu">
           <command name="load">kokkos/4.4.01-omp-sycl</command>
         </modules>
         <modules compiler="gnu">
@@ -3599,7 +3599,7 @@
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
      </environment_variables>
-     <environment_variables compiler="oneapi-ifxgpu">
+     <environment_variables compiler="intelgpu">
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="romio_cb_read">disable</env>
@@ -3612,7 +3612,7 @@
         <env name="ZES_ENABLE_SYSMAN">1</env>
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
@@ -3635,7 +3635,7 @@
     <DESC>ALCF Aurora, 10624 nodes, 2x52c SPR, 6x2s PVC, 2x512GB DDR5, 2x64GB CPU-HBM, 6x128GB GPU-HBM, Slingshot 11, PBSPro</DESC>
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
+    <COMPILERS>intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SMinput/baselines</SAVE_TIMING_DIR>
@@ -3652,9 +3652,9 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>102</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>102</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intelgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
@@ -3701,7 +3701,7 @@
         <env name="PALS_RPC_TIMEOUT">240</env>
         <env name="RLIMITS"> </env>
      </environment_variables>
-     <environment_variables compiler="oneapi-ifxgpu">
+     <environment_variables compiler="intelgpu">
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
@@ -3716,7 +3716,7 @@
         <!-- <env name="ZE_FLAT_DEVICE_HIERARCHY">FLAT</env>
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>-->
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
@@ -3815,7 +3815,7 @@
     <DESC>PNL cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>sooty</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi</COMPILERS>
+    <COMPILERS>intel-classic,pgi</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/$USER/cime_output_root</CIME_OUTPUT_ROOT>
     <!--
@@ -3862,7 +3862,7 @@
         <command name="load">cmake/3.17.1</command>
         <command name="load">svn/1.8.13</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">intel/19.0.5</command>
         <command name="load">mkl/2019u5</command>
       </modules>
@@ -3893,7 +3893,7 @@
     <DESC>PNNL Intel KNC cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>glogin</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>/dtemp/$PROJECT/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/dtemp/st49401/sing201/acme/inputdata/</DIN_LOC_ROOT>
@@ -3938,7 +3938,7 @@
       <modules>
         <command name="load">python/2.7.9</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">intel/ips_18</command>
         <command name="load">mkl/14.0</command>
       </modules>
@@ -3958,7 +3958,7 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_ROOT}</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="MKL_PATH">$ENV{MLIBHOME}</env>
       <env name="COMPILER">intel</env>
     </environment_variables>
@@ -3968,7 +3968,7 @@
     <DESC>PNL Haswell cluster, OS is Linux, batch system is SLURM</DESC>
     <NODENAME_REGEX>constance</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi,nag</COMPILERS>
+    <COMPILERS>intel-classic,pgi,nag</COMPILERS>
     <MPILIBS>mvapich2,openmpi,intelmpi,mvapich</MPILIBS>
     <CIME_OUTPUT_ROOT>/pic/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/pic/projects/climate/csmdata/</DIN_LOC_ROOT>
@@ -4031,7 +4031,7 @@
         <!--command name="load">cmake/3.3.0</command-->
         <command name="load">cmake/3.17.1</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">gcc/8.1.0</command>
         <command name="load">intel/19.0.5</command>
         <command name="load">mkl/2019u5</command>
@@ -4046,7 +4046,7 @@
       <modules mpilib="mvapich">
         <command name="load">mvapich2/2.1</command>
       </modules>
-      <modules mpilib="mvapich2" compiler="intel">
+      <modules mpilib="mvapich2" compiler="intel-classic">
         <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules mpilib="mvapich2" compiler="pgi">
@@ -4061,7 +4061,7 @@
       <modules mpilib="openmpi">
         <command name="load">openmpi/1.8.3</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">netcdf/4.6.3</command>
       </modules>
       <modules compiler="pgi">
@@ -4073,14 +4073,14 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="LD_LIBRARY_PATH">/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
     <environment_variables compiler="nag">
@@ -4092,7 +4092,7 @@
     <DESC>PNL E3SM Intel Xeon Gold 6148(Skylake) nodes, OS is Linux, SLURM</DESC>
     <NODENAME_REGEX>compy</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,pgi</COMPILERS>
+    <COMPILERS>intel-classic,pgi</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <SAVE_TIMING_DIR>/compyfs</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -4146,7 +4146,7 @@
       <modules>
         <command name="load">cmake/3.19.6</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">gcc/8.1.0</command>
         <command name="load">intel/20.0.0</command>
       </modules>
@@ -4156,7 +4156,7 @@
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
       </modules>
-      <modules mpilib="impi" compiler="intel">
+      <modules mpilib="impi" compiler="intel-classic">
 	<command name="load">intelmpi/2020</command>
       </modules>
       <modules mpilib="impi" compiler="pgi">
@@ -4178,7 +4178,7 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}/</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="LD_LIBRARY_PATH">/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="mvapich2">
@@ -4201,7 +4201,7 @@
     <DESC>EMSL, OS is Linux, SLURM</DESC>
     <NODENAME_REGEX>tlogin</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
     <SAVE_TIMING_DIR>/tahoma/emsls60153</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
@@ -4253,14 +4253,14 @@
       <modules>
         <command name="load">cmake/3.19.5-intel</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">gcc/10.2.0</command>
         <command name="load">intel/ips_20_u2</command>
       </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2~cuda/2.3.5-intel</command>
       </modules>
-      <modules mpilib="impi" compiler="intel">
+      <modules mpilib="impi" compiler="intel-classic">
 	<command name="load">impi/ips_20_u2</command>
       </modules>
       <modules>
@@ -4331,7 +4331,7 @@
     <DESC>OR-CONDO, CADES-CCSI, os is Linux, 16 pes/nodes, batch system is PBS</DESC>
     <NODENAME_REGEX>or-condo</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>gnu,intel</COMPILERS>
+    <COMPILERS>gnu,intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/or-hydra/cades-ccsi/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/or-hydra/cades-ccsi/proj-shared/project_acme/ACME_inputdata</DIN_LOC_ROOT>
@@ -4521,7 +4521,7 @@
     <DESC>Chicoma CPU-only nodes at LANL IC. Each node has 2 AMD EPYC 7H12 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>ch-fe*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,intel,nvidia,amdclang</COMPILERS>
+    <COMPILERS>gnu,intel-classic,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/scratch5/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/scratch5/$ENV{USER}/inputdata</DIN_LOC_ROOT>
@@ -4597,7 +4597,7 @@
         <command name="load">cray-libsci/23.12.5</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/8.5.0</command>
         <command name="load">intel/2023.2.0</command>
         <command name="load">intel-mkl/2023.2.0</command>
@@ -4787,7 +4787,7 @@
   <machine MACH="mesabi">
     <DESC>Mesabi batch queue</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/home/reichpb/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>
@@ -4829,7 +4829,7 @@
   <machine MACH="itasca">
     <DESC>Itasca batch queue</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/home/reichpb/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/home/reichpb/shared/cesm_inputdata</DIN_LOC_ROOT>
@@ -4874,7 +4874,7 @@
     <DESC>Lawrencium LR3 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
     <NODENAME_REGEX>n000*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
+    <COMPILERS>intel-classic,gnu</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
     <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
@@ -4919,14 +4919,14 @@
 	     <command name="load">xml-libxml/2.0116</command>
 	     <command name="load">python/3.6</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">intel/2016.4.072</command>
         <command name="load">mkl</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
+      <modules compiler="intel-classic" mpilib="mpi-serial">
         <command name="load">netcdf/4.4.1.1-intel-s</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial">
+      <modules compiler="intel-classic" mpilib="!mpi-serial">
         <command name="load">openmpi</command>
         <command name="load">netcdf/4.4.1.1-intel-p</command>
       </modules>
@@ -4959,7 +4959,7 @@
     <DESC>Lawrencium LR6 cluster at LBL, OS is Linux (intel), batch system is SLURM</DESC>
     <NODENAME_REGEX>n000*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
+    <COMPILERS>intel-classic,gnu</COMPILERS>
     <MPILIBS>openmpi</MPILIBS>
     <CHARGE_ACCOUNT>ac_acme</CHARGE_ACCOUNT>
     <CIME_OUTPUT_ROOT>/global/scratch/$ENV{USER}</CIME_OUTPUT_ROOT>
@@ -5002,14 +5002,14 @@
 	<command name="load">xml-libxml/2.0116</command>
         <command name="load">python/3.6</command>
       </modules>
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">intel/2016.4.072</command>
         <command name="load">mkl</command>
       </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
+      <modules compiler="intel-classic" mpilib="mpi-serial">
         <command name="load">netcdf/4.4.1.1-intel-s</command>
       </modules>
-      <modules compiler="intel" mpilib="!mpi-serial">
+      <modules compiler="intel-classic" mpilib="!mpi-serial">
         <command name="load">openmpi</command>
         <command name="load">netcdf/4.4.1.1-intel-p</command>
       </modules>
@@ -5331,7 +5331,7 @@
     <DESC>ERDC XC40, os is CNL, 44 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>onyx</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>NPSCA07935242</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/p/app/unsupported/RASM/acme</SAVE_TIMING_DIR>
@@ -5393,7 +5393,7 @@
         <command name="rm">craype</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/6.0.9</command>
         <command name="rm">intel</command>
         <command name="load">intel/19.1.3.304</command>
@@ -5429,7 +5429,7 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="FORT_BUFFERED">yes</env>
     </environment_variables>
     <environment_variables compiler="intel18">
@@ -5441,7 +5441,7 @@
     <DESC>NavyDSRC Cray EX, os is CNL, 128 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>narwhal</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>NPSCA07935242</PROJECT>
     <SAVE_TIMING_DIR>/p/work1/projects/RASM/acme</SAVE_TIMING_DIR>
@@ -5491,7 +5491,7 @@
         <command name="rm">cray-parallel-netcdf</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/8.0.0</command>
         <command name="rm">intel</command>
         <command name="rm">intel-classic</command>
@@ -5521,7 +5521,7 @@
       <!--env name="HDF5_DISABLE_VERSION_CHECK">2</env-->
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="FORT_BUFFERED">yes</env>
     </environment_variables>
     <environment_variables compiler="intel18">
@@ -5533,7 +5533,7 @@
     <DESC>AFRL Cray EX, os is CNL, 128 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>warhawk</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>intel</COMPILERS>
+    <COMPILERS>intel-classic</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>NPSCA07935242</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/p/work1/projects/RASM/acme</SAVE_TIMING_DIR>
@@ -5588,7 +5588,7 @@
         <command name="rm">cray-parallel-netcdf</command>
       </modules>
 
-      <modules compiler="intel">
+      <modules compiler="intel-classic">
         <command name="load">PrgEnv-intel/8.0.0</command>
         <command name="rm">intel</command>
         <command name="load">intel-classic/2021.3.0</command>
@@ -5619,7 +5619,7 @@
       <!--env name="HDF5_DISABLE_VERSION_CHECK">2</env-->
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel-classic">
       <env name="FORT_BUFFERED">yes</env>
     </environment_variables>
     <environment_variables compiler="intel18">

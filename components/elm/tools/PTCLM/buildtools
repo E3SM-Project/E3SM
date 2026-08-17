@@ -38,14 +38,14 @@ if [[  "$host" =~ ys ]]; then
   gmake="gmake"
   parcmp=32
   machine="yellowstone"
-  compiler="intel"
+  compiler="intel-classic"
   netcdf=$NETCDF
 elif [[ "$host" =~ goldbach ]]; then
   echo "Setup for goldbach"
   gmake="gmake"
   parcmp=2
   machine="goldbach"
-  compiler="intel"
+  compiler="intel-classic"
   netcdf=/usr/local/netcdf-4.3.0-intel-cluster-2013.4.183
   export PATH="${PATH}:/usr/bin"
 elif [[ "$host" =~ yongi ]] || [[ "$host" =~ vpn ]]; then
@@ -53,7 +53,7 @@ elif [[ "$host" =~ yongi ]] || [[ "$host" =~ vpn ]]; then
   gmake="make"
   parcmp=12
   machine="userdefined"
-  compiler="intel"
+  compiler="intel-classic"
   netcdf="/opt/local"
   toolsmake="USER_FC=ifort USER_LINKER=ifort USER_CC=icc "
   case='$CASE'
@@ -79,7 +79,7 @@ elif [[  "$host" =~ edison ]]; then
   gmake="gmake"
   parcmp=32
   machine="edison"
-  compiler="intel"
+  compiler="intel-classic"
   USER_LDFLAGS="-L$LIB_NETCDF -lnetcdff"
   export USER_LDFLAGS
   toolsmake="USER_FC=ftn"

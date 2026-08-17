@@ -84,7 +84,7 @@ macro(build_model COMP_CLASS COMP_NAME)
       elseif (USE_SYCL)
         set(YAKL_ARCH "SYCL")
         # SYCL_FLAGS is set through Macros.cmake
-        # For instance: cime_config/machines/cmake_macros/oneapi-ifxgpu_sunspot.cmake
+        # For instance: cime_config/machines/cmake_macros/sunspot_intelgpu.cmake
         set(YAKL_SYCL_FLAGS "${CPPDEFS} ${SYCL_FLAGS}")
       else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
@@ -290,14 +290,14 @@ macro(build_model COMP_CLASS COMP_NAME)
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE Fortran)
 
       # A bit hacky, some platforms need help with the fortran linker
-      if (COMPILER STREQUAL "intel" OR COMPILER STREQUAL "oneapi-ifx")
+      if (COMPILER STREQUAL "intel-classic" OR COMPILER STREQUAL "intel")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " -cxxlib")
       endif()
 
     else()
       set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
-      if (COMPILER STREQUAL "oneapi-ifxgpu")
+      if (COMPILER STREQUAL "intelgpu")
         string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,-\-defsym,main=MAIN_\_ -lifcore -fsycl -Xsycl-target-backend \"-device pvc\" ")
       endif()
 

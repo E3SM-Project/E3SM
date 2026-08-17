@@ -2,7 +2,7 @@
 <testlist version="2.0">
   <test name="ERI" grid="T31_g37_rx1" compset="A">
     <machines>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -34,7 +34,7 @@
   </test>
   <test name="ERI_D" grid="T31_g37_rx1" compset="A">
     <machines>
-      <machine name="hobart" compiler="intel" category="prebeta">
+      <machine name="hobart" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -44,7 +44,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -54,7 +54,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -68,12 +68,12 @@
   </test>
   <test name="SMS" grid="f19_g16" compset="X">
     <machines>
-      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+      <machine name="cheyenne" compiler="intel-classic" category="aux_cime_baselines">
 	<options>
 	  <option name="wallclock">00:10:00</option>
 	</options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="jim">
+      <machine name="cheyenne" compiler="intel-classic" category="jim">
 	<options>
 	  <option name="wallclock">00:10:00</option>
 	</options>
@@ -92,7 +92,7 @@
   </test>
   <test name="ERR" grid="f45_g37_rx1" compset="A">
     <machines>
-      <machine name="cheyenne" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -107,7 +107,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prealpha">
+      <machine name="edison" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -131,7 +131,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -150,7 +150,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -169,17 +169,17 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prealpha">
+      <machine name="edison" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="eos" compiler="intel" category="prealpha">
+      <machine name="eos" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -203,12 +203,12 @@
   </test>
   <test name="ERS_Ld3" grid="f45_g37_rx1" compset="A">
     <machines>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="hobart" compiler="intel" category="prealpha">
+      <machine name="hobart" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -218,12 +218,12 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="stampede" compiler="intel" category="prealpha">
+      <machine name="stampede" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -252,7 +252,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="eos" compiler="intel" category="prebeta">
+      <machine name="eos" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -261,7 +261,7 @@
   </test>
   <test name="ERS_Ld3" grid="ne30_g16_rx1" compset="A">
     <machines>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -270,7 +270,7 @@
   </test>
   <test name="ERS_Ld3" grid="f19_g16" compset="X">
     <machines>
-      <machine name="hobart" compiler="intel" category="prealpha">
+      <machine name="hobart" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -280,12 +280,12 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prealpha">
+      <machine name="edison" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -308,7 +308,7 @@
   </test>
   <test name="ERS_Lm3" grid="T62_g16" compset="AIAF">
     <machines>
-      <machine name="cheyenne" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -317,7 +317,7 @@
   </test>
   <test name="ERS_N2_Ld3" grid="T31_g37_rx1" compset="A">
     <machines>
-      <machine name="hobart" compiler="intel" category="prebeta">
+      <machine name="hobart" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -327,7 +327,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -337,7 +337,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -356,12 +356,12 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="eos" compiler="intel" category="prebeta">
+      <machine name="eos" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -370,7 +370,7 @@
   </test>
   <test name="NCK_Ld3" grid="f19_g16_rx1" compset="A">
     <machines>
-      <machine name="hobart" compiler="intel" category="prebeta">
+      <machine name="hobart" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -380,7 +380,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="eos" compiler="intel" category="prebeta">
+      <machine name="eos" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -390,7 +390,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -409,12 +409,12 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="eos" compiler="intel" category="prebeta">
+      <machine name="eos" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -428,7 +428,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -447,7 +447,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -461,7 +461,7 @@
   </test>
   <test name="PEM" grid="f19_g16_rx1" compset="A">
     <machines>
-      <machine name="cheyenne" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel-classic" category="prealpha">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -480,7 +480,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -509,7 +509,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -538,7 +538,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -552,7 +552,7 @@
   </test>
   <test name="SEQ_Ld3" grid="f09_g16" compset="X">
     <machines>
-      <machine name="edison" compiler="intel" category="prebeta">
+      <machine name="edison" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -561,7 +561,7 @@
   </test>
   <test name="SEQ_Ld3" grid="f19_g16" compset="X">
     <machines>
-      <machine name="eos" compiler="intel" category="prebeta">
+      <machine name="eos" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -599,7 +599,7 @@
           <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel-classic" category="prebeta">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
@@ -609,7 +609,7 @@
           <option name="wallclock">00:30:00</option>
          </options>
       </machine>
-      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+      <machine name="cheyenne" compiler="intel-classic" category="aux_cime_baselines">
         <options>
           <option name="wallclock">00:30:00</option>
         </options>
