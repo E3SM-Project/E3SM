@@ -4737,7 +4737,7 @@ graph.</p>
 <span class="c1"># Switch to your branch</span>
 git<span class="w"> </span>checkout<span class="w"> </span>bishtgautam/lnd/emi-example
 
-<span class="c1"># Let&#39;s look at the graph</span>
+<span class="c1"># Let's look at the graph</span>
 git<span class="w"> </span>log<span class="w"> </span>--oneline<span class="w"> </span>--decorate<span class="w"> </span>--graph
 *<span class="w"> </span>9a2cd8459<span class="w"> </span><span class="o">(</span>HEAD<span class="w"> </span>-&gt;<span class="w"> </span>bishtgautam/lnd/emi-example,<span class="w"> </span>origin/bishtgautam/lnd/emi-example<span class="o">)</span><span class="w"> </span>Updates<span class="w"> </span>the<span class="w"> </span>Stub<span class="w"> </span>EM<span class="w"> </span>code
 *<span class="w"> </span>d11fb8c52<span class="w"> </span>Adds<span class="w"> </span>a<span class="w"> </span>readme<span class="w"> </span>and<span class="w"> </span>makefile<span class="w"> </span><span class="k">for</span><span class="w"> </span>EMI<span class="w"> </span>Demo<span class="w"> </span>code
@@ -4754,20 +4754,20 @@ git<span class="w"> </span>log<span class="w"> </span>--oneline<span class="w"> 
 *<span class="w"> </span>beb1fe9ee<span class="w"> </span>Adds<span class="w"> </span>.gitignore<span class="w"> </span>files<span class="w"> </span><span class="k">for</span><span class="w"> </span>EMI
 *<span class="w"> </span>301acfe7a<span class="w"> </span>Renames<span class="w"> </span>ExternalModelInterfaceDataMod.F90
 *<span class="w"> </span>f0eb5b40b<span class="w"> </span>Renames<span class="w"> </span>ExternalModelInterfaceDataDimensionMod.F90
-*<span class="w"> </span><span class="m">076100882</span><span class="w"> </span>Restructures<span class="w"> </span>ELM<span class="s1">&#39;s EMI directory</span>
-<span class="s1">*   cfb7fc2b2 Merge branch &#39;</span>qzhu-lbl/lnd/ch4_inundation_bugfix<span class="s1">&#39; (PR #2814)</span>
+*<span class="w"> </span><span class="m">076100882</span><span class="w"> </span>Restructures<span class="w"> </span>ELM<span class="s1">'s EMI directory</span>
+<span class="s1">*   cfb7fc2b2 Merge branch '</span>qzhu-lbl/lnd/ch4_inundation_bugfix<span class="s1">' (PR #2814)</span>
 <span class="s1">|\</span>
 <span class="s1">| * ec99b1cb4 (origin/qzhu-lbl/lnd/ch4_inundation_bugfix)  - fix ch4 inundatation parameter read in bug</span>
-<span class="s1">* |   c59c98116 Merge branch &#39;</span>darincomeau/mpaso/enable_eddystats<span class="err">&#39;</span><span class="w"> </span><span class="o">(</span>PR<span class="w"> </span><span class="c1">#2821)</span>
+<span class="s1">* |   c59c98116 Merge branch '</span>darincomeau/mpaso/enable_eddystats<span class="err">'</span><span class="w"> </span><span class="o">(</span>PR<span class="w"> </span><span class="c1">#2821)</span>
 <span class="p">|</span><span class="se">\ \</span>
 <span class="p">|</span><span class="w"> </span>*<span class="w"> </span><span class="p">|</span><span class="w"> </span>c21bb46a4<span class="w"> </span>Turn<span class="w"> </span>on<span class="w"> </span>eddy<span class="w"> </span>stats<span class="w"> </span><span class="k">for</span><span class="w"> </span>oEC60to30v3<span class="w"> </span>and<span class="w"> </span>oEC60to30v3wLI<span class="w"> </span>ocn<span class="w"> </span>grids<span class="w"> </span>by<span class="w"> </span>default
 *<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">|</span><span class="w">   </span>a2dd2fce5<span class="w"> </span>Merge<span class="w"> </span>pull<span class="w"> </span>request<span class="w"> </span><span class="c1">#2811 from E3SM-Project/jayeshkrishna/pio2_cime_changes</span>
 </code></pre></div>
 <p>The above Git graph tells us that <code>bishtgautam/lnd/emi-example</code> started with the <code>cfb7fc2b2</code> hash on the <code>master</code>. So, we will generate the baselines using <code>cfb7fc2b2</code>. Checkout <code>cfb7fc2b2</code> and update the submodels via:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>cfb7fc2b2
-Note:<span class="w"> </span>checking<span class="w"> </span>out<span class="w"> </span><span class="s1">&#39;cfb7fc2b2&#39;</span>.
+Note:<span class="w"> </span>checking<span class="w"> </span>out<span class="w"> </span><span class="s1">'cfb7fc2b2'</span>.
 
-You<span class="w"> </span>are<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s1">&#39;detached HEAD&#39;</span><span class="w"> </span>state.<span class="w"> </span>You<span class="w"> </span>can<span class="w"> </span>look<span class="w"> </span>around,<span class="w"> </span>make<span class="w"> </span>experimental
+You<span class="w"> </span>are<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s1">'detached HEAD'</span><span class="w"> </span>state.<span class="w"> </span>You<span class="w"> </span>can<span class="w"> </span>look<span class="w"> </span>around,<span class="w"> </span>make<span class="w"> </span>experimental
 changes<span class="w"> </span>and<span class="w"> </span>commit<span class="w"> </span>them,<span class="w"> </span>and<span class="w"> </span>you<span class="w"> </span>can<span class="w"> </span>discard<span class="w"> </span>any<span class="w"> </span>commits<span class="w"> </span>you<span class="w"> </span>make<span class="w"> </span><span class="k">in</span><span class="w"> </span>this
 state<span class="w"> </span>without<span class="w"> </span>impacting<span class="w"> </span>any<span class="w"> </span>branches<span class="w"> </span>by<span class="w"> </span>performing<span class="w"> </span>another<span class="w"> </span>checkout.
 
@@ -4776,7 +4776,7 @@ If<span class="w"> </span>you<span class="w"> </span>want<span class="w"> </span
 
 <span class="w">  </span>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>&lt;new-branch-name&gt;
 
-HEAD<span class="w"> </span>is<span class="w"> </span>now<span class="w"> </span>at<span class="w"> </span>cfb7fc2b2...<span class="w"> </span>Merge<span class="w"> </span>branch<span class="w"> </span><span class="s1">&#39;qzhu-lbl/lnd/ch4_inundation_bugfix&#39;</span><span class="w"> </span><span class="o">(</span>PR<span class="w"> </span><span class="c1">#2814)</span>
+HEAD<span class="w"> </span>is<span class="w"> </span>now<span class="w"> </span>at<span class="w"> </span>cfb7fc2b2...<span class="w"> </span>Merge<span class="w"> </span>branch<span class="w"> </span><span class="s1">'qzhu-lbl/lnd/ch4_inundation_bugfix'</span><span class="w"> </span><span class="o">(</span>PR<span class="w"> </span><span class="c1">#2814)</span>
 
 git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init
 </code></pre></div>
@@ -4792,10 +4792,10 @@ test suite.</p>
 <span class="c1"># One choice could be the git hash that is being used to generate the baselines.</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">BASELINE_NAME</span><span class="o">=</span>cfb7fc2b2
 
-<span class="c1"># Let&#39;s set TEST_ID to be same as BASELINE_NAME</span>
+<span class="c1"># Let's set TEST_ID to be same as BASELINE_NAME</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">TEST_ID</span><span class="o">=</span><span class="si">${</span><span class="nv">BASELINE_NAME</span><span class="si">}</span>
 
-<span class="c1"># If you are a member of E3SM, you could use &#39;e3sm&#39; project allocation</span>
+<span class="c1"># If you are a member of E3SM, you could use 'e3sm' project allocation</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PROJECT</span><span class="o">=</span>e3sm
 
 <span class="c1"># Set your email</span>
@@ -4806,8 +4806,8 @@ useful arguments for <code>./create_test</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Other arguments</span>
 <span class="c1"># -v         : Verbose option</span>
 <span class="c1"># -g         : Generate the baseline</span>
-<span class="c1"># -q         : If you want to use a particular job queue (e.g. &#39;debug&#39; queue on NERSC)</span>
-<span class="c1"># --walltime : Specify the wall time for jobs (e.g. 30 min is max allowable for &#39;debug&#39; queue on NERSC)</span>
+<span class="c1"># -q         : If you want to use a particular job queue (e.g. 'debug' queue on NERSC)</span>
+<span class="c1"># --walltime : Specify the wall time for jobs (e.g. 30 min is max allowable for 'debug' queue on NERSC)</span>
 <span class="c1"># --mail-user: If you want to receive emails about your jobs</span>
 <span class="c1"># --mail-type: When to receive emails. Options are: never, all, begin, end, fail.</span>
 <span class="c1"># -j         : Number of parallel jobs</span>
@@ -4836,9 +4836,9 @@ status of test by running the <code>cs.status.${TEST_ID}</code> file that was cr
 <p>Now, switch to the development branch and be sure to update submodules.</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>&lt;e3sm-dir&gt;
 git<span class="w"> </span>checkout<span class="w"> </span>bishtgautam/lnd/emi-example
-Previous<span class="w"> </span>HEAD<span class="w"> </span>position<span class="w"> </span>was<span class="w"> </span>cfb7fc2b2...<span class="w"> </span>Merge<span class="w"> </span>branch<span class="w"> </span><span class="s1">&#39;qzhu-lbl/lnd/ch4_inundation_bugfix&#39;</span><span class="w"> </span><span class="o">(</span>PR<span class="w"> </span><span class="c1">#2814)</span>
-Switched<span class="w"> </span>to<span class="w"> </span>branch<span class="w"> </span><span class="s1">&#39;bishtgautam/lnd/emi-example&#39;</span>
-Your<span class="w"> </span>branch<span class="w"> </span>is<span class="w"> </span>up-to-date<span class="w"> </span>with<span class="w"> </span><span class="s1">&#39;origin/bishtgautam/lnd/emi-example&#39;</span>.
+Previous<span class="w"> </span>HEAD<span class="w"> </span>position<span class="w"> </span>was<span class="w"> </span>cfb7fc2b2...<span class="w"> </span>Merge<span class="w"> </span>branch<span class="w"> </span><span class="s1">'qzhu-lbl/lnd/ch4_inundation_bugfix'</span><span class="w"> </span><span class="o">(</span>PR<span class="w"> </span><span class="c1">#2814)</span>
+Switched<span class="w"> </span>to<span class="w"> </span>branch<span class="w"> </span><span class="s1">'bishtgautam/lnd/emi-example'</span>
+Your<span class="w"> </span>branch<span class="w"> </span>is<span class="w"> </span>up-to-date<span class="w"> </span>with<span class="w"> </span><span class="s1">'origin/bishtgautam/lnd/emi-example'</span>.
 
 <span class="c1"># Checkout the appropriate submodules</span>
 git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init
@@ -4846,7 +4846,7 @@ git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w
 <p>Again initialize few settings.</p>
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>cime/scripts
 
-<span class="c1"># Let&#39;s use the settings as the last time</span>
+<span class="c1"># Let's use the settings as the last time</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">MY_BASELINE_DIR</span><span class="o">=</span>/global/cscratch1/sd/gbisht/e3sm_baselines
 
 <span class="c1"># IMPORTANT: One needs to use the same BASELINE_NAME as in Step-1 because one wants</span>
