@@ -569,6 +569,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
       <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
 
+      <gas_species type="array(string)" doc="List of gas species to read in and prescribe">o3</gas_species>
+
       <time_interpolation_method type="string" doc="Method for interpolating SPC data in time">yearly_periodic</time_interpolation_method>
     </spc>
 
