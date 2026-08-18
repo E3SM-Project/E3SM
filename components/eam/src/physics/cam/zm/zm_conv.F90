@@ -585,8 +585,6 @@ subroutine zm_conv_main(pcols, ncol, pver, pverp, is_first_step, time_step, &
       end if
       if (zm_param%clos_dyn_adj) then
          cld_base_mass_flux(i) = max(cld_base_mass_flux(i) - omega_g(i,pbl_top_g(i))*0.01_r8, 0._r8)
-         ! reapply limiter from above to protect against instability caused by large omega values
-         if (mflx_up_max(i) > 0._r8)  cld_base_mass_flux(i) = min(cld_base_mass_flux(i),1._r8/(time_step*mflx_up_max(i)))
       end if
    end do
 
