@@ -457,6 +457,12 @@ endif()
 #               Configure all tpls and subfolders                  #
 ####################################################################
 
+# Set compiler-specific flags. Do it BEFORE ekat, so ekat gets the flags too
+include(EkatSetCompilerFlags)
+ResetFlags()
+SetCommonFlags()
+SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
+
 # We will use the sharedlib one in CIME builds
 if (NOT SCREAM_CIME_BUILD)
   set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
@@ -494,12 +500,6 @@ if (NOT SCREAM_CIME_BUILD)
 
   add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
-
-# Set compiler-specific flags
-include(EkatSetCompilerFlags)
-ResetFlags()
-SetCommonFlags()
-SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
 
 include(EkatMpiUtils)
 # We should avoid cxx bindings in mpi; they are already deprecated,
