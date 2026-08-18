@@ -60,6 +60,7 @@ contains
     use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, &
          implicit_stress, atm_gustiness, force_land_gustiness
     use elm_time_manager    , only : get_nstep
+    use timeinfoMod         , only : dtime_mod
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -137,6 +138,7 @@ contains
     real(r8) :: t_grnd_temp                        ! Used in surface flux correction over frozen ground
     real(r8) :: qflx_evap_cap                      ! water-availability cap on qflx_evap_soi (kg/m2/s)
     logical  :: evap_water_limited                 ! true if qflx_evap_soi(p) was capped by water availability this iteration
+    real(r8) :: dtime                               ! land model time step (sec)
     real(r8) :: betaprime(bounds%begc:bounds%endc) ! Effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
     real(r8) :: e_ref2m                            ! 2 m height surface saturated vapor pressure [Pa]
     real(r8) :: de2mdT                             ! derivative of 2 m height surface saturated vapor pressure on t_ref2m
@@ -195,6 +197,7 @@ contains
 
          h2osoi_liq       =>    col_ws%h2osoi_liq         , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          h2osoi_ice       =>    col_ws%h2osoi_ice         , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osno           =>    col_ws%h2osno             , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
 
          t_lake           =>    col_es%t_lake            , & ! Input:  [real(r8) (:,:) ]  lake temperature (Kelvin)
          t_soisno         =>    col_es%t_soisno          , & ! Input:  [real(r8) (:,:) ]  soil (or snow) temperature (Kelvin)
@@ -248,6 +251,7 @@ contains
       z0qg_col => frictionvel_vars%z0qg_col
 
       kva0temp = 20._r8 + tfrz
+      dtime = dtime_mod
 
       do fp = 1, num_lakep
          p = filter_lakep(fp)
@@ -474,8 +478,11 @@ contains
             ! this iteration: dth/dqh/zeta/obu/roughness lengths below) stays self-consistent
             ! with the capped evaporation instead of the discarded unconstrained value.
             evap_water_limited = .false.
-            if (lake_evap_cap_method == 'rain_snow') then
+            if (lake_evap_cap_method == 'rain_snow' .or. lake_evap_cap_method == 'rain_snow_h2osno') then
                qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
+               if (lake_evap_cap_method == 'rain_snow_h2osno') then
+                  qflx_evap_cap = qflx_evap_cap + h2osno(c)/dtime
+               end if
                if (forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p) > qflx_evap_cap) then
                   evap_water_limited = .true.
                   ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(t) + 3._r8*stftg3(p)*tgbef(c) &
@@ -646,8 +653,11 @@ contains
          ! the lake/ground via eflx_gnet instead. Never clamps condensation (qflx_evap_soi < 0).
          ! In practice this only binds for the convective-mixing branch (t_grnd forced warmer);
          ! the freezing-point branch only forces t_grnd colder than an already-capped value.
-         if (lake_evap_cap_method == 'rain_snow') then
+         if (lake_evap_cap_method == 'rain_snow' .or. lake_evap_cap_method == 'rain_snow_h2osno') then
             qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
+            if (lake_evap_cap_method == 'rain_snow_h2osno') then
+               qflx_evap_cap = qflx_evap_cap + h2osno(c)/dtime
+            end if
             qflx_evap_soi(p) = min(qflx_evap_soi(p), qflx_evap_cap)
          end if
 
