@@ -21,6 +21,17 @@ if (USE_NINJA)
   set (CTEST_CMAKE_GENERATOR Ninja)
 endif()
 
+# Decide what build flags to use
+set (BUILD_FLAGS)
+if (NOT USE_NINJA)
+  string (APPEND BUILD_FLAGS " --output-sync=target")
+endif()
+if (DEFINED ENV{SCREAM_BUILD_PARALLEL_LEVEL})
+  string (APPEND BUILD_FLAGS " -j$ENV{SCREAM_BUILD_PARALLEL_LEVEL}")
+else()
+  string (APPEND BUILD_FLAGS " -j4")
+endif()
+
 separate_arguments(OPTIONS_LIST UNIX_COMMAND "${CMAKE_COMMAND}")
 ctest_configure(OPTIONS "${OPTIONS_LIST}" RETURN_VALUE CONFIG_ERROR_CODE)
 
@@ -31,11 +42,7 @@ else ()
     # Read CTestCustom.cmake from this folder
     ctest_read_custom_files("${CMAKE_CURRENT_LIST_DIR}")
 
-    if (DEFINED ENV{SCREAM_BUILD_PARALLEL_LEVEL})
-      ctest_build(FLAGS "-j$ENV{SCREAM_BUILD_PARALLEL_LEVEL}" RETURN_VALUE BUILD_ERROR_CODE)
-    else()
-      ctest_build(FLAGS "-j4" RETURN_VALUE BUILD_ERROR_CODE)
-    endif()
+    ctest_build(FLAGS "${BUILD_FLAGS}" RETURN_VALUE BUILD_ERROR_CODE)
 
     # Need this code so that build errors don't get buried
     if (BUILD_ERROR_CODE)
