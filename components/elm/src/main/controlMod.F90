@@ -759,9 +759,10 @@ contains
 
     ! Lake evaporation cap method
     if (lake_evap_cap_method /= 'rain_snow' .and. &
+        lake_evap_cap_method /= 'rain_snow_h2osno' .and. &
         lake_evap_cap_method /= 'wslake') then
        write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
-       call endrun(msg=' ERROR:: choices are rain_snow or wslake' // &
+       call endrun(msg=' ERROR:: choices are rain_snow, rain_snow_h2osno, or wslake' // &
             errMsg(__FILE__, __LINE__))
     endif
     if (lake_evap_cap_method == 'wslake') then
