@@ -37,6 +37,9 @@ protected:
   std::shared_ptr<const AbstractGrid>   m_model_grid;
 
   std::shared_ptr<DataInterpolation>    m_data_interpolation;
+
+  // Names of the gas species to be read in and prescribed
+  std::vector<std::string> m_gas_species;
 }; // class SPC
 
 } // namespace scream
