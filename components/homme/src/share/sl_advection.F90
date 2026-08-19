@@ -910,8 +910,6 @@ contains
 
     !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
     !so tensor is only used on second call to laplace_sphere_wk
-    var_coef1 = .true.
-    if(hypervis_scaling > 0)    var_coef1 = .false.
 
     do ie=nets,nete
 #if (defined COLUMN_OPENMP)
@@ -921,7 +919,7 @@ contains
           do k=1,nlev    !  Potential loop inversion (AAM)
              lap_p(:,:)=qtens(:,:,k,q,ie)
              ! Original use of qtens on left and right hand sides caused OpenMP errors (AAM)
-             qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=var_coef1)
+             qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.false.)
           enddo
           call edgeVpack_nlyr(edgeq, elem(ie)%desc, qtens(:,:,:,q,ie),nlev,nlev*(q-1),nq*nlev)
        enddo
@@ -941,7 +939,7 @@ contains
           call edgeVunpack_nlyr(edgeq,elem(ie)%desc,qtens(:,:,:,q,ie),nlev,nlev*(q-1),nq*nlev)
           do k=1,nlev    !  Potential loop inversion (AAM)
              lap_p(:,:)=elem(ie)%rspheremp(:,:)*qtens(:,:,k,q,ie)
-             qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),var_coef=.true.)
+             qtens(:,:,k,q,ie)=laplace_sphere_wk(lap_p,deriv,elem(ie),(hypervis_scaling>0))
           enddo
        enddo
     enddo

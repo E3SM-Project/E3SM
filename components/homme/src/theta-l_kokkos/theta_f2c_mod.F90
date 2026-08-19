@@ -10,7 +10,7 @@ interface
   subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
                                        qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
                                        hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,     &
-                                       hypervis_scaling,                                             &
+                                       hypervis_scaling, laplace_scaling,                            &
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, use_moisture, &
                                        disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
@@ -25,7 +25,7 @@ interface
     integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type, nsplit
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
     integer(kind=c_int),  intent(in) :: state_frequency, qsize, internal_diagnostics_level
-    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
+    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, laplace_scaling, dcmip16_mu, &
                       scale_factor, laplacian_rigid_factor, dp3d_thresh, vtheta_thresh
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
@@ -69,7 +69,8 @@ interface
                                  elem_spheremp_ptr, elem_rspheremp_ptr,   &
                                  elem_metdet_ptr, elem_metinv_ptr,        &
                                  tensorvisc_ptr, vec_sph2cart_ptr,        &
-                                 sphere_cart_vec, sphere_latlon_vec) bind(c)
+                                 sphere_cart_vec, sphere_latlon_vec,      &
+                                 tensorvisc2_ptr) bind(c)
     use iso_c_binding, only: c_int, c_ptr, c_double
     use dimensions_mod, only : np
     !
@@ -81,6 +82,7 @@ interface
     type (c_ptr) , intent(in) :: elem_metdet_ptr, elem_metinv_ptr
     type (c_ptr) , intent(in) :: tensorvisc_ptr, vec_sph2cart_ptr
     real (kind=c_double), intent(in) :: sphere_cart_vec(3,np,np), sphere_latlon_vec(2,np,np)
+    type (c_ptr) , intent(in) :: tensorvisc2_ptr
   end subroutine init_elements_2d_c
 
   ! Copies just tensorVisc from f90 arrays into the C++ view. Used to
@@ -94,6 +96,17 @@ interface
     integer (kind=c_int), intent(in) :: ie
     type (c_ptr) , intent(in) :: tensorvisc_ptr
   end subroutine init_tensorvisc_c
+
+  ! Same as init_tensorvisc_c, but for tensorVisc_2 (the sponge-layer
+  ! tensor coefficient), which is likewise recomputed by dss_hvtensor.
+  subroutine init_tensorvisc2_c (ie, tensorvisc2_ptr) bind(c)
+    use iso_c_binding, only: c_int, c_ptr
+    !
+    ! Inputs
+    !
+    integer (kind=c_int), intent(in) :: ie
+    type (c_ptr) , intent(in) :: tensorvisc2_ptr
+  end subroutine init_tensorvisc2_c
 
   ! Copies geopotential from f90 arrays to C++ views
   subroutine init_geopotential_c (ie, phis_ptr, gradphis_ptr) bind(c)

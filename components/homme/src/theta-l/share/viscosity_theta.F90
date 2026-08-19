@@ -144,21 +144,21 @@ endif
       ! apply inverse mass matrix, then apply laplace again
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,1,ie)
-         stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,1,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,2,ie)
-         stens(:,:,k,2,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,2,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,3,ie)
-         stens(:,:,k,3,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,3,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          tmp(:,:)=rspheremv(:,:)*stens(:,:,k,4,ie)
-         stens(:,:,k,4,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         stens(:,:,k,4,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
 
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
-              var_coef=.true.,nu_ratio=nu_ratio2)
+              var_coef=(hypervis_scaling>0),nu_ratio=nu_ratio2)
 
       enddo
    enddo

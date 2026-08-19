@@ -178,6 +178,7 @@ module control_mod
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
 
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity
+  real (kind=real_kind), public :: laplace_scaling=0          ! scaling for tensor viscosity
 
   !three types of hyper viscosity are supported right now:
   ! (1) const hv:    nu * del^2 del^2
