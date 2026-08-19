@@ -77,9 +77,15 @@ public:
                               CF90Ptr& state_vtheta_dp, CF90Ptr& state_phinh_i,
                               CF90Ptr& state_dp3d,      CF90Ptr& state_ps_v);
 
-  // Push the results from the exec space views to the F90 pointers
+  // Push the results from the exec space views to the F90 pointers, all time levels.
   void push_to_f90_pointers(F90Ptr& state_v, F90Ptr& state_w_i, F90Ptr& state_vtheta_dp,
                             F90Ptr& state_phinh_i, F90Ptr& state_dp) const;
+
+  // As above, but copy only time level tl; the other time levels of the F90
+  // arrays are left untouched. Used on the per-step CAM path, where nothing on
+  // the Fortran side reads the others after a step.
+  void push_to_f90_pointers(F90Ptr& state_v, F90Ptr& state_w_i, F90Ptr& state_vtheta_dp,
+                            F90Ptr& state_phinh_i, F90Ptr& state_dp, const int tl) const;
 
   HashType hash(const int time_level) const;
 
