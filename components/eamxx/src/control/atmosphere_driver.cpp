@@ -628,33 +628,37 @@ void AtmosphereDriver::create_fields()
   }
 
   // Now go through the input fields/groups to the atm proc group,
-  // and mark them as part of the RESTART group.
+  // and mark them as part of the RESTART/STARTUP/TOPOGRAPHY groups.
   // Skip fields in the ACCUMULATED group, since those are reset to 0
   // at the beginning of each atm step, so there is no need to read
   // them from the IC or restart file.
-  for (const auto& f : m_atm_process_group->get_fields_in()) {
+  auto is_topography_field = [] (const std::string& name) {
+    return name=="phis" or name=="sgh" or name=="sgh30";
+  };
+
+  auto set_groups = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
     const auto& fgroups = f.get_header().get_tracking().get_groups_names();
     if (not ekat::contains(fgroups, "ACCUMULATED")) {
       m_field_mgr->add_to_group(fid, "RESTART");
+      m_field_mgr->add_to_group(fid, "STARTUP");
+      if (is_topography_field(fid.name())) {
+        m_field_mgr->add_to_group(fid, "TOPOGRAPHY");
+      }
     }
-  }
+  };
+
+  // Process input fields
+  for (const auto& f : m_atm_process_group->get_fields_in())
+    set_groups(f);
+
+  // Process input groups
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      const auto& mf = *g.m_monolithic_field;
-      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
-        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
-      }
-    } else {
-      for (const auto& fn : g.m_info->m_fields_names) {
-        auto field = m_field_mgr->get_field(fn, g.grid_name());
-        const auto& fgroups = field.get_header().get_tracking().get_groups_names();
-        if (not ekat::contains(fgroups, "ACCUMULATED")) {
-          m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
-        }
-      }
-    }
+    if (g.m_monolithic_field)
+      set_groups(*g.m_monolithic_field);
+    else
+      for (const auto& it : g.m_individual_fields)
+        set_groups(*it.second);
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
