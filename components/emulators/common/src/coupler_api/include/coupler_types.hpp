@@ -93,6 +93,7 @@ struct FieldAttributes {
 /**
  * @brief Fortran/C struct to create RegisteredField entry
  * Fields:
+ * - role
  * - component
  * - attributes
  * - size

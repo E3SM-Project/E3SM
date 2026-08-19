@@ -3,7 +3,10 @@
 
 namespace e3sm::coupler {
 
-void FieldRegistry::register_field(RegisteredField field) {
+/**
+ * @brief: Registers available fields with the registry.
+ */
+FieldID FieldRegistry::register_field(RegisteredField field) {
 
   if (field.component.empty()) {
     throw std::invalid_argument(
@@ -18,30 +21,38 @@ void FieldRegistry::register_field(RegisteredField field) {
     throw std::invalid_argument("Attempting to register field with no units");
   }
 
-  if (field.data == nullptr) {
-    throw std::invalid_argument("Attempting to Register field with nullptr");
-  }
-
+  const auto id = static_cast<FieldID>(fields_.size());
   RegistryKey key{field.component, field.attributes.name};
-  auto [it, inserted] = fields_.emplace(std::move(key), std::move(field));
-
-  if (!inserted) {
-    // throw for now unless we want to handle potentially stale pointers?
+  if (lookup_.contains(key)) {
     throw std::runtime_error("Attempted to register field twice");
   }
-  return;
+
+  auto [it, inserted] = lookup_.emplace(std::move(key), id);
+  fields_.emplace_back(std::move(field));
+
+  return id;
 }
 
-const RegisteredField& FieldRegistry::get(const std::string &component,
-                                          const std::string &field_name) const {
+const RegisteredField& FieldRegistry::get(const std::string& component,
+                                          const std::string& field_name) const {
   RegistryKey key{component, field_name};
-  return fields_.find(key)->second;
+  auto id = lookup_.find(key)->second;
+  return fields_.at(id);
 }
 
-bool FieldRegistry::contains(const std::string &component,
-                             const std::string &field_name) const {
+const RegisteredField& FieldRegistry::get(FieldID id) const {
+  return fields_.at(id);
+}
+
+FieldID FieldRegistry::get_id(const std::string& component,
+                              const std::string& field_name) const {
+  return lookup_.find(RegistryKey{component, field_name})->second;
+}
+
+bool FieldRegistry::contains(const std::string& component,
+                             const std::string& field_name) const {
   RegistryKey key{component, field_name};
-  return fields_.contains(key);
+  return lookup_.contains(key);
 }
 
 std::string to_string(const MergeType merge_type) {

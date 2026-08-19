@@ -1,4 +1,5 @@
 #include "field_registry.hpp"
+#include <algorithm>
 #include <coupler.hpp>
 #include <ekat_yaml.hpp>
 #include <filesystem>
@@ -37,15 +38,15 @@ namespace e3sm::coupler {
  * @throws std::runtime_error If the configuration file does not exist or
  *         cannot be parsed.
  */
-const std::vector<CoupledFieldEntry>
-Coupler::read_coupling_fields_from_yaml(const std::string& filename) {
+std::vector<CoupledFieldEntry>
+Coupler::read_coupling_fields_from_yaml(const std::filesystem::path& filename) {
 
   if (!std::filesystem::exists(filename)) {
     throw std::runtime_error("Coupling configuration file not found: " +
-                             filename);
+                             filename.string());
   }
 
-  const ekat::ParameterList params = ekat::parse_yaml_file(filename);
+  const ekat::ParameterList params = ekat::parse_yaml_file(filename.string());
   // fields are the named coupling fields
   const auto& fields = params.sublist("fields");
   const auto& field_names = fields.sublist_names();
@@ -121,5 +122,30 @@ std::string to_string(const CoupledFieldEntry& entry) {
   out << "    units: " << entry.attributes.units << '\n';
 
   return out.str();
+}
+
+void Coupler::build_routes(const std::filesystem::path& filename) {
+  auto fields = read_coupling_fields_from_yaml(filename);
+
+  routes_.clear();
+  routes_.reserve(fields.size());
+
+  for (const auto& field : fields) {
+    CouplingRoute route{.merge_type = field.merge_type};
+    for (const auto& component : field.sources) {
+      route.sources.push_back(registry_.get_id(component, field.id));
+    }
+    for (const auto& component : field.destinations) {
+      route.destinations.push_back(registry_.get_id(component, field.id));
+    }
+    routes_.emplace_back(std::move(route));
+  }
+
+  // Now sort 
+}
+
+const ActiveCouplingFields&
+Coupler::coupling_plan(const std::string& component_name) const {
+  return coupling_plans_.find(component_name)->second;
 }
 } // namespace e3sm::coupler

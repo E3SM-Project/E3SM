@@ -1,0 +1,36 @@
+fields:
+  - id: temperature
+    merge_type: direct
+    attributes:
+      name: temperature
+      long_name: Atmospheric temperature
+      standard_name: air_temperature
+      units: K
+    sources:
+      - atm
+    destinations:
+      - lnd
+
+  - id: precipitation
+    merge_type: direct
+    attributes:
+      name: precipitation
+      long_name: Precipitation
+      standard_name: precipitation_flux
+      units: kg m-2 s-1
+    sources:
+      - atm
+    destinations:
+      - lnd
+
+  - id: surface_flux
+    merge_type: direct
+    attributes:
+      name: surface_flux
+      long_name: Surface energy flux
+      standard_name: ""
+      units: W m-2
+    sources:
+      - lnd
+    destinations:
+      - atm

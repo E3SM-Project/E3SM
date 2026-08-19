@@ -33,7 +33,6 @@ void register_field(void* handle, const RegisteredFieldDesc* desc) {
               .standard_name = desc->attributes.standard_name,
               .units = desc->attributes.units,
           },
-      .data = desc->data,
   };
 
   registry->register_field(std::move(field));

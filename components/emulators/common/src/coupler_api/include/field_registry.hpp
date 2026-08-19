@@ -1,5 +1,7 @@
 #ifndef E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #define E3SM_COUPLER_API_FIELD_REGISTRY_HPP
+#include <cstddef>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -9,9 +11,6 @@ namespace e3sm::coupler {
 enum class FieldRole {
   Import,
   Export,
-  // is this needed? there are fields that every component sends to the coupler
-  // which merges them, and then each component has the merged state available
-  // next timestep?
   ImportExport,
 };
 
@@ -38,29 +37,23 @@ struct RegisteredFieldAttributes {
   std::string units;
 };
 
+using FieldID = std::size_t;
+
+template<typename T>
+struct FieldBuffer{
+  FieldID id;
+  std::span<T> data;
+};
+
+
+using ImportBuffer = FieldBuffer<const double>;
+using ExportBuffer = FieldBuffer<double>;
+
 struct RegisteredField {
   FieldRole role;
   std::string component;
   RegisteredFieldAttributes attributes;
-  // TODO: Figure out how to register or couple fields that are downscaled or
-  // otherwise transformed
-
-  // TODO: Does this need to be generic or do we only have doubles?
-  double* data = nullptr;
   std::size_t size = 0;
-};
-
-/**
- * @brief Description of how a variable is coupled between components
- * Fields:
- *  - merge_type:  Enum for how multiple sources are merged
- *  - sources: fields that contribute to the same coupled state/flux
- *  - destinations: fields that consume the coupled state/flux
- */
-struct CouplingRoute {
-  MergeType merge_type;
-  std::vector<const RegisteredField*> sources;
-  std::vector<const RegisteredField*> destinations;
 };
 
 /**
@@ -73,9 +66,14 @@ class FieldRegistry {
 public:
   FieldRegistry() = default;
 
-  void register_field(RegisteredField field);
+  FieldID register_field(RegisteredField field);
   const RegisteredField& get(const std::string& component,
                              const std::string& field_name) const;
+  const RegisteredField& get(FieldID id) const;
+
+  FieldID get_id(const std::string& component,
+                                const std::string& field_name) const;
+
   bool contains(const std::string& component,
                 const std::string& field_name) const;
 
@@ -97,7 +95,8 @@ private:
     }
   };
 
-  std::unordered_map<RegistryKey, RegisteredField, RegistryKeyHash> fields_;
+  std::vector<RegisteredField> fields_;
+  std::unordered_map<RegistryKey, FieldID, RegistryKeyHash> lookup_;
 };
 
 } // namespace e3sm::coupler

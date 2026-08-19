@@ -12,21 +12,14 @@ enable_testing()
 # add_test(NAME coupler_api_basic
 #          COMMAND test_coupler_api)
 
-add_executable(test_ekat_yaml
-    test_yaml_fields.cpp
-)
-
-target_link_libraries(test_ekat_yaml
-    PRIVATE
-        Catch2
-        E3SM::coupler_api
-)
+add_executable(test_ekat_yaml test_yaml_fields.cpp)
+target_link_libraries(test_ekat_yaml PRIVATE Catch2 E3SM::coupler_api)
 target_compile_definitions(test_ekat_yaml
-    PRIVATE
-        TEST_FIELDS_YAML="${CMAKE_CURRENT_SOURCE_DIR}/test_fields.yaml"
-)
+    PRIVATE TEST_FIELDS_YAML="${CMAKE_CURRENT_SOURCE_DIR}/test_fields.yaml")
+add_test( NAME test_ekat_yaml COMMAND test_ekat_yaml)
 
-add_test(
-    NAME test_ekat_yaml
-    COMMAND test_ekat_yaml
-)
+# CouplerDriver Test
+add_executable(test_coupler_driver test_coupler_driver.cpp)
+target_link_libraries(test_coupler_driver PRIVATE Catch2 E3SM::coupler_api)
+target_compile_definitions(test_coupler_driver PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input-data")
+add_test(NAME test_coupler_driver COMMAND test_coupler_driver)
