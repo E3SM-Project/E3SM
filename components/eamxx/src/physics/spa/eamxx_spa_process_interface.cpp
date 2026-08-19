@@ -97,20 +97,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
                    ". Valid options are: yearly_periodic, linear.\n");
   }
 
-  if (m_iop_data_manager!=nullptr) {
-    // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
-    EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file=="none",
-      "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
-      "The IOP class defines it's own remap from file data -> model data.\n");
-
-    // TODO: expose tgt lat/lon in IOPDataManager, to avoid injecting knowledge
-    // of its param list structure in other places
-    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
-    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
-    m_data_interpolation->create_horiz_remappers (iop_lat,iop_lon);
-  } else {
-    m_data_interpolation->create_horiz_remappers (spa_map_file=="none" ? "" : spa_map_file);
-  }
+  m_data_interpolation->create_horiz_remappers(spa_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData vremap_data;
   vremap_data.vr_type = DataInterpolation::Dynamic3DRef;
   vremap_data.pname = "PS";

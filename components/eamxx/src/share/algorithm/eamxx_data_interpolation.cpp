@@ -5,6 +5,7 @@
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/iop_remapper.hpp"
 #include "share/grid/point_grid.hpp"
+#include "share/data_managers/IOPDataManager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/util/eamxx_universal_constants.hpp"
@@ -641,39 +642,54 @@ create_horiz_remappers (const std::string& map_file)
 }
 
 void DataInterpolation::
-create_horiz_remappers (const Real iop_lat, const Real iop_lon)
+create_horiz_remappers (const std::string& map_file,
+                        const std::shared_ptr<IOPDataManager>& iop_data_manager)
 {
-  using namespace ShortFieldTagsNames;
+  // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
+  if (iop_data_manager!=nullptr) {
+    EKAT_REQUIRE_MSG(map_file == "" || map_file=="none",
+      "[DataInterpolation] Error! Cannot define map_file for cases with an Intensive Observation Period defined. "
+      "The IOP class defines its own remap from file data to model data.\n");
 
-  EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
-      "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
+    // TODO: expose tgt lat/lon in IOPDataManager, to avoid injecting knowledge
+    // of its parameter list structure in other places
+    Real iop_lat = iop_data_manager->get_params().get<Real>("target_latitude");
+    Real iop_lon = iop_data_manager->get_params().get<Real>("target_longitude");
 
-  EKAT_REQUIRE_MSG (not std::isnan(iop_lat) and not std::isnan(iop_lon),
-      "[DataInterpolation] Error! At least one between iop_lat and iop_lon appears to be invalid.\n"
-      "  - iop_lat: " << iop_lat << "\n"
-      "  - iop_lon: " << iop_lon << "\n");
+    using namespace ShortFieldTagsNames;
 
-  int ncols_model = m_model_grid->get_num_global_dofs();
-  int nlevs_model = m_model_grid->get_num_vertical_levels();
+    EKAT_REQUIRE_MSG (m_horiz_remapper_beg==nullptr,
+        "[DataInterpolation] Error! Horizontal remappers were already setup.\n");
 
-  // Create hremap tgt grid
-  int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]) : nlevs_model;
-  int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(COL)]) : ncols_model;
+    EKAT_REQUIRE_MSG (not std::isnan(iop_lat) and not std::isnan(iop_lon),
+        "[DataInterpolation] Error! At least one between iop_lat and iop_lon appears to be invalid.\n"
+        "  - iop_lat: " << iop_lat << "\n"
+        "  - iop_lon: " << iop_lon << "\n");
 
-  // Create grid for IO and load lat/lon field in IO grid from any data file
-  m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm());
-  auto lat  = m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout());
-  auto lon  = m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout());
-  auto gids = m_data_grid->get_partitioned_dim_gids();
-  auto comm = m_data_grid->get_comm();
-  read_fields(m_time_database.files.front(),{lat,lon},gids,comm);
+    int ncols_model = m_model_grid->get_num_global_dofs();
+    int nlevs_model = m_model_grid->get_num_vertical_levels();
 
-  // Create iop remap tgt grid
-  m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
-  m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
-  m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
-  if (m_time_dependent) {
-    m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+    // Create hremap tgt grid
+    int nlevs_data = m_fields_have_lev_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(LEV)]) : nlevs_model;
+    int ncols_data = m_fields_have_col_dim ? get_input_files_dimlen (m_input_files_dimnames[e2str(COL)]) : ncols_model;
+
+    // Create grid for IO and load lat/lon field in IO grid from any data file
+    m_data_grid = create_point_grid(m_name+"_data",ncols_data,nlevs_data,m_model_grid->get_comm());
+    auto lat  = m_data_grid->create_geometry_data("lat",m_data_grid->get_2d_scalar_layout());
+    auto lon  = m_data_grid->create_geometry_data("lon",m_data_grid->get_2d_scalar_layout());
+    auto gids = m_data_grid->get_partitioned_dim_gids();
+    auto comm = m_data_grid->get_comm();
+    read_fields(m_time_database.files.front(),{lat,lon},gids,comm);
+
+    // Create iop remap tgt grid
+    m_grid_after_hremap = m_model_grid->clone(m_name+"_post_hremap",true);
+    m_grid_after_hremap->reset_vertical_configuration(nlevs_data, AbstractGrid::VKind::Model);
+    m_horiz_remapper_beg = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+    if (m_time_dependent) {
+      m_horiz_remapper_end = std::make_shared<IOPRemapper>(m_data_grid,m_grid_after_hremap,iop_lat,iop_lon);
+    }
+  } else {
+    create_horiz_remappers(map_file=="none" ? "" : map_file);
   }
 }
 
