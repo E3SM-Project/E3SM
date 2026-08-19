@@ -10,7 +10,10 @@
 # compilation.
 #
 # Usage:
-#   build_p3_test.sh <machine-name> <SP|DP> <build-dir>
+#   build_p3_test.sh <machine-name> <SP|DP> <build-dir> [Release|Debug] [ON|OFF]
+#
+# All standalone P3 builds use the small-kernel dispatch path.  This keeps the
+# executable used for testing and profiling consistent across machines.
 #
 set -e
 
@@ -18,9 +21,10 @@ MACHINE_NAME="$1"
 PRECISION="$2"   # SP or DP
 BUILD_DIR="$3"
 BUILD_TYPE="${4:-Release}"
+CUDA_PROFILER="${5:-OFF}"
 
 if [ -z "$MACHINE_NAME" ] || [ -z "$PRECISION" ] || [ -z "$BUILD_DIR" ]; then
-  echo "Usage: build_p3_test.sh <machine-name> <SP|DP> <build-dir>" >&2
+  echo "Usage: build_p3_test.sh <machine-name> <SP|DP> <build-dir> [Release|Debug] [ON|OFF]" >&2
   exit 1
 fi
 
@@ -28,6 +32,11 @@ case "$PRECISION" in
   SP) DOUBLE_PRECISION=OFF ;;
   DP) DOUBLE_PRECISION=ON ;;
   *) echo "Error: precision must be SP or DP, got '${PRECISION}'" >&2; exit 1 ;;
+esac
+
+case "$CUDA_PROFILER" in
+  ON|OFF) ;;
+  *) echo "Error: CUDA profiler option must be ON or OFF, got '${CUDA_PROFILER}'" >&2; exit 1 ;;
 esac
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -76,6 +85,9 @@ cmake -DCMAKE_CXX_COMPILER="${CXX_COMPILER}" -DCMAKE_C_COMPILER="${C_COMPILER}" 
       ${BUILD_TYPE:+-DKokkos_ENABLE_DEBUG=\"$([ "${BUILD_TYPE}" = Debug ] && echo ON || echo OFF)\"} \
       ${BUILD_TYPE:+-DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=\"$([ "${BUILD_TYPE}" = Debug ] && echo ON || echo OFF)\"} \
       -DSCREAM_DOUBLE_PRECISION=${DOUBLE_PRECISION} \
+      -DSCREAM_SMALL_KERNELS=ON \
+      -DSCREAM_P3_SMALL_KERNELS=ON \
+      -DSCREAM_ENABLE_CUDA_PROFILER=${CUDA_PROFILER} \
       -DSCREAM_TEST_MAX_THREADS=1 \
       -DSCREAM_ENABLE_BASELINE_TESTS=OFF \
       ${NETCDF_PATH:+-DNetCDF_PATH="${NETCDF_PATH}"} \
@@ -97,6 +109,7 @@ fi
 
 echo "=========================================================="
 echo " Build complete: ${EXE}"
+echo " Small P3 kernels: ON"
 echo " (build performed on login node; use run_p3_test_*.sh on a"
 echo "  compute node/allocation to actually execute the test)"
 echo "=========================================================="

@@ -16,6 +16,7 @@
 # Examples:
 #   scripts_p3_test/submit_p3_test.sh pm-gpu-dp
 #   scripts_p3_test/submit_p3_test.sh pm-gpu-dp NPAR=4 NCOL=50
+#   scripts_p3_test/submit_p3_test.sh pm-gpu-sp PROFILE=ncu NCOL=50 NCU_LAUNCH_COUNT=20
 #   scripts_p3_test/submit_p3_test.sh pm-cpu-dp NPAR=16 CPUS_PER_INSTANCE=8
 #   scripts_p3_test/submit_p3_test.sh vista-gh-dp NCOL=50
 #

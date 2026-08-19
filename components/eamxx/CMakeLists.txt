@@ -95,11 +95,19 @@ option (Kokkos_ENABLE_SERIAL "" ON)
 
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 
+option (SCREAM_ENABLE_CUDA_PROFILER
+        "Build the P3 test with CUDA profiler API capture markers"
+        OFF)
+
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_CUDA)
   # Add CUDA as a language for CUDA builds
   enable_language(CUDA)
   set (EAMXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
+endif ()
+
+if (SCREAM_ENABLE_CUDA_PROFILER AND NOT Kokkos_ENABLE_CUDA)
+  message(FATAL_ERROR "SCREAM_ENABLE_CUDA_PROFILER requires a CUDA build")
 endif ()
 
 # Determine if this is a HIP build.

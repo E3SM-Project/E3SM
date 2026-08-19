@@ -9,7 +9,7 @@ TEST_EXE="${BUILD_DIR}/src/physics/p3/tests/p3_run_and_cmp"
 
 if [ ! -x "$TEST_EXE" ]; then
   echo "Error: SP executable is missing or not executable: ${TEST_EXE}" >&2
-  echo "Build it first with ./build_p3_test_alvarez-gpu-sp.sh" >&2
+  echo "Build it first with NERSC_HOST=alvarez ./build-p3-test-gpu-sp.sh" >&2
   exit 1
 fi
 

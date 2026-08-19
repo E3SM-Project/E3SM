@@ -1,4 +1,8 @@
 #include "p3_main_wrap.hpp"
+
+#if defined(SCREAM_ENABLE_CUDA_PROFILER)
+#include <cuda_profiler_api.h>
+#endif
 #include "p3_test_data.hpp"
 #include "p3_ic_cases.hpp"
 
@@ -105,6 +109,9 @@ struct Baseline {
 
         if (r != -1 && ps.repeat > 0) {
           for (Int it=0; it<warmup_; ++it) p3_main_wrap(*d);
+#if defined(SCREAM_ENABLE_CUDA_PROFILER)
+          cudaProfilerStart();
+#endif
         }
         for (int it=0; it<ps.nsteps; it++) {
           Int current_microsec = p3_main_wrap(*d);
@@ -119,6 +126,9 @@ struct Baseline {
             write(ofile, d); // Save the fields to the baseline file.
           }
         }
+#if defined(SCREAM_ENABLE_CUDA_PROFILER)
+        if (r != -1 && ps.repeat > 0) cudaProfilerStop();
+#endif
       }
 
       if (ps.repeat > 0) {

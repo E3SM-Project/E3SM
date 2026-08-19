@@ -97,6 +97,11 @@
 #                           across all NSTEPS -- a full unrestricted run
 #                           needs ~3000 launches and does not fit in a
 #                           30-min debug-QOS job.
+#   NCU_LAUNCH_SKIP        CUDA kernel launches to skip when PROFILE=ncu
+#                          (default 0).
+#   NCU_LAUNCH_COUNT       CUDA kernel launches to collect when PROFILE=ncu
+#                          (default 0, meaning omit the option/all launches).
+#   NCU_KERNEL_NAME        ncu kernel-name filter (default: all P3 dispatch kernels).
 #
 # Live progress: timestamped "[HH:MM:SS] [<instance>] <message>" lines are
 # printed to stdout as each stage starts/finishes (timing run, each
@@ -145,7 +150,17 @@ NRUNS=${NRUNS:-2}
 REPEAT=${REPEAT:-20}
 NPAR=${NPAR:-1}
 PROFILE=${PROFILE:-off}
+NCU_LAUNCH_SKIP=${NCU_LAUNCH_SKIP:-0}
+NCU_LAUNCH_COUNT=${NCU_LAUNCH_COUNT:-0}
+NCU_KERNEL_NAME=${NCU_KERNEL_NAME:-'regex:.*(p3_check_values|p3_main_init|p3_main_part1|p3_main_part2|p3_main_part3|cloud_sedimentation|rain_sedimentation|ice_sedimentation|homogeneous_freezing)_disp.*'}
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+case "$PROFILE" in
+  off|nsys|ncu) ;;
+  *)
+    echo "Error: PROFILE must be off, nsys, or ncu; got '${PROFILE}'" >&2
+    exit 1
+    ;;
+esac
 case "$TAG" in
   *alvarez-gpu*) RESULTS_ROOT="${REPO_ROOT}/alvarez-gpu-p3_test_results" ;;
   *alvarez-cpu*) RESULTS_ROOT="${REPO_ROOT}/alvarez-cpu-p3_test_results" ;;
@@ -310,8 +325,18 @@ run_one_instance () {
             progress "skipping ncu profile on ${INST_LABEL} (NPAR>1; only inst0 profiles, see notes.ncu.txt)"
           else
             progress "ncu profile starting (FP32/FP64 instruction counts)..."
-            "${REPO_ROOT}/measure.sh" "$TEST_EXE" "${RUN_DIR}/profile" "$PROFILE_TXT" \
-              -g -b "$BASELINE_DIR" "${COMMON_ARGS[@]}" -r 5 || true
+            local NCU_ARGS=(--set full --target-processes all
+                            --kernel-name-base demangled
+                            --launch-skip "$NCU_LAUNCH_SKIP"
+                            -o "${RUN_DIR}/profile")
+            if [ "$NCU_LAUNCH_COUNT" -gt 0 ]; then
+              NCU_ARGS+=(--launch-count "$NCU_LAUNCH_COUNT")
+            fi
+            if [ -n "$NCU_KERNEL_NAME" ]; then
+              NCU_ARGS+=(--kernel-name "$NCU_KERNEL_NAME")
+            fi
+            "${PIN[@]}" ncu "${NCU_ARGS[@]}" "$TEST_EXE" -g -b "$BASELINE_DIR" \
+              "${COMMON_ARGS[@]}" -r 5 > "$PROFILE_TXT" 2>&1
             progress "ncu profile done -> ${RUN_DIR}/profile.ncu-rep (+ profile.txt)"
           fi
         else

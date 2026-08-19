@@ -14,11 +14,12 @@
 # run concurrently, one per GPU.
 #
 # Build both executables on the login node before submitting:
-#   ./build_p3_test_pm-gpu-sp.sh
-#   ./build_p3_test_pm-gpu-dp.sh
+#   NERSC_HOST=perlmutter ./build-p3-test-gpu-sp.sh
+#   ./build-p3-test-gpu-dp.sh
 #
+# This legacy script intentionally keeps its historical underscore name.
 # Submit from the repository root:
-#   sbatch sbatch_p3_NCOL_pm-gpu-sp-dp-paired.sh
+#   sbatch sbatch_p3_paired11NCOL_alvarez-gpu.sh
 set -e
 MACHINE_NAME="${MACHINE_NAME:-alvarez-gpu}"
 
