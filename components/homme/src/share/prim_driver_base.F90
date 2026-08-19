@@ -946,7 +946,7 @@ contains
     ! apply dss and bilinear projection to tensor coefficients
     call dss_hvtensor(elem,hybrid,nets,nete)
 
-    ! advective and viscious CFL estimates, plus dt_dyn/dt_tracer/dt_remap
+    ! advective and viscous CFL estimates, plus dt_dyn/dt_tracer/dt_remap
     ! timestep-size diagnostics (printed inside print_cfl)
     call print_cfl(elem,hybrid,nets,nete)
 
