@@ -99,9 +99,9 @@ contains
   ! ================================
   ! print_mesh_stats:
   !
-  ! test that the global integral of 
-  ! the area of the sphere is 1.
-  !
+  ! Print mesh statistics (area, dx spacing, norm(Dinv), distortion) and
+  ! report the global integral of 1 over the domain (area should be ~1 on
+  ! the unit sphere, or Lx*Ly on plane).
   ! ================================
 
   subroutine print_mesh_stats(elem,hybrid,nets,nete,mindxout)

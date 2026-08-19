@@ -226,7 +226,7 @@ contains
        call print_mesh_stats(elem, hybrid, 1, nelemd)
     end if
 
-    ! Print advective and viscious CFL estimates, plus dt_dyn/dt_tracer/
+    ! Print advective and viscous CFL estimates, plus dt_dyn/dt_tracer/
     ! dt_remap timestep-size diagnostics (all printed inside print_cfl)
     call print_cfl(elem,hybrid,1,nelemd)
 
