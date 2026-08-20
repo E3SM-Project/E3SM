@@ -4377,7 +4377,6 @@
       </modules>
 
       <modules>
-        <command name="load">craype-accel-host</command>
         <command name="load">craype/2.7.30</command>
         <command name="load">cray-mpich/8.1.28</command>
         <command name="load">cray-hdf5-parallel/1.12.2.9</command>

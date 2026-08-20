@@ -229,6 +229,11 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '220802'
             ic_prefix = 'mpaso.ARRM10to60E2r1.rstFrom1monthG-chrys'
+        #  modify initial condition file if ocean BGC is turned on
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '230227'
+            ic_prefix = 'mpaso.ARRM10to60E2r1.220730+MARBL_ICfromOMIP_80levels_230227.ARRM10to60E2r1.230227.nc'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.ARRM10to60E2r1.230210.nc'
 
     elif ocn_grid == 'EC30to60E2r2':
         decomp_date = '230313'
@@ -1477,6 +1482,16 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="iceFluxNH4"/>')
                 lines.append('    <var name="iceFluxFeDissolved"/>')
                 lines.append('    <var name="iceFluxDOC"/>')
+                lines.append('    <var name="riverFluxDOC"/>')
+                lines.append('    <var name="riverFluxDON"/>')
+                lines.append('    <var name="riverFluxDOP"/>')
+                lines.append('    <var name="riverFluxDIC"/>')
+                lines.append('    <var name="riverFluxALK"/>')
+                lines.append('    <var name="riverFluxNO3"/>')
+                lines.append('    <var name="riverFluxSiO3"/>')
+                lines.append('    <var name="riverFluxPO4"/>')
+                lines.append('    <var name="riverFluxFe"/>')
+                lines.append('    <var name="riverFluxNH4"/>')
                 lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
                 lines.append('    <var name="ecosys_diag_O2_ZMIN"/>')
                 lines.append('    <var name="ecosys_diag_O2_ZMIN_DEPTH"/>')
