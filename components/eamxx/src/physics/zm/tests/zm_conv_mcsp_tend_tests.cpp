@@ -79,14 +79,17 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspTend : public UnitWrap::UnitTest<D>:
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_du_out));
         REQUIRE(d_baseline.total(d_baseline.ptend_s) == d_test.total(d_test.mcsp_dv_out));
         for (Int k = 0; k < d_baseline.total(d_baseline.ptend_s); ++k) {
+          // Momentum (u/v) fields use Approx() because the momentum tendency is
+          // built from cos(), which is std::cos in C++ but bfb_cos in Fortran;
+          // the two are not bit-for-bit. DSE (s) fields likewise use Approx().
           REQUIRE(d_baseline.ptend_s[k] == Approx(d_test.ptend_s[k]).margin(margin));
           REQUIRE(d_baseline.ptend_q[k] == d_test.ptend_q[k]);
-          REQUIRE(d_baseline.ptend_u[k] == d_test.ptend_u[k]);
-          REQUIRE(d_baseline.ptend_v[k] == d_test.ptend_v[k]);
+          REQUIRE(d_baseline.ptend_u[k] == Approx(d_test.ptend_u[k]).margin(margin));
+          REQUIRE(d_baseline.ptend_v[k] == Approx(d_test.ptend_v[k]).margin(margin));
           REQUIRE(d_baseline.mcsp_ds_out[k] == Approx(d_test.mcsp_ds_out[k]).margin(margin));
           REQUIRE(d_baseline.mcsp_dq_out[k] == d_test.mcsp_dq_out[k]);
-          REQUIRE(d_baseline.mcsp_du_out[k] == d_test.mcsp_du_out[k]);
-          REQUIRE(d_baseline.mcsp_dv_out[k] == d_test.mcsp_dv_out[k]);
+          REQUIRE(d_baseline.mcsp_du_out[k] == Approx(d_test.mcsp_du_out[k]).margin(margin));
+          REQUIRE(d_baseline.mcsp_dv_out[k] == Approx(d_test.mcsp_dv_out[k]).margin(margin));
         }
         REQUIRE(d_baseline.total(d_baseline.mcsp_freq) == d_test.total(d_test.mcsp_freq));
         REQUIRE(d_baseline.total(d_baseline.mcsp_freq) == d_test.total(d_test.mcsp_shear));

@@ -9,7 +9,9 @@ extern "C" {
 
 void zm_eamxx_bridge_init_c( Int  pver_in, Int limcnv_in,
                              bool trig_dcape_in, bool trig_ull_in,
-                             bool clos_dyn_adj_in, bool mcsp_enabled_in );
+                             bool clos_dyn_adj_in, bool mcsp_enabled_in,
+                             Real mcsp_t_coeff_in, Real mcsp_q_coeff_in,
+                             Real mcsp_mom_coeff_in, bool mcsp_use_full_shear_in );
 
 void zm_eamxx_bridge_run_c( Int  ncol,                // 01
                             Real dtime,               // 02
@@ -63,10 +65,14 @@ namespace zm {
 
 void zm_eamxx_bridge_init( Int pver, Int limcnv_in,
                            bool trig_dcape_in, bool trig_ull_in,
-                           bool clos_dyn_adj_in, bool mcsp_enabled_in ){
+                           bool clos_dyn_adj_in, bool mcsp_enabled_in,
+                           Real mcsp_t_coeff_in, Real mcsp_q_coeff_in,
+                           Real mcsp_mom_coeff_in, bool mcsp_use_full_shear_in ){
   zm_eamxx_bridge_init_c( pver, limcnv_in,
                           trig_dcape_in, trig_ull_in,
-                          clos_dyn_adj_in, mcsp_enabled_in );
+                          clos_dyn_adj_in, mcsp_enabled_in,
+                          mcsp_t_coeff_in, mcsp_q_coeff_in,
+                          mcsp_mom_coeff_in, mcsp_use_full_shear_in );
 }
 
 void zm_eamxx_bridge_run( Int ncol, Int pver, Real dtime, bool is_first_step,

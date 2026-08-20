@@ -54,7 +54,7 @@ void compute_dilute_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, 
 
 void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* temperature, Real* tv, Real* sp_humidity, Real* pint, Int* msemax_klev, Real* lcl_pmid, Int* lcl_klev, Real* parcel_qsat, Real* parcel_temp, Real* parcel_vtemp, Int* eql_klev, Real* cape);
 
-void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
+void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* shear_u, Real* shear_v);
 
 void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_ds_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
 
@@ -864,7 +864,7 @@ void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d)
 {
   d.transition<ekat::TransposeDirection::c2f>();
   zm_opts_init_f();
-  zm_conv_mcsp_calculate_shear_bridge_f(d.pcols, d.ncol, d.pver, d.state_pmid, d.state_u, d.state_v, d.mcsp_shear);
+  zm_conv_mcsp_calculate_shear_bridge_f(d.pcols, d.ncol, d.pver, d.state_pmid, d.state_u, d.state_v, d.shear_u, d.shear_v);
   zm_opts_finalize_f();
   d.transition<ekat::TransposeDirection::f2c>();
 }
@@ -874,14 +874,15 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
   zm_opts_init();
 
   // create device views and copy
-  std::vector<view1dr_d> vec1dr_in(1);
-  ekat::host_to_device({d.mcsp_shear}, d.pcols, vec1dr_in);
+  std::vector<view1dr_d> vec1dr_in(2);
+  ekat::host_to_device({d.shear_u, d.shear_v}, d.pcols, vec1dr_in);
 
   std::vector<view2dr_d> vec2dr_in(3);
   ekat::host_to_device({d.state_pmid, d.state_u, d.state_v}, d.pcols, d.pver, vec2dr_in);
 
   view1dr_d
-    mcsp_shear_d(vec1dr_in[0]);
+    shear_u_d(vec1dr_in[0]),
+    shear_v_d(vec1dr_in[1]);
 
   view2dr_d
     state_pmid_d(vec2dr_in[0]),
@@ -900,18 +901,21 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
     // after this.
     const auto state_pmid_c = ekat::subview(state_pmid_d, i);
     const auto state_u_c = ekat::subview(state_u_d, i);
+    const auto state_v_c = ekat::subview(state_v_d, i);
 
     ZMF::zm_conv_mcsp_calculate_shear(
       team,
       pver,
       state_pmid_c,
       state_u_c,
-      mcsp_shear_d(i));
+      state_v_c,
+      shear_u_d(i),
+      shear_v_d(i));
   });
 
   // Now get arrays
-  std::vector<view1dr_d> vec1dr_out = {mcsp_shear_d};
-  ekat::device_to_host({d.mcsp_shear}, d.pcols, vec1dr_out);
+  std::vector<view1dr_d> vec1dr_out = {shear_u_d, shear_v_d};
+  ekat::device_to_host({d.shear_u, d.shear_v}, d.pcols, vec1dr_out);
 
   zm_finalize_cxx();
 }
