@@ -1,5 +1,5 @@
-#include <edp/ast.hpp>
-#include <edp/tokens.hpp>
+#include <dexpr/ast.hpp>
+#include <dexpr/tokens.hpp>
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -9,7 +9,7 @@
  * @file ast_print.cpp
  * @brief Implementation of Visitors for printing AST nodes
  */
-namespace edp::ast {
+namespace dexpr::ast {
 
 namespace {
 
@@ -86,4 +86,4 @@ std::string to_string(const Expression& expr) {
   return expr.visit(ToStringVisitor{});
 }
 
-} // namespace edp::ast
+} // namespace dexpr::ast

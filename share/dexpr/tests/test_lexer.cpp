@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <edp/lexer.hpp>
-#include <edp/tokens.hpp>
+#include <dexpr/lexer.hpp>
+#include <dexpr/tokens.hpp>
 
-namespace edp
+namespace dexpr
 {
 
 namespace
@@ -380,4 +380,4 @@ TEST_CASE("some lexer token stream", "[lexer]")
                                                });
 }
 
-} // namespace edp
+} // namespace dexpr

@@ -1,8 +1,8 @@
-#include <edp/tokens.hpp>
-#include <edp/precedences.hpp>
+#include <dexpr/tokens.hpp>
+#include <dexpr/precedences.hpp>
 #include <stdexcept>
 
-namespace edp::parser {
+namespace dexpr::parser {
 
 
   // Lowest,
@@ -69,4 +69,4 @@ Precedence cur_precedence(TokenTypes type) {
   }
 }
 
-} // namespace edp::parser
+} // namespace dexpr::parser

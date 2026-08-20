@@ -1,16 +1,16 @@
-#ifndef EDP_PARSER_HPP
-#define EDP_PARSER_HPP
+#ifndef DEXPR_PARSER_HPP
+#define DEXPR_PARSER_HPP
 
-#include <edp/ast.hpp>
-#include <edp/lexer.hpp>
-#include <edp/precedences.hpp>
-#include <edp/tokens.hpp>
+#include <dexpr/ast.hpp>
+#include <dexpr/lexer.hpp>
+#include <dexpr/precedences.hpp>
+#include <dexpr/tokens.hpp>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-namespace edp::parser {
+namespace dexpr::parser {
 
 class ParserError : public std::runtime_error {
 public:
@@ -79,6 +79,6 @@ private:
   std::vector<ast::ExprPtr> parse_list_of_expressions(TokenTypes end_token);
 };
 
-} // namespace edp::parser
+} // namespace dexpr::parser
 
 #endif

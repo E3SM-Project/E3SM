@@ -1,11 +1,11 @@
-#ifndef EDP_TOKENS_HPP
-#define EDP_TOKENS_HPP
+#ifndef DEXPR_TOKENS_HPP
+#define DEXPR_TOKENS_HPP
 
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
-namespace edp {
+namespace dexpr {
 
 enum class TokenTypes {
   EndofFile,
@@ -66,6 +66,6 @@ std::ostream& operator<<(std::ostream& os, const Token& tok);
 std::string binary_op_to_string(const TokenTypes type);
 std::string unary_op_to_string(const TokenTypes type) ;
 
-} // namespace edp
+} // namespace dexpr
 
 #endif

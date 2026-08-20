@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cctype>
-#include <edp/lexer.hpp>
-#include <edp/tokens.hpp>
+#include <dexpr/lexer.hpp>
+#include <dexpr/tokens.hpp>
 #include <utility>
 
 namespace {
@@ -17,7 +17,7 @@ bool is_identifier_char(const char ch) {
 
 } // namespace
 
-namespace edp {
+namespace dexpr {
 
 Lexer::Lexer(std::string input)
     : input_{std::move(input)}, position_{0}, read_position_{0},
@@ -234,4 +234,4 @@ Token Lexer::next_token() {
   return tok;
 }
 
-} // namespace edp
+} // namespace dexpr

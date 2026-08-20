@@ -1,7 +1,7 @@
-#ifndef EDP_AST_HPP
-#define EDP_AST_HPP
+#ifndef DEXPR_AST_HPP
+#define DEXPR_AST_HPP
 
-#include <edp/tokens.hpp>
+#include <dexpr/tokens.hpp>
 #include <concepts>
 #include <memory>
 #include <string>
@@ -13,7 +13,7 @@
  * @brief Definition of AST Nodes, using std::variant
  */
 
-namespace edp::ast {
+namespace dexpr::ast {
 /* A node of the AST is represented by an Expression which can be of any
  * type listed in the ExpressionVariant.
  * Expression contains a "visit" method that serves as a generic wrapper to
@@ -109,6 +109,6 @@ ExprPtr make_expression(Args&&... args) {
 std::string to_string(const Expression& expr);
 // bool equal(const Expression& lhs, const Expression& rhs);
 
-} // namespace edp::ast
+} // namespace dexpr::ast
 
 #endif

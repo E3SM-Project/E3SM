@@ -1,13 +1,13 @@
-#include <edp/parser.hpp>
-#include <edp/ast.hpp>
-#include <edp/precedences.hpp>
-#include <edp/tokens.hpp>
+#include <dexpr/parser.hpp>
+#include <dexpr/ast.hpp>
+#include <dexpr/precedences.hpp>
+#include <dexpr/tokens.hpp>
 #include <charconv>
 #include <optional>
 #include <stdexcept>
 #include <string>
 
-namespace edp::parser {
+namespace dexpr::parser {
 
 namespace {
 
@@ -222,4 +222,4 @@ ast::ExprPtr Parser::parse() {
   return expr;
 }
 
-} // namespace edp::parser
+} // namespace dexpr::parser

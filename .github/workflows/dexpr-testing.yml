@@ -63,14 +63,17 @@ jobs:
             echo "CXX=clang++" >> "$GITHUB_ENV"
           fi
 
-      # No dexpr-specific options are passed here on purpose: this workflow has
-      # to keep working across the renaming still to come, so it configures the
-      # directory and nothing more.
       - name: Configure
-        run: cmake -S share/dexpr -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        run: |
+          cmake -S share/dexpr -B build \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DDEXPR_WERROR=ON
 
       - name: Build
         run: cmake --build build --parallel
 
       - name: Test
         run: ctest --test-dir build --output-on-failure --parallel
+
+      - name: Smoke test the tool
+        run: ./build/dexpr functions

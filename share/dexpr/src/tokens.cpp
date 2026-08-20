@@ -1,10 +1,10 @@
-#include <edp/tokens.hpp>
+#include <dexpr/tokens.hpp>
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
 #include <string>
 
-namespace edp {
+namespace dexpr {
 
 std::string_view to_string(TokenTypes type) {
   switch (type) {

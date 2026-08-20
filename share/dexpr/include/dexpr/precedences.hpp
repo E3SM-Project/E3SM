@@ -1,8 +1,8 @@
-#ifndef EDP_PRECEDENCES_HPP
-#define EDP_PRECEDENCES_HPP
+#ifndef DEXPR_PRECEDENCES_HPP
+#define DEXPR_PRECEDENCES_HPP
 
-#include <edp/tokens.hpp>
-namespace edp::parser {
+#include <dexpr/tokens.hpp>
+namespace dexpr::parser {
 
 enum class Precedence {
   Lowest,
@@ -18,6 +18,6 @@ enum class Precedence {
 
 Precedence token_precedence(TokenTypes type);
 Precedence cur_precedence(TokenTypes type);
-} // namespace edp::parser
+} // namespace dexpr::parser
 
 #endif

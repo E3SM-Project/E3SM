@@ -1,10 +1,10 @@
-#ifndef EDP_LEXER_HPP
-#define EDP_LEXER_HPP
+#ifndef DEXPR_LEXER_HPP
+#define DEXPR_LEXER_HPP
 
-#include <edp/tokens.hpp>
+#include <dexpr/tokens.hpp>
 #include <string>
 
-namespace edp {
+namespace dexpr {
 
 class Lexer {
 

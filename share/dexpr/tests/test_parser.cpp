@@ -1,12 +1,12 @@
-#include <edp/ast.hpp>
+#include <dexpr/ast.hpp>
 #include "catch2/catch_message.hpp"
-#include <edp/lexer.hpp>
-#include <edp/parser.hpp>
-#include <edp/tokens.hpp>
+#include <dexpr/lexer.hpp>
+#include <dexpr/parser.hpp>
+#include <dexpr/tokens.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 
-namespace edp {
+namespace dexpr {
 
 namespace { // anonymous
 
@@ -271,4 +271,4 @@ TEST_CASE("some parsed expression", "[parser]") {
               "(x*y.derivative((dx=dy), ['col']).where((x>0)))");
 }
 
-} // namespace edp
+} // namespace dexpr

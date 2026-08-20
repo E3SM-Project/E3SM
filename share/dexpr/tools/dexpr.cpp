@@ -1,14 +1,14 @@
 #include <iostream>
 #include <string_view>
 
-#include <edp/supported_functions.hpp>
+#include <dexpr/supported_functions.hpp>
 
 namespace {
 
 void print_functions() {
     std::cout << "Supported functions\n\n";
 
-    for (const auto& function : edp::supported) {
+    for (const auto& function : dexpr::supported) {
         std::cout << "  " << function << '\n';
     }
 }
@@ -16,8 +16,8 @@ void print_functions() {
 void print_help() {
     std::cout <<
 R"(Usage:
-    edp functions
-    edp help
+    dexpr functions
+    dexpr help
 )";
 }
 

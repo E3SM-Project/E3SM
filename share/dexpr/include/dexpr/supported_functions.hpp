@@ -1,12 +1,12 @@
-#ifndef EDP_SUPPORTED_FUNCTIONS_HPP
-#define EDP_SUPPORTED_FUNCTIONS_HPP
+#ifndef DEXPR_SUPPORTED_FUNCTIONS_HPP
+#define DEXPR_SUPPORTED_FUNCTIONS_HPP
 
 #include <array>
 #include <ostream>
 #include <span>
 #include <string>
 #include <string_view>
-namespace edp {
+namespace dexpr {
 struct SupportedFunction {
   std::string_view name;
   std::string_view desc;
@@ -69,6 +69,6 @@ inline constexpr std::array supported{
         .arguments = tend_args,
     },
 };
-} // namespace edp
+} // namespace dexpr
 
 #endif

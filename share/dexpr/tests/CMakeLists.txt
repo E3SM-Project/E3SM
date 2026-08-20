@@ -17,22 +17,20 @@ if (NOT Catch2_FOUND)
   list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
 endif()
 
-add_executable(edp_tests
+add_executable(dexpr_tests
   test_lexer.cpp
   test_parser.cpp
 )
 
-target_link_libraries(edp_tests
+target_link_libraries(dexpr_tests
   PRIVATE
-    e3sm_diags_parser
+    dexpr
     Catch2::Catch2WithMain
 )
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-  target_compile_options(edp_tests PRIVATE -Wall -Wextra)
-endif()
+target_compile_options(dexpr_tests PRIVATE ${DEXPR_WARNINGS})
 
 include(Catch)
 
 # Registers each TEST_CASE as its own ctest test, so a failure names itself.
-catch_discover_tests(edp_tests)
+catch_discover_tests(dexpr_tests)
