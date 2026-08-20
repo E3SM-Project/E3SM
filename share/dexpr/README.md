@@ -71,6 +71,25 @@ Every `TEST_CASE` is registered with ctest individually, so a failure names
 itself. The same commands run in CI, across gcc and clang in both Debug and
 Release, on every pull request touching this directory.
 
+## Planned work
+
+Not implemented here, recorded so it is not rediscovered:
+
+- **Component-supplied functions.** The callable set is fixed in
+  `supported_functions.hpp` and nothing consults it, so `nope(x)` parses and is
+  never rejected. The plan is a registry a component fills in at init -- each
+  function's name, its parameters in positional order, and whether the call is
+  written free (`where(...)`) or as a method (`T_mid.interp(...)`) -- plus a
+  pass over the AST that checks calls against it. That pass stays out of the
+  parser on purpose, so `foo(a, b=c)` parses the same whether or not `foo`
+  exists.
+- **Slicing.** `Colon` is lexed and carries a `Bounds` precedence but has no
+  parse function; `BoundsExpression` in `ast.hpp` is commented out, and `a:b`
+  fails as trailing input.
+- **Operator syntax is fixed.** A registry would let a component add functions
+  but not operators. A new operator means editing the token enum, the lexer,
+  the precedence table and the parser's dispatch tables.
+
 ## Provenance
 
 Vendored from [peterdschwartz/e3sm_diags_parser](https://github.com/peterdschwartz/e3sm_diags_parser)
