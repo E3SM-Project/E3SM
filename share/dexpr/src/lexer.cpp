@@ -1,7 +1,7 @@
-#include <edp/lexer.hpp>
-#include <edp/tokens.hpp>
 #include <algorithm>
 #include <cctype>
+#include <edp/lexer.hpp>
+#include <edp/tokens.hpp>
 #include <utility>
 
 namespace {
@@ -10,15 +10,9 @@ bool is_numeric(const char ch) {
   return std::isdigit(static_cast<unsigned char>(ch));
 }
 
-// Python identifier rules: the first character may be a letter or an
-// underscore, but NOT a digit; every subsequent character may additionally be
-// a digit.
-bool is_identifier_start(const char ch) {
-  return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
-}
-
 bool is_identifier_char(const char ch) {
-  return is_identifier_start(ch) || is_numeric(ch);
+  return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_' ||
+         is_numeric(ch);
 }
 
 } // namespace
@@ -28,12 +22,6 @@ namespace edp {
 Lexer::Lexer(std::string input)
     : input_{std::move(input)}, position_{0}, read_position_{0},
       current_char_{'\0'} {
-  // The input is deliberately NOT case-folded here. Folding the whole buffer
-  // made keywords case-insensitive, but it also rewrote string literals --
-  // which are data, not syntax -- so 'MyVar' silently became 'myvar'. Case
-  // insensitivity is applied where it belongs instead: identifier_lookup()
-  // folds before matching keywords, and read_number() accepts either 'e' or
-  // 'E' as the exponent marker.
   read_char();
 }
 
@@ -66,7 +54,7 @@ Token Lexer::make_token(TokenTypes kind) const {
 }
 
 bool Lexer::read_to_delim(char ch, std::string& out) {
-  const auto start_pos = position_+1;
+  const auto start_pos = position_ + 1;
   while (peek_char() != ch && peek_char() != '\0') {
     read_char();
   }
@@ -93,8 +81,7 @@ std::string Lexer::read_number(bool seen_dot) {
 
   // Only consume an exponent if a digit actually follows it
   if (current_char_ == 'e' || current_char_ == 'E') {
-    const auto sign_offset =
-        (peek_char() == '+' || peek_char() == '-') ? 1 : 0;
+    const auto sign_offset = (peek_char() == '+' || peek_char() == '-') ? 1 : 0;
     const auto digit_pos = read_position_ + sign_offset;
 
     if (digit_pos < static_cast<int>(input_.length()) &&
@@ -217,15 +204,13 @@ Token Lexer::next_token() {
       number.insert(0, "0.");
       return {TokenTypes::Float, number};
     } else {
-        tok = make_token(TokenTypes::Dot);
-        break;
-      }
+      tok = make_token(TokenTypes::Dot);
+      break;
+    }
   }
   default: {
 
-    if (is_identifier_start(current_char_)) {
-      return identifier_lookup({TokenTypes::Identifier, read_identifier()});
-    } else if (is_numeric(current_char_)) {
+    if (is_numeric(current_char_)) {
       auto number = read_number();
 
       // 'E' counts as much as 'e'; missing it classified "1E5" as an integer,
@@ -235,6 +220,8 @@ Token Lexer::next_token() {
       } else {
         return {TokenTypes::Integer, number};
       }
+    } else if (is_identifier_char(current_char_)) {
+      return identifier_lookup({TokenTypes::Identifier, read_identifier()});
     } else {
       auto illegal = make_token(TokenTypes::Illegal);
       read_char();
