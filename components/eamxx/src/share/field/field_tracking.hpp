@@ -49,6 +49,7 @@ public:
 
   // Add group name to the list of groups we belong to
   void add_group (const std::string& group) { m_groups.insert(group); }
+  bool has_group (const std::string& group) { return m_groups.count(group)>0; }
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
   // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.
