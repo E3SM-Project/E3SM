@@ -722,6 +722,7 @@ contains
     if (data_bgc_fluxes_to_ocean_flag) then
 
       call ncd_io(ncid=ncid, varname='Ld_DIN_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DIN_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DIN')
       if (masterproc) write(iulog,*) 'Read DIN ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -733,6 +734,7 @@ contains
       if (masterproc) write(iulog,*) 'DIN ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_DIP_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DIP_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DIP')
       if (masterproc) write(iulog,*) 'Read DIP ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -744,6 +746,7 @@ contains
       if (masterproc) write(iulog,*) 'DIP ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_DON_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DON_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DON')
       if (masterproc) write(iulog,*) 'Read DON ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -755,6 +758,7 @@ contains
       if (masterproc) write(iulog,*) 'DON ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_DOP_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DOP_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DOP')
       if (masterproc) write(iulog,*) 'Read DOP ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -766,6 +770,7 @@ contains
       if (masterproc) write(iulog,*) 'DOP ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_DOC_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DOC_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DOC')
       if (masterproc) write(iulog,*) 'Read DOC ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -777,6 +782,7 @@ contains
       if (masterproc) write(iulog,*) 'DOC ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_PP_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_PP_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART PP')
       if (masterproc) write(iulog,*) 'Read PP ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -788,6 +794,7 @@ contains
       if (masterproc) write(iulog,*) 'PP ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_DSi_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DSi_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DSi')
       if (masterproc) write(iulog,*) 'Read DSi ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -799,6 +806,7 @@ contains
       if (masterproc) write(iulog,*) 'DSi ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_POC_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_POC_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART POC')
       if (masterproc) write(iulog,*) 'Read POC ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -810,6 +818,7 @@ contains
       if (masterproc) write(iulog,*) 'POC ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_PN_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_PN_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART PN')
       if (masterproc) write(iulog,*) 'Read PN ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -821,6 +830,7 @@ contains
       if (masterproc) write(iulog,*) 'PN ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_DIC_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_DIC_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DIC')
       if (masterproc) write(iulog,*) 'Read DIC ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
@@ -832,6 +842,7 @@ contains
       if (masterproc) write(iulog,*) 'DIC ',minval(tempr),maxval(tempr)
 
       call ncd_io(ncid=ncid, varname='Ld_Fe_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call ncd_io(ncid=ncid, varname='Ld_Fe_mosart', flag='read', data=tempr, readvar=found)
       if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART Fe')
       if (masterproc) write(iulog,*) 'Read Fe ',minval(tempr),maxval(tempr)
       do j=1,rtmlat
