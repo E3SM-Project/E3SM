@@ -1,36 +1,40 @@
 fields:
-  - id: temperature
+  temperature:
+    kind: state
+    name: temperature
     merge_type: direct
     attributes:
-      name: temperature
-      long_name: Atmospheric temperature
-      standard_name: air_temperature
+      attname: temperature
+      longname: Atmospheric temperature
+      stdname: air_temperature
       units: K
     sources:
       - atm
     destinations:
       - lnd
-
-  - id: precipitation
+  surface_flux:
+    kind: flux
+    name: surface_flux
     merge_type: direct
     attributes:
-      name: precipitation
-      long_name: Precipitation
-      standard_name: precipitation_flux
-      units: kg m-2 s-1
-    sources:
-      - atm
-    destinations:
-      - lnd
-
-  - id: surface_flux
-    merge_type: direct
-    attributes:
-      name: surface_flux
-      long_name: Surface energy flux
-      standard_name: ""
+      attname: surface_flux
+      longname: Surface energy flux
+      stdname: Sef
       units: W m-2
     sources:
-      - lnd
+    - lnd
     destinations:
-      - atm
+    - atm
+  precipitation:
+    kind: state
+    name: precipitation
+    merge_type: direct
+    attributes:
+      attname: precipitation
+      longname: Precipitation
+      stdname: Sa_prec
+      units: kg m-2 s-1
+    sources:
+    - atm
+    destinations:
+    - lnd
