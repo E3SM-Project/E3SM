@@ -1,0 +1,76 @@
+name: dexpr
+
+# dexpr is plain C++ with no Kokkos, MPI, netCDF or EKAT dependency, so unlike
+# the rest of E3SM it builds and tests on a stock GitHub runner in about a
+# minute. That is why this workflow does not need the self-hosted ghci-snl
+# machines the eamxx workflows run on, and checks out no submodules.
+
+on:
+  # Runs on PRs against master, but only if they touch the parser
+  pull_request:
+    branches: [ master ]
+    types: [opened, synchronize, ready_for_review, reopened]
+    paths:
+      - 'share/dexpr/**'
+      - '.github/workflows/dexpr-testing.yml'
+
+  # Also guard master itself, so a bad merge is caught immediately
+  push:
+    branches: [ master ]
+    paths:
+      - 'share/dexpr/**'
+      - '.github/workflows/dexpr-testing.yml'
+
+  # Manual run for debug purposes only
+  workflow_dispatch:
+
+concurrency:
+  # Two runs are in the same group if they are testing the same git ref
+  #  - if trigger=pull_request, the ref is refs/pull/<PR_NUMBER>/merge
+  #  - for other triggers, the ref is the branch tested
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.compiler }} / ${{ matrix.build_type }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      # One compiler failing should not hide what the others would have said
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Show action trigger
+        uses: ./.github/actions/show-workflow-trigger
+
+      - name: Select the compiler
+        run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            echo "CC=gcc"   >> "$GITHUB_ENV"
+            echo "CXX=g++"  >> "$GITHUB_ENV"
+          else
+            echo "CC=clang"    >> "$GITHUB_ENV"
+            echo "CXX=clang++" >> "$GITHUB_ENV"
+          fi
+
+      # No dexpr-specific options are passed here on purpose: this workflow has
+      # to keep working across the renaming still to come, so it configures the
+      # directory and nothing more.
+      - name: Configure
+        run: cmake -S share/dexpr -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --parallel

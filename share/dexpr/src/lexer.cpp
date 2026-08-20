@@ -29,7 +29,7 @@ Lexer::Lexer(std::string input)
 }
 
 void Lexer::read_char() {
-  if (read_position_ >= input_.length()) {
+  if (read_position_ >= static_cast<int>(input_.length())) {
     current_char_ = '\0';
   } else {
     current_char_ = input_.at(read_position_);
@@ -39,7 +39,7 @@ void Lexer::read_char() {
 }
 
 char Lexer::peek_char() const {
-  if (read_position_ >= input_.length()) {
+  if (read_position_ >= static_cast<int>(input_.length())) {
     return '\0';
   } else {
     return input_[read_position_];

@@ -1,55 +1,44 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(e3sm_diags_parser LANGUAGES CXX)
+project(e3sm_diags_parser
+  VERSION 0.1.0
+  DESCRIPTION "Lexer and parser for the diagnostics expression language"
+  LANGUAGES CXX)
 
-add_library(e3sm_diags_parser 
-src/lexer.cpp
-src/ast_print.cpp
-src/tokens.cpp
-src/precedences.cpp
-src/parser.cpp
-)
+# This library is deliberately standalone: it has no Kokkos, MPI, netCDF or
+# EKAT dependency, and is not wired into the CIME/csm_share build. That is
+# what lets it be configured and tested anywhere cmake and a C++20 compiler
+# exist, including a stock GitHub runner.
+option(EDP_ENABLE_TESTS "Build the unit tests" ON)
+option(EDP_ENABLE_TOOL  "Build the command line tool" ON)
 
-add_executable(edp 
-tools/edp.cpp
-)
-target_link_libraries(edp
-    PRIVATE
-    e3sm_diags_parser
+add_library(e3sm_diags_parser
+  src/ast_print.cpp
+  src/lexer.cpp
+  src/parser.cpp
+  src/precedences.cpp
+  src/tokens.cpp
 )
 
 target_compile_features(e3sm_diags_parser PUBLIC cxx_std_20)
-target_include_directories(
-    e3sm_diags_parser
-    PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-include(CTest)
-if(BUILD_TESTING)
-    include(FetchContent)
 
-    FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.8.1
-    )
+target_include_directories(e3sm_diags_parser
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-    FetchContent_MakeAvailable(Catch2)
-
-    add_executable(edp_tests
-        tests/test_lexer.cpp
-        tests/test_parser.cpp
-    )
-
-    target_link_libraries(
-        edp_tests
-        PRIVATE
-            e3sm_diags_parser
-            Catch2::Catch2WithMain
-    )
-
-    include(Catch)
-
-    catch_discover_tests(edp_tests)
+# Warnings stay on: with no external headers in the include path there is
+# nothing here that anyone has to fight, so the library should stay clean.
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(e3sm_diags_parser PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+if (EDP_ENABLE_TOOL)
+  add_executable(edp tools/edp.cpp)
+  target_link_libraries(edp PRIVATE e3sm_diags_parser)
+endif()
+
+if (EDP_ENABLE_TESTS)
+  include(CTest)
+  if (BUILD_TESTING)
+    add_subdirectory(tests)
+  endif()
+endif()
