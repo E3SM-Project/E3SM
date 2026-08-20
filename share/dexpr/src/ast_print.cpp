@@ -6,7 +6,7 @@
 
 /**
  * @file ast_print.cpp
- * @brief Implementation of Vistors for printing AST nodes
+ * @brief Implementation of Visitors for printing AST nodes
  */
 namespace edp::ast {
 

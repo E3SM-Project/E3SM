@@ -24,9 +24,10 @@ private:
   void skip_whitespace();
 
   std::string read_identifier();
-  std::string read_number();
-  std::string read_to_delim(char ch);
-  void check_precision();
+  // seen_dot is true when the caller already consumed a leading '.', so that
+  // a second one is not folded into the same literal.
+  std::string read_number(bool seen_dot = false);
+  bool read_to_delim(char ch, std::string& out);
 
   char peek_char() const;
   void read_char();

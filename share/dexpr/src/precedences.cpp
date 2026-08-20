@@ -48,9 +48,10 @@ Precedence token_precedence(TokenTypes type) {
   case TokenTypes::LeftParen:
     return Precedence::Call;
 
+  default:
+    return Precedence::Lowest;
   }
-  return Precedence::Lowest;
-}
 
 }
 
+} // namespace edp::parser

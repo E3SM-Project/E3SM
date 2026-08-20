@@ -1,4 +1,9 @@
 #include <edp/tokens.hpp>
+#include <algorithm>
+#include <cctype>
+#include <stdexcept>
+#include <string>
+
 namespace edp {
 
 std::string_view to_string(TokenTypes type) {
@@ -8,8 +13,6 @@ std::string_view to_string(TokenTypes type) {
     return "EndofFile";
   case TokenTypes::Illegal:
     return "Illegal";
-  case TokenTypes::Newline:
-    return "Newline";
 
   case TokenTypes::Identifier:
     return "Identifer";
@@ -74,8 +77,9 @@ std::string_view to_string(TokenTypes type) {
     return "ArrayLeftBracket";
   case TokenTypes::ArrayRightBracket:
     return "ArrayRightBracket";
+  default:
+    return "UNKNOWN";
   }
-  return "UNKNOWN";
 }
 
 std::string to_string(const Token& tok) {
@@ -83,8 +87,15 @@ std::string to_string(const Token& tok) {
          ", Literal: " + tok.literal + "}";
 }
 Token identifier_lookup(const Token& tok) {
-  /*This function checks to see if an identifier is a keyword*/
-  if (const auto it = keywords.find(tok.literal); it != keywords.end()) {
+  // This function checks to see if an identifier is a keyword
+  // keywords are case-insensitive; identifiers are case-sensitive
+  // identifier case intact.
+  std::string folded = tok.literal;
+  std::transform(
+      folded.begin(), folded.end(), folded.begin(),
+      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+  if (const auto it = keywords.find(folded); it != keywords.end()) {
     return it->second;
   }
   return tok;

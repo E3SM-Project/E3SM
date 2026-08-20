@@ -6,12 +6,19 @@
 
 namespace {
 
-bool is_valid_identifier(const char ch) {
+bool is_numeric(const char ch) {
+  return std::isdigit(static_cast<unsigned char>(ch));
+}
+
+// Python identifier rules: the first character may be a letter or an
+// underscore, but NOT a digit; every subsequent character may additionally be
+// a digit.
+bool is_identifier_start(const char ch) {
   return std::isalpha(static_cast<unsigned char>(ch)) || ch == '_';
 }
 
-bool is_numeric(const char ch) {
-  return std::isdigit(static_cast<unsigned char>(ch));
+bool is_identifier_char(const char ch) {
+  return is_identifier_start(ch) || is_numeric(ch);
 }
 
 } // namespace
@@ -21,10 +28,12 @@ namespace edp {
 Lexer::Lexer(std::string input)
     : input_{std::move(input)}, position_{0}, read_position_{0},
       current_char_{'\0'} {
-
-  std::transform(
-      input_.begin(), input_.end(), input_.begin(),
-      [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  // The input is deliberately NOT case-folded here. Folding the whole buffer
+  // made keywords case-insensitive, but it also rewrote string literals --
+  // which are data, not syntax -- so 'MyVar' silently became 'myvar'. Case
+  // insensitivity is applied where it belongs instead: identifier_lookup()
+  // folds before matching keywords, and read_number() accepts either 'e' or
+  // 'E' as the exponent marker.
   read_char();
 }
 
@@ -56,46 +65,56 @@ Token Lexer::make_token(TokenTypes kind) const {
   return {kind, std::string(1, current_char_)};
 }
 
-std::string Lexer::read_to_delim(char ch) {
-  auto start_pos = position_+1;
-  while (peek_char() != ch) {
+bool Lexer::read_to_delim(char ch, std::string& out) {
+  const auto start_pos = position_+1;
+  while (peek_char() != ch && peek_char() != '\0') {
     read_char();
   }
+
+  const bool closed = peek_char() == ch;
   read_char();
+
   auto count = position_ - start_pos;
-  return input_.substr(start_pos, count);
+  out = input_.substr(start_pos, count);
+  return closed;
 }
 
-std::string Lexer::read_number() {
-  auto start_pos = position_;
-  while (is_numeric(current_char_)) {
-    read_char();
+std::string Lexer::read_number(bool seen_dot) {
+  const auto start_pos = position_;
+
+  // At most one decimal point belongs to a single number: "1.2.3" is two
+  // numbers, not one malformed one
+  while (is_numeric(current_char_) || (current_char_ == '.' && !seen_dot)) {
     if (current_char_ == '.') {
-      read_char();
+      seen_dot = true;
     }
+    read_char();
   }
-  check_precision();
-  return input_.substr(start_pos, position_ - start_pos);
-}
 
-void Lexer::check_precision() {
-  const auto peek_ch = peek_char();
-  if (std::isspace(static_cast<unsigned char>(peek_ch))) {
-    return;
-  }
-  if (current_char_ == 'e') {
-    read_char();
-    if (current_char_ == '+' || current_char_ == '-') {
-      read_char();
+  // Only consume an exponent if a digit actually follows it
+  if (current_char_ == 'e' || current_char_ == 'E') {
+    const auto sign_offset =
+        (peek_char() == '+' || peek_char() == '-') ? 1 : 0;
+    const auto digit_pos = read_position_ + sign_offset;
+
+    if (digit_pos < static_cast<int>(input_.length()) &&
+        is_numeric(input_[digit_pos])) {
+      read_char(); // 'e'
+      if (current_char_ == '+' || current_char_ == '-') {
+        read_char(); // sign
+      }
+      while (is_numeric(current_char_)) {
+        read_char();
+      }
     }
-    read_char();
-    read_number();
   }
+
+  return input_.substr(start_pos, position_ - start_pos);
 }
 
 std::string Lexer::read_identifier() {
   auto start_pos = position_;
-  while (is_valid_identifier(current_char_)) {
+  while (is_identifier_char(current_char_)) {
     read_char();
   }
   auto length = position_ - start_pos;
@@ -132,9 +151,6 @@ Token Lexer::next_token() {
   case '-':
     tok = make_token(TokenTypes::Minus);
     break;
-  case '\n':
-    tok = make_token(TokenTypes::Newline);
-    break;
   case '[':
     tok = make_token(TokenTypes::ArrayLeftBracket);
     break;
@@ -169,19 +185,35 @@ Token Lexer::next_token() {
       tok = make_token(TokenTypes::GreaterThan);
     }
     break;
+  case '!':
+    if (peek_char() == '=') {
+      read_char();
+      tok = {TokenTypes::NotEqual, "!="};
+    } else {
+      // '!' is an alias for the `not` keyword
+      tok = make_token(TokenTypes::Bang);
+    }
+    break;
   case '\0':
     return {TokenTypes::EndofFile, ""};
   case ':':
     tok = make_token(TokenTypes::Colon);
     break;
   case '"':
-  case '\'':
-    tok = {TokenTypes::String, read_to_delim(current_char_)};
+  case '\'': {
+    std::string literal;
+    const bool closed = read_to_delim(current_char_, literal);
+    // An unterminated literal is reported as Illegal rather than silently
+    // accepted as a well-formed string.
+    tok = {closed ? TokenTypes::String : TokenTypes::Illegal, literal};
     break;
+  }
   case '.': {
     if (is_numeric(peek_char())) {
+      // The '.' that got us here is part of the literal, so read_number() must
+      // not fold in a second one: ".5.3" is two numbers, exactly as "1.2.3" is.
       read_char();
-      auto number = read_number();
+      auto number = read_number(/*seen_dot=*/true);
       number.insert(0, "0.");
       return {TokenTypes::Float, number};
     } else {
@@ -191,18 +223,22 @@ Token Lexer::next_token() {
   }
   default: {
 
-    if (is_valid_identifier(current_char_)) {
+    if (is_identifier_start(current_char_)) {
       return identifier_lookup({TokenTypes::Identifier, read_identifier()});
     } else if (is_numeric(current_char_)) {
       auto number = read_number();
 
-      if (number.find('e') != std::string::npos) {
+      // 'E' counts as much as 'e'; missing it classified "1E5" as an integer,
+      // and integer parsing then stopped at the 'E' and silently returned 1.
+      if (number.find_first_of(".eE") != std::string::npos) {
         return {TokenTypes::Float, number};
       } else {
         return {TokenTypes::Integer, number};
       }
     } else {
-      return make_token(TokenTypes::Illegal);
+      auto illegal = make_token(TokenTypes::Illegal);
+      read_char();
+      return illegal;
     }
 
   } // default
