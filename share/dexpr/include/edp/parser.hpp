@@ -57,11 +57,9 @@ private:
   void add_error(std::string msg);
   void next_token();
 
-  bool cur_token_is(TokenTypes expected_type);
   bool peek_token_is(TokenTypes expected_type);
 
   bool expect_peek_and_advance(TokenTypes expected_type);
-  Precedence cur_precedence();
   Precedence peek_precedence();
 
   ast::ExprPtr parse_expression(Precedence prec);

@@ -122,8 +122,17 @@ std::string binary_op_to_string(const TokenTypes type) {
     return "!=";
   case TokenTypes::LessThan:
     return "<";
+  case TokenTypes::LessEq:
+    return "<=";
   case TokenTypes::GreaterThan:
     return ">";
+  case TokenTypes::GreaterEqual:
+    return ">=";
+  // Word operators need surrounding whitespace to stay lexable when printed
+  case TokenTypes::And:
+    return " and ";
+  case TokenTypes::Or:
+    return " or ";
   case TokenTypes::Assign:
     return "=";
   case TokenTypes::Exp:

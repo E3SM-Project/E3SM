@@ -59,8 +59,12 @@ struct StringLiteral {
   std::string value;
 };
 
+// Literals are stored at full precision regardless of how the consumer will
+// eventually use them. Narrowing here would lose information before the
+// expression ever meets a field: 273.15 is 273.14999389648438 as a float, and
+// a legal threshold like 1e40 would not survive at all.
 struct FloatLiteral {
-  float value;
+  double value;
 };
 
 struct IntegerLiteral {

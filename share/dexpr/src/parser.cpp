@@ -2,33 +2,52 @@
 #include <edp/ast.hpp>
 #include <edp/precedences.hpp>
 #include <edp/tokens.hpp>
-#include <iostream>
+#include <charconv>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
 namespace edp::parser {
 
-bool Parser::cur_token_is(TokenTypes expected_type) {
-  return cur_token_.type == expected_type;
-};
+namespace {
+
+// std::from_chars rather than std::sto*: it is locale-independent (std::stof
+// reads "1.5" as 1 wherever ',' is the decimal separator), it does not throw,
+// and it reports where it stopped. Requiring it to stop at the end of the
+// literal means a malformed one is rejected outright instead of being read as
+// its leading prefix, which is exactly how "0.5.3" used to become 0.5.
+template <typename T>
+std::optional<T> parse_number(const std::string& literal) {
+  T value{};
+  const auto* const first = literal.data();
+  const auto* const last = first + literal.size();
+
+  const auto [stopped_at, ec] = std::from_chars(first, last, value);
+  if (ec != std::errc{} || stopped_at != last) {
+    return std::nullopt;
+  }
+  return value;
+}
+
+} // namespace
+
 bool Parser::peek_token_is(TokenTypes expected_type) {
   return peek_token_.type == expected_type;
 };
+
+void Parser::add_error(std::string msg) { errors_.push_back(std::move(msg)); }
 
 bool Parser::expect_peek_and_advance(TokenTypes expected_type) {
   if (peek_token_is(expected_type)) {
     next_token();
     return true;
   } else {
-    errors_.push_back("Expected " + std::string(to_string(expected_type)) +
-                      "Got " + to_string(peek_token_));
+    add_error("Expected " + std::string(to_string(expected_type)) + ", got " +
+              to_string(peek_token_));
     return false;
   }
 }
 
-Precedence Parser::cur_precedence() {
-  return token_precedence(cur_token_.type);
-}
 Precedence Parser::peek_precedence() {
   return token_precedence(peek_token_.type);
 }
@@ -39,14 +58,15 @@ void Parser::next_token() {
   cur_token_ = peek_token_;
   peek_token_ = lexer_.next_token();
   if (peek_token_is(TokenTypes::Illegal)) {
-    std::cout << "Encountered Illegal Token: " << to_string(peek_token_);
+    add_error("Illegal token " + to_string(peek_token_));
   }
 }
 
 ast::ExprPtr Parser::parse_expression(Precedence prec) {
   const auto prefix = prefix_parse_fns_.find(cur_token_.type);
   if (prefix == prefix_parse_fns_.end()) {
-    throw std::runtime_error("Unexpected Prefix Token " + to_string(cur_token_));
+    add_error("Unexpected Prefix Token " + to_string(cur_token_));
+    throw ParserError(errors_);
   }
   const auto fn = prefix->second;
   auto left_expr = (this->*fn)();
@@ -69,15 +89,25 @@ ast::ExprPtr Parser::parse_identifier() {
 ast::ExprPtr Parser::parse_string_literal() {
   return ast::make_expression<ast::StringLiteral>(cur_token_.literal);
 }
+
 ast::ExprPtr Parser::parse_integer_literal() {
-  return ast::make_expression<ast::IntegerLiteral>(
-      std::stoi(cur_token_.literal));
+  if (const auto value = parse_number<int>(cur_token_.literal)) {
+    return ast::make_expression<ast::IntegerLiteral>(*value);
+  }
+  add_error("Integer literal out of range: " + cur_token_.literal);
+  throw ParserError(errors_);
 }
+
 ast::ExprPtr Parser::parse_float_literal() {
-  return ast::make_expression<ast::FloatLiteral>(std::stof(cur_token_.literal));
+  if (const auto value = parse_number<double>(cur_token_.literal)) {
+    return ast::make_expression<ast::FloatLiteral>(*value);
+  }
+  add_error("Float literal out of range: " + cur_token_.literal);
+  throw ParserError(errors_);
 }
 ast::ExprPtr Parser::parse_prefix_expression() {
   auto op = cur_token_.type;
+  next_token();
   auto right_expr = parse_expression(Precedence::Prefix);
   return ast::make_expression<ast::PrefixExpression>(op, std::move(right_expr));
 }
@@ -86,14 +116,17 @@ ast::ExprPtr Parser::parse_grouped_expression() {
   next_token();
   auto expr = parse_expression(Precedence::Lowest);
   if (!expect_peek_and_advance(TokenTypes::RightParen)) {
-    return nullptr;
+    // Throwing rather than returning null: parse() would catch this at the end
+    // anyway, but until then the null travels through the tree builders, and
+    // every visitor dereferences its children unguarded.
+    throw ParserError(errors_);
   }
   return expr;
 }
 
 ast::ExprPtr Parser::parse_infix_expression(ast::ExprPtr left_expr) {
   const auto op = cur_token_.type;
-  const auto prec = cur_precedence();
+  const auto prec = cur_precedence(op);
   next_token();
 
   auto right_expr = parse_expression(prec);
@@ -122,9 +155,7 @@ Parser::parse_list_of_expressions(TokenTypes end_token) {
   }
 
   if (!expect_peek_and_advance(end_token)) {
-    // may prefer a throw
-    throw std::runtime_error("Unexpected Token at end of list " +
-                             to_string(cur_token_));
+    throw ParserError(errors_);
   }
   return expressions;
 }
@@ -150,6 +181,7 @@ Parser::Parser(Lexer lexer)
           {TokenTypes::Minus, &Parser::parse_prefix_expression},
           {TokenTypes::Bang, &Parser::parse_prefix_expression},
           {TokenTypes::ArrayLeftBracket, &Parser::parse_array_expression},
+          {TokenTypes::LeftParen, &Parser::parse_grouped_expression},
       }},
       infix_parse_fns_{{
           {TokenTypes::Plus, &Parser::parse_infix_expression},
@@ -177,6 +209,12 @@ ast::ExprPtr Parser::parse() {
   // For now i'll assume we're parsing one expression statement at a time
   // and nothing more complicated
   auto expr = parse_expression(Precedence::Lowest);
+
+  // TODO: maybe this is a bad idea?
+  // The expression must account for the whole input
+  if (!peek_token_is(TokenTypes::EndofFile)) {
+    add_error("Unexpected trailing input at " + to_string(peek_token_));
+  }
 
   if (has_errors()) {
     throw ParserError(errors_);
