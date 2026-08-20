@@ -948,11 +948,11 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
 
          if (thickEdgeDragChoice == thickEdgeDragHarMean) then
-            columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
-                                              (ssh(cell2) + bottomDepth(cell2)) / &
-                                  (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+           columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+                                             (ssh(cell2) + bottomDepth(cell2)) / &
+                                 (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
          else
-            columnThicknessDrag = layerThickEdgeMean(N,iEdge)
+           columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
          endif
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
