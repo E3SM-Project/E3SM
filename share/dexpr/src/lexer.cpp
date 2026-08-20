@@ -21,11 +21,20 @@ namespace dexpr {
 
 Lexer::Lexer(std::string input)
     : input_{std::move(input)}, position_{0}, read_position_{0},
-      current_char_{'\0'} {
+      current_char_{'\0'}, line_{1}, column_{0} {
   read_char();
 }
 
 void Lexer::read_char() {
+  // column_ starts at 0 so the constructor's priming read lands the first
+  // character on column 1.
+  if (current_char_ == '\n') {
+    line_ += 1;
+    column_ = 1;
+  } else {
+    column_ += 1;
+  }
+
   if (read_position_ >= static_cast<int>(input_.length())) {
     current_char_ = '\0';
   } else {
@@ -109,10 +118,22 @@ std::string Lexer::read_identifier() {
 }
 
 Token Lexer::next_token() {
-
   skip_whitespace();
 
-  Token tok;
+  // Captured before scanning: the position is where the token starts.
+  const auto line = line_;
+  const auto column = column_;
+
+  auto tok = scan_token();
+  tok.line = line;
+  tok.column = column;
+  return tok;
+}
+
+Token Lexer::scan_token() {
+
+  // Value-initialized: type would otherwise be indeterminate.
+  Token tok{};
 
   switch (current_char_) {
   case '=':

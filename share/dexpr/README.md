@@ -52,6 +52,11 @@ ctest --test-dir build --output-on-failure --parallel
 Catch2 v3 is used for the tests. An installed copy is used if there is one;
 otherwise CMake fetches a pinned version.
 
+### Compiler requirement
+
+C++20, and in practice GCC 11 or newer: numeric literals are parsed and
+printed with floating-point `<charconv>`, which is the binding constraint.
+
 ### Options
 
 | Option | Default | Effect |

@@ -1,8 +1,9 @@
 #include <dexpr/ast.hpp>
 #include <dexpr/tokens.hpp>
 #include <algorithm>
+#include <array>
+#include <charconv>
 #include <cmath>
-#include <format>
 #include <span>
 
 /**
@@ -72,7 +73,17 @@ std::string ToStringVisitor::operator()(const IntegerLiteral& expr) const {
   return std::to_string(expr.value);
 };
 std::string ToStringVisitor::operator()(const FloatLiteral& expr) const {
-  auto result = std::format("{}", expr.value);
+  // Shortest round-trip form; 24 chars is the worst case.
+  std::array<char, 32> buffer{};
+  const auto [end, ec] =
+      std::to_chars(buffer.data(), buffer.data() + buffer.size(), expr.value);
+  if (ec != std::errc{}) {
+    return "<unprintable>";
+  }
+
+  std::string result(buffer.data(), end);
+
+  // Otherwise "1500" would lex back as an integer, not the float it came from.
   if (std::isfinite(expr.value) &&
       result.find_first_of(".eE") == std::string::npos) {
     result += ".0";

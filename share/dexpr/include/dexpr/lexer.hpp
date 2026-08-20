@@ -19,8 +19,13 @@ private:
   int position_;
   int read_position_;
   char current_char_;
+  // Position of current_char_, 1-based, maintained by read_char().
+  int line_;
+  int column_;
 
   // functions
+  // Scans without position; next_token() stamps it.
+  Token scan_token();
   void skip_whitespace();
 
   std::string read_identifier();

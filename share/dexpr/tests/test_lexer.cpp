@@ -363,6 +363,42 @@ TEST_CASE("lexer: exponent marker is case-insensitive", "[lexer]")
                      });
 }
 
+TEST_CASE("lexer: tokens carry their source position", "[lexer]")
+{
+  //                          1234567
+  const auto tokens = lex_all("x + 12");
+  REQUIRE(tokens.size() == 4);
+  CHECK(tokens[0].line == 1);
+  CHECK(tokens[0].column == 1); // x
+  CHECK(tokens[1].column == 3); // +
+  CHECK(tokens[2].column == 5); // 12
+  CHECK(tokens[3].column == 7); // end of input
+}
+
+TEST_CASE("lexer: position survives multi-character tokens", "[lexer]")
+{
+  //                          123456789
+  const auto tokens = lex_all("ab <= 'c'");
+  REQUIRE(tokens.size() == 4);
+  CHECK(tokens[0].column == 1); // ab
+  CHECK(tokens[1].column == 4); // <=
+  CHECK(tokens[2].column == 7); // 'c'
+}
+
+TEST_CASE("lexer: newlines advance the line and reset the column", "[lexer]")
+{
+  const auto tokens = lex_all("a +\n  b\nc");
+  REQUIRE(tokens.size() == 5);
+  CHECK(tokens[0].line == 1);
+  CHECK(tokens[0].column == 1); // a
+  CHECK(tokens[1].line == 1);
+  CHECK(tokens[1].column == 3); // +
+  CHECK(tokens[2].line == 2);
+  CHECK(tokens[2].column == 3); // b, past two spaces
+  CHECK(tokens[3].line == 3);
+  CHECK(tokens[3].column == 1); // c
+}
+
 TEST_CASE("some lexer token stream", "[lexer]")
 {
   check_tokens(" not x <= 1.0e-4 and y + 5=1", {

@@ -43,7 +43,7 @@ bool Parser::expect_peek_and_advance(TokenTypes expected_type) {
     return true;
   } else {
     add_error("Expected " + std::string(to_string(expected_type)) + ", got " +
-              to_string(peek_token_));
+              to_string(peek_token_) + " at " + position_of(peek_token_));
     return false;
   }
 }
@@ -58,14 +58,16 @@ void Parser::next_token() {
   cur_token_ = peek_token_;
   peek_token_ = lexer_.next_token();
   if (peek_token_is(TokenTypes::Illegal)) {
-    add_error("Illegal token " + to_string(peek_token_));
+    add_error("Illegal token " + to_string(peek_token_) + " at " +
+              position_of(peek_token_));
   }
 }
 
 ast::ExprPtr Parser::parse_expression(Precedence prec) {
   const auto prefix = prefix_parse_fns_.find(cur_token_.type);
   if (prefix == prefix_parse_fns_.end()) {
-    add_error("Unexpected Prefix Token " + to_string(cur_token_));
+    add_error("Unexpected Prefix Token " + to_string(cur_token_) + " at " +
+              position_of(cur_token_));
     throw ParserError(errors_);
   }
   const auto fn = prefix->second;
@@ -94,7 +96,8 @@ ast::ExprPtr Parser::parse_integer_literal() {
   if (const auto value = parse_number<int>(cur_token_.literal)) {
     return ast::make_expression<ast::IntegerLiteral>(*value);
   }
-  add_error("Integer literal out of range: " + cur_token_.literal);
+  add_error("Integer literal out of range: " + cur_token_.literal + " at " +
+            position_of(cur_token_));
   throw ParserError(errors_);
 }
 
@@ -102,7 +105,8 @@ ast::ExprPtr Parser::parse_float_literal() {
   if (const auto value = parse_number<double>(cur_token_.literal)) {
     return ast::make_expression<ast::FloatLiteral>(*value);
   }
-  add_error("Float literal out of range: " + cur_token_.literal);
+  add_error("Float literal out of range: " + cur_token_.literal + " at " +
+            position_of(cur_token_));
   throw ParserError(errors_);
 }
 ast::ExprPtr Parser::parse_prefix_expression() {
@@ -213,7 +217,8 @@ ast::ExprPtr Parser::parse() {
   // TODO: maybe this is a bad idea?
   // The expression must account for the whole input
   if (!peek_token_is(TokenTypes::EndofFile)) {
-    add_error("Unexpected trailing input at " + to_string(peek_token_));
+    add_error("Unexpected trailing input " + to_string(peek_token_) + " at " +
+              position_of(peek_token_));
   }
 
   if (has_errors()) {

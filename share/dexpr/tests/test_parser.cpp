@@ -180,6 +180,22 @@ TEST_CASE("parser: floats print in a form that lexes back as a float",
   CHECK(parse_to_string("1e-09") == "1e-09");
 }
 
+// Printing must produce something that parses back to the same value.
+TEST_CASE("parser: printing a float is the inverse of parsing it", "[parser]") {
+  for (const auto* input : {
+           "1.5", "0.1", "0.0025", "273.15", "3.14159265", "1500.0", "0.0",
+           "1e+30", "1e-09", "1e+40", "1e-40",
+           // Values that only survive at full double precision
+           "1.0000000000000002", "2.2250738585072014e-308",
+           "1.7976931348623157e+308",
+       }) {
+    INFO("Input: " << input);
+    const auto once = parse_to_string(input);
+    const auto twice = parse_to_string(once);
+    CHECK(once == twice);
+  }
+}
+
 TEST_CASE("parser: array literals", "[parser]") {
   check_parse("[]", "[]");
   check_parse("[1]", "[1]");
@@ -264,6 +280,16 @@ TEST_CASE("parser: literals keep double range and precision", "[parser]") {
   // onto the same value.
   check_parse("1.0000000000000002", "1.0000000000000002");
   check_parse("2.2250738585072014e-308", "2.2250738585072014e-308");
+}
+
+TEST_CASE("parser: errors say where they happened", "[parser]") {
+  //                       1234567
+  check_rejected("x + + y", "line 1, column 5");
+  check_rejected("(1 + 2", "line 1, column 7");
+  check_rejected("x y", "line 1, column 3");
+  check_rejected("a @ b", "line 1, column 3");
+  // Position is reported for the offending token, not for the start of input
+  check_rejected("foo(a, b))", "line 1, column 10");
 }
 
 TEST_CASE("some parsed expression", "[parser]") {

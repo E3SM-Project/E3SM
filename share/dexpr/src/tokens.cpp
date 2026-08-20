@@ -15,7 +15,7 @@ std::string_view to_string(TokenTypes type) {
     return "Illegal";
 
   case TokenTypes::Identifier:
-    return "Identifer";
+    return "Identifier";
   case TokenTypes::Integer:
     return "Integer";
   case TokenTypes::Float:
@@ -53,8 +53,6 @@ std::string_view to_string(TokenTypes type) {
     return "Or";
   case TokenTypes::And:
     return "And";
-  case TokenTypes::Concat:
-    return "Concat";
   case TokenTypes::Dot:
     return "Dot";
 
@@ -67,19 +65,18 @@ std::string_view to_string(TokenTypes type) {
     return "RightParen";
   case TokenTypes::Colon:
     return "Colon";
-  case TokenTypes::Semicolon:
-    return "Semicolon";
-  case TokenTypes::Percent:
-    return "Percent";
-  case TokenTypes::DoubleColon:
-    return "DoubleColon";
   case TokenTypes::ArrayLeftBracket:
     return "ArrayLeftBracket";
   case TokenTypes::ArrayRightBracket:
     return "ArrayRightBracket";
-  default:
-    return "UNKNOWN";
   }
+  // No default above: -Wswitch then flags a newly added token type.
+  return "UNKNOWN";
+}
+
+std::string position_of(const Token& tok) {
+  return "line " + std::to_string(tok.line) + ", column " +
+         std::to_string(tok.column);
 }
 
 std::string to_string(const Token& tok) {
@@ -95,16 +92,14 @@ Token identifier_lookup(const Token& tok) {
       folded.begin(), folded.end(), folded.begin(),
       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
-  if (const auto it = keywords.find(folded); it != keywords.end()) {
-    return it->second;
+  for (const auto& keyword : keywords) {
+    if (keyword.name == folded) {
+      return {keyword.type, std::string(keyword.literal)};
+    }
   }
   return tok;
 }
 
-std::ostream& operator<<(std::ostream& os, const Token& tok) {
-  os << to_string(tok);
-  return os;
-}
 std::string binary_op_to_string(const TokenTypes type) {
 
   switch (type) {
