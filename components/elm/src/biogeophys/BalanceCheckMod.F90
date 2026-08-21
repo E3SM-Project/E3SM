@@ -469,6 +469,27 @@ contains
                 snow_sinks(c)  = qflx_sub_snow(c) + qflx_evap_grnd(c) + qflx_snow_melt(c) &
                      + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) + qflx_sl_top_soil(c)
 
+                if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) then
+                   ! With fractional frac_sno_eff on glacier columns, only the
+                   ! snow-covered fraction receives dew/rain and loses sub/evap.
+                   if (do_capsnow(c) .and. .not. use_firn_percolation_and_compaction) then
+                      snow_sources(c) = qflx_prec_grnd(c) &
+                           + frac_sno_eff(c) * (qflx_dew_snow(c) + qflx_dew_grnd(c))
+
+                      snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
+                           + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
+                           + qflx_snow_melt(c) + qflx_sl_top_soil(c)
+                   else
+                      snow_sources(c) = qflx_snow_grnd_col(c) &
+                           + frac_sno_eff(c) * (qflx_rain_grnd_col(c) &
+                           + qflx_dew_snow(c) + qflx_dew_grnd(c))
+
+                      snow_sinks(c) = frac_sno_eff(c) * (qflx_sub_snow(c) + qflx_evap_grnd(c)) &
+                           + qflx_snwcp_ice(c) + qflx_snwcp_liq(c) &
+                           + qflx_snow_melt(c) + qflx_sl_top_soil(c)
+                   endif
+                endif
+
                 if (col_pp%is_lake(c)) then 
                    if (.not. use_firn_percolation_and_compaction) then
                       if ( do_capsnow(c)) then
