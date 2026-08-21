@@ -120,7 +120,7 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
       Int best = -1;
       Real best_error = std::numeric_limits<Real>::max();
       for (Int j = 0; j < nk; ++j) {
-        if (j == exclude) continue;
+        if (j == exclude || T_atm(j) >= target) continue;
         const Real error = std::abs(T_atm(j) - target);
         if (error < best_error) {
           best = j;
@@ -129,7 +129,8 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
       }
       return best;
     };
-    const Int k_homog_freeze = nearest_temperature_level(233.15, -1);
+    const Int k_homog_freeze =
+      nearest_temperature_level(233.15, k_rain_collection);
     const Int k_dep_cond_freeze = nearest_temperature_level(258.15, k_homog_freeze);
 
     // qr is intentionally zero at the collection level.
