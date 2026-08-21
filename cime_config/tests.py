@@ -51,6 +51,7 @@ _TESTS = {
             "SMS_Ly2_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
             "ERS.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP",
             "ERS.ne30pg2_r05_EC30to60E2r2.I20TRWCCNPPHSWFMCROP.elm-elm_wc_I20TRWCCNPPHSWFMCROP",
+            "PEM_Ld3.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP--pemod-omp1",
             "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
             "ERS_Ld150.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
