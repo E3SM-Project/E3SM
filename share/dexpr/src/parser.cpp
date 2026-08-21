@@ -1,8 +1,8 @@
-#include <dexpr/parser.hpp>
+#include <charconv>
 #include <dexpr/ast.hpp>
+#include <dexpr/parser.hpp>
 #include <dexpr/precedences.hpp>
 #include <dexpr/tokens.hpp>
-#include <charconv>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -63,22 +63,106 @@ void Parser::next_token() {
   }
 }
 
+// prefix_parse_fns_{{
+// }},
+// infix_parse_fns_{{
+// }}
+
+Parser::PrefixFn Parser::get_prefix_parse_fn(TokenTypes tok_type) {
+  switch (tok_type) {
+  case TokenTypes::Identifier:
+    return &Parser::parse_identifier;
+  case TokenTypes::Integer:
+    return &Parser::parse_integer_literal;
+  case TokenTypes::Float:
+    return &Parser::parse_float_literal;
+  case TokenTypes::String:
+    return &Parser::parse_string_literal;
+  case TokenTypes::Minus:
+  case TokenTypes::Bang:
+    return &Parser::parse_prefix_expression;
+  case TokenTypes::ArrayLeftBracket:
+    return &Parser::parse_array_expression;
+  case TokenTypes::LeftParen:
+    return &Parser::parse_grouped_expression;
+  default:
+    return nullptr;
+  }
+}
+
+Parser::InfixFn Parser::get_infix_parse_fn(TokenTypes tok_type) {
+  switch (tok_type) {
+  case TokenTypes::Plus:
+  case TokenTypes::Minus:
+  case TokenTypes::Asterisk:
+  case TokenTypes::Exp:
+  case TokenTypes::Assign:
+  case TokenTypes::Slash:
+  case TokenTypes::Equal:
+  case TokenTypes::NotEqual:
+  case TokenTypes::GreaterThan:
+  case TokenTypes::GreaterEqual:
+  case TokenTypes::LessThan:
+  case TokenTypes::LessEq:
+  case TokenTypes::Or:
+  case TokenTypes::And:
+  case TokenTypes::Dot:
+    return &Parser::parse_infix_expression;
+  case TokenTypes::LeftParen:
+    return &Parser::parse_function_expression;
+  default:
+    return nullptr;
+  }
+}
+
+/**
+ * @brief Parses an expression using Pratt/operator-precedence parsing.
+ *
+ * Parsing begins by dispatching on the current token to construct the initial
+ * left-hand expression using the appropriate prefix parse function. The parser
+ * then examines subsequent tokens and extends that expression with infix
+ * operations if the next operator has **higher** precedence.
+ *
+ * The Precedence prec argument sets the minimum binding precedence for
+ * this invocation. Parsing stops when the next token has equal or lower
+ * precedence, allowing the calling parse function to retain ownership of that
+ * operator and thereby determine the grouping of the resulting AST.
+ *
+ * For example, when parsing:
+ * @code
+ * x + y * z
+ * @endcode
+ *
+ * the multiplication operator has higher precedence than addition, so the
+ * right-hand side of the addition is parsed as:
+ * @code
+ * y * z
+ * @endcode
+ *
+ * producing the grouping:
+ * @code
+ * x + (y * z)
+ * @endcode
+ *
+ * @param prec Minimum precedence required for subsequent operators to bind to
+ *             the expression currently being parsed.
+ * @return Pointer to the root expression node of the parsed AST subtree.
+ * @throws ParserError If the current token cannot begin an expression.
+ */
 ast::ExprPtr Parser::parse_expression(Precedence prec) {
-  const auto prefix = prefix_parse_fns_.find(cur_token_.type);
-  if (prefix == prefix_parse_fns_.end()) {
+  const auto prefix_fn = get_prefix_parse_fn(cur_token_.type);
+  if (prefix_fn == nullptr) {
     add_error("Unexpected Prefix Token " + to_string(cur_token_) + " at " +
               position_of(cur_token_));
     throw ParserError(errors_);
   }
-  const auto fn = prefix->second;
-  auto left_expr = (this->*fn)();
+  auto left_expr = (this->*prefix_fn)();
 
   while (!peek_token_is(TokenTypes::EndofFile) && prec < peek_precedence()) {
-    const auto infix_it = infix_parse_fns_.find(peek_token_.type);
-    if (infix_it == infix_parse_fns_.end()) {
+    const auto infix_fn = get_infix_parse_fn(peek_token_.type);
+    if (infix_fn == nullptr) {
       return left_expr;
     }
-    const auto infix_fn = infix_it->second;
     next_token();
     left_expr = (this->*infix_fn)(std::move(left_expr));
   }
@@ -130,7 +214,7 @@ ast::ExprPtr Parser::parse_grouped_expression() {
 
 ast::ExprPtr Parser::parse_infix_expression(ast::ExprPtr left_expr) {
   const auto op = cur_token_.type;
-  const auto prec = cur_precedence(op);
+  const auto prec = right_binding_precedence(op);
   next_token();
 
   auto right_expr = parse_expression(prec);
@@ -175,47 +259,24 @@ ast::ExprPtr Parser::parse_array_expression() {
       parse_list_of_expressions(TokenTypes::ArrayRightBracket));
 }
 
-Parser::Parser(Lexer lexer)
-    : lexer_{std::move(lexer)},
-      prefix_parse_fns_{{
-          {TokenTypes::Identifier, &Parser::parse_identifier},
-          {TokenTypes::Integer, &Parser::parse_integer_literal},
-          {TokenTypes::Float, &Parser::parse_float_literal},
-          {TokenTypes::String, &Parser::parse_string_literal},
-          {TokenTypes::Minus, &Parser::parse_prefix_expression},
-          {TokenTypes::Bang, &Parser::parse_prefix_expression},
-          {TokenTypes::ArrayLeftBracket, &Parser::parse_array_expression},
-          {TokenTypes::LeftParen, &Parser::parse_grouped_expression},
-      }},
-      infix_parse_fns_{{
-          {TokenTypes::Plus, &Parser::parse_infix_expression},
-          {TokenTypes::Minus, &Parser::parse_infix_expression},
-          {TokenTypes::Asterisk, &Parser::parse_infix_expression},
-          {TokenTypes::Exp, &Parser::parse_infix_expression},
-          {TokenTypes::Assign, &Parser::parse_infix_expression},
-          {TokenTypes::Slash, &Parser::parse_infix_expression},
-          {TokenTypes::Equal, &Parser::parse_infix_expression},
-          {TokenTypes::NotEqual, &Parser::parse_infix_expression},
-          {TokenTypes::GreaterThan, &Parser::parse_infix_expression},
-          {TokenTypes::GreaterEqual, &Parser::parse_infix_expression},
-          {TokenTypes::LessThan, &Parser::parse_infix_expression},
-          {TokenTypes::LessEq, &Parser::parse_infix_expression},
-          {TokenTypes::Or, &Parser::parse_infix_expression},
-          {TokenTypes::And, &Parser::parse_infix_expression},
-          {TokenTypes::Dot, &Parser::parse_infix_expression},
-          {TokenTypes::LeftParen, &Parser::parse_function_expression},
-      }} {
+Parser::Parser(Lexer lexer) : lexer_{std::move(lexer)} {
   next_token();
   next_token();
 }
 
+/**
+ * @brief Public entry point to parse an expression.
+ *
+ * Parses the string given to the Lexer used to construct the parser.
+ *
+ * @return Pointer to root of the AST.
+ * @throws ParserError
+ * @see Parser::parse_expression
+ * @warning Assumes input has only **one** expression
+ */
 ast::ExprPtr Parser::parse() {
-  // For now i'll assume we're parsing one expression statement at a time
-  // and nothing more complicated
   auto expr = parse_expression(Precedence::Lowest);
 
-  // TODO: maybe this is a bad idea?
-  // The expression must account for the whole input
   if (!peek_token_is(TokenTypes::EndofFile)) {
     add_error("Unexpected trailing input " + to_string(peek_token_) + " at " +
               position_of(peek_token_));

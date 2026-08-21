@@ -1,3 +1,13 @@
+/**
+ * @file lexer.hpp
+ * @brief Defines the Lexer which turns a user supplied string into `tokens`
+ *
+ * The Lexer accepts a string input.
+ * At the request of the Parser,
+ * The input is scanned character by character
+ * and tokenized based on the tokens defined in 'tokens.hpp'.
+ *
+ */
 #ifndef DEXPR_LEXER_HPP
 #define DEXPR_LEXER_HPP
 
@@ -37,9 +47,8 @@ private:
   char peek_char() const;
   void read_char();
   Token make_token(TokenTypes kind) const;
-
 };
 
-}
+} // namespace dexpr
 
 #endif

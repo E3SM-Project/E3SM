@@ -1,3 +1,13 @@
+/**
+ * @file parser.hpp
+ * @brief Defines the Parser for diagnostic expressions.
+ *
+ * The Parser receives tokens from the lexer and contains the rules
+ * for generating the Abstract Syntax Tree (AST). A malformed expression will
+ * generate a ParserError.
+ *
+ * The grammar rules for order-of-operations are encoded in precedences.hpp
+*/
 #ifndef DEXPR_PARSER_HPP
 #define DEXPR_PARSER_HPP
 
@@ -50,8 +60,8 @@ private:
   // argument
   using InfixFn = ast::ExprPtr (Parser::*)(ast::ExprPtr);
 
-  std::unordered_map<TokenTypes, PrefixFn> prefix_parse_fns_;
-  std::unordered_map<TokenTypes, InfixFn> infix_parse_fns_;
+  PrefixFn get_prefix_parse_fn(TokenTypes tok_type);
+  InfixFn get_infix_parse_fn(TokenTypes tok_type);
 
   // Functions
   void add_error(std::string msg);

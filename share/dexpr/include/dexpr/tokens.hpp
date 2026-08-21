@@ -1,3 +1,8 @@
+/**
+ * @file tokens.hpp
+ * @brief Defines the all the tokens that may be produced by the lexer and
+ * consumed by the Parser
+ */
 #ifndef DEXPR_TOKENS_HPP
 #define DEXPR_TOKENS_HPP
 
@@ -60,7 +65,7 @@ std::string to_string(const Token& tok);
 // constexpr rather than a namespace-scope const container: the latter has
 // internal linkage, so it would be built once per translation unit.
 struct Keyword {
-  std::string_view name;    // spelling, always lower case; matching folds first
+  std::string_view name; // spelling, always lower case; matching folds first
   TokenTypes type;
   std::string_view literal; // what the resulting token carries
 };
@@ -73,7 +78,7 @@ inline constexpr std::array<Keyword, 3> keywords{{
 Token identifier_lookup(const Token& tok);
 
 std::string binary_op_to_string(const TokenTypes type);
-std::string unary_op_to_string(const TokenTypes type) ;
+std::string unary_op_to_string(const TokenTypes type);
 
 } // namespace dexpr
 

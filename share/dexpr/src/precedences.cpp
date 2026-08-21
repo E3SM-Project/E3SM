@@ -1,18 +1,17 @@
-#include <dexpr/tokens.hpp>
 #include <dexpr/precedences.hpp>
+#include <dexpr/tokens.hpp>
 #include <stdexcept>
 
 namespace dexpr::parser {
 
-
-  // Lowest,
-  // Equal,
-  // LessGreater,
-  // Sum,
-  // Product,
-  // Prefix,
-  // Bounds,
-  // Call,
+// Lowest,
+// Equal,
+// LessGreater,
+// Sum,
+// Product,
+// Prefix,
+// Bounds,
+// Call,
 
 Precedence token_precedence(TokenTypes type) {
   switch (type) {
@@ -44,9 +43,6 @@ Precedence token_precedence(TokenTypes type) {
   case TokenTypes::Exp:
     return Precedence::Exponent;
 
-  case TokenTypes::Colon:
-    return Precedence::Bounds;
-
   case TokenTypes::Dot:
   case TokenTypes::LeftParen:
     return Precedence::Call;
@@ -54,10 +50,9 @@ Precedence token_precedence(TokenTypes type) {
   default:
     return Precedence::Lowest;
   }
-
 }
 
-Precedence cur_precedence(TokenTypes type) {
+Precedence right_binding_precedence(TokenTypes type) {
   const auto prec = token_precedence(type);
 
   switch (type) {
