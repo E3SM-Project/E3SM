@@ -376,6 +376,7 @@ module FireDataBaseType
    
       call elm_domain_mct (bounds, dom_elm)
    
+      write(iulog,*) " SHR STRDATA CREATE!!"
       call shr_strdata_create(this%sdat_lnfm,name="clmlnfm", &
            pio_subsystem=pio_subsystem,                      &
            pio_iotype=shr_pio_getiotype(inst_name),          &
@@ -401,7 +402,8 @@ module FireDataBaseType
            tintalgo=lightng_tintalgo,                        &
            mapalgo=lightngmapalgo,                           &
            calendar=get_calendar(),                          &
-           taxmode='cycle'                            )
+           taxmode='cycle' , &
+           readmode='full_file')
    
       if (masterproc) then
          call shr_strdata_print(this%sdat_lnfm,'Lightning data')
