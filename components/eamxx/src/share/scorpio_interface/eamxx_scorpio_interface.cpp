@@ -1042,7 +1042,7 @@ void set_dims_decomp (const std::string& filename,
   // Check that offsets are less than the global dimension length
   int dims_prod = 1;
   for (const auto& n : dimnames) {
-    const auto& dim = impl::get_dim(filename,n,"scorpio::set_dims_decomp");
+    auto& dim = impl::get_dim(filename,n,"scorpio::set_dims_decomp");
     EKAT_REQUIRE_MSG (not dim.unlimited,
         "Error! Cannot partition an unlimited dimension.\n"
         " - filename: " + filename + "\n"
@@ -1307,9 +1307,9 @@ void mark_dim_as_time (const std::string& filename, const std::string& dimname)
 
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time) {
-  const auto& f = impl::get_file(filename,"scorpio::update_time");
+  auto& f = impl::get_file(filename,"scorpio::update_time");
         auto& time_dim = *f.time_dim;
-  const auto& var = impl::get_var(filename,time_dim.name,"scorpio::update_time");
+  auto& var = impl::get_var(filename,time_dim.name,"scorpio::update_time");
 
   PIO_Offset index = time_dim.length;
   int err = PIOc_put_var1(f.ncid,var.ncid,&index,&time);
@@ -1350,7 +1350,7 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
       " - filename: " + filename + "\n"
       " - varname : " + varname + "\n");
 
-  const auto& f = impl::get_file(filename,"scorpio::read_var");
+  auto& f = impl::get_file(filename,"scorpio::read_var");
         auto& var = impl::get_var(filename,varname,"scorpio::read_var");
 
   // If the input pointer type already matches var.dtype, this is a no-op
@@ -1432,7 +1432,7 @@ void write_var (const std::string &filename, const std::string &varname, const T
       " - filename: " + filename + "\n"
       " - varname : " + varname + "\n");
 
-  const auto& f = impl::get_file(filename,"scorpio::write_var");
+  auto& f = impl::get_file(filename,"scorpio::write_var");
   auto& var = impl::get_var(filename,varname,"scorpio::write_var");
 
   // If the input pointer type already matches var.dtype, this is a no-op
@@ -1535,7 +1535,7 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
   if (varname=="GLOBAL") {
     varid = PIO_GLOBAL;
   } else {
-    const auto& var = impl::get_var(filename,varname,"scorpio::has_attribute");
+    auto& var = impl::get_var(filename,varname,"scorpio::has_attribute");
     varid = var.ncid;
   }
 
@@ -1664,7 +1664,7 @@ void set_attribute (const std::string& filename,
                     const std::string& attname,
                     const T& att)
 {
-  const auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
+  auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
 
   int varid;
   if (varname=="GLOBAL") {
