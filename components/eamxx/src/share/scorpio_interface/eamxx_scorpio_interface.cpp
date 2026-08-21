@@ -12,6 +12,7 @@
 #include <set>
 #include <numeric>
 #include <functional>
+#include <string_view>
 
 namespace scream {
 namespace scorpio {
@@ -255,50 +256,55 @@ struct PeekFile {
   bool            was_open;
 };
 
-PIOFile& get_file (const std::string& filename,
-                   const std::string& context)
+PIOFile& get_file (std::string_view filename,
+                   std::string_view context)
 {
   auto& s = ScorpioSession::instance();
+  const std::string filename_str(filename);
 
-  EKAT_REQUIRE_MSG (s.files.count(filename)==1,
+  EKAT_REQUIRE_MSG (s.files.count(filename_str)==1,
       "Error! Could not retrieve the file. File not open.\n"
-      " - filename: " + filename + "\n"
+      " - filename: " + filename_str + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return s.files.at(filename);
+  return s.files.at(filename_str);
 }
 
-PIODim& get_dim (const std::string& filename,
-                 const std::string& dimname,
-                 const std::string& context)
+PIODim& get_dim (std::string_view filename,
+                 std::string_view dimname,
+                 std::string_view context)
 {
   const auto& f = get_file(filename,context);
-  EKAT_REQUIRE_MSG (f.dims.count(dimname)==1,
+  const std::string filename_str(filename);
+  const std::string dimname_str(dimname);
+  EKAT_REQUIRE_MSG (f.dims.count(dimname_str)==1,
       "Error! Could not retrieve dimension. Dimension not found.\n"
-      " - filename: " + filename + "\n"
-      " - dimname : " + dimname + "\n"
+      " - filename: " + filename_str + "\n"
+      " - dimname : " + dimname_str + "\n"
       " - dims on file: " + print_map_keys(f.dims) + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return *f.dims.at(dimname);
+  return *f.dims.at(dimname_str);
 }
 
-PIOVar& get_var (const std::string& filename,
-                 const std::string& varname,
-                 const std::string& context)
+PIOVar& get_var (std::string_view filename,
+                 std::string_view varname,
+                 std::string_view context)
 {
   const auto& f = get_file(filename,context);
-  EKAT_REQUIRE_MSG (f.vars.count(varname)==1,
+  const std::string filename_str(filename);
+  const std::string varname_str(varname);
+  EKAT_REQUIRE_MSG (f.vars.count(varname_str)==1,
       "Error! Could not retrieve variable. Variable not found.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + varname + "\n"
+      " - filename: " + filename_str + "\n"
+      " - varname : " + varname_str + "\n"
       " - vars on file : " + print_map_keys(f.vars) + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return *f.vars.at(varname);
+  return *f.vars.at(varname_str);
 }
 
 } // namespace impl
@@ -1042,7 +1048,7 @@ void set_dims_decomp (const std::string& filename,
   // Check that offsets are less than the global dimension length
   int dims_prod = 1;
   for (const auto& n : dimnames) {
-    auto& dim = impl::get_dim(filename,n,"scorpio::set_dims_decomp");
+    const auto& dim = impl::get_dim(filename,n,"scorpio::set_dims_decomp");
     EKAT_REQUIRE_MSG (not dim.unlimited,
         "Error! Cannot partition an unlimited dimension.\n"
         " - filename: " + filename + "\n"
