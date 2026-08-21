@@ -21,6 +21,7 @@ MODULE WRM_modules
   use rof_cpl_indices, only : nt_nliq
   use mct_mod
   use perf_mod       , only : t_startf, t_stopf
+  use shr_reprosum_mod, only : shr_reprosum_calc
      
   implicit none
   private
@@ -738,8 +739,16 @@ MODULE WRM_modules
      logical :: done
      type(mct_aVect) :: aVect_wdG, aVect_wgG
      real(r8),allocatable :: flow_vol(:)    ! dam storage amount
-     real(r8),allocatable :: dam_uptake(:)  ! dam uptake from gridcells locally
      real(r8),allocatable :: dam_uptake_sum(:)  ! dam uptake from gridcells sum over all pes
+     !--- Individual cell-level contributions to each dam's uptake, sparse-packed
+     !--- for the reproducible sum below. uptake_pack(:,gdam) holds this task's
+     !--- separate 'supply' amounts for dam gdam, one per (gridcell,dependency)
+     !--- pair, zero-padded. They are NOT pre-summed into a per-dam local total:
+     !--- see the comment at the shr_reprosum_calc call.
+     real(r8),allocatable :: uptake_pack(:,:)   ! (max_nctb,NDam) individual contributions
+     integer ,allocatable :: nctb(:)            ! per-dam upper bound on this task's contributions
+     integer ,allocatable :: idx_ct(:)          ! per-dam running slot index while packing
+     integer :: max_nctb                        ! max over dams of nctb, = nsummands
      real(r8),allocatable :: fracsum(:)     ! sum of dam fraction on gridcells
      real(r8) :: demand, demand_orig, supply, budget_term(4),budget_sum(4),budget
      real(r8) :: flow_vol_ratio = 0.9_r8    ! amount of erout for flow_vol
@@ -760,8 +769,27 @@ MODULE WRM_modules
         enddo
      endif
 
-     allocate(dam_uptake(ctlSubwWRM%NDam))
      allocate(dam_uptake_sum(ctlSubwWRM%NDam))
+
+     !---------------------------
+     ! Count, per dam, an upper bound on the number of separate contributions
+     ! this task can make to it: one per (gridcell, dependency) pair naming that
+     ! dam. This sets nsummands for the sparse-packed reproducible sum below. It
+     ! depends only on the static WRM dependency lists, so it is loop-invariant.
+     !---------------------------
+
+     allocate(nctb(ctlSubwWRM%NDam))
+     allocate(idx_ct(ctlSubwWRM%NDam))
+     nctb = 0
+     do iunit = begr, endr
+        do mdam = 1,WRMUnit%myDamNum(iunit)
+           gdam = WRMUnit%myDam(mdam,iunit)
+           nctb(gdam) = nctb(gdam) + 1
+        enddo
+     enddo
+     max_nctb = max(1, maxval(nctb))
+     allocate(uptake_pack(max_nctb,ctlSubwWRM%NDam))
+
      allocate(fracsum(begr:endr))
      allocate(flow_vol(ctlSubwWRM%LocalNumDam)) 
 
@@ -880,12 +908,14 @@ MODULE WRM_modules
         ! 3. if any sum of dam fraction < 1.0 for a gridcell, then provide fraction of 
         !    demand to gridcell prorated by the dam fraction of each dam.
         !
-        ! dam_uptake is the amount of water removed from the dam, it's a global array.
-        ! Gridcells from different tasks will accumluate the amount of water removed
-        ! from each dam in this array.
+        ! uptake_pack holds the amounts of water removed from each dam, indexed by
+        ! the global dam id. Gridcells from different tasks contribute to the same
+        ! dam; each contribution is stored in its own slot rather than accumulated,
+        ! so that the sum below can be made reproducible.
         !---------------------------
 
-        dam_uptake = 0._r8
+        uptake_pack = 0._r8
+        idx_ct      = 0
 
         !---------------------------
         ! 1st case, provide full demand to gridcell
@@ -905,7 +935,8 @@ MODULE WRM_modules
                     if (aVect_wdG%rAttr(1,gdam) > 1.0_r8) then
 ! changed from max to min NV
                        supply = min(demand_orig / float(cnt), StorWater%demand(iunit))
-                       dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       idx_ct(gdam) = idx_ct(gdam) + 1
+                       uptake_pack(idx_ct(gdam),gdam) = supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
                     endif
@@ -946,7 +977,8 @@ MODULE WRM_modules
                        gdam = WRMUnit%myDam(mdam,iunit)
 !first max changed to min NV
                        supply = min(demand_orig*aVect_wdG%rAttr(1,gdam)/fracsum(iunit), StorWater%demand(iunit))
-                       dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       idx_ct(gdam) = idx_ct(gdam) + 1
+                       uptake_pack(idx_ct(gdam),gdam) = supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
                     enddo
@@ -965,7 +997,8 @@ MODULE WRM_modules
                        gdam = WRMUnit%myDam(mdam,iunit)
 !first max changed to min NV
                        supply = min(demand_orig*aVect_wdG%rAttr(1,gdam), StorWater%demand(iunit))
-                       dam_uptake(gdam) = dam_uptake(gdam) + supply
+                       idx_ct(gdam) = idx_ct(gdam) + 1
+                       uptake_pack(idx_ct(gdam),gdam) = supply
                        StorWater%demand(iunit) = StorWater%demand(iunit) - supply
                        StorWater%supply(iunit) = StorWater%supply(iunit) + supply
                     enddo
@@ -990,13 +1023,40 @@ MODULE WRM_modules
         endif
 
         !---------------------------
-        ! Sum the dam_update across all tasks on all tasks.
+        ! Sum the dam uptake across all tasks on all tasks.
         ! Reduce the flow_vol by the amount of water provided to the gridcells
+        !
+        ! This sum MUST be reproducible. It feeds erout directly: the residual
+        ! flow_vol is converted back to main channel flow below, so
+        !    erout_final = erout_initial + dam_uptake_sum(damID)/theDeltaT
+        ! exactly. shr_mpi_sum is a plain MPI_ALLREDUCE, which is bit-reproducible
+        ! only for a fixed reduction tree; MPI may choose a different tree, and a
+        ! different tree is a different rounding of the same addends. That made
+        ! this sum, and hence erout, differ between the two legs of an exact
+        ! restart test even though every input was bit-identical.
+        !
+        ! Each of the NDam dam indices is its own field (nflds = NDam), and every
+        ! individual cell-level contribution is a separate summand. Do NOT pass one
+        ! pre-summed value per task instead: shr_reprosum_calc is invariant to the
+        ! order and grouping only of the summands it is actually handed, so a local
+        ! per-dam subtotal built with += in gridcell order would stay
+        ! decomposition-dependent and fail PEM. That was the mistake in commit
+        ! 8cb9508, fixed by a28ca9c for the qgwl sum in RtmMod.F90.
         !---------------------------
+
+        ! nctb is an upper bound because all three cases above iterate the same
+        ! (gridcell, dependency) pairs under a guard, so idx_ct cannot exceed it.
+        ! Assert rather than trust: a silent overflow would corrupt the sum.
+        if (any(idx_ct > nctb)) then
+           write(iulog,*) subname,' ERROR uptake_pack slot overflow ', &
+                          maxval(idx_ct), max_nctb
+           call shr_sys_abort(subname//' ERROR uptake_pack slot overflow')
+        endif
 
         call t_startf('moswrm_ERFlow_sum')
         dam_uptake_sum = 0._r8
-        call shr_mpi_sum(dam_uptake,dam_uptake_sum,mpicom_rof,'wrm dam_uptake',all=.true.)
+        call shr_reprosum_calc(uptake_pack, dam_uptake_sum, max_nctb, max_nctb, &
+                               ctlSubwWRM%NDam, commid=mpicom_rof)
         call t_stopf('moswrm_ERFlow_sum')
 
         do idam = 1,ctlSubwWRM%LocalNumDam
@@ -1039,8 +1099,10 @@ MODULE WRM_modules
         Trunoff%erout(iunit,nt_nliq) =  Trunoff%erout(iunit,nt_nliq) - flow_vol(idam) / (theDeltaT)
      enddo
      deallocate(flow_vol)
-     deallocate(dam_uptake)
      deallocate(dam_uptake_sum)
+     deallocate(uptake_pack)
+     deallocate(nctb)
+     deallocate(idx_ct)
      deallocate(fracsum)
 
      if (check_local_budget) then
