@@ -162,6 +162,51 @@ macro(build_model COMP_CLASS COMP_NAME)
       set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
       set(SOURCES ${SOURCES} ${RRTMGPXX_F90})
     endif()
+
+    # When using the Kokkos (hommexx) dycore, homme sources are compiled
+    # directly from the Filepath-listed directories, but homme/CMakeLists.txt
+    # is never invoked. We therefore need to generate Hommexx_config.h here,
+    # since homme CXX files include it.
+    if (USE_KOKKOS)
+      message(STATUS "Generating Hommexx_config.h for EAM hommexx build")
+      set(HOMME_SOURCE_DIR "${PROJECT_SOURCE_DIR}/homme")
+      set(HOMME_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/homme")
+
+      # Determine vector size and execution space based on GPU/CPU target
+      if (USE_CUDA)
+        set(HOMMEXX_CUDA_SPACE ON)
+        set(HOMMEXX_ENABLE_GPU ON)
+        set(HOMMEXX_VECTOR_SIZE 1)
+      elseif (USE_HIP)
+        set(HOMMEXX_HIP_SPACE ON)
+        set(HOMMEXX_ENABLE_GPU ON)
+        set(HOMMEXX_VECTOR_SIZE 1)
+      else()
+        set(HOMMEXX_DEFAULT_SPACE ON)
+        set(HOMMEXX_VECTOR_SIZE 8)
+      endif()
+      set(HOMMEXX_MPI_ON_DEVICE 0)
+      set(HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8)
+      set(HOMMEXX_CUDA_MAX_WARP_PER_TEAM 16)
+      string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
+      if (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
+        set(HOMMEXX_DEBUG ON)
+      endif()
+
+      # Create output directory and generate Hommexx_config.h from template
+      file(MAKE_DIRECTORY "${HOMME_BINARY_DIR}/src/share/cxx")
+      configure_file(
+        "${HOMME_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in"
+        "${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h"
+      )
+
+      # Add the directory containing the generated header to includes
+      list(APPEND INCLDIR "${HOMME_BINARY_DIR}/src/share/cxx")
+
+      # Without HOMMEXX_CONFIG_IS_CMAKE, Config.hpp won't include Hommexx_config.h,
+      # causing HOMMEXX_DEFAULT_SPACE to be set instead of HOMMEXX_CUDA_SPACE on GPU.
+      string(APPEND CPPDEFS " -DHOMMEXX_CONFIG_IS_CMAKE")
+    endif()
   endif()
 
   #-------------------------------------------------------------------------------
