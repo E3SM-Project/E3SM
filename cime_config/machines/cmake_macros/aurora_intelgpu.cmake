@@ -14,3 +14,6 @@ string(APPEND OMEGA_SYCL_EXE_LINKER_FLAGS " -Xsycl-target-backend \"-device pvc\
 set(SCREAM_MPI_ON_DEVICE ON CACHE STRING "")
 
 set(USE_SYCL "TRUE")
+
+# Override the value TRUE set by intelgpu.cmake (via intel.cmake)
+set(E3SM_LINK_WITH_FORTRAN "FALSE")
