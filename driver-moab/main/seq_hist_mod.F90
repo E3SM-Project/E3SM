@@ -42,11 +42,12 @@ module seq_hist_mod
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_ax
 
-  use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid
+  use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid, mbgxid
   use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields,seq_flds_dom_fields
   use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2a_fields, seq_flds_x2i_fields
   use seq_flds_mod, only: seq_flds_x2l_fields, seq_flds_x2r_fields
+  use seq_flds_mod, only: seq_flds_g2x_fields, seq_flds_x2g_fields
   use shr_moab_mod,      only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
 
   use component_type_mod
@@ -390,17 +391,16 @@ contains
              deallocate(mask)
           endif
 
-!          ! Ready to uncomment once mbgxid exists
-!          if (glc_present) then
-!             call seq_io_write(hist_file, mbgxid, 'domg',  &
-!                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, dims2do=latlonid)
-!             call seq_io_write(hist_file, mbgxid, 'fracg',  &
-!                  'gfrac:lfrac', whead=whead, wdata=wdata, dims2din=latlonid)
-!             call seq_io_write(hist_file, mbgxid, 'g2x', &
-!                  trim(seq_flds_g2x_fields), nt=1, whead=whead, wdata=wdata, dims2din=latlonid)
-!             call seq_io_write(hist_file, mbgxid, 'x2g', &
-!                  trim(seq_flds_x2g_fields), nt=1, whead=whead, wdata=wdata, dims2din=latlonid)
-!          endif
+          if (glc_present) then
+             call seq_io_write(hist_file, mbgxid, 'domg',  &
+                  trim(seq_flds_dom_fields), whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2do=latlonid)
+             call seq_io_write(hist_file, mbgxid, 'fracg',  &
+                  'gfrac:lfrac', whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2din=latlonid)
+             call seq_io_write(hist_file, mbgxid, 'g2x', &
+                  trim(seq_flds_g2x_fields), whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2din=latlonid)
+             call seq_io_write(hist_file, mbgxid, 'x2g', &
+                  trim(seq_flds_x2g_fields), whead=whead, wdata=wdata, nx=glc_nx, ny=glc_ny, nt=1, dims2din=latlonid)
+          endif
 
           !MOAB TODO:  convert this
 !         if (wav_present) then
