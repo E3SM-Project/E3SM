@@ -12,6 +12,7 @@
 #include <set>
 #include <numeric>
 #include <functional>
+#include <string_view>
 
 namespace scream {
 namespace scorpio {
@@ -255,50 +256,55 @@ struct PeekFile {
   bool            was_open;
 };
 
-PIOFile& get_file (const std::string& filename,
-                   const std::string& context)
+PIOFile& get_file (std::string_view filename,
+                   std::string_view context)
 {
   auto& s = ScorpioSession::instance();
+  const std::string filename_str(filename);
 
-  EKAT_REQUIRE_MSG (s.files.count(filename)==1,
+  EKAT_REQUIRE_MSG (s.files.count(filename_str)==1,
       "Error! Could not retrieve the file. File not open.\n"
-      " - filename: " + filename + "\n"
+      " - filename: " + filename_str + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return s.files.at(filename);
+  return s.files.at(filename_str);
 }
 
-PIODim& get_dim (const std::string& filename,
-                 const std::string& dimname,
-                 const std::string& context)
+PIODim& get_dim (std::string_view filename,
+                 std::string_view dimname,
+                 std::string_view context)
 {
   const auto& f = get_file(filename,context);
-  EKAT_REQUIRE_MSG (f.dims.count(dimname)==1,
+  const std::string filename_str(filename);
+  const std::string dimname_str(dimname);
+  EKAT_REQUIRE_MSG (f.dims.count(dimname_str)==1,
       "Error! Could not retrieve dimension. Dimension not found.\n"
-      " - filename: " + filename + "\n"
-      " - dimname : " + dimname + "\n"
+      " - filename: " + filename_str + "\n"
+      " - dimname : " + dimname_str + "\n"
       " - dims on file: " + print_map_keys(f.dims) + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return *f.dims.at(dimname);
+  return *f.dims.at(dimname_str);
 }
 
-PIOVar& get_var (const std::string& filename,
-                 const std::string& varname,
-                 const std::string& context)
+PIOVar& get_var (std::string_view filename,
+                 std::string_view varname,
+                 std::string_view context)
 {
   const auto& f = get_file(filename,context);
-  EKAT_REQUIRE_MSG (f.vars.count(varname)==1,
+  const std::string filename_str(filename);
+  const std::string varname_str(varname);
+  EKAT_REQUIRE_MSG (f.vars.count(varname_str)==1,
       "Error! Could not retrieve variable. Variable not found.\n"
-      " - filename: " + filename + "\n"
-      " - varname : " + varname + "\n"
+      " - filename: " + filename_str + "\n"
+      " - varname : " + varname_str + "\n"
       " - vars on file : " + print_map_keys(f.vars) + "\n"
       "Context:\n"
-      " " + context + "\n");
+      " " + std::string(context) + "\n");
 
-  return *f.vars.at(varname);
+  return *f.vars.at(varname_str);
 }
 
 } // namespace impl
@@ -1307,9 +1313,9 @@ void mark_dim_as_time (const std::string& filename, const std::string& dimname)
 
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time) {
-  const auto& f = impl::get_file(filename,"scorpio::update_time");
+  auto& f = impl::get_file(filename,"scorpio::update_time");
         auto& time_dim = *f.time_dim;
-  const auto& var = impl::get_var(filename,time_dim.name,"scorpio::update_time");
+  auto& var = impl::get_var(filename,time_dim.name,"scorpio::update_time");
 
   PIO_Offset index = time_dim.length;
   int err = PIOc_put_var1(f.ncid,var.ncid,&index,&time);
@@ -1350,7 +1356,7 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
       " - filename: " + filename + "\n"
       " - varname : " + varname + "\n");
 
-  const auto& f = impl::get_file(filename,"scorpio::read_var");
+  auto& f = impl::get_file(filename,"scorpio::read_var");
         auto& var = impl::get_var(filename,varname,"scorpio::read_var");
 
   // If the input pointer type already matches var.dtype, this is a no-op
@@ -1432,7 +1438,7 @@ void write_var (const std::string &filename, const std::string &varname, const T
       " - filename: " + filename + "\n"
       " - varname : " + varname + "\n");
 
-  const auto& f = impl::get_file(filename,"scorpio::write_var");
+  auto& f = impl::get_file(filename,"scorpio::write_var");
   auto& var = impl::get_var(filename,varname,"scorpio::write_var");
 
   // If the input pointer type already matches var.dtype, this is a no-op
@@ -1535,7 +1541,7 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
   if (varname=="GLOBAL") {
     varid = PIO_GLOBAL;
   } else {
-    const auto& var = impl::get_var(filename,varname,"scorpio::has_attribute");
+    auto& var = impl::get_var(filename,varname,"scorpio::has_attribute");
     varid = var.ncid;
   }
 
@@ -1664,7 +1670,7 @@ void set_attribute (const std::string& filename,
                     const std::string& attname,
                     const T& att)
 {
-  const auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
+  auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
 
   int varid;
   if (varname=="GLOBAL") {

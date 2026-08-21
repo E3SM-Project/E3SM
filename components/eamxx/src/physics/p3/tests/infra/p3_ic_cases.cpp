@@ -1,7 +1,10 @@
 #include "p3_ic_cases.hpp"
 #include "physics_constants.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <ekat_assert.hpp>
+#include <limits>
 
 namespace scream {
 namespace p3 {
@@ -12,6 +15,7 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
   using consts = scream::physics::Constants<Real>;
 
   const Int nk = nlev;
+  EKAT_REQUIRE_MSG(nk >= 2, "The mixed P3 IC requires at least two levels");
   Int k;
   const auto dp = std::make_shared<P3Data>(ncol, nk);
   auto& d = *dp;
@@ -22,22 +26,37 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
     // variations.
 
     // nccn_presribed for the cases where do_prescribed_CCN=true
-    for (k=0; k < nk; ++k) d.nccn_prescribed(i,k) = (100.0 + i/ncol - k/nk) * 1e6;
+    for (k=0; k < nk; ++k) d.nccn_prescribed(i,k) = (100.0 + double(i)/ncol - double(k)/nk) * 1e6;
+
+    const Int k_profile_start = std::max(0, nk-20);
+    const Int n_cloud_levels = std::min(15, nk-1);
+    // Leave at least one level without rain so the collection trigger can
+    // be placed after the profile has been initialized.
+    const Int n_rain_levels = std::min(20, std::max(0, nk-2));
 
     // max cld at ~700mb, decreasing to 0 at 900mb.
-    for (k = 0; k < 15; ++k) d.qc(i,nk-20+k) = 1e-4*(1 - double(k)/14);
+    for (k = 0; k < n_cloud_levels; ++k) {
+      const auto fraction = n_cloud_levels > 1 ? double(k)/(n_cloud_levels-1) : 0;
+      d.qc(i,k_profile_start+k) = 1e-4*(1 - fraction);
+    }
     for (k = 0; k < nk; ++k) d.nc(i,k) = 1e6;
     // max rain at 700mb, decreasing to zero at surf.
-    for (k = 0; k < 20; ++k) d.qr(i,nk-20+k) = 1e-5*(1 - double(k)/19);
+    for (k = 0; k < n_rain_levels; ++k) {
+      const auto fraction = n_rain_levels > 1 ? double(k)/(n_rain_levels-1) : 0;
+      d.qr(i,k_profile_start+k) = 1e-5*(1 - fraction);
+    }
     for (k = 0; k < nk; ++k) d.nr(i,k) = 1e6;
 
     //                                                      v (in the python)
-    for (k = 0; k < 15; ++k) d.qi(i,nk-20+k) = 1e-4; //*(1 - double(k)/14)
+    for (k = 0; k < n_cloud_levels; ++k) d.qi(i,k_profile_start+k) = 1e-4;
     for (k = 0; k < nk; ++k) d.ni(i,k) = 1e6;
-    for (k = 0; k < 15; ++k) d.qm(i,nk-20+k) = 1e-4*(1 - double(k)/14);
+    for (k = 0; k < n_cloud_levels; ++k) {
+      const auto fraction = n_cloud_levels > 1 ? double(k)/(n_cloud_levels-1) : 0;
+      d.qm(i,k_profile_start+k) = 1e-4*(1 - fraction);
+    }
     // guess at reasonable value based on: m3/kg is 1/density and liquid water has
     // a density of 1000 kg/m3
-    for (k = 0; k < 15; ++k) d.bm(i,nk-20+k) = 1e-2;
+    for (k = 0; k < n_cloud_levels; ++k) d.bm(i,k_profile_start+k) = 1e-2;
 
     // qv goes to zero halfway through profile (to avoid condensate near model
     // top)
@@ -46,7 +65,7 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
       d.qv(i,k) = tmp > 0 ? tmp : 0;
     }
     // make layer with qc saturated.
-    for (k = 0; k < 15; ++k) d.qv(i,nk-20+k) = 5e-3;
+    for (k = 0; k < n_cloud_levels; ++k) d.qv(i,k_profile_start+k) = 5e-3;
 
     // pres is actually an input variable, but needed here to compute theta.
     for (k = 0; k < nk; ++k) d.pres(i,k) = 100 + 1e5/double(nk)*k;
@@ -84,15 +103,43 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
     d.qr(i,nk-1) = 1e-6;
     d.qc(i,nk-1) = 1e-6;
 
-    // make qi>1e-8 where qr=0 to test rain collection conditional.
-    d.qi(i,nk-25) = 5e-8;
+    // Apply coverage triggers only after the common profiles and temperature
+    // have been initialized.  Search the profile rather than relying on a
+    // particular vertical resolution.
+    Int k_rain_collection = -1;
+    for (k = nk-1; k >= 0; --k) {
+      if (k_rain_collection < 0 && d.qr(i,k) == 0) {
+        k_rain_collection = k;
+      }
+    }
+    EKAT_REQUIRE_MSG(k_rain_collection >= 0, "Could not place the rain-collection trigger");
 
-    // make qc>0 and qr>0 where T<233.15 to test homogeneous freezing.
-    d.qc(i,35) = 1e-7;
-    d.qv(i,35) = 1e-6;
+    // Select the levels nearest the target temperatures.  Using the nearest
+    // level rather than a fixed index keeps the IC usable at any resolution.
+    auto nearest_temperature_level = [&](const Real target, const Int exclude) {
+      Int best = -1;
+      Real best_error = std::numeric_limits<Real>::max();
+      for (Int j = 0; j < nk; ++j) {
+        if (j == exclude || T_atm(j) >= target) continue;
+        const Real error = std::abs(T_atm(j) - target);
+        if (error < best_error) {
+          best = j;
+          best_error = error;
+        }
+      }
+      return best;
+    };
+    const Int k_homog_freeze =
+      nearest_temperature_level(233.15, k_rain_collection);
+    const Int k_dep_cond_freeze = nearest_temperature_level(258.15, k_homog_freeze);
 
-    // deposition/condensation-freezing needs t<258.15 and >5% supersat.
-    d.qv(i,33) = 1e-4;
+    // qr is intentionally zero at the collection level.
+    d.qi(i,k_rain_collection) = 5e-8;
+    d.qc(i,k_homog_freeze) = 1e-7;
+    d.qr(i,k_homog_freeze) = 1e-7;
+    d.qv(i,k_homog_freeze) = 1e-6;
+    // Deposition/condensation-freezing needs T < 258.15 and supersaturation.
+    d.qv(i,k_dep_cond_freeze) = 1e-4;
 
     // set qv_prev and t_prev to qv and T vals
     for (k = 0; k < nk; ++k){
@@ -106,7 +153,7 @@ P3Data::Ptr make_mixed (const Int ncol, const Int nlev) {
     for (k = 0; k < nk; ++k) {
       double plo, phi; // pressure at cell edges, Pa
       plo = (k == 0   ) ?
-        std::max<double>(i, d.pres(i,0) - 0.5*(d.pres(i,1) - d.pres(i,0))/(1 - 0)) :
+        std::max<double>(0, d.pres(i,0) - 0.5*(d.pres(i,1) - d.pres(i,0))/(1 - 0)) :
         0.5*(d.pres(i,k-1) + d.pres(i,k));
       phi = (k == nk-1) ?
         d.pres(i,nk-1) + 0.5*(d.pres(i,nk-1) - d.pres(i,nk-2))/(1 - 0) :
