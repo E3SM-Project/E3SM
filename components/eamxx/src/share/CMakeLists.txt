@@ -7,6 +7,9 @@ add_subdirectory(scorpio_interface)
 # Small/generic utilities
 add_subdirectory(util)
 
+# Parser for the diagnostics DSL
+add_subdirectory(e3sm_diags_parser)
+
 # Basic physics constant/functions
 add_subdirectory(physics)
 
@@ -52,6 +55,14 @@ target_link_libraries(scream_share INTERFACE
   eamxx_diagnostics
   eamxx_io
   eamxx_algorithm)
+
+# The COSP diagnostic is a library of its own (it needs COSP's fortran), so it is
+# not reachable through eamxx_diagnostics. Put it here, so that whoever links the
+# share catch-all gets it -- and, with it, EAMXX_HAS_COSP_DIAG, which is what
+# register_diagnostics() keys off.
+if (TARGET eamxx_cosp_diag)
+  target_link_libraries(scream_share INTERFACE eamxx_cosp_diag)
+endif()
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML

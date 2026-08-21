@@ -20,6 +20,34 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LABELS io
   )
 
+  # Test lowering of a diag expression into a DiagSpec tree
+  CreateUnitTest(diag_spec
+    SOURCES diag_spec.cpp
+    LIBS eamxx_io
+    LABELS io diagnostics
+  )
+
+  # Test instantiation of a DiagSpec tree into actual diagnostics
+  CreateUnitTest(diag_tree
+    SOURCES diag_tree.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+  )
+
+  # Test the bank of diag names/requests
+  CreateUnitTest(diag_bank
+    SOURCES diag_bank.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+  )
+
+  # Test diags that compute more than one output field
+  CreateUnitTest(diag_multi_output
+    SOURCES diag_multi_output.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+  )
+
   # Test creation of diagnostic from diag_field_name
   CreateUnitTest(create_diag
     SOURCES create_diag.cpp

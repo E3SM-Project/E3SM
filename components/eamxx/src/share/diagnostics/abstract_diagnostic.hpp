@@ -15,6 +15,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace scream
 {
@@ -46,6 +47,14 @@ namespace scream
  *             method 'compute_impl', which derived classes MUST implement.
  *  - get: this can be used to retrieve the diagnostic field (can be called once, as the
  *         stored field is allocated once at initialization and reused at every step).
+ *
+ * Most diagnostics compute exactly one field, which they store in m_diagnostic_output.
+ * A diagnostic that computes several fields in a single pass (e.g. a satellite
+ * simulator, which produces a whole suite of outputs from one expensive call)
+ * declares the extra ones with add_output(), and they are then reachable by name
+ * via get(name). Nothing changes for the single-output case: get() still returns
+ * m_diagnostic_output, and a diag that never calls add_output() behaves exactly
+ * as it did before.
  */
 
 class AbstractDiagnostic
@@ -72,6 +81,11 @@ public:
   // Return the list of input fields needed by this diagnostic
   const std::list<std::string>& get_input_fields_names () const { return m_field_in_names; }
 
+  // Return the input fields themselves, keyed by name. Available once they have
+  // all been set. Prefer this over looking the names up in a FieldManager: an
+  // input may be an intermediate that no FieldManager knows about.
+  const std::map<std::string,Field>& get_input_fields () const { return m_fields_in; }
+
   // Store input field in the map
   void set_input_field (const Field& f);
 
@@ -79,8 +93,23 @@ public:
   // we need to compute tendencies, or accumulated stuff)
   virtual void init_timestep (const util::TimeStamp& /* start_of_step */) {}
 
-  // Returns the diagnostic output field
+  // Returns the diagnostic output field. For a diag computing several fields,
+  // this is the primary one: m_diagnostic_output if it was set, and otherwise
+  // the first output declared via add_output().
   Field get () const;
+
+  // Returns the output field named 'name'. Throws if this diag does not compute
+  // a field by that name.
+  Field get (const std::string& name) const;
+
+  // Whether this diag computes a field named 'name'.
+  bool has_output (const std::string& name) const;
+
+  // All the fields this diag computes, primary first.
+  std::vector<Field> get_outputs () const;
+
+  // Names of all the fields this diag computes, primary first.
+  std::vector<std::string> get_output_names () const;
 
   // Compute the diagnostic (skips if inputs have not changed since last call)
   void compute (const util::TimeStamp& ts);
@@ -93,6 +122,14 @@ protected:
   // Derived classes implement this to compute the output from the inputs.
   virtual void compute_impl () = 0;
 
+  // Declare an output field beyond m_diagnostic_output. This is what a diag
+  // computing several fields uses; single-output diags keep assigning
+  // m_diagnostic_output and never call this. A diag with no natural primary
+  // output may leave m_diagnostic_output unset and declare all of its outputs
+  // here, in which case the first one declared plays the role of the primary.
+  // Call this from initialize_impl(), and only with allocated fields.
+  void add_output (const Field& f);
+
   // MPI communicator
   ekat::Comm              m_comm;
 
@@ -102,11 +139,20 @@ protected:
   // The grid on which this diagnostic is defined (set via set_grid())
   std::shared_ptr<const AbstractGrid> m_grid;
 
-  // Diagnostics produce a single output field
+  // The primary output field. Most diagnostics produce only this one.
   Field m_diagnostic_output;
+
+  // Any further output field, for the diagnostics that compute more than one.
+  // Kept separate from m_diagnostic_output so that single-output diags, and
+  // everything that consumes them, are untouched. See add_output().
+  std::vector<Field> m_extra_outputs;
 
   // Timestamp of the last diag evaluation
   util::TimeStamp m_last_eval_ts;
+
+  // Timestamp compute() was called with. Set before compute_impl() runs, so a
+  // diag that needs to know when it is being evaluated can read it there.
+  util::TimeStamp m_current_ts;
 
   // Input fields
   std::list<std::string>        m_field_in_names;
@@ -115,6 +161,10 @@ protected:
   bfbhash::HashType             m_last_eval_ts_hash = 0;
 
   bool m_is_initialized = false;
+
+private:
+  // The stored output named 'name', or nullptr if there is none.
+  const Field* find_output (const std::string& name) const;
 };
 
 // Factory for atmosphere diagnostics
@@ -125,6 +175,39 @@ using DiagnosticFactory =
                   const ekat::Comm&,const ekat::ParameterList&,
                   const std::shared_ptr<const AbstractGrid>&>;
 
+/*
+ * The fields computed by the diagnostics that compute more than one.
+ *
+ * A diagnostic is asked for by the name of the field it produces, so a diag
+ * computing several fields is reachable under several names, none of which is
+ * the key it is registered in the factory under. Which diag to build for a given
+ * field name must therefore be known *before* anything is built, which rules out
+ * asking an instance: it is declared here, next to the factory registration.
+ *
+ * Single-output diags never appear here. They are found in the factory under
+ * their own name, exactly as they always have been.
+ */
+class DiagOutputsRegistry
+{
+public:
+  static DiagOutputsRegistry& instance ();
+
+  // Declare that the diag registered in the factory under 'factory_key'
+  // computes the fields named in 'outputs'.
+  void register_outputs (const std::string& factory_key,
+                         const std::vector<std::string>& outputs);
+
+  // The factory key of the diag computing 'output_name', or an empty string if
+  // no registered diag computes it.
+  std::string provider_of (const std::string& output_name) const;
+
+private:
+  DiagOutputsRegistry () = default;
+
+  // output field name -> factory key
+  std::map<std::string,std::string> m_provider;
+};
+
 // Convenience functions to create a diagnostic (with and without a grid)
 template <typename AtmDiagType>
 inline std::shared_ptr<AbstractDiagnostic>
@@ -133,6 +216,18 @@ create_diagnostic (const ekat::Comm& comm,
                    const std::shared_ptr<const AbstractGrid>& grid)
 {
   return std::make_shared<AtmDiagType>(comm,p,grid);
+}
+
+// Register a diag that computes several fields: it goes in the factory like any
+// other, and its outputs are declared so that a request for any of them finds
+// it. Registering with the factory alone is enough for a single-output diag.
+template <typename AtmDiagType>
+inline void
+register_multi_output_diagnostic (const std::string& factory_key,
+                                  const std::vector<std::string>& outputs)
+{
+  DiagnosticFactory::instance().register_product(factory_key,&create_diagnostic<AtmDiagType>);
+  DiagOutputsRegistry::instance().register_outputs(factory_key,outputs);
 }
 
 } //namespace scream

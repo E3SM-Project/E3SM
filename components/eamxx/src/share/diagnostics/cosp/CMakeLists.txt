@@ -1,14 +1,17 @@
-# Build cosp external library and eamxx_cosp interface for EAMxx
-
-# Sources for EAMxx interface to COSP
-set(COSP_SRCS
-  eamxx_cosp.cpp
-  cosp_c2f.F90
-)
-set(COSP_HEADERS
-  eamxx_cosp.hpp
-  cosp_functions.hpp
-)
+# The COSP satellite simulator, as a diagnostic.
+#
+# COSP produces a whole suite of fields from one (expensive) pass, so CospDiag is
+# a multi-output diagnostic: a request for any of the fields it computes builds
+# this one diag, and they are all filled together. See eamxx_cosp_diag.hpp.
+#
+# This is a library of its own rather than part of eamxx_diagnostics, so that
+# eamxx_diagnostics -- which everything under share/ links -- does not acquire a
+# dependency on COSP's fortran. share/CMakeLists.txt hangs it off scream_share,
+# which is what makes EAMXX_HAS_COSP_DIAG visible to register_diagnostics().
+#
+# NOTE: this builds at any precision. COSP's fortran interface is unconditionally
+#       double (see cosp_functions.hpp), and the C++ side stages through double
+#       buffers to match, so there is no SCREAM_DOUBLE_PRECISION gate here.
 
 # Build external COSP library (this is all fortran code)
 set(EAM_COSP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/cosp2)
@@ -48,13 +51,15 @@ set(EXTERNAL_SRC
 )
 add_library(cosp ${EXTERNAL_SRC})
 
-# Build interface code
-add_library(eamxx_cosp ${COSP_SRCS})
-target_link_libraries(eamxx_cosp eamxx_physics_share scream_share cosp)
-target_compile_options(eamxx_cosp PUBLIC)
-target_compile_definitions(eamxx_cosp PUBLIC EAMXX_HAS_COSP)
+# The diagnostic and its C++/fortran bridge
+add_library(eamxx_cosp_diag
+  eamxx_cosp_diag.cpp
+  cosp_c2f.F90
+)
 
-if (TARGET eamxx_physics)
-  # Add this library to eamxx_physics
-  target_link_libraries(eamxx_physics INTERFACE eamxx_cosp)
-endif()
+target_link_libraries(eamxx_cosp_diag PUBLIC
+  eamxx_diagnostics
+  eamxx_physics_share
+  cosp)
+
+target_compile_definitions(eamxx_cosp_diag PUBLIC EAMXX_HAS_COSP_DIAG)

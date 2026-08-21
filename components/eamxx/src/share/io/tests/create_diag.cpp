@@ -109,11 +109,13 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("atm_backtend") {
-    // _atm_backtend is a built-in alias: X_atm_backtend → X_minus_X_prev_over_dt
-    // The returned diagnostic is FieldOverDt with field_name = "BlaH_123_minus_BlaH_123_prev"
+    // _atm_backtend is a built-in alias: X_atm_backtend -> (X - X.prev())/dt.
+    // The returned diagnostic is FieldOverDt, and it refers to its operand by
+    // canonical name (the internal, unambiguous one) rather than by a mangled
+    // legacy name.
     auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
     REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
-    REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123_minus_BlaH_123_prev");
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="(BlaH_123-BlaH_123.prev())");
   }
 
   SECTION ("field_prev") {

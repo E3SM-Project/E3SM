@@ -207,6 +207,9 @@ Field::alias (const std::string& name,const std::string& grid_name) const {
   f.m_header = get_header().alias(name,grid_name);
   f.m_data = m_data;
   f.m_is_read_only = m_is_read_only;
+  // An alias shares the alloc props, so it is non-contiguous exactly when we
+  // are, and then it needs the same helper field to sync host/device.
+  f.m_contiguous_field = m_contiguous_field;
   return f;
 }
 
@@ -221,6 +224,7 @@ Field::alias (const std::string& name, const std::string& grid_name, const std::
   f.m_header = get_header().alias(name, grid_name, tag_names);
   f.m_data = m_data;
   f.m_is_read_only = m_is_read_only;
+  f.m_contiguous_field = m_contiguous_field;
   return f;
 }
 
@@ -235,6 +239,7 @@ Field::alias (const std::string& name, const std::string& grid_name, const std::
   f.m_header = get_header().alias(name, grid_name, tag_names);
   f.m_data = m_data;
   f.m_is_read_only = m_is_read_only;
+  f.m_contiguous_field = m_contiguous_field;
   return f;
 }
 

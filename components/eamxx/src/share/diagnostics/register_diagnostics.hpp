@@ -33,6 +33,12 @@
 #include "binary_op.hpp"
 #include "histogram.hpp"
 
+// COSP lives in a library of its own, since it drags in COSP's fortran. Only
+// register it if that library was linked in.
+#ifdef EAMXX_HAS_COSP_DIAG
+#include "cosp/eamxx_cosp_diag.hpp"
+#endif
+
 namespace scream {
 
 inline void register_diagnostics () {
@@ -67,6 +73,11 @@ inline void register_diagnostics () {
   diag_factory.register_product("ConditionalSampling",&create_diagnostic<ConditionalSampling>);
   diag_factory.register_product("BinaryOp", &create_diagnostic<BinaryOp>);
   diag_factory.register_product("Histogram",&create_diagnostic<Histogram>);
+#ifdef EAMXX_HAS_COSP_DIAG
+  // COSP computes a whole suite of fields in one pass, so it is registered with
+  // the names it produces, and a request for any of them builds this one diag.
+  register_multi_output_diagnostic<CospDiag>("Cosp",CospDiag::output_names());
+#endif
 }
 
 } // namespace scream

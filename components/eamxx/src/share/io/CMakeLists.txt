@@ -10,12 +10,22 @@ add_library(eamxx_io
   eamxx_output_manager.cpp
   scorpio_output.cpp
   eamxx_io_utils.cpp
+  eamxx_diag_spec.cpp
+  eamxx_diag_tree.cpp
+  eamxx_diag_bank.cpp
+  eamxx_legacy_diag_names.cpp
 )
 
 target_link_libraries(eamxx_io PUBLIC
   eamxx_data_managers
   eamxx_scorpio_interface
   eamxx_diagnostics)
+
+# NOTE: PRIVATE on purpose. e3sm_diags_parser requires C++20, while E3SM builds
+#       at C++17, so a PUBLIC link would push cxx_std_20 onto every consumer of
+#       eamxx_io. eamxx_diag_spec.hpp does not include any edp header, so the
+#       dependency can stay contained in this library.
+target_link_libraries(eamxx_io PRIVATE e3sm_diags_parser)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

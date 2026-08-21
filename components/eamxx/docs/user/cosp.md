@@ -6,40 +6,54 @@ Currently, minimal outputs from the ISCCP, MODIS, and MISR simulators have been 
 
 ## Running with COSP
 
-Turning COSP on simply requires adding the `cosp` process to `atm_procs_list`
-via `atmchange` in a case directory:
+COSP is a *diagnostic*, not an atmosphere process. There is nothing to add to
+`atm_procs_list`: asking for any of the fields it computes in an output stream is
+what runs it. Those fields are
 
-```shell
-./atmchange physics::atm_procs_list="mac_aero_mic,rrtmgp,cosp"
+- `isccp_cldtot`
+- `isccp_ctptau`
+- `modis_ctptau`
+- `misr_cthtau`
+
+COSP computes all four in a single pass, so asking for one costs the same as
+asking for all four, and asking for them across several output streams still runs
+COSP only once per timestep.
+
+## Controlling how often COSP runs
+
+COSP is expensive, and an averaged output stream would otherwise evaluate it
+every timestep. It therefore throttles itself, with the same two knobs it had as
+a process, given in the `diag_params` section of the output yaml:
+
+```yaml
+diag_params:
+  Cosp:
+    cosp_frequency: 1
+    cosp_frequency_units: hours   # 'hours' or 'steps'
+    cosp_subcolumns: 10
 ```
 
-Additionally, the frequency at which COSP is run can be configured via `atmchange`:
+Between runs the COSP fields keep the values of the last run, exactly as they
+did when COSP was a process. The defaults are `cosp_frequency: 1` and
+`cosp_frequency_units: steps`, i.e. every timestep, so setting them is worth it
+for anything but a short run.
 
-```shell
-./atmchange physics::cosp::cosp_frequency_units="steps"
-./atmchange physics::cosp::cosp_frequency=1
-```
+`diag_params` is keyed by the *diagnostic* name (`Cosp`), not by the name of any
+field it computes, since one COSP pass produces all four. For the same reason,
+one COSP diagnostic is shared by every output stream that asks for its fields:
+if more than one stream configures it, they must all configure it identically,
+and it is an error if they do not.
 
-COSP can be run with or without subcolumn sampling.
-This is configured by changing the `cosp_subcolumns` namelist variable via `atmchange`.
-A value of 1 implies *no* subcolumn sampling, while values greater than 1
-specify the number
-of subcolumns to use for subcolumn sampling (assuming maximum-random overlap).
-E.g.,
+!!! note "Changed in this version"
 
-```shell
-./atmchange physics::cosp:cosp_subcolumns=1
-```
-
-would disable subcolumn sampling, while
-
-```shell
-./atmchange physics::cosp::cosp_subcolumns=10
-```
-
-would use 10 subcolumns for the COSP internal subcolumn sampling using `SCOPS`/`PREC_SCOPS`.
-The default for high resolution cases (e.g., `ne1024`) should be to *not* use
-subcolumns, while lower resolutions (e.g., `ne30`) should enable subcolumn sampling.
+    COSP used to be an atmosphere process, turned on with
+    `./atmchange physics::atm_procs_list="...,cosp"` and configured with
+    `physics::cosp::cosp_frequency` / `cosp_frequency_units` / `cosp_subcolumns`.
+    Output yamls that simply list the COSP field names keep working unchanged,
+    and the `atm_procs_list` entry has to go. The three settings move to the
+    `diag_params: Cosp:` section of the output yaml, keeping their names,
+    meanings, and defaults; `cosp_frequency: 0` ("never run COSP") is the one
+    thing that no longer means anything, and is now an error.
 
 Output streams need to be added manually.
 A minimal example:

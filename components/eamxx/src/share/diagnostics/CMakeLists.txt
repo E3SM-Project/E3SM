@@ -39,6 +39,10 @@ target_link_libraries(eamxx_diagnostics PUBLIC
   eamxx_grid
   ekat::Algorithm)
 
+# COSP is a diagnostic of its own, in its own library: it needs COSP's fortran,
+# which everything else in share/ has no business linking. See cosp/CMakeLists.txt.
+add_subdirectory(cosp)
+
 if (NOT SCREAM_LIB_ONLY AND NOT SCREAM_ONLY_GENERATE_BASELINES)
   add_subdirectory(tests)
 endif()

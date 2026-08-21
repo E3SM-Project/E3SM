@@ -1,4 +1,5 @@
 #include "share/io/scorpio_output.hpp"
+#include "share/io/eamxx_diag_bank.hpp"
 
 #include "share/field/field_utils.hpp"
 #include "share/field/field_reader.hpp"
@@ -11,6 +12,7 @@
 #include <ekat_string_utils.hpp>
 #include <ekat_units.hpp>
 
+#include <algorithm>
 #include <numeric>
 
 namespace
@@ -113,6 +115,22 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   }
 
   auto gm = field_mgr->get_grids_manager();
+
+  // Per-diag options, in a sublist named after the diag they configure. E.g.
+  //
+  //   diag_params:
+  //     Cosp:
+  //       cosp_frequency: 1
+  //       cosp_frequency_units: hours
+  //
+  // These reach the diag through the DiagBank, and are how a diag is given a
+  // setting that its expression has no syntax for. Diags are shared across
+  // output streams, so two streams that configure the same diag differently
+  // would end up with whichever one happened to be built first; check for that
+  // here instead, and say so.
+  if (params.isSublist("diag_params")) {
+    m_diag_params = params.sublist("diag_params");
+  }
 
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("averaging_type");
@@ -299,9 +317,14 @@ AtmosphereOutput::
   //       we are likely at finalization. This static var is only needed at init,
   //       to prevent two output streams creating the same diag. So when this
   //       destructor runs, it's fine to clean up this static var
-  for (auto d : m_diagnostics) {
-    const auto& name = d->get().name();
-    m_diag_repo.erase(name);
+  // NOTE: the repo is keyed by canonical expression, which a diag does not carry
+  //       around, so match on the diag itself rather than on a name.
+  for (auto it=m_diag_repo.begin(); it!=m_diag_repo.end(); ) {
+    if (std::find(m_diagnostics.begin(),m_diagnostics.end(),it->second)!=m_diagnostics.end()) {
+      it = m_diag_repo.erase(it);
+    } else {
+      ++it;
+    }
   }
 }
 
@@ -1010,8 +1033,8 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
   for (auto diag : m_diagnostics) {
     // Check if all inputs are valid
     bool computable = true;
-    for (const auto& fn : diag->get_input_fields_names()) {
-      const auto& f = m_field_mgrs[FromModel]->get_field(fn);
+    for (const auto& it : diag->get_input_fields()) {
+      const auto& f = it.second;
       const auto& fts = f.get_header().get_tracking().get_time_stamp();
       computable &= fts.is_valid();
 
@@ -1022,22 +1045,25 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
         " - dep  name: " + f.name() + "\n");
     }
 
-    auto d = diag->get();
     if (computable) {
       diag->compute(ts);
     }
 
-    bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
+    // One diag may compute several fields, and every one of them is as computed
+    // (or as missing) as the diag itself, so check and fill them all.
+    for (auto d : diag->get_outputs()) {
+      const bool computed = d.get_header().get_tracking().get_time_stamp().is_valid();
 
-    EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
-      "Error! Failed to compute diagnostic.\n"
-      " - diag name: " + diag->get().name() + "\n");
+      EKAT_REQUIRE_MSG (computed or allow_invalid_fields,
+        "Error! Failed to compute diagnostic.\n"
+        " - diag name: " + d.name() + "\n");
 
-    if (not computed) {
-      // The diag was either not computable or it may have failed to compute
-      // (e.g., t=0 output with a flux-like diag).
-      // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+      if (not computed) {
+        // The diag was either not computable or it may have failed to compute
+        // (e.g., t=0 output with a flux-like diag).
+        // If we're allowing invalid fields, then we should simply set diag=fill_value
+        d.deep_copy(constants::fill_value<float>);
+      }
     }
   }
 }
@@ -1050,72 +1076,8 @@ process_requested_fields()
   // must be either a diagnostic or an alias.
 
   auto fm_model = m_field_mgrs[FromModel];
-  auto fm_grid = m_field_mgrs[FromModel]->get_grid();
+  auto fm_grid  = m_field_mgrs[FromModel]->get_grid();
 
-  // Process intermediate-only fields declared in the 'aliases' YAML section.
-  // Each entry has the form "alias:=original". These are created and registered
-  // in the field manager so that dependents can use them, but are NOT written
-  // to the NC output file.
-  std::set<std::string> intermediate_names;
-  for (const auto& spec : m_intermediate_aliases) {
-    auto tokens = ekat::split(spec, ":=");
-    EKAT_REQUIRE_MSG(tokens.size()==2 && !tokens[0].empty() && !tokens[1].empty(),
-        "Error! Invalid entry in 'aliases' section. Should be 'alias:=original'.\n"
-        " - entry: " + spec + "\n");
-    const auto& alias = tokens[0];
-    const auto& orig  = tokens[1];
-    EKAT_REQUIRE_MSG(m_alias_to_orig.count(alias)==0,
-        "Error! Intermediate alias conflicts with an existing alias.\n"
-        " - stream name: " + m_stream_name + "\n"
-        " - alias: " + alias + "\n");
-    m_alias_to_orig[alias] = orig;
-    intermediate_names.insert(alias);
-  }
-
-  // Check that no intermediate name also appears as a regular output field
-  for (const auto& iname : intermediate_names) {
-    for (const auto& fname : m_fields_names) {
-      EKAT_REQUIRE_MSG(fname != iname,
-          "Error! A field declared in the 'aliases' section also appears in 'field_names'.\n"
-          " - stream name: " + m_stream_name + "\n"
-          " - field name: " + iname + "\n");
-    }
-  }
-
-  // Next, find out which field names are just aliases (using ':=' syntax)
-  for (auto& name : m_fields_names) {
-    auto tokens = ekat::split(name,":=");
-    EKAT_REQUIRE_MSG(tokens.size()==2 or tokens.size()==1,
-        "Error! Invalid alias request. Should be 'alias:=original'.\n"
-        " - request: " + name + "\n");
-    if (tokens.size()==2) {
-      EKAT_REQUIRE_MSG (m_alias_to_orig.count(tokens[0])==0,
-          "Error! The same alias has been used multiple times.\n"
-          " - stream name: " + m_stream_name + "\n"
-          " - first alias: " + tokens[0] + ":=" + m_alias_to_orig[tokens[0]] + "\n"
-          " - second alias: " + tokens[0] + ":=" + tokens[1] + "\n");
-      m_alias_to_orig[tokens[0]] = tokens[1];
-      name = tokens[0];
-    }
-  }
-
-  // In case someone has an alias of an alias, we need to resolve the TRUE orig names.
-  bool has_multiple_aliasing_layers = false;
-  do {
-    for (auto it : m_alias_to_orig) {
-      if (m_alias_to_orig.count(it.second)>0) {
-        it.second = m_alias_to_orig[it.second];
-        has_multiple_aliasing_layers = true;
-      }
-    }
-  } while (has_multiple_aliasing_layers);
-
-  EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
-      "Error! The list of requested output fields contains duplicates.\n"
-      " - stream name:  " + m_stream_name + "\n"
-      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
-
-  // Helper lambda to check if this fm_model field should trigger avg count
   auto check_for_avg_cnt = [&](const Field& f) {
     // We need avg-count tracking for any averaged (non-instant) field that:
     //  - supplies explicit mask info ("mask_data" extra data, or mask field)
@@ -1147,9 +1109,9 @@ process_requested_fields()
     diag->initialize();
   };
 
-  auto check_diag_avg_cnt = [&](const std::shared_ptr<AbstractDiagnostic>& diag) {
-    // Set the diag field in the FM
-    auto diag_field = diag->get();
+  // NOTE: this takes the field the diag was *registered* under, which is not
+  //       necessarily the name the diag gave its own output field.
+  auto check_diag_avg_cnt = [&](const diag_ptr_type& diag, Field diag_field) {
 
     // Add the field to the diag group
     diag_field.get_header().get_tracking().add_group("diagnostic");
@@ -1177,6 +1139,16 @@ process_requested_fields()
       m_track_avg_cnt = m_track_avg_cnt || m_avg_type!=OutputAvgType::Instant;
       diag_avg_cnt_name = "_" + diag_field.name();
     }
+    else if (m_avg_type!=OutputAvgType::Instant and
+             (diag_field.has_valid_mask() or diag_field.get_header().may_be_filled())) {
+      // Same rule check_for_avg_cnt applies to model fields: a field that may
+      // hold fill values needs its own avg count, or averaging would divide by
+      // the raw nsteps and bias the result low wherever it was filled. The
+      // special cases above predate may_be_filled() and are kept as they are,
+      // since they name their avg count differently.
+      m_track_avg_cnt = true;
+      diag_avg_cnt_name = "_" + diag_field.name();
+    }
 
     // If specified, set avg_cnt tracking for this diagnostic.
     if (m_track_avg_cnt) {
@@ -1184,95 +1156,61 @@ process_requested_fields()
     }
   };
 
-  // Now process each requested field, if possible. We can process a field if either:
-  //  - it is already in the model FM
-  //  - it is an alias of a field added to the FM
-  //  - it is a diag that ONLY depends on fields already added to the FM
-  // We keep scanning the fields names and process a field, removing it from the list.
-  // There MUST be at least ONE field we can process at every iteration, but
-  // some field MAY have to wait until another is processed. E.g., if we have
-  // 'foo_at_900hPa' and 'foo:=horiz_winds', the latter (an alias) must be
-  // processed first, as it adds the 'foo' alias field to the fm, which the
-  // diag 'foo_at_900hPa' needs to be correctly initialized.
-  // Notice that, thanks to how we create and add diags to m_diagnostics,
-  // the order in which diags appear in m_diagnostics follows the evaluation
-  // order, meaning that if diag A depends on diag B, then B appears *before* A.
-  // This ensures we can evaluate diags in order at runtime
-  bool done = false;
-  std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
-  for (const auto& it : m_alias_to_orig) {
-    remaining.insert(it.second);
-  }
-  // Intermediate-only fields must also be resolved (created and added to fm_model
-  // so that dependent diagnostics can use them), even though they won't be output.
-  for (const auto& n : intermediate_names) {
-    remaining.insert(n);
-  }
-  while (not done) {
-    // We can't add-to/rm-form a std:;set while iterating on it, as that could
-    // change the end iterator. Hence, keep track of what we add or remove,
-    // and add/remove after the for loop ends
-    std::set<std::string> remove_these, add_these;
-    for (const auto& name : remaining) {
-      if (fm_model->has_field(name)) {
-        // This is a regular field, not a diagnostic nor an alias.
-        // Still, we might need to do some extra setup, like for avg_count.
-        const auto& f = m_field_mgrs[FromModel]->get_field(name);
-        check_for_avg_cnt(f);
-        remove_these.insert(name);
-      } else if (m_alias_to_orig.count(name)==1) {
-        // An alias. If the aliased field was already processed, we can
-        // process the alias as well
-        if (fm_model->has_field(m_alias_to_orig[name])) {
-          const auto& orig = fm_model->get_field(m_alias_to_orig[name]);
-          auto alias = orig.alias(name);
-          fm_model->add_field(alias);
-          remove_these.insert(name);
-        }
-      } else {
-        auto& diag = m_diag_repo[name];
-        if (not diag) {
-          // First time we run into this diag. Create it
-          diag = create_diagnostic(name,fm_model->get_grid());
-        }
-        // Add its deps to the list of fields to process (if not already in fm_model)
-        bool deps_met = true;
-        for (const auto& dep_name : diag->get_input_fields_names()) {
-          if (not fm_model->has_field(dep_name)) {
-            deps_met = false;
-            add_these.insert(dep_name);
-          }
-        }
+  // Every requested name -- a plain model field, a rename, or a diagnostic
+  // expression -- goes into the bank, which works out what has to be built,
+  // in what order, and what can be shared. See eamxx_diag_bank.hpp.
+  // NOTE: the bank is given the static diag repo, so that two output streams
+  //       asking for the same thing share one diagnostic, as they always have.
+  DiagBank bank (fm_grid,*fm_model,m_diag_repo);
+  bank.set_diag_params(m_diag_params);
 
-        // If we are missing any dep, we DELAY adding this diag to m_diagnostics, so that
-        // the order in which diags appear is compatible with the evaluation order
-        if (deps_met) {
-          // Check if already inited (perhaps by another stream)
-          if (not diag->is_initialized()) {
-            init_diag(diag);
-          }
-          check_diag_avg_cnt (diag);
-          remove_these.insert(name);
-          fm_model->add_field(diag->get());
-          m_diagnostics.push_back(diag);
-        }
-      }
+  // The 'aliases' yaml section declares intermediates: they must exist, so that
+  // other requests can refer to them, but they are not written to file.
+  for (const auto& request : m_intermediate_aliases) {
+    bank.add(request,/*write=*/false);
+  }
+
+  for (auto& name : m_fields_names) {
+    // A request may rename what it asks for, via 'alias:=expr'. The bank owns
+    // that syntax (including dropping whitespace around ':='), so take the
+    // registered name from it rather than splitting the string again here.
+    const bool is_alias = name.find(":=")!=std::string::npos;
+    const auto registered = bank.add(name);
+    if (is_alias) {
+      m_alias_to_orig[registered] = bank.expr_of(registered);
+    }
+    // From here on, the field is known by the name it was registered under.
+    name = registered;
+  }
+
+  EKAT_REQUIRE_MSG (not has_duplicates(m_fields_names),
+      "Error! The list of requested output fields contains duplicates.\n"
+      " - stream name:  " + m_stream_name + "\n"
+      " - fields names: " + ekat::join(m_fields_names,",") + "\n");
+
+  bank.build();
+
+  for (const auto& it : bank.entries()) {
+    const auto& name  = it.first;
+    const auto& entry = it.second;
+
+    // A request that resolved to a model field under its own name is already in
+    // the FM. Anything else -- a rename, or a diagnostic -- has to be added.
+    if (not fm_model->has_field(name)) {
+      fm_model->add_field(entry.field);
     }
 
-    EKAT_REQUIRE_MSG (add_these.size()>0 or remove_these.size()>0,
-        "Error! We're stuck in an endless loop while processing output fields.\n"
-        " - stream name: " + m_stream_name + "\n");
-
-    // Remove fields we added to the FM, and add new diags we need
-    for (const auto& n : remove_these) {
-      remaining.erase(n);
+    if (entry.diag) {
+      check_diag_avg_cnt(entry.diag,entry.field);
+    } else {
+      check_for_avg_cnt(entry.field);
     }
-    for (const auto& n : add_these) {
-      remaining.insert(n);
-    }
-
-    done = remaining.size()==0;
   }
+
+  // The bank hands the diags back with every input ahead of its consumer, which
+  // is exactly the order they must be evaluated in.
+  const auto& order = bank.eval_order();
+  m_diagnostics.assign(order.begin(),order.end());
 }
 
 std::vector<std::string> AtmosphereOutput::

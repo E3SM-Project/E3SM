@@ -12,6 +12,7 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace scream
 {
@@ -82,6 +83,23 @@ std::string find_filename_in_rpointer (
 std::shared_ptr<AbstractDiagnostic>
 create_diagnostic (const std::string& diag_name,
                    const std::shared_ptr<const AbstractGrid>& grid);
+
+// Copy every parameter of 'src' into 'dst', overwriting what is already there.
+// Used to overlay the per-diag options given in an output yaml on top of the
+// params a diagnostic expression lowered to. Only the scalar and vector types
+// the yaml parser can produce are handled; anything else throws, rather than
+// being silently dropped.
+void overlay_params (ekat::ParameterList& dst, const ekat::ParameterList& src);
+
+// Same, but only for the parameters named in 'only'. A name that 'src' does not
+// have is skipped.
+void overlay_params (ekat::ParameterList& dst, const ekat::ParameterList& src,
+                     const std::vector<std::string>& only);
+
+// A deterministic string rendering of 'params', for comparing two parameter
+// lists for equality. Keys are sorted, so the result does not depend on the
+// order the yaml listed them in.
+std::string params_signature (const ekat::ParameterList& params);
 
 } // namespace scream
 
