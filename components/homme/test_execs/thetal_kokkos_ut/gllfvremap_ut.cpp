@@ -799,7 +799,11 @@ test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode
   const ExecView<Real**> dps("dps", s.nelemd, nf2), dphis("dphis", s.nelemd, nf2);
   const ExecView<Real***> dT("dT", s.nelemd, nf2, g::num_lev_aligned),
     domega("domega", s.nelemd, nf2, g::num_lev_aligned);
-  const ExecView<Real****> dstrain("dstrain", s.nelemd, nf2, 6, g::num_lev_aligned),
+  // dstrain's buffer is reused both as GLL-side input (requires >= np2 in the
+  // 2nd extent) and as FV-side output (requires >= nf2), so it must be sized
+  // to fit the larger of the two.
+  const int dstrain_dim1 = std::max(nf2, static_cast<int>(g::np2));
+  const ExecView<Real****> dstrain("dstrain", s.nelemd, dstrain_dim1, 6, g::num_lev_aligned),
     duv("duv", s.nelemd, nf2, 2, g::num_lev_aligned),
     dq("dq", s.nelemd, nf2, s.qsize, g::num_lev_aligned),
     dq1("dq", s.nelemd, nf2, nq, g::num_lev_aligned);

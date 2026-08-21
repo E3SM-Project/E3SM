@@ -27,7 +27,7 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
  , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
            params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
            params.nu_p,params.nu_s,params.hypervis_scaling,
-           params.do_3d_turbulence, params.tom_sponge_start)
+           params.do_3d_turbulence, params.tom_sponge_start, params.laplace_scaling)
  , m_state   (state)
  , m_derived (derived)
  , m_geometry (geometry)
@@ -36,7 +36,6 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
  , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
- , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
  , m_policy_nutop_update_states (Homme::get_default_team_policy<ExecSpace,TagNutopUpdateStates>(m_num_elems))
  , m_policy_sgsturb_laplace (Homme::get_default_team_policy<ExecSpace, TagSGSTurbLaplace>(m_num_elems))
  , m_policy_sgsturb_update_states (Homme::get_default_team_policy<ExecSpace,TagSGSTurbUpdateStates>(m_num_elems))
@@ -54,13 +53,12 @@ HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
   , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
             params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
             params.nu_p,params.nu_s,params.hypervis_scaling,
-            params.do_3d_turbulence, params.tom_sponge_start)
+            params.do_3d_turbulence, params.tom_sponge_start, params.laplace_scaling)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
   , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(m_num_elems))
   , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(m_num_elems))
-  , m_policy_nutop_laplace (Homme::get_default_team_policy<ExecSpace, TagNutopLaplace>(m_num_elems))
-  , m_policy_nutop_update_states (Homme::get_default_team_policy<ExecSpace,TagNutopUpdateStates>(m_num_elems))
+   , m_policy_nutop_update_states (Homme::get_default_team_policy<ExecSpace,TagNutopUpdateStates>(m_num_elems))
   , m_policy_sgsturb_laplace (Homme::get_default_team_policy<ExecSpace, TagSGSTurbLaplace>(m_num_elems))
   , m_policy_sgsturb_update_states (Homme::get_default_team_policy<ExecSpace,TagSGSTurbUpdateStates>(m_num_elems))
   , m_tu(m_policy_update_states)
@@ -391,9 +389,16 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
   // sponge layer 
   if (m_data.nu_top > 0) {
+    const int ne = m_geometry.num_elems();
     for (int icycle = 0; icycle < m_data.hypervis_subcycle_tom; ++icycle) {
       // laplace(fields) --> ttens, etc.
-      Kokkos::parallel_for(m_policy_nutop_laplace, *this);
+      if ( m_data.constsponge ) {
+        auto policy = Homme::get_default_team_policy<ExecSpace,TagNutopLaplaceConst>(ne);
+        Kokkos::parallel_for(policy, *this);
+      } else {
+        auto policy = Homme::get_default_team_policy<ExecSpace,TagNutopLaplaceTensor>(ne);
+        Kokkos::parallel_for(policy, *this);
+      }
       Kokkos::fence();
 
       // exchange is done on ttens, dptens, vtens, etc.
@@ -435,9 +440,9 @@ void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
   Kokkos::fence();
 } //biharmonic
 
-// Laplace for nu_top
+// Laplace for nu_top, constant coefficient
 KOKKOS_INLINE_FUNCTION
-void HyperviscosityFunctorImpl::operator() (const TagNutopLaplace&, const TeamMember& team) const {
+void HyperviscosityFunctorImpl::operator() (const TagNutopLaplaceConst&, const TeamMember& team) const {
   KernelVariables kv(team, m_tu);
 
   using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
@@ -507,7 +512,88 @@ void HyperviscosityFunctorImpl::operator() (const TagNutopLaplace&, const TeamMe
 
         }); // threadvectorrange
     }); // teamthreadrange
-} // TagNutopLaplace
+} // TagNutopLaplaceConst
+
+// Laplace for nu_top, tensor coefficient (laplace_scaling>0), using tensorVisc_2
+KOKKOS_INLINE_FUNCTION
+void HyperviscosityFunctorImpl::operator() (const TagNutopLaplaceTensor&, const TeamMember& team) const {
+  KernelVariables kv(team, m_tu);
+
+  using MidColumn = decltype(Homme::subview(m_buffers.wtens,0,0,0));
+
+  const auto& tensorvisc2 = Homme::subview(m_geometry.m_tensorvisc2,kv.ie);
+
+  // Laplacian of layer thickness
+  m_sphere_ops.laplace_tensor(kv, tensorvisc2,
+                              Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1),
+                              Homme::subview(m_buffers.dptens,kv.ie),
+                              m_nu_scale_top_ilev_pack_lim);
+  // Laplacian of theta
+  m_sphere_ops.laplace_tensor(kv, tensorvisc2,
+                              Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1),
+                              Homme::subview(m_buffers.ttens,kv.ie),
+                              m_nu_scale_top_ilev_pack_lim);
+
+  if (m_process_nh_vars) {
+    // Laplacian of vertical velocity (do not compute last interface)
+    m_sphere_ops.laplace_tensor<NUM_LEV,NUM_LEV_P>(kv, tensorvisc2,
+                                                   Homme::subview(m_state.m_w_i,kv.ie,m_data.np1),
+                                                   Homme::subview(m_buffers.wtens,kv.ie),
+                                                   m_nu_scale_top_ilev_pack_lim);
+    // Laplacian of geopotential (do not compute last interface)
+    m_sphere_ops.laplace_tensor<NUM_LEV,NUM_LEV_P>(kv, tensorvisc2,
+                                                   Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1),
+                                                   Homme::subview(m_buffers.phitens,kv.ie),
+                                                   m_nu_scale_top_ilev_pack_lim);
+  }
+
+  // Laplacian of velocity
+  m_sphere_ops.vlaplace_sphere_wk_cartesian(kv, tensorvisc2,
+                                         Homme::subview(m_geometry.m_vec_sph2cart,kv.ie),
+                                         Homme::subview(m_state.m_v,kv.ie,m_data.np1),
+                                         Homme::subview(m_buffers.vtens,kv.ie),
+                                         m_nu_scale_top_ilev_pack_lim);
+
+  kv.team_barrier();
+
+  Kokkos::parallel_for(
+    Kokkos::TeamThreadRange(kv.team,NP*NP),
+    [&] (const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      const auto utens  = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
+      const auto vtens  = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
+      const auto ttens  = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
+      const auto dptens = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
+     
+      MidColumn wtens, phitens;
+      if (m_process_nh_vars) {
+        wtens   = Homme::subview(m_buffers.wtens,kv.ie,igp,jgp);
+        phitens = Homme::subview(m_buffers.phitens,kv.ie,igp,jgp);
+      }
+
+      // Note: only the first m_nu_scale_top_ilev_pack_lim packs are scaled and
+      // used here, exactly as in the constant-coefficient path -- laplace_tensor
+      // and vlaplace_sphere_wk_cartesian above are now passed the same runtime
+      // limit, so unused levels are not even computed.
+      Kokkos::parallel_for(
+        Kokkos::ThreadVectorRange(kv.team, m_nu_scale_top_ilev_pack_lim),
+        [&] (const int ilev) {
+          const auto xf = m_data.dt_hvs_tom  * m_nu_scale_top(ilev) * m_data.nu_top;
+          utens(ilev)  *= xf;
+          vtens(ilev)  *= xf;
+          ttens(ilev)  *= xf;
+          dptens(ilev) *= xf;
+
+          if (m_process_nh_vars) {
+            wtens(ilev)   *= xf;
+            phitens(ilev) *= xf;
+          }
+
+        }); // threadvectorrange
+    }); // teamthreadrange
+} // TagNutopLaplaceTensor
 
 KOKKOS_INLINE_FUNCTION
 void HyperviscosityFunctorImpl::operator() (const TagNutopUpdateStates&, const TeamMember& team) const {
