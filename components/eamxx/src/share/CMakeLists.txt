@@ -7,6 +7,9 @@ add_subdirectory(scorpio_interface)
 # Small/generic utilities
 add_subdirectory(util)
 
+# Parser for the diagnostics DSL
+add_subdirectory(e3sm_diags_parser)
+
 # Basic physics constant/functions
 add_subdirectory(physics)
 

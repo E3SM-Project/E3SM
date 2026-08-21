@@ -72,6 +72,11 @@ public:
   // Return the list of input fields needed by this diagnostic
   const std::list<std::string>& get_input_fields_names () const { return m_field_in_names; }
 
+  // Return the input fields themselves, keyed by name. Available once they have
+  // all been set. Prefer this over looking the names up in a FieldManager: an
+  // input may be an intermediate that no FieldManager knows about.
+  const std::map<std::string,Field>& get_input_fields () const { return m_fields_in; }
+
   // Store input field in the map
   void set_input_field (const Field& f);
 
