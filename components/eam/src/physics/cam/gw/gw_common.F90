@@ -553,8 +553,9 @@ end subroutine gwd_project_tau
 
 !==========================================================================
 
-subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, &
-     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
+subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
+     use_gwut_min_limiter, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, &
+     xv, yv, tau, gwut, utgw, vtgw, effgw_loc_in)
 
   !------------------------------Arguments--------------------------------
   ! Column and gravity wave spectrum dimensions.
@@ -562,6 +563,8 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
 
   ! Whether or not to apply the polar taper.
   logical(btype), intent(in) :: do_taper
+  ! flag to use minimum limit on gwut
+  logical(btype), intent(in) :: use_gwut_min_limiter
   ! Time step.
   real(r8), intent(in) :: dt
   ! Tendency efficiency.
@@ -585,6 +588,9 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
   ! Unit vectors of source wind (zonal and meridional components).
   real(r8), intent(in) :: xv(ncol), yv(ncol)
 
+  ! Alternative effgw that varies with location - overrides scalar effgw
+  real(r8), intent(in), optional :: effgw_loc_in(ncol)
+
   ! Wave Reynolds stress.
   real(r8), intent(inout) :: tau(ncol,-pgwv:pgwv,0:pver)
 
@@ -601,6 +607,19 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
 
   ! Polar taper.
   real(r8) :: ptaper(ncol)
+
+  ! Efficiency parameter for each column 
+  real(r8) :: effgw_col(ncol)
+
+  real(r8), parameter :: gwut_magnitude_min = 1.e-15_r8
+  !-----------------------------------------------------------------------
+
+  !  override effgw effciency value from namelist if effgw_in is present
+  if (present(effgw_in)) then
+    effgw_col(1:ncol) = effgw_loc_in(1:ncol)
+  else
+    effgw_col(1:ncol) = effgw
+  endif
 
   if (do_taper) then    ! taper CM only
      do l=1, ncol
@@ -645,7 +664,7 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
 
            ! Save tendency for each wave (for later computation of kzz),
            ! applying efficiency and taper:
-           gwut(:,k,l) = sign(ubtl, c(:,l)-ubm(:,k)) * effgw * ptaper
+           gwut(:,k,l) = sign(ubtl, c(:,l)-ubm(:,k)) * effgw_col * ptaper
 
         end where
 
@@ -657,6 +676,13 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
            where (k <= tend_level)
               ubt(:,k) = ubt(:,k) + sign(ubtl, c(:,l)-ubm(:,k))
            end where
+        end if
+
+        ! Protection on small gwut to prevent floating point issues
+        if (use_gwut_min_limiter) then
+          where( abs(gwut(:,k,l)) < gwut_magnitude_min )
+            gwut(:,k,l) = 0._r8
+          end where
         end if
 
         where (k <= tend_level)
@@ -787,11 +813,13 @@ end subroutine gwd_precalc_rhoi
 
 !==========================================================================
 
-subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
-     lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
-     piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
-     effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
-     ttgw, qtgw, taucd,   egwdffi,   gwut, dttdf, dttke)
+subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, &
+                        use_gwut_min_limiter, dt, &
+                        lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
+                        piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
+                        effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
+                        ttgw, qtgw, taucd,   egwdffi,   gwut, dttdf, dttke, &
+                        effgw_loc_in)
 
   !-----------------------------------------------------------------------
   ! Solve for the drag profile from the multiple gravity wave drag
@@ -871,6 +899,9 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   real(r8), intent(out) :: dttdf(ncol,pver)
   real(r8), intent(out) :: dttke(ncol,pver)
 
+  ! Alternative effgw that varies with location - overrides scalar effgw
+  real(r8), intent(in), optional :: effgw_loc_in(ncol)
+
   !------------------------------------------------------------------------
 
   ! Initialize gravity wave drag tendencies to zero.
@@ -896,8 +927,9 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   !------------------------------------------------------------------------
   ! Compute the tendencies from the stress divergence.
   !------------------------------------------------------------------------
-  call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, &
-       lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
+  call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
+       use_gwut_min_limiter, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, &
+       t, nm, xv, yv, tau, gwut, utgw, vtgw, effgw_loc_in)
 
   if (ngwv > 0) then
 
