@@ -1313,9 +1313,9 @@ void mark_dim_as_time (const std::string& filename, const std::string& dimname)
 
 // Update value of time variable, increasing time dim length
 void update_time(const std::string &filename, const double time) {
-  auto& f = impl::get_file(filename,"scorpio::update_time");
+  const auto& f = impl::get_file(filename,"scorpio::update_time");
         auto& time_dim = *f.time_dim;
-  auto& var = impl::get_var(filename,time_dim.name,"scorpio::update_time");
+  const auto& var = impl::get_var(filename,time_dim.name,"scorpio::update_time");
 
   PIO_Offset index = time_dim.length;
   int err = PIOc_put_var1(f.ncid,var.ncid,&index,&time);
@@ -1356,7 +1356,7 @@ void read_var (const std::string &filename, const std::string &varname, T* buf, 
       " - filename: " + filename + "\n"
       " - varname : " + varname + "\n");
 
-  auto& f = impl::get_file(filename,"scorpio::read_var");
+  const auto& f = impl::get_file(filename,"scorpio::read_var");
         auto& var = impl::get_var(filename,varname,"scorpio::read_var");
 
   // If the input pointer type already matches var.dtype, this is a no-op
@@ -1438,7 +1438,7 @@ void write_var (const std::string &filename, const std::string &varname, const T
       " - filename: " + filename + "\n"
       " - varname : " + varname + "\n");
 
-  auto& f = impl::get_file(filename,"scorpio::write_var");
+  const auto& f = impl::get_file(filename,"scorpio::write_var");
   auto& var = impl::get_var(filename,varname,"scorpio::write_var");
 
   // If the input pointer type already matches var.dtype, this is a no-op
@@ -1541,7 +1541,7 @@ bool has_attribute (const std::string& filename, const std::string& varname, con
   if (varname=="GLOBAL") {
     varid = PIO_GLOBAL;
   } else {
-    auto& var = impl::get_var(filename,varname,"scorpio::has_attribute");
+    const auto& var = impl::get_var(filename,varname,"scorpio::has_attribute");
     varid = var.ncid;
   }
 
@@ -1670,7 +1670,7 @@ void set_attribute (const std::string& filename,
                     const std::string& attname,
                     const T& att)
 {
-  auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
+  const auto& f = impl::get_file (filename,"scorpio::set_any_attribute");
 
   int varid;
   if (varname=="GLOBAL") {
