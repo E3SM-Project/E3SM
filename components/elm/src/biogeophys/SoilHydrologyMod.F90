@@ -493,19 +493,25 @@ contains
              qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c)- qflx_infl_excess(c)
 
              !5. surface runoff from h2osfc
-             ! ELM h2osfc ponding/runoff adjustment for cold-region surface water
-             ! (not a CLM cryosphere physics port). Use frac_h2osfc_act for the
-             ! connected inundated fraction so snow-cover adjustment of frac_h2osfc
-             ! does not suppress h2osfc runoff. Independent of use_modified_infil,
-             ! which remains namelist-controlled (default .false.) for qinmax,
-             ! infiltration excess, and h2osfc drainage.
+             ! ELM ponding/runoff, not a CLM cryosphere physics port.
              if (h2osfcflag==1) then
                 ! calculate runoff from h2osfc  -------------------------------------
-                if (frac_h2osfc_act(c) <= pc) then
-                   frac_infclust = 0.0_r8
+                if (use_modified_infil) then
+                  ! Bug-fix: use unadjusted frac_h2osfc_act so snow-cover
+                  ! adjustment of frac_h2osfc does not suppress ponded runoff.
+                  if (frac_h2osfc_act(c) <= pc .and. frac_h2osfc(c) <= pc) then
+                     frac_infclust=0.0_r8
+                  else
+                     frac_infclust=(frac_h2osfc_act(c)-pc)**mu
+                  endif
                 else
-                   frac_infclust = (frac_h2osfc_act(c) - pc)**mu
-                end if
+                  ! Original scheme (use_modified_infil = .false.)
+                  if (frac_h2osfc(c) <= pc) then
+                    frac_infclust=0.0_r8
+                  else
+                    frac_infclust=(frac_h2osfc(c)-pc)**mu
+                  endif
+                endif
              endif
 
              ! limit runoff to value of storage above S(pc)
