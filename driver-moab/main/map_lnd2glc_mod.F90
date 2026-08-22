@@ -212,13 +212,14 @@ contains
     ! All arrays are on the glc grid decomposition. data_g_EC and topo_g_EC hold the
     ! horizontally-mapped field and Sl_topo for elevation classes 1..nEC.
     !
-    ! Note: the mct path (map_ice_covered) stores the per-EC arrays in default real
-    ! precision; here everything stays in r8, a roundoff-level difference.
+    ! Note: the per-EC arrays are stored in default real precision, exactly like the
+    ! mct path (map_ice_covered), so that the interpolation reproduces the mct
+    ! answers bit for bit (see E3SM issue #8657 about the demotion itself).
     !
     ! !ARGUMENTS:
     real(r8), intent(in)  :: topo_g(:)          ! ice topographic height on the glc grid
-    real(r8), intent(in)  :: topo_g_EC(:,:)     ! mapped per-EC topo (lsize_g, nEC)
-    real(r8), intent(in)  :: data_g_EC(:,:)     ! mapped per-EC field (lsize_g, nEC)
+    real    , intent(in)  :: topo_g_EC(:,:)     ! mapped per-EC topo (lsize_g, nEC), default real like mct
+    real    , intent(in)  :: data_g_EC(:,:)     ! mapped per-EC field (lsize_g, nEC), default real like mct
     real(r8), intent(in)  :: data_g_bareland(:) ! mapped bare-land (EC 0) field
     integer , intent(in)  :: glc_elevclass(:)   ! elevation class of each glc point (0 = bare)
     real(r8), intent(out) :: data_g(:)          ! result on the glc grid

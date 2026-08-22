@@ -417,26 +417,24 @@ contains
        ktopo0 = kfrac0 + 1
        topo_virtual = glc_mean_elevation_virtual(n)
        do i = 1, lsize_l
+          ! The divisions are done as reciprocal multiplies (with a zero denominator
+          ! passing through as a multiply by zero), exactly like the normalization in
+          ! the mct seq_map_avNormArr, so the results match the mct driver bit for bit.
           ! frac_n_l = M(w_n) / M(icemask)
           denom = num_l(i, kmask)
           if (denom /= 0.0_r8) then
-             out_l(i, kfrac0) = num_l(i, kfrac0) / denom
-          else
-             out_l(i, kfrac0) = 0.0_r8
+             denom = 1.0_r8/denom
           end if
+          out_l(i, kfrac0) = num_l(i, kfrac0) * denom
           ! field_n_l = M(field*w_n) / M(w_n)
           denom = num_l(i, kfrac0)
           if (denom /= 0.0_r8) then
-             out_l(i, ktopo0) = num_l(i, ktopo0) / denom
-             do k = 1, nextra
-                out_l(i, ktopo0+k) = num_l(i, ktopo0+k) / denom
-             end do
-          else
-             out_l(i, ktopo0) = 0.0_r8
-             do k = 1, nextra
-                out_l(i, ktopo0+k) = 0.0_r8
-             end do
+             denom = 1.0_r8/denom
           end if
+          out_l(i, ktopo0) = num_l(i, ktopo0) * denom
+          do k = 1, nextra
+             out_l(i, ktopo0+k) = num_l(i, ktopo0+k) * denom
+          end do
           ! set the topo field for virtual columns (no contributing glc cells)
           if (out_l(i, kfrac0) <= 0.0_r8) then
              out_l(i, ktopo0) = topo_virtual

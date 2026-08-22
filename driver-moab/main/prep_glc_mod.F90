@@ -747,24 +747,21 @@ contains
 
     !---------------------------------------------------------------
     ! Description
-    ! Finalize the accumulation of the land forcing for glc, and set the averaged
-    ! values back into the coupler land mesh tags, from where the lnd->glc maps
-    ! read them (prep_rof set-back pattern).
+    ! Finalize the accumulation of the land forcing for glc. The averaged values
+    ! stay in the l2gacc_lm array (matching the mct l2gacc_lx attribute vector);
+    ! prep_glc_calc_l2x_gx_moab stages them into the land mesh tags only for the
+    ! duration of the horizontal map, so the l2x tags keep their instantaneous
+    ! values for the coupler history.
     !
     ! Note: the mct version also averages the ocn accumulation (x2gacc); that part
     ! of the moab port is deferred with the rest of the ocn<->glc coupling.
-    !
-    use iMOAB, only : iMOAB_SetDoubleTagStorage
-    use iso_c_binding, only : C_NULL_CHAR
     !
     ! Arguments
     character(len=*), intent(in) :: timer
     logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
     !
     ! Local Variables
-    integer :: ierr, ent_type, arrsize
     real(r8) :: ravg ! averaging factor
-    character(CXX) :: tagname
     character(*), parameter :: subname = '(prep_glc_accum_avg_moab)'
     !---------------------------------------------------------------
 
@@ -780,15 +777,6 @@ contains
     end if
     l2gacc_lm_cnt_avg = l2gacc_lm_cnt
     l2gacc_lm_cnt = 0
-
-    ! set the averaged values back into the land mesh tags
-    tagname = trim(sharedFieldsLndGlc)//C_NULL_CHAR
-    arrsize = nflds_lg * lsize_lm
-    ent_type = 1 ! cells
-    ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrsize, ent_type, l2gacc_lm )
-    if (ierr .ne. 0) then
-       call shr_sys_abort(subname//' error in setting accumulated per-EC lnd fields on land mesh')
-    endif
     call t_drvstopf (trim(timer))
 
   end subroutine prep_glc_accum_avg_moab
@@ -1920,8 +1908,10 @@ contains
     real(r8), allocatable :: data_lg(:,:)      ! all mapped per-EC fields on the glc mesh
     real(r8), allocatable :: glc_ice_covered(:)
     real(r8), allocatable :: glc_topo(:)
-    real(r8), allocatable :: topo_g_EC(:,:)
-    real(r8), allocatable :: data_g_EC(:,:)
+    ! the per-EC arrays are default real, matching the mct map_ice_covered storage,
+    ! so the vertical interpolation reproduces the mct answers bit for bit
+    real    , allocatable :: topo_g_EC(:,:)
+    real    , allocatable :: data_g_EC(:,:)
     real(r8), allocatable :: data_g_bare(:)
     real(r8), allocatable :: data_g(:)         ! downscaled field on the glc mesh
     real(r8), allocatable :: area_g(:)
@@ -1938,11 +1928,31 @@ contains
     ent_type = 1 ! cells
 
     ! Horizontal map of all per-EC fields at once, weighted by lfrac and normalized.
-    ! The source tags hold the averaged accumulation, set back on the land mesh by
-    ! prep_glc_accum_avg_moab. The attribute vector arguments are metadata only.
+    ! The averaged accumulation (l2gacc_lm) is staged into the land mesh tags only
+    ! for the duration of the map; the instantaneous l2x values are saved first and
+    ! restored right after, so the coupler history still shows instantaneous l2x
+    ! fields exactly like the mct driver. The attribute vector arguments are
+    ! metadata only.
+    arrsize = nflds_lg * lsize_lm
+    tagname = trim(sharedFieldsLndGlc)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage(mblxid, tagname, arrsize, ent_type, l2x_lm2)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR saving instantaneous per-EC lnd fields')
+    endif
+    ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize, ent_type, l2gacc_lm)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR staging averaged per-EC lnd fields')
+    endif
+
     call seq_map_map(mapper_Sl2g, l2gacc_lx(1), l2x_gx(1), &
          fldlist=trim(sharedFieldsLndGlc), norm=.true., &
          avwts_s=fractions_lx(1), avwtsfld_s='lfrac')
+
+    ! restore the instantaneous l2x values on the land mesh
+    ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize, ent_type, l2x_lm2)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR restoring instantaneous per-EC lnd fields')
+    endif
 
     ! fetch the mapped per-EC fields and the glc state needed for the vertical interpolation
     allocate(data_lg(lsize_gm, nflds_lg))
@@ -1971,7 +1981,7 @@ contains
     allocate(data_g(lsize_gm))
     do ec = 1, nEC
        kf = mct_aVect_indexRA(l2gacc_lx(1), 'Sl_topo'//glc_elevclass_as_string(ec))
-       topo_g_EC(:,ec) = data_lg(:,kf)
+       topo_g_EC(:,ec) = real(data_lg(:,kf))
     end do
 
     ! area arrays needed for the qice conservation correction
@@ -1993,7 +2003,7 @@ contains
 
           do ec = 1, nEC
              kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(ec))
-             data_g_EC(:,ec) = data_lg(:,kf)
+             data_g_EC(:,ec) = real(data_lg(:,kf))
           end do
           kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(0))
           data_g_bare(:) = data_lg(:,kf)
@@ -2034,7 +2044,7 @@ contains
 
        do ec = 1, nEC
           kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(ec))
-          data_g_EC(:,ec) = data_lg(:,kf)
+          data_g_EC(:,ec) = real(data_lg(:,kf))
        end do
        kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(0))
        data_g_bare(:) = data_lg(:,kf)

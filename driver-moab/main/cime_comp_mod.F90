@@ -5146,6 +5146,7 @@ contains
 
     type(ESMF_Time)       :: etime_curr           ! Current model time
     real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
+    real(r8), pointer     :: p_l2gacc_lm(:,:)     ! averaged lnd->glc accumulator (moab)
 
     if (iamin_CPLID) then
 
@@ -5336,6 +5337,9 @@ contains
                   years_offset = -1)
 
              call t_startf('CPL:seq_hist_writeaux-l2x1yrg')
+             ! the averaged data lives in the prep_glc accumulator array, not in the
+             ! (instantaneous) l2x tags; the attribute vector supplies the field list
+             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
              do eli = 1,num_inst_lnd
                 inst_suffix = component_get_suffix(lnd(eli))
                 ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
@@ -5344,7 +5348,8 @@ contains
                      aname='l2x1yr_glc',dname='doml',inst_suffix=trim(inst_suffix),  &
                      nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
                      tbnds1_offset = tbnds1_offset, yr_offset=-1, &
-                     av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
+                     av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli), &
+                     matrix=p_l2gacc_lm)
              enddo
              call t_stopf('CPL:seq_hist_writeaux-l2x1yrg')
 

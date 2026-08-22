@@ -1085,7 +1085,7 @@ contains
   !===============================================================================
 
   subroutine seq_hist_writeaux(infodata, EClock_d, comp, flow, aname, dname, inst_suffix, &
-       nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write)
+       nx, ny, nt, write_now, flds, tbnds1_offset, yr_offset, av_to_write, matrix)
 
     implicit none
 
@@ -1124,9 +1124,15 @@ contains
     integer                  , optional, intent(in) :: yr_offset
 
     ! If av_to_write is provided, use it to get the list of tags to write.
-    ! The data is always written from MOAB tags, not from the attribute vector.
+    ! The data is written from MOAB tags unless 'matrix' is provided.
     ! Otherwise, get the tag list from 'comp', based on 'flow'.
     type(mct_avect), target  , optional, intent(in) :: av_to_write
+
+    ! If matrix is provided (non-averaged writes only), write the data directly
+    ! from this (numpts, nflds) array instead of reading the MOAB tags; the columns
+    ! must follow the tag-list order. Used for the l2x1yrg aux file, whose data
+    ! comes from the prep_glc accumulator rather than the instantaneous l2x tags.
+    real(r8), dimension(:,:), pointer, optional :: matrix
 
     !--- local ---
     type(mct_avect), pointer :: av
@@ -1421,6 +1427,13 @@ contains
                      trim(flds), whead=whead, wdata=wdata, &
                      nx=nx, ny=ny, nt=ncnt(found), &
                      file_ind=found, &
+                     use_float=(.not. use_double))
+             else if (present(matrix)) then
+                ! Non-averaged, all fields, data supplied by the caller
+                call seq_io_write(hist_file(found), mbxid, trim(aname), &
+                     trim(tag_list), whead=whead, wdata=wdata, &
+                     nx=nx, ny=ny, nt=ncnt(found), &
+                     matrix=matrix, file_ind=found, &
                      use_float=(.not. use_double))
              else
                 ! Non-averaged, all fields: write from MOAB tags
