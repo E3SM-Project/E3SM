@@ -642,14 +642,15 @@ contains
           end if !end of do_capsnow construct
 
           ! set frac_sno_eff variable
-          if (ltype(l) == istsoil .or. ltype(l) == istcrop) then
-             if (subgridflag ==1) then 
-                frac_sno_eff(c) = frac_sno(c)
-             else
-                frac_sno_eff(c) = 1._r8
-             endif
-          else
+          ! Port of CLM fractional-snow energy fix: when subgrid fluxes are on,
+          ! allow fractional frac_sno_eff for all non-urban, non-lake columns
+          ! (including glacier and wetland), matching soil/crop treatment.
+          if (subgridflag == 1 .and. .not. urbpoi(l) .and. ltype(l) /= istdlak) then
+             frac_sno_eff(c) = frac_sno(c)
+          else if (frac_sno(c) > 0._r8) then
              frac_sno_eff(c) = 1._r8
+          else
+             frac_sno_eff(c) = 0._r8
           endif
 
           if (ltype(l)==istwet .and. t_grnd(c)>tfrz) then

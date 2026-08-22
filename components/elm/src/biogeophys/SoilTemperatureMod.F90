@@ -1047,6 +1047,10 @@ contains
                  .AND. col_pp%itype(c) /= icol_sunwall .AND. col_pp%itype(c) /= icol_shadewall .AND. &
                  col_pp%itype(c) /= icol_roof) then
                cv(c,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
+               ! Port of CLM bedrock heat-capacity fix: do not reduce solid-rock
+               ! heat capacity by soil porosity below the soil-bedrock boundary.
+               ! csol is already set to bedrock mineral heat capacity for these layers.
+               if (j > nlevbed) cv(c,j) = csol(c,j)*dz(c,j)
             else if (lun_pp%itype(l) == istwet) then
                cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
                if (j > nlevbed) cv(c,j) = csol(c,j)*dz(c,j)
