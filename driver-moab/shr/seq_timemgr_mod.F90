@@ -369,6 +369,8 @@ contains
     integer(SHR_KIND_IN)    :: wav_cpl_dt            ! Wav coupling interval
     integer(SHR_KIND_IN)    :: iac_cpl_dt            ! Iac coupling interval
     integer(SHR_KIND_IN)    :: esp_cpl_dt            ! Esp coupling interval
+    integer(SHR_KIND_IN)    :: min_cpl_dt            ! Smallest component coupling interval (s)
+    integer(SHR_KIND_IN)    :: histavg_dt           ! Histavg interval in seconds
     integer(SHR_KIND_IN)    :: atm_cpl_offset        ! Atmosphere coupling interval
     integer(SHR_KIND_IN)    :: lnd_cpl_offset        ! Land coupling interval
     integer(SHR_KIND_IN)    :: ice_cpl_offset        ! Sea-Ice coupling interval
@@ -699,6 +701,42 @@ contains
        if ( (start_ymd < 101) .or. (start_ymd > 2147471231)) then
           write(logunit,*) subname,' ERROR: illegal start_ymd',start_ymd
           call shr_sys_abort( subname//': ERROR invalid start_ymd')
+       end if
+
+       ! --- Histavg period vs coupling period ---------------------------------
+       ! The coupler average-history averaging period must not be smaller than
+       ! the smallest component coupling period.  Otherwise an averaging window
+       ! can close before some components have coupled even once, leaving their
+       ! fields unset (all zero in the MCT AVs, but uninitialized MOAB tags in
+       ! the MOAB driver) and producing wrong averages for that window.
+       min_cpl_dt = min(atm_cpl_dt, lnd_cpl_dt, ice_cpl_dt, ocn_cpl_dt, &
+            glc_cpl_dt, rof_cpl_dt, wav_cpl_dt, esp_cpl_dt, iac_cpl_dt)
+
+       ! Convert the absolute-time averaging options to seconds so they can be
+       ! compared with the coupling period.  nsteps averaging is always a whole
+       ! number of driver steps (>= the smallest coupling period), and
+       ! nmonth/nyear are always larger, so those need no check.  never/none/
+       ! other/date do no fixed-length averaging that can be compared here.
+       histavg_dt = -1
+       if ( trim(histavg_option) == trim(seq_timemgr_optNSeconds) .or. &
+            trim(histavg_option) == trim(seq_timemgr_optNSecond) ) then
+          histavg_dt = histavg_n
+       elseif ( trim(histavg_option) == trim(seq_timemgr_optNMinutes) .or. &
+            trim(histavg_option) == trim(seq_timemgr_optNMinute) ) then
+          histavg_dt = histavg_n * 60
+       elseif ( trim(histavg_option) == trim(seq_timemgr_optNHours) .or. &
+            trim(histavg_option) == trim(seq_timemgr_optNHour) ) then
+          histavg_dt = histavg_n * 3600
+       elseif ( trim(histavg_option) == trim(seq_timemgr_optNDays) .or. &
+            trim(histavg_option) == trim(seq_timemgr_optNDay) ) then
+          histavg_dt = histavg_n * 86400
+       end if
+
+       if ( histavg_dt > 0 .and. histavg_dt < min_cpl_dt ) then
+          write(logunit,*) trim(subname),' ERROR: histavg period (', histavg_dt, &
+               ' s) is smaller than the smallest coupling period (', min_cpl_dt, ' s)'
+          call shr_sys_abort( subname// &
+               ': ERROR histavg period must not be smaller than the smallest coupling period' )
        end if
 
     endif
