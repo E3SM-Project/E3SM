@@ -401,7 +401,7 @@ module elm_varctl
   logical, public :: use_atm_downscaling_to_topunit  = .false.
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
   logical, public :: use_lake_wat_storage = .false.
-  character(len = SHR_KIND_CS), public :: lake_evap_cap_method = 'rain_snow' ! Lake evap cap method values can be rain_snow, rain_snow_h2osno, or wslake
+  character(len = SHR_KIND_CS), public :: lake_evap_cap_method = 'none' ! Lake evap cap method values can be none, rain_snow, or rain_snow_h2osno
   logical, public :: use_top_solar_rad   = .false.  ! TOP : sub-grid topographic effect on surface solar radiation
   logical, public :: use_finetop_rad     = .false.  ! fineTOP : fine(grid)-scale topographic effect on surface radiation balance (longwave + shortwave)
   
