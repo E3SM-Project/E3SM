@@ -2,10 +2,10 @@
 #define EAMXX_MAM_SRF_ONLINE_EMISS_HPP
 
 #include "share/remap/abstract_remapper.hpp"
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
-#include <physics/mam/srf_emission.hpp>
 
 // For reading marine organics file
 #include <physics/mam/readfiles/marine_organics.hpp>
@@ -42,14 +42,11 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   const_view_2d dust_fluxes_;
 
   // Constituent fluxes of species in [kg/m2/s]
-  view_2d constituent_fluxes_;
+  Field constituent_fluxes_;
 
   // Runtime scale factors for online emissions from namelist.
   Real dust_emis_scale_factor;
   Real seasalt_emis_scale_factor;
-
-  // Work array to store fluxes after unit conversions to kg/m2/s
-  view_1d fluxes_in_mks_units_;
 
   // Unified atomic mass unit used for unit conversion (BAD constant)
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
@@ -61,7 +58,6 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
 
  public:
   // For reading surface emissions and marine organics file
-  using srfEmissFunc = mam_coupling::srfEmissFunctions<Real, DefaultDevice>;
   using marineOrganicsFunc =
       marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
 
@@ -153,12 +149,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
     // Species-specific scale factor
     Real scale_factor = 1.0;
 
-    // Data structure for reading interpolation
-    std::shared_ptr<AbstractRemapper> horizInterp_;
-    std::shared_ptr<FieldReader> dataReader_;
-    srfEmissFunc::srfEmissTimeState timeState_;
-    srfEmissFunc::srfEmissInput data_start_, data_end_;
-    srfEmissFunc::srfEmissOutput data_out_;
+    // Data interpolation object and local output fields for each file sector.
+    std::shared_ptr<DataInterpolation> data_interp_;
+    std::vector<Field> emiss_sector_fields_;
   };
 
   // A vector for carrying emissions for all the species

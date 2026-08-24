@@ -210,15 +210,9 @@ void MAMSrfOnlineEmiss::create_requests() {
   srf_emiss_species_.push_back(so4_a2);
 
   //--------------------------------------------------------------------
-  // Init data structures to read and interpolate
+  // Register sector fields in FM for surface emissions.
+  // DataInterpolation is set up in initialize_impl.
   //--------------------------------------------------------------------
-  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    srfEmissFunc::init_srf_emiss_objects(
-        ncol_, grid_, ispec_srf.data_file, ispec_srf.sectors, srf_map_file,
-        // output
-        ispec_srf.horizInterp_, ispec_srf.data_start_, ispec_srf.data_end_,
-        ispec_srf.data_out_, ispec_srf.dataReader_);
-  }  // srf emissions file read init
 
   // -------------------------------------------------------------
   // Setup to enable reading soil erodibility file
@@ -316,32 +310,44 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Output fields
   // ---------------------------------------------------------------
   // Constituent fluxes of species in [kg/m2/s]
-  constituent_fluxes_ = get_field_out("constituent_fluxes").get_view<Real **>();
-
-  // ---------------------------------------------------------------
-  // Allocate memory for local and work arrays
-  // ---------------------------------------------------------------
-
-  // Work array to store fluxes after unit conversions to kg/m2/s
-  fluxes_in_mks_units_ = view_1d("fluxes_in_mks_units", ncol_);
-
-  // Current month ( 0-based)
-  const int curr_month = start_of_step_ts().get_month() - 1;
-
-  // Load the first month into data_end.
-
-  // Note: At the first time step, the data will be moved into data_beg,
-  // and data_end will be reloaded from file with the new month.
+  constituent_fluxes_ = get_field_out("constituent_fluxes");
 
   //--------------------------------------------------------------------
-  // Update surface emissions from file
+  // Setup data interpolation for surface emissions.
   //--------------------------------------------------------------------
-  for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    srfEmissFunc::update_srfEmiss_data_from_file(
-        ispec_srf.dataReader_, start_of_step_ts(), curr_month,
-        ispec_srf.scale_factor, *ispec_srf.horizInterp_,
-        ispec_srf.data_end_);  // output
+  {
+    using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
+    const FieldLayout scalar2d = grid_->get_2d_scalar_layout();
+    const auto srf_map_file    = m_params.get<std::string>("srf_remap_file", "");
+    const auto srf_time_interp = DataInterpolation::Linear;
+    for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
+      std::vector<Field> srf_fields;
+      srf_fields.reserve(ispec_srf.sectors.size());
+      for(const auto &sector_name : ispec_srf.sectors) {
+        Field field(FieldIdentifier(sector_name, scalar2d, none, grid_->name()));
+        field.allocate_view();
+        srf_fields.push_back(field);
+      }
+      ispec_srf.emiss_sector_fields_ = srf_fields;
+
+      ispec_srf.data_interp_ = std::make_shared<DataInterpolation>(grid_, srf_fields);
+      ispec_srf.data_interp_->set_logger(m_atm_logger);
+      ispec_srf.data_interp_->setup_periodic_time_database(
+          {ispec_srf.data_file});
+      ispec_srf.data_interp_->create_horiz_remappers(
+          srf_map_file == "none" ? "" : srf_map_file);
+
+      DataInterpolation::VertRemapData remap_data;
+      remap_data.vr_type = DataInterpolation::None;
+      ispec_srf.data_interp_->create_vert_remapper(remap_data);
+
+      ispec_srf.data_interp_->init_time_interpolation(start_of_step_ts(), srf_time_interp);
+    }
   }
+
+    // Current month ( 0-based)
+    const int curr_month = start_of_step_ts().get_month() - 1;
 
   //-----------------------------------------------------------------
   // Read Soil erodibility data
@@ -386,7 +392,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   Kokkos::fence();
 
   // Constituent fluxes [kg/m^2/s]
-  auto constituent_fluxes = this->constituent_fluxes_;
+  auto constituent_fluxes = constituent_fluxes_.get_view<Real **>();
 
   // Zero out constituent fluxes only for gasses and aerosols
   init_fluxes(ncol_,                // in
@@ -456,18 +462,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
-    // Update TimeState, note the addition of dt
-    ispec_srf.timeState_.t_now = ts.frac_of_year_in_days();
-
-    // Update time state and if the month has changed, update the data.
-    srfEmissFunc::update_srfEmiss_timestate(
-        ispec_srf.dataReader_, ts, *ispec_srf.horizInterp_, ispec_srf.scale_factor,
-        // output
-        ispec_srf.timeState_, ispec_srf.data_start_, ispec_srf.data_end_);
-
-    // Call the main srfEmiss routine to get interpolated aerosol forcings.
-    srfEmissFunc::srfEmiss_main(ispec_srf.timeState_, ispec_srf.data_start_,
-                                ispec_srf.data_end_, ispec_srf.data_out_);
+        ispec_srf.data_interp_->run(ts);
 
     //--------------------------------------------------------------------
     // Modify units to MKS units (from molecules/cm2/s to kg/m2/s)
@@ -476,18 +471,17 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
     // constituent_fluxes_)
     const int species_index = spcIndex_in_pcnst_.at(ispec_srf.species_name);
 
+    auto constituent_fluxes_ispe_srf = constituent_fluxes_.get_component(species_index);
     // modify units from molecules/cm2/s to kg/m2/s
-    auto fluxes_in_mks_units = this->fluxes_in_mks_units_;
-    const Real mfactor =
-        amufac * mam4::gas_chemistry::adv_mass[species_index - offset_];
-    const view_1d ispec_outdata0 =
-        ekat::subview(ispec_srf.data_out_.emiss_sectors, 0);
-    // Parallel loop over all the columns to update units
-    Kokkos::parallel_for(
-        "srf_emis_fluxes", ncol_, KOKKOS_LAMBDA(int icol) {
-          fluxes_in_mks_units(icol) = ispec_outdata0(icol) * mfactor;
-          constituent_fluxes(icol, species_index) = fluxes_in_mks_units(icol);
-        });
+    constituent_fluxes_ispe_srf.deep_copy(0.0);
+
+    for(const auto &sector_field : ispec_srf.emiss_sector_fields_) {
+        constituent_fluxes_ispe_srf.update(sector_field, 1, 1);
+    }
+
+        const Real mfactor = amufac * ispec_srf.scale_factor *
+                                                 mam4::gas_chemistry::adv_mass[species_index - offset_];
+    constituent_fluxes_ispe_srf.scale(mfactor);
   }  // for loop for species
   Kokkos::fence();
 }  // run_impl ends
