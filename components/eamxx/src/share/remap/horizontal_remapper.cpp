@@ -107,6 +107,18 @@ HorizontalRemapper::
 }
 
 void HorizontalRemapper::
+set_mask_threshold (const Real thresh)
+{
+  EKAT_REQUIRE_MSG (thresh>=0 and thresh<1,
+      "Error! Invalid mask threshold for HorizontalRemapper.\n"
+      "  - remapper name: " + name() + "\n"
+      "  - threshold    : " + std::to_string(thresh) + "\n"
+      "  - valid range  : [0,1)\n");
+
+  m_mask_threshold = thresh;
+}
+
+void HorizontalRemapper::
 registration_ends_impl ()
 {
   using namespace ShortFieldTagsNames;
@@ -501,7 +513,7 @@ rescale_masked_fields (const Field& x, const Field& real_mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_tgt_grid->get_num_local_dofs();
-  const Real mask_threshold = 0.25;
+  const Real mask_threshold = m_mask_threshold;
 
   Pack fv_pack(fill_val);
   auto& mask = x.get_valid_mask();
