@@ -4921,7 +4921,7 @@ done using only command line arguments; however, the command is quite long.
 The easier route is to reference the configuration file
 (<code>$EAMXX_ROOT/.clang-format</code>).
 In this case the command is</p>
-<div class="copy highlight"><pre><span></span><code>clang-format<span class="w"> </span><span class="o">[</span>-i<span class="o">]</span><span class="w"> </span>--style<span class="o">=</span><span class="s2">&quot;file:</span><span class="si">${</span><span class="nv">EAMXX_ROOT</span><span class="si">}</span><span class="s2">/.clang-format&quot;</span><span class="w"> </span>&lt;path/to/c++/source/file<span class="o">(</span>s<span class="o">)</span>&gt;
+<div class="copy highlight"><pre><span></span><code>clang-format<span class="w"> </span><span class="o">[</span>-i<span class="o">]</span><span class="w"> </span>--style<span class="o">=</span><span class="s2">"file:</span><span class="si">${</span><span class="nv">EAMXX_ROOT</span><span class="si">}</span><span class="s2">/.clang-format"</span><span class="w"> </span>&lt;path/to/c++/source/file<span class="o">(</span>s<span class="o">)</span>&gt;
 </code></pre></div>
 <p>where the <code>-i</code> (<code>--in-place</code>) argument controls whether the formatting edits
 are conducted and change the source file(s) ("in place") or the required edits
@@ -4932,7 +4932,7 @@ configuration could change before this guide is updated to reflect as such.</p>
 <!-- markdownlint-disable MD046 MD013 -->
 <details class="danger">
 <summary>Terminal One-(long-)liner</summary>
-<div class="copy highlight"><pre><span></span><code>clang-format<span class="w"> </span><span class="o">[</span>-i<span class="o">]</span><span class="w"> </span>--style<span class="o">=</span><span class="s2">&quot;{BasedOnStyle: llvm, ColumnLimit: 100, AlignConsecutiveAssignments: true, AlignConsecutiveBitFields: true, AlignConsecutiveMacros: true, AlignEscapedNewlines: true, AlignTrailingComments: true}&quot;</span><span class="w"> </span>&lt;path/to/c++/source/file<span class="o">(</span>s<span class="o">)</span>&gt;
+<div class="copy highlight"><pre><span></span><code>clang-format<span class="w"> </span><span class="o">[</span>-i<span class="o">]</span><span class="w"> </span>--style<span class="o">=</span><span class="s2">"{BasedOnStyle: llvm, ColumnLimit: 100, AlignConsecutiveAssignments: true, AlignConsecutiveBitFields: true, AlignConsecutiveMacros: true, AlignEscapedNewlines: true, AlignTrailingComments: true}"</span><span class="w"> </span>&lt;path/to/c++/source/file<span class="o">(</span>s<span class="o">)</span>&gt;
 </code></pre></div>
 </details>
 <!-- markdownlint-enable MD046 MD013 -->
@@ -4992,10 +4992,10 @@ is as simple as</p>
 </code></pre></div>
 <p>It it likely that Homebrew will issue a message about not linking the
 <code>clang</code>-related tools by default, so next we add the binary to our <code>PATH</code>.</p>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;/opt/homebrew/opt/llvm@14/bin/clang-format:</span><span class="nv">$PATH</span><span class="s2">&quot;</span>
+<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">"/opt/homebrew/opt/llvm@14/bin/clang-format:</span><span class="nv">$PATH</span><span class="s2">"</span>
 <span class="c1"># Note: this is the default location for a recent Mac running Apple silicon.</span>
 <span class="c1"># It may be different on another system.</span>
-<span class="c1"># You can confirm where yours is installed via &#39;brew info llvm@14&#39;</span>
+<span class="c1"># You can confirm where yours is installed via 'brew info llvm@14'</span>
 $<span class="w"> </span>which<span class="w"> </span>clang-format
 /opt/homebrew/opt/llvm@14/bin/clang-format
 </code></pre></div>
@@ -5003,7 +5003,7 @@ $<span class="w"> </span>which<span class="w"> </span>clang-format
 it may be preferable to instead set a versioned alias to <code>clang-format</code>
 (<code>clang-format-14</code>) as in</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// create a shell-alias</span>
-<span class="n">alias</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span><span class="o">=</span><span class="s">&quot;/opt/homebrew/opt/llvm@14/bin/clang-format&quot;</span>
+<span class="n">alias</span><span class="w"> </span><span class="n">clang</span><span class="o">-</span><span class="n">format</span><span class="mi">-14</span><span class="o">=</span><span class="s">"/opt/homebrew/opt/llvm@14/bin/clang-format"</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -5065,11 +5065,11 @@ As an example, here's my <code>.envrc</code> that adds <code>clang-format v14</c
 when I'm working on <code>EAMxx</code>.</p>
 <div class="copy highlight"><pre><span></span><code>PATH_add<span class="w"> </span>/opt/homebrew/opt/llvm@14/bin/clang-format
 
-<span class="c1"># also, since I often forget to load a python environment that&#39;s required for</span>
+<span class="c1"># also, since I often forget to load a python environment that's required for</span>
 <span class="c1"># running ctest, this creates or loads a python 3 virtual environment with numpy</span>
 layout<span class="w"> </span>python3
 pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>pip
-<span class="c1"># the upgrade isn&#39;t strictly necessary but trades a little extra setup on</span>
+<span class="c1"># the upgrade isn't strictly necessary but trades a little extra setup on</span>
 <span class="c1"># the front end to avoid pip endlessly reminding you to update</span>
 pip<span class="w"> </span>install<span class="w"> </span>numpy
 </code></pre></div>

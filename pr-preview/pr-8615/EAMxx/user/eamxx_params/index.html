@@ -5454,6 +5454,90 @@
 </ul>
 </li>
 </ul>
+<h2 id="water_tracers">water_tracers</h2>
+<ul>
+<li>water_tracers::tracer_count:<ul>
+<li>description: Number of water tracers to track (0 = disabled)</li>
+<li>type: integer</li>
+<li>constraints: ge 0</li>
+</ul>
+</li>
+<li>water_tracers::number_of_subcycles:<ul>
+<li>description: how many times to subcycle this atm process</li>
+<li>type: <strong>MISSING</strong></li>
+<li>constraints: gt 0</li>
+</ul>
+</li>
+<li>water_tracers::enable_precondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>water_tracers::enable_postcondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>water_tracers::repair_log_level:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: string</li>
+<li>valid values: trace,debug,info,warn</li>
+</ul>
+</li>
+<li>water_tracers::internal_diagnostics_level:<ul>
+<li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)</li>
+<li>type: integer</li>
+<li>valid values: 0,1,2</li>
+</ul>
+</li>
+<li>water_tracers::compute_tendencies:<ul>
+<li>description: list of computed fields/groups for which this process will back out tendencies</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+</ul>
+<h2 id="water_isotopes">water_isotopes</h2>
+<ul>
+<li>water_isotopes::tracer_count:<ul>
+<li>description: Number of isotope tracers to track (0 = disabled)</li>
+<li>type: integer</li>
+<li>constraints: ge 0</li>
+</ul>
+</li>
+<li>water_isotopes::number_of_subcycles:<ul>
+<li>description: how many times to subcycle this atm process</li>
+<li>type: <strong>MISSING</strong></li>
+<li>constraints: gt 0</li>
+</ul>
+</li>
+<li>water_isotopes::enable_precondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>water_isotopes::enable_postcondition_checks:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: logical</li>
+</ul>
+</li>
+<li>water_isotopes::repair_log_level:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: string</li>
+<li>valid values: trace,debug,info,warn</li>
+</ul>
+</li>
+<li>water_isotopes::internal_diagnostics_level:<ul>
+<li>description: Whether to print hashes of the atm proc fields: 0=no, 1=yes (lump fields), 2=yes (individual fields)</li>
+<li>type: integer</li>
+<li>valid values: 0,1,2</li>
+</ul>
+</li>
+<li>water_isotopes::compute_tendencies:<ul>
+<li>description: list of computed fields/groups for which this process will back out tendencies</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+</ul>
 <h2 id="gw">gw</h2>
 <ul>
 <li>gw::use_gw_convect:<ul>
@@ -6531,6 +6615,11 @@
 <li>type: file</li>
 </ul>
 </li>
+<li>spc::gas_species:<ul>
+<li>description: List of gas species to read in and prescribe</li>
+<li>type: array(string)</li>
+</ul>
+</li>
 <li>spc::time_interpolation_method:<ul>
 <li>description: Method for interpolating SPC data in time</li>
 <li>type: string</li>
@@ -7418,6 +7507,11 @@
 </ul>
 </li>
 <li>ctl_nl::hypervis_scaling:<ul>
+<li>description: <strong>MISSING</strong></li>
+<li>type: <strong>MISSING</strong></li>
+</ul>
+</li>
+<li>ctl_nl::laplace_scaling:<ul>
 <li>description: <strong>MISSING</strong></li>
 <li>type: <strong>MISSING</strong></li>
 </ul>

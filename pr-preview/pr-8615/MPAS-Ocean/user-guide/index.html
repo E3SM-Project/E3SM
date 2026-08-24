@@ -5173,10 +5173,10 @@ For more information on the schemes used within MPAS-Ocean, refer to the <a href
 Namelist parameters can be changed from default values by modifying the <code>user_nl_mpaso</code> file, found in the <code>case_scripts</code> directory. This is done by entering <code>[namelist option] = [changed value]</code> as separate lines in the <code>user_nl_mpaso</code> file. All other options will remain defaults. These changes can be added at run time and will take effect in the next submission.</p>
 <p>Refer to the <a href="https://zenodo.org/records/11098080">MPAS-Ocean User's Guide</a> (Chapter 10) for a comprehensive description of the namelist parameters and the options that they correspond to. Namelist options may also be found in the code repository in the file <code>components/mpas-ocean/src/Registry.xml</code> for general flags, <code>components/mpas-ocean/src/tracer_groups/Registry_*.xml</code> for specific tracer group flags, and <code>components/mpas-ocean/src/analysis_members/Registry_*.xml</code> for analysis member flags.</p>
 <h4 id="example-of-a-namelist-change-via-user_nl_mpaso">Example of a namelist change via <code>user_nl_mpaso</code></h4>
-<div class="highlight"><pre><span></span><code> config_GM_closure = &#39;constant&#39;
+<div class="highlight"><pre><span></span><code> config_GM_closure = 'constant'
  config_gm_constant_kappa = 900
- config_time_integrator = &#39;split_explicit&#39;
- config_am_timeseriesstatsmonthly_compute_interval = &#39;00-00-01_00:00:00&#39;
+ config_time_integrator = 'split_explicit'
+ config_am_timeseriesstatsmonthly_compute_interval = '00-00-01_00:00:00'
 </code></pre></div>
 <p>In this example, the namelist changes include changing the eddy closure (first 2 options for the type of closure and a parameter value), switching the time integration scheme, and modifying an analysis member (in this case, the interval from which the monthly analysis member is computed).</p>
 <p>Reminder: <code>user_nl_mpaso</code> can be empty. All options not specified are defaults (given the compset and mesh). Some options (like interior restoring) require extra fields to be present in the input file.  </p>
@@ -5187,16 +5187,16 @@ or read together to or from the same file or set of files. They are used for rea
 Streams are defined in XML configuration files that are created at build time for each model core. The name of this XML file for the ocean core is <code>streams.ocean</code> (the sea ice has a similar <code>streams.seaice</code>). Importantly, the stream file is generated in the run directory during the <code>./case.setup</code> step, but <strong>changes made into the run directory will not take effect</strong>. To make changes to the output fields, <strong>copy the <code>streams.ocean</code> file from the run directory into the<code>case_scripts/SourceMods/src.mpaso/</code> directory</strong>. Changes to the stream file made into the <code>SourceMods</code> sub-directory will take effect on the next case submission (there is no need to re-compile after making modifications to the XML file). Alternatively, changes to the streams file can be made directly in the code in <code>components/mpas-ocean/cime_config/buildnml</code>.</p>
 <h4 id="checking-initial-conditions">Checking initial conditions</h4>
 <p>Key information to check regarding the input data typically include:</p>
-<div class="highlight"><pre><span></span><code>&lt;immutable_stream name=&quot;mesh&quot;
-                  type=&quot;none&quot;
-                  io_type=&quot;pnetcdf&quot;
-                  filename_template=&quot;/lcrc/group/e3sm/data/inputdata/ocn/mpas-o/IcoswISC30E3r5/mpaso.IcoswISC30E3r5.20231120.nc&quot;
+<div class="highlight"><pre><span></span><code>&lt;immutable_stream name="mesh"
+                  type="none"
+                  io_type="pnetcdf"
+                  filename_template="/lcrc/group/e3sm/data/inputdata/ocn/mpas-o/IcoswISC30E3r5/mpaso.IcoswISC30E3r5.20231120.nc"
 /&gt;
-&lt;immutable_stream name=&quot;input&quot;
-                  type=&quot;input&quot;
-                  io_type=&quot;pnetcdf&quot;
-                  input_interval=&quot;initial_only&quot;
-                  filename_template=&quot;/lcrc/group/e3sm/data/inputdata/ocn/mpas-o/IcoswISC30E3r5/mpaso.IcoswISC30E3r5.20231120.nc&quot;
+&lt;immutable_stream name="input"
+                  type="input"
+                  io_type="pnetcdf"
+                  input_interval="initial_only"
+                  filename_template="/lcrc/group/e3sm/data/inputdata/ocn/mpas-o/IcoswISC30E3r5/mpaso.IcoswISC30E3r5.20231120.nc"
 /&gt;
 </code></pre></div>
 <p>The <code>mesh</code> filename points to the mesh file used. The <code>input</code> filename points to the file containing the ocean initial conditions (if the run type is <code>initial</code>).
@@ -5217,59 +5217,59 @@ The streams file can be large, it is often useful to rely on the search function
 <li>make further modifications: e.g. you can modify the <code>output_interval</code> for the high-frequency stream. If you are turning on a new stream, remove unnecessary variables from the stream.</li>
 </ul>
 <h5 id="excerpts-from-a-streamsocean-file">Excerpts from a <code>streams.ocean</code> file</h5>
-<div class="highlight"><pre><span></span><code>&lt;stream name=&quot;timeSeriesStatsMonthlyOutput&quot;
-        type=&quot;output&quot;
-        precision=&quot;single&quot;
-        io_type=&quot;pnetcdf&quot;
-        useMissingValMask=&quot;true&quot;
-        filename_template=&quot;GMPAS-JRA.TL319_IcoswISC30E3r5.anvil.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc&quot;
-        filename_interval=&quot;00-01-00_00:00:00&quot;
-        reference_time=&quot;01-01-01_00:00:00&quot;
-        output_interval=&quot;00-01-00_00:00:00&quot;
-        clobber_mode=&quot;truncate&quot;
-        packages=&quot;timeSeriesStatsMonthlyAMPKG&quot;
-        runtime_format=&quot;single_file&quot;&gt;
+<div class="highlight"><pre><span></span><code>&lt;stream name="timeSeriesStatsMonthlyOutput"
+        type="output"
+        precision="single"
+        io_type="pnetcdf"
+        useMissingValMask="true"
+        filename_template="GMPAS-JRA.TL319_IcoswISC30E3r5.anvil.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"
+        filename_interval="00-01-00_00:00:00"
+        reference_time="01-01-01_00:00:00"
+        output_interval="00-01-00_00:00:00"
+        clobber_mode="truncate"
+        packages="timeSeriesStatsMonthlyAMPKG"
+        runtime_format="single_file"&gt;
 
-    &lt;var name=&quot;daysSinceStartOfSim&quot;/&gt;
-    &lt;var name=&quot;binBoundaryMerHeatTrans&quot;/&gt;
-    &lt;var name=&quot;binBoundaryZonalMean&quot;/&gt;
-    &lt;var name=&quot;ssh&quot;/&gt;
-    &lt;var_struct name=&quot;tracers&quot;/&gt;
-    &lt;var name=&quot;velocityMeridional&quot;/&gt;
-    &lt;var name=&quot;velocityZonal&quot;/&gt;
-    &lt;var name=&quot;layerThickness&quot;/&gt;
+    &lt;var name="daysSinceStartOfSim"/&gt;
+    &lt;var name="binBoundaryMerHeatTrans"/&gt;
+    &lt;var name="binBoundaryZonalMean"/&gt;
+    &lt;var name="ssh"/&gt;
+    &lt;var_struct name="tracers"/&gt;
+    &lt;var name="velocityMeridional"/&gt;
+    &lt;var name="velocityZonal"/&gt;
+    &lt;var name="layerThickness"/&gt;
 ...
 &lt;/stream&gt;
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>&lt;stream name=&quot;highFrequencyOutput&quot;
-        type=&quot;output&quot;
-        precision=&quot;single&quot;
-        io_type=&quot;pnetcdf&quot;
-        filename_template=&quot;GMPAS-JRA.TL319_IcoswISC30E3r5.anvil.mpaso.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc&quot;
-        filename_interval=&quot;00-01-00_00:00:00&quot;
-        reference_time=&quot;01-01-01_00:00:00&quot;
-        output_interval=&quot;00-00-05_00:00:00&quot;
-        clobber_mode=&quot;truncate&quot;
-        packages=&quot;highFrequencyOutputAMPKG&quot;&gt;
+<div class="highlight"><pre><span></span><code>&lt;stream name="highFrequencyOutput"
+        type="output"
+        precision="single"
+        io_type="pnetcdf"
+        filename_template="GMPAS-JRA.TL319_IcoswISC30E3r5.anvil.mpaso.highFrequencyOutput.$Y-$M-$D_$h.$m.$s.nc"
+        filename_interval="00-01-00_00:00:00"
+        reference_time="01-01-01_00:00:00"
+        output_interval="00-00-05_00:00:00"
+        clobber_mode="truncate"
+        packages="highFrequencyOutputAMPKG"&gt;
 
-    &lt;var name=&quot;xtime&quot;/&gt;
-    &lt;var name=&quot;daysSinceStartOfSim&quot;/&gt;
-    &lt;var_array name=&quot;activeTracersAtSurface&quot;/&gt;
-    &lt;var_array name=&quot;activeTracersAt250m&quot;/&gt;
-    &lt;var_array name=&quot;activeTracersAtBottom&quot;/&gt;
-    &lt;var name=&quot;kineticEnergyAtSurface&quot;/&gt;
-    &lt;var name=&quot;kineticEnergyAt250m&quot;/&gt;
-    &lt;var name=&quot;relativeVorticityAt250m&quot;/&gt;
-    &lt;var name=&quot;ssh&quot;/&gt;
-    &lt;var name=&quot;pressureAdjustedSSH&quot;/&gt;
-    &lt;var name=&quot;boundaryLayerDepth&quot;/&gt;
-    &lt;var name=&quot;dThreshMLD&quot;/&gt;
-    &lt;var name=&quot;tThreshMLD&quot;/&gt;
-    &lt;var name=&quot;columnIntegratedSpeed&quot;/&gt;
-    &lt;var name=&quot;barotropicSpeed&quot;/&gt;
-    &lt;var name=&quot;landIceFreshwaterFlux&quot;/&gt;
-    &lt;var name=&quot;pressureAdjustedSSH&quot;/&gt;
-    &lt;var name=&quot;atmosphericPressure&quot;/&gt;
+    &lt;var name="xtime"/&gt;
+    &lt;var name="daysSinceStartOfSim"/&gt;
+    &lt;var_array name="activeTracersAtSurface"/&gt;
+    &lt;var_array name="activeTracersAt250m"/&gt;
+    &lt;var_array name="activeTracersAtBottom"/&gt;
+    &lt;var name="kineticEnergyAtSurface"/&gt;
+    &lt;var name="kineticEnergyAt250m"/&gt;
+    &lt;var name="relativeVorticityAt250m"/&gt;
+    &lt;var name="ssh"/&gt;
+    &lt;var name="pressureAdjustedSSH"/&gt;
+    &lt;var name="boundaryLayerDepth"/&gt;
+    &lt;var name="dThreshMLD"/&gt;
+    &lt;var name="tThreshMLD"/&gt;
+    &lt;var name="columnIntegratedSpeed"/&gt;
+    &lt;var name="barotropicSpeed"/&gt;
+    &lt;var name="landIceFreshwaterFlux"/&gt;
+    &lt;var name="pressureAdjustedSSH"/&gt;
+    &lt;var name="atmosphericPressure"/&gt;
 &lt;/stream&gt;
 </code></pre></div>
 <p>A more comprehensive description of the streams options can be found in Chapter 6 of the <a href="https://zenodo.org/records/11098080">MPAS-Ocean User's Guide</a>.</p>
