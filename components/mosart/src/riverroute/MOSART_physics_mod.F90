@@ -20,9 +20,8 @@ MODULE MOSART_physics_mod
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm
   use MOSART_heat_mod
   use MOSART_stra_mod
-  use MOSART_lake_r_mod
-  use MOSART_lake_t_mod
-  use MOSART_lake_hydro_mod
+  use MOSART_lake_r_mod, only : mosart_lake_r
+  use MOSART_lake_t_mod, only : mosart_lake_t
   use RtmSpmd       , only : masterproc, mpicom_rof, iam
   use RtmTimeManager, only : get_curr_date, is_new_month
 
@@ -264,10 +263,14 @@ MODULE MOSART_physics_mod
              end if
              end if
              
-             if (heatflag .and. lakeflag .and. TUnit_lake_t%lake_flg(iunit) >=1) then ! lake is on the sub-channel
+             if (lakeflag .and. TUnit_lake_t%lake_flg(iunit) >=1) then ! lake is on the sub-channel
 			 if (nt == nt_nliq) then
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
-                 call mosart_lake_t(iunit,nt,localDeltaT,temp_Tt) ! here calculate the lake layer change and stratification only
+                 if (heatflag) then
+                     call mosart_lake_t(iunit,nt,localDeltaT,temp_Tt) ! here calculate the lake layer change and stratification only
+                 else
+                     call mosart_lake_t(iunit,nt,localDeltaT,275.15_r8) ! heat OFF: neutral inflow temperature (matches temp_lake init) so density-based layer placement is uniform
+                 end if
                  !THeat%ha_lateral(iunit) = cr_advectheat(abs(TRunoff%erlateral(iunit,nt_nliq)+TRunoff%erlateral(iunit,nt_nice)), TLake_t%lake_Tout(iunit))
                  !TLake_t%lake_evap(iunit) = TLake_t%lake_evap(iunit)/localDeltaT
                  TLake_t%lake_evap_avg(iunit) = TLake_t%lake_evap_avg(iunit) + TLake_t%lake_evap(iunit)
@@ -566,11 +569,15 @@ MODULE MOSART_physics_mod
              end if
              end if
              
-             if (heatflag .and. lakeflag .and. TUnit_lake_r%lake_flg(iunit) >=1) then ! lake is on the main channel
+             if (lakeflag .and. TUnit_lake_r%lake_flg(iunit) >=1) then ! lake is on the main channel
 			 if (nt == nt_nliq) then
              !if(TUnit%rlen(iunit) > myTINYVALUE) then  ! if no mainchannel, no lake modeling. TODO
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R
-                 call mosart_lake_r(iunit,nt,localDeltaT,temp_Tr) ! here calculate the lake layer change and stratification only
+                 if (heatflag) then
+                     call mosart_lake_r(iunit,nt,localDeltaT,temp_Tr) ! here calculate the lake layer change and stratification only
+                 else
+                     call mosart_lake_r(iunit,nt,localDeltaT,275.15_r8) ! heat OFF: neutral inflow temperature (matches temp_lake init) so density-based layer placement is uniform
+                 end if
                  !TLake_r%lake_evap(iunit) = TLake_r%lake_evap(iunit)/localDeltaT
                  ! if(TRunoff%erout(iunit,nt)==0._r8) TRunoff%erout(iunit,nt) = temp_erout
                  TLake_r%lake_evap_avg(iunit) = TLake_r%lake_evap_avg(iunit) + TLake_r%lake_evap(iunit)

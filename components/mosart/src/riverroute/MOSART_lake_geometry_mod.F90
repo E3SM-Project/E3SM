@@ -139,7 +139,10 @@ MODULE MOSART_lake_geometry_mod
                     endif
                end do    
                  
-               if (TLake_r%d_ns(iunit)>1 .and. TLake_r%dd_z(iunit,TLake_r%d_ns(iunit)-1)<ddz_top)then !layer thickness too small
+               ! nested if: Fortran .and. does not short-circuit, so the d_ns-1 index
+               ! must not be evaluated when d_ns == 1 (out-of-bounds)
+               if (TLake_r%d_ns(iunit)>1) then
+               if (TLake_r%dd_z(iunit,TLake_r%d_ns(iunit)-1)<ddz_top)then !layer thickness too small
                     TLake_r%d_ns(iunit)=int((TLake_r%d_lake(iunit)/ddz_top)+1) 
                     do j=1,nlayers!TLake_r%d_ns(iunit)
                           TLake_r%dd_z(iunit,j) = 0._r8
@@ -152,9 +155,10 @@ MODULE MOSART_lake_geometry_mod
                           else
                               TLake_r%dd_z(iunit,j) = (TLake_r%d_lake(iunit) - TLake_r%dd_z(iunit,TLake_r%d_ns(iunit)))/(TLake_r%d_ns(iunit) - 1) !bottom layers evenly descritized
                           end if
-                    end do    
+                    end do
                end if
-             
+               end if ! d_ns > 1 (short-circuit guard)
+
                if (TLake_r%d_ns(iunit)>1) then
                     TLake_r%ddz_local(iunit) = TLake_r%dd_z(iunit,TLake_r%d_ns(iunit)-1)
                else
@@ -320,7 +324,10 @@ MODULE MOSART_lake_geometry_mod
                     endif
                end do    
                  
-               if (TLake_t%d_ns(iunit)>1 .and. TLake_t%dd_z(iunit,TLake_t%d_ns(iunit)-1)<ddz_top)then !layer thickness too small
+               ! nested if: Fortran .and. does not short-circuit, so the d_ns-1 index
+               ! must not be evaluated when d_ns == 1 (out-of-bounds)
+               if (TLake_t%d_ns(iunit)>1) then
+               if (TLake_t%dd_z(iunit,TLake_t%d_ns(iunit)-1)<ddz_top)then !layer thickness too small
                     TLake_t%d_ns(iunit)=int((TLake_t%d_lake(iunit)/ddz_top)+1) 
                     do j=1,nlayers!TLake_t%d_ns(iunit)
                           TLake_t%dd_z(iunit,j) = 0._r8
@@ -333,9 +340,10 @@ MODULE MOSART_lake_geometry_mod
                           else
                               TLake_t%dd_z(iunit,j) = (TLake_t%d_lake(iunit) - TLake_t%dd_z(iunit,TLake_t%d_ns(iunit)))/(TLake_t%d_ns(iunit) - 1) !bottom layers evenly descritized
                           end if
-                    end do    
+                    end do
                end if
-             
+               end if ! d_ns > 1 (short-circuit guard)
+
                if (TLake_t%d_ns(iunit)>1) then
                     TLake_t%ddz_local(iunit) = TLake_t%dd_z(iunit,TLake_t%d_ns(iunit)-1)
                else
@@ -499,6 +507,12 @@ MODULE MOSART_lake_geometry_mod
                     TLake_r%dd_z(iunit,i) = TLake_r%d_z(iunit,i+1)-TLake_r%d_z(iunit,i)
                 else !enough volume, layers don't collapses
                     TLake_r%v_zt(iunit,i+1)=(TLake_r%v_zt(iunit,i) + TLake_r%v_zn(iunit,i))!TLake_r%dv_nt(iunit,i)
+                    ! roundoff guard: a lake sitting exactly at capacity can exceed it by
+                    ! machine roundoff (no evap/precip debit); clamp instead of aborting
+                    if (TLake_r%v_zt(iunit,i+1) > TLake_r%v_zti(iunit,ngeom+1) .and. &
+                        TLake_r%v_zt(iunit,i+1) <= TLake_r%v_zti(iunit,ngeom+1)*(1.0_r8+1.0e-6_r8) + 1.0e-3_r8) then
+                        TLake_r%v_zt(iunit,i+1) = TLake_r%v_zti(iunit,ngeom+1)
+                    end if
  !if(iunit == 186781) then
  !    write(unit=1002,fmt="(i4, i4, 5(e14.6))") 3, TLake_r%d_ns(iunit), TLake_r%v_zn(iunit,1), TLake_r%v_zn(iunit,2), TLake_r%v_zt(iunit, TLake_r%d_ns(iunit) + 1), sum(TLake_r%d_v(iunit,:)), sum(TLake_r%dv_nt(iunit,:))
  !    write(unit=1002,fmt="(i4, i4, 5(e14.6))") 3, TLake_r%d_ns(iunit), TLake_r%dd_z(iunit,TLake_r%d_ns(iunit)), TLake_r%v_zn(iunit,1), TLake_r%v_zt(iunit, 2) - TLake_r%v_zt(iunit, 1), sum(TLake_r%d_v(iunit,:)), sum(TLake_r%dv_nt(iunit,:))
@@ -681,6 +695,12 @@ MODULE MOSART_lake_geometry_mod
                     TLake_t%dd_z(iunit,i) = TLake_t%d_z(iunit,i+1)-TLake_t%d_z(iunit,i)
                 else !enough volume, layers don't collapses
                     TLake_t%v_zt(iunit,i+1)=(TLake_t%v_zt(iunit,i) + TLake_t%v_zn(iunit,i))!TLake_t%dv_nt(iunit,i)
+                    ! roundoff guard: a lake sitting exactly at capacity can exceed it by
+                    ! machine roundoff (no evap/precip debit); clamp instead of aborting
+                    if (TLake_t%v_zt(iunit,i+1) > TLake_t%v_zti(iunit,ngeom+1) .and. &
+                        TLake_t%v_zt(iunit,i+1) <= TLake_t%v_zti(iunit,ngeom+1)*(1.0_r8+1.0e-6_r8) + 1.0e-3_r8) then
+                        TLake_t%v_zt(iunit,i+1) = TLake_t%v_zti(iunit,ngeom+1)
+                    end if
  !if(iunit == 186781) then
  !    write(unit=1002,fmt="(i4, i4, 5(e14.6))") 3, TLake_t%d_ns(iunit), TLake_t%v_zn(iunit,1), TLake_t%v_zn(iunit,2), TLake_t%v_zt(iunit, TLake_t%d_ns(iunit) + 1), sum(TLake_t%d_v(iunit,:)), sum(TLake_t%dv_nt(iunit,:))
  !    write(unit=1002,fmt="(i4, i4, 5(e14.6))") 3, TLake_t%d_ns(iunit), TLake_t%dd_z(iunit,TLake_t%d_ns(iunit)), TLake_t%v_zn(iunit,1), TLake_t%v_zt(iunit, 2) - TLake_t%v_zt(iunit, 1), sum(TLake_t%d_v(iunit,:)), sum(TLake_t%dv_nt(iunit,:))
@@ -1168,7 +1188,10 @@ MODULE MOSART_lake_geometry_mod
         real(r8) :: v_sum1, d_sum1, v_sum2, d_sum2 ! total lake volume [m^3]
         
         myTINYVALUE = 1e-6_r8
-        
+
+        ! at the layer cap: keep the thick layer rather than split past nlayers (abort backstop below)
+        if (TLake_r%d_ns(iunit) >= nlayers-1) return
+
         !v_sum1 = sum(TLake_r%d_v(iunit,:))
         !d_sum1 = sum(TLake_r%dd_z(iunit,:))
 
@@ -1236,7 +1259,10 @@ MODULE MOSART_lake_geometry_mod
         real(r8) :: v_sum1, d_sum1, v_sum2, d_sum2 ! total lake volume [m^3]
         
         myTINYVALUE = 1e-6_r8
-        
+
+        ! at the layer cap: keep the thick layer rather than split past nlayers (abort backstop below)
+        if (TLake_t%d_ns(iunit) >= nlayers-1) return
+
         !v_sum1 = sum(TLake_t%d_v(iunit,:))
         !d_sum1 = sum(TLake_t%dd_z(iunit,:))
 

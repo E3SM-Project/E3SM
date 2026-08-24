@@ -14,7 +14,7 @@ MODULE mosart_lake_r_mod
     use RtmTimeManager
     use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TUnit_lake_r, TLake_r, TPara, rtmCTL
     use rof_cpl_indices, only : nt_nliq, nt_nice
-    use RtmVar         , only : iulog, ngeom, nlayers, rstraflag, lakeflag
+    use RtmVar         , only : iulog, ngeom, nlayers, rstraflag, lakeflag, heatflag
     use MOSART_heat_mod
     use MOSART_lake_hydro_mod
     use MOSART_lake_heat_mod
@@ -134,8 +134,12 @@ MODULE mosart_lake_r_mod
             !TLake_r%lake_rain(iunit) = THeat%forc_rain(iunit) * TUnit_lake_r%A_max(iunit) * 1e6  ! note the unit for A_max is km2
             !TLake_r%lake_snow(iunit) = THeat%forc_snow(iunit) * TUnit_lake_r%A_max(iunit) * 1e6
             TLake_r%lake_inflow(iunit) = -TRunoff%erout(iunit,nt) !inflow does not change during sub timesteps                
-            TLake_r%lake_Tsur(iunit) = THeat%Tr(iunit)
-            do ww = 1,s_dtime    ! Start calculation for each sub-timestep    ************************************************            
+            if (heatflag) then
+                TLake_r%lake_Tsur(iunit) = THeat%Tr(iunit)
+            else
+                TLake_r%lake_Tsur(iunit) = TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit)) ! heat OFF: isothermal lake
+            end if
+            do ww = 1,s_dtime    ! Start calculation for each sub-timestep    ************************************************
                 
                 !!======================== water balance processes   
     !if(iunit == 198841) then 
@@ -188,18 +192,22 @@ MODULE mosart_lake_r_mod
                 !! lake precipitation and evaporation
                 !d_prcp = THeat%forc_rain(iunit) * dtime  //TODO: not enable lake prec. now to avoid double counting
                 v_prcp = d_prcp * TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
-                t_s        = TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit)) 
-                call QSat_str(t_s, THeat%forc_pbot(iunit),es)                
+                if (heatflag) then ! heat OFF: no internal evaporation (evap/d_evap/v_evap stay 0).
+                                   ! NOTE: when the ELM ET-return (Flrl_wslake) lands, its storage debit
+                                   ! belongs in the heat-OFF branch here -- never both (double-evap guard).
+                t_s        = TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit))
+                call QSat_str(t_s, THeat%forc_pbot(iunit),es)
                 evap =  lake_evap_r(iunit,dtime,TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit)),F,es,sar)
-                d_evap = evap * dtime                
+                d_evap = evap * dtime
                 v_evap = d_evap * TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
                 if (v_evap - 0.95_r8 * TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) > TINYVALUE) then ! too little lake storage for lake evap. to occur fully
                     v_evap = TLake_r%d_v(iunit, TLake_r%d_ns(iunit)) * 0.95_r8
-                end if                
+                end if
                 if(v_evap < 0._r8) then
                     v_evap = 0._r8
                 end if
                 d_evap = v_evap / TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
+                end if ! heatflag (evaporation)
                 
                 ! advective inflow/outflow only, don't consider prec. or evap. fluxes here
                 !call mosart_lake_hydro_sub_channel(iunit,nt,dtime)
@@ -502,7 +510,8 @@ MODULE mosart_lake_r_mod
                 !Call lake_r_waterbalance_check(iunit)
 
 
-                !!======================== energy balance processes   
+                if (heatflag) then ! heat OFF: skip all energy-balance / stratification physics below
+                !!======================== energy balance processes
                 ! initialize for current sub time step
                 phi_o          = 0._r8 !
                 sh_net         = 0._r8            
@@ -721,8 +730,9 @@ MODULE mosart_lake_r_mod
                             k=k+1
                         else
                             k=k+2
-                        end if    
-                        v_mix=(TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1)-TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)-k))    
+                        end if
+                        k=min(k,TLake_r%d_ns(iunit)-1) ! guard: mixed zone cannot extend below the bottom layer (d_ns-k >= 1)
+                        v_mix=(TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1)-TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)-k))
                         !    Solar radiation energy absorbed at the mixed zone
                         sh_mix=sh_net*sar*(TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)-(1._r8-beta)*TLake_r%a_d(iunit,TLake_r%d_ns(iunit)-k))
                         j=TLake_r%d_ns(iunit)-k
@@ -818,7 +828,11 @@ MODULE mosart_lake_r_mod
                         elseif (j == TLake_r%d_ns(iunit)) then!top layer
                             m1(j) = 2._r8*dtime/(0.5_r8*(sar*TLake_r%a_d(iunit,j)+sar*TLake_r%a_d(iunit,j+1))*TLake_r%dd_z(iunit,j))
                             m2(j) = 0._r8
-                            m3(j) = m1(j)*sar*TLake_r%a_d(iunit,j)*df_eff(j)/(TLake_r%dd_z(iunit,j)+TLake_r%dd_z(iunit,j-1))
+                            if (j > 1) then
+                                m3(j) = m1(j)*sar*TLake_r%a_d(iunit,j)*df_eff(j)/(TLake_r%dd_z(iunit,j)+TLake_r%dd_z(iunit,j-1))
+                            else
+                                m3(j) = 0._r8 ! single-layer lake: no lower interface
+                            end if
                             Fx(j) = dtime*((phi_o-sh_net)*sar*TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)+phi_z(j))/(TLake_r%d_v(iunit,TLake_r%d_ns(iunit))*c_w*rho_z(j)) ! 
                             a(j) = 0._r8
                             b(j) = 1._r8 + (m2(j) + m3(j)) 
@@ -905,15 +919,18 @@ MODULE mosart_lake_r_mod
                             ! Calculate density of mixed layer    
                             denmix = den(tmix)
                             
-                            ! Check if instability exists below mixed layer    and mix layers    
-                            if(rho_z(mix1-1) < denmix .and. mix1 >= 2) then
-                                mix1=mix1-1    
-                            
-                                ! Calculate temperature of mixed layer    
+                            ! Check if instability exists below mixed layer    and mix layers
+                            ! (nested if: .and. does not short-circuit; rho_z(mix1-1) must not be evaluated when mix1 == 1)
+                            if(mix1 >= 2) then
+                            if(rho_z(mix1-1) < denmix) then
+                                mix1=mix1-1
+
+                                ! Calculate temperature of mixed layer
                                 mixvol1=TLake_r%d_v(iunit,mix1)*1._r8
                                 sumvol=sumvol + mixvol1
                                 tsum=tsum+TLake_r%temp_lake(iunit,mix1)*mixvol1
                                 tmix= tsum/sumvol
+                            end if
                             end if
                             
                             ! Calculate density of mixed layer    
@@ -1007,13 +1024,16 @@ MODULE mosart_lake_r_mod
     !if(iunit == 198841) then 
     !!    write(unit=21002,fmt="(i4, i4, 6(e18.10))") 2, TLake_r%d_ns(iunit), TLake_r%d_lake(iunit), TLake_r%dd_z(iunit,TLake_r%d_ns(iunit)), t_in, THeat%forc_t(iunit), TLake_r%temp_lake(iunit,1), TLake_r%temp_lake(iunit,TLake_r%d_ns(iunit))
     !end if
+                end if ! heatflag (energy balance processes)
             end do ! sub-timestep
 
             tmp_outflow = tmp_outflow/s_dtime
             TRunoff%erout(iunit,nt_nliq) = tmp_outflow
             tmp_tout = tmp_tout/s_dtime
             TLake_r%lake_Tout(iunit) = tmp_tout
-            THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)), TLake_r%lake_Tout(iunit))
+            if (heatflag) then
+                THeat%Ha_rout(iunit) = -cr_advectheat(abs(TRunoff%erout(iunit,nt_nliq)), TLake_r%lake_Tout(iunit))
+            end if
             tmp_evap = tmp_evap/s_dtime
             TLake_r%lake_evap(iunit) = -tmp_evap
             
@@ -1366,9 +1386,10 @@ MODULE mosart_lake_r_mod
         end do
                 
         jmin=TLake_r%J_Min(iunit)
-        !if(d_n>3)jmax=d_n-2 
+        !if(d_n>3)jmax=d_n-2
         !if(d_n<=3)jmax=d_n-1
         jmax = d_n
+        if (jmin < 1 .or. jmin > jmax) jmin = jmax ! guard: J_Min can be unset (0) for single-layer/degenerate lakes
         
         if(d_n==1) then ! outflow from single layer
             dv_ou(d_n) = ou_v

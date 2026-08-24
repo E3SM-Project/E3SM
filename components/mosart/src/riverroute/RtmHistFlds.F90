@@ -259,7 +259,7 @@ contains
            ptr_rof=rtmCTL%ssh, default='active')
     endif
 
-    if (heatflag .and. lakeflag) then
+    if (lakeflag) then ! lake history fields are independent of the heat model
        call RtmHistAddfld (fname='R_LAKE_EVAP'//'_'//trim(rtm_tracers(1)), units='m3/s',  &
             avgflag='A', long_name='MOSART mainchannel-lake evaporation: '//trim(rtm_tracers(1)), &
             ptr_rof=rtmCTL%lake_r_evap_nt1, default='active')

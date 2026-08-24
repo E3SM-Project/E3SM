@@ -378,8 +378,7 @@ contains
            sediflag = .false.
        end if
        if(.not.(heatflag) .and. lakeflag) then
-           write(iulog,*) 'lakeflag can only be effective when heatflag is set as .true.'
-           lakeflag = .false.
+           write(iulog,*) 'lakeflag without heatflag: MOSART-Lake runs hydrology-only (fill-and-spill, no evap/stratification)'
        end if
 
     end if
@@ -4972,8 +4971,8 @@ contains
         
      end if
 
-     !! Used in lake module
-     if (heatflag .and. lakeflag) then
+     !! Used in lake module (lake allocations/inputs are independent of the heat model)
+     if (lakeflag) then
          allocate (TUnit_lake_r%lake_flg(begr:endr))
          TUnit_lake_r%lake_flg = 0
          allocate (TUnit_lake_r%one_layer(begr:endr))
