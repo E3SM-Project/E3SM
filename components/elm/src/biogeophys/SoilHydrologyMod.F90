@@ -497,19 +497,22 @@ contains
              if (h2osfcflag==1) then
                 ! calculate runoff from h2osfc  -------------------------------------
                 if (use_modified_infil) then
-                  ! Bug-fix: use unadjusted frac_h2osfc_act so snow-cover
-                  ! adjustment of frac_h2osfc does not suppress ponded runoff.
                   if (frac_h2osfc_act(c) <= pc .and. frac_h2osfc(c) <= pc) then
                      frac_infclust=0.0_r8
                   else
-                     frac_infclust=(frac_h2osfc_act(c)-pc)**mu
+                      if (frac_h2osfc(c) <= pc) then
+                        frac_infclust=(frac_h2osfc_act(c)-pc)**mu
+                      else
+                        frac_infclust=(frac_h2osfc(c)-pc)**mu
+                      endif
                   endif
                 else
-                  ! Original scheme (use_modified_infil = .false.)
-                  if (frac_h2osfc(c) <= pc) then
+                  ! Default path: use unadjusted frac_h2osfc_act so snow-cover
+                  ! adjustment of frac_h2osfc does not suppress ponded runoff.
+                  if (frac_h2osfc_act(c) <= pc) then
                     frac_infclust=0.0_r8
                   else
-                    frac_infclust=(frac_h2osfc(c)-pc)**mu
+                    frac_infclust=(frac_h2osfc_act(c)-pc)**mu
                   endif
                 endif
              endif
