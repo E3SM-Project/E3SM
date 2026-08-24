@@ -120,7 +120,7 @@ contains
     integer , pointer  :: pftindx(:)     
     integer , pointer  :: colindx(:)     
     integer , pointer  :: lunindx(:)     
-    integer , pointer  :: grcindx(:) 
+    integer , pointer  :: grcindx(:)
     logical , pointer  :: pft_activei(:), pft_activeo(:) 
     logical , pointer  :: col_activei(:), col_activeo(:) 
     logical , pointer  :: lun_activei(:), lun_activeo(:) 
@@ -149,7 +149,6 @@ contains
     call check_dim_subgrid(ncidi, ncido, dimname ='column'  , dimleni=ncolsi, dimleno=ncolso)
     call check_dim_subgrid(ncidi, ncido, dimname ='landunit', dimleni=nlunsi, dimleno=nlunso)
     call check_dim_subgrid(ncidi, ncido, dimname ='gridcell', dimleni=ngrcsi, dimleno=ngrcso)
-
     if (masterproc) then
        write (iulog,*) 'input gridcells = ',ngrcsi,' output gridcells = ',ngrcso
        write (iulog,*) 'input landuntis = ',nlunsi,' output landunits = ',nlunso
@@ -196,27 +195,26 @@ contains
     begc_i = 1 ;  endc_i = ncolsi
     begl_i = 1 ;  endl_i = nlunsi
     begg_i = 1 ;  endg_i = ngrcsi
-
+    
     begp_o = bounds%begp ;  endp_o = bounds%endp
     begc_o = bounds%begc ;  endc_o = bounds%endc
     begl_o = bounds%begl ;  endl_o = bounds%endl
     begg_o = bounds%begg ;  endg_o = bounds%endg
-
+    
     allocate(pft_activei(begp_i:endp_i))
     allocate(col_activei(begc_i:endc_i))
     allocate(lun_activei(begl_i:endl_i))
     allocate(grc_activei(begg_i:endg_i))
-
+    
     allocate(pft_activeo(begp_o:endp_o))
     allocate(col_activeo(begc_o:endc_o))
     allocate(lun_activeo(begl_o:endl_o))
     allocate(grc_activeo(begg_o:endg_o))
-
+    
     allocate(pftindx(begp_o:endp_o))
     allocate(colindx(begc_o:endc_o))
     allocate(lunindx(begl_o:endl_o))
     allocate(grcindx(begg_o:endg_o))
-
     ! For each output pft, find the input pft, pftindx, that is closest
 
     if (masterproc) then
@@ -225,7 +223,6 @@ contains
     vec_dimname = 'pft'
     call findMinDist(vec_dimname, begp_i, endp_i, begp_o, endp_o, ncidi, ncido, &
          pft_activei, pft_activeo, pftindx )
-
     ! For each output column, find the input column, colindx, that is closest
 
     if (masterproc) then
@@ -377,6 +374,13 @@ contains
        else if ( ndimso == 1 ) then
 
           status = pio_inq_dimname(ncido, dimidso(1), vec_dimname)
+          if (trim(vec_dimname) == 'topounit') then
+             if (masterproc) then
+                write(iulog,*) 'Skipping topounit variable: ', trim(varname)
+             end if
+             CYCLE
+          end if
+
           if ( vec_dimname == 'pft' )then
              begi = begp_i
              endi = endp_i
@@ -708,6 +712,7 @@ contains
     else if (dimname == 'gridcell') then
        call ncd_io(ncid=ncid, varname='grid1d_lon'    , flag='read', data=subgrid%lon  )
        call ncd_io(ncid=ncid, varname='grid1d_lat'    , flag='read', data=subgrid%lat  )
+       itemp(:)=1
     end if
 
     do n = beg,end
