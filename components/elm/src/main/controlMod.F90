@@ -690,15 +690,16 @@ contains
     endif
 
     ! Lake evaporation cap method
-    if (lake_evap_cap_method /= 'rain_snow' .and. &
+    if (lake_evap_cap_method /= 'none' .and. &
+        lake_evap_cap_method /= 'rain_snow' .and. &
         lake_evap_cap_method /= 'rain_snow_h2osno' .and. &
         lake_evap_cap_method /= 'wslake') then
        write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
-       call endrun(msg=' ERROR:: choices are rain_snow, rain_snow_h2osno, or wslake' // &
+       call endrun(msg=' ERROR:: choices are none, rain_snow, or rain_snow_h2osno' // &
             errMsg(__FILE__, __LINE__))
     endif
     if (lake_evap_cap_method == 'wslake') then
-       call endrun(msg=' ERROR:: lake_evap_cap_method = wslake is not yet implemented' // &
+       call endrun(msg=' ERROR:: lake_evap_cap_method = wslake is not implemented' // &
             errMsg(__FILE__, __LINE__))
     endif
 
