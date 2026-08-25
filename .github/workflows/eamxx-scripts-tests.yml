@@ -57,6 +57,5 @@ jobs:
           if [ "${{ env.submit }}" == "true" ]; then
             ./scripts/scripts-ctest-driver -s -m ghci-snl-gnu
           else
-            ./scripts/scripts-tests -f -m ghci-snl-gnu
-            ./scripts/cime-nml-tests
+            ./scripts/scripts-ctest-driver -m ghci-snl-gnu
           fi
