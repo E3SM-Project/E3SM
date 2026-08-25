@@ -66,16 +66,7 @@ void SPC::initialize_impl (const RunType /* run_type */)
   auto pmid = get_field_in("p_mid");
   
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
-  if (time_interpolation_method=="yearly_periodic") {
-    m_data_interpolation->setup_periodic_time_database ({spc_data_file});
-  } else if (time_interpolation_method=="linear") {
-    m_data_interpolation->setup_linear_time_database ({spc_data_file});
-  } else {
-    EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " + 
-                   time_interpolation_method + 
-                   ". Valid options are: yearly_periodic, linear.\n");
-  }
-
+  m_data_interpolation->setup_time_database({spc_data_file}, time_interpolation_method);
   m_data_interpolation->create_horiz_remappers(spc_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData vremap_data;
   vremap_data.vr_type = DataInterpolation::Dynamic3DRef;
