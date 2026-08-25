@@ -314,7 +314,7 @@ void MAMDryDep::read_fractional_land_use_data() {
   frac_landuse_interp->set_logger(m_atm_logger);
   frac_landuse_interp->setup_static_database({frac_landuse_data_file});
   frac_landuse_interp->create_horiz_remappers(
-      mapping_file == "none" ? "" : mapping_file);
+      mapping_file == "none" ? "" : mapping_file, m_iop_data_manager);
   DataInterpolation::VertRemapData remap_data;
   remap_data.vr_type = DataInterpolation::None;
   frac_landuse_interp->create_vert_remapper(remap_data);

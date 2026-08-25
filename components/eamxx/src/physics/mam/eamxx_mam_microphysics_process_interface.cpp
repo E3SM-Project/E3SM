@@ -471,7 +471,7 @@ void MAMMicrophysics::set_oxid_reader()
 
   data_interp_oxid_ = std::make_shared<DataInterpolation>(grid_,oxid_fields);
   data_interp_oxid_->setup_periodic_time_database ({oxid_file_name});
-  data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file);
+  data_interp_oxid_->create_horiz_remappers (oxid_map_file=="none" ? "" : oxid_map_file, m_iop_data_manager);
   data_interp_oxid_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_data_oxid;
   remap_data_oxid.vr_type = DataInterpolation::Dynamic3DRef;
@@ -505,7 +505,7 @@ void MAMMicrophysics::set_linoz_reader(){
 
   data_interp_linoz_ = std::make_shared<DataInterpolation>(grid_,linoz_fields);
   data_interp_linoz_->setup_periodic_time_database ({m_linoz_file_name});
-  data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file);
+  data_interp_linoz_->create_horiz_remappers (linoz_map_file=="none" ? "" : linoz_map_file, m_iop_data_manager);
   data_interp_linoz_->set_logger(m_atm_logger);
 
   DataInterpolation::VertRemapData remap_data_linoz;
@@ -553,7 +553,7 @@ void MAMMicrophysics::set_exo_coldens_reader()
 
   data_interp_exo_coldens_ = std::make_shared<DataInterpolation>(grid_exo_coldens,exo_coldens_fields_);
   data_interp_exo_coldens_->setup_periodic_time_database ({exo_coldens_file_name});
-  data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file);
+  data_interp_exo_coldens_->create_horiz_remappers (exo_coldens_map_file=="none" ? "" : exo_coldens_map_file, m_iop_data_manager);
   data_interp_exo_coldens_->set_logger(m_atm_logger);
   DataInterpolation::VertRemapData remap_exo_coldens;
   remap_exo_coldens.vr_type = DataInterpolation::Custom;
@@ -588,7 +588,7 @@ void MAMMicrophysics::set_elevated_emissions_reader()
     di_vertical->set_input_files_dimname(e2str(LEV),"altitude");
     di_vertical->set_input_files_dimname(e2str(ILEV),"altitude_int");
     di_vertical->setup_periodic_time_database ({file_name});
-    di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file);
+    di_vertical->create_horiz_remappers (extfrc_map_file=="none" ? "" : extfrc_map_file, m_iop_data_manager);
     di_vertical->set_logger(m_atm_logger);
     DataInterpolation::VertRemapData remap_data_vertical;
     remap_data_vertical.vr_type = DataInterpolation::Custom;

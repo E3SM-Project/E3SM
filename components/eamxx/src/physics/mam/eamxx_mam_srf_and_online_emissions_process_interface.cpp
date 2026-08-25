@@ -300,7 +300,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   morg_data_interp_->set_logger(m_atm_logger);
   morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
   morg_data_interp_->create_horiz_remappers(
-      marine_map_file == "none" ? "" : marine_map_file);
+      marine_map_file == "none" ? "" : marine_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData remap_data;
   remap_data.vr_type = DataInterpolation::None;
   morg_data_interp_->create_vert_remapper(remap_data);
@@ -328,7 +328,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       ispec_srf.data_interp_->setup_periodic_time_database(
           {ispec_srf.data_file});
       ispec_srf.data_interp_->create_horiz_remappers(
-          srf_map_file == "none" ? "" : srf_map_file);
+          srf_map_file == "none" ? "" : srf_map_file, m_iop_data_manager);
 
       DataInterpolation::VertRemapData remap_data;
       remap_data.vr_type = DataInterpolation::None;
@@ -382,7 +382,7 @@ void MAMSrfOnlineEmiss::read_soil_erodibility_data() {
   soil_erod_data_interp->set_logger(m_atm_logger);
   soil_erod_data_interp->setup_static_database({soil_erodibility_data_file});
   soil_erod_data_interp->create_horiz_remappers(
-      srf_map_file == "none" ? "" : srf_map_file);
+      srf_map_file == "none" ? "" : srf_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData remap_data;
   remap_data.vr_type = DataInterpolation::None;
   soil_erod_data_interp->create_vert_remapper(remap_data);
