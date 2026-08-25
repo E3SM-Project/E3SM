@@ -2043,15 +2043,10 @@ and pct_nat_pft read from the surface dataset.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options related to lateral grid connectivity                                     -->
+<!-- Namelist options related to domain decomposition                                          -->
 <!-- ========================================================================================  -->
-<entry id="lateral_connectivity" type="logical" category="elm_initialization"
-       group="elm_inparm" valid_values="" >
-If TRUE setup up lateral grid connectivity in CLM.
-</entry>
-
 <entry id="domain_decomp_type" type="char*256" category="elm_initialization"
-       group="elm_inparm" valid_values="round_robin,graph_partitioning,simple,moab" >
+       group="elm_inparm" valid_values="round_robin,simple,moab" >
 Specifies the method for decomposing CLM grids across processors.
 </entry>
 
@@ -2091,15 +2086,6 @@ topounit level. Based on the IM2 implementation from NGEE Arctic project.
 <entry id="pflotran_prefix" type="char*256" category="elm_pflotran"
     group="elm_pflotran_inparm" valid_values="" >
     pflotran file prefix.
-</entry>
-
-<!-- ========================================================================================  -->
-<!-- Namelist options related to PETSc-based thermal model                                     -->
-<!-- ========================================================================================  -->
-
-<entry id="use_petsc_thermal_model" type="logical" category="default_settings"
-        group="elm_inparm" valid_values="">
-Runtime flag to turn on/off PETSc based thermal model.
 </entry>
 
 <!-- ========================================================================================  -->

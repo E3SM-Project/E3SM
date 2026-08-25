@@ -88,11 +88,13 @@ contains
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
-    use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
-    use elm_varctl                , only: lateral_connectivity, domain_decomp_type
-    use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
+    use surfrdMod                 , only: surfrd_topounit_data
+    use elm_varctl                , only: domain_decomp_type
+    use decompInitMod             , only: decompInit_ghosts
     use decompInitMod             , only: decompInit_lnd_simple
+#ifdef MOAB_LATERAL
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
+#endif
     use SoilTemperatureMod        , only: init_soil_temperature
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
     use dynSubgridControlMod      , only: dynSubgridControl_init
@@ -112,15 +114,6 @@ contains
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump            ! clump bounds
     integer ,pointer  :: amask(:)                ! global land mask
-    integer ,pointer  :: cellsOnCell(:,:)        ! grid cell level connectivity
-    integer ,pointer  :: edgesOnCell(:,:)        ! index to determine distance between neighbors from dcEdge
-    integer ,pointer  :: nEdgesOnCell(:)         ! number of edges
-    real(r8), pointer :: dcEdge(:)               ! distance between centroids of grid cells
-    real(r8), pointer :: dvEdge(:)               ! distance between vertices
-    real(r8), pointer :: areaCell(:)             ! area of grid cells [m^2]
-    integer           :: nCells_loc              ! number of grid cell level connectivity saved locally
-    integer           :: nEdges_loc              ! number of edge length saved locally
-    integer           :: maxEdges                ! max number of edges/neighbors
     integer           :: nclumps                 ! number of clumps on this processor
     integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
@@ -156,7 +149,6 @@ contains
        call update_pft_array_bounds()
     end if
 
-    call elm_petsc_init()
     call init_soil_temperature()
 
     if (masterproc) call control_print()
@@ -184,20 +176,6 @@ contains
 
 
     ! ------------------------------------------------------------------------
-    ! If specified, read the grid level connectivity
-    ! ------------------------------------------------------------------------
-
-    if (lateral_connectivity) then
-       call surfrd_get_grid_conn(fatmlndfrc, cellsOnCell, edgesOnCell, &
-            nEdgesOnCell, areaCell, dcEdge, dvEdge, &
-            nCells_loc, nEdges_loc, maxEdges)
-    else
-       nullify(cellsOnCell)
-       nCells_loc = 0
-       maxEdges   = 0
-    endif
-
-    ! ------------------------------------------------------------------------
     ! Copy ELM mesh data to MOAB so that we can compute optimal partitions
     ! and enable ghost halo-layers for each task to describe shared entities.
     ! Now let us create that MOAB app that represents the full ELM mesh
@@ -219,8 +197,6 @@ contains
     case ("round_robin")
        call decompInit_lnd(ni, nj, amask)
        deallocate(amask)
-    case ("graph_partitioning")
-       call decompInit_lnd_using_gp(ni, nj, cellsOnCell, nCells_loc, maxEdges, amask)
     case ("simple")
       call decompInit_lnd_simple(ni, nj, amask)
       deallocate(amask)
@@ -231,12 +207,6 @@ contains
 
 #ifdef MOAB_LATERAL
     call domainlateral_init(ldomain_lateral)
-#else
-    if (lateral_connectivity) then
-       call domainlateral_init(ldomain_lateral, cellsOnCell, edgesOnCell, &
-            nEdgesOnCell, areaCell, dcEdge, dvEdge, &
-            nCells_loc, nEdges_loc, maxEdges)
-    endif
 #endif
 
     ! *** Get JUST gridcell processor bounds ***
@@ -1157,49 +1127,12 @@ contains
     ! !DESCRIPTION:
     ! CLM initialization - third phase
     !
-    ! !USES:
-    use elm_varpar               , only : nlevsoi, nlevgrnd, nlevsno, max_patch_per_col
-    use landunit_varcon          , only : istsoil, istcrop, istice_mec, istice_mec
-    use landunit_varcon          , only : istice, istdlak, istwet, max_lunit
-    use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
-    use elm_varctl               , only : lateral_connectivity
-    use elm_varctl               , only : finidat
-    use decompMod                , only : get_proc_clumps
-    use ExternalModelInterfaceMod, only : EMI_Init_EM
-    use ExternalModelConstants   , only : EM_ID_VSFM
-    use ExternalModelConstants   , only : EM_ID_PTM
-
     implicit none
-
-    type(bounds_type) :: bounds_proc
 
     call t_startf('elm_init3')
 
     call t_stopf('elm_init3')
-
-
   end subroutine initialize3
-
-  !-----------------------------------------------------------------------
-  subroutine elm_petsc_init()
-    !
-    ! !DESCRIPTION:
-    ! Initialize PETSc
-    !
-    ! !USES:
-    use spmdMod    , only : mpicom
-    use elm_varctl , only : lateral_connectivity
-    !
-    implicit none
-    !
-    ! !LOCAL VARIABLES:
-
-    if ( (.not. lateral_connectivity) ) return
-
-    call endrun(msg='ERROR elm_petsc_init: '//&
-         'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
-
-  end subroutine elm_petsc_init
 
 #ifdef MOAB_LATERAL
   subroutine elm_moab_interface_init()!(bounds)

@@ -343,9 +343,8 @@ module clm_varctl
   logical, public :: NFIX_PTASE_plant = .false.
 
   !-----------------------------------------------------------------------
-  ! Lateral grid connectivity
+  ! Domain decomposition
   !-----------------------------------------------------------------------
-  logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------

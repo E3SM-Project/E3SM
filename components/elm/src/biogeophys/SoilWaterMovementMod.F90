@@ -852,8 +852,6 @@ contains
      use elm_varcon                , only : watmin
      use LandunitType              , only : lun_pp
      use landunit_varcon           , only : istsoil, istcrop
-     use elm_varctl                , only : lateral_connectivity
-     use domainLateralMod          , only : ldomain_lateral
      use spmdMod
      !
      ! !ARGUMENTS:

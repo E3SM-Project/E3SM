@@ -67,7 +67,7 @@ module controlMod
                         use_betr, use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
                         use_elm_interface, use_elm_bgc, use_pflotran, &
-                        use_hydrstress, lateral_connectivity, domain_decomp_type, &
+                        use_hydrstress, domain_decomp_type, &
                         use_IM2_hillslope_hydrology, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
@@ -362,8 +362,7 @@ contains
 
     namelist /elm_inparm/ use_hydrstress
 
-    namelist /elm_inparm/ &
-       lateral_connectivity, domain_decomp_type
+    namelist /elm_inparm/ domain_decomp_type
 
     namelist /elm_inparm/ &
          use_IM2_hillslope_hydrology
@@ -696,16 +695,6 @@ contains
        end if
     end if
 
-    ! Lateral connectivity
-    if (.not.lateral_connectivity) then
-
-       if (trim(domain_decomp_type) == 'graph_partitioning') then
-          call endrun(msg=' ERROR: domain_decomp_type = graph_partitioning requires ' // &
-               'lateral_connectivity to be true.'                                     // &
-               errMsg(__FILE__, __LINE__))
-       endif
-    endif
-
     ! Fan settings
     if (fan_mode /= 'none'           .and. &
         fan_mode /= 'fan_offline'    .and. &
@@ -981,8 +970,7 @@ contains
 
     call mpi_bcast (clump_pproc, 1, MPI_INTEGER, 0, mpicom, ier)
 
-    ! lateral connectivity
-    call mpi_bcast (lateral_connectivity, 1, MPI_LOGICAL, 0, mpicom, ier)
+    ! domain decomposition
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
 
     ! hillslope connectivity via topounits

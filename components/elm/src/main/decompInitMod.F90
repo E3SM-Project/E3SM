@@ -34,7 +34,6 @@ module decompInitMod
   public decompInit_lnd          ! initializes lnd grid decomposition into clumps and processors
   public decompInit_clumps       ! initializes atm grid decomposition into clumps
   public decompInit_gtlcp        ! initializes g,l,c,p decomp info
-  public decompInit_lnd_using_gp ! initialize lnd grid decomposition into clumps and processors using graph partitioning approach
   public decompInit_ghosts       ! initialize ghost/halo for land grid
   public decompInit_lnd_simple   ! initializes lnd grid decomposition into clumps and processors using simple approach of ngrids/nclumps
   !
@@ -1735,70 +1734,6 @@ contains
   end subroutine decompInit_gtlcp
 
   !------------------------------------------------------------------------------
-  subroutine decompInit_lnd_using_gp(lni, lnj, cellsOnCell, ncells_loc, maxEdges, &
-       amask)
-    !
-    ! !DESCRIPTION:
-    ! This subroutine initializes the land surface decomposition into a clump
-    ! data structure using graph partitioning approach.  This assumes each pe
-    ! has the same number of clumps set by clump_pproc.
-    !
-    ! !USES:
-    use elm_varctl, only : nsegspc
-    !
-    ! !ARGUMENTS:
-    implicit none
-    !
-    !
-    integer , intent(in) :: amask(:)
-    integer , intent(in) :: lni,lnj                     ! domain global size
-    integer , intent(in) :: cellsOnCell(:,:)
-    integer , intent(in) :: ncells_loc
-    integer , intent(in) :: maxEdges
-    !
-    ! !LOCAL VARIABLES:
-    integer            :: lns                           ! global domain size
-    integer            :: ln,lj                         ! indices
-    integer            :: numg                          ! number of land gridcells
-    integer            :: cid,pid                       ! indices
-    integer            :: n,i,m                         ! indices
-    integer            :: ier                           ! error code
-    integer            :: beg,end,lsize,gsize           ! used for gsmap init
-    integer, pointer   :: gindex(:)                     ! global index for gsmap init
-    integer            :: icell, iedge                  ! indices
-    integer            :: offset                        ! temporary
-    integer            :: cell_id_offset                ! temporary
-    integer            :: count                         ! temporary
-    integer            :: num_rows, num_cols            ! temporary
-    integer            :: istart, iend                  ! temporary
-    integer            :: ncells_tot                    ! total number of grid cells
-    integer            :: ncells_owned                  ! number of grid cells owned by a processor after domain decomposition
-    integer            :: ncells_per_clump              ! number of grid cells per clump
-    integer            :: remainder                     ! temporary
-    integer            :: cowner                        ! clump owner
-    integer, pointer   :: i_index(:)                    ! temporary
-    integer, pointer   :: j_index(:)                    ! temporary
-    integer, pointer   :: local_conn_offsets(:)         ! temporary
-    integer, pointer   :: local_conn(:)                 ! temporary
-    integer, pointer   :: clump_ncells(:)               ! temporary
-    integer, pointer   :: clump_begg(:)                 ! temporary
-    integer, pointer   :: clump_endg(:)                 ! temporary
-    integer, pointer   :: local_clump_info(:)           ! temporary
-    integer, pointer   :: global_clump_info(:)          ! temporary
-    integer, pointer   :: thread_count(:)               ! temporary
-    integer, pointer   :: int_array(:)                  ! temporary
-    integer, pointer   :: ncells_count(:)               ! temporary
-    character(len=255) :: subname = 'decompInit_lnd_using_gp'
-    !------------------------------------------------------------------------------
-
-
-    call endrun(msg='ERROR ' // trim(subname) //': Graph partitioning requires '//&
-         'PETSc, but the code was compiled without -DUSE_PETSC_LIB')
-
-
-  end subroutine decompInit_lnd_using_gp
-
-  !------------------------------------------------------------------------------
   subroutine decompInit_ghosts(glcmask)
     !
     ! !DESCRIPTION:
@@ -1810,10 +1745,8 @@ contains
     !  - cohorts.
     !
     ! !USES:
-    use elm_varctl           , only : lateral_connectivity
-    use subgridMod           , only : subgrid_get_gcellinfo
-
 #ifdef MOAB_LATERAL
+    use subgridMod, only : subgrid_get_gcellinfo
     use MOABGridType
     use iso_c_binding
     use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetVisibleElementsInfo, &
@@ -1826,37 +1759,24 @@ contains
     !
     ! !ARGUMENTS:
     integer , pointer, optional  :: glcmask(:)             ! glc mask
-    !integer , pointer, optional  :: num_tunits_per_grd(:)             ! glc mask
     !
     ! !LOCAL VARIABLES:
+#ifdef MOAB_LATERAL
     integer                      :: begg,endg              ! begin/end indices for grid
     integer                      :: anumg                  ! lnd num gridcells
     integer                      :: ln                     ! temporary
-    integer                      :: nblocks                ! block size for PETSc vector
     integer                      :: itunits             ! temporary
     integer                      :: ilunits                ! temporary
     integer                      :: icols                  ! temporary
     integer                      :: ipfts                  ! temporary
     integer                      :: icohorts               ! temporary
-    integer                      :: ighost                 ! temporary
-    integer                      :: ighost_beg, ighost_end ! temporary
-    real(r8), pointer            :: data_send(:)
-    real(r8), pointer            :: data_recv(:)
-    integer                      :: ndata_send
-    integer                      :: ndata_recv
     integer, allocatable         :: data_int(:,:)
     integer                      :: tagtype, numcomp, entity_type(1), numtags, tag_indices(1)
     integer                      :: g, moab_idx
     integer                      :: ierr
     character(len=1024)          :: tagname
-#ifdef MOAB_LATERAL
-    !integer :: nverts(3), nelem(3), nblocks(3), nsbc(3), ndbc(3)
 #endif
-    character(len=32), parameter :: subname = 'decompInit_ghosts'
-
-    if (.not.lateral_connectivity) then
-
-#if defined(MOAB_LATERAL)
+#ifdef MOAB_LATERAL
 
       call get_proc_bounds(begg, endg)
 
@@ -2003,14 +1923,6 @@ contains
        procinfo%endp_all        = procinfo%endp
        procinfo%endCohort_all   = procinfo%endCohort
 #endif
-
-    else
-
-         call endrun(msg='ERROR ' // trim(subname) //': decompInit_ghosts requires '//&
-              'either MOAB or PETSc, but the code was compiled without -DMOAB_LATERAL or -DUSE_PETSC_LIB')
-
-
-    endif
 
   end subroutine decompInit_ghosts
 

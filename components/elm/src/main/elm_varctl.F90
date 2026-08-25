@@ -458,9 +458,8 @@ module elm_varctl
   real(r8), public         :: add_temperature = 0d0
 
   !-----------------------------------------------------------------------
-  ! Lateral grid connectivity
+  ! Domain decomposition
   !-----------------------------------------------------------------------
-  logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
