@@ -132,21 +132,6 @@ contains
             num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, dt)
 
     case (vsfm)
-#ifdef USE_PETSC_LIB
-#ifndef _OPENACC
-       call Prepare_Data_for_EM_VSFM_Driver(bounds, num_hydrologyc, filter_hydrologyc, &
-            soilhydrology_vars, soilstate_vars, &
-            waterflux_vars, waterstate_vars, temperature_vars)
-
-       call EMI_Driver(EM_ID_VSFM, EM_VSFM_SOIL_HYDRO_STAGE, dt = get_step_size()*1.0_r8, &
-            number_step = get_nstep(), &
-            clump_rank  = bounds%clump_index, &
-            num_hydrologyc=num_hydrologyc, filter_hydrologyc=filter_hydrologyc, &
-            soilhydrology_vars=soilhydrology_vars, soilstate_vars=soilstate_vars, &
-            waterflux_vars=waterflux_vars, waterstate_vars=waterstate_vars, &
-            temperature_vars=temperature_vars)
-#endif
-#endif
     case default
 #ifndef _OPENACC
        call endrun('SoilWater' // ':: a SoilWater implementation must be specified!')
@@ -953,12 +938,6 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
 
-#ifdef USE_PETSC_LIB
-          if (lateral_connectivity) then
-             g    = col_pp%gridCell(c)
-             area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
-          endif
-#endif
 
           ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
           flux_unit_conversion     = area * denh2o * 1.0d-3

@@ -28,14 +28,8 @@ contains
 #ifdef MOAB_LATERAL
     use MOABGridType, only : elm_moab_finalize
 #endif
-#ifdef USE_PETSC_LIB
-#include <petsc/finclude/petsc.h>
-#endif
     ! !USES:
     use elm_varctl             , only : use_cn
-#ifdef USE_PETSC_LIB
-    use petscsys
-#endif
     !
     ! !ARGUMENTS
     implicit none

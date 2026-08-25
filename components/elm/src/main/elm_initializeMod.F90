@@ -1186,36 +1186,18 @@ contains
     ! !DESCRIPTION:
     ! Initialize PETSc
     !
-#ifdef USE_PETSC_LIB
-#include <petsc/finclude/petsc.h>
-#endif
     ! !USES:
     use spmdMod    , only : mpicom
     use elm_varctl , only : lateral_connectivity
-#ifdef USE_PETSC_LIB
-    use petscsys
-#endif
     !
     implicit none
     !
     ! !LOCAL VARIABLES:
-#ifdef USE_PETSC_LIB
-    PetscErrorCode        :: ierr                  ! get error code from PETSc
-#endif
 
     if ( (.not. lateral_connectivity) ) return
 
-#ifdef USE_PETSC_LIB
-    ! Initialize PETSc
-    PETSC_COMM_WORLD = mpicom
-    call PetscInitialize(PETSC_NULL_CHARACTER, ierr);CHKERRQ(ierr)
-
-    PETSC_COMM_SELF  = MPI_COMM_SELF
-    PETSC_COMM_WORLD = mpicom
-#else
     call endrun(msg='ERROR elm_petsc_init: '//&
          'PETSc required but the code was not compiled using -DUSE_PETSC_LIB')
-#endif
 
   end subroutine elm_petsc_init
 
