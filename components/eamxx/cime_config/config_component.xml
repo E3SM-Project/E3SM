@@ -25,12 +25,13 @@
   <entry id="SCREAM_CMAKE_OPTIONS">
     <type>char</type>
     <valid_values></valid_values>
-    <default_value></default_value>
+    <default_value>SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128</default_value>
+    <values modifier='additive'>
     <values match='last'>
-      <value compset="_SCREAM">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
-      <value compset="_SCREAM%ZM">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
-      <value compset="_SCREAM%MAM4xx">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 41</value>
-      <value compset="_EAMXX">SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 10</value>
+      <value compset="_SCREAM"        > SCREAM_NUM_TRACERS 10</value>
+      <value compset="_SCREAM%ZM"     > SCREAM_NUM_TRACERS 10</value>
+      <value compset="_SCREAM%MAM4xx" > SCREAM_NUM_TRACERS 41</value>
+      <value compset="_EAMXX"         > SCREAM_NUM_TRACERS 10</value>
     </values>
     <group>build_component_scream</group>
     <file>env_build.xml</file>
