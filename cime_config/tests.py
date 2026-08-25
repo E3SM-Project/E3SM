@@ -307,6 +307,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-upwind_advection",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-freshwater_tracers",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-lat_dep_diffusivity",
+            "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-gm_geometric",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             "ERS_Ld5_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
             "SMS_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.mpaso-frazil_ice_porosity",
@@ -323,7 +324,6 @@ _TESTS = {
             "PET_P480_Ld2.TL319_IcoswISC30E3r5.GMPAS-JRA1p5-DIB-PISMF-DSGR.mpaso-freshwater_tracers_jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-precip_scaling_jra_1958",
             "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-eke_correction_jra_1958",
-            "SMS_P480_Ld5.TL319_IcoswISC30E3r5.GMPAS-JRA1p5.mpaso-gm_geometric",
             )
         },
 
