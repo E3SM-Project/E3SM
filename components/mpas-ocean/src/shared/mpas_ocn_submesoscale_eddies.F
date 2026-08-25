@@ -44,7 +44,7 @@ module ocn_submesoscale_eddies
    real(kind=RKIND),dimension(:),allocatable :: time_scale
 
    ! Ice-aware MLE
-   logical :: iceAwareActive
+   logical :: iceAwareActive, landIceMaskExist
    real(kind=RKIND) :: iceMLE_s, iceMLE_k, iceMLE_u, iceMLE_c, &
                        iceMLE_crit, iceFracEdge, iceMLE_eps,   &
                        iceMLE_eff, erfv, expc
@@ -187,12 +187,14 @@ module ocn_submesoscale_eddies
 
            iceMLE_eff = 1.0_RKIND - iceMLE_s * iceMLE_eps
 
-           landIceMaskEdge = max(landIceMask(cell1), landIceMask(cell2))
+           if ( landIceMaskExist ) then
+              landIceMaskEdge = max(landIceMask(cell1), landIceMask(cell2))
 
-           ! We add an addtional condition here to prevent grid-scale noise in MLE at
-           ! land-ice mask = 1.
-           if ( landIceMaskEdge == 1 ) then
-              iceMLE_eff = 0.0_RKIND
+              ! We add an addtional condition here to prevent grid-scale noise in MLE at
+              ! land-ice mask = 1.
+              if ( landIceMaskEdge == 1 ) then
+                 iceMLE_eff = 0.0_RKIND
+              end if
            end if
 
         else
@@ -273,6 +275,8 @@ module ocn_submesoscale_eddies
 
      real (kind=RKIND), dimension(:), pointer :: iceFraction
 
+     integer, dimension(:), pointer :: landIceMask
+
      integer, intent(out) :: err !< Output: error flag
 
      integer :: iEdge
@@ -304,6 +308,14 @@ module ocn_submesoscale_eddies
         else
            iceAwareActive = .false.
         end if
+     end if
+
+     ! Land-ice mask check
+     call mpas_pool_get_array(forcingPool, 'landIceMask',landIceMask)
+     if ( associated(landIceMask) ) then
+        landIceMaskExist = .true.
+     else
+        landIceMaskExist = .false.
      end if
 
      iceMLE_crit    = config_submesoscale_ice_aware_crit
