@@ -42,6 +42,7 @@ module dynSubgridDriverMod
   use ColumnType          , only : col_pp
   use VegetationType      , only : veg_pp
   use elm_varctl          , only : iulog
+  use dynLakeMod          , only : dynlake_driver
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -284,6 +285,8 @@ contains
     if (iac_present) then
        call iac2lnd_vars%update_iac2lnd(bounds_proc)
     end if
+
+    call dynlake_driver(bounds_proc)
 
     ! ==========================================================================
     ! Do everything else related to land cover change

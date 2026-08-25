@@ -621,7 +621,11 @@ contains
           this%storvegn_patch(p)           = 0._r8
           this%totvegn_patch(p)            = 0._r8
           this%totpftn_patch(p)            = 0._r8          
-          this%plant_n_buffer_patch(p)     = 1._r8
+          if (veg_pp%itype(p) == noveg) then
+             this%plant_n_buffer_patch(p)     = 0._r8
+          else
+             this%plant_n_buffer_patch(p)     = 1._r8
+          endif
        end if
 
        this%npimbalance_patch(p) = 0.0_r8
