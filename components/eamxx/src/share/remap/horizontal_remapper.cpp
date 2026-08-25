@@ -380,9 +380,6 @@ local_mat_vec (const Field& x, const Field& y) const
   auto weights     = m_remap_data->m_weights;
 
   switch (rank) {
-    // Note: in each case, handle 1st contribution to each row separately,
-    //       using = instead of +=. This allows to avoid doing an extra
-    //       loop to zero out y before the mat-vec.
     case 1:
     {
       // Unlike get_view, get_strided_view returns a LayoutStride view,
@@ -394,8 +391,8 @@ local_mat_vec (const Field& x, const Field& y) const
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg));
-        for (int icol=beg+1; icol<end; ++icol) {
+        y_view(row) = 0;
+        for (int icol=beg; icol<end; ++icol) {
           y_view(row) += weights(icol)*x_view(col_lids(icol));
         }
       });
@@ -415,8 +412,8 @@ local_mat_vec (const Field& x, const Field& y) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
-          for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row,j) = 0;
+          for (int icol=beg; icol<end; ++icol) {
             y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
           }
         });
@@ -440,8 +437,8 @@ local_mat_vec (const Field& x, const Field& y) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
-          for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row,j,k) = 0;
+          for (int icol=beg; icol<end; ++icol) {
             y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
           }
         });
@@ -467,8 +464,8 @@ local_mat_vec (const Field& x, const Field& y) const
           const int j = (idx / dim3) / dim2;
           const int k = (idx / dim3) % dim2;
           const int l =  idx % dim3;
-          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l);
-          for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row,j,k,l) = 0;
+          for (int icol=beg; icol<end; ++icol) {
             y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l);
           }
         });
@@ -635,9 +632,6 @@ local_mat_vec_masked (const Field& x, const Field& y) const
   auto col_lids    = m_remap_data->m_col_lids;
   auto weights     = m_remap_data->m_weights;
   switch (rank) {
-    // Note: in each case, handle 1st contribution to each row separately,
-    //       using = instead of +=. This allows to avoid doing an extra
-    //       loop to zero out y before the mat-vec.
     // Note: we ASSUME mask fields are ALWAYS contiguous (they are not subfields)
     case 1:
     {
@@ -651,8 +645,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg))*m_view(col_lids(beg));
-        for (int icol=beg+1; icol<end; ++icol) {
+        y_view(row) = 0;
+        for (int icol=beg; icol<end; ++icol) {
           y_view(row) += weights(icol)*x_view(col_lids(icol))*m_view(col_lids(icol));
         }
       });
@@ -673,8 +667,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j)*m_view(col_lids(beg),j);
-          for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row,j) = 0;
+          for (int icol=beg; icol<end; ++icol) {
             y_view(row,j) += weights(icol)*x_view(col_lids(icol),j)*m_view(col_lids(icol),j);
           }
         });
@@ -699,8 +693,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k)*m_view(col_lids(beg),j,k);
-          for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row,j,k) = 0;
+          for (int icol=beg; icol<end; ++icol) {
             y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k)*m_view(col_lids(icol),j,k);
           }
         });
@@ -727,8 +721,8 @@ local_mat_vec_masked (const Field& x, const Field& y) const
           const int j = (idx / dim3) / dim2;
           const int k = (idx / dim3) % dim2;
           const int l =  idx % dim3;
-          y_view(row,j,k,l) = weights(beg)*x_view(col_lids(beg),j,k,l)*m_view(col_lids(beg),j,k,l);
-          for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row,j,k,l) = 0;
+          for (int icol=beg; icol<end; ++icol) {
             y_view(row,j,k,l) += weights(icol)*x_view(col_lids(icol),j,k,l)*m_view(col_lids(icol),j,k,l);
           }
         });
