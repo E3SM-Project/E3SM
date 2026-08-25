@@ -1,0 +1,13 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #8417. It uses mpaso namelist variables to turn on the modified
+Leith viscosity:
+    config_use_leith_del2
+    config_use_leith_del4
+from its default value of .false. to .true.. It also sets associated
+variables,
+    config_leith_visc2_max
+    config_leith_visc4_max
+    config_leith_dx
+    config_use_mom_del2
+    config_use_mom_del4
+for testing. It will have an impact on all mpaso runs.
