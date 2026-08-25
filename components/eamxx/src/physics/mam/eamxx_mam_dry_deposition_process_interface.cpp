@@ -299,26 +299,29 @@ void MAMDryDep::initialize_impl(const RunType run_type) {
   //-----------------------------------------------------------------
   // Read fractional land use data
   //-----------------------------------------------------------------
-  {
-    const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
-    const auto frac_landuse_data_file =
-        m_params.get<std::string>("fractional_land_use_file");
-    std::vector<Field> frac_landuse_fields = {
-        get_field_out("fraction_landuse")};
-    auto frac_landuse_interp =
-        std::make_shared<DataInterpolation>(grid_, frac_landuse_fields);
-    frac_landuse_interp->set_logger(m_atm_logger);
-    frac_landuse_interp->setup_static_database({frac_landuse_data_file});
-    frac_landuse_interp->create_horiz_remappers(
-        mapping_file == "none" ? "" : mapping_file);
-    DataInterpolation::VertRemapData remap_data;
-    remap_data.vr_type = DataInterpolation::None;
-    frac_landuse_interp->create_vert_remapper(remap_data);
-    frac_landuse_interp->run();
-
-    frac_landuse_ = get_field_out("fraction_landuse").get_view<const Real **>();
-  }
+  read_fractional_land_use_data();
 }  // initialize_impl
+
+// =========================================================================================
+void MAMDryDep::read_fractional_land_use_data() {
+  const auto mapping_file = m_params.get<std::string>("drydep_remap_file", "");
+  const auto frac_landuse_data_file =
+      m_params.get<std::string>("fractional_land_use_file");
+  std::vector<Field> frac_landuse_fields = {
+      get_field_out("fraction_landuse")};
+  auto frac_landuse_interp =
+      std::make_shared<DataInterpolation>(grid_, frac_landuse_fields);
+  frac_landuse_interp->set_logger(m_atm_logger);
+  frac_landuse_interp->setup_static_database({frac_landuse_data_file});
+  frac_landuse_interp->create_horiz_remappers(
+      mapping_file == "none" ? "" : mapping_file);
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  frac_landuse_interp->create_vert_remapper(remap_data);
+  frac_landuse_interp->run();
+
+  frac_landuse_ = get_field_out("fraction_landuse").get_view<const Real **>();
+}
 
 // =========================================================================================
 void MAMDryDep::run_impl(const double dt) {

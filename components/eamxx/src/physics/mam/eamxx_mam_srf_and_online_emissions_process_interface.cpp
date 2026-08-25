@@ -347,25 +347,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   if (dust_emis_scheme == 1) {
     // This data is time-independent, we read all data here for the
     // entire simulation   
-    const auto soil_erodibility_data_file =
-        m_params.get<std::string>("soil_erodibility_file");
-    const auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
-    const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
-
-    std::vector<Field> soil_erod_fields = {
-        get_field_out("soil_erodibility").alias(soil_erod_fld_name)};
-    auto soil_erod_data_interp =
-        std::make_shared<DataInterpolation>(grid_, soil_erod_fields);
-    soil_erod_data_interp->set_logger(m_atm_logger);
-    soil_erod_data_interp->setup_static_database({soil_erodibility_data_file});
-    soil_erod_data_interp->create_horiz_remappers(
-        srf_map_file == "none" ? "" : srf_map_file);
-    DataInterpolation::VertRemapData remap_data;
-    remap_data.vr_type = DataInterpolation::None;
-    soil_erod_data_interp->create_vert_remapper(remap_data);
-    soil_erod_data_interp->run();
-
-    soil_erodibility_ = get_field_out("soil_erodibility").get_view<const Real *>();
+    read_soil_erodibility_data();
   } else if (dust_emis_scheme == 2) {
     // For dust emission scheme 2, override soil erodibility to 1
     auto soil_erod_ones = view_1d("soil_erod_ones", ncol_);
@@ -385,6 +367,29 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
 
 }  // end initialize_impl()
+
+// =========================================================================================
+void MAMSrfOnlineEmiss::read_soil_erodibility_data() {
+  const auto soil_erodibility_data_file =
+      m_params.get<std::string>("soil_erodibility_file");
+  const auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
+  const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
+
+  std::vector<Field> soil_erod_fields = {
+      get_field_out("soil_erodibility").alias(soil_erod_fld_name)};
+  auto soil_erod_data_interp =
+      std::make_shared<DataInterpolation>(grid_, soil_erod_fields);
+  soil_erod_data_interp->set_logger(m_atm_logger);
+  soil_erod_data_interp->setup_static_database({soil_erodibility_data_file});
+  soil_erod_data_interp->create_horiz_remappers(
+      srf_map_file == "none" ? "" : srf_map_file);
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  soil_erod_data_interp->create_vert_remapper(remap_data);
+  soil_erod_data_interp->run();
+
+  soil_erodibility_ = get_field_out("soil_erodibility").get_view<const Real *>();
+}
 
 // ================================================================
 //  RUN_IMPL

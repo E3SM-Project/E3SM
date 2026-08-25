@@ -100,6 +100,9 @@ class MAMDryDep final : public MAMGenericInterface {
   int get_len_temporary_views();
   void init_temporary_views();
   int len_temporary_views_{0};
+  
+  // Read fractional land use data from file
+  void read_fractional_land_use_data();
 
  public:
   using KT = ekat::KokkosTypes<DefaultDevice>;

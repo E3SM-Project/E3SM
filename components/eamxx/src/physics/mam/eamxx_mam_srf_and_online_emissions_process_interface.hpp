@@ -156,6 +156,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+  
+  // Read soil erodibility data from file
+  void read_soil_erodibility_data();
 
 };  // MAMSrfOnlineEmiss
 
