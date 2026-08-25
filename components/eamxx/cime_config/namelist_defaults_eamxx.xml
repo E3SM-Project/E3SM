@@ -297,6 +297,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <c0_lnd             type="real"    doc="ZM autoconversion coefficient over land"   >0.002</c0_lnd>
       <c0_ocn             type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
       <num_cin            type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
+      <cape_threshold     type="real"    doc="ZM CAPE threshold [J/kg]"                  >0.</cape_threshold>
+      <dcape_threshold    type="real"    doc="ZM DCAPE threshold [J/kg/s]"               >0.</dcape_threshold>
       <!-- cloud-top ascent limiter -->
       <use_ascent_limiter type="logical" doc="ZM flag for cloud-top ascent limiter"      >false</use_ascent_limiter>
       <use_idle_limit     type="logical" doc="ZM flag for cloud-top ascent idle time"    >false</use_idle_limit>

@@ -169,6 +169,8 @@ struct Functions {
       trig_ull            = params.get<bool>("trig_ull",            true);
       clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
+      cape_threshold      = params.get<Real>("cape_threshold",      ZMC::cape_threshold_new);
+      dcape_threshold     = params.get<Real>("dcape_threshold",     ZMC::dcape_threshold);
       // cloud-top ascent limiter
       use_ascent_limiter  = params.get<bool>("use_ascent_limiter",  true);
       use_idle_limit      = params.get<bool>("use_idle_limit",      false);
@@ -252,6 +254,8 @@ struct Functions {
       os << indent << "trig_ull           : " << trig_ull           << "\n";
       os << indent << "clos_dyn_adj       : " << clos_dyn_adj       << "\n";
       os << indent << "no_deep_pbl        : " << no_deep_pbl        << "\n";
+      os << indent << "cape_threshold     : " << cape_threshold     << "\n";
+      os << indent << "dcape_threshold    : " << dcape_threshold    << "\n";
       // cloud-top ascent limiter
       os << indent << "use_ascent_limiter : " << use_ascent_limiter << "\n";
       os << indent << "use_idle_limit     : " << use_idle_limit     << "\n";
@@ -289,6 +293,8 @@ struct Functions {
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
+    Real cape_threshold;    // CAPE threshold for trigger condition
+    Real dcape_threshold;   // DCAPE threshold for trigger condition
     // cloud-top ascent limiter
     bool use_ascent_limiter;// flag to enable cloud-top ascent limiter
     bool use_idle_limit;    // flag to enable cloud-top ascent limiter reset time limit
