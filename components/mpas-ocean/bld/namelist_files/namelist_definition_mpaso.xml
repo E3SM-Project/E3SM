@@ -399,14 +399,6 @@ Valid values: any positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Leith_dx" type="real"
-	category="hmix_Leith" group="hmix_Leith">
-Characteristic length scale, usually the smallest dx in the mesh
-
-Valid values: any positive real
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_Leith_visc2_max" type="real"
 	category="hmix_Leith" group="hmix_Leith">
 Upper bound on the allowable value of Leith-computed viscosity

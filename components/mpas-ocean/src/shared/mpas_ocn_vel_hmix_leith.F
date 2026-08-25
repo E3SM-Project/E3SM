@@ -61,7 +61,6 @@ module ocn_vel_hmix_leith
       leithParam4,     &!< Leith del4 parameter
       leithDivScaler2, &!< Leith del4 divergence scale factor
       leithDivScaler4, &!< Leith del4 divergence scale factor
-      dxLeith,         &!< Leith length scale
       visc2MaxLeith,   &!< maximum del2 viscosity
       visc4MaxLeith,   &!< maximum del4 viscosity
       sqrt3fact         !< sqrt(3)
@@ -134,6 +133,7 @@ contains
          dcEdgeInv,        &! 1/dcEdge
          dvEdgeInv,        &! 1/dvEdge
          visc2tmp,         &! common factor for visc2
+         visc2MaxTmp,      &! max factor for visc2
          visc2              ! scaled viscosity coeff
 
       ! End preamble
@@ -153,12 +153,12 @@ contains
       !$acc            dcEdge, dvEdge, meshScalingDel2, div, relVort, &
       !$acc            tend, edgeMask) &
       !$acc    private(k, cell1, cell2, vertex1, vertex2, dcEdgeInv, &
-      !$acc            dvEdgeInv, uDiff, visc2, visc2tmp)
+      !$acc            dvEdgeInv, uDiff, visc2, visc2tmp,visc2MaxTmp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, vertex1, vertex2, dcEdgeInv, &
-      !$omp            dvEdgeInv, uDiff, visc2, visc2tmp)
+      !$omp            dvEdgeInv, uDiff, visc2, visc2tmp,visc2MaxTmp)
 #endif
       do iEdge = 1, nEdgesOwned
          cell1 = cellsOnEdge(1,iEdge)
@@ -169,7 +169,8 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
 
-         visc2tmp = (leithParam2*dxLeith*meshScalingDel2(iEdge)/pi)**3
+         visc2tmp = (leithParam2*dcEdge(iEdge)/pi)**3
+         visc2MaxTmp = visc2MaxLeith*meshScalingDel2(iEdge)
 
          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
@@ -191,7 +192,7 @@ contains
                            dcEdgeInv*sqrt3fact)**2.0 + &
                            leithDivScaler2 * &
                            abs((div(k,cell2)  - div(k,cell1))*dcEdgeInv)**2.0 )
-            visc2 = min(visc2, visc2MaxLeith)
+            visc2 = min(visc2, visc2MaxTmp)
 
             tend(k,iEdge) = tend(k,iEdge) + &
                             edgeMask(k,iEdge)*visc2*uDiff
@@ -250,7 +251,6 @@ contains
 
       real (kind=RKIND) ::      &
          uDiff,                 &! diffusion operator temporary
-         cellWidth,             &! diffusion operator temporary
          areaCellInv,           &! 1/area of cell
          areaTriInv,            &! 1/area of triangle
          dcEdgeInv,             &! 1/dcEdge
@@ -258,6 +258,7 @@ contains
          leithDel2relVortEdge,  &! del2relVort on Edges
          leithDel2divEdge,      &! del2div on Edges
          visc4tmp,              &! common factor for visc4
+         visc4MaxTmp,           &! max factor for visc4
          visc4                   ! scaled biharmonic viscosity coeff
 
 
@@ -402,12 +403,12 @@ contains
       !$acc            dcEdge, dvEdge, meshScalingDel4, edgeMask, &
       !$acc            del2div, del2relVort, tend) &
       !$acc private(k, cell1, cell2, vertex1, vertex2, del2relVortEdge, del2divEdge, &
-      !$acc         dcEdgeInv, dvEdgeInv, visc4, visc4tmp uDiff, kmin, kmax)
+      !$acc         dcEdgeInv, dvEdgeInv, visc4, visc4tmp, visc4MaxTmp, uDiff, kmin, kmax)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(k, cell1, cell2, vertex1, vertex2, &
-      !$omp         dcEdgeInv, dvEdgeInv, visc4, uDiff, kmin, kmax)
+      !$omp         dcEdgeInv, dvEdgeInv, visc4, visc4tmp, visc4MaxTmp, uDiff, kmin, kmax)
 #endif
       do iEdge = 1, nEdgesOwned
          kmin = minLevelEdgeBot(iEdge)
@@ -421,10 +422,8 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
 
-         cellWidth = 2.0_RKIND* &
-                     sqrt((areaCell(cell1) + areaCell(cell2))/2.0_RKIND/pi)
-
-         visc4tmp = (leithParam4*cellWidth/pi)**12
+         visc4tmp = (leithParam4*dcEdge(iEdge)/pi)**12.0_RKIND
+         visc4MaxTmp = visc4MaxLeith*meshScalingDel4(iEdge)
 
          do k = kmin, kmax
             uDiff = (del2div(k,cell2) - del2div(k,cell1))* &
@@ -442,7 +441,7 @@ contains
                    *sqrt(visc4tmp * leithDel2relVortEdge + &
                          visc4tmp * leithDivScaler4 * leithDel2divEdge)
 
-            visc4 = min(visc4, visc4MaxLeith*meshScalingDel4(iEdge))
+            visc4 = min(visc4, visc4MaxTmp)
 
             tend(k,iEdge) = tend(k,iEdge) - &
                             edgeMask(k,iEdge)*uDiff*visc4
@@ -498,7 +497,6 @@ contains
       leithParam4     = 0.0_RKIND
       leithDivScaler2 = 0.0_RKIND
       leithDivScaler4 = 0.0_RKIND
-      dxLeith         = 0.0_RKIND
       visc2MaxLeith   = 0.0_RKIND
       visc4MaxLeith   = 0.0_RKIND
       sqrt3fact       = sqrt(3.0_RKIND)
@@ -509,7 +507,6 @@ contains
          hmixLeith2Off   = .false.
          leithParam2     = config_leith_del2_parameter
          leithDivScaler2 = config_leith_del2_div_scaler ** 6.0
-         dxLeith         = config_leith_dx
          visc2MaxLeith   = config_leith_visc2_max
       endif
 
@@ -517,7 +514,6 @@ contains
          hmixLeith4Off   = .false.
          leithParam4     = config_leith_del4_parameter
          leithDivScaler4 = config_leith_del4_div_scaler ** 12.0
-         dxLeith         = config_leith_dx
          visc4MaxLeith   = config_leith_visc4_max
       endif
 
