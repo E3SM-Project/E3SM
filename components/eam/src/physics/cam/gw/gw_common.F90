@@ -608,7 +608,7 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
   ! Polar taper.
   real(r8) :: ptaper(ncol)
 
-  ! Efficiency parameter for each column 
+  ! Efficiency parameter for each column
   real(r8) :: effgw_col(ncol)
 
   real(r8), parameter :: gwut_magnitude_min = 1.e-15_r8
@@ -845,6 +845,8 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, &
   ! and adjustments to tau below that level.
   ! Whether or not to apply the polar taper.
   logical(btype), intent(in) :: do_taper
+  ! flag to use minimum limit on gwut
+  logical(btype), intent(in) :: use_gwut_min_limiter
   ! Time step.
   real(r8), intent(in) :: dt
 
