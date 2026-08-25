@@ -1,0 +1,8 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #8477. It simplies changes one mpaso namelist variable,
+    config_gm_closure
+from its default value of 'constant' to 'geometric'. It also sets
+associated variables,
+    config_gm_spatially_variable_max_kappa
+    config_gm_spatially_variable_min_kappa
+for testing.
