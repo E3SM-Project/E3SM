@@ -420,6 +420,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <aero_microphys_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</aero_microphys_remap_file>
       <aero_microphys_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</aero_microphys_remap_file>
+      <time_interpolation_method type="string" doc="Method for interpolating MAM4 microphysics data in time">yearly_periodic</time_interpolation_method>
     </mam4_aero_microphys>
 
     <!-- MAM4xx-Optics -->
@@ -485,6 +486,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <srf_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne256pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne512pg2_20231201.nc</srf_remap_file>
       <srf_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30pg2_to_ne1024pg2_20231201.nc</srf_remap_file>
+      <time_interpolation_method type="string" doc="Method for interpolating MAM4 surface emissions data in time">yearly_periodic</time_interpolation_method>
     </mam4_srf_online_emiss>
 
     <!-- MAM4xx-constituent fluxes -->
