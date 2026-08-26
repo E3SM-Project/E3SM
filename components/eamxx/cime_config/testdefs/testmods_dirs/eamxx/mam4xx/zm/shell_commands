@@ -1,0 +1,14 @@
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+# Add ZM deep convection and wetscav processes
+#------------------------------------------------------
+# Add zm before mac_aero_mic, and wetscav after it
+ATMCHANGE physics::atm_procs_list="zm,mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep" -b
+
+#------------------------------------------------------
+# Enable convective processing in wetscav
+#------------------------------------------------------
+# This enables wetscav to use ZM outputs for aerosol processing
+# in deep convective clouds
+ATMCHANGE mam4_wetscav::convproc_do_aer=true -b
+ATMCHANGE mam4_wetscav::convproc_do_gas=false -b
+
