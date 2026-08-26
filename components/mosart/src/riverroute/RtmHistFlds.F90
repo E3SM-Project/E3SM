@@ -269,6 +269,12 @@ contains
        call RtmHistAddfld (fname='R_LAKE_VTOT'//'_'//trim(rtm_tracers(1)), units='m3',  &
             avgflag='A', long_name='MOSART mainchannel-lake storage: '//trim(rtm_tracers(1)), &
             ptr_rof=rtmCTL%lake_r_Vtot_nt1, default='active')
+       call RtmHistAddfld (fname='LAKE_QIN_ELM', units='m3/s',  &
+            avgflag='A', long_name='dyn_lake: ELM lake net water flux (P-E-snowcap-dS) received from the coupler, before the r/t split and floors', &
+            ptr_rof=rtmCTL%qlake, default='active')
+       call RtmHistAddfld (fname='LAKE_DEFICIT', units='m3',  &
+            avgflag='I', long_name='dyn_lake: cumulative ELM lake water demand not met by MOSART-Lake storage (should stay ~0)', &
+            ptr_rof=rtmCTL%lake_deficit, default='active')
        call RtmHistAddfld (fname='R_LAKE_ASUR', units='m2',  &
             avgflag='A', long_name='MOSART mainchannel-lake surface area', &
             ptr_rof=rtmCTL%lake_r_Asur_nt1, default='active')

@@ -2489,6 +2489,12 @@ contains
       ! ELM latches its dynamic lake fraction on it, per cell, without any collective
       call seq_flds_add(r2x_fluxes, 'Sr_lake_valid')
       call seq_flds_add(x2l_fluxes, 'Sr_lake_valid')
+
+      ! lnd->rof: the lake column's net water flux (P-E-snowcap-dS) to MOSART-Lake storage.
+      ! Flrl_wslake is registered in l2x_states above (legacy lake storage diagnostic);
+      ! under dyn_lake it is also mapped to rof and imported by MOSART as a storage flux.
+      call seq_flds_add(l2x_fluxes_to_rof, 'Flrl_wslake')
+      call seq_flds_add(x2r_fluxes, 'Flrl_wslake')
       longname = 'MOSART lake fields valid (exported at least once)'
       stdname  = 'lake_valid'
       units    = '1'

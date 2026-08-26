@@ -2130,6 +2130,13 @@ Runtime flag to turn on/off variable soil thickness.
 Runtime flag to turn on/off lake water storage.
 </entry>
 
+<entry id="lake_evap_cap_method" type="char*64" category="default_settings"
+        group="elm_inparm" valid_values="rain_snow,wslake">
+Cap on lake evaporation. rain_snow: E limited to the same-step rain+snow (G. Bishts
+sensitivity scheme). wslake: E limited to rain+snow plus the water the co-located
+MOSART-Lake actually holds (Vtot via dyn_lake) -- the physical limit; requires dyn_lake.
+</entry>
+
 <entry id="create_lakebed_column" type="logical" category="default_settings"
         group="elm_inparm" valid_values="">
 If TRUE, each lake landunit carries a second (lakebed) soil column next to the lake column;

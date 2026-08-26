@@ -177,6 +177,8 @@ module RunoffMod
 
      real(r8), pointer :: lake_r_evap_nt1(:)
      real(r8), pointer :: lake_r_prcp_nt1(:)
+     real(r8), pointer :: qlake(:)            ! dyn_lake: ELM lake net water flux (P-E-snowcap-dS) to lake storage [m3/s], may be negative
+     real(r8), pointer :: lake_deficit(:)     ! dyn_lake: cumulative ELM lake water demand MOSART could not supply [m3] (diagnostic; should stay ~0)
      real(r8), pointer :: lake_r_Vtot_nt1(:)
      real(r8), pointer :: lake_r_Asur_nt1(:)
      real(r8), pointer :: lake_r_Tsur_nt1(:)     
@@ -840,6 +842,10 @@ contains
       end if
       rtmCTL%lake_r_evap_nt1(:)    = 0._r8
       rtmCTL%lake_r_prcp_nt1(:)    = 0._r8
+      allocate(rtmCTL%qlake(begr:endr), rtmCTL%lake_deficit(begr:endr), stat=ier)
+      if (ier /= 0) call shr_sys_abort('Rtmini ERROR allocation of dyn_lake arrays')
+      rtmCTL%qlake(:) = 0._r8
+      rtmCTL%lake_deficit(:) = 0._r8
       rtmCTL%lake_r_Vtot_nt1(:)    = 0._r8
       rtmCTL%lake_r_Asur_nt1(:)    = 0._r8
       rtmCTL%lake_r_Tsur_nt1(:)    = 273.15_r8

@@ -43,6 +43,7 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
   integer, public :: index_x2r_Flrl_rofmud = 0  ! lnd->rof input suspended sediment flux from soil erosion
   integer, public :: index_x2r_Flrl_inundinf = 0! lnd->rof infiltration from floodplain inundation
+  integer, public :: index_x2r_Flrl_wslake = 0  ! lnd->rof lake net water flux (P-E-snowcap-dS) to MOSART-Lake storage (dyn_lake)
   integer, public :: nflds_x2r = 0
 
   integer, public :: index_x2r_coszen_str  = 0   ! lnd->rof Cosine of Zenith
@@ -127,6 +128,7 @@ contains
 
     index_x2r_Flrl_rofsur = mct_avect_indexra(avtmp,'Flrl_rofsur') !'Flrl_rofsur')
     index_x2r_Flrl_rofgwl = mct_avect_indexra(avtmp,'Flrl_rofgwl')
+    if (dyn_lake) index_x2r_Flrl_wslake = mct_avect_indexra(avtmp,'Flrl_wslake')
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
     index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')

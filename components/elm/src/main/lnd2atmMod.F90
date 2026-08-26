@@ -449,6 +449,12 @@ contains
          lnd2atm_vars%wslake_grc(bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
+    ! dyn_lake: lake column net water flux (per gridcell area) -> MOSART-Lake storage
+    call c2g( bounds, &
+         col_wf%qflx_lake2rof(bounds%begc:bounds%endc), &
+         lnd2atm_vars%qflx_lake2rof_grc(bounds%begg:bounds%endg), &
+         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+
     ! calculate total water storage for history files
     ! first set tws to gridcell total endwb
     ! second add river storage as gridcell average depth (1.e-3 converts [m3/km2] to [mm])

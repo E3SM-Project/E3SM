@@ -39,6 +39,7 @@ module RtmVar
   real,    public :: rinittemp = 283.15_r8             ! initial reservoir temperature
   integer, public :: ngeom   = 50                      ! Reservoir depth layers to calculate depth-area-storage relationship
   integer, public :: nlayers = 30                      ! Maximum number of reservoir layers for stratification
+  logical, public :: dyn_lake_coupled = .false.        ! set from the driver's dyn_lake: ELM's lake P-E arrives as Flrl_wslake and is the ONLY external water term on MOSART-Lake (heat OFF)
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   logical, public :: data_bgc_fluxes_to_ocean_flag = .false.! read in and send BGC fluxes to ocean flag
   logical, public :: redirect_negative_qgwl = .false.     ! redirect negative qgwl flag

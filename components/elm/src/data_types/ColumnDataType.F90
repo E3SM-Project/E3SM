@@ -505,6 +505,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_snow_melt       (:)   => null() ! snow melt (net)
     real(r8), pointer :: qflx_snomelt_lyr     (:,:) => null() ! snow melt (net)
     real(r8), pointer :: qflx_qrgwl           (:)   => null() ! qflx_surf at glaciers, wetlands, lakes
+    real(r8), pointer :: qflx_lake2rof        (:)   => null() ! lake column net water flux P-E-snowcap-dS sent to MOSART-Lake storage instead of qflx_qrgwl (use_dyn_lake) (mm H2O/s)
     real(r8), pointer :: qflx_runoff          (:)   => null() ! total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
     real(r8), pointer :: qflx_runoff_r        (:)   => null() ! Rural total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
     real(r8), pointer :: qflx_runoff_u        (:)   => null() ! urban total runoff (qflx_drain+qflx_surf) (mm H2O /s)
@@ -5830,6 +5831,7 @@ contains
     allocate(this%qflx_snomelt_lyr       (begc:endc,-nlevsno+1:0)) ; this%qflx_snomelt_lyr    (:,:) = spval
     allocate(this%qflx_snow_melt         (begc:endc))             ; this%qflx_snow_melt       (:)   = spval
     allocate(this%qflx_qrgwl             (begc:endc))             ; this%qflx_qrgwl           (:)   = spval
+    allocate(this%qflx_lake2rof          (begc:endc))             ; this%qflx_lake2rof        (:)   = 0._r8   ! 0 on every non-lake column (enters the balance check)
     allocate(this%qflx_runoff            (begc:endc))             ; this%qflx_runoff          (:)   = spval
     allocate(this%qflx_runoff_r          (begc:endc))             ; this%qflx_runoff_r        (:)   = spval
     allocate(this%qflx_runoff_u          (begc:endc))             ; this%qflx_runoff_u        (:)   = spval
@@ -5958,6 +5960,10 @@ contains
      call hist_addfld1d (fname='QRGWL',  units='mm/s',  &
           avgflag='A', long_name='surface runoff at glaciers (liquid only), wetlands, lakes', &
            ptr_col=this%qflx_qrgwl, c2l_scale_type='urbanf')
+
+    call hist_addfld1d (fname='QLAKE2ROF',  units='mm/s',  &
+         avgflag='A', long_name='lake column net water flux (P-E-snowcap-dS) sent to MOSART-Lake storage (dyn_lake; may be negative)', &
+          ptr_col=this%qflx_lake2rof, c2l_scale_type='urbanf')
 
     this%qflx_runoff(begc:endc) = spval
      call hist_addfld1d (fname='QRUNOFF_NODYNLNDUSE',  units='mm/s',  &

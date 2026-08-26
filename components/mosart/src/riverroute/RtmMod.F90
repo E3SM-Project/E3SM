@@ -19,7 +19,7 @@ module RtmMod
   use mpi
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
                                frivinp_rtm, frivinp_mesh, finidat_rtm, nrevsn_rtm,rstraflag,lakeflag,ngeom,nlayers,rinittemp, &
-                               nsrContinue, nsrBranch, nsrStartup, nsrest, &
+                               nsrContinue, nsrBranch, nsrStartup, nsrest, dyn_lake_coupled, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, do_budget, &
                                isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
@@ -2366,6 +2366,15 @@ contains
           budget_terms(br_qsur,nt) = budget_terms(br_qsur,nt) + rtmCTL%qsur(nr,nt)*delt_coupling     ! (rtmCTL%qsur 's unit is m^3/s. --Inund.)
           budget_terms(br_qsub,nt) = budget_terms(br_qsub,nt) + rtmCTL%qsub(nr,nt)*delt_coupling
           budget_terms(br_qgwl,nt) = budget_terms(br_qgwl,nt) + rtmCTL%qgwl(nr,nt)*delt_coupling
+          ! dyn_lake guardrail: ELM lake flux arriving on a cell with NO MOSART lake object
+          ! (inconsistent datasets, pre-validity window) cannot be applied anywhere -- count it
+          ! into the deficit so no water enters or leaves the coupled system silently.
+          if (dyn_lake_coupled .and. lakeflag .and. nt == nt_nliq) then
+             if (TUnit_lake_r%lake_flg(nr) < 1 .and. TUnit_lake_t%lake_flg(nr) < 1 .and. &
+                 abs(rtmCTL%qlake(nr)) > 0._r8) then
+                rtmCTL%lake_deficit(nr) = rtmCTL%lake_deficit(nr) + abs(rtmCTL%qlake(nr))*delt_coupling
+             end if
+          end if
           budget_terms(br_qdto,nt) = budget_terms(br_qdto,nt) + rtmCTL%qdto(nr,nt)*delt_coupling
           budget_terms(br_qdem,nt) = budget_terms(br_qdem,nt) + rtmCTL%qdem(nr,nt)*delt_coupling
           budget_terms(br_ehexch,nt) = budget_terms(br_ehexch,nt) + ehexch_avg(nr,nt)*delt_coupling
@@ -3724,7 +3733,7 @@ contains
             if (nt .eq. nt_nliq) then
                call MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_i, bv_volt_f, &
                  bv_wt_i, bv_wt_f, bv_wr_i, bv_wr_f, bv_wh_i, bv_wh_f, bv_dstor_i, bv_dstor_f, bv_fp_i, bv_fp_f, &
-                 bv_lake_i, bv_lake_f, br_supply, budget_input, budget_output, budget_other)
+                 bv_lake_i, bv_lake_f, br_supply, br_lake_prcp, br_lake_evap, budget_input, budget_output, budget_other)
                call MOSART_WaterBudget_Print()
             endif
 

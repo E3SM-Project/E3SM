@@ -523,6 +523,8 @@ contains
     integer, save :: index_x2r_Flrl_demand
     integer, save :: index_x2r_Flrl_irrig
     integer, save :: index_x2r_Flrl_rofmud
+    integer, save :: index_l2x_Flrl_wslake
+    integer, save :: index_x2r_Flrl_wslake
     integer, save :: index_l2x_Flrl_rofl_16O
     integer, save :: index_l2x_Flrl_rofi_16O
     integer, save :: index_x2r_Flrl_rofl_16O
@@ -611,6 +613,10 @@ contains
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       if (dyn_lake) then
+          index_l2x_Flrl_wslake = mct_aVect_indexRA(l2x_r,'Flrl_wslake')
+          index_x2r_Flrl_wslake = mct_aVect_indexRA(x2r_r,'Flrl_wslake')
+       end if
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
@@ -662,6 +668,10 @@ contains
             trim(fracstr)//'*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
             trim(fracstr)//'*l2x%Flrl_rofi'
+       if (dyn_lake) then
+          mrgstr(index_x2r_Flrl_wslake) = trim(mrgstr(index_x2r_Flrl_wslake))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_wslake'
+       end if
        if (trim(cime_model).eq.'e3sm') then
           mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
                trim(fracstr)//'*l2x%Flrl_demand'
@@ -750,6 +760,9 @@ contains
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * frac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * frac
+       if (dyn_lake) then
+          x2r_r%rAttr(index_x2r_Flrl_wslake,i) = l2x_r%rAttr(index_l2x_Flrl_wslake,i) * frac
+       end if
        if (trim(cime_model).eq.'e3sm') then
           x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * frac
        endif

@@ -52,7 +52,9 @@ contains
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
     use elm_varcon          , only : sb, vkc, grav, denh2o, tfrz, spval, zsno
-    use elm_varctl          , only : iulog, use_lch4, use_firn_percolation_and_compaction
+    use elm_varctl          , only : iulog, use_lch4, use_firn_percolation_and_compaction, lake_evap_cap_method
+    use elm_time_manager    , only : get_step_size
+    use domainMod           , only : ldomain
     use LakeCon             , only : betavis, z0frzlake, tdmax, emg_lake
     use LakeCon             , only : lake_use_old_fcrit_minz0
     use LakeCon             , only : minz0lake, cur0, cus, curm, fcrit
@@ -135,6 +137,9 @@ contains
     real(r8) :: fm(bounds%begp:bounds%endp)        ! needed for BGC only to diagnose 10m wind speed
     real(r8) :: bw                                 ! partial density of water (ice + liquid)
     real(r8) :: t_grnd_temp                        ! Used in surface flux correction over frozen ground
+    real(r8) :: qflx_evap_cap                      ! water-availability cap on qflx_evap_soi (kg/m2/s)
+    real(r8) :: a_wet_cap                          ! wet lake area of the column (m2), for the wslake cap
+    logical  :: evap_water_limited                 ! true if qflx_evap_soi(p) was capped by water availability this iteration
     real(r8) :: betaprime(bounds%begc:bounds%endc) ! Effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
     real(r8) :: e_ref2m                            ! 2 m height surface saturated vapor pressure [Pa]
     real(r8) :: de2mdT                             ! derivative of 2 m height surface saturated vapor pressure on t_ref2m
@@ -464,6 +469,43 @@ contains
             elseif(t_grnd(c)<tgbef(c)-20._r8)then
               t_grnd(c)=tgbef(c)-20._r8
             endif
+
+            ! If the t_grnd solved above would evaporate more than water availability allows,
+            ! evaporation is not actually a function of t_grnd in this regime -- there is no
+            ! more water to respond with. Drop its temperature-derivative from bx, replace it
+            ! with a fixed loss in ax, and re-solve so t_grnd (and everything downstream in
+            ! this iteration: dth/dqh/zeta/obu/roughness lengths below) stays self-consistent
+            ! with the capped evaporation instead of the discarded unconstrained value.
+            evap_water_limited = .false.
+            if (lake_evap_cap_method == 'rain_snow' .or. lake_evap_cap_method == 'wslake') then
+               qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
+               if (lake_evap_cap_method == 'wslake') then
+                  ! water the lake actually holds (MOSART Vtot, r+t) per unit wet-lake area per step:
+                  ! the physical cap -- a lake evaporates while it has water; only a near-empty lake binds.
+                  ! Before the first valid MOSART export the cap stays rain+snow (conservative).
+                  a_wet_cap = col_pp%wtgcell(c) * ldomain%area(g) * 1.e6_r8 * ldomain%frac(g)
+                  if (atm2lnd_vars%lake_valid_grc(g) >= 0.5_r8 .and. a_wet_cap > 0._r8) then
+                     qflx_evap_cap = qflx_evap_cap + denh2o * &
+                          max(atm2lnd_vars%lake_r_Vtot_grc(g) + atm2lnd_vars%lake_t_Vtot_grc(g), 0._r8) / &
+                          (a_wet_cap * get_step_size())
+                  end if
+               end if
+               if (forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p) > qflx_evap_cap) then
+                  evap_water_limited = .true.
+                  ax  = betaprime(c)*sabg(p) + emg_lake*forc_lwrad(t) + 3._r8*stftg3(p)*tgbef(c) &
+                       + forc_rho(t)*cpair/rah(p)*thm(p) &
+                       - htvp(c)*qflx_evap_cap &
+                       + tksur(c)*tsur(c)/dzsur(c)
+                  bx  = 4._r8*stftg3(p) + forc_rho(t)*cpair/rah(p) + tksur(c)/dzsur(c)
+                  t_grnd(c) = ax/bx
+                  if(t_grnd(c)>tgbef(c)+20._r8)then
+                    t_grnd(c)=tgbef(c)+20._r8
+                  elseif(t_grnd(c)<tgbef(c)-20._r8)then
+                    t_grnd(c)=tgbef(c)-20._r8
+                  endif
+               end if
+            end if
+
             ! Update htvp
             if (t_grnd(c) > tfrz) then
                htvp(c) = hvap
@@ -475,7 +517,11 @@ contains
             ! using ground temperatures from previous time step
 
             eflx_sh_grnd(p) = forc_rho(t)*cpair*(t_grnd(c)-thm(p))/rah(p)
-            qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
+            if (evap_water_limited) then
+               qflx_evap_soi(p) = qflx_evap_cap
+            else
+               qflx_evap_soi(p) = forc_rho(t)*(qsatg(c)+qsatgdT(c)*(t_grnd(c)-tgbef(c))-forc_q(t))/raw(p)
+            end if
 
             ! Re-calculate saturated vapor pressure, specific humidity and their
             ! derivatives at lake surface
@@ -604,6 +650,27 @@ contains
             htvp(c) = hvap
          else
             htvp(c) = hsub
+         end if
+
+         ! Backstop cap for the t_grnd overrides just above: those force t_grnd directly
+         ! (freezing point, or convective mixing to t_lake) rather than solving it from ax/bx,
+         ! so there is no equation to re-solve against the cap the way the ITERATION loop does
+         ! above. Applied here, before eflx_soil_grnd/eflx_gnet below are assembled from
+         ! qflx_evap_soi, so any energy that can no longer leave as latent heat is left to warm
+         ! the lake/ground via eflx_gnet instead. Never clamps condensation (qflx_evap_soi < 0).
+         ! In practice this only binds for the convective-mixing branch (t_grnd forced warmer);
+         ! the freezing-point branch only forces t_grnd colder than an already-capped value.
+         if (lake_evap_cap_method == 'rain_snow' .or. lake_evap_cap_method == 'wslake') then
+            qflx_evap_cap = max(forc_rain(t) + forc_snow(t), 0._r8)
+            if (lake_evap_cap_method == 'wslake') then
+               a_wet_cap = col_pp%wtgcell(c) * ldomain%area(g) * 1.e6_r8 * ldomain%frac(g)
+               if (atm2lnd_vars%lake_valid_grc(g) >= 0.5_r8 .and. a_wet_cap > 0._r8) then
+                  qflx_evap_cap = qflx_evap_cap + denh2o * &
+                       max(atm2lnd_vars%lake_r_Vtot_grc(g) + atm2lnd_vars%lake_t_Vtot_grc(g), 0._r8) / &
+                       (a_wet_cap * get_step_size())
+               end if
+            end if
+            qflx_evap_soi(p) = min(qflx_evap_soi(p), qflx_evap_cap)
          end if
 
          ! Net longwave from ground to atmosphere

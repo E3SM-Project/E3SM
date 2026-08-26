@@ -75,6 +75,7 @@ module lnd2atmType
      real(r8), pointer :: Tqsur_grc(:) => null()             ! grc Temperature of surface runoff
      real(r8), pointer :: Tqsub_grc(:) => null()             ! grc Temperature of subsurface runoff
      real(r8), pointer :: wslake_grc(:) => null()            ! grc lake water storage
+     real(r8), pointer :: qflx_lake2rof_grc(:) => null()     ! grc lake net water flux to MOSART-Lake storage (dyn_lake) (mm/s)
 
      real(r8), pointer :: qflx_rofmud_grc(:)       => null() ! grc sediment yield
      real(r8), pointer :: qflx_h2orof_drain_grc(:) => null() ! grc drainage from floodplain inundation
@@ -161,6 +162,7 @@ contains
     allocate(this%Tqsur_grc            (begg:endg))            ; this%Tqsur_grc            (:) =ival
     allocate(this%Tqsub_grc            (begg:endg))            ; this%Tqsub_grc            (:) =ival
     allocate(this%wslake_grc           (begg:endg))            ; this%wslake_grc(:) = ival
+    allocate(this%qflx_lake2rof_grc    (begg:endg))            ; this%qflx_lake2rof_grc(:) = 0._r8
     
     if (shr_megan_mechcomps_n>0) then
        allocate(this%flxvoc_grc(begg:endg,1:shr_megan_mechcomps_n));  this%flxvoc_grc(:,:)=ival
@@ -207,6 +209,11 @@ contains
          avgflag='A', long_name='total liquid runoff (does not include QSNWCPICE)', &
          ptr_lnd=this%qflx_rofliq_grc)
 
+
+    this%qflx_lake2rof_grc(begg:endg) = 0._r8
+    call hist_addfld1d (fname='QLAKE2ROF_GRC',  units='mm/s',  &
+         avgflag='A', long_name='dyn_lake: lake net water flux exported to MOSART-Lake (gridcell mean, = Flrl_wslake)', &
+         ptr_lnd=this%qflx_lake2rof_grc, default='inactive')
     this%qflx_rofice_grc(begg:endg) = 0._r8
     call hist_addfld1d (fname='QSNWCPICE',  units='mm/s',  &
          avgflag='A', long_name='excess snowfall due to snow capping', &

@@ -75,6 +75,7 @@ contains
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
     use elm_varctl      , only : iulog, use_extrasnowlayers, use_lake_wat_storage, use_firn_percolation_and_compaction
+    use elm_varctl      , only : use_dyn_lake
     use elm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
@@ -202,6 +203,7 @@ contains
          qflx_lnd2ocn         =>  col_wf%qflx_lnd2ocn       , & ! Output: [real(r8) (:)   ] lateral flow from lnd to ocn (mm H2O /s)
          qflx_infl            =>  col_wf%qflx_infl          , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)
          qflx_qrgwl           =>  col_wf%qflx_qrgwl         , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes
+         qflx_lake2rof        =>  col_wf%qflx_lake2rof      , & ! Output: [real(r8) (:)   ]  lake net water flux to MOSART-Lake storage (dyn_lake)
          qflx_runoff          =>  col_wf%qflx_runoff        , & ! Output: [real(r8) (:)   ]  total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
          qflx_irrig           =>  veg_wf%qflx_irrig_patch   , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)
          qflx_irrig_col       =>  col_wf%qflx_irrig         , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)
@@ -741,6 +743,17 @@ contains
             end if
             qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
                 (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
+         end if
+
+         ! Dynamic lake coupling: the lake water is MOSART-Lake's. The mass-constant lake's
+         ! residual (P - E - snowcap - d(snow+soil)/dt, negative when E > P) is sent to the
+         ! co-located MOSART lake as a STORAGE flux (Flrl_wslake) instead of being emitted as
+         ! runoff, so a lake can draw down and runoff can no longer go negative on this account.
+         if (use_dyn_lake) then
+            qflx_lake2rof(c) = qflx_qrgwl(c)
+            qflx_qrgwl(c)    = 0._r8
+         else
+            qflx_lake2rof(c) = 0._r8
          end if
 
          qflx_floodc(c)    = qflx_floodg(g)

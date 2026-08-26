@@ -13,6 +13,8 @@ MODULE mosart_lake_r_mod
     use shr_sys_mod   , only : shr_sys_abort
     use RtmTimeManager
     use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TUnit_lake_r, TLake_r, TPara, rtmCTL
+    use RunoffMod , only : TUnit_lake_t, TLake_t
+    use RtmVar    , only : dyn_lake_coupled
     use rof_cpl_indices, only : nt_nliq, nt_nice
     use RtmVar         , only : iulog, ngeom, nlayers, rstraflag, lakeflag, heatflag
     use MOSART_heat_mod
@@ -69,6 +71,7 @@ MODULE mosart_lake_r_mod
         real(r8) :: dv_in(nlayers),dv_ou(nlayers)                               ! volume increment/decrease at layer due to inflow/outflow(m^3)
         real(r8) :: d_evap,v_evap                                               ! Evaporated depth (m) and volume (m^3)
         real(r8) :: d_prcp,v_prcp                                               ! Evaporated depth (m) and volume (m^3)
+        real(r8) :: a_own, a_oth, v_net, v_floor   ! dyn_lake: ELM net-flux split and storage floor
         real(r8) :: v_spill                                                     ! additional flow volume when storage capacity exceeded (m^3)
         real(r8) :: delta_z                                                     ! depth change to calculate corresponding area/volume(m)
         real(r8) :: top_d                                                       ! top layer depth after mixing
@@ -134,6 +137,21 @@ MODULE mosart_lake_r_mod
             !TLake_r%lake_rain(iunit) = THeat%forc_rain(iunit) * TUnit_lake_r%A_max(iunit) * 1e6  ! note the unit for A_max is km2
             !TLake_r%lake_snow(iunit) = THeat%forc_snow(iunit) * TUnit_lake_r%A_max(iunit) * 1e6
             TLake_r%lake_inflow(iunit) = -TRunoff%erout(iunit,nt) !inflow does not change during sub timesteps                
+            if (dyn_lake_coupled) then
+                ! ELM lake net flux (P-E-snowcap-dS, m3/s over the cell) split across the two lake
+                ! classes in proportion to their current surface area (ELM computed one ET rate
+                ! over the combined wet area); carried in lake_rain so history/budget see it.
+                a_own = TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
+                a_oth = 0._r8
+                if (TUnit_lake_t%lake_flg(iunit) >= 1 .and. TLake_t%d_ns(iunit) >= 1) &
+                    a_oth = TLake_t%a_d(iunit,TLake_t%d_ns(iunit)+1)
+                if (a_own + a_oth > 0._r8) then
+                    TLake_r%lake_rain(iunit) = rtmCTL%qlake(iunit) * a_own/(a_own + a_oth)
+                else
+                    TLake_r%lake_rain(iunit) = 0._r8
+                end if
+                TLake_r%lake_snow(iunit) = 0._r8
+            end if
             if (heatflag) then
                 TLake_r%lake_Tsur(iunit) = THeat%Tr(iunit)
             else
@@ -208,6 +226,18 @@ MODULE mosart_lake_r_mod
                 end if
                 d_evap = v_evap / TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
                 end if ! heatflag (evaporation)
+                if (dyn_lake_coupled .and. .not. heatflag) then
+                    ! the ELM net flux is the only external water term (heat OFF); a lake cannot
+                    ! give more than it holds: floor at 95 % of the top layer, book the rest as deficit
+                    v_net = TLake_r%lake_rain(iunit) * dtime
+                    v_floor = 0.95_r8 * TLake_r%d_v(iunit,TLake_r%d_ns(iunit))
+                    if (v_net < 0._r8 .and. -v_net > v_floor) then
+                        rtmCTL%lake_deficit(iunit) = rtmCTL%lake_deficit(iunit) + (-v_net - v_floor)
+                        v_net = -v_floor
+                    end if
+                    v_prcp = v_net
+                    d_prcp = v_prcp / TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
+                end if
                 
                 ! advective inflow/outflow only, don't consider prec. or evap. fluxes here
                 !call mosart_lake_hydro_sub_channel(iunit,nt,dtime)

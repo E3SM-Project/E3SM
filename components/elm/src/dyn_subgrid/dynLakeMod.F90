@@ -60,6 +60,10 @@ module dynLakeMod
   public :: dynlake_driver
 
   integer , parameter :: max_print   = 10       ! per warning type, per call, per task
+  ! Per-cell: has this cell's split been set from a valid MOSART area since (re)start? Until it
+  ! has, the split is applied at the first step a valid area arrives (not only at the day
+  ! boundary), so the fully-wet initial split lasts one coupling interval, not a day+.
+  logical, allocatable, save :: split_initialized(:)
   ! The coupler hands ELM ZEROS (not spval) for rof fields until MOSART's first export
   ! (first rof coupling interval after a cold start or a restart). Updating from those zeros
   ! would collapse every lake to the lakebed on day 1. MOSART therefore exports
@@ -102,9 +106,14 @@ contains
             errMsg(__FILE__, __LINE__))
     end if
 
+    if (.not. allocated(split_initialized)) then
+       allocate(split_initialized(bounds%begg:bounds%endg)); split_initialized(:) = .false.
+    end if
+
     ! Daily cadence, like the other dynamic-landunit sources (the rof->lnd exchange
-    ! itself is every coupling interval; a landunit weight does not need sub-daily updates)
-    if (.not. is_beg_curr_day()) return
+    ! itself is every coupling interval; a landunit weight does not need sub-daily updates) --
+    ! except for cells whose split has not yet been set from a valid area (cold start / restart)
+    if (.not. is_beg_curr_day() .and. all(split_initialized)) return
 
     n_upd = 0; n_over_cell = 0; n_over_foot = 0; n_nolun = 0; n_nomos = 0; n_wait = 0
 
@@ -120,6 +129,8 @@ contains
           n_wait = n_wait + 1
           cycle
        end if
+       if (.not. is_beg_curr_day() .and. split_initialized(g)) cycle   ! mid-day: only first-time splits
+       split_initialized(g) = .true.
 
        asur   = max(asur_r, 0._r8) + max(asur_t, 0._r8)
        a_land = ldomain%area(g) * 1.e6_r8 * ldomain%frac(g)     ! km2 -> m2, land part only

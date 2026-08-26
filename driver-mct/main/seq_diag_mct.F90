@@ -45,6 +45,7 @@ module seq_diag_mct
   use component_type_mod, only : COMPONENT_GET_DOM_CX, COMPONENT_GET_C2X_CX, &
        COMPONENT_GET_X2C_CX, COMPONENT_TYPE
   use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
+  use seq_flds_mod, only : dyn_lake
   use shr_reprosum_mod, only : shr_reprosum_calc
   use seq_diagBGC_mct,  only : seq_diagBGC_preprint_mct, seq_diagBGC_print_mct
 
@@ -288,6 +289,7 @@ module seq_diag_mct
 
   integer :: index_x2r_Flrl_rofsur
   integer :: index_x2r_Flrl_rofgwl
+  integer :: index_x2r_Flrl_wslake
   integer :: index_x2r_Flrl_rofsub
   integer :: index_x2r_Flrl_rofdto
   integer :: index_x2r_Flrl_rofi
@@ -1177,6 +1179,7 @@ contains
     if (first_time) then
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur')
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl')
+       if (dyn_lake) index_x2r_Flrl_wslake = mct_aVect_indexRA(x2r_r,'Flrl_wslake')
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub')
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto')
        index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig', perrWith='quiet')
@@ -1204,6 +1207,9 @@ contains
             + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofgwl,n) &
             + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofsub,n) &
             + ca_r*x2r_r%rAttr(index_x2r_Flrl_rofdto,n)
+       if (dyn_lake) then   ! ELM lake P-E into MOSART-Lake storage (counted as runoff out of land above)
+          nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*x2r_r%rAttr(index_x2r_Flrl_wslake,n)
+       end if
        if (index_x2r_Flrl_irrig /= 0) then
           nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_r*x2r_r%rAttr(index_x2r_Flrl_irrig,n)
        end if

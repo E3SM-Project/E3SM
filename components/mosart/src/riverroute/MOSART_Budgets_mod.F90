@@ -26,14 +26,16 @@ module MOSART_Budgets_mod
   integer, parameter :: f_roff = 1
   integer, parameter :: f_rout = 2
   integer, parameter :: f_irri = 3
+  integer, parameter :: f_lake = 4   ! dyn_lake: ELM lake P-E (net) into MOSART-Lake storage, minus MOSART's own lake evaporation
 
-  integer, parameter, public :: f_size = f_irri
+  integer, parameter, public :: f_size = f_lake
 
   character(len=16),parameter :: fname(f_size) = &
        (/&
        '     runoff (in)', &
        'streamflow (out)', &
-       '           irrig'  &
+       '           irrig', &
+       '   lake P-E (in)'  &
        /)
 
    !--- O for "other" term aggregated from flux to state ---
@@ -172,7 +174,7 @@ contains
 !--------------------------------------------------------------------
   subroutine MOSART_WaterBudget_Extraction(budget_global, budget_terms_total, bv_volt_beg, bv_volt_end, &
    bv_wt_beg, bv_wt_end, bv_wr_beg, bv_wr_end, bv_wh_beg, bv_wh_end, bv_dstor_beg, bv_dstor_end, bv_fp_beg, bv_fp_end, &
-   bv_lake_beg, bv_lake_end, br_sup, budget_in, budget_out, budget_oth)
+   bv_lake_beg, bv_lake_end, br_sup, br_lake_prcp, br_lake_evap, budget_in, budget_out, budget_oth)
 
    use RtmTimeManager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
    implicit none
@@ -194,6 +196,8 @@ contains
    integer,  intent(in) :: bv_lake_beg  ! = 72 ! initial lake storage
    integer,  intent(in) :: bv_lake_end  ! = 73 ! final   lake storage
    integer,  intent(in) :: br_sup       ! = 49 ! supply rate (m3/coupling period)
+   integer,  intent(in) :: br_lake_prcp ! = 70 ! lake precipitation / ELM net flux into lake storage (m3/coupling period)
+   integer,  intent(in) :: br_lake_evap ! = 71 ! MOSART-internal lake evaporation (m3/coupling period)
 
    real(r8), intent(in) :: budget_in, budget_out, budget_oth
 
@@ -206,8 +210,11 @@ contains
 
    unit_conversion = 1.d0/(4.0_r8*shr_const_pi*SHR_CONST_REARTH**2)*1.0e15_r8
 
-   rof_budg_fluxG(f_roff,p_inst) = budget_in / get_step_size() 
-   rof_budg_fluxG(f_rout,p_inst) = -(budget_out - budget_global(br_sup, nt_nliq)) / get_step_size() !subtract the supply part as it has been aggregated to total out
+   ! budget_in/out already contain the lake terms (RtmMod); show them as their own row so the
+   ! ELM P-E arriving via Flrl_wslake (dyn_lake) is visible; the column sum is unchanged
+   rof_budg_fluxG(f_roff,p_inst) = (budget_in - budget_global(br_lake_prcp, nt_nliq)) / get_step_size() 
+   rof_budg_fluxG(f_rout,p_inst) = -(budget_out - budget_global(br_sup, nt_nliq) - budget_global(br_lake_evap, nt_nliq)) / get_step_size() !subtract the supply part as it has been aggregated to total out
+   rof_budg_fluxG(f_lake,p_inst) = (budget_global(br_lake_prcp, nt_nliq) - budget_global(br_lake_evap, nt_nliq)) / get_step_size()
    rof_budg_fluxG(f_irri,p_inst) = -budget_global(br_sup, nt_nliq) / get_step_size() 
    rof_budg_other(o_othr,p_inst) = budget_oth / get_step_size() 
 

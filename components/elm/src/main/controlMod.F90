@@ -44,7 +44,7 @@ module controlMod
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix
   use elm_varctl              , only: nu_com, use_var_soil_thick
-  use elm_varctl              , only: use_lake_wat_storage
+  use elm_varctl              , only: use_lake_wat_storage, lake_evap_cap_method
   use elm_varctl              , only: create_lakebed_column, create_twolakes_per_gridcell, use_dyn_lake
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use elm_varctl              , only: forest_fert_exp
@@ -315,7 +315,7 @@ contains
 
     namelist /elm_inparm/ use_dynroot
 
-    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
+    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage, lake_evap_cap_method
     namelist /elm_inparm/ create_lakebed_column, create_twolakes_per_gridcell
 
     namelist /elm_inparm/ &
@@ -716,6 +716,18 @@ contains
             errMsg(__FILE__, __LINE__))
     endif
 
+    ! Lake evaporation cap method
+    if (lake_evap_cap_method /= 'rain_snow' .and. &
+        lake_evap_cap_method /= 'wslake') then
+       write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
+       call endrun(msg=' ERROR:: choices are rain_snow or wslake' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+    if (lake_evap_cap_method == 'wslake' .and. .not. use_dyn_lake) then
+       call endrun(msg=' ERROR:: lake_evap_cap_method = wslake needs the MOSART lake volume: requires drv dyn_lake=.true.' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -883,6 +895,8 @@ contains
     call mpi_bcast (use_lake_wat_storage, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (create_lakebed_column, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (create_twolakes_per_gridcell, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (lake_evap_cap_method, len(lake_evap_cap_method), MPI_CHARACTER, 0, mpicom, ier)
 
     if ((use_cn .or. use_fates) .and. use_vertsoilc) then
        ! vertical soil mixing variables
@@ -1083,6 +1097,7 @@ contains
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_lake_wat_storage = ', use_lake_wat_storage
+    write(iulog,*) '    lake_evap_cap_method = ', lake_evap_cap_method
     write(iulog,*) '    create_lakebed_column = ', create_lakebed_column
     write(iulog,*) '    create_twolakes_per_gridcell = ', create_twolakes_per_gridcell
     write(iulog,*) '    use_dyn_lake (from drv dyn_lake) = ', use_dyn_lake

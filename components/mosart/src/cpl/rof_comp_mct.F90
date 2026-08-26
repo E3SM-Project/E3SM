@@ -22,7 +22,7 @@ module rof_comp_mct
                                 seq_infodata_start_type_brnch
   use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
   use RunoffMod        , only : rtmCTL, TRunoff, THeat, TUnit, Tctl
-  use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
+  use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, dyn_lake_coupled, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
                                 inst_index, inst_suffix, inst_name, RtmVarSet, &
                                 wrmflag, heatflag, data_bgc_fluxes_to_ocean_flag, &
@@ -39,7 +39,7 @@ module rof_comp_mct
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
                                 index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
-                                index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
+                                index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, index_x2r_Flrl_wslake, &
                                 index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
                                 index_x2r_Sa_u   , index_x2r_Sa_v   , &
                                 index_x2r_Sa_shum, &
@@ -293,6 +293,10 @@ contains
     ! Read namelist, grid and surface data
     call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present,rtm_mesh=rtm_mesh)
 
+    dyn_lake_coupled = dyn_lake
+    if (dyn_lake .and. heatflag) then
+       call shr_sys_abort('rof_init_mct: dyn_lake requires heatflag=.false. -- ELM supplies the lake P-E; MOSART-Lake internal precip/evap must stay off (double-count guard)')
+    endif
     if (dyn_lake .and. .not. lakeflag) then
        call shr_sys_abort('rof_init_mct: dyn_lake requires lakeflag=.true. in MOSART namelist')
     endif
@@ -776,6 +780,10 @@ contains
        rtmCTL%qsur(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsur,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofsub,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qgwl(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofgwl,n2) * (rtmCTL%area(n)*0.001_r8)
+       if (index_x2r_Flrl_wslake > 0) then
+          ! dyn_lake: lake net water flux to MOSART-Lake storage (sign preserved -- negative = drawdown)
+          rtmCTL%qlake(n) = x2r_r%rAttr(index_x2r_Flrl_wslake,n2) * (rtmCTL%area(n)*0.001_r8)
+       endif
        if (index_x2r_Flrl_rofdto > 0) then
           rtmCTL%qdto(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_rofdto,n2) * (rtmCTL%area(n)*0.001_r8)
        else

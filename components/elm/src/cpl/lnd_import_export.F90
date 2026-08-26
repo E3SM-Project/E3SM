@@ -13,6 +13,7 @@ module lnd_import_export
   use elm_varpar   , only: numpft, numharvest
   use ocn2lndType  , only: ocn2lnd_type
   use GridcellType , only: grc_pp          ! for access to gridcell topology
+  use elm_varctl   , only: use_dyn_lake
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices
   use mct_mod
@@ -1527,7 +1528,13 @@ contains
 	   if (rof_sed) then
            l2x(index_l2x_Flrl_rofmud,i) = lnd2atm_vars%qflx_rofmud_grc(g)
 	   end if
-       l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%wslake_grc(g)/dtime
+       if (use_dyn_lake) then
+          ! dyn_lake: Flrl_wslake carries the lake column's net water flux (P-E-snowcap-dS, per
+          ! gridcell area, may be negative) to MOSART-Lake storage; the legacy wslake path is off
+          l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%qflx_lake2rof_grc(g)
+       else
+          l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%wslake_grc(g)/dtime
+       end if
 
        if (index_l2x_Flrl_inundinf /= 0) then
           l2x(index_l2x_Flrl_inundinf,i) = lnd2atm_vars%qflx_h2orof_drain_grc(g)
