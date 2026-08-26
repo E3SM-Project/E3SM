@@ -87,6 +87,8 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
   add_field<Computed>("zm_dcape",             scalar2d,   J/kg/s,   grid_name);
   add_field<Computed>("zm_activity",          scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_jt",                scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_jcbot",             scalar2d,     none,   grid_name);
 
   add_field<Computed>("zm_detr_qc",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("zm_detr_qi",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -597,13 +599,17 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_cape       = get_field_out("zm_cape")    .get_view<Real*>();
   const auto& zm_dcape      = get_field_out("zm_dcape")   .get_view<Real*>();
   const auto& zm_activity   = get_field_out("zm_activity").get_view<Real*>();
+  const auto& zm_jt         = get_field_out("zm_jt")      .get_view<Real*>();
+  const auto& zm_jcbot      = get_field_out("zm_jcbot")   .get_view<Real*>();
   Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
     zm_prec    (i) = loc_zm_output_prec    (i);
     zm_snow    (i) = loc_zm_output_snow    (i);
     zm_cape    (i) = loc_zm_output_cape    (i);
     zm_dcape   (i) = loc_zm_output_dcape   (i);
     zm_activity(i) = loc_zm_output_activity(i);
-  });
+    zm_jt      (i) = loc_zm_output_jt      (i);
+    zm_jcbot   (i) = loc_zm_output_jcbot   (i);
+ });
 
   // 3D mid-level output
   const auto& mflx_up = get_field_out("zm_mflx_up").get_view<Real**>();

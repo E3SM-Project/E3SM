@@ -26,6 +26,8 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params
   scav_fraction_below_cloud_strat_ = m_params.get<Real>("scav_fraction_below_cloud_strat", 0.03);
   activation_fraction_in_cloud_conv_ =
       m_params.get<Real>("activation_fraction_in_cloud_conv", 0.40);
+  convproc_do_aer_ = m_params.get<bool>("convproc_do_aer", false);
+  convproc_do_gas_ = m_params.get<bool>("convproc_do_gas", false);
 }
 
 // ================================================================
@@ -82,6 +84,8 @@ MAMWetscav::create_requests()
 
   // Surface geopotential [m2/s2]
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+  add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa, grid_name);
+
 
   //----------- Variables from microphysics scheme -------------
 
@@ -95,6 +99,23 @@ MAMWetscav::create_requests()
 
   // Total cloud fraction [fraction]
   add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
+
+  //----------- Variables from ZM deep convection scheme -------------
+  // Deep convection cloud water detrainment [kg/kg/s]
+  add_field<Required>("zm_detr_qc", scalar3d_mid, kg / kg / s, grid_name);
+  add_field<Required>("zm_detr_qi", scalar3d_mid, kg / kg / s, grid_name);
+
+  // Cloud top and base indices from ZM deep convection
+  add_field<Required>("zm_jt", scalar2d, none, grid_name);      // Cloud top level index
+  add_field<Required>("zm_jcbot", scalar2d, none, grid_name);   // Cloud base level index
+
+  //----------- Variables from ZM convection scheme -------------
+  // Convective mass fluxes and entrainment/detrainment rates
+  add_field<Required>("zm_mflx_up", scalar3d_mid, kg / m2 / s, grid_name);  // Updraft mass flux
+  add_field<Required>("zm_mflx_dn", scalar3d_mid, kg / m2 / s, grid_name);  // Downdraft mass flux
+  add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft entrainment rate
+  add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft detrainment rate
+  add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);         // Downdraft entrainment rate
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -309,9 +330,24 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   // In cloud water mixing ratio, shallow convection
   icwmrsh_ = view_2d("icwmrsh_", ncol_, nlev_);
-  // Detraining cld H20 from deep convection [kg/kg/s]
+  
+  // Detraining cloud water from deep convection [kg/kg/s]
+  // This will be computed from ZM scheme outputs: dlf = zm_detr_qc + zm_detr_qi
   dlf_ = view_2d("dlf_", ncol_, nlev_);
 
+  // Shallow convection detrainment [kg/kg/s]
+  // NOTE: EAMxx does not yet have a shallow convection scheme implemented.
+  // This is initialized to zero and will be updated when shallow convection is added.
+  dlfsh_ = view_2d("dlfsh_", ncol_, nlev_);
+  
+  // Shallow convection entrainment/(entrainment+detrainment) ratio
+  // NOTE: Also not available without a shallow convection scheme.
+  // Initialized to zero for now.
+  sh_e_ed_ratio_ = view_2d("sh_e_ed_ratio_", ncol_, nlev_);
+
+  // Temporary view for pressure thickness in mb (converted from Pa)
+  dp_tmp_ = view_2d("dp_tmp", ncol_, nlev_);
+  
   calcsize_data_.initialize();
   // wetscav uses update_mmr=true;
   calcsize_data_.set_update_mmr(true);
@@ -384,6 +420,29 @@ void MAMWetscav::run_impl(const double dt) {
   // In cloud water mixing ratio, shallow convection
   auto icwmrsh = icwmrsh_;
 
+  // Shallow convection detrainment (initialized to zero in initialize_impl)
+  auto dlfsh = dlfsh_;
+
+  // Shallow convection entrainment/(entrainment+detrainment) ratio (initialized to zero)
+  auto sh_e_ed_ratio = sh_e_ed_ratio_;
+
+  //----------- Variables from ZM deep convection scheme -------------
+  // Deep convection cloud water detrainment [kg/kg/s]
+  // zm_detr_qc and zm_detr_qi are the liquid and ice detrainment tendencies from ZM
+  // dlf = total cloud water detrainment (liquid + ice)
+  auto zm_detr_qc_in = get_field_in("zm_detr_qc").get_view<const Real **>();
+  auto zm_detr_qi_in = get_field_in("zm_detr_qi").get_view<const Real **>();
+  
+  // Compute total detrainment (dlf = zm_detr_qc + zm_detr_qi)
+  Kokkos::parallel_for("compute_dlf", 
+    policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+        dlf_(icol, kk) = zm_detr_qc_in(icol, kk) + zm_detr_qi_in(icol, kk);
+      });
+    });
+  Kokkos::fence();
+
   // Detraining cld H20 from deep convection [kg/kg/s]
   auto dlf = dlf_;
 
@@ -398,6 +457,15 @@ void MAMWetscav::run_impl(const double dt) {
 
   // Stratiform rain production rate [kg/kg/s]
   auto prain = get_field_in("precip_total_tend").get_view<const Real **>();
+  
+  // Convection mass fluxes and rates from ZM scheme
+  auto zm_mflx_up = get_field_in("zm_mflx_up").get_view<const Real **>();
+  auto zm_mflx_dn = get_field_in("zm_mflx_dn").get_view<const Real **>();
+  auto zm_entr_up = get_field_in("zm_entr_up").get_view<const Real **>();
+  auto zm_detr_up = get_field_in("zm_detr_up").get_view<const Real **>();
+  auto zm_entr_dn = get_field_in("zm_entr_dn").get_view<const Real **>();
+  auto pseudo_density_dry = get_field_in("pseudo_density_dry").get_view<const Real **>();
+  
   // ------------------------------------------------------------------
   // These variables are "Computed" or pure outputs for the process
   // ------------------------------------------------------------------
@@ -433,6 +501,25 @@ void MAMWetscav::run_impl(const double dt) {
   const Real scav_fraction_in_cloud_conv = scav_fraction_in_cloud_conv_;
   const Real scav_fraction_below_cloud_strat  = scav_fraction_below_cloud_strat_;
   const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
+  const auto &aero_config = aero_config_;
+  const auto &dp_tmp = dp_tmp_;
+ 
+  // Get cloud top and base indices from ZM convection scheme
+  auto zm_jt_in    = get_field_in("zm_jt").get_view<const Real *>();
+  auto zm_jcbot_in = get_field_in("zm_jcbot").get_view<const Real *>();
+ 
+  // Get convective processing flags from namelist parameters
+  const bool convproc_do_aer = convproc_do_aer_;
+  const bool convproc_do_gas = convproc_do_gas_;
+  
+  // Species classification and resuspension mapping arrays
+  int species_class[mam4::aero_model::pcnst];
+  int mmtoo_prevap_resusp[mam4::aero_model::pcnst];
+  for (int i = 0; i < mam4::aero_model::pcnst; ++i) {
+    species_class[i] = 0;  // TODO: Initialize from aero_config when needed
+    mmtoo_prevap_resusp[i] = 0;  // TODO: Initialize properly
+  }
+  
   // Loop over atmosphere columns
   Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -479,6 +566,49 @@ void MAMWetscav::run_impl(const double dt) {
         const auto prain_icol = ekat::subview(prain, icol);
 
         auto isprx_icol = ekat::subview(isprx, icol);
+        
+        // Convection mass flux fields from ZM scheme
+        // Scratch arrays for convection processing
+        mam4::wetdep::ConvProc::Col1DView scratch1Dviews[mam4::wetdep::ConvProc::Col1DViewInd::NumScratch];
+        // TODO: Initialize scratch arrays properly from work array
+        
+        // Extract convection fields for this column
+        const auto mu_icol = ekat::subview(zm_mflx_up, icol);  // Updraft mass flux
+        const auto md_icol = ekat::subview(zm_mflx_dn, icol);  // Downdraft mass flux
+        const auto eu_icol = ekat::subview(zm_entr_up, icol);  // Updraft entrainment rate
+        const auto du_icol = ekat::subview(zm_detr_up, icol);  // Updraft detrainment rate
+        const auto ed_icol = ekat::subview(zm_entr_dn, icol);  // Downdraft entrainment rate
+        
+        // Get pressure thickness from atmosphere and convert from Pa to mb
+        // dp (total) is from dry_atm.p_del, dpdry (dry) is from pseudo_density_dry
+        // Both need to be converted from Pa to mb: 1 mb = 100 Pa, so multiply by 0.01
+        constexpr Real pa_to_mb = 0.01;
+        
+        // Get the p_del column for this icol (total pressure thickness)
+        const auto p_del_icol = ekat::subview(dry_atm.p_del, icol);
+        
+        // Get the pseudo_density_dry column for this icol (dry pressure thickness)
+        const auto p_del_dry_icol = ekat::subview(pseudo_density_dry, icol);
+        
+        
+        // Get temporary dp view for this column
+        auto dp_tmp_icol = ekat::subview(dp_tmp, icol);
+        // Convert pressure thickness from Pa to mb
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&](int kk) {
+          dp_tmp_icol(kk) = p_del_icol(kk) * pa_to_mb;
+        });
+        team.team_barrier();
+        
+        const auto dp_icol = dp_tmp_icol;
+        // Extract shallow convection fields for this column
+        // NOTE: These are initialized to zero in initialize_impl since shallow convection
+        // is not yet implemented in EAMxx.
+        const auto dlfsh_icol = ekat::subview(dlfsh, icol);
+        const auto sh_e_ed_ratio_icol = ekat::subview(sh_e_ed_ratio, icol);
+
+        // Get cloud top and base indices from ZM convection for this column
+        const int ktop = static_cast<int>(zm_jt_in(icol));
+        const int kbot = static_cast<int>(zm_jcbot_in(icol));
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
@@ -490,9 +620,18 @@ void MAMWetscav::run_impl(const double dt) {
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
             dlf_icol, prain_icol, scavimptblnum, scavimptblvol, calsize_data,
-            // outputs
+            // in/out calcsize and water_uptake
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
+            // output
+            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol,
+           // Convection mass flux parameters
+           scratch1Dviews,
+           mu_icol, md_icol, du_icol, eu_icol, ed_icol,
+           dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol,
+            ktop, kbot,
+           convproc_do_aer, convproc_do_gas,
+           species_class, mmtoo_prevap_resusp,
+           aero_config);
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
