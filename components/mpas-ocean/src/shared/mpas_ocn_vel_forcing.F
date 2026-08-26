@@ -90,7 +90,7 @@ contains
          layerThickEdgeDrag,&!< [in] mean thickness at edge to use for drag
          layerThickEdgeMean  !< [in] mean thickness at edge
 
-      real (kind=RKIND), dimension(:), intent(inout) :: &
+      real (kind=RKIND), dimension(:), intent(in) :: &
          sfcFlxAttCoeff, &!< [in] attenuation coefficient for sfc fluxes
          surfaceStress    !< [in] surface stress at edges
 

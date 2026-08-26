@@ -32,6 +32,7 @@ module ocn_tendency
    use ocn_constants
    use ocn_config
    use ocn_mesh
+   use ocn_subgrid
 
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
@@ -449,6 +450,11 @@ contains
       ! Add top drag to surface stress
       call ocn_surface_land_ice_fluxes_vel( &
                                        sfcStress, sfcStressMag, err)
+
+      ! Scale surface stress by wet area fraction
+      if (config_use_subgrid_wetting_drying) then
+         call ocn_subgrid_scale_sfcStress(sfcStress)
+      endif
 
       ! Add nonlinear Coriolis term and horizontal advection of
       ! momentum, formulated as grad of kinetic energy

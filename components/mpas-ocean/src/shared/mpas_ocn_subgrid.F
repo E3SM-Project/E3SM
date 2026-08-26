@@ -90,6 +90,7 @@ module ocn_subgrid
 
    public :: ocn_subgrid_layerThickEdgeFlux_center, &
              ocn_subgrid_layerThickEdgeFlux_upwind, &
+             ocn_subgrid_scale_sfcStress, &
              ocn_subgrid_vorticity
 
    public :: ocn_subgrid_layer_thickness_lookup, &
@@ -267,6 +268,55 @@ contains
       enddo     
 
    end subroutine ocn_subgrid_layerThickEdgeFlux_upwind!}}}
+
+!***********************************************************************
+!
+!  routine ocn_subgrid_scale_sfcStress
+!
+!> \brief   Scale surface stress by the cell area wet fraction
+!> \author  Ben Moore-Maley, Steven Brus
+!> \date    August 2026
+!> \details
+!>
+!>
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_subgrid_scale_sfcStress(sfcStress)!{{{
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:), intent(inout) :: &
+         sfcStress           !< [inout] Wind stress at surface
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+
+      integer :: &
+         iEdge,            & ! loop index for edge loops
+         cell1, cell2        ! neighbor cell addresses across edge
+
+      real (kind=RKIND) :: &
+         sshMean,          & ! mean ssh at edge between neighboring cells
+         wetFraction         ! cell area wet fraction
+
+      do iEdge = 1, nEdgesOwned
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         sshMean = 0.5_RKIND * (subgridSSH(cell1) + subgridSSH(cell2))
+
+         call ocn_subgrid_wet_fraction_lookup(sshMean, &
+                                              subgridWetFractionEdgeTable(:,iEdge), &
+                                              subgridSshEdgeTableRange(:,iEdge), &
+                                              wetFraction)
+
+         sfcStress(iEdge) = wetFraction * sfcStress(iEdge)
+      enddo
+
+   end subroutine ocn_subgrid_scale_sfcStress!}}}
 
 !***********************************************************************
 !
