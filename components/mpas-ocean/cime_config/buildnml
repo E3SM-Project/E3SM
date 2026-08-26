@@ -439,32 +439,32 @@ def buildnml(case, caseroot, compname):
         if ocn_glc_ismf_coupling == 'data_mpaso':
             data_ismf_file = 'prescribed_ismf_paolo2023.SOwISC12to30E3r4.20250121.nc'
 
-    elif ocn_grid == 'u01.oi6to18.lr6to10':
+    elif ocn_grid == 'u01.oi6to18':
         decomp_date = '20260811'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         analysis_mask_file = 'u01.oi6to18.lr6to10.mocBasinsAndTransects20210623.20260811.nc'
         ic_date = '20260811'
-        ic_prefix = 'mpaso.u01.oi6to18.lr6to10'
+        ic_prefix = 'mpaso.u01.oi6to18'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ocn_grid == 'u02.oi30.lr10':
+    elif ocn_grid == 'u02.oi30':
         decomp_date = '20260811'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         analysis_mask_file = 'u02.oi30.lr10.mocBasinsAndTransects20210623.20260811.nc'
         ic_date = '20260811'
-        ic_prefix = 'mpaso.u02.oi30.lr10'
+        ic_prefix = 'mpaso.u02.oi30'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ocn_grid == 'u03.oi240.lr240':
+    elif ocn_grid == 'u03.oi240':
         decomp_date = '20260811'
         decomp_prefix = 'partitions/mpas-o.graph.info.'
         analysis_mask_file = 'u03.oi240.lr240.mocBasinsAndTransects20210623.20260811.nc'
         ic_date = '20260811'
-        ic_prefix = 'mpaso.u03.oi240.lr240'
+        ic_prefix = 'mpaso.u03.oi240'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -1375,7 +1375,7 @@ def buildnml(case, caseroot, compname):
                 lines.append('    <var name="langmuirNumber"/>')
             # grids that run without GM, so the GM variables are not available
             no_gm_grids = ['oRRS18to6v3', 'oRRS15to5', 'RRSwISC6to18E3r5',
-                           'u01.oi6to18.lr6to10']
+                           'u01.oi6to18']
             if ocn_grid not in no_gm_grids:
                 lines.append('    <var name="normalGMBolusVelocity"/>')
                 lines.append('    <var name="vertGMBolusVelocityTop"/>')
