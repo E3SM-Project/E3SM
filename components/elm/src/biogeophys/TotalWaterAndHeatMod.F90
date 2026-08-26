@@ -300,7 +300,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ComputeLiqIceMassLake(bounds, num_lakec, filter_lakec, &
-       lakestate_vars, liquid_mass, ice_mass)
+       lakestate_vars, liquid_mass, ice_mass, include_lake_body)
     !
     ! !DESCRIPTION:
     ! Compute total water mass for all lake columns, separated into liquid and ice
@@ -316,9 +316,12 @@ contains
     type(lakestate_type)  , intent(in)    :: lakestate_vars
     real(r8)              , intent(inout) :: liquid_mass( bounds%begc: ) ! computed liquid water mass (kg m-2)
     real(r8)              , intent(inout) :: ice_mass( bounds%begc: )    ! computed ice mass (kg m-2)
+    logical, optional     , intent(in)    :: include_lake_body           ! include the lake water body (default .true.);
+                                                                         ! .false. when MOSART-Lake owns the lake water (use_dyn_lake)
     !
     ! !LOCAL VARIABLES:
     integer :: c, j, fc                  ! indices
+    logical :: l_include_body
 
     character(len=*), parameter :: subname = 'ComputeLiqIceMassLake'
     !-----------------------------------------------------------------------
@@ -363,6 +366,12 @@ contains
        end do
     end do
 
+    ! The lake water body. Under the dynamic-lake coupling (use_dyn_lake) the lake water is a
+    ! MOSART-Lake state, so a change of the wet-lake column weight must not be booked as an
+    ! ELM water gain/loss (qflx_liq_dynbal); the caller then passes include_lake_body=.false.
+    l_include_body = .true.
+    if (present(include_lake_body)) l_include_body = include_lake_body
+    if (l_include_body) then
     do fc = 1, num_lakec
        c = filter_lakec(fc)
        do j = 1,nlevlak
@@ -372,6 +381,7 @@ contains
           ! (thermal properties are appropriately adjusted; see LakeTemperatureMod)
        end do
     end do
+    end if
   end associate
 
   end subroutine ComputeLiqIceMassLake

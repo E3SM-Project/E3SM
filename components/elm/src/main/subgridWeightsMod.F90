@@ -392,8 +392,9 @@ contains
     ! Determine whether the given column is active
     !
     ! !USES:
-    use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX
+    use landunit_varcon, only : istice_mec, isturb_MIN, isturb_MAX, istdlak
     use domainMod , only : ldomain
+    use elm_varctl, only : use_dyn_lake
     !
     ! !ARGUMENTS:
     implicit none
@@ -431,6 +432,12 @@ contains
        ! Note that we use glcmask rather than icemask here; see comment in is_active_l
        ! for the rationale.
        if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_c = .true.
+
+       ! Dynamic lake fraction (MOSART-Lake -> ELM): keep the lake column and the lakebed soil
+       ! column of an active lake landunit always active, even at zero weight, so a lake that
+       ! dries out (or a lakebed that floods) can come back without going through the
+       ! not-yet-implemented lake path of initialize_new_columns.
+       if (use_dyn_lake .and. top_pp%active(t) .and. lun_pp%active(l) .and. lun_pp%itype(l) == istdlak) is_active_c = .true.
 
        ! We don't really need to run over 0-weight urban columns. But because of some
        ! messiness in the urban code (many loops are over the landunit filter, then drill

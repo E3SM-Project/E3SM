@@ -438,7 +438,7 @@ contains
     use landunit_varcon , only : istwet, istdlak, istice, istice_mec, istsoil
     use column_varcon   , only : icemec_class_to_col_itype
     use subgridMod      , only : subgrid_get_topounitinfo
-    use elm_varctl      , only : create_lakebed_column, create_twolakes_per_gridcell
+    use elm_varctl      , only : create_lakebed_column, create_twolakes_per_gridcell, use_dyn_lake
     use pftvarcon       , only : noveg
 
     !
@@ -462,6 +462,7 @@ contains
     real(r8) :: wtcol2lunit                      ! col weight in landunit
     logical  :: is_lake_col
     integer :: nlakes, ilake
+    real(r8) :: wt_lake_col, wt_bed_col   ! initial lake / lakebed column weights within the lake landunit
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -533,13 +534,23 @@ contains
              nlakes = 1
              if (create_twolakes_per_gridcell) nlakes = 2
 
+             if (use_dyn_lake) then
+                ! PCT_LAKE is the maximum footprint: start fully wet; dynLakeMod re-splits
+                ! lake/lakebed from the MOSART-Lake area after the first rof->lnd exchange
+                wt_lake_col = 1.0_r8/nlakes
+                wt_bed_col  = 0.0_r8
+             else
+                wt_lake_col = 0.5_r8/nlakes
+                wt_bed_col  = 0.5_r8/nlakes
+             end if
+
              do ilake = 1, nlakes
                 ! Add a lake column
-                call add_column(ci=ci, li=li, ctype=ltype, wtlunit=0.5_r8/nlakes, is_lake=is_lake_col)
+                call add_column(ci=ci, li=li, ctype=ltype, wtlunit=wt_lake_col, is_lake=is_lake_col)
                 call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8)
 
                 ! Add a lakebed column
-                call add_column(ci=ci, li=li, ctype=istsoil, wtlunit=0.5_r8/nlakes, is_soil=.true.)
+                call add_column(ci=ci, li=li, ctype=istsoil, wtlunit=wt_bed_col, is_soil=.true.)
                 call add_patch(pi=pi, ci=ci, ptype=noveg, wtcol=1.0_r8, is_on_soil_col=.true.)
              enddo
           else

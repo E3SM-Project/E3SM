@@ -117,6 +117,8 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <precip_downscaling_method>ERMM</precip_downscaling_method>
 <!-- Do lake water storage -->
 <use_lake_wat_storage>.false.</use_lake_wat_storage>
+<create_lakebed_column>.false.</create_lakebed_column>
+<create_twolakes_per_gridcell>.false.</create_twolakes_per_gridcell>
 
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory

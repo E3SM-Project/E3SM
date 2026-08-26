@@ -43,6 +43,7 @@ module dynSubgridDriverMod
   use VegetationType      , only : veg_pp
   use elm_varctl          , only : iulog
   use dynLakeMod          , only : dynlake_driver
+  use atm2lndType         , only : atm2lnd_type
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -160,7 +161,7 @@ contains
        energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
        col_cs, c13_col_cs, c14_col_cs, col_cf, &
-       grc_cs, grc_cf, glc2lnd_vars, crop_vars, iac2lnd_vars)
+       grc_cs, grc_cf, glc2lnd_vars, crop_vars, iac2lnd_vars, atm2lnd_vars)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches and/or dynamic
@@ -173,7 +174,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, iac_present
+    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, iac_present, use_dyn_lake
     use elm_varctl           , only : use_fates, use_fates_luh, fates_harvest_mode
     use elm_varctl           , only : use_fates_potentialveg
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
@@ -224,6 +225,7 @@ contains
     type(crop_type)          , intent(inout) :: crop_vars
 
     type(iac2lnd_type)       , intent(inout) :: iac2lnd_vars
+    type(atm2lnd_type)       , intent(inout) :: atm2lnd_vars  ! carries the MOSART-Lake area (dyn_lake)
 
     !
     ! !LOCAL VARIABLES:
@@ -286,7 +288,8 @@ contains
        call iac2lnd_vars%update_iac2lnd(bounds_proc)
     end if
 
-    call dynlake_driver(bounds_proc)
+    ! Dynamic lake fraction from MOSART-Lake surface area (heat-off water coupling)
+    if (use_dyn_lake) call dynlake_driver(bounds_proc, atm2lnd_vars)
 
     ! ==========================================================================
     ! Do everything else related to land cover change

@@ -21,6 +21,7 @@ module dynConsBiogeophysMod
   use TotalWaterAndHeatMod, only : ComputeHeatNonLake, ComputeHeatLake
   use TotalWaterAndHeatMod, only : AdjustDeltaHeatForDeltaLiq
   use TotalWaterAndHeatMod, only : heat_base_temp
+  use elm_varctl        , only : use_dyn_lake
   use elm_varcon        , only : tfrz, cpliq
   use subgridAveMod     , only : p2c, c2g
   use dynSubgridControlMod, only : get_for_testing_zero_dynbal_fluxes
@@ -232,7 +233,8 @@ contains
     call ComputeLiqIceMassLake(bounds, num_lakec, filter_lakec, &
          lakestate_vars, &
          liquid_mass_col(bounds%begc:bounds%endc), &
-         ice_mass_col(bounds%begc:bounds%endc))
+         ice_mass_col(bounds%begc:bounds%endc), &
+         include_lake_body = .not. use_dyn_lake)   ! lake water is MOSART's under dyn_lake
 
     call c2g(bounds, &
          carr = liquid_mass_col(bounds%begc:bounds%endc), &

@@ -2130,6 +2130,19 @@ Runtime flag to turn on/off variable soil thickness.
 Runtime flag to turn on/off lake water storage.
 </entry>
 
+<entry id="create_lakebed_column" type="logical" category="default_settings"
+        group="elm_inparm" valid_values="">
+If TRUE, each lake landunit carries a second (lakebed) soil column next to the lake column;
+the lake/lakebed column weights are the dynamic lake fraction. Required when the driver
+namelist dyn_lake=.true. (MOSART-Lake -> ELM lake area coupling).
+</entry>
+
+<entry id="create_twolakes_per_gridcell" type="logical" category="default_settings"
+        group="elm_inparm" valid_values="">
+If TRUE (and create_lakebed_column), two lake+lakebed column pairs per gridcell (main-stem and
+local lake). Not yet driven by MOSART-Lake; keep FALSE.
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Namelist options for downscaling from grid to topounit                                    -->
 <!-- ========================================================================================  -->

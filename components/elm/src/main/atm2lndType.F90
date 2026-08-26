@@ -124,6 +124,8 @@ module atm2lndType
      real(r8), pointer :: lake_r_Vtot_grc               (:)   => null() ! rof main-channel lake total volume [m3]
      real(r8), pointer :: lake_t_Asur_grc               (:)   => null() ! rof sub-network lake surface area [m2]
      real(r8), pointer :: lake_t_Vtot_grc               (:)   => null() ! rof sub-network lake total volume [m3]
+     real(r8), pointer :: flake_dyn_grc                 (:)   => null() ! dynamic wet-lake fraction of the gridcell land area, from rof lake area [-]
+     real(r8), pointer :: lake_asur_ratio_grc           (:)   => null() ! rof lake area / ELM maximum lake footprint (PCT_LAKE), unclamped [-]
  
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
@@ -289,6 +291,8 @@ contains
     allocate(this%lake_r_Vtot_grc               (begg:endg))        ; this%lake_r_Vtot_grc               (:)   = ival
     allocate(this%lake_t_Asur_grc               (begg:endg))        ; this%lake_t_Asur_grc               (:)   = ival
     allocate(this%lake_t_Vtot_grc               (begg:endg))        ; this%lake_t_Vtot_grc               (:)   = ival
+    allocate(this%flake_dyn_grc                 (begg:endg))        ; this%flake_dyn_grc                 (:)   = ival
+    allocate(this%lake_asur_ratio_grc           (begg:endg))        ; this%lake_asur_ratio_grc           (:)   = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -400,6 +404,17 @@ contains
        call hist_addfld1d(fname='LAKE_T_VTOT',  units='m3',           &
             avgflag='A', long_name='sub-network lake total volume', &
             ptr_lnd=this%lake_t_Vtot_grc)
+
+       ! set by dynLakeMod (daily); spval until the first rof->lnd exchange
+       this%flake_dyn_grc(begg:endg) = spval
+       call hist_addfld1d(fname='FLAKE_DYN',  units='1',           &
+            avgflag='A', long_name='dynamic wet-lake fraction of gridcell land area (from MOSART-Lake area)', &
+            ptr_lnd=this%flake_dyn_grc)
+
+       this%lake_asur_ratio_grc(begg:endg) = spval
+       call hist_addfld1d(fname='LAKE_ASUR_RATIO',  units='1',           &
+            avgflag='A', long_name='MOSART-Lake area / ELM maximum lake footprint (PCT_LAKE), unclamped; >1 flags inconsistent lake data', &
+            ptr_lnd=this%lake_asur_ratio_grc)
     endif
 
 !    this%forc_wind_grc(begg:endg) = spval

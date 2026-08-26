@@ -439,8 +439,10 @@ module elm_varctl
   !----------------------------------------------------------
   ! For dynamic lakes
   !----------------------------------------------------------
-  logical, public :: create_lakebed_column = .true.
-  logical, public :: create_twolakes_per_gridcell = .true.
+  ! (namelist, elm_inparm) lakebed soil column inside the lake landunit; required by use_dyn_lake
+  logical, public :: create_lakebed_column = .false.
+  ! (namelist, elm_inparm) two lake+lakebed column pairs per gridcell (main-stem + local lake); phase 2
+  logical, public :: create_twolakes_per_gridcell = .false.
 
   !----------------------------------------------------------
   ! To retrieve namelist
