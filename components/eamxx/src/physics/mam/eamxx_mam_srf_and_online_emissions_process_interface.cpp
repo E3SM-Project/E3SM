@@ -3,16 +3,12 @@
 // For surface and online emission functions
 #include <physics/mam/eamxx_mam_srf_and_online_emissions_functions.hpp>
 
-// For reading soil erodibility file
-#include <physics/mam/readfiles/soil_erodibility.hpp>
+#include "share/algorithm/eamxx_data_interpolation.hpp"
 
 #include <ekat_team_policy_utils.hpp>
+#include <iostream>
 
 namespace scream {
-
-// For reading soil erodibility file
-using soilErodibilityFunc =
-    soil_erodibility::soilErodibilityFunctions<Real, DefaultDevice>;
 
 // ================================================================
 //  Constructor
@@ -106,7 +102,10 @@ void MAMSrfOnlineEmiss::create_requests() {
   // Constituent fluxes of species in [kg/m2/s]
   // FIXME: confirm if it is Updated or Computed
   add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
-                     grid_name);
+                      grid_name);
+
+  // Soil erodibility [fraction]
+  add_field<Computed>("soil_erodibility", scalar2d, none, grid_name);
 
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
@@ -213,47 +212,19 @@ void MAMSrfOnlineEmiss::create_requests() {
   // Register sector fields in FM for surface emissions.
   // DataInterpolation is set up in initialize_impl.
   //--------------------------------------------------------------------
-
-  // -------------------------------------------------------------
-  // Setup to enable reading soil erodibility file
-  // -------------------------------------------------------------
-
-  const std::string soil_erodibility_data_file =
-      m_params.get<std::string>("soil_erodibility_file");
-
-  // Field to be read from file
-  const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
-
-  // Dimensions of the field
-  const std::string soil_erod_dname = "ncol";
-
-  // initialize the file read
-  soilErodibilityFunc::init_soil_erodibility_file_read(
-      ncol_, soil_erod_fld_name, soil_erod_dname, grid_,
-      soil_erodibility_data_file, srf_map_file, serod_horizInterp_,
-      serod_dataReader_);  // output
-
   // -------------------------------------------------------------
   // Setup to enable reading marine organics file
   // -------------------------------------------------------------
-  const std::string marine_organics_data_file =
-      m_params.get<std::string>("marine_organics_file");
+
 
   // Fields to be read from file (order matters as they are read in the same
   // order)
   const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};
+  for (const auto &field_name : marine_org_fld_name) {
+    add_field<Computed>("morg_" + field_name, scalar2d, none, grid_name);
+  }
 
-  // Dimensions of the field
-  const std::string marine_org_dname = "ncol";
-
-  // initialize the file read
-  marineOrganicsFunc::init_marine_organics_file_read(
-      ncol_, marine_org_fld_name, marine_org_dname, grid_,
-      marine_organics_data_file, srf_map_file,
-      // output
-      morg_horizInterp_, morg_data_start_, morg_data_end_, morg_data_out_,
-      morg_dataReader_);
 
 }  // set_grid ends
 
@@ -312,6 +283,27 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Constituent fluxes of species in [kg/m2/s]
   constituent_fluxes_ = get_field_out("constituent_fluxes");
 
+    const std::string marine_organics_data_file =
+      m_params.get<std::string>("marine_organics_file");
+  const auto marine_map_file = m_params.get<std::string>("srf_remap_file", "");
+
+   const std::vector<std::string> marine_org_fld_name = {
+      "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};           
+  morg_fields_={};
+  morg_fields_.reserve(marine_org_fld_name.size());
+  for (const auto &field_name : marine_org_fld_name) {
+    morg_fields_.push_back(
+        get_field_out("morg_" + field_name).alias(field_name));
+  }
+
+  morg_data_interp_ = std::make_shared<DataInterpolation>(grid_, morg_fields_);
+  morg_data_interp_->set_logger(m_atm_logger);
+  morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
+  morg_data_interp_->create_horiz_remappers(
+      marine_map_file == "none" ? "" : marine_map_file, m_iop_data_manager);
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  morg_data_interp_->create_vert_remapper(remap_data);
   //--------------------------------------------------------------------
   // Setup data interpolation for surface emissions.
   //--------------------------------------------------------------------
@@ -336,7 +328,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       ispec_srf.data_interp_->setup_periodic_time_database(
           {ispec_srf.data_file});
       ispec_srf.data_interp_->create_horiz_remappers(
-          srf_map_file == "none" ? "" : srf_map_file);
+          srf_map_file == "none" ? "" : srf_map_file, m_iop_data_manager);
 
       DataInterpolation::VertRemapData remap_data;
       remap_data.vr_type = DataInterpolation::None;
@@ -355,9 +347,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   if (dust_emis_scheme == 1) {
     // This data is time-independent, we read all data here for the
     // entire simulation   
-    soilErodibilityFunc::update_soil_erodibility_data_from_file(
-        serod_dataReader_, *serod_horizInterp_,
-        soil_erodibility_);  // output
+    read_soil_erodibility_data();
   } else if (dust_emis_scheme == 2) {
     // For dust emission scheme 2, override soil erodibility to 1
     auto soil_erod_ones = view_1d("soil_erod_ones", ncol_);
@@ -368,10 +358,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
-  // Time dependent data
-  marineOrganicsFunc::update_marine_organics_data_from_file(
-      morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
-      morg_data_end_);  // output
+  morg_data_interp_->init_time_interpolation(start_of_step_ts(),
+                                             DataInterpolation::Linear);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -379,6 +367,29 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   preprocess_.initialize(ncol_, nlev_, wet_atm_, dry_atm_);
 
 }  // end initialize_impl()
+
+// =========================================================================================
+void MAMSrfOnlineEmiss::read_soil_erodibility_data() {
+  const auto soil_erodibility_data_file =
+      m_params.get<std::string>("soil_erodibility_file");
+  const auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
+  const std::string soil_erod_fld_name = "mbl_bsn_fct_geo";
+
+  std::vector<Field> soil_erod_fields = {
+      get_field_out("soil_erodibility").alias(soil_erod_fld_name)};
+  auto soil_erod_data_interp =
+      std::make_shared<DataInterpolation>(grid_, soil_erod_fields);
+  soil_erod_data_interp->set_logger(m_atm_logger);
+  soil_erod_data_interp->setup_static_database({soil_erodibility_data_file});
+  soil_erod_data_interp->create_horiz_remappers(
+      srf_map_file == "none" ? "" : srf_map_file, m_iop_data_manager);
+  DataInterpolation::VertRemapData remap_data;
+  remap_data.vr_type = DataInterpolation::None;
+  soil_erod_data_interp->create_vert_remapper(remap_data);
+  soil_erod_data_interp->run();
+
+  soil_erodibility_ = get_field_out("soil_erodibility").get_view<const Real *>();
+}
 
 // ================================================================
 //  RUN_IMPL
@@ -406,24 +417,12 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   //--------------------------------------------------------------------
 
   // --- Interpolate marine organics data --
-
-  // Update TimeState, note the addition of dt
-  morg_timeState_.t_now = ts.frac_of_year_in_days();
-
-  // Update time state and if the month has changed, update the data.
-  marineOrganicsFunc::update_marine_organics_timestate(
-      morg_dataReader_, ts, *morg_horizInterp_,
-      // output
-      morg_timeState_, morg_data_start_, morg_data_end_);
-
-  // Call the main marine organics routine to get interpolated forcings.
-  marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
-                                          morg_data_end_, morg_data_out_);
+  morg_data_interp_->run(ts);
 
   // Marine organics emission data read from the file (order is important here)
-  const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
-  const const_view_1d mprot = ekat::subview(morg_data_out_.emiss_sectors, 1);
-  const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
+  const const_view_1d mpoly = morg_fields_[0].get_view<const Real *>();
+  const const_view_1d mprot = morg_fields_[1].get_view<const Real *>();
+  const const_view_1d mlip  = morg_fields_[2].get_view<const Real *>();
 
   // Ocean fraction [unitless]
   const const_view_1d ocnfrac =
