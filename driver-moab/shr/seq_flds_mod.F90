@@ -2499,6 +2499,16 @@ contains
       units    = 'm3'
       attname  = 'lake_t_Vtot'
       call metadata_set(attname, longname, stdname, units)
+
+      ! 1 once MOSART has exported at least once (the coupler buffer is 0 before that):
+      ! ELM latches its dynamic lake fraction on it, per cell, without any collective
+      call seq_flds_add(r2x_fluxes, 'Sr_lake_valid')
+      call seq_flds_add(x2l_fluxes, 'Sr_lake_valid')
+      longname = 'MOSART lake fields valid (exported at least once)'
+      stdname  = 'lake_valid'
+      units    = '1'
+      attname  = 'lake_valid'
+      call metadata_set(attname, longname, stdname, units)
     endif
 
     if (rof2ocn_nutrients) then

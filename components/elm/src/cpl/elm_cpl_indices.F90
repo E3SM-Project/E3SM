@@ -132,6 +132,7 @@ module elm_cpl_indices
   integer, public ::index_x2l_Sr_lake_r_Vtot  = 0 ! rtm->lnd main-channel lake total volume
   integer, public ::index_x2l_Sr_lake_t_Asur  = 0 ! rtm->lnd sub-network lake surface area
   integer, public ::index_x2l_Sr_lake_t_Vtot  = 0 ! rtm->lnd sub-network lake total volume
+  integer, public ::index_x2l_Sr_lake_valid   = 0 ! rtm->lnd 1 once MOSART has exported lake fields
   integer, public ::index_x2l_So_ssh          ! ocn->lnd sea surface height
   integer, public ::index_x2l_So_frac_h2oocn  ! ocn->lnd coastal inundation fraction
 
@@ -326,6 +327,7 @@ contains
        index_x2l_Sr_lake_r_Vtot = mct_avect_indexra(x2l,'Sr_lake_r_Vtot')
        index_x2l_Sr_lake_t_Asur = mct_avect_indexra(x2l,'Sr_lake_t_Asur')
        index_x2l_Sr_lake_t_Vtot = mct_avect_indexra(x2l,'Sr_lake_t_Vtot')
+       index_x2l_Sr_lake_valid  = mct_avect_indexra(x2l,'Sr_lake_valid')
     endif
     if (ocn_lnd_one_way) then
        index_x2l_So_ssh        = mct_avect_indexra(x2l,'So_ssh')

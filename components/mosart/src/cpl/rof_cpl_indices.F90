@@ -86,6 +86,7 @@ module rof_cpl_indices
   integer, public :: index_r2x_Sr_lake_r_Vtot = 0  ! rof->lnd main-channel lake total volume
   integer, public :: index_r2x_Sr_lake_t_Asur = 0  ! rof->lnd sub-network lake surface area
   integer, public :: index_r2x_Sr_lake_t_Vtot = 0  ! rof->lnd sub-network lake total volume
+  integer, public :: index_r2x_Sr_lake_valid  = 0  ! rof->lnd 1 once lake fields have been exported
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -194,6 +195,7 @@ contains
       index_r2x_Sr_lake_r_Vtot = mct_avect_indexra(avtmp,'Sr_lake_r_Vtot')
       index_r2x_Sr_lake_t_Asur = mct_avect_indexra(avtmp,'Sr_lake_t_Asur')
       index_r2x_Sr_lake_t_Vtot = mct_avect_indexra(avtmp,'Sr_lake_t_Vtot')
+      index_r2x_Sr_lake_valid  = mct_avect_indexra(avtmp,'Sr_lake_valid')
     endif
     
     nflds_r2x = mct_avect_nRattr(avtmp)

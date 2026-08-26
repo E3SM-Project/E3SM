@@ -124,6 +124,7 @@ module atm2lndType
      real(r8), pointer :: lake_r_Vtot_grc               (:)   => null() ! rof main-channel lake total volume [m3]
      real(r8), pointer :: lake_t_Asur_grc               (:)   => null() ! rof sub-network lake surface area [m2]
      real(r8), pointer :: lake_t_Vtot_grc               (:)   => null() ! rof sub-network lake total volume [m3]
+     real(r8), pointer :: lake_valid_grc                (:)   => null() ! 1 once rof has exported its lake fields (0 before: coupler buffer), no unit
      real(r8), pointer :: flake_dyn_grc                 (:)   => null() ! dynamic wet-lake fraction of the gridcell land area, from rof lake area [-]
      real(r8), pointer :: lake_asur_ratio_grc           (:)   => null() ! rof lake area / ELM maximum lake footprint (PCT_LAKE), unclamped [-]
  
@@ -291,6 +292,7 @@ contains
     allocate(this%lake_r_Vtot_grc               (begg:endg))        ; this%lake_r_Vtot_grc               (:)   = ival
     allocate(this%lake_t_Asur_grc               (begg:endg))        ; this%lake_t_Asur_grc               (:)   = ival
     allocate(this%lake_t_Vtot_grc               (begg:endg))        ; this%lake_t_Vtot_grc               (:)   = ival
+    allocate(this%lake_valid_grc                (begg:endg))        ; this%lake_valid_grc                (:)   = 0._r8
     allocate(this%flake_dyn_grc                 (begg:endg))        ; this%flake_dyn_grc                 (:)   = ival
     allocate(this%lake_asur_ratio_grc           (begg:endg))        ; this%lake_asur_ratio_grc           (:)   = ival
 

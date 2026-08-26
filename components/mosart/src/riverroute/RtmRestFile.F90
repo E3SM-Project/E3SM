@@ -15,12 +15,12 @@ module RtmRestFile
   use RtmVar            , only : rtmlon, rtmlat, iulog, inst_suffix, rpntfil, &
                              caseid, nsrest, brnch_retain_casename, &
                              finidat_rtm, nrevsn_rtm, wrmflag, inundflag, &
-                             nsrContinue, nsrBranch, nsrStartup, lakeflag, ngeom, &
+                             nsrContinue, nsrBranch, nsrStartup, lakeflag, ngeom, nlayers, &
                              ctitle, version, username, hostname, conventions, source
   use RtmHistFile       , only : RtmHistRestart
   use RtmFileUtils      , only : relavu, getavu, opnfil, getfil
   use RtmTimeManager    , only : timemgr_restart, get_nstep, get_curr_date, is_last_step
-  use RunoffMod         , only : rtmCTL
+  use RunoffMod         , only : rtmCTL, TLake_r, TLake_t, TstatusFlux_lake
   use MOSART_Budgets_mod, only : rof_budg_stateG_1D, rof_budg_fluxG_1D, rof_budg_fluxN_1D, &
                                  MOSART_WaterBudget_Restart_Write, MOSART_WaterBudget_Restart_Read, &
                                  f_size, p_size, s_size, o_size
@@ -629,6 +629,15 @@ endif
     enddo
     enddo
 
+    !-----------------------------------------------------------------------
+    ! MOSART-Lake state. Without it every lake re-initialises at V_max (and spills)
+    ! on each restart, so multi-segment runs are not continuous (found 2026-08-25).
+    !-----------------------------------------------------------------------
+    if (lakeflag) then
+       call RtmRestartLake(ncid, flag, 'R', TLake_r)
+       call RtmRestartLake(ncid, flag, 'T', TLake_t)
+    endif
+
     if (flag == 'read') then
        do n = rtmCTL%begr,rtmCTL%endr
           do nt = 1,nt_rtm
@@ -681,5 +690,116 @@ endif
     endif  ! read
 
   end subroutine RtmRestart
+
+!-----------------------------------------------------------------------
+
+  subroutine RtmRestartLake(ncid, flag, cls, lake)
+
+    !-----------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Define/write/read the evolving MOSART-Lake state of one lake class
+    ! (cls = 'R' main-channel, 'T' local/sub-network): per-cell storage, area,
+    ! depth, layer count and surface/outflow temperature, plus the per-layer
+    ! depth/thickness/volume/area/cumulative-volume/net-change/temperature arrays
+    ! (one 2-D field per layer, RtmIO has no distributed 2-D io). The static
+    ! geometry tables (d_zi, a_di, v_zti) and TUnit_lake parameters are rebuilt
+    ! by lakegeom_init from the parameter file and are not written.
+    !
+    ! On read: a missing field aborts on a continue run (as for the river state);
+    ! on a startup/branch from an older file the cold-start (lakegeom_init) value
+    ! is kept.
+    !
+    ! ARGUMENTS:
+    implicit none
+    type(file_desc_t)     , intent(inout) :: ncid
+    character(len=*)      , intent(in)    :: flag   ! 'define', 'read' or 'write'
+    character(len=*)      , intent(in)    :: cls    ! 'R' or 'T'
+    type(TstatusFlux_lake), intent(inout) :: lake
+    ! LOCAL VARIABLES:
+    integer, parameter :: n1d = 7, n2d = 8
+    character(len=8), parameter :: v1d(n1d) = (/ 'V_STR   ','A_STR   ','DV_STR  ','D_LAKE  ', &
+                                                 'DDZ_LOC ','TSUR    ','TOUT    ' /)
+    character(len=8), parameter :: v2d(n2d) = (/ 'D_Z     ','DD_Z    ','D_V     ','A_D     ', &
+                                                 'V_ZT    ','DV_NT   ','V_ZN    ','TEMP    ' /)
+    integer :: iv, k
+    logical :: readvar
+    logical, save :: noted = .false.
+    real(r8), pointer :: dfld(:)
+    integer , pointer :: dfld_int(:)
+    character(len=32)  :: vname
+    character(len=256) :: lname
+    !-----------------------------------------------------------------------
+
+    ! per-cell real fields
+    do iv = 1, n1d
+       select case (trim(v1d(iv)))
+       case ('V_STR');   dfld => lake%V_str(:);     lname = 'lake storage (m3)'
+       case ('A_STR');   dfld => lake%A_str(:);     lname = 'lake surface area (m2)'
+       case ('DV_STR');  dfld => lake%dV_str(:);    lname = 'lake storage change (m3/s)'
+       case ('D_LAKE');  dfld => lake%d_lake(:);    lname = 'lake depth (m)'
+       case ('DDZ_LOC'); dfld => lake%ddz_local(:); lname = 'lake initial layer thickness (m)'
+       case ('TSUR');    dfld => lake%lake_Tsur(:); lname = 'lake surface temperature (K)'
+       case ('TOUT');    dfld => lake%lake_Tout(:); lname = 'lake outflow temperature (K)'
+       end select
+       vname = 'LAKE_'//trim(cls)//'_'//trim(v1d(iv))
+       call lake_io_real(vname, lname, dfld)
+    enddo
+
+    ! per-cell integer field: number of active layers
+    vname = 'LAKE_'//trim(cls)//'_D_NS'
+    dfld_int => lake%d_ns(:)
+    if (flag == 'define') then
+       call ncd_defvar(ncid=ncid, varname=trim(vname), xtype=ncd_int, &
+            dim1name='rtmlon', dim2name='rtmlat', long_name='lake number of active layers', units='no unit')
+    else
+       call ncd_io(varname=trim(vname), data=dfld_int, dim1name='allrof', ncid=ncid, flag=flag, readvar=readvar)
+       if (flag == 'read' .and. .not. readvar) call lake_missing(vname)
+    endif
+
+    ! per-layer real fields, one 2-D field per layer (column slices are contiguous)
+    do iv = 1, n2d
+       do k = 1, nlayers
+          select case (trim(v2d(iv)))
+          case ('D_Z');   dfld => lake%d_z(:,k);       lname = 'lake layer depth from bottom (m)'
+          case ('DD_Z');  dfld => lake%dd_z(:,k);      lname = 'lake layer thickness (m)'
+          case ('D_V');   dfld => lake%d_v(:,k);       lname = 'lake layer volume (m3)'
+          case ('A_D');   dfld => lake%a_d(:,k);       lname = 'lake layer area (m2)'
+          case ('V_ZT');  dfld => lake%v_zt(:,k);      lname = 'lake cumulative volume to layer (m3)'
+          case ('DV_NT'); dfld => lake%dv_nt(:,k);     lname = 'lake layer net volume change (m3)'
+          case ('V_ZN');  dfld => lake%v_zn(:,k);      lname = 'lake layer ending volume (m3)'
+          case ('TEMP');  dfld => lake%temp_lake(:,k); lname = 'lake layer temperature (K)'
+          end select
+          write(vname,'(a,i2.2)') 'LAKE_'//trim(cls)//'_'//trim(v2d(iv))//'_L', k
+          call lake_io_real(vname, lname, dfld)
+       enddo
+    enddo
+
+  contains
+
+    subroutine lake_io_real(vname, lname, fld)
+      character(len=*), intent(in) :: vname, lname
+      real(r8), pointer            :: fld(:)
+      if (flag == 'define') then
+         call ncd_defvar(ncid=ncid, varname=trim(vname), xtype=ncd_double, &
+              dim1name='rtmlon', dim2name='rtmlat', long_name=trim(lname), units='')
+      else if (flag == 'read' .or. flag == 'write') then
+         call ncd_io(varname=trim(vname), data=fld, dim1name='allrof', ncid=ncid, flag=flag, readvar=readvar)
+         if (flag == 'read' .and. .not. readvar) call lake_missing(vname)
+      endif
+    end subroutine lake_io_real
+
+    subroutine lake_missing(vname)
+      character(len=*), intent(in) :: vname
+      if (nsrest == nsrContinue) then
+         if (masterproc) write(iulog,*) 'RtmRestartLake ERROR: ', trim(vname), ' not on the restart file of a continue run'
+         call shr_sys_abort('RtmRestartLake: MOSART-Lake state missing on restart file')
+      else if (.not. noted) then
+         if (masterproc) write(iulog,*) 'RtmRestartLake NOTE: ', trim(vname), &
+              ' not on the initial file -- MOSART-Lake keeps its cold-start (lakegeom_init) state'
+         noted = .true.
+      endif
+    end subroutine lake_missing
+
+  end subroutine RtmRestartLake
 
 end module RtmRestFile

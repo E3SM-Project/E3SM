@@ -52,7 +52,7 @@ module dynLakeMod
   use domainMod       , only : ldomain
   use atm2lndType     , only : atm2lnd_type
   use elm_time_manager, only : is_beg_curr_day, get_nstep
-  use spmdMod         , only : masterproc, mpicom, MPI_INTEGER, MPI_SUM
+  use spmdMod         , only : masterproc
 
   implicit none
   private
@@ -60,11 +60,11 @@ module dynLakeMod
   public :: dynlake_driver
 
   integer , parameter :: max_print   = 10       ! per warning type, per call, per task
-  ! Latch: the coupler hands ELM ZEROS (not spval) for rof fields until MOSART's first export
+  ! The coupler hands ELM ZEROS (not spval) for rof fields until MOSART's first export
   ! (first rof coupling interval after a cold start or a restart). Updating from those zeros
-  ! would collapse every lake to the lakebed on day 1, so no update is made on this task
-  ! until a nonzero lake area/volume has been seen at least once.
-  logical, save :: lake_fields_received = .false.
+  ! would collapse every lake to the lakebed on day 1. MOSART therefore exports
+  ! Sr_lake_valid = 1 with its lake fields; a cell is updated only once that flag has arrived.
+  ! Per cell and data-carried, so no MPI collective is needed (PE-layout independent).
   real(r8), parameter :: ratio_tol   = 1.e-6_r8 ! tolerance before a ">1" counts as a warning
 
 contains
@@ -88,8 +88,7 @@ contains
     real(r8) :: wt_l                        ! lake landunit weight in topounit (max footprint)
     real(r8) :: r                           ! wet share of the footprint
     real(r8) :: flake_g                     ! gridcell wet-lake fraction (diagnostic)
-    integer  :: n_upd, n_over_cell, n_over_foot, n_nolun
-    integer  :: nloc(4), nglob(4), ier          ! task / global warning counters
+    integer  :: n_upd, n_over_cell, n_over_foot, n_nolun, n_nomos, n_wait
     character(len=*), parameter :: subname = 'dynlake_driver'
     !-----------------------------------------------------------------------
 
@@ -107,32 +106,20 @@ contains
     ! itself is every coupling interval; a landunit weight does not need sub-daily updates)
     if (.not. is_beg_curr_day()) return
 
-    if (.not. lake_fields_received) then
-       do g = bounds%begg, bounds%endg
-          asur_r = atm2lnd_vars%lake_r_Asur_grc(g); asur_t = atm2lnd_vars%lake_t_Asur_grc(g)
-          if (asur_r >= 0.5_r8*spval .or. asur_t >= 0.5_r8*spval) cycle
-          if (asur_r > 0._r8 .or. asur_t > 0._r8 .or. &
-              atm2lnd_vars%lake_r_Vtot_grc(g) > 0._r8 .or. atm2lnd_vars%lake_t_Vtot_grc(g) > 0._r8) then
-             lake_fields_received = .true.
-             exit
-          end if
-       end do
-       if (.not. lake_fields_received) then
-          write(iulog,'(a,i10,a)') subname//' nstep=', get_nstep(), &
-               '  MOSART lake fields not received yet on this task -- lake/lakebed split unchanged'
-          return
-       end if
-    end if
-
-    n_upd = 0; n_over_cell = 0; n_over_foot = 0; n_nolun = 0
+    n_upd = 0; n_over_cell = 0; n_over_foot = 0; n_nolun = 0; n_nomos = 0; n_wait = 0
 
     do g = bounds%begg, bounds%endg
 
        asur_r = atm2lnd_vars%lake_r_Asur_grc(g)
        asur_t = atm2lnd_vars%lake_t_Asur_grc(g)
 
-       ! Not received yet (spval until the first rof->lnd exchange): keep the current split
+       ! Not received yet (spval, or the coupler's zero buffer before MOSART's first export):
+       ! keep the current split (also the first day after a restart)
        if (asur_r >= 0.5_r8*spval .or. asur_t >= 0.5_r8*spval) cycle
+       if (atm2lnd_vars%lake_valid_grc(g) < 0.5_r8) then
+          n_wait = n_wait + 1
+          cycle
+       end if
 
        asur   = max(asur_r, 0._r8) + max(asur_t, 0._r8)
        a_land = ldomain%area(g) * 1.e6_r8 * ldomain%frac(g)     ! km2 -> m2, land part only
@@ -176,6 +163,18 @@ contains
              cycle
           end if
 
+          ! Warning (3): ELM has a lake landunit here but MOSART reports no lake at all
+          ! (area and volume both zero after the first exchange): the footprint becomes lakebed
+          if (asur <= 0._r8 .and. atm2lnd_vars%lake_r_Vtot_grc(g) <= 0._r8 .and. &
+              atm2lnd_vars%lake_t_Vtot_grc(g) <= 0._r8) then
+             n_nomos = n_nomos + 1
+             if (n_nomos <= max_print) then
+                write(iulog,'(a,2f9.3,a,f8.4)') subname// &
+                     ' WARNING ELM lake landunit but no MOSART lake at (lat,lon)=', &
+                     grc_pp%latdeg(g), grc_pp%londeg(g), '  PCT_LAKE/100=', wt_l
+             end if
+          end if
+
           r = f_lake / wt_l
           atm2lnd_vars%lake_asur_ratio_grc(g) = r        ! unclamped, so the inconsistency is visible in history
 
@@ -207,14 +206,14 @@ contains
        atm2lnd_vars%flake_dyn_grc(g) = flake_g
     end do
 
-    ! Global summary from the master task (per-task prints above only reach the master's log)
-    nloc = (/ n_upd, n_over_cell, n_over_foot, n_nolun /)
-    call mpi_allreduce(nloc, nglob, 4, MPI_INTEGER, MPI_SUM, mpicom, ier)
-    if (masterproc .and. (nglob(2) > 0 .or. nglob(3) > 0 .or. nglob(4) > 0)) then
-       write(iulog,'(a,i10,a,i8,a,i8,a,i8,a,i8)') subname//' nstep=', get_nstep(), &
-            '  lake landunits updated=', nglob(1), &
-            '  WARN lake>gridcell=', nglob(2), '  WARN lake>PCT_LAKE=', nglob(3), &
-            '  WARN lake w/o landunit=', nglob(4)
+    ! Daily summary for THIS task (no collective on the physics path; every task writes to
+    ! its own iulog, the master's reaches lnd.log). Counts > 0 flag WP-C dataset inconsistency.
+    if (n_over_cell > 0 .or. n_over_foot > 0 .or. n_nolun > 0 .or. n_nomos > 0 .or. &
+        (masterproc .and. n_wait > 0)) then
+       write(iulog,'(a,i10,a,i8,a,i8,a,i8,a,i8,a,i8,a,i8)') subname//' nstep=', get_nstep(), &
+            '  [this task] lake landunits updated=', n_upd, '  waiting for MOSART=', n_wait, &
+            '  WARN lake>gridcell=', n_over_cell, '  WARN lake>PCT_LAKE=', n_over_foot, &
+            '  WARN MOSART lake w/o ELM landunit=', n_nolun, '  WARN ELM lake w/o MOSART lake=', n_nomos
     end if
 
   end subroutine dynlake_driver

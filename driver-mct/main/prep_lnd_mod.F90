@@ -246,6 +246,12 @@ contains
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
        if (trim(lnd_gnam) /= trim(iac_gnam)) samegrid_lz = .false.
 
+       ! dynamic lake coupling (MOSART-Lake area -> ELM lake fraction) is defined on a shared grid only:
+       ! ELM divides the m2 lake area by its own gridcell area, which needs a one-to-one rof/lnd cell match
+       if (dyn_lake .and. .not. samegrid_lr) then
+          call shr_sys_abort(subname//' ERROR: dyn_lake=.true. requires lnd and rof on the same grid (LND_GRID == ROF_GRID)')
+       end if
+
        if (rof_c2_lnd) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '

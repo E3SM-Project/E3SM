@@ -62,7 +62,7 @@ module rof_comp_mct
                                 index_r2x_Sr_h2orof, index_r2x_Sr_frac_h2orof, &
                                 index_x2r_Flrl_inundinf, &
                                 index_r2x_Sr_lake_r_Asur, index_r2x_Sr_lake_r_Vtot, &
-                                index_r2x_Sr_lake_t_Asur, index_r2x_Sr_lake_t_Vtot
+                                index_r2x_Sr_lake_t_Asur, index_r2x_Sr_lake_t_Vtot, index_r2x_Sr_lake_valid
 
   use mct_mod
   use ESMF
@@ -101,6 +101,10 @@ module rof_comp_mct
   real (r8) , allocatable, private :: x2r_rm(:,:)  !  moab fields, similar to x2r_r transpose ! used in import from coupler
 #endif
 ! PRIVATE DATA MEMBERS:
+  ! Sr_lake_valid: 0 until MOSART has RUN at least once. The init-phase export (before any
+  ! Rtmrun) packs spval lake fields as 0; ELM must not read those as "no lake" (dyn_lake latch).
+  ! Resets to .false. on every (re)start, so the first day after a restart is also protected.
+  logical, save, private :: lake_fields_valid = .false.
 
 ! REVISION HISTORY:
 ! Author: Mariana Vertenstein
@@ -495,6 +499,7 @@ contains
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
     call Rtmrun(rstwr,nlend,rdate)
+    lake_fields_valid = .true.   ! lake fields exported from here on are real (dyn_lake latch)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
     call t_startf ('lc_rof_export')
@@ -992,6 +997,11 @@ contains
           r2x_r%rattr(index_r2x_Sr_lake_t_Vtot,ni) = rtmCTL%lake_t_Vtot_nt1(n)
         else
           r2x_r%rattr(index_r2x_Sr_lake_t_Vtot,ni) = 0._r8
+        endif
+        if (lake_fields_valid) then
+          r2x_r%rattr(index_r2x_Sr_lake_valid,ni) = 1._r8
+        else
+          r2x_r%rattr(index_r2x_Sr_lake_valid,ni) = 0._r8   ! init-phase export: lake fields not computed yet
         endif
       enddo
     endif
