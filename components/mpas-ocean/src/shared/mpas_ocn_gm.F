@@ -1138,7 +1138,11 @@ contains
 
           ! Compute k_geometric
           ! K_gm = alpha * (int(E)dz / int(Gamma(z)*M^2/N)dz)
-          kGeometric = config_GM_geometric_alpha * (eddyEnergyEdge / M2NInteg)
+          if (M2NInteg > 1.0E-14_RKIND) then
+             kGeometric = config_GM_geometric_alpha * (eddyEnergyEdge / M2NInteg)
+          else
+             kGeometric = config_GM_spatially_variable_min_kappa
+          end if
 
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
