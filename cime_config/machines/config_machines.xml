@@ -3482,23 +3482,24 @@
         <command name="load">craype-accel-host</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">PrgEnv-gnu/8.6.0</command>
-        <command name="load">gcc-native/13.2</command>
+        <command name="load">PrgEnv-gnu/8.7.0</command>
+        <command name="load">gcc-native/14</command>
         <command name="load">hdf5/1.14.6</command>
         <command name="load">netcdf/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler="nvidia.*">
-        <command name="load">PrgEnv-nvidia/8.6.0</command>
+        <command name="load">PrgEnv-nvidia/8.7.0</command>
         <command name="load">hdf5-nvidia/1.14.6</command>
         <command name="load">netcdf-nvidia/4.9.3c-4.6.2f</command>
       </modules>
       <modules compiler=".*gpu">
-        <command name="load">cuda/12.9</command>
+        <command name="load">cuda/13.0</command>
         <command name="load">craype-accel-nvidia80</command>
       </modules>
       <modules>
-        <command name="load">cray-libsci/25.03.0</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
+        <command name="load">cray-libsci/26.03.0</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.21</command>
+        <command name="rm">darshan</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
