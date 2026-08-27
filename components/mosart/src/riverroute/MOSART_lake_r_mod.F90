@@ -71,7 +71,7 @@ MODULE mosart_lake_r_mod
         real(r8) :: dv_in(nlayers),dv_ou(nlayers)                               ! volume increment/decrease at layer due to inflow/outflow(m^3)
         real(r8) :: d_evap,v_evap                                               ! Evaporated depth (m) and volume (m^3)
         real(r8) :: d_prcp,v_prcp                                               ! Evaporated depth (m) and volume (m^3)
-        real(r8) :: a_own, a_oth, v_net, v_floor   ! dyn_lake: ELM net-flux split and storage floor
+        real(r8) :: a_own, a_oth, v_net, v_floor, v_room, v_xs   ! dyn_lake: ELM net-flux split, storage floor, capacity headroom, spilled excess
         real(r8) :: v_spill                                                     ! additional flow volume when storage capacity exceeded (m^3)
         real(r8) :: delta_z                                                     ! depth change to calculate corresponding area/volume(m)
         real(r8) :: top_d                                                       ! top layer depth after mixing
@@ -273,7 +273,30 @@ MODULE mosart_lake_r_mod
         !    write(unit=18006,fmt="(i4, i4,  3(e14.6))")  1, ww, TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1), TLake_r%v_zti(iunit,ngeom+1), TLake_r%v_zn(iunit,TLake_r%d_ns(iunit))
         !end if
 
-                !! Resize layer thickness and numbers based on inflow/outflow contribution                            
+                v_xs = 0._r8
+                if (dyn_lake_coupled .and. .not. heatflag .and. v_prcp > 0._r8) then
+                    ! capacity ceiling (mirror of the floor above): the lake cannot hold more
+                    ! than its geometry-table capacity -- divert the excess ELM net flux (v_xs)
+                    ! to lake_spillflow, which is routed downstream (keeps lakegeom_update_r
+                    ! within its table; no abort). v_xs is added back in the dV_str update so
+                    ! the excess is counted once (spillflow), not twice (spillflow + reduced
+                    ! v_prcp). Budget stays closed: lake_prcp_avg counts the full lake_rain
+                    ! and the spilled part shows up in the outflow.
+                    ! headroom from LIVE layer volumes: av_in_r applies inflow directly to
+                    ! d_v and zeroes dv_in, leaving v_zt stale -- so sum d_v (+ dv_in for
+                    ! the guard branch, where dv_in - v_spill cancels) instead of v_zt.
+                    v_room = TLake_r%v_zti(iunit,ngeom+1) &
+                           - (TLake_r%v_zt(iunit,1) + sum(TLake_r%d_v(iunit,1:TLake_r%d_ns(iunit))) &
+                              + sum(dv_in(1:TLake_r%d_ns(iunit))) - v_spill - v_evap)
+                    if (v_room < 0._r8) v_room = 0._r8
+                    if (v_prcp - v_room > myTINYVALUE) then
+                        v_xs = v_prcp - v_room
+                        TLake_r%lake_spillflow(iunit) = TLake_r%lake_spillflow(iunit) - v_xs/dtime
+                        v_prcp = v_room
+                        d_prcp = v_prcp / TLake_r%a_d(iunit,TLake_r%d_ns(iunit)+1)
+                    end if
+                end if
+                !! Resize layer thickness and numbers based on inflow/outflow contribution
                 TLake_r%dv_nt(iunit,:)    = 0._r8
                 TLake_r%dv_nt(iunit,TLake_r%d_ns(iunit)) = dv_in(TLake_r%d_ns(iunit)) - v_spill + v_prcp - v_evap
                 !TLake_r%dv_nt(iunit,TLake_r%d_ns(iunit)) = dv_in(TLake_r%d_ns(iunit)) + v_prcp - v_evap
@@ -527,7 +550,7 @@ MODULE mosart_lake_r_mod
 
                 tmp_outflow = tmp_outflow + TLake_r%lake_outflow(iunit) + TLake_r%lake_spillflow(iunit)
                 tmp_evap = tmp_evap + v_evap/dtime ! unit m3/s here, note the volume of evap. is calculated only over effective lake areas
-                TLake_r%dV_str(iunit) = TLake_r%lake_inflow(iunit) + TLake_r%lake_outflow(iunit) + TLake_r%lake_spillflow(iunit) + (v_prcp-v_evap)/dtime
+                TLake_r%dV_str(iunit) = TLake_r%lake_inflow(iunit) + TLake_r%lake_outflow(iunit) + TLake_r%lake_spillflow(iunit) + (v_prcp-v_evap+v_xs)/dtime
                 TLake_r%V_str(iunit) = TLake_r%V_str(iunit) + TLake_r%dV_str(iunit) * dtime ! dV_str = inflow - outflow
         !if(iunit == 186781) then 
         !    write(unit=18001,fmt="(i4, i4, i4, 7(e14.6))") 9, ww, TLake_r%d_ns(iunit),  sum(TLake_r%d_v(iunit,:)), TLake_r%v_zt(iunit, TLake_r%d_ns(iunit) + 1)- TLake_r%v_zt(iunit,1), TLake_r%V_str(iunit) - TLake_r%v_zt(iunit,1), TLake_r%lake_inflow(iunit)*dtime, TLake_r%lake_outflow(iunit)*dtime, (v_prcp-v_evap), (TLake_r%lake_inflow(iunit) + TLake_r%lake_outflow(iunit))*dtime + (v_prcp-v_evap)

@@ -49,6 +49,7 @@ MODULE MOSART_lake_geometry_mod
       real(r8) :: dv,da,dz
       real(r8) :: d_v(nlayers)                           ! Reservoir volume change at layer (m^3)
       real(r8) :: rho_z(nlayers)                           ! Reservoir layer density (kg/m^3), taken constant for furture revision 
+      real(r8) :: vfac ! init capacity clamp rescale factor
       real(r8) :: delta_z                                ! depth change to calculate corresponding area/volume(m)
       integer :: i,j,k,iunit                            ! indices
       integer :: tmp_d_ns                               ! temporary number of layers
@@ -203,6 +204,21 @@ MODULE MOSART_lake_geometry_mod
                end do        
                      
                !     Intitialize layer temperature and total storage                    
+               ! init capacity clamp: the fit-evaluated layer volumes can exceed the
+               ! integrated capacity table v_zti(ngeom+1) for poorly-fitted lakes (up to
+               ! ~20 % on tiny lakes); rescale so the cold-start total never exceeds the
+               ! capacity the runtime geometry update enforces (else it aborts at step 1).
+               if (TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) > TLake_r%v_zti(iunit,ngeom+1)) then
+                   vfac = (TLake_r%v_zti(iunit,ngeom+1) - TLake_r%v_zt(iunit,1)) &
+                        / (TLake_r%v_zt(iunit,TLake_r%d_ns(iunit)+1) - TLake_r%v_zt(iunit,1))
+                   if (vfac < 0._r8) vfac = 0._r8
+                   do j = 1, TLake_r%d_ns(iunit)
+                       TLake_r%d_v(iunit,j) = TLake_r%d_v(iunit,j) * vfac
+                   end do
+                   do j = 2, TLake_r%d_ns(iunit)+1
+                       TLake_r%v_zt(iunit,j) = TLake_r%v_zt(iunit,j-1) + TLake_r%d_v(iunit,j-1)
+                   end do
+               end if
                do j=1,TLake_r%d_ns(iunit)                    
                     rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(TLake_r%temp_lake(iunit,j)-277._r8))**1.68_r8) 
                     TLake_r%v_zn(iunit,j) = (TLake_r%d_v(iunit,j))
@@ -240,6 +256,7 @@ MODULE MOSART_lake_geometry_mod
       real(r8) :: dv,da,dz
       real(r8) :: d_v(nlayers)                           ! Reservoir volume change at layer (m^3)
       real(r8) :: rho_z(nlayers)                           ! Reservoir layer density (kg/m^3), taken constant for furture revision 
+      real(r8) :: vfac ! init capacity clamp rescale factor
       real(r8) :: delta_z                                ! depth change to calculate corresponding area/volume(m)
       integer :: i,j,k,iunit                            ! indices
       integer :: tmp_d_ns                               ! temporary number of layers
@@ -388,6 +405,21 @@ MODULE MOSART_lake_geometry_mod
                end do        
                      
                !     Intitialize layer temperature and total storage                    
+               ! init capacity clamp: the fit-evaluated layer volumes can exceed the
+               ! integrated capacity table v_zti(ngeom+1) for poorly-fitted lakes (up to
+               ! ~20 % on tiny lakes); rescale so the cold-start total never exceeds the
+               ! capacity the runtime geometry update enforces (else it aborts at step 1).
+               if (TLake_t%v_zt(iunit,TLake_t%d_ns(iunit)+1) > TLake_t%v_zti(iunit,ngeom+1)) then
+                   vfac = (TLake_t%v_zti(iunit,ngeom+1) - TLake_t%v_zt(iunit,1)) &
+                        / (TLake_t%v_zt(iunit,TLake_t%d_ns(iunit)+1) - TLake_t%v_zt(iunit,1))
+                   if (vfac < 0._r8) vfac = 0._r8
+                   do j = 1, TLake_t%d_ns(iunit)
+                       TLake_t%d_v(iunit,j) = TLake_t%d_v(iunit,j) * vfac
+                   end do
+                   do j = 2, TLake_t%d_ns(iunit)+1
+                       TLake_t%v_zt(iunit,j) = TLake_t%v_zt(iunit,j-1) + TLake_t%d_v(iunit,j-1)
+                   end do
+               end if
                do j=1,TLake_t%d_ns(iunit)                    
                     rho_z(j) = 1000._r8*( 1._r8 - 1.9549e-05*(abs(TLake_t%temp_lake(iunit,j)-277._r8))**1.68_r8) 
                     TLake_t%v_zn(iunit,j) = (TLake_t%d_v(iunit,j))
