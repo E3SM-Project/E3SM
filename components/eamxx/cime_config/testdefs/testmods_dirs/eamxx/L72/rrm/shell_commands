@@ -1,0 +1,7 @@
+./xmlchange SCREAM_CMAKE_OPTIONS="`./xmlquery -value SCREAM_CMAKE_OPTIONS | sed 's/SCREAM_NUM_VERTICAL_LEV [0-9][0-9]*/SCREAM_NUM_VERTICAL_LEV 72/'`"
+
+# Enable the tensor-viscosity sponge layer at the model top.
+$CIMEROOT/../components/eamxx/scripts/atmchange tom_sponge_start=2 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange laplace_scaling=1 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange nu_top=5e-7 -b
+$CIMEROOT/../components/eamxx/scripts/atmchange hypervis_subcycle=2 -b
