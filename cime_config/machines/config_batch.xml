@@ -202,6 +202,7 @@
       <directive> -N {{ job_id }}</directive>
       <directive default="n"> -r {{ rerunnable }} </directive>
       <directive> -j oe </directive>
+      <directive> -V </directive>
     </directives>
   </batch_system>
 
