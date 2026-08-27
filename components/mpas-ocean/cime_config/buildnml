@@ -232,7 +232,7 @@ def buildnml(case, caseroot, compname):
         #  modify initial condition file if ocean BGC is turned on
         if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
             ic_date = '230227'
-            ic_prefix = 'mpaso.ARRM10to60E2r1.220730+MARBL_ICfromOMIP_80levels_230227.ARRM10to60E2r1.230227.nc'
+            ic_prefix = 'mpaso.ARRM10to60E2r1.220730+MARBL_ICfromOMIP_80levels_230227.ARRM10to60E2r1'
             eco_forcing_file = 'ecoForcingSurfaceMonthly.ARRM10to60E2r1.230210.nc'
 
     elif ocn_grid == 'EC30to60E2r2':
