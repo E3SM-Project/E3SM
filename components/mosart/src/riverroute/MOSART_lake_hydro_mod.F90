@@ -12,7 +12,7 @@ MODULE MOSART_lake_hydro_mod
     use shr_const_mod , only : SHR_CONST_G
     use RunoffMod , only : Tctl, TUnit, TRunoff, THeat, TUnit_lake_r, TLake_r, TUnit_lake_t, TLake_t, TPara, rtmCTL
     use rof_cpl_indices, only : nt_nliq, nt_nice
-    use RtmVar         , only : iulog, ngeom, nlayers, rstraflag, lakeflag
+    use RtmVar         , only : iulog, ngeom, nlayers, rstraflag, lakeflag, dyn_lake_coupled
     use RtmTimeManager
 
     implicit none
@@ -63,7 +63,14 @@ MODULE MOSART_lake_hydro_mod
             if(TLake_t%d_lake(iunit) <= 0.1_r8) then ! no outflow when lake water depth is very shallow
                 delta_h = 0._r8
             else
+                if (dyn_lake_coupled) then
+                    ! sill at the lake's full level: a lake spills only its surplus.
+                    ! The legacy notch (h_lake - bankfull depth) drains every lake by a
+                    ! channel depth within days (see wp_a_dyn_fraction_design.md 2026-08-27).
+                    d_min = TUnit_lake_t%h_lake(iunit)
+                else
                 d_min = max(TUnit_lake_t%h_lake(iunit) - 2._r8, 0._r8) !! TODO: here set the bankfull channel depth for t-zone as 2 meters
+                end if
                 delta_h = TLake_t%d_lake(iunit) - d_min  ! only allow outflow when lake water level exceeds the channel bed elevation
                 if(delta_h < TINYVALUE) then
                     delta_h = 0._r8
@@ -165,7 +172,12 @@ MODULE MOSART_lake_hydro_mod
             if(TLake_r%d_lake(iunit) <= 0.1_r8) then ! no outflow when lake water depth is very shallow
                 delta_h = 0._r8
             else
+                if (dyn_lake_coupled) then
+                    ! sill at the lake's full level (see t-zone note above)
+                    d_min = TUnit_lake_r%h_lake(iunit)
+                else
                 d_min = max(TUnit_lake_r%h_lake(iunit) - TUnit%rdepth(iunit), 0._r8)
+                end if
                 delta_h = TLake_r%d_lake(iunit) - d_min  ! only allow outflow when lake water level exceeds the channel bed elevation
                 if(delta_h < TINYVALUE) then
                     delta_h = 0._r8

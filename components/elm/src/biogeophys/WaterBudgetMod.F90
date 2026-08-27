@@ -301,6 +301,7 @@ contains
          qflx_rofliq_qsub   => lnd2atm_vars%qflx_rofliq_qsub_grc         , &
          qflx_rofliq_qsubp  => lnd2atm_vars%qflx_rofliq_qsubp_grc        , &
          qflx_rofliq_qgwl   => lnd2atm_vars%qflx_rofliq_qgwl_grc         , &
+         qflx_lake2rof      => lnd2atm_vars%qflx_lake2rof_grc            , &
          begwb_grc          => grc_ws%begwb                 , &
          endwb_grc          => grc_ws%endwb                 , &
          beg_wa_grc         => soilhydrology_vars%beg_wa_grc             , &
@@ -334,7 +335,8 @@ contains
          nf = f_roff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) &
               - qflx_rofliq_qsur(g)*af - qflx_rofliq_qsurp(g)*af &
               - qflx_rofliq_qsub(g)*af - qflx_rofliq_qsubp(g)*af &
-              - qflx_rofliq_qgwl(g)*af
+              - qflx_rofliq_qgwl(g)*af &
+              - qflx_lake2rof(g)*af   ! dyn_lake: lake P-E exported to MOSART-Lake storage (Flrl_wslake); 0 when off
          nf = f_ioff; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - qflx_rofice(g)*af
          nf = f_irri; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + qflx_irrig_supply(g)*af
 
