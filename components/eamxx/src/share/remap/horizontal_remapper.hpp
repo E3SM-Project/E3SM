@@ -62,7 +62,7 @@ public:
   // When tracking masks, each tgt entry gets a real-valued mask in [0,1]: the fraction
   // of its interpolation weight coming from valid (i.e., not filled) src entries.
   // Entries above thresh are rescaled by that fraction (so they store the average over
-  // the valid src entries), while the others are set to the fill value.
+  // the valid src entries), while the others are masked (and set to the fill value later on).
   void set_mask_threshold (const Real thresh);
 
 protected:

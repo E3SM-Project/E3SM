@@ -222,7 +222,7 @@ protected:
   OutputAvgType m_avg_type;
   // Fraction (in [0,1)) of the output interval that must be valid for an averaged
   // value to be written out (rather than assigned the FillValue). The default of 0
-  // means the output stores the average over the unfilled snapshots only.
+  // means we take into account >0 valid snaps (i.e., even if only 1 is valid, we take it).
   Real m_avg_coeff_threshold = 0;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and
