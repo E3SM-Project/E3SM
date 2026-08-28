@@ -108,6 +108,10 @@ public:
   // Propagate HOMME's parsed 3D turbulence flag to SHOC's internal runtime option.
   void setup_shoc_3d_turbulence_link();
 
+  // If the GW process exists, and the convective GW scheme is enabled,
+  // create link to ZM temperature tendency to drive the GW source spectrum
+  void setup_gw_convect_zm_links();
+
   // Add column data to all pre/postcondition property checks
   // for use in output.
   void add_additional_column_data_to_property_checks ();

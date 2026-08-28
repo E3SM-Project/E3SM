@@ -316,6 +316,11 @@ void AtmosphereDriver::create_grids()
     setup_shoc_3d_turbulence_link();
   }
 
+  if(m_atm_process_group->has_process("gw") &&
+     m_atm_process_group->has_process("zm")) {
+    setup_gw_convect_zm_links();
+  }
+
   // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
   // implementation of some processes, so setup here.
   const bool enable_iop =
@@ -534,6 +539,20 @@ void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
 
     auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
     shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
+  }
+}
+
+void AtmosphereDriver::setup_gw_convect_zm_links ()
+{
+  if (m_atm_process_group->has_process("gw")) {
+    auto gw = m_atm_process_group->get_process_nonconst("gw");
+    const bool use_gw_convect = gw->get_params().get<bool>("use_gw_convect", false);
+    if (use_gw_convect) {
+      EKAT_REQUIRE_MSG(m_atm_process_group->has_process("zm"),
+        "Error! use_gw_convect=true requires the ZM process to be active "
+        "to use the heating tendency (zm_t_tend) to trigger convective GWs,"
+        "but 'zm' was not found in the atm process list.\n");
+    }
   }
 }
 
