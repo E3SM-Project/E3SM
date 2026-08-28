@@ -219,6 +219,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     }
     if (params.isParameter("fill_threshold")) {
       m_avg_coeff_threshold = params.get<Real>("fill_threshold");
+      EKAT_REQUIRE_MSG (m_avg_coeff_threshold>=0 and m_avg_coeff_threshold<1,
+          "Error! Invalid value for 'fill_threshold'.\n"
+          "  - output stream: " + m_stream_name + "\n"
+          "  - fill_threshold: " + std::to_string(m_avg_coeff_threshold) + "\n"
+          "  - valid range   : [0,1)\n");
     }
   }
 
@@ -261,7 +266,11 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     if (use_horiz_remap_from_file) {
       // Construct the coarsening remapper
       auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
-      m_horiz_remapper = std::make_shared<HorizontalRemapper>(grid_after_vr,horiz_remap_file,true);
+      auto hr = std::make_shared<HorizontalRemapper>(grid_after_vr,horiz_remap_file,true);
+      if (params.isParameter("horiz_remap_fill_threshold")) {
+        hr->set_mask_threshold(params.get<Real>("horiz_remap_fill_threshold"));
+      }
+      m_horiz_remapper = hr;
     } else {
       // Construct a generic remapper (likely, Dyn->PhysicsGLL)
       grid_after_hr = fm_grid->get_aux_grid(output_data_layout);
