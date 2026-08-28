@@ -81,6 +81,9 @@ void ZMDeepConvection::create_requests ()
   add_field<Updated>("zm_t_prev",             scalar3d_mid, K,      grid_name, pack_size);
   add_field<Updated>("zm_q_prev",             scalar3d_mid, kg/kg,  grid_name, pack_size);
 
+  // temperature tendency needed for convective GWD scheme
+  add_field<Updated>("zm_t_tend",             scalar3d_mid, K/s,    grid_name, pack_size);
+
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
   add_field<Computed>("zm_snow",              scalar2d,     m/s,    grid_name);
@@ -543,6 +546,7 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_detr_qi = get_field_out("zm_detr_qi").get_view<Real**>();
   const auto& zm_detr_nc = get_field_out("zm_detr_nc").get_view<Real**>();
   const auto& zm_detr_ni = get_field_out("zm_detr_ni").get_view<Real**>();
+  const auto& zm_t_tend  = get_field_out("zm_t_tend") .get_view<Real**>();
   Kokkos::parallel_for("zm_update_prognostic",
     KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
@@ -586,6 +590,8 @@ void ZMDeepConvection::run_impl (const double dt)
     // update "previous" T/qv variabiables for DCAPE
     t_prev(i,k) = T_mid(i,k);
     q_prev(i,k) = qv   (i,k);
+    // save temperature tend for convective GWD
+    zm_t_tend(i,k) = loc_zm_output_tend_out_t(i,k);
   });
 
   //----------------------------------------------------------------------------
