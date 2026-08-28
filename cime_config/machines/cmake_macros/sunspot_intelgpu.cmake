@@ -6,3 +6,5 @@ endif()
 string(APPEND SYCL_FLAGS " -fsycl -fsycl-targets=spir64_gen -mlong-double-64 ")
 string(APPEND OMEGA_SYCL_EXE_LINKER_FLAGS " -Xsycl-target-backend \"-device pvc\" ")
 string(APPEND CMAKE_CXX_FLAGS " -Xclang -fsycl-allow-virtual-functions")
+
+set(USE_SYCL "TRUE")

@@ -23,9 +23,9 @@ set(HAS_F2008_CONTIGUOUS "TRUE")
 set(MPICC "mpicc")
 set(MPICXX "mpicxx")
 set(MPIFC "mpif90")
-set(SCC "icx")
-set(SCXX "icpx")
-set(SFC "ifx")
+set(SCC "icc")
+set(SCXX "icpc")
+set(SFC "ifort")
 
 # Intel has to link fortran mains with fortran
 set(E3SM_LINK_WITH_FORTRAN "TRUE")
