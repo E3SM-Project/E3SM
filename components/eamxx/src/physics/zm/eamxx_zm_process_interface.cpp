@@ -82,7 +82,7 @@ void ZMDeepConvection::create_requests ()
   add_field<Updated>("zm_q_prev",             scalar3d_mid, kg/kg,  grid_name, pack_size);
 
   // temperature tendency needed for convective GWD scheme
-  add_field<Updated>("zm_t_tend",             scalar3d_mid, K/s,    grid_name, pack_size);
+  add_field<Computed>("zm_t_tend",            scalar3d_mid, K/s,    grid_name, pack_size);
 
   // Diagnostic Outputs
   add_field<Computed>("zm_prec",              scalar2d,     m/s,    grid_name);
