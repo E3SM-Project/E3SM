@@ -4,8 +4,6 @@
 #include "eamxx_zm_process_interface.hpp"
 #include "share/physics/physics_constants.hpp"
 
-#include "zm_eamxx_bridge.hpp"
-
 #include <ekat_assert.hpp>
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_reduction_utils.hpp>
@@ -133,15 +131,7 @@ void ZMDeepConvection::initialize_impl (const RunType)
   if (this->get_comm().am_i_root()) ZMF::s_zm_opts.print();
   //----------------------------------------------------------------------------
   if (ZMF::s_zm_opts.use_fortran_bridge) {
-    // allocate host mirror variables for fortran bridging
-    zm_input.init_host_mirrors (m_ncol, m_nlev);
-    zm_output.init_host_mirrors(m_ncol, m_nlev);
-    // initialize variables on the fortran side
-    zm::zm_eamxx_bridge_init( m_nlev, ZMF::s_zm_opts.limcnv+1,
-                              ZMF::s_zm_opts.trig_dcape,
-                              ZMF::s_zm_opts.trig_ull,
-                              ZMF::s_zm_opts.clos_dyn_adj,
-                              ZMF::s_zm_opts.mcsp_enabled);
+    EKAT_REQUIRE_MSG(false, "ZM fortran bridge no longer supported");
   } // if use_fortran_bridge
   //----------------------------------------------------------------------------
 } // ZMDeepConvection::initialize_impl
@@ -316,216 +306,208 @@ void ZMDeepConvection::run_impl (const double dt)
   //----------------------------------------------------------------------------
   // run the ZM scheme
 
-  if (zm_opts.use_fortran_bridge) {
+  // Allocate the Workspace for the MCSP / evap / momentum kernels below.
+  // Slot length is nlev_int*nwind to fit zm_transport_momentum's (nwind, nlev_int) buffers.
+  WSM wsm( nlev_int*nwind, 16, team_policy);
 
-    zm_eamxx_bridge_run(m_ncol, nlev_mid, dt, is_first_step, zm_input, zm_output, zm_opts);
+  //--------------------------------------------------------------------------
+  // run the main ZM scheme
+  ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
+                    zm_input.T_mid, zm_input.qv, zm_input.omega,
+                    zm_input.p_mid, zm_input.p_int, zm_input.p_del,
+                    zm_input.phis, zm_input.z_mid, zm_input.z_int,
+                    zm_input.pblh, zm_input.tpert, zm_input.landfrac,
+                    zm_input.t_prev, zm_input.q_prev,
+                    zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
+                    zm_output.activity,
+                    zm_output.prec, zm_output.tend_out_s, zm_output.tend_out_qv,
+                    zm_output.cape, zm_output.dcape,
+                    zm_output.mass_flux, zm_output.prec_flux,
+                    zm_output.zdu,
+                    zm_output.mflx_up, zm_output.entr_up, zm_output.detr_up,
+                    zm_output.mflx_dn, zm_output.entr_dn,
+                    zm_output.p_del_mb, zm_output.dsubcld,
+                    zm_output.ql, zm_output.rliq, zm_output.rain_prod, zm_output.dlf,
+                    zm_output.ktm, zm_output.kbm );
 
-  } else {
-    // Allocate the Workspace for the MCSP / evap / momentum kernels below.
-    // Slot length is nlev_int*nwind to fit zm_transport_momentum's (nwind, nlev_int) buffers.
-    WSM wsm( nlev_int*nwind, 16, team_policy);
+  //--------------------------------------------------------------------------
+  // MCSP modifies tendencies from zm_conv_main() prior to updating the state
 
-    //--------------------------------------------------------------------------
-    // run the main ZM scheme
-    ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
-                      zm_input.T_mid, zm_input.qv, zm_input.omega,
-                      zm_input.p_mid, zm_input.p_int, zm_input.p_del,
-                      zm_input.phis, zm_input.z_mid, zm_input.z_int,
-                      zm_input.pblh, zm_input.tpert, zm_input.landfrac,
-                      zm_input.t_prev, zm_input.q_prev,
-                      zm_output.msemax_klev, zm_output.jctop, zm_output.jcbot, zm_output.jt,
-                      zm_output.activity,
-                      zm_output.prec, zm_output.tend_out_s, zm_output.tend_out_qv,
-                      zm_output.cape, zm_output.dcape,
-                      zm_output.mass_flux, zm_output.prec_flux,
-                      zm_output.zdu,
-                      zm_output.mflx_up, zm_output.entr_up, zm_output.detr_up,
-                      zm_output.mflx_dn, zm_output.entr_dn,
-                      zm_output.p_del_mb, zm_output.dsubcld,
-                      zm_output.ql, zm_output.rliq, zm_output.rain_prod, zm_output.dlf,
-                      zm_output.ktm, zm_output.kbm );
+  if (zm_opts.mcsp_enabled) {
 
-    //--------------------------------------------------------------------------
-    // MCSP modifies tendencies from zm_conv_main() prior to updating the state
-
-    if (zm_opts.mcsp_enabled) {
-
-      // initialize intermediate output tendencies for MCSP
-      zm_output.init_tmp(m_ncol, nlev_mid);
-
-      // perform the MCSP calculations
-      Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-        const Int i = team.league_rank();
-        const auto phis_i         = loc_zm_input_phis(i);
-        const auto jctop_i        = loc_zm_output_jctop(i);
-        const auto z_mid_i        = ekat::subview(loc_zm_input_z_mid, i);
-        const auto p_mid_i        = ekat::subview(loc_zm_input_p_mid, i);
-        const auto p_int_i        = ekat::subview(loc_zm_input_p_int, i);
-        const auto p_del_i        = ekat::subview(loc_zm_input_p_del, i);
-        const auto T_mid_i        = ekat::subview(loc_zm_input_T_mid, i);
-        const auto qv_i           = ekat::subview(loc_zm_input_qv, i);
-        const auto uwind_i        = ekat::subview(loc_zm_input_uwind, i);
-        const auto vwind_i        = ekat::subview(loc_zm_input_vwind, i);
-        const auto tmp_s_mid_i    = ekat::subview(loc_zm_input_tmp_s_mid, i);
-        const auto tend_out_s_i   = ekat::subview(loc_zm_output_tend_out_s, i);
-        const auto tend_out_qv_i  = ekat::subview(loc_zm_output_tend_out_qv, i);
-        const auto tend_out_u_i   = ekat::subview(loc_zm_output_tend_out_u, i);
-        const auto tend_out_v_i   = ekat::subview(loc_zm_output_tend_out_v, i);
-        const auto tend_tmp_s_i   = ekat::subview(loc_zm_output_tend_tmp_s, i);
-        const auto tend_tmp_qv_i  = ekat::subview(loc_zm_output_tend_tmp_qv, i);
-        const auto tend_tmp_winds_i = ekat::subview(loc_zm_output_tend_tmp_winds, i); // (nwind, nlev)
-        const auto tend_tmp_u_i   = ekat::subview(tend_tmp_winds_i, 0);               // (nlev)
-        const auto tend_tmp_v_i   = ekat::subview(tend_tmp_winds_i, 1);               // (nlev)
-        const auto mcsp_ds_out_i  = ekat::subview(loc_zm_output_mcsp_ds_out, i);
-        const auto mcsp_dq_out_i  = ekat::subview(loc_zm_output_mcsp_dq_out, i);
-        const auto mcsp_du_out_i  = ekat::subview(loc_zm_output_mcsp_du_out, i);
-        const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
-        auto& mcsp_freq_i         = loc_zm_output_mcsp_freq(i);
-        auto& mcsp_shear_i        = loc_zm_output_mcsp_shear(i);
-        auto& zm_depth_i          = loc_zm_output_zm_depth(i);
-
-        // calculate DSE for MCSP
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
-          tmp_s_mid_i(k) = T_mid_i(k)*PC::CP.value + z_mid_i(k)*PC::gravit.value + phis_i;
-        });
-        team.team_barrier();
-
-        // call the MCSP scheme
-        ZMF::zm_conv_mcsp_tend( team, wsm.get_workspace(team), zm_opts, nlev_mid, nlev_int, dt,
-          jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
-          tend_out_s_i, tend_out_qv_i,
-          tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
-          mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
-          mcsp_freq_i, mcsp_shear_i, zm_depth_i );
-
-        // add MCSP tendencies to output tendencies
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
-          tend_out_s_i(k)  += tend_tmp_s_i(k);
-          tend_out_qv_i(k) += tend_tmp_qv_i(k);
-          tend_out_u_i(k)  += tend_tmp_u_i(k);
-          tend_out_v_i(k)  += tend_tmp_v_i(k);
-        });
-      });
-
-    }
-
-    //--------------------------------------------------------------------------
-    // apply tendencies from zm_conv_main() (& MCSP) to temporary state variables for zm_conv_evap()
-
-    Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
-      const int i = idx/nlev_mid;
-      const int k = idx%nlev_mid;
-      // calculate temporary T/qv for zm_conv_evap()
-      loc_zm_input_tmp_T_mid(i,k) = loc_zm_input_T_mid(i,k) + loc_zm_output_tend_out_s(i,k)/PC::CP.value * dt;
-      loc_zm_input_tmp_qv(i,k)    = loc_zm_input_qv(i,k)    + loc_zm_output_tend_out_qv(i,k) * dt;
-      // calculate temporary winds for zm_transport_momentum()
-      loc_zm_input_tmp_winds(i,0,k) = loc_zm_input_uwind(i,k) + loc_zm_output_tend_out_u(i,k) * dt;
-      loc_zm_input_tmp_winds(i,1,k) = loc_zm_input_vwind(i,k) + loc_zm_output_tend_out_v(i,k) * dt;
-    });
-
-    //--------------------------------------------------------------------------
-    // Compute the precipitation, rain evaporation, and snow formation/melting
-    // Note - this routine expects an updated state following zm_conv_main() (+MCSP)
-
-    // initialize intermediate output tendencies for zm_conv_evap()
+    // initialize intermediate output tendencies for MCSP
     zm_output.init_tmp(m_ncol, nlev_mid);
 
-    // perform the convective evaporation calculations
+    // perform the MCSP calculations
     Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
-      // skip inactive columns: zm_conv_main leaves p_del_mb (=dp) zero for them,
-      // and zm_transport_momentum divides by dp, which would produce NaNs
-      if (!loc_zm_output_activity(i)) return;
-      const auto p_mid_i            = ekat::subview(loc_zm_input_p_mid, i);
-      const auto p_del_i            = ekat::subview(loc_zm_input_p_del, i);
-      const auto T_mid_i            = ekat::subview(loc_zm_input_T_mid, i);
-      const auto qv_i               = ekat::subview(loc_zm_input_qv, i);
-      const auto tmp_T_mid_i        = ekat::subview(loc_zm_input_tmp_T_mid, i);
-      const auto tmp_qv_i           = ekat::subview(loc_zm_input_tmp_qv, i);
-      const auto rain_prod_i        = ekat::subview(loc_zm_output_rain_prod, i);
-      const auto cldfrac_i          = ekat::subview(loc_zm_input_cldfrac, i);
-      const auto tend_out_s_i       = ekat::subview(loc_zm_output_tend_out_s, i);
-      const auto tend_out_qv_i      = ekat::subview(loc_zm_output_tend_out_qv, i);
-      const auto tend_tmp_s_i       = ekat::subview(loc_zm_output_tend_tmp_s, i);
-      const auto tend_tmp_qv_i      = ekat::subview(loc_zm_output_tend_tmp_qv, i);
-      const auto tend_s_snwprd_i    = ekat::subview(loc_zm_output_tend_s_snwprd, i);
-      const auto tend_s_snwevmlt_i  = ekat::subview(loc_zm_output_tend_s_snwevmlt, i);
-      const auto ntprprd_i          = ekat::subview(loc_zm_output_ntprprd, i);
-      const auto ntsnprd_i          = ekat::subview(loc_zm_output_ntsnprd, i);
-      const auto flxprec_i          = ekat::subview(loc_zm_output_flxprec, i);
-      const auto flxsnow_i          = ekat::subview(loc_zm_output_flxsnow, i);
-      const auto evap_ds_out_i      = ekat::subview(loc_zm_output_evap_ds_out, i);
-      const auto evap_dq_out_i      = ekat::subview(loc_zm_output_evap_dq_out, i);
+      const auto phis_i         = loc_zm_input_phis(i);
+      const auto jctop_i        = loc_zm_output_jctop(i);
+      const auto z_mid_i        = ekat::subview(loc_zm_input_z_mid, i);
+      const auto p_mid_i        = ekat::subview(loc_zm_input_p_mid, i);
+      const auto p_int_i        = ekat::subview(loc_zm_input_p_int, i);
+      const auto p_del_i        = ekat::subview(loc_zm_input_p_del, i);
+      const auto T_mid_i        = ekat::subview(loc_zm_input_T_mid, i);
+      const auto qv_i           = ekat::subview(loc_zm_input_qv, i);
+      const auto uwind_i        = ekat::subview(loc_zm_input_uwind, i);
+      const auto vwind_i        = ekat::subview(loc_zm_input_vwind, i);
+      const auto tmp_s_mid_i    = ekat::subview(loc_zm_input_tmp_s_mid, i);
+      const auto tend_out_s_i   = ekat::subview(loc_zm_output_tend_out_s, i);
+      const auto tend_out_qv_i  = ekat::subview(loc_zm_output_tend_out_qv, i);
+      const auto tend_out_u_i   = ekat::subview(loc_zm_output_tend_out_u, i);
+      const auto tend_out_v_i   = ekat::subview(loc_zm_output_tend_out_v, i);
+      const auto tend_tmp_s_i   = ekat::subview(loc_zm_output_tend_tmp_s, i);
+      const auto tend_tmp_qv_i  = ekat::subview(loc_zm_output_tend_tmp_qv, i);
+      const auto tend_tmp_winds_i = ekat::subview(loc_zm_output_tend_tmp_winds, i); // (nwind, nlev)
+      const auto tend_tmp_u_i   = ekat::subview(tend_tmp_winds_i, 0);               // (nlev)
+      const auto tend_tmp_v_i   = ekat::subview(tend_tmp_winds_i, 1);               // (nlev)
+      const auto mcsp_ds_out_i  = ekat::subview(loc_zm_output_mcsp_ds_out, i);
+      const auto mcsp_dq_out_i  = ekat::subview(loc_zm_output_mcsp_dq_out, i);
+      const auto mcsp_du_out_i  = ekat::subview(loc_zm_output_mcsp_du_out, i);
+      const auto mcsp_dv_out_i  = ekat::subview(loc_zm_output_mcsp_dv_out, i);
+      auto& mcsp_freq_i         = loc_zm_output_mcsp_freq(i);
+      auto& mcsp_shear_i        = loc_zm_output_mcsp_shear(i);
+      auto& zm_depth_i          = loc_zm_output_zm_depth(i);
 
-      // call the ZM evap scheme
-      ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
-        p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, rain_prod_i, cldfrac_i,
-        tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
-        loc_zm_output_prec(i), loc_zm_output_snow(i),
-        ntprprd_i, ntsnprd_i, flxprec_i, flxsnow_i );
+      // calculate DSE for MCSP
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
+        tmp_s_mid_i(k) = T_mid_i(k)*PC::CP.value + z_mid_i(k)*PC::gravit.value + phis_i;
+      });
+      team.team_barrier();
 
-      // add zm_conv_evap() tendencies to output tendencies and update temporary state variables
+      // call the MCSP scheme
+      ZMF::zm_conv_mcsp_tend( team, wsm.get_workspace(team), zm_opts, nlev_mid, nlev_int, dt,
+        jctop_i, p_mid_i, p_int_i, p_del_i, tmp_s_mid_i, qv_i, uwind_i, vwind_i,
+        tend_out_s_i, tend_out_qv_i,
+        tend_tmp_s_i, tend_tmp_qv_i, tend_tmp_u_i, tend_tmp_v_i,
+        mcsp_ds_out_i, mcsp_dq_out_i, mcsp_du_out_i, mcsp_dv_out_i,
+        mcsp_freq_i, mcsp_shear_i, zm_depth_i );
+
+      // add MCSP tendencies to output tendencies
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
         tend_out_s_i(k)  += tend_tmp_s_i(k);
         tend_out_qv_i(k) += tend_tmp_qv_i(k);
-        evap_ds_out_i(k) = tend_tmp_s_i(k);
-        evap_dq_out_i(k) = tend_tmp_qv_i(k);
+        tend_out_u_i(k)  += tend_tmp_u_i(k);
+        tend_out_v_i(k)  += tend_tmp_v_i(k);
       });
-
     });
 
-    //--------------------------------------------------------------------------
-    // convective momentum transport
-
-    // initialize intermediate output tendencies for zm_transport_momentum()
-    zm_output.init_tmp(m_ncol, nlev_mid);
-
-    // domain-wide convection level bounds from zm_conv_main (host scalars captured by value)
-    const Int ktm = zm_output.ktm;
-    const Int kbm = zm_output.kbm;
-
-    Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-      const Int i = team.league_rank();
-      // skip inactive columns: zm_conv_main leaves p_del_mb (=dp) zero for them,
-      // and zm_transport_momentum divides by dp, which would produce NaNs
-      if (!loc_zm_output_activity(i)) return;
-      // MCSP-updated winds in (nwind, nlev) == (m,k) layout for wind_mid
-      const auto wind_mid_i     = ekat::subview(loc_zm_input_tmp_winds, i);
-      const auto mflx_up_i      = ekat::subview(loc_zm_output_mflx_up, i);
-      const auto mflx_dn_i      = ekat::subview(loc_zm_output_mflx_dn, i);
-      const auto detr_up_i      = ekat::subview(loc_zm_output_detr_up, i);
-      const auto entr_up_i      = ekat::subview(loc_zm_output_entr_up, i);
-      const auto entr_dn_i      = ekat::subview(loc_zm_output_entr_dn, i);
-      const auto p_del_mb_i     = ekat::subview(loc_zm_output_p_del_mb, i);
-
-      const auto tend_out_s_i   = ekat::subview(loc_zm_output_tend_out_s, i);
-      const auto tend_out_u_i   = ekat::subview(loc_zm_output_tend_out_u, i);
-      const auto tend_out_v_i   = ekat::subview(loc_zm_output_tend_out_v, i);
-
-      // seten output buffer, and combined (nwind, nlev) momentum tendency output
-      const auto tend_tmp_s_i   = ekat::subview(loc_zm_output_tend_tmp_s, i);
-      const auto wind_tend_i    = ekat::subview(loc_zm_output_tend_tmp_winds, i);
-
-      // call the ZM momentum transport scheme
-      ZMF::zm_transport_momentum( team, wsm.get_workspace(team), nlev_mid, nlev_int, dt,
-        wind_mid_i, 2,
-        mflx_up_i, mflx_dn_i, detr_up_i, entr_up_i, entr_dn_i, p_del_mb_i,
-        loc_zm_output_jt(i), loc_zm_output_msemax_klev(i), ktm, kbm,
-        wind_tend_i,    // momentum tendency (nwind, nlev)
-        tend_tmp_s_i ); // seten (KE-dissipation dry static energy tendency)
-
-      // add zm_transport_momentum tendencies to output tendencies
-      // (mirrors EAM: output_tend_{u,v} += tx_wind_tend; output_tend_s += seten)
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
-        tend_out_s_i(k)  += tend_tmp_s_i(k);
-        tend_out_u_i(k)  += wind_tend_i(0,k);
-        tend_out_v_i(k)  += wind_tend_i(1,k);
-      });
-
-    });
-
-    //--------------------------------------------------------------------------
   }
+
+  //--------------------------------------------------------------------------
+  // apply tendencies from zm_conv_main() (& MCSP) to temporary state variables for zm_conv_evap()
+
+  Kokkos::parallel_for(KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    // calculate temporary T/qv for zm_conv_evap()
+    loc_zm_input_tmp_T_mid(i,k) = loc_zm_input_T_mid(i,k) + loc_zm_output_tend_out_s(i,k)/PC::CP.value * dt;
+    loc_zm_input_tmp_qv(i,k)    = loc_zm_input_qv(i,k)    + loc_zm_output_tend_out_qv(i,k) * dt;
+    // calculate temporary winds for zm_transport_momentum()
+    loc_zm_input_tmp_winds(i,0,k) = loc_zm_input_uwind(i,k) + loc_zm_output_tend_out_u(i,k) * dt;
+    loc_zm_input_tmp_winds(i,1,k) = loc_zm_input_vwind(i,k) + loc_zm_output_tend_out_v(i,k) * dt;
+  });
+
+  //--------------------------------------------------------------------------
+  // Compute the precipitation, rain evaporation, and snow formation/melting
+  // Note - this routine expects an updated state following zm_conv_main() (+MCSP)
+
+  // initialize intermediate output tendencies for zm_conv_evap()
+  zm_output.init_tmp(m_ncol, nlev_mid);
+
+  // perform the convective evaporation calculations
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const Int i = team.league_rank();
+    // skip inactive columns: zm_conv_main leaves p_del_mb (=dp) zero for them,
+    // and zm_transport_momentum divides by dp, which would produce NaNs
+    if (!loc_zm_output_activity(i)) return;
+    const auto p_mid_i            = ekat::subview(loc_zm_input_p_mid, i);
+    const auto p_del_i            = ekat::subview(loc_zm_input_p_del, i);
+    const auto T_mid_i            = ekat::subview(loc_zm_input_T_mid, i);
+    const auto qv_i               = ekat::subview(loc_zm_input_qv, i);
+    const auto tmp_T_mid_i        = ekat::subview(loc_zm_input_tmp_T_mid, i);
+    const auto tmp_qv_i           = ekat::subview(loc_zm_input_tmp_qv, i);
+    const auto rain_prod_i        = ekat::subview(loc_zm_output_rain_prod, i);
+    const auto cldfrac_i          = ekat::subview(loc_zm_input_cldfrac, i);
+    const auto tend_out_s_i       = ekat::subview(loc_zm_output_tend_out_s, i);
+    const auto tend_out_qv_i      = ekat::subview(loc_zm_output_tend_out_qv, i);
+    const auto tend_tmp_s_i       = ekat::subview(loc_zm_output_tend_tmp_s, i);
+    const auto tend_tmp_qv_i      = ekat::subview(loc_zm_output_tend_tmp_qv, i);
+    const auto tend_s_snwprd_i    = ekat::subview(loc_zm_output_tend_s_snwprd, i);
+    const auto tend_s_snwevmlt_i  = ekat::subview(loc_zm_output_tend_s_snwevmlt, i);
+    const auto ntprprd_i          = ekat::subview(loc_zm_output_ntprprd, i);
+    const auto ntsnprd_i          = ekat::subview(loc_zm_output_ntsnprd, i);
+    const auto flxprec_i          = ekat::subview(loc_zm_output_flxprec, i);
+    const auto flxsnow_i          = ekat::subview(loc_zm_output_flxsnow, i);
+    const auto evap_ds_out_i      = ekat::subview(loc_zm_output_evap_ds_out, i);
+    const auto evap_dq_out_i      = ekat::subview(loc_zm_output_evap_dq_out, i);
+
+    // call the ZM evap scheme
+    ZMF::zm_conv_evap( team, zm_opts, nlev_mid, nlev_int, dt,
+      p_mid_i, p_del_i, tmp_T_mid_i, tmp_qv_i, rain_prod_i, cldfrac_i,
+      tend_tmp_s_i, tend_tmp_qv_i, tend_s_snwprd_i, tend_s_snwevmlt_i,
+      loc_zm_output_prec(i), loc_zm_output_snow(i),
+      ntprprd_i, ntsnprd_i, flxprec_i, flxsnow_i );
+
+    // add zm_conv_evap() tendencies to output tendencies and update temporary state variables
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
+      tend_out_s_i(k)  += tend_tmp_s_i(k);
+      tend_out_qv_i(k) += tend_tmp_qv_i(k);
+      evap_ds_out_i(k) = tend_tmp_s_i(k);
+      evap_dq_out_i(k) = tend_tmp_qv_i(k);
+    });
+
+  });
+
+  //--------------------------------------------------------------------------
+  // convective momentum transport
+
+  // initialize intermediate output tendencies for zm_transport_momentum()
+  zm_output.init_tmp(m_ncol, nlev_mid);
+
+  // domain-wide convection level bounds from zm_conv_main (host scalars captured by value)
+  const Int ktm = zm_output.ktm;
+  const Int kbm = zm_output.kbm;
+
+  Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
+    const Int i = team.league_rank();
+    // skip inactive columns: zm_conv_main leaves p_del_mb (=dp) zero for them,
+    // and zm_transport_momentum divides by dp, which would produce NaNs
+    if (!loc_zm_output_activity(i)) return;
+    // MCSP-updated winds in (nwind, nlev) == (m,k) layout for wind_mid
+    const auto wind_mid_i     = ekat::subview(loc_zm_input_tmp_winds, i);
+    const auto mflx_up_i      = ekat::subview(loc_zm_output_mflx_up, i);
+    const auto mflx_dn_i      = ekat::subview(loc_zm_output_mflx_dn, i);
+    const auto detr_up_i      = ekat::subview(loc_zm_output_detr_up, i);
+    const auto entr_up_i      = ekat::subview(loc_zm_output_entr_up, i);
+    const auto entr_dn_i      = ekat::subview(loc_zm_output_entr_dn, i);
+    const auto p_del_mb_i     = ekat::subview(loc_zm_output_p_del_mb, i);
+
+    const auto tend_out_s_i   = ekat::subview(loc_zm_output_tend_out_s, i);
+    const auto tend_out_u_i   = ekat::subview(loc_zm_output_tend_out_u, i);
+    const auto tend_out_v_i   = ekat::subview(loc_zm_output_tend_out_v, i);
+
+    // seten output buffer, and combined (nwind, nlev) momentum tendency output
+    const auto tend_tmp_s_i   = ekat::subview(loc_zm_output_tend_tmp_s, i);
+    const auto wind_tend_i    = ekat::subview(loc_zm_output_tend_tmp_winds, i);
+
+    // call the ZM momentum transport scheme
+    ZMF::zm_transport_momentum( team, wsm.get_workspace(team), nlev_mid, nlev_int, dt,
+      wind_mid_i, 2,
+      mflx_up_i, mflx_dn_i, detr_up_i, entr_up_i, entr_dn_i, p_del_mb_i,
+      loc_zm_output_jt(i), loc_zm_output_msemax_klev(i), ktm, kbm,
+      wind_tend_i,    // momentum tendency (nwind, nlev)
+      tend_tmp_s_i ); // seten (KE-dissipation dry static energy tendency)
+
+    // add zm_transport_momentum tendencies to output tendencies
+    // (mirrors EAM: output_tend_{u,v} += tx_wind_tend; output_tend_s += seten)
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_mid), [&] (const int k) {
+      tend_out_s_i(k)  += tend_tmp_s_i(k);
+      tend_out_u_i(k)  += wind_tend_i(0,k);
+      tend_out_v_i(k)  += wind_tend_i(1,k);
+    });
+
+  });
 
   //----------------------------------------------------------------------------
   // update prognostic fields
@@ -564,10 +546,9 @@ void ZMDeepConvection::run_impl (const double dt)
     zm_detr_ni(i,k) = zm_detr_qi(i,k) / ( 4.0/3.0*PC::Pi
                                           * Kokkos::pow(ZMF::ZMC::cld_ice_radius,3.0)
                                           * ZMF::ZMC::cld_ice_density);
-    // convert dry static energy tendency to temperature tendency (if not using fortran bridge)
-    if (not zm_opts.use_fortran_bridge) {
-      loc_zm_output_tend_out_t(i,k) = loc_zm_output_tend_out_s(i,k)/PC::CP.value;
-    }
+    // convert dry static energy tendency to temperature tendency
+    loc_zm_output_tend_out_t(i,k) = loc_zm_output_tend_out_s(i,k)/PC::CP.value;
+
     // apply tendencies (winds via the combined (ncol,nwind,nlev) field view)
     T_mid(i,k)     += loc_zm_output_tend_out_t (i,k) * dt;
     qv   (i,k)     += loc_zm_output_tend_out_qv(i,k) * dt;
@@ -659,15 +640,6 @@ size_t ZMDeepConvection::requested_buffer_size_in_bytes() const
   zm_buffer_size+= ZMF::ZmOutputTend::num_2d_intfc * sizeof(Real)  * m_ncol * nlev_int;
   zm_buffer_size+= ZMF::ZmOutputTend::num_3d_midlv * sizeof(Real)  * m_ncol * nwind * nlev_mid;
 
-  // fortran-bridge (LayoutLeft) transpose buffers are only used when running
-  // the fortran bridge, so only reserve space for them in that case
-  if (ZMF::s_zm_opts.use_fortran_bridge) {
-    constexpr int num_f_mid = ZMF::ZmInputState::num_f_midlv + ZMF::ZmOutputTend::num_f_midlv;
-    constexpr int num_f_int = ZMF::ZmInputState::num_f_intfc + ZMF::ZmOutputTend::num_f_intfc;
-    zm_buffer_size+= num_f_mid * sizeof(Real) * m_ncol * m_nlev;
-    zm_buffer_size+= num_f_int * sizeof(Real) * m_ncol * (m_nlev+1);
-  }
-
   return zm_buffer_size;
 }
 
@@ -725,53 +697,7 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   // TEMPORARY
   // ***************************************************************************
   Real* r_mem = reinterpret_cast<Real*>(scl_mem);
-  //----------------------------------------------------------------------------
-  // fortran-bridge (LayoutLeft) transpose buffers are only carved out when
-  // running the fortran bridge (must match requested_buffer_size_in_bytes())
-  if (ZMF::s_zm_opts.use_fortran_bridge) {
-    // device 2D views on mid-point levels
-    ZMF::uview_2dl<Real>* ptrs_f_midlv[num_f_mid]             = { &zm_input.f_z_mid,
-                                                                  &zm_input.f_p_mid,
-                                                                  &zm_input.f_p_del,
-                                                                  &zm_input.f_T_mid,
-                                                                  &zm_input.f_qv,
-                                                                  &zm_input.f_uwind,
-                                                                  &zm_input.f_vwind,
-                                                                  &zm_input.f_omega,
-                                                                  &zm_input.f_cldfrac,
-                                                                  &zm_input.f_t_prev,
-                                                                  &zm_input.f_q_prev,
-                                                                  &zm_output.f_tend_t,
-                                                                  &zm_output.f_tend_qv,
-                                                                  &zm_output.f_tend_u,
-                                                                  &zm_output.f_tend_v,
-                                                                  &zm_output.f_rain_prod,
-                                                                  &zm_output.f_snow_prod,
-                                                                  &zm_output.f_dlf,
-                                                                  &zm_output.f_mcsp_ds_out,
-                                                                  &zm_output.f_mcsp_dq_out,
-                                                                  &zm_output.f_mcsp_du_out,
-                                                                  &zm_output.f_mcsp_dv_out,
-                                                                  &zm_output.f_evap_ds_out,
-                                                                  &zm_output.f_evap_dq_out,
-                                                                };
-    for (auto& v : ptrs_f_midlv) {
-      *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, m_nlev);
-      r_mem += v->size();
-    }
-    //--------------------------------------------------------------------------
-    // device 2D views on interface levels
-    ZMF::uview_2dl<Real>* ptrs_f_intfc[num_f_int]             = { &zm_input.f_z_int,
-                                                                  &zm_input.f_p_int,
-                                                                  &zm_output.f_prec_flux,
-                                                                  &zm_output.f_snow_flux,
-                                                                  &zm_output.f_mass_flux,
-                                                                };
-    for (auto& v : ptrs_f_intfc) {
-      *v = ZMF::uview_2dl<Real>(r_mem, m_ncol, (m_nlev+1));
-      r_mem += v->size();
-    }
-  }
+
   //----------------------------------------------------------------------------
   // ***************************************************************************
   // TEMPORARY
