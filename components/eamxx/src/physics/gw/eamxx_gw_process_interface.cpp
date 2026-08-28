@@ -3,7 +3,6 @@
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
-#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
@@ -50,9 +49,10 @@ void GWDrag::create_requests() {
   add_field<Required>("p_mid",                scalar3d_mid, Pa,     grid_name, pack_size);
   add_field<Required>("p_int",                scalar3d_int, Pa,     grid_name, pack_size);
   add_field<Required>("pseudo_density",       scalar3d_mid, Pa,     grid_name, pack_size);
-  add_field<Required>("phis",                 scalar2d    , m2/s2,  grid_name);
-  add_field<Required>("landfrac",             scalar2d    , nondim, grid_name);
-  add_field<Required>("sgh",                  scalar2d    , nondim, grid_name);
+  add_field<Required>("phis",                 scalar2d,     m2/s2,  grid_name);
+  add_field<Required>("landfrac",             scalar2d,     nondim, grid_name);
+  add_field<Required>("sgh",                  scalar2d,     nondim, grid_name);
+  add_field<Required>("zm_t_tend",            scalar3d_mid, K/s,    grid_name, pack_size);
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
@@ -60,6 +60,10 @@ void GWDrag::create_requests() {
   add_tracer<Updated>("qc",                   m_grid,       kg/kg,             pack_size);
   add_tracer<Updated>("qi",                   m_grid,       kg/kg,             pack_size);
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
+
+  // Diagnostic Outputs
+  add_field<Computed>("gw_conv_heating_depth",scalar2d,     K/s,    grid_name);
+  add_field<Computed>("gw_conv_heating_max",  scalar2d,     K/s,    grid_name);
 
 }
 
@@ -82,27 +86,27 @@ void GWDrag::initialize_impl (const RunType) {
                        GWF::GWC::ktop_default,
                        GWF::GWC::kwv_default);
 
-  // Read GW lookup table data
-  std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
-  scorpio::register_file(gw_drag_file,scorpio::FileMode::Read);
-  const int PS_dim_size = scorpio::get_dimlen(gw_drag_file, "PS"); // Phase Speed [m/s]
-  const int MW_dim_size = scorpio::get_dimlen(gw_drag_file, "MW"); // Mean Wind in Heating [m/s]
-  const int HD_dim_size = scorpio::get_dimlen(gw_drag_file, "HD"); // Heating Depth [km]
-  // scorpio reads into host memory; stage to a device view before passing to init.
-  GWF::view_3d<Real> mfcc("mfcc", HD_dim_size, MW_dim_size, PS_dim_size);
-  auto mfcc_h = Kokkos::create_mirror_view(mfcc);
-  scorpio::read_var(gw_drag_file,"mfcc",mfcc_h.data());
-  scorpio::release_file(gw_drag_file);
-  Kokkos::deep_copy(mfcc, mfcc_h);
+  // set convective scheme parameter and lookup table values
+  if (GWF::s_common_init.use_gw_convect) {
+    // Read the convective GW source-spectrum table ("mfcc") from gw_drag_file.
+    std::string gw_drag_file = m_params.get<std::string>("gw_drag_file");
+    auto mfcc = GWF::gw_convect_read_mfcc_table( gw_drag_file, m_npgw );
+    GWF::gw_convect_init( m_params, pref_int, mfcc );
+  }
 
-  if (GWF::s_common_init.use_gw_convect) { GWF::gw_convect_init( m_params, mfcc ); }
-  if (GWF::s_common_init.use_gw_frontal) { GWF::gw_front_init( m_params, pref_int ); }
+  // set frontal scheme parameter values
+  if (GWF::s_common_init.use_gw_frontal) {
+    GWF::gw_front_init( m_params, pref_int );
+  }
 
   // Set property checks for fields in this process
   using Interval = FieldWithinIntervalCheck;
   // using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),       m_grid,100.0,400.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"), m_grid,-200.0, 200.0,false);
+
+  // print GWD parameters to the log file
+  if (this->get_comm().am_i_root()) { GWF::print_params(); }
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -124,6 +128,7 @@ void GWDrag::run_impl (const double dt) {
   const auto& p_del       = get_field_in("pseudo_density").get_view<const Real**>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
+  const auto& zm_t_tend   = get_field_in("zm_t_tend")     .get_view<const Real**>();
   // get fields updated by GWD
   const auto& T_mid       = get_field_out("T_mid")        .get_view<Real**>();
   const auto& qv          = get_field_out("qv")           .get_view<Real**>();
@@ -132,12 +137,17 @@ void GWDrag::run_impl (const double dt) {
   const auto& hwinds_fld  = get_field_out("horiz_winds");
   const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Real**>();
   const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Real**>();
+  // Diagnostic Outputs
+  const auto& gw_conv_hdepth = get_field_out("gw_conv_heating_depth").get_view<Real*>();
+  const auto& gw_conv_hmax   = get_field_out("gw_conv_heating_max")  .get_view<Real*>();
+  // const auto& gw_conv
   //----------------------------------------------------------------------------
   // create local temporaries to avoid "Implicit capture" warning
-  const auto loc_phis  = phis;
-  const auto loc_p_mid = p_mid;
-  const auto loc_p_int = p_int;
-  const auto loc_p_del = p_del;
+  const auto loc_phis      = phis;
+  const auto loc_p_mid     = p_mid;
+  const auto loc_p_int     = p_int;
+  const auto loc_p_del     = p_del;
+  const auto loc_zm_t_tend = zm_t_tend;
   auto loc_T_mid       = T_mid;
   auto loc_qv          = qv;
   auto loc_qc          = qc;
@@ -145,6 +155,9 @@ void GWDrag::run_impl (const double dt) {
   auto loc_uwind       = uwind;
   auto loc_vwind       = vwind;
   auto loc_landfrac    = landfrac;
+  // Diagnostic Outputs
+  auto loc_gw_conv_hdepth = gw_conv_hdepth;
+  auto loc_gw_conv_hmax   = gw_conv_hmax;
   // local temporaries of buffer variables
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
@@ -190,9 +203,6 @@ void GWDrag::run_impl (const double dt) {
   });
   //----------------------------------------------------------------------------
   // calculate altitude on interfaces (z_int) and mid-points (z_mid)
-  // Kokkos::deep_copy(loc_z_mid,0.0)
-  // Kokkos::deep_copy(loc_z_del,0.0)
-  // Kokkos::deep_copy(loc_z_int,0.0)
   Kokkos::parallel_for(scan_policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
     const auto p_mid_i = ekat::subview(loc_p_mid, i);
@@ -287,6 +297,8 @@ void GWDrag::run_impl (const double dt) {
     const Int i = team.league_rank();
 
     const Real landfrac_i = loc_landfrac(i);
+    // m_lat_v is in degrees, but GW routines expect radians 
+    const Real lat_i = m_lat_v(i) * (PC::Pi / 180.0);
 
     // Get single-column subviews of all inputs
     const auto uwind_i      = ekat::subview(loc_uwind, i);
@@ -323,24 +335,33 @@ void GWDrag::run_impl (const double dt) {
     const auto dttke_i      = ekat::subview(loc_dttke, i);
     const auto q_2d         = ekat::subview(loc_q_combined, i);
 
-    Int src_lev;  // level index of gravity wave source
-    Int tnd_lev;  // lowest level index where tendencies are allowed
-    Real xv;      // zonal unit vector of source wind
-    Real yv;      // meridional unit vector of source wind
+    Int src_lev;    // level index of gravity wave source
+    Int tnd_lev;    // lowest level index where tendencies are allowed
+    Real xv;        // zonal unit vector of source wind
+    Real yv;        // meridional unit vector of source wind
     
+    //--------------------------------------------------------------------------
     // Convective gravity waves (Beres scheme)
     if (common_init.use_gw_convect) {
 
-      // NOTE the call to gw_beres_src() below is a placeholder that will be
-      // filled in later when the ZM convective tendencies is available
+      const auto zm_t_tend_i = ekat::subview(loc_zm_t_tend, i);
 
-      // // Determine convective wave sources
-      // GWF::gw_beres_src();
+      // Determine convective wave sources
+      GWF::gw_beres_src(team, wsm.get_workspace(team), common_init, convect_init,
+                        nlev_mid, common_init.pgwv, lat_i,
+                        uwind_i, vwind_i, zm_t_tend_i, z_mid_i,
+                        convect_init.gw_convect_hcf,
+                        convect_init.gw_convect_hdepth_scale,
+                        convect_init.gw_convect_hdepth_min,
+                        convect_init.gw_convect_storm_speed_min,
+                        convect_init.use_gw_convect_old,
+                        src_lev, tnd_lev, tau_i, ubm_i, ubi_i, xv, yv, c_i,
+                        loc_gw_conv_hdepth(i), loc_gw_conv_hmax(i));
 
       // Solve for the drag profile with convective sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
                         nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
-                        common_init.do_taper, dt, m_lat_v(i),
+                        common_init.do_taper, dt, lat_i,
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
                         N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
@@ -351,12 +372,12 @@ void GWDrag::run_impl (const double dt) {
 
       // add convective tendencies to aggregate output tendencies
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k) {
-        gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
-        gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
-        gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
-        gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
-        gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
-        gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
+        gw_tend_u_i(k)   += utgw_i(k);
+        gw_tend_v_i(k)   += vtgw_i(k);
+        gw_tend_t_i(k)   += ttgw_i(k);
+        gw_tend_q_i(k,0) += qtgw_i(k,0);
+        gw_tend_q_i(k,1) += qtgw_i(k,1);
+        gw_tend_q_i(k,2) += qtgw_i(k,2);
       });
 
       // Momentum & energy conservation for convective tendencies
@@ -367,6 +388,7 @@ void GWDrag::run_impl (const double dt) {
 
     } // use_gw_convect
 
+    //--------------------------------------------------------------------------
     // Frontally generated gravity waves
     if (common_init.use_gw_frontal) {
 
@@ -379,7 +401,7 @@ void GWDrag::run_impl (const double dt) {
       // Solve for the drag profile with frontal sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
                         nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
-                        common_init.do_taper, dt, m_lat_v(i),
+                        common_init.do_taper, dt, lat_i,
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
                         N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
@@ -390,12 +412,12 @@ void GWDrag::run_impl (const double dt) {
 
       // add frontal tendencies to aggregate output tendencies
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k) {
-        gw_tend_u_i(k)   += utgw_i(k)   * landfrac_i;
-        gw_tend_v_i(k)   += vtgw_i(k)   * landfrac_i;
-        gw_tend_t_i(k)   += ttgw_i(k)   * landfrac_i;
-        gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
-        gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
-        gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
+        gw_tend_u_i(k)   += utgw_i(k);
+        gw_tend_v_i(k)   += vtgw_i(k);
+        gw_tend_t_i(k)   += ttgw_i(k);
+        gw_tend_q_i(k,0) += qtgw_i(k,0);
+        gw_tend_q_i(k,1) += qtgw_i(k,1);
+        gw_tend_q_i(k,2) += qtgw_i(k,2);
       });
 
       // Momentum & energy conservation for frontal tendencies
@@ -406,6 +428,7 @@ void GWDrag::run_impl (const double dt) {
 
     } // use_gw_frontal
 
+    //--------------------------------------------------------------------------
     // Orographic stationary gravity waves
     if (common_init.use_gw_orographic) {
 
@@ -419,7 +442,7 @@ void GWDrag::run_impl (const double dt) {
       // Solve for the drag profile with orographic sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
                         nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
-                        common_init.do_taper, dt, m_lat_v(i),
+                        common_init.do_taper, dt, lat_i,
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
                         N_mid_i, N_int_i, ubm_i, ubi_i, xv, yv,
@@ -438,8 +461,7 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
       });
 
-      //----------------------------------------------------------------------------
-      // GW energy fixer
+      // GW energy fixer for orographic waves
       Real dE = 0;
       Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, 0, nlev_mid), [&] (const int k, Real& lsum) {
         lsum -= p_del_i(k) * ( gw_tend_u_i(k) * (uwind_i(k) + gw_tend_u_i(k) * GWF::GWC::half * dt)
