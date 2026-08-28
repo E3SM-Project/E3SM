@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspTend : public UnitWrap::UnitTest<D>:
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_conv_mcsp_tend_f(d);
-      }
-      else {
-        zm_conv_mcsp_tend(d);
-      }
+      zm_conv_mcsp_tend(d);
     }
 
     // zm_conv_mcsp_test does a few sum reductions and we can't guarantee

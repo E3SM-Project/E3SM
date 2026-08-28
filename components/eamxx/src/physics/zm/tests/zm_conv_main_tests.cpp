@@ -53,13 +53,8 @@ struct UnitWrap::UnitTest<D>::TestZmConvMain : public UnitWrap::UnitTest<D>::Bas
     // Get data from test
     std::vector<std::vector<bool>> actives;
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_conv_main_f(d);
-      }
-      else {
-        auto active = zm_conv_main(d);
-        actives.push_back(active);
-      }
+      auto active = zm_conv_main(d);
+      actives.push_back(active);
     }
 
     const auto margin = std::numeric_limits<Real>::epsilon() *
