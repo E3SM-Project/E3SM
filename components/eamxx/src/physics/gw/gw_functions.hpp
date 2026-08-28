@@ -144,7 +144,6 @@ struct Functions
 
     Real gw_orographic_eff;
 
-    bool orographic_only;   // this changes the order of operations (normally false)
     int pver;               // Number of levels in the atmosphere
     int pgwv;               // Maximum number of waves allowed (i.e. wavenumbers are -pgwv:pgwv).
     Real dc;                // Bin width for spectrum => huge(1._r8)
@@ -216,7 +215,6 @@ struct Functions
     os << indent << "use_gw_frontal             :" << s_common_init.use_gw_frontal << "\n";
     os << indent << "use_gw_orographic          :" << s_common_init.use_gw_orographic << "\n";
     os << indent << "gw_orographic_eff          :" << s_common_init.gw_orographic_eff << "\n";
-    os << indent << "orographic_only            :" << s_common_init.orographic_only << "\n";
     os << indent << "pver                       :" << s_common_init.pver << "\n";
     os << indent << "pgwv                       :" << s_common_init.pgwv << "\n";
     os << indent << "dc                         :" << s_common_init.dc << "\n";
@@ -307,7 +305,6 @@ struct Functions
     const Int& pgwv_in,
     const Real& dc_in,
     const uview_1d<const Real>& cref_in,
-    const bool& orographic_only_in,
     const bool& do_molec_diff_in,
     const bool& tau_0_ubc_in,
     const Int& nbot_molec_in,

@@ -34,7 +34,7 @@ extern "C" {
 
 void gwd_compute_tendencies_from_stress_divergence_bridge_f(Int ncol, bool do_taper, Real dt, Real effgw, Int* tend_level, Real* lat, Real* dpm, Real* rdpm, Real* c, Real* ubm, Real* t, Real* nm, Real* xv, Real* yv, Real* tau, Real* gwut, Real* utgw, Real* vtgw);
 
-void gw_common_init_bridge_f(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool orographic_only, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
+void gw_common_init_bridge_f(Int pver_in, Int pgwv_in, Real dc_in, Real* cref_in, bool do_molec_diff_in, bool tau_0_ubc_in, Int nbot_molec_in, Int ktop_in, Int kbotbg_in, Real fcrit2_in, Real kwv_in, Real gravit_in, Real rair_in, Real* alpha_in);
 
 void gw_prof_bridge_f(Int ncol, Real cpair, Real* t, Real* pmid, Real* pint, Real* rhoi, Real* ti, Real* nm, Real* ni);
 
@@ -87,7 +87,7 @@ namespace {
 void gw_common_init_f(GwCommonInit& init)
 {
   // Expects init has already been transitioned to f90
-  gw_common_init_bridge_f(init.pver, init.pgwv, init.dc, init.cref, init.orographic_only, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit.value, GWC::Rair.value, init.alpha);
+  gw_common_init_bridge_f(init.pver, init.pgwv, init.dc, init.cref, init.do_molec_diff, init.tau_0_ubc, init.nbot_molec, init.ktop, init.kbotbg, init.fcrit2, init.kwv, GWC::gravit.value, GWC::Rair.value, init.alpha);
 }
 
 // Wrapper around gw_init for cxx
@@ -103,7 +103,6 @@ void gw_common_init(GwCommonInit& d)
     d.pgwv,
     d.dc,
     cref,
-    d.orographic_only,
     d.do_molec_diff,
     d.tau_0_ubc,
     d.nbot_molec,
