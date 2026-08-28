@@ -52,7 +52,9 @@ void GWDrag::create_requests() {
   add_field<Required>("phis",                 scalar2d,     m2/s2,  grid_name);
   add_field<Required>("landfrac",             scalar2d,     nondim, grid_name);
   add_field<Required>("sgh",                  scalar2d,     nondim, grid_name);
-  add_field<Required>("zm_t_tend",            scalar3d_mid, K/s,    grid_name, pack_size);
+  if (m_params.get<bool>("use_gw_convect", false)) {
+    add_field<Required>("zm_t_tend",          scalar3d_mid, K/s,    grid_name, pack_size);
+  }
 
   // Input/Output variables
   add_field <Updated>("T_mid",                scalar3d_mid, K,      grid_name, pack_size);
@@ -62,8 +64,8 @@ void GWDrag::create_requests() {
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
 
   // Diagnostic Outputs
-  add_field<Computed>("gw_conv_heating_depth",scalar2d,     K/s,    grid_name);
-  add_field<Computed>("gw_conv_heating_max",  scalar2d,     K/s,    grid_name);
+  add_field<Computed>("gw_conv_heating_depth",scalar2d,     1000*m,       grid_name);
+  add_field<Computed>("gw_conv_heating_max",  scalar2d,     K/(86400*s),  grid_name);
 
 }
 
@@ -119,6 +121,10 @@ void GWDrag::run_impl (const double dt) {
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(m_ncol, nlev_mid);
   // Use one workspace with the biggest size or use two, one for pver, one for pver*2*pgwv?
   WSM wsm( nlev_int*m_npgw, 9, team_policy);
+  // Capture host-side static init structs into locals for device lambda capture
+  const auto common_init  = GWF::s_common_init;
+  const auto convect_init = GWF::s_convect_init;
+  const auto front_init   = GWF::s_front_init;
   //----------------------------------------------------------------------------
   // get fields not updated by GWD
   auto m_lat_v = m_lat.get_view<const Real*>();
@@ -128,7 +134,10 @@ void GWDrag::run_impl (const double dt) {
   const auto& p_del       = get_field_in("pseudo_density").get_view<const Real**>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
-  const auto& zm_t_tend   = get_field_in("zm_t_tend")     .get_view<const Real**>();
+  GWF::view_2d<const Real> zm_t_tend;
+  if (common_init.use_gw_convect) {
+    const auto& zm_t_tend = get_field_in("zm_t_tend")     .get_view<const Real**>();
+  }
   // get fields updated by GWD
   const auto& T_mid       = get_field_out("T_mid")        .get_view<Real**>();
   const auto& qv          = get_field_out("qv")           .get_view<Real**>();
@@ -147,7 +156,10 @@ void GWDrag::run_impl (const double dt) {
   const auto loc_p_mid     = p_mid;
   const auto loc_p_int     = p_int;
   const auto loc_p_del     = p_del;
-  const auto loc_zm_t_tend = zm_t_tend;
+  GWF::view_2d<const Real> loc_zm_t_tend;
+  if (common_init.use_gw_convect) {
+    loc_zm_t_tend = zm_t_tend;
+  }
   auto loc_T_mid       = T_mid;
   auto loc_qv          = qv;
   auto loc_qc          = qc;
@@ -289,10 +301,6 @@ void GWDrag::run_impl (const double dt) {
   // if (do_molec_diff) { ??? }
   //----------------------------------------------------------------------------
   // Calculate GW tendencies
-  // Capture host-side static init structs into locals for device lambda capture
-  const auto common_init  = GWF::s_common_init;
-  const auto convect_init = GWF::s_convect_init;
-  const auto front_init   = GWF::s_front_init;
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
 
