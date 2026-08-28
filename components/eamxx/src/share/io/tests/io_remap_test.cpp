@@ -16,6 +16,11 @@ using namespace scream;
 
 constexpr int packsize = SCREAM_PACK_SIZE;
 constexpr Real fill_val = constants::fill_value<Real>;
+// Fraction of a tgt column that must come from valid (unfilled) src columns during
+// horiz remap. The 'remap_horizontal' stream sets this explicitly via the output
+// params, while 'remap_vertical_horizontal' leaves it unset, to test the default.
+constexpr Real hr_fill_threshold     = 0.0;
+constexpr Real hr_fill_threshold_def = 0.5;
 using         Pack     = ekat::Pack<Real,packsize>;
 using stratts_t = std::map<std::string,std::string>;
 
@@ -32,7 +37,7 @@ get_test_fields(std::shared_ptr<FieldManager> fm, const int p_ref=-1);
 
 Real calculate_output(const Real pressure, const int col, const int cmp);
 
-ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap);
+ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap, const Real hr_thresh=-1);
 std::string get_filename(const std::string& name, ekat::Comm& comm, const std::string& tstamp);
 
 bool approx(const Real a, const Real b) {
@@ -258,7 +263,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   print ("    -> vertical remap ... done\n",io_comm);
 
   print ("    -> horizontal remap ... \n",io_comm);
-  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
+  auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true,hr_fill_threshold);
   om_horiz.initialize(io_comm,horiz_remap_control,t0,false);
   om_horiz.setup(field_manager,gm->get_grid_names());
   io_comm.barrier();
@@ -413,18 +418,15 @@ TEST_CASE("io_remap_test","io_remap_test")
       // For the pressured sliced variable we expect some masking which needs to be checked.
       Real Ys_exp = 0.0;
       Real Ys_wgt = 0.0;
-      bool found  = false;
       if (p_ref<=pi_v(col1,nlevs_src) && p_ref>=pi_v(col1,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col1,0)*wgt;
         Ys_wgt += wgt;
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
         Ys_wgt += (1.0 - wgt);
       }
-      if (found) {
+      if (Ys_wgt>hr_fill_threshold) {
         Ys_exp /= Ys_wgt;
       } else {
         Ys_exp = fill_val;
@@ -489,33 +491,36 @@ TEST_CASE("io_remap_test","io_remap_test")
         const Real mid_mask_2 = (p_jj<=pm_v(col2,nlevs_src-1) && p_jj>=pm_v(col2,0));
         const Real int_mask_1 = (p_jj<=pi_v(col1,nlevs_src)   && p_jj>=pi_v(col1,0));
         const Real int_mask_2 = (p_jj<=pi_v(col2,nlevs_src)   && p_jj>=pi_v(col2,0));
+        // Fraction of the tgt column coming from valid src columns
+        const Real mid_mask_r = mid_mask_1*wgt + mid_mask_2*(1-wgt);
+        const Real int_mask_r = int_mask_1*wgt + int_mask_2*(1-wgt);
         Real test_mid;
         Real test_int;
-        if (mid_mask_1 + mid_mask_2 > 0.0) {
-          test_mid = (mid_mask_1*calculate_output(p_jj,col1,0)*wgt + mid_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
+        if (mid_mask_r > hr_fill_threshold_def) {
+          test_mid = (mid_mask_1*calculate_output(p_jj,col1,0)*wgt + mid_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/mid_mask_r;
         } else {
-          // This point is completely masked out, assign masked value
+          // Not enough valid src data, assign masked value
           test_mid = fill_val;
         }
-        if (int_mask_1 + int_mask_2 > 0.0) {
-          test_int = (int_mask_1*calculate_output(p_jj,col1,0)*wgt + int_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
+        if (int_mask_r > hr_fill_threshold_def) {
+          test_int = (int_mask_1*calculate_output(p_jj,col1,0)*wgt + int_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/int_mask_r;
         } else {
-          // This point is completely masked out, assign masked value
+          // Not enough valid src data, assign masked value
           test_int = fill_val;
         }
         REQUIRE(approx(Ym_v_vh(ii,jj), test_mid));
         REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
         for (int cc=0; cc<2; cc++) {
-          if (mid_mask_1 + mid_mask_2 > 0.0) {
-            test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
+          if (mid_mask_r > hr_fill_threshold_def) {
+            test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/mid_mask_r;
           } else {
-            // This point is completely masked out, assign masked value
+            // Not enough valid src data, assign masked value
             test_mid = fill_val;
           }
-          if (int_mask_1 + int_mask_2 > 0.0) {
-            test_int = (int_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + int_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
+          if (int_mask_r > hr_fill_threshold_def) {
+            test_int = (int_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + int_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/int_mask_r;
           } else {
-            // This point is completely masked out, assign masked value
+            // Not enough valid src data, assign masked value
             test_int = fill_val;
           }
           REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
@@ -525,18 +530,15 @@ TEST_CASE("io_remap_test","io_remap_test")
       // For the pressured sliced variable we expect it to match the solution from horizontal mapping only so we use the same syntax.
       Real Ys_exp = 0.0;
       Real Ys_wgt = 0.0;
-      bool found  = false;
       if (p_ref<=pi_v(col1,nlevs_src) && p_ref>=pi_v(col1,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col1,0)*wgt;
         Ys_wgt += wgt;
       }
       if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
-        found = true;
         Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
         Ys_wgt += (1.0 - wgt);
       }
-      if (found) {
+      if (Ys_wgt>hr_fill_threshold_def) {
         Ys_exp /= Ys_wgt;
       } else {
         Ys_exp = fill_val;
@@ -679,7 +681,7 @@ get_test_fields(std::shared_ptr<FieldManager> fm, const int p_ref)
   return fields;
 }
 /*==========================================================================================================*/
-ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap)
+ekat::ParameterList set_output_params(const std::string& name, const std::string& remap_filename, const int p_ref, const bool vert_remap, const bool horiz_remap, const Real hr_thresh)
 {
   using vos_type = std::vector<std::string>;
   ekat::ParameterList params;
@@ -707,6 +709,10 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   }
   if (horiz_remap) {
     params.set<std::string>("horiz_remap_file",remap_filename); // TODO, make this work for general np=?
+    // A negative value means "don't set the param", so that we test the default too
+    if (hr_thresh>=0) {
+      params.set<Real>("horiz_remap_fill_threshold",hr_thresh);
+    }
   }
 
   return params;
