@@ -290,8 +290,8 @@ def buildnml(case, caseroot, compname):
 
     # === Symlinks formerly created by the run script ===
 
-    # Note, this this is touching files outside the case, there's a potential
-    # for races here if other gcam cases are running concurrently which is why
+    # Note: since this touches files outside the case, there's potential
+    # for races if other GCAM cases are running concurrently, which is why
     # we need distributed_dir_lock
     case_parent = os.path.dirname(caseroot)
     with distributed_dir_lock(case_parent, timeout=600):
