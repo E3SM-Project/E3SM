@@ -5530,6 +5530,17 @@ the grid where the fields are defined and a coarser grid.<ul>
 </li>
 </ul>
 </li>
+<li><code>horiz_remap_fill_threshold</code>: fraction (in <code>[0,1)</code>) of a target column that must
+come from valid (i.e., not fill-valued) source columns for the remapped value to be
+written out.<ul>
+<li>When remapping fields that may contain fill values, EAMxx computes, for each
+  target column, the fraction of its interpolation weight that comes from valid
+  source columns.</li>
+<li>Target columns whose fraction is above this threshold store the average over
+  the valid source columns only, while the others are set to the fill value.</li>
+<li>If not set, it defaults to <code>0.5</code>, i.e., majority rules.</li>
+</ul>
+</li>
 <li><code>vertical_remap_file</code>: similar to the previous option, this map file is used to
 refine/coarsen fields in the vertical direction.</li>
 <li><code>IOGrid</code>: this parameter can be specified inside one of the grids sections,
@@ -5576,6 +5587,16 @@ There are, however, particular use cases that require some less common options,
 which we list here (in parentheses, the location in the YAML file and the type
 of the parameter value).</p>
 <ul>
+<li><code>fill_threshold</code> (top-level list, <code>real</code>):<ul>
+<li>This parameter is only used for <code>average</code> output of fields that may contain
+  fill values (e.g., vertically remapped fields, or <code>X_at_YhPa</code> diagnostics).</li>
+<li>It specifies the fraction (in <code>[0,1)</code>) of the output window that must be
+  unfilled for the time average to be written out; if the fraction of unfilled
+  snapshots does not exceed this threshold, the fill value is written instead.</li>
+<li>By default, it is <code>0.0</code>, meaning that the output stores the average over the
+  unfilled snapshots only, regardless of how many there are.</li>
+</ul>
+</li>
 <li><code>flush_frequency</code> (top-level list, <code>integer</code>)<ul>
 <li>This parameter can be used to specify how often the IO library
   should sync the in-memory data to file.</li>
