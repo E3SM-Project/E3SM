@@ -151,7 +151,7 @@ struct Functions {
 
     void load_runtime_options(ekat::ParameterList& params) {
       apply_detr_tend     = params.get<bool>("apply_detr_tend",     true);
-      use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  true);
+      use_fortran_bridge  = params.get<bool>("use_fortran_bridge",  false);
       upper_limit_pref    = params.get<Real>("upper_limit_pref",    40e2);
       tau                 = params.get<Real>("tau",                 3600);
       alfa                = params.get<Real>("alfa",                ZMC::alfa);
