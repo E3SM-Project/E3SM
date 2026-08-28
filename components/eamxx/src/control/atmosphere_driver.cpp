@@ -316,8 +316,7 @@ void AtmosphereDriver::create_grids()
     setup_shoc_3d_turbulence_link();
   }
 
-  if(m_atm_process_group->has_process("gw") &&
-     m_atm_process_group->has_process("zm")) {
+  if(m_atm_process_group->has_process("gw")) {
     setup_gw_convect_zm_links();
   }
 
