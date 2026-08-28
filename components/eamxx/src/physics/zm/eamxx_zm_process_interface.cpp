@@ -658,9 +658,6 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
   constexpr auto num_2d_midlv = ZMF::ZmInputState::num_2d_midlv + ZMF::ZmOutputTend::num_2d_midlv;
   constexpr auto num_2d_intfc = ZMF::ZmInputState::num_2d_intfc + ZMF::ZmOutputTend::num_2d_intfc;
 
-  constexpr int num_f_mid  = ZMF::ZmInputState::num_f_midlv + ZMF::ZmOutputTend::num_f_midlv;
-  constexpr int num_f_int  = ZMF::ZmInputState::num_f_intfc + ZMF::ZmOutputTend::num_f_intfc;
-
   //----------------------------------------------------------------------------
   Int* i_mem = reinterpret_cast<Int*>(buffer_manager.get_memory());
   //----------------------------------------------------------------------------
