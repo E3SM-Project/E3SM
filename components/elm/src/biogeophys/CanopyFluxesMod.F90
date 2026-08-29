@@ -324,6 +324,8 @@ contains
     real(r8) :: del_gs        ! The maximum difference in stomatal conductance
                               ! from current iteration to previous, between sunlit and
                               ! shaded portions of the leaves [m/s]
+    real(r8) :: hmean_gs      ! harmonic mean of conductance (m/s)
+    real(r8) :: reldel_gs     ! relative difference in conductance (-)
     
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -1424,6 +1426,7 @@ contains
     type(energyflux_type)     , intent(inout) :: energyflux_vars
 
     integer :: begp,endp
+    integer :: p,c,f
 
     begp = bounds%begp
     endp = bounds%endp
