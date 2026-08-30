@@ -137,7 +137,7 @@ contains
     real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
     real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
-    integer , parameter :: itmax = 401      ! maximum number of iteration [-]  41
+    integer , parameter :: itmax = 41       ! maximum number of iteration [-]  41
     integer , parameter :: itmin = 3        ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
