@@ -282,6 +282,8 @@ contains
          emg                     => col_es%emg                              , & ! Input:  [real(r8) (:)   ]  ground emissivity
          hc_soi                  => col_es%hc_soi                           , & ! Input:  [real(r8) (:)   ]  soil heat content (MJ/m2)               ! TODO: make a module variable
          hc_soisno               => col_es%hc_soisno                        , & ! Input:  [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2) !TODO: make a module variable
+         cv_bef                  => col_es%cv_bef                           , & ! Output: [real(r8) (:,:) ]  layer heat capacity as of the previous call [J/(m2 K)]
+         eflx_hc_masschg         => col_ef%eflx_hc_masschg                  , & ! Output: [real(r8) (:)   ]  heat-capacity-change term, tssbef*(cv-cv_bef)/dtime (W/m2)
          tssbef                  => col_es%t_ssbef                          , & ! Input:  [real(r8) (:,:) ]  temperature at previous time step [K]
          t_h2osfc                => col_es%t_h2osfc                         , & ! Output: [real(r8) (:)   ]  surface water temperature
          t_soisno                => col_es%t_soisno                         , & ! Output: [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -665,6 +667,7 @@ contains
          if (.not. lun_pp%urbpoi(l)) then
             hc_soisno(c) = 0._r8
             hc_soi(c)    = 0._r8
+            eflx_hc_masschg(c) = 0._r8
          end if
          eflx_fgr12(c)= 0._r8
       end do
@@ -688,6 +691,17 @@ contains
             if (.not. lun_pp%urbpoi(l)) then
                if (j >= snl(c)+1) then
                   hc_soisno(c) = hc_soisno(c) + cv(c,j)*t_soisno(c,j) / 1.e6_r8
+                  ! Heat-capacity-change term: the part of d(cv*T)/dt that the
+                  ! ΔT/fact terms elsewhere in this module (and in
+                  ! SoilFluxesMod.F90's errsoi_patch) cannot capture, since
+                  ! those hold cv fixed within a single call. cv_bef starts
+                  ! at spval (see ColumnDataType.F90), so this is skipped on
+                  ! the first call after cold start or a pre-existing restart.
+                  if (cv_bef(c,j) /= spval) then
+                     eflx_hc_masschg(c) = eflx_hc_masschg(c) &
+                          + tssbef(c,j)*(cv(c,j)-cv_bef(c,j))/dtime
+                  end if
+                  cv_bef(c,j) = cv(c,j)
                endif
                if (j >= 1) then
                   hc_soi(c) = hc_soi(c) + cv(c,j)*t_soisno(c,j) / 1.e6_r8

@@ -39,6 +39,7 @@ module elm_initializeMod
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
+  use HeatBudgetMod          , only : HeatBudget_Reset
   use CNPBudgetMod           , only : CNPBudget_Reset
   use elm_varctl             , only : do_budgets
   !
@@ -603,6 +604,7 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Reset('all')
+       call HeatBudget_Reset('all')
        if (use_cn) then
           call CNPBudget_Reset('all')
        endif
@@ -868,6 +870,7 @@ contains
                sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
          call WaterBudget_Reset('all')
+         call HeatBudget_Reset('all')
          if (use_cn) then
             call CNPBudget_Reset('all')
          endif

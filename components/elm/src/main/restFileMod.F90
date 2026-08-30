@@ -112,6 +112,7 @@ contains
     ! Define/write CLM restart file.
     !
     use WaterBudgetMod, only : WaterBudget_Restart
+    use HeatBudgetMod , only : HeatBudget_Restart
     use CNPBudgetMod  , only : CNPBudget_Restart
     use elm_varctl    , only : do_budgets, use_cn
     !
@@ -292,6 +293,7 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='define')
+       call HeatBudget_Restart(bounds, ncid, flag='define')
        if (use_cn) then
           call CNPBudget_Restart(bounds, ncid, flag='define')
        endif
@@ -430,6 +432,7 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='write')
+       call HeatBudget_Restart(bounds, ncid, flag='write')
        if (use_cn) then
           call CNPBudget_Restart(bounds, ncid, flag='write')
        endif
@@ -476,6 +479,7 @@ contains
     use decompMod        , only : bounds_type
     use reweightMod      , only : reweight_wrapup
     use WaterBudgetMod   , only : WaterBudget_Restart
+    use HeatBudgetMod    , only : HeatBudget_Restart
     use CNPBudgetMod     , only : CNPBudget_Restart
     use elm_varctl       , only : do_budgets, use_cn
     !
@@ -655,6 +659,7 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='read')
+       call HeatBudget_Restart(bounds, ncid, flag='read')
        if (use_cn) then
           call CNPBudget_Restart(bounds, ncid, flag='read')
        endif
@@ -924,6 +929,7 @@ contains
     use decompMod            , only : get_proc_global
     use elm_varctl           , only : do_budgets
     use WaterBudgetMod       , only : f_size, s_size, p_size
+    use HeatBudgetMod        , only : h_f_size => f_size, h_s_size => s_size, h_g_size => g_size, h_p_size => p_size
     use CNPBudgetMod         , only : c_f_size, c_s_size, n_f_size, n_s_size, p_f_size, p_s_size
     !
     ! !ARGUMENTS:
@@ -979,6 +985,9 @@ contains
     if (do_budgets) then
        call ncd_defdim(ncid , 'budg_flux' , f_size*p_size,  dimid)
        call ncd_defdim(ncid , 'budg_state', s_size*p_size,  dimid)
+       call ncd_defdim(ncid , 'heat_budg_flux', h_f_size*h_p_size,  dimid)
+       call ncd_defdim(ncid , 'heat_budg_state', h_s_size*h_p_size,  dimid)
+       call ncd_defdim(ncid , 'heat_budg_gflux', h_g_size*h_p_size,  dimid)
        if (use_cn) then
           call ncd_defdim(ncid , 'C_budg_flux' , c_f_size*p_size,  dimid)
           call ncd_defdim(ncid , 'C_budg_state', c_s_size*p_size,  dimid)

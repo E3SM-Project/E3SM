@@ -181,6 +181,8 @@ module elm_driver
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
   use WaterBudgetMod              , only : WaterBudget_SetEndingMonthlyStates
+  use HeatBudgetMod                , only : HeatBudget_Reset, HeatBudget_Run, HeatBudget_Accum, HeatBudget_Print
+  use HeatBudgetMod                , only : HeatBudget_SetBeginningStates, HeatBudget_SetEndingStates
   use CNPBudgetMod                , only : CNPBudget_Run, CNPBudget_Accum, CNPBudget_Print, CNPBudget_Reset
   use CNPBudgetMod                , only : CNPBudget_SetBeginningMonthlyStates, CNPBudget_SetEndingMonthlyStates
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
@@ -276,6 +278,7 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Reset()
+       call HeatBudget_Reset()
 
        if (use_cn) then
           call CNPBudget_Reset()
@@ -373,6 +376,9 @@ contains
             filter(nc)%num_lakec, filter(nc)%lakec,           &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
             soilhydrology_vars )
+       if (do_budgets) then
+          call HeatBudget_SetBeginningStates(bounds_clump)
+       end if
        call t_stopf('beggridwbal')
 
        if (use_betr) then
@@ -1346,6 +1352,7 @@ contains
 
        if (do_budgets) then
           call WaterBudget_SetEndingMonthlyStates(bounds_clump)
+          call HeatBudget_SetEndingStates(bounds_clump)
           if (use_cn) then
              call CNPBudget_SetEndingMonthlyStates(bounds_clump, col_cs, grc_cs)
           endif
@@ -1537,6 +1544,11 @@ contains
             soilhydrology_vars)
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
+            budget_ann,  budget_ltann,  budget_ltend)
+
+       call HeatBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars)
+       call HeatBudget_Accum()
+       call HeatBudget_Print(budget_inst,  budget_daily,  budget_month,  &
             budget_ann,  budget_ltann,  budget_ltend)
 
        if (use_cn .and. do_budgets) then
