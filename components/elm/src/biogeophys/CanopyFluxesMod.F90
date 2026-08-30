@@ -137,7 +137,7 @@ contains
     real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
     real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
-    integer , parameter :: itmax = 41       ! maximum number of iteration [-]
+    integer , parameter :: itmax = 401      ! maximum number of iteration [-]  41
     integer , parameter :: itmin = 3        ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
@@ -223,9 +223,9 @@ contains
     real(r8) :: delq(bounds%begp:bounds%endp)        ! temporary
     real(r8) :: del(bounds%begp:bounds%endp)         ! absolute change in leaf temp in current iteration [K]
     real(r8) :: del2(bounds%begp:bounds%endp)        ! change in leaf temperature in previous iteration [K]
-    real(r8) :: dele(bounds%begp:bounds%endp)        ! change in latent heat flux from leaf [K]
+    real(r8) :: dele                                 ! change in latent heat flux from leaf [K]
     real(r8) :: dels                                 ! change in leaf temperature in current iteration [K]
-    real(r8) :: det(bounds%begp:bounds%endp)         ! maximum leaf temp. change in two consecutive iter [K]
+    real(r8) :: det                                  ! maximum leaf temp. change in two consecutive iter [K]
     real(r8) :: efeb(bounds%begp:bounds%endp)        ! latent heat flux from leaf (previous iter) [mm/s]
     real(r8) :: efeold                               ! latent heat flux from leaf (previous iter) [mm/s]
     real(r8) :: efpot                                ! potential latent energy flux [kg/m2/s]
@@ -241,8 +241,6 @@ contains
     real(r8) :: o2(bounds%begp:bounds%endp)          ! atmospheric o2 partial pressure (pa)
     real(r8) :: svpts(bounds%begp:bounds%endp)       ! saturation vapor pressure at t_veg (pa)
     real(r8) :: eah(bounds%begp:bounds%endp)         ! canopy air vapor pressure (pa)
-    real(r8) :: rssun_old(bounds%begp:bounds%endp)   ! used for determining convergence via change in resitance
-    real(r8) :: rssha_old(bounds%begp:bounds%endp)   ! from one iteration to the next
     real(r8) :: s_node                               ! vol_liq/eff_porosity
     real(r8) :: smp_node                             ! matrix potential
     real(r8) :: smp_node_lf                          ! F. Li and S. Levis
@@ -271,6 +269,7 @@ contains
     integer  :: filterp2(bounds%endp-bounds%begp+1)  ! inner loop pft filter
     integer  :: fnorig                               ! number of values in pft filter copy
     integer  :: fporig(bounds%endp-bounds%begp+1)    ! temporary filter
+    integer  :: itlefp(bounds%begp:bounds%endp)
     integer  :: fnold                                ! temporary copy of pft count
     integer  :: f                                    ! filter index
     logical  :: found                                ! error flag for canopy above forcing hgt
@@ -341,7 +340,7 @@ contains
 
     integer, parameter  :: itmax_stomata = 10
 
-    logical, parameter :: do_single_loop = .true.  ! Set this true to reproduce results before
+    logical, parameter :: do_single_loop = .false.  ! Set this true to reproduce results before
                                                     ! refactoring the patch-loops
     !------------------------------------------------------------------------------
 
@@ -792,8 +791,6 @@ contains
 
          call MoninObukIni(ur(p), thv(c), dthv(p), zldis(p), z0mv(p), um(p), obu(p))
          num_iter(p) = 0._r8
-         rssun_old(p) = -100._r8
-         rssha_old(p) = -100._r8
       end do
 
       ! Set counter for leaf temperature iteration (itlef)
@@ -814,7 +811,7 @@ contains
          ! and set the patch filters for the inner loop
          filterp2 = filterp
          fn2 = fn
-         itlef = 1
+         itlefp(:) = 0
          converge_tveg = .false.
          iterate_tveg: do while(.not.converge_tveg)
 
@@ -831,6 +828,7 @@ contains
                c = veg_pp%column(p)
                t = veg_pp%topounit(p)
                g = veg_pp%gridcell(p)
+               itlefp(p) = itlefp(p) + 1
 
                tlbef(p) = t_veg(p)
                del2(p) = del(p)
@@ -1171,10 +1169,10 @@ contains
                fn2 = 0
                do f = 1, fnold
                   p = filterp2(f)
-                  dele(p) = abs(efe(p)-efeb(p))
+                  dele = abs(efe(p)-efeb(p))
                   efeb(p) = efe(p)
-                  det(p)  = max(del(p),del2(p))
-                  if ( (.not. (det(p) < dtmin .and. dele(p) < dlemin) .or. &
+                  det  = max(del(p),del2(p))
+                  if ( (.not. (det < dtmin .and. dele < dlemin) .or. &
                        (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) .and. &
                        (itlef <= itmax)) then
                      fn2 = fn2 + 1
@@ -1185,54 +1183,35 @@ contains
                   converge_tveg = .true.
                end if
 
+            !else
+               ! Non-b4b fix: should update efeb(p), no? (RKG 08/29/26)
+               ! just because we force at least 3 steps 
+               ! doesn't mean on the third step we should be comparing to
+               ! the first
+               ! efeb(p) = efe(p)
             end if
 
          end do iterate_tveg
 
          iter_final = iter_final+itlef
-         
-         ! Evaluate quality of conductance solution
-         !
-         ! Criteria for finding a solution to the outer loop
-         !
-         ! 1) Always make sure that at least one photosynthesis call
-         !    is made. (ie itstoma>0)
-         ! 2) Calculate the change in resistance that was made on the
-         !    last solution. If the difference is negligable, and
-         !    condition 1 is satisfied, then you have a solution
-         ! 3) Exit if too many attempts and accept what you have
-         !    (ie. itstoma>itmax_stomata
 
-         itstoma = itstoma + 1
+         ! The test for convergence on the photosynthesis
+         ! solve is to see if the temperature/energy iterator
+         ! finished after 1 attempt.
          fnold = fn
          fn=0
-         do f = 1, fnold
-            p = filterp(f)
-            del_gs = max( abs(1._r8/rssun(p)-1._r8/rssun_old(p)), &
-                 abs(1._r8/rssha(p)-1._r8/rssha_old(p)) )
+         if(.not.do_single_loop)then
+            do f = 1, fnold
+               p = filterp(f)
+               if(.not.(itlefp(p)==1 .and. itstoma>0)) then
+                  fn = fn + 1
+                  filterp(fn) = p
+               end if
+            end do
+         end if
 
-            ! Let's use the harmonic mean of the conductances
-            ! which is the inverse of the sum of resistances
-            hmean_gs = 2._r8/(rssun(p)+rssha(p))
-            reldel_gs = del_gs / hmean_gs
-
-            ! (x/1)/(1/y)
-            ! y
-            reldel_gs = max( rssun(p)*abs(1._r8/rssun(p)-1._r8/rssun_old(p)), &
-                 rssha(p)*abs(1._r8/rssha(p)-1._r8/rssha_old(p)))
-
-            if( .not. (do_single_loop .or. &
-                                !(del_gs < max_del_gs ) .or.  &
-                 (reldel_gs < max_reldel_gs) .or. &
-                 (itstoma>=itmax_stomata) )) then
-               fn = fn + 1
-               filterp(fn) = p
-               rssun_old(p) = rssun(p)
-               rssha_old(p) = rssha(p)
-            end if
-
-         end do
-
+         itstoma = itstoma + 1
+         
          if(fn==0)then
             converge_stoma = .true.
          else
