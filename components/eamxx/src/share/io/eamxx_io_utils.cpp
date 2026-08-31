@@ -1,5 +1,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 
+#include "share/io/eamxx_dexpr_diags.hpp"
+
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
@@ -266,7 +268,12 @@ create_diagnostic (const std::string& diag_field_name,
   }
   else
   {
-    // No existing special regex matches, so we assume that the diag field name IS the diag name.
+    // No pattern claimed this name. Try reading it as an expression before
+    // assuming it IS a diag class name. A plain identifier comes back nullptr,
+    // so we fall through to the factory exactly as before.
+    if (auto diag = dexpr_create_diagnostic(diag_field_name,grid)) {
+      return diag;
+    }
     diag_name = diag_field_name;
   }
 
