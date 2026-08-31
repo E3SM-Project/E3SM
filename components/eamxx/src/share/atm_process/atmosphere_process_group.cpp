@@ -122,9 +122,7 @@ AtmosphereProcessGroup::get_process_nonconst (const std::string& name) const {
   for (auto& process: m_atm_processes) {
     if (process->type() == AtmosphereProcessType::Group) {
       const auto* group = dynamic_cast<const AtmosphereProcessGroup*>(process.get());
-      if (group->has_process(name)) {
-        return group->get_process_nonconst(name);
-      }
+      return group->get_process_nonconst(name);
     } else if (process->name() == name) {
         return_process = process;
         break;
