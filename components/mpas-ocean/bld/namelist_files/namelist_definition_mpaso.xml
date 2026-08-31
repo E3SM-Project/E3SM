@@ -1708,6 +1708,14 @@ Valid values: Any positive real number between 0 and 1.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_include_sensible_heat_frazil" type="logical"
+	category="frazil_ice" group="frazil_ice">
+Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_specific_heat_sea_water" type="real"
 	category="frazil_ice" group="frazil_ice">
 Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM.

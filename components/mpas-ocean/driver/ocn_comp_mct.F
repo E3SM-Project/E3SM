@@ -104,6 +104,7 @@ module ocn_comp_mct
 
   ! Module variable to save accumulatedFrazilIceMass values before they are reset
   real (kind=RKIND), allocatable, private :: saved_accumulatedFrazilIceMass(:)
+  real (kind=RKIND), allocatable, private :: saved_accumulatedFrazilIceEnergy(:)
   integer, private :: saved_frazil_allocated_size = 0
   logical, private :: saved_frazil_initialized = .false.
 
@@ -1517,9 +1518,12 @@ contains
      deallocate (o2x_om2)
      deallocate (x2o_om2)
 #endif
-    ! deallocate saved frazil ice mass array
+    ! deallocate saved frazil ice mass and energy array
     if (allocated(saved_accumulatedFrazilIceMass)) then
        deallocate(saved_accumulatedFrazilIceMass)
+       if (allocated(saved_accumulatedFrazilIceEnergy)) then
+          deallocate(saved_accumulatedFrazilIceEnergy)
+       end if
        saved_frazil_initialized = .false.
        saved_frazil_allocated_size = 0
     end if
@@ -3166,6 +3170,7 @@ contains
    integer, dimension(:), pointer :: landIceMask
 
    real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
+                                               accumulatedFrazilIceEnergy, &
                                                avgTotalFreshWaterTemperatureFlux, &
                                                avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
                                                avgOceanSurfaceDIC, &
@@ -3250,6 +3255,8 @@ contains
       if (.not. allocated(saved_accumulatedFrazilIceMass) .or. saved_frazil_allocated_size < total_cells_needed) then
          if (allocated(saved_accumulatedFrazilIceMass)) deallocate(saved_accumulatedFrazilIceMass)
          allocate(saved_accumulatedFrazilIceMass(total_cells_needed))
+         if (allocated(saved_accumulatedFrazilIceEnergy)) deallocate(saved_accumulatedFrazilIceEnergy)
+         allocate(saved_accumulatedFrazilIceEnergy(total_cells_needed))
          saved_frazil_allocated_size = total_cells_needed
          saved_frazil_initialized = .true.
       end if
@@ -3286,6 +3293,7 @@ contains
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
         call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMass, 1)
+        call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergy, 1)
      end if
 
      ! Cryo fields
@@ -3374,6 +3382,7 @@ contains
           ! Save accumulatedFrazilIceMass value before it is used and reset
           if (saved_frazil_initialized .and. n <= saved_frazil_allocated_size) then
              saved_accumulatedFrazilIceMass(n) = accumulatedFrazilIceMass(i)
+             saved_accumulatedFrazilIceEnergy(n) = accumulatedFrazilIceEnergy(i)
           end if
 
           ! negative when frazil ice can be melted
@@ -3389,7 +3398,8 @@ contains
              ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
 
-              seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion
+              seaIceEnergy(i) = accumulatedFrazilIceEnergy(i)
+              !accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
 
              ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
              ! top layer of the ocean
@@ -3411,7 +3421,8 @@ contains
              o2x_o(index_o2x_Fioo_q, n)  = 0.0_RKIND
              o2x_o(index_o2x_Fioo_frazil, n) = 0.0_RKIND
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
-                o2x_o(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
+                o2x_o(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceEnergy(i) / ocn_cpl_dt
+                !accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
                 o2x_o(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
              endif
 
@@ -3420,6 +3431,7 @@ contains
           ! Reset SeaIce Energy and Accumulated Frazil Ice
           seaIceEnergy(i) = 0.0_RKIND
           accumulatedFrazilIceMass(i) = 0.0_RKIND
+          accumulatedFrazilIceEnergy(i) = 0.0_RKIND
           frazilSurfacePressure(i) = 0.0_RKIND
        end if
 

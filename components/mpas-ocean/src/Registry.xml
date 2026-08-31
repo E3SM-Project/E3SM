@@ -1083,6 +1083,10 @@
 					description="maximum fraction of layer thickness than can be used or created at an instant by frazil."
 					possible_values="Any positive real number between 0 and 1."
 		/>
+		<nml_option name="config_include_sensible_heat_frazil" type="logical" default_value=".true."
+					description="Include both sensible and latent heat in the frazil energy. Otherwise, include only latent heat."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^-1 C^-1"
 					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
@@ -2145,10 +2149,12 @@
 			<var name="effectiveDensityInLandIce"/>
 			<var_struct name="ecosysAuxiliary"/>
 			<var name="accumulatedFrazilIceMass"/>
+			<var name="accumulatedFrazilIceEnergy"/>
 			<var name="accumulatedFrazilIceSalinity"/>
 			<var name="accumulatedLandIceMass"/>
 			<var name="accumulatedLandIceHeat"/>
 			<var name="accumulatedLandIceFrazilMass"/>
+			<var name="accumulatedLandIceFrazilEnergy"/>
 			<var name="frazilSurfacePressure"/>
 			<var_array name="avgSSHGradient"/>
 			<var name="forcingGroupNames"/>
@@ -2517,6 +2523,10 @@
 			 description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
+		<var name="accumulatedFrazilIceEnergy" type="real" dimensions="nCells Time" units="J m^-2"
+			 description="Energy added to the ocean per unit area from frazil ice production. Reset to zero at each coupling interval"
+			 packages="frazilIce"
+		/>
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^-2"
 			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
@@ -2537,6 +2547,10 @@
 		/>
 		<var name="accumulatedLandIceFrazilMass" type="real" dimensions="nCells Time" units="kg m^-2"
 			description="Mass per unit area of frazil ice produced under land ice.  Only computed when not coupled to a dynamic land-ice model."
+			packages="frazilIce"
+		/>
+		<var name="accumulatedLandIceFrazilEnergy" type="real" dimensions="nCells Time" units="J m^-2"
+			description="Energy added to the ocean per unit area from frazil ice production under land ice.  Only computed when not coupled to a dynamic land-ice model."
 			packages="frazilIce"
 		/>
 
