@@ -695,14 +695,17 @@ contains
               ! limit melting by fraction of layer thickness
               meltedFrazilIceThickness = min(meltedFrazilIceThickness, layerThickness(k,iCell) &
                                        * config_frazil_fractional_thickness_limit)
-                                 
+
+              ! track fraction of total frazil melted
+              meltedFraction = max(0.0_RKIND,min(1.0_RKIND,meltedFrazilIceThickness/sumNewFrazilIceThickness))
+
               ! track fraction of total frazil melted
               meltedFraction = max(0.0_RKIND,min(1.0_RKIND,meltedFrazilIceThickness/sumNewFrazilIceThickness))
 
               ! assign some salt to the melted ice
               meltedThicknessWeightedSaltContent = meltedFraction * sumNewThicknessWeightedSaltContent
 
-              ! assign energy to the melted ice              
+              ! assign energy to the melted ice
               meltedFrazilEnergy = meltedFraction * sumNewFrazilEnergy
 
               ! compute tendency to thickness, temperature and salinity
@@ -715,13 +718,12 @@ contains
               ! salt is released into ocean with the melting frazil
               frazilSalinityTendency(k,iCell) = + meltedThicknessWeightedSaltContent/ dt
 
+              ! ocean fluid temperature is cooled due to melting of frazil
               frazilTemperatureTendency(k,iCell) = - meltedFrazilEnergy / (rho_sw * config_specific_heat_sea_water) / dt
 
               ! keep track of new frazil ice
               sumNewThicknessWeightedSaltContent = max(0.0_RKIND,sumNewThicknessWeightedSaltContent - meltedThicknessWeightedSaltContent)
               sumNewFrazilIceThickness = max(0.0_RKIND,sumNewFrazilIceThickness - meltedFrazilIceThickness)
-
-              meltedFrazilEnergy = meltedFrazilIceThickness * config_frazil_ice_density * config_frazil_heat_of_fusion
 
               sumNewFrazilEnergy = max(0.0_RKIND,sumNewFrazilEnergy - meltedFrazilEnergy)
             endif  ! if (sumNewFrazilIceThickness > 0.0_RKIND)

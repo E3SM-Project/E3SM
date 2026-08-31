@@ -2667,7 +2667,6 @@
 			 packages="frazilIce"
 		/>
 		<var name="accumulatedFrazilIceEnergy" type="real" dimensions="nCells Time" units="J m^-2"
-
 			 description="Accumulated frazil ice energy per unit area. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
