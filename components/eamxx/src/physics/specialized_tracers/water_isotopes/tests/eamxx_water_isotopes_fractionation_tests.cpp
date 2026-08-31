@@ -54,10 +54,10 @@ void run_sweep()
 
   using wiso::CondensedOverVapor;
   using wiso::VaporOverCondensed;
-  using wiso::H2O_16;
+  using wiso::H216O;
   using wiso::HDO;
-  using wiso::H2_18O;
-  using wiso::H2_17O;
+  using wiso::H218O;
+  using wiso::H217O;
   using wiso::HTO;
 
   // ---- Liquid-vapor sweep ----
@@ -65,26 +65,26 @@ void run_sweep()
   for (int i = 0; i < NLIQ; ++i) {
     const ScalarT t(T_liq[i]);
 
-    const ScalarT a_hdo = WIF::alpha_liquid_vapor(t, HDO,    CondensedOverVapor);
-    const ScalarT a_o18 = WIF::alpha_liquid_vapor(t, H2_18O, CondensedOverVapor);
+    const ScalarT a_hdo = WIF::alpha_liquid_vapor(t, HDO,   CondensedOverVapor);
+    const ScalarT a_o18 = WIF::alpha_liquid_vapor(t, H218O, CondensedOverVapor);
 
     // Absolute-value checks against the independent reference.
     REQUIRE( rel_ok(a_hdo, ref_alpl_hdo(T_liq[i])) );
     REQUIRE( rel_ok(a_o18, ref_alpl_o18(T_liq[i])) );
 
     // Ordinary water is non-fractionating, exactly.
-    const ScalarT a_16 = WIF::alpha_liquid_vapor(t, H2O_16, CondensedOverVapor);
+    const ScalarT a_16 = WIF::alpha_liquid_vapor(t, H216O, CondensedOverVapor);
     REQUIRE( (a_16 == ScalarT(1)).all() );
 
     // Direction: VaporOverCondensed is the reciprocal.
-    const ScalarT a_hdo_inv = WIF::alpha_liquid_vapor(t, HDO,    VaporOverCondensed);
-    const ScalarT a_o18_inv = WIF::alpha_liquid_vapor(t, H2_18O, VaporOverCondensed);
+    const ScalarT a_hdo_inv = WIF::alpha_liquid_vapor(t, HDO,   VaporOverCondensed);
+    const ScalarT a_o18_inv = WIF::alpha_liquid_vapor(t, H218O, VaporOverCondensed);
     REQUIRE( rel_ok(a_hdo_inv, 1.0/ref_alpl_hdo(T_liq[i])) );
     REQUIRE( rel_ok(a_o18_inv, 1.0/ref_alpl_o18(T_liq[i])) );
 
     // Derived species power laws.
-    const ScalarT a_17 = WIF::alpha_liquid_vapor(t, H2_17O, CondensedOverVapor);
-    const ScalarT a_ht = WIF::alpha_liquid_vapor(t, HTO,    CondensedOverVapor);
+    const ScalarT a_17 = WIF::alpha_liquid_vapor(t, H217O, CondensedOverVapor);
+    const ScalarT a_ht = WIF::alpha_liquid_vapor(t, HTO,   CondensedOverVapor);
     REQUIRE( rel_ok(a_17, std::pow(ref_alpl_o18(T_liq[i]), 0.529)) );
     REQUIRE( rel_ok(a_ht, std::pow(ref_alpl_hdo(T_liq[i]), 2.0)) );
 
@@ -102,22 +102,22 @@ void run_sweep()
   for (int i = 0; i < NICE; ++i) {
     const ScalarT t(T_ice[i]);
 
-    const ScalarT a_hdo = WIF::alpha_ice_vapor(t, HDO,    CondensedOverVapor);
-    const ScalarT a_o18 = WIF::alpha_ice_vapor(t, H2_18O, CondensedOverVapor);
+    const ScalarT a_hdo = WIF::alpha_ice_vapor(t, HDO,   CondensedOverVapor);
+    const ScalarT a_o18 = WIF::alpha_ice_vapor(t, H218O, CondensedOverVapor);
 
     REQUIRE( rel_ok(a_hdo, ref_alpi_hdo(T_ice[i])) );
     REQUIRE( rel_ok(a_o18, ref_alpi_o18(T_ice[i])) );
 
-    const ScalarT a_16 = WIF::alpha_ice_vapor(t, H2O_16, CondensedOverVapor);
+    const ScalarT a_16 = WIF::alpha_ice_vapor(t, H216O, CondensedOverVapor);
     REQUIRE( (a_16 == ScalarT(1)).all() );
 
-    const ScalarT a_hdo_inv = WIF::alpha_ice_vapor(t, HDO,    VaporOverCondensed);
-    const ScalarT a_o18_inv = WIF::alpha_ice_vapor(t, H2_18O, VaporOverCondensed);
+    const ScalarT a_hdo_inv = WIF::alpha_ice_vapor(t, HDO,   VaporOverCondensed);
+    const ScalarT a_o18_inv = WIF::alpha_ice_vapor(t, H218O, VaporOverCondensed);
     REQUIRE( rel_ok(a_hdo_inv, 1.0/ref_alpi_hdo(T_ice[i])) );
     REQUIRE( rel_ok(a_o18_inv, 1.0/ref_alpi_o18(T_ice[i])) );
 
-    const ScalarT a_17 = WIF::alpha_ice_vapor(t, H2_17O, CondensedOverVapor);
-    const ScalarT a_ht = WIF::alpha_ice_vapor(t, HTO,    CondensedOverVapor);
+    const ScalarT a_17 = WIF::alpha_ice_vapor(t, H217O, CondensedOverVapor);
+    const ScalarT a_ht = WIF::alpha_ice_vapor(t, HTO,   CondensedOverVapor);
     REQUIRE( rel_ok(a_17, std::pow(ref_alpi_o18(T_ice[i]), 0.529)) );
     REQUIRE( rel_ok(a_ht, std::pow(ref_alpi_hdo(T_ice[i]), 2.0)) );
 
@@ -140,8 +140,8 @@ void run_on_device()
 
   view_1d out("wiso_alpha_device", 2);
   Kokkos::parallel_for("wiso_frac_device", 1, KOKKOS_LAMBDA(const int /*i*/) {
-    out(0) = WIF::alpha_liquid_vapor(Real(273.15), wiso::HDO,    wiso::CondensedOverVapor);
-    out(1) = WIF::alpha_ice_vapor  (Real(253.15), wiso::H2_18O, wiso::CondensedOverVapor);
+    out(0) = WIF::alpha_liquid_vapor(Real(273.15), wiso::HDO,   wiso::CondensedOverVapor);
+    out(1) = WIF::alpha_ice_vapor  (Real(253.15), wiso::H218O, wiso::CondensedOverVapor);
   });
   Kokkos::fence();
 

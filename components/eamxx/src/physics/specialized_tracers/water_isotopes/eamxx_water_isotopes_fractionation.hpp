@@ -34,15 +34,15 @@ namespace wiso {
  * alpha_ice_vapor_kinetic(t, species, s_ice, ...) sibling would attach.
  */
 
-// Water isotopologues. HDO and H2_18O are computed directly from the tables;
-// H2_18O and HTO are derived by mass-dependent power laws. H2O_16 (ordinary
+// Water isotopologues. HDO and H218O are computed directly from the tables;
+// H217O and HTO are derived by mass-dependent power laws. H216O (ordinary
 // water) is non-fractionating (alpha == 1).
 enum WisoSpecies {
-  H2O_16 = 0,  // ordinary water; alpha == 1
-  HDO    = 1,  // HD16O (deuterium)
-  H2_18O = 2,  // H2-18O (oxygen-18)
-  H2_17O = 3,  // H2-17O; = alpha(H2_18O)^0.529 (Schoenemann et al. 2014)
-  HTO    = 4   // HT16O (tritiated water); = alpha(HDO)^2.0 (isoCAM3)
+  H216O = 0,  // ordinary water; alpha == 1
+  HDO   = 1,  // HD16O (deuterium)
+  H218O = 2,  // H2-18O (oxygen-18)
+  H217O = 3,  // H2-17O; = alpha(H218O)^0.529 (Schoenemann et al. 2014)
+  HTO   = 4   // HT16O (tritiated water); = alpha(HDO)^2.0 (isoCAM3)
 };
 
 // Which R-ratio the returned factor represents.
@@ -59,8 +59,8 @@ struct WaterIsotopeFractionation
   // Liquid <-> vapor equilibrium fractionation factor.
   //
   // Horita & Wesolowski (1994). Two functional forms by species; T in Kelvin.
-  //   HDO:    alpha = exp( a*T^3 + b*T^2 + c*T + d + e/T^3 )
-  //   H2_18O: alpha = exp( a/T^3 + b/T^2 + c/T + d )
+  //   HDO:   alpha = exp( a*T^3 + b*T^2 + c*T + d + e/T^3 )
+  //   H218O: alpha = exp( a/T^3 + b/T^2 + c/T + d )
   // Coefficients transcribed directly from water_isotopes.F90 (lines 167-171).
   // -----------------------------------------------------------------------
   template <typename ScalarT>
@@ -91,22 +91,22 @@ struct WaterIsotopeFractionation
         alpha = exp(hdo_a * t3 + hdo_b * t2 + hdo_c * t + hdo_d + hdo_e / t3);
         break;
       }
-      case H2_18O: {
+      case H218O: {
         const ScalarT it  = sp(1) / t;
         const ScalarT it2 = it * it;
         const ScalarT it3 = it2 * it;
         alpha = exp(o18_a * it3 + o18_b * it2 + o18_c * it + o18_d);
         break;
       }
-      case H2_17O:
+      case H217O:
         // Mass-dependent from H2-18O (Schoenemann et al. 2014).
-        alpha = pow(alpha_liquid_vapor(t, H2_18O, CondensedOverVapor), sp(0.529));
+        alpha = pow(alpha_liquid_vapor(t, H218O, CondensedOverVapor), sp(0.529));
         break;
       case HTO:
         // From HDO (isoCAM3).
         alpha = pow(alpha_liquid_vapor(t, HDO, CondensedOverVapor), sp(2.0));
         break;
-      case H2O_16:
+      case H216O:
       default:
         // alpha stays 1 (non-fractionating).
         break;
@@ -155,21 +155,21 @@ struct WaterIsotopeFractionation
         alpha = exp(hdo_a * it2 + hdo_b * it + hdo_c);
         break;
       }
-      case H2_18O: {
+      case H218O: {
         const ScalarT it  = sp(1) / t;
         const ScalarT it2 = it * it;
         alpha = exp(o18_a * it2 + o18_b * it + o18_c);
         break;
       }
-      case H2_17O:
+      case H217O:
         // Mass-dependent from H2-18O (Schoenemann et al. 2014).
-        alpha = pow(alpha_ice_vapor(t, H2_18O, CondensedOverVapor), sp(0.529));
+        alpha = pow(alpha_ice_vapor(t, H218O, CondensedOverVapor), sp(0.529));
         break;
       case HTO:
         // From HDO (isoCAM3).
         alpha = pow(alpha_ice_vapor(t, HDO, CondensedOverVapor), sp(2.0));
         break;
-      case H2O_16:
+      case H216O:
       default:
         // alpha stays 1 (non-fractionating).
         break;
