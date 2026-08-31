@@ -136,7 +136,7 @@ void GWDrag::run_impl (const double dt) {
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
   GWF::view_2d<const Real> zm_t_tend;
   if (common_init.use_gw_convect) {
-    const auto& zm_t_tend = get_field_in("zm_t_tend")     .get_view<const Real**>();
+    zm_t_tend = get_field_in("zm_t_tend")     .get_view<const Real**>();
   }
   // get fields updated by GWD
   const auto& T_mid       = get_field_out("T_mid")        .get_view<Real**>();
