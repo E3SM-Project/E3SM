@@ -53,7 +53,7 @@ void GWDrag::create_requests() {
   add_field<Required>("landfrac",             scalar2d,     nondim, grid_name);
   add_field<Required>("sgh",                  scalar2d,     nondim, grid_name);
   if (m_params.get<bool>("use_gw_convect", false)) {
-    add_field<Required>("zm_t_tend",          scalar3d_mid, K/s,    grid_name, pack_size);
+    add_field<Required>("deep_conv_t_tend",          scalar3d_mid, K/s,    grid_name, pack_size);
   }
 
   // Input/Output variables
@@ -134,9 +134,9 @@ void GWDrag::run_impl (const double dt) {
   const auto& p_del       = get_field_in("pseudo_density").get_view<const Real**>();
   const auto& landfrac    = get_field_in("landfrac")      .get_view<const Real*>();
   const auto& sgh         = get_field_in("sgh")           .get_view<const Real*>();
-  GWF::view_2d<const Real> zm_t_tend;
+  GWF::view_2d<const Real> deep_conv_t_tend;
   if (common_init.use_gw_convect) {
-    zm_t_tend = get_field_in("zm_t_tend")     .get_view<const Real**>();
+    deep_conv_t_tend = get_field_in("deep_conv_t_tend")     .get_view<const Real**>();
   }
   // get fields updated by GWD
   const auto& T_mid       = get_field_out("T_mid")        .get_view<Real**>();
@@ -156,9 +156,9 @@ void GWDrag::run_impl (const double dt) {
   const auto loc_p_mid     = p_mid;
   const auto loc_p_int     = p_int;
   const auto loc_p_del     = p_del;
-  GWF::view_2d<const Real> loc_zm_t_tend;
+  GWF::view_2d<const Real> loc_deep_conv_t_tend;
   if (common_init.use_gw_convect) {
-    loc_zm_t_tend = zm_t_tend;
+    loc_deep_conv_t_tend = deep_conv_t_tend;
   }
   auto loc_T_mid       = T_mid;
   auto loc_qv          = qv;
@@ -352,12 +352,12 @@ void GWDrag::run_impl (const double dt) {
     // Convective gravity waves (Beres scheme)
     if (common_init.use_gw_convect) {
 
-      const auto zm_t_tend_i = ekat::subview(loc_zm_t_tend, i);
+      const auto deep_conv_t_tend_i = ekat::subview(loc_deep_conv_t_tend, i);
 
       // Determine convective wave sources
       GWF::gw_beres_src(team, wsm.get_workspace(team), common_init, convect_init,
                         nlev_mid, common_init.pgwv, lat_i,
-                        uwind_i, vwind_i, zm_t_tend_i, z_mid_i,
+                        uwind_i, vwind_i, deep_conv_t_tend_i, z_mid_i,
                         convect_init.gw_convect_hcf,
                         convect_init.gw_convect_hdepth_scale,
                         convect_init.gw_convect_hdepth_min,
