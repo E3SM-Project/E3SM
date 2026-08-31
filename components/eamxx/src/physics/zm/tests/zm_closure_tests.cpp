@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmClosure : public UnitWrap::UnitTest<D>::Base
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_closure_f(d);
-      }
-      else {
-        zm_closure(d);
-      }
+      zm_closure(d);
     }
 
     // TODO - Remove?

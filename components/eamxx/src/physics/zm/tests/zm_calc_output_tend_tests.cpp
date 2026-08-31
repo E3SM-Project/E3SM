@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmCalcOutputTend : public UnitWrap::UnitTest<D
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_calc_output_tend_f(d);
-      }
-      else {
-        zm_calc_output_tend(d);
-      }
+      zm_calc_output_tend(d);
     }
 
     // Verify BFB results, all data should be in C layout

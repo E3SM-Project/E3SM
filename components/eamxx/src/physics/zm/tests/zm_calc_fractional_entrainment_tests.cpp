@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmCalcFractionalEntrainment : public UnitWrap:
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_calc_fractional_entrainment_f(d);
-      }
-      else {
-        zm_calc_fractional_entrainment(d);
-      }
+      zm_calc_fractional_entrainment(d);
     }
 
     // TODO - Remove?

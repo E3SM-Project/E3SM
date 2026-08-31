@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmConvMcspCalculateShear : public UnitWrap::Un
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_conv_mcsp_calculate_shear_f(d);
-      }
-      else {
-        zm_conv_mcsp_calculate_shear(d);
-      }
+      zm_conv_mcsp_calculate_shear(d);
     }
 
     // Verify BFB results, all data should be in C layout

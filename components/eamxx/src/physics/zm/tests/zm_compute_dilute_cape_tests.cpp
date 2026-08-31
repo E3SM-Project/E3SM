@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteCape : public UnitWrap::UnitTest<
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        compute_dilute_cape_f(d);
-      }
-      else {
-        compute_dilute_cape(d);
-      }
+      compute_dilute_cape(d);
     }
 
     const auto margin = std::numeric_limits<Real>::epsilon() *

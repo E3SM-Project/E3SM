@@ -1,37 +1,3 @@
-set(PATH_TO_LEGACY_ZM ${SCREAM_BASE_DIR}/../eam/src/physics/cam/zm/)
-
-set(ZM_F90_SRCS
-  # ----------------------------------------------------------------------------
-  # EAMxx side C++ bridge methods
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_main.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_params.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_methods.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_physconst.F90
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge/zm_eamxx_bridge_wv_saturation.F90
-  # ----------------------------------------------------------------------------
-  # Fortran ZM code
-  ${PATH_TO_LEGACY_ZM}/zm_conv.F90
-  ${PATH_TO_LEGACY_ZM}/zm_conv_cape.F90
-  ${PATH_TO_LEGACY_ZM}/zm_conv_util.F90
-  ${PATH_TO_LEGACY_ZM}/zm_conv_types.F90
-  ${PATH_TO_LEGACY_ZM}/zm_aero_type.F90
-  ${PATH_TO_LEGACY_ZM}/zm_microphysics_state.F90
-  ${PATH_TO_LEGACY_ZM}/zm_conv_mcsp.F90
-  ${PATH_TO_LEGACY_ZM}/zm_transport.F90
-  # ----------------------------------------------------------------------------
-  # shared fotran modules
-  ${SCREAM_BASE_DIR}/../../share/util/shr_sys_mod.F90
-  ${SCREAM_BASE_DIR}/../../share/util/shr_kind_mod.F90
-  ${SCREAM_BASE_DIR}/../../share/util/shr_assert_mod.F90.in
-  # ----------------------------------------------------------------------------
-  # misc other fotran modules
-  ${SCREAM_BASE_DIR}/../eam/src/physics/cam/wv_sat_methods.F90
-  ${SCREAM_BASE_DIR}/../eam/src/utils/cam_abortutils.F90
-  ${SCREAM_BASE_DIR}/../eam/src/control/cam_logfile.F90
-  # ----------------------------------------------------------------------------
-)
-
 set(ZM_SRCS
   # ----------------------------------------------------------------------------
   # C++/EAMxx atomsphere process for ZM
@@ -65,7 +31,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
   ) # ZM ETI SRCS
 endif()
 
-add_library(zm ${ZM_F90_SRCS} ${ZM_SRCS})
+add_library(zm ${ZM_SRCS})
 
 set_target_properties(zm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
@@ -75,10 +41,7 @@ target_compile_definitions(zm PUBLIC EAMXX_HAS_ZM)
 
 target_include_directories(zm PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/fortran_bridge
   ${CMAKE_CURRENT_BINARY_DIR}/modules
-  ${PATH_TO_LEGACY_ZM}
-  ${PATH_TO_LEGACY_ZM}/..
 )
 target_link_libraries(zm eamxx_physics_share scream_share csm_share)
 
