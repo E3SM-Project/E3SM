@@ -376,7 +376,10 @@ contains
           status = pio_inq_dimname(ncido, dimidso(1), vec_dimname)
           if (trim(vec_dimname) == 'topounit') then
              if (masterproc) then
-                write(iulog,*) 'Skipping topounit variable: ', trim(varname)
+               call endrun(msg='ERROR interpinic: 1D topounit variable '//trim(varname)// &
+                  ' is not marked skip, but topounit interpolation is not supported. '// &
+                  'Set interpinic_flag=skip or implement a valid topounit mapping.'// &
+                  errMsg(__FILE__, __LINE__))
              end if
              CYCLE
           end if
