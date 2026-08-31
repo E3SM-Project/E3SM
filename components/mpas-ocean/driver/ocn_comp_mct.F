@@ -3395,33 +3395,32 @@ contains
 
           if (index_o2x_Fioo_q /= 0) o2x_o(index_o2x_Fioo_q, n)  = 0.0_RKIND
           if (index_o2x_Fioo_frazilh /= 0) o2x_o(index_o2x_Fioo_frazilh, n)  = 0.0_RKIND
-          if ( keepFrazil ) then
+          if ( keepFrazil .and. accumulatedFrazilIceMass(i) > 0) then
 
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
 
              ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
-
-              seaIceEnergy(i) = accumulatedFrazilIceEnergy(i)
-              if (index_o2x_Fioo_frazilh /= 0) o2x_o(index_o2x_Fioo_frazilh, n) = seaIceEnergy(i)/ocn_cpl_dt
+             seaIceEnergy(i) = accumulatedFrazilIceEnergy(i)
+             if (index_o2x_Fioo_frazilh /= 0) o2x_o(index_o2x_Fioo_frazilh, n) = seaIceEnergy(i)/ocn_cpl_dt
 
              ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
              ! top layer of the ocean
-             else if (index_o2x_Fioo_q /= 0) then
+          else if (index_o2x_Fioo_q /= 0) then
 
-                surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
-                  pressure=0.0_RKIND,  inLandIceCavity=.false.)
+             surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                pressure=0.0_RKIND,  inLandIceCavity=.false.)
 
-                seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
+             seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
                               - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
 
-                o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
-             endif
+             o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
+           endif
 
-             if (index_o2x_Fioo_frazilm /= 0) then
+           if (index_o2x_Fioo_frazilm /= 0) then
                 o2x_o(index_o2x_Fioo_frazilm, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
                 o2x_o(index_o2x_Fioo_frazils, n) = accumulatedFrazilIceMass(i)/ 1000.0_RKIND * &
                    config_frazil_sea_ice_reference_salinity / ocn_cpl_dt
-             endif
+           endif
 
           else
 
