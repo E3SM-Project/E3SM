@@ -1908,10 +1908,8 @@ contains
     real(r8), allocatable :: data_lg(:,:)      ! all mapped per-EC fields on the glc mesh
     real(r8), allocatable :: glc_ice_covered(:)
     real(r8), allocatable :: glc_topo(:)
-    ! the per-EC arrays are default real, matching the mct map_ice_covered storage,
-    ! so the vertical interpolation reproduces the mct answers bit for bit
-    real    , allocatable :: topo_g_EC(:,:)
-    real    , allocatable :: data_g_EC(:,:)
+    real(r8), allocatable :: topo_g_EC(:,:)
+    real(r8), allocatable :: data_g_EC(:,:)
     real(r8), allocatable :: data_g_bare(:)
     real(r8), allocatable :: data_g(:)         ! downscaled field on the glc mesh
     real(r8), allocatable :: area_g(:)
@@ -1981,7 +1979,7 @@ contains
     allocate(data_g(lsize_gm))
     do ec = 1, nEC
        kf = mct_aVect_indexRA(l2gacc_lx(1), 'Sl_topo'//glc_elevclass_as_string(ec))
-       topo_g_EC(:,ec) = real(data_lg(:,kf))
+       topo_g_EC(:,ec) = data_lg(:,kf)
     end do
 
     ! area arrays needed for the qice conservation correction
@@ -2003,7 +2001,7 @@ contains
 
           do ec = 1, nEC
              kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(ec))
-             data_g_EC(:,ec) = real(data_lg(:,kf))
+             data_g_EC(:,ec) = data_lg(:,kf)
           end do
           kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(0))
           data_g_bare(:) = data_lg(:,kf)
@@ -2044,7 +2042,7 @@ contains
 
        do ec = 1, nEC
           kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(ec))
-          data_g_EC(:,ec) = real(data_lg(:,kf))
+          data_g_EC(:,ec) = data_lg(:,kf)
        end do
        kf = mct_aVect_indexRA(l2gacc_lx(1), trim(fieldname)//glc_elevclass_as_string(0))
        data_g_bare(:) = data_lg(:,kf)

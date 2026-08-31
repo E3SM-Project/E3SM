@@ -212,14 +212,10 @@ contains
     ! All arrays are on the glc grid decomposition. data_g_EC and topo_g_EC hold the
     ! horizontally-mapped field and Sl_topo for elevation classes 1..nEC.
     !
-    ! Note: the per-EC arrays are stored in default real precision, exactly like the
-    ! mct path (map_ice_covered), so that the interpolation reproduces the mct
-    ! answers bit for bit (see E3SM issue #8657 about the demotion itself).
-    !
     ! !ARGUMENTS:
     real(r8), intent(in)  :: topo_g(:)          ! ice topographic height on the glc grid
-    real    , intent(in)  :: topo_g_EC(:,:)     ! mapped per-EC topo (lsize_g, nEC), default real like mct
-    real    , intent(in)  :: data_g_EC(:,:)     ! mapped per-EC field (lsize_g, nEC), default real like mct
+    real(r8), intent(in)  :: topo_g_EC(:,:)     ! mapped per-EC topo (lsize_g, nEC)
+    real(r8), intent(in)  :: data_g_EC(:,:)     ! mapped per-EC field (lsize_g, nEC)
     real(r8), intent(in)  :: data_g_bareland(:) ! mapped bare-land (EC 0) field
     integer , intent(in)  :: glc_elevclass(:)   ! elevation class of each glc point (0 = bare)
     real(r8), intent(out) :: data_g(:)          ! result on the glc grid
@@ -440,8 +436,8 @@ contains
     type(mct_aVect) :: l2x_g_temp  ! temporary attribute vector holding the remapped fields for this elevation class
 
     real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
-    real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
-    real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
+    real(r8), pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
+    real(r8), pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
 
     ! 1 is probably enough, but use 10 to be safe, in case the length of the delimiter
     ! changes
@@ -508,9 +504,9 @@ contains
        fieldname_ec = fieldname // elevclass_as_string
        toponame_ec = toponame // elevclass_as_string
        call mct_aVect_exportRattr(l2x_g_temp, fieldname_ec, tmp_field_g)
-       data_g_EC(:,ec) = real(tmp_field_g)
+       data_g_EC(:,ec) = tmp_field_g
        call mct_aVect_exportRattr(l2x_g_temp, toponame_ec, tmp_field_g)
-       topo_g_EC(:,ec) = real(tmp_field_g)
+       topo_g_EC(:,ec) = tmp_field_g
     enddo
 
     ! ------------------------------------------------------------------------
