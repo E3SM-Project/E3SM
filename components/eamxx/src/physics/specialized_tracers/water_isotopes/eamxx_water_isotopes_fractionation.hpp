@@ -2,6 +2,7 @@
 #define EAMXX_WATER_ISOTOPES_FRACTIONATION_HPP
 
 #include "share/core/eamxx_types.hpp"  // for scream::Real and scream::sp()
+#include "eamxx_water_isotopes_constants.hpp"  // isotopic constants (available for future use)
 
 #include <ekat_pack.hpp>
 #include <ekat_pack_math.hpp>  // ekat::exp/ekat::pow overloads for ekat::Pack (found via ADL)
@@ -32,6 +33,10 @@ namespace wiso {
  * wiso_akel / wiso_akci, active below ~253 K) are intentionally NOT included
  * here; see the "KINETIC HOOK" note below for where a future
  * alpha_ice_vapor_kinetic(t, species, s_ice, ...) sibling would attach.
+ *
+ * Note: Isotopic constants are now centralized in eamxx_water_isotopes_constants.hpp
+ * and available for other modules. The coefficients below are embedded for
+ * backwards compatibility; future work may refactor to use the centralized constants.
  */
 
 // Water isotopologues. HDO and H218O are computed directly from the tables;
