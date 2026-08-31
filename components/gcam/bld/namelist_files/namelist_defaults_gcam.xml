@@ -123,6 +123,7 @@ for the iac data in the e3sm distribution
 <!-- Runtime options -->
 <read_scalars>.false.</read_scalars>
 <scalar_source_dir></scalar_source_dir>
+<elm_data_dir></elm_data_dir>
 <write_scalars>.true.</write_scalars>
 <write_co2>.false.</write_co2>
 <elm_ehc_agyield_scaling>.true.</elm_ehc_agyield_scaling>

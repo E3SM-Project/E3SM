@@ -402,6 +402,18 @@ If FALSE, scalars are calculated from npp/hr
 Directory containing previously saved scalar files (for use when read_scalars = .true.)
 </entry>
 
+<entry id="elm_data_dir"
+        type="char*256"
+        category="gcam"
+        group="gcam_inparm"
+        valid_values="">
+Detached-ladder input: directory with elm2gcam_YYYY_{npp,hr,pft_wt}.csv written from an
+ELM-only run (AgenticE3SM/gcam/elm_h1_to_gcam.py). If non-empty (and read_scalars = .false.)
+GCAM fills its ELM arrays for year YYYY = current year - 1 from these files each year and
+computes the land-productivity scalars from them, exactly as with a live land model.
+Empty (default) = use the coupled land fields.
+</entry>
+
 
 <entry id="write_scalars"
         type="logical"  

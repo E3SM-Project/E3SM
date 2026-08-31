@@ -1544,6 +1544,19 @@ sub setup_cmdl_tw_irr_on {
     fatal_error("Namelist item tw_irr contradicts the command-line option -tw_irr, use the command line option");
   }
 
+  # Guard (2026-08-31): tw_irr without the irrigate namelist variable silently loses river water
+  # (demand is exported to MOSART-WM unconditionally, but the returned supply is applied only
+  # inside `if (irrigate)` in CanopyHydrologyMod). -irrig only VALIDATES irrigate, it does not
+  # emit it, so require an explicit irrigate=.true. in user_nl_elm (or the use case).
+  if ( $nl_flags->{'tw_irr_on'} eq 1 ) {
+    # (do not consult $nl_flags->{'irrig'} here: setup_cmdl_irrigation runs later; the
+    # irrigate-vs--irrig contradiction check there enforces -irrig .true. transitively)
+    my $irrigate = $nl->get_value("irrigate");
+    if ( ! defined($irrigate) || $irrigate ne ".true." ) {
+      fatal_error("-tw_irr_on requires 'irrigate = .true.' in user_nl_elm (or the use case); " .
+                  "without it MOSART-WM extracts irrigation water that ELM never applies.");
+    }
+  }
   $var = "tw_irr";
   $val = ".false.";
   if ($nl_flags->{'tw_irr_on'} eq 1) {
