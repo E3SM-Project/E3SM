@@ -46,12 +46,7 @@ struct UnitWrap::UnitTest<D>::TestEntropy : public UnitWrap::UnitTest<D>::Base {
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        entropy_f(d);
-      }
-      else {
-        entropy(d);
-      }
+      entropy(d);
     }
 
     // Verify BFB results, all data should be in C layout
