@@ -177,8 +177,8 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   if (params.do_3d_turbulence) {
-    add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
-    add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
+    add_field<Required>("eddy_diff_heat_horiz", pg_scalar3d_mid, m2/s,  pgn,N);
+    add_field<Required>("eddy_diff_mom_horiz",  pg_scalar3d_mid, m2/s,  pgn,N);
     auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
     add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, 1/s, pgn,N);
   }
@@ -477,8 +477,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
     if (params.do_3d_turbulence) {
       // Remap SHOC eddy diffusivities from physics grid to dynamics grid.
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
+      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom_horiz",pgn),m_helper_fields.at("Km_dyn"));
+      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat_horiz",pgn),m_helper_fields.at("Kh_dyn"));
 
       // Remap horizontal/local strain tensor components from dynamics to physics grid.
       m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
@@ -581,8 +581,6 @@ void HommeDynamics::run_impl (const double dt)
     if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
       compute_local_strain_components3d();
-    } else if (params.do_3d_turbulence) {
-      m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
@@ -917,6 +915,7 @@ void HommeDynamics::init_homme_views () {
   msg << "   nu_div: " << params.nu_div << "\n";
   msg << "   hypervis_order: " << params.hypervis_order << "\n";
   msg << "   hypervis_subcycle: " << params.hypervis_subcycle << "\n";
+  msg << "   horiz_turb_subcycle: " << params.horiz_turb_subcycle << "\n";
   msg << "   hypervis_subcycle_tom: " << params.hypervis_subcycle_tom << "\n";
   msg << "   hypervis_scaling: " << params.hypervis_scaling << "\n";
   msg << "   nu_ratio1: " << params.nu_ratio1 << "\n";
