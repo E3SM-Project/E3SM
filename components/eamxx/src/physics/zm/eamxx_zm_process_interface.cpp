@@ -129,11 +129,6 @@ void ZMDeepConvection::initialize_impl (const RunType)
   //----------------------------------------------------------------------------
   ZMF::s_zm_opts.set_limcnv(m_grid);
   if (this->get_comm().am_i_root()) ZMF::s_zm_opts.print();
-  //----------------------------------------------------------------------------
-  if (ZMF::s_zm_opts.use_fortran_bridge) {
-    EKAT_REQUIRE_MSG(false, "ZM fortran bridge no longer supported");
-  } // if use_fortran_bridge
-  //----------------------------------------------------------------------------
 } // ZMDeepConvection::initialize_impl
 
 /*------------------------------------------------------------------------------------------------*/
