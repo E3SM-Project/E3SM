@@ -120,7 +120,11 @@ create_diagnostic (const std::string& diag_field_name,
     std::regex bt (generic_field + "_atm_backtend$");
     if (std::regex_search(diag_field_name, alias_matches, bt)) {
       const auto f = alias_matches[1].str();
-      return create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
+      auto diag = create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
+      // The expansion names its field after the canonical form, but the
+      // customer asked for the alias, and looks it up by that.
+      diag->get_params().set<std::string>("output_field_name",diag_field_name);
+      return diag;
     }
     // More built-in aliases may be added here.
   }

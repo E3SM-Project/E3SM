@@ -114,6 +114,9 @@ TEST_CASE("create_diag")
     auto d1 = create_diagnostic("BlaH_123_atm_backtend",grid);
     REQUIRE (std::dynamic_pointer_cast<FieldOverDt>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("field_name")=="BlaH_123_minus_BlaH_123_prev");
+    // The diag would name its field after the expansion, but the customer
+    // asked for the alias. Without this, an output stream throws.
+    REQUIRE (d1->get_params().get<std::string>("output_field_name")=="BlaH_123_atm_backtend");
   }
 
   SECTION ("field_prev") {
