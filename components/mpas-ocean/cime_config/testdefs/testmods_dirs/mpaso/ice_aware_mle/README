@@ -1,0 +1,5 @@
+This testdef is used to test a stealth feature in mpaso introduced by
+PR #8520. It simplies changes one mpaso namelist variable,
+    config_submesoscale_ice_aware
+from its default value of .fase. to .true..
+This option only works when 'iceFraction' exists in the forcing pool.
