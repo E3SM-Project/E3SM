@@ -40,7 +40,7 @@ def buildlib(bldroot, installpath, case):
     m = re.match(r"L([0-9]+)", vgrid)
     expect(m is not None,
            f"Could not parse a level count from EAMXX_VGRID '{vgrid}'.\n"
-            " Vertical grid names must begin with 'L' followed by the number of levels")
+           "Vertical grid names must begin with 'L' followed by the number of levels.")
     expect("SCREAM_NUM_VERTICAL_LEV" not in cmake_args_dict,
             "SCREAM_NUM_VERTICAL_LEV is set in SCREAM_CMAKE_OPTIONS, but the level count\n"
             "is now derived from EAMXX_VGRID. Please, remove it and set EAMXX_VGRID instead.")
