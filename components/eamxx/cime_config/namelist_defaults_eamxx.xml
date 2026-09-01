@@ -312,9 +312,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     
     <!-- Gravity Wave Drag -->
     <gw inherit="atm_proc_base">
-      <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
+      <use_gw_orographic type="logical" doc="Flag for orographic GWD">true</use_gw_orographic>
+      <use_gw_convect type="logical" doc="Flag for convective GWD">true</use_gw_convect>
       <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
-      <use_gw_orographic type="logical" doc="Flag for orographic GWD">false</use_gw_orographic>
       <gw_drag_file type="string" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
       <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>

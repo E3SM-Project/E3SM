@@ -15,14 +15,18 @@ module gw_c2f_bridge
 
 contains
 
-  subroutine gw_common_init_bridge_f(pver_in, pgwv_in, dc_in, cref_in, orographic_only, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in) bind(C)
+  subroutine gw_common_init_bridge_f(pver_in, pgwv_in, dc_in, cref_in, do_molec_diff_in, tau_0_ubc_in, nbot_molec_in, ktop_in, kbotbg_in, fcrit2_in, kwv_in, gravit_in, rair_in, alpha_in) bind(C)
     use gw_common, only : gw_common_init
 
     integer(kind=c_int) , value, intent(in) :: pver_in, pgwv_in, nbot_molec_in, ktop_in, kbotbg_in
     real(kind=c_real) , value, intent(in) :: dc_in, fcrit2_in, kwv_in, gravit_in, rair_in
     real(kind=c_real) , intent(in), dimension(-pgwv_in:pgwv_in) :: cref_in
-    logical(kind=c_bool) , value, intent(in) :: orographic_only, do_molec_diff_in, tau_0_ubc_in
+    logical(kind=c_bool) , value, intent(in) :: do_molec_diff_in, tau_0_ubc_in
     real(kind=c_real) , intent(in), dimension(0:pver_in) :: alpha_in
+
+    ! EAMxx has no orographic_only concept (it always runs the non-orographic-only
+    ! code path); this is only here to satisfy the real gw_common_init interface.
+    logical(kind=c_bool), parameter :: orographic_only = .false.
 
     character(len=128) :: errstring
 

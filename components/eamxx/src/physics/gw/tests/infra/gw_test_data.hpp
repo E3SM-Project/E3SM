@@ -23,12 +23,12 @@ struct GwCommonInit : public PhysicsTestData {
   // Inputs
   Int pver, pgwv;
   Real dc;
-  bool orographic_only, do_molec_diff, tau_0_ubc;
+  bool do_molec_diff, tau_0_ubc;
   Int nbot_molec, ktop, kbotbg;
   Real fcrit2, kwv;
   Real *cref, *alpha;
 
-  GwCommonInit(Int pver_, Int pgwv_, Real dc_, bool orographic_only_, bool do_molec_diff_, bool tau_0_ubc_, Int nbot_molec_, Int ktop_, Int kbotbg_, Real fcrit2_, Real kwv_) :
+  GwCommonInit(Int pver_, Int pgwv_, Real dc_, bool do_molec_diff_, bool tau_0_ubc_, Int nbot_molec_, Int ktop_, Int kbotbg_, Real fcrit2_, Real kwv_) :
     PhysicsTestData({
       {pgwv_*2 + 1},
       {pver_ + 1}
@@ -37,7 +37,7 @@ struct GwCommonInit : public PhysicsTestData {
       {&cref},
       {&alpha}
     }),
-    pver(pver_), pgwv(pgwv_), dc(dc_), orographic_only(orographic_only_), do_molec_diff(do_molec_diff_), tau_0_ubc(tau_0_ubc_), nbot_molec(nbot_molec_), ktop(ktop_), kbotbg(kbotbg_), fcrit2(fcrit2_), kwv(kwv_)
+    pver(pver_), pgwv(pgwv_), dc(dc_), do_molec_diff(do_molec_diff_), tau_0_ubc(tau_0_ubc_), nbot_molec(nbot_molec_), ktop(ktop_), kbotbg(kbotbg_), fcrit2(fcrit2_), kwv(kwv_)
   {
     // Assert valid init data?
     assert(kbotbg <= pver);
@@ -48,7 +48,7 @@ struct GwCommonInit : public PhysicsTestData {
     assert(nbot_molec >= ktop);
   }
 
-  PTD_STD_DEF(GwCommonInit, 11, pver, pgwv, dc, orographic_only, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
+  PTD_STD_DEF(GwCommonInit, 10, pver, pgwv, dc, do_molec_diff, tau_0_ubc, nbot_molec, ktop, kbotbg, fcrit2, kwv);
 
   template <ekat::TransposeDirection::Enum D>
   void transition()
