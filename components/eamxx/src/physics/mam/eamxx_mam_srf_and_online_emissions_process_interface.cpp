@@ -108,6 +108,15 @@ void MAMSrfOnlineEmiss::create_requests() {
   add_field<Updated>("constituent_fluxes", vector2d_pcnst, kg / m2 / s,
                      grid_name);
 
+  // Soil erodibility [fraction]
+  add_field<Computed>("soil_erodibility", scalar2d, none, grid_name);
+
+  // Marine organics fields [kg C/m^3]
+  add_field<Computed>("morg_TRUEPOLYC", scalar2d, none, grid_name);
+  add_field<Computed>("morg_TRUEPROTC", scalar2d, none, grid_name);
+  add_field<Computed>("morg_TRUELIPC", scalar2d, none, grid_name);
+
+
   // Surface emissions remapping file
   auto srf_map_file = m_params.get<std::string>("srf_remap_file", "");
 
@@ -312,6 +321,14 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Constituent fluxes of species in [kg/m2/s]
   constituent_fluxes_ = get_field_out("constituent_fluxes");
 
+  // Get marine organics fields from FM
+  auto morg_TRUEPOLYC = get_field_out("morg_TRUEPOLYC");
+  auto morg_TRUEPROTC = get_field_out("morg_TRUEPROTC");
+  auto morg_TRUELIPC = get_field_out("morg_TRUELIPC");
+
+  // Get soil erodibility field from FM
+  auto soil_erodibility_field = get_field_out("soil_erodibility");
+
   //--------------------------------------------------------------------
   // Setup data interpolation for surface emissions.
   //--------------------------------------------------------------------
@@ -350,6 +367,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     const int curr_month = start_of_step_ts().get_month() - 1;
 
   //-----------------------------------------------------------------
+  //-----------------------------------------------------------------
   // Read Soil erodibility data
   //-----------------------------------------------------------------
   if (dust_emis_scheme == 1) {
@@ -358,20 +376,35 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     soilErodibilityFunc::update_soil_erodibility_data_from_file(
         serod_dataReader_, *serod_horizInterp_,
         soil_erodibility_);  // output
+    
+    // Copy to FM field
+    auto soil_erod_fm = soil_erodibility_field.get_view<Real*>();
+    Kokkos::deep_copy(soil_erod_fm, soil_erodibility_);
   } else if (dust_emis_scheme == 2) {
     // For dust emission scheme 2, override soil erodibility to 1
-    auto soil_erod_ones = view_1d("soil_erod_ones", ncol_);
-    Kokkos::deep_copy(soil_erod_ones, 1.0);
-    soil_erodibility_ = soil_erod_ones;
+    auto soil_erod_fm = soil_erodibility_field.get_view<Real*>();
+    Kokkos::deep_copy(soil_erod_fm, 1.0);
+    soil_erodibility_ = soil_erod_fm;
   }
-
-  //--------------------------------------------------------------------
   // Update marine orgaincs from file
   //--------------------------------------------------------------------
   // Time dependent data
   marineOrganicsFunc::update_marine_organics_data_from_file(
       morg_dataReader_, start_of_step_ts(), curr_month, *morg_horizInterp_,
       morg_data_end_);  // output
+
+  // Copy marine organics data to FM fields
+  auto mpoly_fm = morg_TRUEPOLYC.get_view<Real*>();
+  auto mprot_fm = morg_TRUEPROTC.get_view<Real*>();
+  auto mlip_fm = morg_TRUELIPC.get_view<Real*>();
+  
+  auto mpoly_data = ekat::subview(morg_data_end_.data.emiss_sectors, 0);
+  auto mprot_data = ekat::subview(morg_data_end_.data.emiss_sectors, 1);
+  auto mlip_data = ekat::subview(morg_data_end_.data.emiss_sectors, 2);
+  
+  Kokkos::deep_copy(mpoly_fm, mpoly_data);
+  Kokkos::deep_copy(mprot_fm, mprot_data);
+  Kokkos::deep_copy(mlip_fm, mlip_data);
 
   //-----------------------------------------------------------------
   // Setup preprocessing and post processing
@@ -405,6 +438,7 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   // Online emissions from dust and sea salt
   //--------------------------------------------------------------------
 
+
   // --- Interpolate marine organics data --
 
   // Update TimeState, note the addition of dt
@@ -420,10 +454,23 @@ void MAMSrfOnlineEmiss::run_impl(const double dt) {
   marineOrganicsFunc::marineOrganics_main(morg_timeState_, morg_data_start_,
                                           morg_data_end_, morg_data_out_);
 
-  // Marine organics emission data read from the file (order is important here)
-  const const_view_1d mpoly = ekat::subview(morg_data_out_.emiss_sectors, 0);
-  const const_view_1d mprot = ekat::subview(morg_data_out_.emiss_sectors, 1);
-  const const_view_1d mlip  = ekat::subview(morg_data_out_.emiss_sectors, 2);
+  // Update FM fields with interpolated marine organics data
+  auto mpoly_fm = get_field_out("morg_TRUEPOLYC").get_view<Real*>();
+  auto mprot_fm = get_field_out("morg_TRUEPROTC").get_view<Real*>();
+  auto mlip_fm = get_field_out("morg_TRUELIPC").get_view<Real*>();
+  
+  auto mpoly_data = ekat::subview(morg_data_out_.emiss_sectors, 0);
+  auto mprot_data = ekat::subview(morg_data_out_.emiss_sectors, 1);
+  auto mlip_data = ekat::subview(morg_data_out_.emiss_sectors, 2);
+  
+  Kokkos::deep_copy(mpoly_fm, mpoly_data);
+  Kokkos::deep_copy(mprot_fm, mprot_data);
+  Kokkos::deep_copy(mlip_fm, mlip_data);
+
+  // Marine organics emission data from FM (order is important here)
+  const const_view_1d mpoly = mpoly_fm;
+  const const_view_1d mprot = mprot_fm;
+  const const_view_1d mlip  = mlip_fm;
 
   // Ocean fraction [unitless]
   const const_view_1d ocnfrac =
