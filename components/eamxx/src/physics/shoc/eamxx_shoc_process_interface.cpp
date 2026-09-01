@@ -141,19 +141,19 @@ void SHOCMacrophysics::create_requests()
 void SHOCMacrophysics::
 set_computed_group_impl (const FieldGroup& group)
 {
-  EKAT_REQUIRE_MSG(group.m_info->size() >= 3,
+  EKAT_REQUIRE_MSG(group.info()->size() >= 3,
                    "Error! Shoc requires at least 3 tracers (tke, qv, qc) as inputs.");
 
-  const auto& name = group.m_info->m_group_name;
+  const auto& name = group.info()->m_group_name;
 
   EKAT_REQUIRE_MSG(name=="turbulence_advected_tracers",
     "Error! We were not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
+  EKAT_REQUIRE_MSG(group.info()->m_monolithic_allocation,
       "Error! Shoc expects a monolithic allocation for tracers.\n");
 
   // Calculate number of advected tracers
-  m_num_tracers = group.m_info->size();
+  m_num_tracers = group.info()->size();
 }
 
 // =========================================================================================
@@ -305,7 +305,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   if (runtime_options.do_3d_turb) {
     shear_strain3d_components = get_field_in("tke_shear_strain3d_components").get_view<const Pack***>();
   }
-  const auto& qtracers            = get_group_out("turbulence_advected_tracers").m_monolithic_field->get_strided_view<Pack***>();
+  const auto& qtracers            = get_group_out("turbulence_advected_tracers").monolithic_field().get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
   const auto& qv                  = get_field_out("qv").get_view<Pack**>();
   const auto& tke                 = get_field_out("tke").get_view<Pack**>();

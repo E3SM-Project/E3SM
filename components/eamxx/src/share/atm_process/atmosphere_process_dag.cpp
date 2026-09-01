@@ -286,8 +286,8 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
             const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
-            const auto& members = group.m_individual_fields;
-            const auto& members_names = group.m_info->m_fields_names;
+            const auto& members = group.individual_fields();
+            const auto& members_names = group.info()->m_fields_names;
             const size_t max_len = 40;
             size_t len = 0;
             size_t i = 0;
@@ -336,14 +336,14 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
             const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
-            const auto& members = group.m_individual_fields;
-            const auto& members_names = group.m_info->m_fields_names;
+            const auto& members = group.individual_fields();
+            const auto& members_names = group.info()->m_fields_names;
             const size_t max_len = 40;
             size_t len = 0;
             size_t i = 0;
             for (const auto& fn : members_names) {
               const auto f = members.at(fn);
-              const auto& mfid = f->get_header().get_identifier();
+              const auto& mfid = f.get_header().get_identifier();
               const auto mfid_id = get_fid_index(mfid);
               std::string mfc = "<font color=\"";
               mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
@@ -473,17 +473,17 @@ add_nodes (const group_type& atm_procs)
 
       // Input groups
       for (const auto& group : proc->get_groups_in()) {
-        if (!group.m_info->m_monolithic_allocation) {
+        if (!group.info()->m_monolithic_allocation) {
           // Group does not allocate a monolithic field: process fields individually
-          for (const auto& it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
+          for (const auto& it_f : group.individual_fields()) {
+            const auto& fid = it_f.second.get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
           // Group allocates a monolithic field: process the monolithic field
-          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
+          const auto& gr_fid = group.monolithic_field().get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_required.insert(gr_fid_id);
           m_gr_fid_to_group.emplace(gr_fid,group);
@@ -492,17 +492,17 @@ add_nodes (const group_type& atm_procs)
 
       // Output groups
       for (const auto& group : proc->get_groups_out()) {
-        if (!group.m_info->m_monolithic_allocation) {
+        if (!group.info()->m_monolithic_allocation) {
           // Group does not allocate a monolithic field: process fields in the group individually
-          for (const auto& it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
+          for (const auto& it_f : group.individual_fields()) {
+            const auto& fid = it_f.second.get_header().get_identifier();
             const int fid_id = add_fid(fid);
             node.computed.insert(fid_id);
             m_fid_to_last_provider[fid_id] = id;
           }
         } else {
           // Group allocates a monolithic field: process the monolithic field
-          const auto& gr_fid = group.m_monolithic_field->get_header().get_identifier();
+          const auto& gr_fid = group.monolithic_field().get_header().get_identifier();
           const int gr_fid_id = add_fid(gr_fid);
           node.gr_computed.insert(gr_fid_id);
           m_fid_to_last_provider[gr_fid_id] = id;
@@ -510,8 +510,8 @@ add_nodes (const group_type& atm_procs)
 
           // Additionally, each field in the group is implicitly 'computed'
           // by this node, so update their last provider
-          for (auto it_f : group.m_individual_fields) {
-            const auto& fid = it_f.second->get_header().get_identifier();
+          for (auto it_f : group.individual_fields()) {
+            const auto& fid = it_f.second.get_header().get_identifier();
             const int fid_id = add_fid(fid);
             m_fid_to_last_provider[fid_id] = id;
           }
@@ -544,7 +544,7 @@ void AtmProcDAG::add_edges () {
     for (auto id : node.gr_required) {
       const auto& gr_fid = m_fids[id];
       const auto& group = m_gr_fid_to_group.at(gr_fid);
-      const int   size  = group.m_info->size();
+      const int   size  = group.info()->size();
 
       int last_group_update_id = -1;
       std::vector<int> last_members_update_id(size,-1);
@@ -557,8 +557,8 @@ void AtmProcDAG::add_edges () {
       }
       // Then check when each group member was last updated
       int i=0;
-      for (auto f_it : group.m_individual_fields) {
-        const auto& fid = f_it.second->get_header().get_identifier();
+      for (auto f_it : group.individual_fields()) {
+        const auto& fid = f_it.second.get_header().get_identifier();
         auto fid_id = std::find(m_fids.begin(),m_fids.end(),fid) - m_fids.begin();
         it = m_fid_to_last_provider.find(fid_id);
         // Note: check that last provider id is SMALLER than this node id

@@ -457,7 +457,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // ftype!=FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
     // Remap Q directly into FQ, tendency computed in pre_process step
-    m_p2d_remapper->register_field(*get_group_out("Q",pgn).m_monolithic_field,m_helper_fields.at("FQ_dyn"));
+    m_p2d_remapper->register_field(get_group_out("Q",pgn).monolithic_field(),m_helper_fields.at("FQ_dyn"));
     m_p2d_remapper->register_field(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
 
     // FM has 3 components on dyn grid, but only 2 on phys grid
@@ -472,7 +472,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->register_field(get_internal_field("v_dyn"),get_field_out("horiz_winds"));
     m_d2p_remapper->register_field(get_internal_field("dp3d_dyn"), get_field_out("pseudo_density"));
     m_d2p_remapper->register_field(get_internal_field("ps_dyn"), get_field_out("ps"));
-    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",pgn).m_monolithic_field);
+    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),get_group_out("Q",pgn).monolithic_field());
     m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
     if (params.do_3d_turbulence) {
@@ -532,7 +532,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
 
-  add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_monolithic_field,m_phys_grid,0,true);
+  add_postcondition_check<LowerBound>(get_group_out("Q",pgn).monolithic_field(),m_phys_grid,0,true);
   add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,100.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,30000.0, 120000.0,false);
@@ -764,7 +764,7 @@ void HommeDynamics::homme_post_process (const double dt) {
   const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
-  const auto Q_view   = get_group_out("Q",pgn).m_monolithic_field->get_view<Pack***>();
+  const auto Q_view   = get_group_out("Q",pgn).monolithic_field().get_view<Pack***>();
 
   const auto T_view  = get_field_out("T_mid").get_view<Pack**>();
   const auto T_prev_view = m_helper_fields.at("FT_phys").get_view<Pack**>();
@@ -1105,7 +1105,7 @@ void HommeDynamics::restart_homme_state () {
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
-    auto Q_old = *get_group_in("Q",pgn).m_monolithic_field;
+    auto Q_old = get_group_in("Q",pgn).monolithic_field();
     m_ic_remapper->register_field(Q_old,Q_dyn);
 
     // Grab qv_ref_old from Q_old
@@ -1211,7 +1211,7 @@ void HommeDynamics::initialize_homme_state () {
   m_ic_remapper->register_field(get_field_in("ps",rgn),get_internal_field("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),get_internal_field("vtheta_dp_dyn"));
-  m_ic_remapper->register_field(*get_group_in("tracers",rgn).m_monolithic_field,m_helper_fields.at("Q_dyn"));
+  m_ic_remapper->register_field(get_group_in("tracers",rgn).monolithic_field(),m_helper_fields.at("Q_dyn"));
   m_ic_remapper->registration_ends();
   m_ic_remapper->remap_fwd();
 

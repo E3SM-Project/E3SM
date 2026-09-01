@@ -4,6 +4,7 @@
 #include <ekat_string_utils.hpp>
 
 #include <list>
+#include <set>
 #include <map>
 
 namespace scream {
@@ -52,14 +53,14 @@ struct FieldGroupInfo
   std::list<ci_string>   m_fields_names;
 
   // Store the grid which registered each field
-  std::map<ci_string, std::list<ci_string>> m_grid_registered;
+  std::map<ci_string, std::set<ci_string>> m_grid_registered;
 
   // Store any grid that is requested for a group.
   // This is useful in the case where we allocate
   // a monolithic field, we can add a grid that may
   // not have any registered fields, but that we want
   // the group to exist.
-  std::list<ci_string> m_requested_grids;
+  std::set<ci_string> m_requested_grids;
 
   // Whether the group allocated a monolithic field
   bool m_monolithic_allocation = false;

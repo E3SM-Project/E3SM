@@ -42,11 +42,13 @@ namespace scream {
 // and all downstream code uses FieldGroup instead of FieldGroup<T>, we can remove this
 // macro, and sed s/FieldGroup/FieldGroup/g all over the repo.
 
-struct FieldGroup {
+class FieldGroup {
+public:
   using ci_string = FieldGroupInfo::ci_string;
 
-  FieldGroup (const std::string& name);
-  FieldGroup (const FieldGroupInfo& info);
+  FieldGroup (const std::string& name, const std::string& grid_name);
+  FieldGroup (const std::shared_ptr<FieldGroupInfo>& info,
+              const std::string& grid_name);
 
   FieldGroup (const FieldGroup&) = default;
 
@@ -54,30 +56,42 @@ struct FieldGroup {
 
   FieldGroup& operator= (const FieldGroup& src) = default;
 
-  const std::string& grid_name () const;
+  const std::shared_ptr<FieldGroupInfo>& info () const { return m_info; }
 
-  // The fields in this group
-  std::map<ci_string,std::shared_ptr<Field>> m_individual_fields;
+  const std::string& grid_name () const { return m_grid_name; }
 
-  // If m_info->m_monolithic_alloc is true, this is the field
-  // that all fields in m_individual_fields are a subview of.
-  std::shared_ptr<Field> m_monolithic_field;
+  const std::map<ci_string,Field>& individual_fields () const { return *m_individual_fields; }
+        std::map<ci_string,Field>& individual_fields ()       { return *m_individual_fields; }
+
+  bool has_monolithic_field () const { return m_monolithic_field!=nullptr; }
+  const Field& monolithic_field () const { return *m_monolithic_field; }
+        Field& monolithic_field ()       { return *m_monolithic_field; }
+
+  void set_field (const Field& f);
+  void set_monolithic_field (const Field& f);
+
+private:
 
   // The info of this group.
   std::shared_ptr<FieldGroupInfo>  m_info;
 
-private:
+  // The name of the grid where the group lives
+  std::string m_grid_name;
 
   // Only used inside this class;
   FieldGroup () = default;
 
-  void copy_fields (const FieldGroup& src);
+  std::shared_ptr<std::map<ci_string,Field>> m_individual_fields;
+
+  // If m_info->m_monolithic_alloc is true, this is the field
+  // that all fields in m_individual_fields are a subview of.
+  std::shared_ptr<Field> m_monolithic_field;
 };
 
 // We use this to find a FieldGroup in a std container.
 // We do NOT allow two entries with same group name and grid name in such containers.
 inline bool operator== (const FieldGroup& lhs, const FieldGroup& rhs) {
-  return lhs.m_info->m_group_name == rhs.m_info->m_group_name &&
+  return lhs.info()->m_group_name == rhs.info()->m_group_name &&
          lhs.grid_name() == rhs.grid_name();
 }
 
