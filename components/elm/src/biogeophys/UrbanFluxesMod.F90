@@ -14,7 +14,7 @@ module UrbanFluxesMod
   use elm_varctl           , only : iulog
   use abortutils           , only : endrun
   use UrbanParamsType      , only : urbanparams_type
-  use UrbanParamsType      , only : urban_wasteheat_on, urban_hac_on, urban_hac
+  use UrbanParamsType      , only : urban_wasteheat_int, urban_hac_on_int, urban_hac_int,urban_hac_off_int
   use atm2lndType          , only : atm2lnd_type
   use SoilStateType        , only : soilstate_type
   use FrictionVelocityType , only : frictionvel_type
@@ -30,7 +30,7 @@ module UrbanFluxesMod
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use elm_time_manager    , only : get_curr_date, get_step_size, get_nstep
 
-  use timeinfoMod  , only : nstep_mod, year_curr, mon_curr, day_curr, secs_curr
+  use timeinfoMod  , only : nstep_mod,  secs_curr
   use timeinfoMod  , only : dtime_mod
 
   !
@@ -42,29 +42,30 @@ module UrbanFluxesMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: UrbanFluxes       ! Urban physics - turbulent fluxes
   !-----------------------------------------------------------------------
-
+  integer, parameter :: urban_hac_off_int = 0
+  integer, parameter :: urban_hac_on_int = 1
+  integer, parameter :: urban_wasteheat_on_int = 2 
+  integer, public :: urban_hac_int = urban_hac_off_int
 contains
 
   !-----------------------------------------------------------------------
-  subroutine UrbanFluxes (bounds, num_nourbanl, filter_nourbanl,                        &
+  subroutine UrbanFluxes (bounds,       &
        num_urbanl, filter_urbanl, num_urbanc, filter_urbanc, num_urbanp, filter_urbanp, &
-       atm2lnd_vars, urbanparams_vars, soilstate_vars,    &
-      frictionvel_vars, energyflux_vars )
+       urbanparams_vars, soilstate_vars,    &
+      frictionvel_vars )
     !
     ! !DESCRIPTION:
     ! Turbulent and momentum fluxes from urban canyon (consisting of roof, sunwall,
     ! shadewall, pervious and impervious road).
 
     ! !USES:
-      !$acc routine seq
-    
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
-    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, &
+    use FrictionVelocityMod , only : FrictionVelocity_loops, MoninObukIni, &
          implicit_stress, atm_gustiness, force_land_gustiness
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
@@ -72,116 +73,106 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
-    integer                , intent(in)    :: num_nourbanl       ! number of non-urban landunits in clump
-    integer                , intent(in)    :: filter_nourbanl(:) ! non-urban landunit filter
     integer                , intent(in)    :: num_urbanl         ! number of urban landunits in clump
     integer                , intent(in)    :: filter_urbanl(:)   ! urban landunit filter
     integer                , intent(in)    :: num_urbanc         ! number of urban columns in clump
     integer                , intent(in)    :: filter_urbanc(:)   ! urban column filter
     integer                , intent(in)    :: num_urbanp         ! number of urban patches in clump
     integer                , intent(in)    :: filter_urbanp(:)   ! urban pft filter
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(urbanparams_type) , intent(in)    :: urbanparams_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     type(frictionvel_type) , intent(inout) :: frictionvel_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
-    real(r8) :: dtime                                                ! land model time step (sec)
-    integer  :: year,month,day,secs
     !
     ! !LOCAL VARIABLES:
     integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
 
-    integer  :: filterl_copy(num_urbanl)                ! iteration copy of filter_urbanl
-    integer  :: filterc_copy(num_urbanc)                ! iteration copy of filter_urbanc
-    integer  :: fnl_iter                                ! iteration num_urbanl
-    integer  :: fnl_iter_old                            ! previous iteration fnl_iter
-    integer  :: fnc_iter                                ! iteration num_urbanc
-    integer  :: fnc_iter_old                            ! previous iteration fnc_iter
+    integer  :: num_copyl                                ! iteration num_urbanl
+    integer  :: num_copyl_old                            ! previous iteration num_copyl
+    integer  :: num_copyc                                ! iteration num_urbanc
+    integer  :: num_copyc_old                            ! previous iteration num_copyc
+    integer  :: num_unconverged  
 
-    real(r8) :: canyontop_wind(bounds%begl:bounds%endl)              ! wind at canyon top (m/s) 
-    real(r8) :: canyon_u_wind(bounds%begl:bounds%endl)               ! u-component of wind speed inside canyon (m/s)
-    real(r8) :: canyon_wind(bounds%begl:bounds%endl)                 ! net wind speed inside canyon (m/s)
-    real(r8) :: canyon_resistance(bounds%begl:bounds%endl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
+    real(r8) :: canyontop_wind(1:num_urbanl)              ! wind at canyon top (m/s)
+    real(r8) :: canyon_u_wind(1:num_urbanl)               ! u-component of wind speed inside canyon (m/s)
+    real(r8) :: canyon_wind(1:num_urbanl)                 ! net wind speed inside canyon (m/s)
+    real(r8) :: canyon_resistance(1:num_urbanl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
 
-    real(r8) :: ur(bounds%begl:bounds%endl)                          ! wind speed at reference height (m/s)
-    real(r8) :: ustar(bounds%begl:bounds%endl)                       ! friction velocity (m/s)
-    real(r8) :: ramu(bounds%begl:bounds%endl)                        ! aerodynamic resistance (s/m)
-    real(r8) :: rahu(bounds%begl:bounds%endl)                        ! thermal resistance (s/m)
-    real(r8) :: rawu(bounds%begl:bounds%endl)                        ! moisture resistance (s/m)
-    real(r8) :: temp1(bounds%begl:bounds%endl)                       ! relation for potential temperature profile
-    real(r8) :: temp12m(bounds%begl:bounds%endl)                     ! relation for potential temperature profile applied at 2-m
-    real(r8) :: temp2(bounds%begl:bounds%endl)                       ! relation for specific humidity profile
-    real(r8) :: temp22m(bounds%begl:bounds%endl)                     ! relation for specific humidity profile applied at 2-m
-    real(r8) :: thm_g(bounds%begl:bounds%endl)                       ! intermediate variable (forc_t+0.0098*forc_hgt_t)
-    real(r8) :: thv_g(bounds%begl:bounds%endl)                       ! virtual potential temperature (K)
-    real(r8) :: dth(bounds%begl:bounds%endl)                         ! diff of virtual temp. between ref. height and surface
-    real(r8) :: dqh(bounds%begl:bounds%endl)                         ! diff of humidity between ref. height and surface
-    real(r8) :: zldis(bounds%begl:bounds%endl)                       ! reference height "minus" zero displacement height (m)
-    real(r8) :: um(bounds%begl:bounds%endl)                          ! wind speed including the stablity effect (m/s)
-    real(r8) :: obu(bounds%begl:bounds%endl)                         ! Obukhov length scale (m)
-    real(r8) :: taf_numer(bounds%begl:bounds%endl)                   ! numerator of taf equation (K m/s)
-    real(r8) :: taf_denom(bounds%begl:bounds%endl)                   ! denominator of taf equation (m/s)
-    real(r8) :: qaf_numer(bounds%begl:bounds%endl)                   ! numerator of qaf equation (kg m/kg s)
-    real(r8) :: qaf_denom(bounds%begl:bounds%endl)                   ! denominator of qaf equation (m/s)
-    real(r8) :: wtas(bounds%begl:bounds%endl)                        ! sensible heat conductance for urban air to atmospheric air (m/s)
-    real(r8) :: wtaq(bounds%begl:bounds%endl)                        ! latent heat conductance for urban air to atmospheric air (m/s)
-    real(r8) :: wts_sum(bounds%begl:bounds%endl)                     ! sum of wtas, wtus_roof, wtus_road_perv, wtus_road_imperv, wtus_sunwall, wtus_shadewall
-    real(r8) :: wtq_sum(bounds%begl:bounds%endl)                     ! sum of wtaq, wtuq_roof, wtuq_road_perv, wtuq_road_imperv, wtuq_sunwall, wtuq_shadewall
-    real(r8) :: beta(bounds%begl:bounds%endl)                        ! coefficient of convective velocity
-    real(r8) :: zii(bounds%begl:bounds%endl)                         ! convective boundary layer height (m)
-    real(r8) :: fm(bounds%begl:bounds%endl)                          ! needed for BGC only to diagnose 10m wind speed
-    real(r8) :: wtus(bounds%begc:bounds%endc)                        ! sensible heat conductance for urban columns (scaled) (m/s)
-    real(r8) :: wtuq(bounds%begc:bounds%endc)                        ! latent heat conductance for urban columns (scaled) (m/s)
+    real(r8) :: ur(1:num_urbanl)                          ! wind speed at reference height (m/s)
+    real(r8) :: ustar(1:num_urbanl)                       ! friction velocity (m/s)
+    real(r8) :: ramu(1:num_urbanl)                        ! aerodynamic resistance (s/m)
+    real(r8) :: rahu(1:num_urbanl)                        ! thermal resistance (s/m)
+    real(r8) :: rawu(1:num_urbanl)                        ! moisture resistance (s/m)
+    real(r8) :: temp1(1:num_urbanl)                       ! relation for potential temperature profile
+    real(r8) :: temp12m(1:num_urbanl)                     ! relation for potential temperature profile applied at 2-m
+    real(r8) :: temp2(1:num_urbanl)                       ! relation for specific humidity profile
+    real(r8) :: temp22m(1:num_urbanl)                     ! relation for specific humidity profile applied at 2-m
+    real(r8) :: thm_g(1:num_urbanl)                       ! intermediate variable (forc_t+0.0098*forc_hgt_t)
+    real(r8) :: thv_g(1:num_urbanl)                       ! virtual potential temperature (K)
+    real(r8) :: dth(1:num_urbanl)                         ! diff of virtual temp. between ref. height and surface
+    real(r8) :: dqh(1:num_urbanl)                         ! diff of humidity between ref. height and surface
+    real(r8) :: zldis(1:num_urbanl)                       ! reference height "minus" zero displacement height (m)
+    real(r8) :: um(1:num_urbanl)                          ! wind speed including the stablity effect (m/s)
+    real(r8) :: obu(1:num_urbanl)                         ! Monin-Obukhov length (m)
+    real(r8) :: taf_numer(1:num_urbanl)                   ! numerator of taf equation (K m/s)
+    real(r8) :: taf_denom(1:num_urbanl)                   ! denominator of taf equation (m/s)
+    real(r8) :: qaf_numer(1:num_urbanl)                   ! numerator of qaf equation (kg m/kg s)
+    real(r8) :: qaf_denom(1:num_urbanl)                   ! denominator of qaf equation (m/s)
+    real(r8) :: wtas(1:num_urbanl)                        ! sensible heat conductance for urban air to atmospheric air (m/s)
+    real(r8) :: wtaq(1:num_urbanl)                        ! latent heat conductance for urban air to atmospheric air (m/s)
+    real(r8) :: wts_sum(1:num_urbanl)                     ! sum of wtas, wtus_roof, wtus_road_perv, wtus_road_imperv, wtus_sunwall, wtus_shadewall
+    real(r8) :: wtq_sum(1:num_urbanl)                     ! sum of wtaq, wtuq_roof, wtuq_road_perv, wtuq_road_imperv, wtuq_sunwall, wtuq_shadewall
+    real(r8) :: fm(1:num_urbanl)                          ! needed for BGC only to diagnose 10m wind speed
+    real(r8) :: wtus(1:num_urbanc)                        ! sensible heat conductance for urban columns (scaled) (m/s)
+    real(r8) :: wtuq(1:num_urbanc)                        ! latent heat conductance for urban columns (scaled) (m/s)
     integer  :: iter                                                 ! iteration index
     integer  :: iter_final                                           ! number of iterations used
     real(r8) :: dthv                                                 ! diff of vir. poten. temp. between ref. height and surface
     real(r8) :: tstar                                                ! temperature scaling parameter
     real(r8) :: qstar                                                ! moisture scaling parameter
     real(r8) :: thvstar                                              ! virtual potential temperature scaling parameter
-    real(r8) :: wtus_roof(bounds%begl:bounds%endl)                   ! sensible heat conductance for roof (scaled) (m/s)
-    real(r8) :: wtuq_roof(bounds%begl:bounds%endl)                   ! latent heat conductance for roof (scaled) (m/s)
-    real(r8) :: wtus_road_perv(bounds%begl:bounds%endl)              ! sensible heat conductance for pervious road (scaled) (m/s)
-    real(r8) :: wtuq_road_perv(bounds%begl:bounds%endl)              ! latent heat conductance for pervious road (scaled) (m/s)
-    real(r8) :: wtus_road_imperv(bounds%begl:bounds%endl)            ! sensible heat conductance for impervious road (scaled) (m/s)
-    real(r8) :: wtuq_road_imperv(bounds%begl:bounds%endl)            ! latent heat conductance for impervious road (scaled) (m/s)
-    real(r8) :: wtus_sunwall(bounds%begl:bounds%endl)                ! sensible heat conductance for sunwall (scaled) (m/s)
-    real(r8) :: wtuq_sunwall(bounds%begl:bounds%endl)                ! latent heat conductance for sunwall (scaled) (m/s)
-    real(r8) :: wtus_shadewall(bounds%begl:bounds%endl)              ! sensible heat conductance for shadewall (scaled) (m/s)
-    real(r8) :: wtuq_shadewall(bounds%begl:bounds%endl)              ! latent heat conductance for shadewall (scaled) (m/s)
-    real(r8) :: wtus_roof_unscl(bounds%begl:bounds%endl)             ! sensible heat conductance for roof (not scaled) (m/s)
-    real(r8) :: wtuq_roof_unscl(bounds%begl:bounds%endl)             ! latent heat conductance for roof (not scaled) (m/s)
-    real(r8) :: wtus_road_perv_unscl(bounds%begl:bounds%endl)        ! sensible heat conductance for pervious road (not scaled) (m/s)
-    real(r8) :: wtuq_road_perv_unscl(bounds%begl:bounds%endl)        ! latent heat conductance for pervious road (not scaled) (m/s)
-    real(r8) :: wtus_road_imperv_unscl(bounds%begl:bounds%endl)      ! sensible heat conductance for impervious road (not scaled) (m/s)
-    real(r8) :: wtuq_road_imperv_unscl(bounds%begl:bounds%endl)      ! latent heat conductance for impervious road (not scaled) (m/s)
-    real(r8) :: wtus_sunwall_unscl(bounds%begl:bounds%endl)          ! sensible heat conductance for sunwall (not scaled) (m/s)
-    real(r8) :: wtuq_sunwall_unscl(bounds%begl:bounds%endl)          ! latent heat conductance for sunwall (not scaled) (m/s)
-    real(r8) :: wtus_shadewall_unscl(bounds%begl:bounds%endl)        ! sensible heat conductance for shadewall (not scaled) (m/s)
-    real(r8) :: wtuq_shadewall_unscl(bounds%begl:bounds%endl)        ! latent heat conductance for shadewall (not scaled) (m/s)
-    real(r8) :: t_sunwall_innerl(bounds%begl:bounds%endl)            ! temperature of inner layer of sunwall (K)
-    real(r8) :: t_shadewall_innerl(bounds%begl:bounds%endl)          ! temperature of inner layer of shadewall (K)
-    real(r8) :: t_roof_innerl(bounds%begl:bounds%endl)               ! temperature of inner layer of roof (K)
+    real(r8) :: wtus_roof(1:num_urbanl)                   ! sensible heat conductance for roof (scaled) (m/s)
+    real(r8) :: wtuq_roof(1:num_urbanl)                   ! latent heat conductance for roof (scaled) (m/s)
+    real(r8) :: wtus_road_perv(1:num_urbanl)              ! sensible heat conductance for pervious road (scaled) (m/s)
+    real(r8) :: wtuq_road_perv(1:num_urbanl)              ! latent heat conductance for pervious road (scaled) (m/s)
+    real(r8) :: wtus_road_imperv(1:num_urbanl)            ! sensible heat conductance for impervious road (scaled) (m/s)
+    real(r8) :: wtuq_road_imperv(1:num_urbanl)            ! latent heat conductance for impervious road (scaled) (m/s)
+    real(r8) :: wtus_sunwall(1:num_urbanl)                ! sensible heat conductance for sunwall (scaled) (m/s)
+    real(r8) :: wtuq_sunwall(1:num_urbanl)                ! latent heat conductance for sunwall (scaled) (m/s)
+    real(r8) :: wtus_shadewall(1:num_urbanl)              ! sensible heat conductance for shadewall (scaled) (m/s)
+    real(r8) :: wtuq_shadewall(1:num_urbanl)              ! latent heat conductance for shadewall (scaled) (m/s)
+    real(r8) :: wtus_roof_unscl(1:num_urbanl)             ! sensible heat conductance for roof (not scaled) (m/s)
+    real(r8) :: wtuq_roof_unscl(1:num_urbanl)             ! latent heat conductance for roof (not scaled) (m/s)
+    real(r8) :: wtus_road_perv_unscl(1:num_urbanl)        ! sensible heat conductance for pervious road (not scaled) (m/s)
+    real(r8) :: wtuq_road_perv_unscl(1:num_urbanl)        ! latent heat conductance for pervious road (not scaled) (m/s)
+    real(r8) :: wtus_road_imperv_unscl(1:num_urbanl)      ! sensible heat conductance for impervious road (not scaled) (m/s)
+    real(r8) :: wtuq_road_imperv_unscl(1:num_urbanl)      ! latent heat conductance for impervious road (not scaled) (m/s)
+    real(r8) :: wtus_sunwall_unscl(1:num_urbanl)          ! sensible heat conductance for sunwall (not scaled) (m/s)
+    real(r8) :: wtuq_sunwall_unscl(1:num_urbanl)          ! latent heat conductance for sunwall (not scaled) (m/s)
+    real(r8) :: wtus_shadewall_unscl(1:num_urbanl)        ! sensible heat conductance for shadewall (not scaled) (m/s)
+    real(r8) :: wtuq_shadewall_unscl(1:num_urbanl)        ! latent heat conductance for shadewall (not scaled) (m/s)
+    real(r8) :: t_sunwall_innerl(1:num_urbanl)            ! temperature of inner layer of sunwall (K)
+    real(r8) :: t_shadewall_innerl(1:num_urbanl)          ! temperature of inner layer of shadewall (K)
+    real(r8) :: t_roof_innerl(1:num_urbanl)               ! temperature of inner layer of roof (K)
     real(r8) :: lngth_roof                                           ! length of roof (m)
     real(r8) :: wc                                                   ! convective velocity (m/s)
-    real(r8) :: ugust_total(bounds%begl:bounds%endl)                 ! gustiness including convective velocity [m/s]
     real(r8) :: zeta                                                 ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: eflx_sh_grnd_scale(bounds%begp:bounds%endp)          ! scaled sensible heat flux from ground (W/m**2) [+ to atm]
     real(r8) :: qflx_evap_soi_scale(bounds%begp:bounds%endp)         ! scaled soil evaporation (mm H2O/s) (+ = to atm)
-    real(r8) :: eflx_wasteheat_roof(bounds%begl:bounds%endl)         ! sensible heat flux from urban heating/cooling sources of waste heat for roof (W/m**2)
-    real(r8) :: eflx_wasteheat_sunwall(bounds%begl:bounds%endl)      ! sensible heat flux from urban heating/cooling sources of waste heat for sunwall (W/m**2)
-    real(r8) :: eflx_wasteheat_shadewall(bounds%begl:bounds%endl)    ! sensible heat flux from urban heating/cooling sources of waste heat for shadewall (W/m**2)
-    real(r8) :: eflx_heat_from_ac_roof(bounds%begl:bounds%endl)      ! sensible heat flux put back into canyon due to heat removal by AC for roof (W/m**2)
-    real(r8) :: eflx_heat_from_ac_sunwall(bounds%begl:bounds%endl)   ! sensible heat flux put back into canyon due to heat removal by AC for sunwall (W/m**2)
-    real(r8) :: eflx_heat_from_ac_shadewall(bounds%begl:bounds%endl) ! sensible heat flux put back into canyon due to heat removal by AC for shadewall (W/m**2)
-    real(r8) :: eflx(bounds%begl:bounds%endl)                        ! total sensible heat flux for error check (W/m**2)
-    real(r8) :: qflx(bounds%begl:bounds%endl)                        ! total water vapor flux for error check (kg/m**2/s)
-    real(r8) :: eflx_scale(bounds%begl:bounds%endl)                  ! sum of scaled sensible heat fluxes for urban columns for error check (W/m**2)
-    real(r8) :: qflx_scale(bounds%begl:bounds%endl)                  ! sum of scaled water vapor fluxes for urban columns for error check (kg/m**2/s)
-    real(r8) :: eflx_err(bounds%begl:bounds%endl)                    ! sensible heat flux error (W/m**2)
-    real(r8) :: qflx_err(bounds%begl:bounds%endl)                    ! water vapor flux error (kg/m**2/s)
+    real(r8) :: eflx_wasteheat_roof(1:num_urbanl)         ! sensible heat flux from urban heating/cooling sources of waste heat for roof (W/m**2)
+    real(r8) :: eflx_wasteheat_sunwall(1:num_urbanl)      ! sensible heat flux from urban heating/cooling sources of waste heat for sunwall (W/m**2)
+    real(r8) :: eflx_wasteheat_shadewall(1:num_urbanl)    ! sensible heat flux from urban heating/cooling sources of waste heat for shadewall (W/m**2)
+    real(r8) :: eflx_heat_from_ac_roof(1:num_urbanl)      ! sensible heat flux put back into canyon due to heat removal by AC for roof (W/m**2)
+    real(r8) :: eflx_heat_from_ac_sunwall(1:num_urbanl)   ! sensible heat flux put back into canyon due to heat removal by AC for sunwall (W/m**2)
+    real(r8) :: eflx_heat_from_ac_shadewall(1:num_urbanl) ! sensible heat flux put back into canyon due to heat removal by AC for shadewall (W/m**2)
+    real(r8) :: eflx(1:num_urbanl)                        ! total sensible heat flux for error check (W/m**2)
+    real(r8) :: qflx(1:num_urbanl)                        ! total water vapor flux for error check (kg/m**2/s)
+    real(r8) :: eflx_scale(1:num_urbanl)                  ! sum of scaled sensible heat fluxes for urban columns for error check (W/m**2)
+    real(r8) :: qflx_scale(1:num_urbanl)                  ! sum of scaled water vapor fluxes for urban columns for error check (kg/m**2/s)
+    real(r8) :: eflx_err(1:num_urbanl)                    ! sensible heat flux error (W/m**2)
+    real(r8) :: qflx_err(1:num_urbanl)                    ! water vapor flux error (kg/m**2/s)
     real(r8) :: fwet_roof                                            ! fraction of roof surface that is wet (-)
     real(r8) :: fwet_road_imperv                                     ! fraction of impervious road surface that is wet (-)
-    integer  :: local_secp1(bounds%begl:bounds%endl)                 ! seconds into current date in local time (sec)
+    integer  :: local_secp1(1:num_urbanl)                 ! seconds into current date in local time (sec)
                                      ! calendar info for current time step
     logical  :: found                                                ! flag in search loop
     integer  :: indexl                                               ! index of first found in search loop
@@ -196,31 +187,39 @@ contains
     integer, parameter  :: itmin = 3              ! minimum number of iterations
     integer, parameter  :: itmax = 30             ! maximum number of iterations
     integer  :: loopmax                           ! bound for iteration loop
-    real(r8) :: wind_speed0(bounds%begl:bounds%endl) ! Wind speed from atmosphere at start of iteration
-    real(r8) :: wind_speed_adj(bounds%begl:bounds%endl) ! Adjusted wind speed for iteration
-    real(r8) :: tau(bounds%begl:bounds%endl)      ! Stress used in iteration
-    real(r8) :: tau_diff(bounds%begl:bounds%endl) ! Difference from previous iteration tau
-    real(r8) :: prev_tau(bounds%begl:bounds%endl) ! Previous iteration tau
+    real(r8) :: wind_speed0(1:num_urbanl) ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(1:num_urbanl) ! Adjusted wind speed for iteration
+    real(r8) :: tau(1:num_urbanl)      ! Stress used in iteration
+    real(r8) :: tau_diff(1:num_urbanl) ! Difference from previous iteration tau
+    real(r8) :: prev_tau(1:num_urbanl) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tau
+    real(r8), parameter :: beta = 1._r8           ! coefficient of convective velocity
+    real(r8), parameter :: zii  = 1000._r8        ! convective boundary layer height (m)
+    integer :: lnd_to_urban_filter(bounds%begl:bounds%endl) !
+    integer :: col_to_urban_filter(bounds%begc:bounds%endc)
+    logical :: converged_landunits(bounds%begl:bounds%endl)
+    integer :: begl, endl, begc, endc, begp, endp
+    integer :: erridx1, erridx2
+    real(r8) :: sum_denom, sum_numer
     !-----------------------------------------------------------------------
 
-    associate(                                                                & 
-         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers                              
-         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type                                        
-         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)   
-         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)         
-         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)                          
-         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit           
-         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width          
-         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road            
+    associate(                                                                &
+         snl                 =>   col_pp%snl                                   , & ! Input:  [integer  (:)   ]  number of snow layers
+         ctype               =>   col_pp%itype                                 , & ! Input:  [integer  (:)   ]  column type
+         z_0_town            =>   lun_pp%z_0_town                              , & ! Input:  [real(r8) (:)   ]  momentum roughness length of urban landunit (m)
+         z_d_town            =>   lun_pp%z_d_town                              , & ! Input:  [real(r8) (:)   ]  displacement height of urban landunit (m)
+         ht_roof             =>   lun_pp%ht_roof                               , & ! Input:  [real(r8) (:)   ]  height of urban roof (m)
+         wtlunit_roof        =>   lun_pp%wtlunit_roof                          , & ! Input:  [real(r8) (:)   ]  weight of roof with respect to landunit
+         canyon_hwr          =>   lun_pp%canyon_hwr                            , & ! Input:  [real(r8) (:)   ]  ratio of building height to street width
+         wtroad_perv         =>   lun_pp%wtroad_perv                           , & ! Input:  [real(r8) (:)   ]  weight of pervious road wrt total road
 
-         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)                       
-         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)             
-         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)                                 
-         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)             
-         forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)                         
-         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)    
-         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)   
+         forc_t              =>   top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (K)
+         forc_th             =>   top_as%thbot                              , & ! Input:  [real(r8) (:)   ]  atmospheric potential temperature (K)
+         forc_rho            =>   top_as%rhobot                             , & ! Input:  [real(r8) (:)   ]  air density (kg/m**3)
+         forc_q              =>   top_as%qbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric specific humidity (kg/kg)
+         forc_pbot           =>   top_as%pbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
+         forc_u              =>   top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
+         forc_v              =>   top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
          wsresp              =>   top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
          tau_est             =>   top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          ugust               =>   top_as%ugust                              , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
@@ -280,235 +279,329 @@ contains
          qflx_evap_soi       =>   veg_wf%qflx_evap_soi        , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
          qflx_tran_veg       =>   veg_wf%qflx_tran_veg        , & ! Output: [real(r8) (:)   ]  vegetation transpiration (mm H2O/s) (+ = to atm)
          qflx_evap_veg       =>   veg_wf%qflx_evap_veg        , & ! Output: [real(r8) (:)   ]  vegetation evaporation (mm H2O/s) (+ = to atm)
-         qflx_evap_tot       =>   veg_wf%qflx_evap_tot        , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
+         qflx_evap_tot       =>   veg_wf%qflx_evap_tot         & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
 
-         begl                =>   bounds%begl                               , &
-         endl                =>   bounds%endl                                 &
+
          )
+    !$acc enter data create(&
+    !$acc canyontop_wind(:), &
+    !$acc canyon_u_wind(:), &
+    !$acc canyon_wind(:), &
+    !$acc canyon_resistance(:), &
+    !$acc ur(:), &
+    !$acc ustar(:), &
+    !$acc ramu(:), &
+    !$acc rahu(:), &
+    !$acc rawu(:), &
+    !$acc temp1(:), &
+    !$acc temp12m(:), &
+    !$acc temp2(:), &
+    !$acc temp22m(:), &
+    !$acc thm_g(:), &
+    !$acc thv_g(:), &
+    !$acc dth(:), &
+    !$acc dqh(:), &
+    !$acc zldis(:), &
+    !$acc um(:), &
+    !$acc obu(:), &
+    !$acc taf_numer(:), &
+    !$acc taf_denom(:), &
+    !$acc qaf_numer(:), &
+    !$acc qaf_denom(:), &
+    !$acc wtas(:), &
+    !$acc wtaq(:), &
+    !$acc wts_sum(:), &
+    !$acc wtq_sum(:), &
+    !$acc fm(:), &
+    !$acc wtus(:), &
+    !$acc wtuq(:), &
+    !$acc wtus_roof(:), &
+    !$acc wtuq_roof(:), &
+    !$acc wtus_road_perv(:), &
+    !$acc wtuq_road_perv(:), &
+    !$acc wtus_road_imperv(:), &
+    !$acc wtuq_road_imperv(:), &
+    !$acc wtus_sunwall(:), &
+    !$acc wtuq_sunwall(:), &
+    !$acc wtus_shadewall(:), &
+    !$acc wtuq_shadewall(:), &
+    !$acc wtus_roof_unscl(:), &
+    !$acc wtuq_roof_unscl(:), &
+    !$acc wtus_road_perv_unscl(:), &
+    !$acc wtuq_road_perv_unscl(:), &
+    !$acc wtus_road_imperv_unscl(:), &
+    !$acc wtuq_road_imperv_unscl(:), &
+    !$acc wtus_sunwall_unscl(:), &
+    !$acc wtuq_sunwall_unscl(:), &
+    !$acc wtus_shadewall_unscl(:), &
+    !$acc wtuq_shadewall_unscl(:), &
+    !$acc t_sunwall_innerl(:), &
+    !$acc t_shadewall_innerl(:), &
+    !$acc t_roof_innerl(:), &
+    !$acc eflx_sh_grnd_scale(:), &
+    !$acc qflx_evap_soi_scale(:), &
+    !$acc eflx_wasteheat_roof(:), &
+    !$acc eflx_wasteheat_sunwall(:), &
+    !$acc eflx_wasteheat_shadewall(:), &
+    !$acc eflx_heat_from_ac_roof(:), &
+    !$acc eflx_heat_from_ac_sunwall(:), &
+    !$acc eflx_heat_from_ac_shadewall(:), &
+    !$acc eflx(:), &
+    !$acc qflx(:), &
+    !$acc eflx_scale(:), &
+    !$acc qflx_scale(:), &
+    !$acc eflx_err(:), &
+    !$acc qflx_err(:), &
+    !$acc local_secp1(:), &
+    !$acc wind_speed0(:), &
+    !$acc wind_speed_adj(:), &
+    !$acc tau(:), &
+    !$acc tau_diff(:), &
+    !$acc prev_tau(:), &
+    !$acc prev_tau_diff(:), &
+    !$acc lnd_to_urban_filter(:), &
+    !$acc converged_landunits(:), col_to_urban_filter(:) )
 
-      ! Define fields that appear on the restart file for non-urban landunits
-      do fl = 1,num_nourbanl
-         l = filter_nourbanl(fl)
-         taf(l) = spval
-         qaf(l) = spval
-      end do
 
+       begl = bounds%begl
+       endl = bounds%endl
+       begc = bounds%begc
+       endc = bounds%endc
+       begp = bounds%begp
+       endp = bounds%endp
       ! Get time step
 
-      nstep = nstep_mod
-      dtime = dtime_mod
-      year = year_curr
-      month = mon_curr
-      day = day_curr
-      secs = secs_curr
-
-      ! Set constants (same as in Biogeophysics1Mod)
-      beta(begl:endl) = 1._r8             ! Should be set to the same values as in Biogeophysics1Mod
-      zii(begl:endl)  = 1000._r8          ! Should be set to the same values as in Biogeophysics1Mod
-
+      lnd_to_urban_filter(:) = -9999
       ! Compute canyontop wind using Masson (2000)
-
+      erridx1 = -9999
+      erridx2 = -9999
+      !$acc parallel loop independent gang vector default(present) copy(erridx1,erridx2) &
+      !$acc present(lnd_to_urban_filter(:), ht_roof(:), z_d_town(:),z_0_town(:))
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
+         lnd_to_urban_filter(l) = fl
          g = lun_pp%gridcell(l)
          t = lun_pp%topounit(l)
 
-         local_secp1(l)        = secs + nint((grc_pp%londeg(g)/degpsec)/dtime)*dtime
-         local_secp1(l)        = mod(local_secp1(l),isecspday)
+         local_secp1(fl)        = secs_curr + nint((grc_pp%londeg(g)/degpsec)/dtime_mod)*dtime_mod
+         local_secp1(fl)        = mod(local_secp1(fl),isecspday)
 
          ! Error checks
 
-#ifndef _OPENACC
          if (ht_roof(l) - z_d_town(l) <= z_0_town(l)) then
-            write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
-            write (iulog,*) 'h_r - z_d <= z_0'
-            write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
-                 z_0_town(l)
-            write (iulog,*) 'elm model is stopping'
-            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            erridx1 = l
+
          end if
          if (forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l) <= z_0_town(l)) then
-            write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
-            write (iulog,*) 'h_u - z_d <= z_0'
-            write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
-                 z_0_town(l)
-            write (iulog,*) 'elm model is stopping'
-            call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            erridx2 = l
          end if
-#endif
+
          ! Initialize winds for iteration.
          if (implicit_stress) then
-            wind_speed0(l) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-            wind_speed_adj(l) = wind_speed0(l)
-            ur(l) = max(1.0_r8, sqrt(wind_speed_adj(l)**2 + ugust(t)**2))
+            wind_speed0(fl) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(fl) = wind_speed0(fl)
+            ur(fl) = max(1.0_r8, wind_speed_adj(fl) + ugust(t))
 
-            prev_tau(l) = tau_est(t)
+            prev_tau(fl) = tau_est(t)
          else
-            ur(l) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
+            ur(fl) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
          end if
-         tau_diff(l) = 1.e100_r8
+         tau_diff(fl) = 1.e100_r8
          ugust_total(l) = ugust(t)
 
       end do
 
+      if(erridx1 > 0) then
+         l = erridx1
+         write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
+         write (iulog,*) 'h_r - z_d <= z_0'
+         write (iulog,*) 'ht_roof, z_d_town, z_0_town: ', ht_roof(l), z_d_town(l), &
+              z_0_town(l)
+         write (iulog,*) 'elm model is stopping'
+
+         call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+      end if
+
+      if(erridx2 > 0) then
+         l = erridx2
+         write (iulog,*) 'aerodynamic parameter error in UrbanFluxes'
+         write (iulog,*) 'h_u - z_d <= z_0'
+         write (iulog,*) 'forc_hgt_u_patch, z_d_town, z_0_town: ', forc_hgt_u_patch(lun_pp%pfti(l)), z_d_town(l), &
+             z_0_town(l)
+         write (iulog,*) 'elm model is stopping'
+         call endrun(decomp_index=l, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+      end if
+
       ! Compute fluxes - Follows elm approach for bare soils (Oleson et al 2004)
 
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc present(z_0_town(:),z_d_town(:),taf(:),qaf(:) )
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
 
-         thm_g(l) = forc_t(t) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
-         thv_g(l) = forc_th(t)*(1._r8+0.61_r8*forc_q(t))
-         dth(l)   = thm_g(l)-taf(l)
-         dqh(l)   = forc_q(t)-qaf(l)
-         dthv     = dth(l)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(l)
-         zldis(l) = forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l)
+         thm_g(fl) = forc_t(t) + lapse_rate*forc_hgt_t_patch(lun_pp%pfti(l))
+         thv_g(fl) = forc_th(t)*(1._r8+0.61_r8*forc_q(t))
+         dth(fl)   = thm_g(fl)-taf(l)
+         dqh(fl)   = forc_q(t)-qaf(l)
+         dthv     = dth(fl)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(fl)
+         zldis(fl) = forc_hgt_u_patch(lun_pp%pfti(l)) - z_d_town(l)
 
-         ! Initialize Obukhov length scale and wind speed including convective velocity
-
-         call MoninObukIni(ur(l), thv_g(l), dthv, zldis(l), z_0_town(l), um(l), obu(l))
-
+         ! Initialize Monin-Obukhov length and wind speed including convective velocity
+         call MoninObukIni(ur(fl), thv_g(fl), dthv, zldis(fl), z_0_town(l), um(fl), obu(fl))
       end do
 
-      ! Initialize conductances
-      wtus_roof(begl:endl)        = 0._r8
-      wtus_road_perv(begl:endl)   = 0._r8
-      wtus_road_imperv(begl:endl) = 0._r8
-      wtus_sunwall(begl:endl)     = 0._r8
-      wtus_shadewall(begl:endl)   = 0._r8
-      wtuq_roof(begl:endl)        = 0._r8
-      wtuq_road_perv(begl:endl)   = 0._r8
-      wtuq_road_imperv(begl:endl) = 0._r8
-      wtuq_sunwall(begl:endl)     = 0._r8
-      wtuq_shadewall(begl:endl)   = 0._r8
-      wtus_roof_unscl(begl:endl)        = 0._r8
-      wtus_road_perv_unscl(begl:endl)   = 0._r8
-      wtus_road_imperv_unscl(begl:endl) = 0._r8
-      wtus_sunwall_unscl(begl:endl)     = 0._r8
-      wtus_shadewall_unscl(begl:endl)   = 0._r8
-      wtuq_roof_unscl(begl:endl)        = 0._r8
-      wtuq_road_perv_unscl(begl:endl)   = 0._r8
-      wtuq_road_imperv_unscl(begl:endl) = 0._r8
-      wtuq_sunwall_unscl(begl:endl)     = 0._r8
-      wtuq_shadewall_unscl(begl:endl)   = 0._r8
+      ! ! Initialize conductances
+      !$acc parallel loop independent gang vector default(present) 
+      do fl=1,num_urbanl
+        wtus_roof(fl)              = 0._r8
+        wtus_road_perv(fl)         = 0._r8
+        wtus_road_imperv(fl)       = 0._r8
+        wtus_sunwall(fl)           = 0._r8
+        wtus_shadewall(fl)         = 0._r8
+        wtuq_roof(fl)              = 0._r8
+        wtuq_road_perv(fl)         = 0._r8
+        wtuq_road_imperv(fl)       = 0._r8
+        wtuq_sunwall(fl)           = 0._r8
+        wtuq_shadewall(fl)         = 0._r8
+        wtus_roof_unscl(fl)        = 0._r8
+        wtus_road_perv_unscl(fl)   = 0._r8
+        wtus_road_imperv_unscl(fl) = 0._r8
+        wtus_sunwall_unscl(fl)     = 0._r8
+        wtus_shadewall_unscl(fl)   = 0._r8
+        wtuq_roof_unscl(fl)        = 0._r8
+        wtuq_road_perv_unscl(fl)   = 0._r8
+        wtuq_road_imperv_unscl(fl) = 0._r8
+        wtuq_sunwall_unscl(fl)     = 0._r8
+        wtuq_shadewall_unscl(fl)   = 0._r8
+      end do 
 
       ! Start stability iteration
-      fnl_iter = num_urbanl
-      fnc_iter = num_urbanc
-      filterl_copy(1:num_urbanl) = filter_urbanl(1:num_urbanl)
-      filterc_copy(1:num_urbanc) = filter_urbanc(1:num_urbanc)
+      num_copyl = num_urbanl
+      num_copyc = num_urbanc
 
       if (implicit_stress) then
          loopmax = itmax
       else
          loopmax = itmin
       end if
-
+      ! converged_cols(begc:endc) = .false.
+      converged_landunits(begl:endl) = .false.
+      !$acc update device(converged_landunits(:))
       ITERATION: do iter = 1, loopmax
-
          ! Get friction velocity, relation for potential
          ! temperature and humidity profiles of surface boundary layer.
-
-         if (fnl_iter > 0) then
-            call FrictionVelocity(begl, endl, &
+         call FrictionVelocity_loops(begl, endl, &
                  num_urbanl, filter_urbanl, &
                  z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
-                 obu(begl:endl), iter, ur(begl:endl), um(begl:endl), ugust_total(begl:endl), ustar(begl:endl), &
-                 temp1(begl:endl), temp2(begl:endl), temp12m(begl:endl), temp22m(begl:endl), fm(begl:endl), &
-                 frictionvel_vars, landunit_index=.true.)
-         end if
+                 obu(1:num_urbanl), iter, ur(1:num_urbanl), um(1:num_urbanl), ustar(1:num_urbanl), &
+                 temp1(1:num_urbanl), temp2(1:num_urbanl), temp12m(1:num_urbanl), &
+                 temp22m(1:num_urbanl), fm(1:num_urbanl), &
+                 frictionvel_vars, converged_landunits(begl:endl),landunit_index=.true.)
 
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
+         !$acc parallel loop independent gang vector default(present) &
+         !$acc  present(ht_roof(:),wind_hgt_canyon(:),z_0_town(:),&
+         !$acc  z_d_town(:),canyon_hwr(:),converged_landunits(:))
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
+            if(converged_landunits(l)) cycle
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
             ! atmosphere
-            ramu(l) = 1._r8/(ustar(l)*ustar(l)/um(l))
-            rahu(l) = 1._r8/(temp1(l)*ustar(l))
-            rawu(l) = 1._r8/(temp2(l)*ustar(l))
+            ramu(fl) = 1._r8/(ustar(fl)*ustar(fl)/um(fl))
+            rahu(fl) = 1._r8/(temp1(fl)*ustar(fl))
+            rawu(fl) = 1._r8/(temp2(fl)*ustar(fl))
 
             ! Calculate magnitude of stress and update wind speed.
+            #ifndef _OPENACC
             if (implicit_stress) then
-               tau(l) = forc_rho(t)*wind_speed_adj(l)/ramu(l)
+               tau(fl) = forc_rho(t)*wind_speed_adj(fl)/ramu(fl)
                call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
                     tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
                     wind_speed_adj(l))
-               ur(l) = max(1.0_r8, sqrt(wind_speed_adj(l)**2 + ugust(t)**2))
+               ur(fl) = max(1.0_r8, wind_speed_adj(fl) + ugust(t))
             end if
+            #endif
 
             ! Canyon top wind
             ! If the wind does not change in this loop (explicit stress), then
             ! we only need to calculate this on the first iteration.
             if (implicit_stress .or. iter == 1) then
-               canyontop_wind(l) = ur(l) * &
+               canyontop_wind(fl) = ur(fl) * &
                     log( (ht_roof(l)-z_d_town(l)) / z_0_town(l) ) / &
                     log( (forc_hgt_u_patch(lun_pp%pfti(l))-z_d_town(l)) / z_0_town(l) )
 
-               ! U component of canyon wind 
+               ! U component of canyon wind
 
                if (canyon_hwr(l) < 0.5_r8) then  ! isolated roughness flow
-                  canyon_u_wind(l) = canyontop_wind(l) * exp( -0.5_r8*canyon_hwr(l)* &
+                  canyon_u_wind(fl) = canyontop_wind(fl) * exp( -0.5_r8*canyon_hwr(l)* &
                        (1._r8-(wind_hgt_canyon(l)/ht_roof(l))) )
                else if (canyon_hwr(l) < 1.0_r8) then ! wake interference flow
-                  canyon_u_wind(l) = canyontop_wind(l) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
+                  canyon_u_wind(fl) = canyontop_wind(fl) * (1._r8+2._r8*(2._r8/rpi - 1._r8)* &
                        (ht_roof(l)/(ht_roof(l)/canyon_hwr(l)) - 0.5_r8)) * &
                        exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
                else  ! skimming flow
-                  canyon_u_wind(l) = canyontop_wind(l) * (2._r8/rpi) * &
+                  canyon_u_wind(fl) = canyontop_wind(fl) * (2._r8/rpi) * &
                        exp(-0.5_r8*canyon_hwr(l)*(1._r8-(wind_hgt_canyon(l)/ht_roof(l))))
                end if
             end if
 
             ! Determine magnitude of canyon wind by using horizontal wind determined
             ! previously and vertical wind from friction velocity (Masson 2000)
-
-            canyon_wind(l) = sqrt(canyon_u_wind(l)**2._r8 + ustar(l)**2._r8)
+            canyon_wind(fl) = sqrt(canyon_u_wind(fl)**2._r8 + ustar(fl)**2._r8)
 
             ! Determine canyon_resistance (currently this single resistance determines the
             ! resistance from urban surfaces (roof, pervious and impervious road, sunlit and
             ! shaded walls) to urban canopy air, since it is only dependent on wind speed
             ! Also from Masson 2000.
 
-            canyon_resistance(l) = cpair * forc_rho(t) / (11.8_r8 + 4.2_r8*canyon_wind(l))
+            canyon_resistance(fl) = cpair * forc_rho(t) / (11.8_r8 + 4.2_r8*canyon_wind(fl))
 
          end do
 
          ! This is the first term in the equation solutions for urban canopy air temperature
          ! and specific humidity (numerator) and is a landunit quantity
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
+         !$acc parallel loop independent gang vector default(present) present(converged_landunits(:))
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
+            if(converged_landunits(l)) cycle
 
-            taf_numer(l) = thm_g(l)/rahu(l)
-            taf_denom(l) = 1._r8/rahu(l)
-            qaf_numer(l) = forc_q(t)/rawu(l)
-            qaf_denom(l) = 1._r8/rawu(l)
+            taf_numer(fl) = thm_g(fl)/rahu(fl)
+            taf_denom(fl) = 1._r8/rahu(fl)
+            qaf_numer(fl) = forc_q(t)/rawu(fl)
+            qaf_denom(fl) = 1._r8/rawu(fl)
 
             ! First term needed for derivative of heat fluxes
-            wtas(l) = 1._r8/rahu(l)
-            wtaq(l) = 1._r8/rawu(l)
+            wtas(fl) = 1._r8/rahu(fl)
+            wtaq(fl) = 1._r8/rawu(fl)
 
          end do
 
 
          ! Gather other terms for other urban columns for numerator and denominator of
          ! equations for urban canopy air temperature and specific humidity
-
-         do fc = 1, fnc_iter
-            c = filterc_copy(fc)
+         !$acc parallel loop independent gang vector default(present) present(&
+         !$acc wtroad_perv(:),qaf(:),lnd_to_urban_filter(:),converged_landunits(:),&
+         !$acc canyon_hwr(:),wtlunit_roof(:))
+          do fc = 1, num_urbanc
+            c = filter_urbanc(fc)
             l = col_pp%landunit(c)
+            if(converged_landunits(l)) cycle
+            fl = lnd_to_urban_filter(l)
+            col_to_urban_filter(c) = fc
 
             if (ctype(c) == icol_roof) then
 
                ! scaled sensible heat conductance
-               wtus(c) = wtlunit_roof(l)/canyon_resistance(l)
-               wtus_roof(l) = wtus(c)
+               wtus(fc) = wtlunit_roof(l)/canyon_resistance(fl)
+               wtus_roof(fl) = wtus(fc)
                ! unscaled sensible heat conductance
-               wtus_roof_unscl(l) = 1._r8/canyon_resistance(l)
+               wtus_roof_unscl(fl) = 1._r8/canyon_resistance(fl)
 
                if (snow_depth(c) > 0._r8) then
                   fwet_roof = min(snow_depth(c)/0.05_r8, 1._r8)
@@ -520,55 +613,55 @@ contains
                   fwet_roof = 1._r8
                end if
                ! scaled latent heat conductance
-               wtuq(c) = fwet_roof*(wtlunit_roof(l)/canyon_resistance(l))
-               wtuq_roof(l) = wtuq(c)
+               wtuq(fc) = fwet_roof*(wtlunit_roof(l)/canyon_resistance(fl))
+               wtuq_roof(fl) = wtuq(fc)
                ! unscaled latent heat conductance
-               wtuq_roof_unscl(l) = fwet_roof*(1._r8/canyon_resistance(l))
+               wtuq_roof_unscl(fl) = fwet_roof*(1._r8/canyon_resistance(fl))
 
                ! wasteheat from heating/cooling
-               if (trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_wasteheat_roof(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
+               if (urban_hac_int == urban_wasteheat_int) then
+                  eflx_wasteheat_roof(fl) = ac_wasteheat_factor * eflx_urban_ac(c) + &
                        ht_wasteheat_factor * eflx_urban_heat(c)
                else
-                  eflx_wasteheat_roof(l) = 0._r8
+                  eflx_wasteheat_roof(fl) = 0._r8
                end if
 
                ! If air conditioning on, always replace heat removed with heat into canyon
-               if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_heat_from_ac_roof(l) = abs(eflx_urban_ac(c))
+               if (urban_hac_int == urban_hac_on_int .or. urban_hac_int == urban_wasteheat_int) then
+                  eflx_heat_from_ac_roof(fl) = abs(eflx_urban_ac(c))
                else
-                  eflx_heat_from_ac_roof(l) = 0._r8
+                  eflx_heat_from_ac_roof(fl) = 0._r8
                end if
 
             else if (ctype(c) == icol_road_perv) then
 
                ! scaled sensible heat conductance
-               wtus(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_road_perv(l) = wtus(c)
+               wtus(fc) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(fl)
+               wtus_road_perv(fl) = wtus(fc)
                ! unscaled sensible heat conductance
-               wtus_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
+               wtus_road_perv_unscl(fl) = 1._r8/canyon_resistance(fl)
 
                ! scaled latent heat conductance
-               wtuq(c) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtuq_road_perv(l) = wtuq(c)
+               wtuq(fc) = wtroad_perv(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(fl)
+               wtuq_road_perv(fl) = wtuq(fc)
                ! unscaled latent heat conductance
-               wtuq_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
+               wtuq_road_perv_unscl(fl) = 1._r8/canyon_resistance(fl)
 
                if (use_vsfm) then
                   if (qaf(l) < qg(c)) then
                      if (do_soilevap_beta()) then
-                        wtuq_road_perv(l)       = soilbeta(c)*wtuq_road_perv(l)
-                        wtuq_road_perv_unscl(l) = soilbeta(c)*wtuq_road_perv_unscl(l)
+                        wtuq_road_perv(fl)       = soilbeta(c)*wtuq_road_perv(fl)
+                        wtuq_road_perv_unscl(fl) = soilbeta(c)*wtuq_road_perv_unscl(fl)
                      endif
                   endif
                endif
             else if (ctype(c) == icol_road_imperv) then
 
                ! scaled sensible heat conductance
-               wtus(c) = (1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_road_imperv(l) = wtus(c)
+               wtus(fc) = (1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(fl)
+               wtus_road_imperv(fl) = wtus(fc)
                ! unscaled sensible heat conductance
-               wtus_road_imperv_unscl(l) = 1._r8/canyon_resistance(l)
+               wtus_road_imperv_unscl(fl) = 1._r8/canyon_resistance(fl)
 
                if (snow_depth(c) > 0._r8) then
                   fwet_road_imperv = min(snow_depth(c)/0.05_r8, 1._r8)
@@ -580,179 +673,206 @@ contains
                   fwet_road_imperv = 1._r8
                end if
                ! scaled latent heat conductance
-               wtuq(c) = fwet_road_imperv*(1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtuq_road_imperv(l) = wtuq(c)
+               wtuq(fc) = fwet_road_imperv*(1._r8-wtroad_perv(l))*(1._r8-wtlunit_roof(l))/canyon_resistance(fl)
+               wtuq_road_imperv(fl) = wtuq(fc)
                ! unscaled latent heat conductance
-               wtuq_road_imperv_unscl(l) = fwet_road_imperv*(1._r8/canyon_resistance(l))
+               wtuq_road_imperv_unscl(fl) = fwet_road_imperv*(1._r8/canyon_resistance(fl))
 
             else if (ctype(c) == icol_sunwall) then
 
                ! scaled sensible heat conductance
-               wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_sunwall(l) = wtus(c)
+               wtus(fc) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(fl)
+               wtus_sunwall(fl) = wtus(fc)
                ! unscaled sensible heat conductance
-               wtus_sunwall_unscl(l) = 1._r8/canyon_resistance(l)
+               wtus_sunwall_unscl(fl) = 1._r8/canyon_resistance(fl)
 
                ! scaled latent heat conductance
-               wtuq(c) = 0._r8
-               wtuq_sunwall(l) = wtuq(c)
+               wtuq(fc) = 0._r8
+               wtuq_sunwall(fl) = wtuq(fc)
                ! unscaled latent heat conductance
-               wtuq_sunwall_unscl(l) = 0._r8
+               wtuq_sunwall_unscl(fl) = 0._r8
 
                ! wasteheat from heating/cooling
-               if (trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_wasteheat_sunwall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
+               if (urban_hac_int == urban_wasteheat_int) then
+                  eflx_wasteheat_sunwall(fl) = ac_wasteheat_factor * eflx_urban_ac(c) + &
                        ht_wasteheat_factor * eflx_urban_heat(c)
                else
-                  eflx_wasteheat_sunwall(l) = 0._r8
+                  eflx_wasteheat_sunwall(fl) = 0._r8
                end if
 
                ! If air conditioning on, always replace heat removed with heat into canyon
-               if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_heat_from_ac_sunwall(l) = abs(eflx_urban_ac(c))
+               if (urban_hac_int == urban_hac_on_int .or. urban_hac_int == urban_wasteheat_int) then
+                  eflx_heat_from_ac_sunwall(fl) = abs(eflx_urban_ac(c))
                else
-                  eflx_heat_from_ac_sunwall(l) = 0._r8
+                  eflx_heat_from_ac_sunwall(fl) = 0._r8
                end if
 
             else if (ctype(c) == icol_shadewall) then
 
                ! scaled sensible heat conductance
-               wtus(c) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(l)
-               wtus_shadewall(l) = wtus(c)
+               wtus(fc) = canyon_hwr(l)*(1._r8-wtlunit_roof(l))/canyon_resistance(fl)
+               wtus_shadewall(fl) = wtus(fc)
                ! unscaled sensible heat conductance
-               wtus_shadewall_unscl(l) = 1._r8/canyon_resistance(l)
+               wtus_shadewall_unscl(fl) = 1._r8/canyon_resistance(fl)
 
                ! scaled latent heat conductance
-               wtuq(c) = 0._r8
-               wtuq_shadewall(l) = wtuq(c)
+               wtuq(fc) = 0._r8
+               wtuq_shadewall(fl) = wtuq(fc)
                ! unscaled latent heat conductance
-               wtuq_shadewall_unscl(l) = 0._r8
+               wtuq_shadewall_unscl(fl) = 0._r8
 
                ! wasteheat from heating/cooling
-               if (trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_wasteheat_shadewall(l) = ac_wasteheat_factor * eflx_urban_ac(c) + &
+               if (urban_hac_int == urban_wasteheat_int) then
+                  eflx_wasteheat_shadewall(fl) = ac_wasteheat_factor * eflx_urban_ac(c) + &
                        ht_wasteheat_factor * eflx_urban_heat(c)
                else
-                  eflx_wasteheat_shadewall(l) = 0._r8
+                  eflx_wasteheat_shadewall(fl) = 0._r8
                end if
 
                ! If air conditioning on, always replace heat removed with heat into canyon
-               if (trim(urban_hac) == urban_hac_on .or. trim(urban_hac) == urban_wasteheat_on) then
-                  eflx_heat_from_ac_shadewall(l) = abs(eflx_urban_ac(c))
+               if (urban_hac_int == urban_hac_on_int .or. urban_hac_int == urban_wasteheat_int) then
+                  eflx_heat_from_ac_shadewall(fl) = abs(eflx_urban_ac(c))
                else
-                  eflx_heat_from_ac_shadewall(l) = 0._r8
+                  eflx_heat_from_ac_shadewall(fl) = 0._r8
                end if
-            else
-#ifndef _OPENACC
-               write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
-               write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
-               write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
-               call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
-#endif
+           ! else
+           !    write(iulog,*) 'c, ctype, pi = ', c, ctype(c), pi
+           !    write(iulog,*) 'Column indices for: shadewall, sunwall, road_imperv, road_perv, roof: '
+           !    write(iulog,*) icol_shadewall, icol_sunwall, icol_road_imperv, icol_road_perv, icol_roof
+               !call endrun(decomp_index=l, elmlevel=namel, msg="ERROR, ctype out of range"//errmsg(__FILE__, __LINE__))
             end if
-
-            taf_numer(l) = taf_numer(l) + t_grnd(c)*wtus(c)
-            taf_denom(l) = taf_denom(l) + wtus(c)
-            qaf_numer(l) = qaf_numer(l) + qg(c)*wtuq(c)
-            qaf_denom(l) = qaf_denom(l) + wtuq(c)
+           ! Made seperate reduction loop 
+           !  taf_numer(fl) = taf_numer(fl) + t_grnd(c)*wtus(fc)
+           !  taf_denom(fl) = taf_denom(fl) + wtus(fc)
+           ! qaf_numer(fl) = qaf_numer(fl) + qg(c)*wtuq(fc)
+           ! qaf_denom(fl) = qaf_denom(fl) + wtuq(fc)
 
          end do
+      !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)&
+      !$acc present(converged_landunits(:))
+      do fl = 1, num_urbanl
+         sum_denom = taf_denom(fl)
+         sum_numer = taf_numer(fl) 
+         l = filter_urbanl(fl)
+         if(converged_landunits(l)) cycle
+         !$acc loop vector reduction(+:sum_denom,sum_numer)
+         do c = lun_pp%coli(l), lun_pp%colf(l)
+            if(col_pp%active(c)) then
+               fc = col_to_urban_filter(c)
+               sum_denom = sum_denom + wtus(fc)
+               sum_numer = sum_numer + t_grnd(c)*wtus(fc)
+            end if
+         end do
+         taf_denom(fl) =  sum_denom
+         taf_numer(fl) =  sum_numer
+      end do
+      !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)&
+      !$acc present(qg(:),col_pp%active(:),lun_pp%coli(:),lun_pp%colf(:),col_to_urban_filter(:))
+      do fl = 1, num_urbanl
+         sum_denom = qaf_denom(fl)
+         sum_numer = qaf_numer(fl)
+         l = filter_urbanl(fl)
+         !$acc loop vector reduction(+:sum_denom,sum_numer)
+         do c = lun_pp%coli(l), lun_pp%colf(l)
+            if(col_pp%active(c)) then
+               fc = col_to_urban_filter(c)
+               sum_denom = sum_denom + wtuq(fc)
+               sum_numer = sum_numer + qg(c)*wtuq(fc)
+            end if
+         end do
+         qaf_denom(fl) =  sum_denom
+         qaf_numer(fl) =  sum_numer
+      end do
 
          ! Calculate new urban canopy air temperature and specific humidity
 
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
+         !$acc parallel loop independent gang vector default(present)&
+         !$acc present(wtroad_perv(:),taf(:),converged_landunits(:),eflx_heat_from_ac(:),&
+         !$acc eflx_traffic_factor(:),eflx_wasteheat(:),eflx_traffic(:),qaf(:), &
+         !$acc wtlunit_roof(:),canyon_hwr(:) )
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
             g = lun_pp%gridcell(l)
-
+            if(converged_landunits(l)) cycle
             ! Total waste heat and heat from AC is sum of heat for walls and roofs
             ! accounting for different surface areas
-            eflx_wasteheat(l) = wtlunit_roof(l)*eflx_wasteheat_roof(l) + &
-                 (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_wasteheat_sunwall(l) + &
-                 eflx_wasteheat_shadewall(l)))
+            eflx_wasteheat(l) = wtlunit_roof(l)*eflx_wasteheat_roof(fl) + &
+                 (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_wasteheat_sunwall(fl) + &
+                 eflx_wasteheat_shadewall(fl)))
 
             ! Limit wasteheat to ensure that we don't get any unrealistically strong
             ! positive feedbacks due to AC in a warmer climate
             eflx_wasteheat(l) = min(eflx_wasteheat(l),wasteheat_limit)
 
-            eflx_heat_from_ac(l) = wtlunit_roof(l)*eflx_heat_from_ac_roof(l) + &
-                 (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_heat_from_ac_sunwall(l) + &
-                 eflx_heat_from_ac_shadewall(l)))
+            eflx_heat_from_ac(l) = wtlunit_roof(l)*eflx_heat_from_ac_roof(fl) + &
+                 (1._r8-wtlunit_roof(l))*(canyon_hwr(l)*(eflx_heat_from_ac_sunwall(fl) + &
+                 eflx_heat_from_ac_shadewall(fl)))
 
             ! Calculate traffic heat flux
             ! Only comes from impervious road
             eflx_traffic(l) = (1._r8-wtlunit_roof(l))*(1._r8-wtroad_perv(l))* &
                  eflx_traffic_factor(l)
 
-            taf(l) = taf_numer(l)/taf_denom(l)
-            qaf(l) = qaf_numer(l)/qaf_denom(l)
+            taf(l) = taf_numer(fl)/taf_denom(fl)
+            qaf(l) = qaf_numer(fl)/qaf_denom(fl)
 
-            wts_sum(l) = wtas(l) + wtus_roof(l) + wtus_road_perv(l) + &
-                 wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)
+            wts_sum(fl) = wtas(fl) + wtus_roof(fl) + wtus_road_perv(fl) + &
+                 wtus_road_imperv(fl) + wtus_sunwall(fl) + wtus_shadewall(fl)
 
-            wtq_sum(l) = wtaq(l) + wtuq_roof(l) + wtuq_road_perv(l) + &
-                 wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)
+            wtq_sum(fl) = wtaq(fl) + wtuq_roof(fl) + wtuq_road_perv(fl) + &
+                 wtuq_road_imperv(fl) + wtuq_sunwall(fl) + wtuq_shadewall(fl)
 
          end do
 
          ! This section of code is not required if niters = 1
          ! Determine stability using new taf and qaf
-         ! TODO: Some of these constants replicate what is in FrictionVelocity and BareGround fluxes should consildate. EBK
-         do fl = 1, fnl_iter
-            l = filterl_copy(fl)
+         ! TODO: Some of these constants replicate what is in FrictionVelocity 
+         !       and BareGround fluxes should consildate. EBK
+         !$acc parallel loop independent gang vector default(present) &
+         !$acc present(taf(:), qaf(:), converged_landunits(:) ) 
+         do fl = 1, num_urbanl
+            l = filter_urbanl(fl)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
+            if(converged_landunits(l)) cycle
 
-            dth(l) = thm_g(l)-taf(l)
-            dqh(l) = forc_q(t)-qaf(l)
-            tstar = temp1(l)*dth(l)
-            qstar = temp2(l)*dqh(l)
+            dth(fl) = thm_g(fl)-taf(l)
+            dqh(fl) = forc_q(t)-qaf(l)
+            tstar = temp1(fl)*dth(fl)
+            qstar = temp2(fl)*dqh(fl)
+
             thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
-            zeta = zldis(l)*vkc*grav*thvstar/(ustar(l)**2*thv_g(l))
-
+            zeta = zldis(fl)*vkc*grav*thvstar/(ustar(fl)**2*thv_g(fl))
+           
             if (zeta >= 0._r8) then                   !stable
                zeta = min(2._r8,max(zeta,0.01_r8))
-               um(l) = max(ur(l),0.1_r8)
+               um(fl) = max(ur(fl),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               if ((.not. atm_gustiness) .or. force_land_gustiness) then
-                  wc = beta(l)*(-grav*ustar(l)*thvstar*zii(l)/thv_g(l))**0.333_r8
-                  ugust_total(l) = sqrt(ugust(t)**2 + wc**2)
-                  um(l) = sqrt(ur(l)*ur(l) + wc*wc)
-               else
-                  um(l) = max(ur(l),0.1_r8)
-               end if
+               wc = beta*(-grav*ustar(fl)*thvstar*zii/thv_g(fl))**0.333_r8
+               um(fl) = sqrt(ur(fl)*ur(fl) + wc*wc)
             end if
-
-            obu(l) = zldis(l)/zeta
+            obu(fl) = zldis(fl)/zeta
          end do
 
          ! Test for convergence
          iter_final = iter
          if (iter >= itmin) then
-            fnl_iter_old = fnl_iter
-            fnl_iter = 0
-            do fl = 1, fnl_iter_old
-               l = filterl_copy(fl)
-               if (.not. (abs(tau_diff(l)) < dtaumin)) then
-                  fnl_iter = fnl_iter + 1
-                  filterl_copy(fnl_iter) = l
+            num_unconverged = 0
+            !$acc parallel loop independent gang vector default(present) & 
+            !$acc  present(converged_landunits(:)) copy(num_unconverged) reduction(+:num_unconverged)
+            do fl = 1, num_urbanl
+               l = filter_urbanl(fl)
+               if (.not. (abs(tau_diff(fl)) < dtaumin)) then
+                  num_unconverged = num_unconverged + 1
+               else
+                  converged_landunits(l) = .true.
                end if
             end do
-            if (fnl_iter == 0) then
+            if (num_unconverged == 0) then
+               print *, "UrbanFluxes::Converged after ",iter,"iterations"
                exit ITERATION
             end if
-            ! After weeding out landunits that have converged, we also need to
-            ! filter out the associated columns.
-            fnc_iter_old = fnc_iter
-            fnc_iter = 0
-            do fc = 1, fnc_iter_old
-               c = filterc_copy(fc)
-               l = col_pp%landunit(c)
-               if (.not. (abs(tau_diff(l)) < dtaumin)) then
-                  fnc_iter = fnc_iter + 1
-                  filterc_copy(fnc_iter) = c
-               end if
-            end do
          end if
 
       end do ITERATION ! end iteration
@@ -761,9 +881,16 @@ contains
 
       ! the following initializations are needed to ensure that the values are 0 over non-
       ! active urban Patches
-      eflx_sh_grnd_scale(bounds%begp : bounds%endp) = 0._r8
-      qflx_evap_soi_scale(bounds%begp : bounds%endp) = 0._r8
-
+      ! eflx_sh_grnd_scale(bounds%begp : bounds%endp) = 0._r8
+      ! qflx_evap_soi_scale(bounds%begp : bounds%endp) = 0._r8
+      
+      !$acc parallel loop independent gang vector default(present)
+      do p = begp, endp 
+         eflx_sh_grnd_scale(p) = 0._r8
+         qflx_evap_soi_scale(p) = 0._r8
+      enddo
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc present(qaf(:), taf(:), lnd_to_urban_filter(:))
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
@@ -771,8 +898,9 @@ contains
          g = veg_pp%gridcell(p)
          t = veg_pp%topounit(p)
          l = veg_pp%landunit(p)
-
-         ram1(p) = ramu(l)  !pass value to global variable
+         fl = lnd_to_urban_filter(l)
+         fc = col_to_urban_filter(c)
+         ram1(p) = ramu(fl)  !pass value to global variable
 
          ! Upward and downward canopy longwave are zero
 
@@ -783,73 +911,73 @@ contains
          ! ground temperature
 
          if (ctype(c) == icol_roof) then
-            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_road_perv(l) +  &
-                 wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
-                 (wtus_roof_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(t) * (wtaq(l) + wtuq_road_perv(l) +  &
-                 wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
-                 (wtuq_roof_unscl(l)/wtq_sum(l))*dqgdT(c)
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(fl) + wtus_road_perv(fl) +  &
+                 wtus_road_imperv(fl) + wtus_sunwall(fl) + wtus_shadewall(fl)) * &
+                 (wtus_roof_unscl(fl)/wts_sum(fl))
+            cgrndl(p) = forc_rho(t) * (wtaq(fl) + wtuq_road_perv(fl) +  &
+                 wtuq_road_imperv(fl) + wtuq_sunwall(fl) + wtuq_shadewall(fl)) * &
+                 (wtuq_roof_unscl(fl)/wtq_sum(fl))*dqgdT(c)
          else if (ctype(c) == icol_road_perv) then
-            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
-                 wtus_road_imperv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
-                 (wtus_road_perv_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(t) * (wtaq(l) + wtuq_roof(l) +  &
-                 wtuq_road_imperv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
-                 (wtuq_road_perv_unscl(l)/wtq_sum(l))*dqgdT(c)
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(fl) + wtus_roof(fl) +  &
+                 wtus_road_imperv(fl) + wtus_sunwall(fl) + wtus_shadewall(fl)) * &
+                 (wtus_road_perv_unscl(fl)/wts_sum(fl))
+            cgrndl(p) = forc_rho(t) * (wtaq(fl) + wtuq_roof(fl) +  &
+                 wtuq_road_imperv(fl) + wtuq_sunwall(fl) + wtuq_shadewall(fl)) * &
+                 (wtuq_road_perv_unscl(fl)/wtq_sum(fl))*dqgdT(c)
          else if (ctype(c) == icol_road_imperv) then
-            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
-                 wtus_road_perv(l) + wtus_sunwall(l) + wtus_shadewall(l)) * &
-                 (wtus_road_imperv_unscl(l)/wts_sum(l))
-            cgrndl(p) = forc_rho(t) * (wtaq(l) + wtuq_roof(l) +  &
-                 wtuq_road_perv(l) + wtuq_sunwall(l) + wtuq_shadewall(l)) * &
-                 (wtuq_road_imperv_unscl(l)/wtq_sum(l))*dqgdT(c)
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(fl) + wtus_roof(fl) +  &
+                 wtus_road_perv(fl) + wtus_sunwall(fl) + wtus_shadewall(fl)) * &
+                 (wtus_road_imperv_unscl(fl)/wts_sum(fl))
+            cgrndl(p) = forc_rho(t) * (wtaq(fl) + wtuq_roof(fl) +  &
+                 wtuq_road_perv(fl) + wtuq_sunwall(fl) + wtuq_shadewall(fl)) * &
+                 (wtuq_road_imperv_unscl(fl)/wtq_sum(fl))*dqgdT(c)
          else if (ctype(c) == icol_sunwall) then
-            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
-                 wtus_road_perv(l) + wtus_road_imperv(l) + wtus_shadewall(l)) * &
-                 (wtus_sunwall_unscl(l)/wts_sum(l))
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(fl) + wtus_roof(fl) +  &
+                 wtus_road_perv(fl) + wtus_road_imperv(fl) + wtus_shadewall(fl)) * &
+                 (wtus_sunwall_unscl(fl)/wts_sum(fl))
             cgrndl(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
-            cgrnds(p) = forc_rho(t) * cpair * (wtas(l) + wtus_roof(l) +  &
-                 wtus_road_perv(l) + wtus_road_imperv(l) + wtus_sunwall(l)) * &
-                 (wtus_shadewall_unscl(l)/wts_sum(l))
+            cgrnds(p) = forc_rho(t) * cpair * (wtas(fl) + wtus_roof(fl) +  &
+                 wtus_road_perv(fl) + wtus_road_imperv(fl) + wtus_sunwall(fl)) * &
+                 (wtus_shadewall_unscl(fl)/wts_sum(fl))
             cgrndl(p) = 0._r8
          end if
          cgrnd(p)  = cgrnds(p) + cgrndl(p)*htvp(c)
 
          ! Surface fluxes of momentum, sensible and latent heat
 
-         taux(p) = -forc_rho(t)*forc_u(t)/ramu(l)
-         tauy(p) = -forc_rho(t)*forc_v(t)/ramu(l)
+         taux(p) = -forc_rho(t)*forc_u(t)/ramu(fl)
+         tauy(p) = -forc_rho(t)*forc_v(t)/ramu(fl)
          if (implicit_stress) then
-            taux(p) = taux(p) * (wind_speed_adj(l) / wind_speed0(l))
-            tauy(p) = tauy(p) * (wind_speed_adj(l) / wind_speed0(l))
+            taux(p) = taux(p) * (wind_speed_adj(fl) / wind_speed0(fl))
+            tauy(p) = tauy(p) * (wind_speed_adj(fl) / wind_speed0(fl))
          end if
 
          ! Use new canopy air temperature
-         dth(l) = taf(l) - t_grnd(c)
+         dth(fl) = taf(l) - t_grnd(c)
 
          if (ctype(c) == icol_roof) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_roof_unscl(fl)*dth(fl)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_perv) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_perv_unscl(fl)*dth(fl)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_road_imperv) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_road_imperv_unscl(fl)*dth(fl)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_sunwall) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_sunwall_unscl(fl)*dth(fl)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
          else if (ctype(c) == icol_shadewall) then
-            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(l)*dth(l)
+            eflx_sh_grnd(p)  = -forc_rho(t)*cpair*wtus_shadewall_unscl(fl)*dth(fl)
             eflx_sh_snow(p)  = 0._r8
             eflx_sh_soil(p)  = 0._r8
             eflx_sh_h2osfc(p)= 0._r8
@@ -858,24 +986,24 @@ contains
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
          eflx_sh_tot_u(p) = eflx_sh_tot(p)
 
-         dqh(l) = qaf(l) - qg(c)
+         dqh(fl) = qaf(l) - qg(c)
 
          if (ctype(c) == icol_roof) then
-            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(l)*dqh(l)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_roof_unscl(fl)*dqh(fl)
          else if (ctype(c) == icol_road_perv) then
             ! Evaporation assigned to soil term if dew or snow
             ! or if no liquid water available in soil column
-            if (dqh(l) > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
-               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh(l)
+            if (dqh(fl) > 0._r8 .or. frac_sno(c) > 0._r8 .or. soilalpha_u(c) <= 0._r8) then
+               qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_perv_unscl(fl)*dqh(fl)
                qflx_tran_veg(p) = 0._r8
                ! Otherwise, evaporation assigned to transpiration term
             else
                qflx_evap_soi(p) = 0._r8
-               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(l)*dqh(l)
+               qflx_tran_veg(p) = -forc_rho(t)*wtuq_road_perv_unscl(fl)*dqh(fl)
             end if
             qflx_evap_veg(p) = qflx_tran_veg(p)
          else if (ctype(c) == icol_road_imperv) then
-            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(l)*dqh(l)
+            qflx_evap_soi(p) = -forc_rho(t)*wtuq_road_imperv_unscl(fl)*dqh(fl)
          else if (ctype(c) == icol_sunwall) then
             qflx_evap_soi(p) = 0._r8
          else if (ctype(c) == icol_shadewall) then
@@ -883,66 +1011,87 @@ contains
          end if
 
          ! SCALED sensible and latent heat flux for error check
-         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(c)*dth(l)
-         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(c)*dqh(l)
+         eflx_sh_grnd_scale(p)  = -forc_rho(t)*cpair*wtus(fc)*dth(fl)
+         qflx_evap_soi_scale(p) = -forc_rho(t)*wtuq(fc)*dqh(fl)
 
       end do
 
       ! Check to see that total sensible and latent heat equal the sum of
       ! the scaled heat fluxes above
+      !$acc parallel loop independent gang vector default(present) present(qaf(:), taf(:))
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
-         eflx(l)       = -(forc_rho(t)*cpair/rahu(l))*(thm_g(l) - taf(l))
-         qflx(l)       = -(forc_rho(t)/rawu(l))*(forc_q(t) - qaf(l))
-         eflx_scale(l) = sum(eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
-         qflx_scale(l) = sum(qflx_evap_soi_scale(lun_pp%pfti(l):lun_pp%pftf(l)))
-         eflx_err(l)   = eflx_scale(l) - eflx(l)
-         qflx_err(l)   = qflx_scale(l) - qflx(l)
-      end do
-
-      found = .false.
-      do fl = 1, num_urbanl
-         l = filter_urbanl(fl)
-         if (abs(eflx_err(l)) > 0.01_r8) then
+         !
+         eflx_scale = 0.0_r8 
+         qflx_scale = 0.0_r8
+         eflx       = -(forc_rho(t)*cpair/rahu(fl))*(thm_g(fl) - taf(l))
+         qflx       = -(forc_rho(t)/rawu(fl))*(forc_q(t) - qaf(l))
+         !$acc loop vector reduction(+:eflx_scale,qflx_scale) 
+         do p = lun_pp%pfti(l), lun_pp%pftf(l) 
+            if(veg_pp%active(p) .and. lun_pp%urbpoi(l)) then
+               eflx_scale = eflx_scale + eflx_sh_grnd_scale(p) 
+               qflx_scale = qflx_scale + qflx_evap_soi_scale(p)
+            end if 
+         end do 
+         eflx_err   = eflx_scale - eflx
+         qflx_err   = qflx_scale - qflx
+         if(abs(eflx_err) > 0.01_r8) then 
+            found=.true. 
+            indexl = l 
+            print *, "EFLX_ERR indexl",l 
+            stop 
+         end if 
+         if (abs(qflx_err) > 4.e-9_r8) then
             found = .true.
             indexl = l
             exit
          end if
       end do
 
-#ifndef _OPENACC
+      found = .false.
+      !$acc parallel loop independent gang vector default(present)
+      do fl = 1, num_urbanl
+         l = filter_urbanl(fl)
+         if (abs(eflx_err(fl)) > 0.01_r8) then
+            found = .true.
+            indexl = fl
+            exit
+         end if
+      end do
+
       if ( found ) then
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
-              ' nstep = ',nstep,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
+              ' nstep = ',nstep_mod,' indexl= ',indexl,' eflx_err= ',eflx_err(indexl)
          if (abs(eflx_err(indexl)) > .01_r8) then
+            l = filter_urbanl(indexl)
             write(iulog,*)'elm model is stopping - error is greater than .01 W/m**2'
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
-            write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(indexl):lun_pp%pftf(indexl))
+            write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l))
             write(iulog,*)'eflx          = ',eflx(indexl)
             ! test code, PET
-            write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(indexl))
+            write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(l))
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
-#endif
 
-      found = .false.
+      erridx1 = -9999
+      !$acc parallel loop independent gang vector default(present) copy(erridx1)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          ! 4.e-9 kg/m**2/s = 0.01 W/m**2
-         if (abs(qflx_err(l)) > 4.e-9_r8) then
-            found = .true.
-            indexl = l
-            exit
+         if (abs(qflx_err(fl)) > 4.e-9_r8) then
+            ! found = .true.
+            erridx1 = l
+            ! exit
          end if
       end do
 
-#ifndef _OPENACC
-      if ( found ) then
+      if ( erridx1 > 0 ) then
+         indexl = erridx1
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
-              ' nstep = ',nstep,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
+              ' nstep = ',nstep_mod,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
          if (abs(qflx_err(indexl)) > 4.e-9_r8) then
             write(iulog,*)'elm model is stopping - error is greater than 4.e-9 kg/m**2/s'
             write(iulog,*)'qflx_scale    = ',qflx_scale(indexl)
@@ -950,18 +1099,17 @@ contains
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
-#endif
 
       ! Check for convergence of stress.
       if (implicit_stress) then
          do fl = 1, num_urbanl
             l = filter_urbanl(fl)
-            if (abs(tau_diff(l)) > dtaumin) then
-               if (nstep > 0) then ! Suppress common warnings on the first time step.
+            if (abs(tau_diff(fl)) > dtaumin) then
+               if (nstep_mod > 0) then ! Suppress common warnings on the first time step.
                   write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
                        ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
-                       ' tau_diff= ',tau_diff(l),' tau= ',tau(l),&
-                       ' wind_speed_adj= ',wind_speed_adj(l),' iter_final= ',iter_final
+                       ' tau_diff= ',tau_diff(fl),' tau= ',tau(fl),&
+                       ' wind_speed_adj= ',wind_speed_adj(fl),' iter_final= ',iter_final
                end if
             end if
          end do
@@ -969,31 +1117,36 @@ contains
 
       ! Gather terms required to determine internal building temperature
 
+      !$acc parallel loop independent gang vector default(present) present(&
+      !$acc t_soisno(:,:),lnd_to_urban_filter(:) )
       do fc = 1,num_urbanc
          c = filter_urbanc(fc)
          l = col_pp%landunit(c)
-
+         fl = lnd_to_urban_filter(l)
          if (ctype(c) == icol_roof) then
-            t_roof_innerl(l) = t_soisno(c,nlevurb)
+            t_roof_innerl(fl) = t_soisno(c,nlevurb)
          else if (ctype(c) == icol_sunwall) then
-            t_sunwall_innerl(l) = t_soisno(c,nlevurb)
+            t_sunwall_innerl(fl) = t_soisno(c,nlevurb)
          else if (ctype(c) == icol_shadewall) then
-            t_shadewall_innerl(l) = t_soisno(c,nlevurb)
+            t_shadewall_innerl(fl) = t_soisno(c,nlevurb)
          end if
 
       end do
 
       ! Calculate internal building temperature
+      !$acc parallel loop independent gang vector default(present) present(&
+      !$acc ht_roof(:),t_building(:),canyon_hwr(:),wtlunit_roof(:))
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
 
          lngth_roof = (ht_roof(l)/canyon_hwr(l))*wtlunit_roof(l)/(1._r8-wtlunit_roof(l))
-         t_building(l) = (ht_roof(l)*(t_shadewall_innerl(l) + t_sunwall_innerl(l)) &
-              +lngth_roof*t_roof_innerl(l))/(2._r8*ht_roof(l)+lngth_roof)
+         t_building(l) = (ht_roof(l)*(t_shadewall_innerl(fl) + t_sunwall_innerl(fl)) &
+              +lngth_roof*t_roof_innerl(fl))/(2._r8*ht_roof(l)+lngth_roof)
       end do
 
       ! No roots for urban except for pervious road
 
+      !$acc parallel loop independent gang vector default(present) collapse(2)
       do j = 1, nlevgrnd
          do f = 1, num_urbanp
             p = filter_urbanp(f)
@@ -1001,12 +1154,12 @@ contains
             if (ctype(c) == icol_road_perv) then
                rootr(p,j) = rootr_road_perv(c,j)
             else
-
                rootr(p,j) = 0._r8
             end if
          end do
       end do
 
+      !$acc parallel loop independent gang vector default(present) present(taf(:),qaf(:))
       do f = 1, num_urbanp
 
          p = filter_urbanp(f)
@@ -1032,6 +1185,85 @@ contains
          t_veg(p) = forc_t(t)
 
       end do
+
+    !$acc exit data delete(&
+    !$acc canyontop_wind(:), &
+    !$acc canyon_u_wind(:), &
+    !$acc canyon_wind(:), &
+    !$acc canyon_resistance(:), &
+    !$acc ur(:), &
+    !$acc ustar(:), &
+    !$acc ramu(:), &
+    !$acc rahu(:), &
+    !$acc rawu(:), &
+    !$acc temp1(:), &
+    !$acc temp12m(:), &
+    !$acc temp2(:), &
+    !$acc temp22m(:), &
+    !$acc thm_g(:), &
+    !$acc thv_g(:), &
+    !$acc dth(:), &
+    !$acc dqh(:), &
+    !$acc zldis(:), &
+    !$acc um(:), &
+    !$acc obu(:), &
+    !$acc taf_numer(:), &
+    !$acc taf_denom(:), &
+    !$acc qaf_numer(:), &
+    !$acc qaf_denom(:), &
+    !$acc wtas(:), &
+    !$acc wtaq(:), &
+    !$acc wts_sum(:), &
+    !$acc wtq_sum(:), &
+    !$acc fm(:), &
+    !$acc wtus(:), &
+    !$acc wtuq(:), &
+    !$acc wtus_roof(:), &
+    !$acc wtuq_roof(:), &
+    !$acc wtus_road_perv(:), &
+    !$acc wtuq_road_perv(:), &
+    !$acc wtus_road_imperv(:), &
+    !$acc wtuq_road_imperv(:), &
+    !$acc wtus_sunwall(:), &
+    !$acc wtuq_sunwall(:), &
+    !$acc wtus_shadewall(:), &
+    !$acc wtuq_shadewall(:), &
+    !$acc wtus_roof_unscl(:), &
+    !$acc wtuq_roof_unscl(:), &
+    !$acc wtus_road_perv_unscl(:), &
+    !$acc wtuq_road_perv_unscl(:), &
+    !$acc wtus_road_imperv_unscl(:), &
+    !$acc wtuq_road_imperv_unscl(:), &
+    !$acc wtus_sunwall_unscl(:), &
+    !$acc wtuq_sunwall_unscl(:), &
+    !$acc wtus_shadewall_unscl(:), &
+    !$acc wtuq_shadewall_unscl(:), &
+    !$acc t_sunwall_innerl(:), &
+    !$acc t_shadewall_innerl(:), &
+    !$acc t_roof_innerl(:), &
+    !$acc eflx_sh_grnd_scale(:), &
+    !$acc qflx_evap_soi_scale(:), &
+    !$acc eflx_wasteheat_roof(:), &
+    !$acc eflx_wasteheat_sunwall(:), &
+    !$acc eflx_wasteheat_shadewall(:), &
+    !$acc eflx_heat_from_ac_roof(:), &
+    !$acc eflx_heat_from_ac_sunwall(:), &
+    !$acc eflx_heat_from_ac_shadewall(:), &
+    !$acc eflx(:), &
+    !$acc qflx(:), &
+    !$acc eflx_scale(:), &
+    !$acc qflx_scale(:), &
+    !$acc eflx_err(:), &
+    !$acc qflx_err(:), &
+    !$acc local_secp1(:), &
+    !$acc wind_speed0(:), &
+    !$acc wind_speed_adj(:), &
+    !$acc tau(:), &
+    !$acc tau_diff(:), &
+    !$acc prev_tau(:), &
+    !$acc prev_tau_diff(:), &
+    !$acc lnd_to_urban_filter(:), &
+    !$acc converged_landunits(:),col_to_urban_filter(:) )
 
     end associate
 

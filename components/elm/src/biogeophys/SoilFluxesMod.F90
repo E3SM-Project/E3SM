@@ -167,12 +167,12 @@ contains
 
       deg2rad = SHR_CONST_PI/180._r8
 
-         dtime = dtime_mod
+      dtime = dtime_mod
       call t_startf('bgp2_loop_1')
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          j = col_pp%snl(c)+1
-
+         
          ! Calculate difference in soil temperature from last time step, for
          ! flux corrections
 
@@ -297,6 +297,11 @@ contains
                     - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
                     - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
             endif
+
+            eflx_soil_grnd(p) = ((1._r8- frac_sno_eff(c))*sabg_soil(p) + frac_sno_eff(c)*sabg_snow(p)) + dlrad(p) &
+                 + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                 - emg(c)*sb*lw_grnd - emg(c)*sb*t_grnd0(c)**3*(4._r8*tinc(c)) &
+                 - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
             if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                eflx_soil_grnd_r(p) = eflx_soil_grnd(p)
@@ -430,9 +435,9 @@ contains
          j = col_pp%snl(c)+1
 
          if (.not. lun_pp%urbpoi(l)) then
-            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4 &
-                 +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4 &
-                 +frac_h2osfc(c)*t_h2osfc_bef(c)**4)
+            lw_grnd=(frac_sno_eff(c)*tssbef(c,col_pp%snl(c)+1)**4._r8 &
+                 +(1._r8-frac_sno_eff(c)-frac_h2osfc(c))*tssbef(c,1)**4._r8 &
+                 +frac_h2osfc(c)*t_h2osfc_bef(c)**4._r8)
 
             if (use_finetop_rad) then
                slope_rad = slope_deg(g) * deg2rad
