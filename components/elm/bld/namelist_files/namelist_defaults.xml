@@ -269,19 +269,19 @@ lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr2010_c260829.nc</fsurdat
 
  <!-- u02.lr10 -->
  <fsurdat hgrid="u02.lr10"   sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr1850_c260829.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_u02.oi30.lr10_simyr1850_c260829.nc</fsurdat>
  <fsurdat hgrid="u02.lr10"   sim_year="1950" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr1950_c260829.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_u02.oi30.lr10_simyr1950_c260829.nc</fsurdat>
  <fsurdat hgrid="u02.lr10"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr2010_c260829.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_u02.oi30.lr10_simyr2010_c260829.nc</fsurdat>
 
- <!-- u02.lr240 -->
- <fsurdat hgrid="u02.lr240"   sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr1850_c260829.nc</fsurdat>
- <fsurdat hgrid="u02.lr240"   sim_year="1950" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr1950_c260829.nc</fsurdat>
- <fsurdat hgrid="u02.lr240"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_simyr2010_c260829.nc</fsurdat>
+ <!-- u03.lr240 -->
+ <fsurdat hgrid="u03.lr240"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_u03.oi240.lr240_simyr1850_c260829.nc</fsurdat>
+ <fsurdat hgrid="u03.lr240"   sim_year="1950" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_u03.oi240.lr240_simyr1950_c260829.nc</fsurdat>
+ <fsurdat hgrid="u03.lr240"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_u03.oi240.lr240_simyr2010_c260829.nc</fsurdat>
 
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
