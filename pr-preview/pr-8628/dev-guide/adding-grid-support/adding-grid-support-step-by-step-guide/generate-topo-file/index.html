@@ -5081,9 +5081,9 @@ ncremap<span class="w"> </span><span class="si">${</span><span class="nv">MAP_AR
 ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 
 <span class="c1"># Compute phi_s on the target np4 grid</span>
-ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">'PHIS=terr*9.80616'</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 
-<span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
+<span class="c1"># rename the column dimension to be "ncol"</span>
 ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 </code></pre></div>
 </li>
@@ -5095,7 +5095,7 @@ ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span cl
 
 cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;ctl_nl</span>
-<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
+<span class="s">mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"</span>
 <span class="s">smooth_phis_p2filt = 0</span>
 <span class="s">smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing</span>
 <span class="s">smooth_phis_nudt = 4e-16</span>
@@ -5105,14 +5105,14 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;vert_nl</span>
 <span class="s">/</span>
 <span class="s">&amp;analysis_nl</span>
-<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
-<span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
+<span class="s">tool = 'topo_pgn_to_smoothed'</span>
+<span class="s">infilenames = '${topo_file_1}', '${topo_file_2}'</span>
 <span class="s">/</span>
 <span class="s">EOF</span>
 
 mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
 
-<span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
+<span class="c1"># rename output file to remove "1.nc" suffix</span>
 mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
 </code></pre></div>
 </li>
@@ -5173,12 +5173,12 @@ ncks<span class="w"> </span>-A<span class="w"> </span><span class="si">${</span>
 <span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/lcrc/group/e3sm/data/inputdata
 <span class="c1"># argument for ncremap to select TempestRemap or mbtempest backend</span>
 <span class="nv">MAP_ARGS</span><span class="o">=</span>
-<span class="c1"># MAP_ARGS+=&quot;--mpi_nbr=32&quot;</span>
+<span class="c1"># MAP_ARGS+="--mpi_nbr=32"</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Stop script execution on error</span>
 <span class="nb">set</span><span class="w"> </span>-e
 <span class="c1"># ANSI color codes for highlighting terminal output</span>
-<span class="nv">RED</span><span class="o">=</span><span class="s1">&#39;\033[0;31m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">&#39;\033[0;32m&#39;</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">&#39;\033[0;36m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">&#39;\033[0m&#39;</span>
+<span class="nv">RED</span><span class="o">=</span><span class="s1">'\033[0;31m'</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">'\033[0;32m'</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">'\033[0;36m'</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">'\033[0m'</span>
 <span class="c1"># start timer for entire script</span>
 <span class="nv">start</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
@@ -5242,8 +5242,8 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 <span class="c1"># Remap high-res topo to target np4 grid</span>
 ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 <span class="c1"># Compute phi_s on the target np4 grid</span>
-ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-<span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
+ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">'PHIS=terr*9.80616'</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1"># rename the column dimension to be "ncol"</span>
 ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Apply Smoothing</span>
@@ -5252,7 +5252,7 @@ ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span cl
 <span class="c1"># Create namelist file for HOMME</span>
 cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;ctl_nl</span>
-<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
+<span class="s">mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"</span>
 <span class="s">smooth_phis_p2filt = 0</span>
 <span class="s">smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing</span>
 <span class="s">smooth_phis_nudt = 4e-16</span>
@@ -5262,13 +5262,13 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;vert_nl</span>
 <span class="s">/</span>
 <span class="s">&amp;analysis_nl</span>
-<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
-<span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
+<span class="s">tool = 'topo_pgn_to_smoothed'</span>
+<span class="s">infilenames = '${topo_file_1}', '${topo_file_2}'</span>
 <span class="s">/</span>
 <span class="s">EOF</span>
 <span class="c1"># run homme_tool for topography smoothing</span>
 srun<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
-<span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
+<span class="c1"># rename output file to remove "1.nc" suffix</span>
 mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Compute SGH with cube_to_target</span>
@@ -5337,12 +5337,12 @@ rm<span class="w"> </span><span class="si">${</span><span class="nv">topo_root</
 <span class="nv">DIN_LOC_ROOT</span><span class="o">=</span>/global/cfs/cdirs/e3sm/inputdata
 <span class="c1"># argument for ncremap to select TempestRemap or mbtempest backend</span>
 <span class="nv">MAP_ARGS</span><span class="o">=</span>
-<span class="c1"># MAP_ARGS+=&quot;--mpi_nbr=32&quot;</span>
+<span class="c1"># MAP_ARGS+="--mpi_nbr=32"</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Stop script execution on error</span>
 <span class="nb">set</span><span class="w"> </span>-e
 <span class="c1"># ANSI color codes for highlighting terminal output</span>
-<span class="nv">RED</span><span class="o">=</span><span class="s1">&#39;\033[0;31m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">&#39;\033[0;32m&#39;</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">&#39;\033[0;36m&#39;</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">&#39;\033[0m&#39;</span>
+<span class="nv">RED</span><span class="o">=</span><span class="s1">'\033[0;31m'</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">GRN</span><span class="o">=</span><span class="s1">'\033[0;32m'</span><span class="w"> </span><span class="nv">CYN</span><span class="o">=</span><span class="s1">'\033[0;36m'</span><span class="w"> </span><span class="p">;</span><span class="w"> </span><span class="nv">NC</span><span class="o">=</span><span class="s1">'\033[0m'</span>
 <span class="c1"># start timer for entire script</span>
 <span class="nv">start</span><span class="o">=</span><span class="sb">`</span>date<span class="w"> </span>+%s<span class="sb">`</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
@@ -5406,8 +5406,8 @@ ConvertMeshToSCRIP<span class="w"> </span>--in<span class="w"> </span><span clas
 <span class="c1"># Remap high-res topo to target np4 grid</span>
 ncremap<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">map_file_src_to_np4</span><span class="si">}</span><span class="w"> </span>-i<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_0</span><span class="si">}</span><span class="w"> </span>-o<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 <span class="c1"># Compute phi_s on the target np4 grid</span>
-ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;PHIS=terr*9.80616&#39;</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
-<span class="c1"># rename the column dimension to be &quot;ncol&quot;</span>
+ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s1">'PHIS=terr*9.80616'</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
+<span class="c1"># rename the column dimension to be "ncol"</span>
 ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_1</span><span class="si">}</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Apply Smoothing</span>
@@ -5416,7 +5416,7 @@ ncrename<span class="w"> </span>-d<span class="w"> </span>grid_size,ncol<span cl
 <span class="c1"># Create namelist file for HOMME</span>
 cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;ctl_nl</span>
-<span class="s">mesh_file = &quot;${grid_root}/exodus_ne${NE_DST}.g&quot;</span>
+<span class="s">mesh_file = "${grid_root}/exodus_ne${NE_DST}.g"</span>
 <span class="s">smooth_phis_p2filt = 0</span>
 <span class="s">smooth_phis_numcycle = 6 ! v2/v3 uses 12/6 for more/less smoothing</span>
 <span class="s">smooth_phis_nudt = 4e-16</span>
@@ -5426,13 +5426,13 @@ cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; input.nl</span>
 <span class="s">&amp;vert_nl</span>
 <span class="s">/</span>
 <span class="s">&amp;analysis_nl</span>
-<span class="s">tool = &#39;topo_pgn_to_smoothed&#39;</span>
-<span class="s">infilenames = &#39;${topo_file_1}&#39;, &#39;${topo_file_2}&#39;</span>
+<span class="s">tool = 'topo_pgn_to_smoothed'</span>
+<span class="s">infilenames = '${topo_file_1}', '${topo_file_2}'</span>
 <span class="s">/</span>
 <span class="s">EOF</span>
 <span class="c1"># run homme_tool for topography smoothing</span>
 srun<span class="w"> </span>-n<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="si">${</span><span class="nv">e3sm_root</span><span class="si">}</span>/components/homme/src/tool/homme_tool<span class="w"> </span>&lt;<span class="w"> </span>input.nl
-<span class="c1"># rename output file to remove &quot;1.nc&quot; suffix</span>
+<span class="c1"># rename output file to remove "1.nc" suffix</span>
 mv<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span><span class="m">1</span>.nc<span class="w"> </span><span class="si">${</span><span class="nv">topo_file_2</span><span class="si">}</span>
 <span class="c1">#---------------------------------------------------------------------------</span>
 <span class="c1"># Compute SGH with cube_to_target</span>

@@ -5063,7 +5063,7 @@ variables may not be of interest, thus one could remove all default variables
 to the monthly history files by</p>
 <div class="highlight"><pre><span></span><code><span class="w">   </span><span class="p">&amp;</span><span class="n">elm_inparm</span>
 <span class="w">     </span><span class="n">hist_empty_htapes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">.</span><span class="n">true</span><span class="p">.</span>
-<span class="w">     </span><span class="n">hist_fincl1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TG&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;TV&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;FSA&#39;</span>
+<span class="w">     </span><span class="n">hist_fincl1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TG'</span><span class="p">,</span><span class="w"> </span><span class="s1">'TV'</span><span class="p">,</span><span class="w"> </span><span class="s1">'FSA'</span>
 <span class="w">   </span><span class="o">/</span>
 </code></pre></div>
 <h4 id="saving-additional-output-files">Saving additional output files</h4>
@@ -5079,9 +5079,9 @@ that have different temporal averaging (e.g. daily, hourly, every model timestep
 <p>The number of time slices in these additional files can be controlled
 vai <code>hist_mfilt</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="w">   </span><span class="p">&amp;</span><span class="n">elm_inparm</span>
-<span class="w">     </span><span class="n">hist_fincl2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TG&#39;</span>
-<span class="w">     </span><span class="n">hist_fincl3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TV&#39;</span>
-<span class="w">     </span><span class="n">hist_fincl4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;TG&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;TV&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;FSA&#39;</span>
+<span class="w">     </span><span class="n">hist_fincl2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TG'</span>
+<span class="w">     </span><span class="n">hist_fincl3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TV'</span>
+<span class="w">     </span><span class="n">hist_fincl4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TG'</span><span class="p">,</span><span class="w"> </span><span class="s1">'TV'</span><span class="p">,</span><span class="w"> </span><span class="s1">'FSA'</span>
 <span class="w">     </span><span class="n">hist_nhtfrq</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">24</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">     </span><span class="n">hist_mfilt</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span><span class="w"> </span><span class="mi">48</span>
 <span class="w">   </span><span class="o">/</span>

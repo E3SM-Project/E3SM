@@ -4753,10 +4753,10 @@
 <div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>components/elm/tools/mksurfdata_map/src/
 
 make<span class="w"> </span>clean
-<span class="nb">export</span><span class="w"> </span><span class="nv">USER_LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L</span><span class="nv">$NETCDF_DIR</span><span class="s2">/lib -lnetcdf -lnetcdff -lnetcdf_intel&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">USER_LDFLAGS</span><span class="o">=</span><span class="nv">$USER_LDFLAGS</span><span class="s2">&quot; -L</span><span class="nv">$HDF5_DIR</span><span class="s2">/lib -lhdf5 -lhdf5_fortran -lhdf5_hl_intel -lhdf5hl_fortran_intel&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">USER_LDFLAGS</span><span class="o">=</span><span class="s2">"-L</span><span class="nv">$NETCDF_DIR</span><span class="s2">/lib -lnetcdf -lnetcdff -lnetcdf_intel"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">USER_LDFLAGS</span><span class="o">=</span><span class="nv">$USER_LDFLAGS</span><span class="s2">" -L</span><span class="nv">$HDF5_DIR</span><span class="s2">/lib -lhdf5 -lhdf5_fortran -lhdf5_hl_intel -lhdf5hl_fortran_intel"</span>
 
-<span class="nv">USER_FC</span><span class="o">=</span>ifort<span class="w"> </span><span class="nv">LIB_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nc-config --flibs`&quot;</span><span class="w"> </span><span class="nv">INC_NETCDF</span><span class="o">=</span><span class="s2">&quot;`nf-config --includedir`&quot;</span><span class="w"> </span>make<span class="w"> </span><span class="nv">VERBOSE</span><span class="o">=</span><span class="m">1</span>
+<span class="nv">USER_FC</span><span class="o">=</span>ifort<span class="w"> </span><span class="nv">LIB_NETCDF</span><span class="o">=</span><span class="s2">"`nc-config --flibs`"</span><span class="w"> </span><span class="nv">INC_NETCDF</span><span class="o">=</span><span class="s2">"`nf-config --includedir`"</span><span class="w"> </span>make<span class="w"> </span><span class="nv">VERBOSE</span><span class="o">=</span><span class="m">1</span>
 </code></pre></div>
 <h2 id="build-the-namelist">Build the namelist</h2>
 <p>This step assumes that the resolution for which the new surface dataset is being created is a supported resolution.

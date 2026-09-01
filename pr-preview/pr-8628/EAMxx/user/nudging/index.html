@@ -4932,10 +4932,10 @@ To achieve that, the user can use <code>atmchange</code> to set <code>use_nudgin
 Currently, weighted nudging is only supported if the user provides the nudging data at the target grid.</p>
 <h2 id="example-setup-current-as-of-april-2024">Example setup (current as of April 2024)</h2>
 <p>To enable nudging as a process, one must declare it in the <code>atm_procs_list</code> runtime parameter.</p>
-<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::atm_procs_list<span class="o">=</span><span class="s2">&quot;mac_aero_mic,rrtmgp,cosp,nudging&quot;</span>
+<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>physics::atm_procs_list<span class="o">=</span><span class="s2">"mac_aero_mic,rrtmgp,cosp,nudging"</span>
 </code></pre></div>
 <p>The following options are needed to specify the nudging.</p>
-<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>nudging::nudging_filenames_patterns<span class="o">=</span><span class="s2">&quot;/pathto/nudging_files/*.nc&quot;</span><span class="w"> </span><span class="c1"># can provide file name explicitly here instead (or multiple patterns)</span>
+<div class="highlight"><pre><span></span><code>./atmchange<span class="w"> </span>nudging::nudging_filenames_patterns<span class="o">=</span><span class="s2">"/pathto/nudging_files/*.nc"</span><span class="w"> </span><span class="c1"># can provide file name explicitly here instead (or multiple patterns)</span>
 ./atmchange<span class="w"> </span>nudging::source_pressure_type<span class="o">=</span>TIME_DEPENDENT_3D_PROFILE<span class="w"> </span><span class="c1"># see section on pressure</span>
 ./atmchange<span class="w"> </span>nudging::nudging_fields<span class="o">=</span>U,V<span class="w"> </span><span class="c1"># can include qv, T_mid as well</span>
 ./atmchange<span class="w"> </span>nudging::nudging_timescale<span class="o">=</span><span class="m">21600</span><span class="w"> </span><span class="c1"># in seconds</span>

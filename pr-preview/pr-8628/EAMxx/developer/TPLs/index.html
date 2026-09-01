@@ -5045,9 +5045,9 @@ the source directory for that TPL--e.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/</co
 <div class="copy highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 
 <span class="c1"># add MPI C/C++ compilers to the proper environment variables</span>
-<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin/&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicc&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CXX</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicxx&quot;</span>
+<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin/"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicc"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CXX</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicxx"</span>
 
 <span class="c1"># configure HDF5 build</span>
 ../configure<span class="w"> </span><span class="se">\</span>
@@ -5063,18 +5063,18 @@ the source directory for that TPL--e.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/</co
 <div class="copy highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 
 <span class="c1"># add MPI C/C++ to the proper environment variables</span>
-<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicc&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CXX</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicxx&quot;</span>
+<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicc"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CXX</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicxx"</span>
 
 <span class="c1"># historically, netcdf can be a little picky to build, so it can help to</span>
 <span class="c1"># make ABSOLUTELY CERTAIN that the build system knows where HDF5 is</span>
-<span class="c1"># via the &quot;sledgehammer&quot; approach</span>
-<span class="nv">hdf5_path</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/hdf5/install&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">hdf5_path</span><span class="si">}</span><span class="s2">/lib&quot;</span>
+<span class="c1"># via the "sledgehammer" approach</span>
+<span class="nv">hdf5_path</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/hdf5/install"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">hdf5_path</span><span class="si">}</span><span class="s2">/lib"</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">LIBRARY_PATH</span><span class="si">}</span>:<span class="si">${</span><span class="nv">hdf5_path</span><span class="si">}</span>/lib
 <span class="nb">export</span><span class="w"> </span><span class="nv">PKG_CONFIG_PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PKG_CONFIG_PATH</span><span class="si">}</span>:<span class="si">${</span><span class="nv">hdf5_path</span><span class="si">}</span>/lib/pkgconfig
-<span class="nb">export</span><span class="w"> </span><span class="nv">CPPFLAGS</span><span class="o">=</span><span class="s2">&quot;-I</span><span class="si">${</span><span class="nv">hdf5_path</span><span class="si">}</span><span class="s2">/include&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CPPFLAGS</span><span class="o">=</span><span class="s2">"-I</span><span class="si">${</span><span class="nv">hdf5_path</span><span class="si">}</span><span class="s2">/include"</span>
 
 ../configure<span class="w"> </span>--prefix<span class="o">=</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span>/netcdf-c/install
 </code></pre></div>
@@ -5084,8 +5084,8 @@ the source directory for that TPL--e.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/</co
 <div class="copy highlight"><pre><span></span><code><span class="ch">#! /bin/bash</span>
 
 <span class="c1"># add MPI Fortran compiler to the proper environment variables</span>
-<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FC</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpif90&quot;</span>
+<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FC</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpif90"</span>
 
 <span class="c1"># local variables, to be used below</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">NetCDF_C_ROOT</span><span class="o">=</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span>/netcdf-c/install
@@ -5093,15 +5093,15 @@ the source directory for that TPL--e.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/</co
 <span class="nb">export</span><span class="w"> </span><span class="nv">NETCDF_C_INCLUDE_DIR</span><span class="o">=</span><span class="si">${</span><span class="nv">NetCDF_C_ROOT</span><span class="si">}</span>/include
 
 <span class="c1"># add netcdf-C bits and pieces to the proper paths</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">NETCDF_C_LIBRARY</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">NETCDF_C_LIBRARY</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">LIBRARY_PATH</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">NETCDF_C_LIBRARY</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">LD_LIBRARY_PATH</span><span class="si">}</span><span class="s2">"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LIBRARY_PATH</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">NETCDF_C_LIBRARY</span><span class="si">}</span><span class="s2">:</span><span class="si">${</span><span class="nv">LIBRARY_PATH</span><span class="si">}</span><span class="s2">"</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="si">${</span><span class="nv">NetCDF_C_ROOT</span><span class="si">}</span>/bin:<span class="si">${</span><span class="nv">PATH</span><span class="si">}</span>
 
 <span class="c1"># add netcdf-C include and library dir to the requisite compiler flags</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CPPFLAGS</span><span class="o">=</span><span class="s2">&quot;-I</span><span class="si">${</span><span class="nv">NETCDF_C_INCLUDE_DIR</span><span class="si">}</span><span class="s2">&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">&quot;-L</span><span class="si">${</span><span class="nv">NETCDF_C_LIBRARY</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CPPFLAGS</span><span class="o">=</span><span class="s2">"-I</span><span class="si">${</span><span class="nv">NETCDF_C_INCLUDE_DIR</span><span class="si">}</span><span class="s2">"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LDFLAGS</span><span class="o">=</span><span class="s2">"-L</span><span class="si">${</span><span class="nv">NETCDF_C_LIBRARY</span><span class="si">}</span><span class="s2">"</span>
 
-<span class="c1"># while we&#39;re at it, tell it where to find hdf5, too</span>
+<span class="c1"># while we're at it, tell it where to find hdf5, too</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">HDF5_ROOT</span><span class="o">=</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span>/hdf5/install
 
 ../configure<span class="w"> </span>--prefix<span class="o">=</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span>/netcdf-fortran/install
@@ -5111,10 +5111,10 @@ the source directory for that TPL--e.g., <code>${TPL_ROOT}/&lt;lib-name&gt;/</co
 <summary><code>configure-pnetcdf.sh</code></summary>
 <div class="copy highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 
-<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicc&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">CXX</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicxx&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FC</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpif90&quot;</span>
+<span class="nv">mpi_path</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span><span class="s2">/openmpi/install/bin"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CC</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicc"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CXX</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpicxx"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FC</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">mpi_path</span><span class="si">}</span><span class="s2">/mpif90"</span>
 
 ../configure<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--prefix<span class="o">=</span><span class="si">${</span><span class="nv">TPL_ROOT</span><span class="si">}</span>/pnetcdf/install<span class="w"> </span><span class="se">\</span>
