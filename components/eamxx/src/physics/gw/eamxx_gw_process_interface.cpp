@@ -53,7 +53,7 @@ void GWDrag::create_requests() {
   add_field<Required>("landfrac",             scalar2d,     nondim, grid_name);
   add_field<Required>("sgh",                  scalar2d,     nondim, grid_name);
   if (m_params.get<bool>("use_gw_convect", false)) {
-    add_field<Required>("deep_conv_t_tend",          scalar3d_mid, K/s,    grid_name, pack_size);
+    add_field<Required>("deep_conv_t_tend",   scalar3d_mid, K/s,    grid_name, pack_size);
   }
 
   // Input/Output variables
@@ -63,9 +63,24 @@ void GWDrag::create_requests() {
   add_tracer<Updated>("qi",                   m_grid,       kg/kg,             pack_size);
   add_field <Updated>("horiz_winds",          vector3d_mid, m/s,    grid_name, pack_size);
 
-  // Diagnostic Outputs
-  add_field<Computed>("gw_conv_heating_depth",scalar2d,     1000*m,       grid_name);
-  add_field<Computed>("gw_conv_heating_max",  scalar2d,     K/(86400*s),  grid_name);
+  // Diagnostic Outputs (only allocated when the corresponding scheme is active)
+  if (m_params.get<bool>("use_gw_convect", false)) {
+    add_field<Computed>("gw_conv_heating_depth", scalar2d,     1000*m,       grid_name);
+    add_field<Computed>("gw_conv_heating_max",   scalar2d,     K/(86400*s),  grid_name);
+    add_field<Computed>("gw_conv_tend_u",        scalar3d_mid, m/s/s,       grid_name, pack_size);
+    add_field<Computed>("gw_conv_tend_v",        scalar3d_mid, m/s/s,       grid_name, pack_size);
+    add_field<Computed>("gw_conv_tend_t",        scalar3d_mid, K/s,         grid_name, pack_size);
+  }
+  if (m_params.get<bool>("use_gw_frontal", false)) {
+    add_field<Computed>("gw_frontal_tend_u", scalar3d_mid, m/s/s, grid_name, pack_size);
+    add_field<Computed>("gw_frontal_tend_v", scalar3d_mid, m/s/s, grid_name, pack_size);
+    add_field<Computed>("gw_frontal_tend_t", scalar3d_mid, K/s,   grid_name, pack_size);
+  }
+  if (m_params.get<bool>("use_gw_orographic", false)) {
+    add_field<Computed>("gw_oro_tend_u", scalar3d_mid, m/s/s, grid_name, pack_size);
+    add_field<Computed>("gw_oro_tend_v", scalar3d_mid, m/s/s, grid_name, pack_size);
+    add_field<Computed>("gw_oro_tend_t", scalar3d_mid, K/s,   grid_name, pack_size);
+  }
 
 }
 
@@ -147,9 +162,28 @@ void GWDrag::run_impl (const double dt) {
   const auto& uwind       = hwinds_fld.get_component(0)   .get_view<Real**>();
   const auto& vwind       = hwinds_fld.get_component(1)   .get_view<Real**>();
   // Diagnostic Outputs
-  const auto& gw_conv_hdepth = get_field_out("gw_conv_heating_depth").get_view<Real*>();
-  const auto& gw_conv_hmax   = get_field_out("gw_conv_heating_max")  .get_view<Real*>();
-  // const auto& gw_conv
+  GWF::view_1d<Real> gw_conv_hdepth;
+  GWF::view_1d<Real> gw_conv_hmax;
+  GWF::view_2d<Real> gw_conv_tend_u, gw_conv_tend_v, gw_conv_tend_t;
+  GWF::view_2d<Real> gw_frontal_tend_u, gw_frontal_tend_v, gw_frontal_tend_t;
+  GWF::view_2d<Real> gw_oro_tend_u, gw_oro_tend_v, gw_oro_tend_t;
+  if (common_init.use_gw_convect) {
+    gw_conv_hdepth = get_field_out("gw_conv_heating_depth").get_view<Real*>();
+    gw_conv_hmax   = get_field_out("gw_conv_heating_max")  .get_view<Real*>();
+    gw_conv_tend_u = get_field_out("gw_conv_tend_u")       .get_view<Real**>();
+    gw_conv_tend_v = get_field_out("gw_conv_tend_v")       .get_view<Real**>();
+    gw_conv_tend_t = get_field_out("gw_conv_tend_t")       .get_view<Real**>();
+  }
+  if (common_init.use_gw_frontal) {
+    gw_frontal_tend_u = get_field_out("gw_frontal_tend_u").get_view<Real**>();
+    gw_frontal_tend_v = get_field_out("gw_frontal_tend_v").get_view<Real**>();
+    gw_frontal_tend_t = get_field_out("gw_frontal_tend_t").get_view<Real**>();
+  }
+  if (common_init.use_gw_orographic) {
+    gw_oro_tend_u = get_field_out("gw_oro_tend_u").get_view<Real**>();
+    gw_oro_tend_v = get_field_out("gw_oro_tend_v").get_view<Real**>();
+    gw_oro_tend_t = get_field_out("gw_oro_tend_t").get_view<Real**>();
+  }
   //----------------------------------------------------------------------------
   // create local temporaries to avoid "Implicit capture" warning
   const auto loc_phis      = phis;
@@ -168,8 +202,17 @@ void GWDrag::run_impl (const double dt) {
   auto loc_vwind       = vwind;
   auto loc_landfrac    = landfrac;
   // Diagnostic Outputs
-  auto loc_gw_conv_hdepth = gw_conv_hdepth;
-  auto loc_gw_conv_hmax   = gw_conv_hmax;
+  auto loc_gw_conv_hdepth     = gw_conv_hdepth;
+  auto loc_gw_conv_hmax       = gw_conv_hmax;
+  auto loc_gw_oro_tend_u      = gw_oro_tend_u;
+  auto loc_gw_oro_tend_v      = gw_oro_tend_v;
+  auto loc_gw_oro_tend_t      = gw_oro_tend_t;
+  auto loc_gw_conv_tend_u     = gw_conv_tend_u;
+  auto loc_gw_conv_tend_v     = gw_conv_tend_v;
+  auto loc_gw_conv_tend_t     = gw_conv_tend_t;
+  auto loc_gw_frontal_tend_u  = gw_frontal_tend_u;
+  auto loc_gw_frontal_tend_v  = gw_frontal_tend_v;
+  auto loc_gw_frontal_tend_t  = gw_frontal_tend_t;
   // local temporaries of buffer variables
   auto loc_z_mid       = m_buffer.z_mid;
   auto loc_z_del       = m_buffer.z_del;
@@ -253,6 +296,24 @@ void GWDrag::run_impl (const double dt) {
   Kokkos::deep_copy(loc_gw_tend_v,0.0);
   Kokkos::deep_copy(loc_gw_tend_t,0.0);
   Kokkos::deep_copy(loc_gw_tend_q,0.0);
+  // initialize diagnostic output
+  if (common_init.use_gw_convect) {
+    Kokkos::deep_copy(loc_gw_conv_hdepth, 0.0);
+    Kokkos::deep_copy(loc_gw_conv_hmax,   0.0);
+    Kokkos::deep_copy(loc_gw_conv_tend_u, 0.0);
+    Kokkos::deep_copy(loc_gw_conv_tend_v, 0.0);
+    Kokkos::deep_copy(loc_gw_conv_tend_t, 0.0);
+  }
+  if (common_init.use_gw_frontal) {
+    Kokkos::deep_copy(loc_gw_frontal_tend_u, 0.0);
+    Kokkos::deep_copy(loc_gw_frontal_tend_v, 0.0);
+    Kokkos::deep_copy(loc_gw_frontal_tend_t, 0.0);
+  }
+  if (common_init.use_gw_orographic) {
+    Kokkos::deep_copy(loc_gw_oro_tend_u, 0.0);
+    Kokkos::deep_copy(loc_gw_oro_tend_v, 0.0);
+    Kokkos::deep_copy(loc_gw_oro_tend_t, 0.0);
+  }
   // initialize intermediate per-source tendency and diffusivity buffers;
   // gw_drag_prof may not write all levels (e.g., above the source level),
   // so uninitialized memory would corrupt the accumulation into gw_tend_*
@@ -266,7 +327,8 @@ void GWDrag::run_impl (const double dt) {
   //----------------------------------------------------------------------------
   // Compute profiles of background state
   // Capture host-side constants into local variables for device lambda capture
-  constexpr Real cpair = PC::Cpair.value;
+  constexpr Real cpair     = PC::Cpair.value;
+  constexpr Real inv_cpair = 1.0 / PC::Cpair.value;
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
     // Get single-column subviews of all inputs
@@ -353,6 +415,9 @@ void GWDrag::run_impl (const double dt) {
     if (common_init.use_gw_convect) {
 
       const auto deep_conv_t_tend_i = ekat::subview(loc_deep_conv_t_tend, i);
+      const auto gw_conv_tend_u_i   = ekat::subview(loc_gw_conv_tend_u, i);
+      const auto gw_conv_tend_v_i   = ekat::subview(loc_gw_conv_tend_v, i);
+      const auto gw_conv_tend_t_i   = ekat::subview(loc_gw_conv_tend_t, i);
 
       // Determine convective wave sources
       GWF::gw_beres_src(team, wsm.get_workspace(team), common_init, convect_init,
@@ -386,6 +451,9 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,0) += qtgw_i(k,0);
         gw_tend_q_i(k,1) += qtgw_i(k,1);
         gw_tend_q_i(k,2) += qtgw_i(k,2);
+        gw_conv_tend_u_i(k) = utgw_i(k);
+        gw_conv_tend_v_i(k) = vtgw_i(k);
+        gw_conv_tend_t_i(k) = ttgw_i(k) * inv_cpair;
       });
 
       // Momentum & energy conservation for convective tendencies
@@ -405,6 +473,10 @@ void GWDrag::run_impl (const double dt) {
 
       // // Determine frontal wave sources
       // GWF::gw_cm_src();
+
+      const auto gw_frontal_tend_u_i = ekat::subview(loc_gw_frontal_tend_u, i);
+      const auto gw_frontal_tend_v_i = ekat::subview(loc_gw_frontal_tend_v, i);
+      const auto gw_frontal_tend_t_i = ekat::subview(loc_gw_frontal_tend_t, i);
 
       // Solve for the drag profile with frontal sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
@@ -426,6 +498,9 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,0) += qtgw_i(k,0);
         gw_tend_q_i(k,1) += qtgw_i(k,1);
         gw_tend_q_i(k,2) += qtgw_i(k,2);
+        gw_frontal_tend_u_i(k) = utgw_i(k);
+        gw_frontal_tend_v_i(k) = vtgw_i(k);
+        gw_frontal_tend_t_i(k) = ttgw_i(k) * inv_cpair;
       });
 
       // Momentum & energy conservation for frontal tendencies
@@ -439,6 +514,10 @@ void GWDrag::run_impl (const double dt) {
     //--------------------------------------------------------------------------
     // Orographic stationary gravity waves
     if (common_init.use_gw_orographic) {
+
+      const auto gw_oro_tend_u_i = ekat::subview(loc_gw_oro_tend_u, i);
+      const auto gw_oro_tend_v_i = ekat::subview(loc_gw_oro_tend_v, i);
+      const auto gw_oro_tend_t_i = ekat::subview(loc_gw_oro_tend_t, i);
 
       // Determine the orographic wave source
       GWF::gw_oro_src(team, common_init, nlev_mid, common_init.pgwv,
@@ -467,6 +546,9 @@ void GWDrag::run_impl (const double dt) {
         gw_tend_q_i(k,0) += qtgw_i(k,0) * landfrac_i;
         gw_tend_q_i(k,1) += qtgw_i(k,1) * landfrac_i;
         gw_tend_q_i(k,2) += qtgw_i(k,2) * landfrac_i;
+        gw_oro_tend_u_i(k) = utgw_i(k) * landfrac_i;
+        gw_oro_tend_v_i(k) = vtgw_i(k) * landfrac_i;
+        gw_oro_tend_t_i(k) = ttgw_i(k) * inv_cpair * landfrac_i;
       });
 
       // GW energy fixer for orographic waves
@@ -502,7 +584,6 @@ void GWDrag::run_impl (const double dt) {
 
   //----------------------------------------------------------------------------
   // update prognostic fields
-  constexpr Real inv_cpair = 1.0 / PC::Cpair.value;
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
     const auto uwind_i = ekat::subview(loc_uwind, i);
