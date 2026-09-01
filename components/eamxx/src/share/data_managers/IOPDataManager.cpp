@@ -653,7 +653,7 @@ set_fields_from_iop_data(const field_mgr_ptr field_mgr, const std::string& grid_
   view_2d<Real> T_mid, qv, nc, qc, qi, ni;
   view_3d<Real> horiz_winds;
 
-  Real ps_iop;
+  Real ps_iop = -1;
   view_1d<Real> t_iop, u_iop, v_iop, qv_iop, nc_iop, qc_iop, qi_iop, ni_iop;
 
   if (set_ps) {

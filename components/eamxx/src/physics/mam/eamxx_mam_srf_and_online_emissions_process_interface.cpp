@@ -338,9 +338,6 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     }
   }
 
-    // Current month ( 0-based)
-    const int curr_month = start_of_step_ts().get_month() - 1;
-
   //-----------------------------------------------------------------
   // Read Soil erodibility data
   //-----------------------------------------------------------------
