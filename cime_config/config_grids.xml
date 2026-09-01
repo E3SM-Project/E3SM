@@ -1970,6 +1970,16 @@
       <mask>RRSwISC6to18E3r5</mask>
     </model_grid>
 
+    <model_grid alias="ne128pg2_u01.oi6to18.lr6to10">
+      <grid name="atm">ne128np4.pg2</grid>
+      <grid name="lnd">u01.lr6to10</grid>
+      <grid name="ocnice">u01.oi6to18</grid>
+      <grid name="rof">u01.lr6to10</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>u01.oi6to18</mask>
+    </model_grid>
+
     <model_grid alias="ne240_ne240" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne240np4</grid>
       <grid name="lnd">ne240np4</grid>
@@ -3626,6 +3636,8 @@
       <ny>1</ny>
       <file grid="atm|lnd" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne128pg2_RRSwISC6to18E3r5.20251006.nc</file>
       <file grid="ice|ocn" mask="RRSwISC6to18E3r5">$DIN_LOC_ROOT/share/domains/domain.ocn.ne128pg2_RRSwISC6to18E3r5.20251006.nc</file>
+      <file grid="atm|lnd" mask="u01.oi6to18">$DIN_LOC_ROOT/share/domains/domain.lnd.ne128pg2_u01.oi6to18.20260901.nc</file>
+      <file grid="ice|ocn" mask="u01.oi6to18">$DIN_LOC_ROOT/share/domains/domain.ocn.ne128pg2_u01.oi6to18.20260901.nc</file>
       <desc>ne128pg2</desc>
     </domain>
 
@@ -5068,6 +5080,29 @@
       <map name="ATM2ROF_FMAPNAME"          >cpl/gridmaps/ne128pg2/map_ne128pg2_to_r025_traave.20251006.nc</map>
       <map name="ATM2ROF_FMAPNAME_NONLINEAR">cpl/gridmaps/ne128pg2/map_ne128pg2_to_r025_trfv2.20251006.nc</map>
       <map name="ATM2ROF_SMAPNAME"          >cpl/gridmaps/ne128pg2/map_ne128pg2_to_r025_trbilin.20251006.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne128np4.pg2" ocn_grid="u01.oi6to18">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.oi6to18_traave.20260901.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.oi6to18_trbilin.20260901.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.oi6to18_trbilin.20260901.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/u01/map_u01.oi6to18_to_ne128pg2_traave.20260901.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/u01/map_u01.oi6to18_to_ne128pg2_traave.20260901.nc</map>
+      <map name="ATM2ICE_FMAPNAME_NONLINEAR">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.oi6to18_trfvnp2.20260901.nc</map>
+      <map name="ATM2OCN_FMAPNAME_NONLINEAR">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.oi6to18_trfvnp2.20260901.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne128np4.pg2" lnd_grid="u01.lr6to10">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.lr6to10_traave.20260901.nc</map>
+      <map name="ATM2LND_FMAPNAME_NONLINEAR">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.lr6to10_trfvnp2.20260901.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.lr6to10_trbilin.20260901.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/u01/map_u01.lr6to10_to_ne128pg2_traave.20260901.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/u01/map_u01.lr6to10_to_ne128pg2_traave.20260901.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne128np4.pg2" rof_grid="u01.lr6to10">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.lr6to10_traave.20260901.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/ne128pg2/map_ne128pg2_to_u01.lr6to10_traave.20260901.nc</map>
     </gridmap>
     <!--=====================================================================-->
 
