@@ -199,14 +199,18 @@ class TestBuildnml(unittest.TestCase):
         self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
 
         # Test case 1: append to base, then to last. Should give all 3 entries stacked
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 1'", from_dir=case)
+        run_cmd_no_fail("./xmlchange EAMXX_VGRID=L128v4", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
         self._get_values(case,"my_param","1,2,3,4,5,6")
 
         # Test case 2: append to last, then to base. Should give 1st and 3rd entry
-        run_cmd_no_fail(f"./xmlchange --append SCREAM_CMAKE_OPTIONS='SCREAM_NUM_VERTICAL_LEV 2'", from_dir=case)
+        run_cmd_no_fail("./xmlchange EAMXX_VGRID=L72", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
         self._get_values(case,"my_param","1,2,5,6")
+
+        # Restore the default vgrid, since this case is shared with the other tests
+        run_cmd_no_fail("./xmlchange EAMXX_VGRID=L128v4", from_dir=case)
+        run_cmd_no_fail("./case.setup", from_dir=case)
 
     ###########################################################################
     def test_append(self):
