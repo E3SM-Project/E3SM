@@ -76,7 +76,7 @@ std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>
 viewAsReal(ViewType<ScalarType *[DIM1][DIM2][DIM3], Properties...> v_in) {
   using ReturnST = RealType<ScalarType>;
   using ReturnView = Unmanaged<ViewType<RealType<ScalarType>*[DIM1][DIM2][DIM3*VECTOR_SIZE],Properties...>>;
-  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()), v_in.extent(0));
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, typename... Properties>
@@ -100,7 +100,7 @@ std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>
 viewAsReal(ViewType<ScalarType*[DIM1][DIM2][DIM3][DIM4], Properties...> v_in) {
   using ReturnST = RealType<ScalarType>;
   using ReturnView = Unmanaged<ViewType<RealType<ScalarType>*[DIM1][DIM2][DIM3][DIM4*VECTOR_SIZE],Properties...>>;
-  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()), v_in.extent(0));
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
 template <typename ScalarType, int DIM1, int DIM2, int DIM3, int DIM4, int DIM5, typename... Properties>
@@ -112,7 +112,7 @@ std::enable_if<std::is_same<typename std::remove_const<ScalarType>::type,Scalar>
 viewAsReal(ViewType<ScalarType*[DIM1][DIM2][DIM3][DIM4][DIM5], Properties...> v_in) {
   using ReturnST = RealType<ScalarType>;
   using ReturnView = Unmanaged<ViewType<RealType<ScalarType>*[DIM1][DIM2][DIM3][DIM4][DIM5*VECTOR_SIZE],Properties...>>;
-  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()), v_in.extent(0));
+  return ReturnView(reinterpret_cast<ReturnST*>(v_in.data()));
 }
 
 // Structure to define the type of a view that has a const data type,
