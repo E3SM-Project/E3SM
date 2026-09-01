@@ -56,7 +56,7 @@ void MAMDryDep::create_requests() {
 
   // Layout for 4D (2d horiz X 1d vertical x number of modes) variables
   // at mid points
-  const int num_aero_modes       = mam_coupling::num_aero_modes();
+  const int num_aero_modes       = aero_config_.num_modes();
   const FieldLayout vector3d_mid = grid_->get_3d_vector_layout(
       LEV, num_aero_modes, mam_coupling::num_modes_tag_name());
 
@@ -179,10 +179,10 @@ int MAMDryDep::get_len_temporary_views() {
   constexpr int pcnst = mam4::aero_model::pcnst;
   int work_len        = 0;
   // vlc_trb_
-  work_len += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
+  work_len += aero_config_.num_modes() * aerosol_categories_ * ncol_;
   // vlc_grv_, vlc_dry_
   work_len +=
-      2 * mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+      2 * aero_config_.num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // rho_
   work_len += ncol_ * nlev_;
   // qqcw_, dqdt_tmp_, qtracers_, ptend_q_
@@ -201,21 +201,21 @@ void MAMDryDep::init_temporary_views() {
   work_ptr += ncol_ * nlev_ * pcnst;
 
   // Deposition velocity of turbulent dry deposition [m/s]
-  vlc_trb_ = view_3d(work_ptr, mam4::AeroConfig::num_modes(),
+  vlc_trb_ = view_3d(work_ptr, aero_config_.num_modes(),
                      aerosol_categories_, ncol_);
-  work_ptr += mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_;
+  work_ptr += aero_config_.num_modes() * aerosol_categories_ * ncol_;
 
   // Deposition velocity of gravitational settling [m/s]
-  vlc_grv_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
+  vlc_grv_ = view_4d(work_ptr, aero_config_.num_modes(),
                      aerosol_categories_, ncol_, nlev_);
   work_ptr +=
-      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+      aero_config_.num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Deposition velocity, [m/s]
   // Fraction landuse weighted sum of vlc_grv and vlc_trb
-  vlc_dry_ = view_4d(work_ptr, mam4::AeroConfig::num_modes(),
+  vlc_dry_ = view_4d(work_ptr, aero_config_.num_modes(),
                      aerosol_categories_, ncol_, nlev_);
   work_ptr +=
-      mam4::AeroConfig::num_modes() * aerosol_categories_ * ncol_ * nlev_;
+      aero_config_.num_modes() * aerosol_categories_ * ncol_ * nlev_;
   // Work array to hold the mixing ratios [kg/kg or 1/kg]
   // Packs AerosolState::int_aero_nmr and AerosolState::int_aero_nmr
   // into one array.
@@ -370,7 +370,7 @@ void MAMDryDep::run_impl(const double dt) {
   //--------------------------------------------------------------------
   // Call drydeposition and get tendencies
   //--------------------------------------------------------------------
-  compute_tendencies(ncol_, nlev_, dt, obukhov_length_,
+  compute_tendencies(aero_config_, ncol_, nlev_, dt, obukhov_length_,
                      surface_friction_velocty_, land_fraction_, ice_fraction_,
                      ocean_fraction_, friction_velocity_,
                      aerodynamical_resistance_, frac_landuse_, dgncur_awet_,
@@ -384,11 +384,11 @@ void MAMDryDep::run_impl(const double dt) {
   Kokkos::fence();
 
   // Update the interstitial aerosols using ptend.
-  update_interstitial_mmrs(ptend_q_, dt, ncol_, nlev_,  // inputs
+  update_interstitial_mmrs(aero_config_, ptend_q_, dt, ncol_, nlev_,  // inputs
                            dry_aero_);                  // output
 
   // Update the interstitial aerosols
-  update_cloudborne_mmrs(qqcw_, dt, nlev_,  // inputs
+  update_cloudborne_mmrs(aero_config_, qqcw_, dt, nlev_,  // inputs
                          dry_aero_);        // output
 
   // call post processing to convert dry mixing ratios to wet mixing ratios
