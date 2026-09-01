@@ -37,8 +37,8 @@ public:
   using header_type         = typename Field::header_type;
   using identifier_type     = typename Field::identifier_type;
   using ci_string           = typename identifier_type::ci_string;
-  using repo_type           = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
-  using field_group_type    = std::map<ci_string,std::map<ci_string,std::shared_ptr<FieldGroup>>>;
+  using field_repo_type     = std::map<ci_string,std::map<ci_string,std::shared_ptr<Field>>>;
+  using group_repo_type     = std::map<ci_string,std::map<ci_string,std::shared_ptr<FieldGroup>>>;
   using group_info_map      = std::map<ci_string, std::shared_ptr<FieldGroupInfo>>;
 
   // Constructor(s)
@@ -166,10 +166,10 @@ protected:
   RepoState m_repo_state;
 
   // The actual repo.
-  repo_type           m_fields;
+  field_repo_type     m_fields;
 
   // Preprocessed field groups
-  field_group_type    m_field_groups;
+  group_repo_type     m_field_groups;
 
   // The map group_name -> FieldGroupInfo
   group_info_map      m_field_group_info;

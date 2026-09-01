@@ -144,11 +144,18 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
 {
   EKAT_REQUIRE_MSG (m_repo_state==RepoState::Closed,
       "Error! You cannot call 'add_to_group' until after 'registration_ends' has been called.\n");
-  auto& group = m_field_group_info[group_name];
-  if (not group) {
-    group = std::make_shared<FieldGroupInfo>(group_name);
+  auto& info = m_field_group_info[group_name];
+  auto& group = m_field_groups[grid_name][group_name];
+  if (not info) {
+    info = std::make_shared<FieldGroupInfo>(group_name);
+    EKAT_REQUIRE_MSG (group==nullptr,
+        "Error! FieldGroupInfo was not present, but a FieldGroup was present.\n"
+        "   field name: " + field_name + "\n"
+        "   grid name : " + grid_name + "\n"
+        "   group name: " + group_name + "\n");
   }
-  EKAT_REQUIRE_MSG (not group->m_monolithic_allocation,
+
+  EKAT_REQUIRE_MSG (not info->m_monolithic_allocation,
       "Error! Cannot add fields to a group that has a monolithic allocation.\n"
       "   field name: " + field_name + "\n"
       "   group name: " + group_name + "\n");
@@ -159,11 +166,15 @@ add_to_group (const std::string& field_name, const std::string& grid_name, const
       "   grid name:  " + grid_name + "\n"
       "   group name: " + group_name + "\n");
 
-  if (not ekat::contains(group->m_fields_names, field_name)) {
-    group->m_fields_names.push_back(field_name);
-  }
-  if (not ekat::contains(group->m_grid_registered[field_name], grid_name)) {
-    group->m_grid_registered[field_name].push_back(grid_name);
+  if (not group)
+    group = std::make_shared<FieldGroup>(info);
+
+  if (not ekat::contains(info->m_fields_names, field_name))
+    info->m_fields_names.push_back(field_name);
+
+  if (not ekat::contains(info->m_grid_registered[field_name], grid_name)) {
+    info->m_grid_registered[field_name].push_back(grid_name);
+    group->m_individual_fields[field_name] = m_fields[grid_name][field_name];
   }
 
   auto& ft = get_field(field_name, grid_name).get_header().get_tracking();

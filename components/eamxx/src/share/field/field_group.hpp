@@ -47,6 +47,7 @@ struct FieldGroup {
 
   FieldGroup (const std::string& name);
   FieldGroup (const FieldGroupInfo& info);
+  FieldGroup (const std::shared_ptr<FieldGroupInfo>& info);
 
   FieldGroup (const FieldGroup&) = default;
 
