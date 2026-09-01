@@ -396,6 +396,7 @@
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">day</value>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">year</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">year</value>
+        <value compset="_GCAM">year</value>
     </values>
     <desc>Base period associated with NCPL coupling frequency.
     This xml variable is only used to set the driver namelist variables,
@@ -489,6 +490,7 @@
       <value compset="_EAM%.*MMF" grid="a%ne120np4">96</value>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+        <value compset="_GCAM">17520</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
@@ -644,6 +646,7 @@
       <value compset="20TR_" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">17520</value>
+        <value compset="_MOSART.*_GCAM">2920</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>
