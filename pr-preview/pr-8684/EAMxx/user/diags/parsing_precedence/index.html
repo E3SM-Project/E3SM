@@ -4852,15 +4852,19 @@ control — how composite names are parsed.</p>
 <p><strong>Histograms</strong> — <code>X_histogram_&lt;bin_config&gt;</code>.</p>
 </li>
 <li>
-<p><strong>Expressions</strong> — a name none of the patterns above claimed is parsed as a
-   <a href="../expressions/">diagnostic expression</a>, e.g. <code>(qc+qv)*p_mid</code> or
-   <code>T_mid.mean('lev')</code>. Being last is what keeps every name above working
-   unchanged; it is not a statement about which syntax to prefer. Expressions
-   are the intended replacement for items 3–8, which will eventually go away.</p>
+<p><strong>Plain diagnostic name</strong> — a name none of the patterns above claimed, and
+   that is a bare identifier, is looked up directly in the atmosphere-diagnostic
+   factory.</p>
 </li>
 <li>
-<p><strong>Plain diagnostic name</strong> — a bare identifier is not an expression, so it is
-    looked up directly in the atmosphere-diagnostic factory.</p>
+<p><strong>Expressions</strong> — anything left is parsed as a
+    <a href="../expressions/">diagnostic expression</a>, e.g. <code>(qc+qv)*p_mid</code> or
+    <code>T_mid.mean('lev')</code>. This is the last resort: there is nothing after it, so
+    an expression that does not parse, or that no diagnostic implements, is an
+    error rather than a fall-through. Being last is what keeps every name above
+    working unchanged; it is not a statement about which syntax to prefer.
+    Expressions are the intended replacement for items 3–8, which will
+    eventually go away.</p>
 </li>
 </ol>
 <h2 id="key-rules">Key rules</h2>

@@ -5123,6 +5123,15 @@ reductions to count occurrences of specific conditions.</p>
 <ul>
 <li><code>mask_where_ps_gt_100000_horiz_avg</code></li>
 </ul>
+<p><strong>A mask cannot currently be written to file.</strong> The mask diagnostic's output has
+<code>int</code> data type, and IO cannot write it: listing a <code>mask_where_..</code> name in
+<code>field_names</code> aborts the run with a narrowing-conversion error. Reducing it does
+not help: <code>mask_where_ps_gt_100000_horiz_avg</code> is still an <code>int</code>. The workaround
+is to promote it to <code>Real</code> by multiplying by 1, which is easiest to write as an
+<a href="../expressions/">expression</a>:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wet_frac := mask.where(ps&gt;100000)*1.0</span>
+</code></pre></div>
 <h2 id="caveats">Caveats</h2>
 <ul>
 <li>For now, we only support 1D, 2D, and 3D fields.

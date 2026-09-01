@@ -5042,7 +5042,7 @@
 
 
 <h1 id="diagnostic-expressions">Diagnostic expressions</h1>
-<p>Alongside the underscore names described in the rest of this section, EAMxx can
+<p>As the underscore-based system is being deprecated, EAMxx can now
 build diagnostics from <strong>expressions</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">q_flux := (qc+qv)*p_mid</span>
@@ -5084,6 +5084,10 @@ diagnostics use but that are not written), need no name of their own.</p>
 <td>element-wise arithmetic</td>
 </tr>
 <tr>
+<td><code>-a</code></td>
+<td>negation, shorthand for <code>(-1)*a</code></td>
+</tr>
+<tr>
 <td><code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code></td>
 <td>comparison, <strong>only</strong> inside <code>where(..)</code></td>
 </tr>
@@ -5099,10 +5103,13 @@ diagnostics use but that are not written), need no name of their own.</p>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_hPa      := p_mid/100</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">T_scaled   := T_mid*0.5</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dry_air    := p_mid - qv*p_mid</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">p_ratio    := p_mid / P0</span>
 </code></pre></div>
 <p>Precedence is the usual one, so <code>qc+qv*p_mid</code> is <code>qc+(qv*p_mid)</code>. Note this
 differs from the underscore spelling <code>qc_plus_qv_times_p_mid</code>, which means
-<code>(qc+qv)*p_mid</code>. When in doubt, parenthesize.</p>
+<code>(qc+qv)*p_mid</code>. When in doubt, parenthesize. (That pair only illustrates
+grouping: <code>qc+(qv*p_mid)</code> adds a mixing ratio to a pressure, and is rejected at
+run time for incompatible units, while <code>(qc+qv)*p_mid</code> is fine.)</p>
 <h2 id="functions">Functions</h2>
 <p>Functions are written as methods on the field they act on, <code>X.f(..)</code>, and are
 named after their <a href="https://docs.xarray.dev">xarray</a> counterparts wherever there
@@ -5156,7 +5163,7 @@ is an honest analogue.</p>
 <td><code>X_where_qv_gt_0.01</code></td>
 </tr>
 <tr>
-<td><code>X.differentiate('p_mid')</code></td>
+<td><code>X.derivative('p_mid')</code></td>
 <td><code>X_pvert_derivative</code></td>
 </tr>
 <tr>
@@ -5199,8 +5206,20 @@ is an honest analogue.</p>
   <code>weights</code> for <code>'lev'</code> is <code>'dp'</code> or <code>'dz'</code>.</li>
 <li><code>where</code> takes a single comparison. <code>and</code>/<code>or</code> are not supported; chain
   <code>where(..)</code> calls instead. The special operand names <code>mask</code> and <code>lev</code> work as
-  they do in the underscore syntax, so <code>mask.where(lev&gt;5)</code> is valid.</li>
-<li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>.</li>
+  they do in the underscore syntax, so <code>mask.where(lev&gt;5)</code> parses.</li>
+<li><strong><code>over_dt</code> and <code>tend</code> cannot go in an <code>instant</code> stream.</strong> An instant stream
+  takes a snapshot at <code>t0</code>, before any step has run, and <code>dt</code> is zero there, so
+  the diagnostic aborts with "dt must be positive". Write them to an averaged
+  stream (<code>averaging_type: average</code>, <code>max</code>, <code>min</code>) instead. This is a property
+  of the diagnostic, not of the syntax: the underscore spellings <code>X_over_dt</code> and
+  <code>X_atm_backtend</code> behave the same way.</li>
+<li><strong>A <code>mask</code> operand cannot currently be written to file.</strong> The diagnostic is
+  built, but its output has <code>int</code> data type, which IO cannot handle: writing
+  <code>mask.where(..)</code> (or the underscore <code>mask_where_..</code>) fails with a narrowing
+  conversion error, and reducing it first does not help. Multiply by 1 to
+  promote it to <code>Real</code> -- <code>mask.where(ps&gt;100000)*1.0</code> writes fine.</li>
+<li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
+  the <code>over_dt</code> restriction above.</li>
 <li>Histogram bin edges must be non-negative, and must be writable without an
   exponent: the diagnostic joins them with <code>_</code> and splits them back apart, so
   <code>1e3</code> is fine (it is written <code>1000.0</code>) but <code>1e30</code> is not.</li>
@@ -5237,9 +5256,11 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 </tr>
 </tbody>
 </table>
+<p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, but computed
+in one sweep rather than as three diagnostics.</p>
 <p>Two operand names are special, inherited from the underscore syntax rather than
 from xarray: <code>mask</code> stands for the 0/1 indicator of the condition itself, so
-<code>mask.where(..)</code> gives where the condition holds rather than sampling a field;
+<code>mask.where(...)</code> is 1 where the condition <code>(...)</code> holds;
 and <code>lev</code> on the left of a comparison means the level index.</p>
 <h2 id="errors">Errors</h2>
 <p>An expression that does not parse, calls a function that does not exist, or
@@ -5286,6 +5307,13 @@ fails fast rather than at the moment a user first writes it.</p>
 <p>So adding a function means: register it with an example, translate it, and both
 checks come along for free. The <code>dexpr</code> command line tool does the same for the
 generic vocabulary -- <code>dexpr check "&lt;expr&gt;"</code> and <code>dexpr check-registry</code>.</p>
+<p>Those two checks stop at "a diagnostic was built". Every expression on this page
+is also run end to end -- computed and written to NetCDF -- by the standalone
+test in
+<code>components/eamxx/tests/multi-process/dynamics_physics/homme_shoc_cld_p3_rrtmgp_pg2</code>,
+which carries two extra output streams for the purpose: <code>output_diags_ins.yaml</code>
+and, for the ones an instant stream cannot hold, <code>output_diags_avg.yaml</code>. Keep
+them in step with this page: an example added here belongs in one of those.</p>
 
 
 
