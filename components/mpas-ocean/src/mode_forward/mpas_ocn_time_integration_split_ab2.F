@@ -107,7 +107,7 @@ module ocn_time_integration_split_ab2
     type(MPAS_Time_Type) :: nowTime ! Current model time
     character(len=STRKIND) :: initialTimeStamp, nowTimeStamp
                                     ! Initial and current time stamp
- 
+
 !***********************************************************************
 
    contains
@@ -288,6 +288,12 @@ module ocn_time_integration_split_ab2
       real (kind=RKIND), dimension(:,:), pointer :: &
          layerThicknessLagNew
 
+      ! Variables for the GEOMETRIC GM parameterization
+      logical:: useAB2
+      integer:: gmTendTimeLevel
+      real (kind=RKIND), dimension(:), pointer :: &
+        totalParamEddyEnergyCur, totalParamEddyEnergyNew, totalParamEddyEnergyTend
+
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
@@ -405,6 +411,16 @@ module ocn_time_integration_split_ab2
                                           lowFreqDivergenceTend)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
+
+      !*** Retrieve the state and tendency vars for the GEOMETRIC parameterization
+      if ( config_use_GM .and. config_GM_closure == 'geometric') then
+         call mpas_pool_get_array(statePool, 'totalParamEddyEnergy', &
+                                              totalParamEddyEnergyCur, 1)
+         call mpas_pool_get_array(statePool, 'totalParamEddyEnergy', &
+                                              totalParamEddyEnergyNew, 2)
+         call mpas_pool_get_array(tendPool, 'totalParamEddyEnergy', &
+                                             totalParamEddyEnergyTend)
+      endif
 
       allocate(bottomDepthEdge(nEdgesAll+1))
 
@@ -588,7 +604,7 @@ module ocn_time_integration_split_ab2
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
 
-      if (landIcePressureOn) then 
+      if (landIcePressureOn) then
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
@@ -767,7 +783,7 @@ module ocn_time_integration_split_ab2
                             (sshNew(cell2) - sshNew(cell1)) &
                             /dcEdge(iEdge)
                   do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-   
+
                      ! normalBaroclinicVelocityNew =
                      ! normalBaroclinicVelocityOld +
                      !                dt*(-f*normalBaroclinicVelocityPerp
@@ -788,7 +804,7 @@ module ocn_time_integration_split_ab2
                         CoriolisTermOld(k,iEdge) = normalVelocityNew(k,iEdge)
                      enddo ! vertical
                   end if
-   
+
                enddo ! iEdge
                !$omp end do
                !$omp end parallel
@@ -1703,7 +1719,7 @@ module ocn_time_integration_split_ab2
                ! normalTransportVelocity = normalBarotropicVelocity
                !                         + normalBaroclinicVelocity
                !                         + normalGMBolusVelocity
-               !                         + normalMLEvelocity 
+               !                         + normalMLEvelocity
                !                         + normalVelocityCorrection
                ! This is the velocity used in advective terms for layerThickness
                ! and tracers in tendency calls in stage 3.
@@ -1995,6 +2011,28 @@ module ocn_time_integration_split_ab2
                                       meshPool, verticalMeshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 
+            if ( config_use_GM .and. config_GM_closure == 'geometric') then
+               ! Compute the eddy energy tendency for the GEOMETRIC parameterization
+               call ocn_GM_eddyEnergy_tendency(statePool, meshPool, tendPool, dt, 1)
+               call mpas_dmpar_field_halo_exch(domain, 'tendTotalParamEddyEnergy')
+
+               ! eddyEnergy at n+1
+               do iCell = 1, nCellsAll
+                  !totalParamEddyEnergyNew(iCell) = totalParamEddyEnergyCur(iCell)
+                  totalParamEddyEnergyNew(iCell) = totalParamEddyEnergyCur(iCell) &
+                                                 + dt * totalParamEddyEnergyTend(iCell)
+
+                  ! Cap the total parameterized eddy energy using configured bounds
+                  totalParamEddyEnergyNew(iCell) = max( config_GM_geometric_backgroundEddyEnergy, &
+                     min(config_GM_geometric_maximumEddyEnergy, totalParamEddyEnergyNew(iCell)) )
+               end do
+
+               ! Save the old tendency of the eddy energy
+               do iCell = 1, nCellsAll
+                  totalParamEddyEnergyTendOld(iCell) = totalParamEddyEnergyTend(iCell)
+               end do
+            endif
+
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! If large iteration complete, compute all variables at
          ! time n+1
@@ -2030,7 +2068,7 @@ module ocn_time_integration_split_ab2
             !$omp end do
             !$omp end parallel
 #endif
-               
+
             ! Compute layerThicknessTend again
             !   layerThickTend from 0.5 * (h_{n} + h_{*})
             if ( nowTimeStamp /= initialTimeStamp .or. config_do_restart ) then
@@ -2693,6 +2731,55 @@ module ocn_time_integration_split_ab2
 
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, &
                              scratchPool, err, 2)
+
+      ! Compute the eddy energy tendency for the GEOMETRIC parameterization
+      ! and time integration of the eddy energy
+      if (config_use_gm .and. config_GM_closure == 'geometric') then
+         useAB2 = (.not. ((.not. config_do_restart) .and. &
+                          (nowTimeStamp == initialTimeStamp)))
+
+         if (useAB2) then
+            ! Restart or later timestep: AB2
+            gmTendTimeLevel = 1
+         else
+            ! Initial time + not restart: precitor-corrector
+            gmTendTimeLevel = 2
+         endif
+
+         ! Compute eddy energy tendency for the GEOMETRIC parameterization
+         call ocn_GM_eddyEnergy_tendency(statePool, meshPool, tendPool, dt, gmTendTimeLevel)
+         call mpas_dmpar_field_halo_exch(domain, 'tendTotalParamEddyEnergy')
+
+         if (useAB2) then
+
+            do iCell = 1, nCellsAll
+               totalParamEddyEnergyNew(iCell) = totalParamEddyEnergyCur(iCell) &
+                  + 1.5_RKIND * dt * totalParamEddyEnergyTend(iCell) &
+                  - 0.5_RKIND * dt * totalParamEddyEnergyTendOld(iCell)
+
+               ! Save the old tendency of the eddy energy
+               totalParamEddyEnergyTendOld(iCell) = totalParamEddyEnergyTend(iCell)
+            end do
+
+         else
+
+            do iCell = 1, nCellsAll
+               totalParamEddyEnergyNew(iCell) = totalParamEddyEnergyCur(iCell) &
+                  + dt * 0.5_RKIND * ( totalParamEddyEnergyTendOld(iCell) + &
+                                       totalParamEddyEnergyTend(iCell) )
+            end do
+
+         endif
+
+         ! Cap the total parameterized eddy energy using configured bounds
+         do iCell = 1, nCellsAll
+            totalParamEddyEnergyNew(iCell) = &
+               max( config_GM_geometric_backgroundEddyEnergy,   &
+                     min(config_GM_geometric_maximumEddyEnergy, &
+                         totalParamEddyEnergyNew(iCell)) )
+         end do
+
+      endif ! config_use_gm
 
       ! Update halo on u and tracers, which were just updated for
       ! implicit vertical mixing.  If not done, this leads to lack of
