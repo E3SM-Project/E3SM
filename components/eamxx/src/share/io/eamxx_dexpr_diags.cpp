@@ -171,9 +171,32 @@ std::string binary_op_to_diag_op (TokenTypes op)
   }
 }
 
+// Unary minus, as '-X' or the '-f2' in '-f2*f3'. No diagnostic negates a
+// field, but BinaryOp multiplies one by a scalar literal, so '-X' is '(-1)*X'.
+void translate_unary (const ast::UnaryExpression& e, const ast::Expression& self,
+                      std::string& diag_name, ekat::ParameterList& params)
+{
+  // dexpr's only other prefix operator is '!', which has no diagnostic.
+  if (e.op!=TokenTypes::Minus) {
+    unsupported("no diagnostic implements the unary operator '" +
+                dexpr::unary_op_to_string(e.op) + "'",self);
+  }
+
+  diag_name = "BinaryOp";
+  params.set<std::string>("arg1","-1");
+  params.set<std::string>("arg2",name_of(*e.right));
+  params.set<std::string>("binary_op","times");
+}
+
 void translate_binary (const ast::BinaryExpression& e, const ast::Expression& self,
                        std::string& diag_name, ekat::ParameterList& params)
 {
+  // dexpr has a single BinaryExpression node for EVERY infix operator, not just
+  // the arithmetic ones: comparisons, 'and'/'or', '**', and even '.' all parse
+  // to it. So a node that casts to BinaryExpression may still be a comparison
+  // ('T_mid<273' at the top level) or a bare attribute access ('T_mid.mean',
+  // with no call). Only the four arithmetic ops map to a diagnostic; the rest
+  // get an error that says what they actually are.
   const auto op = binary_op_to_diag_op(e.op);
   if (op=="") {
     if (comparison_to_cmp(e.op)!="") {
@@ -202,6 +225,19 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
 // needs a case there. Nothing enforces that in the type system, so two checks
 // do: validate_registry() below, and the create_diag case that builds every
 // example.
+//
+// Each entry is a dexpr::FunctionSpec, whose fields are:
+//   name            the method name, as written in 'X.name(..)'
+//   desc            one line, shown in error messages and by the dexpr tool
+//   min/max_positional  how many POSITIONAL args the call takes. The receiver
+//                   X is not one of them, so 'X.mean("lev")' has one.
+//   keywords        the accepted 'kw=value' arguments, as {name,required}
+//                   pairs. 'true' means the call is invalid without it;
+//                   'false' means optional. A keyword not listed here is
+//                   rejected, so this doubles as the spell-checker.
+//   example         a call that must parse, match this spec, and translate.
+//                   validate_registry() and the create_diag test both run it,
+//                   so it cannot drift from the code below.
 const dexpr::FunctionRegistry& eamxx_registry ()
 {
   static const dexpr::FunctionRegistry reg = [] {
@@ -232,11 +268,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {},
            .example = "T_mid.where(qv>0.01)"});
-    r.add({.name = "differentiate",
+    r.add({.name = "derivative",
            .desc = "vertical derivative w.r.t. 'p_mid' or 'z_mid'",
            .min_positional = 1, .max_positional = 1,
            .keywords = {},
-           .example = "T_mid.differentiate('p_mid')"});
+           .example = "T_mid.derivative('p_mid')"});
     r.add({.name = "histogram",
            .desc = "counts per bin, given the bin edges",
            .min_positional = 0, .max_positional = 0,
@@ -373,10 +409,10 @@ void translate_call (const Call& call, const ast::Expression& self,
     return;
   }
 
-  if (call.name=="differentiate") {
+  if (call.name=="derivative") {
     const auto wrt = string_arg(*call.positional[0],"the coordinate");
     EKAT_REQUIRE_MSG (wrt=="p_mid" or wrt=="z_mid",
-        "Error! Unknown coordinate in differentiate().\n"
+        "Error! Unknown coordinate in derivative().\n"
         " - expression: " + ast::to_string(self) + "\n"
         " - input: '" + wrt + "'\n"
         " - valid coordinates: 'p_mid', 'z_mid'\n");
@@ -491,12 +527,14 @@ dexpr_create_diagnostic (const std::string& expr,
   } else if (const auto* bin = as<ast::BinaryExpression>(*root)) {
     translate_binary(*bin,*root,diag_name,params);
   } else if (const auto* un = as<ast::UnaryExpression>(*root)) {
-    unsupported("no diagnostic implements the unary operator '" +
-                dexpr::unary_op_to_string(un->op) + "'",*root);
+    translate_unary(*un,*root,diag_name,params);
   } else if (as<ast::FuncExpression>(*root)) {
     unsupported("EAMxx functions are written as methods, X.f(..), not f(X)",*root);
   } else {
-    unsupported("an expression must produce a field",*root);
+    // Everything left is a leaf that is not a name: a bare literal, a string,
+    // a list. There is nothing to compute, and nothing for the factory to look
+    // up either, so this is the end of the road for the whole precedence chain.
+    unsupported("this is neither a diagnostic name nor an operation on a field",*root);
   }
 
   // Name the field after the request, so customers find what they asked for.

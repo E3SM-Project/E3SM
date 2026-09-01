@@ -1105,6 +1105,16 @@ process_requested_fields()
     EKAT_REQUIRE_MSG(tokens.size()==2 or tokens.size()==1,
         "Error! Invalid alias request. Should be 'alias:=original'.\n"
         " - request: " + name + "\n");
+    // Trimming can leave a token empty (' := expr', 'name :=', or an entry that
+    // is only whitespace). Catch it here: an empty name silently poisons
+    // m_fields_names/m_alias_to_orig, and only fails much later.
+    for (const auto& t : tokens) {
+      EKAT_REQUIRE_MSG(not t.empty(),
+          "Error! Empty field name in output request.\n"
+          " - stream name: " + m_stream_name + "\n"
+          " - request: '" + name + "'\n"
+          " - expected 'alias := original' with both sides non-empty.\n");
+    }
     if (tokens.size()==2) {
       EKAT_REQUIRE_MSG (m_alias_to_orig.count(tokens[0])==0,
           "Error! The same alias has been used multiple times.\n"

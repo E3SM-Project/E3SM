@@ -202,6 +202,28 @@ TEST_CASE("create_diag")
     REQUIRE (d3->get_params().get<std::string>("binary_op")=="over");
   }
 
+  SECTION ("dexpr_unary_minus") {
+    // No diagnostic negates a field, so '-X' goes through BinaryOp as (-1)*X.
+    auto d1 = create_diagnostic("-T_mid",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("arg1")=="-1");
+    REQUIRE (d1->get_params().get<std::string>("arg2")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("binary_op")=="times");
+    // -1 is a scalar, so only T_mid is requested as an input field
+    REQUIRE (d1->get_input_fields_names().size()==1);
+    REQUIRE (d1->get_input_fields_names().front()=="T_mid");
+
+    // Prefix binds tighter than '*', so '-qc*qv' is '(-qc)*qv'...
+    auto d2 = create_diagnostic("-qc*qv",grid);
+    REQUIRE (d2->get_params().get<std::string>("binary_op")=="times");
+    REQUIRE (d2->get_params().get<std::string>("arg1")=="(-qc)");
+    REQUIRE (d2->get_params().get<std::string>("arg2")=="qv");
+    // ...and the negated operand resolves on its own when it comes back around
+    auto inner = create_diagnostic("(-qc)",grid);
+    REQUIRE (inner->get_params().get<std::string>("arg1")=="-1");
+    REQUIRE (inner->get_params().get<std::string>("arg2")=="qc");
+  }
+
   SECTION ("dexpr_operator_precedence") {
     // 'qc_plus_qv_times_p_mid' groups by regex greediness: (qc+qv)*p_mid. As
     // an expression, '*' binds tighter.
@@ -341,12 +363,12 @@ TEST_CASE("create_diag")
   }
 
   SECTION ("dexpr_other_calls") {
-    auto d1 = create_diagnostic("T_mid.differentiate('p_mid')",grid);
+    auto d1 = create_diagnostic("T_mid.derivative('p_mid')",grid);
     REQUIRE (std::dynamic_pointer_cast<VertDerivative>(d1)!=nullptr);
     REQUIRE (d1->get_params().get<std::string>("derivative_method")=="p");
-    REQUIRE_THROWS (create_diagnostic("T_mid.differentiate('t')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.derivative('t')",grid));
     // the bare shorthands are gone; name the coordinate
-    REQUIRE_THROWS (create_diagnostic("T_mid.differentiate('p')",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.derivative('p')",grid));
 
     auto d2 = create_diagnostic("T_mid.histogram(bins=[0,1.5,2])",grid);
     REQUIRE (std::dynamic_pointer_cast<Histogram>(d2)!=nullptr);
@@ -406,7 +428,7 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("mean(T_mid,'lev')",grid));
     // Operators with no diagnostic behind them
     REQUIRE_THROWS (create_diagnostic("T_mid**2",grid));
-    REQUIRE_THROWS (create_diagnostic("-T_mid",grid));
+    REQUIRE_THROWS (create_diagnostic("!T_mid",grid));
     // Attribute access with no call
     REQUIRE_THROWS (create_diagnostic("T_mid.prev",grid));
     // An expression must produce a field

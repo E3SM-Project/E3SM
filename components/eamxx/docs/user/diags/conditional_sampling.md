@@ -71,6 +71,18 @@ To count the percentage of earth where the surface pressure is > 1e5Pa:
 
 - `mask_where_ps_gt_100000_horiz_avg`
 
+**A mask cannot currently be written to file.** The mask diagnostic's output has
+`int` data type, and IO cannot write it: listing a `mask_where_..` name in
+`field_names` aborts the run with a narrowing-conversion error. Reducing it does
+not help: `mask_where_ps_gt_100000_horiz_avg` is still an `int`. The workaround
+is to promote it to `Real` by multiplying by 1, which is easiest to write as an
+[expression](expressions.md):
+
+```yaml
+field_names:
+  - wet_frac := mask.where(ps>100000)*1.0
+```
+
 ## Caveats
 
 - For now, we only support 1D, 2D, and 3D fields.

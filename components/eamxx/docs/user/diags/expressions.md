@@ -1,6 +1,6 @@
 # Diagnostic expressions
 
-Alongside the underscore names described in the rest of this section, EAMxx can
+As the underscore-based system is being deprecated, EAMxx can now
 build diagnostics from **expressions**:
 
 ```yaml
@@ -44,6 +44,7 @@ diagnostics use but that are not written), need no name of their own.
 | Operator | Meaning |
 | -------- | ------- |
 | `a + b`, `a - b`, `a * b`, `a / b` | element-wise arithmetic |
+| `-a` | negation, shorthand for `(-1)*a` |
 | `>`, `>=`, `<`, `<=`, `==`, `!=` | comparison, **only** inside `where(..)` |
 | `( )` | grouping |
 
@@ -55,11 +56,14 @@ field_names:
   - p_hPa      := p_mid/100
   - T_scaled   := T_mid*0.5
   - dry_air    := p_mid - qv*p_mid
+  - p_ratio    := p_mid / P0
 ```
 
 Precedence is the usual one, so `qc+qv*p_mid` is `qc+(qv*p_mid)`. Note this
 differs from the underscore spelling `qc_plus_qv_times_p_mid`, which means
-`(qc+qv)*p_mid`. When in doubt, parenthesize.
+`(qc+qv)*p_mid`. When in doubt, parenthesize. (That pair only illustrates
+grouping: `qc+(qv*p_mid)` adds a mixing ratio to a pressure, and is rejected at
+run time for incompatible units, while `(qc+qv)*p_mid` is fine.)
 
 ## Functions
 
@@ -79,7 +83,7 @@ is an honest analogue.
 | `X.sum('lev')` | `X_vert_sum` |
 | `X.mean('lev', weights='dp')` | `X_vert_avg_dp_weighted` |
 | `X.where(qv>0.01)` | `X_where_qv_gt_0.01` |
-| `X.differentiate('p_mid')` | `X_pvert_derivative` |
+| `X.derivative('p_mid')` | `X_pvert_derivative` |
 | `X.histogram(bins=[0,1,2])` | `X_histogram_0_1_2` |
 | `X.zonal_mean(bins=20)` | `X_zonal_avg_20_bins` |
 | `X.shift(time=1)` | `X_prev` |
@@ -104,8 +108,20 @@ Notes:
   `weights` for `'lev'` is `'dp'` or `'dz'`.
 - `where` takes a single comparison. `and`/`or` are not supported; chain
   `where(..)` calls instead. The special operand names `mask` and `lev` work as
-  they do in the underscore syntax, so `mask.where(lev>5)` is valid.
-- `X.tend()` is shorthand for `(X - X.shift(time=1)).over_dt()`.
+  they do in the underscore syntax, so `mask.where(lev>5)` parses.
+- **`over_dt` and `tend` cannot go in an `instant` stream.** An instant stream
+  takes a snapshot at `t0`, before any step has run, and `dt` is zero there, so
+  the diagnostic aborts with "dt must be positive". Write them to an averaged
+  stream (`averaging_type: average`, `max`, `min`) instead. This is a property
+  of the diagnostic, not of the syntax: the underscore spellings `X_over_dt` and
+  `X_atm_backtend` behave the same way.
+- **A `mask` operand cannot currently be written to file.** The diagnostic is
+  built, but its output has `int` data type, which IO cannot handle: writing
+  `mask.where(..)` (or the underscore `mask_where_..`) fails with a narrowing
+  conversion error, and reducing it first does not help. Multiply by 1 to
+  promote it to `Real` -- `mask.where(ps>100000)*1.0` writes fine.
+- `X.tend()` is shorthand for `(X - X.shift(time=1)).over_dt()`, and inherits
+  the `over_dt` restriction above.
 - Histogram bin edges must be non-negative, and must be writable without an
   exponent: the diagnostic joins them with `_` and splits them back apart, so
   `1e3` is fine (it is written `1000.0`) but `1e30` is not.
@@ -126,9 +142,12 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 | `over_dt`, `tend` | no xarray equivalent |
 | `mean('lev', weights=..)` | xarray would be `weighted(dp).mean('lev')`, again a chain |
 
+`X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, but computed
+in one sweep rather than as three diagnostics.
+
 Two operand names are special, inherited from the underscore syntax rather than
 from xarray: `mask` stands for the 0/1 indicator of the condition itself, so
-`mask.where(..)` gives where the condition holds rather than sampling a field;
+`mask.where(...)` is 1 where the condition `(...)` holds;
 and `lev` on the left of a comparison means the level index.
 
 ## Errors
@@ -185,3 +204,11 @@ fails fast rather than at the moment a user first writes it.
 So adding a function means: register it with an example, translate it, and both
 checks come along for free. The `dexpr` command line tool does the same for the
 generic vocabulary -- `dexpr check "<expr>"` and `dexpr check-registry`.
+
+Those two checks stop at "a diagnostic was built". Every expression on this page
+is also run end to end -- computed and written to NetCDF -- by the standalone
+test in
+`components/eamxx/tests/multi-process/dynamics_physics/homme_shoc_cld_p3_rrtmgp_pg2`,
+which carries two extra output streams for the purpose: `output_diags_ins.yaml`
+and, for the ones an instant stream cannot hold, `output_diags_avg.yaml`. Keep
+them in step with this page: an example added here belongs in one of those.

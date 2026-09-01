@@ -41,14 +41,18 @@ control — how composite names are parsed.
 
 8. **Histograms** — `X_histogram_<bin_config>`.
 
-9. **Expressions** — a name none of the patterns above claimed is parsed as a
-   [diagnostic expression](expressions.md), e.g. `(qc+qv)*p_mid` or
-   `T_mid.mean('lev')`. Being last is what keeps every name above working
-   unchanged; it is not a statement about which syntax to prefer. Expressions
-   are the intended replacement for items 3–8, which will eventually go away.
+9. **Plain diagnostic name** — a name none of the patterns above claimed, and
+   that is a bare identifier, is looked up directly in the atmosphere-diagnostic
+   factory.
 
-10. **Plain diagnostic name** — a bare identifier is not an expression, so it is
-    looked up directly in the atmosphere-diagnostic factory.
+10. **Expressions** — anything left is parsed as a
+    [diagnostic expression](expressions.md), e.g. `(qc+qv)*p_mid` or
+    `T_mid.mean('lev')`. This is the last resort: there is nothing after it, so
+    an expression that does not parse, or that no diagnostic implements, is an
+    error rather than a fall-through. Being last is what keeps every name above
+    working unchanged; it is not a statement about which syntax to prefer.
+    Expressions are the intended replacement for items 3–8, which will
+    eventually go away.
 
 ## Key rules
 

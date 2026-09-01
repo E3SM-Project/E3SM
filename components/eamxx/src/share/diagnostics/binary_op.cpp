@@ -34,21 +34,23 @@ bool str2real (const std::string& s, Real& value) {
   return true;
 }
 
-bool is_scalar (const std::string& s) {
-  Real dummy;
-  return physics::Constants<Real>::dictionary().count(s)>0 or str2real(s,dummy);
-}
-
-Real scalar_value (const std::string& s) {
-  Real value;
-  if (str2real(s,value)) return value;
-  return physics::Constants<Real>::dictionary().at(s).value;
-}
-
-ekat::units::Units scalar_units (const std::string& s) {
-  Real dummy;
-  if (str2real(s,dummy)) return ekat::units::Units::nondimensional();
-  return physics::Constants<Real>::dictionary().at(s).units;
+// Resolves 's' as a scalar operand, if it is one. The dictionary is checked
+// first: a lookup is cheaper than a strtod, and named constants are the common
+// case. Called once per operand, from the constructor; initialize_impl and
+// compute_impl use the cached values.
+bool scalar_operand (const std::string& s, Real& value, ekat::units::Units& units) {
+  const auto& dict = physics::Constants<Real>::dictionary();
+  auto it = dict.find(s);
+  if (it!=dict.end()) {
+    value = it->second.value;
+    units = it->second.units;
+    return true;
+  }
+  if (str2real(s,value)) {
+    units = ekat::units::Units::nondimensional();
+    return true;
+  }
+  return false;
 }
 } // anonymous namespace
 
@@ -225,8 +227,10 @@ BinaryOp(const ekat::Comm &comm,
                    "Error! Invalid binary operator: '" + m_binary_op_str + "'\n"
                    "Valid operators are: plus, minus, times, over\n");
 
-  m_arg1_is_field = not is_scalar(m_arg1_name);
-  m_arg2_is_field = not is_scalar(m_arg2_name);
+  // A non-field operand's value/units never change, so resolve them here rather
+  // than on every compute_impl call.
+  m_arg1_is_field = not scalar_operand(m_arg1_name,m_arg1_value,m_arg1_units);
+  m_arg2_is_field = not scalar_operand(m_arg2_name,m_arg2_value,m_arg2_units);
   if (m_arg1_is_field)
     m_field_in_names.push_back(m_arg1_name);
   if (m_arg2_is_field)
@@ -265,9 +269,9 @@ void BinaryOp::initialize_impl()
                             : (m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_layout()
                                                : FieldLayout({},{}));
   const auto u1 = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_units()
-                                  : scalar_units(m_arg1_name);
+                                  : m_arg1_units;
   const auto u2 = m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_units()
-                                  : scalar_units(m_arg2_name);
+                                  : m_arg2_units;
   auto diag_units = apply_binary_op(u1, u2, m_binary_op_code);
   auto gn = m_params.get<std::string>("grid_name");
   auto diag_name = m_arg1_name + "_" + m_binary_op_str + "_" + m_arg2_name;
@@ -276,9 +280,7 @@ void BinaryOp::initialize_impl()
 
   if (not m_arg1_is_field and not m_arg2_is_field) {
     // We can pre-compute the diag now
-    const auto  c1 = scalar_value(m_arg1_name);
-    const auto  c2 = scalar_value(m_arg2_name);
-    apply_binary_op(m_diagnostic_output, c1, c2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, m_arg1_value, m_arg2_value, m_binary_op_code);
   } else {
     m_arg1_has_mask = m_arg1_is_field and m_fields_in.at(m_arg1_name).has_valid_mask();
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
@@ -307,13 +309,11 @@ void BinaryOp::compute_impl()
     apply_binary_op(m_diagnostic_output, f1, f2, m_binary_op_code);
   } else if (m_arg1_is_field) {
     const auto& f1 = m_fields_in.at(m_arg1_name);
-    const auto  c2 = scalar_value(m_arg2_name);
-    apply_binary_op(m_diagnostic_output, f1, c2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, f1, m_arg2_value, m_binary_op_code);
   } else if (m_arg2_is_field) {
     // We can do scale/scale_inv for * and /, but for + and - we must deep copy arg2 first
-    const auto  c1 = scalar_value(m_arg1_name);
     const auto& f2 = m_fields_in.at(m_arg2_name);
-    apply_binary_op(m_diagnostic_output, c1, f2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, m_arg1_value, f2, m_binary_op_code);
   }
 
   // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid

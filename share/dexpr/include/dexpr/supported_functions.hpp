@@ -47,8 +47,10 @@ struct FunctionSpec {
   std::string to_string() const;
 };
 
+// No trailing newline: to_string() is already multi-line, and the caller
+// decides how entries are separated.
 inline std::ostream& operator<<(std::ostream& os, const FunctionSpec& function) {
-  return os << function.to_string() << '\n';
+  return os << function.to_string();
 }
 
 // Ordered, so listings and error messages are stable rather than hash-order.

@@ -13,7 +13,8 @@ void print_functions() {
     std::cout << "Builtin functions\n\n";
 
     for (const auto& entry : dexpr::builtin_functions()) {
-        std::cout << "  " << entry.second << '\n';
+        // Each spec spans a few lines, so separate entries with a blank one.
+        std::cout << "  " << entry.second << "\n\n";
     }
 }
 
