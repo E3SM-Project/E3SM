@@ -34,6 +34,8 @@ module GridcellDataType
     real(r8), pointer :: liquid_water_temp2   (:)   ! post land cover change weighted average liquid water temperature (K)
     real(r8), pointer :: beg_hc               (:)   ! grid-level column heat content (snow+soil+lake) at beginning of time step (MJ/m2)
     real(r8), pointer :: end_hc               (:)   ! grid-level column heat content (snow+soil+lake) at end of time step (MJ/m2)
+    real(r8), pointer :: beg_hc_soi           (:)   ! grid-level column soil-only heat content at beginning of time step (MJ/m2)
+    real(r8), pointer :: end_hc_soi           (:)   ! grid-level column soil-only heat content at end of time step (MJ/m2)
     real(r8), pointer :: errsoi               (:)   ! grid-level column-level soil/lake energy conservation error (W/m2)
 
   contains
@@ -273,6 +275,8 @@ contains
     allocate(this%liquid_water_temp2   (begg:endg))                      ; this%liquid_water_temp2   (:)   = spval
     allocate(this%beg_hc               (begg:endg))                      ; this%beg_hc               (:)   = spval
     allocate(this%end_hc               (begg:endg))                      ; this%end_hc               (:)   = spval
+    allocate(this%beg_hc_soi           (begg:endg))                      ; this%beg_hc_soi           (:)   = spval
+    allocate(this%end_hc_soi           (begg:endg))                      ; this%end_hc_soi           (:)   = spval
     allocate(this%errsoi               (begg:endg))                      ; this%errsoi               (:)   = spval
 
     !-----------------------------------------------------------------------
@@ -307,6 +311,8 @@ contains
     deallocate(this%liquid_water_temp2)
     deallocate(this%beg_hc)
     deallocate(this%end_hc)
+    deallocate(this%beg_hc_soi)
+    deallocate(this%end_hc_soi)
     deallocate(this%errsoi)
   end subroutine grc_es_clean
   
