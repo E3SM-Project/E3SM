@@ -445,9 +445,8 @@ public:
   // Safety parameters
   // -----------------------------------------------------------------------
 
-  // Minimum water threshold for tracer calculations [kg/kg]
-  // From eamxx_water_tracers_functions.hpp line 34
-  static constexpr Scalar wtrc_qmin = sp(1.e-22);
+  // Note: wtrc_qmin is defined in eamxx_water_tracers_functions.hpp
+  // Use water_tracers::WaterTracerFunctions::wtrc_qmin for minimum water threshold
 };
 
 // Convenience alias for Real precision
