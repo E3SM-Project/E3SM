@@ -8,6 +8,7 @@
 #include <ekat_assert.hpp>
 
 #include <memory>
+#include <ranges>
 
 namespace scream {
 
@@ -511,7 +512,7 @@ set_required_field (const Field& f) {
       if (g.grid_name()!=fid.get_grid_name()) {
         continue;
       }
-      for (const auto& fn : g.info()->m_fields_names) {
+      for (const auto& fn : std::views::keys(g.individual_fields())) {
         if (fid.name()==fn) {
           computed = true;
           goto endloop;
@@ -546,7 +547,7 @@ set_required_group (const FieldGroup& group) {
   // Find the first process that requires this group
   int first_proc_that_needs_group = -1;
   for (int iproc=0; iproc<m_group_size; ++iproc) {
-    if (m_atm_processes[iproc]->has_required_group(group.info()->m_group_name,group.grid_name())) {
+    if (m_atm_processes[iproc]->has_required_group(group.name(),group.grid_name())) {
       first_proc_that_needs_group = iproc;
       break;
     }
@@ -554,7 +555,7 @@ set_required_group (const FieldGroup& group) {
 
   EKAT_REQUIRE_MSG (first_proc_that_needs_group>=0,
     "Error! This atmosphere process does not require the input group.\n"
-    "   group name: " + group.info()->m_group_name + "\n"
+    "   group name: " + group.name() + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
@@ -582,7 +583,7 @@ set_required_group (const FieldGroup& group) {
         if (g.grid_name()!=group.grid_name()) {
           continue;
         }
-        for (const auto& f : g.info()->m_fields_names) {
+        for (const auto& f : std::views::keys(g.individual_fields())) {
           if (f==fn) {
             computed.insert(fn);
             goto endloop;
@@ -594,12 +595,11 @@ set_required_group (const FieldGroup& group) {
   // Yes, goto statement are not the prettiest C++ feature, but they allow to
   // break from multiple nested loops without the need of several checks.
 endloop:
-    if (computed.size()==group.info()->m_fields_names.size()) {
+    if (computed.size()==group.size())
       break;
-    }
   }
 
-  if (computed.size()==group.info()->m_fields_names.size()) {
+  if (computed.size()==group.size()) {
     // We compute all the fields in the group *before* any atm proc
     // that requires this group. Simply set the group in those atm
     // proc that require it, without storing it as an input to this group.
@@ -617,7 +617,7 @@ void AtmosphereProcessGroup::
 set_required_group_impl (const FieldGroup& group)
 {
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_required_group(group.info()->m_group_name,group.grid_name())) {
+    if (atm_proc->has_required_group(group.name(),group.grid_name())) {
       atm_proc->set_required_group(group);
     }
   }
@@ -627,14 +627,14 @@ void AtmosphereProcessGroup::
 set_computed_group_impl (const FieldGroup& group)
 {
   for (auto atm_proc : m_atm_processes) {
-    if (atm_proc->has_computed_group(group.info()->m_group_name,group.grid_name())) {
+    if (atm_proc->has_computed_group(group.name(),group.grid_name())) {
       atm_proc->set_computed_group(group);
     }
     // In sequential scheduling, some groups may be computed by
     // a process and used by the next one. In this case, the group
     // may not figure as 'input' for the group, but we still
     // need to set it in the processes that need it.
-    if (atm_proc->has_required_group(group.info()->m_group_name,group.grid_name())) {
+    if (atm_proc->has_required_group(group.name(),group.grid_name())) {
       atm_proc->set_required_group(group.get_const());
     }
   }

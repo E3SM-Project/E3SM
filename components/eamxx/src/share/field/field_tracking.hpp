@@ -1,7 +1,6 @@
 #ifndef SCREAM_FIELD_TRACKING_HPP
 #define SCREAM_FIELD_TRACKING_HPP
 
-#include "share/field/field_group_info.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_family_tracking.hpp"

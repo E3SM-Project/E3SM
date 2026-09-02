@@ -324,9 +324,9 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
 
 void AtmosphereProcess::set_required_group (const FieldGroup& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (has_required_group(group.info()->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_required_group(group.name(),group.grid_name()),
     "Error! This atmosphere process does not require the input group.\n"
-    "   group name: " + group.info()->m_group_name + "\n"
+    "   group name: " + group.name() + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
@@ -353,9 +353,9 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
 
 void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (has_computed_group(group.info()->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_computed_group(group.name(),group.grid_name()),
     "Error! This atmosphere process does not compute the input group.\n"
-    "   group name: " + group.info()->m_group_name + "\n"
+    "   group name: " + group.name() + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
@@ -830,7 +830,7 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
     m_fields_out_pointers[fid.name()][fid.get_grid_name()] = &f;
   }
   for (auto& g : m_groups_in) {
-    const auto& group_name = g.info()->m_group_name;
+    const auto& group_name = g.name();
     m_groups_in_pointers[group_name][g.grid_name()] = &g;
     // Also add pointers for individual fields in the group and monolithic field (if present)
     for (auto& [fn,f] : g.individual_fields()) {
@@ -841,7 +841,7 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
     }
   }
   for (auto& g : m_groups_out) {
-    const auto& group_name = g.info()->m_group_name;
+    const auto& group_name = g.name();
     m_groups_out_pointers[group_name][g.grid_name()] = &g;
     // Also add pointers for individual fields in the group and monolithic field (if present)
     for (auto& [fn,f] : g.individual_fields()) {
@@ -1146,18 +1146,17 @@ void AtmosphereProcess
 
 void AtmosphereProcess
 ::remove_group (const std::string& group_name, const std::string& grid_name) {
-  typedef std::list<FieldGroup>::iterator It;
-  const auto rmg = [&] (std::list<FieldGroup>& fields, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
-    std::vector<It> rm_its;
-    for (It it = fields.begin(); it != fields.end(); ++it) {
-      if (it->info()->m_group_name == group_name and it->grid_name() == grid_name) {
-        rm_its.push_back(it);
+  const auto rmg = [&] (std::list<FieldGroup>& groups, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
+    for (auto it = groups.begin(); it != groups.end();) {
+      if (it->name() == group_name and it->grid_name() == grid_name) {
         ptrs[group_name][grid_name] = nullptr;
         for (auto& kv : it->individual_fields())
           remove_field(kv.first, grid_name);
+        it = groups.erase(it);
+      } else {
+        ++it;
       }
     }
-    for (auto& it : rm_its) fields.erase(it);
   };
   rmg(m_groups_in, m_groups_in_pointers);
   rmg(m_groups_out, m_groups_out_pointers);

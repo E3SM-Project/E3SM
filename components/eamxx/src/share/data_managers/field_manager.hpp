@@ -3,6 +3,7 @@
 
 #include "share/data_managers/grids_manager.hpp"
 #include "share/data_managers/field_request.hpp"
+#include "share/data_managers/field_group_info.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
@@ -77,7 +78,6 @@ public:
     return add_to_group(field_name, m_grids_mgr->get_repo().begin()->second->name(),group_name);
   }
   void add_to_group (const std::string& field_name, const std::string& grid_name, const std::string& group_name);
-  void add_to_group (const identifier_type& id, const std::string& group_name) { add_to_group(id.name(), id.get_grid_name(), group_name); }
 
   // Query for a particular field or group of fields
   bool has_field (const std::string& field_name, const std::string& grid_name) const;
@@ -158,6 +158,9 @@ public:
 
 protected:
 
+  // Called by add_to_group, but skips some checks. Used at the end of registration_ends.
+  void add_to_group_internal (const std::string& field_name, const std::string& grid_name,
+                              const std::string& group_name, const bool monolithic_ok);
   void pre_process_monolithic_group_requests ();
 
   // The state of the repository
