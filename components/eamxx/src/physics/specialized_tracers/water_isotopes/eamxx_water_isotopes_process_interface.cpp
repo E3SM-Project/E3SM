@@ -15,9 +15,9 @@ WaterIsotopes::WaterIsotopes(const ekat::Comm& comm, const ekat::ParameterList& 
   const std::string lv_form = m_params.get<std::string>(
     "liquid_vapor_formulation", "horita_wesolowski_1994");
   if (lv_form == "majoube_1971a") {
-    m_runtime_options.liquid_vapor = wiso::LiquidVaporFormulation::Majoube1971a;
+    m_runtime_options.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
   } else if (lv_form == "horita_wesolowski_1994") {
-    m_runtime_options.liquid_vapor = wiso::LiquidVaporFormulation::HoritaWesolowski1994;
+    m_runtime_options.liquid_vapor = wiso::LiquidVaporFractionation::HoritaWesolowski1994;
   } else {
     EKAT_ERROR_MSG("Invalid liquid_vapor_formulation: " + lv_form +
                    ". Valid options: horita_wesolowski_1994, majoube_1971a");
@@ -63,9 +63,9 @@ WaterIsotopes::WaterIsotopes(const ekat::Comm& comm, const ekat::ParameterList& 
   const std::string iv_form = m_params.get<std::string>(
     "ice_vapor_formulation", "merlivat_nief_1967");
   if (iv_form == "isocam3") {
-    m_runtime_options.ice_vapor = wiso::IceVaporFormulation::IsoCAM3;
+    m_runtime_options.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
   } else if (iv_form == "merlivat_nief_1967") {
-    m_runtime_options.ice_vapor = wiso::IceVaporFormulation::MerlivatNief1967;
+    m_runtime_options.ice_vapor = wiso::IceVaporFractionation::MerlivatNief1967;
   } else {
     EKAT_ERROR_MSG("Invalid ice_vapor_formulation: " + iv_form +
                    ". Valid options: merlivat_nief_1967, isocam3");

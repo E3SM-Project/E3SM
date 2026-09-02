@@ -33,7 +33,7 @@ namespace wiso {
 // ============================================================================
 
 // Liquid/vapor equilibrium fractionation formulation
-enum class LiquidVaporFormulation {
+enum class LiquidVaporFractionation {
   HoritaWesolowski1994 = 0,  // Default: Horita & Wesolowski (1994)
   Majoube1971a = 1           // Alternative: Majoube (1971a)
 };
@@ -57,18 +57,18 @@ enum class OceanEnrichmentFormulation {
 };
 
 // Ice/vapor equilibrium fractionation formulation
-enum class IceVaporFormulation {
+enum class IceVaporFractionation {
   MerlivatNief1967 = 0,  // Default: Merlivat & Nief (1967) HDO + Majoube (1971b) O18
   IsoCAM3 = 1            // Alternative: isoCAM3 formulation
 };
 
 // Runtime configuration struct - holds user's formulation choices
 struct WaterIsotopeRuntimeOptions {
-  LiquidVaporFormulation liquid_vapor = LiquidVaporFormulation::HoritaWesolowski1994;
+  LiquidVaporFractionation liquid_vapor = LiquidVaporFractionation::HoritaWesolowski1994;
   DiffusivityFormulation diffusivity = DiffusivityFormulation::Merlivat1978;
   StandardRatioFormulation standard_ratio = StandardRatioFormulation::Normalized;
   OceanEnrichmentFormulation ocean_enrichment = OceanEnrichmentFormulation::None;
-  IceVaporFormulation ice_vapor = IceVaporFormulation::MerlivatNief1967;
+  IceVaporFractionation ice_vapor = IceVaporFractionation::MerlivatNief1967;
 };
 
 template <typename Scalar>
@@ -127,7 +127,7 @@ struct WaterIsotopeConstants
     copy_array(boce, ocean_src, num_species);
 
     // Select liquid/vapor formulation
-    if (opts.liquid_vapor == LiquidVaporFormulation::Majoube1971a) {
+    if (opts.liquid_vapor == LiquidVaporFractionation::Majoube1971a) {
       copy_array(alpal, alpal_majoube1971a, num_species);
       copy_array(alpbl, alpbl_majoube1971a, num_species);
       copy_array(alpcl, alpcl_majoube1971a, num_species);
@@ -142,7 +142,7 @@ struct WaterIsotopeConstants
     }
 
     // Select ice/vapor formulation
-    if (opts.ice_vapor == IceVaporFormulation::IsoCAM3) {
+    if (opts.ice_vapor == IceVaporFractionation::IsoCAM3) {
       copy_array(alpai, alpai_isocam3, num_species);
       copy_array(alpbi, alpbi_isocam3, num_species);
       copy_array(alpci, alpci_isocam3, num_species);

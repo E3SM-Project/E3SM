@@ -101,7 +101,7 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Test 2: Majoube 1971a
     WaterIsotopeRuntimeOptions opts_majoube;
-    opts_majoube.liquid_vapor = wiso::LiquidVaporFormulation::Majoube1971a;
+    opts_majoube.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
     WaterIsotopeConstants<Real> constants_majoube(opts_majoube);
 
     // Verify Majoube 1971a values for HDO coefficient A
@@ -124,7 +124,7 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Test 2: isoCAM3
     WaterIsotopeRuntimeOptions opts_isocam3;
-    opts_isocam3.ice_vapor = wiso::IceVaporFormulation::IsoCAM3;
+    opts_isocam3.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
     WaterIsotopeConstants<Real> constants_isocam3(opts_isocam3);
 
     // Verify isoCAM3 values for HDO coefficient A
@@ -168,7 +168,7 @@ TEST_CASE("runtime_formulation_selection") {
 
     // Majoube 1971a
     WaterIsotopeRuntimeOptions opts_majoube;
-    opts_majoube.liquid_vapor = wiso::LiquidVaporFormulation::Majoube1971a;
+    opts_majoube.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
     WaterIsotopeConstants<Real> constants_majoube(opts_majoube);
     Real alpha_lv_majoube = WaterIsotopeFractionation::alpha_liquid_vapor(
       temp, wiso::HDO, wiso::CondensedOverVapor, constants_majoube);
