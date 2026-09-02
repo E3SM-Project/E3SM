@@ -2149,6 +2149,15 @@ Runtime flag to turn on/off PETSc based thermal model.
 Runtime flag to turn on/off variable soil thickness.
 </entry>
 
+<!-- ========================================================================================  -->
+
+<entry id="squareomfrac" type="logical" category="default_settings"
+        group="elm_inparm" valid_values="">
+Flag to use squared organic matter fraction in soil calculations. If true (default), uses the squared
+formulation (organic3d/organic_max)**2. If false, uses the unsquared formulation min(organic3d/organic_max, 1.0)
+following CLM5.0 and Lawrence and Slater (2008).
+</entry>
+
 <!-- ======================================================================================== -->
 <!-- Namelist options for lake water storage                                                  -->
 <!-- ======================================================================================== -->

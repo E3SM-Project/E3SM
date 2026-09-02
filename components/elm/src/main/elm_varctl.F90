@@ -397,6 +397,7 @@ module elm_varctl
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
   logical, public :: use_var_soil_thick  = .false.
+  logical, public :: squareomfrac        = .true.   ! use squared organic matter fraction in soil calculations
   logical, public :: use_T_rho_dependent_snowthk     = .false.
   logical, public :: use_atm_downscaling_to_topunit  = .false.
   character(len = SHR_KIND_CS), public :: precip_downscaling_method  = 'ERMM' ! Precip downscaling method values can be ERMM or FNM
@@ -548,6 +549,7 @@ module elm_varctl
   !$acc declare copyin(use_mexicocity     )
   !$acc declare copyin(use_noio           )
   !$acc declare copyin(use_var_soil_thick )
+  !$acc declare copyin(squareomfrac       )
   !$acc declare copyin(tw_irr)
   !$acc declare copyin(use_vsfm                   )
   !$acc declare copyin(vsfm_use_dynamic_linesearch)
