@@ -281,7 +281,6 @@ void Functions<S,D>::zm_conv_main(
 
   //============================================================================
   // Host: Determine active columns
-  // cape_threshold_loc depends only on runtime_opt / is_first_step (same for all cols)
   //============================================================================
   const Real cape_threshold_loc = runtime_opt.cape_threshold;
   const bool use_dcape_trigger = runtime_opt.trig_dcape && !is_first_step;
