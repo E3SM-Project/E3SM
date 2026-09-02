@@ -153,12 +153,7 @@ static bool is_conv_active(
   Real& cape_threshold_loc)        // cape threshold
 {
   // set local threshold to be used for zm_closure()
-  if ( runtime_opt.trig_dcape && !is_first_step ) {
-    cape_threshold_loc = runtime_opt.cape_threshold;
-  }
-  else {
-    cape_threshold_loc = ZMC::cape_threshold_old;
-  }
+  cape_threshold_loc = runtime_opt.cape_threshold;
 
   //--------------------------------------------------------------------------
   // determine if column is active

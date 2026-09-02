@@ -100,7 +100,6 @@ struct Functions {
     static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
     static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
     static inline constexpr Real ull_upper_launch_pressure = 600.0;    // upper search limit for unrestricted launch level (ULL)
-    static inline constexpr Real cape_threshold_old        = 70.;      // threshold value of cape for deep convection (old value before DCAPE)
     static inline constexpr Real cape_threshold_new        = 0.;       // threshold value of cape for deep convection
     static inline constexpr Real dcape_threshold           = 0.;       // threshold value of dcape for deep convection
     static inline constexpr Real beta                      = 0;        // proportion of liquid water from layer below used in closure
