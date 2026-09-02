@@ -49,8 +49,6 @@ _TESTS = {
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.I20TRGSWCNPCROP.elm-lulcc_sville",
-            "ERS.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP",
-            "ERS.ne30pg2_r05_EC30to60E2r2.I20TRWCCNPPHSWFMCROP.elm-elm_wc_I20TRWCCNPPHSWFMCROP",
             "ERS.r05_r05.ICNPRDCTCBC.elm-cbudget",
             "ERS_Ld150.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
@@ -69,7 +67,6 @@ _TESTS = {
             "ERS.f09_g16.IELMBC.elm-simple_decomp",
             "ERS_Vmct.hcru_hcru.IELM.elm-multi_inst",
             "SMS_Vmct.ELM_USRDAT.GTSM2ELM.elm-lnd_docn_1way",
-            "PEM_Ld3.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP--pemod-omp1",
             )
         },
 
@@ -80,8 +77,6 @@ _TESTS = {
             "ERS_D.f09_g16.I1850ELMCN",
             "ERS_D.ne4pg2_oQU480.I20TRELM.elm-disableDynpftCheck",
             "ERS_D.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
-            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850GSWCNPPHSWFMCROP.elm-elm_gsw_I1850GSWCNPPHSWFMCROP",
-            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850WCCNPPHSWFMCROP.elm-elm_wc_I1850WCCNPPHSWFMCROP",
             "ERS_D.f09_f09.IELM.elm-solar_rad",
             "ERS_D.f09_f09.IELM.elm-koch_snowflake",
             )
@@ -109,6 +104,15 @@ _TESTS = {
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
             "ERS.ELM_USRDAT.IELM.elm-surface_water_dynamics",
             "ERS.ELM_USRDAT.IELM.elm-finetop_rad"
+            )
+        },
+
+    "e3sm_land_integration" : {
+        "tests" : (
+            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850GSWCNPPHSWFMCROP.elm-elm_gsw_I1850GSWCNPPHSWFMCROP",
+            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850WCCNPPHSWFMCROP.elm-elm_wc_I1850WCCNPPHSWFMCROP",
+            "ERS.ne30pg2_r05_EC30to60E2r2.I20TRWCCNPPHSWFMCROP.elm-elm_wc_I20TRWCCNPPHSWFMCROP",
+            "PEM_Ld3.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP--pemod-omp1",
             )
         },
 
@@ -373,7 +377,7 @@ _TESTS = {
         },
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm", "e3sm_land_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
