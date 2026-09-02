@@ -521,6 +521,26 @@ void FieldManager::registration_ends ()
         // See below where we assume idim is 1
         EKAT_REQUIRE_MSG(idim==1, "Error! idim is assumed to be 1 in FieldManager::registration_ends().\n");
 
+        // If the cluster contains 2+ groups, ensure that also the individual groups
+        // do have a monolithic field in the repo.
+        if (cluster.size()>1) {
+          int vec_idx = c_layout.get_vector_component_idx();
+          for (auto group_name : cluster) {
+            const auto& info = *m_field_group_info.at(group_name);
+            // Find the first field of this group in the ordered cluster names.
+            auto it = std::find_first_of(cluster_ordered_fields.begin(),cluster_ordered_fields.end(),
+                                            info.m_fields_names.begin(),info.m_fields_names.end());
+            int beg = std::distance(cluster_ordered_fields.begin(),it);
+            int end = beg + info.size();
+
+            auto sub_layout = c_layout.clone().reset_dim(vec_idx,info.size());;
+            auto sub_fid = c_fid.clone(group_name).reset_layout(sub_layout);
+            register_field(sub_fid);
+            auto& sub_C = m_fields.at(cluster_grid_name).at(group_name);
+            *sub_C = C->subfield (group_name,vec_idx, beg, end);
+          }
+        }
+
         // Create all individual subfields
         for (const auto& fn : cluster_ordered_fields) {
           const auto pos = ekat::find(cluster_ordered_fields,fn);
@@ -577,7 +597,7 @@ void FieldManager::registration_ends ()
         info.m_monolithic_allocation = true;
 
         // The subview indices will need to be corrected in the case of this group being
-        // itself a subfile of the cluster field. We are guarenteed that the indices
+        // itself a subgroup of the cluster field. We are guarenteed that the indices
         // are contiguous, so just calculate the min idx and subtract from all fields indices.
         int min_idx = std::numeric_limits<int>::max();
         for (auto& it : info.m_subview_idx) {
