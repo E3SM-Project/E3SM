@@ -136,14 +136,9 @@ contains
     !DESCRIPTION
     !  Initializes the soil tempreature model
     !
-    use elm_varctl, only : use_petsc_thermal_model
     ! !ARGUMENTS:
 
-    if (.not.use_petsc_thermal_model) then
-       thermal_model = default_thermal_model
-    else
-       thermal_model = petsc_thermal_model
-    endif
+    thermal_model = default_thermal_model
     !$acc update device(thermal_model)
 
   end subroutine init_soil_temperature
@@ -477,31 +472,6 @@ contains
               tvector_nourbanc( begc:endc, -nlevsno: ))
 
       case (petsc_thermal_model)
-#ifdef USE_PETSC_LIB
-         update_temperature = .false.
-        call Prepare_Data_for_EM_PTM_Driver(bounds, &
-             num_nolakec_and_nourbanc,              &
-             filter_nolakec_and_nourbanc,           &
-             sabg_lyr_col(begc:endc, -nlevsno+1:),  &
-             dhsdT( begc:endc ),                    &
-             hs_soil( begc:endc ),                  &
-             hs_top_snow( begc:endc ),              &
-             hs_h2osfc( begc:endc ),                &
-             energyflux_vars                        &
-             )
-
-        call EMI_Driver(EM_ID_PTM,                                      &
-             EM_PTM_TBASED_SOLVE_STAGE,                                 &
-              dt = dtime,                               &
-              clump_rank  = bounds%clump_index,                          &
-              num_nolakec_and_nourbanc = num_nolakec_and_nourbanc,       &
-              filter_nolakec_and_nourbanc = filter_nolakec_and_nourbanc, &
-              num_filter_lun = num_filter_lun,                           &
-              filter_lun = filter_lun,                                   &
-              waterstate_vars = waterstate_vars,                         &
-              energyflux_vars = energyflux_vars,                         &
-              temperature_vars = temperature_vars)
-#endif
       end select
 
       !
