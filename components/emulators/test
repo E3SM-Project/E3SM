@@ -14,7 +14,7 @@ source "${SCRIPT_DIR}/scripts/colors.sh"
 source "${SCRIPT_DIR}/scripts/parse_args.sh"
 
 # Parse command line arguments
-parse_test_args "$@"
+test_name="$@"
 
 # Clean only mode
 if [ "$CLEAN_ONLY" = true ]; then
@@ -31,7 +31,8 @@ cd "${BUILD_DIR}"
 # Configure (only if needed)
 if [ ! -f "CMakeCache.txt" ]; then
     print_status "Configuring CMake..."
-        cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_EMULATOR_TESTS=ON -DSTANDALONE_MODE=ON "${CMAKE_ARGS[@]}"
+        cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Release -DBUILD_EMULATOR_TESTS=ON \
+            -DSTANDALONE_MODE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${CMAKE_ARGS[@]}"
 fi
 
 # Build
@@ -47,9 +48,9 @@ fi
 # Run tests
 print_status "Running tests..."
 if [ "$VERBOSE" = true ]; then
-    ctest --output-on-failure --verbose
+    ctest --output-on-failure --verbose -R $test_name
 else
-    ctest --output-on-failure
+    ctest --output-on-failure -R $test_name
 fi
 
 print_status "All tests passed!"
