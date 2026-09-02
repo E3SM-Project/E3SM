@@ -109,15 +109,15 @@ TEST_CASE("field_mgr", "") {
   REQUIRE (field_mgr.has_group("group_2", "grid2"));
 
   // Check that the groups in the field_mgr contain the correct fields
-  auto gr1_1 = field_mgr.get_group_info("group_1", "grid1");
-  auto gr1_2 = field_mgr.get_group_info("group_1", "grid2");
-  auto gr2_2 = field_mgr.get_group_info("group_2", "grid2");
-  REQUIRE (gr1_1.m_fields_names.size()==1);
-  REQUIRE (gr1_2.m_fields_names.size()==1);
-  REQUIRE (gr2_2.m_fields_names.size()==1);
-  REQUIRE (ekat::contains(gr1_1.m_fields_names,"Field2"));
-  REQUIRE (ekat::contains(gr1_2.m_fields_names,"Field1"));
-  REQUIRE (ekat::contains(gr2_2.m_fields_names,"Field1"));
+  auto gr1_1 = field_mgr.get_field_group("group_1", "grid1");
+  auto gr1_2 = field_mgr.get_field_group("group_1", "grid2");
+  auto gr2_2 = field_mgr.get_field_group("group_2", "grid2");
+  REQUIRE (gr1_1.info()->m_fields_names.size()==1);
+  REQUIRE (gr1_2.info()->m_fields_names.size()==1);
+  REQUIRE (gr2_2.info()->m_fields_names.size()==1);
+  REQUIRE (ekat::contains(gr1_1.info()->m_fields_names,"Field2"));
+  REQUIRE (ekat::contains(gr1_2.info()->m_fields_names,"Field1"));
+  REQUIRE (ekat::contains(gr2_2.info()->m_fields_names,"Field1"));
 
   // Check alloc props for f1 and f2 (which requested pack size > 1)
   auto f1_1_padding = f1_1.get_header().get_alloc_properties().get_padding();
