@@ -196,18 +196,6 @@ Field& FieldManager::get_field (const std::string& name, const std::string& grid
   return *m_fields.at(grid_name).at(name);
 }
 
-FieldGroupInfo FieldManager::
-get_group_info (const std::string& group_name, const std::string& grid_name) const
-{
-  // Sanity checks
-  EKAT_REQUIRE_MSG(m_repo_state==RepoState::Closed,
-    "Error! Cannot get field groups from the repo while registration has not yet completed.\n");
-  EKAT_REQUIRE_MSG (has_group(group_name, grid_name),
-    "Error! Field group '" + group_name + "' on grid '" + grid_name + "' not found.\n");
-
-  return *m_field_group_info.at(group_name);
-}
-
 FieldGroup FieldManager::
 get_field_group (const std::string& group_name, const std::string& grid_name)
 {
