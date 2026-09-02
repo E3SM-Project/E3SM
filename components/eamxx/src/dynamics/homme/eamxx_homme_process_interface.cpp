@@ -418,10 +418,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
       get_field_out("pseudo_density",pgn).get_header().get_tracking().get_providers().size()==1,
       "Error! Someone other than dynamics is trying to update the pseudo_density.\n");
 
-  // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
-  EKAT_REQUIRE_MSG(not get_group_out("Q",pgn).m_info->empty(),
-    "Error! There should be at least one tracer (qv) in the tracers group.\n");
-
   // Create remaining internal fields
   constexpr int NGP  = HOMMEXX_NP;
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
@@ -613,10 +609,14 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
   const auto& c = Homme::Context::singleton();
         auto& tracers = c.get<Homme::Tracers>();
 
-  if (group.m_info->m_group_name=="tracers") {
+  if (group.name()=="tracers") {
+    // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
+    const int qsize = group.size();
+    EKAT_REQUIRE_MSG(qsize,
+      "Error! There should be at least one tracer (qv) in the tracers group.\n");
+
     // Set runtime number of tracers in Homme
     auto& params = c.get<Homme::SimulationParams>();
-    const int qsize = group.m_info->size();
     params.qsize = qsize;           // Set in the CXX data structure
     set_homme_param("qsize",qsize); // Set in the F90 module
     tracers.init(tracers.num_elems(),qsize);

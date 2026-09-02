@@ -621,9 +621,8 @@ void AtmosphereDriver::create_fields()
     // Internal fields have their group names set by the processes that create them.
     // Hence, simply add them to all the groups they are marked as part of
     const auto& ftrack = f.get_header().get_tracking();
-    const auto& fid    = f.get_header().get_identifier();
     for (const auto& gn : ftrack.get_groups_names()) {
-      m_field_mgr->add_to_group(fid, gn);
+      m_field_mgr->add_to_group(f.name(), gn);
     }
   }
 
@@ -636,14 +635,19 @@ void AtmosphereDriver::create_fields()
     return name=="phis" or name=="sgh" or name=="sgh30";
   };
 
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    m_field_mgr->register_group(GroupRequest("RESTART",gn));
+    m_field_mgr->register_group(GroupRequest("STARTUP",gn));
+    m_field_mgr->register_group(GroupRequest("TOPOGRAPHY",gn));
+  }
+
   auto set_groups = [&](const Field& f) {
-    const auto& fid = f.get_header().get_identifier();
     const auto& fgroups = f.get_header().get_tracking().get_groups_names();
     if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      m_field_mgr->add_to_group(fid, "RESTART");
-      m_field_mgr->add_to_group(fid, "STARTUP");
-      if (is_topography_field(fid.name())) {
-        m_field_mgr->add_to_group(fid, "TOPOGRAPHY");
+      m_field_mgr->add_to_group(f.name(), "RESTART");
+      m_field_mgr->add_to_group(f.name(), "STARTUP");
+      if (is_topography_field(f.name())) {
+        m_field_mgr->add_to_group(f.name(), "TOPOGRAPHY");
       }
     }
   };

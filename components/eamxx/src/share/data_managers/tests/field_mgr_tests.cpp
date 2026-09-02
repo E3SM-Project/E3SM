@@ -112,12 +112,12 @@ TEST_CASE("field_mgr", "") {
   auto gr1_1 = field_mgr.get_field_group("group_1", "grid1");
   auto gr1_2 = field_mgr.get_field_group("group_1", "grid2");
   auto gr2_2 = field_mgr.get_field_group("group_2", "grid2");
-  REQUIRE (gr1_1.info()->m_fields_names.size()==1);
-  REQUIRE (gr1_2.info()->m_fields_names.size()==1);
-  REQUIRE (gr2_2.info()->m_fields_names.size()==1);
-  REQUIRE (ekat::contains(gr1_1.info()->m_fields_names,"Field2"));
-  REQUIRE (ekat::contains(gr1_2.info()->m_fields_names,"Field1"));
-  REQUIRE (ekat::contains(gr2_2.info()->m_fields_names,"Field1"));
+  REQUIRE (gr1_1.size()==1);
+  REQUIRE (gr1_2.size()==1);
+  REQUIRE (gr2_2.size()==1);
+  REQUIRE (gr1_1.individual_fields().count("field2")==1);
+  REQUIRE (gr1_2.individual_fields().count("field1")==1);
+  REQUIRE (gr2_2.individual_fields().count("field1")==1);
 
   // Check alloc props for f1 and f2 (which requested pack size > 1)
   auto f1_1_padding = f1_1.get_header().get_alloc_properties().get_padding();
@@ -185,18 +185,16 @@ TEST_CASE("tracers_group", "") {
   auto b2 = field_mgr.get_field("b", gn2);
   auto c2 = field_mgr.get_field("c", gn2);
 
-  // No subtracer field should exist since it is not
-  // a parent of any field.
-  REQUIRE_THROWS (field_mgr.get_field("subtracers", gn1));
-  REQUIRE_THROWS (field_mgr.get_field("subtracers", gn2));
-
   // The field_mgr should have allocated the group as a monolith
   auto tracers1 = field_mgr.get_field_group("tracers", gn1);
   auto tracers2 = field_mgr.get_field_group("tracers", gn2);
   auto subtracers = field_mgr.get_field_group("subtracers", gn1);
-  REQUIRE (tracers1.info()->m_monolithic_allocation);
-  REQUIRE (tracers2.info()->m_monolithic_allocation);
-  REQUIRE (subtracers.info()->m_monolithic_allocation);
+  REQUIRE (tracers1.has_monolithic_field());
+  REQUIRE (tracers2.has_monolithic_field());
+  REQUIRE (subtracers.has_monolithic_field());
+  REQUIRE (tracers1.size()==4);
+  REQUIRE (tracers2.size()==4);
+  REQUIRE (subtracers.size()==2);
 
   // The monolithic field in the tracers group should match the field we get from the field_mgr
   REQUIRE (T1.is_aliasing(tracers1.monolithic_field()));
@@ -226,20 +224,27 @@ TEST_CASE("tracers_group", "") {
     subtracers.monolithic_field().get_header().get_parent() != nullptr &&
     subtracers.monolithic_field().get_header().get_parent().get() == &T1.get_header()));
 
-  const auto idx_qv1 = tracers1.info()->m_subview_idx.at("qv");
-  const auto idx_a1 = tracers1.info()->m_subview_idx.at("a");
-  const auto idx_b1 = tracers1.info()->m_subview_idx.at("b");
-  const auto idx_c1 = tracers1.info()->m_subview_idx.at("c");
-  const auto idx_qv2 = tracers2.info()->m_subview_idx.at("qv");
-  const auto idx_a2 = tracers2.info()->m_subview_idx.at("a");
-  const auto idx_b2 = tracers2.info()->m_subview_idx.at("b");
-  const auto idx_c2 = tracers2.info()->m_subview_idx.at("c");
+  const auto qv1_sub = tracers1.individual_fields().at("qv");
+  const auto a1_sub = tracers1.individual_fields().at("a");
+  const auto b1_sub = tracers1.individual_fields().at("b");
+  const auto c1_sub = tracers1.individual_fields().at("c");
+  const auto qv2_sub = tracers2.individual_fields().at("qv");
+  const auto a2_sub = tracers2.individual_fields().at("a");
+  const auto b2_sub = tracers2.individual_fields().at("b");
+  const auto c2_sub = tracers2.individual_fields().at("c");
 
-  const auto sub_idx_b1 = subtracers.info()->m_subview_idx.at("b");
-  const auto sub_idx_c1 = subtracers.info()->m_subview_idx.at("c");
+  auto idx_qv1 = qv1_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_a1 = a1_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_b1 = b1_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_c1 = c1_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_qv2 = qv2_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_a2 = a2_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_b2 = b2_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
+  auto idx_c2 = c2_sub.get_header().get_alloc_properties().get_subview_info().slice_idx;
 
   // Subview indices of all groups should be identical over requested grids
   REQUIRE (idx_qv1 == idx_qv2);
+  REQUIRE (idx_qv1 == 0); // qv should always be the first tracer
   REQUIRE (idx_a1 == idx_a2);
   REQUIRE (idx_b1 == idx_b2);
   REQUIRE (idx_c1 == idx_c2);
@@ -249,10 +254,6 @@ TEST_CASE("tracers_group", "") {
   REQUIRE ((0<=idx_a1 and idx_a1<=3));
   REQUIRE ((0<=idx_b1 and idx_b1<=3));
   REQUIRE ((0<=idx_c1 and idx_c1<=3));
-
-  // Indices of sub tracers should be between [0,2)
-  REQUIRE ((0<=sub_idx_b1 and sub_idx_b1<=1));
-  REQUIRE ((0<=sub_idx_c1 and sub_idx_c1<=1));
 
   // Now fill tracer field with random values
   int seed = get_random_test_seed(&comm);
@@ -300,6 +301,8 @@ TEST_CASE("tracers_group", "") {
   sub_T1.sync_to_host();
   auto sub_T1_h = sub_T1.get_strided_view<Real***,Host>();
 
+  int sub_idx_b1 = idx_b1<idx_c1 ? 0 : 1;
+  int sub_idx_c1 = idx_b1<idx_c1 ? 1 : 0;
   for (int icol=0; icol<ncols1; ++icol) {
     for (int ilev=0; ilev<nlevs; ++ilev) {
       REQUIRE (sub_T1_h(icol,sub_idx_b1,ilev)==b1_h(icol,ilev));

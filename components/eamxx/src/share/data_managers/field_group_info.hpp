@@ -21,8 +21,6 @@ namespace scream {
  *   - a list of the field names associated to this group;
  *   - whether the field were allocated as a single monolithic field,
  *     with each field extracted as a "subview" of the monolithic one;
- *   - if the group allocated a monolithic field, also store for each
- *     subfield the index that was used to extract the corresponding subview.
  */
 
 struct FieldGroupInfo
@@ -34,8 +32,6 @@ struct FieldGroupInfo
     : m_group_name (group_name)
     , m_fields_names{}
     , m_monolithic_allocation (false)
-    , m_subview_dim(-1)
-    , m_subview_idx{}
   {
     // Nothing to do here
   }
@@ -50,7 +46,7 @@ struct FieldGroupInfo
   ci_string m_group_name;
 
   // The names of the fields in this group
-  std::list<ci_string>   m_fields_names;
+  std::set<ci_string>   m_fields_names;
 
   // Store the grid which registered each field
   std::map<ci_string, std::set<ci_string>> m_grid_registered;
@@ -62,16 +58,10 @@ struct FieldGroupInfo
   // the group to exist.
   std::set<ci_string> m_requested_grids;
 
-  // Whether the group allocated a monolithic field
+  // Whether the group allocated a monolithic field.
+  // NOTE: if monolithic, it will be monolithic across grids,
+  //       and contain the same fields across all grids
   bool m_monolithic_allocation = false;
-
-  // If we allocate a monolithic field, each field is subviewed
-  // along a different entry along the same dimension.
-  int m_subview_dim = -1;
-
-  // If we allocate a monolithic field, for each field name,
-  // store the idx used to subview each individual field.
-  std::map<ci_string,int>  m_subview_idx;
 };
 
 inline bool operator== (const FieldGroupInfo& lhs,
@@ -79,9 +69,7 @@ inline bool operator== (const FieldGroupInfo& lhs,
 {
   return lhs.m_group_name==rhs.m_group_name &&
          lhs.m_fields_names==rhs.m_fields_names &&
-         lhs.m_monolithic_allocation==rhs.m_monolithic_allocation &&
-         lhs.m_subview_dim==rhs.m_subview_dim &&
-         lhs.m_subview_idx==rhs.m_subview_idx;
+         lhs.m_monolithic_allocation==rhs.m_monolithic_allocation;
 }
 
 } // namespace scream

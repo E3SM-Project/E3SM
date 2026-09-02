@@ -1,7 +1,6 @@
 #ifndef SCREAM_FIELD_GROUP_HPP
 #define SCREAM_FIELD_GROUP_HPP
 
-#include "share/field/field_group_info.hpp"
 #include "share/field/field.hpp"
 
 namespace scream {
@@ -16,12 +15,9 @@ namespace scream {
  *
  * A FieldGroup contains:
  *
- *   - a FieldGroupInfo struct
- *   - a list of fields pointers
- *   - a grid name (the grid where the fields are)
- *
- * The same FieldGroupInfo can be recycled for several FieldGroup's, each living
- * on a different grid.
+ *   - a name and a grid name (where the group lives)
+ *   - a map name->field_pointer
+ *   - possibly, a monolithic version of the field
  *
  * Notice that, if the group has a monolithic allocation, the monolithic field is allocated
  * with layout given by grid->get_Xd_vector_layout(), where grid is the
@@ -44,36 +40,34 @@ namespace scream {
 
 class FieldGroup {
 public:
-  using ci_string = FieldGroupInfo::ci_string;
 
   FieldGroup (const std::string& name, const std::string& grid_name);
-  FieldGroup (const std::shared_ptr<FieldGroupInfo>& info,
-              const std::string& grid_name);
-
   FieldGroup (const FieldGroup&) = default;
-
-  FieldGroup get_const () const;
 
   FieldGroup& operator= (const FieldGroup& src) = default;
 
-  const std::shared_ptr<FieldGroupInfo>& info () const { return m_info; }
+  FieldGroup get_const () const;
 
+  const std::string& name () const { return m_name; }
   const std::string& grid_name () const { return m_grid_name; }
 
-  const std::map<ci_string,Field>& individual_fields () const { return *m_individual_fields; }
-        std::map<ci_string,Field>& individual_fields ()       { return *m_individual_fields; }
+  const std::map<std::string,Field>& individual_fields () const { return *m_individual_fields; }
+        std::map<std::string,Field>& individual_fields ()       { return *m_individual_fields; }
 
   bool has_monolithic_field () const { return m_monolithic_field!=nullptr; }
   const Field& monolithic_field () const { return *m_monolithic_field; }
         Field& monolithic_field ()       { return *m_monolithic_field; }
 
   void set_field (const Field& f);
-  void set_monolithic_field (const Field& f);
+  void set_monolithic_field (const Field& f, const std::vector<std::string>& names,
+                             const int subview_dim, const int subview_beg);
+
+  std::size_t size () const { return m_individual_fields->size(); }
 
 private:
 
-  // The info of this group.
-  std::shared_ptr<FieldGroupInfo>  m_info;
+  // The name of this group
+  std::string m_name;
 
   // The name of the grid where the group lives
   std::string m_grid_name;
@@ -81,7 +75,7 @@ private:
   // Only used inside this class;
   FieldGroup () = default;
 
-  std::shared_ptr<std::map<ci_string,Field>> m_individual_fields;
+  std::shared_ptr<std::map<std::string,Field>> m_individual_fields;
 
   // If m_info->m_monolithic_alloc is true, this is the field
   // that all fields in m_individual_fields are a subview of.
@@ -91,7 +85,7 @@ private:
 // We use this to find a FieldGroup in a std container.
 // We do NOT allow two entries with same group name and grid name in such containers.
 inline bool operator== (const FieldGroup& lhs, const FieldGroup& rhs) {
-  return lhs.info()->m_group_name == rhs.info()->m_group_name &&
+  return lhs.name() == rhs.name() &&
          lhs.grid_name() == rhs.grid_name();
 }
 

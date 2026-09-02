@@ -141,19 +141,17 @@ void SHOCMacrophysics::create_requests()
 void SHOCMacrophysics::
 set_computed_group_impl (const FieldGroup& group)
 {
-  EKAT_REQUIRE_MSG(group.info()->size() >= 3,
+  EKAT_REQUIRE_MSG(group.size() >= 3,
                    "Error! Shoc requires at least 3 tracers (tke, qv, qc) as inputs.");
 
-  const auto& name = group.info()->m_group_name;
+  EKAT_REQUIRE_MSG(group.name()=="turbulence_advected_tracers",
+    "Error! We were not expecting a field group called '" << group.name() << "\n");
 
-  EKAT_REQUIRE_MSG(name=="turbulence_advected_tracers",
-    "Error! We were not expecting a field group called '" << name << "\n");
-
-  EKAT_REQUIRE_MSG(group.info()->m_monolithic_allocation,
+  EKAT_REQUIRE_MSG(group.has_monolithic_field(),
       "Error! Shoc expects a monolithic allocation for tracers.\n");
 
   // Calculate number of advected tracers
-  m_num_tracers = group.info()->size();
+  m_num_tracers = group.size();
 }
 
 // =========================================================================================

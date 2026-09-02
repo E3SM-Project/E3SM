@@ -22,28 +22,16 @@ TEST_CASE("field_group") {
   Field f (fid);
   f.allocate_view();
 
-  auto info = std::make_shared<FieldGroupInfo>("G");
-  info->m_monolithic_allocation = true;
-  std::vector<Field> f_i;
-  for (int i=0; i<ndims; ++i) {
-    f_i.push_back(f.get_component(i));
-    info->m_fields_names.push_back(f_i[i].name());
-    info->m_subview_dim = 1;
-    info->m_subview_idx[f_i[i].name()] = i;
-  }
-
   // Create group and set subfields
-  FieldGroup g(info,"my_grid");
-  g.set_monolithic_field(f);
-  for (int i=0; i<ndims; ++i) {
-    g.set_field(f_i[i]);
-  }
+  FieldGroup g("my_group","my_grid");
+
+  std::vector<std::string> names = {"V_0","V_1","V_2","V_3"};
+  g.set_monolithic_field(f,names,1,0);
 
   // Check const cloning
   auto cg= g.get_const();
   REQUIRE (cg.monolithic_field().is_read_only());
   REQUIRE (cg.individual_fields().size()==g.individual_fields().size());
-  REQUIRE (*cg.info()==*g.info());
   REQUIRE (cg.monolithic_field().get_internal_view_data<const Real>()==
             g.monolithic_field().get_internal_view_data<const Real>());
   for (int i=0; i<ndims; ++i) {
