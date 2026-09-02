@@ -155,7 +155,7 @@ def buildnml(case, caseroot, compname):
         sysmod += ' -namelist " &gcamexp {} /" '.format(gcam_namelist_opts)
         sysmod += " -use_case {}".format(usecase)
         sysmod += ' -inst_string "{}" {}'.format(inst_string, gcam_bldnml_opts)
-        
+
         run_cmd_no_fail(sysmod, from_dir=iacconf_dir)
 
         # -----------------------------------------------------
