@@ -61,31 +61,33 @@ struct WaterIsotopeFractionation
   using Real = scream::Real;
 
   // -----------------------------------------------------------------------
-  // Liquid <-> vapor equilibrium fractionation factor.
+  // Liquid <-> vapor equilibrium fractionation factor (with runtime constants).
   //
-  // Horita & Wesolowski (1994). Two functional forms by species; T in Kelvin.
+  // Two functional forms by species; T in Kelvin.
   //   HDO:   alpha = exp( a*T^3 + b*T^2 + c*T + d + e/T^3 )
   //   H218O: alpha = exp( a/T^3 + b/T^2 + c/T + d )
-  // Coefficients transcribed directly from water_isotopes.F90 (lines 167-171).
+  // Coefficients come from the constants struct (selected formulation).
   // -----------------------------------------------------------------------
   template <typename ScalarT>
   KOKKOS_INLINE_FUNCTION
   static ScalarT alpha_liquid_vapor(const ScalarT& t,
                                     const WisoSpecies species,
-                                    const WisoAlphaDir dir)
+                                    const WisoAlphaDir dir,
+                                    const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants)
   {
-    // HDO (Horita & Wesolowski 1994): a*T^3 + b*T^2 + c*T + d + e/T^3
-    constexpr Real hdo_a = sp(1158.8e-12);
-    constexpr Real hdo_b = sp(-1620.1e-9);
-    constexpr Real hdo_c = sp(794.84e-6);
-    constexpr Real hdo_d = sp(-161.04e-3);
-    constexpr Real hdo_e = sp(2.9992e6);
+    using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
 
-    // H2-18O (Horita & Wesolowski 1994): a/T^3 + b/T^2 + c/T + d
-    constexpr Real o18_a = sp(0.35041e6);
-    constexpr Real o18_b = sp(-1.6664e3);
-    constexpr Real o18_c = sp(6.7123);
-    constexpr Real o18_d = sp(-7.685e-3);
+    // Coefficients from runtime-selected formulation
+    const RealT hdo_a = constants.alpal[HDO];
+    const RealT hdo_b = constants.alpbl[HDO];
+    const RealT hdo_c = constants.alpcl[HDO];
+    const RealT hdo_d = constants.alpdl[HDO];
+    const RealT hdo_e = constants.alpel[HDO];
+
+    const RealT o18_a = constants.alpal[H218O];
+    const RealT o18_b = constants.alpbl[H218O];
+    const RealT o18_c = constants.alpcl[H218O];
+    const RealT o18_d = constants.alpdl[H218O];
 
     ScalarT alpha(1);
 
@@ -97,7 +99,7 @@ struct WaterIsotopeFractionation
         break;
       }
       case H218O: {
-        const ScalarT it  = sp(1) / t;
+        const ScalarT it  = RealT(1) / t;
         const ScalarT it2 = it * it;
         const ScalarT it3 = it2 * it;
         alpha = exp(o18_a * it3 + o18_b * it2 + o18_c * it + o18_d);
@@ -105,11 +107,11 @@ struct WaterIsotopeFractionation
       }
       case H217O:
         // Mass-dependent from H2-18O (Schoenemann et al. 2014).
-        alpha = pow(alpha_liquid_vapor(t, H218O, CondensedOverVapor), sp(0.529));
+        alpha = pow(alpha_liquid_vapor(t, H218O, CondensedOverVapor, constants), RealT(0.529));
         break;
       case HTO:
         // From HDO (isoCAM3).
-        alpha = pow(alpha_liquid_vapor(t, HDO, CondensedOverVapor), sp(2.0));
+        alpha = pow(alpha_liquid_vapor(t, HDO, CondensedOverVapor, constants), RealT(2.0));
         break;
       case H216O:
       default:
@@ -119,16 +121,27 @@ struct WaterIsotopeFractionation
 
     // KINETIC HOOK: a future kinetic evaporation factor (iCAM wiso_akel) would
     // modify `alpha` here before the direction is applied.
-    return (dir == VaporOverCondensed) ? (sp(1) / alpha) : alpha;
+    return (dir == VaporOverCondensed) ? (RealT(1) / alpha) : alpha;
+  }
+
+  // Backward-compatible overload using default formulation (Horita & Wesolowski 1994)
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT alpha_liquid_vapor(const ScalarT& t,
+                                    const WisoSpecies species,
+                                    const WisoAlphaDir dir)
+  {
+    using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
+    WaterIsotopeConstants<RealT> constants;  // Uses default formulations
+    return alpha_liquid_vapor(t, species, dir, constants);
   }
 
   // -----------------------------------------------------------------------
-  // Ice(solid) <-> vapor equilibrium fractionation factor.
+  // Ice(solid) <-> vapor equilibrium fractionation factor (with runtime constants).
   //
-  // Merlivat & Nief (1967) for HDO; Majoube (1971b) for H2-18O. Single
-  // functional form for all species; T in Kelvin:
+  // Single functional form for all species; T in Kelvin:
   //   alpha = exp( a/T^2 + b/T + c )
-  // Coefficients transcribed directly from water_isotopes.F90 (lines 183-185).
+  // Coefficients come from the constants struct (selected formulation).
   //
   // Note: in iCAM this equilibrium factor is applied on DEPOSITION
   // (vapor->ice); SUBLIMATION (ice->vapor) is treated as non-fractionating
@@ -139,40 +152,42 @@ struct WaterIsotopeFractionation
   KOKKOS_INLINE_FUNCTION
   static ScalarT alpha_ice_vapor(const ScalarT& t,
                                  const WisoSpecies species,
-                                 const WisoAlphaDir dir)
+                                 const WisoAlphaDir dir,
+                                 const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants)
   {
-    // alpha = exp(a/T^2 + b/T + c)
-    //                       a               b              c
-    constexpr Real hdo_a = sp(16289.0);
-    constexpr Real hdo_b = sp(0.0);
-    constexpr Real hdo_c = sp(-9.45e-2);
+    using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
 
-    constexpr Real o18_a = sp(0.0);
-    constexpr Real o18_b = sp(11.839);
-    constexpr Real o18_c = sp(-28.224e-3);
+    // Coefficients from runtime-selected formulation
+    const RealT hdo_a = constants.alpai[HDO];
+    const RealT hdo_b = constants.alpbi[HDO];
+    const RealT hdo_c = constants.alpci[HDO];
+
+    const RealT o18_a = constants.alpai[H218O];
+    const RealT o18_b = constants.alpbi[H218O];
+    const RealT o18_c = constants.alpci[H218O];
 
     ScalarT alpha(1);
 
     switch (species) {
       case HDO: {
-        const ScalarT it  = sp(1) / t;
+        const ScalarT it  = RealT(1) / t;
         const ScalarT it2 = it * it;
         alpha = exp(hdo_a * it2 + hdo_b * it + hdo_c);
         break;
       }
       case H218O: {
-        const ScalarT it  = sp(1) / t;
+        const ScalarT it  = RealT(1) / t;
         const ScalarT it2 = it * it;
         alpha = exp(o18_a * it2 + o18_b * it + o18_c);
         break;
       }
       case H217O:
         // Mass-dependent from H2-18O (Schoenemann et al. 2014).
-        alpha = pow(alpha_ice_vapor(t, H218O, CondensedOverVapor), sp(0.529));
+        alpha = pow(alpha_ice_vapor(t, H218O, CondensedOverVapor, constants), RealT(0.529));
         break;
       case HTO:
         // From HDO (isoCAM3).
-        alpha = pow(alpha_ice_vapor(t, HDO, CondensedOverVapor), sp(2.0));
+        alpha = pow(alpha_ice_vapor(t, HDO, CondensedOverVapor, constants), RealT(2.0));
         break;
       case H216O:
       default:
@@ -183,7 +198,19 @@ struct WaterIsotopeFractionation
     // KINETIC HOOK: a future ice-condensation factor (iCAM wiso_akci, with the
     // supersaturation function and T < ~253 K mask) would modify `alpha` here
     // before the direction is applied.
-    return (dir == VaporOverCondensed) ? (sp(1) / alpha) : alpha;
+    return (dir == VaporOverCondensed) ? (RealT(1) / alpha) : alpha;
+  }
+
+  // Backward-compatible overload using default formulation
+  template <typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT alpha_ice_vapor(const ScalarT& t,
+                                 const WisoSpecies species,
+                                 const WisoAlphaDir dir)
+  {
+    using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
+    WaterIsotopeConstants<RealT> constants;  // Uses default formulations
+    return alpha_ice_vapor(t, species, dir, constants);
   }
 };
 

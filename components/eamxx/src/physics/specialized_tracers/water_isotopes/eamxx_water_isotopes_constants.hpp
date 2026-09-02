@@ -20,16 +20,56 @@ namespace wiso {
  *   H217O = 3 (oxygen-17 water, H2-17O) - derived from H218O
  *   HTO   = 4 (tritiated water, HT16O) - derived from HDO
  *
- * Alternative formulations can be selected via preprocessor macros:
- *   WISO_USE_MAJOUBE_1971     - Use Majoube 1971a liquid/vapor coefficients
- *   WISO_USE_CAPPA_2003       - Use Cappa et al. 2003 diffusivity ratios
- *   WISO_USE_NATURAL_ABUNDANCE - Use natural abundance standard ratios
- *   WISO_USE_LGM_OCEAN        - Use LGM ocean enrichment values
- *   WISO_USE_ISOCAM3_ICE      - Use isoCAM3 ice/vapor coefficients
+ * Formulations are now selected at runtime via WaterIsotopeRuntimeOptions.
+ * See README.md for details on available formulations and their scientific references.
  *
- * Default (no macros): Horita & Wesolowski 1994, Merlivat 1978 diffusivity,
- *                      Merlivat & Nief 1967 / Majoube 1971b ice/vapor
+ * Default formulations: Horita & Wesolowski 1994 (liquid/vapor), Merlivat 1978 (diffusivity),
+ *                       Normalized ratios, No ocean enrichment,
+ *                       Merlivat & Nief 1967 + Majoube 1971b (ice/vapor)
  */
+
+// ============================================================================
+// Runtime configuration enums and struct
+// ============================================================================
+
+// Liquid/vapor equilibrium fractionation formulation
+enum class LiquidVaporFormulation {
+  HoritaWesolowski1994 = 0,  // Default: Horita & Wesolowski (1994)
+  Majoube1971a = 1           // Alternative: Majoube (1971a)
+};
+
+// Diffusivity ratio formulation
+enum class DiffusivityFormulation {
+  Merlivat1978 = 0,  // Default: Merlivat (1978) direct from paper
+  Cappa2003 = 1      // Alternative: Cappa et al. (2003)
+};
+
+// Standard isotope ratio formulation
+enum class StandardRatioFormulation {
+  Normalized = 0,        // Default: All 1.0 for best numerics
+  NaturalAbundance = 1   // Alternative: Natural abundance values
+};
+
+// Ocean surface enrichment formulation
+enum class OceanEnrichmentFormulation {
+  None = 0,  // Default: No enrichment (all 1.0)
+  LGM = 1    // Alternative: Last Glacial Maximum values
+};
+
+// Ice/vapor equilibrium fractionation formulation
+enum class IceVaporFormulation {
+  MerlivatNief1967 = 0,  // Default: Merlivat & Nief (1967) HDO + Majoube (1971b) O18
+  IsoCAM3 = 1            // Alternative: isoCAM3 formulation
+};
+
+// Runtime configuration struct - holds user's formulation choices
+struct WaterIsotopeRuntimeOptions {
+  LiquidVaporFormulation liquid_vapor = LiquidVaporFormulation::HoritaWesolowski1994;
+  DiffusivityFormulation diffusivity = DiffusivityFormulation::Merlivat1978;
+  StandardRatioFormulation standard_ratio = StandardRatioFormulation::Normalized;
+  OceanEnrichmentFormulation ocean_enrichment = OceanEnrichmentFormulation::None;
+  IceVaporFormulation ice_vapor = IceVaporFormulation::MerlivatNief1967;
+};
 
 template <typename Scalar>
 struct WaterIsotopeConstants
@@ -40,7 +80,85 @@ struct WaterIsotopeConstants
   static constexpr int num_species = 5;
 
   // -----------------------------------------------------------------------
-  // Molecular properties (species-indexed arrays)
+  // Active constants (runtime-selected, non-constexpr)
+  // -----------------------------------------------------------------------
+
+  // Diffusivity ratios (D_isotope/D_H2O)
+  Scalar difrm[num_species];
+
+  // Model standard isotope ratios
+  Scalar rstd[num_species];
+
+  // Ocean surface enrichment
+  Scalar boce[num_species];
+
+  // Liquid/vapor equilibrium fractionation coefficients
+  Scalar alpal[num_species];  // Coefficient A
+  Scalar alpbl[num_species];  // Coefficient B
+  Scalar alpcl[num_species];  // Coefficient C
+  Scalar alpdl[num_species];  // Coefficient D
+  Scalar alpel[num_species];  // Coefficient E
+
+  // Ice/vapor equilibrium fractionation coefficients
+  Scalar alpai[num_species];  // Coefficient A
+  Scalar alpbi[num_species];  // Coefficient B
+  Scalar alpci[num_species];  // Coefficient C
+
+  // -----------------------------------------------------------------------
+  // Constructors
+  // -----------------------------------------------------------------------
+
+  // Constructor with runtime options (selects formulations)
+  KOKKOS_INLINE_FUNCTION
+  WaterIsotopeConstants(const WaterIsotopeRuntimeOptions& opts) {
+    // Select diffusivity formulation
+    const Scalar* diff_src = (opts.diffusivity == DiffusivityFormulation::Cappa2003)
+                              ? difrm_cappa2003 : difrm_merlivat1978;
+    copy_array(difrm, diff_src, num_species);
+
+    // Select standard ratio formulation
+    const Scalar* ratio_src = (opts.standard_ratio == StandardRatioFormulation::NaturalAbundance)
+                               ? rstd_natural_abundance : rstd_normalized;
+    copy_array(rstd, ratio_src, num_species);
+
+    // Select ocean enrichment formulation
+    const Scalar* ocean_src = (opts.ocean_enrichment == OceanEnrichmentFormulation::LGM)
+                               ? boce_lgm : boce_none;
+    copy_array(boce, ocean_src, num_species);
+
+    // Select liquid/vapor formulation
+    if (opts.liquid_vapor == LiquidVaporFormulation::Majoube1971a) {
+      copy_array(alpal, alpal_majoube1971a, num_species);
+      copy_array(alpbl, alpbl_majoube1971a, num_species);
+      copy_array(alpcl, alpcl_majoube1971a, num_species);
+      copy_array(alpdl, alpdl_majoube1971a, num_species);
+      copy_array(alpel, alpel_majoube1971a, num_species);
+    } else {
+      copy_array(alpal, alpal_horita1994, num_species);
+      copy_array(alpbl, alpbl_horita1994, num_species);
+      copy_array(alpcl, alpcl_horita1994, num_species);
+      copy_array(alpdl, alpdl_horita1994, num_species);
+      copy_array(alpel, alpel_horita1994, num_species);
+    }
+
+    // Select ice/vapor formulation
+    if (opts.ice_vapor == IceVaporFormulation::IsoCAM3) {
+      copy_array(alpai, alpai_isocam3, num_species);
+      copy_array(alpbi, alpbi_isocam3, num_species);
+      copy_array(alpci, alpci_isocam3, num_species);
+    } else {
+      copy_array(alpai, alpai_merlivat1967, num_species);
+      copy_array(alpbi, alpbi_merlivat1967, num_species);
+      copy_array(alpci, alpci_merlivat1967, num_species);
+    }
+  }
+
+  // Default constructor (uses default formulations)
+  KOKKOS_INLINE_FUNCTION
+  WaterIsotopeConstants() : WaterIsotopeConstants(WaterIsotopeRuntimeOptions{}) {}
+
+  // -----------------------------------------------------------------------
+  // Molecular properties (species-indexed arrays) - always same
   // -----------------------------------------------------------------------
 
   // Isotopic substitutions (mass-dependent factor)
@@ -55,84 +173,230 @@ struct WaterIsotopeConstants
     sp(3.0)   // HTO (tritium substitution)
   };
 
-  // Diffusivity ratios (D_isotope/D_H2O)
-  // From water_isotopes.F90 lines 119-125
-  // Default: Merlivat 1978 direct from paper (line 124)
-  // Alternative: WISO_USE_CAPPA_2003 for Cappa et al. 2003 values
-#ifdef WISO_USE_CAPPA_2003
-  // Cappa et al. 2003 (Fortran line 125)
-  static constexpr Scalar difrm[num_species] = {
-    sp(1.0),     // H216O
-    sp(0.9839),  // HDO
-    sp(0.9691),  // H218O
-    sp(0.9691),  // H217O (assumed same as H218O)
-    sp(0.9839)   // HTO (assumed same as HDO)
-  };
-#else
-  // Merlivat 1978 direct from paper (default, Fortran line 124)
-  static constexpr Scalar difrm[num_species] = {
+private:
+  // -----------------------------------------------------------------------
+  // All formulation data as static constexpr (compile-time constants)
+  // -----------------------------------------------------------------------
+
+  // Diffusivity ratios - Merlivat 1978 (default)
+  static constexpr Scalar difrm_merlivat1978[num_species] = {
     sp(1.0),     // H216O
     sp(0.9757),  // HDO
     sp(0.9727),  // H218O
     sp(0.9727),  // H217O (assumed same as H218O)
     sp(0.9757)   // HTO (assumed same as HDO)
   };
-#endif
 
-  // -----------------------------------------------------------------------
-  // Standard ratios (species-indexed arrays)
-  // -----------------------------------------------------------------------
+  // Diffusivity ratios - Cappa et al. 2003
+  static constexpr Scalar difrm_cappa2003[num_species] = {
+    sp(1.0),     // H216O
+    sp(0.9839),  // HDO
+    sp(0.9691),  // H218O
+    sp(0.9691),  // H217O (assumed same as H218O)
+    sp(0.9839)   // HTO (assumed same as HDO)
+  };
 
-  // Model standard isotope ratio
-  // From water_isotopes.F90 lines 128-134
-  // Default: all 1.0 for best numerics (Fortran line 130)
-  // Alternative: WISO_USE_NATURAL_ABUNDANCE for natural abundance values
-#ifdef WISO_USE_NATURAL_ABUNDANCE
-  // Natural abundance (Fortran line 132)
-  static constexpr Scalar rstd[num_species] = {
+  // Standard ratios - Normalized (default)
+  static constexpr Scalar rstd_normalized[num_species] = {
+    sp(1.0),  // H216O
+    sp(1.0),  // HDO
+    sp(1.0),  // H218O
+    sp(1.0),  // H217O
+    sp(1.0)   // HTO
+  };
+
+  // Standard ratios - Natural abundance
+  static constexpr Scalar rstd_natural_abundance[num_species] = {
     sp(1.0),         // H216O (reference)
     sp(155.76e-6),   // HDO
     sp(2005.20e-6),  // H218O
     sp(379.9e-6),    // H217O (approximately 0.189 * H218O)
     sp(1.0e-18)      // HTO (trace amount)
   };
-#else
-  // All 1.0 for best numerics (default, Fortran line 130)
-  static constexpr Scalar rstd[num_species] = {
+
+  // Ocean surface enrichment - None (default)
+  static constexpr Scalar boce_none[num_species] = {
     sp(1.0),  // H216O
     sp(1.0),  // HDO
     sp(1.0),  // H218O
     sp(1.0),  // H217O
     sp(1.0)   // HTO
   };
-#endif
 
-  // Ocean surface enrichment
-  // From water_isotopes.F90 lines 136-140
-  // Default: all 1.0 (no enrichment, Fortran line 140)
-  // Alternative: WISO_USE_LGM_OCEAN for Last Glacial Maximum values
-#ifdef WISO_USE_LGM_OCEAN
-  // LGM values (Fortran line 139)
-  static constexpr Scalar boce[num_species] = {
+  // Ocean surface enrichment - LGM
+  static constexpr Scalar boce_lgm[num_species] = {
     sp(1.0),      // H216O
     sp(1.0128),   // HDO
     sp(1.0016),   // H218O
     sp(1.0008),   // H217O (interpolated)
     sp(1.00671)   // HTO (assumed)
   };
-#else
-  // No enrichment (default, Fortran line 140)
-  static constexpr Scalar boce[num_species] = {
-    sp(1.0),  // H216O
-    sp(1.0),  // HDO
-    sp(1.0),  // H218O
-    sp(1.0),  // H217O
-    sp(1.0)   // HTO
+
+  // -----------------------------------------------------------------------
+  // Liquid/vapor equilibrium fractionation coefficients
+  // -----------------------------------------------------------------------
+
+  // Coefficients for alpha = exp(polynomial in T)
+  // HDO uses: alpha = exp(a*T^3 + b*T^2 + c*T + d + e/T^3)
+  // H218O uses: alpha = exp(a/T^3 + b/T^2 + c/T + d)
+  // H217O and HTO are derived from these by power laws
+
+  // Horita & Wesolowski 1994 (default) - Coefficient A
+  static constexpr Scalar alpal_horita1994[num_species] = {
+    sp(0.0),         // H216O
+    sp(1158.8e-12),  // HDO
+    sp(0.35041e6),   // H218O
+    sp(0.0),         // H217O (derived from H218O)
+    sp(0.0)          // HTO (derived from HDO)
   };
-#endif
+
+  // Horita & Wesolowski 1994 - Coefficient B
+  static constexpr Scalar alpbl_horita1994[num_species] = {
+    sp(0.0),        // H216O
+    sp(-1620.1e-9), // HDO
+    sp(-1.6664e3),  // H218O
+    sp(0.0),        // H217O (derived from H218O)
+    sp(0.0)         // HTO (derived from HDO)
+  };
+
+  // Horita & Wesolowski 1994 - Coefficient C
+  static constexpr Scalar alpcl_horita1994[num_species] = {
+    sp(0.0),       // H216O
+    sp(794.84e-6), // HDO
+    sp(6.7123),    // H218O
+    sp(0.0),       // H217O (derived from H218O)
+    sp(0.0)        // HTO (derived from HDO)
+  };
+
+  // Horita & Wesolowski 1994 - Coefficient D
+  static constexpr Scalar alpdl_horita1994[num_species] = {
+    sp(0.0),        // H216O
+    sp(-161.04e-3), // HDO
+    sp(-7.685e-3),  // H218O
+    sp(0.0),        // H217O (derived from H218O)
+    sp(0.0)         // HTO (derived from HDO)
+  };
+
+  // Horita & Wesolowski 1994 - Coefficient E (only used for HDO)
+  static constexpr Scalar alpel_horita1994[num_species] = {
+    sp(0.0),      // H216O
+    sp(2.9992e6), // HDO
+    sp(0.0),      // H218O
+    sp(0.0),      // H217O (derived from H218O)
+    sp(0.0)       // HTO (derived from HDO)
+  };
+
+  // Majoube 1971a - Coefficient A
+  static constexpr Scalar alpal_majoube1971a[num_species] = {
+    sp(0.0),       // H216O
+    sp(24.844e3),  // HDO
+    sp(1.137e3),   // H218O
+    sp(0.0),       // H217O (placeholder)
+    sp(0.0)        // HTO (placeholder)
+  };
+
+  // Majoube 1971a - Coefficient B
+  static constexpr Scalar alpbl_majoube1971a[num_species] = {
+    sp(0.0),      // H216O
+    sp(-76.248),  // HDO
+    sp(-0.4156),  // H218O
+    sp(0.0),      // H217O (placeholder)
+    sp(0.0)       // HTO (placeholder)
+  };
+
+  // Majoube 1971a - Coefficient C
+  static constexpr Scalar alpcl_majoube1971a[num_species] = {
+    sp(0.0),         // H216O
+    sp(52.612e-3),   // HDO
+    sp(-2.0667e-3),  // H218O
+    sp(0.0),         // H217O (placeholder)
+    sp(0.0)          // HTO (placeholder)
+  };
+
+  // Majoube 1971a - Coefficient D (not used)
+  static constexpr Scalar alpdl_majoube1971a[num_species] = {
+    sp(0.0), sp(0.0), sp(0.0), sp(0.0), sp(0.0)
+  };
+
+  // Majoube 1971a - Coefficient E (not used)
+  static constexpr Scalar alpel_majoube1971a[num_species] = {
+    sp(0.0), sp(0.0), sp(0.0), sp(0.0), sp(0.0)
+  };
+
+  // -----------------------------------------------------------------------
+  // Ice/vapor equilibrium fractionation coefficients
+  // -----------------------------------------------------------------------
+
+  // Coefficients for alpha = exp(a/T^2 + b/T + c)
+
+  // Merlivat & Nief 1967 (HDO) + Majoube 1971b (H218O) - default
+  // Coefficient A
+  static constexpr Scalar alpai_merlivat1967[num_species] = {
+    sp(0.0),     // H216O
+    sp(16289.0), // HDO (Merlivat & Nief 1967)
+    sp(0.0),     // H218O
+    sp(0.0),     // H217O (derived from H218O)
+    sp(0.0)      // HTO (derived from HDO)
+  };
+
+  // Merlivat & Nief 1967 + Majoube 1971b - Coefficient B
+  static constexpr Scalar alpbi_merlivat1967[num_species] = {
+    sp(0.0),    // H216O
+    sp(0.0),    // HDO
+    sp(11.839), // H218O (Majoube 1971b)
+    sp(0.0),    // H217O (derived from H218O)
+    sp(0.0)     // HTO (derived from HDO)
+  };
+
+  // Merlivat & Nief 1967 + Majoube 1971b - Coefficient C
+  static constexpr Scalar alpci_merlivat1967[num_species] = {
+    sp(0.0),        // H216O
+    sp(-9.45e-2),   // HDO (Merlivat & Nief 1967)
+    sp(-28.224e-3), // H218O (Majoube 1971b)
+    sp(0.0),        // H217O (derived from H218O)
+    sp(0.0)         // HTO (derived from HDO)
+  };
+
+  // isoCAM3 - Coefficient A
+  static constexpr Scalar alpai_isocam3[num_species] = {
+    sp(0.0),     // H216O
+    sp(16288.0), // HDO
+    sp(0.0),     // H218O
+    sp(0.0),     // H217O (derived from H218O)
+    sp(0.0)      // HTO (derived from HDO)
+  };
+
+  // isoCAM3 - Coefficient B
+  static constexpr Scalar alpbi_isocam3[num_species] = {
+    sp(0.0),    // H216O
+    sp(0.0),    // HDO
+    sp(11.839), // H218O
+    sp(0.0),    // H217O (derived from H218O)
+    sp(0.0)     // HTO (derived from HDO)
+  };
+
+  // isoCAM3 - Coefficient C
+  static constexpr Scalar alpci_isocam3[num_species] = {
+    sp(0.0),        // H216O
+    sp(-9.34e-2),   // HDO
+    sp(-28.224e-3), // H218O
+    sp(0.0),        // H217O (derived from H218O)
+    sp(0.0)         // HTO (derived from HDO)
+  };
+
+  // Helper function to copy arrays
+  KOKKOS_INLINE_FUNCTION
+  void copy_array(Scalar* dest, const Scalar* src, int n) {
+    for (int i = 0; i < n; ++i) {
+      dest[i] = src[i];
+    }
+  }
+
+public:
 
   // -----------------------------------------------------------------------
   // Kinetic fractionation parameters (Merlivat & Jouzel method)
+  // These do not vary by formulation
   // -----------------------------------------------------------------------
 
   // Surface kinetic exchange
@@ -163,173 +427,6 @@ struct WaterIsotopeConstants
     sp(0.82e-3),    // H217O (assumed same as H218O)
     sp(0.7216e-3)   // HTO (assumed same as HDO)
   };
-
-  // -----------------------------------------------------------------------
-  // Liquid/vapor equilibrium fractionation coefficients
-  // -----------------------------------------------------------------------
-
-  // Coefficients for alpha = exp(polynomial in T)
-  // Default: Horita & Wesolowski 1994 (Fortran lines 157-163)
-  // Alternative: WISO_USE_MAJOUBE_1971 for Majoube 1971a
-  //
-  // HDO uses: alpha = exp(a*T^3 + b*T^2 + c*T + d + e/T^3)
-  // H218O uses: alpha = exp(a/T^3 + b/T^2 + c/T + d)
-  // H217O and HTO are derived from these by power laws
-
-#ifdef WISO_USE_MAJOUBE_1971
-  // Majoube 1971a (Fortran lines 151-155)
-  // Coefficient A
-  static constexpr Scalar alpal[num_species] = {
-    sp(0.0),       // H216O
-    sp(24.844e3),  // HDO
-    sp(1.137e3),   // H218O
-    sp(0.0),       // H217O (placeholder)
-    sp(0.0)        // HTO (placeholder)
-  };
-
-  // Coefficient B
-  static constexpr Scalar alpbl[num_species] = {
-    sp(0.0),      // H216O
-    sp(-76.248),  // HDO
-    sp(-0.4156),  // H218O
-    sp(0.0),      // H217O (placeholder)
-    sp(0.0)       // HTO (placeholder)
-  };
-
-  // Coefficient C
-  static constexpr Scalar alpcl[num_species] = {
-    sp(0.0),         // H216O
-    sp(52.612e-3),   // HDO
-    sp(-2.0667e-3),  // H218O
-    sp(0.0),         // H217O (placeholder)
-    sp(0.0)          // HTO (placeholder)
-  };
-
-  // Coefficient D (not used in Majoube 1971a)
-  static constexpr Scalar alpdl[num_species] = {
-    sp(0.0), sp(0.0), sp(0.0), sp(0.0), sp(0.0)
-  };
-
-  // Coefficient E (not used in Majoube 1971a)
-  static constexpr Scalar alpel[num_species] = {
-    sp(0.0), sp(0.0), sp(0.0), sp(0.0), sp(0.0)
-  };
-#else
-  // Horita & Wesolowski 1994 (default, Fortran lines 157-163)
-  // Coefficient A
-  static constexpr Scalar alpal[num_species] = {
-    sp(0.0),         // H216O
-    sp(1158.8e-12),  // HDO
-    sp(0.35041e6),   // H218O
-    sp(0.0),         // H217O (derived from H218O)
-    sp(0.0)          // HTO (derived from HDO)
-  };
-
-  // Coefficient B
-  static constexpr Scalar alpbl[num_species] = {
-    sp(0.0),        // H216O
-    sp(-1620.1e-9), // HDO
-    sp(-1.6664e3),  // H218O
-    sp(0.0),        // H217O (derived from H218O)
-    sp(0.0)         // HTO (derived from HDO)
-  };
-
-  // Coefficient C
-  static constexpr Scalar alpcl[num_species] = {
-    sp(0.0),       // H216O
-    sp(794.84e-6), // HDO
-    sp(6.7123),    // H218O
-    sp(0.0),       // H217O (derived from H218O)
-    sp(0.0)        // HTO (derived from HDO)
-  };
-
-  // Coefficient D
-  static constexpr Scalar alpdl[num_species] = {
-    sp(0.0),       // H216O
-    sp(-161.04e-3), // HDO
-    sp(-7.685e-3), // H218O
-    sp(0.0),       // H217O (derived from H218O)
-    sp(0.0)        // HTO (derived from HDO)
-  };
-
-  // Coefficient E (only used for HDO)
-  static constexpr Scalar alpel[num_species] = {
-    sp(0.0),       // H216O
-    sp(2.9992e6),  // HDO
-    sp(0.0),       // H218O
-    sp(0.0),       // H217O (derived from H218O)
-    sp(0.0)        // HTO (derived from HDO)
-  };
-#endif
-
-  // -----------------------------------------------------------------------
-  // Ice/vapor equilibrium fractionation coefficients
-  // -----------------------------------------------------------------------
-
-  // Coefficients for alpha = exp(a/T^2 + b/T + c)
-  // Default: Merlivat & Nief 1967 for HDO, Majoube 1971b for H218O
-  //          (Fortran lines 172-175)
-  // Alternative: WISO_USE_ISOCAM3_ICE for isoCAM3 values
-  //              (Fortran lines 165-169)
-
-#ifdef WISO_USE_ISOCAM3_ICE
-  // isoCAM3 values (Fortran lines 165-169)
-  // Coefficient A
-  static constexpr Scalar alpai[num_species] = {
-    sp(0.0),     // H216O
-    sp(16288.0), // HDO
-    sp(0.0),     // H218O
-    sp(0.0),     // H217O (derived from H218O)
-    sp(0.0)      // HTO (derived from HDO)
-  };
-
-  // Coefficient B
-  static constexpr Scalar alpbi[num_species] = {
-    sp(0.0),    // H216O
-    sp(0.0),    // HDO
-    sp(11.839), // H218O
-    sp(0.0),    // H217O (derived from H218O)
-    sp(0.0)     // HTO (derived from HDO)
-  };
-
-  // Coefficient C
-  static constexpr Scalar alpci[num_species] = {
-    sp(0.0),        // H216O
-    sp(-9.34e-2),   // HDO
-    sp(-28.224e-3), // H218O
-    sp(0.0),        // H217O (derived from H218O)
-    sp(0.0)         // HTO (derived from HDO)
-  };
-#else
-  // Merlivat & Nief 1967 (HDO), Majoube 1971b (H218O) - default
-  // (Fortran lines 172-175)
-  // Coefficient A
-  static constexpr Scalar alpai[num_species] = {
-    sp(0.0),     // H216O
-    sp(16289.0), // HDO (Merlivat & Nief 1967)
-    sp(0.0),     // H218O
-    sp(0.0),     // H217O (derived from H218O)
-    sp(0.0)      // HTO (derived from HDO)
-  };
-
-  // Coefficient B
-  static constexpr Scalar alpbi[num_species] = {
-    sp(0.0),    // H216O
-    sp(0.0),    // HDO
-    sp(11.839), // H218O (Majoube 1971b)
-    sp(0.0),    // H217O (derived from H218O)
-    sp(0.0)     // HTO (derived from HDO)
-  };
-
-  // Coefficient C
-  static constexpr Scalar alpci[num_species] = {
-    sp(0.0),        // H216O
-    sp(-9.45e-2),   // HDO (Merlivat & Nief 1967)
-    sp(-28.224e-3), // H218O (Majoube 1971b)
-    sp(0.0),        // H217O (derived from H218O)
-    sp(0.0)         // HTO (derived from HDO)
-  };
-#endif
 
   // -----------------------------------------------------------------------
   // Physical constants for kinetic calculations

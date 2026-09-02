@@ -2,6 +2,7 @@
 #define SCREAM_WATER_ISOTOPES_HPP
 
 #include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
+#include "eamxx_water_isotopes_constants.hpp"
 #include <ekat_parameter_list.hpp>
 
 #include <string>
@@ -38,6 +39,11 @@ protected:
 
   // TODO: Add virtual hooks for fractionation processes
   // e.g., apply_equilibrium_fractionation(), apply_kinetic_fractionation()
+
+private:
+
+  // Runtime configuration options for isotope formulations
+  wiso::WaterIsotopeRuntimeOptions m_runtime_options;
 
 }; // class WaterIsotopes
 
