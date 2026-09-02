@@ -14,11 +14,11 @@ namespace wiso {
  * and reference ratios for water isotope tracers.
  *
  * All species-specific constants are arrays indexed by WisoSpecies enum:
- *   H216O = 0 (ordinary water, non-fractionating)
- *   HDO   = 1 (deuterated water, HD16O)
- *   H218O = 2 (oxygen-18 water, H2-18O)
- *   H217O = 3 (oxygen-17 water, H2-17O) - derived from H218O
- *   HTO   = 4 (tritiated water, HT16O) - derived from HDO
+ *   H216O = 0 ("ordinary water," non-fractionating)
+ *   HDO   = 1 (singly deuterated water, HD16O)
+ *   H218O = 2 (oxygen-18 substituted water, H218O)
+ *   H217O = 3 (oxygen-17 substituted water, H217O)
+ *   HTO   = 4 (tritiated water, HT16O)
  *
  * Formulations are now selected at runtime via WaterIsotopeRuntimeOptions.
  * See README.md for details on available formulations and their scientific references.
@@ -35,12 +35,12 @@ namespace wiso {
 // Liquid/vapor equilibrium fractionation formulation
 enum class LiquidVaporFractionation {
   HoritaWesolowski1994 = 0,  // Default: Horita & Wesolowski (1994)
-  Majoube1971a = 1           // Alternative: Majoube (1971a)
+  Majoube1971 = 1           // Alternative: Majoube (1971)
 };
 
 // Diffusivity ratio formulation
 enum class DiffusivityFormulation {
-  Merlivat1978 = 0,  // Default: Merlivat (1978) direct from paper
+  Merlivat1978 = 0,  // Default: Merlivat (1978)
   Cappa2003 = 1      // Alternative: Cappa et al. (2003)
 };
 
@@ -58,7 +58,7 @@ enum class OceanEnrichmentFormulation {
 
 // Ice/vapor equilibrium fractionation formulation
 enum class IceVaporFractionation {
-  MerlivatNief1967 = 0,  // Default: Merlivat & Nief (1967) HDO + Majoube (1971b) O18
+  MerlivatNief1967 = 0,  // Default: Merlivat & Nief (1967) HDO + Majoube (1971) O18
   IsoCAM3 = 1            // Alternative: isoCAM3 formulation
 };
 
@@ -162,8 +162,7 @@ struct WaterIsotopeConstants
   // -----------------------------------------------------------------------
 
   // Isotopic substitutions (mass-dependent factor)
-  // From water_isotopes.F90 lines 114-115
-  // Fortran: fisub = (/ 1.0, 1.0, 2.0, 1.0 /) for H2O, H216O, HDO, H218O
+  // Ported from CAM6 water_isotopes.F90
   // C++: expanded to 5 elements with H217O and HTO derived values
   static constexpr Scalar fisub[num_species] = {
     sp(1.0),  // H216O (non-fractionating)
@@ -183,8 +182,8 @@ private:
     sp(1.0),     // H216O
     sp(0.9757),  // HDO
     sp(0.9727),  // H218O
-    sp(0.9727),  // H217O (assumed same as H218O)
-    sp(0.9757)   // HTO (assumed same as HDO)
+    sp(0.9727),  // H217O (TODO: assumed same as H218O)
+    sp(0.9757)   // HTO (TODO: assumed same as HDO)
   };
 
   // Diffusivity ratios - Cappa et al. 2003
@@ -192,8 +191,8 @@ private:
     sp(1.0),     // H216O
     sp(0.9839),  // HDO
     sp(0.9691),  // H218O
-    sp(0.9691),  // H217O (assumed same as H218O)
-    sp(0.9839)   // HTO (assumed same as HDO)
+    sp(0.9691),  // H217O (TODO: assumed same as H218O)
+    sp(0.9839)   // HTO (TODO: assumed same as HDO)
   };
 
   // Standard ratios - Normalized (default)
@@ -210,8 +209,8 @@ private:
     sp(1.0),         // H216O (reference)
     sp(155.76e-6),   // HDO
     sp(2005.20e-6),  // H218O
-    sp(379.9e-6),    // H217O (approximately 0.189 * H218O)
-    sp(1.0e-18)      // HTO (trace amount)
+    sp(379.9e-6),    // H217O
+    sp(1.0)          // HTO (TODO: define more robustly)
   };
 
   // Ocean surface enrichment - None (default)
@@ -228,8 +227,8 @@ private:
     sp(1.0),      // H216O
     sp(1.0128),   // HDO
     sp(1.0016),   // H218O
-    sp(1.0008),   // H217O (interpolated)
-    sp(1.00671)   // HTO (assumed)
+    sp(1.0008),   // H217O (TODO)
+    sp(1.0)   // HTO (TODO)
   };
 
   // -----------------------------------------------------------------------
@@ -400,7 +399,7 @@ public:
   // -----------------------------------------------------------------------
 
   // Surface kinetic exchange
-  // From water_isotopes.F90 lines 144-147
+  // From water_isotopes.F90
   // Note: H216O entries are 0.0 (non-fractionating)
   static constexpr Scalar aksmc[num_species] = {
     sp(0.0),      // H216O
@@ -431,7 +430,8 @@ public:
   // -----------------------------------------------------------------------
   // Physical constants for kinetic calculations
   // -----------------------------------------------------------------------
-
+  // RPF - check if these already exist in physics constants, and if 
+  // there are more precise values available.
   // Molecular diffusivity of air [m2/s]
   // From water_isotopes.F90 line 215
   static constexpr Scalar difair = sp(2.36e-5);
@@ -444,10 +444,6 @@ public:
   // -----------------------------------------------------------------------
   // Safety parameters
   // -----------------------------------------------------------------------
-
-  // Small value for safe division (avoid division by zero)
-  // From water_isotopes.F90 line 689
-  static constexpr Scalar qtiny = sp(1.e-16);
 
   // Minimum water threshold for tracer calculations [kg/kg]
   // From eamxx_water_tracers_functions.hpp line 34

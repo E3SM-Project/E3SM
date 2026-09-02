@@ -15,8 +15,8 @@ namespace wiso {
 /*
  * Equilibrium isotopic fractionation factors for water isotopologues.
  *
- * Ported from the iCAM Fortran module water_isotopes.F90 (functions wiso_alpl
- * and wiso_alpi, author David Noone). These are pure, device-callable functions
+ * Derived from the iCAM Fortran module water_isotopes.F90 (functions wiso_alpl
+ * and wiso_alpi, original author David Noone). These are pure, device-callable functions
  * of temperature only; species is selected by a scalar enum (uniform across a
  * Pack, so no per-lane masking is needed). Templated on ScalarT so they work
  * for both a plain Real and an ekat::Pack<Real,N>: exp() and pow() are called
@@ -28,15 +28,6 @@ namespace wiso {
  * i.e. the heavy isotope is preferentially retained in the condensed phase.
  * The desired direction is chosen explicitly via WisoAlphaDir (required
  * argument) so every call site states its intent.
- *
- * Scope: EQUILIBRIUM factors only. Kinetic / supersaturation effects (iCAM
- * wiso_akel / wiso_akci, active below ~253 K) are intentionally NOT included
- * here; see the "KINETIC HOOK" note below for where a future
- * alpha_ice_vapor_kinetic(t, species, s_ice, ...) sibling would attach.
- *
- * Note: Isotopic constants are now centralized in eamxx_water_isotopes_constants.hpp
- * and available for other modules. The coefficients below are embedded for
- * backwards compatibility; future work may refactor to use the centralized constants.
  */
 
 // Water isotopologues. HDO and H218O are computed directly from the tables;
@@ -45,9 +36,9 @@ namespace wiso {
 enum WisoSpecies {
   H216O = 0,  // ordinary water; alpha == 1
   HDO   = 1,  // HD16O (deuterium)
-  H218O = 2,  // H2-18O (oxygen-18)
-  H217O = 3,  // H2-17O; = alpha(H218O)^0.529 (Schoenemann et al. 2014)
-  HTO   = 4   // HT16O (tritiated water); = alpha(HDO)^2.0 (isoCAM3)
+  H218O = 2,  // H218O (oxygen-18)
+  H217O = 3,  // H217O; = alpha(H218O)^0.529 (Schoenemann et al. 2014)
+  HTO   = 4   // HT16O (tritiated water); = alpha(HDO)^2.0 (isoCAM3 assumption)
 };
 
 // Which R-ratio the returned factor represents.
@@ -143,10 +134,6 @@ struct WaterIsotopeFractionation
   //   alpha = exp( a/T^2 + b/T + c )
   // Coefficients come from the constants struct (selected formulation).
   //
-  // Note: in iCAM this equilibrium factor is applied on DEPOSITION
-  // (vapor->ice); SUBLIMATION (ice->vapor) is treated as non-fractionating
-  // (alpha = 1) by the caller, not here. This function is the pure equilibrium
-  // factor; the deposition/sublimation choice is process logic.
   // -----------------------------------------------------------------------
   template <typename ScalarT>
   KOKKOS_INLINE_FUNCTION
@@ -182,11 +169,11 @@ struct WaterIsotopeFractionation
         break;
       }
       case H217O:
-        // Mass-dependent from H2-18O (Schoenemann et al. 2014).
+        // Mass-dependent from H218O (Schoenemann et al. 2014).
         alpha = pow(alpha_ice_vapor(t, H218O, CondensedOverVapor, constants), RealT(0.529));
         break;
       case HTO:
-        // From HDO (isoCAM3).
+        // From HDO (isoCAM3 assumption).
         alpha = pow(alpha_ice_vapor(t, HDO, CondensedOverVapor, constants), RealT(2.0));
         break;
       case H216O:
