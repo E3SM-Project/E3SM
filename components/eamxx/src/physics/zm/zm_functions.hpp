@@ -167,6 +167,8 @@ struct Functions {
       trig_ull            = params.get<bool>("trig_ull",            true);
       clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
+      cape_threshold      = params.get<Real>("cape_threshold",      ZMC::cape_threshold_new);
+      dcape_threshold     = params.get<Real>("dcape_threshold",     ZMC::dcape_threshold);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
       old_snow            = params.get<bool>("old_snow",            true);
@@ -243,6 +245,8 @@ struct Functions {
       os << indent << "trig_ull        : " << trig_ull       << "\n";
       os << indent << "clos_dyn_adj    : " << clos_dyn_adj   << "\n";
       os << indent << "no_deep_pbl     : " << no_deep_pbl    << "\n";
+      os << indent << "cape_threshold  : " << cape_threshold << "\n";
+      os << indent << "dcape_threshold : " << dcape_threshold<< "\n";
       // ZM micro parameters
       os << indent << "zm_microp       : " << zm_microp      << "\n";
       os << indent << "old_snow        : " << old_snow       << "\n";
@@ -273,6 +277,8 @@ struct Functions {
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
+    Real cape_threshold;    // CAPE threshold for trigger condition
+    Real dcape_threshold;   // DCAPE threshold for trigger condition
     bool apply_detr_tend;
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
