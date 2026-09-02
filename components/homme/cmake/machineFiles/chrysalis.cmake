@@ -74,3 +74,6 @@ ELSE()
   SET (MKLROOT $ENV{MKLROOT} CACHE FILEPATH "")
   SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 ENDIF()
+
+# Currently, homme is only compatible with Kokkos' legacy view impl
+SET (Kokkos_ENABLE_IMPL_VIEW_LEGACY ON CACHE BOOL "")
