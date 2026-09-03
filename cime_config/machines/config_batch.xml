@@ -375,8 +375,9 @@
       <directive> -l select={{ num_nodes }}:mpiprocs={{ tasks_per_node }} </directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" jobmin="1" jobmax="8" strict="true" default="true">debug</queue>
-      <queue walltimemax="00:30:00" jobmin="9" jobmax="737" strict="true">compute</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="2" default="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemin="3" nodemax="805">compute</queue>
+      <queue walltimemax="00:30:00" nodemin="1" nodemax="12">bigmem</queue>
     </queues>
   </batch_system>
 
