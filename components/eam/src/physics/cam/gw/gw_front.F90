@@ -180,7 +180,7 @@ end subroutine gw_front_gw_sources
 
 !==========================================================================
 subroutine gw_rossby_radius_ratio(ncol, lat, lchnk, rossby_radius_ratio)
-  use physconst, only: rearth, gravit, omega
+  use physconst, only: rearth, gravit, omega, pi
   use phys_grid, only: get_area_p
   !------------------------------------------------------------------------
   ! The purpose of the "Rossby radius ratio" (RRR) is to act as a crude
@@ -200,23 +200,24 @@ subroutine gw_rossby_radius_ratio(ncol, lat, lchnk, rossby_radius_ratio)
   !------------------------------------------------------------------------
   ! Local Variables
   integer :: i
-  real(r8), parameter :: max_rossby_radius = 1000e3_r8 ! limit RR to 1000km in the Tropics
+  real(r8), parameter :: min_lat_deg = 5 ! min latitude for limiter (RR~10e6m@5deg) [deg]
   real(r8), parameter :: rossby_depth = 2.0e3_r8 ! effective depth / scale height
   real(r8), parameter :: eff_res_grid_num = 6 ! number of grid points for effective resolution
-  real(r8) :: coriolis_f    ! coriolis parameter
+  real(r8) :: coriolis_f    ! coriolis parameter [1/s]
   real(r8) :: grid_length   ! effective local grid length (i.e. dx) [m]
   real(r8) :: rossby_radius ! Rossby radius [m]
+  real(r8) :: min_lat_rad   ! min_lat_deg converted to radians
   !------------------------------------------------------------------------
+  min_lat_rad = min_lat_deg*pi/180.0_r8
   do i = 1,ncol
     ! Calculate coriolis parameter
-    coriolis_f = 2 * omega * sin(lat(i)) ! latitude must be in radians
-    ! Calculate Rossby Radius
-    if (coriolis_f>0.0_r8) then
-      rossby_radius = sqrt(gravit*rossby_depth)/abs(coriolis_f)
-      rossby_radius = min(rossby_radius,max_rossby_radius)
+    if (abs(lat(i)) > min_lat_rad) then
+      coriolis_f = 2 * omega * sin(lat(i)) ! latitude must be in radians
     else
-      rossby_radius = max_rossby_radius
+      coriolis_f = 2 * omega * sin(sign(min_lat_rad,lat(i))) ! latitude must be in radians
     end if
+    ! Calculate Rossby Radius
+    rossby_radius = sqrt(gravit*rossby_depth)/abs(coriolis_f)
     ! Calculate grid length
     grid_length = sqrt( get_area_p(lchnk,i) * rearth**2 ) ! sqrt( steradians x m2 ) => m
     ! Calculate ratio of Rossby Radius to effective grid length
