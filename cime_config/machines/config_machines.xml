@@ -2633,8 +2633,9 @@
       <env name="NETCDF_FORTRAN_PATH">/projects/sems/install/boca/acme/manual/netcdf-fortran/4.6.3</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /projects/ccsm/moab; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /projects/ccsm/moab-flight; else echo "$MOAB_ROOT"; fi}</env>
       <env name="HDF5_ROOT">$SHELL{dirname $(dirname $(which h5dump))}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
    </environment_variables>
     <environment_variables compiler="intel">
       <env name="CLDERA_PATH">/projects/cldera/cldera-tools/install-master/intel</env>
