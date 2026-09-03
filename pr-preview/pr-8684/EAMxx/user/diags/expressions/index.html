@@ -5205,19 +5205,32 @@ is an honest analogue.</p>
 <li><code>mean('col')</code> is always area weighted, so <code>weights</code> does not apply to it.
   <code>weights</code> for <code>'lev'</code> is <code>'dp'</code> or <code>'dz'</code>.</li>
 <li><code>where</code> takes a single comparison. <code>and</code>/<code>or</code> are not supported; chain
-  <code>where(..)</code> calls instead. The special operand names <code>mask</code> and <code>lev</code> work as
-  they do in the underscore syntax, so <code>mask.where(lev&gt;5)</code> parses.</li>
+  <code>where(..)</code> calls instead.</li>
+<li><strong><code>mask</code> and <code>lev</code> are placeholders, not fields.</strong> Neither exists in the field
+  manager, and neither means anything on its own. <code>mask</code> is only legal as the
+  receiver of <code>.where(..)</code>: <code>mask.where(cond)</code> is the 0/1 indicator of <code>cond</code>
+  itself, rather than some field sampled by it. <code>lev</code> is only legal as the left
+  operand of the comparison inside <code>where(..)</code>, where it means the level index.
+  So <code>mask.where(lev&gt;5)</code> is a request, while <code>mask</code>, <code>mask*1.0</code>,
+  <code>mask.mean('lev')</code> and <code>lev&gt;5</code> are not: each of those leaves <code>mask</code> or <code>lev</code>
+  as an operand to be resolved on its own, and the run aborts with
+  <code>The key 'mask' is not associated to any registered product</code>, since it is
+  neither a field nor a diagnostic. Both names are inherited from the underscore
+  syntax (<code>mask_where_lev_gt_5</code>), not from xarray.</li>
 <li><strong><code>over_dt</code> and <code>tend</code> cannot go in an <code>instant</code> stream.</strong> An instant stream
   takes a snapshot at <code>t0</code>, before any step has run, and <code>dt</code> is zero there, so
   the diagnostic aborts with "dt must be positive". Write them to an averaged
   stream (<code>averaging_type: average</code>, <code>max</code>, <code>min</code>) instead. This is a property
   of the diagnostic, not of the syntax: the underscore spellings <code>X_over_dt</code> and
   <code>X_atm_backtend</code> behave the same way.</li>
-<li><strong>A <code>mask</code> operand cannot currently be written to file.</strong> The diagnostic is
-  built, but its output has <code>int</code> data type, which IO cannot handle: writing
-  <code>mask.where(..)</code> (or the underscore <code>mask_where_..</code>) fails with a narrowing
-  conversion error, and reducing it first does not help. Multiply by 1 to
-  promote it to <code>Real</code> -- <code>mask.where(ps&gt;100000)*1.0</code> writes fine.</li>
+<li><strong>A <code>mask.where(..)</code> result cannot currently be written to file as is.</strong> The
+  diagnostic is built, but its output has <code>int</code> data type, which IO cannot
+  handle: listing <code>mask.where(..)</code> (or the underscore <code>mask_where_..</code>) in
+  <code>field_names</code> fails with a narrowing conversion error, and reducing it first
+  does not help. Multiplying by 1 promotes it to <code>Real</code>, and
+  <code>mask.where(ps&gt;100000)*1.0</code> writes fine. Note the <code>*1.0</code> applies to the field
+  that <code>where</code> produced, which is a perfectly ordinary field; it is not an
+  operation on <code>mask</code>, which per the bullet above cannot be multiplied.</li>
 <li><code>X.tend()</code> is shorthand for <code>(X - X.shift(time=1)).over_dt()</code>, and inherits
   the <code>over_dt</code> restriction above.</li>
 <li>Histogram bin edges must be non-negative, and must be writable without an
@@ -5258,10 +5271,10 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:<
 </table>
 <p><code>X.mean('lev', weights='dp')</code> is <code>(X*dp).sum('lev')/dp.sum('lev')</code>, but computed
 in one sweep rather than as three diagnostics.</p>
-<p>Two operand names are special, inherited from the underscore syntax rather than
-from xarray: <code>mask</code> stands for the 0/1 indicator of the condition itself, so
-<code>mask.where(...)</code> is 1 where the condition <code>(...)</code> holds;
-and <code>lev</code> on the left of a comparison means the level index.</p>
+<p>Two operand names have no xarray analogue at all, because they are not fields:
+<code>mask</code> and <code>lev</code>, both inherited from the underscore syntax and both legal only
+inside <code>where(..)</code>. See the note above for what they mean and where they may
+appear.</p>
 <h2 id="errors">Errors</h2>
 <p>An expression that does not parse, calls a function that does not exist, or
 uses an operator no diagnostic implements is rejected with a message pointing
