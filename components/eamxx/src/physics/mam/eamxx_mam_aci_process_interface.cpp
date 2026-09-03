@@ -155,6 +155,12 @@ void MAMAci::create_requests() {
   // FIXME: [TEMPORARY]droplet number mixing ratio source tendency [#/kg/s]
   add_field<Computed>("nsource", scalar3d_mid, n_unit / s, grid_name);
 
+  // Exact explicit vertical-mixing loop count from ndrop. The sum and maximum
+  // aggregate all MAMAci calls in the enclosing physics step.
+  add_field<Computed>("ndrop_nsubmix", scalar2d, none, grid_name);
+  add_field<Computed>("ndrop_sum_nsubmix", scalar2d, none, grid_name);
+  add_field<Computed>("ndrop_max_nsubmix", scalar2d, none, grid_name);
+
   // FIXME: [TEMPORARY]droplet number mixing ratio tendency due to mixing
   // [#/kg/s]
   add_field<Computed>("ndropmix", scalar3d_mid, n_unit / s, grid_name);
@@ -309,6 +315,9 @@ void MAMAci::initialize_impl(const RunType run_type) {
       {"nc_nuceat_tend", {-1e100, 1e100}},                   // FIXME
       {"nsource", {-1e10, 1e10}},                            // FIXME
       {"ndropmix", {-1e10, 1e10}},                           // FIXME
+      {"ndrop_nsubmix", {0, detail::max_exact_ndrop_nsubmix_aggregate}},
+      {"ndrop_sum_nsubmix", {0, detail::max_exact_ndrop_nsubmix_aggregate}},
+      {"ndrop_max_nsubmix", {0, detail::max_exact_ndrop_nsubmix_aggregate}},
       {"nc_inp_to_aci", {-1e10, 1e10}},                      // FIXME
       {"ccn_0p02", {-1e10, 1e10}},                           // FIXME
       {"ccn_0p05", {-1e10, 1e10}},                           // FIXME
@@ -439,6 +448,16 @@ void MAMAci::initialize_impl(const RunType run_type) {
   // Temporarily output nc_inp_to_aci_
   nc_inp_to_aci_ = get_field_out("nc_inp_to_aci").get_view<Real **>();
 
+  ndrop_nsubmix_ = get_field_out("ndrop_nsubmix").get_view<Real *>();
+  ndrop_sum_nsubmix_ =
+      get_field_out("ndrop_sum_nsubmix").get_view<Real *>();
+  ndrop_max_nsubmix_ =
+      get_field_out("ndrop_max_nsubmix").get_view<Real *>();
+  Kokkos::deep_copy(ndrop_nsubmix_, Real(0));
+  Kokkos::deep_copy(ndrop_sum_nsubmix_, Real(0));
+  Kokkos::deep_copy(ndrop_max_nsubmix_, Real(0));
+  reset_ndrop_nsubmix_accumulators_ = true;
+
   // FIXME: [TEMPORARY] remove the following ccn outputs
   ccn_0p02_ = get_field_out("ccn_0p02").get_view<Real **>();
   ccn_0p05_ = get_field_out("ccn_0p05").get_view<Real **>();
@@ -493,6 +512,10 @@ void MAMAci::initialize_impl(const RunType run_type) {
 // ================================================================
 void MAMAci::run_impl(const double dt) {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
+
+  const bool completes_physics_step =
+      do_update_time_stamp() &&
+      get_subcycle_iter() == get_num_subcycles() - 1;
 
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
 
@@ -562,6 +585,8 @@ void MAMAci::run_impl(const double dt) {
       cloud_frac_prev_, dry_aero_, nlev_, top_lev_, enable_aero_vertical_mix_,
       // output
       coltend_, coltend_cw_, qcld_, ndropcol_, ndropmix_, nsource_, wtke_, ccn_,
+      ndrop_nsubmix_, ndrop_sum_nsubmix_, ndrop_max_nsubmix_,
+      reset_ndrop_nsubmix_accumulators_,
       // ## output to be used by the other processes ##
       qqcw_fld_work_, ptend_q_, factnum_, tendnd_,
       // work arrays
@@ -615,6 +640,10 @@ void MAMAci::run_impl(const double dt) {
 
   post_process(wet_aero_, dry_aero_, dry_atm_);
   Kokkos::fence();  // wait before returning to calling function
+  reset_ndrop_nsubmix_accumulators_ = false;
+  if(completes_physics_step) {
+    reset_ndrop_nsubmix_accumulators_ = true;
+  }
 }
 
 }  // namespace scream
