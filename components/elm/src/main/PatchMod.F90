@@ -48,14 +48,16 @@ contains
 
     idx = 0
 
-    idx = idx + 1;                                   values(idx) = real( veg_pp%gridcell (p))
+    idx = idx + 1;                                     values(idx) = real( veg_pp%gridcell (p))
     idx = idx + 1; if (.not. isnan(veg_pp%wtgcell(p))) values(idx) =       veg_pp%wtgcell  (p)
-    idx = idx + 1;                                   values(idx) = real( veg_pp%landunit (p))
+	idx = idx + 1;                                     values(idx) = real( veg_pp%topounit (p)) ! TKT TGUs
+    idx = idx + 1; if (.not. isnan(veg_pp%wttopounit(p))) values(idx) =    veg_pp%wttopounit(p) ! TKT TGUs
+    idx = idx + 1;                                     values(idx) = real( veg_pp%landunit (p))
     idx = idx + 1; if (.not. isnan(veg_pp%wtlunit(p))) values(idx) =       veg_pp%wtlunit  (p)
-    idx = idx + 1;                                   values(idx) = real( veg_pp%column   (p))
+    idx = idx + 1;                                     values(idx) = real( veg_pp%column   (p))
     idx = idx + 1; if (.not. isnan(veg_pp%wtcol(p)))   values(idx) =       veg_pp%wtcol    (p)
-    idx = idx + 1;                                   values(idx) = real( veg_pp%itype    (p))
-    idx = idx + 1;                                   values(idx) = real( veg_pp%mxy      (p))
+    idx = idx + 1;                                     values(idx) = real( veg_pp%itype    (p))
+    idx = idx + 1;                                     values(idx) = real( veg_pp%mxy      (p))
 
     idx = idx + 1; if (veg_pp%active(p))               values(idx) = 1._r8
 
@@ -92,6 +94,8 @@ contains
 
     idx = idx + 1;                           veg_pp%gridcell (p) = int(values(idx))
     idx = idx + 1;                           veg_pp%wtgcell  (p) =     values(idx)
+	idx = idx + 1;                           veg_pp%topounit (p) = int(values(idx))  
+    idx = idx + 1;                           veg_pp%wttopounit  (p) =  values(idx) 
     idx = idx + 1;                           veg_pp%landunit (p) = int(values(idx))
     idx = idx + 1;                           veg_pp%wtlunit  (p) =     values(idx)
     idx = idx + 1;                           veg_pp%column   (p) = int(values(idx))
@@ -111,7 +115,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(out)     :: nvalues
 
-    nvalues = 9
+    nvalues = 11
 
   end subroutine NumValuesPerPatch
 

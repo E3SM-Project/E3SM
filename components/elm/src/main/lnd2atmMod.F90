@@ -49,6 +49,7 @@ module lnd2atmMod
 
   integer, parameter :: unity = 0, urbanf = 1, urbans = 2
   integer, parameter :: natveg = 3, veg =4, ice=5, nonurb=6, lake=7
+  integer, parameter :: tgu_unity = 1, tgu_level = 2
   !------------------------------------------------------------------------
 
 contains
@@ -562,6 +563,13 @@ contains
          zwt_col(bounds%begc:bounds%endc)   , &
          zwt_grc(bounds%begg:bounds%endg)   , &
          c2l_scale_type= urbans, l2g_scale_type=unity )
+	
+	! TKT debugging
+	!write(iulog,*)'TKT bounds%begg,bounds%endg is',bounds%begp,bounds%endp
+	!write(iulog,*)'TKT bounds%begg,bounds%endg is',bounds%begc,bounds%endc
+	!write(iulog,*)'TKT bounds%begg,bounds%endg is',bounds%begt,bounds%endt
+	!write(iulog,*)'TKT bounds%begg,bounds%endg is',bounds%begg,bounds%endg
+	!write(iulog,*)'TKT zwt_col(bounds%begc:bounds%endc) is',zwt_col(bounds%begc:bounds%endc)
 
     do g = bounds%begg,bounds%endg
        ! TODO temperary treatment in case weird values after c2g
@@ -658,6 +666,13 @@ contains
             enddo
             ! calculate mean soil temperature of the total saturated soil zone
             do ilvl = izwt + 1, nlevsoi
+			    ! TKT debug error
+			   ! write(iulog,*)'nlevsoi is',nlevsoi
+				!write(iulog,*)'izwt is',izwt
+				!write(iulog,*)'ilvl is',ilvl
+				!write(iulog,*)'zwt_ is',zwt_
+				!write(iulog,*)'h_layer(ilvl) is',h_layer(ilvl)
+				!write(iulog,*)'Tsoil_(ilvl) is',Tsoil_(ilvl)
                 sum_h = sum_h + h_layer(ilvl)
                 sum_ht = sum_ht + h_layer(ilvl)*Tsoil_(ilvl)
             enddo

@@ -1311,7 +1311,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use subgridAveMod      , only : p2c, c2g
+    use subgridAveMod      , only : p2c, c2g, tgu_level
     use elm_varpar         , only : nlevgrnd, nlevdecomp
     use pftvarcon          , only : noveg
     use CH4varcon          , only : replenishlakec, allowlakeprod, ch4offline, fin_use_fsat

@@ -225,6 +225,10 @@ sub get_filelists {
   my @outfiles = sort( keys(%$outfiles_ref) );
 
   if ( $#infiles != $#outfiles ) {
+     print "Number of input files=$#infiles\n";
+     print "Number of output files=$#outfiles\n";
+     print "Number of input files=@infiles\n";
+     print "Number of output files=@outfiles\n";
      die "$nm: number of infiles is different from outfiles\n";
   }
   if ( "@infiles" ne "@outfiles" ) {

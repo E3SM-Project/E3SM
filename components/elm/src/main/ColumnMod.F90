@@ -51,6 +51,8 @@ contains
 
     idx = idx + 1;                                         values(idx) = real( col_pp%landunit (c))
     idx = idx + 1;                                         values(idx) =       col_pp%wtlunit  (c)
+	idx = idx + 1;                                         values(idx) = real( col_pp%topounit (c)) ! TKT TGUs
+    idx = idx + 1;                                         values(idx) =       col_pp%wttopounit  (c) ! TKT TGUs
     idx = idx + 1;                                         values(idx) = real( col_pp%gridcell (c))
     idx = idx + 1;                                         values(idx) =       col_pp%wtgcell  (c)
     idx = idx + 1;                                         values(idx) = real( col_pp%pfti     (c))
@@ -128,6 +130,8 @@ contains
 
     idx = idx + 1;                           col_pp%landunit    (c) = int(values(idx))
     idx = idx + 1;                           col_pp%wtlunit     (c) =     values(idx)
+	idx = idx + 1;                           col_pp%topounit    (c) = int(values(idx)) ! TKT TGUS
+    idx = idx + 1;                           col_pp%wttopounit     (c) =     values(idx)  ! TKT TGUs
     idx = idx + 1;                           col_pp%gridcell    (c) = int(values(idx))
     idx = idx + 1;                           col_pp%wtgcell     (c) = values(idx)
     idx = idx + 1;                           col_pp%pfti        (c) = int(values(idx))
@@ -181,7 +185,7 @@ contains
     ! !ARGUMENTS:
     integer, intent(out)     :: nvalues
 
-    nvalues = 17 + 2*(nlevgrnd+nlevsno+1) + (nlevgrnd+nlevsno) + 2*nlevlak
+    nvalues = 19 + 2*(nlevgrnd+nlevsno+1) + (nlevgrnd+nlevsno) + 2*nlevlak  !TKT changed from 17 to 19 because of TGUs
 
   end subroutine NumValuesPerColumn
 

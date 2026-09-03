@@ -9,7 +9,7 @@ module surfrdMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
-  use elm_varpar      , only : numpft, numcft
+  use elm_varpar      , only : nlevsoifl, numpft, numcft
   use landunit_varcon , only : numurbl
   use elm_varcon      , only : grlnd
   use elm_varctl      , only : iulog, scmlat, scmlon, single_column, firrig_data
@@ -670,6 +670,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     call domain_clean(surfdata_domain)
+
     ! Obtain special landunit info
 
     call surfrd_special(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
@@ -713,6 +714,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: n,nl,nurb,g, t,tm,ti                ! indices
     integer  :: dimid,varid                ! netCDF id's
+    real(r8) :: nlevsoidata(nlevsoifl)
     logical  :: found                      ! temporary for error check
     integer  :: nindx                      ! temporary for error check
     integer  :: ier                        ! error status
@@ -750,6 +752,7 @@ contains
     allocate(pctglc_mec_tot(begg:endg,1:max_topounits))
     allocate(pctspec(begg:endg,1:max_topounits))
     
+    call check_dim(ncid, 'nlevsoi', nlevsoifl)
 
        ! Obtain non-grid surface properties of surface dataset other than percent pft
 
@@ -1532,6 +1535,7 @@ contains
     call getfil( lfsurdat, locfn, 0 )
     call ncd_pio_openfile (ncid, trim(locfn), 0)
 	
+    !call check_dim(ncid, 'nlevsoi', nlevsoifl)
     call check_var(ncid=ncid, varname='MaxTopounitElv', vardesc=vardesc, readvar=readvar)
     if (readvar) then
        call ncd_io(ncid=ncid, varname='MaxTopounitElv', flag='read', data=maxTopoElv, &
@@ -1588,6 +1592,7 @@ contains
            do t = 1, max_topounits
               wt_tunit(n,t) = TopounitFracArea(n,t)
               elv_tunit(n,t) = TopounitElv(n,t)
+			  grc_pp%tgu_wtgcell(t,n)=TopounitFracArea(n,t)
         !      slp_tunit(n,t) = TopounitSlope(n,t)
         !      asp_tunit(n,t) = TopounitAspect(n,t)              
            end do

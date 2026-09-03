@@ -826,6 +826,7 @@ module UrbanParamsType
        write(iulog,*) trim(caller), ' ERROR: no valid urban data for nl=',nindx
        write(iulog,*)'density type:    ',dindx
        write(iulog,*)'urban_valid:     ',urban_valid(nindx,:)
+       write(iulog,*)'percent_urban:     ',pcturb(nindx,:,:)
        write(iulog,*)'canyon_hwr:      ',urbinp%canyon_hwr(nindx,:,dindx)
        write(iulog,*)'em_improad:      ',urbinp%em_improad(nindx,:,dindx)
        write(iulog,*)'em_perroad:      ',urbinp%em_perroad(nindx,:,dindx)

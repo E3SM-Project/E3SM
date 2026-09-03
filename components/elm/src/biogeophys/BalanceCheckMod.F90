@@ -788,7 +788,7 @@ contains
     ! Initialize column-level water balance at beginning of time step
     !
     ! !USES:
-    use subgridAveMod , only : p2c,c2g, urbanf, unity
+    use subgridAveMod , only : p2c,c2g, urbanf, unity, tgu_level
     use elm_varpar    , only : nlevgrnd, nlevsoi, nlevurb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv
@@ -933,7 +933,7 @@ contains
      use elm_varctl        , only : create_glacier_mec_landunit
      use elm_initializeMod , only : surfalb_vars
      use CanopyStateType   , only : canopystate_type
-     use subgridAveMod     , only : c2g, urbanf, unity
+     use subgridAveMod     , only : c2g, urbanf, unity, tgu_level
      !
      ! !ARGUMENTS:
      type(bounds_type)     , intent(in)    :: bounds

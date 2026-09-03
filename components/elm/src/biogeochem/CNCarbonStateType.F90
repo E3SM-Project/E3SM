@@ -81,6 +81,7 @@ module CNCarbonStateType
      ! pools for dynamic landcover
      real(r8), pointer :: cropseedc_deficit_patch  (:) ! (gC/m2) pool for seeding new crop growth; this is a NEGATIVE term, indicating the amount of seed usage that needs to be repaid
      real(r8), pointer :: seedc_grc                (:)     ! (gC/m2) gridcell-level pool for seeding new PFTs via dynamic landcover
+     real(r8), pointer :: top_seedc                (:)     ! (gC/m2) tgu-level pool for seeding new PFTs via dynamic landcover
      real(r8), pointer :: frootc_col               (:)     ! col (gC/m2) column-level C pool for fine root
      real(r8), pointer :: seedc_col                (:)     ! col (gC/m2) column-level pool for seeding new Patches
      real(r8), pointer :: prod10c_col              (:)     ! col (gC/m2) wood product C pool, 10-year lifespan
@@ -185,6 +186,7 @@ contains
     ! !LOCAL VARIABLES:
     integer           :: begp,endp
     integer           :: begc,endc
+    integer           :: begt,endt
     integer           :: begg,endg
     !------------------------------------------------------------------------
 
@@ -275,6 +277,7 @@ contains
 
     allocate(this%cropseedc_deficit_patch  (begp:endp)) ; this%cropseedc_deficit_patch  (:) = nan
     allocate(this%seedc_grc                (begg:endg)) ; this%seedc_grc                (:) = nan
+    allocate(this%top_seedc                (begt:endt)) ; this%top_seedc                (:) = nan
     allocate(this%totpftc_beg_col(begc:endc));  this%totpftc_beg_col (:) = nan
     allocate(this%cwdc_beg_col   (begc:endc));  this%cwdc_beg_col    (:) = nan
     allocate(this%totlitc_beg_col(begc:endc));  this%totlitc_beg_col (:) = nan
@@ -409,7 +412,7 @@ contains
     type(carbonstate_type), optional, intent(in) :: c12_carbonstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer :: p,c,l,g,j,k
+    integer :: p,c,l,g,j,k,t
     integer :: fc                                        ! filter index
     integer :: num_special_col                           ! number of good values in special_col filter
     integer :: num_special_patch                         ! number of good values in special_patch filter
@@ -607,6 +610,10 @@ contains
 
     do g = bounds%begg, bounds%endg
        this%seedc_grc(g) = 0._r8
+    end do
+    
+    do t = bounds%begt, bounds%endt
+       this%top_seedc(t) = 0._r8
     end do
 
     ! initialize fields for special filters

@@ -14,6 +14,7 @@ module NitrogenStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use GridcellDataType       , only : grc_ns, grc_nf
+  use TopounitDataType       , only : top_ns, top_nf
   use ColumnDataType         , only : col_ns, col_nf
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_ns, veg_nf
@@ -58,7 +59,7 @@ contains
     ! !LOCAL VARIABLES:
     integer                                  :: c                             ! column index
     integer                                  :: fc                            ! column filter index
-    integer                                  :: g                             ! gridcell index
+    integer                                  :: g, t                             ! gridcell and topounit indices
     integer                                  :: j                             ! level index
 
     !character(len=*)         , parameter     :: subname = 'NitrogenStateUpdateDynPatch'
@@ -71,6 +72,14 @@ contains
                  - grc_nf%dwt_seedn_to_leaf(g)     * dt &
                  - grc_nf%dwt_seedn_to_deadstem(g) * dt &
                  - grc_nf%dwt_seedn_to_npool(g)    * dt
+         end do
+		 
+		 ! TKT for TGU
+		 do t = bounds%begt, bounds%endt                          
+            top_ns%seedn(t) = top_ns%seedn(t) &
+                 - top_nf%dwt_seedn_to_leaf(t)     * dt &
+                 - top_nf%dwt_seedn_to_deadstem(t) * dt &
+                 - top_nf%dwt_seedn_to_npool(t)    * dt
          end do
 
          do fc = 1, num_soilc_with_inactive

@@ -74,6 +74,7 @@ module GridcellType
      ! this is for efficiency, since most loops will go over g in the outer loop, and
      ! landunit type in the inner loop)
      integer , pointer :: landunit_indices (:,:) => null()
+	 real(r8) , pointer :: tgu_wtgcell (:,:) => null()        ! This is used for debugging to check the sum is 1
 
    contains
 
@@ -138,6 +139,7 @@ contains
     allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = spval
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
+	allocate(this%tgu_wtgcell(1:max_lunit, begg:endg)); this%tgu_wtgcell(:,:) = spval
 
    ! allocate(this%topounit_indices (begg:endg,1:max_topounits)) ; this%topounit_indices (:,:) = ispval
 
@@ -174,7 +176,8 @@ contains
     deallocate(this%elevation        )
     deallocate(this%froudenum        )
     deallocate(this%MaxElevation     )
-    deallocate(this%landunit_indices )
+    deallocate(this%landunit_indices ) 
+	deallocate(this%tgu_wtgcell      )
     deallocate(this%stdev_elev       ) 
     deallocate(this%sky_view         ) 
     deallocate(this%terrain_config   ) 

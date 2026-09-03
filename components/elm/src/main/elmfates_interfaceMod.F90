@@ -1329,21 +1329,21 @@ contains
          ! this will eventually change
          ! the harvest data are zero if today is before the start of the harvest time series
          if (trim(fates_harvest_mode) == fates_harvest_hlmlanduse) then
-            this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
+            this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,1,g)  ! TKT works only for a single topounit
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          else if (trim(fates_harvest_mode) == fates_harvest_luh_area .or. &
                   trim(fates_harvest_mode) == fates_harvest_luh_mass) then
-            this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
+            this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,1,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
          end if
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
          if (use_fates_luh) then
-            this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+            this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,1,g)
             this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
-            this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+            this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,1,g)
             this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
          end if
 
@@ -1351,26 +1351,8 @@ contains
 
       ! Nutrient uptake fluxes have been accumulating with each short
       ! timestep, here, we unload them from the boundary condition
-      ! structures into the cohort structures.  We also tell
-      ! fates the current supplementation status (used for dynamic rooting)
-
-      if(carbon_only)then
-         nitr_suppl = .true.
-         phos_suppl = .true.
-      else
-         if(carbonnitrogen_only)then
-            phos_suppl = .true.
-         else
-            phos_suppl = .false.
-         end if
-         if(carbonphosphorus_only)then
-            nitr_suppl = .true.
-         else
-            nitr_suppl = .false.
-         end if
-      end if
-      
-      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in, nitr_suppl, phos_suppl)
+      ! structures into the cohort structures.
+      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
       
       ! Distribute any seeds from neighboring gridcells into the current gridcell
       ! Global seed availability array populated by WrapGlobalSeedDispersal call
@@ -2222,14 +2204,14 @@ contains
                  c = this%f2hmap(nc)%fcolumn(s)
                  g = col_pp%gridcell(c)
 
-                 this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+                 this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,1,g)
                  this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
-                 this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+                 this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,1,g)
                  this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
 
                  if (trim(fates_harvest_mode) == fates_harvest_luh_area .or. &
                      trim(fates_harvest_mode) == fates_harvest_luh_mass) then
-                    this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
+                    this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,1,g)
                     this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
                     this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
                  end if

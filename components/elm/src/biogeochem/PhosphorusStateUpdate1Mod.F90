@@ -27,6 +27,7 @@ module PhosphorusStateUpdate1Mod
   use elm_varcon             , only : dzsoi_decomp
   use elm_varctl             , only : use_fates
   use GridcellDataType       , only : grc_ps, grc_pf
+  use TopounitDataType       , only : top_ps, top_pf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
 
@@ -56,7 +57,7 @@ contains
     ! !LOCAL VARIABLES:
     integer                                    :: c                             ! column index
     integer                                    :: fc                            ! column filter index
-    integer                                    :: g                             ! gridcell index
+    integer                                    :: g, t                             ! gridcell and topounit indices
     integer                                    :: j                             ! level index
 
     !-----------------------------------------------------------------------
@@ -68,6 +69,14 @@ contains
                  - grc_pf%dwt_seedp_to_leaf(g)     * dt &
                  - grc_pf%dwt_seedp_to_deadstem(g) * dt &
                  - grc_pf%dwt_seedp_to_ppool(g)    * dt
+         end do
+		 
+		 ! TKT for TGU
+		 do t = bounds%begt, bounds%endt
+            top_ps%seedp(t) = top_ps%seedp(t) &
+                 - top_pf%dwt_seedp_to_leaf(t)     * dt &
+                 - top_pf%dwt_seedp_to_deadstem(t) * dt &
+                 - top_pf%dwt_seedp_to_ppool(t)    * dt
          end do
 
          do fc = 1, num_soilc_with_inactive

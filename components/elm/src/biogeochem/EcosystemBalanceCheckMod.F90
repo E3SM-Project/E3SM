@@ -20,7 +20,7 @@ module EcosystemBalanceCheckMod
   use spmdMod             , only : masterproc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use elm_varpar          , only: ndecomp_cascade_transitions
-  use subgridAveMod       , only : p2c, c2g, unity
+  use subgridAveMod       , only : p2c, c2g, unity, c2t, tgu_level, tgu_unity
   ! soil erosion
   use elm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
@@ -32,6 +32,7 @@ module EcosystemBalanceCheckMod
   use pftvarcon           , only: noveg
   use elm_varctl          , only : NFIX_PTASE_plant
   use GridcellType        , only : grc_pp
+  Use TopounitType        , only : top_pp
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
   use GridcellDataType    , only : gridcell_nitrogen_state, gridcell_nitrogen_flux
   use GridcellDataType    , only : gridcell_phosphorus_state, gridcell_phosphorus_flux
@@ -861,6 +862,7 @@ contains
     !
     integer             :: g, nstep
     real(r8)            :: dt
+    real(r8), parameter :: error_tol = 1.e-8_r8
     !-----------------------------------------------------------------------
 
     associate(                                                       &
@@ -1150,6 +1152,13 @@ contains
          g = err_index
          write(iulog,*)'Grid cbalance error   = ',errcb_grc(g), g
          write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(g),grc_pp%londeg(g)
+		 write(iulog,*)'topi,topf,ntopounits         => ',grc_pp%topi(g),grc_pp%topf(g),grc_pp%ntopounits(g)
+		 write(iulog,*)'lndi,lndf,nlandunits         => ',grc_pp%lndi(g),grc_pp%lndf(g),grc_pp%nlandunits(g)
+		 write(iulog,*)'coli,colf,ncolumns         => ',grc_pp%coli(g),grc_pp%colf(g),grc_pp%ncolumns(g)
+		 write(iulog,*)'pfti,pftf,npfts         => ',grc_pp%pfti(g),grc_pp%pftf(g),grc_pp%npfts(g) 
+		 write(iulog,*)'tgu_wtgcell         = ',grc_pp%tgu_wtgcell(:,g) 
+		 write(iulog,*)'tgu_wtgcell(topi)         = ',top_pp%wtgcell(grc_pp%topi(g)) 
+		 write(iulog,*)'tgu_wtgcell(topf)         = ',top_pp%wtgcell(grc_pp%topf(g))
          write(iulog,*)'input                 = ',grc_cinputs(g)*dt
          write(iulog,*)'output                = ',grc_coutputs(g)*dt
          write(iulog,*)'error                 = ',errcb_grc(g)*dt
@@ -1157,6 +1166,7 @@ contains
          write(iulog,*)'endcb                 = ',endcb_grc(g)
          write(iulog,*)'delta store           = ',endcb_grc(g)-begcb_grc(g)
          call endrun(msg=errMsg(__FILE__, __LINE__))
+
 #endif
       end if
 
