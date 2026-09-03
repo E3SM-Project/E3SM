@@ -2,6 +2,17 @@
 
 #include <ekat_team_policy_utils.hpp>
 
+/*
+-----------------------------------------------------------------
+NOTES:
+1. We should connect surface fluxes and add code to update the fluxes
+2. Identify diagnostic variables and remove them from FM
+3. Add assert statements to check output ranges
+*/
+
+namespace scream
+{
+
 // =========================================================================================
 // Helper function to initialize scratch arrays for convection processing
 // =========================================================================================
@@ -158,17 +169,6 @@ void initialize_scratch1d_views(
 }
 
 } // anonymous namespace
-
-/*
------------------------------------------------------------------
-NOTES:
-1. We should connect surface fluxes and add code to update the fluxes
-2. Identify diagnostic variables and remove them from FM
-3. Add assert statements to check output ranges
-*/
-
-namespace scream
-{
 
 // =========================================================================================
 MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params)
@@ -550,6 +550,11 @@ void MAMWetscav::run_impl(const double dt) {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
+
+  // Making a local copy of 'nlev_' because we cannot use a member of a class
+  // inside a parallel_for.
+  const int nlev = nlev_;
 
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
@@ -653,12 +658,6 @@ void MAMWetscav::run_impl(const double dt) {
       get_field_out("dgnum").get_view<Real ***>();
   const auto qaerwat = get_field_out("qaerwat").get_view<Real ***>();
   const auto wetdens = get_field_out("wetdens").get_view<Real ***>();
-
-  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
-
-  // Making a local copy of 'nlev_' because we cannot use a member of a class
-  // inside a parallel_for.
-  const int nlev = nlev_;
 
   // Zero out tendencies otherwise, they are initialized to junk values
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
