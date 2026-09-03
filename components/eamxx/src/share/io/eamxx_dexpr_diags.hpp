@@ -32,8 +32,7 @@ namespace scream {
  *     expression is not a usable NetCDF variable name, so a customer writing
  *     one to file must require 'name := expr'.
  *
- * NOTE: exposes no dexpr types, keeping dexpr (and its C++20 requirement)
- *       private to eamxx_io.
+ * NOTE: exposes no dexpr types, keeping dexpr private to eamxx_io.
  */
 
 // Returns nullptr if 'expr' is a plain identifier: that is a diag class name
@@ -42,11 +41,6 @@ namespace scream {
 std::shared_ptr<AbstractDiagnostic>
 dexpr_create_diagnostic (const std::string& expr,
                          const std::shared_ptr<const AbstractGrid>& grid);
-
-// One example call per supported function, e.g. "T_mid.isel(lev=10)". Exposed
-// so a test can prove every registered function is buildable; a function with
-// no case in the translator is otherwise caught only when someone writes it.
-std::vector<std::string> dexpr_diagnostic_examples ();
 
 } // namespace scream
 

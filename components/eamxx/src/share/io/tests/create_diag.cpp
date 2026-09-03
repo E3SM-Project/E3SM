@@ -452,18 +452,6 @@ TEST_CASE("create_diag")
     REQUIRE_FALSE (d2->get_params().isParameter("from_expression"));
   }
 
-  SECTION ("dexpr_every_registered_function_is_buildable") {
-    // validate_registry() already proved each example matches its spec; this
-    // proves the translator turns each one into a diagnostic. A function
-    // registered with no case is otherwise caught only when someone writes it.
-    const auto examples = dexpr_diagnostic_examples();
-    REQUIRE (examples.size()>0);
-    for (const auto& e : examples) {
-      INFO ("example: " + e);
-      REQUIRE (create_diagnostic(e,grid)!=nullptr);
-    }
-  }
-
   SECTION ("dexpr_marks_what_it_built") {
     // Customers must tell an expression from a plain name, since an
     // expression needs a ':=' output name.

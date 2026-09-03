@@ -107,19 +107,32 @@ Notes:
 - `mean('col')` is always area weighted, so `weights` does not apply to it.
   `weights` for `'lev'` is `'dp'` or `'dz'`.
 - `where` takes a single comparison. `and`/`or` are not supported; chain
-  `where(..)` calls instead. The special operand names `mask` and `lev` work as
-  they do in the underscore syntax, so `mask.where(lev>5)` parses.
+  `where(..)` calls instead.
+- **`mask` and `lev` are placeholders, not fields.** Neither exists in the field
+  manager, and neither means anything on its own. `mask` is only legal as the
+  receiver of `.where(..)`: `mask.where(cond)` is the 0/1 indicator of `cond`
+  itself, rather than some field sampled by it. `lev` is only legal as the left
+  operand of the comparison inside `where(..)`, where it means the level index.
+  So `mask.where(lev>5)` is a request, while `mask`, `mask*1.0`,
+  `mask.mean('lev')` and `lev>5` are not: each of those leaves `mask` or `lev`
+  as an operand to be resolved on its own, and the run aborts with
+  `The key 'mask' is not associated to any registered product`, since it is
+  neither a field nor a diagnostic. Both names are inherited from the underscore
+  syntax (`mask_where_lev_gt_5`), not from xarray.
 - **`over_dt` and `tend` cannot go in an `instant` stream.** An instant stream
   takes a snapshot at `t0`, before any step has run, and `dt` is zero there, so
   the diagnostic aborts with "dt must be positive". Write them to an averaged
   stream (`averaging_type: average`, `max`, `min`) instead. This is a property
   of the diagnostic, not of the syntax: the underscore spellings `X_over_dt` and
   `X_atm_backtend` behave the same way.
-- **A `mask` operand cannot currently be written to file.** The diagnostic is
-  built, but its output has `int` data type, which IO cannot handle: writing
-  `mask.where(..)` (or the underscore `mask_where_..`) fails with a narrowing
-  conversion error, and reducing it first does not help. Multiply by 1 to
-  promote it to `Real` -- `mask.where(ps>100000)*1.0` writes fine.
+- **A `mask.where(..)` result cannot currently be written to file as is.** The
+  diagnostic is built, but its output has `int` data type, which IO cannot
+  handle: listing `mask.where(..)` (or the underscore `mask_where_..`) in
+  `field_names` fails with a narrowing conversion error, and reducing it first
+  does not help. Multiplying by 1 promotes it to `Real`, and
+  `mask.where(ps>100000)*1.0` writes fine. Note the `*1.0` applies to the field
+  that `where` produced, which is a perfectly ordinary field; it is not an
+  operation on `mask`, which per the bullet above cannot be multiplied.
 - `X.tend()` is shorthand for `(X - X.shift(time=1)).over_dt()`, and inherits
   the `over_dt` restriction above.
 - Histogram bin edges must be non-negative, and must be writable without an
@@ -145,10 +158,10 @@ xarray, on the same arguments. The rest have no xarray spelling we could adopt:
 `X.mean('lev', weights='dp')` is `(X*dp).sum('lev')/dp.sum('lev')`, but computed
 in one sweep rather than as three diagnostics.
 
-Two operand names are special, inherited from the underscore syntax rather than
-from xarray: `mask` stands for the 0/1 indicator of the condition itself, so
-`mask.where(...)` is 1 where the condition `(...)` holds;
-and `lev` on the left of a comparison means the level index.
+Two operand names have no xarray analogue at all, because they are not fields:
+`mask` and `lev`, both inherited from the underscore syntax and both legal only
+inside `where(..)`. See the note above for what they mean and where they may
+appear.
 
 ## Errors
 

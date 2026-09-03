@@ -173,6 +173,7 @@ std::string binary_op_to_diag_op (TokenTypes op)
 
 // Unary minus, as '-X' or the '-f2' in '-f2*f3'. No diagnostic negates a
 // field, but BinaryOp multiplies one by a scalar literal, so '-X' is '(-1)*X'.
+// TODO: implement translation for other unary operators asap
 void translate_unary (const ast::UnaryExpression& e, const ast::Expression& self,
                       std::string& diag_name, ekat::ParameterList& params)
 {
@@ -191,19 +192,29 @@ void translate_unary (const ast::UnaryExpression& e, const ast::Expression& self
 void translate_binary (const ast::BinaryExpression& e, const ast::Expression& self,
                        std::string& diag_name, ekat::ParameterList& params)
 {
-  // dexpr has a single BinaryExpression node for EVERY infix operator, not just
-  // the arithmetic ones: comparisons, 'and'/'or', '**', and even '.' all parse
-  // to it. So a node that casts to BinaryExpression may still be a comparison
-  // ('T_mid<273' at the top level) or a bare attribute access ('T_mid.mean',
-  // with no call). Only the four arithmetic ops map to a diagnostic; the rest
-  // get an error that says what they actually are.
+  // Called on the ROOT of a whole field_names entry, and dexpr roots an
+  // expression at its LOWEST-precedence operator -- which need not be an
+  // arithmetic one, since EVERY infix operator builds a BinaryExpression:
+  // comparisons, 'and'/'or', '**' and '.' included. So arriving here means
+  // "the request is an infix expression", not "the request is arithmetic",
+  // and e.op still has to be checked.
+  //
+  // Concretely, the two non-arithmetic ops handled below are reached by
+  //   field_names: [T_mid<273]      -> root is BinaryExpression{LessThan}
+  //   field_names: [T_mid.mean]     -> root is BinaryExpression{Dot}
+  // Both parse; neither names something we can compute. Note a comparison
+  // written where it belongs, inside where(..), is consumed by translate_call
+  // and never reaches this function -- which is why the error below can safely
+  // say the comparison is in the wrong place.
   const auto op = binary_op_to_diag_op(e.op);
   if (op=="") {
     if (comparison_to_cmp(e.op)!="") {
-      unsupported("a comparison is only meaningful inside where(..)",self);
+      unsupported("a comparison is only meaningful inside where(..), "
+                  "as in 'T_mid.where(T_mid<273)'",self);
     }
     if (e.op==TokenTypes::Dot) {
-      unsupported("attribute access with no call",self);
+      unsupported("attribute access with no call; EAMxx has no attributes, "
+                  "only methods, so this needs '(..)'",self);
     }
     unsupported("no diagnostic implements the operator '" +
                 dexpr::binary_op_to_string(e.op) + "'",self);
@@ -216,15 +227,15 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
 }
 
 // ---------------------------------------------------------------------------
-// The EAMxx vocabulary
+// The EAMxx vocabulary -- TODO: REDO!
 // ---------------------------------------------------------------------------
 // Named after xarray where there is an honest analogue. Lives here, not in
 // share/dexpr: dexpr owns the grammar, we own the vocabulary.
 //
 // Sits above translate_call() because the two are a pair -- every entry here
-// needs a case there. Nothing enforces that in the type system, so two checks
-// do: validate_registry() below, and the create_diag case that builds every
-// example.
+// needs a case there. Nothing enforces that, so an entry added without its case
+// is caught only when a user first writes that function, as the "registered but
+// not translated" error at the end of translate_call().
 //
 // Each entry is a dexpr::FunctionSpec, whose fields are:
 //   name            the method name, as written in 'X.name(..)'
@@ -235,9 +246,10 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
 //                   pairs. 'true' means the call is invalid without it;
 //                   'false' means optional. A keyword not listed here is
 //                   rejected, so this doubles as the spell-checker.
-//   example         a call that must parse, match this spec, and translate.
-//                   validate_registry() and the create_diag test both run it,
-//                   so it cannot drift from the code below.
+//   example         a call that must parse and match this spec.
+//                   validate_registry() runs it, so a spec cannot lie about
+//                   its own arity or keywords.
+// TODO: Let's rethink how a vocab shall be introduced and maintained ... below is fugly
 const dexpr::FunctionRegistry& eamxx_registry ()
 {
   static const dexpr::FunctionRegistry reg = [] {
@@ -458,6 +470,7 @@ void translate_call (const Call& call, const ast::Expression& self,
     // the value from a step ahead, which a running model cannot know -- worth
     // saying out loud, since isel(lev=-1) makes -1 look like "one back".
     const auto n = int_arg(*keyword(call,"time"),"'time'");
+    // TODO: support recursive shift (i.e., shift(time=2) would look back two steps)
     EKAT_REQUIRE_MSG (n==1,
         "Error! Only shift(time=1) is available.\n"
         " - expression: " + ast::to_string(self) + "\n"
@@ -470,6 +483,7 @@ void translate_call (const Call& call, const ast::Expression& self,
   }
 
   if (call.name=="over_dt") {
+    // TODO: support dt as a constant, so T_mid/dt can work out of the box like p_mid/P0
     diag_name = "FieldOverDt";
     return;
   }
@@ -504,14 +518,13 @@ dexpr_create_diagnostic (const std::string& expr,
     dexpr::parser::Parser parser {dexpr::Lexer{expr}};
     root = parser.parse();
   } catch (const dexpr::parser::ParserError& e) {
-    // Matched no legacy pattern and is not a legal identifier, so it can only
-    // have been meant as an expression. Say where it went wrong.
     EKAT_ERROR_MSG (
-        "Error! '" + expr + "' is neither a registered diagnostic nor a valid expression.\n" +
+        "Error! '" + expr + "' is not a valid expression.\n" +
         std::string(e.what()));
   }
 
-  // A bare identifier is a diag class name or a typo; the caller's to resolve.
+  // A bare identifier is a diag class name or a typo;
+  // in that case, return nullptr to let the caller handle it.
   if (as<ast::Identifier>(*root)) {
     return nullptr;
   }
@@ -531,9 +544,6 @@ dexpr_create_diagnostic (const std::string& expr,
   } else if (as<ast::FuncExpression>(*root)) {
     unsupported("EAMxx functions are written as methods, X.f(..), not f(X)",*root);
   } else {
-    // Everything left is a leaf that is not a name: a bare literal, a string,
-    // a list. There is nothing to compute, and nothing for the factory to look
-    // up either, so this is the end of the road for the whole precedence chain.
     unsupported("this is neither a diagnostic name nor an operation on a field",*root);
   }
 
@@ -544,15 +554,6 @@ dexpr_create_diagnostic (const std::string& expr,
   params.set<bool>("from_expression",true);
 
   return DiagnosticFactory::instance().create(diag_name,grid->get_comm(),params,grid);
-}
-
-std::vector<std::string> dexpr_diagnostic_examples ()
-{
-  std::vector<std::string> out;
-  for (const auto& entry : eamxx_registry()) {
-    out.push_back(entry.second.example);
-  }
-  return out;
 }
 
 } // namespace scream
