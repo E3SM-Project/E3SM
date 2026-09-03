@@ -402,13 +402,15 @@ contains
       !$acc    present(cellsOnEdge, verticesOnEdge, minLevelEdgeBot, maxLevelEdgeTop, &
       !$acc            dcEdge, dvEdge, meshScalingDel4, edgeMask, &
       !$acc            del2div, del2relVort, tend) &
-      !$acc private(k, cell1, cell2, vertex1, vertex2, del2relVortEdge, del2divEdge, &
-      !$acc         dcEdgeInv, dvEdgeInv, visc4, visc4tmp, visc4MaxTmp, uDiff, kmin, kmax)
+      !$acc private(k, cell1, cell2, vertex1, vertex2, &
+      !$acc         dcEdgeInv, dvEdgeInv, visc4, visc4tmp, visc4MaxTmp, uDiff, kmin, kmax, &
+      !$acc         leithDel2relVortEdge, leithDel2divEdge)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(k, cell1, cell2, vertex1, vertex2, &
-      !$omp         dcEdgeInv, dvEdgeInv, visc4, visc4tmp, visc4MaxTmp, uDiff, kmin, kmax)
+      !$omp         dcEdgeInv, dvEdgeInv, visc4, visc4tmp, visc4MaxTmp, uDiff, kmin, kmax, &
+      !$omp         leithDel2relVortEdge, leithDel2divEdge)
 #endif
       do iEdge = 1, nEdgesOwned
          kmin = minLevelEdgeBot(iEdge)
