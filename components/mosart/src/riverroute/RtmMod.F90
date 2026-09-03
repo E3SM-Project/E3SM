@@ -1898,7 +1898,7 @@ contains
              TRunoff%ffunit_ini(:) = rtmCTL%inundffunit(:)
           end if
        end if
-       if (wrmflag .and. nsrest == nsrStartup) then
+       if (wrmflag) then 
            call WRM_computeRelease()
         endif
 
