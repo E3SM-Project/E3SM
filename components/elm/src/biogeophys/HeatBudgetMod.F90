@@ -42,25 +42,37 @@ module HeatBudgetMod
   public :: HeatBudget_SetEndingStates
 
   !--- F for flux ---
-  ! Named/ordered to match the coupler's own NET HEAT BUDGET rows
-  ! (hnetsw/hlwdn/hlwup/hlatvap/hsen) for direct cross-validation against
-  ! cpl.log's 'lnd' column.
+  ! Named and ordered exactly like the coupler's NET HEAT BUDGET rows for
+  ! direct cross-validation against cpl.log's land column. The land model has
+  ! no hfreeze, hmelt, hpolar, or hh2otemp flux, so those rows remain zero.
 
-  integer, parameter :: f_netsw = 1
-  integer, parameter :: f_lwdn  = 2
-  integer, parameter :: f_lwup  = 3
-  integer, parameter :: f_lh    = 4
-  integer, parameter :: f_sh    = 5
+  integer, parameter :: f_hfreeze  = 1
+  integer, parameter :: f_hmelt    = 2
+  integer, parameter :: f_netsw    = 3
+  integer, parameter :: f_lwdn     = 4
+  integer, parameter :: f_lwup     = 5
+  integer, parameter :: f_hlatvap  = 6
+  integer, parameter :: f_hlatfus  = 7
+  integer, parameter :: f_hiroff   = 8
+  integer, parameter :: f_hsen     = 9
+  integer, parameter :: f_hpolar   = 10
+  integer, parameter :: f_hh2otemp = 11
 
-  integer, parameter, public :: f_size = f_sh
+  integer, parameter, public :: f_size = f_hh2otemp
 
   character(len=12),parameter :: fname(f_size) = &
        (/&
-       '      netsw ', &
-       '       lwdn ', &
-       '       lwup ', &
-       '        lh  ', &
-       '        sh  '  &
+       '     hfreeze', &
+       '       hmelt', &
+       '      hnetsw', &
+       '       hlwdn', &
+       '       hlwup', &
+       '     hlatvap', &
+       '     hlatfus', &
+       '      hiroff', &
+       '        hsen', &
+       '      hpolar', &
+       '    hh2otemp'  &
        /)
 
   !--- P for period ---
@@ -483,7 +495,7 @@ contains
     ! printed here for that reason, not as a stand-in for the former.
     !
     use domainMod, only : ldomain
-    use elm_varcon, only : re
+    use elm_varcon, only : re, hfus
     !
     implicit none
 
@@ -496,10 +508,12 @@ contains
 
     associate(                                                              &
          forc_lwdn   => atm2lnd_vars%forc_lwrad_not_downscaled_grc        , &
+         forc_snow   => atm2lnd_vars%forc_snow_not_downscaled_grc         , &
          netsw       => lnd2atm_vars%fsa_grc                              , &
          lwup        => lnd2atm_vars%eflx_lwrad_out_grc                   , &
          eflx_sh_tot => lnd2atm_vars%eflx_sh_tot_grc                      , &
          eflx_lh_tot => lnd2atm_vars%eflx_lh_tot_grc                      , &
+         qflx_rofice => lnd2atm_vars%qflx_rofice_grc                      , &
          beg_hc_grc  => grc_es%beg_hc                                     , &
          end_hc_grc  => grc_es%end_hc                                     , &
          beg_hcsoi_grc => grc_es%beg_hc_soi                               , &
@@ -524,8 +538,10 @@ contains
          nf = f_netsw; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + netsw(g)*af
          nf = f_lwdn ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + forc_lwdn(g)*af
          nf = f_lwup ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - lwup(g)*af
-         nf = f_lh   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - eflx_lh_tot(g)*af
-         nf = f_sh   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - eflx_sh_tot(g)*af
+         nf = f_hlatvap; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - eflx_lh_tot(g)*af
+         nf = f_hlatfus; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - forc_snow(g)*hfus*af
+         nf = f_hiroff ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + qflx_rofice(g)*hfus*af
+         nf = f_hsen   ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - eflx_sh_tot(g)*af
 
          if (beg_hc_grc(g) /= spval .and. end_hc_grc(g) /= spval) then
             nf = s_h_beg ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_hc_grc(g)*af
@@ -607,7 +623,8 @@ contains
     integer :: year, mon, day, sec
     integer :: cdate
     logical :: sumdone
-    real(r8) :: unit_conversion
+    real(r8) :: area_normalization
+    real(r8) :: state_conversion
     real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
     real(r8) :: budg_gfluxGpr (g_size,p_size) ! values to print, scaled and such
 
@@ -640,15 +657,16 @@ contains
        endif
 
        if (plev > 0) then
-          unit_conversion = 1.d0/(4.0_r8*shr_const_pi)*1.0e6_r8
+          area_normalization = 1._r8/(4._r8*shr_const_pi)
+          state_conversion = area_normalization*1.e6_r8
           if (.not.sumdone) then
              sumdone = .true.
              call HeatBudget_Sum0()
              budg_fluxGpr = budg_fluxG
-             budg_fluxGpr = budg_fluxGpr*unit_conversion
+             budg_fluxGpr = budg_fluxGpr*area_normalization
              budg_fluxGpr = budg_fluxGpr/budg_fluxN
              budg_gfluxGpr = budg_gfluxG
-             budg_gfluxGpr = budg_gfluxGpr*unit_conversion
+             budg_gfluxGpr = budg_gfluxGpr*area_normalization
              budg_gfluxGpr = budg_gfluxGpr/budg_gfluxN
           end if
 
@@ -662,28 +680,30 @@ contains
              write(iulog,*)'NET HEAT FLUXES : period ',trim(pname(ip)),': date = ',cdate,sec
              write(iulog,FA0)'  Time  ','  Time    '
              write(iulog,FA0)'averaged','integrated'
-             write(iulog,FA0)'W/m2*1e6','MJ/m2*1e6'
+             write(iulog,FA0)'   W/m2   ','MJ/m2*1e6'
              write(iulog,'(32("-"),"|",20("-"))')
              do f = 1, f_size
-                write(iulog,FF)fname(f),budg_fluxGpr(f,ip),budg_fluxG(f,ip)*unit_conversion*get_step_size()/1.e6_r8
+                write(iulog,FF)fname(f),budg_fluxGpr(f,ip), &
+                     budg_fluxG(f,ip)*area_normalization*get_step_size()
              end do
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,FF)'   *SUM*', &
-                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*unit_conversion*get_step_size()/1.e6_r8
+                  sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*area_normalization*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
 
              write(iulog,*)''
              write(iulog,*)'NET HEAT FLUXES (into ground) : period ',trim(pname(ip)),': date = ',cdate,sec
              write(iulog,FA0)'  Time  ','  Time    '
              write(iulog,FA0)'averaged','integrated'
-             write(iulog,FA0)'W/m2*1e6','MJ/m2*1e6'
+             write(iulog,FA0)'   W/m2   ','MJ/m2*1e6'
              write(iulog,'(32("-"),"|",20("-"))')
              do f = 1, g_size
-                write(iulog,FF)gname(f),budg_gfluxGpr(f,ip),budg_gfluxG(f,ip)*unit_conversion*get_step_size()/1.e6_r8
+                write(iulog,FF)gname(f),budg_gfluxGpr(f,ip), &
+                     budg_gfluxG(f,ip)*area_normalization*get_step_size()
              end do
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,FF)'   *SUM*', &
-                  sum(budg_gfluxGpr(:,ip)), sum(budg_gfluxG(:,ip))*unit_conversion*get_step_size()/1.e6_r8
+                  sum(budg_gfluxGpr(:,ip)), sum(budg_gfluxG(:,ip))*area_normalization*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,*)'  (integrated column is directly comparable to the *NET CHANGE* row of HEAT STATES below)'
 
@@ -696,24 +716,24 @@ contains
                   '       TOTAL      '
              write(iulog,'(71("-"),"|",20("-"))')
              write(iulog,HS) '         beg', &
-                  budg_stateG(s_hsoi_beg,ip)*unit_conversion, &
-                  (budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip))*unit_conversion, &
-                  budg_stateG(s_h_beg,ip)*unit_conversion
+                  budg_stateG(s_hsoi_beg,ip)*state_conversion, &
+                  (budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip))*state_conversion, &
+                  budg_stateG(s_h_beg,ip)*state_conversion
              write(iulog,HS) '         end', &
-                  budg_stateG(s_hsoi_end,ip)*unit_conversion, &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip))*unit_conversion, &
-                  budg_stateG(s_h_end,ip)*unit_conversion
+                  budg_stateG(s_hsoi_end,ip)*state_conversion, &
+                  (budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip))*state_conversion, &
+                  budg_stateG(s_h_end,ip)*state_conversion
              write(iulog,HS3)'*NET CHANGE*', &
-                  (budg_stateG(s_hsoi_end,ip)-budg_stateG(s_hsoi_beg,ip))*unit_conversion, &
+                  (budg_stateG(s_hsoi_end,ip)-budg_stateG(s_hsoi_beg,ip))*state_conversion, &
                   ((budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip)) &
-                  -(budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip)))*unit_conversion, &
-                  budg_stateG(s_h_errsoi,ip)*unit_conversion/budg_fluxN(1,ip), &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*unit_conversion
+                  -(budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip)))*state_conversion, &
+                  budg_stateG(s_h_errsoi,ip)*state_conversion/budg_fluxN(1,ip), &
+                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion
              write(iulog,'(71("-"),"|",20("-"))')
              write(iulog,HS2)'   *SUM*    ', &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*unit_conversion &
-                  - budg_stateG(s_h_errsoi,ip)*unit_conversion/budg_fluxN(1,ip), &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*unit_conversion
+                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion &
+                  - budg_stateG(s_h_errsoi,ip)*state_conversion/budg_fluxN(1,ip), &
+                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion
              write(iulog,'(71("-"),"|",20("-"))')
           end if
        end if
