@@ -835,7 +835,7 @@ add_default($nl,'gw_convect_storm_speed_min') if (get_default_value('gw_convect_
 add_default($nl,'gw_convect_plev_src_wind') if (get_default_value('gw_convect_plev_src_wind'));
 add_default($nl,'use_gw_convect_old', 'val'=>'.true.');
 add_default($nl,'use_tau_limiter', 'val'=>'.false.');
-add_default($nl,'use_gw_front_RR_scaling', 'val'=>'.false.');
+add_default($nl,'use_gw_front_rr_scaling', 'val'=>'.false.');
 add_default($nl,'linoz_psc_T');
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl,'micro_mg_dcs_tdep');

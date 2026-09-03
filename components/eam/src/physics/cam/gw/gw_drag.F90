@@ -128,7 +128,7 @@ module gw_drag
   real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
 
   logical  :: use_tau_limiter             ! switch to enable minimum limit on "gwut" values in GW calculations
-  logical  :: use_gw_front_RR_scaling     ! switch to enable Rossby radius scaling for the frontal GW scheme
+  logical  :: use_gw_front_rr_scaling     ! switch to enable Rossby radius scaling for the frontal GW scheme
 
 !==========================================================================
 contains
@@ -155,7 +155,7 @@ subroutine gw_drag_readnl(nlfile)
       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
       hdepth_scaling_factor, gw_convect_hdepth_min, &
       gw_convect_storm_speed_min, gw_convect_plev_src_wind, &
-      use_gw_convect_old, use_tau_limiter, use_gw_front_RR_scaling
+      use_gw_convect_old, use_tau_limiter, use_gw_front_rr_scaling
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -191,7 +191,7 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(gw_convect_plev_src_wind,   1, mpir8,  0, mpicom)
   call mpibcast(use_gw_convect_old,         1, mpilog, 0, mpicom)
   call mpibcast(use_tau_limiter,            1, mpilog, 0, mpicom)
-  call mpibcast(use_gw_front_RR_scaling,    1, mpilog, 0, mpicom)
+  call mpibcast(use_gw_front_rr_scaling,    1, mpilog, 0, mpicom)
 #endif
 
   dc = gw_dc
@@ -925,14 +925,14 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           do_latitude_taper = .true.
         end if
 
-        if (use_gw_front_RR_scaling) then
+        if (use_gw_front_rr_scaling) then
           ! Calculate the effgw_cm as a function of the ratio between the
           ! Rossby radius and effective grid length of each column
           do i = 1, ncol
             grid_area(i) = get_area_p(lchnk, i)
           end do
           call gw_rossby_radius_ratio(ncol, state1%lat(1:ncol), grid_area(1:ncol), &
-               rearth, omega, pi, rossby_radius_ratio)
+                                      rearth, omega, pi, rossby_radius_ratio)
           effgw_cm_var = effgw_cm
           where (rossby_radius_ratio > 1._r8)
             effgw_cm_var = effgw_cm/rossby_radius_ratio
@@ -948,6 +948,22 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              effgw_cm,    c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
              ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke, effgw_cm_var, &
              use_tau_limiter=use_tau_limiter)
+
+        if (use_gw_front_rr_scaling) then
+          ! taucd is projected from the raw (unscaled) source stress inside
+          ! gw_drag_prof, before effgw_cm_var is applied to the tendencies
+          ! (gwd_compute_tendencies_from_stress_divergence only scales gwut/
+          ! utgw/vtgw). momentum_energy_conservation below uses taucd at
+          ! tend_level to set the below-source recoil tendency, so without
+          ! this correction that recoil stays at full strength even as
+          ! effgw_cm_var -> 0, defeating the intent of RR scaling to fully
+          ! disable the frontal scheme at high Rossby ratio. Scale taucd by
+          ! the same per-column ratio applied to the tendencies; this is a
+          ! no-op wherever rossby_radius_ratio <= 1 (effgw_cm_var == effgw_cm).
+          do i = 1, ncol
+            taucd(i,:,:) = taucd(i,:,:) * (effgw_cm_var(i)/effgw_cm)
+          end do
+        end if
 
         !  add the diffusion coefficients
         do k = 0, pver
