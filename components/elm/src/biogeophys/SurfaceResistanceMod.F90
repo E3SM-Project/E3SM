@@ -109,7 +109,6 @@ contains
      use column_varcon   , only : icol_road_imperv, icol_road_perv
      use ColumnType      , only : col_pp
      use LandunitType    , only : lun_pp
-     use elm_varctl      , only : use_vsfm
      !
      implicit none
      type(bounds_type)     , intent(in)    :: bounds    ! bounds
@@ -156,33 +155,8 @@ contains
                 else   !when water content of ths top layer is more than that at F.C.
                    soilbeta(c) = 1._r8
                 end if
-                if ( use_vsfm ) then
-                   if ((wx < watmin(c,1)) .or. (soilp_col(c,1) < sucmin(c,1))) then
-                      soilbeta(c) = 0._r8
-                   end if
-                end if
              else if (col_pp%itype(c) == icol_road_perv) then
-                if (.not. use_vsfm) then
-                   soilbeta(c) = 0._r8
-                else
-                   wx   = (h2osoi_liq(c,1)/denh2o+h2osoi_ice(c,1)/denice)/col_pp%dz(c,1)
-                   fac  = min(1._r8, wx/watsat(c,1))
-                   fac  = max( fac, 0.01_r8 )
-                   if (wx < watfc(c,1) ) then  !when water content of ths top layer is less than that at F.C.
-                      if (wx >= watmin(c,1) .and. soilp_col(c,1) >= sucmin(c,1) ) then
-                         fac_fc  = min(1._r8, wx/watfc(c,1))  !eqn5.66 but divided by theta at field capacity
-                         fac_fc  = max( fac_fc, 0.01_r8 )
-                         ! modify soil beta by snow cover. soilbeta for snow surface is one
-                         soilbeta(c) = (1._r8-frac_sno(c)-frac_h2osfc(c)) &
-                              *0.25_r8*(1._r8 - cos(SHR_CONST_PI*fac_fc))**2._r8 &
-                              + frac_sno(c)+ frac_h2osfc(c)
-                      else
-                         soilbeta(c) = 0._r8
-                      endif
-                   else   !when water content of ths top layer is more than that at F.C.
-                      soilbeta(c) = 1._r8
-                   end if
-                endif
+                soilbeta(c) = 0._r8
              else if (col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall) then
                 soilbeta(c) = 0._r8
              else if (col_pp%itype(c) == icol_roof .or. col_pp%itype(c) == icol_road_imperv) then
