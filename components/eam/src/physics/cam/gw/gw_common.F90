@@ -660,6 +660,13 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
         ubtl = min(ubtl, umcfac * abs(c(:,l)-ubm(:,k)) / dt)
         ubtl = min(ubtl, tndmax)
 
+        ! Protection on small ubtl to prevent floating point issues
+        if (use_tau_limiter) then
+          where( abs(ubtl) < ubtl_magnitude_min )
+            ubtl = 0._r8
+          end where
+        end if
+
         where (k <= tend_level)
 
            ! Save tendency for each wave (for later computation of kzz),
@@ -676,13 +683,6 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
            where (k <= tend_level)
               ubt(:,k) = ubt(:,k) + sign(ubtl, c(:,l)-ubm(:,k))
            end where
-        end if
-
-        ! Protection on small gwut to prevent floating point issues
-        if (use_tau_limiter) then
-          where( abs(ubtl) < ubtl_magnitude_min )
-            ubtl = 0._r8
-          end where
         end if
 
         where (k <= tend_level)
