@@ -975,6 +975,36 @@
       <mask>IcoswISC30E3r5</mask>
     </model_grid>
 
+    <model_grid alias="u01_u01" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">u01.lr6to10</grid>
+      <grid name="lnd">u01.lr6to10</grid>
+      <grid name="ocnice">u01.oi6to18</grid>
+      <grid name="rof">u01.lr6to10</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>u01.oi6to18</mask>
+    </model_grid>
+
+    <model_grid alias="u02_u02" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">u02.lr10</grid>
+      <grid name="lnd">u02.lr10</grid>
+      <grid name="ocnice">u02.oi30</grid>
+      <grid name="rof">u02.lr10</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>u02.oi30</mask>
+    </model_grid>
+
+    <model_grid alias="u03_u03" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">u03.lr240</grid>
+      <grid name="lnd">u03.lr240</grid>
+      <grid name="ocnice">u03.oi240</grid>
+      <grid name="rof">u03.lr240</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>u03.oi240</mask>
+    </model_grid>
+
     <!--  spectral element grids -->
 
     <model_grid alias="ne4_oQU480">
