@@ -200,17 +200,23 @@ subroutine gw_rossby_radius_ratio(ncol, lat, lchnk, rossby_radius_ratio)
   !------------------------------------------------------------------------
   ! Local Variables
   integer :: i
+  real(r8), parameter :: max_rossby_radius = 1000e3_r8 ! limit RR to 1000km in the Tropics
   real(r8), parameter :: rossby_depth = 2.0e3_r8 ! effective depth / scale height
   real(r8), parameter :: eff_res_grid_num = 6 ! number of grid points for effective resolution
-  real(r8), :: coriolis_f    ! coriolis parameter
-  real(r8), :: grid_length   ! effective local grid length (i.e. dx) [m]
-  real(r8), :: rossby_radius ! Rossby radius [m]
+  real(r8) :: coriolis_f    ! coriolis parameter
+  real(r8) :: grid_length   ! effective local grid length (i.e. dx) [m]
+  real(r8) :: rossby_radius ! Rossby radius [m]
   !------------------------------------------------------------------------
   do i = 1,ncol
     ! Calculate coriolis parameter
-    coriolis_f = 2 * omega * sin(lat) ! latitude must be in radians
+    coriolis_f = 2 * omega * sin(lat(i)) ! latitude must be in radians
     ! Calculate Rossby Radius
-    rossby_radius = sqrt(gravit*rossby_depth)/abs(coriolis_f)
+    if (coriolis_f>0.0_r8) then
+      rossby_radius = sqrt(gravit*rossby_depth)/abs(coriolis_f)
+      rossby_radius = min(rossby_radius,max_rossby_radius)
+    else
+      rossby_radius = max_rossby_radius
+    end if
     ! Calculate grid length
     grid_length = sqrt( get_area_p(lchnk,i) * rearth**2 ) ! sqrt( steradians x m2 ) => m
     ! Calculate ratio of Rossby Radius to effective grid length
