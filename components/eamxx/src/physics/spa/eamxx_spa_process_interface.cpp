@@ -72,7 +72,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   };
   auto spa_data_file = m_params.get<std::string>("spa_data_file");
   auto spa_map_file  = m_params.get<std::string>("spa_remap_file","");
-  auto time_interpolation_method = m_params.get<std::string>("time_interpolation_method","yearly_periodic");
+  auto data_timeline_type = m_params.get<std::string>("data_timeline_type","yearly_periodic");
 
   // SPA doesn't really *need* pint, but DataInterpolation does. It's important to stress that
   // NO FIELD VALUES from p_int are accessed in the DataInterpolation we build, since we
@@ -87,7 +87,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   pint.allocate_view();
 
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
-  m_data_interpolation->setup_time_database({spa_data_file}, time_interpolation_method);
+  m_data_interpolation->setup_time_database({spa_data_file}, data_timeline_type);
   m_data_interpolation->create_horiz_remappers(spa_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData vremap_data;
   vremap_data.vr_type = DataInterpolation::Dynamic3DRef;

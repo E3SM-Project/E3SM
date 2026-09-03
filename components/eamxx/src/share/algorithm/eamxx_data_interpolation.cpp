@@ -260,16 +260,16 @@ init_time_interpolation (const util::TimeStamp& t0,
 
 void DataInterpolation::
 setup_time_database (const strvec_t& input_files,
-                    const std::string& time_interpolation_method,
+                    const std::string& data_timeline_type,
                     const util::TimeStamp& ts)
 {
-  if (time_interpolation_method == "yearly_periodic") {
+  if (data_timeline_type == "yearly_periodic") {
     setup_periodic_time_database(input_files, ts);
-  } else if (time_interpolation_method == "linear") {
+  } else if (data_timeline_type == "linear") {
     setup_linear_time_database(input_files, ts);
   } else {
-    EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " +
-                   time_interpolation_method +
+    EKAT_ERROR_MSG("Error! Invalid data_timeline_type: " +
+                   data_timeline_type +
                    ". Valid options are: yearly_periodic, linear.\n");
   }
 }

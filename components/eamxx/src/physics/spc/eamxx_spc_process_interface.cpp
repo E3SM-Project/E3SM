@@ -61,12 +61,12 @@ void SPC::initialize_impl (const RunType /* run_type */)
   }
   auto spc_data_file = m_params.get<std::string>("spc_data_file");
   auto spc_map_file  = m_params.get<std::string>("spc_remap_file","");
-  auto time_interpolation_method = m_params.get<std::string>("time_interpolation_method","yearly_periodic");
+  auto data_timeline_type = m_params.get<std::string>("data_timeline_type","yearly_periodic");
 
   auto pmid = get_field_in("p_mid");
   
   m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spc_fields);
-  m_data_interpolation->setup_time_database({spc_data_file}, time_interpolation_method);
+  m_data_interpolation->setup_time_database({spc_data_file}, data_timeline_type);
   m_data_interpolation->create_horiz_remappers(spc_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData vremap_data;
   vremap_data.vr_type = DataInterpolation::Dynamic3DRef;
