@@ -127,7 +127,7 @@ module gw_drag
   real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table [km]
   real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
 
-  logical  :: use_tau_limiter        ! switch to enable minimum limit on "gwut" values in GW calculations
+  logical  :: use_tau_limiter             ! switch to enable minimum limit on "gwut" values in GW calculations
   logical  :: use_gw_front_RR_scaling     ! switch to enable Rossby radius scaling for the frontal GW scheme
 
 !==========================================================================
@@ -654,8 +654,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use gw_front,   only: gw_cm_src, gw_rossby_radius_ratio
   use gw_convect, only: gw_beres_src
   use dycore,     only: dycore_is
-  use phys_grid,  only: get_rlat_all_p
-  use physconst,  only: gravit,rair
+  use phys_grid,  only: get_rlat_all_p, get_area_p
+  use physconst,  only: gravit,rair,omega
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -737,6 +737,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   real(r8), pointer :: frontga(:,:)
   real(r8) :: rossby_radius_ratio(state%ncol) ! Rossby radius ratio => Lr/(dx*nx)
   real(r8) :: effgw_cm_var(state%ncol) ! locally modified version of effgw_cm
+  real(r8) :: grid_area(state%ncol) ! grid cell area [steradians], for gw_rossby_radius_ratio
 
   ! Temperature change due to deep convection.
   real(r8), pointer, dimension(:,:) :: ttend_dp
@@ -861,12 +862,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         do_latitude_taper = .false.
 
         ! Solve for the drag profile with Beres source spectrum.
-        call gw_drag_prof(ncol, pgwv, src_level, tend_level, &
-             do_latitude_taper, use_tau_limiter,dt, &
+        call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_beres, c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke)
+             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke, &
+             use_tau_limiter=use_tau_limiter)
 
         !  add the diffusion coefficients
         do k = 0, pver
@@ -927,7 +928,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         if (use_gw_front_RR_scaling) then
           ! Calculate the effgw_cm as a function of the ratio between the
           ! Rossby radius and effective grid length of each column
-          call gw_rossby_radius_ratio(ncol, state1%lat(1:ncol),state1%lchnk,rossby_radius_ratio)
+          do i = 1, ncol
+            grid_area(i) = get_area_p(lchnk, i)
+          end do
+          call gw_rossby_radius_ratio(ncol, state1%lat(1:ncol), grid_area(1:ncol), &
+               rearth, omega, pi, rossby_radius_ratio)
           effgw_cm_var = effgw_cm
           where (rossby_radius_ratio > 1._r8)
             effgw_cm_var = effgw_cm/rossby_radius_ratio
@@ -937,12 +942,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         end if
 
         ! Solve for the drag profile with C&M source spectrum.
-        call gw_drag_prof(ncol, pgwv, src_level, tend_level, &
-             do_latitude_taper, use_tau_limiter, dt, &
+        call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_cm,    c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke, effgw_cm_var)
+             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke, effgw_cm_var, &
+             use_tau_limiter=use_tau_limiter)
 
         !  add the diffusion coefficients
         do k = 0, pver
@@ -992,12 +997,12 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
      do_latitude_taper = .false.
 
      ! Solve for the drag profile with orographic sources.
-     call gw_drag_prof(ncol, 0, src_level, tend_level, &
-          do_latitude_taper, use_tau_limiter, dt, &
+     call gw_drag_prof(ncol, 0, src_level, tend_level, do_latitude_taper, dt, &
           state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-          ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
+          ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke, &
+          use_tau_limiter=use_tau_limiter)
   endif
   !
   if ( use_od_ls .or. use_od_bl .or. use_od_ss) then
