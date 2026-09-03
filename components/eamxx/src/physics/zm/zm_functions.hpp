@@ -100,7 +100,7 @@ struct Functions {
     static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
     static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
     static inline constexpr Real ull_upper_launch_pressure = 600.0;    // upper search limit for unrestricted launch level (ULL)
-    static inline constexpr Real cape_threshold_new        = 0.;       // threshold value of cape for deep convection
+    static inline constexpr Real cape_threshold            = 0.;       // threshold value of cape for deep convection
     static inline constexpr Real dcape_threshold           = 0.;       // threshold value of dcape for deep convection
     static inline constexpr Real beta                      = 0;        // proportion of liquid water from layer below used in closure
     static inline constexpr Real mu_min                    = 0.02;     // minimum updraft mass flux threshold [mb/s]
@@ -166,7 +166,7 @@ struct Functions {
       trig_ull            = params.get<bool>("trig_ull",            true);
       clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
-      cape_threshold      = params.get<Real>("cape_threshold",      ZMC::cape_threshold_new);
+      cape_threshold      = params.get<Real>("cape_threshold",      ZMC::cape_threshold);
       dcape_threshold     = params.get<Real>("dcape_threshold",     ZMC::dcape_threshold);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
