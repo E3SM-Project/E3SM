@@ -929,8 +929,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           ! Rossby radius and effective grid length of each column
           call gw_rossby_radius_ratio(ncol, state1%lat(1:ncol),state1%lchnk,rossby_radius_ratio)
           effgw_cm_var = effgw_cm
-          where (rossby_radius_ratio>1)
-            effgw_cm_var = effgw_cm/rossby_radius_index
+          where (rossby_radius_ratio > 1._r8)
+            effgw_cm_var = effgw_cm/rossby_radius_ratio
           end where
         else
           effgw_cm_var(1:ncol) = effgw_cm
