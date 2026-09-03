@@ -614,8 +614,8 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
   real(r8), parameter :: gwut_magnitude_min = 1.e-15_r8
   !-----------------------------------------------------------------------
 
-  !  override effgw effciency value from namelist if effgw_in is present
-  if (present(effgw_in)) then
+  ! Override scalar effgw with a column-varying value, if provided
+  if (present(effgw_loc_in)) then
     effgw_col(1:ncol) = effgw_loc_in(1:ncol)
   else
     effgw_col(1:ncol) = effgw
