@@ -104,6 +104,15 @@ private:
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
 
+  // Shallow convection detrainment (not available in EAMxx yet)
+  view_2d dlfsh_;
+
+  // Shallow convection entrainment/(entrainment+detrainment) ratio
+  view_2d sh_e_ed_ratio_;
+
+  // Temporary view for pressure thickness in mb (converted from Pa)
+  view_2d dp_tmp_;
+
   int num_2d_scratch_ = 39;
   //
   view_2d scavimptblnum_;
@@ -138,6 +147,18 @@ private:
 
   // activation_fraction_in_cloud_conv_ is convection activation fraction
   Real activation_fraction_in_cloud_conv_ = 0.40;
+
+  // convproc_do_aer: Enable aerosol processing in convection
+  bool convproc_do_aer_ = false;
+
+  // convproc_do_gas: Enable gas processing in convection
+  bool convproc_do_gas_ = false;
+
+  // ConvProc configuration for species classification and resuspension mapping
+  mam4::ConvProc::Config convproc_config_;
+
+  // Species processing flags for convection (computed once based on species_class and runtime flags)
+  bool ptend_lq_[mam4::aero_model::pcnst];
 
 }; // class MAMWetscav
 
