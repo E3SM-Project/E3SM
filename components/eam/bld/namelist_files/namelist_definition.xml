@@ -1231,9 +1231,9 @@ Background source strength (used for waves from frontogenesis).
 Default: set by build-namelist.
 </entry>
 
-<entry id="use_gwut_min_limiter" type="logical" category="gw_drag"
+<entry id="use_tau_limiter" type="logical" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
-switch to enable minimum limit on "gwut" values in GW calculations.
+switch to enable minimum limit on tau values in GW calculations.
 </entry>
 
 <entry id="use_gw_front_RR_scaling" type="logical" category="gw_drag"

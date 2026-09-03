@@ -127,7 +127,7 @@ module gw_drag
   real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table [km]
   real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
 
-  logical  :: use_gwut_min_limiter        ! switch to enable minimum limit on "gwut" values in GW calculations
+  logical  :: use_tau_limiter        ! switch to enable minimum limit on "gwut" values in GW calculations
   logical  :: use_gw_front_RR_scaling     ! switch to enable Rossby radius scaling for the frontal GW scheme
 
 !==========================================================================
@@ -155,7 +155,7 @@ subroutine gw_drag_readnl(nlfile)
       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
       hdepth_scaling_factor, gw_convect_hdepth_min, &
       gw_convect_storm_speed_min, gw_convect_plev_src_wind, &
-      use_gw_convect_old, use_gwut_min_limiter, use_gw_front_RR_scaling
+      use_gw_convect_old, use_tau_limiter, use_gw_front_RR_scaling
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -190,7 +190,7 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(gw_convect_storm_speed_min, 1, mpir8,  0, mpicom)
   call mpibcast(gw_convect_plev_src_wind,   1, mpir8,  0, mpicom)
   call mpibcast(use_gw_convect_old,         1, mpilog, 0, mpicom)
-  call mpibcast(use_gwut_min_limiter,       1, mpilog, 0, mpicom)
+  call mpibcast(use_tau_limiter,            1, mpilog, 0, mpicom)
   call mpibcast(use_gw_front_RR_scaling,    1, mpilog, 0, mpicom)
 #endif
 
@@ -862,7 +862,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
         ! Solve for the drag profile with Beres source spectrum.
         call gw_drag_prof(ncol, pgwv, src_level, tend_level, &
-             do_latitude_taper, use_gwut_min_limiter,dt, &
+             do_latitude_taper, use_tau_limiter,dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_beres, c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
@@ -938,7 +938,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
         ! Solve for the drag profile with C&M source spectrum.
         call gw_drag_prof(ncol, pgwv, src_level, tend_level, &
-             do_latitude_taper, use_gwut_min_limiter, dt, &
+             do_latitude_taper, use_tau_limiter, dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_cm,    c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
@@ -993,7 +993,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
 
      ! Solve for the drag profile with orographic sources.
      call gw_drag_prof(ncol, 0, src_level, tend_level, &
-          do_latitude_taper, use_gwut_min_limiter, dt, &
+          do_latitude_taper, use_tau_limiter, dt, &
           state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &

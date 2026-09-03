@@ -554,7 +554,7 @@ end subroutine gwd_project_tau
 !==========================================================================
 
 subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
-     use_gwut_min_limiter, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, &
+     use_tau_limiter, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, &
      xv, yv, tau, gwut, utgw, vtgw, effgw_loc_in)
 
   !------------------------------Arguments--------------------------------
@@ -564,7 +564,7 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
   ! Whether or not to apply the polar taper.
   logical(btype), intent(in) :: do_taper
   ! flag to use minimum limit on gwut
-  logical(btype), intent(in) :: use_gwut_min_limiter
+  logical(btype), intent(in) :: use_tau_limiter
   ! Time step.
   real(r8), intent(in) :: dt
   ! Tendency efficiency.
@@ -611,7 +611,7 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
   ! Efficiency parameter for each column
   real(r8) :: effgw_col(ncol)
 
-  real(r8), parameter :: gwut_magnitude_min = 1.e-15_r8
+  real(r8), parameter :: ubtl_magnitude_min = 1.e-15_r8
   !-----------------------------------------------------------------------
 
   ! Override scalar effgw with a column-varying value, if provided
@@ -679,9 +679,9 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
         end if
 
         ! Protection on small gwut to prevent floating point issues
-        if (use_gwut_min_limiter) then
-          where( abs(gwut(:,k,l)) < gwut_magnitude_min )
-            gwut(:,k,l) = 0._r8
+        if (use_tau_limiter) then
+          where( abs(ubtl) < ubtl_magnitude_min )
+            ubtl = 0._r8
           end where
         end if
 
@@ -814,7 +814,7 @@ end subroutine gwd_precalc_rhoi
 !==========================================================================
 
 subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, &
-                        use_gwut_min_limiter, dt, &
+                        use_tau_limiter, dt, &
                         lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
                         piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
                         effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
@@ -846,7 +846,7 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, &
   ! Whether or not to apply the polar taper.
   logical(btype), intent(in) :: do_taper
   ! flag to use minimum limit on gwut
-  logical(btype), intent(in) :: use_gwut_min_limiter
+  logical(btype), intent(in) :: use_tau_limiter
   ! Time step.
   real(r8), intent(in) :: dt
 
@@ -930,7 +930,7 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, &
   ! Compute the tendencies from the stress divergence.
   !------------------------------------------------------------------------
   call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
-       use_gwut_min_limiter, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, &
+       use_tau_limiter, dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, &
        t, nm, xv, yv, tau, gwut, utgw, vtgw, effgw_loc_in)
 
   if (ngwv > 0) then
