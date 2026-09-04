@@ -1537,18 +1537,18 @@ contains
     call t_stopf('hbuf')
 
     ! ============================================================================
-    ! Compute water budget
+    ! Compute heat and water budgets (heat first, matching the coupler log)
     ! ============================================================================
     if (get_nstep()>0 .and. do_budgets) then
+       call HeatBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars)
+       call HeatBudget_Accum()
+       call HeatBudget_Print(budget_inst,  budget_daily,  budget_month,  &
+            budget_ann,  budget_ltann,  budget_ltend)
+
        call WaterBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars, &
             soilhydrology_vars)
        call WaterBudget_Accum()
        call WaterBudget_Print(budget_inst,  budget_daily,  budget_month,  &
-            budget_ann,  budget_ltann,  budget_ltend)
-
-       call HeatBudget_Run(bounds_proc, atm2lnd_vars, lnd2atm_vars)
-       call HeatBudget_Accum()
-       call HeatBudget_Print(budget_inst,  budget_daily,  budget_month,  &
             budget_ann,  budget_ltann,  budget_ltend)
 
        if (use_cn .and. do_budgets) then

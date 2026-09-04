@@ -25,6 +25,9 @@ module HeatBudgetMod
   use spmdMod           , only : masterproc
   use elm_varcon        , only : spval
   use ColumnDataType    , only : col_es, col_ef, col_ws
+  use ColumnType        , only : col_pp
+  use LandunitType      , only : lun_pp
+  use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_ef
   use GridcellDataType  , only : grc_es, grc_ef
   use timeinfoMod
@@ -93,44 +96,30 @@ module HeatBudgetMod
   real(r8) :: budg_fluxN(f_size, p_size) ! counter, valid only on root pe
 
   !--- G for the into-ground flux table ---
-  ! Rows that (up to errsoi_col's own tiny residual) sum to exactly the
-  ! rate of change of col_es%hc_soisno -- i.e. this table's *SUM*, unlike
-  ! NET HEAT FLUXES' *SUM*, is directly comparable to HEAT STATES'
-  ! *NET CHANGE*. Derived from the exact identity
-  !   d(cv*T)/dt = cv*(dT/dt) + T*(dcv/dt)
-  ! applied to SoilFluxesMod.F90's own errsoi_patch formula (whose
-  ! ΔT/fact terms are exactly the cv*(dT/dt) part, evaluated with cv held
-  ! at whatever mass was current for that call):
-  !   d(hc_soisno)/dt = eflx_soil_grnd - xmf - xmf_h2osfc
-  !        - frac_h2osfc*(t_h2osfc-t_h2osfc_bef)*(c_h2osfc/dtime)
-  !        + eflx_h2osfc_to_snow + eflx_building_heat
-  !        + tssbef*(cv-cv_bef)/dtime - errsoi_col
-  ! grnd and phase use only already-persistent veg_ef/col_ef/col_es/col_ws
-  ! fields. masschg (the T*(dcv/dt) term above) needed a small, purely
-  ! additive change to SoilTemperatureMod.F90/LakeTemperatureMod.F90: a new
-  ! col_es%cv_bef snapshot of layer heat capacity from the previous call,
-  ! and col_ef%eflx_hc_masschg computed from it and the existing tssbef.
-  ! It captures how hc_soisno changes purely from water mass changing
-  ! (infiltration, drainage, ET) while referenced to absolute Kelvin
-  ! temperature -- not itself a boundary flux, but the dominant missing
-  ! piece once phase is accounted for. LakeTemperatureMod folds its own
-  ! analogous correction into eflx_sh_tot instead of keeping it separate,
-  ! and masschg does not cover the lake-water layers themselves (cv_lake),
-  ! so g_phase and g_masschg both under-represent lake columns specifically
-  ! -- any residual for a lake-containing gridcell shows up against
-  ! errsoi_col, not as a bug in this table.
+  ! grnd and phase are the terms in SoilFluxesMod's native errsoi equation.
+  ! ELM does not have a native whole-land heat budget, and hc_soisno is a
+  ! diagnostic cv*T state rather than the enthalpy used by every solver.
+  ! stateadj is therefore diagnosed at gridcell level as
+  !
+  !   d(hc_soisno)/dt - grnd - phase
+  !
+  ! so that it explicitly exposes, and the table consistently accounts for,
+  ! heat-capacity changes, snow-layer creation/removal, the lake solver's
+  ! different reference state, and heat carried by hydrologic mass changes.
+  ! It is a state-coordinate adjustment, not an external boundary flux.
+  ! The independent numerical check remains col_ef%errsoi in HEAT STATES.
 
-  integer, parameter :: g_grnd    = 1
-  integer, parameter :: g_phase   = 2
-  integer, parameter :: g_masschg = 3
+  integer, parameter :: g_grnd     = 1
+  integer, parameter :: g_phase    = 2
+  integer, parameter :: g_stateadj = 3
 
-  integer, parameter, public :: g_size = g_masschg
+  integer, parameter, public :: g_size = g_stateadj
 
   character(len=12),parameter :: gname(g_size) = &
        (/&
        '        grnd', &
        '       phase', &
-       '     masschg'  &
+       '    stateadj'  &
        /)
 
   real(r8) :: budg_gfluxL(g_size, p_size) ! local sum, valid on all pes
@@ -139,13 +128,10 @@ module HeatBudgetMod
 
   !--- S for state ---
   ! Column heat content (col_es%hc_soisno = snow+soil+lake heat content,
-  ! MJ/m2) aggregated to the gridcell, split into two reservoirs the same
-  ! way col_es%hc_soi already splits it internally: "Soil" (hc_soi, j>=1
-  ! layers only) and "Snow+Lake" (hc_soisno-hc_soi, derived at print time --
-  ! snow layers for non-lake columns, snow-on-lake plus the lake water
-  ! itself for lake columns; the model has no field that separates those
-  ! two for lake columns specifically). Plus the soil/lake solver's own
-  ! column-level numerical-closure residual (col_ef%errsoi, W/m2),
+  ! MJ/m2) aggregated to the gridcell and split into Soil, Snow and Lake.
+  ! LakeTemperature records lake-water heat separately in hc_lake; snow is
+  ! then the exact remainder hc_soisno-hc_soi-hc_lake. Plus the soil/lake
+  ! solver's own column-level numerical-closure residual (col_ef%errsoi, W/m2),
   ! aggregated the same way. Canopy heat storage is not tracked anywhere
   ! in the model, so there is deliberately no canopy reservoir here
   ! (unlike a fabricated always-zero one).
@@ -154,7 +140,9 @@ module HeatBudgetMod
   integer, parameter :: s_h_end     = 2
   integer, parameter :: s_hsoi_beg  = 3
   integer, parameter :: s_hsoi_end  = 4
-  integer, parameter :: s_h_errsoi  = 5
+  integer, parameter :: s_hlake_beg = 5
+  integer, parameter :: s_hlake_end = 6
+  integer, parameter :: s_h_errsoi  = 7
 
   integer, parameter, public :: s_size = s_h_errsoi
 
@@ -164,6 +152,8 @@ module HeatBudgetMod
        'total_hc_end', &
        ' soil_hc_beg', &
        ' soil_hc_end', &
+       ' lake_hc_beg', &
+       ' lake_hc_end', &
        '  errsoi_col'  &
        /)
 
@@ -173,10 +163,10 @@ module HeatBudgetMod
   !----- formats -----
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f18.2)"
-  character(*),parameter :: HS0= "('    ',12x,3(a18),' | ',(a18))"
-  character(*),parameter :: HS = "('    ',a12,2(f18.2),18x,' | ',(f18.2))"
-  character(*),parameter :: HS2= "('    ',a12,18x,f18.2,18x,' | ',f18.2)"
-  character(*),parameter :: HS3= "('    ',a12,3(f18.2),' | ',(f18.2))"
+  character(*),parameter :: HS0= "('    ',12x,4(a18),' | ',a18)"
+  character(*),parameter :: HS = "('    ',a12,3(f18.2),18x,' | ',f18.2)"
+  character(*),parameter :: HS2= "('    ',a12,72x,' | ',f18.2)"
+  character(*),parameter :: HS3= "('    ',a12,4(f18.2),' | ',f18.2)"
 
 contains
 
@@ -343,11 +333,13 @@ contains
        if (update_state_beg) then
           nf = s_h_beg    ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
           nf = s_hsoi_beg ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_hlake_beg; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
        endif
 
        if (update_state_end) then
           nf = s_h_end    ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
           nf = s_hsoi_end ; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
+          nf = s_hlake_end; budg_stateL(nf,ip) = budg_stateL(nf, p_inst)
        endif
        nf = s_h_errsoi ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + budg_stateL(nf, p_inst)
     end do
@@ -390,6 +382,10 @@ contains
          grc_es%beg_hc_soi(bounds%begg:bounds%endg), &
          c2l_scale_type='unity', l2g_scale_type='unity')
 
+    call c2g(bounds, col_es%hc_lake(bounds%begc:bounds%endc), &
+         grc_es%beg_hc_lake(bounds%begg:bounds%endg), &
+         c2l_scale_type='unity', l2g_scale_type='unity')
+
   end subroutine HeatBudget_SetBeginningStates
 
   !-----------------------------------------------------------------------
@@ -407,12 +403,13 @@ contains
     ! fluxes are gathered) only reads the results, mirroring
     ! WaterBudget_Run's own read-only use of grc_ws%endwb.
     !
-    ! Also aggregate the two terms behind the "into ground" flux table:
+    ! Also form the three terms behind the "into ground" table:
     ! grc_ef%heat_into_grnd (p2g of veg_ef%eflx_soil_grnd) and
     ! grc_ef%heat_phase_corr (c2g of a per-column combination of the
     ! phase-change and h2osfc/building-heat terms from
     ! SoilFluxesMod.F90's own errsoi_patch formula -- see HeatBudget_Run's
-    ! header for the exact expression and its provenance).
+    ! header for the exact expression and its provenance), followed by the
+    ! gridcell-level state adjustment defined in the module header.
     !
     use subgridAveMod, only : c2g, p2g
     !
@@ -420,8 +417,9 @@ contains
     !
     type(bounds_type), intent(in) :: bounds
     !
-    integer  :: c
+    integer  :: c, l, p
     real(r8) :: phase_col(bounds%begc:bounds%endc)
+    real(r8) :: grnd_patch(bounds%begp:bounds%endp)
 
     call c2g(bounds, col_es%hc_soisno(bounds%begc:bounds%endc), &
          grc_es%end_hc(bounds%begg:bounds%endg), &
@@ -431,11 +429,25 @@ contains
          grc_es%end_hc_soi(bounds%begg:bounds%endg), &
          c2l_scale_type='unity', l2g_scale_type='unity')
 
+    call c2g(bounds, col_es%hc_lake(bounds%begc:bounds%endc), &
+         grc_es%end_hc_lake(bounds%begg:bounds%endg), &
+         c2l_scale_type='unity', l2g_scale_type='unity')
+
     call c2g(bounds, col_ef%errsoi(bounds%begc:bounds%endc), &
          grc_es%errsoi(bounds%begg:bounds%endg), &
          c2l_scale_type='unity', l2g_scale_type='unity')
 
-    call p2g(bounds, veg_ef%eflx_soil_grnd(bounds%begp:bounds%endp), &
+    do p = bounds%begp, bounds%endp
+       c = veg_pp%column(p)
+       l = col_pp%landunit(c)
+       if (lun_pp%urbpoi(l)) then
+          grnd_patch(p) = spval
+       else
+          grnd_patch(p) = veg_ef%eflx_soil_grnd(p)
+       end if
+    end do
+
+    call p2g(bounds, grnd_patch(bounds%begp:bounds%endp), &
          grc_ef%heat_into_grnd(bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type='unity', l2g_scale_type='unity')
 
@@ -451,7 +463,16 @@ contains
          )
 
       do c = bounds%begc, bounds%endc
-         if (xmf(c) == spval .or. xmf_h2osfc(c) == spval .or. h2osfc2snow(c) == spval &
+         l = col_pp%landunit(c)
+         if (lun_pp%urbpoi(l)) then
+            ! The printed state excludes urban walls, roofs and roads, so its
+            ! matching flux table must exclude those reservoirs as well.
+            phase_col(c) = spval
+         else if (col_pp%is_lake(c)) then
+            ! LakeTemperature's state is its native enthalpy (ncvts), whose
+            ! change is balanced directly by eflx_soil_grnd.
+            phase_col(c) = 0._r8
+         else if (xmf(c) == spval .or. xmf_h2osfc(c) == spval .or. h2osfc2snow(c) == spval &
               .or. bldg_heat(c) == spval .or. frac_h2osfc(c) == spval &
               .or. t_h2osfc(c) == spval .or. t_h2osfc_bef(c) == spval .or. c_h2osfc(c) == spval) then
             phase_col(c) = spval
@@ -468,9 +489,18 @@ contains
          grc_ef%heat_phase_corr(bounds%begg:bounds%endg), &
          c2l_scale_type='unity', l2g_scale_type='unity')
 
-    call c2g(bounds, col_ef%eflx_hc_masschg(bounds%begc:bounds%endc), &
-         grc_ef%heat_masschg(bounds%begg:bounds%endg), &
-         c2l_scale_type='unity', l2g_scale_type='unity')
+    ! Diagnose all non-temperature state changes after subgrid aggregation.
+    ! Doing this at gridcell level gives every term identical spatial
+    ! support and also handles snow layers that appear or disappear.
+    do c = bounds%begg, bounds%endg
+       if (grc_es%beg_hc(c) /= spval .and. grc_es%end_hc(c) /= spval &
+            .and. grc_ef%heat_into_grnd(c) /= spval .and. grc_ef%heat_phase_corr(c) /= spval) then
+          grc_ef%heat_state_adj(c) = (grc_es%end_hc(c)-grc_es%beg_hc(c))*1.e6_r8/dtime_mod &
+               - grc_ef%heat_into_grnd(c) - grc_ef%heat_phase_corr(c)
+       else
+          grc_ef%heat_state_adj(c) = spval
+       end if
+    end do
 
   end subroutine HeatBudget_SetEndingStates
 
@@ -485,12 +515,10 @@ contains
     ! Also accumulate the grid-level heat-content state (col_es%hc_soisno,
     ! now holding this step's ending value since SoilTemperature/
     ! SoilFluxes/LakeTemperature have already run) and the soil/lake
-    ! solver's own numerical-closure residual (col_ef%errsoi). Note that
-    ! (end_hc - beg_hc) - (net flux table * dt) is NOT a clean numerical
-    ! truncation term the way water's errh2o is: it also contains real,
-    ! currently-unmodeled advected heat carried by precipitation,
-    ! snowmelt, and runoff (see HEAT_BUDGET_PLAN.md, Phase 2 issue #3).
-    ! errsoi_col itself, by contrast, IS a validated, tightly-bounded
+    ! solver's own numerical-closure residual (col_ef%errsoi). stateadj in
+    ! the into-ground table contains state-coordinate and unmodeled
+    ! advective-heat effects; it must not be interpreted as a numerical
+    ! truncation error. errsoi_col, by contrast, IS a validated, tightly-bounded
     ! (<1e-5 W/m2, or the model aborts) internal closure term -- it is
     ! printed here for that reason, not as a stand-in for the former.
     !
@@ -518,10 +546,12 @@ contains
          end_hc_grc  => grc_es%end_hc                                     , &
          beg_hcsoi_grc => grc_es%beg_hc_soi                               , &
          end_hcsoi_grc => grc_es%end_hc_soi                               , &
+         beg_hclake_grc => grc_es%beg_hc_lake                             , &
+         end_hclake_grc => grc_es%end_hc_lake                             , &
          errsoi_grc  => grc_es%errsoi                                     , &
          grnd_grc    => grc_ef%heat_into_grnd                             , &
          phase_grc   => grc_ef%heat_phase_corr                            , &
-         masschg_grc => grc_ef%heat_masschg                                 &
+         stateadj_grc => grc_ef%heat_state_adj                               &
          )
 
       ip = p_inst
@@ -551,6 +581,10 @@ contains
             nf = s_hsoi_beg ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_hcsoi_grc(g)*af
             nf = s_hsoi_end ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_hcsoi_grc(g)*af
          end if
+         if (beg_hclake_grc(g) /= spval .and. end_hclake_grc(g) /= spval) then
+            nf = s_hlake_beg ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + beg_hclake_grc(g)*af
+            nf = s_hlake_end ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + end_hclake_grc(g)*af
+         end if
          if (errsoi_grc(g) /= spval) then
             nf = s_h_errsoi ; budg_stateL(nf,ip) = budg_stateL(nf,ip) + errsoi_grc(g)*af
          end if
@@ -561,8 +595,8 @@ contains
          if (phase_grc(g) /= spval) then
             nf = g_phase ; budg_gfluxL(nf,ip) = budg_gfluxL(nf,ip) + phase_grc(g)*af
          end if
-         if (masschg_grc(g) /= spval) then
-            nf = g_masschg ; budg_gfluxL(nf,ip) = budg_gfluxL(nf,ip) + masschg_grc(g)*af
+         if (stateadj_grc(g) /= spval) then
+            nf = g_stateadj ; budg_gfluxL(nf,ip) = budg_gfluxL(nf,ip) + stateadj_grc(g)*af
          end if
       end do
 
@@ -706,35 +740,41 @@ contains
                   sum(budg_gfluxGpr(:,ip)), sum(budg_gfluxG(:,ip))*area_normalization*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
              write(iulog,*)'  (integrated column is directly comparable to the *NET CHANGE* row of HEAT STATES below)'
+             write(iulog,*)'  (stateadj is a diagnosed heat-state adjustment, not an external boundary flux)'
+             write(iulog,*)'  (ground terms and heat states exclude urban roof, wall, and road reservoirs)'
 
              write(iulog,*)''
              write(iulog,*)'HEAT STATES (MJ/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
              write(iulog,HS0) &
                   '       Soil       ', &
-                  '     Snow+Lake    ', &
+                  '       Snow       ', &
+                  '       Lake       ', &
                   '   Grid-level Err ', &
                   '       TOTAL      '
-             write(iulog,'(71("-"),"|",20("-"))')
+             write(iulog,'(88("-"),"|",20("-"))')
              write(iulog,HS) '         beg', &
                   budg_stateG(s_hsoi_beg,ip)*state_conversion, &
-                  (budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip))*state_conversion, &
+                  (budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip) &
+                  -budg_stateG(s_hlake_beg,ip))*state_conversion, &
+                  budg_stateG(s_hlake_beg,ip)*state_conversion, &
                   budg_stateG(s_h_beg,ip)*state_conversion
              write(iulog,HS) '         end', &
                   budg_stateG(s_hsoi_end,ip)*state_conversion, &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip))*state_conversion, &
+                  (budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip) &
+                  -budg_stateG(s_hlake_end,ip))*state_conversion, &
+                  budg_stateG(s_hlake_end,ip)*state_conversion, &
                   budg_stateG(s_h_end,ip)*state_conversion
              write(iulog,HS3)'*NET CHANGE*', &
                   (budg_stateG(s_hsoi_end,ip)-budg_stateG(s_hsoi_beg,ip))*state_conversion, &
-                  ((budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip)) &
-                  -(budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip)))*state_conversion, &
+                  ((budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip)-budg_stateG(s_hlake_end,ip)) &
+                  -(budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip)-budg_stateG(s_hlake_beg,ip)))*state_conversion, &
+                  (budg_stateG(s_hlake_end,ip)-budg_stateG(s_hlake_beg,ip))*state_conversion, &
                   budg_stateG(s_h_errsoi,ip)*state_conversion/budg_fluxN(1,ip), &
                   (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion
-             write(iulog,'(71("-"),"|",20("-"))')
+             write(iulog,'(88("-"),"|",20("-"))')
              write(iulog,HS2)'   *SUM*    ', &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion &
-                  - budg_stateG(s_h_errsoi,ip)*state_conversion/budg_fluxN(1,ip), &
                   (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion
-             write(iulog,'(71("-"),"|",20("-"))')
+             write(iulog,'(88("-"),"|",20("-"))')
           end if
        end if
     end do
@@ -787,15 +827,15 @@ contains
          dim1name='heat_budg_flux', &
          long_name='heat_budg_fluxN', units='-', ncid=ncid)
 
-    call ncd_defvar(varname='heat_budg_stateG', xtype=ncd_double, &
+    call ncd_defvar(varname='heat_budg_stateG_v2', xtype=ncd_double, &
          dim1name='heat_budg_state', &
          long_name='heat_budg_stateG', units='MJ/m2 or W/m2', ncid=ncid)
 
-    call ncd_defvar(varname='heat_budg_gfluxG', xtype=ncd_double, &
+    call ncd_defvar(varname='heat_budg_gfluxG_v2', xtype=ncd_double, &
          dim1name='heat_budg_gflux', &
          long_name='heat_budg_gfluxG', units='W/m2', ncid=ncid)
 
-    call ncd_defvar(varname='heat_budg_gfluxN', xtype=ncd_double, &
+    call ncd_defvar(varname='heat_budg_gfluxN_v2', xtype=ncd_double, &
          dim1name='heat_budg_gflux', &
          long_name='heat_budg_gfluxN', units='-', ncid=ncid)
 
@@ -866,9 +906,9 @@ contains
 
     call ncd_io(flag=flag, varname='heat_budg_fluxG', data=budg_fluxG_1D, ncid=ncid)
     call ncd_io(flag=flag, varname='heat_budg_fluxN', data=budg_fluxN_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='heat_budg_stateG', data=budg_stateG_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='heat_budg_gfluxG', data=budg_gfluxG_1D, ncid=ncid)
-    call ncd_io(flag=flag, varname='heat_budg_gfluxN', data=budg_gfluxN_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='heat_budg_stateG_v2', data=budg_stateG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='heat_budg_gfluxG_v2', data=budg_gfluxG_1D, ncid=ncid)
+    call ncd_io(flag=flag, varname='heat_budg_gfluxN_v2', data=budg_gfluxN_1D, ncid=ncid)
 
   end subroutine HeatBudget_Restart_Write
 
@@ -893,10 +933,12 @@ contains
     integer  :: f, s, p, count
     logical  :: readvar_fluxG, readvar_fluxN, readvar_stateG, readvar_gfluxG, readvar_gfluxN
 
-    ! Every restart file that predates this change will lack these
-    ! variables; guard with readvar and zero-initialize the accumulators
-    ! rather than aborting or reading garbage, so restarting from an older
-    ! case works.
+    ! Every restart file that predates this diagnostic will lack these
+    ! variables. The v2 state and into-ground names also prevent a
+    ! prototype restart, whose state vector had a different shape and whose
+    ! third ground term had different semantics, from being misinterpreted.
+    ! Guard with readvar and zero-initialize missing accumulators so an old
+    ! restart remains usable.
     budg_fluxG_1D = 0._r8
     budg_fluxN_1D = 0._r8
     budg_stateG_1D = 0._r8
@@ -905,9 +947,9 @@ contains
 
     call ncd_io(flag=flag, varname='heat_budg_fluxG', data=budg_fluxG_1D, ncid=ncid, readvar=readvar_fluxG)
     call ncd_io(flag=flag, varname='heat_budg_fluxN', data=budg_fluxN_1D, ncid=ncid, readvar=readvar_fluxN)
-    call ncd_io(flag=flag, varname='heat_budg_stateG', data=budg_stateG_1D, ncid=ncid, readvar=readvar_stateG)
-    call ncd_io(flag=flag, varname='heat_budg_gfluxG', data=budg_gfluxG_1D, ncid=ncid, readvar=readvar_gfluxG)
-    call ncd_io(flag=flag, varname='heat_budg_gfluxN', data=budg_gfluxN_1D, ncid=ncid, readvar=readvar_gfluxN)
+    call ncd_io(flag=flag, varname='heat_budg_stateG_v2', data=budg_stateG_1D, ncid=ncid, readvar=readvar_stateG)
+    call ncd_io(flag=flag, varname='heat_budg_gfluxG_v2', data=budg_gfluxG_1D, ncid=ncid, readvar=readvar_gfluxG)
+    call ncd_io(flag=flag, varname='heat_budg_gfluxN_v2', data=budg_gfluxN_1D, ncid=ncid, readvar=readvar_gfluxN)
 
     if (.not. readvar_fluxG) budg_fluxG_1D = 0._r8
     if (.not. readvar_fluxN) budg_fluxN_1D = 0._r8

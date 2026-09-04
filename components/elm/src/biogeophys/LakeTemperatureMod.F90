@@ -245,8 +245,7 @@ contains
          t_lake          =>   col_es%t_lake          , & ! Output: [real(r8) (:,:) ]  col lake temperature (Kelvin)
          hc_soi          =>   col_es%hc_soi          , & ! Output: [real(r8) (:)   ]  soil heat content (MJ/m2)
          hc_soisno       =>   col_es%hc_soisno       , & ! Output: [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2)
-         cv_bef          =>   col_es%cv_bef          , & ! Output: [real(r8) (:,:) ]  layer heat capacity as of the previous call [J/(m2 K)]
-         eflx_hc_masschg =>   col_ef%eflx_hc_masschg , & ! Output: [real(r8) (:)   ]  heat-capacity-change term, snow/soil-under-lake layers only (W/m2)
+         hc_lake         =>   col_es%hc_lake         , & ! Output: [real(r8) (:)   ]  lake-water heat content (MJ/m2)
 
          beta            =>   lakestate_vars%betaprime_col         , & ! Output: [real(r8) (:)   ]  col effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
          lake_icefrac    =>   lakestate_vars%lake_icefrac_col      , & ! Output: [real(r8) (:,:) ]  col mass fraction of lake layer that is frozen
@@ -293,7 +292,7 @@ contains
        esum2(c) = 0._r8
        hc_soisno(c) = 0._r8
        hc_soi(c)    = 0._r8
-       eflx_hc_masschg(c) = 0._r8
+       hc_lake(c)   = 0._r8
        if (use_lch4) then
           jconvect(c) = 0
           jconvectbot(c) = nlevlak+1
@@ -997,6 +996,7 @@ contains
           fin(c) = fin(c) + phi(c,j)
           ! New for CLM 4
           hc_soisno(c) = hc_soisno(c) + cv_lake(c,j)*t_lake(c,j)/1.e6
+          hc_lake(c) = hc_lake(c) + cv_lake(c,j)*t_lake(c,j)/1.e6
        end do
     end do
 
@@ -1013,23 +1013,10 @@ contains
              end if
              hc_soisno(c) = hc_soisno(c) + cv(c,j)*t_soisno(c,j)/1.e6
              if (j >= 1) hc_soi(c) = hc_soi(c) + cv(c,j)*t_soisno(c,j)/1.e6
-             ! Heat-capacity-change term for the snow-on-lake/soil-under-lake
-             ! layers, mirroring SoilTemperatureMod.F90's identical addition;
-             ! t_soisno_bef (captured above, before this call's own solve)
-             ! plays the same role tssbef plays there. cv_bef is shared with
-             ! the non-lake path and starts at spval (see ColumnDataType.F90),
-             ! so this is skipped on the first call after cold start or a
-             ! pre-existing restart.
-             if (cv_bef(c,j) /= spval) then
-                eflx_hc_masschg(c) = eflx_hc_masschg(c) &
-                     + t_soisno_bef(c,j)*(cv(c,j)-cv_bef(c,j))/dtime
-             end if
-             cv_bef(c,j) = cv(c,j)
           end if
           if (j == 1) fin(c) = fin(c) + phi_soil(c)
        end do
     end do
-
 
     ! Check energy conservation.
     do fp = 1, num_lakep

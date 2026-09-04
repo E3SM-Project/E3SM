@@ -89,7 +89,7 @@ module ColumnDataType
     ! heat content variables (diagnostic)
     real(r8), pointer :: hc_soi        (:)   => null() ! soil heat content (MJ/m2)
     real(r8), pointer :: hc_soisno     (:)   => null() ! soil plus snow heat content (MJ/m2)
-    real(r8), pointer :: cv_bef        (:,:) => null() ! layer heat capacity as of the previous call to SoilTemperature (J/(m2 K)) (-nlevsno+1:nlevgrnd)
+    real(r8), pointer :: hc_lake       (:)   => null() ! lake-water heat content (MJ/m2; zero for non-lake columns)
     ! other quantities related to energy state
     real(r8), pointer :: emg           (:)   => null() ! ground emissivity (unitless)
     real(r8), pointer :: fact          (:,:) => null() ! factors used in computing tridiagonal matrix
@@ -440,7 +440,6 @@ module ColumnDataType
     real(r8), pointer :: htvp                    (:)   => null() ! latent heat of vapor of water (or sublimation) [j/kg]
     real(r8), pointer :: xmf                     (:)   => null() ! total latent heat of phase change of ground water
     real(r8), pointer :: xmf_h2osfc              (:)   => null() ! latent heat of phase change of surface water
-    real(r8), pointer :: eflx_hc_masschg         (:)   => null() ! heat-capacity-change term, tssbef*(cv-cv_bef)/dtime (W/m2)
     integer , pointer :: imelt                   (:,:) => null() ! flag for melting (=1), freezing (=2), Not=0 (-nlevsno+1:nlevgrnd)
     ! for couplig with pflotran
     real(r8), pointer :: eflx_soil_grnd          (:)   => null() ! integrated soil ground heat flux (W/m2)  [+ = into ground]
@@ -1141,7 +1140,7 @@ contains
     allocate(this%thv              (begc:endc))                     ; this%thv                (:)   = spval
     allocate(this%hc_soi           (begc:endc))                     ; this%hc_soi             (:)   = spval
     allocate(this%hc_soisno        (begc:endc))                     ; this%hc_soisno          (:)   = spval
-    allocate(this%cv_bef           (begc:endc,-nlevsno+1:nlevgrnd)) ; this%cv_bef             (:,:) = spval
+    allocate(this%hc_lake          (begc:endc))                     ; this%hc_lake            (:)   = spval
     allocate(this%emg              (begc:endc))                     ; this%emg                (:)   = spval
     allocate(this%fact             (begc:endc, -nlevsno+1:nlevgrnd)); this%fact               (:,:) = spval
     allocate(this%c_h2osfc         (begc:endc))                     ; this%c_h2osfc           (:)   = spval
@@ -5660,7 +5659,6 @@ contains
     allocate(this%htvp                 (begc:endc))              ; this%htvp                 (:)   = spval
     allocate(this%xmf                  (begc:endc))              ; this%xmf                  (:)   = spval
     allocate(this%xmf_h2osfc           (begc:endc))              ; this%xmf_h2osfc           (:)   = spval
-    allocate(this%eflx_hc_masschg      (begc:endc))              ; this%eflx_hc_masschg      (:)   = spval
     allocate(this%imelt                (begc:endc,-nlevsno+1:nlevgrnd))  ; this%imelt        (:,:) = huge(1)
     allocate(this%eflx_soil_grnd       (begc:endc))              ; this%eflx_soil_grnd       (:)   = spval
     allocate(this%eflx_rnet_soil       (begc:endc))              ; this%eflx_rnet_soil       (:)   = spval
