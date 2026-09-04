@@ -320,6 +320,8 @@ contains
     integer  :: itstoma                              ! counter for stoma iteration [-]
     logical :: converge_stoma ! logical switch that flags if the tveg loop converged
     logical :: converge_tveg  ! logical swithc that flags if the stomatal loop converged
+    logical ::	do_single_loop	! Set this true to reproduce results before
+                                ! refactoring the patch-loops
     real(r8) :: del_gs        ! The maximum difference in stomatal conductance
                               ! from current iteration to previous, between sunlit and
                               ! shaded portions of the leaves [m/s]
@@ -339,9 +341,6 @@ contains
     real(r8),parameter :: max_reldel_gs = 0.02
 
     integer, parameter  :: itmax_stomata = 10
-
-    logical, parameter :: do_single_loop = .false.  ! Set this true to reproduce results before
-                                                    ! refactoring the patch-loops
     !------------------------------------------------------------------------------
 
     associate(                                                               &
@@ -488,6 +487,12 @@ contains
       dtime = dtime_mod
       !yr = year_curr; mon = mon_curr; day = day_curr;
       time = secs_curr;
+
+      if(use_fates)then
+         do_single_loop = .false.
+      else
+         do_single_loop = .true.
+      end if
 
       irrig_nsteps_per_day = ((irrig_length + (dtime - 1))/dtime)  ! round up
       ! First - set the following values over points where frac vegetation covered by snow is zero
