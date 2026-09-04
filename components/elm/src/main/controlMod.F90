@@ -47,6 +47,7 @@ module controlMod
   use elm_varpar              , only: elmfates_carbon_only
   use elm_varpar              , only: elmfates_cnp
   use elm_varctl, only: nu_com, use_dynroot, use_fan, fan_mode, fan_to_bgc_veg, &
+                        use_gcam_landuse, &
                         use_var_soil_thick, use_lake_wat_storage, &
                         forest_fert_exp, ECA_Pconst_RGspin, NFIX_PTASE_plant, &
                         use_pheno_flux_limiter, startdate_add_temperature, &
