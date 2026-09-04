@@ -12,7 +12,7 @@
         <link rel="prev" href="../eamxx_cases/">
       
       
-        <link rel="next" href="../nudging/">
+        <link rel="next" href="../shoc_homme_3d_turbulence/">
       
       
         
@@ -1648,6 +1648,8 @@
       
         
       
+        
+      
     
     
     
@@ -1913,6 +1915,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shoc_homme_3d_turbulence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SHOC-HOMME 3D turbulence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -2203,7 +2233,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_13" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_2_14" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -2225,14 +2255,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_3_2_13" id="__nav_3_3_2_13_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_3_2_14" id="__nav_3_3_2_14_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_2_13">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_3_2_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_2_14">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3603,6 +3633,8 @@
       
         
       
+        
+      
     
     
     
@@ -3651,6 +3683,34 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../technical/physics/shoc_3d_turbulence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SHOC-HOMME 3D turbulence coupling
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     
     
       
@@ -3674,10 +3734,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4_2_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3_4_2_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_3_4_2_1" id="__nav_3_3_4_2_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_3_4_2_2" id="__nav_3_3_4_2_2_label" tabindex="0">
             
   
   
@@ -3695,8 +3755,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_4_2_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_3_4_2_1">
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_3_4_2_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3_4_2_2">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -5182,8 +5242,10 @@ We can do that by using the <code>--grep</code> flag:</p>
 <div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"> </span>sub
 <span class="w">    </span>iop_options::iop_dosubsidence:<span class="w"> </span><span class="nb">false</span>
 <span class="w">    </span>ctl_nl::hypervis_subcycle:<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span>ctl_nl::horiz_turb_subcycle:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>ctl_nl::hypervis_subcycle_tom:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>ctl_nl::hypervis_subcycle_q:<span class="w"> </span><span class="m">6</span>
+<span class="w">    </span>ctl_nl::horiz_turb_subcycle_q:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>atmosphere_processes::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>sc_import::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
 <span class="w">    </span>homme::number_of_subcycles:<span class="w"> </span><span class="m">1</span>
@@ -5286,6 +5348,8 @@ $<span class="w"> </span>./atmquery<span class="w"> </span>--grep<span class="w"
 <span class="w">    </span>rrtmgp::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 <span class="w">    </span>sc_export::number_of_subcycles:<span class="w"> </span><span class="m">3</span>
 </code></pre></div>
+<p>For the SHOC-HOMME 3D turbulence option and its user-facing parameters, see
+<a href="../shoc_homme_3d_turbulence/">SHOC-HOMME 3D Turbulence</a>.</p>
 <p>In addition, "ANY" can be used in a "scoped" string, to limit the set of matches:</p>
 <div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmchange<span class="w"> </span>mac_aero_mic::ANY::number_of_subcycles<span class="o">=</span><span class="m">1</span>
 Regenerating<span class="w"> </span>/path/to/namelist_eamxx.xml.<span class="w"> </span>Manual<span class="w"> </span>edits<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>lost.
