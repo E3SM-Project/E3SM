@@ -1255,7 +1255,7 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
         thicknessData[iV] = eps;
         elevationData[iV] = bedTopographyData[iV]+eps;
 
-        // Now check if all dynamic ice neighbors have higher lower surface elevation
+        // Now check if all dynamic ice neighbors have lower surface elevation
         double highestNeighboringElev = -1e10;
         int nEdg = nEdgesOnCells_F[fCell];
         int neighbor_cell = -1;
@@ -1274,7 +1274,7 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
             
           int c = (fCellToVertex[c0] == iV) ? c1 : c0;
           if((cellsMask_F[c] & dynamic_ice_bit_value)) {
-            double elev = thickness_F[c] + lowerSurface_F[c];
+            double elev = (thickness_F[c] + lowerSurface_F[c]) / unit_length;
             if (elev > highestNeighboringElev) {
               highestNeighboringElev = elev;
               neighbor_cell = c;
@@ -1298,13 +1298,22 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
     int iv = it->first;
     int ic = it->second;
 
-    double bed = bedTopographyData[iv];
-    double elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length;
-    double thick = thickness_F[ic] / unit_length;
+    double bed = bedTopographyData[iv]; // bed here
+    double elev = -1e10;
+    double thick = eps;
 
-    //assume elevation as given and adjust thickness to avoid unphysical situations
-    thick = std::min(thick, elev - bed);
-    thick = std::min(thick, rho_ocean/(rho_ocean-rho_ice)*elev);
+    // check if loan cell is grounded or floating
+    if (elevationData[ic] > (1.0 - rho_ice / rho_ocean) * thicknessData[iv]) {
+       // grounded loan cell: assume the extension terminates at a thin ice shelf;
+       //    this extension location would be where the glacier terminates at the ocean
+       thick = eps;
+       elev = std::max(bed+thick, (1.0 - rho_ice/rho_ocean)*thick);
+    } else {
+       // floating loan cell: assume this extension has the same elevation, like a flat ice shelf
+       elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length; // elev from dynamic neighbor
+       // assume elevation as given and adjust thickness if bed is too shallow here
+       thick = std::min(rho_ocean/(rho_ocean-rho_ice)*elev, elev - bed);
+    }
 
     if(thick < eps) { //thickness needs to be greater than eps
       thicknessData[iv] = eps;
