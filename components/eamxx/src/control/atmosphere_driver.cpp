@@ -417,9 +417,9 @@ void AtmosphereDriver::reset_accumulated_fields ()
     }
 
     auto accum_group = m_field_mgr->get_field_group("ACCUMULATED", grid_name);
-    for (auto f_it : accum_group.m_individual_fields) {
-      auto& track = f_it.second->get_header().get_tracking();
-      f_it.second->deep_copy(zero);
+    for (auto f_it : accum_group.individual_fields()) {
+      auto& track = f_it.second.get_header().get_tracking();
+      f_it.second.deep_copy(zero);
       track.set_accum_start_time(m_current_ts);
     }
   }
@@ -622,9 +622,8 @@ void AtmosphereDriver::create_fields()
     // Internal fields have their group names set by the processes that create them.
     // Hence, simply add them to all the groups they are marked as part of
     const auto& ftrack = f.get_header().get_tracking();
-    const auto& fid    = f.get_header().get_identifier();
     for (const auto& gn : ftrack.get_groups_names()) {
-      m_field_mgr->add_to_group(fid, gn);
+      m_field_mgr->add_to_group(f.name(), gn);
     }
   }
 
@@ -637,14 +636,19 @@ void AtmosphereDriver::create_fields()
     return name=="phis" or name=="sgh" or name=="sgh30";
   };
 
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    m_field_mgr->register_group(GroupRequest("RESTART",gn));
+    m_field_mgr->register_group(GroupRequest("STARTUP",gn));
+    m_field_mgr->register_group(GroupRequest("TOPOGRAPHY",gn));
+  }
+
   auto set_groups = [&](const Field& f) {
-    const auto& fid = f.get_header().get_identifier();
     const auto& fgroups = f.get_header().get_tracking().get_groups_names();
     if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      m_field_mgr->add_to_group(fid, "RESTART");
-      m_field_mgr->add_to_group(fid, "STARTUP");
-      if (is_topography_field(fid.name())) {
-        m_field_mgr->add_to_group(fid, "TOPOGRAPHY");
+      m_field_mgr->add_to_group(f.name(), "RESTART");
+      m_field_mgr->add_to_group(f.name(), "STARTUP");
+      if (is_topography_field(f.name())) {
+        m_field_mgr->add_to_group(f.name(), "TOPOGRAPHY");
       }
     }
   };
@@ -655,11 +659,11 @@ void AtmosphereDriver::create_fields()
 
   // Process input groups
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field)
-      set_groups(*g.m_monolithic_field);
+    if (g.has_monolithic_field())
+      set_groups(g.monolithic_field());
     else
-      for (const auto& it : g.m_individual_fields)
-        set_groups(*it.second);
+      for (const auto& it : g.individual_fields())
+        set_groups(it.second);
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -978,17 +982,17 @@ void AtmosphereDriver::restart_model ()
       // No field needs to be restarted on this grid.
       continue;
     }
-    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
+    auto restart_group = m_field_mgr->get_field_group("RESTART", gn);
     std::vector<Field> fields;
-    for (const auto& fn : restart_fnames) {
+    for (const auto& it : restart_group.individual_fields()) {
       // If the field has a parent, and the parent is also in the RESTART group,
       // then skip it, since restarting the parent will restart the child too
-      auto f = m_field_mgr->get_field(fn,gn);
+      const auto& f = it.second;
       auto p = f.get_header().get_parent();
       if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
         continue;
       }
-      fields.push_back(m_field_mgr->get_field(fn,gn));
+      fields.push_back(f);
     }
     auto grid = m_grids_manager->get_grid(gn);
     read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
@@ -1209,15 +1213,15 @@ void AtmosphereDriver::set_initial_conditions ()
   // ...then the input groups
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      const auto& mf = *g.m_monolithic_field;
+    if (g.has_monolithic_field()) {
+      const auto& mf = g.monolithic_field();
       const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
       if (not ekat::contains(mfgroups, "ACCUMULATED")) {
         process_ic_field(mf);
       }
     }
-    for (auto it : g.m_individual_fields) {
-      const auto& f = *it.second;
+    for (auto it : g.individual_fields()) {
+      const auto& f = it.second;
       const auto& fgroups = f.get_header().get_tracking().get_groups_names();
       if (not ekat::contains(fgroups, "ACCUMULATED")) {
         process_ic_field(f);
@@ -1339,8 +1343,8 @@ void AtmosphereDriver::set_initial_conditions ()
   // is valid (all entries have been inited). Let's fix that.
   m_atm_logger->debug("    [EAMxx] Processing subfields ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      auto& track = g.m_monolithic_field->get_header().get_tracking();
+    if (g.has_monolithic_field()) {
+      auto& track = g.monolithic_field().get_header_ptr()->get_tracking();
       if (not track.get_time_stamp().is_valid()) {
         // The groups monolithic field has not been inited. Check if all the subfields
         // have been inited. If so, init the timestamp of the monlithic field too.
@@ -1725,8 +1729,8 @@ void AtmosphereDriver::run (const int dt) {
     }
 
     auto rescale_group = m_field_mgr->get_field_group("DIVIDE_BY_DT", gname);
-    for (auto f_it : rescale_group.m_individual_fields) {
-      f_it.second->scale(Real(1) / dt);
+    for (auto f_it : rescale_group.individual_fields()) {
+      f_it.second.scale(Real(1) / dt);
     }
   }
 

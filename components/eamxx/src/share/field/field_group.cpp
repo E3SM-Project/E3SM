@@ -2,49 +2,90 @@
 
 namespace scream {
 
-FieldGroup::FieldGroup (const std::string& name)
- : m_info (new FieldGroupInfo(name))
+FieldGroup::FieldGroup (const std::string& name, const std::string& grid_name)
+ : m_name (name)
+ , m_grid_name(grid_name)
 {
-  // Nothing to do here
-}
-
-FieldGroup::
-FieldGroup (const FieldGroupInfo& info)
- : m_info (new FieldGroupInfo(info))
-{
-  // Nothing to do here
+  m_individual_fields = std::make_shared<std::map<std::string,Field>>();
+  m_monolithic_field  = std::make_shared<Field>();
 }
 
 FieldGroup
-FieldGroup::get_const () const {
-  FieldGroup gr(*m_info);
-  if (m_info->m_monolithic_allocation) {
-    gr.m_monolithic_field = std::make_shared<Field>(m_monolithic_field->get_const());
-  }
-  for (const auto& it : m_individual_fields) {
-    gr.m_individual_fields[it.first] = std::make_shared<Field>(it.second->get_const());
-  }
-  return gr;
+FieldGroup::get_const () const
+{
+  FieldGroup cgroup(m_name,m_grid_name);
+  cgroup.m_monolithic_field = std::make_shared<Field>(m_monolithic_field->get_const());
+  for (auto [fn,f] : *m_individual_fields)
+    (*cgroup.m_individual_fields)[fn] = f.get_const();
+
+  return cgroup;
 }
 
-const std::string& FieldGroup::grid_name () const {
-  EKAT_REQUIRE_MSG(m_individual_fields.size()>0 || m_monolithic_field,
-      "Error! Cannot establish the group grid name until fields have been added.\n");
+void FieldGroup::
+set_field (const Field& f)
+{
+  EKAT_REQUIRE_MSG (m_individual_fields->count(f.name())==0,
+      "[FieldGroup] Error! Cannot reset an individual field once set.\n"
+      " - group name: " + m_name + "\n"
+      " - grid name : " + m_grid_name + "\n"
+      " - field name: " + f.name() + "\n");
 
-  if (m_monolithic_field) {
-    const auto& id = m_monolithic_field->get_header().get_identifier();
-    return id.get_grid_name();
-  } else {
-    const auto& id = m_individual_fields.begin()->second->get_header().get_identifier();
-    return id.get_grid_name();
+  if (has_monolithic_field()) {
+    // Run additional checks, to ensure the field is TRULY a subfield of the monolithic one
+    auto fp = f.get_header().get_parent();
+    EKAT_REQUIRE_MSG (fp!=nullptr,
+        "[FieldGroup::set_field] Error! Input field has no parent, but the grup stores a monolithic_field.\n"
+        " - group name: " + m_name + "\n"
+        " - grid name : " + m_grid_name + "\n"
+        " - field name: " + f.name() + "\n");
+
+    auto mp = m_monolithic_field->get_header().get_parent();
+    if (mp==nullptr)
+      EKAT_REQUIRE_MSG (fp->get_identifier().name()==m_monolithic_field->name(),
+          "[FieldGroup::set_field] Error! Input field does not seem to be a subfield of the monolithic field.\n"
+          " - group name: " + m_name + "\n"
+          " - grid name : " + m_grid_name + "\n"
+          " - field name: " + f.name() + "\n");
+    else {
+      // Same parent field
+      EKAT_REQUIRE_MSG (fp==mp,
+          "[FieldGroup::set_field] Error! Input field does not seem to be a subfield of the monolithic field.\n"
+          " - group name: " + m_name + "\n"
+          " - grid name : " + m_grid_name + "\n"
+          " - field name: " + f.name() + "\n");
+
+      // The slice idx of f is in [m_beg,m_end] slice idx range
+      auto m_beg = m_monolithic_field->get_header().get_alloc_properties().get_subview_info().slice_idx;
+      auto m_end = m_monolithic_field->get_header().get_alloc_properties().get_subview_info().slice_idx_end;
+      auto f_idx = f.get_header().get_alloc_properties().get_subview_info().slice_idx;
+
+      EKAT_REQUIRE_MSG (m_beg<=f_idx and f_idx<m_end,
+          "[FieldGroup::set_field] Error! Input field does not seem to be a subfield of the monolithic field.\n"
+          " - group name: " + m_name + "\n"
+          " - grid name : " + m_grid_name + "\n"
+          " - field name: " + f.name() + "\n");
+    }
   }
+
+  EKAT_REQUIRE_MSG (f.is_allocated(),
+      "[FieldGroup::set_field] Error! Input field has not yet been allocated.\n"
+      " - group name: " + m_name + "\n"
+      " - grid name : " + m_grid_name + "\n"
+      " - field name: " + f.name() + "\n");
+
+  (*m_individual_fields)[f.name()] = f;
 }
 
-void FieldGroup::copy_fields (const FieldGroup& src) {
-  m_monolithic_field = src.m_monolithic_field;
-  for (auto it : src.m_individual_fields) {
-    m_individual_fields[it.first] = it.second;
-  }
+void FieldGroup::
+set_monolithic_field (const Field& f)
+{
+  EKAT_REQUIRE_MSG (not m_monolithic_field->is_allocated(),
+      "[FieldGroup] Error! Cannot reset the monolithic field once set.\n"
+      " - group name: " + m_name + "\n"
+      " - grid name : " + m_grid_name + "\n"
+      " - field name: " + f.name() + "\n");
+
+  *m_monolithic_field = f;
 }
 
 } // namespace scream
