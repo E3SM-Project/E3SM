@@ -155,6 +155,9 @@ private:
   // convproc_do_gas: Enable gas processing in convection
   bool convproc_do_gas_ = false;
 
+  // do_convproc: Combined flag for any convection processing
+  bool do_convproc_ = false;
+
   // ConvProc configuration for species classification and resuspension mapping
   mam4::ConvProc::Config convproc_config_;
 
