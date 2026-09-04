@@ -27,6 +27,8 @@ class MAMWetscav : public MAMGenericInterface
   using view_2d      = typename KT::template view_2d<Real>;
   using view_2d_host = typename KT::template view_2d<Real>::host_mirror_type;
   using int_view_2d  = typename KT::template view_2d<int>;
+  using const_view_1d = typename KT::template view_1d<const Real>;
+  using const_view_2d = typename KT::template view_2d<const Real>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
