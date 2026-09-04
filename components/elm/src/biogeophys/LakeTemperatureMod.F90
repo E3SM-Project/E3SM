@@ -114,7 +114,7 @@ contains
     use TridiagonalMod     , only : Tridiagonal
     use elm_varpar         , only : nlevlak, nlevgrnd, nlevsno
     use elm_varcon         , only : hfus, cpliq, cpice, tkwat, tkice, denice
-    use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
+    use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac, spval
     use elm_varctl         , only : iulog, use_lch4
     !
     ! !ARGUMENTS:
@@ -245,6 +245,7 @@ contains
          t_lake          =>   col_es%t_lake          , & ! Output: [real(r8) (:,:) ]  col lake temperature (Kelvin)
          hc_soi          =>   col_es%hc_soi          , & ! Output: [real(r8) (:)   ]  soil heat content (MJ/m2)
          hc_soisno       =>   col_es%hc_soisno       , & ! Output: [real(r8) (:)   ]  soil plus snow plus lake heat content (MJ/m2)
+         hc_lake         =>   col_es%hc_lake         , & ! Output: [real(r8) (:)   ]  lake-water heat content (MJ/m2)
 
          beta            =>   lakestate_vars%betaprime_col         , & ! Output: [real(r8) (:)   ]  col effective beta: sabg_lyr(p,jtop) for snow layers, beta otherwise
          lake_icefrac    =>   lakestate_vars%lake_icefrac_col      , & ! Output: [real(r8) (:,:) ]  col mass fraction of lake layer that is frozen
@@ -291,6 +292,7 @@ contains
        esum2(c) = 0._r8
        hc_soisno(c) = 0._r8
        hc_soi(c)    = 0._r8
+       hc_lake(c)   = 0._r8
        if (use_lch4) then
           jconvect(c) = 0
           jconvectbot(c) = nlevlak+1
@@ -994,6 +996,7 @@ contains
           fin(c) = fin(c) + phi(c,j)
           ! New for CLM 4
           hc_soisno(c) = hc_soisno(c) + cv_lake(c,j)*t_lake(c,j)/1.e6
+          hc_lake(c) = hc_lake(c) + cv_lake(c,j)*t_lake(c,j)/1.e6
        end do
     end do
 
@@ -1014,7 +1017,6 @@ contains
           if (j == 1) fin(c) = fin(c) + phi_soil(c)
        end do
     end do
-
 
     ! Check energy conservation.
     do fp = 1, num_lakep
