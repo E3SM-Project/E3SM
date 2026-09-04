@@ -281,17 +281,14 @@ void Functions<S,D>::zm_conv_main(
 
   //============================================================================
   // Host: Determine active columns
-  // cape_threshold_loc depends only on runtime_opt / is_first_step (same for all cols)
   //============================================================================
-  const Real cape_threshold_loc = (runtime_opt.trig_dcape && !is_first_step)
-                                    ? ZMC::cape_threshold_new
-                                    : ZMC::cape_threshold_old;
+  const Real cape_threshold_loc = runtime_opt.cape_threshold;
   const bool use_dcape_trigger = runtime_opt.trig_dcape && !is_first_step;
   int inactive_cnt = 0;
   Kokkos::parallel_reduce("zm_conv_main_active", RangePolicy(0, ncol),
                           KOKKOS_LAMBDA(const Int i, Int& local_inactive) {
       const bool is_active = use_dcape_trigger
-        ? (cape(i) > cape_threshold_loc && dcape(i) > ZMC::dcape_threshold)
+        ? (cape(i) > cape_threshold_loc && dcape(i) > runtime_opt.dcape_threshold)
         : (cape(i) > cape_threshold_loc);
       active(i) = is_active ? 1 : 0;
       if (!is_active) {
