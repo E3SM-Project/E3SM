@@ -272,7 +272,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
       <apply_detr_tend    type="logical" doc="ZM flag for cld liq/ice detrainment tend"     >true</apply_detr_tend>
-      <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >false</use_fortran_bridge>
       <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
       <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>
       <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >false</clos_dyn_adj>
@@ -308,9 +307,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     
     <!-- Gravity Wave Drag -->
     <gw inherit="atm_proc_base">
-      <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
+      <use_gw_orographic type="logical" doc="Flag for orographic GWD">true</use_gw_orographic>
+      <use_gw_convect type="logical" doc="Flag for convective GWD">true</use_gw_convect>
       <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
-      <use_gw_orographic type="logical" doc="Flag for orographic GWD">false</use_gw_orographic>
       <gw_drag_file type="string" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
       <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
@@ -476,8 +475,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
       <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
 
-      <marine_organics_file type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20241030.nc</marine_organics_file>
-      <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20241030.nc</marine_organics_file>
+      <marine_organics_file type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20260807.nc</marine_organics_file>
+      <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20260807.nc</marine_organics_file>
 
       <!-- Mapping Files for finer resolutions -->
       <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same.">none</srf_remap_file>

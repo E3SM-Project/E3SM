@@ -537,6 +537,15 @@ endif()
 # scripts work correctly. We are not really interested in building/testing SCREAM.
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
 
+  if (NOT TARGET dexpr)
+    set (DEXPR_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set (DEXPR_ENABLE_TOOL  OFF CACHE BOOL "" FORCE)
+    set (DEXPR_WERROR       OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../share/dexpr
+                     ${CMAKE_BINARY_DIR}/externals/dexpr)
+    set_target_properties(dexpr PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  endif()
+
   add_subdirectory(tpls)
   add_subdirectory(src)
 

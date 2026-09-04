@@ -7,9 +7,6 @@
 // For MAM4 aerosol configuration
 #include <physics/mam/mam_coupling.hpp>
 
-// For reading marine organics file
-#include <physics/mam/readfiles/marine_organics.hpp>
-
 #include "share/field/field_reader.hpp"
 
 // For declaring surface and online emission class derived from atm process
@@ -51,19 +48,11 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   // Unified atomic mass unit used for unit conversion (BAD constant)
   static constexpr Real amufac = 1.65979e-23;  // 1.e4* kg / amu
 
-  // For reading soil erodibility file
-  std::shared_ptr<AbstractRemapper> serod_horizInterp_;
-  std::shared_ptr<FieldReader> serod_dataReader_;
   const_view_1d soil_erodibility_;
 
  public:
-  // For reading surface emissions and marine organics file
-  using marineOrganicsFunc =
-      marine_organics::marineOrganicsFunctions<Real, DefaultDevice>;
-
   // Constructor
   MAMSrfOnlineEmiss(const ekat::Comm &comm, const ekat::ParameterList &params);
-
   // --------------------------------------------------------------------------
   // AtmosphereProcess overrides (see share/atm_process/atmosphere_process.hpp)
   // --------------------------------------------------------------------------
@@ -158,11 +147,8 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   std::vector<srf_emiss_> srf_emiss_species_;
 
   // For reading marine organics file
-  std::shared_ptr<AbstractRemapper> morg_horizInterp_;
-  std::shared_ptr<FieldReader> morg_dataReader_;
-  marineOrganicsFunc::marineOrganicsTimeState morg_timeState_;
-  marineOrganicsFunc::marineOrganicsInput morg_data_start_, morg_data_end_;
-  marineOrganicsFunc::marineOrganicsOutput morg_data_out_;
+  std::shared_ptr<DataInterpolation> morg_data_interp_;
+  std::vector<Field> morg_fields_;
 
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
@@ -170,6 +156,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
       mam4::aero_model::pcnst - mam4::gas_chemistry::gas_pcnst;
   // workspace manager for internal local variables
   mam_coupling::Buffer buffer_;
+  
+  // Read soil erodibility data from file
+  void read_soil_erodibility_data();
 
 };  // MAMSrfOnlineEmiss
 

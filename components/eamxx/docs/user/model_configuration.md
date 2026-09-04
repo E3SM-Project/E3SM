@@ -505,6 +505,15 @@ the grid where the fields are defined and a coarser grid.
       the size of the output file.
           - **Note:** with this feature, the user can only specify fields
           from a single grid.
+- `horiz_remap_fill_threshold`: fraction (in `[0,1)`) of a target column that must
+come from valid (i.e., not fill-valued) source columns for the remapped value to be
+written out.
+      - When remapping fields that may contain fill values, EAMxx computes, for each
+      target column, the fraction of its interpolation weight that comes from valid
+      source columns.
+      - Target columns whose fraction is above this threshold store the average over
+      the valid source columns only, while the others are set to the fill value.
+      - If not set, it defaults to `0.5`, i.e., majority rules.
 - `vertical_remap_file`: similar to the previous option, this map file is used to
 refine/coarsen fields in the vertical direction.
 - `IOGrid`: this parameter can be specified inside one of the grids sections,
@@ -552,6 +561,14 @@ There are, however, particular use cases that require some less common options,
 which we list here (in parentheses, the location in the YAML file and the type
 of the parameter value).
 
+- `fill_threshold` (top-level list, `real`):
+      - This parameter is only used for `average` output of fields that may contain
+      fill values (e.g., vertically remapped fields, or `X_at_YhPa` diagnostics).
+      - It specifies the fraction (in `[0,1)`) of the output window that must be
+      unfilled for the time average to be written out; if the fraction of unfilled
+      snapshots does not exceed this threshold, the fill value is written instead.
+      - By default, it is `0.0`, meaning that the output stores the average over the
+      unfilled snapshots only, regardless of how many there are.
 - `flush_frequency` (top-level list, `integer`)
       - This parameter can be used to specify how often the IO library
       should sync the in-memory data to file.

@@ -1,0 +1,27 @@
+%YAML 1.1
+---
+# The documented expressions that an INSTANT stream cannot carry.
+#
+# 'over_dt' divides by the time elapsed since the start of the step. An INSTANT
+# stream writes a snapshot at t0, before any step has run, where that time is
+# zero and the diagnostic aborts with "dt must be positive" -- so these have to
+# go in an averaged stream. 'tend' is built on 'over_dt' and inherits the
+# restriction, as do the legacy underscore spellings of both.
+filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_diags_avg
+averaging_type: average
+fields:
+  physics_pg2:
+    field_names:
+      - T_rate        := T_mid.over_dt()
+      - T_tend        := T_mid.tend()
+      # The legacy spellings of the same two.
+      - T_rate_legacy := T_mid_over_dt
+      - T_tend_legacy := T_mid_atm_backtend
+      # A bare mask has int data type, which IO cannot write; multiplying by 1
+      # promotes it to Real. See docs/user/diags/conditional_sampling.md.
+      - wet_frac      := mask.where(ps>100000)*1.0
+
+output_control:
+  frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...

@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestFindMseMax : public UnitWrap::UnitTest<D>::Bas
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        find_mse_max_f(d);
-      }
-      else {
-        find_mse_max(d);
-      }
+      find_mse_max(d);
     }
 
     // Verify BFB results, all data should be in C layout

@@ -14,7 +14,6 @@ namespace zm {
 template<typename S, typename D>
 void Functions<S,D>::zm_opts_init()
 {
-  s_zm_opts.use_fortran_bridge  = false;
   s_zm_opts.apply_detr_tend     = true;
   s_zm_opts.upper_limit_pref    = 40e2;
   s_zm_opts.plenest             = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;

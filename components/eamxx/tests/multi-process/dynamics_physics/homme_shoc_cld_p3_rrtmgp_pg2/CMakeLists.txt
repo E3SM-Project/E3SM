@@ -29,6 +29,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/output.yaml)
+# Two extra streams carrying the diagnostic expressions from
+# docs/user/diags/expressions.md, so every documented spelling is exercised
+# end-to-end. They are split because 'over_dt' and friends cannot go in an
+# INSTANT stream; see the comments in the yamls.
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_diags_ins.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output_diags_ins.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/output_diags_avg.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/output_diags_avg.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
@@ -82,6 +90,24 @@ CompareNCFilesFamilyMpi (
   FILE_META_NAME ${TEST_BASE_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   LABELS dynamics physics tms shoc cld p3 rrtmgp pg2
+  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+)
+
+# The diagnostic-expression streams get the same treatment: a reduction like
+# mean('col') or zonal_mean() must not depend on the rank count.
+CompareNCFilesFamilyMpi (
+  TEST_BASE_NAME ${TEST_BASE_NAME}_diags_ins
+  FILE_META_NAME ${TEST_BASE_NAME}_diags_ins.INSTANT.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  LABELS dynamics physics tms shoc cld p3 rrtmgp pg2 diagnostics
+  META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
+)
+
+CompareNCFilesFamilyMpi (
+  TEST_BASE_NAME ${TEST_BASE_NAME}_diags_avg
+  FILE_META_NAME ${TEST_BASE_NAME}_diags_avg.AVERAGE.nsteps_x${NUM_STEPS}.npMPIRANKS.${RUN_T0}.nc
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  LABELS dynamics physics tms shoc cld p3 rrtmgp pg2 diagnostics
   META_FIXTURES_REQUIRED ${FIXTURES_BASE_NAME}_npMPIRANKS_omp1
 )
 

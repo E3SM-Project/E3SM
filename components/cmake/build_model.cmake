@@ -263,18 +263,30 @@ macro(build_model COMP_CLASS COMP_NAME)
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
 
-    # driver-mct/main sources (e.g. cime_comp_mod.F90) use netcdf directly, but
-    # the component libraries only link netcdf PRIVATEly (via csm_share), so
-    # its usage requirements (e.g. include dirs for netcdf.mod) do not
-    # propagate up to this exe target. Find/link it explicitly here too.
-    find_package(NETCDF REQUIRED)
-    target_link_libraries(${TARGET_NAME} netcdf)
-
     foreach(ITEM IN LISTS COMP_CLASSES)
       if (NOT ITEM STREQUAL "cpl")
         target_link_libraries(${TARGET_NAME} ${ITEM})
       endif()
     endforeach()
+
+    # driver-mct/main sources (e.g. cime_comp_mod.F90) use netcdf directly, but
+    # the component libraries only link netcdf PRIVATEly (via csm_share), so
+    # its usage requirements (e.g. include dirs for netcdf.mod) do not
+    # propagate up to this exe target. Pull in just the include dirs here.
+    #
+    # Deliberately NOT using target_link_libraries(${TARGET_NAME} netcdf):
+    # CMake treats "netcdf" as a single graph node, so linking it directly to
+    # this executable pins its (and PnetCDF's) position to wherever it's
+    # first encountered, ahead of the component libraries below that also
+    # transitively link it via csm_share -> spio. But piof/pioc (also pulled
+    # in via csm_share -> spio) reference PnetCDF symbols, so libpnetcdf.a
+    # must come after them on the link line, or the linker drops its symbols
+    # before piof/pioc need them. Only requesting the include dirs avoids
+    # adding that extra, mis-ordering link edge, while the link libraries
+    # still reach this target correctly ordered via csm_share -> spio.
+    find_package(NETCDF REQUIRED)
+    get_target_property(NETCDF_INTERFACE_INCLUDE_DIRS netcdf INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(${TARGET_NAME} PRIVATE ${NETCDF_INTERFACE_INCLUDE_DIRS})
 
     if (USE_MOAB)
       target_link_libraries(${TARGET_NAME} ${MOAB_LIBRARIES})
