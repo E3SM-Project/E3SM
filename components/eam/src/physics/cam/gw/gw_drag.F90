@@ -651,7 +651,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use od_common,  only: oro_drag_interface
   use gw_common,  only: gw_prof, momentum_energy_conservation, gw_drag_prof
   use gw_oro,     only: gw_oro_src
-  use gw_front,   only: gw_cm_src, gw_rossby_radius_ratio
+  use gw_front,   only: gw_cm_src, gw_rossby_radius
   use gw_convect, only: gw_beres_src
   use dycore,     only: dycore_is
   use phys_grid,  only: get_rlat_all_p, get_area_p
@@ -735,9 +735,16 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Frontogenesis
   real(r8), pointer :: frontgf(:,:)
   real(r8), pointer :: frontga(:,:)
-  real(r8) :: rossby_radius_ratio(state%ncol) ! Rossby radius ratio => Lr/(dx*nx)
+  real(r8) :: rossby_radius(state%ncol) ! Rossby radius [m], for RR scaling of the frontal GW scheme
+  real(r8) :: grid_length(state%ncol) ! effective local grid length (i.e. dx) [m], for RR scaling
+  real(r8) :: rossby_radius_ratio(state%ncol) ! number of grid lengths spanning the Rossby radius => Lr/dx
   real(r8) :: effgw_cm_var(state%ncol) ! locally modified version of effgw_cm
-  real(r8) :: grid_area(state%ncol) ! grid cell area [steradians], for gw_rossby_radius_ratio
+  real(r8) :: grid_area(state%ncol) ! grid cell area [steradians], for gw_rossby_radius / RR scaling
+  ! Below eff_res_grid_num_min grid lengths across the Rossby radius the
+  ! frontal GW scheme runs at full efficiency; above eff_res_grid_num_max
+  ! it is fully disabled; in between effgw_cm is tapered linearly to zero.
+  real(r8), parameter :: eff_res_grid_num_min = 6._r8
+  real(r8), parameter :: eff_res_grid_num_max = 20._r8
 
   ! Temperature change due to deep convection.
   real(r8), pointer, dimension(:,:) :: ttend_dp
@@ -926,16 +933,25 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         end if
 
         if (use_gw_front_rr_scaling) then
-          ! Calculate the effgw_cm as a function of the ratio between the
-          ! Rossby radius and effective grid length of each column
+          ! Calculate effgw_cm as a function of how many local grid lengths
+          ! span the Rossby radius: the frontal GW scheme runs at full
+          ! efficiency where the Rossby radius is poorly resolved (fewer than
+          ! eff_res_grid_num_min grid lengths across it), is fully disabled
+          ! where it is well resolved (more than eff_res_grid_num_max grid
+          ! lengths across it), and tapers linearly to zero in between.
           do i = 1, ncol
             grid_area(i) = get_area_p(lchnk, i)
           end do
-          call gw_rossby_radius_ratio(ncol, state1%lat(1:ncol), grid_area(1:ncol), &
-                                      rearth, omega, pi, rossby_radius_ratio)
-          effgw_cm_var = effgw_cm
-          where (rossby_radius_ratio > 1._r8)
-            effgw_cm_var = effgw_cm/rossby_radius_ratio
+          grid_length(1:ncol) = sqrt( grid_area(1:ncol) * rearth**2 ) ! sqrt( steradians x m2 ) => m
+          call gw_rossby_radius(ncol, state1%lat(1:ncol), omega, pi, rossby_radius(1:ncol))
+          rossby_radius_ratio(1:ncol) = rossby_radius(1:ncol) / grid_length(1:ncol)
+          where (rossby_radius_ratio <= eff_res_grid_num_min)
+            effgw_cm_var = effgw_cm
+          else where (rossby_radius_ratio >= eff_res_grid_num_max)
+            effgw_cm_var = 0._r8
+          else where
+            effgw_cm_var = effgw_cm * (eff_res_grid_num_max - rossby_radius_ratio) &
+                                     / (eff_res_grid_num_max - eff_res_grid_num_min)
           end where
         else
           effgw_cm_var(1:ncol) = effgw_cm
@@ -953,13 +969,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           ! taucd is projected from the raw (unscaled) source stress inside
           ! gw_drag_prof, before effgw_cm_var is applied to the tendencies
           ! (gwd_compute_tendencies_from_stress_divergence only scales gwut/
-          ! utgw/vtgw). momentum_energy_conservation below uses taucd at
-          ! tend_level to set the below-source recoil tendency, so without
-          ! this correction that recoil stays at full strength even as
-          ! effgw_cm_var -> 0, defeating the intent of RR scaling to fully
-          ! disable the frontal scheme at high Rossby ratio. Scale taucd by
-          ! the same per-column ratio applied to the tendencies; this is a
-          ! no-op wherever rossby_radius_ratio <= 1 (effgw_cm_var == effgw_cm).
+          ! utgw/vtgw). momentum_energy_conservation below uses taucd
+          ! to set the below-source correction for energy conservation.
+          ! without this correction that correction stays at full strength even
+          ! as effgw_cm_var->0, defeating the intent of RR scaling. Therefore,
+          ! we scale taucd here by the same per-column value as tendencies.
           do i = 1, ncol
             taucd(i,:,:) = taucd(i,:,:) * (effgw_cm_var(i)/effgw_cm)
           end do

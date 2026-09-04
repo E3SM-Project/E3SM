@@ -18,7 +18,7 @@ public :: gw_cm_src
 ! Only public for testing
 public :: gw_front_project_winds
 public :: gw_front_gw_sources
-public :: gw_rossby_radius_ratio
+public :: gw_rossby_radius
 
 ! Tuneable settings.
 
@@ -179,42 +179,33 @@ subroutine gw_front_gw_sources(ncol, ngwv, kbot, frontgf, tau)
 end subroutine gw_front_gw_sources
 
 !==========================================================================
-subroutine gw_rossby_radius_ratio(ncol, lat, grid_area, rearth, omega, pi, &
-                                  rossby_radius_ratio)
+subroutine gw_rossby_radius(ncol, lat, omega, pi, rossby_radius)
   use gw_common, only: gravit
   !------------------------------------------------------------------------
-  ! The purpose of the "Rossby radius ratio" (RRR) is to act as a crude
-  ! estimate of whether frontogenesis process are resolved at each local
-  ! point of the grid. We do this by checking whether the Rossby radius is
-  ! well resolved locally, assuming that we need "eff_res_grid_num" number
-  ! of grid points to resolve a feature. Thus, when the Rossby radius is
-  ! larger than "grid_length*eff_res_grid_num" we can assume that frontogenesis
-  ! is resolved, and the frontal GW scheme can be disabled, or scaled down.
-  ! This is meant as a way to make the frontal GW scheme "scale aware".
+  ! Calculate the (baroclinic) Rossby radius at each column, which is used
+  ! as a crude estimate of the length scale of frontogenesis processes.
+  ! Comparing this against the local effective grid length lets the caller
+  ! judge whether frontogenesis is resolved at each point of the grid, and
+  ! scale down (or disable) the frontal GW scheme accordingly, making it
+  ! "scale aware".
   !
-  ! Note: the grid cell area and the rearth/omega/pi constants are passed
-  ! in (rather than obtained via "use phys_grid" / "use physconst") so that
-  ! this module stays independent of the EAM-specific grid decomposition
-  ! and physconst modules, which are unavailable to the standalone EAMxx
-  ! GW unit-test build.
+  ! Note: the omega/pi constants are passed in (rather than obtained via
+  ! "use physconst") so that this module stays independent of the
+  ! EAM-specific physconst module, which is unavailable to the standalone
+  ! EAMxx GW unit-test build.
   !------------------------------------------------------------------------
   ! Arguments
   integer,  intent(in) :: ncol
   real(r8), dimension(ncol), intent(in ) :: lat ! latitude [radians]
-  real(r8), dimension(ncol), intent(in ) :: grid_area ! grid cell area [steradians]
-  real(r8), intent(in) :: rearth ! radius of the Earth [m]
   real(r8), intent(in) :: omega  ! Earth's angular rotation rate [1/s]
   real(r8), intent(in) :: pi
-  real(r8), dimension(ncol), intent(out) :: rossby_radius_ratio ! rossby radius ratio
+  real(r8), dimension(ncol), intent(out) :: rossby_radius ! Rossby radius [m]
   !------------------------------------------------------------------------
   ! Local Variables
   integer :: i
   real(r8), parameter :: min_lat_deg = 5 ! min latitude for limiter (RR~10e6m@5deg) [deg]
   real(r8), parameter :: rossby_depth = 2.0e3_r8 ! effective depth / scale height
-  real(r8), parameter :: eff_res_grid_num = 6 ! number of grid points for effective resolution
   real(r8) :: coriolis_f    ! coriolis parameter [1/s]
-  real(r8) :: grid_length   ! effective local grid length (i.e. dx) [m]
-  real(r8) :: rossby_radius ! Rossby radius [m]
   real(r8) :: min_lat_rad   ! min_lat_deg converted to radians
   !------------------------------------------------------------------------
   min_lat_rad = min_lat_deg*pi/180.0_r8
@@ -226,14 +217,10 @@ subroutine gw_rossby_radius_ratio(ncol, lat, grid_area, rearth, omega, pi, &
       coriolis_f = 2 * omega * sin(sign(min_lat_rad,lat(i))) ! latitude must be in radians
     end if
     ! Calculate Rossby Radius
-    rossby_radius = sqrt(gravit*rossby_depth)/abs(coriolis_f)
-    ! Calculate grid length
-    grid_length = sqrt( grid_area(i) * rearth**2 ) ! sqrt( steradians x m2 ) => m
-    ! Calculate ratio of Rossby Radius to effective grid length
-    rossby_radius_ratio(i) = rossby_radius / (grid_length*eff_res_grid_num)
+    rossby_radius(i) = sqrt(gravit*rossby_depth)/abs(coriolis_f)
   end do
   !------------------------------------------------------------------------
-end subroutine gw_rossby_radius_ratio
+end subroutine gw_rossby_radius
 
 !==========================================================================
 subroutine gw_cm_src(ncol, ngwv, kbot, u, v, frontgf, &
