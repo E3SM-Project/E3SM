@@ -206,6 +206,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
+                std::vector<std::pair<int, int> >& terrestrialBdyExtensionMap,
                 double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
     double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* muFriction_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
