@@ -44,7 +44,8 @@ module interpinic
   integer :: nlevgrnd_o      ! number of soil levels on output file
   integer :: nlevcan        ! number of canopy layers
   integer :: nlevmon        ! number of months
-
+  integer :: nvegwcs        ! number of veg water/snow canopy state levels
+  
   integer :: numpfts        ! input file number of pfts 
   integer :: numpftso       ! output file number of pfts 
   integer :: numcols        ! input file number of columns 
@@ -125,6 +126,7 @@ contains
     integer :: dimidmon            ! netCDF dimension id month
     integer :: dimidrtmlat         ! netCDF dimension id rtmlat
     integer :: dimidrtmlon         ! netCDF dimension id rtmlon
+    integer :: dimidvegwcs         ! netCDF dimension id vegwcs
     integer :: varid               ! netCDF variable id
     integer :: varido              ! netCDF variable id
     integer :: xtype               ! netCDF variable type
@@ -220,6 +222,22 @@ contains
        dimidcan = -9999
        nlevcan  = -9999
     end if
+
+    ret = nf90_inq_dimid(ncidi, "vegwcs", dimidvegwcs)
+    if (ret == NF90_NOERR) then
+       call check_ret(nf90_inquire_dimension(ncidi, dimidvegwcs, len=nvegwcs))
+       call check_ret(nf90_inq_dimid(ncido, "vegwcs", dimid))
+       call check_ret(nf90_inquire_dimension(ncido, dimid, len=dimlen))
+       if (dimlen /= nvegwcs) then
+          write (6,*) 'error: input and output vegwcs values disagree'
+          write (6,*) 'input vegwcs = ', nvegwcs, ' output vegwcs = ', dimlen
+          stop
+       end if
+     else
+       write (6,*) 'vegwcs dimension does NOT exist on the input dataset'
+       dimidvegwcs = -9999
+       nvegwcs = -9999
+     end if
 
     ret = nf90_inq_dimid(ncidi, "month", dimidmon)
     if (ret == NF90_NOERR) then
@@ -549,6 +567,18 @@ contains
              end if
              cycle
           end if
+
+          if ( dimids(1) == dimidvegwcs )then
+            if ( dimids(2) == dimidpft )then
+               call interp_ml_real(varname, ncidi, ncido, &
+                          nlev=nvegwcs, nlev_o=nvegwcs, &
+                          nvec=numpfts, nveco=numpftso)
+            else
+              write (6,*) 'Skipping variable with vegwcs dimension: ', trim(varname)
+            end if
+            cycle
+         end if
+         
           if ( dimids(2) /= dimidcols .and. dimids(2) /= dimidpft )then
              write (6,*) 'error: variable = ', varname
              write (6,*) 'error: variables second dimension is not recognized'; stop
