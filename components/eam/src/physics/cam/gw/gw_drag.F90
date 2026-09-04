@@ -127,6 +127,9 @@ module gw_drag
   real(r8) :: gw_convect_hdepth_min       ! minimum hdepth for for convective GWD spectrum lookup table [km]
   real(r8) :: gw_convect_storm_speed_min  ! minimum convective storm speed for convective GWD           [m/s]
 
+  logical  :: use_tau_limiter             ! switch to enable minimum limit on "gwut" values in GW calculations
+  logical  :: use_gw_front_rr_scaling     ! switch to enable Rossby radius scaling for the frontal GW scheme
+
 !==========================================================================
 contains
 !==========================================================================
@@ -152,7 +155,7 @@ subroutine gw_drag_readnl(nlfile)
       effgw_oro, fcrit2, frontgfc, gw_drag_file, taubgnd, gw_convect_hcf, &
       hdepth_scaling_factor, gw_convect_hdepth_min, &
       gw_convect_storm_speed_min, gw_convect_plev_src_wind, &
-      use_gw_convect_old
+      use_gw_convect_old, use_tau_limiter, use_gw_front_rr_scaling
   !----------------------------------------------------------------------
 
   if (masterproc) then
@@ -187,6 +190,8 @@ subroutine gw_drag_readnl(nlfile)
   call mpibcast(gw_convect_storm_speed_min, 1, mpir8,  0, mpicom)
   call mpibcast(gw_convect_plev_src_wind,   1, mpir8,  0, mpicom)
   call mpibcast(use_gw_convect_old,         1, mpilog, 0, mpicom)
+  call mpibcast(use_tau_limiter,            1, mpilog, 0, mpicom)
+  call mpibcast(use_gw_front_rr_scaling,    1, mpilog, 0, mpicom)
 #endif
 
   dc = gw_dc
@@ -644,14 +649,13 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Location-dependent cpair
   use physconst,  only: cpairv
   use od_common,  only: oro_drag_interface
-  use gw_common,  only: gw_prof, momentum_energy_conservation, &
-       gw_drag_prof
+  use gw_common,  only: gw_prof, momentum_energy_conservation, gw_drag_prof
   use gw_oro,     only: gw_oro_src
-  use gw_front,   only: gw_cm_src
+  use gw_front,   only: gw_cm_src, gw_rossby_radius
   use gw_convect, only: gw_beres_src
   use dycore,     only: dycore_is
-  use phys_grid,  only: get_rlat_all_p
-  use physconst,  only: gravit,rair
+  use phys_grid,  only: get_rlat_all_p, get_area_p
+  use physconst,  only: gravit,rair,omega
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -731,6 +735,16 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! Frontogenesis
   real(r8), pointer :: frontgf(:,:)
   real(r8), pointer :: frontga(:,:)
+  real(r8) :: rossby_radius(state%ncol) ! Rossby radius [m], for RR scaling of the frontal GW scheme
+  real(r8) :: grid_length(state%ncol) ! effective local grid length (i.e. dx) [m], for RR scaling
+  real(r8) :: rossby_radius_ratio(state%ncol) ! number of grid lengths spanning the Rossby radius => Lr/dx
+  real(r8) :: effgw_cm_var(state%ncol) ! locally modified version of effgw_cm
+  real(r8) :: grid_area(state%ncol) ! grid cell area [steradians], for gw_rossby_radius / RR scaling
+  ! Below eff_res_grid_num_min grid lengths across the Rossby radius the
+  ! frontal GW scheme runs at full efficiency; above eff_res_grid_num_max
+  ! it is fully disabled; in between effgw_cm is tapered linearly to zero.
+  real(r8), parameter :: eff_res_grid_num_min = 6._r8
+  real(r8), parameter :: eff_res_grid_num_max = 20._r8
 
   ! Temperature change due to deep convection.
   real(r8), pointer, dimension(:,:) :: ttend_dp
@@ -859,7 +873,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_beres, c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke)
+             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke, &
+             use_tau_limiter=use_tau_limiter)
 
         !  add the diffusion coefficients
         do k = 0, pver
@@ -917,12 +932,52 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           do_latitude_taper = .true.
         end if
 
+        if (use_gw_front_rr_scaling) then
+          ! Calculate effgw_cm as a function of how many local grid lengths
+          ! span the Rossby radius: the frontal GW scheme runs at full
+          ! efficiency where the Rossby radius is poorly resolved (fewer than
+          ! eff_res_grid_num_min grid lengths across it), is fully disabled
+          ! where it is well resolved (more than eff_res_grid_num_max grid
+          ! lengths across it), and tapers linearly to zero in between.
+          do i = 1, ncol
+            grid_area(i) = get_area_p(lchnk, i)
+          end do
+          grid_length(1:ncol) = sqrt( grid_area(1:ncol) * rearth**2 ) ! sqrt( steradians x m2 ) => m
+          call gw_rossby_radius(ncol, state1%lat(1:ncol), omega, pi, rossby_radius(1:ncol))
+          rossby_radius_ratio(1:ncol) = rossby_radius(1:ncol) / grid_length(1:ncol)
+          where (rossby_radius_ratio <= eff_res_grid_num_min)
+            effgw_cm_var = effgw_cm
+          else where (rossby_radius_ratio >= eff_res_grid_num_max)
+            effgw_cm_var = 0._r8
+          else where
+            effgw_cm_var = effgw_cm * (eff_res_grid_num_max - rossby_radius_ratio) &
+                                     / (eff_res_grid_num_max - eff_res_grid_num_min)
+          end where
+        else
+          effgw_cm_var(1:ncol) = effgw_cm
+        end if
+
         ! Solve for the drag profile with C&M source spectrum.
         call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_cm,    c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke)
+             ttgw, qtgw,  taucd,     egwdffi,  gwut, dttdf, dttke, effgw_cm_var, &
+             use_tau_limiter=use_tau_limiter)
+
+        if (use_gw_front_rr_scaling) then
+          ! taucd is projected from the raw (unscaled) source stress inside
+          ! gw_drag_prof, before effgw_cm_var is applied to the tendencies
+          ! (gwd_compute_tendencies_from_stress_divergence only scales gwut/
+          ! utgw/vtgw). momentum_energy_conservation below uses taucd
+          ! to set the below-source correction for energy conservation.
+          ! without this correction that correction stays at full strength even
+          ! as effgw_cm_var->0, defeating the intent of RR scaling. Therefore,
+          ! we scale taucd here by the same per-column value as tendencies.
+          do i = 1, ncol
+            taucd(i,:,:) = taucd(i,:,:) * (effgw_cm_var(i)/effgw_cm)
+          end do
+        end if
 
         !  add the diffusion coefficients
         do k = 0, pver
@@ -976,7 +1031,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
-          ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke)
+          ttgw, qtgw,  taucd,     egwdffi,  gwut(:,:,0:0), dttdf, dttke, &
+          use_tau_limiter=use_tau_limiter)
   endif
   !
   if ( use_od_ls .or. use_od_bl .or. use_od_ss) then
