@@ -599,19 +599,18 @@ void MAMWetscav::run_impl(const double dt) {
   // dlf = total cloud water detrainment (liquid + ice)
   auto zm_detr_qc_in = get_field_in("zm_detr_qc").get_view<const Real **>();
   auto zm_detr_qi_in = get_field_in("zm_detr_qi").get_view<const Real **>();
-  
+
+  // Detraining cld H20 from deep convection [kg/kg/s]
+  auto dlf = dlf_;
   // Compute total detrainment (dlf = zm_detr_qc + zm_detr_qi)
   Kokkos::parallel_for("compute_dlf", 
     policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
       const int icol = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
-        dlf_(icol, kk) = zm_detr_qc_in(icol, kk) + zm_detr_qi_in(icol, kk);
+        dlf(icol, kk) = zm_detr_qc_in(icol, kk) + zm_detr_qi_in(icol, kk);
       });
     });
   Kokkos::fence();
-
-  // Detraining cld H20 from deep convection [kg/kg/s]
-  auto dlf = dlf_;
 
   //----------- Variables from macrophysics scheme -------------
   // Total cloud fraction
@@ -756,7 +755,7 @@ void MAMWetscav::run_impl(const double dt) {
         // Get temporary dp view for this column
         auto dp_tmp_icol = ekat::subview(dp_tmp, icol);
         // Convert pressure thickness from Pa to mb
-        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, mam4::nlev), [&](int kk) {
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
           dp_tmp_icol(kk) = p_del_icol(kk) * pa_to_mb;
         });
         team.team_barrier();
