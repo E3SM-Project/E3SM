@@ -322,11 +322,6 @@ contains
     logical :: converge_tveg  ! logical swithc that flags if the stomatal loop converged
     logical ::	do_single_loop	! Set this true to reproduce results before
                                 ! refactoring the patch-loops
-    real(r8) :: del_gs        ! The maximum difference in stomatal conductance
-                              ! from current iteration to previous, between sunlit and
-                              ! shaded portions of the leaves [m/s]
-    real(r8) :: hmean_gs      ! harmonic mean of conductance (m/s)
-    real(r8) :: reldel_gs     ! relative difference in conductance (-)
     
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -334,13 +329,8 @@ contains
 
     ! Lower bound for VPD (based on CLM)
     real(r8), parameter :: vpd_min = 50._r8
-
-    ! We set the minum allowable difference in the conductance iteration
-    ! to be equal to the maximum allowable stomatal resistance (this number is from fates)
-    real(r8),parameter :: max_del_gs =  1._r8/2.e8_r8   ! [m/s]
-    real(r8),parameter :: max_reldel_gs = 0.02
-
-    integer, parameter  :: itmax_stomata = 10
+    integer, parameter  :: itmax_stomata = 10 ! Maximum number of stomatal conductance iterations
+                                              ! )double loop only)
     !------------------------------------------------------------------------------
 
     associate(                                                               &
