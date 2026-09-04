@@ -157,9 +157,6 @@ private:
   // ConvProc configuration for species classification and resuspension mapping
   mam4::ConvProc::Config convproc_config_;
 
-  // Species processing flags for convection (computed once based on species_class and runtime flags)
-  bool ptend_lq_[mam4::aero_model::pcnst];
-
 }; // class MAMWetscav
 
 } // namespace scream
