@@ -733,8 +733,8 @@ void MAMWetscav::run_impl(const double dt) {
   
   // Convection processing variables - only retrieve if enabled
   // These are passed to aero_model_wetdep but only used when do_convproc is true
-  view_1d zm_jt_in, zm_jcbot_in;
-  view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
+  const_view_1d zm_jt_in, zm_jcbot_in;
+  const_view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
   const int* species_class = nullptr;
   const int* mmtoo_prevap_resusp = nullptr;
   
@@ -806,8 +806,8 @@ void MAMWetscav::run_impl(const double dt) {
         
         // Convection processing variables - only initialize if enabled
         Kokkos::View<Real*> scratch1Dviews[mam4::ConvProc::Col1DViewInd::NumScratch];
-        view_1d mu_icol, md_icol, eu_icol, du_icol, ed_icol;
-        view_1d dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol;
+        const_view_1d mu_icol, md_icol, eu_icol, du_icol, ed_icol;
+        const_view_1d dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol;
         int ktop = 0;
         int kbot = 0;
         
