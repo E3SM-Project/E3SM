@@ -109,17 +109,17 @@ subroutine zm_conv_readnl(nlfile)
    real(r8) :: zmconv_micro_dcs              = unset_r8
    real(r8) :: zmconv_MCSP_heat_coeff        = 0._r8
    real(r8) :: zmconv_MCSP_moisture_coeff    = 0._r8
-   real(r8) :: zmconv_MCSP_uwind_coeff       = 0._r8
-   real(r8) :: zmconv_MCSP_vwind_coeff       = 0._r8
+   real(r8) :: zmconv_MCSP_mom_coeff         = 0._r8
+   logical  :: zmconv_MCSP_use_full_shear    = .false.
    !----------------------------------------------------------------------------
    namelist /zmconv_nl/ zmconv_tau, zmconv_alfa, zmconv_ke, zmconv_dmpdz,  &
             zmconv_tpert_fix, zmconv_tp_fac, zmconv_tiedke_add, &
-            zmconv_c0_lnd, zmconv_c0_ocn,  & 
+            zmconv_c0_lnd, zmconv_c0_ocn,  &
             zmconv_cape_cin, zmconv_mx_bot_lyr_adj,  &
             zmconv_trig_dcape, zmconv_trig_ull, zmconv_clos_dyn_adj, &
             zmconv_microp, zmconv_auto_fac, zmconv_accr_fac, zmconv_micro_dcs, &
             zmconv_MCSP_heat_coeff, zmconv_MCSP_moisture_coeff, &
-            zmconv_MCSP_uwind_coeff, zmconv_MCSP_vwind_coeff
+            zmconv_MCSP_mom_coeff, zmconv_MCSP_use_full_shear
    !----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -157,12 +157,12 @@ subroutine zm_conv_readnl(nlfile)
       zm_param%micro_dcs       = zmconv_micro_dcs
 
       ! mesoscale coherent structure parameterization (MCSP) parameters
-      zm_param%mcsp_t_coeff = zmconv_MCSP_heat_coeff
-      zm_param%mcsp_q_coeff = zmconv_MCSP_moisture_coeff
-      zm_param%mcsp_u_coeff = zmconv_MCSP_uwind_coeff
-      zm_param%mcsp_v_coeff = zmconv_MCSP_vwind_coeff
+      zm_param%mcsp_t_coeff       = zmconv_MCSP_heat_coeff
+      zm_param%mcsp_q_coeff       = zmconv_MCSP_moisture_coeff
+      zm_param%mcsp_mom_coeff     = zmconv_MCSP_mom_coeff
+      zm_param%mcsp_use_full_shear = zmconv_MCSP_use_full_shear
       if ( abs(zm_param%mcsp_t_coeff)>0._r8 .or. abs(zm_param%mcsp_q_coeff)>0._r8 .or. &
-           abs(zm_param%mcsp_u_coeff)>0._r8 .or. abs(zm_param%mcsp_v_coeff)>0._r8 ) then
+           abs(zm_param%mcsp_mom_coeff)>0._r8 ) then
          zm_param%mcsp_enabled = .true.
       else
          zm_param%mcsp_enabled = .false.
@@ -483,8 +483,7 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
    ! flags for MCSP tendencies
    logical :: do_mcsp_t        = .false.
    logical :: do_mcsp_q(pcnst) = .false.
-   logical :: do_mcsp_u        = .false.
-   logical :: do_mcsp_v        = .false.
+   logical :: do_mcsp_mom      = .false.
 
    ! MCSP history output variables
    real(r8), dimension(pcols,pver) :: mcsp_dt_out     ! MCSP tendency for DSE
@@ -674,11 +673,10 @@ subroutine zm_conv_tend(pblh, mcon, cme, tpert, dlftot, pflx, zdu, &
       ! a problem with bridging to this routine from C++ for porting ZM to EAMxx
       do_mcsp_t    = .true.
       do_mcsp_q(1) = .true.
-      do_mcsp_u    = .true.
-      do_mcsp_v    = .true.
+      do_mcsp_mom  = .true.
 
       call physics_ptend_init( ptend_mcsp, state%psetcols, 'zm_conv_mcsp_tend', &
-                               ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_u, lv=do_mcsp_v)
+                               ls=do_mcsp_t, lq=do_mcsp_q, lu=do_mcsp_mom, lv=do_mcsp_mom)
 
       call zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                               ztodt, jctop, zm_const, zm_param, &
