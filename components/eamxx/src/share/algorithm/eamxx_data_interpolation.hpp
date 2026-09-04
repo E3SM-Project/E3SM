@@ -56,6 +56,11 @@ public:
 
   void set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger);
 
+  // Setup time database based on data_timeline_type string
+  // Valid options: "yearly_periodic", "linear"
+  void setup_time_database (const strvec_t& input_files,
+                           const std::string& data_timeline_type,
+                           const util::TimeStamp& ts = util::TimeStamp());
   // Setup time database for LinearHistory time-dependent data interpolation
   void setup_linear_time_database (const strvec_t& input_files,
                                    const util::TimeStamp& ref_ts = util::TimeStamp());
@@ -65,7 +70,6 @@ public:
   // If unset, we pick the first timestamp from the first file
   void setup_periodic_time_database (const strvec_t& input_files,
                                      const util::TimeStamp& year_start_ts = util::TimeStamp());
-
   // In case the input files store dims with exhotic names, the user can provide them here
   void set_input_files_dimname (const std::string& name, const std::string& nc_name);
 
@@ -102,6 +106,7 @@ protected:
   void register_fields_in_remappers ();
   void shift_data_interval ();
   void update_end_fields ();
+
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:

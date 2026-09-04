@@ -283,9 +283,11 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
   // Constituent fluxes of species in [kg/m2/s]
   constituent_fluxes_ = get_field_out("constituent_fluxes");
 
-    const std::string marine_organics_data_file =
+  const std::string marine_organics_data_file =
       m_params.get<std::string>("marine_organics_file");
   const auto marine_map_file = m_params.get<std::string>("srf_remap_file", "");
+  const auto marine_data_timeline_type = 
+      m_params.get<std::string>("data_timeline_type", "yearly_periodic");
 
    const std::vector<std::string> marine_org_fld_name = {
       "TRUEPOLYC", "TRUEPROTC", "TRUELIPC"};           
@@ -298,7 +300,7 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
   morg_data_interp_ = std::make_shared<DataInterpolation>(grid_, morg_fields_);
   morg_data_interp_->set_logger(m_atm_logger);
-  morg_data_interp_->setup_periodic_time_database({marine_organics_data_file});
+  morg_data_interp_->setup_time_database({marine_organics_data_file}, marine_data_timeline_type);
   morg_data_interp_->create_horiz_remappers(
       marine_map_file == "none" ? "" : marine_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData remap_data;
@@ -312,7 +314,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
     using namespace ShortFieldTagsNames;
     const FieldLayout scalar2d = grid_->get_2d_scalar_layout();
     const auto srf_map_file    = m_params.get<std::string>("srf_remap_file", "");
-    const auto srf_time_interp = DataInterpolation::Linear;
+    const auto srf_data_timeline_type = 
+        m_params.get<std::string>("data_timeline_type", "yearly_periodic");
     for(srf_emiss_ &ispec_srf : srf_emiss_species_) {
       std::vector<Field> srf_fields;
       srf_fields.reserve(ispec_srf.sectors.size());
@@ -325,8 +328,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
 
       ispec_srf.data_interp_ = std::make_shared<DataInterpolation>(grid_, srf_fields);
       ispec_srf.data_interp_->set_logger(m_atm_logger);
-      ispec_srf.data_interp_->setup_periodic_time_database(
-          {ispec_srf.data_file});
+      ispec_srf.data_interp_->setup_time_database(
+          {ispec_srf.data_file}, srf_data_timeline_type);
       ispec_srf.data_interp_->create_horiz_remappers(
           srf_map_file == "none" ? "" : srf_map_file, m_iop_data_manager);
 
@@ -334,7 +337,8 @@ void MAMSrfOnlineEmiss::initialize_impl(const RunType run_type) {
       remap_data.vr_type = DataInterpolation::None;
       ispec_srf.data_interp_->create_vert_remapper(remap_data);
 
-      ispec_srf.data_interp_->init_time_interpolation(start_of_step_ts(), srf_time_interp);
+      ispec_srf.data_interp_->init_time_interpolation(start_of_step_ts(), 
+                                                       DataInterpolation::Linear);
     }
   }
 
