@@ -1288,8 +1288,8 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
           }
         }
 
-      }
-    } // is on margin
+      } // else (nonmarine)
+    } // is on margin (not dynamic vertex check)
   }  // vertex loop
 
   // Apply extension on marine margin
@@ -1327,7 +1327,51 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
       thicknessData[iv] = thick;
       elevationData[iv] = elev;
     }
+  } // map vector loop
 
+  // Do another pass.  For any extended marine margin locations that are connected to
+  // any grounded neighbors but have at least one floating neighbor, create a ramp
+  // down to zero thickness instead of whatever they are currently doing.
+  // This is to eliminate steep slopes on thick ice adjacent to floating ice which is
+  // defenseless to protect itself from the longitudinal stress barrelling down at it.
+  std::vector<int> marineRevisionList;
+  marineRevisionList.clear();
+  marineRevisionList.reserve(nVertices);
+
+  for (std::vector<std::pair<int, int> >::iterator it = marineBdyExtensionMap.begin();
+      it != marineBdyExtensionMap.end(); ++it) {
+    int iv = it->first; // the extended cell
+    int fCell = vertexToFCell[iv]; // fortran index for extended cell of interest
+
+    // Check if this extended cell has any grounded neighbors and if it has any floating neighbors
+    bool hasGroundNeigh = false;
+    bool hasFloatNeigh = false;
+    int nEdg = nEdgesOnCells_F[fCell];
+    int neighbor_cell = -1;
+    for (int j = 0; j < nEdg; j++) {
+      int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
+      //skip if edge is not valid
+      if(fEdge >= nEdges_F)
+        continue;
+      int c0 = cellsOnEdge_F[2 * fEdge] - 1;
+      int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
+      //skip if either of neighboring cells is zero
+      if((c0 >= nCells_F) || (c1 >= nCells_F))
+        continue;
+      int c = (fCellToVertex[c0] == iv) ? c1 : c0; // index to neighbor
+
+      hasGroundNeigh = hasGroundNeigh || ((thicknessData[c] >= eps) && (rho_ice * thicknessData[c] >= -rho_ocean * bedTopographyData[c]));
+      hasFloatNeigh =  hasFloatNeigh  || ((thicknessData[c] >= eps) && (rho_ice * thicknessData[c] <  -rho_ocean * bedTopographyData[c]));
+    } // loop over neighboring edges
+    if (hasGroundNeigh && hasFloatNeigh) {
+      marineRevisionList.push_back(iv);
+    }
+  } // map vector loop ("do another pass")
+  // Now loop through locations identified and apply the zero ramp
+  for (const int iv : marineRevisionList) {
+      // modify existing thk,elev to create ramp to 0
+      thicknessData[iv] = eps;
+      elevationData[iv] = std::max(bedTopographyData[iv] + eps, (1.0 - rho_ice/rho_ocean)*eps);
   }
 }
 
