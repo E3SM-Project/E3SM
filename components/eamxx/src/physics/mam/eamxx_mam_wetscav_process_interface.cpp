@@ -529,18 +529,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // The default constructor initializes species_class and mmtoo_prevap_resusp arrays
   // with reference values from mam4xx/convproc.hpp
   convproc_config_ = mam4::ConvProc::Config();
-
-  // Initialize ptend_lq flags based on species to process
-  // This determines which species undergo convective processing based on:
-  //   - species_class (aerosol vs gas vs other) from convproc_config_
-  //   - convproc_do_aer and convproc_do_gas runtime flags from namelist
-  // NOTE: This assumes convproc_do_aer_ and convproc_do_gas_ don't change during simulation
-  for (int i = 0; i < mam4::aero_model::pcnst; ++i) {
-    ptend_lq_[i] = (convproc_config_.species_class[i] == mam4::ConvProc::species_class::aerosol && 
-                    convproc_do_aer_) ||
-                   (convproc_config_.species_class[i] == mam4::ConvProc::species_class::gas && 
-                    convproc_do_gas_);
-  }
 }
 
 // ================================================================
@@ -690,10 +678,6 @@ void MAMWetscav::run_impl(const double dt) {
   // These were initialized in initialize_impl from mam4xx ConvProc defaults
   const int* species_class = convproc_config_.species_class;
   const int* mmtoo_prevap_resusp = convproc_config_.mmtoo_prevap_resusp;
-
-  // Get pointer to species processing flags
-  // These were initialized in initialize_impl based on species_class and runtime flags
-  const bool* ptend_lq = ptend_lq_;
   
   // Loop over atmosphere columns
   Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
@@ -809,7 +793,6 @@ void MAMWetscav::run_impl(const double dt) {
            ktop, kbot,
            convproc_do_aer, convproc_do_gas,
            species_class, mmtoo_prevap_resusp,
-           ptend_lq,
            aero_config);
         team.team_barrier();
         // update interstitial aerosol state
