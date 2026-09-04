@@ -269,8 +269,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   if (!isDomainEmpty) {
 
     std::vector<std::pair<int, int> > marineBdyExtensionMap;
-    std::vector<std::pair<int, int> > terrestrialBdyExtensionMap;
-    importFields(marineBdyExtensionMap, terrestrialBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
+    importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -1116,7 +1115,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  std::vector<std::pair<int, int> >& terrestrialBdyExtensionMap,
+void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
     double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F, double const* muFriction_F,
     double const * temperature_F, double const * smb_F, double eps) {
@@ -1187,9 +1186,6 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  std
   //extend thickness and elevation data to the border for marine vertices
   marineBdyExtensionMap.clear();
   marineBdyExtensionMap.reserve(nVertices);
-  // and same for terrestrial
-  terrestrialBdyExtensionMap.clear();
-  terrestrialBdyExtensionMap.reserve(nVertices);
 
   for (int iV = 0; iV < nVertices; iV++) {
     int fCell = vertexToFCell[iV];
@@ -1254,7 +1250,13 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  std
         // surface elevations.  To avoid surface slope directing flow out of the glacier
         // (which would really be uphill on the true topography), make sure the modified surface slope
         // is zero for the *highest* of the neighbors with ice
-        double elevTemp = -1e10;
+
+        // First assign standard values for terrestrial margin extension if no adjustment is required
+        thicknessData[iV] = eps;
+        elevationData[iV] = bedTopographyData[iV]+eps;
+
+        // Now check if all dynamic ice neighbors have higher lower surface elevation
+        double highestNeighboringElev = -1e10;
         int nEdg = nEdgesOnCells_F[fCell];
         int neighbor_cell = -1;
         for (int j = 0; j < nEdg; j++) {
@@ -1273,27 +1275,19 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  std
           int c = (fCellToVertex[c0] == iV) ? c1 : c0;
           if((cellsMask_F[c] & dynamic_ice_bit_value)) {
             double elev = thickness_F[c] + lowerSurface_F[c];
-            if (elev > elevTemp) {
-              elevTemp = elev;
+            if (elev > highestNeighboringElev) {
+              highestNeighboringElev = elev;
               neighbor_cell = c;
             }
           }
         }
-        // check if we didn't assign anything.  This occurs if this node has no neighbors with (dynamic) ice.
-        // This should not ever occur, but including the check just to be safe.
-        if (neighbor_cell != -1) {
-          terrestrialBdyExtensionMap.push_back(std::make_pair(iV,neighbor_cell));
-        } else {
-          std::cout << "WARNING: vertex with ID " << indexToVertexID[iV] <<
-              " is not connected to active ice." << std::endl;
-          // Check that this margin location is not below sea level!
-          thicknessData[iV] = eps*3.0; // insert special value here to make identifying these points easier in exo output
-          elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
+        if (neighbor_cell > -1) {
+          if (highestNeighboringElev < elevationData[iV]) {
+             bedTopographyData[iV] = highestNeighboringElev - thicknessData[iV];;
+             elevationData[iV] = bedTopographyData[iV] + thicknessData[iV]; 
+          }
         }
 
-        // Assign standard values for terrestrial margin extension if no adjustment is required
-        thicknessData[iV] = eps;
-        elevationData[iV] = bedTopographyData[iV]+eps;
       }
     } // is on margin
   }  // vertex loop
@@ -1301,29 +1295,6 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  std
   // Apply extension on marine margin
   for (std::vector<std::pair<int, int> >::iterator it = marineBdyExtensionMap.begin();
       it != marineBdyExtensionMap.end(); ++it) {
-    int iv = it->first;
-    int ic = it->second;
-
-    double bed = bedTopographyData[iv];
-    double elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length;
-    double thick = thickness_F[ic] / unit_length;
-
-    //assume elevation as given and adjust thickness to avoid unphysical situations
-    thick = std::min(thick, elev - bed);
-    thick = std::min(thick, rho_ocean/(rho_ocean-rho_ice)*elev);
-
-    if(thick < eps) { //thickness needs to be greater than eps
-      thicknessData[iv] = eps;
-      elevationData[iv] = std::max(bed+eps, (1.0 - rho_ice/rho_ocean)*eps);
-    } else {
-      thicknessData[iv] = thick;
-      elevationData[iv] = elev;
-    }
-
-  }
-  // Apply extension for terrestrial margin
-  for (std::vector<std::pair<int, int> >::iterator it = terrestrialBdyExtensionMap.begin();
-      it != terrestrialBdyExtensionMap.end(); ++it) {
     int iv = it->first;
     int ic = it->second;
 
@@ -1791,8 +1762,7 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     // Call needed functions to process MPAS fields to Albany units/format
 
     std::vector<std::pair<int, int> > marineBdyExtensionMap;  // local map to be created by importFields
-    std::vector<std::pair<int, int> > terrestrialBdyExtensionMap;  // local map to be created by importFields
-    importFields(marineBdyExtensionMap, terrestrialBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
+    importFields(marineBdyExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
                    stiffnessFactor_F, effecPress_F, muFriction_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(marineBdyExtensionMap,
