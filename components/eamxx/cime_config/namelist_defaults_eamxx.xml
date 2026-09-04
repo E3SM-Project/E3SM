@@ -27,18 +27,16 @@ be lost if SCREAM_HACK_XML is not enabled.
                  By default, the entire value is grabbed. If the regex does not match
                  the case value, then the selector will evaluate to False.
 
-    Example using the nlev selector
-      <partmethod nlev="128">42</partmethod>
-      <partmethod nlev="72">420</partmethod>
+    Example using the vgrid selector
+      <partmethod vgrid="L128v4">42</partmethod>
+      <partmethod vgrid="L72">420</partmethod>
 
     Selector info will not be duplicated in the processed $case/namelist_scream.xml file.
   -->
   <selectors>
     <selector name="hgrid" case_env="ATM_GRID"/>
     <selector name="dyn" case_env="CAM_TARGET"/>
-    <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
-    <selector name="ntracers" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_TRACERS ([0-9]+).*"/>
-
+    <selector name="vgrid" case_env="EAMXX_VGRID"/>
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
@@ -339,8 +337,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mam4_aci inherit="mam4_atm_proc_base">
       <wsubmin type="real" doc="Minimum diagnostic sub-grid vertical velocity">0.001</wsubmin>
       <enable_aero_vertical_mix type="logical" doc="Enable vertical mixing of interstitial aerosols and liquid number during activation">true</enable_aero_vertical_mix>
-      <top_level_mam4xx type="integer" doc="Level corresponding to the top of troposphere clouds" nlev="72"  >6</top_level_mam4xx>
-      <top_level_mam4xx type="integer" doc="level corresponding to the top of troposphere clouds" nlev="128" >0</top_level_mam4xx>
+      <top_level_mam4xx type="integer" doc="Level corresponding to the top of troposphere clouds" vgrid="L72" >6</top_level_mam4xx>
+      <top_level_mam4xx type="integer" doc="level corresponding to the top of troposphere clouds" vgrid="L128">0</top_level_mam4xx>
     </mam4_aci>
 
     <!-- MAM4xx-Dry Deposition -->
@@ -524,10 +522,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- For internal testing only -->
     <test_only inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
-      <my_param nlev="1" append="base">3,4</my_param>
-      <my_param nlev="1" append="last">5,6</my_param>
-      <my_param nlev="2" append="last">3,4</my_param>
-      <my_param nlev="2" append="base">5,6</my_param>
+      <my_param vgrid="L128" append="base">3,4</my_param>
+      <my_param vgrid="L128" append="last">5,6</my_param>
+      <my_param vgrid="L72"  append="last">3,4</my_param>
+      <my_param vgrid="L72"  append="base">5,6</my_param>
     </test_only>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
@@ -697,33 +695,52 @@ be lost if SCREAM_HACK_XML is not enabled.
     <physics_grid_rebalance>none</physics_grid_rebalance>
     <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
     <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
-    <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
-    <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+    <vertical_coordinate_filename vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+    <vertical_coordinate_filename vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+    <vertical_coordinate_filename vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128v4_c20260820.nc</vertical_coordinate_filename>
   </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
     <filename type="file">UNSET</filename>
-    <filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</filename>
-    <filename hgrid="ne4np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
-    <filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</filename>
-    <filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
-    <filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
-    <filename hgrid="ne30np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
-    <filename hgrid="ne32np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
-    <filename hgrid="ne64np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
-    <filename hgrid="ne128np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
-    <filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
-    <filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
-    <filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
-    <filename hgrid="ne256np4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
-    <filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</filename>
-    <filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</filename>
-    <filename hgrid="ne1024np4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
-    <filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</filename>
-    <filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
-    <filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</filename>
-    <filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</filename>
+    <!-- L72 for testing -->
+    <filename hgrid="ne4np4"   vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</filename>
+    <filename hgrid="ne4np4"   vgrid="L72" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
+    <filename hgrid="ne4np4"   vgrid="L72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
+    <filename hgrid="ne30np4"  vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
+    <filename hgrid="ne30np4"  vgrid="L72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
+    <filename hgrid="ne120np4" vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
+
+    <!-- new L128v4 -->
+    <filename hgrid="ne4np4"    vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128v4_20260825.nc</filename>
+    <filename hgrid="ne30np4"   vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128v4_20260825.nc</filename>
+    <filename hgrid="ne32np4"   vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128v4_v3.LR.amip_0101.eam.i.2000-01-01-00000.20260825.nc</filename>
+    <filename hgrid="ne64np4"   vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128v4_v3.LR.amip_0101.eam.i.2000-01-01-00000.20260825.nc</filename>
+    <filename hgrid="ne120np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128v4_20260825.nc</filename>
+    <filename hgrid="ne128np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128v4_v3.LR.amip_0101.eam.i.2000-01-01-00000.20260825.nc</filename>
+    <filename hgrid="ne256np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128v4_ifs-20200120_20260825.nc</filename>
+    <filename hgrid="ne512np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128v4_20260825.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128v4_era5-20131001-topoadj-16x_20260825.nc</filename>
+    <filename hgrid="ne256np4"  vgrid="L128v4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128v4_era5_aer_c20260825.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128v4_20260825.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128v4_ifs-20200120-topoadjx6t_20260825.nc</filename>
+
+    <!-- old L128 (original for SCREAM) -->
+    <filename hgrid="ne4np4"    vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</filename>
+    <filename hgrid="ne30np4"   vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
+    <filename hgrid="ne32np4"   vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
+    <filename hgrid="ne64np4"   vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
+    <filename hgrid="ne120np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
+    <filename hgrid="ne128np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
+    <filename hgrid="ne256np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
+    <filename hgrid="ne512np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</filename>
+    <filename hgrid="ne256np4"  vgrid="L128v1" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v1" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v1" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</filename>
+
+    <filename hgrid="ne0np4_conus_x4v1_lowcon" vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</filename>
+    <filename hgrid="ne0np4_CAx32v1" vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</filename>
 
     <!-- List of default topography files on specific grids -->
     <topography_filename type="file">UNSET</topography_filename>
@@ -926,26 +943,31 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
-    <laplace_scaling>0.0</laplace_scaling>
+    <laplace_scaling>UNSET</laplace_scaling>
+    <laplace_scaling vgrid="L128v1|L72">0.0</laplace_scaling>
+    <laplace_scaling vgrid="L128v4">1.0</laplace_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
     <nu>3.4e-08</nu>
     <nu COMPSET=".*DP-EAMxx">0.216784</nu>
     <nu_top>UNSET</nu_top>
-    <nu_top hgrid="ne4np4"  >250000.0</nu_top>
-    <nu_top hgrid="ne30np4" >250000.0</nu_top>
-    <nu_top hgrid="ne32np4" >250000.0</nu_top>
-    <nu_top hgrid="ne64np4" >175000.0</nu_top>
-    <nu_top hgrid="ne120np4">100000.0</nu_top>
-    <nu_top hgrid="ne128np4">100000.0</nu_top>
-    <nu_top hgrid="ne256np4">4.0e4</nu_top>
-    <nu_top hgrid="ne512np4">2.0e4</nu_top>
-    <nu_top hgrid="ne1024np4">1.0e4</nu_top>
-    <nu_top hgrid="ne0np4_CAx32v1">1.0e4</nu_top>
-    <nu_top COMPSET=".*DP-EAMxx">1.0e4</nu_top>
-    <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
-    <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">0.0</tom_sponge_start>
+    <!-- old nu_top defaults w/ laplace_scaling=0  -->
+    <nu_top vgrid="L128v1|L72" hgrid="ne4np4"  >250000.0</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne30np4" >250000.0</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne32np4" >250000.0</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne64np4" >175000.0</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne120np4">100000.0</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne128np4">100000.0</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne256np4">4.0e4</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne512np4">2.0e4</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne1024np4">1.0e4</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne0np4_CAx32v1">1.0e4</nu_top>
+    <nu_top vgrid="L128v1|L72" COMPSET=".*DP-EAMxx">1.0e4</nu_top>
+    <nu_top vgrid="L128v1|L72" hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
+    <!-- updated nu_top for L128v4 when laplace_scaling > 0 (tensor viscosity) -->
+    <nu_top vgrid="L128v4" >5e-7</nu_top>
+    <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">15.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
