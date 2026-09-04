@@ -55,8 +55,10 @@ Use the special condition field name `lev`.
 ## Mask-only calculation
 
 Compute a mask stating where the condition is met.
-Use the special input field name `mask`. The output will be `1`
-where the condition is satisfied and `0` elsewhere.
+Put `mask` where the sampled field name goes. It is a placeholder, not a field:
+nothing named `mask` exists in the field manager, and it is recognized only in
+that one position, so it cannot be requested or operated on by itself. The
+output will be `1` where the condition is satisfied and `0` elsewhere.
 This is particularly useful when combined with horizontal or vertical
 reductions to count occurrences of specific conditions.
 
@@ -70,6 +72,18 @@ reductions to count occurrences of specific conditions.
 To count the percentage of earth where the surface pressure is > 1e5Pa:
 
 - `mask_where_ps_gt_100000_horiz_avg`
+
+**A mask cannot currently be written to file.** The mask diagnostic's output has
+`int` data type, and IO cannot write it: listing a `mask_where_..` name in
+`field_names` aborts the run with a narrowing-conversion error. Reducing it does
+not help: `mask_where_ps_gt_100000_horiz_avg` is still an `int`. The workaround
+is to promote it to `Real` by multiplying by 1, which is easiest to write as an
+[expression](expressions.md):
+
+```yaml
+field_names:
+  - wet_frac := mask.where(ps>100000)*1.0
+```
 
 ## Caveats
 

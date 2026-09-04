@@ -18,6 +18,7 @@ if (NOT Catch2_FOUND)
 endif()
 
 add_executable(dexpr_tests
+  test_function_registry.cpp
   test_lexer.cpp
   test_parser.cpp
 )

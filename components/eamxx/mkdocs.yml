@@ -21,6 +21,7 @@ nav:
       - 'Conditional sampling': 'user/diags/conditional_sampling.md'
       - 'Binary arithmetics': 'user/diags/binary_ops.md'
       - 'Vertical derivative': 'user/diags/vert_derivative.md'
+      - 'Diagnostic expressions': 'user/diags/expressions.md'
     - 'Presentations': 'user/presentations.md'
     - 'IO Aliases': 'user/io_aliases.md'
   - 'Developer Guide':
