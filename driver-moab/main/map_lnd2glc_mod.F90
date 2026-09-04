@@ -32,12 +32,17 @@ module map_lnd2glc_mod
   !--------------------------------------------------------------------------
 
   public :: map_lnd2glc  ! map one field from LND -> GLC grid
+  ! array-based pieces of the algorithm, used by the moab path in prep_glc_mod
+  ! (the horizontal map is done there with one batched seq_map_map call on tags;
+  ! these routines provide the elevation-class assignment and the vertical
+  ! interpolation on plain arrays fetched from the glc mesh tags)
+  public :: get_glc_elevation_classes  ! get the elevation class of each point on the glc grid
+  public :: map_lnd2glc_vertical_interp ! vertically interpolate per-EC data to the ice sheet topography
 
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
 
-  private :: get_glc_elevation_classes ! get the elevation class of each point on the glc grid
   private :: map_bare_land             ! remap the field of interest for the bare land "elevation class"
   private :: map_ice_covered           ! remap the field of interest for all elevation classes (excluding bare land)
 
@@ -191,6 +196,89 @@ contains
     deallocate(glc_elevclass)
 
   end subroutine map_lnd2glc
+
+  !-----------------------------------------------------------------------
+  subroutine map_lnd2glc_vertical_interp(topo_g, topo_g_EC, data_g_EC, data_g_bareland, &
+       glc_elevclass, data_g)
+    !
+    ! !DESCRIPTION:
+    ! Vertically interpolate a field, already horizontally mapped to the glc grid in
+    ! each elevation class, onto the actual ice sheet topography. This is the
+    ! array-based equivalent of the combination of map_bare_land / map_ice_covered
+    ! (minus the horizontal maps, which the caller has already done): the output is
+    ! the bare-land (EC 0) value where the glc cell is ice-free, and the linear
+    ! vertical interpolation between bounding elevation classes where ice-covered.
+    !
+    ! All arrays are on the glc grid decomposition. data_g_EC and topo_g_EC hold the
+    ! horizontally-mapped field and Sl_topo for elevation classes 1..nEC.
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in)  :: topo_g(:)          ! ice topographic height on the glc grid
+    real(r8), intent(in)  :: topo_g_EC(:,:)     ! mapped per-EC topo (lsize_g, nEC)
+    real(r8), intent(in)  :: data_g_EC(:,:)     ! mapped per-EC field (lsize_g, nEC)
+    real(r8), intent(in)  :: data_g_bareland(:) ! mapped bare-land (EC 0) field
+    integer , intent(in)  :: glc_elevclass(:)   ! elevation class of each glc point (0 = bare)
+    real(r8), intent(out) :: data_g(:)          ! result on the glc grid
+    !
+    ! !LOCAL VARIABLES:
+    integer :: lsize_g       ! number of cells on glc grid
+    integer :: nEC           ! number of elevation classes
+    integer :: n, ec
+    real(r8) :: elev_l, elev_u  ! lower and upper elevations in interpolation range
+    real(r8) :: d_elev          ! elev_u - elev_l
+
+    character(len=*), parameter :: subname = 'map_lnd2glc_vertical_interp'
+    !-----------------------------------------------------------------------
+
+    lsize_g = size(data_g)
+    nEC = size(data_g_EC, 2)
+    SHR_ASSERT_FL((size(topo_g) == lsize_g), __FILE__, __LINE__)
+    SHR_ASSERT_FL((size(glc_elevclass) == lsize_g), __FILE__, __LINE__)
+
+    do n = 1, lsize_g
+
+       if (glc_elevclass(n) == 0) then
+          ! bare land (ice-free) point: use the bare-land value
+          data_g(n) = data_g_bareland(n)
+
+       ! For each ice sheet point, find bounding EC values...
+       else if (topo_g(n) < topo_g_EC(n,1)) then
+          ! lower than lowest mean EC elevation value
+          data_g(n) = data_g_EC(n,1)
+
+       else if (topo_g(n) >= topo_g_EC(n,nEC)) then
+          ! higher than highest mean EC elevation value
+          data_g(n) = data_g_EC(n,nEC)
+
+       else
+          ! do linear interpolation of data in the vertical
+          do ec = 2, nEC
+             if (topo_g(n) < topo_g_EC(n, ec)) then
+                elev_l = topo_g_EC(n, ec-1)
+                elev_u = topo_g_EC(n, ec)
+                d_elev = elev_u - elev_l
+                if (d_elev <= 0) then
+                   ! This shouldn't happen, but handle it in case it does. In this case,
+                   ! let's arbitrarily use the mean of the two elevation classes, rather
+                   ! than the weighted mean.
+                   write(logunit,*) subname//' WARNING: topo diff between elevation classes <= 0'
+                   write(logunit,*) 'n, ec, elev_l, elev_u = ', n, ec, elev_l, elev_u
+                   write(logunit,*) 'Simply using mean of the two elevation classes,'
+                   write(logunit,*) 'rather than the weighted mean.'
+                   data_g(n) = data_g_EC(n,ec-1) * 0.5_r8 &
+                        + data_g_EC(n,ec)   * 0.5_r8
+                else
+                   data_g(n) = data_g_EC(n,ec-1) * (elev_u - topo_g(n)) / d_elev  &
+                        + data_g_EC(n,ec)   * (topo_g(n) - elev_l) / d_elev
+                end if
+
+                exit
+             end if
+          end do
+       end if  ! topo_g(n)
+    end do  ! lsize_g
+
+  end subroutine map_lnd2glc_vertical_interp
 
   !-----------------------------------------------------------------------
   subroutine get_glc_elevation_classes(glc_ice_covered, glc_topo, glc_elevclass)
@@ -348,8 +436,8 @@ contains
     type(mct_aVect) :: l2x_g_temp  ! temporary attribute vector holding the remapped fields for this elevation class
 
     real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
-    real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
-    real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
+    real(r8), pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
+    real(r8), pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
 
     ! 1 is probably enough, but use 10 to be safe, in case the length of the delimiter
     ! changes
@@ -416,9 +504,9 @@ contains
        fieldname_ec = fieldname // elevclass_as_string
        toponame_ec = toponame // elevclass_as_string
        call mct_aVect_exportRattr(l2x_g_temp, fieldname_ec, tmp_field_g)
-       data_g_EC(:,ec) = real(tmp_field_g)
+       data_g_EC(:,ec) = tmp_field_g
        call mct_aVect_exportRattr(l2x_g_temp, toponame_ec, tmp_field_g)
-       topo_g_EC(:,ec) = real(tmp_field_g)
+       topo_g_EC(:,ec) = tmp_field_g
     enddo
 
     ! ------------------------------------------------------------------------
