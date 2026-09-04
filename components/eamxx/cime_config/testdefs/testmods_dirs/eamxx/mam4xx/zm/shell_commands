@@ -1,0 +1,11 @@
+alias ATMCHANGE='$CIMEROOT/../components/eamxx/scripts/atmchange'
+
+#------------------------------------------------------
+# Add wetscav process
+#------------------------------------------------------
+ATMCHANGE physics::atm_procs_list="mac_aero_mic,mam4_wetscav,rrtmgp" -b
+
+#------------------------------------------------------
+# Set rest of the options to default
+#------------------------------------------------------
+$CIMEROOT/../components/eamxx/cime_config/testdefs/testmods_dirs/eamxx/mam4xx/set_default_eamxx_options
