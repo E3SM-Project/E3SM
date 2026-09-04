@@ -18,6 +18,54 @@ namespace scream
 // =========================================================================================
 namespace {
 
+// Calculate the total work length needed for scratch1Dviews arrays
+// This function computes the memory requirement for all scratch arrays used in convection processing
+KOKKOS_INLINE_FUNCTION
+int get_convproc_scratch1d_work_len(const int nlev) {
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  constexpr int pcnst_extd = mam4::ConvProc::pcnst_extd;
+  
+  int work_len = 0;
+  
+  // Index 0: q - tracer mixing ratios
+  work_len += nlev * pcnst;
+  
+  // Indices 1-2: mu, md - updraft/downdraft mass fluxes
+  work_len += 2 * (nlev + 1);
+  
+  // Indices 3-6: eudp, dudp, eddp, dddp - entrainment/detrainment × dp
+  work_len += 4 * nlev;
+  
+  // Index 7: rhoair - air density
+  work_len += nlev;
+  
+  // Index 8: zmagl - height above ground level
+  work_len += nlev;
+  
+  // Indices 9-12: gath, chat, conu, cond - gathered tracers and concentrations
+  work_len += 4 * (nlev + 1) * pcnst_extd;
+  
+  // Indices 13-14: dconudt_wetdep, dconudt_activa - updraft tendencies
+  work_len += 2 * (nlev + 1) * pcnst_extd;
+  
+  // Index 15: fa_u - updraft fractional area
+  work_len += nlev;
+  
+  // Indices 16-20: dcondt arrays - downdraft tendencies
+  work_len += 5 * nlev * pcnst_extd;
+  
+  // Indices 21-27: wd_flux and sum arrays
+  work_len += 7 * pcnst_extd;
+  
+  // Indices 28-29: dqdt, qnew - tracer tendency and updated values
+  work_len += 2 * nlev * pcnst;
+  
+  // Index 30: dlfdp - detrainment × dp
+  work_len += nlev;
+  
+  return work_len;
+}
+
 // Initialize scratch1Dviews array from work array for convective processing
 // This must be called for each column to set up per-column scratch workspace
 KOKKOS_INLINE_FUNCTION
@@ -366,7 +414,9 @@ MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager)
 
 int MAMWetscav::get_len_temporary_views() {
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len() * ncol_;
-  return work_len;
+  // Calculate work length for convection processing scratch arrays
+  const int work_convproc_len = get_convproc_scratch1d_work_len(nlev_) * ncol_;
+  return work_len + work_convproc_len;
 }
 
 void MAMWetscav::init_temporary_views() {
@@ -375,6 +425,11 @@ void MAMWetscav::init_temporary_views() {
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d(work_ptr, ncol_, work_len);
   work_ptr += ncol_ * work_len;
+
+  // Allocate separate work array for convection processing scratch1Dviews
+  const int work_convproc_len = get_convproc_scratch1d_work_len(nlev_);
+  work_convproc_ = view_2d(work_ptr, ncol_, work_convproc_len);
+  work_ptr += ncol_ * work_convproc_len;
 
   /// error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -552,6 +607,7 @@ void MAMWetscav::run_impl(const double dt) {
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
+  const auto &work_convproc                  = work_convproc_;
   const auto &isprx                          = isprx_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
@@ -715,6 +771,7 @@ void MAMWetscav::run_impl(const double dt) {
         auto aerdepwetis_icol = ekat::subview(aerdepwetis, icol);
         auto aerdepwetcw_icol = ekat::subview(aerdepwetcw, icol);
         auto work_icol        = ekat::subview(work, icol);
+        auto work_convproc_icol = ekat::subview(work_convproc, icol);
         auto wet_diameter_icol =
             ekat::subview(wet_geometric_mean_diameter_i, icol);
         auto dry_diameter_icol =
@@ -730,7 +787,8 @@ void MAMWetscav::run_impl(const double dt) {
         Kokkos::View<Real*> scratch1Dviews[mam4::ConvProc::Col1DViewInd::NumScratch];
         
         // Initialize scratch arrays from work array for convective processing
-        initialize_scratch1d_views(scratch1Dviews, work_icol.data(), nlev);
+        // Use separate work_convproc array instead of work array
+        initialize_scratch1d_views(scratch1Dviews, work_convproc_icol.data(), nlev);
         
         // Convection mass flux fields from ZM scheme
         // Extract convection fields for this column

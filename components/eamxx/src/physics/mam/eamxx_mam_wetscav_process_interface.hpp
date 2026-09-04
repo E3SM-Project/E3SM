@@ -74,6 +74,7 @@ private:
 
   // Work arrays
   view_2d work_;
+  view_2d work_convproc_;  // Separate work array for convection processing scratch1Dviews
   int_view_2d isprx_;
 
   // TODO: Following variables are from convective parameterization (not
