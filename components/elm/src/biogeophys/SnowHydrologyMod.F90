@@ -259,7 +259,7 @@ contains
                wgdif=h2osoi_liq(c,j)
                if (wgdif >= 0._r8) exit
                h2osoi_liq(c,j) = 0._r8
-               mflx_neg_snow_col_1d(c-bounds%begc+1) = wgdif/dtime
+               h2osoi_liq(c,j+1) = h2osoi_liq(c,j+1) + wgdif
             enddo
          end if
       end do

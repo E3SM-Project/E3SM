@@ -107,6 +107,15 @@ _TESTS = {
             )
         },
 
+    "e3sm_land_integration" : {
+        "tests" : (
+            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850GSWCNPPHSWFMCROP.elm-elm_gsw_I1850GSWCNPPHSWFMCROP",
+            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850WCCNPPHSWFMCROP.elm-elm_wc_I1850WCCNPPHSWFMCROP",
+            "ERS.ne30pg2_r05_EC30to60E2r2.I20TRWCCNPPHSWFMCROP.elm-elm_wc_I20TRWCCNPPHSWFMCROP",
+            "PEM_Ld3.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP--pemod-omp1",
+            )
+        },
+
     "e3sm_atm_developer" : {
         "inherit" : ("eam_theta_pg2"),
         "tests"   : (
@@ -369,7 +378,7 @@ _TESTS = {
         },
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm", "e3sm_land_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
