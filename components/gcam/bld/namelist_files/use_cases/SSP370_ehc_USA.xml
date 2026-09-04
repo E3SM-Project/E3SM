@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<case_name>E3SM_GCAM_USA_SSP370</case_name>
+
+<use_gcam_usa>.true.</use_gcam_usa>
+<num_gcam_energy_regions>82</num_gcam_energy_regions>
+
+<crop_addtreeonly>0</crop_addtreeonly>
+<crop_setherbfracrem>0.2</crop_setherbfracrem>
+<crop_setavailtreefracrem>0.0</crop_setavailtreefracrem>
+<pasture_addtreeonly>1</pasture_addtreeonly>
+<pasture_setherbfracrem>1.0</pasture_setherbfracrem>
+<pasture_setavailtreefracrem>0.0</pasture_setavailtreefracrem>
+
+<gcam_config>iac/giac/gcam/gcam_6_0/configuration/configuration_gcamusa_in_E3SM_ssp3.xml</gcam_config>
+<base_gcam_co2_file>iac/giac/gcam/gcam_6_0/data/co2_2015_gcam_out_USA.csv</base_gcam_co2_file>
+<gcam2elm_co2_mapping_file>iac/giac/gcam/gcam_6_0/mappings/co2_USA.xml</gcam2elm_co2_mapping_file>
+<gcam2elm_degdays_mapping_file>iac/giac/gcam/gcam_6_0/mappings/degree_days_USA.xml</gcam2elm_degdays_mapping_file>
+<elm2gcam_co2_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_usa_mapping.csv</elm2gcam_co2_mapping_file>
+
+</namelist_defaults>

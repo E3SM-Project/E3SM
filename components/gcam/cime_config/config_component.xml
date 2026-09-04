@@ -32,6 +32,8 @@
       <value compset="2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_GCAM" >SSP245_ehc</value>
       <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP245_ehc</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP370_ehc</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM%USA" >SSP245_ehc_USA</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM%USA" >SSP370_ehc_USA</value>
     </values>
 
     <group>run_component_ehc</group>
