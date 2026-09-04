@@ -1302,17 +1302,22 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,
     double elev = -1e10;
     double thick = eps;
 
-    // check if loan cell is grounded or floating
-    if (elevationData[ic] > (1.0 - rho_ice / rho_ocean) * thicknessData[iv]) {
-       // grounded loan cell: assume the extension terminates at a thin ice shelf;
+    // check if loan cell bed is above sea level or not
+    if (bedTopographyData[ic] > 0.0) {
+       // loan cell bed above sea level: assume the extension terminates at a thin ice shelf;
        //    this extension location would be where the glacier terminates at the ocean
        thick = eps;
        elev = std::max(bed+thick, (1.0 - rho_ice/rho_ocean)*thick);
     } else {
-       // floating loan cell: assume this extension has the same elevation, like a flat ice shelf
+       // loan cell bed below sea level: assume this extension has the same elevation,
+       // like a flat ice shelf or tidewater glacier
        elev = (lowerSurface_F[ic]+thickness_F[ic]) / unit_length; // elev from dynamic neighbor
        // assume elevation as given and adjust thickness if bed is too shallow here
        thick = std::min(rho_ocean/(rho_ocean-rho_ice)*elev, elev - bed);
+       // but don't let be thicker than the loan cell!
+       thick = std::min(thick, thickness_F[ic] / unit_length);
+       // recalculate elev in case we adjusted it
+       elevationData[iv] = std::max((1.0 - rho_ice / rho_ocean) * thick, bed + thick);
     }
 
     if(thick < eps) { //thickness needs to be greater than eps
