@@ -2018,6 +2018,8 @@
       
         
       
+        
+      
     
     
     
@@ -2168,6 +2170,34 @@
     
   
     Vertical derivative
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostic expressions
   
 
     
@@ -4759,8 +4789,11 @@ This is useful for converting accumulated differences into per-second rates.</p>
 <li>At evaluation time (<code>compute_diagnostic</code>), <code>dt</code> is computed as the difference
   between the field's current timestamp and the saved start timestamp (in seconds).</li>
 <li>The output is <code>X / dt</code> element-wise.</li>
-<li>On the very first evaluation — before <code>init_timestep</code> has been called — the
-  output is filled with the standard EAMxx fill value (<code>constants::fill_value&lt;Real&gt;</code>).</li>
+<li>Before <code>init_timestep</code> has ever been called, the output is filled with the
+  standard EAMxx fill value (<code>constants::fill_value&lt;Real&gt;</code>). Note this does NOT
+  cover the case where <code>init_timestep</code> HAS been called but no time has elapsed
+  since: there <code>dt</code> is zero, which is an error rather than a fill value (see
+  the caveats below).</li>
 </ul>
 <h2 id="example-atmospheric-backward-tendency">Example: atmospheric backward tendency</h2>
 <div class="highlight"><pre><span></span><code><span class="nt">field_names</span><span class="p">:</span>
@@ -4777,6 +4810,11 @@ built-in alias system (see <a href="../builtin_aliases/">Built-in aliases</a>).<
 <h2 id="caveats">Caveats</h2>
 <ul>
 <li><code>dt</code> must be strictly positive; a zero or negative timestep triggers a runtime error.</li>
+<li><strong>This diagnostic cannot be written to an <code>instant</code> output stream.</strong> An instant
+  stream takes a snapshot at <code>t0</code>, before the first step has run, so <code>dt</code> is zero
+  and the run aborts with "dt must be positive". Use an averaged stream
+  (<code>averaging_type: average</code>, <code>max</code>, <code>min</code>) instead. The same applies to
+  everything built on top of it, including <code>X_atm_backtend</code>.</li>
 <li>Only fields with <code>Real</code> data type are supported.</li>
 <li>The suffix <code>_over_dt</code> is matched <em>before</em> binary-op patterns, so
   <code>A_minus_B_over_dt</code> parses as <code>FieldOverDtDiag(A_minus_B)</code>, not

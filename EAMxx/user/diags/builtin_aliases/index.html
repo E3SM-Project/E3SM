@@ -2018,6 +2018,8 @@
       
         
       
+        
+      
     
     
     
@@ -2168,6 +2170,34 @@
     
   
     Vertical derivative
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../expressions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostic expressions
   
 
     
@@ -4772,6 +4802,10 @@ is itself parsed normally.</p>
 <ul>
 <li>Built-in aliases are checked before all other pattern rules (including suffix
   operators and binary ops), so they always take precedence.</li>
+<li><code>X_atm_backtend</code> ends in a <code>FieldOverDtDiag</code>, so it inherits that
+  diagnostic's restriction: it cannot be written to an <code>instant</code> output stream,
+  where <code>dt</code> is zero at <code>t0</code>. Use an averaged stream. See
+  <a href="../field_over_dt/">Field divided by timestep</a>.</li>
 <li>The match is greedy on the field-name part, so <code>T_mid_at_500hPa_atm_backtend</code>
   expands to <code>T_mid_at_500hPa_minus_T_mid_at_500hPa_prev_over_dt</code>.</li>
 <li>Additional built-in aliases may be added in <code>eamxx_io_utils.cpp</code> in the
