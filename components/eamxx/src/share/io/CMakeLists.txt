@@ -10,12 +10,15 @@ add_library(eamxx_io
   eamxx_output_manager.cpp
   scorpio_output.cpp
   eamxx_io_utils.cpp
+  eamxx_dexpr_diags.cpp
 )
 
 target_link_libraries(eamxx_io PUBLIC
   eamxx_data_managers
   eamxx_scorpio_interface
   eamxx_diagnostics)
+
+target_link_libraries(eamxx_io PRIVATE dexpr)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

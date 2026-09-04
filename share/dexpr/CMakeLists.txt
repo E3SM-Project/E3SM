@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.14)
 
-project(dexpr
-  VERSION 0.1.0
-  DESCRIPTION "Lexer and parser for the diagnostics expression language"
-  LANGUAGES CXX)
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(dexpr
+    VERSION 0.1.0
+    DESCRIPTION "Lexer and parser for the diagnostics expression language"
+    LANGUAGES CXX)
+endif()
 
 # This library is deliberately standalone: it has no Kokkos, MPI, netCDF or
 # EKAT dependency, and is not wired into the CIME/csm_share build. That is
@@ -17,6 +19,7 @@ add_library(dexpr
   src/lexer.cpp
   src/parser.cpp
   src/precedences.cpp
+  src/supported_functions.cpp
   src/tokens.cpp
 )
 

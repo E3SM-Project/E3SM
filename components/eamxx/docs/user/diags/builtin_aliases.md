@@ -35,6 +35,10 @@ which in turn chains:
 
 - Built-in aliases are checked before all other pattern rules (including suffix
   operators and binary ops), so they always take precedence.
+- `X_atm_backtend` ends in a `FieldOverDtDiag`, so it inherits that
+  diagnostic's restriction: it cannot be written to an `instant` output stream,
+  where `dt` is zero at `t0`. Use an averaged stream. See
+  [Field divided by timestep](field_over_dt.md).
 - The match is greedy on the field-name part, so `T_mid_at_500hPa_atm_backtend`
   expands to `T_mid_at_500hPa_minus_T_mid_at_500hPa_prev_over_dt`.
 - Additional built-in aliases may be added in `eamxx_io_utils.cpp` in the

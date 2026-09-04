@@ -1,0 +1,61 @@
+%YAML 1.1
+---
+# Every diagnostic expression documented in
+# components/eamxx/docs/user/diags/expressions.md that can be written to an
+# INSTANT stream. The point is not the numbers, it is that each documented
+# spelling parses, builds a diagnostic, and reaches the NetCDF file: a docs
+# example that stops working fails here rather than in a user's yaml.
+#
+# The dt-dependent ones live in output_diags_avg.yaml; see the note at the end.
+filename_prefix: homme_shoc_cld_p3_rrtmgp_pg2_diags_ins
+averaging_type: instant
+fields:
+  physics_pg2:
+    aliases:
+      # An intermediate: usable as an operand below, but never written.
+      - qt := qc+qv
+    field_names:
+      # --- Operators -------------------------------------------------------
+      # Grouping is what the underscore syntax cannot express.
+      - q_flux    := (qc+qv)*p_mid
+      # An operand may be a numeric literal...
+      - p_hPa     := p_mid/100
+      - T_scaled  := T_mid*0.5
+      # ...a named physical constant...
+      - p_ratio   := p_mid/P0
+      # ...or another expression.
+      - dry_air   := p_mid - qv*p_mid
+      # Negation: no diagnostic negates a field, so this goes through (-1)*X.
+      - neg_T     := -T_mid
+      # A ':=' alias declared in 'aliases' is usable as an operand.
+      - qt_flux   := qt*p_mid
+
+      # --- Functions (one per row of the docs' function table) --------------
+      - T_lev10   := T_mid.isel(lev=10)
+      - T_top     := T_mid.isel(lev=0)
+      - T_bot     := T_mid.isel(lev=-1)
+      - T_500hPa  := T_mid.interp(p_mid=500, units='hPa')
+      - T_10m     := T_mid.interp(z_mid=10, reference='surface')
+      - T_colavg  := T_mid.mean('col')
+      - T_vavg    := T_mid.mean('lev')
+      - T_vsum    := T_mid.sum('lev')
+      - T_dpavg   := T_mid.mean('lev', weights='dp')
+      - T_wet     := T_mid.where(qv>0.01)
+      - T_dpdz    := T_mid.derivative('p_mid')
+      - T_hist    := T_mid.histogram(bins=[200,250,300])
+      - T_zonal   := T_mid.zonal_mean(bins=20)
+      - T_prev    := T_mid.shift(time=1)
+
+      # --- Composition ------------------------------------------------------
+      # No unambiguous underscore spelling exists for this one.
+      - cold_T    := T_mid.where(T_mid<273.15).mean('lev')
+
+      # NOTE: 'over_dt' and 'tend' are NOT here on purpose. They divide by the
+      #       time elapsed since the start of the step, and an INSTANT stream
+      #       writes a snapshot at t0, before any step has run, where that time
+      #       is zero. See output_diags_avg.yaml.
+
+output_control:
+  frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+...
