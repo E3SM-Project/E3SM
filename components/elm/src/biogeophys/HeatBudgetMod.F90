@@ -1,17 +1,13 @@
 module HeatBudgetMod
   ! !DESCRIPTION:
   ! Heat (energy) budget diagnostic for ELM's lnd.log, mirroring
-  ! WaterBudgetMod. Two tables are printed:
+  ! WaterBudgetMod. One table is printed:
   !
   ! - NET HEAT FLUXES: a cross-boundary flux-conservation check
   !   (comparable to the coupler's own NET HEAT BUDGET table in cpl.log).
-  ! - HEAT STATES: a beginning/end-of-timestep snapshot of column heat
-  !   content (col_es%hc_soisno, snow+soil+lake) plus the soil/lake
-  !   solver's own numerical-closure residual (col_ef%errsoi), both
-  !   already validated every timestep by SoilFluxesMod/LakeTemperatureMod/
-  !   BalanceCheckMod -- see HeatBudget_Run's header for what this
-  !   table can and cannot be used to conclude, and HEAT_BUDGET_PLAN.md's
-  !   Phase 2 section for the full reasoning.
+  ! Ground-flux and heat-state diagnostics are accumulated internally but
+  ! are not printed because their state-adjustment term is diagnosed as a
+  ! residual rather than computed directly from physical processes.
   !
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
@@ -95,7 +91,7 @@ module HeatBudgetMod
   real(r8) :: budg_fluxG(f_size, p_size) ! global sum, valid only on root pe
   real(r8) :: budg_fluxN(f_size, p_size) ! counter, valid only on root pe
 
-  !--- G for the into-ground flux table ---
+  !--- G for the internal into-ground diagnostic ---
   ! grnd and phase are the terms in SoilFluxesMod's native errsoi equation.
   ! ELM does not have a native whole-land heat budget, and hc_soisno is a
   ! diagnostic cv*T state rather than the enthalpy used by every solver.
@@ -103,11 +99,11 @@ module HeatBudgetMod
   !
   !   d(hc_soisno)/dt - grnd - phase
   !
-  ! so that it explicitly exposes, and the table consistently accounts for,
+  ! so that it explicitly exposes, and the diagnostic consistently accounts for,
   ! heat-capacity changes, snow-layer creation/removal, the lake solver's
   ! different reference state, and heat carried by hydrologic mass changes.
   ! It is a state-coordinate adjustment, not an external boundary flux.
-  ! The independent numerical check remains col_ef%errsoi in HEAT STATES.
+  ! The independent numerical check remains col_ef%errsoi.
 
   integer, parameter :: g_grnd     = 1
   integer, parameter :: g_phase    = 2
@@ -163,10 +159,6 @@ module HeatBudgetMod
   !----- formats -----
   character(*),parameter :: FA0= "('    ',12x,(3x,a10,2x),' | ',(3x,a10,2x))"
   character(*),parameter :: FF = "('    ',a12,f15.8,' | ',f18.2)"
-  character(*),parameter :: HS0= "('    ',12x,4(a18),' | ',a18)"
-  character(*),parameter :: HS = "('    ',a12,3(f18.2),18x,' | ',f18.2)"
-  character(*),parameter :: HS2= "('    ',a12,72x,' | ',f18.2)"
-  character(*),parameter :: HS3= "('    ',a12,4(f18.2),' | ',f18.2)"
 
 contains
 
@@ -403,7 +395,7 @@ contains
     ! fluxes are gathered) only reads the results, mirroring
     ! WaterBudget_Run's own read-only use of grc_ws%endwb.
     !
-    ! Also form the three terms behind the "into ground" table:
+    ! Also form the three terms behind the internal into-ground diagnostic:
     ! grc_ef%heat_into_grnd (p2g of veg_ef%eflx_soil_grnd) and
     ! grc_ef%heat_phase_corr (c2g of a per-column combination of the
     ! phase-change and h2osfc/building-heat terms from
@@ -465,7 +457,7 @@ contains
       do c = bounds%begc, bounds%endc
          l = col_pp%landunit(c)
          if (lun_pp%urbpoi(l)) then
-            ! The printed state excludes urban walls, roofs and roads, so its
+            ! The heat state excludes urban walls, roofs and roads, so its
             ! matching flux table must exclude those reservoirs as well.
             phase_col(c) = spval
          else if (col_pp%is_lake(c)) then
@@ -516,11 +508,11 @@ contains
     ! now holding this step's ending value since SoilTemperature/
     ! SoilFluxes/LakeTemperature have already run) and the soil/lake
     ! solver's own numerical-closure residual (col_ef%errsoi). stateadj in
-    ! the into-ground table contains state-coordinate and unmodeled
+    ! the internal into-ground diagnostic contains state-coordinate and unmodeled
     ! advective-heat effects; it must not be interpreted as a numerical
     ! truncation error. errsoi_col, by contrast, IS a validated, tightly-bounded
-    ! (<1e-5 W/m2, or the model aborts) internal closure term -- it is
-    ! printed here for that reason, not as a stand-in for the former.
+    ! (<1e-5 W/m2, or the model aborts) internal closure term. Both are
+    ! retained for future work but are not printed.
     !
     use domainMod, only : ldomain
     use elm_varcon, only : re, hfus
@@ -658,9 +650,7 @@ contains
     integer :: cdate
     logical :: sumdone
     real(r8) :: area_normalization
-    real(r8) :: state_conversion
     real(r8) :: budg_fluxGpr (f_size,p_size) ! values to print, scaled and such
-    real(r8) :: budg_gfluxGpr (g_size,p_size) ! values to print, scaled and such
 
     sumdone = .false.
 
@@ -692,16 +682,12 @@ contains
 
        if (plev > 0) then
           area_normalization = 1._r8/(4._r8*shr_const_pi)
-          state_conversion = area_normalization*1.e6_r8
           if (.not.sumdone) then
              sumdone = .true.
              call HeatBudget_Sum0()
              budg_fluxGpr = budg_fluxG
              budg_fluxGpr = budg_fluxGpr*area_normalization
              budg_fluxGpr = budg_fluxGpr/budg_fluxN
-             budg_gfluxGpr = budg_gfluxG
-             budg_gfluxGpr = budg_gfluxGpr*area_normalization
-             budg_gfluxGpr = budg_gfluxGpr/budg_gfluxN
           end if
 
           if (ip == p_day .and. get_nstep() == 1) cycle
@@ -724,57 +710,6 @@ contains
              write(iulog,FF)'   *SUM*', &
                   sum(budg_fluxGpr(:,ip)), sum(budg_fluxG(:,ip))*area_normalization*get_step_size()
              write(iulog,'(32("-"),"|",20("-"))')
-
-             write(iulog,*)''
-             write(iulog,*)'NET HEAT FLUXES (into ground) : period ',trim(pname(ip)),': date = ',cdate,sec
-             write(iulog,FA0)'  Time  ','  Time    '
-             write(iulog,FA0)'averaged','integrated'
-             write(iulog,FA0)'   W/m2   ','MJ/m2*1e6'
-             write(iulog,'(32("-"),"|",20("-"))')
-             do f = 1, g_size
-                write(iulog,FF)gname(f),budg_gfluxGpr(f,ip), &
-                     budg_gfluxG(f,ip)*area_normalization*get_step_size()
-             end do
-             write(iulog,'(32("-"),"|",20("-"))')
-             write(iulog,FF)'   *SUM*', &
-                  sum(budg_gfluxGpr(:,ip)), sum(budg_gfluxG(:,ip))*area_normalization*get_step_size()
-             write(iulog,'(32("-"),"|",20("-"))')
-             write(iulog,*)'  (integrated column is directly comparable to the *NET CHANGE* row of HEAT STATES below)'
-             write(iulog,*)'  (stateadj is a diagnosed heat-state adjustment, not an external boundary flux)'
-             write(iulog,*)'  (ground terms and heat states exclude urban roof, wall, and road reservoirs)'
-
-             write(iulog,*)''
-             write(iulog,*)'HEAT STATES (MJ/m2*1e6): period ',trim(pname(ip)),': date = ',cdate,sec
-             write(iulog,HS0) &
-                  '       Soil       ', &
-                  '       Snow       ', &
-                  '       Lake       ', &
-                  '   Grid-level Err ', &
-                  '       TOTAL      '
-             write(iulog,'(88("-"),"|",20("-"))')
-             write(iulog,HS) '         beg', &
-                  budg_stateG(s_hsoi_beg,ip)*state_conversion, &
-                  (budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip) &
-                  -budg_stateG(s_hlake_beg,ip))*state_conversion, &
-                  budg_stateG(s_hlake_beg,ip)*state_conversion, &
-                  budg_stateG(s_h_beg,ip)*state_conversion
-             write(iulog,HS) '         end', &
-                  budg_stateG(s_hsoi_end,ip)*state_conversion, &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip) &
-                  -budg_stateG(s_hlake_end,ip))*state_conversion, &
-                  budg_stateG(s_hlake_end,ip)*state_conversion, &
-                  budg_stateG(s_h_end,ip)*state_conversion
-             write(iulog,HS3)'*NET CHANGE*', &
-                  (budg_stateG(s_hsoi_end,ip)-budg_stateG(s_hsoi_beg,ip))*state_conversion, &
-                  ((budg_stateG(s_h_end,ip)-budg_stateG(s_hsoi_end,ip)-budg_stateG(s_hlake_end,ip)) &
-                  -(budg_stateG(s_h_beg,ip)-budg_stateG(s_hsoi_beg,ip)-budg_stateG(s_hlake_beg,ip)))*state_conversion, &
-                  (budg_stateG(s_hlake_end,ip)-budg_stateG(s_hlake_beg,ip))*state_conversion, &
-                  budg_stateG(s_h_errsoi,ip)*state_conversion/budg_fluxN(1,ip), &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion
-             write(iulog,'(88("-"),"|",20("-"))')
-             write(iulog,HS2)'   *SUM*    ', &
-                  (budg_stateG(s_h_end,ip)-budg_stateG(s_h_beg,ip))*state_conversion
-             write(iulog,'(88("-"),"|",20("-"))')
           end if
        end if
     end do
