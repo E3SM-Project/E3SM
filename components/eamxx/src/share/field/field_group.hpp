@@ -54,7 +54,7 @@ public:
   const std::map<std::string,Field>& individual_fields () const { return *m_individual_fields; }
         std::map<std::string,Field>& individual_fields ()       { return *m_individual_fields; }
 
-  bool has_monolithic_field () const { return m_monolithic_field!=nullptr; }
+  bool has_monolithic_field () const { return m_monolithic_field->is_allocated(); }
   const Field& monolithic_field () const { return *m_monolithic_field; }
         Field& monolithic_field ()       { return *m_monolithic_field; }
 

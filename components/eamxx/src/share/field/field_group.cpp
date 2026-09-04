@@ -7,17 +7,16 @@ FieldGroup::FieldGroup (const std::string& name, const std::string& grid_name)
  , m_grid_name(grid_name)
 {
   m_individual_fields = std::make_shared<std::map<std::string,Field>>();
+  m_monolithic_field  = std::make_shared<Field>();
 }
 
 FieldGroup
 FieldGroup::get_const () const
 {
   FieldGroup cgroup(m_name,m_grid_name);
-  if (m_monolithic_field!=nullptr)
-    cgroup.set_monolithic_field(m_monolithic_field->get_const());
-  else
-    for (const auto& it : *m_individual_fields)
-      cgroup.set_field(it.second.get_const());
+  cgroup.m_monolithic_field = std::make_shared<Field>(m_monolithic_field->get_const());
+  for (auto [fn,f] : *m_individual_fields)
+    (*cgroup.m_individual_fields)[fn] = f.get_const();
 
   return cgroup;
 }
@@ -25,7 +24,7 @@ FieldGroup::get_const () const
 void FieldGroup::
 set_field (const Field& f)
 {
-  EKAT_REQUIRE_MSG (m_monolithic_field==nullptr,
+  EKAT_REQUIRE_MSG (not m_monolithic_field->is_allocated(),
       "[FieldGroup] Error! Cannot set an individual field once monolithic field has been set.\n"
       " - group name: " + m_name + "\n"
       " - grid name : " + m_grid_name + "\n"
@@ -44,7 +43,7 @@ void FieldGroup::
 set_monolithic_field (const Field& f, const std::vector<std::string>& names,
                       const int subview_dim, const int subview_beg)
 {
-  EKAT_REQUIRE_MSG (m_monolithic_field==nullptr,
+  EKAT_REQUIRE_MSG (not m_monolithic_field->is_allocated(),
       "[FieldGroup] Error! Cannot reset the monolithic field once set.\n"
       " - group name: " + m_name + "\n"
       " - grid name : " + m_grid_name + "\n"
