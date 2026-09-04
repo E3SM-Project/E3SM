@@ -534,32 +534,33 @@ void FieldManager::registration_ends ()
 
         // If the cluster contains 2+ groups, ensure that also the individual groups
         // do have a monolithic field in the repo.
-        if (cluster.size()>1) {
-          int vec_idx = c_layout.get_vector_component_idx();
-          for (auto group_name : cluster) {
-            if (group_name==cluster_name)
-              continue; // This was allocated before
-            const auto& info = *m_field_group_info.at(group_name);
-            // Find the first field of this group in the ordered cluster names.
-            auto it = std::find_first_of(cluster_ordered_fields.begin(),cluster_ordered_fields.end(),
-                                            info.m_fields_names.begin(),info.m_fields_names.end());
-            int beg = std::distance(cluster_ordered_fields.begin(),it);
-            int end = beg + info.size();
+        for (auto group_name : cluster) {
+          if (group_name==cluster_name)
+            continue; // This was allocated before
+          const auto& info = *m_field_group_info.at(group_name);
+          if (not info.m_monolithic_allocation)
+            continue; // Nobody needs the monolithic field for this sub-group
 
-            auto sub_layout = c_layout.clone().reset_dim(vec_idx,info.size());;
-            auto sub_fid = c_fid.clone(group_name).reset_layout(sub_layout);
-            register_field(sub_fid);
-            auto& sub_C = m_fields.at(cluster_grid_name).at(group_name);
-            *sub_C = C->subfield (group_name,vec_idx, beg, end);
-          }
+          // Find the first field of this group in the ordered cluster names.
+          auto it = std::find_first_of(cluster_ordered_fields.begin(),cluster_ordered_fields.end(),
+                                          info.m_fields_names.begin(),info.m_fields_names.end());
+          int beg = std::distance(cluster_ordered_fields.begin(),it);
+          int end = beg + info.size();
+
+          int vec_idx = c_layout.get_vector_component_idx();
+          auto sub_layout = c_layout.clone().reset_dim(vec_idx,info.size());;
+          auto sub_fid = c_fid.clone(group_name).reset_layout(sub_layout);
+          register_field(sub_fid);
+          auto& sub_C = m_fields.at(cluster_grid_name).at(group_name);
+          *sub_C = C->subfield (group_name,vec_idx, beg, end);
         }
 
         // Create all individual subfields
         for (const auto& fn : cluster_ordered_fields) {
-          const auto pos = ekat::find(cluster_ordered_fields,fn);
-          const auto idx = std::distance(cluster_ordered_fields.begin(),pos);
-
           const auto& f = m_fields.at(cluster_grid_name).at(fn);
+          const auto pos = ekat::find(cluster_ordered_fields,fn);
+          const int idx = std::distance(cluster_ordered_fields.begin(),pos);
+
           const auto& fid = f->get_header().get_identifier();
           EKAT_REQUIRE_MSG (fid.get_units()!=ekat::units::Units::invalid(),
               "Error! A field was registered without providing valid units.\n"
@@ -577,35 +578,37 @@ void FieldManager::registration_ends ()
         cluster.erase(ekat::find(cluster,"__qv__"));
       }
 
-      // If the cluster contains 2+ groupsNow, update the group info of all the field groups in the cluster
-      for (const auto& group_name : cluster) {
-        for (auto grid_name : grids_in_cluster) {
-          auto parent = m_fields.at(grid_name).at(cluster_name);
-
+      // Now, update the groups in the cluster
+      for (auto grid_name : grids_in_cluster) {
+        auto parent = m_fields.at(grid_name).at(cluster_name);
+        int subview_dim = parent->get_header().get_identifier().get_layout().get_vector_component_idx();
+        for (const auto& group_name : cluster) {
           auto group = m_field_groups[grid_name][group_name];
           auto info = m_field_group_info[group_name];
 
           std::vector<std::string> fnames;
-          for (auto it : info->m_grid_registered)
-            if (it.second.count(grid_name)>0)
-              fnames.push_back(it.first);
-          
-          // Find the first field of this group in the ordered cluster names.
-          auto first = std::find_first_of(cluster_ordered_fields.begin(),cluster_ordered_fields.end(),
-                                          fnames.begin(),fnames.end());
-          auto last = std::next(first,fnames.size());
+          if (group_name==cluster_name) {
+            // Simple: the monolithic field is the whole cluster
+            group->set_monolithic_field(*parent);
 
-          // The fields in the cluster may be ordered differently as in fnames. So rebuild fnames
-          fnames.clear();
-          for (auto it=first; it!=last; ++it)
-            fnames.push_back(*it);
+            fnames = std::vector<std::string>(cluster_ordered_fields.begin(),cluster_ordered_fields.end());
+          } else {
 
+            for (auto it : info->m_grid_registered)
+              if (it.second.count(grid_name)>0)
+                fnames.push_back(it.first);
 
-          int subview_beg = std::distance(cluster_ordered_fields.begin(),first);
-          int subview_end = subview_beg+fnames.size();
-          int subview_dim = parent->get_header().get_identifier().get_layout().get_vector_component_idx();
-          auto monolithic_f = parent->subfield(group_name,subview_dim,subview_beg,subview_end);
-          group->set_monolithic_field(monolithic_f,fnames,subview_dim,subview_beg);
+            // Find the first field of this group in the ordered cluster names.
+            // The group is guaranteed to be contiguous, since 
+            auto first = std::find_first_of(cluster_ordered_fields.begin(),cluster_ordered_fields.end(),
+                                            fnames.begin(),fnames.end());
+            int subview_beg = std::distance(cluster_ordered_fields.begin(),first);
+            int subview_end = subview_beg+fnames.size();
+            auto monolithic_f = parent->subfield(group_name,subview_dim,subview_beg,subview_end);
+            group->set_monolithic_field(monolithic_f);
+          }
+          for (const auto& fn : fnames)
+            group->set_field(*m_fields.at(grid_name).at(fn));
         }
       }
     }
@@ -613,10 +616,9 @@ void FieldManager::registration_ends ()
 
   for (auto grid_name : m_grids_mgr->get_grid_names()) {
     for (auto& it : m_fields.at(grid_name)) {
-      if (it.second->is_allocated()) {
+      if (it.second->is_allocated())
         // If the field has been already allocated, then it was in a monolithic group, so skip it.
         continue;
-      }
       // A brand new field. Allocate it
       it.second->allocate_view();
     }
@@ -706,8 +708,11 @@ void FieldManager::pre_process_monolithic_group_requests () {
     // Register fields on all grids
     for (auto field_name : group_info->m_fields_names) {
       for (auto grid_name : grids_in_group) {
-        // Field already registered on grid, nothing to do
-        if (has_field(field_name, grid_name)) continue;
+        // Field already registered on grid. Just make sure group_info has it down for this grid
+        if (has_field(field_name, grid_name)) {
+          group_info->m_grid_registered[field_name].insert(grid_name);
+          continue;
+        }
 
         // Find the grid which registered this field.
         // Note: We require *exactly one* grid has registered the field
@@ -731,11 +736,7 @@ void FieldManager::pre_process_monolithic_group_requests () {
         const auto fl = m_grids_mgr->get_grid(grid_name)->equivalent_layout(src_fid.get_layout());
         auto fid = src_fid.clone().reset_layout(fl).reset_grid(grid_name);
 
-        // Register the field for each group req
-        for (auto greq : m_group_requests.at(grid_name).at(group_name)) {
-          FieldRequest req(fid, greq.name, greq.pack_size);
-          register_field(req);
-        }
+        register_field(FieldRequest(fid,group_name));
       }
     }
   }

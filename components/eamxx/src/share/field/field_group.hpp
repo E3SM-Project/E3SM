@@ -59,8 +59,7 @@ public:
         Field& monolithic_field ()       { return *m_monolithic_field; }
 
   void set_field (const Field& f);
-  void set_monolithic_field (const Field& f, const std::vector<std::string>& names,
-                             const int subview_dim, const int subview_beg);
+  void set_monolithic_field (const Field& f);
 
   std::size_t size () const { return m_individual_fields->size(); }
 

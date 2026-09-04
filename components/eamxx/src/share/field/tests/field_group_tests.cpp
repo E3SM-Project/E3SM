@@ -26,7 +26,14 @@ TEST_CASE("field_group") {
   FieldGroup g("my_group","my_grid");
 
   std::vector<std::string> names = {"V_0","V_1","V_2","V_3"};
-  g.set_monolithic_field(f,names,1,0);
+  g.set_monolithic_field(f);
+  REQUIRE_THROWS(g.set_monolithic_field(f)); // Cannot reset monolithic field
+
+  REQUIRE_THROWS (g.set_field(f)); // Not a subfield of the monolithic field
+  for (int i=0; i<ndims; ++i)
+    g.set_field(f.get_component(i));
+
+  REQUIRE_THROWS(g.set_field(f.get_component(0))); // Cannot reset field
 
   // Check const cloning
   auto cg= g.get_const();
