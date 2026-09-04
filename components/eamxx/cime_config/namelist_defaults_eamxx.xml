@@ -294,6 +294,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_q_coeff type="real" doc="MCSP sp. humidity coefficient"   >0.0</mcsp_q_coeff>
       <mcsp_u_coeff type="real" doc="MCSP U-wind coefficient"         >0.0</mcsp_u_coeff>
       <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
+      <!-- Convective transport -->
+      <convproc_do_aer type="logical" doc="ZM flag to enable convective transport of aerosols">false</convproc_do_aer>
+      <convproc_do_gas type="logical" doc="ZM flag to enable convective transport of gases">false</convproc_do_gas>
     </zm>
 
     <!-- Water tracers -->
