@@ -41,8 +41,8 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom,
-                               const double& hypervis_scaling, const double& laplace_scaling, const double& dcmip16_mu,
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& horiz_turb_subcycle,
+                               const int& hypervis_subcycle_tom, const double& hypervis_scaling, const double& laplace_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const int& prescribed_wind, const int& use_moisture, const int& disable_diagnostics,
                                const int& use_cpstar, const int& transport_alg, const int& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
@@ -56,6 +56,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // options in the C++ build, we will remove some checks
   Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
+  Errors::check_option("init_simulation_params_c","hypervis_subcycle",hypervis_subcycle,0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","horiz_turb_subcycle",horiz_turb_subcycle,0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","transport_alg",transport_alg,{0,12});
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
@@ -113,6 +115,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.nu_top                        = nu_top;
   params.hypervis_order                = hypervis_order;
   params.hypervis_subcycle             = hypervis_subcycle;
+  params.horiz_turb_subcycle           = horiz_turb_subcycle;
   params.hypervis_subcycle_tom         = hypervis_subcycle_tom;
   params.hypervis_scaling              = hypervis_scaling;
   params.laplace_scaling               = laplace_scaling;

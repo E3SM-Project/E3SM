@@ -107,8 +107,10 @@ We can do that by using the `--grep` flag:
 $ ./atmquery --grep sub
     iop_options::iop_dosubsidence: false
     ctl_nl::hypervis_subcycle: 1
+    ctl_nl::horiz_turb_subcycle: 1
     ctl_nl::hypervis_subcycle_tom: 1
     ctl_nl::hypervis_subcycle_q: 6
+    ctl_nl::horiz_turb_subcycle_q: 1
     atmosphere_processes::number_of_subcycles: 1
     sc_import::number_of_subcycles: 1
     homme::number_of_subcycles: 1
@@ -227,6 +229,9 @@ $ ./atmquery --grep number_of_subcycles
     rrtmgp::number_of_subcycles: 3
     sc_export::number_of_subcycles: 3
 ```
+
+For the SHOC-HOMME 3D turbulence option and its user-facing parameters, see
+[SHOC-HOMME 3D Turbulence](shoc_homme_3d_turbulence.md).
 
 In addition, "ANY" can be used in a "scoped" string, to limit the set of matches:
 

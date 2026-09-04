@@ -80,6 +80,8 @@ void SHOCMacrophysics::create_requests()
     const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
     add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
     add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
+    add_field<Computed>("eddy_diff_heat_horiz", scalar3d_mid, m2/s, grid_name, ps);
+    add_field<Computed>("eddy_diff_mom_horiz",  scalar3d_mid, m2/s, grid_name, ps);
   }
 
   // Input/Output variables
@@ -214,6 +216,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int num_tracer_packs = ekat::npack<Pack>(m_num_tracers);
   m_dummy_shear_strain3d = view_2d("dummy_shear_strain3d", m_num_cols, nlev_packs);
   Kokkos::deep_copy(m_dummy_shear_strain3d, 0);
+  m_dummy_shear_strain3d_components = view_3d("dummy_shear_strain3d_components", m_num_cols, 6, nlev_packs);
+  Kokkos::deep_copy(m_dummy_shear_strain3d_components, 0);
 
   m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
   s_mem += m_buffer.pref_mid.size();
@@ -283,6 +287,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.c_diag_3rd_mom = m_params.get<double>("c_diag_3rd_mom");
   runtime_options.Ckh           = m_params.get<double>("coeff_kh");
   runtime_options.Ckm           = m_params.get<double>("coeff_km");
+  runtime_options.Ckh_horiz     = m_params.get<double>("coeff_kh_horiz",0.1);
+  runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz",0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
@@ -579,6 +585,27 @@ void SHOCMacrophysics::run_impl (const double dt)
                  , temporaries
 #endif
                  );
+
+  if (runtime_options.do_3d_turb) {
+    // If doing 3d turbulence, then compute the horizontal eddy diffusivities to pass to HOMME.
+    const auto tke       = get_field_out("tke").get_view<const Pack**>();
+    const auto eddy_diff_heat_horiz = get_field_out("eddy_diff_heat_horiz").get_view<Pack**>();
+    const auto eddy_diff_mom_horiz  = get_field_out("eddy_diff_mom_horiz").get_view<Pack**>();
+    const auto dx        = input.dx;
+    const auto dy        = input.dy;
+    const auto Ckh_horiz = runtime_options.Ckh_horiz;
+    const auto Ckm_horiz = runtime_options.Ckm_horiz;
+    const auto nlev      = m_num_levs;
+    Kokkos::parallel_for("horizontal_eddy_diffusivities", default_policy,
+                         KOKKOS_LAMBDA (const KT::MemberType& team) {
+      const int icol = team.league_rank();
+      SHF::horizontal_eddy_diffusivities(
+          team, nlev, Ckh_horiz, Ckm_horiz, dx(icol), dy(icol),
+          ekat::subview(tke,icol), ekat::subview(eddy_diff_heat_horiz,icol),
+          ekat::subview(eddy_diff_mom_horiz,icol));
+    });
+    Kokkos::fence();
+  }
 
   // Postprocessing of SHOC outputs
   Kokkos::parallel_for("shoc_postprocess",
