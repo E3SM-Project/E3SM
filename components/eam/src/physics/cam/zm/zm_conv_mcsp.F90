@@ -70,8 +70,8 @@ subroutine zm_conv_mcsp_init()
    !----------------------------------------------------------------------------
    call addfld('MCSP_DT', (/'lev'/), 'A', 'K/s',      'MCSP T tendency')
    call addfld('MCSP_DQ', (/'lev'/), 'A', 'kg/kg/s',  'MCSP qv tendency')
-   call addfld('MCSP_DU', (/'lev'/), 'A', 'm/s/day',  'MCSP U wind tendency')
-   call addfld('MCSP_DV', (/'lev'/), 'A', 'm/s/day',  'MCSP V wind tendency')
+   call addfld('MCSP_DU', (/'lev'/), 'A', 'm/s/s',    'MCSP U wind tendency')
+   call addfld('MCSP_DV', (/'lev'/), 'A', 'm/s/s',    'MCSP V wind tendency')
 
    call addfld('MCSP_freq',     horiz_only, 'A', '1',        'MCSP frequency of activation')
    call addfld('MCSP_shear',    horiz_only, 'A', 'm/s',      'MCSP vertical shear of zonal wind')
