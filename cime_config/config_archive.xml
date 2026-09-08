@@ -28,12 +28,24 @@
   <comp_archive_spec compname="scream" compclass="atm">
     <rest_file_extension>r\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
     <rest_file_extension>rhist\.(INSTANT|AVERAGE|MAX|MIN)\.n(step|sec|min|hour|day|month|year)s_x\d*</rest_file_extension>
-    <!-- The following matches "hi.AVGTYPE.FREQUNITS_xFREQ.TIMESTAMP.nc"-->
-    <hist_file_extension>.*\.h\.(?!rhist\.).*\.nc$</hist_file_extension>
+    <!-- Matches "[STREAM.]h.AVGTYPE.FREQUNITS_xFREQ.TIMESTAMP.nc". The STREAM label is
+         optional: an output yaml that does not set filename_prefix gets the default
+         "$CASE.scream.h", so there is nothing between "scream" and "h". History restart
+         files ("[STREAM.]h.rhist.*") are excluded, they are picked up as restarts above. -->
+    <hist_file_extension>(.*\.)?h\.(?!rhist\.).*\.nc$</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.atm$NINST_STRING</rpointer_file>
-      <rpointer_content>$CASE.scream$NINST_STRING.r.$DATENAME.nc </rpointer_content>
+      <!-- EAMxx writes rpointer.atm itself, listing the model restart file plus one
+           line per history restart file, so there is nothing to synthesize here. -->
+      <rpointer_content>unset</rpointer_content>
     </rpointer>
+    <test_file_names>
+      <tfile disposition="copy">casename.scream.r.INSTANT.nmonths_x1.1976-01-01-00000.nc</tfile>
+      <tfile disposition="copy">casename.scream.1dailyAVG.h.rhist.AVERAGE.ndays_x1.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.scream.h.AVERAGE.nmonths_x1.1975-12.nc</tfile>
+      <tfile disposition="move">casename.scream.1dailyAVG.h.AVERAGE.ndays_x1.1975-12-31-00000.nc</tfile>
+    </test_file_names>
   </comp_archive_spec>
 
   <comp_archive_spec compname="elm" compclass="lnd">
@@ -87,7 +99,8 @@
 
   <comp_archive_spec compname="mpassi" compclass="ice" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
-    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
+    <!-- Covers every timeSeriesStats AM: Daily, Monthly, MonthlyMax, MonthlyMin, ... -->
+    <rest_file_extension>rst\.am\.timeSeriesStats\w+</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -98,6 +111,7 @@
       <tfile disposition="copy">rpointer.ice</tfile>
       <tfile disposition="copy">casename.mpassi.rst.1976-01-01_00000.nc</tfile>
       <tfile disposition="copy">casename.mpassi.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">casename.mpassi.rst.am.timeSeriesStatsDaily.1976-01-01_00000.nc</tfile>
       <tfile disposition="move">casename.mpassi.hist.1976-01-01_00000.nc</tfile>
       <tfile disposition="move">casename.mpassi.hist.am.regionalStatistics.0001.01.nc</tfile>
     </test_file_names>
@@ -105,7 +119,8 @@
 
   <comp_archive_spec compname="mpaso" compclass="ocn" exclude_testing="true">
     <rest_file_extension>rst</rest_file_extension>
-    <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
+    <!-- Covers every timeSeriesStats AM: Daily, Monthly, MonthlyMax, MonthlyMin, ... -->
+    <rest_file_extension>rst\.am\.timeSeriesStats\w+</rest_file_extension>
     <hist_file_extension>hist</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -116,6 +131,8 @@
       <tfile disposition="copy">rpointer.ocn</tfile>
       <tfile disposition="copy">casename.mpaso.rst.1976-01-01_00000.nc</tfile>
       <tfile disposition="copy">casename.mpaso.rst.am.timeSeriesStatsMonthly.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">casename.mpaso.rst.am.timeSeriesStatsMonthlyMax.1976-01-01_00000.nc</tfile>
+      <tfile disposition="copy">casename.mpaso.rst.am.timeSeriesStatsMonthlyMin.1976-01-01_00000.nc</tfile>
       <tfile disposition="move">casename.mpaso.hist.am.globalStats.1976-01-01.nc</tfile>
       <tfile disposition="move">casename.mpaso.hist.am.highFrequencyOutput.1976-01-01_00.00.00.nc</tfile>
     </test_file_names>
