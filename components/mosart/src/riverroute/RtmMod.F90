@@ -11,7 +11,7 @@ module RtmMod
 ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
-  use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
+  use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY, SHR_CONST_G
   use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use seq_flds_mod    , only : rof_sed
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask
@@ -5002,6 +5002,12 @@ contains
          TLake_r%d_ns = 0
          allocate (TUnit_lake_r%h_lake(begr:endr))
          TUnit_lake_r%h_lake = 0._r8
+         allocate (TUnit_lake_r%h_sill(begr:endr))
+         TUnit_lake_r%h_sill = 0._r8
+         allocate (TUnit_lake_r%Q_mean(begr:endr))
+         TUnit_lake_r%Q_mean = 0._r8
+         allocate (TUnit_lake_r%endorheic(begr:endr))
+         TUnit_lake_r%endorheic = 0
          allocate (TUnit_lake_r%h_min(begr:endr))
          TUnit_lake_r%h_min = 0._r8
          allocate (TUnit_lake_r%v_min(begr:endr))
@@ -5104,6 +5110,12 @@ contains
          TLake_t%d_ns = 0
          allocate (TUnit_lake_t%h_lake(begr:endr))
          TUnit_lake_t%h_lake = 0._r8
+         allocate (TUnit_lake_t%h_sill(begr:endr))
+         TUnit_lake_t%h_sill = 0._r8
+         allocate (TUnit_lake_t%Q_mean(begr:endr))
+         TUnit_lake_t%Q_mean = 0._r8
+         allocate (TUnit_lake_t%endorheic(begr:endr))
+         TUnit_lake_t%endorheic = 0
          allocate (TUnit_lake_t%h_min(begr:endr))
          TUnit_lake_t%h_min = 0._r8
          allocate (TUnit_lake_t%v_min(begr:endr))
@@ -5214,6 +5226,32 @@ contains
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%h_lake, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m in r-lake',minval(TUnit_lake_r%h_lake),maxval(TUnit_lake_r%h_lake)
          call shr_sys_flush(iulog)
+
+         ! WP-C (2026-09-04): optional mean discharge (HydroLAKES Dis_Avg, carried by
+         ! reconcile_lake_params.py) and endorheic flag. The head-allowance sill is
+         ! DERIVED at the end of MOSART_init from Q_mean and the weir's own width
+         ! (TUnit%twidth is rescaled there, after this read). Absent from the file ->
+         ! sill at the full level (h_sill = h_lake), every lake has an outlet: b4b with 12bb60e.
+         TUnit_lake_r%h_sill = TUnit_lake_r%h_lake
+         call check_var(ncid, 'mlake_Dis_Avg', vardesc, readvar)
+         if (readvar) then
+            ier = pio_inq_varid(ncid, 'mlake_Dis_Avg', vardesc)
+            call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_r%Q_mean, ier)
+            where (TUnit_lake_r%Q_mean < 0._r8) TUnit_lake_r%Q_mean = 0._r8   ! fill -> no outlet head
+            if (masterproc) write(iulog,FORMR) trim(subname),' read Dis_Avg in r-lake',minval(TUnit_lake_r%Q_mean),maxval(TUnit_lake_r%Q_mean)
+         else
+            if (masterproc) write(iulog,*) trim(subname),' mlake_Dis_Avg not on file: r-lake sill = h_lake (full level)'
+         end if
+         call check_var(ncid, 'mlake_endorheic', vardesc, readvar)
+         if (readvar) then
+            ier = pio_inq_varid(ncid, 'mlake_endorheic', vardesc)
+            call pio_read_darray(ncid, vardesc, iodesc_int , TUnit_lake_r%endorheic, ier)
+            where (TUnit_lake_r%endorheic < 0) TUnit_lake_r%endorheic = 0
+            if (masterproc) write(iulog,FORMR) trim(subname),' read endorheic in r-lake',minval(TUnit_lake_r%endorheic),maxval(TUnit_lake_r%endorheic)
+         else
+            if (masterproc) write(iulog,*) trim(subname),' mlake_endorheic not on file: every r-lake has an outlet'
+         end if
+         call shr_sys_flush(iulog)
          
          ier = pio_inq_varid(ncid, 'mlake_Dn', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_int , TLake_r%d_ns, ier)
@@ -5295,6 +5333,28 @@ contains
          ier = pio_inq_varid(ncid, 'tlake_depth_m', vardesc)
          call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%h_lake, ier)
          if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m in t-lake',minval(TUnit_lake_t%h_lake),maxval(TUnit_lake_t%h_lake)
+         call shr_sys_flush(iulog)
+
+         ! WP-C (2026-09-04): optional mean discharge + endorheic flag (see r-lake note)
+         TUnit_lake_t%h_sill = TUnit_lake_t%h_lake
+         call check_var(ncid, 'tlake_Dis_Avg', vardesc, readvar)
+         if (readvar) then
+            ier = pio_inq_varid(ncid, 'tlake_Dis_Avg', vardesc)
+            call pio_read_darray(ncid, vardesc, iodesc_dbl , TUnit_lake_t%Q_mean, ier)
+            where (TUnit_lake_t%Q_mean < 0._r8) TUnit_lake_t%Q_mean = 0._r8
+            if (masterproc) write(iulog,FORMR) trim(subname),' read Dis_Avg in t-lake',minval(TUnit_lake_t%Q_mean),maxval(TUnit_lake_t%Q_mean)
+         else
+            if (masterproc) write(iulog,*) trim(subname),' tlake_Dis_Avg not on file: t-lake sill = h_lake (full level)'
+         end if
+         call check_var(ncid, 'tlake_endorheic', vardesc, readvar)
+         if (readvar) then
+            ier = pio_inq_varid(ncid, 'tlake_endorheic', vardesc)
+            call pio_read_darray(ncid, vardesc, iodesc_int , TUnit_lake_t%endorheic, ier)
+            where (TUnit_lake_t%endorheic < 0) TUnit_lake_t%endorheic = 0
+            if (masterproc) write(iulog,FORMR) trim(subname),' read endorheic in t-lake',minval(TUnit_lake_t%endorheic),maxval(TUnit_lake_t%endorheic)
+         else
+            if (masterproc) write(iulog,*) trim(subname),' tlake_endorheic not on file: every t-lake has an outlet'
+         end if
          call shr_sys_flush(iulog)
 
          ier = pio_inq_varid(ncid, 'tlake_Dn', vardesc)
@@ -5473,8 +5533,37 @@ contains
         TUnit%rslpsqrt(iunit) = sqrt(Tunit%rslp(iunit))
         TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
-     end do 
+     end do
   end if  ! endr >= begr
+
+  ! WP-C (2026-09-04) — head-allowance lake sill, derived here because TUnit%twidth
+  ! (the weir crest width CR_lake_Bernoulli uses for BOTH lake classes) is only final
+  ! after the rescaling loop above. The observed full level h_lake is the equilibrium
+  ! stage under the mean discharge Q_mean, so the crest sits below it by the head that
+  ! passes Q_mean:   Q = 2/3*C*sqrt(2g)*L*dh^1.5  ->  dh = (Q/(2/3*C*sqrt(2g)*L))^(2/3),
+  ! capped at lake_sill_max_head_frac*h_lake. A shrinking lake then keeps draining
+  ! (~dh^1.5) down to the sill instead of disconnecting at the full level. Q_mean <= 0
+  ! (not on file / fill), endorheic, or L <= 0 -> sill at the full level (12bb60e).
+  if (lakeflag .and. endr >= begr) then
+     do iunit = rtmCTL%begr, rtmCTL%endr
+        if (TUnit_lake_r%lake_flg(iunit) >= 1) then
+           TUnit_lake_r%h_sill(iunit) = lake_sill_from_qmean(TUnit_lake_r%h_lake(iunit), TUnit_lake_r%Q_mean(iunit), &
+                                                             TUnit%twidth(iunit), TUnit_lake_r%endorheic(iunit))
+        end if
+        if (TUnit_lake_t%lake_flg(iunit) >= 1) then
+           TUnit_lake_t%h_sill(iunit) = lake_sill_from_qmean(TUnit_lake_t%h_lake(iunit), TUnit_lake_t%Q_mean(iunit), &
+                                                             TUnit%twidth(iunit), TUnit_lake_t%endorheic(iunit))
+        end if
+     end do
+     if (masterproc) then
+        write(iulog,*) trim(subname),' WP-C lake sill derived from Dis_Avg (master task cells only): r-lakes with head > 0 = ', &
+             count(TUnit_lake_r%lake_flg >= 1 .and. TUnit_lake_r%h_sill < TUnit_lake_r%h_lake), &
+             ' endorheic = ', count(TUnit_lake_r%lake_flg >= 1 .and. TUnit_lake_r%endorheic >= 1)
+        write(iulog,*) trim(subname),' WP-C lake sill derived from Dis_Avg (master task cells only): t-lakes with head > 0 = ', &
+             count(TUnit_lake_t%lake_flg >= 1 .and. TUnit_lake_t%h_sill < TUnit_lake_t%h_lake), &
+             ' endorheic = ', count(TUnit_lake_t%lake_flg >= 1 .and. TUnit_lake_t%endorheic >= 1)
+     end if
+  end if
 
   ! retrieve the downstream channel attributes after some post-processing above
   if (Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
@@ -5583,6 +5672,29 @@ contains
   endif 
 
   end subroutine MOSART_init
+
+!-----------------------------------------------------------------------
+
+  function lake_sill_from_qmean(h_lake, q_mean, width, endorheic) result(h_sill)
+    ! WP-C head-allowance sill: crest depth = full level minus the broad-crested-weir
+    ! head that passes the mean discharge (same C, g, L as CR_lake_Bernoulli), capped
+    ! at lake_sill_max_head_frac of the full level. Terminal lakes and lakes without a
+    ! discharge / width keep the sill at the full level.
+    real(r8), intent(in) :: h_lake      ! full (sill-level) lake depth [m]
+    real(r8), intent(in) :: q_mean      ! mean discharge [m3/s]
+    real(r8), intent(in) :: width       ! weir crest width used by CR_lake_Bernoulli [m]
+    integer , intent(in) :: endorheic
+    real(r8)             :: h_sill
+    real(r8), parameter  :: weir_c = 0.6_r8
+    real(r8), parameter  :: lake_sill_max_head_frac = 0.5_r8
+    real(r8) :: dh
+
+    h_sill = h_lake
+    if (endorheic >= 1 .or. q_mean <= 0._r8 .or. width <= 0._r8 .or. h_lake <= 0._r8) return
+    dh = (q_mean / (2._r8/3._r8 * weir_c * sqrt(2._r8*SHR_CONST_G) * width))**(2._r8/3._r8)
+    dh = min(dh, lake_sill_max_head_frac * h_lake)
+    h_sill = h_lake - dh
+  end function lake_sill_from_qmean
 
 !----------------------------------------------------------------------------
 

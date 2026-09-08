@@ -561,6 +561,9 @@ module RunoffMod
      real(r8), pointer :: A_dfs(:)         ! (nunit) surface area difference of assumed geometry (km2)
      real(r8), pointer :: h_min(:)         ! (nunit) mininum lake depth, outflow allowed only when exceeding it [m]
      real(r8), pointer :: v_min(:)         ! (nunit) mininum lake storage, outflow allowed only when exceeding it [m]
+     real(r8), pointer :: h_sill(:)        ! (nunit) outlet sill (weir crest) depth above the bottom [m]; derived at init = h_lake - weir head at Q_mean (WP-C); = h_lake if Q_mean absent / endorheic
+     real(r8), pointer :: Q_mean(:)        ! (nunit) mean lake discharge [m3/s] (<class>_Dis_Avg on the parameter file, HydroLAKES); <= 0 if absent
+     integer , pointer :: endorheic(:)     ! (nunit) 1 = terminal lake, no weir outflow (WP-C); 0 = has an outlet
 
   end type Tspatialunit_lake
 

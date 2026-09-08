@@ -64,14 +64,20 @@ MODULE MOSART_lake_hydro_mod
                 delta_h = 0._r8
             else
                 if (dyn_lake_coupled) then
-                    ! sill at the lake's full level: a lake spills only its surplus.
-                    ! The legacy notch (h_lake - bankfull depth) drains every lake by a
-                    ! channel depth within days (see wp_a_dyn_fraction_design.md 2026-08-27).
-                    d_min = TUnit_lake_t%h_lake(iunit)
+                    ! Head-allowance sill (WP-C, 2026-09-04): the weir crest sits below the
+                    ! full level h_lake by the head that passes the lake's mean discharge, so
+                    ! the observed level is the equilibrium stage and a shrinking lake keeps
+                    ! draining (outflow ~ dh^1.5) down to the sill instead of disconnecting.
+                    ! h_sill = h_lake (sill at the full level, 12bb60e behaviour) when the
+                    ! parameter file carries no tlake_sill_m. The legacy notch below
+                    ! (h_lake - bankfull depth) drained every lake by a channel depth in
+                    ! days because h_lake was a MEAN depth (wp_a_dyn_fraction_design.md).
+                    d_min = TUnit_lake_t%h_sill(iunit)
                 else
                 d_min = max(TUnit_lake_t%h_lake(iunit) - 2._r8, 0._r8) !! TODO: here set the bankfull channel depth for t-zone as 2 meters
                 end if
                 delta_h = TLake_t%d_lake(iunit) - d_min  ! only allow outflow when lake water level exceeds the channel bed elevation
+                if (dyn_lake_coupled .and. TUnit_lake_t%endorheic(iunit) >= 1) delta_h = 0._r8  ! terminal lake: no outlet (surplus above capacity still spills via the ceiling)
                 if(delta_h < TINYVALUE) then
                     delta_h = 0._r8
                 end if
@@ -173,12 +179,13 @@ MODULE MOSART_lake_hydro_mod
                 delta_h = 0._r8
             else
                 if (dyn_lake_coupled) then
-                    ! sill at the lake's full level (see t-zone note above)
-                    d_min = TUnit_lake_r%h_lake(iunit)
+                    ! head-allowance sill from the parameter file (see t-zone note above)
+                    d_min = TUnit_lake_r%h_sill(iunit)
                 else
                 d_min = max(TUnit_lake_r%h_lake(iunit) - TUnit%rdepth(iunit), 0._r8)
                 end if
                 delta_h = TLake_r%d_lake(iunit) - d_min  ! only allow outflow when lake water level exceeds the channel bed elevation
+                if (dyn_lake_coupled .and. TUnit_lake_r%endorheic(iunit) >= 1) delta_h = 0._r8  ! terminal lake: no outlet
                 if(delta_h < TINYVALUE) then
                     delta_h = 0._r8
                 end if
