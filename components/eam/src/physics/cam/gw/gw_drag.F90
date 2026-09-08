@@ -974,9 +974,13 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           ! without this correction that correction stays at full strength even
           ! as effgw_cm_var->0, defeating the intent of RR scaling. Therefore,
           ! we scale taucd here by the same per-column value as tendencies.
-          do i = 1, ncol
-            taucd(i,:,:) = taucd(i,:,:) * (effgw_cm_var(i)/effgw_cm)
-          end do
+          if (effgw_cm == 0._r8) then
+            taucd = 0._r8
+          else
+            do i = 1, ncol
+              taucd(i,:,:) = taucd(i,:,:) * (effgw_cm_var(i)/effgw_cm)
+            end do
+          end if
         end if
 
         !  add the diffusion coefficients
