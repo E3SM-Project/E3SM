@@ -123,7 +123,7 @@ subroutine zm_conv_mcsp_calculate_shear( pcols, ncol, pver, state_pmid, state_u,
          shear_v(i) = storm_v(i)-state_v(i,pver)
       else
          shear_u(i) = -999
-         shear_v(i) = 0
+         shear_v(i) = -999
       end if
    end do
 
