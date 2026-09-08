@@ -11,21 +11,38 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
 	endif()
 endif()
 
-set(NETCDF_C_PATH "$ENV{NETCDF_C_PATH}")
-set(NETCDF_FORTRAN_PATH "$ENV{NETCDF_FORTRAN_PATH}")
 set(MKL_PATH "/usr/tce/packages/mkl/mkl-2022.1.0/lib/intel64")
 
-list(APPEND CMAKE_BUILD_RPATH
-	"${NETCDF_C_PATH}/lib"
-	"${NETCDF_FORTRAN_PATH}/lib"
-	"${MKL_PATH}"
-)
+# Keep the runtime search path attached to the binaries instead of relying on
+# LD_LIBRARY_PATH in the user's shell or batch environment.
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_SKIP_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
-list(APPEND CMAKE_INSTALL_RPATH
-	"${NETCDF_C_PATH}/lib"
-	"${NETCDF_FORTRAN_PATH}/lib"
-	"${MKL_PATH}"
-)
+foreach (_prefix
+	"$ENV{NETCDF_C_PATH}"
+	"$ENV{NETCDF_FORTRAN_PATH}"
+	"$ENV{PNETCDF_PATH}"
+	"$ENV{HDF5_ROOT}"
+	"$ENV{TEMPESTREMAP_ROOT}"
+	"$ENV{MOAB_ROOT}")
+	list(APPEND CMAKE_BUILD_RPATH "${_prefix}/lib" "${_prefix}/lib64")
+	list(APPEND CMAKE_INSTALL_RPATH "${_prefix}/lib" "${_prefix}/lib64")
+endforeach()
+
+list(APPEND CMAKE_BUILD_RPATH "${MKL_PATH}")
+list(APPEND CMAKE_INSTALL_RPATH "${MKL_PATH}")
+
+list(REMOVE_DUPLICATES CMAKE_BUILD_RPATH)
+list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
+
+if (NOT "${MPILIB}" STREQUAL "mpi-serial")
+	find_library(E3SM_PNETCDF_LINK_LIB pnetcdf REQUIRED HINTS "$ENV{PNETCDF_PATH}/lib" NO_DEFAULT_PATH)
+	# CMake already discovers PnetCDF through the netcdf interface target, but on this
+	# platform the static Scorpio archive still needs libpnetcdf repeated late on the
+	# final Fortran link line so the linker can resolve ncmpi_* symbols from libpioc.a.
+	string(APPEND CMAKE_Fortran_STANDARD_LIBRARIES " ${E3SM_PNETCDF_LINK_LIB}")
+endif()
 
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--enable-new-dtags")
 string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--enable-new-dtags")
