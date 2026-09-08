@@ -3204,6 +3204,7 @@
       <env name="NETCDF_C_PATH">/usr/tce/packages/netcdf-c/netcdf-c-4.9.0-mvapich2-2.3.7-intel-2025.2.0</env>
       <env name="NETCDF_FORTRAN_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-2025.2.0</env>
       <env name="PNETCDF_PATH">/usr/workspace/e3sm/apps/pnetcdf/dane-intel-2025.2.0-mvapich2-2.3.7/1.14.1</env>
+      <env name="TEMPESTREMAP_ROOT">/usr/workspace/e3sm/apps/tempestremap/dane-intel-2025.2.0-mvapich2-2.3.7/master</env>
       <env name="MOAB_ROOT">/usr/workspace/e3sm/apps/moab/dane-intel-2025.2.0-mvapich2-2.3.7/master</env>
     </environment_variables>
   </machine>
