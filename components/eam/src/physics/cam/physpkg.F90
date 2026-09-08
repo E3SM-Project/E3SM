@@ -840,6 +840,12 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     call check_energy_init(phys_state)
 
+    ! Initialize energy diagnostic state fields (tc_curr, tc_init, etc.)
+    ! so they aren't left at the Infinity sentinel value for ideal/adiabatic
+    ! physics configurations (e.g. FIDEAL), which return before the call
+    ! further below.
+    call co2_diags_init(phys_state)
+
     call tracers_init()
 
     ! age of air tracers
@@ -913,7 +919,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if (co2_transport()) then
        call co2_init()
     end if
-    call co2_diags_init(phys_state)
 
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
