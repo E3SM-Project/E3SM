@@ -86,6 +86,5 @@ SET(USE_MPIEXEC "srun" CACHE STRING "")
 SET(USE_MPI_OPTIONS "-K --cpu-bind=cores" CACHE STRING "")
 SET(HOMME_TESTING_TIMELIMIT 1800 CACHE STRING "")
 
-#FIXME: Remove when updating to Kokkos 5, then
-#       homme will inherit c++20 from Kokkos.
-set(CMAKE_CXX_STANDARD 20)
+# Currently, homme is only compatible with Kokkos' legacy view impl
+SET (Kokkos_ENABLE_IMPL_VIEW_LEGACY ON CACHE BOOL "")
