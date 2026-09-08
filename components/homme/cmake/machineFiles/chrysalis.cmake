@@ -75,5 +75,6 @@ ELSE()
   SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 ENDIF()
 
-# Currently, homme is only compatible with Kokkos' legacy view impl
-SET (Kokkos_ENABLE_IMPL_VIEW_LEGACY ON CACHE BOOL "")
+#FIXME: Remove when updating to Kokkos 5, then
+#       homme will inherit c++20 from Kokkos.
+set(CMAKE_CXX_STANDARD 20)

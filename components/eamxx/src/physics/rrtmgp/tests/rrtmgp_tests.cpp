@@ -77,6 +77,10 @@ int run_kokkos(int argc, char** argv) {
     return -1;
   }
 
+  // Initialize kokkos
+  logger->info("Initialize kokkos...\n");
+  scream::init_kls();
+
   // Get reference fluxes from input file; do this here so we can get ncol dimension
   logger->info("Read fluxes...\n");
   real2dk sw_flux_up_ref;
@@ -250,6 +254,7 @@ int run_kokkos(int argc, char** argv) {
   logger->info("Cleaning up...\n");
   // Clean up or else Kokkos will throw errors
   interface_t::rrtmgp_finalize();
+  scream::finalize_kls();
 
   return nerr != 0 ? 1 : 0;
 }  // end of main driver code
@@ -259,10 +264,8 @@ int run_kokkos(int argc, char** argv) {
 int main(int argc, char** argv) {
 
     MPI_Init(&argc,&argv);
-    scream::initialize_eamxx_session(argc, argv);
     int ret = 0;
     ret += run_kokkos(argc,argv);
-    scream::finalize_eamxx_session();
     MPI_Finalize();
 
     return ret;
