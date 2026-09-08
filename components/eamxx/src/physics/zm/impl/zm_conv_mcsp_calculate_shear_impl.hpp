@@ -80,7 +80,7 @@ void Functions<S,D>::zm_conv_mcsp_calculate_shear(
     shear_v = storm_v - state_v(pver - 1);
   } else {
     shear_u = -999;
-    shear_v = 0;
+    shear_v = -999;
   }
 }
 
