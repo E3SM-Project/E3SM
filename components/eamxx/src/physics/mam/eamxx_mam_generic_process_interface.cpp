@@ -1,3 +1,4 @@
+#include <cmath>
 #include <physics/mam/eamxx_mam_generic_process_interface.hpp>
 #include <physics/mam/physical_limits.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
@@ -11,12 +12,53 @@ namespace scream {
 
 MAMGenericInterface::MAMGenericInterface(const ekat::Comm &comm,
                                          const ekat::ParameterList &params)
-    : AtmosphereProcess(comm, params) {
-      use_prescribed_ozone_   = m_params.get<bool>("use_mam4_precribed_ozone", false);
+    : AtmosphereProcess(comm, params), aero_config_() {
+  use_prescribed_ozone_   = m_params.get<bool>("use_mam4_precribed_ozone", false);
   /* Anything that can be initialized without grid information can be
    * initialized here. Like universal constants, mam wetscav options.
    */
+  if (m_params.isSublist("mam4_aero_species")) {
+    override_aerosol_species_properties(m_params.sublist("mam4_aero_species"));
+  }
 }
+
+namespace {
+  void override_single_species_properties(const ekat::ParameterList &single_species_params,
+                                          mam4::AeroSpecies &species) {
+    if (single_species_params.isParameter("molecular_weight")) {
+      EKAT_REQUIRE(single_species_params.isType<double>("molecular_weight"));
+      double mw = single_species_params.get<double>("molecular_weight");
+      species.molecular_weight = mw;
+    }
+    if (single_species_params.isParameter("density")) {
+      EKAT_REQUIRE(single_species_params.isType<double>("density"));
+      double rho = single_species_params.get<double>("density");
+      species.density = rho;
+    }
+    if (single_species_params.isParameter("hygroscopicity")) {
+      EKAT_REQUIRE(single_species_params.isType<double>("hygroscopicity"));
+      double hygro = single_species_params.get<double>("hygroscopicity");
+      species.hygroscopicity = hygro;
+    }
+  }
+}
+
+void MAMGenericInterface::override_aerosol_species_properties(const ekat::ParameterList &all_species_params) {
+  // NOTE: For now, we allow changing aerosol species parameters, but not adding new species.
+  mam4::AeroSpeciesHostView aero_species_h = Kokkos::create_mirror_view(aero_config_.aero_species);
+  Kokkos::deep_copy(aero_species_h, aero_config_.aero_species);
+
+  for (size_t i = 0; i < aero_species_h.size(); ++i) {
+    const std::string name = mam4::aero_id_short_name(mam4::AeroId(i));
+    if (all_species_params.isSublist(name)) {
+      const ekat::ParameterList &single_species_params = all_species_params.sublist(name);
+      override_single_species_properties(single_species_params, aero_species_h[i]);
+    }
+  }
+
+  Kokkos::deep_copy(aero_config_.aero_species, aero_species_h);
+}
+
 // ================================================================
 void MAMGenericInterface::set_aerosol_and_gas_ranges() {
   // NOTE: Using only one range for all num variables.
@@ -25,7 +67,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
   const std::string nmr_label = "nmr";
   const std::string mmr_label = "mmr";
 
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+  for(int mode = 0; mode < aero_config_.num_modes(); ++mode) {
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
     limits_aerosol_gas_tracers_[int_nmr_field_name] =
@@ -36,7 +78,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
     limits_aerosol_gas_tracers_[cld_nmr_field_name] =
         mam_coupling::physical_min_max(nmr_label);
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
       if(not int_mmr_field_name.empty()) {
@@ -52,7 +94,7 @@ void MAMGenericInterface::set_aerosol_and_gas_ranges() {
     }  // end for loop num species
   }
 
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     limits_aerosol_gas_tracers_[std::string(mam_coupling::gas_mmr_name[g])] =
         mam_coupling::physical_min_max(mmr_label);
   }  // end for loop num gases
@@ -113,7 +155,7 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol() {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+  for(int mode = 0; mode < aero_config_.num_modes(); ++mode) {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
     // NOT advected
@@ -121,7 +163,7 @@ void MAMGenericInterface::add_fields_cloudborne_aerosol() {
         mam_coupling::cld_aero_nmr_field_name(mode);
     add_field<Updated>(cld_nmr_field_name, scalar3d_mid, n_unit, grid_name);
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       // NOTE: DO NOT add cld borne aerosols to the "tracer" group as these are
       // NOT advected
@@ -152,13 +194,13 @@ void MAMGenericInterface::add_tracers_interstitial_aerosol() {
 
   // interstitial and cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int mode = 0; mode < mam_coupling::num_aero_modes(); ++mode) {
+  for(int mode = 0; mode < aero_config_.num_modes(); ++mode) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(mode);
     add_tracer<Updated>(int_nmr_field_name, grid_, n_unit, 1,
                         TracerAdvection::DynamicsOnly);
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(mode, a);
@@ -195,7 +237,7 @@ void MAMGenericInterface::add_tracers_gases() {
   }
 
   // add other gases as tracers (note that the index of gases starts from 1)
-  for(int g = 1; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 1; g < aero_config_.num_gas_ids(); ++g) {
     add_tracer<Updated>(std::string(mam_coupling::gas_mmr_name[g]), grid_, q_unit);
   }  // end for loop num gases
 }
@@ -204,14 +246,14 @@ void MAMGenericInterface::populate_cloudborne_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     const std::string cld_nmr_field_name =
         mam_coupling::cld_aero_nmr_field_name(m);
     wet_aero.cld_aero_nmr[m] =
         get_field_out(cld_nmr_field_name).get_view<Real **>();
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const std::string cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
@@ -228,11 +270,11 @@ void MAMGenericInterface::populate_cloudborne_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   // cloudborne aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // cloudborne aerosol tracers of interest: number (n) mixing ratios
     dry_aero.cld_aero_nmr[m] = buffer.dry_cld_aero_nmr[m];
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (cloudborne) aerosol tracers of interest: mass (q) mixing ratios
       const std::string cld_mmr_field_name =
           mam_coupling::cld_aero_mmr_field_name(m, a);
@@ -262,7 +304,7 @@ void MAMGenericInterface::set_field_w_scratch_buffer(
 // ================================================================
 void MAMGenericInterface::populate_gases_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     dry_aero.gas_mmr[g] = buffer.dry_gas_mmr[g];
   }
 }
@@ -276,7 +318,7 @@ void MAMGenericInterface::set_buffer_scratch_to_zero(
 // ================================================================
 void MAMGenericInterface::populate_gases_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
-  for(int g = 0; g < mam_coupling::num_aero_gases(); ++g) {
+  for(int g = 0; g < aero_config_.num_gas_ids(); ++g) {
     wet_aero.gas_mmr[g] = get_field_out(std::string(mam_coupling::gas_mmr_name[g])).get_view<Real **>();
   }
 }
@@ -286,11 +328,11 @@ void MAMGenericInterface::populate_interstitial_dry_aero(
     mam_coupling::AerosolState &dry_aero, mam_coupling::Buffer &buffer) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     dry_aero.int_aero_nmr[m] = buffer.dry_int_aero_nmr[m];
 
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
@@ -307,13 +349,13 @@ void MAMGenericInterface::populate_interstitial_wet_aero(
     mam_coupling::AerosolState &wet_aero) {
   // interstitial aerosol tracers of interest: mass (q) and
   // number (n) mixing ratios
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config_.num_modes(); ++m) {
     // interstitial aerosol tracers of interest: number (n) mixing ratios
     const std::string int_nmr_field_name =
         mam_coupling::int_aero_nmr_field_name(m);
     wet_aero.int_aero_nmr[m] =
         get_field_out(int_nmr_field_name).get_view<Real **>();
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       // (interstitial) aerosol tracers of interest: mass (q) mixing ratios
       const std::string int_mmr_field_name =
           mam_coupling::int_aero_mmr_field_name(m, a);
