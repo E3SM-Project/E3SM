@@ -33,6 +33,8 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.trig_ull            = true;
   s_zm_opts.clos_dyn_adj        = true;
   s_zm_opts.no_deep_pbl         = false;
+  s_zm_opts.cape_threshold      = ZMC::cape_threshold;
+  s_zm_opts.dcape_threshold     = ZMC::dcape_threshold;
   // ZM micro parameters
   s_zm_opts.zm_microp           = false;
   s_zm_opts.old_snow            = true;

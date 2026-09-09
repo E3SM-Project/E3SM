@@ -100,8 +100,7 @@ struct Functions {
     static inline constexpr Real lcl_pressure_threshold    = 600.0;    // if LCL pressure is lower => no convection and cape is zero
     static inline constexpr Real lwmax                     = 1.e-3;    // maximum condensate that can be held in cloud before rainout
     static inline constexpr Real ull_upper_launch_pressure = 600.0;    // upper search limit for unrestricted launch level (ULL)
-    static inline constexpr Real cape_threshold_old        = 70.;      // threshold value of cape for deep convection (old value before DCAPE)
-    static inline constexpr Real cape_threshold_new        = 0.;       // threshold value of cape for deep convection
+    static inline constexpr Real cape_threshold            = 0.;       // threshold value of cape for deep convection
     static inline constexpr Real dcape_threshold           = 0.;       // threshold value of dcape for deep convection
     static inline constexpr Real beta                      = 0;        // proportion of liquid water from layer below used in closure
     static inline constexpr Real mu_min                    = 0.02;     // minimum updraft mass flux threshold [mb/s]
@@ -167,6 +166,8 @@ struct Functions {
       trig_ull            = params.get<bool>("trig_ull",            true);
       clos_dyn_adj        = params.get<bool>("clos_dyn_adj",        false);
       no_deep_pbl         = params.get<bool>("no_deep_pbl",         false);
+      cape_threshold      = params.get<Real>("cape_threshold",      ZMC::cape_threshold);
+      dcape_threshold     = params.get<Real>("dcape_threshold",     ZMC::dcape_threshold);
       // ZM micro parameters
       zm_microp           = params.get<bool>("zm_microp",           false);
       old_snow            = params.get<bool>("old_snow",            true);
@@ -243,6 +244,8 @@ struct Functions {
       os << indent << "trig_ull        : " << trig_ull       << "\n";
       os << indent << "clos_dyn_adj    : " << clos_dyn_adj   << "\n";
       os << indent << "no_deep_pbl     : " << no_deep_pbl    << "\n";
+      os << indent << "cape_threshold  : " << cape_threshold << "\n";
+      os << indent << "dcape_threshold : " << dcape_threshold<< "\n";
       // ZM micro parameters
       os << indent << "zm_microp       : " << zm_microp      << "\n";
       os << indent << "old_snow        : " << old_snow       << "\n";
@@ -273,6 +276,8 @@ struct Functions {
     bool trig_ull;          // true if to using the "unrestricted launch level" (ULL) mode
     bool clos_dyn_adj;      // flag for mass flux adjustment to CAPE closure
     bool no_deep_pbl;       // flag to eliminate deep convection within PBL
+    Real cape_threshold;    // CAPE threshold for trigger condition
+    Real dcape_threshold;   // DCAPE threshold for trigger condition
     bool apply_detr_tend;
     // ZM micro parameters
     bool zm_microp;         // switch for convective microphysics
