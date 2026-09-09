@@ -648,7 +648,7 @@ module TopounitDataType
 
     call restartvar(ncid=ncid, flag=flag, varname='TS_TOPO', xtype=ncd_double, &
         dim1name='topounit', long_name='surface radiative temperature', &
-        units='K', interpinic_flag='copy', readvar=readvar, data=this%t_rad)
+        units='K', interpinic_flag='skip', readvar=readvar, data=this%t_rad)
 
   end subroutine restart_top_es
   
@@ -696,7 +696,7 @@ module TopounitDataType
 
     call restartvar(ncid=ncid, flag=flag, varname='FROM_UPHILL', xtype=ncd_double, &
         dim1name='topounit', long_name='water received from uphill topounit(s)', &
-        units='kg/m2', interpinic_flag='interp', readvar=readvar, data=this%from_uphill)
+        units='kg/m2', interpinic_flag='skip', readvar=readvar, data=this%from_uphill)
     if (flag=='read' .and. .not. readvar) then
        this%from_uphill(bounds%begt:bounds%endt) = 0.0_r8
     end if
