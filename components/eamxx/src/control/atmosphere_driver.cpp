@@ -1165,27 +1165,11 @@ void AtmosphereDriver::set_initial_conditions ()
       // will be properly computed in the dynamics interface.
       auto& this_grid_ic_fnames = ic_fields_names[grid_name];
       auto c = f.get_header().get_children();
+
+      // If this field is the parent of other subfields, we only read from file the subfields.
       if (c.size()==0) {
-        // If this field is the parent of other subfields, we only read from file the subfields.
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
-          m_fields_inited[grid_name].push_back(fname);
-        }
-      } else if (fvphyshack and grid_name == "physics_gll") {
-        // [CGLL ICs in pg2] I tried doing something like this in
-        // HommeDynamics::set_grids, but I couldn't find the means to get the
-        // list of fields. I think the issue is that you can't access group
-        // objects until some registration period ends. So instead do it here,
-        // where the list is definitely available.
-        for (const auto& e : c) {
-          const auto f = e.lock();
-          const auto& fid = f->get_identifier();
-          const auto& fname = fid.name();
-          if (ic_pl.isParameter(fname) and ic_pl.isType<double>(fname)) {
-            initialize_constant_field(fid, ic_pl);
-          } else {
-            this_grid_ic_fnames.push_back(fname);
-          }
           m_fields_inited[grid_name].push_back(fname);
         }
       }
