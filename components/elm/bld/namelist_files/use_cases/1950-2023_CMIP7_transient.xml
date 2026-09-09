@@ -2,10 +2,10 @@
 
 <namelist_defaults>
 
-<use_case_desc            >Simulate transient land-use, and aerosol deposition changes from 1850 to 2023</use_case_desc>
-<use_case_desc bgc="cn"   >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2023</use_case_desc>
-<use_case_desc bgc="cndv" >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2023</use_case_desc>
-<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2023</use_case_desc>
+<use_case_desc            >Simulate transient land-use, and aerosol deposition changes from 1950 to 2023</use_case_desc>
+<use_case_desc bgc="cn"   >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1950 to 2023</use_case_desc>
+<use_case_desc bgc="cndv" >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1950 to 2023</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 1950 to 2023</use_case_desc>
 
 <sim_year>1950</sim_year>
 
