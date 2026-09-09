@@ -2048,7 +2048,7 @@ subroutine diag_conv(state, ztodt, pbuf)
    call outfld('PREC_zmc', prec_dp ,pcols   ,lchnk )
    call outfld('PRECSC  ', snowc, pcols, lchnk )
    call outfld('PRECSL  ', snowl, pcols, lchnk )
-   call outfld('PRECST  ', snowc + snowl, pcols, lchnk )
+   call outfld('PRECST  ', snowc(:ncol) + snowl(:ncol), ncol, lchnk )
    call outfld('PRECT   ', prect, pcols, lchnk )
    call outfld('PRECTMX ', prect, pcols, lchnk )
 
