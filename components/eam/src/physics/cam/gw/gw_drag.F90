@@ -966,23 +966,19 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              use_tau_limiter=use_tau_limiter)
 
         if (use_gw_front_rr_scaling) then
-          ! taucd is projected from the raw (unscaled) source stress inside
-          ! gw_drag_prof, before effgw_cm_var is applied to the tendencies
-          ! (gwd_compute_tendencies_from_stress_divergence only scales gwut/
-          ! utgw/vtgw). momentum_energy_conservation below uses taucd
-          ! to set the below-source correction for energy conservation.
-          ! without this correction that correction stays at full strength even
-          ! as effgw_cm_var->0, defeating the intent of RR scaling. Therefore,
-          ! we scale taucd here by the same per-column value as tendencies.
-          if (effgw_cm == 0._r8) then
-            tau = 0._r8
-            taucd = 0._r8
-          else
-            do i = 1, ncol
-              tau(i,:,:) = tau(i,:,:) * (effgw_cm_var(i)/effgw_cm)
-              taucd(i,:,:) = taucd(i,:,:) * (effgw_cm_var(i)/effgw_cm)
-            end do
-          end if
+          ! tau/taucd are projected/reconstructed from the raw (unscaled)
+          ! source stress inside gw_drag_prof, before effgw_cm_var is applied
+          ! to the tendencies (gwd_compute_tendencies_from_stress_divergence
+          ! only scales gwut/utgw/vtgw). momentum_energy_conservation below
+          ! uses taucd to set the below-source correction for energy
+          ! conservation; without this correction that correction stays at
+          ! full strength even as effgw_cm_var->0, defeating the intent of RR
+          ! scaling. Therefore, we scale tau/taucd here by the same
+          ! per-column value applied to the tendencies.
+          do i = 1, ncol
+            tau(i,:,:) = tau(i,:,:) * effgw_cm_var(i)
+            taucd(i,:,:) = taucd(i,:,:) * effgw_cm_var(i)
+          end do
         end if
 
         !  add the diffusion coefficients
