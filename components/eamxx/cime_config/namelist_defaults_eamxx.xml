@@ -946,6 +946,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <laplace_scaling>UNSET</laplace_scaling>
     <laplace_scaling vgrid="L128v1|L72">0.0</laplace_scaling>
     <laplace_scaling vgrid="L128v4">1.0</laplace_scaling>
+    <!-- DP is less stable when using laplace_scaling=1, so keep the old sponge layer settings -->
+    <laplace_scaling vgrid="L128v4" COMPSET=".*DP-EAMxx">0.0</laplace_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
@@ -967,6 +969,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top vgrid="L128v1|L72" hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
     <!-- updated nu_top for L128v4 when laplace_scaling > 0 (tensor viscosity) -->
     <nu_top vgrid="L128v4" >5e-7</nu_top>
+    <nu_top vgrid="L128v4" COMPSET=".*DP-EAMxx">1.0e4</nu_top>
     <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">15.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <se_ftype valid_values="0,2">0</se_ftype>
