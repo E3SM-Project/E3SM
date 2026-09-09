@@ -67,6 +67,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("ConditionalSampling",&create_diagnostic<ConditionalSampling>);
   diag_factory.register_product("BinaryOp", &create_diagnostic<BinaryOp>);
   diag_factory.register_product("Histogram",&create_diagnostic<Histogram>);
+  diag_factory.register_product("LogUnaryDiag",&create_diagnostic<LogDiagnostic>);
+  diag_factory.register_product("ExpUnaryDiag",&create_diagnostic<ExpDiagnostic>);
 }
 
 } // namespace scream
