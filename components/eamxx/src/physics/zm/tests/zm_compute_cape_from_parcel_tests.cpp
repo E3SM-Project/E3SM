@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestComputeCapeFromParcel : public UnitWrap::UnitT
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        compute_cape_from_parcel_f(d);
-      }
-      else {
-        compute_cape_from_parcel(d);
-      }
+      compute_cape_from_parcel(d);
     }
 
     // Verify BFB results, all data should be in C layout

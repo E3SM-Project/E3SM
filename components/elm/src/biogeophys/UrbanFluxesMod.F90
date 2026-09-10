@@ -68,7 +68,6 @@ contains
          implicit_stress, atm_gustiness, force_land_gustiness
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
-    use elm_varctl          , only : use_vsfm
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -554,14 +553,6 @@ contains
                ! unscaled latent heat conductance
                wtuq_road_perv_unscl(l) = 1._r8/canyon_resistance(l)
 
-               if (use_vsfm) then
-                  if (qaf(l) < qg(c)) then
-                     if (do_soilevap_beta()) then
-                        wtuq_road_perv(l)       = soilbeta(c)*wtuq_road_perv(l)
-                        wtuq_road_perv_unscl(l) = soilbeta(c)*wtuq_road_perv_unscl(l)
-                     endif
-                  endif
-               endif
             else if (ctype(c) == icol_road_imperv) then
 
                ! scaled sensible heat conductance

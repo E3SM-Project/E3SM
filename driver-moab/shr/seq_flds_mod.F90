@@ -1838,12 +1838,20 @@ contains
     attname  = 'So_bldepth'
     call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(xao_states,"So_fswpen")
+    ! NOTE: So_fswpen is the one field carried by BOTH o2x and xao states. In the MOAB
+    ! coupler the atm-ocn "flux" mesh (mbofxid) is an alias of the ocn coupler mesh (mboxid),
+    ! so o2x and xao tags live on the SAME MOAB mesh. To avoid a tag collision, the xao copy
+    ! is named So_fswpen_ao while o2x keeps So_fswpen. (So_fswpen is consumed only by the
+    ! atm-ocn flux as an o2x input; the xao copy is not merged to x2a/x2o, so this rename is
+    ! transparent.) See cplcomp_moab_init_ocn (alias) and seq_flux_atmocn_moab (write).
+    call seq_flds_add(xao_states,"So_fswpen_ao")
     call seq_flds_add(o2x_states,"So_fswpen")
     longname = 'Fraction of sw penetrating surface layer for diurnal cycle'
     stdname  = 'Fraction of sw penetrating surface layer for diurnal cycle'
     units    = '1'
     attname  = 'So_fswpen'
+    call metadata_set(attname, longname, stdname, units)
+    attname  = 'So_fswpen_ao'
     call metadata_set(attname, longname, stdname, units)
 
     !------------------------------

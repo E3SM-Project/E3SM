@@ -99,7 +99,9 @@ Int Functions<S,D>
   constexpr Int    kdir         = -1;
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
+#ifndef NDEBUG
   constexpr bool   debug_ABORT  = false;
+#endif
 
   const bool do_ice_production = runtime_options.do_ice_production;
 

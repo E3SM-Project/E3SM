@@ -11,7 +11,7 @@
 #include "compose_hommexx.hpp"
 
 extern "C" void
-sl_get_params(double* nu_q, double* hv_scaling, int* hv_q, int* hv_subcycle_q,
+sl_get_params(double* nu_q, double* hv_scaling, int* hv_q, int* hv_subcycle_q, int* hv_subcycle_q_sgs,
               int* limiter_option, int* cdr_check, int* geometry_type,
               int* trajectory_nsubstep, int* trajectory_nvelocity,
               int* diagnostics, bool* do_3d_turbulence);
@@ -57,7 +57,7 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
 
   const bool independent_time_steps = params.dt_tracer_factor > params.dt_remap_factor;
 
-  sl_get_params(&m_data.nu_q, &m_data.hv_scaling, &m_data.hv_q, &m_data.hv_subcycle_q,
+  sl_get_params(&m_data.nu_q, &m_data.hv_scaling, &m_data.hv_q, &m_data.hv_subcycle_q, &m_data.hv_subcycle_q_sgs,
                 &m_data.limiter_option, &m_data.cdr_check, &m_data.geometry_type,
                 &m_data.trajectory_nsubstep, &m_data.trajectory_nvelocity,
                 &m_data.diagnostics, &m_data.do_3d_turbulence);
@@ -109,6 +109,10 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
                         "semi_lagrange_hv_q should be in [0, qsize].");
   Errors::runtime_check(m_data.hv_subcycle_q >= 0,
                         "hypervis_subcycle_q should be >= 0.");
+  Errors::runtime_check(m_data.hv_subcycle_q_sgs >= 0,
+                        "horiz_turb_subcycle_q should be >= 0.");
+  Errors::runtime_check(!m_data.do_3d_turbulence || m_data.hv_subcycle_q_sgs > 0,
+                        "horiz_turb_subcycle_q should be > 0 when 3D turbulence is enabled.");
 
   m_tp_ne = Homme::get_default_team_policy<ExecSpace>(m_data.nelemd);
   m_tp_ne_qsize = Homme::get_default_team_policy<ExecSpace>(m_data.nelemd * m_data.qsize);
@@ -122,9 +126,9 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
   m_sphere_ops.allocate_buffers(m_tu_ne_qsize);
 
   if (Context::singleton().get<Connectivity>().get_comm().root())
-    printf("compose> nelemd %d qsize %d hv_q %d hv_subcycle_q %d lim %d "
+    printf("compose> nelemd %d qsize %d hv_q %d hv_subcycle_q %d hv_subcycle_q_sgs %d lim %d "
            "independent_time_steps %d\n",
-           m_data.nelemd, m_data.qsize, m_data.hv_q, m_data.hv_subcycle_q,
+           m_data.nelemd, m_data.qsize, m_data.hv_q, m_data.hv_subcycle_q, m_data.hv_subcycle_q_sgs,
            m_data.limiter_option, (int) m_data.independent_time_steps);
 }
 
@@ -207,6 +211,23 @@ void ComposeTransportImpl::init_boundary_exchanges () {
       be->registration_completed();
     }
   }
+
+  // For horizontal turbulent diffusion applied to all tracers.
+  if (m_data.do_3d_turbulence) {
+    for (int i = 0; i < 2; ++i) {
+      m_horiz_turb_dss_be[i] = std::make_shared<BoundaryExchange>();
+      auto be = m_horiz_turb_dss_be[i];
+      be->set_label(std::string("ComposeTransport-q-HorizTurb-" + std::to_string(i)));
+      be->set_diagnostics_level(sp.internal_diagnostics_level);
+      be->set_buffers_manager(bm_exchange);
+      be->set_num_fields(0, 0, m_data.qsize);
+      if (i == 0)
+        be->register_field(m_tracers.qtens_biharmonic, m_data.qsize, 0);
+      else
+        be->register_field(m_tracers.Q, m_data.qsize, 0);
+      be->registration_completed();
+    }
+  }
 }
 
 void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
@@ -227,14 +248,14 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
     advance_hypervis_scalar(dt);
     Kokkos::fence();
     GPTLstop("compose_hypervis_scalar");
+  }
 
-    // SGS horizontal turbulent diffusion for scalars
-    if (m_data.do_3d_turbulence){
-      GPTLstart("compose_horizturb_scalar");
-      advance_horizontal_turbulent_diffusion_scalar(dt);
-      Kokkos::fence();
-      GPTLstop("compose_horizturb_scalar");
-    }
+  // SGS horizontal turbulent diffusion for all tracers.
+  if (m_data.do_3d_turbulence) {
+    GPTLstart("compose_horizturb_scalar");
+    advance_horizontal_turbulent_diffusion_scalar(dt);
+    Kokkos::fence();
+    GPTLstop("compose_horizturb_scalar");
   }
 
   GPTLstart("compose_cedr_global");

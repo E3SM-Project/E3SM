@@ -58,7 +58,8 @@ module element_mod
 
      real (kind=real_kind)    :: variable_hyperviscosity(np,np)       ! hyperviscosity based on above
      real (kind=real_kind)    :: hv_courant                           ! hyperviscosity courant number
-     real (kind=real_kind)    :: tensorVisc(np,np,2,2)                !og, matrix V for tensor viscosity
+     real (kind=real_kind)    :: tensorVisc(np,np,2,2)                ! matrix V for tensor hyperviscosity
+     real (kind=real_kind)    :: tensorVisc_2(np,np,2,2)              ! matrix V for tensor viscosity
 
      type (GridVertex_t)      :: vertex                               ! element grid vertex information
      type (EdgeDescriptor_t)  :: desc
@@ -116,7 +117,7 @@ module element_mod
      ! The transpose of this operation is its pseudoinverse.
      ! This is just "identity" for plane
 
-     real (kind=real_kind)    :: vec_sphere2cart(np,np,3,2)
+     real (kind=real_kind)    :: vec_sphere2cart(np,np,3,3)
 
      ! Mass matrix terms for an element on a cube or reference face
      real (kind=real_kind)    :: mp(np,np)                            ! mass matrix on v and p grid

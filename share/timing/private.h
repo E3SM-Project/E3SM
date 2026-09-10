@@ -44,8 +44,10 @@
 #define MAX_AUX 9
 
 #ifndef __cplusplus
-// Protect against inclusion of stdbool.h in, e.g., a compiler wrapper.
-# ifndef true
+// Protect against inclusion of stdbool.h in, e.g., a compiler wrapper, and
+// against C23 (and later) where true/false/bool are keywords, not macros
+// defined via stdbool.h.
+# if !defined(true) && !(defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
 # endif
 #endif

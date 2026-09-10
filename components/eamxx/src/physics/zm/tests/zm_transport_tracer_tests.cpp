@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestZmTransportTracer : public UnitWrap::UnitTest<
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        zm_transport_tracer_f(d);
-      }
-      else {
-        zm_transport_tracer(d);
-      }
+      zm_transport_tracer(d);
     }
 
     // Verify BFB results, all data should be in C layout

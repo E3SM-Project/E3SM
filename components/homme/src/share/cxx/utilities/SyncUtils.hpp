@@ -314,6 +314,131 @@ sync_to_host_p2i(Source_T source, Dest_T dest)
   }
 }
 
+// ============ SYNC A SINGLE TIME LEVEL FROM DEVICE TO HOST ================= //
+//
+// These are trimmed twins of the sync_to_host overloads above, for the case where
+// only one time level of a state array is actually consumed on the Fortran side
+// (which is all CAM/EAM and SCREAM ever read after a step). They copy source time
+// level src_tl into destination time level dst_tl and leave the other destination
+// slots untouched, so the Fortran array keeps its full NUM_TIME_LEVELS extent and
+// its layout/strides are unchanged.
+//
+// src_tl and dst_tl are separate because they are not always the same slot: the
+// qdp levels are rotated by TimeLevel::update_tracers_levels() before the vertical
+// remap, while the dynamics levels are rotated afterwards, so the freshly-remapped
+// tracer mass lives in np1_qdp while Fortran readers index with TimeLevel_Qdp().
+// Pass the same value twice when they do coincide.
+//
+// NOTE: the create_mirror_view/deep_copy pair below is deliberately left full
+// width. On a host build it is a no-op alias plus a self-copy that Kokkos
+// short-circuits, so the entire cost is the repack loop that we are trimming here.
+// Narrowing the transfer itself would require packing one time level on the device
+// first, since a Kokkos::subview slice is LayoutStride and neither the *_mappable
+// predicates above nor cross-space deep_copy accept that.
+
+// Single time level of m_w_i / m_phinh_i
+template <typename Source_T, typename Dest_T>
+typename std::enable_if
+  <
+    (exec_view_mappable<Source_T, Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV_P]>::value &&
+     host_view_mappable<Dest_T, Real * [NUM_TIME_LEVELS][NUM_INTERFACE_LEV][NP][NP]>::value),
+    void
+  >::type
+sync_to_host(Source_T source, Dest_T dest, const int src_tl, const int dst_tl)
+{
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
+  Kokkos::deep_copy(source_mirror, source);
+  for (int ie = 0; ie < source.extent_int(0); ++ie) {
+    for (int level = 0; level < NUM_INTERFACE_LEV; ++level) {
+      const int ilev = level / VECTOR_SIZE;
+      const int ivec = level % VECTOR_SIZE;
+      for (int igp = 0; igp < NP; ++igp) {
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          dest(ie, dst_tl, level, igp, jgp) = source_mirror(ie, src_tl, igp, jgp, ilev)[ivec];
+        }
+      }
+    }
+  }
+}
+
+// Single time level of m_vtheta_dp / m_dp3d
+template <typename Source_T, typename Dest_T>
+typename std::enable_if
+  <
+    (exec_view_mappable<Source_T, Scalar ** [NP][NP][NUM_LEV]>::value &&
+     host_view_mappable<Dest_T, Real ** [NUM_PHYSICAL_LEV][NP][NP]>::value),
+    void
+  >::type
+sync_to_host(Source_T source, Dest_T dest, const int src_tl, const int dst_tl)
+{
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
+  Kokkos::deep_copy(source_mirror, source);
+  for (int ie = 0; ie < source.extent_int(0); ++ie) {
+    for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
+      const int ilev = level / VECTOR_SIZE;
+      const int ivec = level % VECTOR_SIZE;
+      for (int igp = 0; igp < NP; ++igp) {
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          dest(ie, dst_tl, level, igp, jgp) = source_mirror(ie, src_tl, igp, jgp, ilev)[ivec];
+        }
+      }
+    }
+  }
+}
+
+// Single time level of m_v (2 horizontal components)
+template <typename Source_T, typename Dest_T>
+typename std::enable_if
+  <
+    (exec_view_mappable<Source_T, Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV]>::value &&
+     host_view_mappable<Dest_T, Real * [NUM_TIME_LEVELS][NUM_PHYSICAL_LEV][2][NP][NP]>::value),
+    void
+  >::type
+sync_to_host(Source_T source, Dest_T dest, const int src_tl, const int dst_tl)
+{
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
+  Kokkos::deep_copy(source_mirror, source);
+  for (int ie = 0; ie < source.extent_int(0); ++ie) {
+    for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
+      const int ilev = level / VECTOR_SIZE;
+      const int ivec = level % VECTOR_SIZE;
+      for (int igp = 0; igp < NP; ++igp) {
+        for (int jgp = 0; jgp < NP; ++jgp) {
+          dest(ie, dst_tl, level, 0, igp, jgp) = source_mirror(ie, src_tl, 0, igp, jgp, ilev)[ivec];
+          dest(ie, dst_tl, level, 1, igp, jgp) = source_mirror(ie, src_tl, 1, igp, jgp, ilev)[ivec];
+        }
+      }
+    }
+  }
+}
+
+// Single qdp time level (all tracers)
+template <typename Source_T, typename Dest_T>
+typename std::enable_if
+  <
+    (exec_view_mappable<Source_T, Scalar * [Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]>::value &&
+     host_view_mappable<Dest_T, Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>::value),
+    void
+  >::type
+sync_to_host(Source_T source, Dest_T dest, const int src_tl, const int dst_tl)
+{
+  typename Source_T::host_mirror_type source_mirror = Kokkos::create_mirror_view(source);
+  Kokkos::deep_copy(source_mirror, source);
+  for (int ie = 0; ie < source.extent_int(0); ++ie) {
+    for (int tracer = 0; tracer < QSIZE_D; ++tracer) {
+      for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
+        const int ilev = level / VECTOR_SIZE;
+        const int ivec = level % VECTOR_SIZE;
+        for (int igp = 0; igp < NP; ++igp) {
+          for (int jgp = 0; jgp < NP; ++jgp) {
+            dest(ie, dst_tl, tracer, level, igp, jgp) = source_mirror(ie, src_tl, tracer, igp, jgp, ilev)[ivec];
+          }
+        }
+      }
+    }
+  }
+}
+
 // ===================== SYNC FROM HOST TO DEVICE ============================ //
 
 template <typename Source_T, typename Dest_T>

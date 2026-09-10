@@ -76,7 +76,6 @@ module cplcomp_exchange_mod
   character(*),parameter :: subName = '(seq_mctext_mct)'
   real(r8),parameter :: c1 = 1.0_r8
    integer, parameter :: ATM_PHYS_ID_OFFSET = 200
-   integer, parameter :: OCN_SECOND_COPY_ID_OFFSET = 1000
 
   !=======================================================================
 contains
@@ -414,7 +413,6 @@ subroutine  copy_aream_from_area(mbappid)
 
       use iMOAB, only: iMOAB_WriteMesh, iMOAB_GetMeshInfo
       use seq_infodata_mod, only: seq_infodata_type, seq_infodata_GetData
-      use shr_moab_mod, only: mbGetnCells, mbGetCellTagVals, mbSetCellTagVals
 
       type(seq_infodata_type), intent(in) :: infodata
       type(component_type),    intent(inout) :: comp
@@ -429,10 +427,7 @@ subroutine  copy_aream_from_area(mbappid)
       integer :: ierr
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ocn_domain
-      character(CXX) :: tagname
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      real(r8), allocatable :: tagValues(:)
-      integer :: arrsize, nloc
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -527,62 +522,22 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_exchange_domain_tags(comp, mpoid, mboxid, 'lat:lon:area:frac:mask', 'domo')
       endif
 
-!!!!!!!!! OCEAN 2nd COPY
-      ! start copy
-      ! Do another ocean copy on the coupler so So_fswpen does not collide between
-      ! xao states and o2x states. Preserve the explicit second-copy context offset.
-      id_join = id_join + OCN_SECOND_COPY_ID_OFFSET
-
-!!!!!!  OCEAN COMPONENT
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
- !!!! FULL OCEAN
-         if ( trim(ocn_domain) == 'none' ) then
-            !  send mesh to coupler, the second time! a copy would be cheaper
-            call moab_send_mesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
-         endif
-      endif
-
-!!!!!!  ON 2nd OCN ON CPL
+!!!!!!!!! OCEAN 2nd COPY (mbofxid) -- ALIAS of mboxid (robust fix)
+      ! mbofxid shares mboxid's MOAB app / mesh / local ordering instead of being an
+      ! independent second load. Two independent LoadMesh (data ocn) or send/receive
+      ! (full ocn) calls do NOT guarantee identical local (handle) ordering: each rank
+      ! owns the same ocean cells but in a different order, which scattered every by-index
+      ! mboxid<->mbofxid transfer (atm-ocn flux xao, ofrac, domain copy, albedo, budget
+      ! diagnostics) whenever the PE layout changed (PEM/ERP). Sharing one mesh makes all
+      ! by-index access correct by construction, for both data and active ocean.
+      !
+      ! The single field that lived on BOTH o2x and xao states, So_fswpen, is renamed to
+      ! So_fswpen_ao on the xao side (seq_flds_mod) so the two do not collide on the shared
+      ! mesh. The xao->atm second-hop map reuses mboxid's o2x->atm comm graph (prep_atm_mod);
+      ! no separate app id / context offset is needed for mbofxid any more.
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MPASOF"
-         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
-         call moab_register_app(appname, mpicom_new, id_join, mbofxid, subname)
- !!!!! FULL OCN
-         if ( trim(ocn_domain) == 'none' ) then
-            call moab_receive_mesh(mbofxid, mpicom_join, mpigrp_old, id_old, subname)
- !!!!! DATA OCN
-         else
-             ! we need to read the ocean mesh on coupler, from domain file
-            infile = trim(ocn_domain)
-            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE=;NO_CULLING;REPARTITION'
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit,'(A)') subname//' load ocn domain mesh from file for second ocn instance '//trim(ocn_domain) &
-               , ' with options '//trim(ropts)
-            endif
-            call moab_load_mesh(mbofxid, infile, ropts, 0, subname)
-            call moab_define_global_id_tag(mbofxid, subname)
-         endif
-
-  !! ON 2nd OCEAN ON COUPLER
-         call moab_define_double_tag(mbofxid, trim(seq_flds_dom_fields)//":norm8wt", subname)
-
-         ! copy domain data to mbofxid
-         nloc = mbGetnCells(mbofxid)
-         arrsize=nloc*5
-         allocate(tagValues(arrsize))
-         call mbGetCellTagVals(mboxid,'lat:lon:area:frac:mask'//C_NULL_CHAR,tagValues,arrsize)
-         call mbSetCellTagVals(mbofxid,'lat:lon:area:frac:mask'//C_NULL_CHAR,tagValues,arrsize)
-         deallocate(tagValues)
-
+         mbofxid = mboxid
       endif
-
-!!!!!!  ON OCN COMPONENT
-      if (mpoid .ge. 0) then  ! we are on component ocn pes again, release buffers
-          if ( trim(ocn_domain) == 'none' ) then
-            call moab_free_sender_buffers(mpoid, id_join, subname)
-          endif
-      endif
-      ! end copy
 #ifdef MOABDEBUG
    if (mbofxid >= 0) then
       outfile = 'recMeshOcnF.h5m'//C_NULL_CHAR

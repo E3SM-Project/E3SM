@@ -515,12 +515,12 @@ def atm_config_chg_impl(xml_root, change):
     >>> ################ INVALID TYPE #######################
     >>> atm_config_chg_impl(tree,'prop2=two')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Could not refine 'two' as type 'integer':
+    CIME.core.exceptions.CIMEError: ERROR: Could not refine 'two' as type 'integer':
     could not convert string to float: 'two'
     >>> ################ INVALID VALUE #######################
     >>> atm_config_chg_impl(tree,'prop2=3')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
+    CIME.core.exceptions.CIMEError: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
     >>> ################ AMBIGUOUS CHANGE #######################
     >>> atm_config_chg_impl(tree,'prop1=three')
     Traceback (most recent call last):

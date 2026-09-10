@@ -813,7 +813,7 @@ contains
        time0=time1
     endif
        
-
+    call flush(iulog)  
   call t_stopf('prim_printstate')
   end subroutine prim_printstate
    

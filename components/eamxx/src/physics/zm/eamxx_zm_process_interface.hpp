@@ -36,7 +36,7 @@ class ZMDeepConvection : public AtmosphereProcess
     AtmosphereProcessType type() const override { return AtmosphereProcessType::Physics; }
 
     // The name of the subcomponent
-    std::string name() const override { return "ZM"; }
+    std::string name() const override { return "zm"; }
 
     // Create grid-dependent field requests
     void create_requests() override;

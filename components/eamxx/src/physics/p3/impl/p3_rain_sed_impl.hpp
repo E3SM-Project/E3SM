@@ -148,6 +148,10 @@ void Functions<S,D>
         auto index_pack = range_pack-1;
         const auto lt_zero = index_pack < 0;
         index_pack.set(lt_zero, 0);
+        // Evaluate the gather with valid indices on masked lanes too. Kokkos
+        // evaluates vector expressions before applying the mask below.
+        const auto gt_last = index_pack >= sflux_qx.extent(0);
+        index_pack.set(gt_last, sflux_qx.extent(0)-1);
         const auto flux_qx_pk = index(sflux_qx, index_pack);
         precip_liq_flux(pk).set(range_mask, precip_liq_flux(pk) + flux_qx_pk);
       });

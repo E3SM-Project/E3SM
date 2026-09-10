@@ -33,7 +33,7 @@ contains
     use shal_movie_mod, only : shal_movie_init, shal_movie_output, shal_movie_finish
 #endif
     !-----------------
-    use global_norms_mod, only : test_global_integral, print_cfl, dss_hvtensor
+    use global_norms_mod, only : print_mesh_stats, print_cfl, dss_hvtensor
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
@@ -190,7 +190,7 @@ contains
     call t_startf('sweq')
     hybrid = hybrid_create(par,ithr,hthreads)
     simday=0
-       call test_global_integral(elem,hybrid,nets,nete)
+       call print_mesh_stats(elem,hybrid,nets,nete)
        call dss_hvtensor(elem,hybrid,nets,nete)
        call print_cfl(elem,hybrid,nets,nete)
 
@@ -845,7 +845,7 @@ contains
 
 #endif
     !-----------------
-    use global_norms_mod, only : test_global_integral, print_cfl, dss_hvtensor
+    use global_norms_mod, only : print_mesh_stats, print_cfl, dss_hvtensor
     !-----------------
     use quadrature_mod, only : quadrature_t, gausslobatto
     !-----------------
@@ -928,7 +928,7 @@ contains
 
     hybrid = hybrid_create(par,ithr,hthreads)
 
-       call test_global_integral(elem,hybrid,nets,nete,mindx)
+       call print_mesh_stats(elem,hybrid,nets,nete,mindx)
        call dss_hvtensor(elem,hybrid,nets,nete)
        call print_cfl(elem,hybrid,nets,nete)
 

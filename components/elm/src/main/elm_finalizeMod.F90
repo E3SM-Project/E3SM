@@ -28,14 +28,8 @@ contains
 #ifdef MOAB_LATERAL
     use MOABGridType, only : elm_moab_finalize
 #endif
-#ifdef USE_PETSC_LIB
-#include <petsc/finclude/petsc.h>
-#endif
     ! !USES:
-    use elm_varctl             , only : use_vsfm, use_cn
-#ifdef USE_PETSC_LIB
-    use petscsys
-#endif
+    use elm_varctl             , only : use_cn
     !
     ! !ARGUMENTS
     implicit none
@@ -45,13 +39,6 @@ contains
     call elm_moab_finalize()
 #endif
 
-#ifdef USE_PETSC_LIB
-    PetscErrorCode        :: ierr
-
-    if (use_vsfm) then
-       call PetscFinalize(ierr)
-    endif
-#endif
     if (use_cn) then
        call cleanupLitterTransportList()
     endif

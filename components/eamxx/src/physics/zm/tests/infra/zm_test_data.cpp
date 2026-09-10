@@ -9,10 +9,6 @@
 using scream::Real;
 using scream::Int;
 
-//
-// A C++ interface to ZM fortran calls and vice versa
-//
-
 namespace scream {
 namespace zm {
 
@@ -32,60 +28,7 @@ using view3dr_d = ZMF::view_3d<Real>;
 
 using WSM = typename ZMF::WorkspaceManager;
 
-extern "C" {
-
-void zm_opts_init_bridge_f();
-
-void zm_opts_finalize_bridge_f();
-
-void ientropy_bridge_f(Real s, Real p, Real qt, Real* t, Real* qst, Real tfg);
-
-void entropy_bridge_f(Real tk, Real p, Real qtot, Real* entropy);
-
-void zm_transport_tracer_bridge_f(Int pcols, Int pver, bool* doconvtran, Real* q, Int ncnst, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* fracis, Real* dqdt, Real* dpdry, Real dt);
-
-void zm_transport_momentum_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real* wind_in, Int nwind, Real* mu, Real* md, Real* du, Real* eu, Real* ed, Real* dp, Int* jt, Int* mx, Int* ideep, Int il1g, Int il2g, Real* wind_tend, Real* pguall, Real* pgdall, Real* icwu, Real* icwd, Real dt, Real* seten);
-
-void compute_dilute_cape_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* sp_humidity_in, Real* temperature_in, Real* zmid, Real* pmid, Real* pint, Int* pblt, Real* tpert, Real* parcel_temp, Real* parcel_qsat, Int* msemax_klev, Real* lcl_temperature, Int* lcl_klev, Int* eql_klev, Real* cape, bool calc_msemax_klev, Int* prev_msemax_klev, bool use_input_tq_mx, Real* q_mx, Real* t_mx);
-
-void find_mse_max_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* msemax_top_k, bool pergro_active, Real* temperature, Real* zmid, Real* sp_humidity, Int* msemax_klev, Real* mse_max_val);
-
-void compute_dilute_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int num_msg, Int* klaunch, Real* pmid, Real* temperature, Real* sp_humidity, Real* tpert, Int* pblt, Real* parcel_temp, Real* parcel_vtemp, Real* parcel_qsat, Real* lcl_pmid, Real* lcl_temperature, Int* lcl_klev);
-
-void compute_cape_from_parcel_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int num_cin, Int num_msg, Real* temperature, Real* tv, Real* sp_humidity, Real* pint, Int* msemax_klev, Real* lcl_pmid, Int* lcl_klev, Real* parcel_qsat, Real* parcel_temp, Real* parcel_vtemp, Int* eql_klev, Real* cape);
-
-void zm_conv_mcsp_calculate_shear_bridge_f(Int pcols, Int ncol, Int pver, Real* state_pmid, Real* state_u, Real* state_v, Real* mcsp_shear);
-
-void zm_conv_mcsp_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real ztodt, Int* jctop, Real* state_pmid, Real* state_pint, Real* state_pdel, Real* state_s, Real* state_q, Real* state_u, Real* state_v, Real* ptend_zm_s, Real* ptend_zm_q, Real* ptend_s, Real* ptend_q, Real* ptend_u, Real* ptend_v, Real* mcsp_ds_out, Real* mcsp_dq_out, Real* mcsp_du_out, Real* mcsp_dv_out, Real* mcsp_freq, Real* mcsp_shear, Real* zm_depth);
-
-void zm_conv_main_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, bool is_first_step, Real time_step, Real* t_mid, Real* q_mid_in, Real* omega, Real* p_mid_in, Real* p_int_in, Real* p_del_in, Real* geos, Real* z_mid_in, Real* z_int_in, Real* pbl_hgt, Real* tpert, Real* landfrac, Real* t_star, Real* q_star, Int* lengath, Int* gather_index, Int* msemax_klev_g, Int* jctop, Int* jcbot, Int* jt, Real* prec, Real* heat, Real* qtnd, Real* cape, Real* dcape, Real* mcon, Real* pflx, Real* zdu, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* p_del, Real* dsubcld, Real* ql, Real* rliq, Real* rprd, Real* dlf);
-
-void zm_conv_evap_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Real time_step, Real* p_mid, Real* p_del, Real* t_mid, Real* q_mid, Real* prdprec, Real* cldfrc, Real* tend_s, Real* tend_q, Real* tend_s_snwprd, Real* tend_s_snwevmlt, Real* prec, Real* snow, Real* ntprprd, Real* ntsnprd, Real* flxprec, Real* flxsnow);
-
-void zm_calc_fractional_entrainment_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Real* z_mid, Real* z_int, Real* dz, Real* h_env, Real* h_env_sat, Real* h_env_min, Real* lambda, Real* lambda_max);
-
-void zm_downdraft_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jb, Int* jt, Int* j0, Int* jd, Real* z_int, Real* dz, Real* s_mid, Real* q_mid, Real* h_env, Real* lambda, Real* lambda_max, Real* qsthat, Real* hsthat, Real* gamhat, Real* rprd, Real* mflx_up, Real* mflx_dn, Real* entr_dn, Real* s_dnd, Real* q_dnd, Real* h_dnd, Real* q_dnd_sat, Real* evp, Real* totevp);
-
-void zm_cloud_properties_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int limcnv, Real* p_mid, Real* z_mid, Real* z_int, Real* t_mid, Real* s_mid, Real* s_int, Real* q_mid, Real* landfrac, Real* tpert_g, Int* jb, Int* lel, Int* jt, Int* jlcl, Int* j0, Int* jd, Real* mflx_up, Real* entr_up, Real* detr_up, Real* mflx_dn, Real* entr_dn, Real* mflx_net, Real* s_upd, Real* q_upd, Real* ql, Real* s_dnd, Real* q_dnd, Real* qst, Real* cu, Real* evp, Real* pflx, Real* rprd);
-
-void zm_closure_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Real cape_threshold_in, Int* lcl, Int* lel, Int* jt, Int* mx, Real* dsubcld, Real* z_mid, Real* z_int, Real* p_mid, Real* p_del, Real* t_mid, Real* s_mid, Real* q_mid, Real* qs, Real* ql, Real* s_int, Real* q_int, Real* t_pcl_lcl, Real* t_pcl, Real* q_pcl_sat, Real* s_upd, Real* q_upd, Real* mflx_net, Real* detr_up, Real* mflx_up, Real* mflx_dn, Real* q_dnd, Real* s_dnd, Real* cape, Real* cld_base_mass_flux);
-
-void zm_calc_output_tend_bridge_f(Int pcols, Int ncol, Int pver, Int pverp, Int msg, Int* jt, Int* mx, Real* dsubcld, Real* p_del, Real* s_int, Real* q_int, Real* s_upd, Real* q_upd, Real* mflx_up, Real* detr_up, Real* mflx_dn, Real* s_dnd, Real* q_dnd, Real* ql, Real* evp, Real* cu, Real* dsdt, Real* dqdt, Real* dl);
-} // extern "C" : end _f decls
-
-// Inits and finalizes are not intended to be called outside this comp unit
 namespace {
-
-void zm_opts_init_f()
-{
-  zm_opts_init_bridge_f();
-}
-
-void zm_opts_finalize_f()
-{
-  zm_opts_finalize_bridge_f();
-}
-
 
 // Wrapper around zm_opts_init for cxx
 void zm_opts_init()
@@ -98,15 +41,6 @@ void zm_finalize_cxx()
   ZMF::zm_finalize();
 }
 
-}
-
-void ientropy_f(IentropyData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  ientropy_bridge_f(d.s, d.p, d.qt, &d.t, &d.qst, d.tfg);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void ientropy(IentropyData& d)
@@ -146,15 +80,6 @@ void ientropy(IentropyData& d)
   zm_finalize_cxx();
 }
 
-void entropy_f(EntropyData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  entropy_bridge_f(d.tk, d.p, d.qtot, &d.entropy);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void entropy(EntropyData& d)
 {
   zm_opts_init();
@@ -181,15 +106,6 @@ void entropy(EntropyData& d)
   d.entropy = entropy_h();
 
   zm_finalize_cxx();
-}
-
-void zm_transport_tracer_f(ZmTransportTracerData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_transport_tracer_bridge_f(d.pcols, d.pver, d.doconvtran, d.q, d.ncnst, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.fracis, d.dqdt, d.dpdry, d.dt);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_transport_tracer(ZmTransportTracerData& d)
@@ -302,15 +218,6 @@ void zm_transport_tracer(ZmTransportTracerData& d)
   ekat::device_to_host({d.dqdt}, d.pcols, d.pver, d.ncnst, vec3dr_out);
 
   zm_finalize_cxx();
-}
-
-void zm_transport_momentum_f(ZmTransportMomentumData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_transport_momentum_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.wind_in, d.nwind, d.mu, d.md, d.du, d.eu, d.ed, d.dp, d.jt, d.mx, d.ideep, d.il1g, d.il2g, d.wind_tend, d.pguall, d.pgdall, d.icwu, d.icwd, d.dt, d.seten);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_transport_momentum(ZmTransportMomentumData& d)
@@ -470,15 +377,6 @@ void zm_transport_momentum(ZmTransportMomentumData& d)
   zm_finalize_cxx();
 }
 
-void compute_dilute_cape_f(ComputeDiluteCapeData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  compute_dilute_cape_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.sp_humidity_in, d.temperature_in, d.zmid, d.pmid, d.pint, d.pblt, d.tpert, d.parcel_temp, d.parcel_qsat, d.msemax_klev, d.lcl_temperature, d.lcl_klev, d.eql_klev, d.cape, d.calc_msemax_klev, d.prev_msemax_klev, d.use_input_tq_mx, d.q_mx, d.t_mx);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void compute_dilute_cape(ComputeDiluteCapeData& d)
 {
   zm_opts_init();
@@ -586,15 +484,6 @@ void compute_dilute_cape(ComputeDiluteCapeData& d)
   zm_finalize_cxx();
 }
 
-void find_mse_max_f(FindMseMaxData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  find_mse_max_bridge_f(d.pcols, d.ncol, d.pver, d.num_msg, d.msemax_top_k, d.pergro_active, d.temperature, d.zmid, d.sp_humidity, d.msemax_klev, d.mse_max_val);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void find_mse_max(FindMseMaxData& d)
 {
   zm_opts_init();
@@ -661,15 +550,6 @@ void find_mse_max(FindMseMaxData& d)
   ekat::device_to_host({d.msemax_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
-}
-
-void compute_dilute_parcel_f(ComputeDiluteParcelData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  compute_dilute_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.num_msg, d.klaunch, d.pmid, d.temperature, d.sp_humidity, d.tpert, d.pblt, d.parcel_temp, d.parcel_vtemp, d.parcel_qsat, d.lcl_pmid, d.lcl_temperature, d.lcl_klev);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void compute_dilute_parcel(ComputeDiluteParcelData& d)
@@ -756,15 +636,6 @@ void compute_dilute_parcel(ComputeDiluteParcelData& d)
   ekat::device_to_host({d.lcl_klev}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
-}
-
-void compute_cape_from_parcel_f(ComputeCapeFromParcelData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  compute_cape_from_parcel_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.num_cin, d.num_msg, d.temperature, d.tv, d.sp_humidity, d.pint, d.msemax_klev, d.lcl_pmid, d.lcl_klev, d.parcel_qsat, d.parcel_temp, d.parcel_vtemp, d.eql_klev, d.cape);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
@@ -860,15 +731,6 @@ void compute_cape_from_parcel(ComputeCapeFromParcelData& d)
   zm_finalize_cxx();
 }
 
-void zm_conv_mcsp_calculate_shear_f(ZmConvMcspCalculateShearData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_conv_mcsp_calculate_shear_bridge_f(d.pcols, d.ncol, d.pver, d.state_pmid, d.state_u, d.state_v, d.mcsp_shear);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
 {
   zm_opts_init();
@@ -914,15 +776,6 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
   ekat::device_to_host({d.mcsp_shear}, d.pcols, vec1dr_out);
 
   zm_finalize_cxx();
-}
-
-void zm_conv_mcsp_tend_f(ZmConvMcspTendData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_conv_mcsp_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.ztodt, d.jctop, d.state_pmid, d.state_pint, d.state_pdel, d.state_s, d.state_q, d.state_u, d.state_v, d.ptend_zm_s, d.ptend_zm_q, d.ptend_s, d.ptend_q, d.ptend_u, d.ptend_v, d.mcsp_ds_out, d.mcsp_dq_out, d.mcsp_du_out, d.mcsp_dv_out, d.mcsp_freq, d.mcsp_shear, d.zm_depth);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
@@ -1041,15 +894,6 @@ void zm_conv_mcsp_tend(ZmConvMcspTendData& d)
   zm_finalize_cxx();
 }
 
-void zm_conv_main_f(ZmConvMainData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_conv_main_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.is_first_step, d.time_step, d.t_mid, d.q_mid_in, d.omega, d.p_mid_in, d.p_int_in, d.p_del_in, d.geos, d.z_mid_in, d.z_int_in, d.pbl_hgt, d.tpert, d.landfrac, d.t_star, d.q_star, &d.lengath, d.gather_index, d.msemax_klev, d.jctop, d.jcbot, d.jt, d.prec, d.heat, d.qtnd, d.cape, d.dcape, d.mcon, d.pflx, d.zdu, d.mflx_up, d.entr_up, d.detr_up, d.mflx_dn, d.entr_dn, d.p_del, d.dsubcld, d.ql, d.rliq, d.rprd, d.dlf);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 std::vector<bool> zm_conv_main(ZmConvMainData& d)
 {
   zm_opts_init();
@@ -1156,15 +1000,6 @@ std::vector<bool> zm_conv_main(ZmConvMainData& d)
   return active_v;
 }
 
-void zm_conv_evap_f(ZmConvEvapData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_conv_evap_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.time_step, d.p_mid, d.p_del, d.t_mid, d.q_mid, d.prdprec, d.cldfrc, d.tend_s, d.tend_q, d.tend_s_snwprd, d.tend_s_snwevmlt, d.prec, d.snow, d.ntprprd, d.ntsnprd, d.flxprec, d.flxsnow);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void zm_conv_evap(ZmConvEvapData& d)
 {
   zm_opts_init();
@@ -1263,15 +1098,6 @@ void zm_conv_evap(ZmConvEvapData& d)
   zm_finalize_cxx();
 }
 
-void zm_calc_fractional_entrainment_f(ZmCalcFractionalEntrainmentData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_calc_fractional_entrainment_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jb, d.jt, d.j0, d.z_mid, d.z_int, d.dz, d.h_env, d.h_env_sat, d.h_env_min, d.lambda, d.lambda_max);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
 {
   zm_opts_init();
@@ -1356,15 +1182,6 @@ void zm_calc_fractional_entrainment(ZmCalcFractionalEntrainmentData& d)
   ekat::device_to_host({d.j0}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
-}
-
-void zm_downdraft_properties_f(ZmDowndraftPropertiesData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_downdraft_properties_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jb, d.jt, d.j0, d.jd, d.z_int, d.dz, d.s_mid, d.q_mid, d.h_env, d.lambda, d.lambda_max, d.qsthat, d.hsthat, d.gamhat, d.rprd, d.mflx_up, d.mflx_dn, d.entr_dn, d.s_dnd, d.q_dnd, d.h_dnd, d.q_dnd_sat, d.evp, d.totevp);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
@@ -1491,15 +1308,6 @@ void zm_downdraft_properties(ZmDowndraftPropertiesData& d)
   ekat::device_to_host({d.jd, d.jt}, d.pcols, vec1di_out);
 
   zm_finalize_cxx();
-}
-
-void zm_cloud_properties_f(ZmCloudPropertiesData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_cloud_properties_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.limcnv, d.p_mid, d.z_mid, d.z_int, d.t_mid, d.s_mid, d.s_int, d.q_mid, d.landfrac, d.tpert_g, d.jb, d.lel, d.jt, d.jlcl, d.j0, d.jd, d.mflx_up, d.entr_up, d.detr_up, d.mflx_dn, d.entr_dn, d.mflx_net, d.s_upd, d.q_upd, d.ql, d.s_dnd, d.q_dnd, d.qst, d.cu, d.evp, d.pflx, d.rprd);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_cloud_properties(ZmCloudPropertiesData& d)
@@ -1647,15 +1455,6 @@ void zm_cloud_properties(ZmCloudPropertiesData& d)
   zm_finalize_cxx();
 }
 
-void zm_closure_f(ZmClosureData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_closure_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.cape_threshold_in, d.lcl, d.lel, d.jt, d.mx, d.dsubcld, d.z_mid, d.z_int, d.p_mid, d.p_del, d.t_mid, d.s_mid, d.q_mid, d.qs, d.ql, d.s_int, d.q_int, d.t_pcl_lcl, d.t_pcl, d.q_pcl_sat, d.s_upd, d.q_upd, d.mflx_net, d.detr_up, d.mflx_up, d.mflx_dn, d.q_dnd, d.s_dnd, d.cape, d.cld_base_mass_flux);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
-}
-
 void zm_closure(ZmClosureData& d)
 {
   zm_opts_init();
@@ -1789,15 +1588,6 @@ void zm_closure(ZmClosureData& d)
   ekat::device_to_host({d.cld_base_mass_flux}, d.pcols, vec1dr_out);
 
   zm_finalize_cxx();
-}
-
-void zm_calc_output_tend_f(ZmCalcOutputTendData& d)
-{
-  d.transition<ekat::TransposeDirection::c2f>();
-  zm_opts_init_f();
-  zm_calc_output_tend_bridge_f(d.pcols, d.ncol, d.pver, d.pverp, d.msg, d.jt, d.mx, d.dsubcld, d.p_del, d.s_int, d.q_int, d.s_upd, d.q_upd, d.mflx_up, d.detr_up, d.mflx_dn, d.s_dnd, d.q_dnd, d.ql, d.evp, d.cu, d.dsdt, d.dqdt, d.dl);
-  zm_opts_finalize_f();
-  d.transition<ekat::TransposeDirection::f2c>();
 }
 
 void zm_calc_output_tend(ZmCalcOutputTendData& d)

@@ -1,0 +1,102 @@
+#include <dexpr/ast.hpp>
+#include <dexpr/tokens.hpp>
+#include <algorithm>
+#include <array>
+#include <charconv>
+#include <cmath>
+#include <span>
+
+/**
+ * @file ast_print.cpp
+ * @brief Implementation of Visitors for printing AST nodes
+ */
+namespace dexpr::ast {
+
+namespace {
+
+struct ToStringVisitor {
+
+  std::string operator()(const Identifier& expr) const;
+  std::string operator()(const UnaryExpression& expr) const;
+  std::string operator()(const BinaryExpression& expr) const;
+  std::string operator()(const FuncExpression& expr) const;
+  std::string operator()(const ArrayExpression& expr) const;
+  std::string operator()(const StringLiteral& expr) const;
+  std::string operator()(const FloatLiteral& expr) const;
+  std::string operator()(const IntegerLiteral& expr) const;
+};
+
+std::string expr_list_to_string(std::span<const ExprPtr> vals) {
+
+  std::string result;
+  bool first = true;
+
+  std::ranges::for_each(vals, [&](const ExprPtr& val) {
+    if (!first) {
+      result += ", ";
+    }
+    first = false;
+    result += to_string(*val);
+  });
+  return result;
+}
+
+std::string ToStringVisitor::operator()(const Identifier& expr) const {
+  return expr.value;
+};
+
+std::string ToStringVisitor::operator()(const UnaryExpression& expr) const {
+  return "(" + unary_op_to_string(expr.op) + to_string(*expr.right) + ")";
+};
+
+std::string ToStringVisitor::operator()(const BinaryExpression& expr) const {
+  // '.' binds at Call, the tightest level, so wrapping it adds noise without
+  // disambiguating anything...
+  if (expr.op == TokenTypes::Dot) {
+    return to_string(*expr.left) + "." + to_string(*expr.right);
+  }
+  return "(" + to_string(*expr.left) + binary_op_to_string(expr.op) +
+         to_string(*expr.right) + ")";
+};
+std::string ToStringVisitor::operator()(const FuncExpression& expr) const {
+  return to_string(*expr.function) + "(" + expr_list_to_string(expr.args) + ")";
+};
+
+std::string ToStringVisitor::operator()(const ArrayExpression& expr) const {
+  return "[" + expr_list_to_string(expr.elements) + "]";
+};
+
+std::string ToStringVisitor::operator()(const StringLiteral& expr) const {
+     const char quote =
+       expr.value.find('\'') == std::string::npos ? '\'' : '"';
+   return std::string(1, quote) + expr.value + quote;
+};
+std::string ToStringVisitor::operator()(const IntegerLiteral& expr) const {
+  return std::to_string(expr.value);
+};
+std::string ToStringVisitor::operator()(const FloatLiteral& expr) const {
+  // Shortest round-trip form; 24 chars is the worst case.
+  std::array<char, 32> buffer{};
+  const auto [end, ec] =
+      std::to_chars(buffer.data(), buffer.data() + buffer.size(), expr.value);
+  if (ec != std::errc{}) {
+    return "<unprintable>";
+  }
+
+  std::string result(buffer.data(), end);
+
+  // Otherwise "1500" would lex back as an integer, not the float it came from.
+  if (std::isfinite(expr.value) &&
+      result.find_first_of(".eE") == std::string::npos) {
+    result += ".0";
+  }
+  return result;
+};
+
+} // namespace
+
+std::string to_string(const Expression& expr) {
+  return expr.visit(ToStringVisitor{});
+}
+
+} // namespace dexpr::ast

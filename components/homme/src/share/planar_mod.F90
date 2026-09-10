@@ -306,6 +306,10 @@ call initgridedge(GridEdge,GridVertex)
     elem%vec_sphere2cart(:,:,1,2) = 0.0_real_kind
     elem%vec_sphere2cart(:,:,2,2) = 1.0_real_kind
     elem%vec_sphere2cart(:,:,3,2) = 0.0_real_kind
+    ! z direction = vertical direction
+    elem%vec_sphere2cart(:,:,1,3) = 0.0_real_kind
+    elem%vec_sphere2cart(:,:,2,3) = 0.0_real_kind
+    elem%vec_sphere2cart(:,:,3,3) = 1.0_real_kind
 
   end subroutine coordinates_atomic
 

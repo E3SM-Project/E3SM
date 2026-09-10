@@ -60,7 +60,8 @@ interface
                                  elem_spheremp_ptr, elem_rspheremp_ptr,   &
                                  elem_metdet_ptr, elem_metinv_ptr,        &
                                  phis_ptr,                                &
-                                 tensorvisc_ptr, vec_sph2cart_ptr) bind(c)
+                                 tensorvisc_ptr, vec_sph2cart_ptr,        &
+                                 tensorvisc2_ptr) bind(c)
     use iso_c_binding, only: c_int, c_ptr
     !
     ! Inputs
@@ -70,6 +71,7 @@ interface
     type (c_ptr) , intent(in) :: elem_spheremp_ptr, elem_rspheremp_ptr
     type (c_ptr) , intent(in) :: elem_metdet_ptr, elem_metinv_ptr, phis_ptr
     type (c_ptr) , intent(in) :: tensorvisc_ptr, vec_sph2cart_ptr
+    type (c_ptr) , intent(in) :: tensorvisc2_ptr
   end subroutine init_elements_2d_c
 
   ! Initializes C++ diagnostics arrays with ptrs provided from f90

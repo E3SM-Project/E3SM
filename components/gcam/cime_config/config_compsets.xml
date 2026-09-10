@@ -45,8 +45,12 @@
 
    <compset>
     <alias>SSP245_ZB_BGC</alias>
+    <lname>SSP245_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%BGC_MPASO%OIECO_MOSART_SGLC_SWAV_GCAM_BGC%BPRP</lname>
+   </compset>
+
+   <compset>
+    <alias>SSP245_ZBPHS_BGC</alias>
     <lname>SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%BGC_MPASO%OIECO_MOSART_SGLC_SWAV_GCAM_BGC%BPRP</lname>
-    <!-- <lname>SSP245_EAM%CMIP6_ELM%CNPRDCTCBCTOP_MPASSI%BGC_MPASO%OIECO_MOSART_SGLC_SWAV_GCAM_BGC%BPRP</lname> -->
    </compset>
 
    <compset>
@@ -67,6 +71,7 @@
        <value compset="SSP370_ZATM_BGC">year</value>
        <value compset="SSP245_ZB">year</value>
        <value compset="SSP245_ZB_BGC">year</value>
+       <value compset="SSP245_ZBPHS_BGC">year</value>
        <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">year</value>
        <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">year</value>
      </values>
@@ -83,6 +88,7 @@
        <value compset="SSP370_ZATM_BGC">1</value>
        <value compset="SSP245_ZB">1</value>
        <value compset="SSP245_ZB_BGC">1</value>
+       <value compset="SSP245_ZBPHS_BGC">1</value>
        <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">1</value>
        <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM_BGC%LNDATM">1</value>
      </values>
@@ -99,6 +105,7 @@
        <value compset="SSP370_ZATM_BGC">1</value>
        <value compset="SSP245_ZB">1</value>
        <value compset="SSP245_ZB_BGC">1</value>
+       <value compset="SSP245_ZBPHS_BGC">1</value>
        <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
        <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM">1</value>
      </values>
@@ -115,6 +122,7 @@
        <value compset="SSP370_ZATM_BGC">17520</value>
        <value compset="SSP245_ZB">17520</value>
        <value compset="SSP245_ZB_BGC">17520</value>
+       <value compset="SSP245_ZBPHS_BGC">17520</value>
      </values>
    </entry>
 
@@ -128,6 +136,7 @@
        <value compset="SSP370_ZATM_BGC">17520</value>
        <value compset="SSP245_ZB">17520</value>
        <value compset="SSP245_ZB_BGC">17520</value>
+       <value compset="SSP245_ZBPHS_BGC">17520</value>
      </values>
    </entry>
 
@@ -141,6 +150,7 @@
        <value compset="SSP370_ZATM_BGC">17520</value>
        <value compset="SSP245_ZB">17520</value>
        <value compset="SSP245_ZB_BGC">17520</value>
+       <value compset="SSP245_ZBPHS_BGC">17520</value>
      </values>
    </entry>
 
@@ -154,6 +164,7 @@
        <value compset="SSP370_ZATM_BGC">17520</value>
        <value compset="SSP245_ZB">17520</value>
        <value compset="SSP245_ZB_BGC">17520</value>
+       <value compset="SSP245_ZBPHS_BGC">17520</value>
      </values>
    </entry>
 
@@ -167,6 +178,7 @@
        <value compset="SSP370_ZATM_BGC">17520</value>
        <value compset="SSP245_ZB">17520</value>
        <value compset="SSP245_ZB_BGC">17520</value>
+       <value compset="SSP245_ZBPHS_BGC">17520</value>
      </values>
    </entry>
 
@@ -180,6 +192,7 @@
        <value compset="SSP370_ZATM_BGC">17520</value>
        <value compset="SSP245_ZB">17520</value>
        <value compset="SSP245_ZB_BGC">17520</value>
+       <value compset="SSP245_ZBPHS_BGC">17520</value>
      </values>
    </entry>
 

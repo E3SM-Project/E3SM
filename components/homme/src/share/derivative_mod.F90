@@ -10,7 +10,7 @@ module derivative_mod
   use quadrature_mod, only : quadrature_t, gauss, gausslobatto,legendre, jacobi
   use parallel_mod,   only : abortmp
   use element_mod,    only : element_t
-  use control_mod,    only : hypervis_scaling
+  use control_mod,    only : hypervis_scaling, laplace_scaling
   use physical_constants, only : scale_factor_inv, laplacian_rigid_factor
 
 implicit none
@@ -77,7 +77,7 @@ private
   public  :: curl_sphere_wk_testcov
 ! public  :: curl_sphere_wk_testcontra  ! not coded
   public  :: divergence_sphere_wk
-  public  :: laplace_sphere_wk
+  public  :: laplace_sphere_wk         ! laplace with hypervis_scaling tensor option
   public  :: vlaplace_sphere_wk
   public  :: vlaplace_sphere_wk_contra
   public  :: vlaplace_sphere_wk_cartesian
@@ -704,7 +704,7 @@ contains
        ! (This is just a faster way of doing a dot product for each grid point,
        ! since reindexing the inputs to use the intrinsic effectively would be
        ! just asking for trouble.)
-       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,1:2)*v(:,:,:) ,3)
 !       dum_cart(:,:,component)= elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
 !                                elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do
@@ -1069,7 +1069,7 @@ contains
 
 
 !DIR$ ATTRIBUTES FORCEINLINE :: laplace_sphere_wk
-  function laplace_sphere_wk(s,deriv,elem,var_coef) result(laplace)
+  function laplace_sphere_wk(s,deriv,elem,var_coef,tensor) result(laplace)
 !
 !   input:  s = scalar
 !   ouput:  -< grad(PHI), grad(s) >   = weak divergence of grad(s)
@@ -1079,6 +1079,8 @@ contains
     logical, intent(in) :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
+    real(kind=real_kind), optional, intent(in) :: tensor(np,np,2,2) 
+    
     real(kind=real_kind)             :: laplace(np,np)
     integer :: i,j
 
@@ -1088,9 +1090,17 @@ contains
     grads=gradient_sphere(s,deriv,elem%Dinv)
  
     if (var_coef) then
-       if (hypervis_scaling /=0 ) then
-          ! tensor hv, (3)
-          oldgrads=grads
+       oldgrads=grads
+       if (present(tensor)) then
+          do j=1,np
+             do i=1,np
+                grads(i,j,1) = oldgrads(i,j,1)*tensor(i,j,1,1) + &
+                               oldgrads(i,j,2)*tensor(i,j,1,2)
+                grads(i,j,2) = oldgrads(i,j,1)*tensor(i,j,2,1) + &
+                               oldgrads(i,j,2)*tensor(i,j,2,2)
+             end do
+          end do
+       else 
           do j=1,np
              do i=1,np
                 grads(i,j,1) = oldgrads(i,j,1)*elem%tensorVisc(i,j,1,1) + &
@@ -1099,8 +1109,6 @@ contains
                                oldgrads(i,j,2)*elem%tensorVisc(i,j,2,2)
              end do
           end do
-       else
-          ! do nothing: constant coefficient viscsoity
        endif
     endif
 
@@ -1111,7 +1119,7 @@ contains
   end function laplace_sphere_wk
 
 !DIR$ ATTRIBUTES FORCEINLINE :: vlaplace_sphere_wk
-  function vlaplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk(v,deriv,elem,var_coef,nu_ratio,tensor) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -1127,27 +1135,33 @@ contains
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
     real(kind=real_kind), optional :: nu_ratio
+    real(kind=real_kind), optional :: tensor(np,np,2,2)
+
     real(kind=real_kind) :: laplace(np,np,2)
 
 
-    if (hypervis_scaling/=0 .and. var_coef) then
+    if (var_coef) then
        ! tensorHV is turned on - requires cartesian formulation
        if (present(nu_ratio)) then
           if (nu_ratio /= 1) then
              call abortmp('ERROR: tensorHV can not be used with nu_div/=nu')
           endif
        endif
-       laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef)
+       if (present(tensor)) then
+          laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,tensor)
+       else
+          laplace=vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,elem%tensorVisc)
+       endif
     else  
        ! all other cases, use contra formulation:
-       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio)
+       laplace=vlaplace_sphere_wk_contra(v,deriv,elem,nu_ratio)
     endif
 
   end function vlaplace_sphere_wk
 
 
 
-  function vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef) result(laplace)
+  function vlaplace_sphere_wk_cartesian(v,deriv,elem,var_coef,tensor) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -1156,6 +1170,7 @@ contains
     logical :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
+    real(kind=real_kind) :: tensor(np,np,2,2)
     real(kind=real_kind) :: laplace(np,np,2)
     ! Local
 
@@ -1165,14 +1180,14 @@ contains
 
     ! latlon -> cartesian
     do component=1,3
-!JMD       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,:)*v(:,:,:) ,3)
+!JMD       dum_cart(:,:,component)=sum( elem%vec_sphere2cart(:,:,component,1:2)*v(:,:,:) ,3)
        dum_cart(:,:,component) = elem%vec_sphere2cart(:,:,component,1)*v(:,:,1) + &
                                 elem%vec_sphere2cart(:,:,component,2)*v(:,:,2)
     end do
 
     ! Do laplace on cartesian comps
     do component=1,3
-       dum_cart(:,:,component) = laplace_sphere_wk(dum_cart(:,:,component),deriv,elem,var_coef)
+       dum_cart(:,:,component) = laplace_sphere_wk(dum_cart(:,:,component),deriv,elem,var_coef,tensor)
     enddo
 
     ! cartesian -> latlon
@@ -1194,7 +1209,7 @@ contains
 
 
 
-  function vlaplace_sphere_wk_contra(v,deriv,elem,var_coef,nu_ratio) result(laplace)
+  function vlaplace_sphere_wk_contra(v,deriv,elem,nu_ratio) result(laplace)
 !
 !   input:  v = vector in lat-lon coordinates
 !   ouput:  weak laplacian of v, in lat-lon coordinates
@@ -1205,7 +1220,6 @@ contains
 !                 = grad_wk(div) - curl_wk(vor)               
 !
     real(kind=real_kind), intent(in) :: v(np,np,2) 
-    logical, intent(in) :: var_coef
     type (derivative_t), intent(in) :: deriv
     type (element_t), intent(in) :: elem
     real(kind=real_kind) :: laplace(np,np,2)

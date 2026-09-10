@@ -52,12 +52,7 @@ struct UnitWrap::UnitTest<D>::TestComputeDiluteParcel : public UnitWrap::UnitTes
 
     // Get data from test
     for (auto& d : test_data) {
-      if (this->m_baseline_action == GENERATE) {
-        compute_dilute_parcel_f(d);
-      }
-      else {
-        compute_dilute_parcel(d);
-      }
+      compute_dilute_parcel(d);
     }
 
     // Verify BFB results, all data should be in C layout

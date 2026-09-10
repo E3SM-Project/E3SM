@@ -20,7 +20,7 @@ module cube_mod
        change_coordinates
 
   use physical_constants, only : dd_pi, rearth
-  use control_mod, only : hypervis_scaling, cubed_sphere_map
+  use control_mod, only : hypervis_scaling, laplace_scaling, cubed_sphere_map
   use parallel_mod, only : abortmp
   use dimensions_mod, only : np,ne
 
@@ -177,6 +177,10 @@ contains
     elem%vec_sphere2cart(:,:,1,2) = -SIN(elem%spherep(:,:)%lat)*COS(elem%spherep(:,:)%lon)
     elem%vec_sphere2cart(:,:,2,2) = -SIN(elem%spherep(:,:)%lat)*SIN(elem%spherep(:,:)%lon)
     elem%vec_sphere2cart(:,:,3,2) =  COS(elem%spherep(:,:)%lat)
+    ! Radial (vertical) direction
+    elem%vec_sphere2cart(:,:,1,3) = COS(elem%spherep(:,:)%lat) * COS(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,2,3) = COS(elem%spherep(:,:)%lat) * SIN(elem%spherep(:,:)%lon)
+    elem%vec_sphere2cart(:,:,3,3) = SIN(elem%spherep(:,:)%lat)
 
   end subroutine coordinates_atomic
 
@@ -422,6 +426,20 @@ contains
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
 	  elem%tensorVisc(i,j,:,:)=V(:,:)
+
+
+!
+!         Tensor with scalings=2 for regular laplace operator (spnge layer)
+	  lamStar1=1/(eig(1)**(laplace_scaling/2.0d0))*(rearth**2.0d0)
+	  lamStar2=1/(eig(2)**(laplace_scaling/2.0d0))*(rearth**2.0d0)
+          DEL(1:2,1) = lamStar1 *eig(1)*DE(1:2,1)
+          DEL(1:2,2) = lamStar2 *eig(2)*DE(1:2,2)
+          V(1,1)=sum(DEL(1,:)*DE(1,:))
+          V(1,2)=sum(DEL(1,:)*DE(2,:))
+          V(2,1)=sum(DEL(2,:)*DE(1,:))
+          V(2,2)=sum(DEL(2,:)*DE(2,:))
+
+	  elem%tensorVisc_2(i,j,:,:)=V(:,:)
 
        end do
     end do

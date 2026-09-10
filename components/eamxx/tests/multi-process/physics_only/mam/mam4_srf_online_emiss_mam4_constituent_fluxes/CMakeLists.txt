@@ -22,15 +22,17 @@ GetInputFile(cam/topo/${EAMxx_tests_TOPO_FILE})
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  scream/mam4xx/emissions/ne2np4/surface/DMSflux.2010.ne2np4_conserv.POPmonthlyClimFromACES4BGC_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so2_surf_ne2np4_2010_clim_c20240723.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_bc_a4_surf_ne2np4_2010_clim_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a1_surf_ne2np4_2010_clim_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a2_surf_ne2np4_2010_clim_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a4_surf_ne2np4_2010_clim_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_pom_a4_surf_ne2np4_2010_clim_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20240726.nc
-  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20240726.nc
+  scream/mam4xx/emissions/ne2np4/surface/DMSflux.2010.ne2np4_conserv.POPmonthlyClimFromACES4BGC_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so2_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_bc_a4_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a1_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a2_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_num_a4_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_pom_a4_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a1_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/surface/cmip6_mam4_so4_a2_surf_ne2np4_2010_clim_c20260730.nc
+  scream/mam4xx/emissions/ne2np4/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne2np4_c20260807.nc
+  scream/mam4xx/emissions/ne2np4/dst_ne2np4_c20241028.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})

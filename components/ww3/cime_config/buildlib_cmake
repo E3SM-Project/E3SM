@@ -4,7 +4,6 @@
 build ww3 library
 """
 import sys, os, shutil
-from distutils.spawn import find_executable
 
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:

@@ -66,7 +66,7 @@ module FireMod
 
   ! !PRIVATE MEMBER DATA:
   real(r8), pointer     :: forc_lnfm(:)        ! Lightning frequency
-  real(r8), pointer     :: forc_hdm(:)         ! Human population density
+  real(r8), public, pointer :: forc_hdm(:)     ! Human population density
   !$acc declare create(forc_lnfm)
   !$acc declare create(forc_hdm )
   real(r8), parameter   :: secsphr = 3600._r8  ! Seconds in an hour

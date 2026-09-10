@@ -240,7 +240,7 @@ int main (int argc, char** argv) {
       "  -s <steps>          Number of timesteps. Default=6.\n"
       "  -dt <seconds>       Length of timestep. Default=300.\n"
       "  -i <cols>           Number of columns. Default=3.\n"
-      "  -k <nlev>           Number of vertical levels. Default=72.\n"
+      "  -k <nlev>           Number of vertical levels. Default=128.\n"
       "  -r <repeat>         Number of repetitions, implies timing run (generate + no I/O). Default=0.\n"
       "  --predict-nc       yes|no|both. Default=both.\n"
       "  --prescribed-ccn   yes|no|both. Default=both.\n";
@@ -252,7 +252,7 @@ int main (int argc, char** argv) {
   Int timesteps = 6;
   Int dt = 300;
   Int ncol = 3;
-  Int nlev = 72;
+  Int nlev = 128;
   Int repeat = 0;
   std::string device;
   std::string predict_nc = "both";

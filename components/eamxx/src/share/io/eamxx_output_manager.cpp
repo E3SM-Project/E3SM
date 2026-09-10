@@ -860,7 +860,6 @@ setup_file (      IOFileSpecs& filespecs,
       const auto& c = pc_dict.at(n);
       scorpio::define_var (filename, n, c.units.to_string(), {},
                            "real", "real", false);
-      scorpio::write_var (filename, n, &c.value);
     }
   }
 
@@ -909,6 +908,16 @@ setup_file (      IOFileSpecs& filespecs,
 
   scorpio::enddef (filename);
 
+  // Write the constants to the output file
+  if (!m_resume_output_file) {
+    const auto& pc_names = m_params.get<std::vector<std::string>>("constants",{});
+    const auto& pc_dict = physics::Constants<Real>::dictionary();
+    for (const auto& n: pc_names) {
+      const auto& c = pc_dict.at(n);
+      scorpio::write_var (filename, n, &c.value);
+    }
+  }
+
   if (m_save_grid_data and not filespecs.is_restart_file() and not m_resume_output_file) {
     // Immediately run the geo data streams
     for (const auto& it : m_geo_data_streams) {
@@ -919,7 +928,9 @@ setup_file (      IOFileSpecs& filespecs,
 
   filespecs.is_open = true;
   if (filespecs.storage.type!=NumSnaps) {
-    filespecs.storage.set_time_idx(control.next_write_ts);
+    // We want the next write timestamp for instant, but the last write timestamp for average/min/max,
+    // since the latter is the start of the averaging window, and its control hasn't progressed yet
+    filespecs.storage.set_time_idx(m_avg_type==OutputAvgType::Instant ? control.next_write_ts : control.last_write_ts);
   }
 
   m_resume_output_file = false;

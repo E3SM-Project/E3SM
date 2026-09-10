@@ -345,6 +345,33 @@ struct PhysicsFunctions
   static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
                                       ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
 
+  //-----------------------------------------------------------------------------------------------
+  // Calculate a characteristic gustiness speed from turbulent kinetic energy (TKE).
+  // This does not (yet) include gustiness sourced from the deep convection parameterization.
+  // INPUTS:
+  // TKE is turbulent kinetic energy in (m/s)^2, i.e. (up^2 + vp^2 + wp^2)/2.
+  // RETURNS:
+  // Gustiness speed in m/s.
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real calculate_gustiness_speed(const Real& tke);
+
+  //-----------------------------------------------------------------------------------------------
+  // Calculate the approximate derivative of current wind speed with respect to magnitude of
+  // surface stress at the previous time step. Specifically, the derivative of the component of
+  // wind speed in the direction of the surface stress.
+  // INPUTS:
+  // taux is the u component of surface stress (Pa)
+  // tauy is the v component of surface stress (Pa)
+  // um_pert_diff is the u component of a response to perturbation of size tau_pert_mag (m/s)
+  // vm_pert_diff is the v component of a response to perturbation of size tau_pert_mag (m/s)
+  // RETURNS:
+  // Sensitivity in m/s/Pa.
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real calculate_wind_speed_sensitivity(const Real& taux, const Real& tauy,
+                                               const Real& um_pert_diff, const Real& vm_pert_diff);
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //

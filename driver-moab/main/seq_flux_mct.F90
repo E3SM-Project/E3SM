@@ -1607,7 +1607,7 @@ contains
        index_xao_Faox_lwup = mct_aVect_indexRA(xao,'Faox_lwup')
        index_xao_Faox_swdn = mct_aVect_indexRA(xao,'Faox_swdn')
        index_xao_Faox_swup = mct_aVect_indexRA(xao,'Faox_swup')
-       index_xao_So_fswpen            = mct_aVect_indexRA(xao,'So_fswpen')
+       index_xao_So_fswpen            = mct_aVect_indexRA(xao,'So_fswpen_ao')
        index_xao_So_warm_diurn        = mct_aVect_indexRA(xao,'So_warm_diurn')
        index_xao_So_salt_diurn        = mct_aVect_indexRA(xao,'So_salt_diurn')
        index_xao_So_speed_diurn       = mct_aVect_indexRA(xao,'So_speed_diurn')
@@ -1935,7 +1935,9 @@ contains
     call mbSetCellTagVals(mbfid, 'So_u10', u10res, nloc)
     u10gust = sqrt(duu10n)
     call mbSetCellTagVals(mbfid, 'So_u10withgusts', u10gust, nloc)
-    call mbSetCellTagVals(mbfid, 'So_fswpen', fswpen, nloc)
+    ! xao copy of fswpen: renamed So_fswpen_ao so it does not collide with the o2x So_fswpen
+    ! tag on the shared (aliased) ocn coupler mesh. See seq_flds_mod / cplcomp_moab_init_ocn.
+    call mbSetCellTagVals(mbfid, 'So_fswpen_ao', fswpen, nloc)
 
 #ifdef MOABDEBUG
         ! debug out file

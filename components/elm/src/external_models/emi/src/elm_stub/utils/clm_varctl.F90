@@ -314,20 +314,6 @@ module clm_varctl
   logical, public :: use_var_soil_thick  = .false.
 
   !----------------------------------------------------------
-  ! VSFM switches
-  !----------------------------------------------------------
-  logical          , public :: use_vsfm                    = .false.
-  logical          , public :: vsfm_use_dynamic_linesearch = .false.
-  logical          , public :: vsfm_include_seepage_bc     = .false.
-  character(len=32), public :: vsfm_satfunc_type           = 'smooth_brooks_corey_bz3'
-  character(len=32), public :: vsfm_lateral_model_type     = 'none'
-
-  !----------------------------------------------------------
-  ! PETSc-based thermal model switches
-  !----------------------------------------------------------
-  logical, public :: use_petsc_thermal_model = .false.
-
-  !----------------------------------------------------------
   ! Stub external model
   !----------------------------------------------------------
   logical, public :: use_em_stub = .false.
@@ -357,9 +343,8 @@ module clm_varctl
   logical, public :: NFIX_PTASE_plant = .false.
 
   !-----------------------------------------------------------------------
-  ! Lateral grid connectivity
+  ! Domain decomposition
   !-----------------------------------------------------------------------
-  logical, public            :: lateral_connectivity  = .false.
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------

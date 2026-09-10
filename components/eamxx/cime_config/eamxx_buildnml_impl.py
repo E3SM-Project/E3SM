@@ -101,7 +101,7 @@ def get_child (root,name,remove=False,must_exist=True):
     >>> root = ET.fromstring(xml)
     >>> get_child(root,'c')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: There must be exactly one c entry inside my_root
+    CIME.core.exceptions.CIMEError: ERROR: There must be exactly one c entry inside my_root
     >>> get_child(root,'c',must_exist=False)
     """
 
@@ -160,11 +160,11 @@ def refine_type(entry, force_type=None):
     >>> e = '1.0'
     >>> refine_type(e,force_type='my_type')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Invalid/unsupported force type 'my_type'
+    CIME.core.exceptions.CIMEError: ERROR: Invalid/unsupported force type 'my_type'
     >>> e = 'true,falsE'
     >>> refine_type(e,'logical')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Could not refine 'true,falsE' as type 'logical':
+    CIME.core.exceptions.CIMEError: ERROR: Could not refine 'true,falsE' as type 'logical':
     ERROR: For entry of type 'logical', expected 'true' or 'false', got 'true,falsE'
     >>> refine_type(e,'array(logical)')
     [True, False]
@@ -191,7 +191,7 @@ def refine_type(entry, force_type=None):
             try:
                 result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
             except ValueError:
-                expect(False, "List '{entry}' has items not compatible with requested element type '{elem_type}'")
+                expect(False, f"List '{entry}' has items not compatible with requested element type '{elem_type}'")
         else:
             result = []
 
@@ -292,25 +292,25 @@ def check_value(elem, value):
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'1.5')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Could not refine '1.5' as type 'integer':
+    CIME.core.exceptions.CIMEError: ERROR: Could not refine '1.5' as type 'integer':
     ERROR: Cannot interpret 1.5 as int
     >>> check_value(root,'3')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
+    CIME.core.exceptions.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
     >>> xml = '''
     ... <a type="real" constraints="ge 0">1</a>
     ... '''
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'-1')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Value '-1.0' for entry 'a' violates constraint '-1.0 >= 0.0'
+    CIME.core.exceptions.CIMEError: ERROR: Value '-1.0' for entry 'a' violates constraint '-1.0 >= 0.0'
     >>> xml = '''
     ... <a type="real" constraints="mod 2 eq 0">1</a>
     ... '''
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'2')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Cannot evaluate constraint '2.0 mod 2 eq 0' for entry 'a'
+    CIME.core.exceptions.CIMEError: ERROR: Cannot evaluate constraint '2.0 mod 2 eq 0' for entry 'a'
     Modulo constraint only makes sense for integer parameters.
     >>> xml = '''
     ... <a constraints="gt 0; le 5">1</a>
@@ -319,7 +319,7 @@ def check_value(elem, value):
     >>> check_value(root,'2')
     >>> check_value(root,'6')
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Value '6' for entry 'a' violates constraint '6 <= 5'
+    CIME.core.exceptions.CIMEError: ERROR: Value '6' for entry 'a' violates constraint '6 <= 5'
     """
 
     v = value
@@ -548,7 +548,7 @@ def get_valid_selectors(xml_root):
     >>> root = ET.fromstring(xml)
     >>> selectors = get_valid_selectors(root)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Expected selector tag, not blah
+    CIME.core.exceptions.CIMEError: ERROR: Expected selector tag, not blah
     """
 
     # Get the right XML element, and iterate over its children

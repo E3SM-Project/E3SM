@@ -41,7 +41,7 @@ public:
 
   int num_elems () const { return m_num_elems; }
 
-  void init (const int num_elems, const bool consthv, const bool alloc_gradphis,
+  void init (const int num_elems, const bool alloc_gradphis,
              // See ElementsGeometry::init for details about these arguments.
              const Real scale_factor, const Real laplacian_rigid_factor=-1,
              const bool alloc_sphere_coords=false);

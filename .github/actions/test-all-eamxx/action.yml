@@ -114,10 +114,10 @@ runs:
       shell: bash --login {0}
     - name: Upload ctest logs
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: log-files-${{ inputs.build_type }}-${{ inputs.machine }}
         path: |
-          components/eamxx/ctest-build/**/Testing/Temporary/Last*.log
           components/eamxx/ctest-build/**/ctest_resource_file.json
           components/eamxx/ctest-build/**/CMakeCache.txt
+          components/eamxx/ctest-build/**/Testing/**

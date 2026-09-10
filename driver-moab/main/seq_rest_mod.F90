@@ -476,6 +476,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     integer (in), pointer   :: l2racc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
+    integer (in)   :: lnd_nx, lnd_ny ! global land grid dims (from infodata), for non-samegrid land restart I/O
     integer (in)   :: ngv, nge ! global num vertices / elements from iMOAB_GetGlobalInfo
     integer (in)   ::  ierr
 
@@ -523,6 +524,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
          iac_prognostic=iac_prognostic,      &
          ocn_c2_glcshelf=ocn_c2_glcshelf,    &
          do_bgc_budgets=do_bgc_budgets,      &
+         lnd_nx=lnd_nx, lnd_ny=lnd_ny,       &
          case_name=case_name,                &
          model_doi_url=model_doi_url)
 
@@ -667,9 +669,14 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
                  whead=whead, wdata=wdata, nx=nx_lnd)
              else
+                ! land on its own (masked) grid, distinct from atm and rof: size the
+                ! PIO global dim from the land grid dims in infodata, exactly as the
+                ! cpl.hi history write does (seq_hist_mod). mblxid's num_global_elems
+                ! is the packed active-cell count and is smaller than the max land
+                ! GLOBAL_ID, which would scramble lfrac/lfrin on restart.
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
-                  whead=whead, wdata=wdata)
+                  whead=whead, wdata=wdata, nx=lnd_nx, ny=lnd_ny)
              endif
           endif
           if (lnd_present .and. rof_prognostic) then
@@ -698,9 +705,10 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                 trim(tagname), &
                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=nx_lnd)
              else
+                ! land on its own (masked) grid: size PIO global dim from infodata land dims
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
-                 whead=whead, wdata=wdata, matrix = p_l2racc_lm )
+                 whead=whead, wdata=wdata, matrix = p_l2racc_lm, nx=lnd_nx, ny=lnd_ny )
              endif
              call seq_io_write(rest_file, l2racc_lm_cnt, 'l2racc_lx_cnt', &
                  whead=whead, wdata=wdata)

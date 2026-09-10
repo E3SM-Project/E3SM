@@ -30,6 +30,10 @@ streams - code for managing "streams" of data files.
 
 test - unit tests for some of the share code
 
+dexpr - lexer and parser for the diagnostics expression language; a
+      standalone C++20 library with no dependencies, built and tested on
+      its own rather than as part of csm_share.  See dexpr/README.md.
+
 
 This code was originaly part of CIME in CIME/src/share. Brought in to E3SM
 from CIME hash b95a28b417b9b27 from May 4, 2021

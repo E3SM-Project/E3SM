@@ -48,7 +48,10 @@ void calc_q (const IslMpi<MT>& cm, const Int& src_lid, const Int& lev,
       }
     }
   } else {
-    // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
+    // NOTE: we used to have a calc_q_tgt overload that took qdp and dp,
+    //       computing qdp/dp on the fly. This was not bit-for-bit identical
+    //       to the "remote" path. Hence, we removed that overload, and
+    //       pre-compute qdp/dp
     const Real* const dp = ed.dp + levos;
     const Real* const qdp0 = ed.qdp + levos;
     for (Int iqo = 0; iqo < qsize; iqo += blocksize) {
@@ -56,14 +59,18 @@ void calc_q (const IslMpi<MT>& cm, const Int& src_lid, const Int& lev,
         Real tmp[blocksize];
         for (Int iqi = 0; iqi < blocksize; ++iqi) {
           const Real* const qdp = qdp0 + (iqo + iqi)*np2nlev;
-          tmp[iqi] = calc_q_tgt(rx, ry, qdp, dp);
+          Real qs[16];
+          for (Int k = 0; k < 16; ++k) qs[k] = qdp[k]/dp[k];
+          tmp[iqi] = calc_q_tgt(rx, ry, qs);
         }
         for (Int iqi = 0; iqi < blocksize; ++iqi)
           q_tgt[iqo + iqi] = tmp[iqi];
       } else {
         for (Int iq = iqo; iq < qsize; ++iq) {
           const Real* const qdp = qdp0 + iq*np2nlev;
-          q_tgt[iq] = calc_q_tgt(rx, ry, qdp, dp);
+          Real qs[16];
+          for (Int k = 0; k < 16; ++k) qs[k] = qdp[k]/dp[k];
+          q_tgt[iq] = calc_q_tgt(rx, ry, qs);
         }
       }
     }
@@ -200,7 +207,10 @@ void calc_own_q (IslMpi<MT>& cm, const Int& nets, const Int& nete,
     Real rx[4], ry[4];
     calc_coefs<np,MT>(s2r, local_meshes(slid), alg, slid, tgt_lev,
                       &dep_points(tci, tgt_lev, tgt_k, 0), rx, ry);
-    // q from calc_q_extrema is being overwritten, so have to use qdp/dp.
+    // NOTE: we used to have a calc_q_tgt overload that took qdp and dp,
+    //       computing qdp/dp on the fly. This was not bit-for-bit identical
+    //       to the "remote" path. Hence, we removed that overload, and
+    //       pre-compute qdp/dp
     Real dp[16];
     for (Int k = 0; k < 16; ++k) dp[k] = dp_src(slid, k, tgt_lev);
     // Block for auto-vectorization.
@@ -209,17 +219,19 @@ void calc_own_q (IslMpi<MT>& cm, const Int& nets, const Int& nete,
         Real tmp[blocksize];
         for (Int iqi = 0; iqi < blocksize; ++iqi) {
           const Int iq = iqo + iqi;
-          Real qdp[16];
+          Real qdp[16], qs[16];
           for (Int k = 0; k < 16; ++k) qdp[k] = qdp_src(slid, qtl, iq, k, tgt_lev);
-          tmp[iqi] = calc_q_tgt(rx, ry, qdp, dp);
+          for (Int k = 0; k < 16; ++k) qs[k] = qdp[k]/dp[k];
+          tmp[iqi] = calc_q_tgt(rx, ry, qs);
         }
         for (Int iqi = 0; iqi < blocksize; ++iqi)
           q_tgt(tci, iqo + iqi, tgt_k, tgt_lev) = tmp[iqi];
       } else {
         for (Int iq = iqo; iq < qsize; ++iq) {
-          Real qdp[16];
+          Real qdp[16], qs[16];
           for (Int k = 0; k < 16; ++k) qdp[k] = qdp_src(slid, qtl, iq, k, tgt_lev);
-          q_tgt(tci, iq, tgt_k, tgt_lev) = calc_q_tgt(rx, ry, qdp, dp);
+          for (Int k = 0; k < 16; ++k) qs[k] = qdp[k]/dp[k];
+          q_tgt(tci, iq, tgt_k, tgt_lev) = calc_q_tgt(rx, ry, qs);
         }
       }
     }

@@ -63,7 +63,7 @@ contains
     !
     character(len=256), pointer :: full_name
     character(len=256) :: path, fname
-    integer :: len, slash, ierr
+    integer :: len, slash
 
     call c_f_pointer(c_str,full_name)
     len = index(full_name, C_NULL_CHAR) -1
@@ -79,22 +79,20 @@ contains
 
       homme_log_fname = trim(path)//"homme_"//fname
 
-      iulog = shr_file_getunit()
+      ! Only the root rank opens/owns the homme log file (following the same
+      ! approach used by EAM in atm_comp_mct.F90/atm_comp_esmf.F90). All other
+      ! ranks simply keep iulog at its module default (stdout), rather than
+      ! all ranks independently opening the same shared file, which is racy
+      ! and can lead to corrupted/interleaved writes or spurious I/O errors.
       if (masterproc) then
-        ! Create the homme log file on root rank...
+        iulog = shr_file_getunit()
         open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
               action='WRITE', access='SEQUENTIAL', position="append")
         write(iulog,*) " ---- HOMME LOG FILE ----"
         flush(iulog)
-      endif
-      call mpi_barrier(par%comm,ierr)
-      if (.not. masterproc) then
-        ! ... and open it on all other ranks
-        open (unit=iulog,file=trim(homme_log_fname),status='OLD', &
-              action='WRITE', access='SEQUENTIAL', position="append")
-      endif
 
-      homme_log_set = .true.
+        homme_log_set = .true.
+      endif
     endif
   end subroutine set_homme_log_file_name_f90
 

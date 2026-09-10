@@ -11,7 +11,7 @@ namespace p3 {
 namespace {
 
 template <typename S, typename IceT, typename CollT>
-void read_ice_lookup_tables(const bool masterproc, const char* p3_lookup_base, const char* p3_version, IceT& ice_table_vals, CollT& collect_table_vals, int densize, int rimsize, int isize, int rcollsize)
+void read_ice_lookup_tables(const ekat::Comm* comm, const char* p3_lookup_base, const char* p3_version, IceT& ice_table_vals, CollT& collect_table_vals, int densize, int rimsize, int isize, int rcollsize)
 {
   using DeviceIcetable = typename IceT::non_const_type;
   using DeviceColtable = typename CollT::non_const_type;
@@ -28,46 +28,69 @@ void read_ice_lookup_tables(const bool masterproc, const char* p3_lookup_base, c
 
   std::string filename = std::string(p3_lookup_base) + std::string(p3_version);
 
-  if (masterproc) {
+  // Decouple "who does the I/O" from "who prints": do_io says which
+  // process(es) must touch the filesystem below, while do_print gates the
+  // informational message so it only appears for a genuine multi-rank root.
+  // This preserves the pre-existing quiet default when no comm is given
+  // (e.g. stand-alone tools/unit tests that call p3_init() with no args),
+  // instead of unconditionally printing just because comm is null.
+  const bool do_io    = comm == nullptr || comm->am_i_root();
+  const bool do_print = comm != nullptr && comm->am_i_root();
+  if (do_print) {
     std::cout << "Reading ice lookup tables in file: " << filename << std::endl;
   }
 
-  std::ifstream in(filename);
+  // Only the root rank (or every calling process, if comm is null, e.g. in
+  // stand-alone tools/unit tests that don't provide a communicator) touches
+  // the filesystem. The resulting data is then broadcast to the other ranks
+  // in comm below. This avoids every single MPI rank independently reading
+  // the exact same (small, read-only) text file at initialization, which can
+  // put unnecessary stress on shared/parallel filesystems and, in the worst
+  // case, cause a slowdown or stall (see E3SM issue #6654 / #6833).
+  if (do_io) {
+    std::ifstream in(filename);
 
-  // read header
-  std::string version, version_val;
-  in >> version >> version_val;
-  EKAT_REQUIRE_MSG(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
-  EKAT_REQUIRE_MSG(version_val == p3_version, "Bad " << filename << ", expected version " << p3_version << ", but got " << version_val);
+    // read header
+    std::string version, version_val;
+    in >> version >> version_val;
+    EKAT_REQUIRE_MSG(version == "VERSION", "Bad " << filename << ", expected VERSION X.Y.Z header");
+    EKAT_REQUIRE_MSG(version_val == p3_version, "Bad " << filename << ", expected version " << p3_version << ", but got " << version_val);
 
-  // read tables
-  double dum_s; int dum_i; // dum_s needs to be double to stream correctly
-  for (int jj = 0; jj < densize; ++jj) {
-    for (int ii = 0; ii < rimsize; ++ii) {
-      for (int i = 0; i < isize; ++i) {
-        in >> dum_i >> dum_i;
-        int j_idx = 0;
-        for (int j = 0; j < 15; ++j) {
-          in >> dum_s;
-          if (j > 1 && j != 10) {
-            ice_table_vals_h(jj, ii, i, j_idx++) = dum_s;
+    // read tables
+    double dum_s; int dum_i; // dum_s needs to be double to stream correctly
+    for (int jj = 0; jj < densize; ++jj) {
+      for (int ii = 0; ii < rimsize; ++ii) {
+        for (int i = 0; i < isize; ++i) {
+          in >> dum_i >> dum_i;
+          int j_idx = 0;
+          for (int j = 0; j < 15; ++j) {
+            in >> dum_s;
+            if (j > 1 && j != 10) {
+              ice_table_vals_h(jj, ii, i, j_idx++) = dum_s;
+            }
           }
         }
-      }
 
-      for (int i = 0; i < isize; ++i) {
-        for (int j = 0; j < rcollsize; ++j) {
-          in >> dum_i >> dum_i;
-          int k_idx = 0;
-          for (int k = 0; k < 6; ++k) {
-            in >> dum_s;
-            if (k == 3 || k == 4) {
-              collect_table_vals_h(jj, ii, i, j, k_idx++) = std::log10(dum_s);
+        for (int i = 0; i < isize; ++i) {
+          for (int j = 0; j < rcollsize; ++j) {
+            in >> dum_i >> dum_i;
+            int k_idx = 0;
+            for (int k = 0; k < 6; ++k) {
+              in >> dum_s;
+              if (k == 3 || k == 4) {
+                collect_table_vals_h(jj, ii, i, j, k_idx++) = std::log10(dum_s);
+              }
             }
           }
         }
       }
     }
+  }
+
+  // Broadcast the data read by the root rank to the rest of comm.
+  if (comm != nullptr) {
+    comm->broadcast(ice_table_vals_h.data(), static_cast<int>(ice_table_vals_h.size()), comm->root_rank());
+    comm->broadcast(collect_table_vals_h.data(), static_cast<int>(collect_table_vals_h.size()), comm->root_rank());
   }
 
   // deep copy to device
@@ -211,9 +234,13 @@ static void action(StreamT& stream, S* data, const size_t size)
 }
 
 template <bool IsRead, typename MuRT, typename VNT, typename VMT, typename RevapT>
-void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT& vn_table_vals, VMT& vm_table_vals, RevapT& revap_table_vals)
+void io_impl(const ekat::Comm* comm, const char* dir, MuRT& mu_r_table_vals, VNT& vn_table_vals, VMT& vm_table_vals, RevapT& revap_table_vals)
 {
-  if (masterproc) {
+  // Decouple "who does the I/O" from "who prints" (see read_ice_lookup_tables
+  // above for the full rationale).
+  const bool do_io    = comm == nullptr || comm->am_i_root();
+  const bool do_print = comm != nullptr && comm->am_i_root();
+  if (do_print) {
     std::cout << (IsRead ? "Reading" : "Writing") << " lookup (non-ice) tables in dir " << dir << std::endl;
   }
 
@@ -240,19 +267,45 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
 
   using stream_t = std::conditional_t<IsRead,std::ifstream,std::ofstream>;
 
-  stream_t mu_r_file(mu_r_filename.c_str(), std::ios::binary);
-  stream_t revap_file(revap_filename.c_str(), std::ios::binary);
-  stream_t vn_file(vn_filename.c_str(), std::ios::binary);
-  stream_t vm_file(vm_filename, std::ios::binary);
+  // For reads: only the root rank needs to touch the filesystem; the data it
+  // reads is broadcast to the rest of comm below. For writes (only exercised
+  // by the offline table-generation tool): only the root rank should write,
+  // to avoid multiple ranks racing to write the same files. If comm is null,
+  // every calling process reads/writes independently, as was always done.
+  if (do_io) {
+    stream_t mu_r_file(mu_r_filename.c_str(), std::ios::binary);
+    stream_t revap_file(revap_filename.c_str(), std::ios::binary);
+    stream_t vn_file(vn_filename.c_str(), std::ios::binary);
+    stream_t vm_file(vm_filename, std::ios::binary);
 
-  // Read files
-  action(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
-  action(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
-  action(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
-  action(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
+    EKAT_REQUIRE_MSG(mu_r_file.good(),  "Could not open file: " << mu_r_filename);
+    EKAT_REQUIRE_MSG(revap_file.good(), "Could not open file: " << revap_filename);
+    EKAT_REQUIRE_MSG(vn_file.good(),    "Could not open file: " << vn_filename);
+    EKAT_REQUIRE_MSG(vm_file.good(),    "Could not open file: " << vm_filename);
+
+    // Read/write files
+    action(mu_r_file, mu_r_table_vals_h.data(), mu_r_table_vals.size());
+    action(revap_file, revap_table_vals_h.data(), revap_table_vals.size());
+    action(vn_file, vn_table_vals_h.data(), vn_table_vals.size());
+    action(vm_file, vm_table_vals_h.data(), vm_table_vals.size());
+
+    const char* verb = IsRead ? "read" : "write";
+    EKAT_REQUIRE_MSG(mu_r_file.good(),  "Failed to " << verb << " file: " << mu_r_filename);
+    EKAT_REQUIRE_MSG(revap_file.good(), "Failed to " << verb << " file: " << revap_filename);
+    EKAT_REQUIRE_MSG(vn_file.good(),    "Failed to " << verb << " file: " << vn_filename);
+    EKAT_REQUIRE_MSG(vm_file.good(),    "Failed to " << verb << " file: " << vm_filename);
+  }
 
   // Copy back to device
   if constexpr (IsRead) {
+    // Broadcast the data read by the root rank to the rest of comm.
+    if (comm != nullptr) {
+      comm->broadcast(mu_r_table_vals_h.data(),  static_cast<int>(mu_r_table_vals_h.size()),  comm->root_rank());
+      comm->broadcast(revap_table_vals_h.data(), static_cast<int>(revap_table_vals_h.size()), comm->root_rank());
+      comm->broadcast(vn_table_vals_h.data(),    static_cast<int>(vn_table_vals_h.size()),    comm->root_rank());
+      comm->broadcast(vm_table_vals_h.data(),    static_cast<int>(vm_table_vals_h.size()),    comm->root_rank());
+    }
+
     Kokkos::deep_copy(mu_r_table_vals, mu_r_table_vals_h);
     Kokkos::deep_copy(revap_table_vals, revap_table_vals_h);
     Kokkos::deep_copy(vn_table_vals, vn_table_vals_h);
@@ -261,7 +314,7 @@ void io_impl(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT&
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
-void read_computed_tables(const bool masterproc, const char* dir, MuRT& mu_r_table_vals, VNT& vn_table_vals, VMT& vm_table_vals, RevapT& revap_table_vals)
+void read_computed_tables(const ekat::Comm* comm, const char* dir, MuRT& mu_r_table_vals, VNT& vn_table_vals, VMT& vm_table_vals, RevapT& revap_table_vals)
 {
   using MuRT_NC   = typename MuRT::non_const_type;
   using VNT_NC    = typename VNT::non_const_type;
@@ -273,7 +326,7 @@ void read_computed_tables(const bool masterproc, const char* dir, MuRT& mu_r_tab
   VMT_NC    vm_table_vals_nc("vm_table_vals");
   RevapT_NC revap_table_vals_nc("revap_table_vals");
 
-  io_impl<true>(masterproc, dir, mu_r_table_vals_nc, vn_table_vals_nc, vm_table_vals_nc, revap_table_vals_nc);
+  io_impl<true>(comm, dir, mu_r_table_vals_nc, vn_table_vals_nc, vm_table_vals_nc, revap_table_vals_nc);
 
   mu_r_table_vals = mu_r_table_vals_nc;
   vn_table_vals = vn_table_vals_nc;
@@ -282,9 +335,9 @@ void read_computed_tables(const bool masterproc, const char* dir, MuRT& mu_r_tab
 }
 
 template <typename MuRT, typename VNT, typename VMT, typename RevapT>
-void write_computed_tables(const bool masterproc, const char* dir, const MuRT& mu_r_table_vals, const VNT& vn_table_vals, const VMT& vm_table_vals, const RevapT& revap_table_vals)
+void write_computed_tables(const ekat::Comm* comm, const char* dir, const MuRT& mu_r_table_vals, const VNT& vn_table_vals, const VMT& vm_table_vals, const RevapT& revap_table_vals)
 {
-  io_impl<false>(masterproc, dir, mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals);
+  io_impl<false>(comm, dir, mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals);
 }
 
 template <typename S, typename DnuT>
@@ -320,20 +373,27 @@ void compute_dnu(DnuT& dnu_table_vals)
  */
 template <typename S, typename D>
 typename Functions<S,D>::P3LookupTables Functions<S,D>
-::p3_init (const bool write_tables, const bool masterproc) {
+::p3_init (const bool write_tables, const ekat::Comm* comm) {
   P3LookupTables lookup_tables; // This struct could be our global singleton
   auto version = P3C::p3_version;
   auto p3_lookup_base = P3C::p3_lookup_base;
   static const char* dir = SCREAM_DATA_DIR "/tables";
+  // compute_tables() below does no file I/O of its own (mu_r/vn/vm/revap are
+  // computed in-memory on every rank), so it only needs to know whether it
+  // should print, not whether it should do I/O. Gate that print the same way
+  // read_ice_lookup_tables/io_impl gate theirs (see do_print there), so a
+  // null comm (the common case for stand-alone tools/unit tests calling
+  // p3_init() with no args) stays quiet, matching the pre-existing default.
+  const bool do_print = comm != nullptr && comm->am_i_root();
   // p3_init_a (reads ice_table, collect_table)
-  read_ice_lookup_tables<S>(masterproc, p3_lookup_base, version, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, P3C::densize, P3C::rimsize, P3C::isize, P3C::rcollsize);
+  read_ice_lookup_tables<S>(comm, p3_lookup_base, version, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, P3C::densize, P3C::rimsize, P3C::isize, P3C::rcollsize);
   if (write_tables) {
     //p3_init_b (computes tables mu_r_table, revap_table, vn_table, vm_table)
-    compute_tables<S, P3C>(masterproc, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
-    write_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    compute_tables<S, P3C>(do_print, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    write_computed_tables(comm, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
   }
   else {
-    read_computed_tables(masterproc, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
+    read_computed_tables(comm, dir, lookup_tables.mu_r_table_vals, lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, lookup_tables.revap_table_vals);
   }
   // dnu is always computed/hardcoded
   compute_dnu<S>(lookup_tables.dnu_table_vals);

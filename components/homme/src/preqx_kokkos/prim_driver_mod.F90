@@ -130,11 +130,13 @@ contains
     type (c_ptr) :: elem_state_q_ptr, elem_state_Qdp_ptr
     type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
     type (c_ptr) :: elem_accum_iener_ptr, elem_accum_iener_wet_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr
+    type (c_ptr) :: elem_tensorvisc2_ptr
 
     real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_D, elem_Dinv, elem_metinv, elem_tensorvisc
+    real (kind=real_kind), target, dimension(np,np,2,2)     :: elem_tensorvisc2
     real (kind=real_kind), target, dimension(np,np)         :: elem_spheremp, elem_rspheremp, elem_metdet
     real (kind=real_kind), target, dimension(np,np)         :: elem_state_phis, elem_fcor
-    real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+    real (kind=real_kind), target, dimension(np,np,3,3)     :: elem_vec_sph2cart
     integer :: ie
 
     ! Initialize the 2d element arrays in C++
@@ -148,6 +150,7 @@ contains
     elem_tensorvisc_ptr   = c_loc(elem_tensorvisc)
     elem_vec_sph2cart_ptr = c_loc(elem_vec_sph2cart)
     elem_state_phis_ptr   = c_loc(elem_state_phis)
+    elem_tensorvisc2_ptr  = c_loc(elem_tensorvisc2)
 
     do ie=1,nelemd
       elem_D            = elem(ie)%D
@@ -160,12 +163,14 @@ contains
       elem_state_phis   = elem(ie)%state%phis
       elem_tensorvisc   = elem(ie)%tensorVisc
       elem_vec_sph2cart = elem(ie)%vec_sphere2cart
+      elem_tensorvisc2  = elem(ie)%tensorVisc_2
       call init_elements_2d_c (ie-1,                                      &
                                elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr,  &
                                elem_spheremp_ptr, elem_rspheremp_ptr,     &
                                elem_metdet_ptr, elem_metinv_ptr,          &
                                elem_state_phis_ptr,                       &
-                               elem_tensorvisc_ptr, elem_vec_sph2cart_ptr)
+                               elem_tensorvisc_ptr, elem_vec_sph2cart_ptr, &
+                               elem_tensorvisc2_ptr)
     enddo
 
     ! Initialize the 3d element arrays in C++

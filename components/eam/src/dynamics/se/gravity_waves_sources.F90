@@ -242,7 +242,7 @@ CONTAINS
         do k = 1,nlev
           ! latlon -> cartesian - Summing along the third dimension is a sum over components for each point
           do component=1,3
-            dum_cart(:,:,component,k)=sum( elem(ie)%vec_sphere2cart(:,:,component,:) * elem(ie)%state%v(:,:,:,k,tl) ,3)
+            dum_cart(:,:,component,k)=sum( elem(ie)%vec_sphere2cart(:,:,component,1:2) * elem(ie)%state%v(:,:,:,k,tl) ,3)
           end do
         end do
 

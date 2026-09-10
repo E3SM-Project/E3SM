@@ -20,6 +20,7 @@
 
 #include "utilities/VectorUtils.hpp"
 
+#include <cmath>
 #include <memory>
 
 #include "profiling.hpp"
@@ -37,20 +38,25 @@ class HyperviscosityFunctorImpl
 public:
   struct HyperviscosityData {
     HyperviscosityData(const int hypervis_subcycle_in, 
+                       const int horiz_turb_subcycle_in,
                        const int hypervis_subcycle_tom_in, 
                        const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
                        const Real hypervis_scaling_in, bool do_3d_turbulence_in,
-                       const double tom_sponge_start_in)
+                       const double tom_sponge_start_in, const Real laplace_scaling_in = 0.0)
                       : hypervis_subcycle(hypervis_subcycle_in) 
+                      , horiz_turb_subcycle(horiz_turb_subcycle_in)
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
                       , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
+                      , dt_hvs(-1.0), dt_hvs_sgs(-1.0), dt_hvs_tom(-1.0)
                       , consthv(hypervis_scaling_in == 0)
+                      , constsponge(laplace_scaling_in == 0)
                       , do_3d_turbulence(do_3d_turbulence_in)
                       , tom_sponge_start(tom_sponge_start_in) {}
 
     const int   hypervis_subcycle;
+    const int   horiz_turb_subcycle;
     const int   hypervis_subcycle_tom;
 
     bool do_3d_turbulence;
@@ -66,11 +72,13 @@ public:
     int         np1; // The time-level on which to apply hv
     Real        dt;
     Real        dt_hvs;
+    Real        dt_hvs_sgs;
     Real        dt_hvs_tom;
 
     Real        eta_ave_w;
 
     bool consthv;
+    bool constsponge;
     double tom_sponge_start;
   };//hyperviscosityData
 
@@ -82,7 +90,6 @@ public:
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
-    ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_heat_i;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_mom_i;
   };//buffers
 
@@ -95,7 +102,8 @@ public:
   struct TagApplyInvMass {};
   struct TagHyperPreExchange {};
   struct TagNutopUpdateStates {};
-  struct TagNutopLaplace {};
+  struct TagNutopLaplaceConst {};
+  struct TagNutopLaplaceTensor {};
   struct TagSGSTurbUpdateStates {};
   struct TagSGSTurbLaplace {};
 
@@ -198,7 +206,10 @@ public:
 
   // Laplace for nu_top
   KOKKOS_INLINE_FUNCTION
-  void operator()(const TagNutopLaplace&, const TeamMember& team) const;
+  void operator()(const TagNutopLaplaceConst&, const TeamMember& team) const;
+
+  KOKKOS_INLINE_FUNCTION
+  void operator()(const TagNutopLaplaceTensor&, const TeamMember& team) const;
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagNutopUpdateStates&, const TeamMember& team) const;
@@ -424,7 +435,6 @@ protected:
   Kokkos::TeamPolicy<ExecSpace,TagFirstLaplaceHV>   m_policy_first_laplace;
   Kokkos::TeamPolicy<ExecSpace,TagHyperPreExchange> m_policy_pre_exchange;
 
-  Kokkos::TeamPolicy<ExecSpace,TagNutopLaplace>      m_policy_nutop_laplace;
   Kokkos::TeamPolicy<ExecSpace,TagNutopUpdateStates> m_policy_nutop_update_states;
 
   Kokkos::TeamPolicy<ExecSpace,TagSGSTurbLaplace>      m_policy_sgsturb_laplace;

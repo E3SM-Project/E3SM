@@ -44,6 +44,8 @@ void compute_online_dust_nacl_emiss(
     const const_view_1d &mpoly, const const_view_1d &mprot,
     const const_view_1d &mlip, const const_view_1d &soil_erodibility,
     const const_view_2d &z_mid,
+    const Real &dust_emis_scale_factor,
+    const Real &seasalt_emis_scale_factor,
     // output
     view_2d &constituent_fluxes) {
   const int surf_lev = nlev - 1;  // surface level
@@ -63,6 +65,7 @@ void compute_online_dust_nacl_emiss(
             sst(icol), ocnfrac(icol), u_wind(icol, surf_lev),
             v_wind(icol, surf_lev), z_mid(icol, surf_lev), dstflx_icol,
             soil_erodibility(icol), mpoly(icol), mprot(icol), mlip(icol),
+            dust_emis_scale_factor, seasalt_emis_scale_factor,
             // out
             fluxes_col);
       });

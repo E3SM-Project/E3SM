@@ -187,6 +187,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <moisture>moist</moisture>
+      <!-- This value is synchronized with ctl_nl::do_3d_turbulence by
+           eamxx_buildnml.py and forwarded by the driver to SHOC. -->
+      <do_3d_turbulence_homme type="logical" locked="true">false</do_3d_turbulence_homme>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
@@ -265,6 +268,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <c_diag_3rd_mom type="real" doc="Third moment vertical velocity damping factor">7.0</c_diag_3rd_mom>
       <coeff_kh type="real" doc="Eddy diffusivity coefficient for heat">0.1</coeff_kh>
       <coeff_km type="real" doc="Eddy diffusivity coefficient for momentum">0.1</coeff_km>
+      <coeff_kh_horiz type="real" doc="Horizontal eddy diffusivity coefficient for heat">0.1</coeff_kh_horiz>
+      <coeff_km_horiz type="real" doc="Horizontal eddy diffusivity coefficient for momentum">0.1</coeff_km_horiz>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
     </shoc>
@@ -272,22 +277,24 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- ZM deep convection -->
     <zm inherit="atm_proc_base">
       <apply_detr_tend    type="logical" doc="ZM flag for cld liq/ice detrainment tend"     >true</apply_detr_tend>
-      <use_fortran_bridge type="logical" doc="ZM flag to call fortran ZM"                   >false</use_fortran_bridge>
       <trig_dcape         type="logical" doc="ZM flag to enable DCAPE trigger"              >true</trig_dcape>
       <trig_ull           type="logical" doc="ZM flag to enable ULL mode"                   >true</trig_ull>
       <clos_dyn_adj       type="logical" doc="ZM flag to enable dynamic closure adjustment" >false</clos_dyn_adj>
       <!-- ZM tuning parameters -->
-      <upper_limit_pref type="real"    doc="ZM upper pressure limit for convection"    >40e2</upper_limit_pref>
-      <tau              type="real"    doc="ZM convective adjustment time scale"       >3600</tau>
-      <alfa             type="real"    doc="ZM max downdraft mass flux fraction"       >0.14</alfa>
-      <ke               type="real"    doc="ZM evaporation efficiency"                 >2.5E-6</ke>
-      <dmpdz            type="real"    doc="ZM fractional mass entrainment rate [1/m]" >-0.7e-3</dmpdz>
-      <tpert_fix        type="logical" doc="ZM flag to enable tpert"                   >true</tpert_fix>
-      <tpert_fac        type="real"    doc="ZM tunable temperature perturbation factor">2.0</tpert_fac>
-      <tiedke_add       type="real"    doc="ZM tunable temperature perturbation"       >0.8</tiedke_add>
-      <c0_lnd           type="real"    doc="ZM autoconversion coefficient over land"   >0.002</c0_lnd>
-      <c0_ocn           type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
-      <num_cin          type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
+      <upper_limit_pref   type="real"    doc="ZM upper pressure limit for convection"    >40e2</upper_limit_pref>
+      <tau                type="real"    doc="ZM convective adjustment time scale"       >3600</tau>
+      <alfa               type="real"    doc="ZM max downdraft mass flux fraction"       >0.14</alfa>
+      <ke                 type="real"    doc="ZM evaporation efficiency"                 >2.5E-6</ke>
+      <dmpdz              type="real"    doc="ZM fractional mass entrainment rate [1/m]" >-0.7e-3</dmpdz>
+      <tpert_fix          type="logical" doc="ZM flag to enable tpert"                   >true</tpert_fix>
+      <tpert_fac          type="real"    doc="ZM tunable temperature perturbation factor">2.0</tpert_fac>
+      <tiedke_add         type="real"    doc="ZM tunable temperature perturbation"       >0.8</tiedke_add>
+      <c0_lnd             type="real"    doc="ZM autoconversion coefficient over land"   >0.002</c0_lnd>
+      <c0_ocn             type="real"    doc="ZM autoconversion coefficient over ocean"  >0.002</c0_ocn>
+      <num_cin            type="integer" doc="ZM num of neg buoyancy regions allowed"    >1</num_cin>
+      <cape_threshold     type="real"    doc="ZM CAPE threshold [J/kg](traditionally zero
+                                              w/ trig_dcape, or 70 otherwise)"           >0.</cape_threshold>
+      <dcape_threshold    type="real"    doc="ZM DCAPE threshold [J/kg/s]"               >0.</dcape_threshold>
       <!-- MCSP -->
       <mcsp_enabled type="logical" doc="ZM flag to enable MCSP in ZM" >true</mcsp_enabled>
       <mcsp_t_coeff type="real" doc="MCSP temperature coefficient"    >0.3</mcsp_t_coeff>
@@ -296,11 +303,21 @@ be lost if SCREAM_HACK_XML is not enabled.
       <mcsp_v_coeff type="real" doc="MCSP V-wind coefficient"         >0.0</mcsp_v_coeff>
     </zm>
 
+    <!-- Water tracers -->
+    <water_tracers inherit="atm_proc_base">
+      <tracer_count type="integer" doc="Number of water tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+    </water_tracers>
+
+    <!-- Water isotopes (subclass of water tracers with fractionation physics) -->
+    <water_isotopes inherit="atm_proc_base">
+      <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+    </water_isotopes>
+    
     <!-- Gravity Wave Drag -->
     <gw inherit="atm_proc_base">
-      <use_gw_convect type="logical" doc="Flag for convective GWD">false</use_gw_convect>
+      <use_gw_orographic type="logical" doc="Flag for orographic GWD">true</use_gw_orographic>
+      <use_gw_convect type="logical" doc="Flag for convective GWD">true</use_gw_convect>
       <use_gw_frontal type="logical" doc="Flag for frontal GWD">false</use_gw_frontal>
-      <use_gw_orographic type="logical" doc="Flag for orographic GWD">false</use_gw_orographic>
       <gw_drag_file type="string" doc="GW source spectra file">${DIN_LOC_ROOT}/atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
       <pgwv type="integer" doc="Maximum number of waves allowed">32</pgwv>
       <gw_dc type="real" doc="Bin width for spectrum">2.5</gw_dc>
@@ -435,36 +452,39 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mam4_srf_online_emiss inherit="mam4_atm_proc_base">
 
       <!-- For all other grids -->
-      <srf_emis_specifier_for_dms     type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20240816.nc</srf_emis_specifier_for_dms>
-      <srf_emis_specifier_for_so2     type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so2>
-      <srf_emis_specifier_for_bc_a4   type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_bc_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_bc_a4>
-      <srf_emis_specifier_for_num_a1  type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a1_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a1>
-      <srf_emis_specifier_for_num_a2  type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a2>
-      <srf_emis_specifier_for_num_a4  type="file" doc="File containing surface emissions data for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_num_a4>
-      <srf_emis_specifier_for_pom_a4  type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_pom_a4_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_pom_a4>
-      <srf_emis_specifier_for_so4_a1  type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a1_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a1>
-      <srf_emis_specifier_for_so4_a2  type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a2_surf_ne30pg2_2010_clim_c20240816.nc</srf_emis_specifier_for_so4_a2>
+      <srf_emis_specifier_for_dms     type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/DMSflux.2010.ne30pg2_conserv.POPmonthlyClimFromACES4BGC_c20260730.nc</srf_emis_specifier_for_dms>
+      <srf_emis_specifier_for_so2     type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so2_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_so2>
+      <srf_emis_specifier_for_bc_a4   type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_bc_a4_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_bc_a4>
+      <srf_emis_specifier_for_num_a1  type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a1_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_num_a1>
+      <srf_emis_specifier_for_num_a2  type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a2_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_num_a2>
+      <srf_emis_specifier_for_num_a4  type="file" doc="File containing surface emissions data for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_num_a4_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_num_a4>
+      <srf_emis_specifier_for_pom_a4  type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_pom_a4_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_pom_a4>
+      <srf_emis_specifier_for_so4_a1  type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a1_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_so4_a1>
+      <srf_emis_specifier_for_so4_a2  type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/surface/cmip6_mam4_so4_a2_surf_ne30pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_so4_a2>
 
       <!-- For ne4pg2 grid -->
-      <srf_emis_specifier_for_dms    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20240814.nc</srf_emis_specifier_for_dms>
-      <srf_emis_specifier_for_so2    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so2>
-      <srf_emis_specifier_for_bc_a4  hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_bc_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_bc_a4>
-      <srf_emis_specifier_for_num_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_num_a1>
-      <srf_emis_specifier_for_num_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_num_a2>
-      <srf_emis_specifier_for_num_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_num_a4>
-      <srf_emis_specifier_for_pom_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_pom_a4_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_pom_a4>
-      <srf_emis_specifier_for_so4_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a1_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a1>
-      <srf_emis_specifier_for_so4_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a2_surf_ne4pg2_2010_clim_c20240815.nc</srf_emis_specifier_for_so4_a2>
+      <srf_emis_specifier_for_dms    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for DMS">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/DMSflux.2010.ne4pg2_conserv.POPmonthlyClimFromACES4BGC_c20260730.nc</srf_emis_specifier_for_dms>
+      <srf_emis_specifier_for_so2    hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for SO2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so2_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_so2>
+      <srf_emis_specifier_for_bc_a4  hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for bc_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_bc_a4_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_bc_a4>
+      <srf_emis_specifier_for_num_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a1_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_num_a1>
+      <srf_emis_specifier_for_num_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a2_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_num_a2>
+      <srf_emis_specifier_for_num_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for num_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_num_a4_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_num_a4>
+      <srf_emis_specifier_for_pom_a4 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for pom_a4">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_pom_a4_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_pom_a4>
+      <srf_emis_specifier_for_so4_a1 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a1">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a1_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_so4_a1>
+      <srf_emis_specifier_for_so4_a2 hgrid="ne4np4.pg2" type="file" doc="File containing surface emissions data for so4_a2">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/surface/cmip6_mam4_so4_a2_surf_ne4pg2_2010_clim_c20260730.nc</srf_emis_specifier_for_so4_a2>
 
       <!-- scale factors (applied to data read from file) -->
       <srf_emis_scale_factor_for_dms type="real" doc="Surface emissions scale factor for DMS">1.0</srf_emis_scale_factor_for_dms>
 
+      <srf_emis_scale_factor_for_seasalt type="real" doc="Surface emissions scale factor for seasalt">0.6</srf_emis_scale_factor_for_seasalt>
+
+      <srf_emis_scale_factor_for_dust type="real" doc="Surface emissions scale factor for dust">1.5</srf_emis_scale_factor_for_dust>
       <dust_emis_scheme type="integer" doc="Dust emission scheme, 1: Zender et al. (2003), 2: Kok et al. (2014)">1</dust_emis_scheme>
       <soil_erodibility_file type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/dst_ne30pg2_c20241028.nc</soil_erodibility_file>
       <soil_erodibility_file hgrid="ne4np4.pg2" type="file" doc="File containing soil erodibility">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/dst_ne4pg2_c20241028.nc</soil_erodibility_file>
 
-      <marine_organics_file type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20241030.nc</marine_organics_file>
-      <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20241030.nc</marine_organics_file>
+      <marine_organics_file type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne30pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne30pg2_c20260807.nc</marine_organics_file>
+      <marine_organics_file hgrid="ne4np4.pg2" type="file" doc="File containing marine organics emissions">${DIN_LOC_ROOT}/atm/scream/mam4xx/emissions/ne4pg2/monthly_macromolecules_0.1deg_bilinear_year01_merge_ne4pg2_c20260807.nc</marine_organics_file>
 
       <!-- Mapping Files for finer resolutions -->
       <srf_remap_file type="file" doc="File containing mapping data from the grid of emission files to the model grid. Unused if the grid is the same.">none</srf_remap_file>
@@ -555,6 +575,8 @@ be lost if SCREAM_HACK_XML is not enabled.
       <spc_data_file type="file" doc="File containing chemistry data. Must be on same grid as the atm, or a coarser one">none</spc_data_file>
       <spc_data_file hgrid="ne.*np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne30pg2_c20260206.nc</spc_data_file>
       <spc_data_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/spc_from_v3LRamip_2010_clim_ne4pg2_c20260211.nc</spc_data_file>
+
+      <gas_species type="array(string)" doc="List of gas species to read in and prescribe">o3</gas_species>
 
       <time_interpolation_method type="string" doc="Method for interpolating SPC data in time">yearly_periodic</time_interpolation_method>
     </spc>
@@ -740,6 +762,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sgs_buoy_flux     >0.0</sgs_buoy_flux>
     <eddy_diff_mom     >0.0</eddy_diff_mom>
     <eddy_diff_heat    >0.0</eddy_diff_heat>
+    <eddy_diff_mom_horiz>0.0</eddy_diff_mom_horiz>
+    <eddy_diff_heat_horiz>0.0</eddy_diff_heat_horiz>
     <T_prev_micro_step >0.0</T_prev_micro_step>
     <qv_prev_micro_step>0.0</qv_prev_micro_step>
     <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
@@ -751,6 +775,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nc_nuceat_tend    >0.0</nc_nuceat_tend>
     <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
     <tke               >0.0</tke>
+    <!-- ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized -->
+    <pbl_height        >2000.0</pbl_height>
     <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
     <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
     <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
@@ -910,9 +936,12 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
+    <laplace_scaling>0.0</laplace_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
+    <horiz_turb_subcycle>1</horiz_turb_subcycle>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
     <hypervis_subcycle_q>1</hypervis_subcycle_q>
+    <horiz_turb_subcycle_q>1</horiz_turb_subcycle_q>
     <nu>3.4e-08</nu>
     <nu COMPSET=".*DP-EAMxx">0.216784</nu>
     <nu_top>UNSET</nu_top>
@@ -987,6 +1016,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
     <dt_tracer_factor hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
+    <horiz_turb_subcycle_q hgrid=".*pg2">1</horiz_turb_subcycle_q>
     <transport_alg hgrid=".*pg2" doc="0 (Eulerian) or 12 (semi-Lagrangian) tracer transport">12</transport_alg>
     <semi_lagrange_trajectory_nsubstep doc="Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.">0</semi_lagrange_trajectory_nsubstep>
     <semi_lagrange_trajectory_nvelocity doc="Number of velocity slices to use in new method. 2 or less maps to 2">-1</semi_lagrange_trajectory_nvelocity>

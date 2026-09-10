@@ -312,6 +312,10 @@ void AtmosphereDriver::create_grids()
     setup_shoc_tms_links();
   }
 
+  if (m_atm_process_group->has_process("shoc")) {
+    setup_shoc_3d_turbulence_link();
+  }
+
   // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
   // implementation of some processes, so setup here.
   const bool enable_iop =
@@ -490,7 +494,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
   const std::string fail_handling_type_str =
       driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "warning");
 
-  CheckFailHandling fail_handling_type;
+  CheckFailHandling fail_handling_type = CheckFailHandling::Warning;
   if (fail_handling_type_str == "warning") {
     fail_handling_type = CheckFailHandling::Warning;
   } else if (fail_handling_type_str == "fatal") {
@@ -516,6 +520,22 @@ void AtmosphereDriver::setup_shoc_tms_links ()
 
   auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
   shoc_process->get_params().set<bool>("apply_tms", true);
+}
+
+void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
+{
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("shoc"),
+                   "Error! Attempting to setup 3D turbulence link for "
+                   "SHOC, but SHOC is not defined.\n");
+
+  if (m_atm_process_group->has_process("homme")) {
+    auto homme_process = m_atm_process_group->get_process_nonconst("homme");
+    const bool do_3d_turbulence =
+        homme_process->get_params().get<bool>("do_3d_turbulence_homme", false);
+
+    auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
+    shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
+  }
 }
 
 void AtmosphereDriver::add_additional_column_data_to_property_checks () {
@@ -609,33 +629,37 @@ void AtmosphereDriver::create_fields()
   }
 
   // Now go through the input fields/groups to the atm proc group,
-  // and mark them as part of the RESTART group.
+  // and mark them as part of the RESTART/STARTUP/TOPOGRAPHY groups.
   // Skip fields in the ACCUMULATED group, since those are reset to 0
   // at the beginning of each atm step, so there is no need to read
   // them from the IC or restart file.
-  for (const auto& f : m_atm_process_group->get_fields_in()) {
+  auto is_topography_field = [] (const std::string& name) {
+    return name=="phis" or name=="sgh" or name=="sgh30";
+  };
+
+  auto set_groups = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
     const auto& fgroups = f.get_header().get_tracking().get_groups_names();
     if (not ekat::contains(fgroups, "ACCUMULATED")) {
       m_field_mgr->add_to_group(fid, "RESTART");
+      m_field_mgr->add_to_group(fid, "STARTUP");
+      if (is_topography_field(fid.name())) {
+        m_field_mgr->add_to_group(fid, "TOPOGRAPHY");
+      }
     }
-  }
+  };
+
+  // Process input fields
+  for (const auto& f : m_atm_process_group->get_fields_in())
+    set_groups(f);
+
+  // Process input groups
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      const auto& mf = *g.m_monolithic_field;
-      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
-        m_field_mgr->add_to_group(mf.get_header().get_identifier(), "RESTART");
-      }
-    } else {
-      for (const auto& fn : g.m_info->m_fields_names) {
-        auto field = m_field_mgr->get_field(fn, g.grid_name());
-        const auto& fgroups = field.get_header().get_tracking().get_groups_names();
-        if (not ekat::contains(fgroups, "ACCUMULATED")) {
-          m_field_mgr->add_to_group(fn, g.grid_name(), "RESTART");
-        }
-      }
-    }
+    if (g.m_monolithic_field)
+      set_groups(*g.m_monolithic_field);
+    else
+      for (const auto& it : g.m_individual_fields)
+        set_groups(*it.second);
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -1015,7 +1039,7 @@ void AtmosphereDriver::create_logger () {
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
   auto str2lev = [](const std::string& s, const std::string& name) {
-    LogLevel lev;
+    LogLevel lev = LogLevel::info;
     if (s=="trace") {
       lev = LogLevel::trace;
     } else if (s=="debug") {
@@ -1771,7 +1795,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   m_grids_manager = nullptr;
 
   // Destroy all the fields manager
-  m_field_mgr->clean_up();
+  m_field_mgr = nullptr;
 
   // Write all timers to file, and possibly finalize gptl
   if (not m_gptl_externally_handled) {

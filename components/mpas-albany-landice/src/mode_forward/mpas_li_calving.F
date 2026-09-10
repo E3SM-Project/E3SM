@@ -139,6 +139,7 @@ module li_calving
 
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
+      real (kind=RKIND), dimension(:), pointer :: faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer :: strainRateEnhancementForCalving, &
                                                   calvingStrainRateScaling
 
@@ -194,9 +195,11 @@ module li_calving
          ! (e.g. if order of operations is changed or data melt rates are used)
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
          call mpas_pool_get_array(geometryPool, 'strainRateEnhancementForCalving', strainRateEnhancementForCalving)
          call mpas_pool_get_array(geometryPool, 'calvingStrainRateScaling', calvingStrainRateScaling)
-         call calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
+         call calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, faceMeltingThickness, &
+                                                        strainRateEnhancementForCalving)
 
          block => block % next
       end do
@@ -4737,8 +4740,10 @@ module li_calving
 !> from marine terminating glaciers. Journal of Geophysical Research: Earth Surface
 !-----------------------------------------------------------------------
 
-   subroutine calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, strainRateEnhancementForCalving)
+   subroutine calculate_facemelt_strainrate_enhancement(calvingStrainRateScaling, faceMeltSpeed, faceMeltingThickness, &
+                                                        strainRateEnhancementForCalving)
       real(kind=RKIND), dimension(:), intent(in) :: faceMeltSpeed
+      real(kind=RKIND), dimension(:), intent(in) :: faceMeltingThickness
       real(kind=RKIND), dimension(:), intent(out) :: strainRateEnhancementForCalving
       real(kind=RKIND), dimension(:), intent(inout) :: calvingStrainRateScaling
 
@@ -4757,7 +4762,14 @@ module li_calving
          else
             ! do nothing
          endif
-         strainRateEnhancementForCalving(:) = 1.0_RKIND + faceMeltSpeed(:) * 86400.0_RKIND * calvingStrainRateScaling(:)
+         ! faceMeltSpeed is calculated as a potential facemelt speed and can have nonzero values in regions where
+         ! facemelting does not actually occur.  Use faceMeltingThickness as a mask to identify where the strain rate
+         ! enhancement should be applied.
+         where (faceMeltingThickness(:) > 0.0_RKIND)
+            strainRateEnhancementForCalving(:) = 1.0_RKIND + faceMeltSpeed(:) * 86400.0_RKIND * calvingStrainRateScaling(:)
+         elsewhere
+            strainRateEnhancementForCalving(:) = 1.0_RKIND
+         end where
          ! Don't allow negative multiplier
          strainRateEnhancementForCalving(:) = max(0.0_RKIND, strainRateEnhancementForCalving(:))
       else

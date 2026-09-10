@@ -69,8 +69,8 @@ private:
   // Local variables
   // ------------------------------------------------
 
-  // Number of aerosol modes
-  static constexpr int ntot_amode_ = mam4::AeroConfig::num_modes();
+  // aerosol metadata
+  mam4::AeroConfig aero_config_;
 
   // Work arrays
   view_2d work_;

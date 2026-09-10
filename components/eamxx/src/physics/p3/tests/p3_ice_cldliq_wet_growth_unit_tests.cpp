@@ -144,13 +144,18 @@ struct UnitWrap::UnitTest<D>::TestIceCldliqWetGrowth : public UnitWrap::UnitTest
 
 namespace {
 
-TEST_CASE("p3_ice_cldliq_wet_growth", "[p3_functions]")
+TEST_CASE("p3_ice_cldliq_wet_growth_prop", "[p3_functions]")
 {
   using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCldliqWetGrowth;
 
-  T t;
-  t.run_ice_cldliq_wet_growth_phys();
-  t.run_ice_cldliq_wet_growth_bfb();
+  T t;  t.run_ice_cldliq_wet_growth_phys();
+}
+
+TEST_CASE("p3_ice_cldliq_wet_growth_bfb", "[p3_functions]")
+{
+  using T = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestIceCldliqWetGrowth;
+
+  T t;  t.run_ice_cldliq_wet_growth_bfb();
 }
 
 }

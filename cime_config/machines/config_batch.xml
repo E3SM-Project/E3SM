@@ -618,6 +618,27 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="vista-gh" type="slurm">
+    <directives>
+      <directive>-n {{ total_tasks }}</directive>
+      <directive>--partition=gh</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="8" default="true">gh-dev</queue>
+      <queue walltimemax="00:30:00" nodemax="64" strict="true">gh</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="vista-gg" type="slurm">
+    <directives>
+      <directive>-n {{ total_tasks }}</directive>
+      <directive>--partition=gg</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="32" strict="true">gg</queue>
+    </queues>
+  </batch_system>
+
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>

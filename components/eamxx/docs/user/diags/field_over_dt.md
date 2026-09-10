@@ -21,8 +21,11 @@ The output field has the same layout and grid as `X`, with units `[X_units / s]`
 - At evaluation time (`compute_diagnostic`), `dt` is computed as the difference
   between the field's current timestamp and the saved start timestamp (in seconds).
 - The output is `X / dt` element-wise.
-- On the very first evaluation — before `init_timestep` has been called — the
-  output is filled with the standard EAMxx fill value (`constants::fill_value<Real>`).
+- Before `init_timestep` has ever been called, the output is filled with the
+  standard EAMxx fill value (`constants::fill_value<Real>`). Note this does NOT
+  cover the case where `init_timestep` HAS been called but no time has elapsed
+  since: there `dt` is zero, which is an error rather than a fill value (see
+  the caveats below).
 
 ## Example: atmospheric backward tendency
 
@@ -43,6 +46,11 @@ built-in alias system (see [Built-in aliases](builtin_aliases.md)).
 ## Caveats
 
 - `dt` must be strictly positive; a zero or negative timestep triggers a runtime error.
+- **This diagnostic cannot be written to an `instant` output stream.** An instant
+  stream takes a snapshot at `t0`, before the first step has run, so `dt` is zero
+  and the run aborts with "dt must be positive". Use an averaged stream
+  (`averaging_type: average`, `max`, `min`) instead. The same applies to
+  everything built on top of it, including `X_atm_backtend`.
 - Only fields with `Real` data type are supported.
 - The suffix `_over_dt` is matched *before* binary-op patterns, so
   `A_minus_B_over_dt` parses as `FieldOverDtDiag(A_minus_B)`, not

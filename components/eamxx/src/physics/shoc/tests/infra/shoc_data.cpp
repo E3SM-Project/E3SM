@@ -32,6 +32,8 @@ FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_,
   wqw_sfc = Array1("Surface latent heat flux [kg/kg m/s]", shcol);
   uw_sfc = Array1("Surface momentum flux (u direction) [m2/s2]", shcol);
   vw_sfc = Array1("Surface momentum flux (v direction) [m2/s2]", shcol);
+  uw_sfc_pert = Array1("Perturbation surface momentum flux (u direction) [m2/s2]", shcol);
+  vw_sfc_pert = Array1("Perturbation surface momentum flux (v direction) [m2/s2]", shcol);
   wtracer_sfc = Array2("Surface tracer flux [various]", shcol, num_qtracers);
   inv_exner = Array2("Inverse of the Exner function [-]", shcol, nlev);
   phis = Array1("Host model surface geopotential height [m?]", shcol);
@@ -51,6 +53,8 @@ FortranData::FortranData(Int shcol_, Int nlev_, Int nlevi_,
   // Out variables (including diagnostics)
   shoc_cldfrac = Array2("Cloud fraction [-]", shcol, nlev);
   shoc_ql = Array2("Cloud liquid mixing ratio [kg/kg]", shcol, nlev);
+  um_pert = Array2("Perturbation u wind [m/s]", shcol, nlev);
+  vm_pert = Array2("Perturbation v wind [m/s]", shcol, nlev);
   pblh = Array1("Planetary boundary layer depth [m]", shcol);
   shoc_mix = Array2("Turbulent length scale [m]", shcol, nlev);
   w_sec = Array2("Vertical velocity variance [m2/s2]", shcol, nlev);

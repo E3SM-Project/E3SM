@@ -7,12 +7,12 @@ namespace scream {
 namespace p3 {
 namespace ic {
 
-P3Data::Ptr make_mixed(Int ncol);
+P3Data::Ptr make_mixed(Int ncol, Int nlev = 128);
 
 struct Factory {
   enum IC { mixed };
 
-  static P3Data::Ptr create(IC ic, Int ncol = 1, Int nlev = 72);
+  static P3Data::Ptr create(IC ic, Int ncol = 1, Int nlev = 128);
 };
 
 } // namespace ic

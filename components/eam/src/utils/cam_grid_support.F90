@@ -574,8 +574,10 @@ contains
       ierr=pio_put_att(File, this%vardesc, 'long_name', trim(this%long_name))
       call cam_pio_handle_error(ierr, 'Error writing "long_name" attr in write_horiz_coord_attr')
       ! units
-      ierr=pio_put_att(File, this%vardesc, 'units', trim(this%units))
-      call cam_pio_handle_error(ierr, 'Error writing "units" attr in write_horiz_coord_attr')
+      if (len_trim(this%units) > 0) then
+        ierr=pio_put_att(File, this%vardesc, 'units', trim(this%units))
+        call cam_pio_handle_error(ierr, 'Error writing "units" attr in write_horiz_coord_attr')
+      end if
     end if ! We define the variable
 
     if (present(dimid_out)) then

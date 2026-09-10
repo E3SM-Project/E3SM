@@ -51,11 +51,6 @@ if (SCREAM_CIME_BUILD)
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
-if (NOT CMAKE_CXX_STANDARD)
-  # Default to C++17 in EAMxx
-  set(CMAKE_CXX_STANDARD 17)
-endif()
-
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)
 
@@ -462,6 +457,12 @@ endif()
 #               Configure all tpls and subfolders                  #
 ####################################################################
 
+# Set compiler-specific flags. Do it BEFORE ekat, so ekat gets the flags too
+include(EkatSetCompilerFlags)
+ResetFlags()
+SetCommonFlags()
+SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
+
 # We will use the sharedlib one in CIME builds
 if (NOT SCREAM_CIME_BUILD)
   set (EKAT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../externals/ekat)
@@ -500,12 +501,6 @@ if (NOT SCREAM_CIME_BUILD)
   add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
-# Set compiler-specific flags
-include(EkatSetCompilerFlags)
-ResetFlags()
-SetCommonFlags()
-SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
-
 include(EkatMpiUtils)
 # We should avoid cxx bindings in mpi; they are already deprecated,
 # and can cause headaches at link time, cause they require -lmpi_cxx
@@ -541,6 +536,15 @@ endif()
 # SCREAM_FAKE_ONLY is used to run some tests to ensure the enclosing testing
 # scripts work correctly. We are not really interested in building/testing SCREAM.
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
+
+  if (NOT TARGET dexpr)
+    set (DEXPR_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set (DEXPR_ENABLE_TOOL  OFF CACHE BOOL "" FORCE)
+    set (DEXPR_WERROR       OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../share/dexpr
+                     ${CMAKE_BINARY_DIR}/externals/dexpr)
+    set_target_properties(dexpr PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  endif()
 
   add_subdirectory(tpls)
   add_subdirectory(src)

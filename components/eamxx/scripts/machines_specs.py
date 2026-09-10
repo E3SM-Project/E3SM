@@ -177,6 +177,77 @@ class PMGPU(PM):
         cls.gpu_arch = "cuda"
 
 ###############################################################################
+class Alvarez(CrayMachine):
+###############################################################################
+    @classmethod
+    def setup_alvarez(cls, partition):
+        expect(partition in ["cpu", "gpu"], "Unknown Alvarez partition")
+
+        super().setup_cray("alvarez-" + partition)
+
+        compiler = "gnu" if partition == "cpu" else "gnugpu"
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
+        cls.batch = f"salloc --account e3sm_g --constraint={partition}"
+        if partition == "cpu":
+            cls.batch += " --time 00:30:00 --nodes=1 -q debug"
+        else:
+            cls.batch += " --time 02:00:00 --nodes=1 --gpus-per-node=4 --gpu-bind=none -q regular"
+            cls.num_run_res = 4
+            cls.gpu_arch = "cuda"
+
+###############################################################################
+class AlvarezCPU(Alvarez):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_alvarez("cpu")
+
+###############################################################################
+class AlvarezGPU(Alvarez):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_alvarez("gpu")
+
+###############################################################################
+class Muller(CrayMachine):
+###############################################################################
+    @classmethod
+    def setup_muller(cls, partition):
+        expect(partition in ["cpu", "gpu"], "Unknown Muller partition")
+
+        super().setup_cray("muller-" + partition)
+
+        compiler = "gnu" if partition == "cpu" else "gnugpu"
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
+        cls.batch = f"salloc --account e3sm_g --constraint={partition}"
+        if partition == "cpu":
+            cls.batch += " --time 00:30:00 --nodes=1 -q debug"
+        else:
+            cls.batch += " --time 02:00:00 --nodes=1 --gpus-per-node=4 --gpu-bind=none -q regular"
+            cls.num_run_res = 4
+            cls.gpu_arch = "cuda"
+
+###############################################################################
+class MullerCPU(Muller):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_muller("cpu")
+
+###############################################################################
+class MullerGPU(Muller):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_muller("gpu")
+
+###############################################################################
+###############################################################################
 class Polaris(CrayMachine):
 ###############################################################################
     concrete = True
@@ -238,6 +309,20 @@ class Lychee(Machine):
         #cls.batch = "bsub -I -q rhel8 -n 4 -gpu num=4"
 
         cls.num_run_res = 4 # four gpus
+        cls.gpu_arch = "cuda"
+
+###############################################################################
+class Vista(Machine):
+###############################################################################
+    concrete = True
+    @classmethod
+    def setup(cls):
+        super().setup_base("vista")
+
+        compiler = "gnugpu"
+        cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
+        cls.batch = "salloc --account CDA24017 --partition gh-dev --time 00:30:00 --nodes=1"
+        cls.num_run_res = 1
         cls.gpu_arch = "cuda"
 
 ###############################################################################
@@ -386,6 +471,7 @@ class AnlGceUb22(Machine):
                          "module load gcc/12.1.0",
                          "export LD_LIBRARY_PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/lib:$LD_LIBRARY_PATH",
                          "export PATH=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/mpich/4.1.2/gcc-12.1.0/bin:/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0/bin:$PATH",
+                          "export HDF5_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/hdf5/1.14.6/mpich-4.1.2/gcc-12.1.0-mt",
                          "export NetCDF_ROOT=/nfs/gce/projects/climate/software/linux-ubuntu22.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-12.1.0",
                          "export PERL5LIB=/nfs/gce/projects/climate/software/perl5/lib/perl5"
                         ]

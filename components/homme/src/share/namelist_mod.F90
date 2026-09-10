@@ -76,11 +76,14 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     dcmip16_pbl_type,&
     interp_lon0,    &
     hypervis_scaling,   &  ! use tensor HV instead of scalar coefficient
+    laplace_scaling,   &   ! use tensor laplace instead of scalar coefficient
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
     hypervis_order,       &
     hypervis_subcycle,    &
+    horiz_turb_subcycle,&
     hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
+    horiz_turb_subcycle_q, &
     smooth_phis_numcycle, &
     smooth_phis_p2filt, &
     smooth_phis_nudt,     &
@@ -205,12 +208,14 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
 #endif
+    use mpi
     character(len=*), intent(in) :: NLFilename  ! namelist filename
 #else
   subroutine readnl(par)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
 #endif
+    use mpi
 #endif
     type (parallel_t), intent(in) ::  par
     character(len=MAX_FILE_LEN) :: mesh_file
@@ -311,9 +316,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       dcmip16_pbl_type,&
       hypervis_order,    &
       hypervis_subcycle, &
+      horiz_turb_subcycle, &
       hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
+      horiz_turb_subcycle_q, &
       hypervis_scaling, &
+      laplace_scaling, &
       smooth_phis_numcycle, &
       smooth_phis_p2filt, &
       smooth_phis_nudt, &
@@ -813,9 +821,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(laplace_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(horiz_turb_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(horiz_turb_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_p2filt,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -959,6 +970,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           call abortmp('hypervis_subcycle auto determine only supported for nv==4 and topology==cube')
        endif
     endif
+    if (horiz_turb_subcycle == -1) horiz_turb_subcycle = hypervis_subcycle
+    if (horiz_turb_subcycle_q < 0) horiz_turb_subcycle_q = hypervis_subcycle_q
 #endif
     ! set defautl for dynamics remap
     if (vert_remap_u_alg == -2) vert_remap_u_alg = vert_remap_q_alg
@@ -1195,6 +1208,9 @@ end if
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
        endif
+       if (theta_advect_form==2 .and. pgrad_correction /= 0) then
+          call abortmp("theta_advect_form=2 (splitform) should not be used with pgrad_correction/=0")
+       endif
        
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
        write(iulog,*)"readnl: vert_remap_u_alg  = ",vert_remap_u_alg
@@ -1218,14 +1234,21 @@ end if
        write(iulog,*)"readnl: internal_diagnostics_level = ",internal_diagnostics_level
 
        if(hypervis_scaling /=0)then
-          write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
+          write(iulog,*)"Tensor hyperviscosity: hypervis_scaling=",hypervis_scaling
        else
-          write(iulog,*)"Constant (hyper)viscosity used."
+          write(iulog,*)"Constant (hyper)viscosity.  hypervis_scaling=",hypervis_scaling
+       endif
+       if(laplace_scaling /=0)then
+          write(iulog,*)"Sponge layer viscosity: laplace_scaling=",laplace_scaling
+       else
+          write(iulog,*)"Sponge layer Constant viscosity. laplace_scaling=",laplace_scaling
        endif
 
        write(iulog,*)"hypervis_subcycle     = ",hypervis_subcycle
+       write(iulog,*)"horiz_turb_subcycle = ",horiz_turb_subcycle
        write(iulog,*)"hypervis_subcycle_tom = ",hypervis_subcycle_tom
        write(iulog,*)"hypervis_subcycle_q   = ",hypervis_subcycle_q
+       write(iulog,*)"horiz_turb_subcycle_q = ",horiz_turb_subcycle_q
        write(iulog,'(a,2e9.2)')"viscosity:  nu (vor/div) = ",nu,nu_div
        write(iulog,'(a,2e9.2)')"viscosity:  nu_s      = ",nu_s
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q

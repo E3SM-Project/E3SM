@@ -33,6 +33,8 @@ eamxx:
     c_diag_3rd_mom: 7.0
     coeff_kh: 0.1
     coeff_km: 0.1
+    coeff_kh_horiz: 0.1
+    coeff_km_horiz: 0.1
     shoc_1p5tke: false
 
 grids_manager:

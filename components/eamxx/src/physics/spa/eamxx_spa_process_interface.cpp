@@ -86,44 +86,25 @@ void SPA::initialize_impl (const RunType /* run_type */)
   pint.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
   pint.allocate_view();
 
-  util::TimeLine timeline;
-  util::TimeStamp ref_ts;
+  m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
   if (time_interpolation_method=="yearly_periodic") {
-    timeline = util::TimeLine::YearlyPeriodic;
-    ref_ts = util::TimeStamp(1,1,1,0,0,0); // Beg of any year, since we use yearly periodic timeline
+    m_data_interpolation->setup_periodic_time_database ({spa_data_file});
   } else if (time_interpolation_method=="linear") {
-    timeline = util::TimeLine::Linear;
-    // For linear interpolation we read reference timestamp from the input file's time var units
+    m_data_interpolation->setup_linear_time_database ({spa_data_file});
   } else {
     EKAT_ERROR_MSG("Error! Invalid time_interpolation_method: " +
                    time_interpolation_method +
                    ". Valid options are: yearly_periodic, linear.\n");
   }
 
-  m_data_interpolation = std::make_shared<DataInterpolation>(m_model_grid,spa_fields);
-  m_data_interpolation->setup_time_database ({spa_data_file},timeline, DataInterpolation::Linear, ref_ts);
-
-  if (m_iop_data_manager!=nullptr) {
-    // IOP cases cannot have a remap file. We will create a IOPRemapper as the horiz remapper
-    EKAT_REQUIRE_MSG(spa_map_file == "" or spa_map_file=="none",
-      "Error! Cannot define spa_remap_file for cases with an Intensive Observation Period defined. "
-      "The IOP class defines it's own remap from file data -> model data.\n");
-
-    // TODO: expose tgt lat/lon in IOPDataManager, to avoid injecting knowledge
-    // of its param list structure in other places
-    Real iop_lat = m_iop_data_manager->get_params().get<Real>("target_latitude");
-    Real iop_lon = m_iop_data_manager->get_params().get<Real>("target_longitude");
-    m_data_interpolation->create_horiz_remappers (iop_lat,iop_lon);
-  } else {
-    m_data_interpolation->create_horiz_remappers (spa_map_file=="none" ? "" : spa_map_file);
-  }
+  m_data_interpolation->create_horiz_remappers(spa_map_file, m_iop_data_manager);
   DataInterpolation::VertRemapData vremap_data;
   vremap_data.vr_type = DataInterpolation::Dynamic3DRef;
   vremap_data.pname = "PS";
   vremap_data.pmid = pmid;
   vremap_data.pint = pint;
   m_data_interpolation->create_vert_remapper (vremap_data);
-  m_data_interpolation->init_data_interval (start_of_step_ts());
+  m_data_interpolation->init_time_interpolation (start_of_step_ts(),DataInterpolation::Linear);
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;

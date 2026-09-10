@@ -2,6 +2,9 @@
 
 #include "share/physics/physics_constants.hpp"
 
+#include <cmath>
+#include <cstdlib>
+
 namespace {
   constexpr int OP_PLUS = 0;
   constexpr int OP_MINUS = 1;
@@ -10,6 +13,46 @@ namespace {
 }
 
 namespace scream {
+
+namespace {
+// A non-field operand is a named physical constant (Rgas, P0, ...) or a numeric
+// literal. Only expressions can write a literal -- (qc+qv)*2 -- but accept both.
+// NOTE: strtod because from_chars for floating point is missing on some
+//       compilers we support (e.g. compy).
+bool str2real (const std::string& s, Real& value) {
+  if (s.empty()) return false;
+
+  char* endptr;
+  const char* startptr = s.c_str();
+  const double d = std::strtod(startptr,&endptr);
+
+  if (endptr==startptr or *endptr!='\0') return false;
+  // strtod also takes "nan"/"inf"; those are field names to us, not numbers.
+  if (not std::isfinite(d)) return false;
+
+  value = static_cast<Real>(d);
+  return true;
+}
+
+// Resolves 's' as a scalar operand, if it is one. The dictionary is checked
+// first: a lookup is cheaper than a strtod, and named constants are the common
+// case. Called once per operand, from the constructor; initialize_impl and
+// compute_impl use the cached values.
+bool scalar_operand (const std::string& s, Real& value, ekat::units::Units& units) {
+  const auto& dict = physics::Constants<Real>::dictionary();
+  auto it = dict.find(s);
+  if (it!=dict.end()) {
+    value = it->second.value;
+    units = it->second.units;
+    return true;
+  }
+  if (str2real(s,value)) {
+    units = ekat::units::Units::nondimensional();
+    return true;
+  }
+  return false;
+}
+} // anonymous namespace
 
 // parse string to get the operator code
 int get_binary_operator_code(const std::string& op) {
@@ -184,9 +227,10 @@ BinaryOp(const ekat::Comm &comm,
                    "Error! Invalid binary operator: '" + m_binary_op_str + "'\n"
                    "Valid operators are: plus, minus, times, over\n");
 
-  const auto& pc_dict = physics::Constants<Real>::dictionary();
-  m_arg1_is_field = pc_dict.count(m_arg1_name)==0;
-  m_arg2_is_field = pc_dict.count(m_arg2_name)==0;
+  // A non-field operand's value/units never change, so resolve them here rather
+  // than on every compute_impl call.
+  m_arg1_is_field = not scalar_operand(m_arg1_name,m_arg1_value,m_arg1_units);
+  m_arg2_is_field = not scalar_operand(m_arg2_name,m_arg2_value,m_arg2_units);
   if (m_arg1_is_field)
     m_field_in_names.push_back(m_arg1_name);
   if (m_arg2_is_field)
@@ -195,8 +239,6 @@ BinaryOp(const ekat::Comm &comm,
 
 void BinaryOp::initialize_impl()
 {
-  const auto& dict = physics::Constants<Real>::dictionary();
-
   if (m_arg1_is_field and m_arg2_is_field) {
     const auto& fid1   = m_fields_in.at(m_arg1_name).get_header().get_identifier();
     const auto& fid2   = m_fields_in.at(m_arg2_name).get_header().get_identifier();
@@ -226,10 +268,10 @@ void BinaryOp::initialize_impl()
   auto dl = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_layout()
                             : (m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_layout()
                                                : FieldLayout({},{}));
-  const auto& u1 = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_units()
-                                   : dict.at(m_arg1_name).units;
-  const auto& u2 = m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_units()
-                                   : dict.at(m_arg2_name).units;
+  const auto u1 = m_arg1_is_field ? m_fields_in.at(m_arg1_name).get_header().get_identifier().get_units()
+                                  : m_arg1_units;
+  const auto u2 = m_arg2_is_field ? m_fields_in.at(m_arg2_name).get_header().get_identifier().get_units()
+                                  : m_arg2_units;
   auto diag_units = apply_binary_op(u1, u2, m_binary_op_code);
   auto gn = m_params.get<std::string>("grid_name");
   auto diag_name = m_arg1_name + "_" + m_binary_op_str + "_" + m_arg2_name;
@@ -238,9 +280,7 @@ void BinaryOp::initialize_impl()
 
   if (not m_arg1_is_field and not m_arg2_is_field) {
     // We can pre-compute the diag now
-    const auto  c1 = dict.at(m_arg1_name).value;
-    const auto  c2 = dict.at(m_arg2_name).value;
-    apply_binary_op(m_diagnostic_output, c1, c2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, m_arg1_value, m_arg2_value, m_binary_op_code);
   } else {
     m_arg1_has_mask = m_arg1_is_field and m_fields_in.at(m_arg1_name).has_valid_mask();
     m_arg2_has_mask = m_arg2_is_field and m_fields_in.at(m_arg2_name).has_valid_mask();
@@ -263,20 +303,17 @@ void BinaryOp::compute_impl()
   }
 
   // Note the case where m_arg1_is_field=m_arg2_is_field=false was handled in the initialize method
-  const auto& dict = physics::Constants<Real>::dictionary();
   if (m_arg1_is_field and m_arg2_is_field) {
     const auto& f1 = m_fields_in.at(m_arg1_name);
     const auto& f2 = m_fields_in.at(m_arg2_name);
     apply_binary_op(m_diagnostic_output, f1, f2, m_binary_op_code);
   } else if (m_arg1_is_field) {
     const auto& f1 = m_fields_in.at(m_arg1_name);
-    const auto  c2 = dict.at(m_arg2_name).value;
-    apply_binary_op(m_diagnostic_output, f1, c2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, f1, m_arg2_value, m_binary_op_code);
   } else if (m_arg2_is_field) {
     // We can do scale/scale_inv for * and /, but for + and - we must deep copy arg2 first
-    const auto  c1 = physics::Constants<Real>::dictionary().at(m_arg1_name).value;
     const auto& f2 = m_fields_in.at(m_arg2_name);
-    apply_binary_op(m_diagnostic_output, c1, f2, m_binary_op_code);
+    apply_binary_op(m_diagnostic_output, m_arg1_value, f2, m_binary_op_code);
   }
 
   // Until IO is ready to fully rely on valid_mask fields, we must set diag=fill_value where invalid

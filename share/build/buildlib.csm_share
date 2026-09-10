@@ -138,10 +138,8 @@ def buildlib(bldroot, installpath, case):
     cmake_args = get_standard_cmake_args(case, installpath)
     config_if_not_configured("csm_share", libdir, f"cmake {cmake_args} {csm_share_dir}", logger)
 
-    gmake_cmd = case.get_value("GMAKE")
-    gmake_j   = case.get_value("GMAKE_J")
-
-    cmd = "{} -j {}".format(gmake_cmd, gmake_j)
+    gmake_j = case.get_value("GMAKE_J")
+    cmd = f"cmake --build . -v -j {gmake_j}"
     run_bld_cmd_ensure_logging(cmd, logger, from_dir=libdir)
     #
     # The pgi compiler sometimes has issues with long include paths

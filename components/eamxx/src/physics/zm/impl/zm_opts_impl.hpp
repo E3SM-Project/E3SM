@@ -14,7 +14,6 @@ namespace zm {
 template<typename S, typename D>
 void Functions<S,D>::zm_opts_init()
 {
-  s_zm_opts.use_fortran_bridge  = false;
   s_zm_opts.apply_detr_tend     = true;
   s_zm_opts.upper_limit_pref    = 40e2;
   s_zm_opts.plenest             = static_cast<Int>(ZMC::tmax-ZMC::tmin) + 3;
@@ -34,6 +33,8 @@ void Functions<S,D>::zm_opts_init()
   s_zm_opts.trig_ull            = true;
   s_zm_opts.clos_dyn_adj        = true;
   s_zm_opts.no_deep_pbl         = false;
+  s_zm_opts.cape_threshold      = ZMC::cape_threshold;
+  s_zm_opts.dcape_threshold     = ZMC::dcape_threshold;
   // ZM micro parameters
   s_zm_opts.zm_microp           = false;
   s_zm_opts.old_snow            = true;

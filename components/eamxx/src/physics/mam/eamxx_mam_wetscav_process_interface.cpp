@@ -323,7 +323,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
                                   mam4::aero_model::nimptblgrow_total,
                                   mam4::AeroConfig::num_modes());
 
-  mam4::wetdep::init_scavimptbl(scavimptblvol_host, scavimptblnum_host);
+  mam4::wetdep::init_scavimptbl(aero_config_, scavimptblvol_host, scavimptblnum_host);
 
   scavimptblnum_ = view_2d("scavimptblnum", mam4::aero_model::nimptblgrow_total,
                            mam4::AeroConfig::num_modes());

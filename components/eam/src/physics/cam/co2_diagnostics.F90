@@ -24,8 +24,8 @@ use constituents   , only: pcnst, cnst_name
 use cam_logfile    , only: iulog
 use spmd_utils     , only: masterproc
 use cam_abortutils , only: endrun
-use time_manager   , only: is_first_step, is_last_step, get_prev_date, &
-                           get_curr_date, is_end_curr_month
+use time_manager   , only: is_first_step, is_first_restart_step, is_last_step, &
+                           get_prev_date, get_curr_date, is_end_curr_month
 
 implicit none
 private
@@ -280,7 +280,7 @@ contains
          end do
       end if
 
-      if ( .not. is_first_step() ) then
+      if ( .not. is_first_step() .or. is_first_restart_step() ) then
          do i = 1, ncol
             state%c_iflx_sfc(i) = state%c_iflx_sfc(i) + (sfc_flux(i)     * dtime)
             state%c_iflx_ocn(i) = state%c_iflx_ocn(i) + (sfc_flux_ocn(i) * dtime)
@@ -365,7 +365,7 @@ contains
             end do
          end if
 
-         if ( .not. is_first_step() ) then
+         if ( .not. is_first_step() .or. is_first_restart_step() ) then
             do i = 1, ncol
                state%c_iflx_air(i) = state%c_iflx_air(i) + (fossil_flux(i) * dtime)
                state%c_mflx_air(i) = state%c_mflx_air(i) + (fossil_flux(i) * dtime)

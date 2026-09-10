@@ -58,12 +58,9 @@ real (kind=real_kind), dimension(np,np) :: tmp
 real (kind=real_kind), dimension(np,np) :: tmp2
 real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
-logical var_coef1
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 
    !so tensor is only used on second call to laplace_sphere_wk
-   var_coef1 = .true.
-   if(hypervis_scaling > 0)    var_coef1 = .false.
 
    ! note: there is a scaling bug in the treatment of nu_div
    ! nu_ratio is applied twice, once in each laplace operator
@@ -92,11 +89,11 @@ logical var_coef1
 #endif
       do k=1,nlev
          tmp=elem(ie)%state%T(:,:,k,nt) 
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.false.)
          tmp=elem(ie)%state%dp3d(:,:,k,nt) 
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=var_coef1)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.false.)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(elem(ie)%state%v(:,:,:,k,nt),deriv,elem(ie),&
-              var_coef=var_coef1,nu_ratio=nu_ratio1)
+              var_coef=.false.,nu_ratio=nu_ratio1)
       enddo
       kptr=0
       call edgeVpack_nlyr(edge3, elem(ie)%desc, ptens(1,1,1,ie),nlev,kptr,4*nlev)
@@ -127,13 +124,13 @@ logical var_coef1
 #endif
       do k=1,nlev
          tmp(:,:)=rspheremv(:,:)*ptens(:,:,k,ie)
-         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=.true.)
+         ptens(:,:,k,ie)=laplace_sphere_wk(tmp,deriv,elem(ie),var_coef=(hypervis_scaling>0))
          tmp2(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
-         dptens(:,:,k,ie)=laplace_sphere_wk(tmp2,deriv,elem(ie),var_coef=.true.)
+         dptens(:,:,k,ie)=laplace_sphere_wk(tmp2,deriv,elem(ie),var_coef=(hypervis_scaling>0))
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
          vtens(:,:,:,k,ie)=vlaplace_sphere_wk(v(:,:,:),deriv,elem(ie),&
-              var_coef=.true.,nu_ratio=nu_ratio2)
+              var_coef=(hypervis_scaling>0),nu_ratio=nu_ratio2)
 
       enddo
    enddo

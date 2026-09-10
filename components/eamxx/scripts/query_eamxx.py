@@ -6,6 +6,7 @@ CHOICES = (
     "cxx_compiler",
     "c_compiler",
     "f90_compiler",
+    "mach_file",
     "batch",
     "env",
     "baseline_root",
@@ -27,6 +28,8 @@ def query_eamxx(machine, param):
         return mach.c_compiler
     elif param == "f90_compiler":
         return mach.ftn_compiler
+    elif param == "mach_file":
+        return mach.mach_file
     elif param == "batch":
         return mach.batch
     elif param == "env":

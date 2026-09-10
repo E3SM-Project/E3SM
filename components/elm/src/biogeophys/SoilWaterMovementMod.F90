@@ -51,7 +51,7 @@ contains
     !DESCRIPTION
     !specify method for doing soil&root water interactions
     !
-    use elm_varctl, only : use_vsfm, use_var_soil_thick, use_hydrstress
+    use elm_varctl, only : use_var_soil_thick, use_hydrstress
     use spmdMod,    only : mpicom, MPI_LOGICAL
     use shr_sys_mod,only : shr_sys_abort
     ! !ARGUMENTS:
@@ -63,9 +63,6 @@ contains
 
     ! GB-FIX-ME: The call to control_spmd() [in subroutine control_init()] before
     !            call to init_hydrology() would avoid the mpi broadcast
-
-    call mpi_bcast (use_vsfm, 1, MPI_LOGICAL, 0, mpicom, ier)
-    if (use_vsfm) soilroot_water_method = vsfm
 
     call mpi_bcast (use_var_soil_thick, 1, MPI_LOGICAL, 0, mpicom, ier)
     if (use_var_soil_thick .and. soilroot_water_method .eq. zengdecker_2009) then
@@ -135,21 +132,6 @@ contains
             num_urbanc, filter_urbanc, soilhydrology_vars, soilstate_vars, dt)
 
     case (vsfm)
-#ifdef USE_PETSC_LIB
-#ifndef _OPENACC
-       call Prepare_Data_for_EM_VSFM_Driver(bounds, num_hydrologyc, filter_hydrologyc, &
-            soilhydrology_vars, soilstate_vars, &
-            waterflux_vars, waterstate_vars, temperature_vars)
-
-       call EMI_Driver(EM_ID_VSFM, EM_VSFM_SOIL_HYDRO_STAGE, dt = get_step_size()*1.0_r8, &
-            number_step = get_nstep(), &
-            clump_rank  = bounds%clump_index, &
-            num_hydrologyc=num_hydrologyc, filter_hydrologyc=filter_hydrologyc, &
-            soilhydrology_vars=soilhydrology_vars, soilstate_vars=soilstate_vars, &
-            waterflux_vars=waterflux_vars, waterstate_vars=waterstate_vars, &
-            temperature_vars=temperature_vars)
-#endif
-#endif
     case default
 #ifndef _OPENACC
        call endrun('SoilWater' // ':: a SoilWater implementation must be specified!')
@@ -870,8 +852,6 @@ contains
      use elm_varcon                , only : watmin
      use LandunitType              , only : lun_pp
      use landunit_varcon           , only : istsoil, istcrop
-     use elm_varctl                , only : lateral_connectivity
-     use domainLateralMod          , only : ldomain_lateral
      use spmdMod
      !
      ! !ARGUMENTS:
@@ -956,12 +936,6 @@ contains
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
 
-#ifdef USE_PETSC_LIB
-          if (lateral_connectivity) then
-             g    = col_pp%gridCell(c)
-             area = ldomain_lateral%ugrid%areaGrid_ghosted(g)
-          endif
-#endif
 
           ! [mm/s] --> [kg/s]   [m^2] [kg/m^3]  [m/mm]
           flux_unit_conversion     = area * denh2o * 1.0d-3

@@ -353,6 +353,24 @@ void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_w_i, F9
   sync_to_host(m_dp3d,      state_dp3d_f90);
 }
 
+void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_w_i, F90Ptr& state_vtheta_dp,
+                                          F90Ptr& state_phinh_i, F90Ptr& state_dp3d,
+                                          const int tl) const {
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV ][2][NP][NP]> state_v_f90         (state_v,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_INTERFACE_LEV]   [NP][NP]> state_w_i_f90       (state_w_i,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV ]   [NP][NP]> state_vtheta_dp_f90 (state_vtheta_dp,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_INTERFACE_LEV]   [NP][NP]> state_phinh_i_f90   (state_phinh_i,m_num_elems);
+  HostViewUnmanaged<Real *[NUM_TIME_LEVELS][NUM_PHYSICAL_LEV ]   [NP][NP]> state_dp3d_f90      (state_dp3d,m_num_elems);
+
+  // Source and destination time level coincide for the dynamics state: the
+  // caller passes the (0-based) level that Fortran will read.
+  sync_to_host(m_v,         state_v_f90,         tl, tl);
+  sync_to_host(m_w_i,       state_w_i_f90,       tl, tl);
+  sync_to_host(m_vtheta_dp, state_vtheta_dp_f90, tl, tl);
+  sync_to_host(m_phinh_i,   state_phinh_i_f90,   tl, tl);
+  sync_to_host(m_dp3d,      state_dp3d_f90,      tl, tl);
+}
+
 static bool all_good_elems (const ElementsState& s, const int tlvl) {
   using Kokkos::ALL;
   using Kokkos::parallel_for;

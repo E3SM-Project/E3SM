@@ -67,7 +67,7 @@ def do_cime_vars(entry, case, refine=False, extra=None):
     >>> do_cime_vars('hi ${invalid} there', case)
     Traceback (most recent call last):
       ...
-    CIME.utils.CIMEError: ERROR: Cannot resolve XML entry 'hi ${invalid} there', CIME has no value for 'invalid'
+    CIME.core.exceptions.CIMEError: ERROR: Cannot resolve XML entry 'hi ${invalid} there', CIME has no value for 'invalid'
     >>> d = { 'foo' : '${foo}',
     ...      'subdict' : { 'bar' : 'foo', 'baz' : '${foo}' } }
     >>> do_cime_vars(d, case)
@@ -126,14 +126,14 @@ def perform_consistency_checks(case, xml):
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':2, 'REST_OPTION':'nsteps'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
+    CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency (3 steps) incompatible with restart frequency (2 steps).
      Please, ensure restart happens on a step when rad is ON
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':10800, 'REST_OPTION':'nseconds'})
     >>> perform_consistency_checks(case,xml)
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':7200, 'REST_OPTION':'nseconds'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+    CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
       rest_tstep: 7200
       rad_testep: 10800.0
@@ -142,7 +142,7 @@ def perform_consistency_checks(case, xml):
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':120, 'REST_OPTION':'nminutes'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+    CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
       rest_tstep: 7200
       rad_testep: 10800.0
@@ -151,7 +151,7 @@ def perform_consistency_checks(case, xml):
     >>> case = MockCase({'ATM_NCPL':'24', 'REST_N':8, 'REST_OPTION':'nhours'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+    CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
       rest_tstep: 28800
       rad_testep: 10800.0
@@ -160,9 +160,18 @@ def perform_consistency_checks(case, xml):
     >>> case = MockCase({'ATM_NCPL':'10', 'REST_N':2, 'REST_OPTION':'ndays'})
     >>> perform_consistency_checks(case,xml)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
+    CIME.core.exceptions.CIMEError: ERROR: rrtmgp::rad_frequency incompatible with restart frequency.
      Please, ensure restart happens on a step when rad is ON
      For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL
+    >>> turbulence_xml = ET.fromstring('''
+    ... <params>
+    ...   <homme><do_3d_turbulence_homme>false</do_3d_turbulence_homme></homme>
+    ...   <ctl_nl><do_3d_turbulence>true</do_3d_turbulence></ctl_nl>
+    ... </params>
+    ... ''')
+    >>> perform_consistency_checks(MockCase({}), turbulence_xml)
+    >>> find_node(find_node(turbulence_xml, "homme"), "do_3d_turbulence_homme").text
+    'true'
     """
 
     # RRTMGP can be supercycled. Restarts cannot fall in the middle
@@ -218,6 +227,31 @@ def perform_consistency_checks(case, xml):
                     "rrtmgp::rad_frequency incompatible with restart frequency.\n"
                     " Please, ensure restart happens on a step when rad is ON\n"
                     " For daily (or less frequent) restart, rad_frequency must divide ATM_NCPL")
+
+    ctl_nl = find_node(xml, "ctl_nl")
+    if ctl_nl is not None:
+        # HOMME reads do_3d_turbulence from ctl_nl, while the atmosphere
+        # driver needs the same value in HOMME's process parameters in order
+        # to forward it to SHOC. Keep the process parameter as a locked mirror
+        # so ctl_nl remains the single user-facing source of truth.
+        homme = find_node(xml, "homme")
+        do_3d_turbulence = find_node(ctl_nl, "do_3d_turbulence")
+        if homme is not None and do_3d_turbulence is not None:
+            homme_do_3d_turbulence = find_node(homme, "do_3d_turbulence_homme")
+            expect(homme_do_3d_turbulence is not None,
+                   "Missing locked homme::do_3d_turbulence_homme mirror")
+            homme_do_3d_turbulence.text = do_3d_turbulence.text
+
+        hypervis_subcycle = find_node(ctl_nl, "hypervis_subcycle")
+        horiz_turb_subcycle = find_node(ctl_nl, "horiz_turb_subcycle")
+        if hypervis_subcycle is not None and horiz_turb_subcycle is not None:
+            if int(horiz_turb_subcycle.text) == -1:
+                horiz_turb_subcycle.text = hypervis_subcycle.text
+        hypervis_subcycle_q = find_node(ctl_nl, "hypervis_subcycle_q")
+        horiz_turb_subcycle_q = find_node(ctl_nl, "horiz_turb_subcycle_q")
+        if hypervis_subcycle_q is not None and horiz_turb_subcycle_q is not None:
+            if int(horiz_turb_subcycle_q.text) < 0:
+                horiz_turb_subcycle_q.text = hypervis_subcycle_q.text
 
 ###############################################################################
 def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
@@ -418,7 +452,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> good = ET.fromstring(xml_good)
     >>> evaluate_selectors(good,case,selectors_bad1)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Bad easy selector 'grid' definition. Relies on unknown case value 'BADENV'
+    CIME.core.exceptions.CIMEError: ERROR: Bad easy selector 'grid' definition. Relies on unknown case value 'BADENV'
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad2 = '''
     ... <selectors_xml>
@@ -431,7 +465,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> good = ET.fromstring(xml_good)
     >>> evaluate_selectors(good,case,selectors_bad2)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Selector 'grid' has invalid custom regex '.*' which does not capture exactly 1 group
+    CIME.core.exceptions.CIMEError: ERROR: Selector 'grid' has invalid custom regex '.*' which does not capture exactly 1 group
     >>> ############## BAD SELECTOR NAME #####################
     >>> xml_bad1 = '''
     ... <namelist_defaults>
@@ -442,7 +476,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad1 = ET.fromstring(xml_bad1)
     >>> evaluate_selectors(bad1,case,selectors_good)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Bad selector 'my_grid' for child 'var1'. 'my_grid' is not a valid case value or easy selector
+    CIME.core.exceptions.CIMEError: ERROR: Bad selector 'my_grid' for child 'var1'. 'my_grid' is not a valid case value or easy selector
     >>> ############## BAD DEFAULTS ORDERING #####################
     >>> xml_bad2 = '''
     ... <namelist_defaults>
@@ -453,7 +487,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad2 = ET.fromstring(xml_bad2)
     >>> evaluate_selectors(bad2,case,selectors_good)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
+    CIME.core.exceptions.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
     >>> ############## MULTIPLE MATCHES #####################
     >>> xml_bad3 = '''
     ... <namelist_defaults>
@@ -464,7 +498,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad3 = ET.fromstring(xml_bad3)
     >>> evaluate_selectors(bad3,case,selectors_good)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
+    CIME.core.exceptions.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
     """
 
     selected_child = {} # elem_name -> evaluated XML element
@@ -899,7 +933,7 @@ def _dump_to_nml_impl(dict_contents):
     ... }
     >>> print(_dump_to_nml_impl(good2))
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.
+    CIME.core.exceptions.CIMEError: ERROR: Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.
     """
 
     result = ""

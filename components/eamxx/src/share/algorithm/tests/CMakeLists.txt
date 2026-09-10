@@ -2,15 +2,59 @@
 if (NOT SCREAM_ONLY_GENERATE_BASELINES)
   include(ScreamUtils)
 
-  # Generate data for data interpolation test
+  # Generate data for data interpolation tests
   CreateUnitTest(data_interpolation_setup
     SOURCES data_interpolation_setup.cpp
     LIBS eamxx_algorithm
     FIXTURES_SETUP data_interpolation_setup)
 
-  # Test data interpolation
-  CreateUnitTest(data_interpolation
-    SOURCES data_interpolation_tests.cpp
+  # --- Existing time-dependent interpolation tests (split for parallelism) ---
+
+  # Error/exception handling
+  CreateUnitTest(data_interpolation_exceptions
+    SOURCES data_interpolation_exceptions_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
+  # YearlyPeriodic × Linear interpolation
+  CreateUnitTest(data_interpolation_periodic_linear
+    SOURCES data_interpolation_periodic_linear_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
+  # YearlyPeriodic × Nearest interpolation
+  CreateUnitTest(data_interpolation_periodic_nearest
+    SOURCES data_interpolation_periodic_nearest_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
+  # Linear timeline × Linear interpolation
+  CreateUnitTest(data_interpolation_linear_hist_linear
+    SOURCES data_interpolation_linear_hist_linear_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
+  # Linear timeline × Nearest interpolation
+  CreateUnitTest(data_interpolation_linear_hist_nearest
+    SOURCES data_interpolation_linear_hist_nearest_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
+  # Time-independent (static) data interpolation
+  CreateUnitTest(data_interpolation_static
+    SOURCES data_interpolation_static_tests.cpp
+    LIBS eamxx_algorithm
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    FIXTURES_REQUIRED data_interpolation_setup)
+
+  # YearlyPeriodic with custom start_ts (slice rotation)
+  CreateUnitTest(data_interpolation_start_ts
+    SOURCES data_interpolation_start_ts_tests.cpp
     LIBS eamxx_algorithm
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
     FIXTURES_REQUIRED data_interpolation_setup)

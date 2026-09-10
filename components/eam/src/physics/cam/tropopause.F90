@@ -94,6 +94,12 @@ module tropopause
   real(r8) :: cnst_faktor  ! = -gravit/rair
   real(r8) :: cnst_ka1     ! = cnst_kap - 1._r8
 
+  ! If pressure values in all model layers are higher than the threshold specified below,
+  ! do not attempt to locate the tropopause. The value used here is somewhat
+  ! arbitrary and is taken from subroutine tropopause_twmo.
+
+  real(r8),parameter :: ptop_thresh = 45000._r8  ! unit: Pa
+
 !================================================================================================
 contains
 !================================================================================================
@@ -1557,6 +1563,11 @@ contains
     lchnk = pstate%lchnk
     ncol  = pstate%ncol
 
+    ! Skip the rest of the subroutine if pressure values in all model layers are
+    ! higher than ptop_thresh. This is unlikely in typical global simulations but
+    ! can happen in idealized tests.
+    if (minval(pstate%pmid(:ncol,:)).gt.ptop_thresh) return
+
     ! Find the tropopause using the default algorithm backed by the climatology.
     call tropopause_find(pstate, tropLev, tropP=tropP, tropT=tropT, tropZ=tropZ)
     
@@ -1664,6 +1675,11 @@ contains
     e90_ndx = get_spc_ndx('E90')
 
     if (e90_ndx < 0) return
+
+    ! Skip the rest of the subroutine if pressure values in all model layers are
+    ! higher than ptop_thresh. This is unlikely in typical global simulations but
+    ! can happen in idealized tests.
+    if (minval(pstate%pmid(:ncol,:)).gt.ptop_thresh) return
 
     ! Find the tropopause
     call tropopause_e90_3d(pstate, tropLevB, tropLevU, tropFlag, tropFlagInt, tropP=tropP, tropT=tropT, tropZ=tropZ)

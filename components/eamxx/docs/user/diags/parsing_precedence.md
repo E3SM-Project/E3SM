@@ -41,8 +41,18 @@ control — how composite names are parsed.
 
 8. **Histograms** — `X_histogram_<bin_config>`.
 
-9. **Plain diagnostic name** — the string is looked up directly in the
-   atmosphere-diagnostic factory.
+9. **Plain diagnostic name** — a name none of the patterns above claimed, and
+   that is a bare identifier, is looked up directly in the atmosphere-diagnostic
+   factory.
+
+10. **Expressions** — anything left is parsed as a
+    [diagnostic expression](expressions.md), e.g. `(qc+qv)*p_mid` or
+    `T_mid.mean('lev')`. This is the last resort: there is nothing after it, so
+    an expression that does not parse, or that no diagnostic implements, is an
+    error rather than a fall-through. Being last is what keeps every name above
+    working unchanged; it is not a statement about which syntax to prefer.
+    Expressions are the intended replacement for items 3–8, which will
+    eventually go away.
 
 ## Key rules
 
@@ -106,3 +116,14 @@ Use `:=` in both sections to give a convenient name to a complex expression.
 
 Use `:=` aliases to break complex expressions into named sub-expressions.
 This is always clearer than relying on implicit precedence.
+
+Better still, write the thing as an expression, where the grouping is explicit
+and the two rules above do not apply at all:
+
+```none
+A_minus_B_over_C     →  (A-B)/C   by rule 1 above
+(A-B)/C              →  (A-B)/C   because you said so
+A-(B/C)              →  A-(B/C)   which rule 1 gives you no way to ask for
+```
+
+See [Diagnostic expressions](expressions.md).

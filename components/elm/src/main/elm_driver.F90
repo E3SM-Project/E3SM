@@ -1469,7 +1469,7 @@ contains
        !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
        do nc = 1,nclumps
           call get_clump_bounds(nc, bounds_clump)
-          call lnd2iac_vars%update_lnd2iac(bounds_clump)
+          call lnd2iac_vars%update_lnd2iac(bounds_clump, lnd2atm_vars)
        end do
        !$OMP END PARALLEL DO
        call t_stopf('lnd2iac')

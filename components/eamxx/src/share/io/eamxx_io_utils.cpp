@@ -1,5 +1,7 @@
 #include "share/io/eamxx_io_utils.hpp"
 
+#include "share/io/eamxx_dexpr_diags.hpp"
+
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/core/eamxx_config.hpp"
@@ -120,7 +122,11 @@ create_diagnostic (const std::string& diag_field_name,
     std::regex bt (generic_field + "_atm_backtend$");
     if (std::regex_search(diag_field_name, alias_matches, bt)) {
       const auto f = alias_matches[1].str();
-      return create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
+      auto diag = create_diagnostic(f + "_minus_" + f + "_prev_over_dt", grid);
+      // The expansion names its field after the canonical form, but the
+      // customer asked for the alias, and looks it up by that.
+      diag->get_params().set<std::string>("output_field_name",diag_field_name);
+      return diag;
     }
     // More built-in aliases may be added here.
   }
@@ -262,7 +268,12 @@ create_diagnostic (const std::string& diag_field_name,
   }
   else
   {
-    // No existing special regex matches, so we assume that the diag field name IS the diag name.
+    // No pattern claimed this name. Try reading it as an expression before
+    // assuming it IS a diag class name. A plain identifier comes back nullptr,
+    // so we fall through to the factory exactly as before.
+    if (auto diag = dexpr_create_diagnostic(diag_field_name,grid)) {
+      return diag;
+    }
     diag_name = diag_field_name;
   }
 
