@@ -626,7 +626,6 @@ contains
           sumwttunit(t) = sumwttunit(t) + veg_pp%wttopounit(p)
           sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
           !end if
-	  
        end if
     end do
 
