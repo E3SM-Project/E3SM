@@ -121,7 +121,7 @@ mpas_ocn_vel_hmix_del4.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_vel_forcing.o: mpas_ocn_vel_forcing_surface_stress.o mpas_ocn_vel_forcing_explicit_bottom_drag.o mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_vel_forcing_topographic_wave_drag.o
 
-mpas_ocn_vel_forcing_surface_stress.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
+mpas_ocn_vel_forcing_surface_stress.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_subgrid.o
 
 mpas_ocn_vel_forcing_topographic_wave_drag.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o mpas_ocn_forcing.o
 
@@ -157,7 +157,7 @@ mpas_ocn_tracer_short_wave_absorption_variable.o: mpas_ocn_constants.o mpas_ocn_
 
 mpas_ocn_tracer_short_wave_absorption_jerlov.o: mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vmix.o: mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_vmix_gotm.o mpas_ocn_diagnostics.o
+mpas_ocn_vmix.o: mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_vmix_gotm.o mpas_ocn_diagnostics.o mpas_ocn_subgrid.o
 
 mpas_ocn_vmix_cvmix.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_stokes_drift.o
 
