@@ -491,12 +491,6 @@
   <lname>20TRSOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
-<!-- SCREAM DYAMOND compsets -->
-<compset>
-  <alias>A_SCREAM-HR-DYAMOND2</alias>
-  <lname>2010_EAM%SCREAM-HR-DYAMOND2_ELM45%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
 <!-- E3SM BG compsets -->
 
 <compset>
