@@ -35,8 +35,6 @@
 
 <!-- CMIP7 DECK compsets -->
 
-<!-- CMIP7 DECK compsets -->
-
 <fsurdat hgrid="r025" >lnd/clm2/surfdata_map/surfdata_r025_simyr1950_cmip7_c260404.nc</fsurdat>
 
 <flanduse_timeseries hgrid="r025">lnd/clm2/surfdata_map/landuse.timeseries_r025_hist_simyr1950-2024_cmip7_c260404.nc</flanduse_timeseries>
