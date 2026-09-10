@@ -5490,6 +5490,16 @@
 <li>type: integer</li>
 </ul>
 </li>
+<li>zm::cape_threshold:<ul>
+<li>description: ZM CAPE threshold <a href="traditionally zero                                               w/ trig_dcape, or 70 otherwise">J/kg</a></li>
+<li>type: real</li>
+</ul>
+</li>
+<li>zm::dcape_threshold:<ul>
+<li>description: ZM DCAPE threshold [J/kg/s]</li>
+<li>type: real</li>
+</ul>
+</li>
 <li>zm::mcsp_enabled:<ul>
 <li>description: ZM flag to enable MCSP in ZM</li>
 <li>type: logical</li>
@@ -6115,10 +6125,9 @@
 <li>type: file</li>
 </ul>
 </li>
-<li>mam4_aero_microphys::data_timeline_type:<ul>
+<li>mam4_aero_microphys::time_interpolation_method:<ul>
 <li>description: Method for interpolating MAM4 microphysics data in time</li>
 <li>type: string</li>
-<li>valid values: yearly_periodic,linear_history</li>
 </ul>
 </li>
 <li>mam4_aero_microphys::create_fields_interval_checks:<ul>
@@ -6399,10 +6408,9 @@
 <li>type: file</li>
 </ul>
 </li>
-<li>mam4_srf_online_emiss::data_timeline_type:<ul>
+<li>mam4_srf_online_emiss::time_interpolation_method:<ul>
 <li>description: Method for interpolating MAM4 surface emissions data in time</li>
 <li>type: string</li>
-<li>valid values: yearly_periodic,linear_history</li>
 </ul>
 </li>
 <li>mam4_srf_online_emiss::create_fields_interval_checks:<ul>
@@ -6671,10 +6679,9 @@
 <li>type: file</li>
 </ul>
 </li>
-<li>spa::data_timeline_type:<ul>
+<li>spa::time_interpolation_method:<ul>
 <li>description: Method for interpolating SPA data in time</li>
 <li>type: string</li>
-<li>valid values: yearly_periodic,linear_history</li>
 </ul>
 </li>
 <li>spa::number_of_subcycles:<ul>
@@ -6728,10 +6735,9 @@
 <li>type: array(string)</li>
 </ul>
 </li>
-<li>spc::data_timeline_type:<ul>
+<li>spc::time_interpolation_method:<ul>
 <li>description: Method for interpolating SPC data in time</li>
 <li>type: string</li>
-<li>valid values: yearly_periodic,linear_history</li>
 </ul>
 </li>
 <li>spc::number_of_subcycles:<ul>
