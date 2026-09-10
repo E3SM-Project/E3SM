@@ -522,8 +522,13 @@
 <!-- EAMXX fully coupled compset -->
 
 <compset>
+  <alias>WCYCLXX1850</alias>
+  <lname>1850SOI%CMIP7_EAMXX%BETA_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCLXX2010</alias>
-  <lname>2010_SCREAM_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>2010_EAMXX_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 
