@@ -652,11 +652,6 @@ run (const std::string& filename, const util::TimeStamp& ts,
       // Write to file
       auto func_start = std::chrono::steady_clock::now();
 
-      // No value conversion needed:
-      // - lat/lon are already in degrees (from Fortran), just mislabeled as "rad"
-      // - area stays in steradians (sr) to maintain BFB compatibility
-      //   (converting to m² would be CF-compliant but breaks BFB tests)
-
       if (m_transpose) {
         const auto& id = f_out.get_header().get_identifier();
         const auto& layout = id.get_layout();
@@ -807,21 +802,8 @@ register_variables(const std::string& filename,
     const auto& dimnames = m_vars_dims.at(field_name);
     std::string units = fid.get_units().to_string();
 
-    // Get standard name for CF compliance checks
-    auto standardname = m_default_metadata.get_standardname(field_name);
-
-    // Check if this is a coordinate/dimension variable
-    // Coordinate variables should not have _FillValue or coordinates attributes
-    const bool is_dim_coord_var = (dimnames.size() == 1 && dimnames[0] == field_name);
-    const bool is_coord_var = is_dim_coord_var ||
-                              field_name == "lat" || field_name == "lon" || field_name == "area" ||
-                              field_name == "hyam" || field_name == "hybm" ||
-                              field_name == "hyai" || field_name == "hybi" ||
-                              field_name == "lev" || field_name == "ilev" ||
-                              field_name == "lwband" || field_name == "swband";
-
     // Auxiliary coordinates (lat, lon) should not list themselves in coordinates attribute
-    const bool is_aux_coord = (standardname == "latitude" || standardname == "longitude");
+    const bool is_aux_coord = field_name=="lat" or field_name=="lon";
 
     // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
@@ -858,7 +840,7 @@ register_variables(const std::string& filename,
 
       // CF compliance: Only add _FillValue for fields that may actually contain fill values
       // (e.g., pressure-interpolated fields). Coordinate variables and regular fields
-      // without missing values should not have _FillValue.
+      // without missing values should not have _FillValue (may_be_filled() should return false).
       if (f.get_header().may_be_filled()) {
         if (fp_precision=="double" or
             (fp_precision=="real" and std::is_same<Real,double>::value)) {
@@ -910,12 +892,15 @@ register_variables(const std::string& filename,
 
       // Gather standard name, CF-Compliant (if not already in the io: string attributes)
       if (str_atts.count("standard_name")==0) {
+        // Get standard name from metadata registry
+        auto standardname = m_default_metadata.get_standardname(field_name);
+
         scorpio::set_attribute(filename, field_name, "standard_name", standardname);
       }
 
       // CF compliance: Only add cell_methods to variables with time dimension.
       // Coordinate/dimension variables don't need cell_methods.
-      if (m_add_time_dim && !is_coord_var) {
+      if (m_add_time_dim) {
         switch (m_avg_type) {
           case OutputAvgType::Instant:
             scorpio::set_attribute(filename, field_name, "cell_methods", "time: point");
