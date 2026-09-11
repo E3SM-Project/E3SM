@@ -56,6 +56,12 @@ public:
 
   void set_logger (const std::shared_ptr<ekat::logger::LoggerBase>& logger);
 
+  // Setup time database based on time_interpolation_method string
+  // Valid options: "yearly_periodic", "linear"
+  void setup_time_database (const strvec_t& input_files,
+                           const std::string& time_interpolation_method,
+                           const util::TimeStamp& ts = util::TimeStamp());
+
   // Setup time database for LinearHistory time-dependent data interpolation
   void setup_linear_time_database (const strvec_t& input_files,
                                    const util::TimeStamp& ref_ts = util::TimeStamp());
