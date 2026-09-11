@@ -931,11 +931,9 @@ initialize_fields ()
     TraceGasesWorkaround::singleton().run_type = m_run_type;
   }
 
-  // ModelInit does not (yet) support the PG2 physics grid, IOP-driven runs,
-  // or random IC perturbations: fall back to the legacy code path for those.
-  auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  const bool use_model_init = not fvphyshack and not m_iop_data_manager and
-      ic_pl.get<strvec_t>("perturbed_fields",{}).size()==0;
+  // ModelInit does not (yet) support the PG2 physics grid or IOP-driven
+  // runs: fall back to the legacy code path for those.
+  const bool use_model_init = not fvphyshack and not m_iop_data_manager;
 
   // Initialize fields
   if (use_model_init) {

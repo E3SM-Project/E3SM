@@ -1,9 +1,13 @@
 #include "share/data_managers/model_init.hpp"
 
 #include "share/field/field_reader.hpp"
+#include "share/field/field_utils.hpp"
+#include "share/physics/physics_constants.hpp"
 
 #include <ekat_std_utils.hpp>
 
+#include <cstdlib>
+#include <ctime>
 #include <functional>
 #include <ranges>
 
@@ -42,6 +46,13 @@ run (const std::shared_ptr<FieldManager>& fm,
         init_startup_fields(fm,grid,t0);
       }
     }
+  }
+
+  // A restarted field is, by construction, already "perturbed" (it is
+  // whatever it was at the end of the previous run), so perturbation only
+  // applies to a startup run.
+  if (run_type!=RunType::Restart) {
+    perturb_fields(fm);
   }
 }
 
@@ -190,6 +201,77 @@ fixup_parents_time_stamp (const std::shared_ptr<FieldManager>& fm,
     if (all_inited) {
       track.update_time_stamp(t0);
     }
+  }
+}
+
+void ModelInit::
+perturb_fields (const std::shared_ptr<FieldManager>& fm)
+{
+  const auto perturbed_fields = m_params.get<std::vector<std::string>>("perturbed_fields",{});
+  if (perturbed_fields.size()==0) {
+    return;
+  }
+
+  auto gm = fm->get_grids_manager();
+  EKAT_REQUIRE_MSG (gm->get_grid_names().count("physics_gll")>0,
+      "Error! Random IC perturbation can only be applied to fields on the "
+      "GLL grid, but no physics_gll grid was defined in the field manager.\n");
+
+  // Setup RNG. There are two relevant params: generate_perturbation_random_seed and
+  // perturbation_random_seed. We have 3 cases:
+  //   1. Parameter generate_perturbation_random_seed is set true, assert perturbation_random_seed
+  //      is not given and generate a random seed using std::rand() to get an integer random value.
+  //   2. Parameter perturbation_random_seed is given, use this value for the seed.
+  //   3. Parameter perturbation_random_seed is not given and generate_perturbation_random_seed is
+  //      not given, use 0 as the random seed.
+  // Case 3 is considered the default (using seed=0).
+  int seed;
+  if (m_params.get<bool>("generate_perturbation_random_seed",false)) {
+    EKAT_REQUIRE_MSG (not m_params.isParameter("perturbation_random_seed"),
+        "Error! Param generate_perturbation_random_seed=true, and a "
+        "perturbation_random_seed is given. Only one of these can be "
+        "defined for a simulation.\n");
+    std::srand(std::time(nullptr));
+    seed = std::rand();
+  } else {
+    seed = m_params.get<int>("perturbation_random_seed",0);
+  }
+
+  // Get perturbation limit. Defines a range [1-perturbation_limit, 1+perturbation_limit]
+  // for which the perturbation value will be randomly generated from.
+  const auto perturbation_limit = m_params.get<Real>("perturbation_limit",0.001);
+
+  // Define a level mask using reference pressure and the perturbation_minimum_pressure
+  // parameter. This mask dictates which levels we apply a perturbation to.
+  const auto gll_grid = gm->get_grid("physics_gll");
+  const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*,Host>();
+  const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*,Host>();
+  constexpr auto ps0 = physics::Constants<Real>::P0.value;
+  const auto min_pressure = m_params.get<Real>("perturbation_minimum_pressure",1050.0);
+
+  using namespace ShortFieldTagsNames;
+  const auto& pmask_lt = gll_grid->get_vertical_layout(LEV);
+  const auto nondim = ekat::units::none;
+  FieldIdentifier pmask_fid("lev_mask",pmask_lt,nondim,gll_grid->name(),DataType::IntType);
+  Field pressure_mask(pmask_fid,true);
+  auto pmask_h = pressure_mask.get_view<int*,Host>();
+  for (int ilev=0; ilev<pmask_lt.dim(0); ++ilev) {
+    const auto pref = (hyam_h(ilev)*ps0 + hybm_h(ilev)*ps0)/100; // Reference pressure ps0 is in Pa, convert to millibar
+    pmask_h(ilev) = static_cast<int>(pref > min_pressure);
+  }
+  pressure_mask.sync_to_dev();
+
+  // Loop through fields and apply perturbation.
+  const auto& gll_grid_name = gll_grid->name();
+  auto dofs_gids = gll_grid->get_dofs_gids();
+  for (const auto& fname : perturbed_fields) {
+    auto field = fm->get_field(fname,gll_grid_name);
+    EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
+        "Error! Attempting to apply perturbation to a field that was not initialized.\n"
+        "  - Field: " + fname + "\n"
+        "  - Grid:  " + gll_grid_name + "\n");
+
+    perturb(field,perturbation_limit,seed,pressure_mask,dofs_gids);
   }
 }
 

@@ -4,6 +4,7 @@
 #include "share/data_managers/library_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
 #include <ekat_parameter_list.hpp>
@@ -324,6 +325,141 @@ TEST_CASE ("model_init_topography_not_loaded_on_restart", "")
   REQUIRE_NOTHROW (model_init.run(fm,t0,RunType::Restart));
 
   REQUIRE (not fm->get_field("phis",gn).get_header().get_tracking().get_time_stamp().is_valid());
+}
+
+TEST_CASE ("model_init_perturbation", "")
+{
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using FR = FieldRequest;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // Perturbation only ever applies to the physics_gll grid.
+  const std::string gn = "physics_gll";
+  const int ncols = 4*comm.size();
+  const int nlevs = 4;
+
+  auto grid = create_point_grid(gn,ncols,nlevs,comm);
+
+  // Set up hyam/hybm so that the reference pressure increases with level
+  // index: with perturbation_minimum_pressure=1000mb below, only the
+  // bottom two (of four) levels end up perturbed.
+  constexpr auto ps0 = physics::Constants<Real>::P0.value;
+  Field hyam(FieldIdentifier("hyam",{{LEV},{nlevs}},none,gn)); hyam.allocate_view();
+  Field hybm(FieldIdentifier("hybm",{{LEV},{nlevs}},none,gn)); hybm.allocate_view();
+  auto hyam_h = hyam.get_view<Real*,Host>();
+  auto hybm_h = hybm.get_view<Real*,Host>();
+  for (int k=0; k<nlevs; ++k) {
+    const Real pref_mb = 500.0 + k*300.0; // 500, 800, 1100, 1400
+    hyam_h(k) = hybm_h(k) = pref_mb*100/ps0/2; // hyam*ps0 + hybm*ps0 = pref_mb*100 (Pa)
+  }
+  hyam.sync_to_dev();
+  hybm.sync_to_dev();
+  grid->set_geometry_data(hyam);
+  grid->set_geometry_data(hybm);
+
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+  auto fm = std::make_shared<FieldManager>(gm);
+
+  FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  fm->register_field(FR{t_id});
+  fm->register_group(GroupRequest("STARTUP",gn));
+  fm->registration_ends();
+  fm->add_to_group("T_mid",gn,"STARTUP");
+
+  ekat::ParameterList params("initial_conditions");
+  params.set<double>("T_mid",300.0);
+  params.set<std::vector<std::string>>("perturbed_fields",{"T_mid"});
+  params.set<double>("perturbation_limit",0.05);
+  params.set<int>("perturbation_random_seed",123);
+  params.set<double>("perturbation_minimum_pressure",1000.0);
+
+  ModelInit model_init(params);
+  util::TimeStamp t0(2000,1,1,0,0,0);
+  model_init.run(fm,t0,RunType::Initial);
+
+  auto f = fm->get_field("T_mid",gn);
+  f.sync_to_host();
+  auto v = f.get_view<const Real**,Host>();
+
+  // Levels 0,1 (pref 500,800mb) are below the pressure threshold: untouched.
+  for (int i=0; i<ncols; ++i) {
+    for (int k=0; k<2; ++k) {
+      REQUIRE (v(i,k)==300.0);
+    }
+  }
+
+  // Levels 2,3 (pref 1100,1400mb) are perturbed: within [1-lim,1+lim]*300,
+  // and (with overwhelming probability, given a real RNG draw) not exactly
+  // equal to the unperturbed value for at least one column/level.
+  bool any_perturbed = false;
+  for (int i=0; i<ncols; ++i) {
+    for (int k=2; k<nlevs; ++k) {
+      REQUIRE (v(i,k)>=300.0*0.95);
+      REQUIRE (v(i,k)<=300.0*1.05);
+      any_perturbed |= (v(i,k)!=300.0);
+    }
+  }
+  REQUIRE (any_perturbed);
+}
+
+TEST_CASE ("model_init_no_perturbation_on_restart", "")
+{
+  // A restarted field is already whatever it was at the end of the previous
+  // run, so ModelInit must not perturb it again.
+  using namespace ekat::units;
+  using namespace ShortFieldTagsNames;
+  using FR = FieldRequest;
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const std::string gn = "physics_gll";
+  const int ncols = 4*comm.size();
+  const int nlevs = 4;
+
+  auto grid = create_point_grid(gn,ncols,nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+  auto fm = std::make_shared<FieldManager>(gm);
+
+  FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
+  fm->register_field(FR{t_id});
+  fm->register_group(GroupRequest("RESTART",gn));
+  fm->registration_ends();
+  fm->add_to_group("T_mid",gn,"RESTART");
+
+  const std::string filename = "model_init_no_perturb_restart_np" + std::to_string(comm.size()) + ".nc";
+  scorpio::init_subsystem(comm);
+  {
+    Field f(t_id); f.allocate_view();
+    f.deep_copy(300.0);
+
+    scorpio::register_file(filename,scorpio::Write);
+    scorpio::define_dim(filename,"ncol",ncols);
+    scorpio::define_dim(filename,"lev",nlevs);
+    scorpio::define_var(filename,"T_mid",{"ncol","lev"},"real",false);
+    scorpio::enddef(filename);
+
+    write_field_to_file(filename,f);
+    scorpio::release_file(filename);
+  }
+
+  // Even though a 'perturbed_fields' entry is present, it must be ignored
+  // on a restart run.
+  ekat::ParameterList params("initial_conditions");
+  params.set<std::string>("filename",filename);
+  params.set<std::vector<std::string>>("perturbed_fields",{"T_mid"});
+  params.set<double>("perturbation_limit",0.05);
+
+  ModelInit model_init(params);
+  util::TimeStamp t0(2000,1,1,0,0,0);
+  model_init.run(fm,t0,RunType::Restart);
+
+  auto f = fm->get_field("T_mid",gn);
+  Field f_check(t_id); f_check.allocate_view(); f_check.deep_copy(300.0);
+  REQUIRE (views_are_equal(f,f_check));
+
+  scorpio::finalize_subsystem();
 }
 
 } // namespace scream

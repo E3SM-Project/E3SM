@@ -85,6 +85,11 @@ protected:
                                  const std::string& grid_name,
                                  const util::TimeStamp& t0);
 
+  // If m_params has a (non-empty) 'perturbed_fields' entry, apply a random
+  // (relative) perturbation to each of those (already inited) GLL fields,
+  // at levels below 'perturbation_minimum_pressure'. A no-op otherwise.
+  void perturb_fields (const std::shared_ptr<FieldManager>& fm);
+
   // If m_params has an entry '$name: $value' (a number, or an array of
   // numbers, for vector fields), assign $value to f, and stamp its time.
   // Returns true if such an entry was found (and used).
