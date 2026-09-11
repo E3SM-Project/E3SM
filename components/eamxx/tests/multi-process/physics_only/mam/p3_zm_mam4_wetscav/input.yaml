@@ -67,6 +67,8 @@ initial_conditions:
   # Variables required by ZM (from previous timestep)
   zm_t_prev: 300.0  # Temperature from previous timestep [K]
   zm_q_prev: 0.001  # Water vapor from previous timestep [kg/kg]
+  landfrac : 0.0
+  thl_sec : 1e-3
 
 # The parameters for I/O control
 scorpio:
