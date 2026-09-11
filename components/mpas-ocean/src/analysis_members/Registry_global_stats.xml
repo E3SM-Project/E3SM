@@ -160,6 +160,9 @@
 			<var name="accumulatedLandIceFrazilMassMin" array_group="mins" units="kg m^-2"
 				 description="Minimum global value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
+			<var name="accumulatedLandIceFrazilEnergyMin" array_group="mins" units="J m^-2"
+				 description="Minimum global value of accumulatedLandIceFrazilEnergy in ocean cells."
+			/>
 			<var name="frazilIceFreshwaterFluxMin" array_group="mins" units="kg m^-2"
 				 description="Minimum global value of frazilIceFreshwaterFlux in ocean cells."
 			/>
@@ -264,6 +267,9 @@
 			/>
 			<var name="accumulatedLandIceFrazilMassMax" array_group="maxes" units="kg m^-2"
 				 description="Maximum global value of accumulatedLandIceFrazilMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilEnergyMax" array_group="maxes" units="J m^-2"
+				 description="Maximum global value of accumulatedLandIceFrazilEnergy in ocean cells."
 			/>
 			<var name="frazilIceFreshwaterFluxMax" array_group="maxes" units="kg m^-2"
 				 description="Maximum global value of frazilIceFreshwaterFlux in ocean cells."
@@ -370,6 +376,9 @@
 			<var name="accumulatedLandIceFrazilMassSum" array_group="sums" units="kg"
 				 description="Accumulated global value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
+			<var name="accumulatedLandIceFrazilEnergySum" array_group="sums" units="J"
+				 description="Accumulated global value of accumulatedLandIceFrazilEnergy in ocean cells."
+			/>
 			<var name="frazilIceFreshwaterFluxSum" array_group="sums" units="kg"
 				 description="Accumulated global value of frazilIceFreshwaterFlux in ocean cells."
 			/>
@@ -474,6 +483,9 @@
 			/>
 			<var name="accumulatedLandIceFrazilMassRms" array_group="rms" units="kg m^-2"
 				 description="Global root mean square value of accumulatedLandIceFrazilMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilEnergyRms" array_group="rms" units="J m^-2"
+				 description="Global root mean square value of accumulatedLandIceFrazilEnergy in ocean cells."
 			/>
 			<var name="frazilIceFreshwaterFluxRms" array_group="rms" units="kg m^-2"
 				 description="Global root mean square value of frazilIceFreshwaterFlux in ocean cells."
@@ -580,6 +592,9 @@
 			<var name="accumulatedLandIceFrazilMassAvg" array_group="avg" units="kg m^-2"
 				 description="Average value of accumulatedLandIceFrazilMass in ocean cells."
 			/>
+			<var name="accumulatedLandIceFrazilEnergyAvg" array_group="avg" units="J m^-2"
+				 description="Average value of accumulatedLandIceFrazilEnergy in ocean cells."
+			/>
 			<var name="frazilIceFreshwaterFluxAvg" array_group="avg" units="kg m^-2"
 				 description="Average value of frazilIceFreshwaterFlux in ocean cells."
 			/>
@@ -685,6 +700,9 @@
 			<var name="accumulatedLandIceFrazilMassMinVertSum" array_group="vertSumMin" units="kg m^-2"
 				 description="Minimum vertical sum of accumulatedLandIceFrazilMass in ocean cells."
 			/>
+			<var name="accumulatedLandIceFrazilEnergyMinVertSum" array_group="vertSumMin" units="J m^-2"
+				 description="Minimum vertical sum of accumulatedLandIceFrazilEnergy in ocean cells."
+			/>
 			<var name="frazilIceFreshwaterFluxMinVertSum" array_group="vertSumMin" units="kg m^-2"
 				 description="Minimum vertical sum of frazilIceFreshwaterFlux in ocean cells."
 			/>
@@ -789,6 +807,9 @@
 			/>
 			<var name="accumulatedLandIceFrazilMassMaxVertSum" array_group="vertSumMax" units="kg m^-2"
 				 description="Maximum vertical sum of accumulatedLandIceFrazilMass in ocean cells."
+			/>
+			<var name="accumulatedLandIceFrazilEnergyMaxVertSum" array_group="vertSumMax" units="J m^-2"
+				 description="Maximum vertical sum of accumulatedLandIceFrazilEnergy in ocean cells."
 			/>
 			<var name="frazilIceFreshwaterFluxMaxVertSum" array_group="vertSumMax" units="kg m^-2"
 				 description="Maximum vertical sum of frazilIceFreshwaterFlux in ocean cells."
