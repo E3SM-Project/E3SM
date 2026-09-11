@@ -931,9 +931,11 @@ initialize_fields ()
     TraceGasesWorkaround::singleton().run_type = m_run_type;
   }
 
-  // ModelInit does not (yet) support the PG2 physics grid or IOP-driven
-  // runs: fall back to the legacy code path for those.
-  const bool use_model_init = not fvphyshack and not m_iop_data_manager;
+  // ModelInit does not (yet) support IOP-driven runs: fall back to the
+  // legacy code path for those. The PG2 physics grid is now handled by
+  // ModelInitPG2 (see HommeGridsManager::do_create_model_init), so it no
+  // longer needs to be excluded here.
+  const bool use_model_init = not m_iop_data_manager;
 
   // Initialize fields
   if (use_model_init) {
