@@ -41,8 +41,6 @@ protected:
   template<typename T>
   using strmap_t = std::map<std::string,T>;
 
-  using strvec_t = std::vector<std::string>;
-
   // Fields in group_name (on grid_name) that still need to be initialized.
   //  - For the STARTUP group, a field that is the parent of other fields
   //    (e.g., a group's monolithic field, or a field with convenience
