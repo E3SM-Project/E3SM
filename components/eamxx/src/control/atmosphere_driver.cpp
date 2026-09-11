@@ -1185,16 +1185,10 @@ void AtmosphereDriver::set_initial_conditions ()
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
-  // ...then the input groups
+  // ...then the input groups.
+  // NOTE: always process individual fields, NEVER the monolithic one (if present)
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.has_monolithic_field()) {
-      const auto& mf = g.monolithic_field();
-      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
-        process_ic_field(mf);
-      }
-    }
     for (auto it : g.individual_fields()) {
       const auto& f = it.second;
       const auto& fgroups = f.get_header().get_tracking().get_groups_names();
