@@ -167,8 +167,20 @@ void Nudging::create_requests()
 // =========================================================================================
 void Nudging::apply_tendency(Field& state, const Field& nudge, const Real dt) const
 {
-  // Calculate the weight to apply the tendency
-  const Real dtend = dt / m_timescale;
+  // Use exponential relaxation coefficient for unconditional stability:
+  //   alpha = 1 - exp(-dt/tau)
+  // This is equivalent to exact integration of dx/dt = (x_nudge - x)/tau
+  // and is stable for all dt/tau > 0, unlike the explicit Euler dt/tau.
+  const Real dtend = 1.0 - std::exp(-dt / m_timescale);
+
+  // Warn once if dt/tau > 1 (explicit Euler would be non-monotonic in this regime)
+  if (not m_large_dtau_warned and dt / m_timescale > 1.0) {
+    m_large_dtau_warned = true;
+    m_atm_logger->warn(
+        "[Nudging] Warning: dt/tau = " + std::to_string(dt / m_timescale) + " > 1.\n"
+        "  An explicit Euler update would be non-monotonic in this regime.\n"
+        "  Using exponential relaxation (alpha = 1 - exp(-dt/tau)) for unconditional stability.");
+  }
 
   using cview_2d = decltype(state.get_view<const Real**>());
 
@@ -417,16 +429,18 @@ void Nudging::run_impl (const double dt)
       // Set the first/last entries of data, so that linear interp
       // can extrapolate if the p_tgt is outside the p_src bounds
       Kokkos::single(Kokkos::PerTeam(team),[&]{
-        to_view(icol,0) = 0; // Does this make sense for *every field*?
         if (is_pmid) {
-          // For pmid, we put a very large value, so that any p_mid_tgt
-          // that is larger than input p_mid bnds will end up in the
-          // last interval.
+          // For pmid, pad top with 0 (very small pressure) so that any target
+          // p_mid above the source data range falls within the first interval.
+          to_view(icol,0) = 0;
+          // For pmid, pad bottom with a very large value so that any target
+          // p_mid below the source data range falls within the last interval.
           to_view(icol,nlevs_src+1) = 1e7;
         } else {
-          // For data, we set last entry equal to second-to-last.
-          // This will cause constant extrapolation outside of
-          // the input p_mid bounds
+          // For data fields, use constant extrapolation at both ends.
+          // This avoids unphysical zero values (e.g. for T_mid, U, V, qv)
+          // when the model top extends above the nudging data range.
+          to_view(icol,0) = from_view(icol,0);
           to_view(icol,nlevs_src+1) = from_view(icol,nlevs_src-1);
         }
       });
