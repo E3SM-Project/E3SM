@@ -491,12 +491,6 @@
   <lname>20TRSOI_EAM%CMIP6_ELM%CNPECACNTBC_MPASSI_MPASO_MOSART_SGLC_SWAV_BGC%BDRD</lname>
 </compset>
 
-<!-- SCREAM DYAMOND compsets -->
-<compset>
-  <alias>A_SCREAM-HR-DYAMOND2</alias>
-  <lname>2010_EAM%SCREAM-HR-DYAMOND2_ELM45%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
-</compset>
-
 <!-- E3SM BG compsets -->
 
 <compset>
@@ -522,8 +516,13 @@
 <!-- EAMXX fully coupled compset -->
 
 <compset>
+  <alias>WCYCLXX1850</alias>
+  <lname>1850SOI%CMIP7_EAMXX%BETA_ELM%CNPRDCTCBCTOP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
   <alias>WCYCLXX2010</alias>
-  <lname>2010_SCREAM_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+  <lname>2010_EAMXX_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
 
