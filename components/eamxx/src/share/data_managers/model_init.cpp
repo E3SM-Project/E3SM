@@ -30,18 +30,17 @@ run (const std::shared_ptr<FieldManager>& fm,
   for (const auto& gn : gm->get_grid_names()) {
     auto grid = gm->get_grid(gn);
 
-    // Restart files always contain the full model state, so there is no
-    // need (nor a guarantee that 'topography_filename' was even given) to
-    // separately load topography on a restart run.
-    if (run_type!=RunType::Restart and fm->has_group("TOPOGRAPHY",gn)) {
-      init_topography_fields(fm,grid,t0);
-    }
-
     if (run_type==RunType::Restart) {
       if (fm->has_group("RESTART",gn)) {
         init_restart_fields(fm,grid,t0);
       }
     } else {
+      // Restart files always contain the full model state, so there is no
+      // need (nor a guarantee that 'topography_filename' was even given) to
+      // separately load topography on a restart run.
+      if (fm->has_group("TOPOGRAPHY",gn)) {
+        init_topography_fields(fm,grid,t0);
+      }
       if (fm->has_group("STARTUP",gn)) {
         init_startup_fields(fm,grid,t0);
       }
@@ -62,7 +61,7 @@ init_startup_fields (const std::shared_ptr<FieldManager>& fm,
                      const util::TimeStamp& t0)
 {
   const auto& gn = grid->name();
-  auto fields = get_fields(fm,"STARTUP",gn);
+  auto fields = get_leaf_fields(fm,"STARTUP",gn);
 
   // 1) Constant fields, and fields to be copied from another field (the
   //    latter is postponed, since the source field may itself need to be
@@ -85,10 +84,7 @@ init_startup_fields (const std::shared_ptr<FieldManager>& fm,
         "'filename' was found in the input parameters.\n"
         " - grid name: " + gn + "\n");
     const auto& filename = m_params.get<std::string>("filename");
-    read_fields(filename,to_read,grid,get_tag_rename("STARTUP",gn));
-    for (auto& f : to_read) {
-      f.get_header().get_tracking().update_time_stamp(t0);
-    }
+    read_fields(filename,to_read,grid,t0,get_tag_rename("STARTUP",gn));
   }
 
   // 3) Fields to be copied from another (by now, necessarily inited) field.
@@ -122,13 +118,7 @@ init_restart_fields (const std::shared_ptr<FieldManager>& fm,
       "'filename' was found in the input parameters.\n"
       " - grid name: " + gn + "\n");
   const auto& filename = m_params.get<std::string>("filename");
-  read_fields(filename,fields,grid,get_tag_rename("RESTART",gn));
-  for (auto& f : fields) {
-    // NOTE: this also updates the time stamp of any (subview) child of f,
-    // e.g., U/V for horiz_winds, or the individual fields of a group that
-    // was allocated as a monolithic field.
-    f.get_header().get_tracking().update_time_stamp(t0);
-  }
+  read_fields(filename,fields,grid,t0,get_tag_rename("RESTART",gn));
 }
 
 void ModelInit::
@@ -150,12 +140,7 @@ init_topography_fields (const std::shared_ptr<FieldManager>& fm,
 
   // The topography file uses different names for these fields than the
   // ones used internally by eamxx.
-  static const strmap_t<std::string> file_names = {
-    {"phis",  "PHIS_d"},
-    {"sgh30", "SGH30"},
-    {"sgh",   "SGH"}
-  };
-
+  const auto file_names = get_topography_file_names();
   std::vector<Field> aliased;
   for (const auto& f : fields) {
     auto it = file_names.find(f.name());
@@ -164,12 +149,9 @@ init_topography_fields (const std::shared_ptr<FieldManager>& fm,
     aliased.push_back(f.alias(it->second));
   }
 
-  read_fields(filename,aliased,grid,get_tag_rename("TOPOGRAPHY",gn));
-  for (auto& f : aliased) {
-    // f shares tracking with the original (unaliased) field, so this also
-    // stamps the field as known by the rest of the field manager.
-    f.get_header().get_tracking().update_time_stamp(t0);
-  }
+  // aliased shares tracking with fields, so reading (and stamping) it also
+  // stamps the fields as known by the rest of the field manager.
+  read_fields(filename,aliased,grid,t0,get_tag_rename("TOPOGRAPHY",gn));
 }
 
 void ModelInit::
@@ -216,8 +198,31 @@ perturb_fields (const std::shared_ptr<FieldManager>& fm)
   EKAT_REQUIRE_MSG (gm->get_grid_names().count("physics_gll")>0,
       "Error! Random IC perturbation can only be applied to fields on the "
       "GLL grid, but no physics_gll grid was defined in the field manager.\n");
+  const auto gll_grid = gm->get_grid("physics_gll");
 
-  // Setup RNG. There are two relevant params: generate_perturbation_random_seed and
+  const auto seed = get_perturbation_seed();
+  // Defines a range [1-perturbation_limit, 1+perturbation_limit] for which
+  // the perturbation value will be randomly generated from.
+  const auto perturbation_limit = m_params.get<Real>("perturbation_limit",0.001);
+  const auto pressure_mask = build_perturbation_level_mask(gll_grid);
+
+  const auto& gll_grid_name = gll_grid->name();
+  auto dofs_gids = gll_grid->get_dofs_gids();
+  for (const auto& fname : perturbed_fields) {
+    auto field = fm->get_field(fname,gll_grid_name);
+    EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
+        "Error! Attempting to apply perturbation to a field that was not initialized.\n"
+        "  - Field: " + fname + "\n"
+        "  - Grid:  " + gll_grid_name + "\n");
+
+    perturb(field,perturbation_limit,seed,pressure_mask,dofs_gids);
+  }
+}
+
+int ModelInit::
+get_perturbation_seed ()
+{
+  // There are two relevant params: generate_perturbation_random_seed and
   // perturbation_random_seed. We have 3 cases:
   //   1. Parameter generate_perturbation_random_seed is set true, assert perturbation_random_seed
   //      is not given and generate a random seed using std::rand() to get an integer random value.
@@ -225,25 +230,20 @@ perturb_fields (const std::shared_ptr<FieldManager>& fm)
   //   3. Parameter perturbation_random_seed is not given and generate_perturbation_random_seed is
   //      not given, use 0 as the random seed.
   // Case 3 is considered the default (using seed=0).
-  int seed;
   if (m_params.get<bool>("generate_perturbation_random_seed",false)) {
     EKAT_REQUIRE_MSG (not m_params.isParameter("perturbation_random_seed"),
         "Error! Param generate_perturbation_random_seed=true, and a "
         "perturbation_random_seed is given. Only one of these can be "
         "defined for a simulation.\n");
     std::srand(std::time(nullptr));
-    seed = std::rand();
-  } else {
-    seed = m_params.get<int>("perturbation_random_seed",0);
+    return std::rand();
   }
+  return m_params.get<int>("perturbation_random_seed",0);
+}
 
-  // Get perturbation limit. Defines a range [1-perturbation_limit, 1+perturbation_limit]
-  // for which the perturbation value will be randomly generated from.
-  const auto perturbation_limit = m_params.get<Real>("perturbation_limit",0.001);
-
-  // Define a level mask using reference pressure and the perturbation_minimum_pressure
-  // parameter. This mask dictates which levels we apply a perturbation to.
-  const auto gll_grid = gm->get_grid("physics_gll");
+Field ModelInit::
+build_perturbation_level_mask (const std::shared_ptr<const AbstractGrid>& gll_grid)
+{
   const auto hyam_h = gll_grid->get_geometry_data("hyam").get_view<const Real*,Host>();
   const auto hybm_h = gll_grid->get_geometry_data("hybm").get_view<const Real*,Host>();
   constexpr auto ps0 = physics::Constants<Real>::P0.value;
@@ -260,19 +260,37 @@ perturb_fields (const std::shared_ptr<FieldManager>& fm)
     pmask_h(ilev) = static_cast<int>(pref > min_pressure);
   }
   pressure_mask.sync_to_dev();
+  return pressure_mask;
+}
 
-  // Loop through fields and apply perturbation.
-  const auto& gll_grid_name = gll_grid->name();
-  auto dofs_gids = gll_grid->get_dofs_gids();
-  for (const auto& fname : perturbed_fields) {
-    auto field = fm->get_field(fname,gll_grid_name);
-    EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
-        "Error! Attempting to apply perturbation to a field that was not initialized.\n"
-        "  - Field: " + fname + "\n"
-        "  - Grid:  " + gll_grid_name + "\n");
+std::vector<Field>
+ModelInit::
+get_leaf_fields (const std::shared_ptr<FieldManager>& fm,
+                 const std::string& group_name,
+                 const std::string& grid_name)
+{
+  auto group = fm->get_field_group(group_name,grid_name);
+  std::vector<Field> fields;
 
-    perturb(field,perturbation_limit,seed,pressure_mask,dofs_gids);
+  std::function<void(const Field&)> collect_leaves = [&] (const Field& f) {
+    if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
+      return;
+    }
+    const auto& children = f.get_header().get_children();
+    if (children.size()>0) {
+      for (const auto& wp : children) {
+        auto c = wp.lock();
+        EKAT_REQUIRE_MSG (c, "Error! A weak pointer of a child field expired.\n");
+        collect_leaves(fm->get_field(c->get_identifier().name(),grid_name));
+      }
+    } else {
+      fields.push_back(f);
+    }
+  };
+  for (const auto& f : std::views::values(group.individual_fields())) {
+    collect_leaves(f);
   }
+  return fields;
 }
 
 std::vector<Field>
@@ -283,39 +301,17 @@ get_fields (const std::shared_ptr<FieldManager>& fm,
 {
   auto group = fm->get_field_group(group_name,grid_name);
   std::vector<Field> fields;
-
-  if (group_name=="STARTUP") {
-    std::function<void(const Field&)> collect_leaves = [&] (const Field& f) {
-      if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
-        return;
-      }
-      const auto& children = f.get_header().get_children();
-      if (children.size()>0) {
-        for (const auto& wp : children) {
-          auto c = wp.lock();
-          EKAT_REQUIRE_MSG (c, "Error! A weak pointer of a child field expired.\n");
-          collect_leaves(fm->get_field(c->get_identifier().name(),grid_name));
-        }
-      } else {
-        fields.push_back(f);
-      }
-    };
-    for (const auto& f : std::views::values(group.individual_fields())) {
-      collect_leaves(f);
+  for (const auto& f : std::views::values(group.individual_fields())) {
+    if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
+      continue;
     }
-  } else {
-    for (const auto& f : std::views::values(group.individual_fields())) {
-      if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
-        continue;
-      }
-      // If the parent of f is also part of this group, skip f: reading (and
-      // stamping) the parent will automatically take care of f too.
-      auto p = f.get_header().get_parent();
-      if (p and ekat::contains(p->get_tracking().get_groups_names(),group_name)) {
-        continue;
-      }
-      fields.push_back(f);
+    // If the parent of f is also part of this group, skip f: reading (and
+    // stamping) the parent will automatically take care of f too.
+    auto p = f.get_header().get_parent();
+    if (p and ekat::contains(p->get_tracking().get_groups_names(),group_name)) {
+      continue;
     }
+    fields.push_back(f);
   }
   return fields;
 }
@@ -393,6 +389,16 @@ get_tag_rename (const std::string& group_name,
   return {};
 }
 
+ModelInit::strmap_t<std::string> ModelInit::
+get_topography_file_names () const
+{
+  return {
+    {"phis",  "PHIS_d"},
+    {"sgh30", "SGH30"},
+    {"sgh",   "SGH"}
+  };
+}
+
 std::string ModelInit::
 get_copy_source (const std::string& name) const
 {
@@ -406,6 +412,7 @@ void ModelInit::
 read_fields (const std::string& filename,
             std::vector<Field>& fields,
             const std::shared_ptr<const AbstractGrid>& grid,
+            const util::TimeStamp& t0,
             const strmap_t<std::string>& tag_rename)
 {
   FieldReader reader;
@@ -413,6 +420,10 @@ read_fields (const std::string& filename,
   reader.set_dim_decomp(grid->get_partitioned_dim_gids(),grid->get_comm());
   reader.set_file_specs(filename,tag_rename);
   reader.read();
+
+  for (auto& f : fields) {
+    f.get_header().get_tracking().update_time_stamp(t0);
+  }
 }
 
 } // namespace scream

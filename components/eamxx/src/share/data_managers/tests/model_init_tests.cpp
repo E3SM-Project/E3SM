@@ -13,6 +13,20 @@ namespace scream {
 
 namespace {
 
+// A grid+field_manager pair, set up on a single grid named grid_name, with
+// ncols columns and nlevs levels (partitioned evenly across comm's ranks).
+struct Fixture {
+  std::shared_ptr<PointGrid>   grid;
+  std::shared_ptr<FieldManager> fm;
+};
+
+Fixture make_fixture (const std::string& grid_name, int ncols, int nlevs, const ekat::Comm& comm)
+{
+  auto grid = create_point_grid(grid_name,ncols,nlevs,comm);
+  auto gm = std::make_shared<LibraryGridsManager>(grid);
+  return { grid, std::make_shared<FieldManager>(gm) };
+}
+
 // Write a single (real-valued) variable to an already-open (and enddef'd)
 // scorpio file.
 void write_field_to_file (const std::string& filename, Field& f)
@@ -20,6 +34,27 @@ void write_field_to_file (const std::string& filename, Field& f)
   f.sync_to_host();
   scorpio::write_var(filename, f.name(),
                      f.get_internal_view_data<const Real,Host>());
+}
+
+// Write a fresh, single-variable netcdf file, containing a (COL,LEV)
+// field named varname, with 'ncol'/'lev' on-file dimension names, and every
+// entry set to value.
+void write_constant_2d_field (const std::string& filename,
+                              const std::string& varname,
+                              int ncols, int nlevs, Real value)
+{
+  using namespace ShortFieldTagsNames;
+  FieldIdentifier fid(varname,{{COL,LEV},{ncols,nlevs}},ekat::units::none,"");
+  Field f(fid); f.allocate_view(); f.deep_copy(value);
+
+  scorpio::register_file(filename,scorpio::Write);
+  scorpio::define_dim(filename,"ncol",ncols);
+  scorpio::define_dim(filename,"lev",nlevs);
+  scorpio::define_var(filename,varname,{"ncol","lev"},"real",false);
+  scorpio::enddef(filename);
+
+  write_field_to_file(filename,f);
+  scorpio::release_file(filename);
 }
 
 } // anonymous namespace
@@ -32,15 +67,12 @@ TEST_CASE ("model_init_constants_and_copy", "")
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  const std::string gn = "point_grid";
   const int ncols = 4*comm.size();
   const int nlevs = 3;
   const int ncmp  = 2;
 
-  auto grid = create_point_grid(gn,ncols,nlevs,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-
-  auto fm = std::make_shared<FieldManager>(gm);
+  auto [grid,fm] = make_fixture("point_grid",ncols,nlevs,comm);
+  const auto& gn = grid->name();
 
   FieldIdentifier a_id ("A", {{COL,LEV},    {ncols,nlevs}},       none, gn);
   FieldIdentifier z_id ("Z", {{COL,LEV},    {ncols,nlevs}},       none, gn);
@@ -107,13 +139,11 @@ TEST_CASE ("model_init_startup_from_file", "")
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
 
-  const std::string gn = "point_grid";
   const int ncols = 4*comm.size();
   const int nlevs = 3;
 
-  auto grid = create_point_grid(gn,ncols,nlevs,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  auto fm = std::make_shared<FieldManager>(gm);
+  auto [grid,fm] = make_fixture("point_grid",ncols,nlevs,comm);
+  const auto& gn = grid->name();
 
   FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
   fm->register_field(FR{t_id});
@@ -122,19 +152,7 @@ TEST_CASE ("model_init_startup_from_file", "")
   fm->add_to_group("T_mid",gn,"STARTUP");
 
   const std::string filename = "model_init_startup_np" + std::to_string(comm.size()) + ".nc";
-  {
-    Field f(t_id); f.allocate_view();
-    f.deep_copy(300.0);
-
-    scorpio::register_file(filename,scorpio::Write);
-    scorpio::define_dim(filename,"ncol",ncols);
-    scorpio::define_dim(filename,"lev",nlevs);
-    scorpio::define_var(filename,"T_mid",{"ncol","lev"},"real",false);
-    scorpio::enddef(filename);
-
-    write_field_to_file(filename,f);
-    scorpio::release_file(filename);
-  }
+  write_constant_2d_field(filename,"T_mid",ncols,nlevs,300.0);
 
   ekat::ParameterList params("initial_conditions");
   params.set<std::string>("filename",filename);
@@ -155,13 +173,14 @@ TEST_CASE ("model_init_startup_from_file", "")
 TEST_CASE ("model_init_group_selection_rules", "")
 {
   // This test does not perform any file I/O: it checks the selection rules
-  // that get_fields uses to decide which fields of a monolithically
-  // allocated group need to be read/inited, and that fixup_parents_time_stamp
-  // correctly propagates the time stamp to the parent once all its children
-  // (which do NOT auto-update their parent's time stamp) are inited.
+  // that get_leaf_fields/get_fields use to decide which fields of a
+  // monolithically allocated group need to be read/inited, and that
+  // fixup_parents_time_stamp correctly propagates the time stamp to the
+  // parent once all its children (which do NOT auto-update their parent's
+  // time stamp) are inited.
   //
-  // Since get_fields/fixup_parents_time_stamp are protected, this test uses
-  // a trivial derived class to expose them.
+  // Since these are protected, this test uses a trivial derived class to
+  // expose them.
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FR = FieldRequest;
@@ -169,19 +188,18 @@ TEST_CASE ("model_init_group_selection_rules", "")
 
   struct TestModelInit : public ModelInit {
     using ModelInit::ModelInit;
+    using ModelInit::get_leaf_fields;
     using ModelInit::get_fields;
     using ModelInit::fixup_parents_time_stamp;
   };
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  const std::string gn = "point_grid";
   const int ncols = 4*comm.size();
   const int nlevs = 3;
 
-  auto grid = create_point_grid(gn,ncols,nlevs,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  auto fm = std::make_shared<FieldManager>(gm);
+  auto [grid,fm] = make_fixture("point_grid",ncols,nlevs,comm);
+  const auto& gn = grid->name();
 
   FieldIdentifier qv_id ("qv", {{COL,LEV}, {ncols,nlevs}}, none, gn);
   FieldIdentifier qc_id ("qc", {{COL,LEV}, {ncols,nlevs}}, none, gn);
@@ -195,7 +213,8 @@ TEST_CASE ("model_init_group_selection_rules", "")
 
   // Mimic what the driver does: put the group's monolithic field (only) in
   // STARTUP/RESTART, since that's what a restart file stores; the IC file
-  // stores the leaves instead, which is why get_fields must expand parents.
+  // stores the leaves instead, which is why get_leaf_fields must expand
+  // parents.
   fm->add_to_group("tracers",gn,"STARTUP");
   fm->add_to_group("tracers",gn,"RESTART");
 
@@ -203,7 +222,7 @@ TEST_CASE ("model_init_group_selection_rules", "")
   TestModelInit model_init(params);
 
   // STARTUP: parent has children, so it must be expanded into its leaves.
-  auto startup_fields = model_init.get_fields(fm,"STARTUP",gn);
+  auto startup_fields = model_init.get_leaf_fields(fm,"STARTUP",gn);
   REQUIRE (startup_fields.size()==2);
   std::map<std::string,bool> found = {{"qv",false},{"qc",false}};
   for (const auto& f : startup_fields) {
@@ -245,13 +264,10 @@ TEST_CASE ("model_init_topography", "")
   ekat::Comm comm(MPI_COMM_WORLD);
   scorpio::init_subsystem(comm);
 
-  const std::string gn = "physics_gll";
   const int ncols = 4*comm.size();
-  const int nlevs = 3;
 
-  auto grid = create_point_grid(gn,ncols,nlevs,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  auto fm = std::make_shared<FieldManager>(gm);
+  auto [grid,fm] = make_fixture("physics_gll",ncols,3,comm);
+  const auto& gn = grid->name();
 
   FieldIdentifier phis_id ("phis", {{COL}, {ncols}}, none, gn);
   fm->register_field(FR{phis_id});
@@ -265,7 +281,8 @@ TEST_CASE ("model_init_topography", "")
     f.deep_copy(42.0);
 
     // The topography file uses 'ncol_d' (not 'ncol') for the GLL grid's
-    // column dimension: see ModelInit::get_tag_rename.
+    // column dimension: see ModelInit::get_tag_rename. The field is also
+    // named 'PHIS_d' on file: see ModelInit::get_topography_file_names.
     scorpio::register_file(filename,scorpio::Write);
     scorpio::define_dim(filename,"ncol_d",ncols);
     scorpio::define_var(filename,"PHIS_d",{"ncol_d"},"real",false);
@@ -303,12 +320,10 @@ TEST_CASE ("model_init_topography_not_loaded_on_restart", "")
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  const std::string gn = "physics_gll";
   const int ncols = 4*comm.size();
 
-  auto grid = create_point_grid(gn,ncols,3,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  auto fm = std::make_shared<FieldManager>(gm);
+  auto [grid,fm] = make_fixture("physics_gll",ncols,3,comm);
+  const auto& gn = grid->name();
 
   FieldIdentifier phis_id ("phis", {{COL}, {ncols}}, none, gn);
   fm->register_field(FR{phis_id});
@@ -335,12 +350,12 @@ TEST_CASE ("model_init_perturbation", "")
 
   ekat::Comm comm(MPI_COMM_WORLD);
 
-  // Perturbation only ever applies to the physics_gll grid.
-  const std::string gn = "physics_gll";
   const int ncols = 4*comm.size();
   const int nlevs = 4;
 
-  auto grid = create_point_grid(gn,ncols,nlevs,comm);
+  // Perturbation only ever applies to the physics_gll grid.
+  auto [grid,fm] = make_fixture("physics_gll",ncols,nlevs,comm);
+  const auto& gn = grid->name();
 
   // Set up hyam/hybm so that the reference pressure increases with level
   // index: with perturbation_minimum_pressure=1000mb below, only the
@@ -358,9 +373,6 @@ TEST_CASE ("model_init_perturbation", "")
   hybm.sync_to_dev();
   grid->set_geometry_data(hyam);
   grid->set_geometry_data(hybm);
-
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  auto fm = std::make_shared<FieldManager>(gm);
 
   FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
   fm->register_field(FR{t_id});
@@ -413,14 +425,13 @@ TEST_CASE ("model_init_no_perturbation_on_restart", "")
   using FR = FieldRequest;
 
   ekat::Comm comm(MPI_COMM_WORLD);
+  scorpio::init_subsystem(comm);
 
-  const std::string gn = "physics_gll";
   const int ncols = 4*comm.size();
   const int nlevs = 4;
 
-  auto grid = create_point_grid(gn,ncols,nlevs,comm);
-  auto gm = std::make_shared<LibraryGridsManager>(grid);
-  auto fm = std::make_shared<FieldManager>(gm);
+  auto [grid,fm] = make_fixture("physics_gll",ncols,nlevs,comm);
+  const auto& gn = grid->name();
 
   FieldIdentifier t_id ("T_mid", {{COL,LEV}, {ncols,nlevs}}, none, gn);
   fm->register_field(FR{t_id});
@@ -429,20 +440,7 @@ TEST_CASE ("model_init_no_perturbation_on_restart", "")
   fm->add_to_group("T_mid",gn,"RESTART");
 
   const std::string filename = "model_init_no_perturb_restart_np" + std::to_string(comm.size()) + ".nc";
-  scorpio::init_subsystem(comm);
-  {
-    Field f(t_id); f.allocate_view();
-    f.deep_copy(300.0);
-
-    scorpio::register_file(filename,scorpio::Write);
-    scorpio::define_dim(filename,"ncol",ncols);
-    scorpio::define_dim(filename,"lev",nlevs);
-    scorpio::define_var(filename,"T_mid",{"ncol","lev"},"real",false);
-    scorpio::enddef(filename);
-
-    write_field_to_file(filename,f);
-    scorpio::release_file(filename);
-  }
+  write_constant_2d_field(filename,"T_mid",ncols,nlevs,300.0);
 
   // Even though a 'perturbed_fields' entry is present, it must be ignored
   // on a restart run.

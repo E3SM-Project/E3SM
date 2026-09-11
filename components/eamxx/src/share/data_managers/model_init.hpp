@@ -26,6 +26,16 @@ namespace scream
 // restart run, the caller (which needs access to the case's rpointer file
 // to resolve the actual restart file name) is responsible for resolving the
 // restart file name and passing it as 'filename' instead.
+//
+// This class is meant to be subclassed (e.g., for the PG2 physics grid,
+// where dynamics owns the fields on that grid, and the base class's
+// straight FieldManager/file interaction is not enough). Everything that
+// may need to change in a derived class is a separate virtual method:
+//  - get_leaf_fields/get_fields decide WHICH fields need to be inited;
+//  - get_tag_rename/get_topography_file_names decide how a field/dimension
+//    is named on file, when that differs from its eamxx name.
+// The rest of the class (the init_*_fields methods, driving the above hooks)
+// is not virtual, and a derived class is expected to reuse it as-is.
 class ModelInit {
 public:
   ModelInit (const ekat::ParameterList& params);
@@ -40,21 +50,6 @@ protected:
 
   template<typename T>
   using strmap_t = std::map<std::string,T>;
-
-  // Fields in group_name (on grid_name) that still need to be initialized.
-  //  - For the STARTUP group, a field that is the parent of other fields
-  //    (e.g., a group's monolithic field, or a field with convenience
-  //    component subfields, like U/V for horiz_winds) is expanded into its
-  //    (not yet inited) children, recursively, since IC files only store
-  //    leaf fields.
-  //  - For every other group, a field is skipped if its parent is also
-  //    part of group_name, since restart/topography files store the parent
-  //    only, and updating a parent automatically updates all its children.
-  // Virtual, since the pg2 model init may change the field names
-  virtual std::vector<Field>
-  get_fields (const std::shared_ptr<FieldManager>& fm,
-              const std::string& group_name,
-              const std::string& grid_name);
 
   // Startup (initial) run: init fields in the STARTUP group of grid, from
   // (in order of precedence) a constant value, a copy of another field, or
@@ -76,6 +71,29 @@ protected:
                                const std::shared_ptr<const AbstractGrid>& grid,
                                const util::TimeStamp& t0);
 
+  // Leaf fields (still needing initialization) of group_name on grid_name.
+  // IC files only store leaf fields, so a field that is the parent of
+  // others (e.g., a group's monolithic field, or a field with convenience
+  // component subfields, like U/V for horiz_winds) is expanded into its
+  // (not yet inited) children, recursively. Used for the STARTUP group.
+  // Virtual, since a derived class may need to change which fields are
+  // considered leaves (e.g., to exclude fields owned by dynamics).
+  virtual std::vector<Field>
+  get_leaf_fields (const std::shared_ptr<FieldManager>& fm,
+                   const std::string& group_name,
+                   const std::string& grid_name);
+
+  // Fields (still needing initialization) of group_name on grid_name, as
+  // they are stored in the group, with no leaf expansion: a field is
+  // skipped only if its parent is also part of group_name, since a
+  // restart/topography file stores the parent as a whole, and updating a
+  // parent automatically updates all its children. Used for the RESTART
+  // and TOPOGRAPHY groups. Virtual, for the same reason as get_leaf_fields.
+  virtual std::vector<Field>
+  get_fields (const std::shared_ptr<FieldManager>& fm,
+              const std::string& group_name,
+              const std::string& grid_name);
+
   // After initializing the (leaf) fields of the STARTUP group, some parent
   // fields (whose time stamp is NOT automatically updated when their
   // children's is) may now have all their children inited: propagate the
@@ -90,6 +108,17 @@ protected:
   // at levels below 'perturbation_minimum_pressure'. A no-op otherwise.
   void perturb_fields (const std::shared_ptr<FieldManager>& fm);
 
+  // The random seed to use for perturb_fields, resolved from the
+  // 'generate_perturbation_random_seed'/'perturbation_random_seed' params.
+  int get_perturbation_seed ();
+
+  // A (LEV-layout, int) field, used by perturb_fields to decide which
+  // levels of gll_grid to perturb: level k is perturbed iff the field's
+  // value at k is nonzero. A level is included iff its reference pressure
+  // (computed from gll_grid's hyam/hybm geometry data) exceeds the
+  // 'perturbation_minimum_pressure' param.
+  Field build_perturbation_level_mask (const std::shared_ptr<const AbstractGrid>& gll_grid);
+
   // If m_params has an entry '$name: $value' (a number, or an array of
   // numbers, for vector fields), assign $value to f, and stamp its time.
   // Returns true if such an entry was found (and used).
@@ -99,11 +128,13 @@ protected:
   // Otherwise, return an empty string.
   std::string get_copy_source (const std::string& name) const;
 
-  // Read fields from filename, optionally renaming some layout tags
-  // (e.g., to account for a different dimension name on file).
+  // Read fields from filename, and stamp their time to t0. Optionally,
+  // rename some layout tags (e.g., to account for a different dimension
+  // name on file).
   void read_fields (const std::string& filename,
                     std::vector<Field>& fields,
                     const std::shared_ptr<const AbstractGrid>& grid,
+                    const util::TimeStamp& t0,
                     const strmap_t<std::string>& tag_rename = {});
 
   // By default, only the GLL grid's topography fields need a rename (the
@@ -114,6 +145,12 @@ protected:
   virtual strmap_t<std::string>
   get_tag_rename (const std::string& group_name,
                   const std::string& grid_name) const;
+
+  // Map from eamxx field name to the (differing) name used for that field
+  // in the topography file. Virtual, since a derived class may need to
+  // change which fields are expected there (e.g., the PG2 grid does not
+  // load phis from the topography file, since dynamics computes it).
+  virtual strmap_t<std::string> get_topography_file_names () const;
 
   ekat::ParameterList       m_params;
 };
