@@ -975,8 +975,11 @@ run_model_init ()
     params.set<std::string>("filename",filename);
   }
 
-  ModelInit model_init(params);
-  model_init.run(m_field_mgr,m_current_ts,m_run_type);
+  // Let the grids manager decide which ModelInit to use (e.g., a subclass
+  // handling grid-specific initialization needs, like Homme's PG2 physics
+  // grid), so the driver stays agnostic of that choice.
+  auto model_init = m_grids_manager->create_model_init(params);
+  model_init->run(m_field_mgr,m_current_ts,m_run_type);
 
   if (m_run_type==RunType::Restart) {
     load_restart_extra_data(filename);
