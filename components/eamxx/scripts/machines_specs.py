@@ -130,7 +130,7 @@ class Aurora(Machine):
         cls.c_compiler   = "mpicc"
         cls.ftn_compiler = "mpifort"
 
-        compiler = "oneapi-ifxgpu"
+        compiler = "intelgpu"
 
         cls.env_setup = [f"eval $({CIMEROOT}/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.{cls.name}_{compiler})"]
 
