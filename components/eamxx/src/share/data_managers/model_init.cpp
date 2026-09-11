@@ -1,16 +1,18 @@
 #include "share/data_managers/model_init.hpp"
 
+#include "share/field/field_reader.hpp"
+
 #include <ekat_std_utils.hpp>
 
+#include <functional>
 #include <ranges>
 
 namespace scream
 {
 
 ModelInit::
-ModelInit (const ekat::ParameterList& params, const ekat::Comm& comm)
+ModelInit (const ekat::ParameterList& params)
  : m_params (params)
- , m_comm   (comm)
 {
   // Nothing to do here
 }
@@ -20,26 +22,173 @@ run (const std::shared_ptr<FieldManager>& fm,
      const util::TimeStamp& t0,
      const RunType run_type)
 {
-  EKAT_REQUIRE_MSG (run_type!=RunType::Restart,
-      "Error! ModelInit does not yet support restart runs.\n");
-
   auto gm = fm->get_grids_manager();
   for (const auto& gn : gm->get_grid_names()) {
-    if (not fm->has_group("STARTUP",gn)) {
+    auto grid = gm->get_grid(gn);
+
+    // Restart files always contain the full model state, so there is no
+    // need (nor a guarantee that 'topography_filename' was even given) to
+    // separately load topography on a restart run.
+    if (run_type!=RunType::Restart and fm->has_group("TOPOGRAPHY",gn)) {
+      init_topography_fields(fm,grid,t0);
+    }
+
+    if (run_type==RunType::Restart) {
+      if (fm->has_group("RESTART",gn)) {
+        init_restart_fields(fm,grid,t0);
+      }
+    } else {
+      if (fm->has_group("STARTUP",gn)) {
+        init_startup_fields(fm,grid,t0);
+      }
+    }
+  }
+}
+
+void ModelInit::
+init_startup_fields (const std::shared_ptr<FieldManager>& fm,
+                     const std::shared_ptr<const AbstractGrid>& grid,
+                     const util::TimeStamp& t0)
+{
+  const auto& gn = grid->name();
+  auto fields = get_fields(fm,"STARTUP",gn);
+
+  // 1) Constant fields, and fields to be copied from another field (the
+  //    latter is postponed, since the source field may itself need to be
+  //    inited, e.g., from file, first).
+  std::vector<Field> to_read;
+  strmap_t<std::string> to_copy;
+  for (auto& f : fields) {
+    const auto& src_name = get_copy_source(f.name());
+    if (src_name!="") {
+      to_copy[f.name()] = src_name;
+    } else if (not set_constant_field(f,t0)) {
+      to_read.push_back(f);
+    }
+  }
+
+  // 2) Whatever is left must come from the input file.
+  if (to_read.size()>0) {
+    EKAT_REQUIRE_MSG (m_params.isParameter("filename"),
+        "Error! Some fields need to be loaded from the startup file, but no "
+        "'filename' was found in the input parameters.\n"
+        " - grid name: " + gn + "\n");
+    const auto& filename = m_params.get<std::string>("filename");
+    read_fields(filename,to_read,grid,get_tag_rename("STARTUP",gn));
+    for (auto& f : to_read) {
+      f.get_header().get_tracking().update_time_stamp(t0);
+    }
+  }
+
+  // 3) Fields to be copied from another (by now, necessarily inited) field.
+  for (const auto& [tgt_name,src_name] : to_copy) {
+    auto f_tgt = fm->get_field(tgt_name,gn);
+    auto f_src = fm->get_field(src_name,gn);
+    f_tgt.deep_copy(f_src);
+    f_tgt.get_header().get_tracking().update_time_stamp(t0);
+  }
+
+  // Some fields we inited above may be leaves of a parent field (e.g., a
+  // group's monolithic field) whose time stamp does not auto-update when
+  // its children's does. If all of a parent's children are now inited,
+  // propagate the time stamp to the parent too.
+  fixup_parents_time_stamp(fm,"STARTUP",gn,t0);
+}
+
+void ModelInit::
+init_restart_fields (const std::shared_ptr<FieldManager>& fm,
+                     const std::shared_ptr<const AbstractGrid>& grid,
+                     const util::TimeStamp& t0)
+{
+  const auto& gn = grid->name();
+  auto fields = get_fields(fm,"RESTART",gn);
+  if (fields.size()==0) {
+    return;
+  }
+
+  EKAT_REQUIRE_MSG (m_params.isParameter("filename"),
+      "Error! Some fields need to be loaded from the restart file, but no "
+      "'filename' was found in the input parameters.\n"
+      " - grid name: " + gn + "\n");
+  const auto& filename = m_params.get<std::string>("filename");
+  read_fields(filename,fields,grid,get_tag_rename("RESTART",gn));
+  for (auto& f : fields) {
+    // NOTE: this also updates the time stamp of any (subview) child of f,
+    // e.g., U/V for horiz_winds, or the individual fields of a group that
+    // was allocated as a monolithic field.
+    f.get_header().get_tracking().update_time_stamp(t0);
+  }
+}
+
+void ModelInit::
+init_topography_fields (const std::shared_ptr<FieldManager>& fm,
+                        const std::shared_ptr<const AbstractGrid>& grid,
+                        const util::TimeStamp& t0)
+{
+  const auto& gn = grid->name();
+  auto fields = get_fields(fm,"TOPOGRAPHY",gn);
+  if (fields.size()==0) {
+    return;
+  }
+
+  EKAT_REQUIRE_MSG (m_params.isParameter("topography_filename"),
+      "Error! Topography data was requested, but no 'topography_filename' "
+      "was found in the input parameters.\n"
+      " - grid name: " + gn + "\n");
+  const auto& filename = m_params.get<std::string>("topography_filename");
+
+  // The topography file uses different names for these fields than the
+  // ones used internally by eamxx.
+  static const strmap_t<std::string> file_names = {
+    {"phis",  "PHIS_d"},
+    {"sgh30", "SGH30"},
+    {"sgh",   "SGH"}
+  };
+
+  std::vector<Field> aliased;
+  for (const auto& f : fields) {
+    auto it = file_names.find(f.name());
+    EKAT_REQUIRE_MSG (it!=file_names.end(),
+        "Error! Unrecognized topography field '" + f.name() + "'.\n");
+    aliased.push_back(f.alias(it->second));
+  }
+
+  read_fields(filename,aliased,grid,get_tag_rename("TOPOGRAPHY",gn));
+  for (auto& f : aliased) {
+    // f shares tracking with the original (unaliased) field, so this also
+    // stamps the field as known by the rest of the field manager.
+    f.get_header().get_tracking().update_time_stamp(t0);
+  }
+}
+
+void ModelInit::
+fixup_parents_time_stamp (const std::shared_ptr<FieldManager>& fm,
+                          const std::string& group_name,
+                          const std::string& grid_name,
+                          const util::TimeStamp& t0)
+{
+  auto group = fm->get_field_group(group_name,grid_name);
+  for (auto& f : std::views::values(group.individual_fields())) {
+    auto& track = f.get_header().get_tracking();
+    if (track.get_time_stamp().is_valid()) {
+      continue;
+    }
+    const auto& children = track.get_children();
+    if (children.size()==0) {
       continue;
     }
 
-    for (auto& f : get_fields(fm,"STARTUP",gn)) {
-      const auto& name = f.name();
-      const auto& src_name = get_copy_source(name);
-      if (src_name!="") {
-        auto f_src = fm->get_field(src_name,gn);
-        f.deep_copy(f_src);
-        f.get_header().get_tracking().update_time_stamp(t0);
-      } else if (m_params.isParameter(name)) {
-        set_constant_field(f,t0);
+    bool all_inited = true;
+    for (const auto& wp : children) {
+      auto c = wp.lock();
+      EKAT_REQUIRE_MSG (c, "Error! A weak pointer of a child field expired.\n");
+      if (not c->get_time_stamp().is_valid()) {
+        all_inited = false;
+        break;
       }
-      // else: f must be inited from a startup file. Not yet supported.
+    }
+    if (all_inited) {
+      track.update_time_stamp(t0);
     }
   }
 }
@@ -52,11 +201,39 @@ get_fields (const std::shared_ptr<FieldManager>& fm,
 {
   auto group = fm->get_field_group(group_name,grid_name);
   std::vector<Field> fields;
-  for (const auto& f : std::views::values(group.individual_fields())) {
-    // If for some reason the field was already inited, skip it
-    if (f.get_header().get_tracking().get_time_stamp().is_valid())
-      continue;
-    fields.push_back(f);
+
+  if (group_name=="STARTUP") {
+    std::function<void(const Field&)> collect_leaves = [&] (const Field& f) {
+      if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
+        return;
+      }
+      const auto& children = f.get_header().get_children();
+      if (children.size()>0) {
+        for (const auto& wp : children) {
+          auto c = wp.lock();
+          EKAT_REQUIRE_MSG (c, "Error! A weak pointer of a child field expired.\n");
+          collect_leaves(fm->get_field(c->get_identifier().name(),grid_name));
+        }
+      } else {
+        fields.push_back(f);
+      }
+    };
+    for (const auto& f : std::views::values(group.individual_fields())) {
+      collect_leaves(f);
+    }
+  } else {
+    for (const auto& f : std::views::values(group.individual_fields())) {
+      if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
+        continue;
+      }
+      // If the parent of f is also part of this group, skip f: reading (and
+      // stamping) the parent will automatically take care of f too.
+      auto p = f.get_header().get_parent();
+      if (p and ekat::contains(p->get_tracking().get_groups_names(),group_name)) {
+        continue;
+      }
+      fields.push_back(f);
+    }
   }
   return fields;
 }
@@ -124,6 +301,16 @@ set_constant_field (Field& f, const util::TimeStamp& t0)
   return true;
 }
 
+ModelInit::strmap_t<std::string> ModelInit::
+get_tag_rename (const std::string& group_name,
+                const std::string& grid_name) const
+{
+  if (group_name=="TOPOGRAPHY" and grid_name=="physics_gll") {
+    return { {"ncol","ncol_d"} };
+  }
+  return {};
+}
+
 std::string ModelInit::
 get_copy_source (const std::string& name) const
 {
@@ -131,6 +318,19 @@ get_copy_source (const std::string& name) const
     return m_params.get<std::string>(name);
   }
   return "";
+}
+
+void ModelInit::
+read_fields (const std::string& filename,
+            std::vector<Field>& fields,
+            const std::shared_ptr<const AbstractGrid>& grid,
+            const strmap_t<std::string>& tag_rename)
+{
+  FieldReader reader;
+  reader.set_fields(fields);
+  reader.set_dim_decomp(grid->get_partitioned_dim_gids(),grid->get_comm());
+  reader.set_file_specs(filename,tag_rename);
+  reader.read();
 }
 
 } // namespace scream
