@@ -12,31 +12,37 @@
 
   <compset>
     <alias>F2000-SCREAM-SA</alias> <!-- SCREAM standalone -->
-    <lname>2000_SCREAM_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAMXX_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2000-SCREAMv1-AQP1</alias> <!-- atm aquaplanet compset (using SCREAMv1), 2000 initial conditions -->
-    <lname>2000_SCREAM%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAMXX%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2000-SCREAMv1-AQP1-noAero</alias> <!-- atm aquaplanet compset (using SCREAMv1), 2000 initial conditions, turn of Aerosol forcing -->
-    <lname>2000_SCREAM%AQUA-noAero_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <lname>2000_EAMXX%AQUA-noAero_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>FIOP-SCREAMv1-DP</alias> <!-- DP-EAMxx General compset; to be interfaced with official scripts forced from IOPs for all cases other than RCE. -->
-    <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%IOP</lname>
+    <lname>2010_EAMXX_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx%IOP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>FRCE-SCREAMv1-DP</alias> <!-- RCE compset for DP-EAMxx -->
-    <lname>2000_SCREAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
+    <lname>2000_EAMXX%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV_SIAC_SESP%DP-EAMxx</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+    <alias>F2010-SCREAM-SA</alias> <!-- SCREAM standalone -->
+    <lname>2010_EAMXX_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
@@ -44,76 +50,70 @@
   <!-- E3SM F compsets w/ EAMxx -->
 
   <compset>
-    <alias>F2010-SCREAM-SA</alias> <!-- SCREAM standalone -->
-    <lname>2010_SCREAM_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
-    <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
     <alias>F2010-SCREAMv1</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
-    <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010-SCREAMv1-DYAMOND1</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-1 initial conditions with X6T topography-->
-    <lname>2010_SCREAM%DYAMOND-1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%DYAMOND-1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010-SCREAMv1-DYAMOND2</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-2 initial conditions with X6T topography-->
-    <lname>2010_SCREAM%DYAMOND-2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%DYAMOND-2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010-SCREAMv1-MPASSI</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
-    <lname>2010_SCREAM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010-SCREAMv1-noAero</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions, turn off Aerosol forcing -->
-    <lname>2010_SCREAM%noAero_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%noAero_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010-SCREAMv1-MPASSI-noAero</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions, turn off Aerosol forcing -->
-    <lname>2010_SCREAM%noAero_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%noAero_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F20TR-SCREAMv1</alias> <!-- SCREAMv1 AMIP -->
-    <lname>20TR_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <lname>20TR_EAMXX_ELM%SPBC_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!-- ========================================================================================= -->
-  <!-- development compsets for EAMxx-LR -->
+  <!-- development compsets -->
 
   <compset>
     <alias>F2010-EAMxx-MAM4xx</alias> <!-- Coupled land-atm compset (using EAMxx with MAM4xx aerosol package), 2010 initial conditions -->
-    <lname>2010_SCREAM%MAM4xx_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%MAM4xx_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010-EAMxx-MAM4xx-MPASSI</alias> <!-- Coupled land-atm compset (using EAMxx with MAM4xx aerosol package with MPASSI), 2010 initial conditions -->
-    <lname>2010_SCREAM%MAM4xx_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%MAM4xx_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010xx-ZM</alias> <!-- Coupled land-atm compset (using EAmxx+ZM), 2010 initial conditions -->
-    <lname>2010_SCREAM%ZM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%ZM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
   <compset>
     <alias>F2010xx-ZM-CICE</alias> <!-- Coupled land-atm compset (using EAmxx+ZM), 2010 initial conditions -->
-    <lname>2010_SCREAM%ZM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+    <lname>2010_EAMXX%ZM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 
