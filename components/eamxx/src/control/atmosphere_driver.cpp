@@ -1154,14 +1154,21 @@ void AtmosphereDriver::set_initial_conditions ()
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
       auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto c = f.get_header().get_children();
+      auto children = f.get_header().get_children();
 
       // If this field is the parent of other subfields, we only read from file the subfields.
-      if (c.size()==0) {
-        if (not ekat::contains(this_grid_ic_fnames,fname)) {
-          this_grid_ic_fnames.push_back(fname);
-          m_fields_inited[grid_name].push_back(fname);
+      auto add = [&](const std::string& n) {
+        if (not ekat::contains(this_grid_ic_fnames,n)) {
+          this_grid_ic_fnames.push_back(n);
+          m_fields_inited[grid_name].push_back(n);
         }
+      };
+      if (children.size()==0) {
+        add(fname);
+      } else {
+        for (auto child : children)
+          if (child.lock()->get_children().size()==0) // Skip children that themselves have children
+            add (child.lock()->get_identifier().name());
       }
     }
   };
