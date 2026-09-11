@@ -6,6 +6,7 @@
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
+#include "share/data_managers/model_init.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -985,6 +986,14 @@ void AtmosphereDriver::restart_model ()
     }
   }
 
+  load_restart_extra_data(filename);
+
+  m_atm_logger->info("  [EAMxx] restart_model ... done!");
+}
+
+void AtmosphereDriver::
+load_restart_extra_data (const std::string& filename)
+{
   for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
           auto& any  = *it.second;
@@ -1006,8 +1015,6 @@ void AtmosphereDriver::restart_model ()
           " - extra data typeid: " + std::string(any.type().name()) + "\n");
     }
   }
-
-  m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
 
 void AtmosphereDriver::create_logger () {
