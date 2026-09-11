@@ -204,11 +204,11 @@ be lost if SCREAM_HACK_XML is not enabled.
     <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols">false</use_hetfrz_classnuc>
-      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM%MAM4xx.*">true</use_hetfrz_classnuc>
-      <do_prescribed_ccn COMPSET=".*SCREAM%MAM4xx.*">false</do_prescribed_ccn>
+      <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*EAMXX%MAM4xx.*">true</use_hetfrz_classnuc>
+      <do_prescribed_ccn COMPSET=".*EAMXX%MAM4xx.*">false</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
-      <do_predict_nc COMPSET=".*SCREAM%MAM4xx.*">true</do_predict_nc>
+      <do_predict_nc COMPSET=".*EAMXX%MAM4xx.*">true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
       <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
@@ -596,11 +596,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <f12vmr      > 531.2820e-12 </f12vmr>
       <n2vmr       > 0.7906       </n2vmr>
       <covmr       > 1.0e-7       </covmr>
-      <ch4vmr COMPSET=".*SCREAM%RCE.*" > 1650.e-9 </ch4vmr>
-      <co2vmr COMPSET=".*SCREAM%RCE.*" > 348.0e-6 </co2vmr>
-      <n2ovmr COMPSET=".*SCREAM%RCE.*" > 306.0e-9 </n2ovmr>
-      <f11vmr COMPSET=".*SCREAM%RCE.*" > 0.0      </f11vmr>
-      <f12vmr COMPSET=".*SCREAM%RCE.*" > 0.0      </f12vmr>
+      <ch4vmr COMPSET=".*EAMXX%RCE.*" > 1650.e-9 </ch4vmr>
+      <co2vmr COMPSET=".*EAMXX%RCE.*" > 348.0e-6 </co2vmr>
+      <n2ovmr COMPSET=".*EAMXX%RCE.*" > 306.0e-9 </n2ovmr>
+      <f11vmr COMPSET=".*EAMXX%RCE.*" > 0.0      </f11vmr>
+      <f12vmr COMPSET=".*EAMXX%RCE.*" > 0.0      </f12vmr>
       <!-- Orbital parameters for solar zenith angle and TSI scaling. For F2010 compsets, -->
       <!-- we set a fixed year for these parameters, but for other compsets we set to a   -->
       <!-- negative value to force the code to get simulated year from the timestamp.     -->
@@ -610,15 +610,15 @@ be lost if SCREAM_HACK_XML is not enabled.
       <orbital_year>-9999</orbital_year>
       <orbital_year COMPSET="2010_.*">2010</orbital_year>
       <orbital_eccentricity type="real">-9999.0</orbital_eccentricity>
-      <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0.0</orbital_eccentricity>
+      <orbital_eccentricity COMPSET=".*EAMXX%AQUA.*">0.0</orbital_eccentricity>
       <orbital_obliquity type="real">-9999.0</orbital_obliquity>
-      <orbital_obliquity COMPSET=".*SCREAM%AQUA.*">0.0</orbital_obliquity>
+      <orbital_obliquity COMPSET=".*EAMXX%AQUA.*">0.0</orbital_obliquity>
       <orbital_mvelp type="real">-9999.0</orbital_mvelp>
-      <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0.0</orbital_mvelp>
+      <orbital_mvelp COMPSET=".*EAMXX%AQUA.*">0.0</orbital_mvelp>
 
       <!-- Option for prescribing an invariant solar constant -->
       <fixed_total_solar_irradiance>-9999.0</fixed_total_solar_irradiance>
-      <fixed_total_solar_irradiance COMPSET=".*SCREAM%RCE.*">551.58</fixed_total_solar_irradiance>
+      <fixed_total_solar_irradiance COMPSET=".*EAMXX%RCE.*">551.58</fixed_total_solar_irradiance>
 
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
@@ -656,7 +656,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <mac_aero_mic inherit="atm_proc_group">
       <atm_procs_list>shoc,cld_fraction,spa,p3</atm_procs_list>
       <atm_procs_list hgrid=".*pg2">tms,shoc,cld_fraction,spa,p3</atm_procs_list> <!-- TMS only available for PG2 -->
-      <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*EAMXX%MAM4xx.*" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*EAMXX%BETA.*">shoc,cld_fraction,spa,p3</atm_procs_list>
@@ -690,8 +690,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*EAMXX%BETA.*">zm,mac_aero_mic,spc,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
+      <atm_procs_list COMPSET=".*EAMXX%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*EAMXX%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
@@ -712,23 +712,23 @@ be lost if SCREAM_HACK_XML is not enabled.
   <initial_conditions>
     <filename type="file">UNSET</filename>
     <filename hgrid="ne4np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</filename>
-    <filename hgrid="ne4np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
+    <filename hgrid="ne4np4" nlev="72" COMPSET=".*EAMXX%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20240208.nc</filename>
     <filename hgrid="ne4np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20241022.nc</filename>
     <filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</filename>
     <filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</filename>
-    <filename hgrid="ne30np4" nlev="72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
+    <filename hgrid="ne30np4" nlev="72" COMPSET=".*EAMXX%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20240623.nc</filename>
     <filename hgrid="ne32np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
     <filename hgrid="ne64np4"  nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
     <filename hgrid="ne128np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20251001.nc</filename>
     <filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</filename>
     <filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</filename>
     <filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</filename>
-    <filename hgrid="ne256np4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
+    <filename hgrid="ne256np4" COMPSET=".*EAMXX%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20240929.nc</filename>
     <filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</filename>
     <filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</filename>
-    <filename hgrid="ne1024np4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
-    <filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</filename>
-    <filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
+    <filename hgrid="ne1024np4" COMPSET=".*EAMXX%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20240513.nc</filename>
+    <filename hgrid="ne1024np4" COMPSET=".*EAMXX%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</filename>
+    <filename hgrid="ne4np4" COMPSET=".*EAMXX%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</filename>
     <filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</filename>
     <filename hgrid="ne0np4_CAx32v1" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_041823.ncpdq.nc</filename>
 
@@ -748,8 +748,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
-    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
-    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
+    <topography_filename COMPSET=".*EAMXX%AQUA.*">UNSET</topography_filename>
+    <phis COMPSET=".*EAMXX%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
