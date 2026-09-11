@@ -793,7 +793,6 @@ void MAMWetscav::run_impl(const double dt) {
         auto aerdepwetis_icol = ekat::subview(aerdepwetis, icol);
         auto aerdepwetcw_icol = ekat::subview(aerdepwetcw, icol);
         auto work_icol        = ekat::subview(work, icol);
-        auto work_convproc_icol = ekat::subview(work_convproc, icol);
         auto wet_diameter_icol =
             ekat::subview(wet_geometric_mean_diameter_i, icol);
         auto dry_diameter_icol =
@@ -812,6 +811,7 @@ void MAMWetscav::run_impl(const double dt) {
         int kbot = 0;
         
         if(do_convproc) {
+          auto work_convproc_icol = ekat::subview(work_convproc, icol);
           // Initialize scratch arrays from work array for convective processing
           initialize_scratch1d_views(scratch1Dviews, work_convproc_icol.data(), nlev);
           
