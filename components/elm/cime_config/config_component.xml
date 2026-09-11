@@ -76,6 +76,7 @@
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
       <value compset="20TR.*_EAM%.*CMIP6_ELM">20thC_CMIP6_transient</value>
       <value compset="20TR.*CMIP7_EAM_ELM">20thC_CMIP7_transient</value>
+      <value compset="20TR1950.*CMIP7_EAM_ELM">1950-2023_CMIP7_transient</value>
       <value compset="20TR.*_EAM%.*CMIP6-GHG_ELM">20thC_CMIP6xLULC_transient</value>
       <value compset="20TR.*_EAM%.*CMIP6-AER_ELM">20thC_CMIP6xLULC_transient</value>
       <value compset="20TR.*_EAM%.*CMIP6-NAT_ELM">20thC_CMIP6xLULC_transient</value>
@@ -89,7 +90,7 @@
       <value compset="20TR(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR.*_ELM%[^_]*BGC">20thC_bgc_transient</value>
       <value compset="1950(?:SOI)?_EAM%CMIP6_ELM">1950_CMIP6_control</value>
-      <value compset="1950(?:SOI)?.*CMIP7_EAM_ELM">1950_CMIP7_control</value>
+      <value compset="^1950(?:SOI)?.*CMIP7_EAM_ELM">1950_CMIP7_control</value>
       <value compset="2010(?:SOI)?_EAM%CMIP6_ELM">2010_CMIP6_control</value>
       <value compset="2010(?:SOI)?.*CMIP7_EAM_ELM">2010_CMIP7_control</value>
       <value compset="2010_DATM.*_ELM"      >2010_CMIP6_control</value> 
