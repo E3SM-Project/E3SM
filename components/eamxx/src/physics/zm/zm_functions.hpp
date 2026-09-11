@@ -414,8 +414,8 @@ struct Functions {
     // variable counters for device-side only
     static constexpr int num_1d_intgr =  5; // number of 1D integer views
     static constexpr int num_1d_scalr =  6; // number of 1D scalar views
-    static constexpr int num_2d_midlv = 24; // number of 2D mid-point views
-    static constexpr int num_2d_intfc =  3; // number of 2D interface views
+    static constexpr int num_2d_midlv = 22; // number of 2D mid-point views
+    static constexpr int num_2d_intfc =  5; // number of 2D interface views
     static constexpr int num_3d_midlv =  1; // number of 3D mid-point views (ncol,nwind,nlev)
     static constexpr int num_f_midlv  = 13; // number of fortran-bridge (LayoutLeft) 2D mid-point views
     static constexpr int num_f_intfc  =  3; // number of fortran-bridge (LayoutLeft) 2D interface views
