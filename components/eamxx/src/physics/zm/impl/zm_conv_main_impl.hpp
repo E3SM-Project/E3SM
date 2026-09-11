@@ -160,7 +160,7 @@ void Functions<S,D>::zm_conv_main(
       dsubcld(i)             = 0;
       jctop(i)               = pver - 1;
       jcbot(i)               = 0;
-      jt(i)                  = pver - 1;  // Initialize for inactive columns
+      jt(i)                  = 0;  // Initialize for inactive columns (no convection)
       cape(i)                = 0;
       dcape(i)               = 0;
       msemax_klev(i)         = 0;
