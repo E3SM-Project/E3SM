@@ -736,14 +736,15 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
   zm_opts_init();
 
   // create device views and copy
-  std::vector<view1dr_d> vec1dr_in(1);
-  ekat::host_to_device({d.mcsp_shear}, d.pcols, vec1dr_in);
+  std::vector<view1dr_d> vec1dr_in(2);
+  ekat::host_to_device({d.shear_u, d.shear_v}, d.pcols, vec1dr_in);
 
   std::vector<view2dr_d> vec2dr_in(3);
   ekat::host_to_device({d.state_pmid, d.state_u, d.state_v}, d.pcols, d.pver, vec2dr_in);
 
   view1dr_d
-    mcsp_shear_d(vec1dr_in[0]);
+    shear_u_d(vec1dr_in[0]),
+    shear_v_d(vec1dr_in[1]);
 
   view2dr_d
     state_pmid_d(vec2dr_in[0]),
@@ -762,18 +763,21 @@ void zm_conv_mcsp_calculate_shear(ZmConvMcspCalculateShearData& d)
     // after this.
     const auto state_pmid_c = ekat::subview(state_pmid_d, i);
     const auto state_u_c = ekat::subview(state_u_d, i);
+    const auto state_v_c = ekat::subview(state_v_d, i);
 
     ZMF::zm_conv_mcsp_calculate_shear(
       team,
       pver,
       state_pmid_c,
       state_u_c,
-      mcsp_shear_d(i));
+      state_v_c,
+      shear_u_d(i),
+      shear_v_d(i));
   });
 
   // Now get arrays
-  std::vector<view1dr_d> vec1dr_out = {mcsp_shear_d};
-  ekat::device_to_host({d.mcsp_shear}, d.pcols, vec1dr_out);
+  std::vector<view1dr_d> vec1dr_out = {shear_u_d, shear_v_d};
+  ekat::device_to_host({d.shear_u, d.shear_v}, d.pcols, vec1dr_out);
 
   zm_finalize_cxx();
 }

@@ -3075,15 +3075,17 @@ Multiscale Coherent System Parameterization (MCSP), moisture coefficient
 Default: set by build-namelist
 </entry>
 
-<entry id="zmconv_MCSP_uwind_coeff" type="real" category="conv"
+<entry id="zmconv_MCSP_mom_coeff" type="real" category="conv"
        group="zmconv_nl" valid_values="" >
-Multiscale Coherent System Parameterization (MCSP), zonal wind coefficient
+Multiscale Coherent System Parameterization (MCSP), momentum coefficient
+(dimensionless fraction of the storm-relative shear)
 Default: set by build-namelist
 </entry>
 
-<entry id="zmconv_MCSP_vwind_coeff" type="real" category="conv"
+<entry id="zmconv_MCSP_use_full_shear" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
-Multiscale Coherent System Parameterization (MCSP), meridional wind coefficient
+Multiscale Coherent System Parameterization (MCSP), use the full (u,v) shear
+vector instead of zonal-only shear. Default (.false.) preserves E3SMv3 behavior.
 Default: set by build-namelist
 </entry>
 
