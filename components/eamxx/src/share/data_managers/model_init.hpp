@@ -72,12 +72,17 @@ protected:
                                const util::TimeStamp& t0);
 
   // Leaf fields (still needing initialization) of group_name on grid_name.
-  // IC files only store leaf fields, so a field that is the parent of
-  // others (e.g., a group's monolithic field, or a field with convenience
-  // component subfields, like U/V for horiz_winds) is expanded into its
-  // (not yet inited) children, recursively. Used for the STARTUP group.
-  // Virtual, since a derived class may need to change which fields are
-  // considered leaves (e.g., to exclude fields owned by dynamics).
+  // IC files only store leaf fields, so a composite field is expanded into
+  // its (not yet inited) leaves, recursively. A field is a composite either
+  // because it is itself a registered FieldManager group (e.g., a group's
+  // own monolithic field, expanded into that group's declared members --
+  // which may not be its header children, if the group is an overlapping
+  // subset of a bigger one, like SHOC's "turbulence_advected_tracers" is of
+  // "tracers"), or because it has header children of its own without being
+  // a group (e.g., "horiz_winds", whose U/V component subfields are its
+  // header children). Used for the STARTUP group. Virtual, since a derived
+  // class may need to change which fields are considered leaves (e.g., to
+  // exclude fields owned by dynamics).
   virtual std::vector<Field>
   get_leaf_fields (const std::shared_ptr<FieldManager>& fm,
                    const std::string& group_name,

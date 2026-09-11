@@ -10,6 +10,7 @@
 #include <ctime>
 #include <functional>
 #include <ranges>
+#include <set>
 
 namespace scream
 {
@@ -271,9 +272,34 @@ get_leaf_fields (const std::shared_ptr<FieldManager>& fm,
 {
   auto group = fm->get_field_group(group_name,grid_name);
   std::vector<Field> fields;
+  std::set<std::string> seen;
 
+  // A field may be a composite in two different ways:
+  //  - it may itself be the name of a registered FieldManager group (e.g., a
+  //    group's own monolithic field, like "tracers"; or an overlapping
+  //    subset group, like SHOC's "turbulence_advected_tracers", whose
+  //    members are a subset of "tracers"'s, and hence are NOT its own
+  //    header children, but "tracers"'s). In that case, recurse into the
+  //    group's own declared members.
+  //  - it may have header children of its own (e.g., "horiz_winds", whose
+  //    U/V component subfields are its header children, without either
+  //    being a registered group).
+  // Either way, the composite field itself is never a leaf, and is never
+  // read from file directly.
   std::function<void(const Field&)> collect_leaves = [&] (const Field& f) {
     if (f.get_header().get_tracking().get_time_stamp().is_valid()) {
+      return;
+    }
+    if (not seen.insert(f.name()).second) {
+      // Already visited (e.g., reached via two different overlapping
+      // groups): avoid duplicate entries.
+      return;
+    }
+    if (fm->has_group(f.name(),grid_name)) {
+      auto member_group = fm->get_field_group(f.name(),grid_name);
+      for (const auto& m : std::views::values(member_group.individual_fields())) {
+        collect_leaves(m);
+      }
       return;
     }
     const auto& children = f.get_header().get_children();
