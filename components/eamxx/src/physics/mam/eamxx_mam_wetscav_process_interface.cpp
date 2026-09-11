@@ -14,6 +14,211 @@ namespace scream
 {
 
 // =========================================================================================
+// Helper function to initialize scratch arrays for convection processing
+// =========================================================================================
+namespace {
+
+// Calculate the total work length needed for scratch1Dviews arrays
+// This function computes the memory requirement for all scratch arrays used in convection processing
+KOKKOS_INLINE_FUNCTION
+int get_convproc_scratch1d_work_len(const int nlev) {
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  constexpr int pcnst_extd = mam4::ConvProc::pcnst_extd;
+  
+  int work_len = 0;
+  
+  // Index 0: q - tracer mixing ratios
+  work_len += nlev * pcnst;
+  
+  // Indices 1-2: mu, md - updraft/downdraft mass fluxes
+  work_len += 2 * (nlev + 1);
+  
+  // Indices 3-6: eudp, dudp, eddp, dddp - entrainment/detrainment × dp
+  work_len += 4 * nlev;
+  
+  // Index 7: rhoair - air density
+  work_len += nlev;
+  
+  // Index 8: zmagl - height above ground level
+  work_len += nlev;
+  
+  // Indices 9-12: gath, chat, conu, cond - gathered tracers and concentrations
+  work_len += 4 * (nlev + 1) * pcnst_extd;
+  
+  // Indices 13-14: dconudt_wetdep, dconudt_activa - updraft tendencies
+  work_len += 2 * (nlev + 1) * pcnst_extd;
+  
+  // Index 15: fa_u - updraft fractional area
+  work_len += nlev;
+  
+  // Indices 16-20: dcondt arrays - downdraft tendencies
+  work_len += 5 * nlev * pcnst_extd;
+  
+  // Indices 21-27: wd_flux and sum arrays
+  work_len += 7 * pcnst_extd;
+  
+  // Indices 28-29: dqdt, qnew - tracer tendency and updated values
+  work_len += 2 * nlev * pcnst;
+  
+  // Index 30: dlfdp - detrainment × dp
+  work_len += nlev;
+  
+  return work_len;
+}
+
+// Initialize scratch1Dviews array from work array for convective processing
+// This must be called for each column to set up per-column scratch workspace
+KOKKOS_INLINE_FUNCTION
+void initialize_scratch1d_views(
+    Kokkos::View<Real*> scratch1Dviews[mam4::ConvProc::Col1DViewInd::NumScratch],
+    Real* work_ptr,
+    const int nlev)
+{
+  constexpr int pcnst = mam4::aero_model::pcnst;
+  constexpr int pcnst_extd = mam4::ConvProc::pcnst_extd;
+  using ConvProc = mam4::ConvProc;
+  
+  // Allocate each scratch array from the work array
+  // Index 0: q - tracer mixing ratios
+  scratch1Dviews[ConvProc::Col1DViewInd::q] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst);
+  work_ptr += nlev * pcnst;
+  
+  // Indices 1-2: mu, md - updraft/downdraft mass fluxes
+  scratch1Dviews[ConvProc::Col1DViewInd::mu] = 
+      Kokkos::View<Real*>(work_ptr, nlev + 1);
+  work_ptr += nlev + 1;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::md] = 
+      Kokkos::View<Real*>(work_ptr, nlev + 1);
+  work_ptr += nlev + 1;
+  
+  // Indices 3-6: eudp, dudp, eddp, dddp - entrainment/detrainment × dp
+  scratch1Dviews[ConvProc::Col1DViewInd::eudp] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dudp] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::eddp] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dddp] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  // Index 7: rhoair - air density
+  scratch1Dviews[ConvProc::Col1DViewInd::rhoair] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  // Index 8: zmagl - height above ground level
+  scratch1Dviews[ConvProc::Col1DViewInd::zmagl] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  // Indices 9-12: gath, chat, conu, cond - gathered tracers and concentrations
+  scratch1Dviews[ConvProc::Col1DViewInd::gath] = 
+      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
+  work_ptr += (nlev + 1) * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::chat] = 
+      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
+  work_ptr += (nlev + 1) * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::conu] = 
+      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
+  work_ptr += (nlev + 1) * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::cond] = 
+      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
+  work_ptr += (nlev + 1) * pcnst_extd;
+  
+  // Indices 13-14: dconudt_wetdep, dconudt_activa - updraft tendencies
+  scratch1Dviews[ConvProc::Col1DViewInd::dconudt_wetdep] = 
+      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
+  work_ptr += (nlev + 1) * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dconudt_activa] = 
+      Kokkos::View<Real*>(work_ptr, (nlev + 1) * pcnst_extd);
+  work_ptr += (nlev + 1) * pcnst_extd;
+  
+  // Index 15: fa_u - updraft fractional area
+  scratch1Dviews[ConvProc::Col1DViewInd::fa_u] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+  
+  // Indices 16-20: dcondt arrays - downdraft tendencies
+  scratch1Dviews[ConvProc::Col1DViewInd::dcondt] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
+  work_ptr += nlev * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_wetdep] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
+  work_ptr += nlev * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_prevap] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
+  work_ptr += nlev * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_prevap_hist] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
+  work_ptr += nlev * pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::dcondt_resusp] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst_extd);
+  work_ptr += nlev * pcnst_extd;
+  
+  // Indices 21-27: wd_flux and sum arrays
+  scratch1Dviews[ConvProc::Col1DViewInd::wd_flux] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::sumactiva] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::sumaqchem] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::sumprevap] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::sumprevap_hist] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::sumresusp] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::sumwetdep] = 
+      Kokkos::View<Real*>(work_ptr, pcnst_extd);
+  work_ptr += pcnst_extd;
+  
+  // Indices 28-29: dqdt, qnew - tracer tendency and updated values
+  scratch1Dviews[ConvProc::Col1DViewInd::dqdt] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst);
+  work_ptr += nlev * pcnst;
+  
+  scratch1Dviews[ConvProc::Col1DViewInd::qnew] = 
+      Kokkos::View<Real*>(work_ptr, nlev * pcnst);
+  work_ptr += nlev * pcnst;
+  
+  // Index 30: dlfdp - detrainment × dp
+  scratch1Dviews[ConvProc::Col1DViewInd::dlfdp] = 
+      Kokkos::View<Real*>(work_ptr, nlev);
+  work_ptr += nlev;
+}
+
+} // anonymous namespace
+
+// =========================================================================================
 MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params)
  : MAMGenericInterface(comm, params)
 {
@@ -26,6 +231,9 @@ MAMWetscav::MAMWetscav(const ekat::Comm &comm, const ekat::ParameterList &params
   scav_fraction_below_cloud_strat_ = m_params.get<Real>("scav_fraction_below_cloud_strat", 0.03);
   activation_fraction_in_cloud_conv_ =
       m_params.get<Real>("activation_fraction_in_cloud_conv", 0.40);
+  convproc_do_aer_ = m_params.get<bool>("convproc_do_aer", false);
+  convproc_do_gas_ = m_params.get<bool>("convproc_do_gas", false);
+  do_convproc_ = convproc_do_aer_ || convproc_do_gas_;
 }
 
 // ================================================================
@@ -82,6 +290,8 @@ MAMWetscav::create_requests()
 
   // Surface geopotential [m2/s2]
   add_field<Required>("phis", scalar2d, m2 / s2, grid_name);
+  add_field<Required>("pseudo_density_dry", scalar3d_mid, Pa, grid_name);
+
 
   //----------- Variables from microphysics scheme -------------
 
@@ -95,6 +305,26 @@ MAMWetscav::create_requests()
 
   // Total cloud fraction [fraction]
   add_field<Required>("cldfrac_liq", scalar3d_mid, none, grid_name);
+
+  // Convection processing fields - only add if enabled
+  if(do_convproc_) {
+    //----------- Variables from ZM deep convection scheme -------------
+    // Deep convection cloud water detrainment [kg/kg/s]
+    add_field<Required>("zm_detr_qc", scalar3d_mid, kg / kg / s, grid_name);
+    add_field<Required>("zm_detr_qi", scalar3d_mid, kg / kg / s, grid_name);
+
+    // Cloud top and base indices from ZM deep convection
+    add_field<Required>("zm_jt", scalar2d, none, grid_name);      // Cloud top level index
+    add_field<Required>("zm_jcbot", scalar2d, none, grid_name);   // Cloud base level index
+
+    //----------- Variables from ZM convection scheme -------------
+    // Convective mass fluxes and entrainment/detrainment rates
+    add_field<Required>("zm_mflx_up", scalar3d_mid, kg / m2 / s, grid_name);  // Updraft mass flux
+    add_field<Required>("zm_mflx_dn", scalar3d_mid, kg / m2 / s, grid_name);  // Downdraft mass flux
+    add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft entrainment rate
+    add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft detrainment rate
+    add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);         // Downdraft entrainment rate
+  }
 
   // ---------------------------------------------------------------------
   // These variables are "updated" or inputs/outputs for the process
@@ -188,7 +418,10 @@ MAMWetscav::init_buffers(const ATMBufferManager &buffer_manager)
 
 int MAMWetscav::get_len_temporary_views() {
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len() * ncol_;
-  return work_len;
+  // Calculate work length for convection processing scratch arrays
+  // Only allocate if convection processing is enabled
+  const int work_convproc_len = do_convproc_ ? get_convproc_scratch1d_work_len(nlev_) * ncol_ : 0;
+  return work_len + work_convproc_len;
 }
 
 void MAMWetscav::init_temporary_views() {
@@ -197,6 +430,14 @@ void MAMWetscav::init_temporary_views() {
   const int work_len = mam4::wetdep::get_aero_model_wetdep_work_len();
   work_              = view_2d(work_ptr, ncol_, work_len);
   work_ptr += ncol_ * work_len;
+
+  // Allocate separate work array for convection processing scratch1Dviews
+  // Only allocate if convection processing is enabled
+  if(do_convproc_) {
+    const int work_convproc_len = get_convproc_scratch1d_work_len(nlev_);
+    work_convproc_ = view_2d(work_ptr, ncol_, work_convproc_len);
+    work_ptr += ncol_ * work_convproc_len;
+  }
 
   /// error check
   // NOTE: workspace_provided can be larger than workspace_used, but let's try
@@ -309,9 +550,24 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
 
   // In cloud water mixing ratio, shallow convection
   icwmrsh_ = view_2d("icwmrsh_", ncol_, nlev_);
-  // Detraining cld H20 from deep convection [kg/kg/s]
+  
+  // Detraining cloud water from deep convection [kg/kg/s]
+  // This will be computed from ZM scheme outputs: dlf = zm_detr_qc + zm_detr_qi
   dlf_ = view_2d("dlf_", ncol_, nlev_);
 
+  // Shallow convection detrainment [kg/kg/s]
+  // NOTE: EAMxx does not yet have a shallow convection scheme implemented.
+  // This is initialized to zero and will be updated when shallow convection is added.
+  dlfsh_ = view_2d("dlfsh_", ncol_, nlev_);
+  
+  // Shallow convection entrainment/(entrainment+detrainment) ratio
+  // NOTE: Also not available without a shallow convection scheme.
+  // Initialized to zero for now.
+  sh_e_ed_ratio_ = view_2d("sh_e_ed_ratio_", ncol_, nlev_);
+
+  // Temporary view for pressure thickness in mb (converted from Pa)
+  dp_tmp_ = view_2d("dp_tmp", ncol_, nlev_);
+  
   calcsize_data_.initialize();
   // wetscav uses update_mmr=true;
   calcsize_data_.set_update_mmr(true);
@@ -331,6 +587,11 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
                            mam4::AeroConfig::num_modes());
   Kokkos::deep_copy(scavimptblnum_, scavimptblnum_host);
   Kokkos::deep_copy(scavimptblvol_, scavimptblvol_host);
+
+  // Initialize ConvProc configuration for species classification and resuspension mapping
+  // The default constructor initializes species_class and mmtoo_prevap_resusp arrays
+  // with reference values from mam4xx/convproc.hpp
+  convproc_config_ = mam4::ConvProc::Config();
 }
 
 // ================================================================
@@ -340,6 +601,11 @@ void MAMWetscav::run_impl(const double dt) {
   using TPF = ekat::TeamPolicyFactory<KT::ExeSpace>;
 
   const auto scan_policy = TPF::get_thread_range_parallel_scan_team_policy(ncol_, nlev_);
+  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
+
+  // Making a local copy of 'nlev_' because we cannot use a member of a class
+  // inside a parallel_for.
+  const int nlev = nlev_;
 
   // preprocess input -- needs a scan for the calculation of all variables
   // needed by this process or setting up MAM4xx classes and their objects
@@ -349,6 +615,7 @@ void MAMWetscav::run_impl(const double dt) {
   const mam_coupling::DryAtmosphere &dry_atm = dry_atm_;
   const auto &dry_aero                       = dry_aero_;
   const auto &work                           = work_;
+  const auto &work_convproc                  = work_convproc_;
   const auto &isprx                          = isprx_;
   const auto &dry_aero_tends                 = dry_aero_tends_;
 
@@ -384,8 +651,34 @@ void MAMWetscav::run_impl(const double dt) {
   // In cloud water mixing ratio, shallow convection
   auto icwmrsh = icwmrsh_;
 
+  // Shallow convection detrainment (initialized to zero in initialize_impl)
+  auto dlfsh = dlfsh_;
+
+  // Shallow convection entrainment/(entrainment+detrainment) ratio (initialized to zero)
+  auto sh_e_ed_ratio = sh_e_ed_ratio_;
+
   // Detraining cld H20 from deep convection [kg/kg/s]
   auto dlf = dlf_;
+  
+  // Only compute dlf if convection processing is enabled
+  if(do_convproc_) {
+    //----------- Variables from ZM deep convection scheme -------------
+    // Deep convection cloud water detrainment [kg/kg/s]
+    // zm_detr_qc and zm_detr_qi are the liquid and ice detrainment tendencies from ZM
+    // dlf = total cloud water detrainment (liquid + ice)
+    auto zm_detr_qc_in = get_field_in("zm_detr_qc").get_view<const Real **>();
+    auto zm_detr_qi_in = get_field_in("zm_detr_qi").get_view<const Real **>();
+
+    // Compute total detrainment (dlf = zm_detr_qc + zm_detr_qi)
+    Kokkos::parallel_for("compute_dlf", 
+      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+          dlf(icol, kk) = zm_detr_qc_in(icol, kk) + zm_detr_qi_in(icol, kk);
+        });
+      });
+    Kokkos::fence();
+  }
 
   //----------- Variables from macrophysics scheme -------------
   // Total cloud fraction
@@ -398,6 +691,9 @@ void MAMWetscav::run_impl(const double dt) {
 
   // Stratiform rain production rate [kg/kg/s]
   auto prain = get_field_in("precip_total_tend").get_view<const Real **>();
+  
+  auto pseudo_density_dry = get_field_in("pseudo_density_dry").get_view<const Real **>();
+  
   // ------------------------------------------------------------------
   // These variables are "Computed" or pure outputs for the process
   // ------------------------------------------------------------------
@@ -411,12 +707,6 @@ void MAMWetscav::run_impl(const double dt) {
       get_field_out("dgnum").get_view<Real ***>();
   const auto qaerwat = get_field_out("qaerwat").get_view<Real ***>();
   const auto wetdens = get_field_out("wetdens").get_view<Real ***>();
-
-  const auto policy = TPF::get_default_team_policy(ncol_, nlev_);
-
-  // Making a local copy of 'nlev_' because we cannot use a member of a class
-  // inside a parallel_for.
-  const int nlev = nlev_;
 
   // Zero out tendencies otherwise, they are initialized to junk values
   for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
@@ -433,6 +723,39 @@ void MAMWetscav::run_impl(const double dt) {
   const Real scav_fraction_in_cloud_conv = scav_fraction_in_cloud_conv_;
   const Real scav_fraction_below_cloud_strat  = scav_fraction_below_cloud_strat_;
   const Real activation_fraction_in_cloud_conv = activation_fraction_in_cloud_conv_;
+  const auto &aero_config = aero_config_;
+  const auto &dp_tmp = dp_tmp_;
+ 
+  // Check if convection processing is enabled
+  const bool convproc_do_aer = convproc_do_aer_;
+  const bool convproc_do_gas = convproc_do_gas_;
+  const bool do_convproc = do_convproc_;
+  
+  // Convection processing variables - only retrieve if enabled
+  // These are passed to aero_model_wetdep but only used when do_convproc is true
+  const_view_1d zm_jt_in, zm_jcbot_in;
+  const_view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
+  const int* species_class = nullptr;
+  const int* mmtoo_prevap_resusp = nullptr;
+  
+  if(do_convproc) {
+    // Get cloud top and base indices from ZM convection scheme
+    zm_jt_in    = get_field_in("zm_jt").get_view<const Real *>();
+    zm_jcbot_in = get_field_in("zm_jcbot").get_view<const Real *>();
+    
+    // Convection mass fluxes and rates from ZM scheme
+    zm_mflx_up = get_field_in("zm_mflx_up").get_view<const Real **>();
+    zm_mflx_dn = get_field_in("zm_mflx_dn").get_view<const Real **>();
+    zm_entr_up = get_field_in("zm_entr_up").get_view<const Real **>();
+    zm_detr_up = get_field_in("zm_detr_up").get_view<const Real **>();
+    zm_entr_dn = get_field_in("zm_entr_dn").get_view<const Real **>();
+    
+    // Species classification and resuspension mapping arrays
+    // These were initialized in initialize_impl from mam4xx ConvProc defaults
+    species_class = convproc_config_.species_class;
+    mmtoo_prevap_resusp = convproc_config_.mmtoo_prevap_resusp;
+  }
+  
   // Loop over atmosphere columns
   Kokkos::parallel_for("MAMWetscav::run_impl::aero_model_wetdep",
       policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
@@ -479,6 +802,52 @@ void MAMWetscav::run_impl(const double dt) {
         const auto prain_icol = ekat::subview(prain, icol);
 
         auto isprx_icol = ekat::subview(isprx, icol);
+        
+        // Convection processing variables - only initialize if enabled
+        Kokkos::View<Real*> scratch1Dviews[mam4::ConvProc::Col1DViewInd::NumScratch];
+        const_view_1d mu_icol, md_icol, eu_icol, du_icol, ed_icol;
+        const_view_1d dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol;
+        int ktop = 0;
+        int kbot = 0;
+        
+        if(do_convproc) {
+          auto work_convproc_icol = ekat::subview(work_convproc, icol);
+          // Initialize scratch arrays from work array for convective processing
+          initialize_scratch1d_views(scratch1Dviews, work_convproc_icol.data(), nlev);
+          
+          // Convection mass flux fields from ZM scheme
+          mu_icol = ekat::subview(zm_mflx_up, icol);
+          md_icol = ekat::subview(zm_mflx_dn, icol);
+          eu_icol = ekat::subview(zm_entr_up, icol);
+          du_icol = ekat::subview(zm_detr_up, icol);
+          ed_icol = ekat::subview(zm_entr_dn, icol);
+        }
+        
+        // Get pressure thickness and remaining convproc variables
+        // These are always needed, but some are only meaningful when do_convproc is true
+        constexpr Real pa_to_mb = 0.01;
+        const auto p_del_icol = ekat::subview(dry_atm.p_del, icol);
+        auto dp_tmp_icol = ekat::subview(dp_tmp, icol);
+        
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+          dp_tmp_icol(kk) = p_del_icol(kk) * pa_to_mb;
+        });
+        team.team_barrier();
+        
+        if(do_convproc) {
+          dp_icol = dp_tmp_icol;
+          p_del_dry_icol = ekat::subview(pseudo_density_dry, icol);
+          dlfsh_icol = ekat::subview(dlfsh, icol);
+          sh_e_ed_ratio_icol = ekat::subview(sh_e_ed_ratio, icol);
+          ktop = static_cast<int>(zm_jt_in(icol));
+          kbot = static_cast<int>(zm_jcbot_in(icol));
+        } else {
+          // When convproc is disabled, provide fallback values
+          dp_icol = dp_tmp_icol;
+          p_del_dry_icol = ekat::subview(pseudo_density_dry, icol);
+          dlfsh_icol = ekat::subview(dlfsh, icol);
+          sh_e_ed_ratio_icol = ekat::subview(sh_e_ed_ratio, icol);
+        }
 
         mam4::wetdep::aero_model_wetdep(
             team, atm, progs, tends, dt,
@@ -490,9 +859,18 @@ void MAMWetscav::run_impl(const double dt) {
             cldt_icol, rprdsh_icol, rprddp_icol, evapcdp_icol, evapcsh_icol,
             dp_frac_icol, sh_frac_icol, icwmrdp_col, icwmrsh_icol, nevapr_icol,
             dlf_icol, prain_icol, scavimptblnum, scavimptblvol, calsize_data,
-            // outputs
+            // in/out calcsize and water_uptake
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
-            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol);
+            // output
+            aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol,
+           // Convection mass flux parameters
+           scratch1Dviews,
+           mu_icol, md_icol, du_icol, eu_icol, ed_icol,
+           dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol,
+           ktop, kbot,
+           convproc_do_aer, convproc_do_gas,
+           species_class, mmtoo_prevap_resusp,
+           aero_config);
         team.team_barrier();
         // update interstitial aerosol state
         Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
