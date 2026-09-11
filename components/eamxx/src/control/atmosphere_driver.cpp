@@ -931,8 +931,16 @@ initialize_fields ()
     TraceGasesWorkaround::singleton().run_type = m_run_type;
   }
 
+  // ModelInit does not (yet) support the PG2 physics grid, IOP-driven runs,
+  // or random IC perturbations: fall back to the legacy code path for those.
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
+  const bool use_model_init = not fvphyshack and not m_iop_data_manager and
+      ic_pl.get<strvec_t>("perturbed_fields",{}).size()==0;
+
   // Initialize fields
-  if (m_run_type==RunType::Restart) {
+  if (use_model_init) {
+    run_model_init ();
+  } else if (m_run_type==RunType::Restart) {
     restart_model ();
   } else {
     set_initial_conditions ();
@@ -948,6 +956,35 @@ initialize_fields ()
   stop_timer("EAMxx::init");
   m_ad_status |= s_fields_inited;
   m_atm_logger->info("[EAMxx] initialize_fields ... done!");
+}
+
+void AtmosphereDriver::
+run_model_init ()
+{
+  m_atm_logger->info("  [EAMxx] run_model_init ...");
+
+  auto params = m_atm_params.sublist("initial_conditions");
+
+  std::string filename;
+  if (m_run_type==RunType::Restart) {
+    // ModelInit itself cannot resolve the restart file name, since that
+    // requires the case's rpointer file (see eamxx_io_utils.hpp), which
+    // lives in a library that ModelInit's (lower layer) cannot depend on.
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
+    params.set<std::string>("filename",filename);
+  }
+
+  ModelInit model_init(params);
+  model_init.run(m_field_mgr,m_current_ts,m_run_type);
+
+  if (m_run_type==RunType::Restart) {
+    load_restart_extra_data(filename);
+  }
+
+  m_atm_logger->info("  [EAMxx] run_model_init ... done!");
 }
 
 void AtmosphereDriver::restart_model ()
