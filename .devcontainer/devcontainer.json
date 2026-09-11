@@ -1,0 +1,78 @@
+{
+  // Name of container
+  "name": "E3SM (gnu-cpu)",
+
+  // One tag, both arches: this resolves to the native image on Apple Silicon and x86_64.
+  // TODO: remove `-pr-48` once is merged
+  "image": "ghcr.io/e3sm-project/e3sm-ghci:gnu-cpu-env-dev-pr-48",
+
+  // The image's non-root user. On Linux the Dev Containers extension rewrites its uid/gid
+  // to match yours so bind-mounted files are not owned by the wrong user.
+  "remoteUser": "e3sm",
+  "updateRemoteUserUID": true,
+
+  // CRITICAL. The whole environment (lmod modules, SPACK_ARCH, the python venv) lives in
+  // /etc/profile.d, which only a LOGIN shell sources. This makes VS Code probe a login
+  // shell and hand that environment to terminals, tasks, and extensions. Without it,
+  // nothing finds a compiler.
+  "userEnvProbe": "loginInteractiveShell",
+
+  // Keep the checkout inside /projects/e3sm, next to the data mounts below.
+  "workspaceMount": "source=${localWorkspaceFolder},target=/projects/e3sm/work/E3SM,type=bind,consistency=cached",
+  "workspaceFolder": "/projects/e3sm/work/E3SM",
+
+  // Docker's bind mounts require the source to exist on the host; unlike `-v` it will not
+  // create it. initializeCommand runs on the HOST before the container is created.
+  // NOTE: "e3sm-data", not "e3sm" -- macOS filesystems are case-insensitive, so ~/e3sm
+  // and an ~/E3SM checkout are the SAME directory, and the data would land in your repo.
+  "initializeCommand": "mkdir -p ${localEnv:HOME}/e3sm-data/inputdata ${localEnv:HOME}/e3sm-data/baselines",
+
+  "mounts": [
+    // Input data and baselines. Adjust or drop the baselines line if you do not compare.
+    "source=${localEnv:HOME}/e3sm-data/inputdata,target=/projects/e3sm/data/inputdata,type=bind",
+    "source=${localEnv:HOME}/e3sm-data/baselines,target=/projects/e3sm/data/baselines,type=bind",
+
+    // Compiler cache, so a rebuild does not start cold.
+    "source=e3sm-ccache,target=/home/e3sm/.cache/ccache,type=volume",
+
+    // CREDENTIALS. Empty volumes: log into gh and the agents ONCE inside the container and
+    // it persists across rebuilds. Nothing from the host is exposed.
+    "source=e3sm-config,target=/home/e3sm/.config,type=volume",
+    "source=e3sm-claude,target=/home/e3sm/.claude,type=volume",
+    "source=e3sm-codex,target=/home/e3sm/.codex,type=volume",
+    "source=e3sm-copilot,target=/home/e3sm/.copilot,type=volume"
+  ],
+
+  "containerEnv": {
+    "CCACHE_DIR": "/home/e3sm/.cache/ccache",
+    "CCACHE_MAXSIZE": "20G"
+  },
+
+  // CIME identifies the machine by hostname against config_machines.xml. Naming the
+  // container after the machine entry these images are built for lets `create_newcase`
+  // find it without an explicit --machine.
+  "runArgs": ["--hostname=ghci-snl"],
+
+  // Lifecycle hooks run under `sh -c`, which is NOT a login shell, so wrap anything that
+  // needs the toolchain. `e3sm-env` in these images does exactly that.
+  "postCreateCommand": "e3sm-env git submodule update --init --recursive",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "fortran-lang.linter-gfortran",
+        "ms-python.python",
+        "twxs.cmake"
+      ],
+      "settings": {
+        // Same login-shell reason as userEnvProbe above.
+        "terminal.integrated.profiles.linux": {
+          "bash-login": { "path": "/bin/bash", "args": ["-l"] }
+        },
+        "terminal.integrated.defaultProfile.linux": "bash-login",
+        "C_Cpp.intelliSenseEngine": "default"
+      }
+    }
+  }
+}
