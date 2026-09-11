@@ -1331,6 +1331,7 @@ module mpas_timekeeping
       character(len=16) :: fmtString
       integer :: iwidth
       integer :: idecimals
+      logical :: dt_negative
 
 !      if (present(DD)) then
 !         days = DD
@@ -1396,7 +1397,7 @@ module mpas_timekeeping
 
 !      call ESMF_TimeIntervalSet(interval % ti, D=days, S=seconds, Sn=S_n, Sd=S_d, rc=ierr)
 
-
+      dt_negative = .false.
       if (present(timeString) .or. present(dt)) then
 
 
@@ -1416,13 +1417,13 @@ module mpas_timekeeping
                iwidth = idecimals + 2
             end if
 
-            ! Add an extra character for a minus sign if needed
+            ! Flag for negative values
             if (dt < 0.0_RKIND) then
-               iwidth = iwidth + 1
+               dt_negative = .true. 
             end if
 
             write(fmtString, '(a,i2.2,a,i2.2,a)') '(a,f', iwidth, '.', idecimals, ')'
-            write(timeString_,trim(fmtString)) '00:00:', dt
+            write(timeString_,trim(fmtString)) '00:00:', abs(dt)
          else
             timeString_ = timeString
          end if
@@ -1521,7 +1522,8 @@ module mpas_timekeeping
             return
          end if
 
-         if (sec < 0) then
+         if (dt_negative) then
+            sec = -sec
             numerator = -numerator
          end if
 
