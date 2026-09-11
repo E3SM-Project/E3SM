@@ -1,7 +1,7 @@
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
-set(SCC "nvcc")
+set(SCC "nvc")
 set(SCXX "nvc++")
 set(SFC "nvfortran")
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRNVIDIA")
