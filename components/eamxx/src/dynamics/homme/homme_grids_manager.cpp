@@ -2,6 +2,7 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/eamxx_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "dynamics/homme/model_init_pg2.hpp"
 
 #include "share/algorithm/eamxx_fv_phys_rrtmgp_active_gases_workaround.hpp"
 
@@ -87,6 +88,16 @@ HommeGridsManager::do_create_remapper(const grid_ptr_type from_grid,
     EKAT_ERROR_MSG("Error! P-D remapping only implemented for 'physics_gll' phys grid.\n");
   }
   return nullptr;
+}
+
+HommeGridsManager::model_init_ptr_type
+HommeGridsManager::do_create_model_init (const ekat::ParameterList& params) const
+{
+  if (fvphyshack) {
+    // The PG2 physics grid needs extra care: see model_init_pg2.hpp.
+    return std::make_shared<ModelInitPG2>(params);
+  }
+  return std::make_shared<ModelInit>(params);
 }
 
 void HommeGridsManager::

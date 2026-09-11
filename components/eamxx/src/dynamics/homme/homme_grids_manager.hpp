@@ -37,6 +37,9 @@ protected:
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
 
+  model_init_ptr_type
+  do_create_model_init (const ekat::ParameterList& params) const;
+
   void build_pg_codes ();
 
   // Read vertical coordinates and set them in hommexx's structures

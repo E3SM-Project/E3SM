@@ -183,6 +183,8 @@ protected:
   void create_logger ();
   void set_initial_conditions ();
   void restart_model ();
+  void run_model_init ();
+  void load_restart_extra_data (const std::string& filename);
 
   void register_groups ();
 

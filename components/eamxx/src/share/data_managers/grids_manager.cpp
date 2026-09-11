@@ -1,4 +1,5 @@
 #include "share/data_managers/grids_manager.hpp"
+#include "share/data_managers/model_init.hpp"
 
 namespace scream
 {
@@ -65,6 +66,20 @@ create_remapper (const grid_ptr_type& from_grid,
     "       Perhaps you forgot to add its creation to the implementation of the grids manager?\n");
 
   return remapper;
+}
+
+auto GridsManager::
+create_model_init (const ekat::ParameterList& params) const
+ -> GridsManager::model_init_ptr_type
+{
+  return do_create_model_init(params);
+}
+
+auto GridsManager::
+do_create_model_init (const ekat::ParameterList& params) const
+ -> GridsManager::model_init_ptr_type
+{
+  return std::make_shared<ModelInit>(params);
 }
 
 void GridsManager::

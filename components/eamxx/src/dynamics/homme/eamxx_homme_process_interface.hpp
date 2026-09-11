@@ -12,6 +12,44 @@
 
 namespace scream
 {
+
+// Populate Homme's dynamics-grid state (dyn_state) from IC data already
+// read into the physics_gll grid's fields (passed in individually, since
+// this may be called from an AtmosphereProcess, which has no direct
+// FieldManager access): PDR-remap the prognostic state across, compute the
+// EOS/hydrostatic-balance-derived quantities (pressure, geopotential) and
+// the tracer mass (Qdp), and copy the result to all of Homme's time
+// levels. This is exactly what Homme's own dynamical core needs as its t0
+// state, regardless of whether physics runs on the GLL grid, or (via a
+// further remap) the PG2 grid.
+//
+// pseudo_density_gll is used as scratch (its value on return is the
+// hydrostatic pseudo-density on the GLL grid, also used to derive
+// dp3d_dyn). dyn_state must contain (as full, multi-time-level fields, on
+// the "dynamics" grid, i.e. what HommeDynamics's create_helper_field
+// creates): "v_dyn", "vtheta_dp_dyn", "dp3d_dyn", "w_int_dyn",
+// "phi_int_dyn", "ps_dyn", "phis_dyn", "omega_dyn", "Q_dyn", "Qdp_dyn".
+// Their time stamp (and pseudo_density_gll's) is updated to t0 on return,
+// which (since these are the header parents of any single-time-level,
+// FieldManager-registered subfield of theirs, e.g. HommeDynamics's own
+// RESTART-tagged internal fields) auto-propagates to any such subfield too.
+void init_homme_dyn_state_from_gll_ic (
+    const std::shared_ptr<const GridsManager>& grids_manager,
+    const Field& horiz_winds_gll,
+    const Field& T_mid_gll,
+    const Field& ps_gll,
+    const Field& phis_gll,
+    const Field& tracers_gll,
+    Field& pseudo_density_gll,
+    std::map<std::string,Field>& dyn_state,
+    const util::TimeStamp& t0);
+
+// Copy dyn_state's n0 (current) time level to all of Homme's other time
+// levels (nm1/np1 for the prognostic states, np1_qdp for Qdp). Context-only,
+// no atm-proc dependency: dyn_state must contain the same full,
+// multi-time-level fields as init_homme_dyn_state_from_gll_ic above.
+void copy_dyn_states_to_all_timelevels (std::map<std::string,Field>& dyn_state);
+
 /*
  *  The class responsible to handle the atmosphere dynamics
  *
@@ -76,9 +114,6 @@ protected:
 
   // Updates p_mid
   void update_pressure (const std::shared_ptr<const AbstractGrid>& grid);
-
-  // Copy initial states from n0 timelevel to other timelevels
-  void copy_dyn_states_to_all_timelevels ();
 
   void initialize_impl (const RunType run_type);
 

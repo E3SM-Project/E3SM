@@ -6,6 +6,7 @@
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
+#include "share/data_managers/model_init.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -930,8 +931,16 @@ initialize_fields ()
     TraceGasesWorkaround::singleton().run_type = m_run_type;
   }
 
+  // ModelInit does not (yet) support IOP-driven runs: fall back to the
+  // legacy code path for those. The PG2 physics grid is now handled by
+  // ModelInitPG2 (see HommeGridsManager::do_create_model_init), so it no
+  // longer needs to be excluded here.
+  const bool use_model_init = not m_iop_data_manager;
+
   // Initialize fields
-  if (m_run_type==RunType::Restart) {
+  if (use_model_init) {
+    run_model_init ();
+  } else if (m_run_type==RunType::Restart) {
     restart_model ();
   } else {
     set_initial_conditions ();
@@ -947,6 +956,38 @@ initialize_fields ()
   stop_timer("EAMxx::init");
   m_ad_status |= s_fields_inited;
   m_atm_logger->info("[EAMxx] initialize_fields ... done!");
+}
+
+void AtmosphereDriver::
+run_model_init ()
+{
+  m_atm_logger->info("  [EAMxx] run_model_init ...");
+
+  auto params = m_atm_params.sublist("initial_conditions");
+
+  std::string filename;
+  if (m_run_type==RunType::Restart) {
+    // ModelInit itself cannot resolve the restart file name, since that
+    // requires the case's rpointer file (see eamxx_io_utils.hpp), which
+    // lives in a library that ModelInit's (lower layer) cannot depend on.
+    const auto& provenance = m_atm_params.sublist("provenance");
+    const auto& casename = provenance.get<std::string>("rest_caseid");
+    filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
+    params.set<std::string>("filename",filename);
+  }
+
+  // Let the grids manager decide which ModelInit to use (e.g., a subclass
+  // handling grid-specific initialization needs, like Homme's PG2 physics
+  // grid), so the driver stays agnostic of that choice.
+  auto model_init = m_grids_manager->create_model_init(params);
+  model_init->run(m_field_mgr,m_current_ts,m_run_type);
+
+  if (m_run_type==RunType::Restart) {
+    load_restart_extra_data(filename);
+  }
+
+  m_atm_logger->info("  [EAMxx] run_model_init ... done!");
 }
 
 void AtmosphereDriver::restart_model ()
@@ -985,6 +1026,14 @@ void AtmosphereDriver::restart_model ()
     }
   }
 
+  load_restart_extra_data(filename);
+
+  m_atm_logger->info("  [EAMxx] restart_model ... done!");
+}
+
+void AtmosphereDriver::
+load_restart_extra_data (const std::string& filename)
+{
   for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
           auto& any  = *it.second;
@@ -1006,8 +1055,6 @@ void AtmosphereDriver::restart_model ()
           " - extra data typeid: " + std::string(any.type().name()) + "\n");
     }
   }
-
-  m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
 
 void AtmosphereDriver::create_logger () {
