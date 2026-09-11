@@ -661,6 +661,38 @@ void AtmosphereDriver::create_fields()
         set_groups(it.second);
   }
 
+  // Now that the fields are created, add U/V subfields of horiz_winds,
+  // as well as U/V component of surf_mom_flux
+  auto add_component = [&](Field& f, int cmp, const std::string& sf_name) {
+    const auto& gn = f.get_header().get_identifier().get_grid_name();
+    if (m_field_mgr->has_field(sf_name,gn))
+      return;
+
+    auto sf = f.get_component(cmp).alias(sf_name);
+    m_field_mgr->add_field(sf);
+
+    // Set subfield as part of the proper groups
+    auto& f_track = f.get_header().get_tracking();
+    if (f_track.has_group("STARTUP"))
+      m_field_mgr->add_to_group(sf_name,gn,"STARTUP");
+    if (f_track.has_group("RESTART"))
+      m_field_mgr->add_to_group(sf_name,gn,"RESTART");
+  };
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    auto gn = grid->name();
+    if (m_field_mgr->has_field("horiz_winds", gn)) {
+      auto hw = m_field_mgr->get_field("horiz_winds", gn);
+      add_component(hw,0,"U");
+      add_component(hw,1,"V");
+    }
+    if (m_field_mgr->has_field("surf_mom_flux", gn)) {
+      auto smf = m_field_mgr->get_field("surf_mom_flux", gn);
+      add_component(smf,0,"surf_mom_flux_U");
+      add_component(smf,1,"surf_mom_flux_V");
+    }
+  }
+
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
   const int verb_lvl = driver_options_pl.get<int>("atmosphere_dag_verbosity_level",-1);
   if (verb_lvl>0) {
@@ -905,49 +937,6 @@ initialize_fields ()
     set_initial_conditions ();
   }
 
-  // Now that IC have been read, add U/V subfields of horiz_winds,
-  // as well as U/V component of surf_mom_flux
-  // NOTE: if you add them _before_ the IC read, set_initial_conditions
-  //       will skip horiz_winds, and only process U/V, which, being
-  //       missing in the IC file, would cause horiz_winds=0.
-  for (auto it : m_grids_manager->get_repo()) {
-    auto grid = it.second;
-    auto gn = grid->name();
-    auto fm = m_field_mgr;
-    if (fm->has_field("horiz_winds", gn)) {
-      using namespace ShortFieldTagsNames;
-      auto hw = fm->get_field("horiz_winds", gn);
-      const auto& fid = hw.get_header().get_identifier();
-      const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_component_idx();
-      const auto& units = fid.get_units();
-      auto U = hw.subfield("U",units,vec_dim,0);
-      auto V = hw.subfield("V",units,vec_dim,1);
-      if (not fm->has_field("U", gn)) {
-        fm->add_field(U);
-      }
-      if (not fm->has_field("V", gn)) {
-        fm->add_field(V);
-      }
-    }
-    if (fm->has_field("surf_mom_flux", gn)) {
-      using namespace ShortFieldTagsNames;
-      auto hw = fm->get_field("surf_mom_flux", gn);
-      const auto& fid = hw.get_header().get_identifier();
-      const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_component_idx();
-      const auto& units = fid.get_units();
-      auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
-      auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
-      if (not fm->has_field("surf_mom_flux_U", gn)) {
-        fm->add_field(surf_mom_flux_U);
-      }
-      if (not fm->has_field("surf_mom_flux_V", gn)) {
-        fm->add_field(surf_mom_flux_V);
-      }
-    }
-  }
-
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
@@ -1165,14 +1154,21 @@ void AtmosphereDriver::set_initial_conditions ()
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
       auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto c = f.get_header().get_children();
+      auto children = f.get_header().get_children();
 
       // If this field is the parent of other subfields, we only read from file the subfields.
-      if (c.size()==0) {
-        if (not ekat::contains(this_grid_ic_fnames,fname)) {
-          this_grid_ic_fnames.push_back(fname);
-          m_fields_inited[grid_name].push_back(fname);
+      auto add = [&](const std::string& n) {
+        if (not ekat::contains(this_grid_ic_fnames,n)) {
+          this_grid_ic_fnames.push_back(n);
+          m_fields_inited[grid_name].push_back(n);
         }
+      };
+      if (children.size()==0) {
+        add(fname);
+      } else {
+        for (auto child : children)
+          if (child.lock()->get_children().size()==0) // Skip children that themselves have children
+            add (child.lock()->get_identifier().name());
       }
     }
   };
@@ -1189,16 +1185,10 @@ void AtmosphereDriver::set_initial_conditions ()
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
-  // ...then the input groups
+  // ...then the input groups.
+  // NOTE: always process individual fields, NEVER the monolithic one (if present)
   m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.has_monolithic_field()) {
-      const auto& mf = g.monolithic_field();
-      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
-        process_ic_field(mf);
-      }
-    }
     for (auto it : g.individual_fields()) {
       const auto& f = it.second;
       const auto& fgroups = f.get_header().get_tracking().get_groups_names();
