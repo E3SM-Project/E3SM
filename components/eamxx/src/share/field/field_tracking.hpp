@@ -1,7 +1,6 @@
 #ifndef SCREAM_FIELD_TRACKING_HPP
 #define SCREAM_FIELD_TRACKING_HPP
 
-#include "share/field/field_group_info.hpp"
 #include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_family_tracking.hpp"
@@ -49,6 +48,7 @@ public:
 
   // Add group name to the list of groups we belong to
   void add_group (const std::string& group) { m_groups.insert(group); }
+  bool has_group (const std::string& group) const { return m_groups.count(group)>0; }
 
   // Set the time stamp for this field. This can only be called once, due to TimeStamp implementation.
   // NOTE: if the field has 'children' (see FamilyTracking), their ts will be updated too.

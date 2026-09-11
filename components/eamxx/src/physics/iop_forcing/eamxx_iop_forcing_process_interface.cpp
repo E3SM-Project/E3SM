@@ -61,18 +61,18 @@ IOPForcing::create_requests()
 void IOPForcing::
 set_computed_group_impl (const FieldGroup& group)
 {
-  EKAT_REQUIRE_MSG(group.m_info->size() >= 1,
+  EKAT_REQUIRE_MSG(group.size() >= 1,
                    "Error! IOPForcing requires at least qv as tracer input.\n");
 
-  const auto& name = group.m_info->m_group_name;
+  const auto& name = group.name();
 
   EKAT_REQUIRE_MSG(name=="tracers",
     "Error! IOPForcing was not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
+  EKAT_REQUIRE_MSG(group.has_monolithic_field(),
       "Error! IOPForcing expects a monolithic allocation for tracers.\n");
 
-  m_num_tracers = group.m_info->size();
+  m_num_tracers = group.size();
 }
 // =========================================================================================
 size_t IOPForcing::requested_buffer_size_in_bytes() const
@@ -278,7 +278,7 @@ void IOPForcing::run_impl (const double dt)
   const auto horiz_winds = get_field_out("horiz_winds").get_view<Pack***>();
   const auto T_mid = get_field_out("T_mid").get_view<Pack**>();
   const auto qv = get_field_out("qv").get_view<Pack**>();
-  const auto Q = get_group_out("tracers").m_monolithic_field->get_view<Pack***>();
+  const auto Q = get_group_out("tracers").monolithic_field().get_view<Pack***>();
 
   // Load data from IOP files, if necessary
   // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?

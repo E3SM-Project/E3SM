@@ -20,7 +20,7 @@ public:
 
   virtual ~LibraryGridsManager () = default;
 
-  std::string name () const { return "Library grids_manager"; }
+  std::string name () const override { return "Library grids_manager"; }
 
   void build_grids () override {}
 
@@ -35,7 +35,7 @@ public:
 protected:
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
-                      const grid_ptr_type to_grid) const
+                      const grid_ptr_type to_grid) const override
   {
     EKAT_ERROR_MSG (
         "Error! LibraryGridsManager is not capable of creating remappers.\n"
