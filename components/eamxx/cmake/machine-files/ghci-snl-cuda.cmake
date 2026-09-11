@@ -11,11 +11,13 @@ set(LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/lib64/liblapack.so" CACHE STRING "Path to 
 # Set SCREAM_MACHINE
 set(SCREAM_MACHINE ghci-snl-cuda CACHE STRING "")
 
+# Set the path to BLAS/LAPACK libraries
+set(BLAS_LIBRARIES "$ENV{BLAS_ROOT}/lib64/libblas.so" CACHE STRING "Path to BLAS library" FORCE)
+set(LAPACK_LIBRARIES "$ENV{BLAS_ROOT}/lib64/liblapack.so" CACHE STRING "Path to LAPACK library" FORCE)
+
 # Enable CUDA in kokkos
 set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
 include (${EKAT_MACH_FILES_PATH}/kokkos/cuda.cmake)
-
-set(EKAT_MPI_NP_FLAG "-n" CACHE STRING "The mpirun flag for designating the total number of ranks")
 
 # TODO: rebuild cuda image with cuda-aware MPI, so we can set this to ON
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" OFF)
