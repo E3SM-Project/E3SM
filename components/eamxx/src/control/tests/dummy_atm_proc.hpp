@@ -91,8 +91,8 @@ public:
       });
     } else if (m_name=="Group to Group") {
       const auto& g = get_group_out("The Group");
-      const auto view_B = g.m_individual_fields.at("B")->get_view<Real**>();
-      const auto view_C = g.m_individual_fields.at("C")->get_view<Real**>();
+      const auto view_B = g.individual_fields().at("B").get_view<Real**>();
+      const auto view_C = g.individual_fields().at("C").get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
         const int icol = idx / nlevs;
@@ -103,8 +103,8 @@ public:
       });
     } else {
       const auto& g = get_group_in("The Group");
-      const auto view_B = g.m_individual_fields.at("B")->get_view<const Real**>();
-      const auto view_C = g.m_individual_fields.at("C")->get_view<const Real**>();
+      const auto view_B = g.individual_fields().at("B").get_view<const Real**>();
+      const auto view_C = g.individual_fields().at("C").get_view<const Real**>();
       const auto view_A = get_field_out("A").get_view<Real**>();
 
       Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {

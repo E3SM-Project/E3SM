@@ -136,8 +136,6 @@ private:
 
   TimeInfo m_time_info;
 
-  Real m_dynamics_dx_size;
-
   std::map<std::string,grid_ptr> m_io_grids;
 
   std::map<std::string, Field> m_iop_fields;
