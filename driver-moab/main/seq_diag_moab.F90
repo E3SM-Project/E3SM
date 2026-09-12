@@ -1234,14 +1234,14 @@ contains
 
   subroutine seq_diag_glc_moab( glc, infodata)
 
+    use seq_comm_mct, only : mbgxid
+
     type(component_type)    , intent(in) :: glc    ! component type for instance1
     type(seq_infodata_type) , intent(in) :: infodata
 
     !EOP
 
     !----- local -----
-    !TODO  change this to seq_comm_mct when GLC is ported
-    integer(in)             :: mbgxid
     integer(in)              :: n,ic,nf,ip    ! generic index
     integer(in)              :: lSize         ! size of mesh
     real(r8)                 :: ca_g          ! area of a grid cell

@@ -156,6 +156,7 @@ module cime_comp_mod
   use seq_diag_moab, only : seq_diag_zero_moab, seq_diag_lnd_moab
   use seq_diag_moab, only : seq_diag_rof_moab , seq_diag_ocn_moab, seq_diag_atm_moab
   use seq_diag_moab, only : seq_diag_ice_moab , seq_diag_accum_moab, seq_diag_print_moab
+  use seq_diag_moab, only : seq_diag_glc_moab
   use seq_diagBGC_moab, only : seq_diagBGC_zero_moab, seq_diagBGC_lnd_moab
   use seq_diagBGC_moab, only : seq_diagBGC_rof_moab  , seq_diagBGC_ocn_moab, seq_diagBGC_atm_moab
   use seq_diagBGC_moab, only : seq_diagBGC_ice_moab  , seq_diagBGC_accum_moab
@@ -1500,7 +1501,9 @@ contains
   subroutine cime_init()
     use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields, seq_flds_l2x_fields, &
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
+    use seq_flds_mod , only : seq_flds_g2x_fluxes, seq_flds_g2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
+    use seq_comm_mct , only :  mbglid, mbgxid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
 
     integer :: nfields, numpts
@@ -2144,7 +2147,7 @@ contains
        ! MOABTODO:  l2r intx, a2r intx
        call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
-       call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
+       call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glctf, ocn_c2_glcshelf)
 
        call prep_wav_init(infodata, atm_c2_wav, ocn_c2_wav, ice_c2_wav)
 
@@ -2253,9 +2256,8 @@ contains
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor_moab(ice, areafact_samegrid, mpsiid, mbixid, seq_flds_i2x_fluxes, seq_flds_i2x_fields)
 
-    ! MOAB TODO: convert these to moab
     call mpi_barrier(mpicom_GLOID,ierr)
-    !if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
+    if (glc_present) call component_init_areacor_moab(glc, areafact_samegrid, mbglid, mbgxid, seq_flds_g2x_fluxes, seq_flds_g2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     !if (wav_present) call component_init_areacor(wav, areafact_samegrid, seq_flds_w2x_fluxes)
@@ -3310,8 +3312,12 @@ contains
        !----------------------------------------------------------
        !| GLC SETUP-SEND
        !----------------------------------------------------------
-       if (glc_present .and. glcrun_alarm) then
-          call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+       if (glc_present) then
+          if (glcrun_alarm) then
+             call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+          else
+             if (iamin_CPLID) call prep_glc_zero_fields_moab()
+          endif
        endif
 
        ! ------------------------------------------------------------------------
@@ -4467,11 +4473,15 @@ contains
 
     if (glc_present) then
 
+       ! create o2x_gx for either ocn-glc coupling or ocn-glc shelf coupling
+       if (ocn_c2_glctf .or. (ocn_c2_glcshelf .and. glcshelf_c2_ocn)) then
+          call prep_glc_calc_o2x_gx(ocn_c2_glctf, ocn_c2_glcshelf, timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
+       endif
+
+       ! if ice-shelf coupling is on, now proceed to handle those calculations here in the coupler
        if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
           ! the boundary flux calculations done in the coupler require inputs from both GLC and OCN,
           ! so they will only be valid if both OCN->GLC and GLC->OCN
-
-          call prep_glc_calc_o2x_gx(timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
 
           call prep_glc_calculate_subshelf_boundary_fluxes ! this is actual boundary layer flux calculation
                                         !this outputs
@@ -4576,7 +4586,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum_lnd_moab(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
+       if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd_moab(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4588,6 +4598,9 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+
+    use seq_flds_mod , only : seq_flds_x2g_fields
+    use seq_comm_mct , only : mbglid, mbgxid
 
     logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages are taken this timestep (otherwise left unchanged)
     logical, intent(inout) :: prep_glc_accum_avg_called ! Set to .true. if prep_glc_accum_avg is called here (otherwise left unchanged)
@@ -4603,22 +4616,23 @@ contains
        ! NOTE - only create appropriate input to glc if the avg_alarm is on
        if (lnd_c2_glc .or. ocn_c2_glcshelf) then
           if (glcrun_avg_alarm) then
-             call prep_glc_accum_avg(timer='CPL:glcprep_avg', &
+             call prep_glc_accum_avg_moab(timer='CPL:glcprep_avg', &
                   lnd2glc_averaged_now=lnd2glc_averaged_now)
              prep_glc_accum_avg_called = .true.
 
              if (lnd_c2_glc) then
-                ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
-                call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
+                ! Note that the mapped fields are obtained from the accumulated lnd
+                ! fields (set back into the land mesh tags by prep_glc_accum_avg_moab)
+                call prep_glc_calc_l2x_gx_moab(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-                call prep_glc_mrg_lnd(infodata, fractions_gx, timer_mrg='CPL:glcprep_mrgx2g')
+                call prep_glc_mrg_lnd_moab(infodata, timer_mrg='CPL:glcprep_mrgx2g')
              endif
 
              call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                   info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
 
           else
-             call prep_glc_zero_fields()
+             call prep_glc_zero_fields_moab()
           endif ! glcrun_avg_alarm
        end if ! lnd_c2_glc or ocn_c2_glcshelf
 
@@ -4640,7 +4654,7 @@ contains
     !| cpl -> glc
     !----------------------------------------------------
     if (iamin_CPLALLGLCID .and. glc_prognostic) then
-       call component_exch(glc, flow='x2c', &
+       call component_exch_moab(glc(1), mbgxid, mbglid, 'x2c', seq_flds_x2g_fields, &
             infodata=infodata, infodata_string='cpl2glc_run', &
             mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2G_BARRIER', timer_comp_exch='CPL:C2G', &
@@ -4661,7 +4675,7 @@ contains
     call t_drvstartf ('CPL:AVG_L2X1YRG',cplrun=.true.,barrier=mpicom_CPLID)
     if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-    call prep_glc_accum_avg(timer='CPL:glcprep_avg', &
+    call prep_glc_accum_avg_moab(timer='CPL:glcprep_avg', &
          lnd2glc_averaged_now=lnd2glc_averaged_now)
     prep_glc_accum_avg_called = .true.
 
@@ -4673,11 +4687,15 @@ contains
 
   subroutine cime_run_glc_recv_post()
 
+    use seq_flds_mod , only : seq_flds_g2x_fields
+    use seq_comm_mct , only : mbglid, mbgxid
+
     !----------------------------------------------------------
     ! glc -> cpl
     !----------------------------------------------------------
     if (iamin_CPLALLGLCID) then
-       call component_exch(glc, flow='c2x', infodata=infodata, infodata_string='glc2cpl_run', &
+       call component_exch_moab(glc(1), mbglid, mbgxid, 'c2x', seq_flds_g2x_fields, &
+            infodata=infodata, infodata_string='glc2cpl_run', &
             mpicom_barrier=mpicom_CPLALLGLCID, run_barriers=run_barriers, &
             timer_barrier='CPL:G2C_BARRIER', timer_comp_exch='CPL:G2C', &
             timer_map_exch='CPL:g2c_glcg2glcx', timer_infodata_exch='CPL:g2c_infoexch')
@@ -5044,6 +5062,11 @@ contains
        if (ice_present) then
           call seq_diag_ice_moab(ice(ens1), infodata, do_i2x=.true.)
        endif
+       if (glc_present) then
+          ! covers the g2x (runoff to ocn/ice) budget terms; the x2g budget terms of
+          ! the mct driver are deferred with the rest of the ocn<->glc port
+          call seq_diag_glc_moab(glc(ens1), infodata)
+       endif
        if (do_bgc_budgets) then
           if (atm_present) then
              call seq_diagBGC_atm_moab(atm(ens1), infodata, do_a2x=.true., do_x2a=.true.)
@@ -5123,6 +5146,7 @@ contains
 
     type(ESMF_Time)       :: etime_curr           ! Current model time
     real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
+    real(r8), pointer     :: p_l2gacc_lm(:,:)     ! averaged lnd->glc accumulator (moab)
 
     if (iamin_CPLID) then
 
@@ -5313,6 +5337,9 @@ contains
                   years_offset = -1)
 
              call t_startf('CPL:seq_hist_writeaux-l2x1yrg')
+             ! the averaged data lives in the prep_glc accumulator array, not in the
+             ! (instantaneous) l2x tags; the attribute vector supplies the field list
+             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
              do eli = 1,num_inst_lnd
                 inst_suffix = component_get_suffix(lnd(eli))
                 ! Use yr_offset=-1 so the file with fields from year 1 has time stamp
@@ -5321,7 +5348,8 @@ contains
                      aname='l2x1yr_glc',dname='doml',inst_suffix=trim(inst_suffix),  &
                      nx=lnd_nx, ny=lnd_ny, nt=1, write_now=.true., &
                      tbnds1_offset = tbnds1_offset, yr_offset=-1, &
-                     av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli))
+                     av_to_write=prep_glc_get_l2gacc_lx_one_instance(eli), &
+                     matrix=p_l2gacc_lm)
              enddo
              call t_stopf('CPL:seq_hist_writeaux-l2x1yrg')
 

@@ -348,8 +348,8 @@ contains
     type(mct_aVect) :: l2x_g_temp  ! temporary attribute vector holding the remapped fields for this elevation class
 
     real(r8), pointer :: tmp_field_g(:)  ! must be a pointer to satisfy the MCT interface
-    real, pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
-    real, pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
+    real(r8), pointer :: data_g_EC(:,:)    ! remapped field in each glc cell, in each EC
+    real(r8), pointer :: topo_g_EC(:,:)    ! remapped topo in each glc cell, in each EC
 
     ! 1 is probably enough, but use 10 to be safe, in case the length of the delimiter
     ! changes
@@ -416,9 +416,9 @@ contains
        fieldname_ec = fieldname // elevclass_as_string
        toponame_ec = toponame // elevclass_as_string
        call mct_aVect_exportRattr(l2x_g_temp, fieldname_ec, tmp_field_g)
-       data_g_EC(:,ec) = real(tmp_field_g)
+       data_g_EC(:,ec) = tmp_field_g
        call mct_aVect_exportRattr(l2x_g_temp, toponame_ec, tmp_field_g)
-       topo_g_EC(:,ec) = real(tmp_field_g)
+       topo_g_EC(:,ec) = tmp_field_g
     enddo
 
     ! ------------------------------------------------------------------------
