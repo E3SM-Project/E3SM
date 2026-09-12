@@ -70,6 +70,7 @@ module ice_comp_mct
    use seaice_core
    use seaice_core_interface
    use seaice_forcing
+   use seaice_fme_horiz_remap, only: seaice_fme_horiz_remap_set_provenance
    use seaice_initialize, only: seaice_init_post_clock_advance
    use seaice_mesh, only: seaice_latlon_vector_rotation_backward
    use seaice_time_integration
@@ -611,6 +612,12 @@ contains
     call MPAS_stream_mgr_add_att(domain % streamManager, 'history', trim(history))
     call MPAS_stream_mgr_add_att(domain % streamManager, 'Conventions', 'CF-1.7')
     call MPAS_stream_mgr_add_att(domain % streamManager, 'git_version', trim(model_version))
+
+    ! Forward provenance to the FME direct-PIO writer (its `.remapped.nc`
+    ! files don't go through the stream manager so the add_att calls above
+    ! never reach them).
+    call seaice_fme_horiz_remap_set_provenance(trim(caseid), trim(username), &
+         trim(hostname), trim(model_version), trim(history))
 
     ! Setup all immutable streams for the core
     ierr = domain % core % setup_immutable_streams(domain % streamManager)
@@ -1346,6 +1353,8 @@ contains
          ! Write a restart file, because the coupler asked for it.
          if (debugOn) call mpas_log_write('Writing restart streams', masterOnly=.true.)
          call seaice_forcing_write_restart_times(domain)
+         ! FME accumulator sidecar
+         call seaice_analysis_fme_write_restart(domain, ierr)
          call mpas_stream_mgr_begin_iteration(domain % streamManager)
          do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID=streamName, &
                     directionProperty=streamDirection, activeProperty=streamActive) )

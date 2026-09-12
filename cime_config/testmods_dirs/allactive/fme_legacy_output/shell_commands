@@ -1,0 +1,81 @@
+#!/bin/bash
+# FME Legacy Output testmod
+#
+# Produces raw E3SM output needed by the ACE/Samudra offline postprocessing
+# pipeline. No online remapping, vertical coarsening, or derived fields.
+#
+# Compare with allactive/fme_output for the online-processed equivalent.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Runtime-configurable parameters (override via environment variables)
+# ---------------------------------------------------------------------------
+# EAM output frequency in hours
+FME_EAM_OUTPUT_HOURS=${FME_EAM_OUTPUT_HOURS:-6}
+# EAM averaging flag: 'I' = instantaneous (default), fluxes use per-field :A
+FME_EAM_AVGFLAG=${FME_EAM_AVGFLAG:-I}
+# Number of EAM time samples per output file
+FME_EAM_MFILT=${FME_EAM_MFILT:-4}
+# MPAS timeSeriesStatsCustom reset/averaging interval
+FME_MPAS_INTERVAL=${FME_MPAS_INTERVAL:-00-00-01_00:00:00}
+
+echo "FME legacy output configuration:"
+echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}"
+echo "  MPAS: interval=${FME_MPAS_INTERVAL}"
+
+# ---------------------------------------------------------------------------
+# EAM namelist -- raw output for ACE offline pipeline
+# ---------------------------------------------------------------------------
+cat >> user_nl_eam << EOF
+cosp_lite = .true.
+empty_htapes = .true.
+avgflag_pertape = '${FME_EAM_AVGFLAG}'
+nhtfrq = -${FME_EAM_OUTPUT_HOURS}
+mfilt  = ${FME_EAM_MFILT}
+
+fincl1 =  'T','Q','U','V','PS','PHIS',
+          'CLDLIQ','CLDICE','RAINQM',
+          'TMQ','TGCLDLWP','TGCLDIWP',
+          'TEFIX','TS','QREFHT','U10','TREFHT',
+          'PSL','LANDFRAC','OCNFRAC','ICEFRAC',
+          'FSDS:A','FLDS:A','FSNS:A','FLNS:A','SOLIN:A',
+          'FSNTOA:A','FSUTOA:A','FLUT:A','FLNT:A',
+          'FSUS:A','FLUS:A',
+          'LHFLX:A','QFLX:A',
+          'SHFLX:A','PRECT:A','PRECC:A','PRECSL:A','PRECSC:A','TAUX:A','TAUY:A'
+
+EOF
+
+# ---------------------------------------------------------------------------
+# ELM namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_elm << 'EOF'
+hist_empty_htapes = .true.
+EOF
+
+# ---------------------------------------------------------------------------
+# MOSART namelist
+# ---------------------------------------------------------------------------
+cat >> user_nl_mosart << 'EOF'
+EOF
+
+# ---------------------------------------------------------------------------
+# MPAS-Ocean namelist -- enable timeSeriesStatsCustom for raw output
+# Stream variables are defined in Registry_time_series_stats_custom.xml
+# ---------------------------------------------------------------------------
+cat >> user_nl_mpaso << EOF
+! Enable daily time-averaged output for legacy comparison.
+! timeSeriesStatsDaily has daily output_interval and includes SST, SSS, SSH,
+! velocities. For heat flux comparisons, timeSeriesStatsCustom is needed
+! but its default output_interval (5-7 days) exceeds short test runs.
+config_am_timeseriesstatsdaily_enable = .true.
+config_am_timeseriesstatscustom_enable = .true.
+config_am_timeseriesstatscustom_reset_intervals = '${FME_MPAS_INTERVAL}'
+EOF
+
+# ---------------------------------------------------------------------------
+# MPAS-SeaIce namelist -- enable timeSeriesStatsDaily for raw output
+# ---------------------------------------------------------------------------
+cat >> user_nl_mpassi << EOF
+config_am_timeseriesstatsdaily_enable = .true.
+EOF

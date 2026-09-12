@@ -307,10 +307,21 @@ Fields to add to history tape series  3.
 Default: ' '
 </entry>
 
-<entry id="rtmhist_mfilt" 
-       type="integer(6)" 
+<entry id="rtmhist_empty_htapes"
+       type="logical"
        category="history"
-       group="mosart_inparm" 
+       group="mosart_inparm"
+       valid_values="" >
+If TRUE, indicates do not output any default history fields. Only fields
+explicitly requested via rtmhist_fincl[1-3] are written. Mirrors ELM's
+hist_empty_htapes.
+Default: .false.
+</entry>
+
+<entry id="rtmhist_mfilt"
+       type="integer(6)"
+       category="history"
+       group="mosart_inparm"
        valid_values="" >
 Per tape series  maximum number of time samples.
 Default: 1,30,30

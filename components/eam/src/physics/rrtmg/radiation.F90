@@ -1350,6 +1350,14 @@ end function radiation_nextsw_cday
                           aerindex(i) = fillvalue
                        end if
                     end do 
+                    ! Day+night unmasked snapshot BEFORE the cosmetic fill loop.
+                    ! aer_tau is solar-zenith-independent so the values at idxnite
+                    ! columns are physically valid; the masking below is purely
+                    ! a legacy choice. See AGENTS.md gotcha #43.
+                    if(icall.eq.0) then
+                       call outfld('angstrmall',  angstrm,  pcols, lchnk)
+                       call outfld('aerindexall', aerindex, pcols, lchnk)
+                    end if
                     do i = 1, nnite
                        angstrm(idxnite(i)) = fillvalue
                        aod400(idxnite(i)) = fillvalue

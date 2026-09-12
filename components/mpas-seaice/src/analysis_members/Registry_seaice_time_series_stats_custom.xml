@@ -98,6 +98,12 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 
+			<var name="xtime"/>
+			<var name="iceAreaCell"/>
+			<var name="iceVolumeCell"/>
+			<var name="snowVolumeCell"/>
+			<var name="uVelocity"/>
+			<var name="vVelocity"/>
 		</stream>
 
 		<stream name="timeSeriesStatsCustomRestart"

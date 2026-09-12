@@ -4,6 +4,43 @@
     <hist_file_extension>hi\..*\.nc$</hist_file_extension>
     <hist_file_extension>ha\..*\.nc$</hist_file_extension>
     <hist_file_extension>h\w+\..*\.nc$</hist_file_extension>
+    <!-- Coupler-native FME output (as-exchanged merged forcing).  Two pieces
+         are required to make ERS COMPARE_base_rest actually compare these files
+         (AGENTS.md gotchas #34, #48, #50):
+
+         1. hist_file_extension below matches ONLY the dated monthly OUTPUT
+            files (fme.STREAM.YYYY-MM.nc), via the "\.\d" after the stream name.
+            This deliberately EXCLUDES the fme.STREAM.accum.nc restart sidecars:
+            those carry the casename prefix (unlike the MPAS
+            *.fme_accum_restart.nc sidecars, which dodge archiving by NOT
+            starting with the casename), so a bare ".*\.nc$" would match them
+            and st_archive (disposition move) would relocate them out of the run
+            dir, breaking the next RESUBMIT leg warm-restart accumulator read
+            (cpl_fme_read_sidecar reads them from the run dir at init).
+            Excluding them here keeps them in the run dir for restart.
+
+         2. The hist_file_ext_regex below is what archive_base._get_extension
+            uses to bucket files for the "latest per ext" COMPARE selection.
+            WITHOUT a drv-specific regex it falls back to "\w+", which collapses
+            EVERY cpl.fme.* file into a single "fme" bucket so only one
+            (alphabetically last) gets compared.  "fme\.\w+" gives each stream
+            its own bucket (fme.x2o1D, fme.x2a, ...) so all are compared. -->
+    <!-- IMPORTANT: re-create a test case after editing this spec so its
+         CASEROOT env_archive.xml picks up the change (a pre-existing case dir
+         keeps a stale copy and silently skips the new streams). -->
+    <hist_file_extension>fme\.x2o1D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2o5D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.xao1D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.xao5D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2i1D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2i5D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.o2x1D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.o2x5D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.i2x1D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.i2x5D\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2a\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.a2x\.\d.*\.nc$</hist_file_extension>
+    <hist_file_ext_regex>fme\.\w+</hist_file_ext_regex>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer$NINST_STRING.drv</rpointer_file>
@@ -17,6 +54,18 @@
       <tfile disposition="move">casename.cpl.ha2x1d.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.cpl.ha2x1h.1976-01-01-00000.nc</tfile>
       <tfile disposition="move">casename.cpl.hl2x1yr_glc.1976-01-01-00000.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2o1D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2o5D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.xao1D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.xao5D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2i1D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2i5D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.o2x1D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.o2x5D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.i2x1D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.i2x5D.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2a.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.a2x.1976-01.nc</tfile>
       <tfile disposition="ignore">rpointer.drv_0001</tfile>
       <tfile disposition="copy">rpointer.drv</tfile>
       <tfile disposition="ignore">casenamenot.cpl.r.1976-01-01-00000.nc</tfile>
