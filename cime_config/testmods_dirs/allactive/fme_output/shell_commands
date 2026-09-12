@@ -156,9 +156,39 @@ OCN_GRID=$(./xmlquery --value OCN_GRID)
 ATM_GRID_NORM=$(echo "$ATM_GRID" | sed 's/np[0-9]*\.//')
 
 # use trintbilin maps. Target Gaussian grid resolution scales with the atm
-# grid so the remap doesn't discard resolution (180x360 for ne30pg2 ~1deg,
-# 720x1440 for ne120pg2 ~0.25deg).
-if [ "${ATM_GRID_NORM}" = "ne30pg2" ]; then
+# grid so the remap doesn't discard resolution (18x36 for ne4pg2 ~7.5deg,
+# 180x360 for ne30pg2 ~1deg, 720x1440 for ne120pg2 ~0.25deg).
+# ne4pg2 is the low-res smoke-test grid, not a production FME target.
+if [ "${ATM_GRID_NORM}" = "ne4pg2" ]; then
+  GAUSS_GRID="18by36"
+  # --- ne4pg2/oQU480 smoke-test-only coupling override -----------------------
+  # oQU480 defaults to OCN_NCPL=6 (4-hourly ocean coupling) against
+  # ATM_NCPL=ICE_NCPL=24. The coupler-FME ocean-phase hook only runs on ocean
+  # coupling steps, which then fall at t = 1, 5, 9, ... h and never coincide
+  # with a 24 h output boundary. Measured consequences on this grid:
+  #   * x2o1D/xao1D/o2x1D/i2x1D flush 1 h late (t = 1.0417, 2.0417, ...)
+  #   * x2o5D/xao5D/o2x5D/i2x5D never flush at all -- 4 of the 12 coupler
+  #     streams get zero coverage
+  #   * a2x records land on a 4h/8h stagger instead of even 6 h spacing
+  # None of that is a code defect: cpl_fme_init warns about exactly this
+  # OCN_NCPL < ATM_NCPL regime (AGENTS.md gotcha #52), and all three symptoms
+  # vanish at ne30pg2_r05_IcoswISC30E3r5 where ATM/OCN/ICE_NCPL are all 48.
+  # Matching the ocean to the base coupling step puts every flush on the
+  # boundary and makes this grid exercise all 12 streams.
+  ./xmlchange OCN_NCPL=24
+  # OCN_NCPL=24 alone aborts in MPAS-O ("The model time step cannot be longer
+  # then the coupling interval") because oQU480 runs config_dt='02:00:00' > the
+  # resulting 1 h coupling interval, so the ocean timestep must shrink to match.
+  # config_btr_dt='00:05:00' still divides 1 h evenly. This perturbs ocean
+  # physics and is acceptable ONLY because ne4pg2_oQU480 is a plumbing smoke
+  # test, never a production FME target.
+  cat >> user_nl_mpaso << 'MPASODT'
+! Paired with the OCN_NCPL=24 override in the FME testmod shell_commands:
+! config_dt must be <= the 1 h coupling interval (oQU480 default is 02:00:00).
+config_dt = '01:00:00'
+MPASODT
+  # --------------------------------------------------------------------------
+elif [ "${ATM_GRID_NORM}" = "ne30pg2" ]; then
   GAUSS_GRID="180by360"
 elif [ "${ATM_GRID_NORM}" = "ne120pg2" ]; then
   GAUSS_GRID="720by1440"
