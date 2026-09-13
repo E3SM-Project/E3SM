@@ -26,6 +26,7 @@ module li_statistics
    use mpas_dmpar
    use mpas_timer
    use mpas_log
+   use mpas_global_sum_mod
 
    use li_setup
    use li_mask
@@ -135,8 +136,11 @@ module li_statistics
      integer :: localVertSumMinlocElement, localVertSumMaxlocElement
      real (kind=RKIND), dimension(:), allocatable :: workLevel
 
+     ! per-cell contributions to the area/volume-weighted sums, used for a reproducible
+     ! (decomposition-independent) global sum in place of a plain MPI_Allreduce
+     real (kind=RKIND), dimension(:), allocatable :: iceAreaContribution, iceVolumeContribution, iceEnergyContribution
+
      ! sums and max/mins on local processor
-     real (kind=RKIND) :: iceAreaSum, iceVolumeSum, iceEnergySum
      real (kind=RKIND) :: thicknessMax, thicknessMin
      real (kind=RKIND) :: temperatureMax, temperatureMin
      real (kind=RKIND) :: velocityMax, basalVelocityMax
@@ -175,9 +179,7 @@ module li_statistics
      ! initialize statistics for this processor
      ! If we have > 1 block/proc, these are summed or reduced over the block
 
-     iceAreaSum   =  0.0_RKIND
-     iceVolumeSum =  0.0_RKIND
-     iceEnergySum =  0.0_RKIND
+
      thicknessMax =     -huge(0.0_RKIND)
      thicknessMin =      huge(0.0_RKIND)
      temperatureMax =   -huge(0.0_RKIND)
@@ -315,6 +317,10 @@ module li_statistics
         workLevelCell(2:nVertLevels,:) = 0.0_RKIND
 
         ! total ice area
+        ! Note: iceAreaContribution captures the raw per-cell contribution to the sum
+        ! (rather than the pre-summed scalar localSum) so that a decomposition-independent
+        ! (reproducible) global sum can be performed below, after the block loop.
+        if (.not. allocated(iceAreaContribution)) allocate(iceAreaContribution(nCellsSolve))
         call li_compute_field_area_weighted_local_stats                       &
                                           (dminfo,                            &
                                            nVertLevels,       nCellsSolve,    &
@@ -323,14 +329,14 @@ module li_statistics
                                            iceCellMask(1:nCellsSolve),        &
                                            localSum,                          &
                                            localMin,          localMax,       &
-                                           localVertSumMin,   localVertSumMax)
-
-        iceAreaSum = iceAreaSum + localSum
+                                           localVertSumMin,   localVertSumMax, &
+                                           localSumField = iceAreaContribution)
 
         ! work array with a value of 1 in each layer
         workLevelCell(:,:) = 1.0_RKIND
 
         ! total ice volume
+        if (.not. allocated(iceVolumeContribution)) allocate(iceVolumeContribution(nCellsSolve))
         call li_compute_field_volume_weighted_local_stats                                 &
                                           (dminfo,                                        &
                                            nVertLevels,                     nCellsSolve,  &
@@ -340,9 +346,8 @@ module li_statistics
                                            iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
                                            localMin,                        localMax,     &
-                                           localVertSumMin,                 localVertSumMax)
-
-        iceVolumeSum = iceVolumeSum + localSum
+                                           localVertSumMin,                 localVertSumMax, &
+                                           localSumField = iceVolumeContribution)
 
         ! max and min temperature
         ! optional maxloc/minloc arguments give the local cell IDs where max/mins are located
@@ -372,6 +377,7 @@ module li_statistics
         ! total ice energy (relative to 0 deg C)
         !TODO - Compute ice energy differently if using the enthalpy scheme
 
+        if (.not. allocated(iceEnergyContribution)) allocate(iceEnergyContribution(nCellsSolve))
         call li_compute_field_volume_weighted_local_stats                                 &
                                           (dminfo,                                        &
                                            nVertLevels,                     nCellsSolve,  &
@@ -381,9 +387,8 @@ module li_statistics
                                            iceCellMask(1:nCellsSolve),                    &
                                            localSum,                                      &
                                            localMin,                        localMax,     &
-                                           localVertSumMin,                 localVertSumMax)
-
-        iceEnergySum = iceEnergySum + localSum*rhoi*cp_ice
+                                           localVertSumMin,                 localVertSumMax, &
+                                           localSumField = iceEnergyContribution)
 
         ! normal velocity at cell edges; find the maximum magnitude
 
@@ -481,9 +486,17 @@ module li_statistics
      !       This could be done by packing quantities into arrays.
 
      ! global sums
-     call mpas_dmpar_sum_real(dminfo, iceAreaSum, globalIceAreaSum)
-     call mpas_dmpar_sum_real(dminfo, iceVolumeSum, globalIceVolumeSum)
-     call mpas_dmpar_sum_real(dminfo, iceEnergySum, globalIceEnergySum)
+     ! Note: Use the reproducible (decomposition-independent) global sum from mpas_global_sum_mod,
+     ! fed with the raw per-cell contribution arrays, rather than mpas_dmpar_sum_real on the
+     ! already block-local-summed scalars. A plain MPI_Allreduce of block-local partial sums is
+     ! not reproducible across different processor/block decompositions because floating-point
+     ! addition is not associative.
+     globalIceAreaSum = mpas_global_sum(iceAreaContribution, dminfo % comm)
+     globalIceVolumeSum = mpas_global_sum(iceVolumeContribution, dminfo % comm)
+     globalIceEnergySum = mpas_global_sum(iceEnergyContribution, dminfo % comm) * rhoi * cp_ice
+     deallocate(iceAreaContribution)
+     deallocate(iceVolumeContribution)
+     deallocate(iceEnergyContribution)
 
      ! global means
      !TODO - Replace temperature mean with enthalpy mean if using enthalpy scheme
@@ -782,7 +795,8 @@ module li_statistics
                                                          field,           mask,       &
                                                          localSum,                    &
                                                          localMin,        localMax,   &
-                                                         localVertSumMin, localVertSumMax)
+                                                         localVertSumMin, localVertSumMax, &
+                                                         localSumField)
 
      ! Compute field statistics weighted by area
 
@@ -804,6 +818,11 @@ module li_statistics
      real (kind=RKIND), intent(out) :: localSum, localMin, localMax
      real (kind=RKIND), intent(out) :: localVertSumMin, localVertSumMax
 
+     real (kind=RKIND), dimension(nElements), intent(out), optional :: &
+          localSumField  !< per-element contribution to localSum (mask*area*vertical sum);
+                          !< returned so the caller can perform a reproducible (decomposition-independent)
+                          !< global sum instead of reducing the already block-local-summed scalar localSum
+
      ! Local variables
      integer :: i
 
@@ -811,6 +830,10 @@ module li_statistics
      do i = 1, nElements
         localSum = localSum + real(mask(i),RKIND) * areas(i) * sum(field(:,i))
      end do
+
+     if (present(localSumField)) then
+        localSumField(:) = real(mask(:),RKIND) * areas(:) * sum(field, dim=1)
+     endif
 
      localMin = minval(field)
      localMax = maxval(field)
@@ -840,7 +863,8 @@ module li_statistics
                                                             field,           mask,           &
                                                             localSum,                        &
                                                             localMin,        localMax,       &
-                                                            localVertSumMin, localVertSumMax)
+                                                            localVertSumMin, localVertSumMax, &
+                                                            localSumField)
 
       implicit none
 
@@ -863,6 +887,11 @@ module li_statistics
       real (kind=RKIND), intent(out) :: localSum, localMin, localMax
       real (kind=RKIND), intent(out) :: localVertSumMin, localVertSumMax
 
+      real (kind=RKIND), dimension(nElements), intent(out), optional :: &
+           localSumField  !< per-element contribution to localSum (mask*area*vertical sum of layerThickness*field);
+                           !< returned so the caller can perform a reproducible (decomposition-independent)
+                           !< global sum instead of reducing the already block-local-summed scalar localSum
+
       ! Local variables
       integer :: i
 
@@ -870,6 +899,10 @@ module li_statistics
       do i = 1, nElements
          localSum = localSum + real(mask(i),RKIND) * areas(i) * sum(layerThickness(:,i)*field(:,i))
       end do
+
+      if (present(localSumField)) then
+         localSumField(:) = real(mask(:),RKIND) * areas(:) * sum(layerThickness*field, dim=1)
+      endif
 
       localMin = minval(field)
       localMax = maxval(field)
