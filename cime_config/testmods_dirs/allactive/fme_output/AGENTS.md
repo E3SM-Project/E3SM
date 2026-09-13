@@ -13,6 +13,15 @@ postprocessing. Overhead: +1.6% wallclock.
 
 ## Source Files
 
+Coupler (in `driver-mct/main/`):
+- `cpl_fme_mod.F90` -- as-exchanged merged forcing and component exports,
+  remapped and written directly from the coupler. 16 streams across 11
+  bundles: `x2o`/`o2x`, `x2i`/`i2x`, `xao` (ocean mesh), `x2a`/`a2x` (atm
+  grid), `x2l`/`l2x` (lnd grid), `x2r`/`r2x` (rof grid). See gotchas #51
+  (sampling phases) and #60 (the land/river additions).
+- `cime_comp_mod.F90` (modified) -- seven `cpl_fme_accum` hooks, one per
+  sampling phase
+
 Shared infrastructure (pure computation, no I/O or MPI):
 - `share/util/shr_horiz_remap_mod.F90` -- CRS SpMV remap + apply_masked
 - `share/util/shr_vcoarsen_mod.F90` -- vertical coarsening (pressure/depth)
@@ -1845,6 +1854,47 @@ Two details that are easy to get wrong:
   `.YYYY.nc` off the open file instead, and falls back to the record only
   when no file is open.
 
+### gotcha #60 — coupler-native land/river streams: l2x is not in the coupler restart (ADDED 2026-09-13)
+
+The cpl-FME tape grew four more bundles — `x2l`/`l2x` on the LND grid and
+`x2r`/`r2x` on the ROF grid — so every component now has its as-exchanged
+import and export on the same lat-lon grid and cadence as the rest of the
+training tape. Three things about them differ from the atm/ocean pattern:
+
+1. **The exports get their own phases.** `o2x`/`i2x`/`a2x` are sampled at the
+   ocean hook, one driver step behind, and that is safe only because
+   `seq_rest_mod` writes `o2x_ox`, `i2x_ix` and `a2x_ax` into the coupler
+   restart: a warm leg reads back exactly what the continuous run had.
+   **`l2x_lx` is not in the coupler restart** (`seq_rest_mod` writes
+   `r2x_rx` but no `l2x`). Sampling it before the land runs would take the
+   init-time export on the first step of a warm leg and the previous step's
+   export on a continuous run — gotcha #51 all over again. So `l2x` samples at
+   `CPL_FME_PHASE_L2X` (in `cime_run_lnd_recv_post`, after the land has run)
+   and `r2x` at `CPL_FME_PHASE_R2X` (in `cime_run_rof_recv_post`), where every
+   sample is freshly computed. `x2l`/`x2r` sample right after their own merge,
+   like `x2i`/`x2a`.
+
+2. **The river hooks only fire on river coupling steps.** `ROF_NCPL` is
+   normally coarser than the base step (8 vs 48 in WCYCL), and
+   `cime_run_rof_setup_send` / `cime_run_rof_recv_post` run on `rofrun_alarm`.
+   That is fine — the window mean is over river coupling steps, which is the
+   right answer for a river emulator. What is NOT fine is a river step that
+   does not divide `cpl_fme_rof_interval`: the flush then fires on the first
+   river step PAST the boundary, so records land late and drift against the
+   other streams. `cpl_fme_init` warns when `mod(interval, rof_cpl_dt) /= 0`.
+
+3. **`cpl_fme_init` no longer requires an ocean.** It used to return early on
+   `.not. ocn_present`, which would have made the land/river streams useless in
+   a land-only configuration. The guard is now
+   `.not. (ocn_present .or. lnd_present .or. rof_present)` and the ocean block
+   is guarded individually. Note `x2l` is only merged when the land is
+   prognostic — enabling it against a data land yields a stream of zeros.
+
+`r2x` carries `Flrr_volr` / `Flrr_volrmch` (channel volumes) and `Forr_rof*`
+(discharge). The conservation caveat of gotcha #58 applies to them as well:
+the remap is an area-weighted mean, so these do not sum to the global total on
+the target grid.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -1871,6 +1921,14 @@ FME_LND_OUTPUT_HOURS=24         # ELM output frequency in hours (default: 24)
 FME_ROF_OUTPUT_HOURS=24         # MOSART output frequency in hours (default: 24)
 FME_LND_STORAGE=one_month       # ELM file rotation (gotcha #59)
 FME_ROF_STORAGE=one_month       # MOSART file rotation (gotcha #59)
+
+FME_CPL_X2L_ENABLE=.true.       # coupler-native lnd import  (gotcha #60)
+FME_CPL_L2X_ENABLE=.true.       # coupler-native lnd export  (gotcha #60)
+FME_CPL_X2R_ENABLE=.true.       # coupler-native rof import  (gotcha #60)
+FME_CPL_R2X_ENABLE=.true.       # coupler-native rof export  (gotcha #60)
+FME_CPL_LND_INTERVAL=1.0        # x2l/l2x window (days)
+FME_CPL_ROF_INTERVAL=1.0        # x2r/r2x window (days); must be a multiple
+                                # of the river coupling step
 ```
 
 Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_test ...`

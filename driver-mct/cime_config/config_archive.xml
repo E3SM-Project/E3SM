@@ -40,6 +40,10 @@
     <hist_file_extension>fme\.i2x5D\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.x2a\.\d.*\.nc$</hist_file_extension>
     <hist_file_extension>fme\.a2x\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2l\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.l2x\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.x2r\.\d.*\.nc$</hist_file_extension>
+    <hist_file_extension>fme\.r2x\.\d.*\.nc$</hist_file_extension>
     <hist_file_ext_regex>fme\.\w+</hist_file_ext_regex>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
@@ -66,6 +70,10 @@
       <tfile disposition="move">casename.cpl.fme.i2x5D.1976-01.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.x2a.1976-01.nc</tfile>
       <tfile disposition="move">casename.cpl.fme.a2x.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2l.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.l2x.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.x2r.1976-01.nc</tfile>
+      <tfile disposition="move">casename.cpl.fme.r2x.1976-01.nc</tfile>
       <tfile disposition="ignore">rpointer.drv_0001</tfile>
       <tfile disposition="copy">rpointer.drv</tfile>
       <tfile disposition="ignore">casenamenot.cpl.r.1976-01-01-00000.nc</tfile>

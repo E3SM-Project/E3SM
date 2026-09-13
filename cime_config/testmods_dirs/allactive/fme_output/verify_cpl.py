@@ -77,6 +77,20 @@ EXPECTED = {
             "Sa_pslv", "Sa_dens", "Faxa_lwdn", "Faxa_rainc", "Faxa_rainl",
             "Faxa_snowc", "Faxa_snowl", "Faxa_swndr", "Faxa_swvdr",
             "Faxa_swndf", "Faxa_swvdf"],
+    "x2l": ["Sa_z", "Sa_topo", "Sa_u", "Sa_v", "Sa_tbot", "Sa_ptem", "Sa_shum",
+            "Sa_pbot", "Faxa_rainc", "Faxa_rainl", "Faxa_snowc", "Faxa_snowl",
+            "Faxa_lwdn", "Faxa_swndr", "Faxa_swvdr", "Faxa_swndf", "Faxa_swvdf",
+            "Flrr_flood", "Flrr_volr", "Flrr_volrmch", "Flrr_supply",
+            "Flrr_deficit"],
+    "l2x": ["Sl_avsdr", "Sl_anidr", "Sl_avsdf", "Sl_anidf", "Sl_tref", "Sl_qref",
+            "Sl_t", "Sl_fv", "Sl_ram1", "Sl_snowh", "Sl_u10", "Fall_taux",
+            "Fall_tauy", "Fall_lat", "Fall_sen", "Fall_lwup", "Fall_evap",
+            "Fall_swnet", "Flrl_rofsur", "Flrl_rofgwl", "Flrl_rofsub",
+            "Flrl_rofdto", "Flrl_rofi"],
+    "x2r": ["Flrl_rofsur", "Flrl_rofgwl", "Flrl_rofsub", "Flrl_rofdto",
+            "Flrl_rofi", "Flrl_demand", "Flrl_Tqsur", "Flrl_Tqsub"],
+    "r2x": ["Forr_rofl", "Forr_rofi", "Firr_rofi", "Flrr_flood", "Flrr_volr",
+            "Flrr_volrmch", "Flrr_supply", "Flrr_deficit"],
 }
 
 # stream label -> (bundle, cadence). PRIMARY (1D) streams must exist for a
@@ -89,6 +103,11 @@ STREAMS = [
     ("i2x1D", "i2x", "1D"), ("i2x5D", "i2x", "5D"),
     # atm streams: single configurable sub-daily cadence (no 5D companion)
     ("x2a", "x2a", "1D"), ("a2x", "a2x", "1D"),
+    # lnd / rof streams: single configurable cadence, same pattern as the atm.
+    # The rof pair samples only on river coupling steps (ROF_NCPL), so its
+    # records carry fewer samples per window than the land pair.
+    ("x2l", "x2l", "1D"), ("l2x", "l2x", "1D"),
+    ("x2r", "x2r", "1D"), ("r2x", "r2x", "1D"),
 ]
 
 

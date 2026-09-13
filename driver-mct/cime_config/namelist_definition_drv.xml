@@ -1682,6 +1682,136 @@
     </values>
   </entry>
 
+  <entry id="cpl_fme_lnd_map">
+    <type>char*256</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: map file remapping the LND grid (r05 in the
+      production configuration) to the lat-lon output grid, used by the x2l and
+      l2x streams. The same map ELM uses for its own FME tape
+      (hist_horiz_remap_file). Must be non-negative (gotcha #47).
+      default: empty.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_rof_map">
+    <type>char*256</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: map file remapping the ROF grid (r05) to the
+      lat-lon output grid, used by the x2r and r2x streams. Usually the same
+      file as cpl_fme_lnd_map -- land and river share a grid in the production
+      configuration -- but kept separate because they need not.
+      Must be non-negative (gotcha #47). default: empty.
+    </desc>
+    <values>
+      <value></value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_x2l_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the land-import (x2l: the merged
+      lower-boundary forcing ELM integrates -- atm state, precipitation,
+      radiation, and the river feedback) time-mean stream. These are a land
+      emulator's INPUTS. Output cadence is cpl_fme_lnd_interval (default
+      daily). LND grid -> requires cpl_fme_lnd_map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_l2x_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the land-export (l2x: albedos,
+      reference-height state, surface turbulent and radiative fluxes, and the
+      runoff handed to the river) time-mean stream. These are a land emulator's
+      OUTPUTS. Sampled after the land has run each step, not at the ocean hook,
+      because l2x is not in the coupler restart. Output cadence is
+      cpl_fme_lnd_interval. LND grid -> requires cpl_fme_lnd_map.
+      default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_x2r_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the river-import (x2r: the surface,
+      subsurface, groundwater and direct-to-ocean runoff MOSART routes)
+      time-mean stream -- a river emulator's INPUTS. Sampled on river coupling
+      steps only, so the mean is over those. Output cadence is
+      cpl_fme_rof_interval (default daily). ROF grid -> requires
+      cpl_fme_rof_map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_r2x_enable">
+    <type>logical</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: enable the river-export (r2x: liquid and ice
+      discharge to the ocean, flood, channel volume, supply and deficit)
+      time-mean stream -- a river emulator's OUTPUTS. Sampled after the river
+      has run each step. Output cadence is cpl_fme_rof_interval. ROF grid ->
+      requires cpl_fme_rof_map. default: false
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_lnd_interval">
+    <type>real</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: averaging/output window for the land streams
+      (x2l and l2x), in days. Must be a multiple of the land coupling step.
+      default: 1.0 (daily)
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
+  <entry id="cpl_fme_rof_interval">
+    <type>real</type>
+    <category>history</category>
+    <group>cpl_fme_inparm</group>
+    <desc>
+      Coupler-native FME output: averaging/output window for the river streams
+      (x2r and r2x), in days. Must be a multiple of the river coupling step
+      (ROF_NCPL), which is normally coarser than the base step -- a window that
+      the river step does not divide makes records flush on the first river
+      step past each boundary instead of on it, and cpl_fme_init warns about
+      it. default: 1.0 (daily)
+    </desc>
+    <values>
+      <value>1.0</value>
+    </values>
+  </entry>
+
   <entry id="histavg_atm">
     <type>logical</type>
     <category>history</category>

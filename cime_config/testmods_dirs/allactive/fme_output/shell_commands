@@ -72,14 +72,21 @@ FME_MAPS_DIR=${FME_MAPS_DIR:-$(./xmlquery --value DIN_LOC_ROOT)/fme}
 # Set FME_CPL_ENABLE=FALSE to turn it off (e.g. to isolate a component issue).
 # Imports (cpl->component, what each component integrates):
 #   x2o = ocean merged forcing (the prize); x2i = sea-ice import;
-#   x2a = atm import (ACE boundary forcing IN, ATM grid).
+#   x2a = atm import (ACE boundary forcing IN, ATM grid);
+#   x2l = land import (a land emulator's inputs, LND grid);
+#   x2r = river import (a river emulator's inputs, ROF grid).
 # Exports (component->cpl, what each component produces):
 #   o2x = ocean state out (Samudra outputs); i2x = sea-ice export;
-#   a2x = atm export (ACE forcing OUT, ATM grid).
+#   a2x = atm export (ACE forcing OUT, ATM grid);
+#   l2x = land export (a land emulator's outputs); r2x = river export.
 # Coupler-computed: xao = atm-ocean bulk fluxes (Faox_*).
-# x2i/o2x/i2x/xao share the ocean mesh map; x2a/a2x use the ATM (EAM) map.
+# x2i/o2x/i2x/xao share the ocean mesh map; x2a/a2x use the ATM (EAM) map;
+# x2l/l2x use the LND map and x2r/r2x the ROF map (both r05 in production --
+# the same file ELM and MOSART use for their own FME tapes).
 # The atm streams (x2a, a2x) run at a configurable sub-daily cadence
-# (FME_CPL_ATM_INTERVAL, default 6 h); the ocean/ice streams have 1D + 5D means.
+# (FME_CPL_ATM_INTERVAL, default 6 h); the land and river streams at
+# FME_CPL_LND_INTERVAL / FME_CPL_ROF_INTERVAL (default daily); the ocean/ice
+# streams have 1D + 5D means.
 FME_CPL_ENABLE=${FME_CPL_ENABLE:-.true.}         # x2o ocean merged forcing
 FME_CPL_XAO_ENABLE=${FME_CPL_XAO_ENABLE:-.true.} # xao atm-ocean fluxes
 FME_CPL_ICE_ENABLE=${FME_CPL_ICE_ENABLE:-.true.} # x2i sea-ice import
@@ -87,9 +94,17 @@ FME_CPL_O2X_ENABLE=${FME_CPL_O2X_ENABLE:-.true.} # o2x ocean export
 FME_CPL_I2X_ENABLE=${FME_CPL_I2X_ENABLE:-.true.} # i2x sea-ice export
 FME_CPL_X2A_ENABLE=${FME_CPL_X2A_ENABLE:-.true.} # x2a atm import (ATM grid)
 FME_CPL_A2X_ENABLE=${FME_CPL_A2X_ENABLE:-.true.} # a2x atm export (ATM grid)
+FME_CPL_X2L_ENABLE=${FME_CPL_X2L_ENABLE:-.true.} # x2l lnd import (LND grid)
+FME_CPL_L2X_ENABLE=${FME_CPL_L2X_ENABLE:-.true.} # l2x lnd export (LND grid)
+FME_CPL_X2R_ENABLE=${FME_CPL_X2R_ENABLE:-.true.} # x2r rof import (ROF grid)
+FME_CPL_R2X_ENABLE=${FME_CPL_R2X_ENABLE:-.true.} # r2x rof export (ROF grid)
 FME_CPL_INTERVAL=${FME_CPL_INTERVAL:-1.0}        # 1D mean window (days)
 FME_CPL_INTERVAL_5D=${FME_CPL_INTERVAL_5D:-5.0}  # 5D mean window (days)
 FME_CPL_ATM_INTERVAL=${FME_CPL_ATM_INTERVAL:-0.25} # atm x2a/a2x window (days; 6 h)
+FME_CPL_LND_INTERVAL=${FME_CPL_LND_INTERVAL:-1.0}  # lnd x2l/l2x window (days)
+# The river window must be a multiple of the river coupling step (ROF_NCPL is
+# normally coarser than the base step); cpl_fme_init warns if it is not.
+FME_CPL_ROF_INTERVAL=${FME_CPL_ROF_INTERVAL:-1.0}  # rof x2r/r2x window (days)
 # Set FME_CPL_5D_ENABLE=.false. to skip ALL 5-day companion streams.
 FME_CPL_5D_ENABLE=${FME_CPL_5D_ENABLE:-.true.}
 
@@ -99,6 +114,7 @@ echo "  MPAS: interval=${FME_MPAS_INTERVAL}, 5D companion=${FME_MPAS_INTERVAL_5D
 echo "  ELM: ${FME_LND_OUTPUT_HOURS}-hourly, storage=${FME_LND_STORAGE}, remap=${FME_LND_ENABLE}"
 echo "  ROF: ${FME_ROF_OUTPUT_HOURS}-hourly, storage=${FME_ROF_STORAGE}, remap=${FME_ROF_ENABLE}"
 echo "  CPL: enable=${FME_CPL_ENABLE}, ocn 1D=${FME_CPL_INTERVAL}d, ocn 5D=${FME_CPL_INTERVAL_5D}d (5D enable=${FME_CPL_5D_ENABLE})"
+echo "  CPL lnd/rof: x2l=${FME_CPL_X2L_ENABLE} l2x=${FME_CPL_L2X_ENABLE} (${FME_CPL_LND_INTERVAL}d), x2r=${FME_CPL_X2R_ENABLE} r2x=${FME_CPL_R2X_ENABLE} (${FME_CPL_ROF_INTERVAL}d)"
 echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
 #
 # ---------------------------------------------------------------------------
@@ -250,10 +266,15 @@ cat > Buildconf/fme.input_data_list << EOF
 fme_map_eam = ${EAM_MAP}
 fme_map_ocn = ${OCN_MAP}
 EOF
-if [ "${FME_LND_ENABLE}" = "TRUE" ]; then
+# The land map is needed by the ELM tape AND by the coupler's x2l/l2x streams;
+# same for the river map. Register it if any of its consumers is on.
+if [ "${FME_LND_ENABLE}" = "TRUE" ] || [ "${FME_CPL_X2L_ENABLE}" = ".true." ] \
+   || [ "${FME_CPL_L2X_ENABLE}" = ".true." ]; then
   echo "fme_map_lnd = ${LND_MAP}" >> Buildconf/fme.input_data_list
 fi
-if [ "${FME_ROF_ENABLE}" = "TRUE" ] && [ "${ROF_MAP}" != "${LND_MAP}" ]; then
+if { [ "${FME_ROF_ENABLE}" = "TRUE" ] || [ "${FME_CPL_X2R_ENABLE}" = ".true." ] \
+     || [ "${FME_CPL_R2X_ENABLE}" = ".true." ]; } \
+   && [ "${ROF_MAP}" != "${LND_MAP}" ]; then
   echo "fme_map_rof = ${ROF_MAP}" >> Buildconf/fme.input_data_list
 fi
 
@@ -416,9 +437,13 @@ fi
 cat >> user_nl_cpl << EOF
 cpl_fme_ocn_map         = '${OCN_MAP}'
 cpl_fme_atm_map         = '${EAM_MAP}'
+cpl_fme_lnd_map         = '${LND_MAP}'
+cpl_fme_rof_map         = '${ROF_MAP}'
 cpl_fme_ocn_interval    = ${FME_CPL_INTERVAL}
 cpl_fme_ocn_5d_interval = ${FME_CPL_INTERVAL_5D}
 cpl_fme_atm_interval    = ${FME_CPL_ATM_INTERVAL}
+cpl_fme_lnd_interval    = ${FME_CPL_LND_INTERVAL}
+cpl_fme_rof_interval    = ${FME_CPL_ROF_INTERVAL}
 cpl_fme_x2o_enable      = ${FME_CPL_ENABLE}
 cpl_fme_x2o_5d_enable   = ${FME_CPL_OCN5D}
 cpl_fme_xao_enable      = ${FME_CPL_XAO_ENABLE}
@@ -431,6 +456,10 @@ cpl_fme_i2x_enable      = ${FME_CPL_I2X_ENABLE}
 cpl_fme_i2x_5d_enable   = ${FME_CPL_I2X5D}
 cpl_fme_x2a_enable      = ${FME_CPL_X2A_ENABLE}
 cpl_fme_a2x_enable      = ${FME_CPL_A2X_ENABLE}
+cpl_fme_x2l_enable      = ${FME_CPL_X2L_ENABLE}
+cpl_fme_l2x_enable      = ${FME_CPL_L2X_ENABLE}
+cpl_fme_x2r_enable      = ${FME_CPL_X2R_ENABLE}
+cpl_fme_r2x_enable      = ${FME_CPL_R2X_ENABLE}
 EOF
 
 # ---------------------------------------------------------------------------

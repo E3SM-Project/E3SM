@@ -4,9 +4,17 @@ module cpl_fme_mod
   ! Coupler-native FME (Full Model Emulation) output.
   !
   ! Emits the merged, post-coupler forcing that each component actually
-  ! integrates (x2o / x2i / xao) as horizontally-remapped lat-lon monthly
-  ! NetCDF files.  This is the one quantity no component history tape can
-  ! provide: it exists only on the mediator after the coupler merge.
+  ! integrates -- and the export each component hands back -- as horizontally
+  ! remapped lat-lon monthly NetCDF files.  This is the one quantity no
+  ! component history tape can provide: it exists only on the mediator after
+  ! the coupler merge.
+  !
+  ! Bundles, by direction (imports = what the component integrates, exports =
+  ! what it produces):
+  !   ocean mesh : x2o / o2x, x2i / i2x, xao (coupler-computed bulk fluxes)
+  !   atm grid   : x2a / a2x
+  !   lnd grid   : x2l / l2x   -- a land emulator's inputs and outputs
+  !   rof grid   : x2r / r2x   -- a river emulator's inputs and outputs
   !
   ! This module mirrors the MPAS-Ocean FME analysis-member pattern
   ! (components/mpas-ocean/src/shared/mpas_ocn_fme_horiz_remap.F):
@@ -90,6 +98,20 @@ module cpl_fme_mod
   integer, parameter, public :: CPL_FME_PHASE_OCN = 1  ! after prep_ocn_accum_avg
   integer, parameter, public :: CPL_FME_PHASE_ICE = 2  ! after prep_ice_mrg
   integer, parameter, public :: CPL_FME_PHASE_ATM = 3  ! after prep_atm_mrg
+  integer, parameter, public :: CPL_FME_PHASE_LND = 4  ! after prep_lnd_mrg
+  integer, parameter, public :: CPL_FME_PHASE_ROF = 5  ! after prep_rof_mrg
+  ! The land and river EXPORTS get their own post-run phases rather than
+  ! riding the ocean hook the way o2x/i2x/a2x do.  Those three are safe to
+  ! sample one step late because seq_rest writes o2x_ox / i2x_ix / a2x_ax to
+  ! the coupler restart, so a warm-restart leg reads back exactly what the
+  ! continuous run had.  l2x_lx is NOT in the coupler restart (seq_rest_mod
+  ! writes r2x_rx but no l2x): sampling it before the land has run would take
+  ! the init-time export on the first step of a warm leg and the previous
+  ! step's export on a continuous run -- the gotcha #51 failure mode again.
+  ! Sampling both exports after their component has run this step makes every
+  ! sample freshly computed, so cold and warm legs accumulate identically.
+  integer, parameter, public :: CPL_FME_PHASE_L2X = 6  ! after the lnd runs (LNDPOST)
+  integer, parameter, public :: CPL_FME_PHASE_R2X = 7  ! after the rof runs (ROFRUNPOST)
 
   !-----------------------------------------------------------------------------
   ! Per-stream monthly lat-lon PIO output file (2D, time-averaged records).
@@ -156,7 +178,7 @@ module cpl_fme_mod
      logical            :: reopen_pending = .true.     ! gotcha #29/#44 latch
   end type cpl_fme_stream_t
 
-  integer, parameter :: max_streams = 16
+  integer, parameter :: max_streams = 24
   type(cpl_fme_stream_t) :: streams(max_streams)
   integer :: nstreams = 0
 
@@ -186,9 +208,13 @@ module cpl_fme_mod
   type(mct_gsMap), pointer :: ocn_gsmap => null()
   type(mct_gsMap), pointer :: ice_gsmap => null()
   type(mct_gsMap), pointer :: atm_gsmap => null()
+  type(mct_gsMap), pointer :: lnd_gsmap => null()
+  type(mct_gsMap), pointer :: rof_gsmap => null()
   integer :: lsize_ocn = 0, gsize_ocn = 0
   integer :: lsize_ice = 0, gsize_ice = 0
   integer :: lsize_atm = 0, gsize_atm = 0
+  integer :: lsize_lnd = 0, gsize_lnd = 0
+  integer :: lsize_rof = 0, gsize_rof = 0
   type(mct_aVect), pointer :: b_x2o => null()   ! ocn merged window-mean (x2oacc)
   type(mct_aVect), pointer :: b_xao => null()   ! atm-ocn bulk fluxes (Faox_*)
   type(mct_aVect), pointer :: b_x2i => null()   ! ice merged import (x2i)
@@ -196,6 +222,10 @@ module cpl_fme_mod
   type(mct_aVect), pointer :: b_i2x => null()   ! ice export
   type(mct_aVect), pointer :: b_x2a => null()   ! atm merged import (ACE forcing)
   type(mct_aVect), pointer :: b_a2x => null()   ! atm export (ACE forcing out)
+  type(mct_aVect), pointer :: b_x2l => null()   ! lnd merged import (what ELM integrates)
+  type(mct_aVect), pointer :: b_l2x => null()   ! lnd export (ELM state + fluxes out)
+  type(mct_aVect), pointer :: b_x2r => null()   ! rof merged import (what MOSART integrates)
+  type(mct_aVect), pointer :: b_r2x => null()   ! rof export (discharge + storage out)
 
   real(r8), parameter :: SCHED_EPS  = 1.0e-9_r8   ! day-boundary tolerance
   real(r8), parameter :: FILL_DETECT = SHR_FILL_VALUE * 0.1_r8
@@ -275,11 +305,61 @@ module cpl_fme_mod
        'Faxa_snowc      ', 'Faxa_snowl      ', 'Faxa_swndr      ', &
        'Faxa_swvdr      ', 'Faxa_swndf      ', 'Faxa_swvdf      ' /)
 
+  ! x2l : land import -- the merged lower-boundary forcing ELM integrates.
+  ! These are the INPUTS of a land emulator, on the LND grid (r05 in the
+  ! production configuration) -> needs cpl_fme_lnd_map.  The Flrr_* entries
+  ! are the river feedback into the land (flood, channel volume, supply).
+  integer, parameter :: n_x2l_default = 22
+  character(len=16), parameter :: x2l_default(n_x2l_default) = (/ &
+       'Sa_z            ', 'Sa_topo         ', 'Sa_u            ', &
+       'Sa_v            ', 'Sa_tbot         ', 'Sa_ptem         ', &
+       'Sa_shum         ', 'Sa_pbot         ', 'Faxa_rainc      ', &
+       'Faxa_rainl      ', 'Faxa_snowc      ', 'Faxa_snowl      ', &
+       'Faxa_lwdn       ', 'Faxa_swndr      ', 'Faxa_swvdr      ', &
+       'Faxa_swndf      ', 'Faxa_swvdf      ', 'Flrr_flood      ', &
+       'Flrr_volr       ', 'Flrr_volrmch    ', 'Flrr_supply     ', &
+       'Flrr_deficit    ' /)
+
+  ! l2x : land export -- albedos, reference-height state, surface turbulent
+  ! and radiative fluxes, and the runoff the land hands to the river.
+  ! These are the OUTPUTS of a land emulator.
+  integer, parameter :: n_l2x_default = 23
+  character(len=16), parameter :: l2x_default(n_l2x_default) = (/ &
+       'Sl_avsdr        ', 'Sl_anidr        ', 'Sl_avsdf        ', &
+       'Sl_anidf        ', 'Sl_tref         ', 'Sl_qref         ', &
+       'Sl_t            ', 'Sl_fv           ', 'Sl_ram1         ', &
+       'Sl_snowh        ', 'Sl_u10          ', 'Fall_taux       ', &
+       'Fall_tauy       ', 'Fall_lat        ', 'Fall_sen        ', &
+       'Fall_lwup       ', 'Fall_evap       ', 'Fall_swnet      ', &
+       'Flrl_rofsur     ', 'Flrl_rofgwl     ', 'Flrl_rofsub     ', &
+       'Flrl_rofdto     ', 'Flrl_rofi       ' /)
+
+  ! x2r : river import -- the runoff MOSART routes, on the ROF grid (r05)
+  ! -> needs cpl_fme_rof_map.  Flrl_Tq* are only present with the MOSART heat
+  ! option; absent fields are skipped+warned at setup.
+  integer, parameter :: n_x2r_default = 8
+  character(len=16), parameter :: x2r_default(n_x2r_default) = (/ &
+       'Flrl_rofsur     ', 'Flrl_rofgwl     ', 'Flrl_rofsub     ', &
+       'Flrl_rofdto     ', 'Flrl_rofi       ', 'Flrl_demand     ', &
+       'Flrl_Tqsur      ', 'Flrl_Tqsub      ' /)
+
+  ! r2x : river export -- discharge to the ocean/ice and the channel state
+  ! the land sees back.  These are the OUTPUTS of a river emulator.
+  ! NOTE these are per-cell rates/volumes as the coupler exchanges them; see
+  ! the conservation note in AGENTS.md gotcha #58 before summing them on the
+  ! remapped grid.
+  integer, parameter :: n_r2x_default = 8
+  character(len=16), parameter :: r2x_default(n_r2x_default) = (/ &
+       'Forr_rofl       ', 'Forr_rofi       ', 'Firr_rofi       ', &
+       'Flrr_flood      ', 'Flrr_volr       ', 'Flrr_volrmch    ', &
+       'Flrr_supply     ', 'Flrr_deficit    ' /)
+
 CONTAINS
 
   !=============================================================================
   subroutine cpl_fme_init(infodata, EClock, ocn, ocn_present, ice, ice_present, &
-       atm, atm_present, read_restart, ocn_cpl_dt)
+       atm, atm_present, lnd, lnd_present, rof, rof_present, &
+       read_restart, ocn_cpl_dt, rof_cpl_dt)
     !---------------------------------------------------------------------------
     ! One-time setup.  Reads the cpl_fme_inparm namelist group from drv_in,
     ! loads maps, builds remap comm patterns + decompositions, allocates the
@@ -299,8 +379,13 @@ CONTAINS
     logical,                 intent(in)    :: ice_present
     type(component_type),    intent(in)    :: atm(:)
     logical,                 intent(in)    :: atm_present
+    type(component_type),    intent(in)    :: lnd(:)
+    logical,                 intent(in)    :: lnd_present
+    type(component_type),    intent(in)    :: rof(:)
+    logical,                 intent(in)    :: rof_present
     logical,                 intent(in)    :: read_restart
     integer,                 intent(in)    :: ocn_cpl_dt
+    integer,                 intent(in)    :: rof_cpl_dt
 
     integer :: s, ierr, base_dt
     type(mct_aVect), pointer :: avp(:)
@@ -312,8 +397,9 @@ CONTAINS
     iamin_cpl = seq_comm_iamin(CPLID)
     if (.not. iamin_cpl) return
 
-    ! all current streams ride the ocn/ice merged forcing; nothing without ocn
-    if (.not. ocn_present) return
+    ! The ocean/ice/atm streams need an ocean; the land and river streams do
+    ! not, so a land-only configuration can still emit x2l/l2x/x2r/r2x.
+    if (.not. (ocn_present .or. lnd_present .or. rof_present)) return
 
     ! coupler PIO + MPI context
     cpl_iosys  => shr_pio_getiosys(CPLID)
@@ -333,12 +419,14 @@ CONTAINS
 
     ! ocean source decomposition + live bundle pointers (stable targets).
     ! x2o : merged window-mean (import); o2x : ocean export (state out).
-    ocn_gsmap => component_get_gsmap_cx(ocn(1))
-    gsize_ocn =  mct_gsMap_gsize(ocn_gsmap)
-    lsize_ocn =  mct_gsMap_lsize(ocn_gsmap, cpl_mpicom)
-    avp => prep_ocn_get_x2oacc_ox()   ; if (associated(avp)) b_x2o => avp(1)
-    avp => prep_aoflux_get_xao_ox()   ; if (associated(avp)) b_xao => avp(1)
-    b_o2x => component_get_c2x_cx(ocn(1))
+    if (ocn_present) then
+       ocn_gsmap => component_get_gsmap_cx(ocn(1))
+       gsize_ocn =  mct_gsMap_gsize(ocn_gsmap)
+       lsize_ocn =  mct_gsMap_lsize(ocn_gsmap, cpl_mpicom)
+       avp => prep_ocn_get_x2oacc_ox()   ; if (associated(avp)) b_x2o => avp(1)
+       avp => prep_aoflux_get_xao_ox()   ; if (associated(avp)) b_xao => avp(1)
+       b_o2x => component_get_c2x_cx(ocn(1))
+    end if
 
     ! ice source decomposition + merged-import + export bundles (shares the
     ! ocean mesh, hence the same map file, but a distinct gsmap)
@@ -357,6 +445,27 @@ CONTAINS
        lsize_atm =  mct_gsMap_lsize(atm_gsmap, cpl_mpicom)
        b_x2a     => component_get_x2c_cx(atm(1))   ! merged import (into atm)
        b_a2x     => component_get_c2x_cx(atm(1))   ! atm export (out of atm)
+    end if
+
+    ! land source decomposition + merged-import + export bundles (LND grid ->
+    ! cpl_fme_lnd_map)
+    if (lnd_present) then
+       lnd_gsmap => component_get_gsmap_cx(lnd(1))
+       gsize_lnd =  mct_gsMap_gsize(lnd_gsmap)
+       lsize_lnd =  mct_gsMap_lsize(lnd_gsmap, cpl_mpicom)
+       b_x2l     => component_get_x2c_cx(lnd(1))   ! merged import (into lnd)
+       b_l2x     => component_get_c2x_cx(lnd(1))   ! lnd export (out of lnd)
+    end if
+
+    ! river source decomposition + merged-import + export bundles (ROF grid ->
+    ! cpl_fme_rof_map; the same r05 map as the land in the production setup,
+    ! but a distinct gsmap and potentially a distinct grid)
+    if (rof_present) then
+       rof_gsmap => component_get_gsmap_cx(rof(1))
+       gsize_rof =  mct_gsMap_gsize(rof_gsmap)
+       lsize_rof =  mct_gsMap_lsize(rof_gsmap, cpl_mpicom)
+       b_x2r     => component_get_x2c_cx(rof(1))   ! merged import (into rof)
+       b_r2x     => component_get_c2x_cx(rof(1))   ! rof export (out of rof)
     end if
 
     ! read namelist + populate streams(:) (default: all disabled)
@@ -405,9 +514,38 @@ CONTAINS
                'ocean-coupling-window mean rather than a true instant, and ', &
                'x2a/a2x means undersample. See AGENTS.md gotcha #52.'
        end if
+       ! The river normally couples coarser than the base step (ROF_NCPL=8 vs
+       ! ATM_NCPL=48 in WCYCL), which is fine -- the x2r/r2x hooks only run on
+       ! river coupling steps, so the window mean is over those samples. What
+       ! is NOT fine is a river step that does not divide the output window:
+       ! the flush then fires on the first river step PAST the boundary, so
+       ! records land late and drift relative to the other streams.
+       if (rof_cpl_dt > 0) then
+          if (mod(nint(streams_rof_interval_days() * 86400.0_r8), rof_cpl_dt) /= 0) then
+             write(logunit,*) subname, ': WARNING the river coupling step (', &
+                  rof_cpl_dt, 's) does not divide the cpl-FME river output ', &
+                  'window evenly; x2r/r2x records will flush on the first ', &
+                  'river step past each boundary rather than on it. Pick a ', &
+                  'cpl_fme_rof_interval that is a multiple of ROF_NCPL.'
+          end if
+       end if
     end if
 
   end subroutine cpl_fme_init
+
+  !=============================================================================
+  real(r8) function streams_rof_interval_days()
+    ! Output window (days) of the enabled river streams; 0 when none is on.
+    integer :: s
+    streams_rof_interval_days = 0.0_r8
+    do s = 1, nstreams
+       if (.not. streams(s)%enabled) cycle
+       if (trim(streams(s)%bundle) == 'x2r' .or. trim(streams(s)%bundle) == 'r2x') then
+          streams_rof_interval_days = streams(s)%interval
+          return
+       end if
+    end do
+  end function streams_rof_interval_days
 
   !=============================================================================
   subroutine cpl_fme_read_namelist()
@@ -429,9 +567,13 @@ CONTAINS
     logical           :: cpl_fme_o2x_enable, cpl_fme_o2x_5d_enable
     logical           :: cpl_fme_i2x_enable, cpl_fme_i2x_5d_enable
     logical           :: cpl_fme_x2a_enable, cpl_fme_a2x_enable
+    logical           :: cpl_fme_x2l_enable, cpl_fme_l2x_enable
+    logical           :: cpl_fme_x2r_enable, cpl_fme_r2x_enable
     character(len=CL) :: cpl_fme_ocn_map, cpl_fme_atm_map
+    character(len=CL) :: cpl_fme_lnd_map, cpl_fme_rof_map
     real(r8)          :: cpl_fme_ocn_interval, cpl_fme_ocn_5d_interval
     real(r8)          :: cpl_fme_atm_interval
+    real(r8)          :: cpl_fme_lnd_interval, cpl_fme_rof_interval
 
     namelist /cpl_fme_inparm/ cpl_fme_x2o_enable, cpl_fme_x2o_5d_enable, &
          cpl_fme_xao_enable, cpl_fme_xao_5d_enable, &
@@ -439,9 +581,13 @@ CONTAINS
          cpl_fme_o2x_enable, cpl_fme_o2x_5d_enable, &
          cpl_fme_i2x_enable, cpl_fme_i2x_5d_enable, &
          cpl_fme_x2a_enable, cpl_fme_a2x_enable, &
+         cpl_fme_x2l_enable, cpl_fme_l2x_enable, &
+         cpl_fme_x2r_enable, cpl_fme_r2x_enable, &
          cpl_fme_ocn_map, cpl_fme_atm_map, &
+         cpl_fme_lnd_map, cpl_fme_rof_map, &
          cpl_fme_ocn_interval, cpl_fme_ocn_5d_interval, &
-         cpl_fme_atm_interval
+         cpl_fme_atm_interval, &
+         cpl_fme_lnd_interval, cpl_fme_rof_interval
 
     ! defaults: everything off
     cpl_fme_x2o_enable      = .false. ; cpl_fme_x2o_5d_enable = .false.
@@ -450,11 +596,17 @@ CONTAINS
     cpl_fme_o2x_enable      = .false. ; cpl_fme_o2x_5d_enable = .false.
     cpl_fme_i2x_enable      = .false. ; cpl_fme_i2x_5d_enable = .false.
     cpl_fme_x2a_enable      = .false. ; cpl_fme_a2x_enable    = .false.
+    cpl_fme_x2l_enable      = .false. ; cpl_fme_l2x_enable    = .false.
+    cpl_fme_x2r_enable      = .false. ; cpl_fme_r2x_enable    = .false.
     cpl_fme_ocn_map         = ''
     cpl_fme_atm_map         = ''
+    cpl_fme_lnd_map         = ''
+    cpl_fme_rof_map         = ''
     cpl_fme_ocn_interval    = 1.0_r8
     cpl_fme_ocn_5d_interval = 5.0_r8
     cpl_fme_atm_interval    = 0.25_r8   ! 6 h (atm import/export cadence)
+    cpl_fme_lnd_interval    = 1.0_r8    ! daily (lnd import/export cadence)
+    cpl_fme_rof_interval    = 1.0_r8    ! daily (rof import/export cadence)
 
     inquire(file='drv_in', exist=exists)
     if (exists) then
@@ -487,6 +639,16 @@ CONTAINS
     !   a2x = atm export the coupler redistributes to ocn/ice.
     call add_stream(cpl_fme_x2a_enable, 'x2a', 'x2a', cpl_fme_atm_map, cpl_fme_atm_interval)
     call add_stream(cpl_fme_a2x_enable, 'a2x', 'a2x', cpl_fme_atm_map, cpl_fme_atm_interval)
+    ! land streams (LND grid -> lnd map) at a configurable cadence
+    ! (cpl_fme_lnd_interval, default daily), following the x2a/a2x pattern:
+    !   x2l = coupler merged import ELM integrates (a land emulator's inputs);
+    !   l2x = land export the coupler redistributes to atm/rof/glc.
+    call add_stream(cpl_fme_x2l_enable, 'x2l', 'x2l', cpl_fme_lnd_map, cpl_fme_lnd_interval)
+    call add_stream(cpl_fme_l2x_enable, 'l2x', 'l2x', cpl_fme_lnd_map, cpl_fme_lnd_interval)
+    ! river streams (ROF grid -> rof map) at cpl_fme_rof_interval:
+    !   x2r = runoff MOSART routes; r2x = discharge + channel state it returns.
+    call add_stream(cpl_fme_x2r_enable, 'x2r', 'x2r', cpl_fme_rof_map, cpl_fme_rof_interval)
+    call add_stream(cpl_fme_r2x_enable, 'r2x', 'r2x', cpl_fme_rof_map, cpl_fme_rof_interval)
 
   contains
     subroutine add_stream(en, nm, bn, mf, iv)
@@ -502,9 +664,15 @@ CONTAINS
       ! Sample the merged IMPORT bundles right after their own merge (gotcha
       ! #51): x2i after prep_ice_mrg, x2a after prep_atm_mrg.  All other
       ! bundles are valid at the ocean hook.
+      ! The land/river EXPORTS sample after their component has run this step
+      ! (l2x_lx is not in the coupler restart -- see the phase constants).
       select case (trim(bn))
       case ('x2i') ; streams(nstreams)%phase = CPL_FME_PHASE_ICE
       case ('x2a') ; streams(nstreams)%phase = CPL_FME_PHASE_ATM
+      case ('x2l') ; streams(nstreams)%phase = CPL_FME_PHASE_LND
+      case ('l2x') ; streams(nstreams)%phase = CPL_FME_PHASE_L2X
+      case ('x2r') ; streams(nstreams)%phase = CPL_FME_PHASE_ROF
+      case ('r2x') ; streams(nstreams)%phase = CPL_FME_PHASE_R2X
       case default ; streams(nstreams)%phase = CPL_FME_PHASE_OCN
       end select
     end subroutine add_stream
@@ -711,6 +879,18 @@ CONTAINS
     case ('a2x')
        st%src_bundle => b_a2x ; st%src_gsmap => atm_gsmap
        st%src_lsize = lsize_atm ; st%src_gsize = gsize_atm
+    case ('x2l')
+       st%src_bundle => b_x2l ; st%src_gsmap => lnd_gsmap
+       st%src_lsize = lsize_lnd ; st%src_gsize = gsize_lnd
+    case ('l2x')
+       st%src_bundle => b_l2x ; st%src_gsmap => lnd_gsmap
+       st%src_lsize = lsize_lnd ; st%src_gsize = gsize_lnd
+    case ('x2r')
+       st%src_bundle => b_x2r ; st%src_gsmap => rof_gsmap
+       st%src_lsize = lsize_rof ; st%src_gsize = gsize_rof
+    case ('r2x')
+       st%src_bundle => b_r2x ; st%src_gsmap => rof_gsmap
+       st%src_lsize = lsize_rof ; st%src_gsize = gsize_rof
     case default
        ierr = 5
        return
@@ -733,6 +913,10 @@ CONTAINS
     case ('i2x') ; n = n_i2x_default ; names(1:n) = i2x_default
     case ('x2a') ; n = n_x2a_default ; names(1:n) = x2a_default
     case ('a2x') ; n = n_a2x_default ; names(1:n) = a2x_default
+    case ('x2l') ; n = n_x2l_default ; names(1:n) = x2l_default
+    case ('l2x') ; n = n_l2x_default ; names(1:n) = l2x_default
+    case ('x2r') ; n = n_x2r_default ; names(1:n) = x2r_default
+    case ('r2x') ; n = n_r2x_default ; names(1:n) = r2x_default
     case default ; n = 0
     end select
   end subroutine cpl_fme_field_list
@@ -742,15 +926,25 @@ CONTAINS
     !---------------------------------------------------------------------------
     ! Sample the merged forcing into each enabled stream's source-space
     ! accumulator, then flush+remap+write any stream whose output window has
-    ! elapsed.  Called once per coupling step at EACH of three phases
-    ! (gotcha #51): CPL_FME_PHASE_OCN right after prep_ocn_accum_avg (x2o
-    ! window-mean + xao/o2x/i2x/a2x), CPL_FME_PHASE_ICE right after
-    ! prep_ice_mrg (x2i, freshly merged), CPL_FME_PHASE_ATM right after
-    ! prep_atm_mrg (x2a, freshly merged).  Each stream is processed at exactly
-    ! one phase (streams(s)%phase) so it samples its bundle when validly
-    ! populated -- this is what makes x2i/x2a warm-restart BFB.  All three
-    ! phases see the same curr_time (the driver clock advances once per step,
-    ! before any prep), so the drift-free flush schedule stays consistent.
+    ! elapsed.  Called at each of seven phases (gotcha #51):
+    !   CPL_FME_PHASE_OCN  after prep_ocn_accum_avg  -- x2o window-mean, xao,
+    !                                                   o2x/i2x/a2x exports
+    !   CPL_FME_PHASE_ICE  after prep_ice_mrg        -- x2i, freshly merged
+    !   CPL_FME_PHASE_ATM  after prep_atm_mrg        -- x2a, freshly merged
+    !   CPL_FME_PHASE_LND  after prep_lnd_mrg        -- x2l, freshly merged
+    !   CPL_FME_PHASE_ROF  after prep_rof_mrg        -- x2r, freshly merged
+    !   CPL_FME_PHASE_L2X  after the lnd has run     -- l2x, freshly computed
+    !   CPL_FME_PHASE_R2X  after the rof has run     -- r2x, freshly computed
+    ! Each stream is processed at exactly one phase (streams(s)%phase) so it
+    ! samples its bundle when validly populated -- this is what makes
+    ! x2i/x2a/x2l/x2r and the l2x/r2x exports warm-restart BFB.  All phases
+    ! see the same curr_time (the driver clock advances once per step, before
+    ! any prep), so the drift-free flush schedule stays consistent.
+    !
+    ! A phase that runs on a coarser alarm than the base step (ROF_NCPL <
+    ! ATM_NCPL is the normal case) simply contributes fewer samples per
+    ! window; the mean is over the river coupling steps, which is the right
+    ! answer for a river emulator. See the cadence WARN in cpl_fme_init.
     !---------------------------------------------------------------------------
     type(ESMF_Clock), intent(in) :: EClock
     integer,          intent(in) :: phase

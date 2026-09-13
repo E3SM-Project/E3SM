@@ -133,7 +133,9 @@ module cime_comp_mod
   ! coupler-native FME output (as-exchanged merged forcing x2o/x2i/xao)
   use cpl_fme_mod, only : cpl_fme_init, cpl_fme_accum, &
        cpl_fme_restart_write, cpl_fme_final, &
-       CPL_FME_PHASE_OCN, CPL_FME_PHASE_ICE, CPL_FME_PHASE_ATM
+       CPL_FME_PHASE_OCN, CPL_FME_PHASE_ICE, CPL_FME_PHASE_ATM, &
+       CPL_FME_PHASE_LND, CPL_FME_PHASE_ROF, &
+       CPL_FME_PHASE_L2X, CPL_FME_PHASE_R2X
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
@@ -354,6 +356,7 @@ module cime_comp_mod
   integer  :: dtime                  ! dt of one coupling interval
   integer  :: ncpl                   ! number of coupling intervals per day
   integer  :: fme_ocn_cpl_dt         ! ocn coupling interval (s), for cpl-FME cadence WARN
+  integer  :: fme_rof_cpl_dt         ! rof coupling interval (s), for cpl-FME cadence WARN
   integer  :: ymd                    ! Current date (YYYYMMDD)
   integer  :: year                   ! Current date (YYYY)
   integer  :: month                  ! Current date (MM)
@@ -2511,12 +2514,15 @@ contains
     !| Placed after prep_ocn_init and the cpl restart read so the ocean
     !| gsmap / x2oacc accumulator are available and read_restart is known.
     !----------------------------------------------------------
-    ! ocean coupling step for the cpl-FME cadence sanity WARN (gotcha #52);
-    ! 0 when no ocean (cpl-FME is inert without ocn_present anyway)
+    ! ocean and river coupling steps for the cpl-FME cadence sanity WARNs
+    ! (gotcha #52); 0 when the component is absent
     fme_ocn_cpl_dt = 0
     if (ocn_present) call seq_timemgr_EClockGetData(EClock_o, dtime=fme_ocn_cpl_dt)
+    fme_rof_cpl_dt = 0
+    if (rof_present) call seq_timemgr_EClockGetData(EClock_r, dtime=fme_rof_cpl_dt)
     call cpl_fme_init(infodata, EClock_d, ocn, ocn_present, ice, ice_present, &
-         atm, atm_present, read_restart, fme_ocn_cpl_dt)
+         atm, atm_present, lnd, lnd_present, rof, rof_present, &
+         read_restart, fme_ocn_cpl_dt, fme_rof_cpl_dt)
 
     !----------------------------------------------------------
     !| Map initial r2x_rx and g2x_gx to _ox, _ix and _lx
@@ -4401,6 +4407,11 @@ contains
        if (lnd_prognostic) then
           call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
 
+          ! coupler-native FME (land phase): sample x2l now that prep_lnd_mrg
+          ! has merged the land import for this step -- the same point
+          ! component_diag reads it for the BFB cpl history (gotcha #51).
+          call cpl_fme_accum(EClock_d, CPL_FME_PHASE_LND)
+
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
        endif
@@ -4443,6 +4454,13 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:LNDPOST_BARRIER')
        call t_drvstartf  ('CPL:LNDPOST',cplrun=.true.,barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       ! coupler-native FME (land export phase): sample l2x now that the land
+       ! has run and returned this step's export.  Unlike o2x/i2x/a2x, l2x_lx
+       ! is NOT in the coupler restart, so sampling it before the land runs
+       ! would take the init-time export on the first step of a warm leg and
+       ! break restart BFB (the gotcha #51 mechanism).
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_L2X)
 
        call component_diag(infodata, lnd, flow='c2x', comment='recv lnd', &
             info_debug=info_debug, timer_diag='CPL:lndpost_diagav')
@@ -4608,6 +4626,11 @@ contains
        if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
        call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
 
+       ! coupler-native FME (river phase): sample x2r now that prep_rof_mrg has
+       ! merged the river import for this step.  This hook only runs on river
+       ! coupling steps (rofrun_alarm), so the x2r window mean is over those.
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_ROF)
+
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
 
@@ -4652,6 +4675,10 @@ contains
        call t_drvstartf ('CPL:ROFRUNPOST',cplrun=.true.,barrier=mpicom_CPLID)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       ! coupler-native FME (river export phase): sample r2x now that the
+       ! river has run and returned this step's discharge and channel state.
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_R2X)
 
        call component_diag(infodata, rof, flow='c2x', comment= 'recv rof', &
             info_debug=info_debug, timer_diag='CPL:rofpost_diagav')
