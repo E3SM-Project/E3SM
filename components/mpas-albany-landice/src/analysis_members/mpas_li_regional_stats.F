@@ -23,6 +23,7 @@ module li_regional_stats
    use mpas_dmpar
    use mpas_timekeeping
    use mpas_stream_manager
+   use mpas_global_sum_mod, only: mpas_global_sum_nfld
 
    use li_mask
    use li_constants
@@ -213,7 +214,7 @@ contains
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels
       integer :: k, iCell, iEdge
       integer :: upwindCell
-      integer :: iRegion, iGroup
+      integer :: iRegion, iGroup, iVar
 
       ! scalars to be calculated here from regional sums
       real (kind=RKIND), dimension(:), pointer ::  regionalIceArea, regionalIceVolume
@@ -245,32 +246,38 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  regionalSumChnlWaterFluxTerrestrialMargin
       real (kind=RKIND), dimension(:), pointer ::  regionalAvgFlotationFraction
 
-      ! storage for sums over blocks
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionIceArea, blockSumRegionIceVolume
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionVAF
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGroundedIceArea, blockSumRegionGroundedIceVolume
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionFloatingIceArea, blockSumRegionFloatingIceVolume
+      ! storage for min/max reductions over blocks (kept as block-local scalars per region,
+      ! since min/max are exact/associative operations and do not need a reproducible sum)
       real (kind=RKIND), dimension(:), allocatable ::  blockRegionThickMin, blockRegionThickMax
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionSfcMassBal, blockSumRegionBasalMassBal
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGroundedSfcMassBal, blockSumRegionFloatingSfcMassBal
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGroundedBasalMassBal, blockSumRegionFloatingBasalMassBal
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionCalvingFlux
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionFaceMeltingFlux
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGLflux
-      real (kind=RKIND), dimension(:), allocatable ::  blockRegionGLMigrationFlux
       real (kind=RKIND), dimension(:), allocatable ::  blockRegionMaxSurfaceSpeed
       real (kind=RKIND), dimension(:), allocatable ::  blockRegionMaxBasalSpeed
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionSubglacialWaterVolume
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionBasalMeltInput
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionExternalWaterInput
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionChannelMelt
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionLakeVolume
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionLakeArea
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGLMeltFlux
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionTerrestrialMeltFlux
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionChannelGLMeltFlux
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionChannelTerrestrialMeltFlux
-      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionFlotationFraction
+
+      ! Raw (region-independent) per-cell and per-edge contributions to the sum-type
+      ! reductions, computed once per cell/edge (outside the region loop). For each region,
+      ! these are multiplied by that region's cell/edge mask and reduced with the reproducible
+      ! mpas_global_sum_nfld routine, instead of accumulating a block-local scalar per region
+      ! and reducing it with a plain MPI_Allreduce (mpas_dmpar_sum_real_array), which is not
+      ! decomposition-independent due to floating-point non-associativity.
+      ! NOTE: MALI supports only a single block per MPI task, so these arrays are sized
+      ! and filled for the single block on this task.
+      integer, parameter :: nCellSumVars = 22, nEdgeSumVars = 6
+      real (kind=RKIND), dimension(:,:), allocatable :: cellRawContribution, edgeRawContribution
+      real (kind=RKIND), dimension(:,:), allocatable :: cellSumContribution, edgeSumContribution
+      real (kind=RKIND), dimension(nCellSumVars) :: cellGlobalSums
+      real (kind=RKIND), dimension(nEdgeSumVars) :: edgeGlobalSums
+      integer, dimension(:), allocatable :: edgeUpwindCell  ! upwind cell for each GL edge, used to assign GL flux to a region
+
+      ! column indices into cellRawContribution/cellSumContribution/cellGlobalSums
+      integer, parameter :: cIceArea = 1, cIceVolume = 2, cGroundedIceArea = 3, cGroundedIceVolume = 4, &
+                             cFloatingIceArea = 5, cFloatingIceVolume = 6, cSfcMassBal = 7, cGroundedSfcMassBal = 8, &
+                             cFloatingSfcMassBal = 9, cBasalMassBal = 10, cGroundedBasalMassBal = 11, &
+                             cFloatingBasalMassBal = 12, cCalvingFlux = 13, cFaceMeltingFlux = 14, cVAF = 15, &
+                             cGLMigrationFlux = 16, cSubglacialWaterVolume = 17, cBasalMeltInput = 18, &
+                             cExternalWaterInput = 19, cLakeVolume = 20, cLakeArea = 21, cFlotationFraction = 22
+
+      ! column indices into edgeRawContribution/edgeSumContribution/edgeGlobalSums
+      integer, parameter :: eGLflux = 1, eChannelMelt = 2, eGLMeltFlux = 3, eTerrestrialMeltFlux = 4, &
+                             eChannelGLMeltFlux = 5, eChannelTerrestrialMeltFlux = 6
       ! local variable needed calculating numerator of regionalAvgFlotationFraction
       real (kind=RKIND), dimension(:), allocatable:: regionalSumFlotationFraction
 
@@ -280,7 +287,7 @@ contains
       ! variables for processing stats
       integer, parameter :: kMaxVariables = 43 ! Increase if number of stats increase
       integer :: nVars
-      real (kind=RKIND), dimension(kMaxVariables) :: reductions, sums, mins, maxes
+      real (kind=RKIND), dimension(kMaxVariables) :: reductions, mins, maxes
 
       err = 0
 
@@ -356,135 +363,125 @@ contains
             call mpas_pool_get_array(regionsPool, 'regionEdgeMasks', regionEdgeMasks)
          endif
          ! allocate & initialize sums over blocks to 0
-         allocate(blockSumRegionIceArea(nRegions)); allocate(blockSumRegionIceVolume(nRegions))
-         allocate(blockSumRegionVAF(nRegions))
-         allocate(blockSumRegionGroundedIceArea(nRegions)); allocate(blockSumRegionGroundedIceVolume(nRegions))
-         allocate(blockSumRegionFloatingIceArea(nRegions)); allocate(blockSumRegionFloatingIceVolume(nRegions))
          allocate(blockRegionThickMin(nRegions)); allocate(blockRegionThickMax(nRegions))
          allocate(blockRegionMaxBasalSpeed(nRegions)); allocate(blockRegionMaxSurfaceSpeed(nRegions))
-         allocate(blockSumRegionSfcMassBal(nRegions)); allocate(blockSumRegionBasalMassBal(nRegions))
-         allocate(blockSumRegionGroundedBasalMassBal(nRegions)); allocate(blockSumRegionFloatingBasalMassBal(nRegions))
-         allocate(blockSumRegionGroundedSfcMassBal(nRegions)); allocate(blockSumRegionFloatingSfcMassBal(nRegions))
-         allocate(blockSumRegionCalvingFlux(nRegions))
-         allocate(blockSumRegionFaceMeltingFlux(nRegions))
-         allocate(blockSumRegionGLflux(nRegions))
-         allocate(blockRegionGLMigrationFlux(nRegions))
          if (config_SGH) then
-            allocate(blockSumRegionSubglacialWaterVolume(nRegions))
-            allocate(blockSumRegionBasalMeltInput(nRegions))
-            allocate(blockSumRegionExternalWaterInput(nRegions))
-            allocate(blockSumRegionChannelMelt(nRegions))
-            allocate(blockSumRegionLakeVolume(nRegions))
-            allocate(blockSumRegionLakeArea(nRegions))
-            allocate(blockSumRegionGLMeltFlux(nRegions))
-            allocate(blockSumRegionTerrestrialMeltFlux(nRegions))
-            allocate(blockSumRegionChannelGLMeltFlux(nRegions))
-            allocate(blockSumRegionChannelTerrestrialMeltFlux(nRegions))
-            allocate(blockSumRegionFlotationFraction(nRegions))
             allocate(regionalSumFlotationFraction(nRegions))
-         endif 
+         endif
 
-         blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
-         blockSumRegionVAF = 0.0_RKIND
-         blockSumRegionGroundedIceArea = 0.0_RKIND; blockSumRegionGroundedIceVolume = 0.0_RKIND
-         blockSumRegionFloatingIceArea = 0.0_RKIND; blockSumRegionFloatingIceVolume = 0.0_RKIND
          blockRegionThickMin = 10000.0_RKIND; blockRegionThickMax = 0.0_RKIND
          blockRegionMaxBasalSpeed = 0.0_RKIND; blockRegionMaxSurfaceSpeed = 0.0_RKIND
-         blockSumRegionSfcMassBal = 0.0_RKIND; blockSumRegionBasalMassBal = 0.0_RKIND
-         blockSumRegionGroundedSfcMassBal = 0.0_RKIND; blockSumRegionFloatingSfcMassBal = 0.0_RKIND
-         blockSumRegionGroundedBasalMassBal = 0.0_RKIND; blockSumRegionFloatingBasalMassBal = 0.0_RKIND
-         blockSumRegionCalvingFlux = 0.0_RKIND
-         blockSumRegionFaceMeltingFlux = 0.0_RKIND
-         blockSumRegionGLflux = 0.0_RKIND
-         blockRegionGLMigrationFlux = 0.0_RKIND
-         
-         if (config_SGH) then 
-            blockSumRegionSubglacialWaterVolume = 0.0_RKIND
-            blockSumRegionBasalMeltInput = 0.0_RKIND
-            blockSumRegionExternalWaterInput = 0.0_RKIND
-            blockSumRegionChannelMelt = 0.0_RKIND
-            blockSumRegionLakeVolume = 0.0_RKIND
-            blockSumRegionLakeArea = 0.0_RKIND
-            blockSumRegionGLMeltFlux = 0.0_RKIND
-            blockSumRegionTerrestrialMeltFlux = 0.0_RKIND
-            blockSumRegionChannelGLMeltFlux = 0.0_RKIND
-            blockSumRegionChannelTerrestrialMeltFlux = 0.0_RKIND
-            blockSumRegionFlotationFraction = 0.0_RKIND
+
+         if (config_SGH) then
             regionalSumFlotationFraction = 0.0_RKIND
          endif
 
+         ! Compute raw (region-independent) per-cell/per-edge contributions once; these will be
+         ! multiplied by each region's mask and reduced (reproducibly) after the cell/edge loops.
+         if (.not. allocated(cellRawContribution)) allocate(cellRawContribution(nCellsSolve, nCellSumVars))
+         if (.not. allocated(edgeRawContribution)) allocate(edgeRawContribution(nEdgesSolve, nEdgeSumVars))
+         if (.not. allocated(cellSumContribution)) allocate(cellSumContribution(nCellsSolve, nCellSumVars))
+         if (.not. allocated(edgeSumContribution)) allocate(edgeSumContribution(nEdgesSolve, nEdgeSumVars))
+         if (.not. allocated(edgeUpwindCell)) allocate(edgeUpwindCell(nEdgesSolve))
+         cellRawContribution(:,:) = 0.0_RKIND
+         edgeRawContribution(:,:) = 0.0_RKIND
+         edgeUpwindCell(:) = 0
+
          do iCell = 1,nCellsSolve      ! loop over cells
- !         do iGroup = 1,nRegionGroups  ! loop over groups
-           do iRegion = 1,nRegions     ! loop over regions
 
             ! regional sums of ice area over cells with ice (m^2)
-            blockSumRegionIceArea(iRegion) = blockSumRegionIceArea(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-               * areaCell(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) )
+            cellRawContribution(iCell, cIceArea) = areaCell(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND)
 
             ! regional sums of ice volume over cells with ice (m^3)
-            blockSumRegionIceVolume(iRegion) = blockSumRegionIceVolume(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-               * areaCell(iCell) * thickness(iCell) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) )
+            cellRawContribution(iCell, cIceVolume) = areaCell(iCell) * thickness(iCell) &
+               * real(li_mask_is_ice_int(cellMask(iCell)),RKIND)
 
             ! regional sums of ice volume above floatation over cells with ice (m^3)
-            blockSumRegionVAF(iRegion) = blockSumRegionVAF(iRegion) + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-               * real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * ( thickness(iCell) + (rhow / rhoi) &
+            cellRawContribution(iCell, cVAF) = real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
+               * areaCell(iCell) * ( thickness(iCell) + (rhow / rhoi) &
                * min(0.0_RKIND, (bedTopography(iCell) - config_sea_level)) )
 
             ! regional sums of grounded ice area over cells with ice (m^2)
-            blockSumRegionGroundedIceArea(iRegion) = blockSumRegionGroundedIceArea(iRegion) + &
-               ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) &
-                * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) )
+            cellRawContribution(iCell, cGroundedIceArea) = areaCell(iCell) &
+                * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND)
 
             ! regional sums of grounded ice volume over cells with ice (m^3)
-            blockSumRegionGroundedIceVolume(iRegion) = blockSumRegionGroundedIceVolume(iRegion) + &
-            ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) &
-              * thickness(iCell) * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) )
+            cellRawContribution(iCell, cGroundedIceVolume) = areaCell(iCell) &
+              * thickness(iCell) * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND)
 
             ! regional sums of floating ice area over cells with ice (m^2)
-            blockSumRegionFloatingIceArea(iRegion) = blockSumRegionFloatingIceArea(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) &
-                * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) )
+            cellRawContribution(iCell, cFloatingIceArea) = areaCell(iCell) &
+                * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND)
 
             ! regional sums of floating ice volume over cells with ice (m^3)
-            blockSumRegionFloatingIceVolume(iRegion) = blockSumRegionFloatingIceVolume(iRegion) + &
-            ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) &
-              * thickness(iCell) * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) )
+            cellRawContribution(iCell, cFloatingIceVolume) = areaCell(iCell) &
+              * thickness(iCell) * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND)
 
             ! regional sum of sfc mass balance (kg yr^{-1})
-            blockSumRegionSfcMassBal(iRegion) = blockSumRegionSfcMassBal(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * areaCell(iCell) * sfcMassBalApplied(iCell) * scyr )
+            cellRawContribution(iCell, cSfcMassBal) = areaCell(iCell) * sfcMassBalApplied(iCell) * scyr
 
             ! regional sum of sfc mass balance on grounded ice (kg yr^{-1})
-            blockSumRegionGroundedSfcMassBal(iRegion) = blockSumRegionGroundedSfcMassBal(iRegion) + &
-                ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * areaCell(iCell) * groundedSfcMassBalApplied(iCell) * scyr)
+            cellRawContribution(iCell, cGroundedSfcMassBal) = areaCell(iCell) * groundedSfcMassBalApplied(iCell) * scyr
 
             ! regional sum of sfc mass balance on floatingice (kg yr^{-1})
-            blockSumRegionFloatingSfcMassBal(iRegion) = blockSumRegionFloatingSfcMassBal(iRegion) + &
-                ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * areaCell(iCell) * (sfcMassBalApplied(iCell) - groundedSfcMassBalApplied(iCell)) * scyr)
+            cellRawContribution(iCell, cFloatingSfcMassBal) = &
+                areaCell(iCell) * (sfcMassBalApplied(iCell) - groundedSfcMassBalApplied(iCell)) * scyr
 
             ! regional sum of basal mass balance (kg yr^{-1})
-            blockSumRegionBasalMassBal(iRegion) = blockSumRegionBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * basalMassBalApplied(iCell) * scyr )
+            cellRawContribution(iCell, cBasalMassBal) = areaCell(iCell) * basalMassBalApplied(iCell) * scyr
 
             ! regional sum of floating basal mass balance (kg yr^{-1})
-            blockSumRegionFloatingBasalMassBal(iRegion) = blockSumRegionFloatingBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * floatingBasalMassBalApplied(iCell) * scyr )
+            cellRawContribution(iCell, cFloatingBasalMassBal) = areaCell(iCell) * floatingBasalMassBalApplied(iCell) * scyr
 
             ! regional sum of grounded basal mass balance (kg yr^{-1})
-            blockSumRegionGroundedBasalMassBal(iRegion) = blockSumRegionGroundedBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * groundedBasalMassBalApplied(iCell) * scyr )
+            cellRawContribution(iCell, cGroundedBasalMassBal) = areaCell(iCell) * groundedBasalMassBalApplied(iCell) * scyr
 
             ! regional sum of mass lass due do calving (kg yr^{-1})
-            blockSumRegionCalvingFlux(iRegion) = blockSumRegionCalvingFlux(iRegion) + &
-            ( real(regionCellMasks(iRegion,iCell),RKIND) &
-              * calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr ) )
+            cellRawContribution(iCell, cCalvingFlux) = &
+              calvingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr )
 
             ! regional sum of mass lass due do face-melting (kg yr^{-1})
-            blockSumRegionFaceMeltingFlux(iRegion) = blockSumRegionFaceMeltingFlux(iRegion) + &
-            ( real(regionCellMasks(iRegion,iCell),RKIND) &
-              * faceMeltingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr ) )
+            cellRawContribution(iCell, cFaceMeltingFlux) = &
+              faceMeltingThickness(iCell) * areaCell(iCell) * config_ice_density / ( deltat / scyr )
+
+            ! GL migration flux
+            cellRawContribution(iCell, cGLMigrationFlux) = &
+               groundedToFloatingThickness(iCell) * areaCell(iCell) * rhoi / (deltat / scyr)
+
+            !! Subglacial Hydrology Calculations
+            if (config_SGH) then
+
+               ! Subglacial Water Volume
+               cellRawContribution(iCell, cSubglacialWaterVolume) = waterThickness(iCell) * areaCell(iCell)
+
+               if (li_mask_is_grounded_ice(cellMask(iCell))) then
+                  ! Basal melt input
+                  cellRawContribution(iCell, cBasalMeltInput) = basalMeltInput(iCell) * areaCell(iCell)
+               endif
+
+               ! External water input
+               cellRawContribution(iCell, cExternalWaterInput) = &
+                                                            real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * &
+                                                            externalWaterInput(iCell) * areaCell(iCell)
+
+               ! Lake Volume
+               if (waterThickness(iCell) > bedBumpMax) then
+                  cellRawContribution(iCell, cLakeVolume) = (waterThickness(iCell) - bedBumpMax) * areaCell(iCell)
+               endif
+
+               ! Lake Area
+               if (waterThickness(iCell) > bedBumpMax) then
+                   cellRawContribution(iCell, cLakeArea) = areaCell(iCell)
+               endif
+
+               ! Area-weighted flotation fraction for grounded ice
+               if (li_mask_is_grounded_ice(cellMask(iCell))) then
+                   cellRawContribution(iCell, cFlotationFraction) = &
+                     ( waterPressure(iCell) / rhoi / gravity / thickness(iCell) ) * areaCell(iCell)
+               endif
+            endif
+
+           do iRegion = 1,nRegions     ! loop over regions, for min/max only (exact, region-restricted)
 
             ! max, min thickness values (m)
             if( ( thickness(iCell) * real(regionCellMasks(iRegion,iCell),RKIND) * &
@@ -508,49 +505,6 @@ contains
                blockRegionMaxBasalSpeed(iRegion) = basalSpeed(iCell)
             endif
 
-            ! GL migration flux
-            blockRegionGLMigrationFlux(iRegion) = blockRegionGLMigrationFlux(iRegion) + &
-               real(regionCellMasks(iRegion,iCell),RKIND) * &
-               groundedToFloatingThickness(iCell) * areaCell(iCell) * rhoi / (deltat / scyr)
-
-            !! Subglacial Hydrology Calculations
-            if (config_SGH) then
-
-               ! Subglacial Water Volume
-               blockSumRegionSubglacialWaterVolume(iRegion) = blockSumRegionSubglacialWaterVolume(iRegion) + &
-                 (real(regionCellMasks(iRegion,iCell),RKIND) * waterThickness(iCell) * areaCell(iCell))
-               
-               if (li_mask_is_grounded_ice(cellMask(iCell))) then
-                  ! Basal melt input
-                  blockSumRegionBasalMeltInput(iRegion) = blockSumRegionBasalMeltInput(iRegion) + &
-                    (real(regionCellMasks(iRegion,iCell),RKIND) * basalMeltInput(iCell) * areaCell(iCell))
-               endif
-
-               ! External water input
-               blockSumRegionExternalWaterInput(iRegion) = blockSumRegionExternalWaterInput(iRegion) + &
-                                                           (real(regionCellMasks(iRegion,iCell),RKIND) * &
-                                                            real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) * &
-                                                            externalWaterInput(iCell) * areaCell(iCell))
-
-               ! Lake Volume
-               if (waterThickness(iCell) > bedBumpMax) then
-                  blockSumRegionLakeVolume(iRegion) = blockSumRegionLakeVolume(iRegion) + &
-                    (real(regionCellMasks(iRegion,iCell),RKIND) * (waterThickness(iCell) - bedBumpMax) * areaCell(iCell))
-               endif
-
-               ! Lake Area
-               if (waterThickness(iCell) > bedBumpMax) then
-                   blockSumRegionLakeArea(iRegion) = blockSumRegionLakeArea(iRegion) + &
-                    (real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell))
-               endif
-
-               ! Area-weighted flotation fraction for grounded ice
-               if (li_mask_is_grounded_ice(cellMask(iCell))) then
-                   blockSumRegionFlotationFraction(iRegion) = blockSumRegionFlotationFraction(iRegion) + &
-                     (real(regionCellMasks(iRegion,iCell),RKIND) * &
-                     ( waterPressure(iCell) / rhoi / gravity / thickness(iCell) ) * areaCell(iCell))
-               endif
-            endif
            end do ! end loop over regions
          end do ! end loop over cells
 
@@ -567,43 +521,34 @@ contains
                   upwindCell = cellsOnEdge(2,iEdge)
                endif
 
-               do iRegion = 1,nRegions     ! find this edge's region(s)
-                  if(regionCellMasks(iRegion, upwindCell) == 1) then
-                     ! assign the GL flux from this edge to the stat
-                     blockSumRegionGLflux(iRegion) = blockSumRegionGLflux(iRegion) + &
-                        fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) * scyr * config_ice_density  ! convert from m^3/s to kg/yr
-                  end if ! if edge is on cell in region of interest
-               end do ! end loop over regions
+               ! record the raw GL flux and its upwind cell; the region assignment (based on
+               ! regionCellMasks(iRegion, upwindCell)) is applied per-region below
+               edgeUpwindCell(iEdge) = upwindCell
+               edgeRawContribution(iEdge, eGLflux) = fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) * scyr * config_ice_density
+                  ! convert from m^3/s to kg/yr
             end if ! if GL
 
             ! assign the SGH stats based on edge values using the regionEdgeMask 
             if (config_SGH) then
 
-               do iRegion = 1,nRegions ! loop over regions
-                  ! Channel Melt
-                  blockSumRegionChannelMelt(iRegion) = blockSumRegionChannelMelt(iRegion) + &
-                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * abs(channelMelt(iEdge) * dcEdge(iEdge)))
+               ! Channel Melt
+               edgeRawContribution(iEdge, eChannelMelt) = abs(channelMelt(iEdge) * dcEdge(iEdge))
 
-                  ! Meltwater Flux across the grounding line
-                  blockSumRegionGLMeltFlux(iRegion) = blockSumRegionGLMeltFlux(iRegion) + &
-                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
-                    abs(hydroMarineMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water))
+               ! Meltwater Flux across the grounding line
+               edgeRawContribution(iEdge, eGLMeltFlux) = &
+                 abs(hydroMarineMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water)
 
-                  ! Meltwater Flux across terrestrial margins
-                  blockSumRegionTerrestrialMeltFlux(iRegion) = blockSumRegionTerrestrialMeltFlux(iRegion) + &
-                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
-                    abs(hydroTerrestrialMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water))
+               ! Meltwater Flux across terrestrial margins
+               edgeRawContribution(iEdge, eTerrestrialMeltFlux) = &
+                 abs(hydroTerrestrialMarginMask(iEdge) * waterFlux(iEdge) * dvEdge(iEdge) * rho_water)
 
-                  ! Meltwater Discharge in channels across grounding line
-                  blockSumRegionChannelGLMeltFlux(iRegion) = blockSumRegionChannelGLMeltFlux(iRegion) + &
-                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
-                    abs(hydroMarineMarginMask(iEdge) * channelDischarge(iEdge) * rho_water))
+               ! Meltwater Discharge in channels across grounding line
+               edgeRawContribution(iEdge, eChannelGLMeltFlux) = &
+                 abs(hydroMarineMarginMask(iEdge) * channelDischarge(iEdge) * rho_water)
 
-                  ! Meltwater discharge in channels across terrestrial margin
-                  blockSumRegionChannelTerrestrialMeltFlux(iRegion) = blockSumRegionChannelTerrestrialMeltFlux(iRegion) + &
-                    (real(regionEdgeMasks(iRegion,iEdge),RKIND) * &
-                    abs( hydroTerrestrialMarginMask(iEdge) * channelDischarge(iEdge) * rho_water))
-               end do ! end loop over regions 
+               ! Meltwater discharge in channels across terrestrial margin
+               edgeRawContribution(iEdge, eChannelTerrestrialMeltFlux) = &
+                 abs( hydroTerrestrialMarginMask(iEdge) * channelDischarge(iEdge) * rho_water)
             endif ! if SGH is on
          end do ! end loop over edges
 
@@ -629,44 +574,64 @@ contains
 
       do iRegion = 1,nRegions     ! loop over regions
 
-        sums = 0.0_RKIND
         reductions = 0.0_RKIND
 
-        sums(1) = blockSumRegionIceArea(iRegion)
-        sums(2) = blockSumRegionIceVolume(iRegion)
-        sums(3) = blockSumRegionGroundedIceArea(iRegion)
-        sums(4) = blockSumRegionGroundedIceVolume(iRegion)
-        sums(5) = blockSumRegionFloatingIceArea(iRegion)
-        sums(6) = blockSumRegionFloatingIceVolume(iRegion)
-        sums(7) = blockSumRegionSfcMassBal(iRegion)
-        sums(8) = blockSumRegionGroundedSfcMassBal(iRegion)
-        sums(9) = blockSumRegionFloatingSfcMassBal(iRegion)
-        sums(10) = blockSumRegionBasalMassBal(iRegion)
-        sums(11) = blockSumRegionGroundedBasalMassBal(iRegion)
-        sums(12) = blockSumRegionFloatingBasalMassBal(iRegion)
-        sums(13) = blockSumRegionCalvingFlux(iRegion)
-        sums(14) = blockSumRegionFaceMeltingFlux(iRegion)
-        sums(15) = blockSumRegionVAF(iRegion)
-        sums(16) = blockSumRegionGLflux(iRegion)
-        sums(17) = blockRegionGLMigrationFlux(iRegion)
+        ! Mask the region-independent raw contributions by this region's cell/edge mask,
+        ! then perform a single reproducible reduction across all cell (and all edge) variables.
+        ! (GL flux is masked by the region of its GL edge's upwind cell, not by regionEdgeMasks.)
+        do iVar = 1, nCellSumVars
+           cellSumContribution(1:nCellsSolve,iVar) = cellRawContribution(1:nCellsSolve,iVar) * &
+              real(regionCellMasks(iRegion,1:nCellsSolve),RKIND)
+        end do
+        edgeSumContribution(:,:) = 0.0_RKIND
+        do iEdge = 1, nEdgesSolve
+           if (edgeUpwindCell(iEdge) > 0) then
+              edgeSumContribution(iEdge,eGLflux) = edgeRawContribution(iEdge,eGLflux) * &
+                 real(regionCellMasks(iRegion,edgeUpwindCell(iEdge)),RKIND)
+           end if
+        end do
         if (config_SGH) then
-           sums(18) = blockSumRegionSubglacialWaterVolume(iRegion)
-           sums(19) = blockSumRegionBasalMeltInput(iRegion)
-           sums(20) = blockSumRegionExternalWaterInput(iRegion)
-           sums(21) = blockSumRegionChannelMelt(iRegion)
-           sums(22) = blockSumRegionLakeVolume(iRegion)
-           sums(23) = blockSumRegionLakeArea(iRegion)
-           sums(24) = blockSumRegionGLMeltFlux(iRegion)
-           sums(25) = blockSumRegionTerrestrialMeltFlux(iRegion)
-           sums(26) = blockSumRegionChannelGLMeltFlux(iRegion)
-           sums(27) = blockSumRegionChannelTerrestrialMeltFlux(iRegion)
-           sums(28) = blockSumRegionFlotationFraction(iRegion)
-           nVars = 28
-        else
-          nVars = 17
-        endif
+           do iVar = 1, nEdgeSumVars
+              if (iVar /= eGLflux) then
+                 edgeSumContribution(1:nEdgesSolve,iVar) = edgeRawContribution(1:nEdgesSolve,iVar) * &
+                    real(regionEdgeMasks(iRegion,1:nEdgesSolve),RKIND)
+              end if
+           end do
+        end if
 
-        call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
+        cellGlobalSums(:) = mpas_global_sum_nfld(cellSumContribution, dminfo % comm)
+        edgeGlobalSums(:) = mpas_global_sum_nfld(edgeSumContribution, dminfo % comm)
+
+        reductions(1) = cellGlobalSums(cIceArea)
+        reductions(2) = cellGlobalSums(cIceVolume)
+        reductions(3) = cellGlobalSums(cGroundedIceArea)
+        reductions(4) = cellGlobalSums(cGroundedIceVolume)
+        reductions(5) = cellGlobalSums(cFloatingIceArea)
+        reductions(6) = cellGlobalSums(cFloatingIceVolume)
+        reductions(7) = cellGlobalSums(cSfcMassBal)
+        reductions(8) = cellGlobalSums(cGroundedSfcMassBal)
+        reductions(9) = cellGlobalSums(cFloatingSfcMassBal)
+        reductions(10) = cellGlobalSums(cBasalMassBal)
+        reductions(11) = cellGlobalSums(cGroundedBasalMassBal)
+        reductions(12) = cellGlobalSums(cFloatingBasalMassBal)
+        reductions(13) = cellGlobalSums(cCalvingFlux)
+        reductions(14) = cellGlobalSums(cFaceMeltingFlux)
+        reductions(15) = cellGlobalSums(cVAF)
+        reductions(16) = edgeGlobalSums(eGLflux)
+        reductions(17) = cellGlobalSums(cGLMigrationFlux)
+        if (config_SGH) then
+           reductions(18) = cellGlobalSums(cSubglacialWaterVolume)
+           reductions(19) = cellGlobalSums(cBasalMeltInput)
+           reductions(20) = cellGlobalSums(cExternalWaterInput)
+           reductions(21) = edgeGlobalSums(eChannelMelt)
+           reductions(22) = cellGlobalSums(cLakeVolume)
+           reductions(23) = cellGlobalSums(cLakeArea)
+           reductions(24) = edgeGlobalSums(eGLMeltFlux)
+           reductions(25) = edgeGlobalSums(eTerrestrialMeltFlux)
+           reductions(26) = edgeGlobalSums(eChannelGLMeltFlux)
+           reductions(27) = edgeGlobalSums(eChannelTerrestrialMeltFlux)
+           reductions(28) = cellGlobalSums(cFlotationFraction)
+        endif
 
         block => domain % blocklist
         do while (associated(block))
@@ -815,31 +780,12 @@ contains
       end do    ! loop over regions
 
       ! deallocate storage for sums over blocks
-      deallocate(blockSumRegionIceArea); deallocate(blockSumRegionIceVolume)
-      deallocate(blockSumRegionVAF)
-      deallocate(blockSumRegionGroundedIceArea); deallocate(blockSumRegionGroundedIceVolume)
-      deallocate(blockSumRegionFloatingIceArea); deallocate(blockSumRegionFloatingIceVolume)
       deallocate(blockRegionThickMin); deallocate(blockRegionThickMax)
       deallocate(blockRegionMaxBasalSpeed); deallocate(blockRegionMaxSurfaceSpeed)
-      deallocate(blockSumRegionSfcMassBal); deallocate(blockSumRegionBasalMassBal)
-      deallocate(blockSumRegionGroundedSfcMassBal); deallocate(blockSumRegionFloatingSfcMassBal)
-      deallocate(blockSumRegionGroundedBasalMassBal); deallocate(blockSumRegionFloatingBasalMassBal)
-      deallocate(blockSumRegionCalvingFlux)
-      deallocate(blockSumRegionFaceMeltingFlux)
-      deallocate(blockSumRegionGLflux)
-      deallocate(blockRegionGLMigrationflux)
+      deallocate(cellRawContribution); deallocate(edgeRawContribution)
+      deallocate(cellSumContribution); deallocate(edgeSumContribution)
+      deallocate(edgeUpwindCell)
       if (config_SGH) then
-         deallocate(blockSumRegionSubglacialWaterVolume)
-         deallocate(blockSumRegionBasalMeltInput)
-         deallocate(blockSumRegionExternalWaterInput)
-         deallocate(blockSumRegionChannelMelt)
-         deallocate(blockSumRegionLakeVolume)
-         deallocate(blockSumRegionLakeArea)
-         deallocate(blockSumRegionGLMeltFlux)
-         deallocate(blockSumRegionTerrestrialMeltFlux)
-         deallocate(blockSumRegionChannelGLMeltFlux)
-         deallocate(blockSumRegionChannelTerrestrialMeltFlux)
-         deallocate(blockSumRegionFlotationFraction)
          ! local variable needed for calculating numerator of regionalAvgFlotationFraction
          deallocate(regionalSumFlotationFraction)
       endif 
