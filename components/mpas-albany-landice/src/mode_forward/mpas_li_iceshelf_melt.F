@@ -960,6 +960,19 @@ module li_iceshelf_melt
 !> For the GL depth, an approximation of the mean depth of deepest specified-fraction of the
 !> grounding line is used.  For the CF depth, the mean of the calving front
 !> is used.
+!> KNOWN ISSUE (unresolved): The global reductions for both the GL depth bins and the CF
+!> depth below use mpas_dmpar_sum_real_array, which performs a plain MPI_Allreduce.
+!> Floating-point summation is not associative, so this reduction is not guaranteed to be
+!> bit-for-bit reproducible across different domain decompositions/processor counts, which
+!> will make GLdepth and CFdepth (and therefore the temperature_profile melt method that
+!> consumes them) non-BFB across decompositions. A reproducible-sum implementation (e.g.
+!> using mpas_global_sum_mod, as was done for the ismip6 melt method's basin-mean thermal
+!> forcing) would fix this, but is not implemented here because the GL depth bin reduction
+!> uses ~400 bins, and a naive per-cell one-hot reproducible-sum implementation (as used for
+!> the ismip6 fix, which only has 32 basins) would be considerably more expensive in memory
+!> and compute. A more efficient scatter-based reproducible accumulation would be needed.
+!> This has been left unfixed because the temperature_profile melt method is not currently
+!> in use.
 !-----------------------------------------------------------------------
 
     subroutine calc_iceshelf_draft_info(domain, GLdepth, CFdepth, err)
@@ -1108,6 +1121,7 @@ module li_iceshelf_melt
       enddo   ! associated(block)
 
       ! --- Global reduction for GL stat ---
+      ! NOTE: this reduction is not decomposition-reproducible (see subroutine header) - unresolved
       ! pack communication array
       localGLSums(1:nBins) = binWeightedDepthSum(1:nBins)
       localGLSums(nBins+1:2*nBins) = binWeightSum(1:nBins)
@@ -1136,6 +1150,7 @@ module li_iceshelf_melt
       endif
 
       ! --- Global reduction for CF stat ---
+      ! NOTE: this reduction is not decomposition-reproducible (see subroutine header) - unresolved
       localCFSums = (/sumCFdepth, sumCFarea/)
       ! sum up over all procs
       call mpas_dmpar_sum_real_array(domain % dminfo, 2, localCFSums(:), globalCFSums(:))
