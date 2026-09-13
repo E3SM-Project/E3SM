@@ -17,14 +17,31 @@ Shared infrastructure (pure computation, no I/O or MPI):
 - `share/util/shr_horiz_remap_mod.F90` -- CRS SpMV remap + apply_masked
 - `share/util/shr_vcoarsen_mod.F90` -- vertical coarsening (pressure/depth)
 - `share/util/shr_derived_mod.F90` -- expression parser (e.g. `STW=Q+CLDICE+CLDLIQ`)
+- `share/util/shr_horiz_remap_col_mod.F90` -- generic remap driver for
+  components whose decomposition is a plain list of global column indices
+  (ELM, MOSART). Owns gcol_to_rank construction, send packing, PIO
+  decomposition caching, partial source coverage and per-level fill.
+  See gotchas #57-#59.
 
 EAM wrappers (in `components/eam/src/control/`):
 - `horiz_remap_mod.F90` -- per-tape remap via cam_history (transparent)
-- `eam_vcoarsen.F90` -- 8-layer pressure-bounded averaging + column integration
+- `eam_vcoarsen.F90` -- 8-layer pressure-bounded averaging, column
+  integration, and linear interpolation to fixed pressure levels
+  (T/U/V/Z/Q on 13 levels, 50-1000 hPa) and to heights AGL. See gotcha #53.
 - `eam_derived.F90` -- chained expressions, tendencies, phys/dyn split
 - `cam_history.F90` (modified) -- adds `hist_file_storage_type` namelist
   for calendar-based file rotation (`one_month` / `one_year`),
   ported from EAMxx's StorageType pattern
+
+ELM (in `components/elm/src/main/`):
+- `elmHorizRemapMod.F90` -- per-tape remap over the gridcell decomposition
+- `histFileMod.F90` (modified) -- adds `hist_horiz_remap_file` and
+  `hist_file_storage_type` namelist entries
+
+MOSART (in `components/mosart/src/riverroute/`):
+- `RtmHorizRemap.F90` -- per-tape remap over the runoff decomposition
+- `RtmHistFile.F90` (modified) -- adds `rtmhist_horiz_remap_file` and
+  `rtmhist_file_storage_type` namelist entries
 
 MPAS-Ocean (in `components/mpas-ocean/src/`):
 - `analysis_members/mpas_ocn_fme_depth_coarsening.F` -- 25-level depth coarsening
@@ -77,6 +94,10 @@ Map files default to `$DIN_LOC_ROOT/fme/` (the standard E3SM inputdata tree --
 override with the `FME_MAPS_DIR` environment variable to point elsewhere.
 - `map_ne30pg2_to_gaussian_180by360_shifted.nc` (EAM, n_a=21600)
 - `map_IcoswISC30E3r5_to_gaussian_180by360_shifted.nc` (MPAS, n_a=465044)
+- `map_r05_to_gaussian_180by360_shifted_trintbilin.nc` (ELM + MOSART,
+  n_a=259200). Shared by both: land and river run on the same grid in the
+  production configuration. `FME_LND_ENABLE=FALSE` / `FME_ROF_ENABLE=FALSE`
+  leave those tapes native while the map is not yet staged.
 
 ## Architecture Gotchas
 
@@ -1668,6 +1689,134 @@ These are hard-won lessons. Read before modifying FME code.
     candidate. LR testing cannot catch these; the safe habit is to form
     such products in `i8` unconditionally.
 
+### gotcha #53 — pressure-level fields: `shr_vcoarsen_select_nearest` INTERPOLATES, and Z3 needed PHIS back (ADDED 2026-09-13)
+
+`vcoarsen_select_pres` / `vcoarsen_select_pres_flds` produce `<FLD>at<P>hPa`
+(e.g. `Tat850hPa`, `Zat500hPa`). Two things were misleading about that path
+before the T/U/V/Z/Q 13-level set was added to the production tape:
+
+1. **The name says "nearest"; the code interpolates.**
+   `shr_vcoarsen_select_nearest` brackets the target value between the two
+   model midpoints on either side and interpolates linearly, falling back to
+   the nearest end value only when the target lies outside the column. That
+   is exactly EAM's own `vertinterp` (what `Z500`/`T850` use): linear in
+   pressure, no extrapolation. The routine name is kept (MPAS calls it too)
+   but the comments and the registered `long_name` now say what it does.
+
+   Consequence to know when reading the tape: at 925 and 1000 hPa over
+   terrain, and at 50 hPa if the model top is lower, the value is the nearest
+   model level's, **not** an under-ground or above-top estimate. Mask with
+   `PS` if that matters.
+
+2. **`Z3` was returning `state%zm`**, which is height above the *surface*.
+   `cam_diagnostics` defines `Z3 = state%zm + PHIS/g` (above sea level), so
+   Z on a pressure surface was short by the terrain height. `get_state_field`
+   now adds PHIS/g back. Latent until now because no production namelist
+   listed Z3. `'Z'` is accepted as an alias so the tape reads `Zat500hPa`
+   rather than `Z3at500hPa`; it resolves to the same field.
+
+### gotcha #54 — ELM/MOSART remap: the map covers the whole grid, the component does not (ADDED 2026-09-13)
+
+`shr_horiz_remap_build_comm` **fails** when a target row needs a source
+column that no rank claims — a dropped column would later index
+`ws_recv_buf` out of bounds with `ierr=0`, so failing loudly is right. But
+ELM's decomposition holds only the *land* cells of the r05 grid while the map
+file is built against all 259200, so that check fires on every ELM map.
+
+`shr_horiz_remap_col_mod` resolves it without touching the shared SpMV:
+every unclaimed column gets a deterministic **virtual owner**,
+`mod(gcol-1, npes)`, which spreads the extra send volume evenly instead of
+piling ~170k columns onto rank 0. A virtual column has local index 0 and is
+packed as missing.
+
+What "missing" means is the caller's choice:
+- **default** (`missing_as_zero` absent/false): value 0, mask 0 — excluded
+  from the masked average. A half-land target cell reports the mean over its
+  land part, which is what a land emulator wants from `QRUNOFF` or `TSOI`.
+- **`missing_as_zero=.true.`**: value 0, mask 1 — counted as a real zero.
+  This is what `landfrac` uses; with the default it would read ~1 in every
+  cell containing any land at all.
+
+MOSART decomposes the full runoff grid, so it has no virtual columns in
+practice — but its `landfrac` still needs `missing_as_zero` because its
+*ocean* cells are real cells with mask 2/3 that must count as zeros.
+
+### gotcha #55 — ELM snow fields are fill per LEVEL, not per column (ADDED 2026-09-13)
+
+`apply_masked` carries one validity mask for the whole packed column. That is
+exact when a column is either valid at every level or fill at every level —
+which the EAM wrapper can assume ("EAM enforces z-invariant fill per column")
+and which holds for the virtual columns of gotcha #54. It is **false** for
+ELM: a `levsno` field is `spval` in exactly the snow layers that are absent,
+so a single level-1 test would either discard valid deep layers or remap
+`1e36` as a real number.
+
+`shr_horiz_remap_col_mod` therefore remaps a multi-level field **one level at
+a time** whenever a caller fill value is supplied, each level with its own
+mask. Cost is `numlev` small `MPI_Alltoallv` calls instead of one larger one
+— for `levgrnd=15` at daily output that is noise next to the rest of the
+step. Do not "optimize" it back into a single call without first extending
+`apply_masked` to carry per-level masks.
+
+### gotcha #56 — PIO_REAL decomposition + real(r8) darray = silent garbage, again (ADDED 2026-09-13)
+
+Gotcha #1 restated because ELM and MOSART walk straight into it: both
+default to `hist_ndens=2` / `rtmhist_ndens=2`, i.e. `ncprec = PIO_REAL`,
+while every history buffer is `real(r8)`. `shr_horiz_remap_col_write`
+narrows to `real(r4)` when `data_type == PIO_REAL` before calling
+`pio_write_darray`. The EAM wrapper never needed this because it always
+passes `PIO_DOUBLE`.
+
+### gotcha #57 — `errmsg` collides with the use-associated `errMsg` in ELM (ADDED 2026-09-13)
+
+`elmHorizRemapMod` does `use shr_log_mod, only : errMsg => shr_log_errMsg`,
+the standard ELM idiom. Fortran is case-insensitive, so a local
+`character(len=512) :: errmsg` is a redeclaration of that function, and
+gfortran reports it as "Invalid procedure argument" at the *call site* plus
+"'string' argument of 'trim' must be CHARACTER" — neither of which points at
+the actual declaration. The local is named `remap_errmsg`.
+
+### gotcha #58 — MOSART remapped output is NOT budget-conserving (ADDED 2026-09-13)
+
+The remap produces an area-weighted **mean** of the source cells covering
+each target cell. That is the right operation for a flux density, and EAM /
+MPAS / ELM fields are densities. MOSART's are not: `RIVER_DISCHARGE_*`,
+`STORAGE_*`, `QSUR/QSUB/QGWL` are `m3/s` and `m3`, extensive quantities whose
+**sum** is the physical invariant, and a mean does not preserve it (r05 ->
+1 deg is ~4 source cells per target cell, so the total is ~4x the mean).
+
+A remapped river tape is therefore for emulator forcing and diagnostics.
+When a water budget has to close, use the native tape
+(`FME_ROF_ENABLE=FALSE`). Making it conservative needs cell areas, which
+`shr_horiz_remap_read_mapfile` does not currently read from the map file —
+that is the work item, not a one-line normalization.
+
+### gotcha #59 — calendar rotation in ELM/MOSART hangs off `ntimes`, not `mfilt` (ADDED 2026-09-13)
+
+EAM's `hist_file_storage_type` (gotcha #27) rotates inside `wshist`. ELM and
+MOSART have no equivalent hook, so the port sits in `hist_htapes_wrapup` /
+`RtmHistHtapesWrapup` immediately **before** `ntimes` is incremented: if the
+record's calendar period differs from the open file's, close the file and set
+`ntimes = 0`, which makes the existing `ntimes == 1` branch create the next
+file. `mfilt` becomes a safety bound, exactly as in EAM.
+
+Two details that are easy to get wrong:
+
+- **The period comes from `get_prev_date`, not `get_curr_date`.** A daily
+  mean for Feb 1 is written at Feb 2 00:00; using the current date would put
+  it in February's file and the Jan 31 mean (written Feb 1 00:00) in
+  February's too. The previous date puts each record in the month it
+  describes — the same convention `set_hist_filename` already used for
+  `nhtfrq=0, mfilt=1` monthly files.
+- **After a restart the period is parsed back out of `locfnh(t)`.**
+  `hist_storage_curr_idx` is module state, not restart state, so it comes
+  back as -1. Seeding it from the *current record* would be wrong for a
+  restart that lands exactly on a month boundary: the first record after the
+  restart would adopt the new month and keep appending to the old month's
+  reopened file. `hist_storage_idx_from_filename` reads `.YYYY-MM.nc` /
+  `.YYYY.nc` off the open file instead, and falls back to the record only
+  when no file is open.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -1686,6 +1835,14 @@ FME_MPAS_INTERVAL=00-00-01_00:00:00      # MPAS output/averaging interval (defau
 FME_MPAS_INTERVAL_5D=00-00-05_00:00:00   # 5-day-mean companion stream cadence
                                          # (set to 'none' to disable; see #42)
 FME_MAPS_DIR=/path/to/fme_maps  # SCRIP map directory (default: $DIN_LOC_ROOT/fme)
+
+FME_LND_ENABLE=TRUE             # Remap the ELM tape onto the Gaussian grid
+FME_ROF_ENABLE=TRUE             # Remap the MOSART tape (see gotcha #58 --
+                                # NOT budget-conserving)
+FME_LND_OUTPUT_HOURS=24         # ELM output frequency in hours (default: 24)
+FME_ROF_OUTPUT_HOURS=24         # MOSART output frequency in hours (default: 24)
+FME_LND_STORAGE=one_month       # ELM file rotation (gotcha #59)
+FME_ROF_STORAGE=one_month       # MOSART file rotation (gotcha #59)
 ```
 
 Example: `FME_EAM_OUTPUT_HOURS=24 FME_MPAS_INTERVAL=00-00-05_00:00:00 ./create_test ...`
@@ -1826,6 +1983,39 @@ submit (one resolved 2026-05-05; two remain):
    preference, then rename in `mpas_seaice_fme_derived_fields.F`
    (register_var calls + local target arrays + verify_mpas.py
    expected names).
+
+### ELM / ROF emulation follow-ups (added 2026-09-13)
+
+The land and river tapes now come off the model already remapped. What is
+NOT done yet:
+
+1. **Stage `map_r05_to_gaussian_180by360_shifted_trintbilin.nc`** in
+   `$DIN_LOC_ROOT/fme` and on the inputdata server. Until then a case must
+   either keep the map locally (`FME_MAPS_DIR`) or run with
+   `FME_LND_ENABLE=FALSE FME_ROF_ENABLE=FALSE`. `shell_commands` registers
+   the map in `Buildconf/fme.input_data_list`, so `check_input_data` reports
+   it as missing rather than failing at runtime.
+
+2. **Conservative remap for MOSART** (gotcha #58). Needs `area_a`/`area_b`
+   from the map file, which `shr_horiz_remap_read_mapfile` does not read
+   today. Until that exists the river tape carries means, not totals.
+
+3. **`verify_lnd.py` / `verify_rof.py`.** There is no dashboard for the two
+   new tapes yet — `verify_eam.py` and `verify_mpas.py` cover the others.
+   The checks worth porting first: fill-leak scan against `landfrac`,
+   global-mean cross-compare vs a native-grid companion run, and (for ELM)
+   a per-level mask check on `TSOI`/`H2OSOI` to confirm gotcha #55's
+   per-level path.
+
+4. **Derived fields and vertical coarsening for ELM.** `shr_derived_mod`
+   and `shr_vcoarsen_mod` are component-agnostic but only EAM and MPAS wrap
+   them. ELM's `levgrnd` soil profile is the obvious candidate for
+   coarsening (15 levels -> a handful of thickness-weighted layers) once the
+   emulator spec says how many.
+
+5. **Field-list review with the land/ROF emulation team.** The lists in
+   `shell_commands` are a defensible water/energy starting point, not a
+   spec-checked selection like the SamudrACE atm/ocean lists.
 
 ### Near-term
 - **Monthly-boundary smoke test for the 5D companion stream
