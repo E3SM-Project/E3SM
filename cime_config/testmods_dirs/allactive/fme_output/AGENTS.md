@@ -1891,9 +1891,15 @@ training tape. Three things about them differ from the atm/ocean pattern:
    prognostic — enabling it against a data land yields a stream of zeros.
 
 `r2x` carries `Flrr_volr` / `Flrr_volrmch` (channel volumes) and `Forr_rof*`
-(discharge). The conservation caveat of gotcha #58 applies to them as well:
-the remap is an area-weighted mean, so these do not sum to the global total on
-the target grid.
+(discharge). Two things to know about them:
+
+* The conservation caveat of gotcha #58 applies: the remap is an area-weighted
+  mean, so these do not sum to the global total on the target grid.
+* `Flrr_volr` / `Flrr_volrmch` are storage terms that `seq_flds` classifies as
+  fluxes (the `F` prefix drives `fld_is_state`), so the tape writes them as
+  window MEANS, not end-of-window snapshots. That is mean channel storage over
+  the window — fine for training, but do not read them as instantaneous state
+  the way `Sa_*` / `Sl_*` fields are.
 
 ## Runtime Configuration
 

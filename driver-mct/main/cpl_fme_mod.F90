@@ -347,7 +347,10 @@ module cpl_fme_mod
   ! the land sees back.  These are the OUTPUTS of a river emulator.
   ! NOTE these are per-cell rates/volumes as the coupler exchanges them; see
   ! the conservation note in AGENTS.md gotcha #58 before summing them on the
-  ! remapped grid.
+  ! remapped grid.  Flrr_volr / Flrr_volrmch are channel STORAGE terms that
+  ! seq_flds classifies as fluxes ('F' prefix), so they are written as window
+  ! means rather than snapshots -- mean channel storage over the window, which
+  ! is what a river emulator wants anyway.
   integer, parameter :: n_r2x_default = 8
   character(len=16), parameter :: r2x_default(n_r2x_default) = (/ &
        'Forr_rofl       ', 'Forr_rofi       ', 'Firr_rofi       ', &
