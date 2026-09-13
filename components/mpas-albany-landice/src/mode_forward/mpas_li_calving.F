@@ -79,6 +79,7 @@ module li_calving
    subroutine li_calve_ice(domain, err, solveVeloAfterCalving)
 
       use li_advection
+      use mpas_global_sum_mod, only: mpas_global_sum
 
       !-----------------------------------------------------------------
       ! input variables
@@ -157,7 +158,8 @@ module li_calving
 
       integer :: err_tmp
 
-      real (kind=RKIND), dimension(1) :: calvingSumLocal, calvingSumGlobal
+      real (kind=RKIND), dimension(:), allocatable :: calvingSumContribution
+      real (kind=RKIND) :: calvingSumGlobal
 
       err = 0
       err_tmp = 0
@@ -393,10 +395,12 @@ module li_calving
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         calvingSumLocal(1) = sum(calvingThickness(1:nCellsSolve) * areaCell(1:nCellsSolve) * &
-                               real(li_mask_is_dynamic_ice_int(cellMaskTemporaryField % array(1:nCellsSolve)), RKIND))
-         call mpas_dmpar_sum_real_array(domain % dminfo, 1, calvingSumLocal(1), calvingSumGlobal(1))
-         if (calvingSumGlobal(1) > smallNumber) then
+         allocate(calvingSumContribution(nCellsSolve))
+         calvingSumContribution(:) = calvingThickness(1:nCellsSolve) * &
+                               real(li_mask_is_dynamic_ice_int(cellMaskTemporaryField % array(1:nCellsSolve)), RKIND)
+         calvingSumGlobal = mpas_global_sum(calvingSumContribution, areaCell(1:nCellsSolve), domain % dminfo % comm)
+         deallocate(calvingSumContribution)
+         if (calvingSumGlobal > smallNumber) then
             solveVeloAfterCalving = .true.
          else
             solveVeloAfterCalving = .false.
@@ -2481,6 +2485,7 @@ module li_calving
                    totalAblatedVolume, totalUnablatedVolume, err)
 
       use ieee_arithmetic, only : ieee_is_nan
+      use mpas_global_sum_mod, only: mpas_global_sum
 
       !-----------------------------------------------------------------
       ! input variables
@@ -2541,7 +2546,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: ablatedVolumeNonDynCell, ablatedVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: unablatedVolumeNonDynCell, unablatedVolumeDynCell
       real (kind=RKIND), dimension(:), allocatable :: cellVolume
-      real(kind=RKIND) :: ablationSubtotal1, ablationSubtotal2, ablationSubtotal3
+      real (kind=RKIND), dimension(:), allocatable :: strandedAblationThickness
       real(kind=RKIND) :: thkSum, ablationVelSum, uvelSum, vvelSum
       integer :: thkCount
       real(kind=RKIND) :: removeVolumeHere
@@ -2549,7 +2554,7 @@ module li_calving
                           !< to be calved is 'leftover' after trying to calve non-dynamic cells and can be transferred to
                           !< neighboring dynamic cells
       real(kind=RKIND) :: ablateLengthCell, ablateLengthEdge
-      real(kind=RKIND), dimension(6) :: localInfo, globalInfo
+      real(kind=RKIND), dimension(6) :: globalInfo
       real(kind=RKIND) :: edgeLengthScaling
       real(kind=RKIND), parameter :: ablationSmallThk = 1.0e-8_RKIND ! in meters, a small thickness threshold
       real(kind=RKIND) :: minOfMaxAllowableDt
@@ -2733,6 +2738,8 @@ module li_calving
       unablatedVolumeDynCell(:) = 0.0_RKIND
       allocate(cellVolume(nCells+1))
       cellVolume(:) = areaCell(:) * thickness(:)
+      allocate(strandedAblationThickness(nCells+1))
+      strandedAblationThickness(:) = 0.0_RKIND
       requiredAblationVolumeNonDynEdge(:) = 0.0_RKIND
       requiredAblationVolumeNonDynCell(:) = 0.0_RKIND
       requiredAblationVolumeDynEdge(:) = 0.0_RKIND
@@ -2749,7 +2756,6 @@ module li_calving
       twoCellsBackList(:) = 0
 
       ! 1. Calculate ablation rate for all non-dynamic cells by working with their ocean-going edges
-      ablationSubtotal1 = 0.0_RKIND
       do iCell = 1, nCells
          if ((frontAblationMask(iCell)>0) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
             ! a1. Translate the calving front height based on dynamic cells to the non-dynamic locations
@@ -2905,7 +2911,6 @@ module li_calving
                unablatedVolumeNonDynCell(iCell) = 0.0_RKIND ! Ignore leftover potential calving when we hit sea level
             endif
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-            if (iCell <= nCellsSolve) ablationSubtotal1 = ablationSubtotal1 + removeVolumeHere
          endif
       enddo
       call mpas_timer_start("halo updates")
@@ -2916,7 +2921,6 @@ module li_calving
 
 
       ! 2. Calculate calving for dynamic cells
-      ablationSubtotal2 = 0.0_RKIND
 
       ! 2a1. for grounded dynamic margins, don't use the thickness there because it may be unrealistically thin due to ablation
       ! from previous time steps.  Instead copy forward the thickness from the row cells behind.
@@ -3027,10 +3031,8 @@ module li_calving
             ablatedVolumeDynCell(iCell) = removeVolumeHere
             unablatedVolumeDynCell(iCell) = requiredAblationVolumeDynCell(iCell) - removeVolumeHere
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-            if (iCell <= nCellsSolve) ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
          endif
       enddo
-
       ! Clean up to account for roundoff level errors that can occur
       do iCell = 1, nCells
          if (abs(ablationThickness(iCell) - thickness(iCell)) < ablationSmallThk) then
@@ -3086,7 +3088,6 @@ module li_calving
                   cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
                   ! For debugging it may be helpful to add a separate metric for
                   ! this step.
-                  if (iCell <= nCellsSolve) ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
               endif
          enddo
          !call mpas_log_write("Done calculating ablation for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal2/))
@@ -3101,7 +3102,6 @@ module li_calving
 
       ! 4. Clean up after applying ablation velocity from parameterization
       ! a. Zap any stranded ice.  This only needs to be considered for floating ice.
-      ablationSubtotal3 = 0.0_RKIND
       do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
             thkCount = 0
@@ -3113,7 +3113,7 @@ module li_calving
             enddo
             if (thkCount == 0) then
                ablationThickness(iCell) = thickness(iCell)
-               if (iCell <= nCellsSolve) ablationSubtotal3 = ablationSubtotal3 + ablationThickness(iCell)
+               strandedAblationThickness(iCell) = ablationThickness(iCell)
             endif
          endif
          if (ieee_is_nan(calvingThickness(iCell))) then
@@ -3147,16 +3147,17 @@ module li_calving
       enddo
 
       ! End of routine accounting/reporting
-      localInfo(1) = ablationSubtotal1
-      localInfo(2) = ablationSubtotal2
-      localInfo(3) = ablationSubtotal3
-      localInfo(4) = sum(ablationThickness(1:nCellsSolve) * areaCell(1:nCellsSolve))
-      localInfo(5) = sum(unablatedVolumeNonDynCell(1:nCellsSolve))
-      localInfo(6) = sum(unablatedVolumeDynCell(1:nCellsSolve))
       ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
-      call mpas_dmpar_sum_real_array(domain % dminfo, 6, localInfo, globalInfo)
+      ! Use reproducible (decomposition-independent) global sums instead of a plain MPI_Allreduce,
+      ! because these quantities feed into error-threshold checks and optional output arguments
+      ! (totalAblatedVolume, totalUnablatedVolume) below.
+      globalInfo(1) = mpas_global_sum(ablatedVolumeNonDynCell(1:nCellsSolve), domain % dminfo % comm)
+      globalInfo(2) = mpas_global_sum(ablatedVolumeDynCell(1:nCellsSolve), domain % dminfo % comm)
+      globalInfo(3) = mpas_global_sum(strandedAblationThickness(1:nCellsSolve), domain % dminfo % comm)
+      globalInfo(4) = mpas_global_sum(ablationThickness(1:nCellsSolve), areaCell(1:nCellsSolve), domain % dminfo % comm)
+      globalInfo(5) = mpas_global_sum(unablatedVolumeNonDynCell(1:nCellsSolve), domain % dminfo % comm)
+      globalInfo(6) = mpas_global_sum(unablatedVolumeDynCell(1:nCellsSolve), domain % dminfo % comm)
       if (present(maxDt)) then
-         ! Do this global reduce at the same time as the previous for efficiency
          call mpas_dmpar_min_real(domain % dminfo, minOfMaxAllowableDt, maxDt)
          if (present(CFLratio)) then
             CFLratio = deltat / maxDt
@@ -3201,6 +3202,7 @@ module li_calving
       endif
 
       deallocate(cellVolume)
+      deallocate(strandedAblationThickness)
       deallocate(thicknessForAblation)
       deallocate(uvelForAblation)
       deallocate(vvelForAblation)
