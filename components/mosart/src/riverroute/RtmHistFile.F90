@@ -17,6 +17,9 @@ module RtmHistFile
   use RtmTimeManager, only : get_nstep, get_curr_date, get_curr_time, get_ref_date, &
                              get_prev_time, get_prev_date, is_last_step
   use RtmSpmd       , only : masterproc
+  use RtmHorizRemap , only : RtmHorizRemapInit, RtmHorizRemapActive, &
+                             RtmHorizRemapDims, RtmHorizRemapCoords, &
+                             RtmHorizRemapWriteField, RtmHorizRemapWriteConst
   use RtmIO
   use RtmDateTime
 
@@ -51,6 +54,14 @@ module RtmHistFile
 
   logical, public :: rtmhist_empty_htapes = .false.   ! namelist: flag indicates no default history fields
 
+  ! Per tape: path to an ESMF/SCRIP map file. When set, that tape is written on
+  ! the map file's lat-lon target grid instead of the native runoff grid.
+  character(len=256), public :: rtmhist_horiz_remap_file(max_tapes) = ' '
+
+  ! Per tape: history file rotation policy, 'num_snapshots' (rtmhist_mfilt
+  ! samples per file, the legacy behavior), 'one_month' or 'one_year'.
+  character(len=16), public :: rtmhist_file_storage_type(max_tapes) = 'num_snapshots'
+
   ! list of fields to add
   character(len=max_namlen+2), public :: rtmhist_fincl1(max_flds) = ' '       
   character(len=max_namlen+2), public :: rtmhist_fincl2(max_flds) = ' '
@@ -68,6 +79,11 @@ module RtmHistFile
 !! Restart
 !
   logical, private :: if_close(max_tapes)   ! true => save history file
+
+  ! Calendar-based file rotation. hist_storage_curr_idx holds the calendar
+  ! month (yr*12+mon) or year the currently open file belongs to; -1 means
+  ! "not yet known", in which case the next record seeds it.
+  integer, private :: hist_storage_curr_idx(max_tapes) = -1
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   public :: RtmHistAddfld        ! Add a field to the master field list
@@ -86,6 +102,7 @@ module RtmHistFile
   private :: htape_create              ! Define contents of history file t
   private :: htape_timeconst           ! Write time constant values to history tape
   private :: set_hist_filename         ! Determine history dataset filenames
+  private :: hist_storage_idx_from_filename ! Recover a file's calendar period from its name
   private :: list_index                ! Find index of field in exclude list
   private :: getname                   ! Retrieve name portion of input "inname"
   private :: getflag                   ! Retrieve flag
@@ -278,6 +295,28 @@ contains
        else
           tape(t)%ncprec = ncd_float
        endif
+    end do
+
+    ! Validate the per-tape file rotation policy
+
+    do t=1,ntapes
+       select case (trim(rtmhist_file_storage_type(t)))
+       case ('num_snapshots', 'one_month', 'one_year')
+          ! ok
+       case default
+          write(iulog,*) trim(subname),' ERROR: rtmhist_file_storage_type(',t,')="', &
+               trim(rtmhist_file_storage_type(t)),'" is not one of ', &
+               '"num_snapshots", "one_month", "one_year"'
+          call shr_sys_abort()
+       end select
+    end do
+
+    ! Initialize per-tape horizontal remapping
+
+    do t=1,ntapes
+       if (len_trim(rtmhist_horiz_remap_file(t)) > 0) then
+          call RtmHorizRemapInit(t, trim(rtmhist_horiz_remap_file(t)))
+       end if
     end do
 
     ! Set time of beginning of current averaging interval
@@ -633,6 +672,9 @@ contains
     integer :: ret                 ! netCDF error status
     integer :: numrtm              ! total number of rtm cells on all procs
     logical :: lhistrest           ! local history restart flag
+    logical :: do_remap            ! true => this tape is written on a remapped lat-lon grid
+    integer :: remap_nlon          ! remapped target grid longitude count
+    integer :: remap_nlat          ! remapped target grid latitude count
     type(file_desc_t) :: lnfid     ! local file id
     character(len=  8) :: curdate  ! current date
     character(len=  8) :: curtime  ! current time
@@ -712,9 +754,16 @@ contains
     ! Define dimensions.
     ! Time is an unlimited dimension. Character string is treated as an array of characters.
 
-    ! Global uncompressed dimensions (including non-land points)
+    ! Global uncompressed dimensions (including non-land points).
+    ! A remapped tape replaces the native runoff grid with the map file's
+    ! lat-lon target grid; the history restart file always stays native.
     numrtm     = rtmCTL%numr
-    if (isgrid2d) then
+    do_remap = RtmHorizRemapActive(t) .and. (.not. lhistrest)
+    if (do_remap) then
+      call RtmHorizRemapDims(t, remap_nlon, remap_nlat)
+      call ncd_defdim( lnfid, 'lon',      remap_nlon, dimid)
+      call ncd_defdim( lnfid, 'lat',      remap_nlat, dimid)
+    else if (isgrid2d) then
       call ncd_defdim( lnfid, 'lon',      rtmlon, dimid)
       call ncd_defdim( lnfid, 'lat',      rtmlat, dimid)
     else
@@ -780,6 +829,9 @@ contains
     character(len=max_namlen):: units     ! variable units
     character(len=256):: str              ! global attribute string
     integer :: status
+    real(r8), allocatable :: remap_lon(:) ! remapped target grid longitudes
+    real(r8), allocatable :: remap_lat(:) ! remapped target grid latitudes
+    real(r8), allocatable :: maskr8(:)    ! runoff mask as a real for remapping
     character(len=*),parameter :: subname = 'htape_timeconst'
     !--------------------------------------------------------
 
@@ -823,7 +875,23 @@ contains
        call ncd_defvar(nfid(t), 'date_written', ncd_char, 2, dim2id, varid)
        call ncd_defvar(nfid(t), 'time_written', ncd_char, 2, dim2id, varid)
 
-       if (isgrid2d) then
+       if (RtmHorizRemapActive(t)) then
+         ! Remapped tape: the grid is the map file's lat-lon target grid. The
+         ! native geometry variables (area, areatotal, areatotal2) describe
+         ! source cells and upstream basins and do not carry over. The runoff
+         ! mask becomes landfrac, the fraction of each target cell that is
+         ! MOSART land -- the remapped fields themselves are full-coverage
+         ! means over land and ocean alike, so a consumer wanting a land-only
+         ! mean divides by it.
+         call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
+              long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
+         call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
+              long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
+         call ncd_defvar(varname='landfrac', xtype=tape(t)%ncprec, &
+              dim1name='lon', dim2name='lat', &
+              long_name='fraction of the remapped grid cell that is MOSART land', &
+              units='1', ncid=nfid(t))
+       else if (isgrid2d) then
          call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
               long_name='runoff coordinate longitude', units='degrees_east', ncid=nfid(t))
          call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
@@ -876,16 +944,39 @@ contains
 
        call ncd_io('time_written', ctime, 'write', nfid(t), nt=tape(t)%ntimes)
 
-       call ncd_io(varname='lon', data=rtmCTL%rlon, ncid=nfid(t), flag='write')
-       call ncd_io(varname='lat', data=rtmCTL%rlat, ncid=nfid(t), flag='write')
-       call ncd_io(flag='write', varname='mask', dim1name='allrof', &
-           data=rtmCTL%mask, ncid=nfid(t))
-       call ncd_io(flag='write', varname='area', dim1name='allrof', &
-           data=rtmCTL%area, ncid=nfid(t))
-       call ncd_io(flag='write', varname='areatotal', dim1name='allrof', &
-           data=Tunit%areatotal, ncid=nfid(t))
-       call ncd_io(flag='write', varname='areatotal2', dim1name='allrof', &
-           data=Tunit%areatotal2, ncid=nfid(t))
+       if (RtmHorizRemapActive(t)) then
+          call RtmHorizRemapCoords(t, remap_lon, remap_lat)
+          call ncd_io(varname='lon', data=remap_lon, ncid=nfid(t), flag='write')
+          call ncd_io(varname='lat', data=remap_lat, ncid=nfid(t), flag='write')
+          deallocate(remap_lon, remap_lat)
+          ! MOSART's runoff mask is 1 over land, 2 over ocean and 3 at an
+          ! ocean outlet. Ocean cells -- and any cell outside the runoff
+          ! decomposition -- must count as real zeros here, or every target
+          ! cell touching land would report a fraction of 1.
+          allocate(maskr8(rtmCTL%begr:rtmCTL%endr))
+          do n = rtmCTL%begr, rtmCTL%endr
+             if (rtmCTL%mask(n) == 1) then
+                maskr8(n) = 1.0_r8
+             else
+                maskr8(n) = 0.0_r8
+             end if
+          end do
+          call RtmHorizRemapWriteConst(t, nfid(t), 'landfrac', &
+               maskr8(rtmCTL%begr:rtmCTL%endr), tape(t)%ncprec, &
+               missing_as_zero=.true.)
+          deallocate(maskr8)
+       else
+          call ncd_io(varname='lon', data=rtmCTL%rlon, ncid=nfid(t), flag='write')
+          call ncd_io(varname='lat', data=rtmCTL%rlat, ncid=nfid(t), flag='write')
+          call ncd_io(flag='write', varname='mask', dim1name='allrof', &
+              data=rtmCTL%mask, ncid=nfid(t))
+          call ncd_io(flag='write', varname='area', dim1name='allrof', &
+              data=rtmCTL%area, ncid=nfid(t))
+          call ncd_io(flag='write', varname='areatotal', dim1name='allrof', &
+              data=Tunit%areatotal, ncid=nfid(t))
+          call ncd_io(flag='write', varname='areatotal2', dim1name='allrof', &
+              data=Tunit%areatotal2, ncid=nfid(t))
+       end if
 
     endif
 
@@ -944,6 +1035,7 @@ contains
     character(len=max_chars) :: long_name ! long name
     character(len=max_chars) :: units     ! units
     character(len=max_namlen):: varname   ! variable name
+    integer :: storage_idx                ! calendar index (yr*12+mon or yr) of the record being written
     character(len=*),parameter :: subname = 'hist_htapes_wrapup'
     !-----------------------------------------------------------
 
@@ -995,6 +1087,39 @@ contains
              end do
           end do
           
+          ! Calendar-aligned file rotation. A record written at, say, Feb 2
+          ! 00:00 covers Feb 1, so the calendar period comes from the previous
+          ! date -- the same convention that puts the last daily mean of a
+          ! month in that month's file rather than the next one's.
+          if (trim(rtmhist_file_storage_type(t)) /= 'num_snapshots') then
+             if (trim(rtmhist_file_storage_type(t)) == 'one_month') then
+                storage_idx = yrm1*12 + monm1
+             else
+                storage_idx = yrm1
+             end if
+             if (hist_storage_curr_idx(t) < 0) then
+                ! Fresh run, or the first record after a restart: adopt the
+                ! period of the file already open, else of this record.
+                if (tape(t)%ntimes > 0) then
+                   call hist_storage_idx_from_filename(locfnh(t), &
+                        rtmhist_file_storage_type(t), hist_storage_curr_idx(t))
+                end if
+                if (hist_storage_curr_idx(t) < 0) hist_storage_curr_idx(t) = storage_idx
+             end if
+             if (storage_idx /= hist_storage_curr_idx(t)) then
+                if (tape(t)%ntimes > 0) then
+                   if (masterproc) then
+                      write(iulog,*) trim(subname),' : Closing local history file ', &
+                           trim(locfnh(t)),' at the calendar boundary (', &
+                           trim(rtmhist_file_storage_type(t)),')'
+                   end if
+                   call ncd_pio_closefile(nfid(t))
+                   tape(t)%ntimes = 0
+                end if
+                hist_storage_curr_idx(t) = storage_idx
+             end if
+          end if
+
           ! Increment current time sample counter.
           tape(t)%ntimes = tape(t)%ntimes + 1
 
@@ -1005,7 +1130,8 @@ contains
 
           if (tape(t)%ntimes == 1) then
              locfnh(t) = set_hist_filename (hist_freq=tape(t)%nhtfrq, &
-                                            rtmhist_mfilt=tape(t)%mfilt, hist_file=t)
+                                            rtmhist_mfilt=tape(t)%mfilt, hist_file=t, &
+                                            storage_type=rtmhist_file_storage_type(t))
              if (masterproc) then
                 write(iulog,*) trim(subname),' : Creating history file ', trim(locfnh(t)), &
                      ' at nstep = ',get_nstep()
@@ -1039,7 +1165,7 @@ contains
                    call shr_sys_abort()
                 end select
                 
-                if (isgrid2d) then
+                if (isgrid2d .or. RtmHorizRemapActive(t)) then
                   call ncd_defvar(ncid=nfid(t), varname=varname, xtype=tape(t)%ncprec, &
                        dim1name='lon', dim2name='lat', dim3name='time',                &
                        long_name=long_name, units=units, cell_method=avgstr,           &
@@ -1074,13 +1200,20 @@ contains
           ! Update beginning time of next interval
           tape(t)%begtime = time
 
-          ! Write history time slice
+          ! Write history time slice. A remapped tape bypasses ncd_io: the
+          ! data has to go through the sparse-matrix remap and out on the
+          ! target grid's own PIO decomposition rather than the native one.
           do f = 1,tape(t)%nflds
              varname =  tape(t)%hlist(f)%field%name
              nt      =  tape(t)%ntimes
              histo   => tape(t)%hlist(f)%hbuf
-             call ncd_io(flag='write', varname=varname, dim1name='allrof', &
-                  data=histo, ncid=nfid(t), nt=nt)
+             if (RtmHorizRemapActive(t)) then
+                call RtmHorizRemapWriteField(t, nfid(t), varname, &
+                     histo(begrof:endrof), nt, tape(t)%ncprec)
+             else
+                call ncd_io(flag='write', varname=varname, dim1name='allrof', &
+                     data=histo, ncid=nfid(t), nt=nt)
+             end if
           end do
 
           ! Zero necessary history buffers
@@ -1659,7 +1792,53 @@ contains
 
 !-----------------------------------------------------------------------
 
-  character(len=256) function set_hist_filename (hist_freq, rtmhist_mfilt, hist_file)
+  subroutine hist_storage_idx_from_filename (fname, storage_type, idx)
+
+    ! !DESCRIPTION:
+    ! Recover the calendar period of an already-open history file from its
+    ! name, so that a restart landing exactly on a month or year boundary
+    ! still rotates at the right record instead of appending to the previous
+    ! period's file. Returns -1 if the name does not parse.
+
+    ! !ARGUMENTS:
+    implicit none
+    character(len=*), intent(in)  :: fname        ! history file name
+    character(len=*), intent(in)  :: storage_type ! 'one_month' or 'one_year'
+    integer         , intent(out) :: idx          ! yr*12+mon, or yr
+
+    ! !LOCAL VARIABLES:
+    integer :: ndot, nend, yr, mon, ier
+    character(len=32) :: cdate
+    !-----------------------------------------------------
+
+    idx = -1
+
+    ! Names end in '.<cdate>.nc'; isolate <cdate>.
+    nend = index(fname, '.nc', back=.true.)
+    if (nend <= 1) return
+    ndot = index(fname(1:nend-1), '.', back=.true.)
+    if (ndot < 1 .or. nend-ndot-1 < 4) return
+    cdate = fname(ndot+1:nend-1)
+
+    if (trim(storage_type) == 'one_month') then
+       if (len_trim(cdate) < 7) return
+       read(cdate(1:4), '(i4)', iostat=ier) yr
+       if (ier /= 0) return
+       read(cdate(6:7), '(i2)', iostat=ier) mon
+       if (ier /= 0) return
+       idx = yr*12 + mon
+    else if (trim(storage_type) == 'one_year') then
+       read(cdate(1:4), '(i4)', iostat=ier) yr
+       if (ier /= 0) return
+       idx = yr
+    end if
+
+  end subroutine hist_storage_idx_from_filename
+
+!------------------------------------------------------------------------
+
+  character(len=256) function set_hist_filename (hist_freq, rtmhist_mfilt, hist_file, &
+                                                 storage_type)
 
     ! Determine history dataset filenames.
     
@@ -1668,17 +1847,31 @@ contains
     integer, intent(in)  :: hist_freq   !history file frequency
     integer, intent(in)  :: rtmhist_mfilt  !history file number of time-samples
     integer, intent(in)  :: hist_file   !history file index
+    character(len=*), intent(in), optional :: storage_type !file rotation policy
     
     ! !LOCAL VARIABLES:
     character(len=256) :: cdate       !date char string
     character(len=  1) :: hist_index  !p,1 or 2 (currently)
+    character(len= 16) :: lstorage    !local copy of storage_type
     integer :: day                    !day (1 -> 31)
     integer :: mon                    !month (1 -> 12)
     integer :: yr                     !year (0 -> ...)
     integer :: sec                    !seconds into current day
     character(len=*),parameter :: subname = 'set_hist_filename'
-    
-    if (hist_freq == 0 .and. rtmhist_mfilt == 1) then   !monthly
+
+    lstorage = 'num_snapshots'
+    if (present(storage_type)) lstorage = storage_type
+
+    ! Calendar-aligned rotation names the file for the period it covers. The
+    ! period is taken from the previous date so that a record written at the
+    ! stroke of a new month still lands in the month it describes.
+    if (trim(lstorage) == 'one_month') then
+       call get_prev_date (yr, mon, day, sec)
+       write(cdate,'(i4.4,"-",i2.2)') yr,mon
+    else if (trim(lstorage) == 'one_year') then
+       call get_prev_date (yr, mon, day, sec)
+       write(cdate,'(i4.4)') yr
+    else if (hist_freq == 0 .and. rtmhist_mfilt == 1) then   !monthly
        call get_prev_date (yr, mon, day, sec)
        write(cdate,'(i4.4,"-",i2.2)') yr,mon
     else                        !other

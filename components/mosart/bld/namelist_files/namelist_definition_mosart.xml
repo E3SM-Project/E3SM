@@ -318,6 +318,46 @@ hist_empty_htapes.
 Default: .false.
 </entry>
 
+<entry id="rtmhist_horiz_remap_file"
+       type="char*256(3)"
+       category="history"
+       group="mosart_inparm"
+       valid_values="" >
+Per tape series: path to an ESMF/SCRIP mapping file. When set, that tape is
+written directly on the map file's regular lat-lon target grid instead of the
+native runoff grid, removing the offline regrid step for ROF emulation training
+data. The map's source grid must be the full (rtmlon x rtmlat) runoff grid --
+e.g. map_r05_to_gaussian_180by360_shifted.nc for r05. Maps with negative
+weights are rejected: they are unsafe for the masked remap path.
+
+The remap produces an area-weighted mean of the source cells covering each
+target cell, which is the right operation for the flux densities MOSART
+history fields carry. Extensive quantities such as channel volume or discharge
+are not conserved by an average, so a remapped tape is for emulator forcing and
+diagnostics, not for closing a water budget on the target grid.
+
+A remapped tape carries lon, lat and landfrac (the fraction of each target cell
+that is MOSART land); the native geometry variables (area, areatotal,
+areatotal2) are omitted. The remapped fields are full-coverage means over land
+and ocean alike, so a consumer wanting a land-only mean divides by landfrac.
+Default: ' ' (no remapping)
+</entry>
+
+<entry id="rtmhist_file_storage_type"
+       type="char*16(3)"
+       category="history"
+       group="mosart_inparm"
+       valid_values="num_snapshots,one_month,one_year" >
+Per tape series: how history files are rotated.
+    'num_snapshots' (default) rotate after rtmhist_mfilt time samples, legacy behavior
+    'one_month'     rotate at each calendar month boundary; files named %y-%m.nc
+    'one_year'      rotate at each calendar year boundary; files named %y.nc
+With calendar rotation rtmhist_mfilt acts only as a safety upper bound. Mirrors
+EAM's and ELM's hist_file_storage_type so all components of an emulation
+training tape share one file cadence.
+Default: 'num_snapshots'
+</entry>
+
 <entry id="rtmhist_mfilt"
        type="integer(6)"
        category="history"

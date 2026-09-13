@@ -43,6 +43,20 @@ FME_MPAS_INTERVAL_5D=${FME_MPAS_INTERVAL_5D:-00-00-05_00:00:00}
 # from MPAS_START_TIME (== CIME RUN_STARTDATE on initial runs); on warm
 # restart they read it back from the per-AM accumulator sidecar's
 # `time_reference_date` global attribute. No shell-side plumbing required.
+# Land / river online remapping. ELM and MOSART write their FME tape straight
+# onto the same Gaussian target grid as EAM and MPAS, which is what ELM/ROF
+# emulation training needs. Set FME_LND_ENABLE / FME_ROF_ENABLE to FALSE to
+# leave those tapes on their native grids (e.g. while the r05 map file is not
+# yet staged in the inputdata tree).
+FME_LND_ENABLE=${FME_LND_ENABLE:-TRUE}
+FME_ROF_ENABLE=${FME_ROF_ENABLE:-TRUE}
+# ELM / MOSART output frequency in hours (EAM convention: negative = hours).
+FME_LND_OUTPUT_HOURS=${FME_LND_OUTPUT_HOURS:-24}
+FME_ROF_OUTPUT_HOURS=${FME_ROF_OUTPUT_HOURS:-24}
+# File rotation policy shared with EAM ('one_month', 'one_year', 'num_snapshots')
+FME_LND_STORAGE=${FME_LND_STORAGE:-one_month}
+FME_ROF_STORAGE=${FME_ROF_STORAGE:-one_month}
+
 # Directory containing the gaussian-grid SCRIP map files (180x360 for
 # ne30pg2, 720x1440 for ne120pg2). Defaults to
 # $DIN_LOC_ROOT/fme so the maps are managed by CIME's inputdata machinery
@@ -82,6 +96,8 @@ FME_CPL_5D_ENABLE=${FME_CPL_5D_ENABLE:-.true.}
 echo "FME output configuration:"
 echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
 echo "  MPAS: interval=${FME_MPAS_INTERVAL}, 5D companion=${FME_MPAS_INTERVAL_5D}"
+echo "  ELM: ${FME_LND_OUTPUT_HOURS}-hourly, storage=${FME_LND_STORAGE}, remap=${FME_LND_ENABLE}"
+echo "  ROF: ${FME_ROF_OUTPUT_HOURS}-hourly, storage=${FME_ROF_STORAGE}, remap=${FME_ROF_ENABLE}"
 echo "  CPL: enable=${FME_CPL_ENABLE}, ocn 1D=${FME_CPL_INTERVAL}d, ocn 5D=${FME_CPL_INTERVAL_5D}d (5D enable=${FME_CPL_5D_ENABLE})"
 echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
 #
@@ -125,12 +141,14 @@ echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidec
 #     -g $GAUSS \
 #     -m $OUTDIR/map_ne30pg2_to_gaussian_${GRIDTAG}_shifted.nc
 #
-#   # ELM and MOSART (r05 = 0.5x0.5 regular lat-lon). Not needed for
+#   # ELM and MOSART (r05 = 0.5x0.5 regular lat-lon). Shared by both: the
+#   # land and river grids are the same in the production configuration, and
+#   # the testmod looks the map up under LND_GRID / ROF_GRID. Not needed for
 #   # ne120pg2 land-less (DOCN/no r025 land) configurations.
 #   ncremap \
 #     -s /global/cfs/cdirs/e3sm/inputdata/lnd/clm2/mappingdata/grids/SCRIPgrid_0.5x0.5_nomask_c110308.nc \
 #     -g $GAUSS \
-#     -m $OUTDIR/map_r05_to_gaussian_${GRIDTAG}_shifted.nc
+#     -m $OUTDIR/map_r05_to_gaussian_${GRIDTAG}_shifted_trintbilin.nc
 #
 #   # MPAS-O and MPAS-SI (IcoswISC30E3r5 unstructured mesh; for
 #   # ne120pg2_r025_RRSwISC6to18E3r5 use the RRSwISC6to18E3r5 mesh instead:
@@ -199,11 +217,25 @@ fi
 EAM_MAP="${FME_MAPS_DIR}/map_${ATM_GRID_NORM}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
 OCN_MAP="${FME_MAPS_DIR}/map_${OCN_GRID}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
 
+# Land and river run on their own grids (r05 in the production configuration,
+# the atm grid in the ne4pg2 land-on-atm smoke test), so they get their own
+# map lookups. Same npN. normalization as the atm grid.
+LND_GRID=$(./xmlquery --value LND_GRID)
+ROF_GRID=$(./xmlquery --value ROF_GRID)
+LND_GRID_NORM=$(echo "$LND_GRID" | sed 's/np[0-9]*\.//')
+ROF_GRID_NORM=$(echo "$ROF_GRID" | sed 's/np[0-9]*\.//')
+LND_MAP="${FME_MAPS_DIR}/map_${LND_GRID_NORM}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
+ROF_MAP="${FME_MAPS_DIR}/map_${ROF_GRID_NORM}_to_gaussian_${GAUSS_GRID}_shifted_trintbilin.nc"
+
 echo "FME map detection:"
 echo "  ATM_GRID=${ATM_GRID} -> normalized: ${ATM_GRID_NORM}"
 echo "  OCN_GRID=${OCN_GRID}"
+echo "  LND_GRID=${LND_GRID} -> normalized: ${LND_GRID_NORM}"
+echo "  ROF_GRID=${ROF_GRID} -> normalized: ${ROF_GRID_NORM}"
 echo "  EAM map : ${EAM_MAP} $([ -f "${EAM_MAP}" ] && echo '[cached]' || echo '[will be staged by check_input_data]')"
 echo "  OCN map : ${OCN_MAP} $([ -f "${OCN_MAP}" ] && echo '[cached]' || echo '[will be staged by check_input_data]')"
+echo "  LND map : ${LND_MAP} (remap enabled=${FME_LND_ENABLE})"
+echo "  ROF map : ${ROF_MAP} (remap enabled=${FME_ROF_ENABLE})"
 
 # ---------------------------------------------------------------------------
 # Register maps with CIME's inputdata machinery
@@ -218,6 +250,12 @@ cat > Buildconf/fme.input_data_list << EOF
 fme_map_eam = ${EAM_MAP}
 fme_map_ocn = ${OCN_MAP}
 EOF
+if [ "${FME_LND_ENABLE}" = "TRUE" ]; then
+  echo "fme_map_lnd = ${LND_MAP}" >> Buildconf/fme.input_data_list
+fi
+if [ "${FME_ROF_ENABLE}" = "TRUE" ] && [ "${ROF_MAP}" != "${LND_MAP}" ]; then
+  echo "fme_map_rof = ${ROF_MAP}" >> Buildconf/fme.input_data_list
+fi
 
 # ---------------------------------------------------------------------------
 # EAM namelist
@@ -396,19 +434,66 @@ cpl_fme_a2x_enable      = ${FME_CPL_A2X_ENABLE}
 EOF
 
 # ---------------------------------------------------------------------------
-# ELM namelist: stub for now
+# ELM namelist
 # ---------------------------------------------------------------------------
-cat >> user_nl_elm << 'EOF'
+# Tape 1 is the FME land tape: gridcell-averaged (hist_dov2xy) daily output,
+# remapped online onto the same Gaussian grid as EAM/MPAS, in monthly files.
+# Water and energy fields for ELM emulation; the atmospheric forcing fields
+# (RAIN..WIND) are included on the land grid so a land emulator has its inputs
+# and outputs on one tape.
+cat >> user_nl_elm << EOF
 hist_empty_htapes = .true.
+hist_dov2xy  = .true.
+hist_nhtfrq  = -${FME_LND_OUTPUT_HOURS}
+hist_mfilt   = 1500
+hist_avgflag_pertape = 'A'
+hist_file_storage_type = '${FME_LND_STORAGE}'
 
+hist_fincl1 = 'RAIN', 'SNOW', 'FSDS', 'FLDS', 'TBOT', 'QBOT', 'PBOT', 'WIND',
+              'TSA', 'RH2M', 'TG', 'FSNO', 'ELAI', 'TLAI',
+              'H2OSNO', 'SNOWDP', 'SNOWICE', 'SNOWLIQ', 'QSNOMELT',
+              'TWS', 'ZWT', 'SOILWATER_10CM', 'TSOI_10CM',
+              'FSH', 'EFLX_LH_TOT', 'FSA', 'FIRA', 'FIRE',
+              'QRUNOFF', 'QOVER', 'QDRAI', 'QINFL',
+              'QSOIL', 'QVEGE', 'QVEGT', 'QINTR',
+              'TSOI', 'H2OSOI'
 EOF
 
+if [ "${FME_LND_ENABLE}" = "TRUE" ]; then
+cat >> user_nl_elm << EOF
+! Horizontal remapping to the shared Gaussian grid. Cells ELM does not own
+! contribute nothing to the masked average, so a coastal target cell reports
+! the mean over its land part; landfrac on the tape gives that land fraction.
+hist_horiz_remap_file = '${LND_MAP}'
+EOF
+fi
+
 # ---------------------------------------------------------------------------
-# MOSART namelist: stub for now
+# MOSART namelist
 # ---------------------------------------------------------------------------
-cat >> user_nl_mosart << 'EOF'
+# NOTE on conservation: the remap produces an area-weighted MEAN of the source
+# cells covering each target cell. MOSART's history fields are extensive
+# (m3/s, m3), so their sum is NOT preserved by that operation -- the remapped
+# river tape is for emulator forcing and diagnostics, not for closing a water
+# budget on the target grid. Use the native tape (FME_ROF_ENABLE=FALSE) when a
+# budget has to close.
+cat >> user_nl_mosart << EOF
 rtmhist_empty_htapes = .true.
+rtmhist_nhtfrq = -${FME_ROF_OUTPUT_HOURS}
+rtmhist_mfilt  = 1500
+rtmhist_file_storage_type = '${FME_ROF_STORAGE}'
+
+rtmhist_fincl1 = 'RIVER_DISCHARGE_OVER_LAND_LIQ', 'RIVER_DISCHARGE_TO_OCEAN_LIQ',
+                 'DIRECT_DISCHARGE_TO_OCEAN_LIQ', 'TOTAL_DISCHARGE_TO_OCEAN_LIQ',
+                 'STORAGE_LIQ', 'Main_Channel_STORAGE_LIQ',
+                 'QSUR_LIQ', 'QSUB_LIQ', 'QGWL_LIQ'
 EOF
+
+if [ "${FME_ROF_ENABLE}" = "TRUE" ]; then
+cat >> user_nl_mosart << EOF
+rtmhist_horiz_remap_file = '${ROF_MAP}'
+EOF
+fi
 
 # ---------------------------------------------------------------------------
 # MPAS-Ocean namelist
