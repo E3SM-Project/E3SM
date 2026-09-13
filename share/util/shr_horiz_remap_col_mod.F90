@@ -70,14 +70,18 @@ module shr_horiz_remap_col_mod
     ! Persistent send workspace (grows as needed)
     real(r8), allocatable :: ws_send_buf(:)
 
-    ! Cached PIO decompositions
-    logical :: iodesc_2d_valid = .false.
-    integer :: iodesc_2d_dtype = 0
-    type(io_desc_t) :: iodesc_2d
-    logical :: iodesc_3d_valid = .false.
-    integer :: iodesc_3d_nlev  = 0
-    integer :: iodesc_3d_dtype = 0
-    type(io_desc_t) :: iodesc_3d
+    ! Cached PIO decompositions, keyed by (numlev, data type).
+    !
+    ! They are cached rather than rebuilt because a decomposition must NOT be
+    ! freed while any buffered write_darray still references it -- PIO
+    ! dereferences the freed decomp when the file is later flushed and aborts.
+    ! A tape with, say, both levgrnd and levsno fields would hit exactly that
+    ! if the single slot were freed and rebuilt between the two writes. The
+    ! cache is bounded in practice by the number of distinct shapes on a tape.
+    integer :: n_iodesc = 0
+    integer, allocatable :: iodesc_nlev(:)
+    integer, allocatable :: iodesc_dtype(:)
+    type(io_desc_t), allocatable :: iodescs(:)
 
     type(iosystem_desc_t), pointer :: iosystem => null()
     integer :: mpicom = 0
@@ -335,11 +339,10 @@ CONTAINS
   !-------------------------------------------------------------------------------------------
   subroutine shr_horiz_remap_col_write(self, File, varid, fld_out, numlev, data_type)
     !
-    ! Write a remapped field with PIO.  Decompositions are cached per instance
-    ! and rebuilt only when the level count or data type changes.
+    ! Write a remapped field with PIO, using (and caching) the decomposition
+    ! for this level count and data type.
     !
-    use pio, only: file_desc_t, var_desc_t, pio_initdecomp, pio_freedecomp, &
-                   pio_write_darray, PIO_OFFSET_KIND, PIO_REAL
+    use pio, only: file_desc_t, var_desc_t, pio_write_darray, PIO_REAL
 
     class(shr_horiz_remap_col_t), intent(inout) :: self
     type(file_desc_t), intent(inout) :: File
@@ -348,81 +351,104 @@ CONTAINS
     integer,           intent(in)    :: numlev
     integer,           intent(in)    :: data_type
 
-    integer(PIO_OFFSET_KIND), allocatable :: idof(:)
     real(r4), allocatable :: fld_r4(:,:)
-    integer :: i, k, global_row, ilon, ilat, ierr
-    integer :: nlat, nlon
+    integer :: slot, ierr
+
+    call get_iodesc(self, numlev, data_type, slot)
 
     ! pio_initdecomp(PIO_REAL) paired with a real(r8) pio_write_darray writes
     ! garbage and reports no error, so narrow the data here when the variable
-    ! was defined single precision (ELM/MOSART default to hist_ndens=2).
+    ! was defined single precision (ELM/MOSART default to ndens=2).
     if (data_type == PIO_REAL) then
       allocate(fld_r4(size(fld_out,1), size(fld_out,2)))
       fld_r4(:,:) = real(fld_out(:,:), r4)
+      if (numlev <= 1) then
+        call pio_write_darray(File, varid, self%iodescs(slot), fld_r4(:,1), ierr)
+      else
+        call pio_write_darray(File, varid, self%iodescs(slot), fld_r4, ierr)
+      end if
+      deallocate(fld_r4)
+    else
+      if (numlev <= 1) then
+        call pio_write_darray(File, varid, self%iodescs(slot), fld_out(:,1), ierr)
+      else
+        call pio_write_darray(File, varid, self%iodescs(slot), fld_out, ierr)
+      end if
     end if
+
+  end subroutine shr_horiz_remap_col_write
+
+  !-------------------------------------------------------------------------------------------
+  subroutine get_iodesc(self, numlev, data_type, slot)
+    !
+    ! Return the cache slot holding the decomposition for (numlev, data_type),
+    ! building and appending a new one if this shape has not been seen yet.
+    !
+    use pio, only: pio_initdecomp, PIO_OFFSET_KIND
+
+    class(shr_horiz_remap_col_t), intent(inout) :: self
+    integer, intent(in)  :: numlev
+    integer, intent(in)  :: data_type
+    integer, intent(out) :: slot
+
+
+    integer(PIO_OFFSET_KIND), allocatable :: idof(:)
+    integer :: i, k, global_row, ilon, ilat, nlat, nlon, nlev
+    integer, allocatable :: tmp_nlev(:), tmp_dtype(:)
+    type(io_desc_t), allocatable :: tmp_iodescs(:)
+
+    nlev = max(1, numlev)
+
+    do i = 1, self%n_iodesc
+      if (self%iodesc_nlev(i) == nlev .and. self%iodesc_dtype(i) == data_type) then
+        slot = i
+        return
+      end if
+    end do
+
+    ! Grow the cache by one.
+    if (self%n_iodesc == 0) then
+      allocate(self%iodesc_nlev(1), self%iodesc_dtype(1), self%iodescs(1))
+    else
+      allocate(tmp_nlev(self%n_iodesc+1), tmp_dtype(self%n_iodesc+1), &
+               tmp_iodescs(self%n_iodesc+1))
+      tmp_nlev(1:self%n_iodesc)    = self%iodesc_nlev(1:self%n_iodesc)
+      tmp_dtype(1:self%n_iodesc)   = self%iodesc_dtype(1:self%n_iodesc)
+      tmp_iodescs(1:self%n_iodesc) = self%iodescs(1:self%n_iodesc)
+      call move_alloc(tmp_nlev, self%iodesc_nlev)
+      call move_alloc(tmp_dtype, self%iodesc_dtype)
+      call move_alloc(tmp_iodescs, self%iodescs)
+    end if
+
+    slot = self%n_iodesc + 1
+    self%n_iodesc = slot
+    self%iodesc_nlev(slot)  = nlev
+    self%iodesc_dtype(slot) = data_type
 
     nlat = self%shared%nlat
     nlon = self%shared%nlon
 
-    if (numlev <= 1) then
-      if (self%iodesc_2d_valid .and. self%iodesc_2d_dtype /= data_type) then
-        call pio_freedecomp(File, self%iodesc_2d)
-        self%iodesc_2d_valid = .false.
-      end if
-      if (.not. self%iodesc_2d_valid) then
-        allocate(idof(max(1, self%shared%n_b_local)))
-        idof(:) = 0
-        do i = 1, self%shared%n_b_local
-          global_row = self%shared%row_start + i - 1
-          ilon = mod(global_row - 1, nlon) + 1
-          ilat = (global_row - 1) / nlon + 1
-          idof(i) = int(ilon + nlon * (ilat - 1), PIO_OFFSET_KIND)
-        end do
-        call pio_initdecomp(self%iosystem, data_type, (/nlon, nlat/), &
-             idof(1:self%shared%n_b_local), self%iodesc_2d)
-        deallocate(idof)
-        self%iodesc_2d_valid = .true.
-        self%iodesc_2d_dtype = data_type
-      end if
-      if (data_type == PIO_REAL) then
-        call pio_write_darray(File, varid, self%iodesc_2d, fld_r4(:,1), ierr)
-      else
-        call pio_write_darray(File, varid, self%iodesc_2d, fld_out(:,1), ierr)
-      end if
+    allocate(idof(max(1, self%shared%n_b_local * nlev)))
+    idof(:) = 0
+    do i = 1, self%shared%n_b_local
+      global_row = self%shared%row_start + i - 1
+      ilon = mod(global_row - 1, nlon) + 1
+      ilat = (global_row - 1) / nlon + 1
+      do k = 1, nlev
+        idof((k-1)*self%shared%n_b_local + i) = &
+             int(ilon + nlon*(ilat-1) + nlon*nlat*(k-1), PIO_OFFSET_KIND)
+      end do
+    end do
+
+    if (nlev <= 1) then
+      call pio_initdecomp(self%iosystem, data_type, (/nlon, nlat/), &
+           idof(1:self%shared%n_b_local), self%iodescs(slot))
     else
-      if (self%iodesc_3d_valid .and. &
-          (self%iodesc_3d_nlev /= numlev .or. self%iodesc_3d_dtype /= data_type)) then
-        call pio_freedecomp(File, self%iodesc_3d)
-        self%iodesc_3d_valid = .false.
-      end if
-      if (.not. self%iodesc_3d_valid) then
-        allocate(idof(max(1, self%shared%n_b_local * numlev)))
-        idof(:) = 0
-        do i = 1, self%shared%n_b_local
-          global_row = self%shared%row_start + i - 1
-          ilon = mod(global_row - 1, nlon) + 1
-          ilat = (global_row - 1) / nlon + 1
-          do k = 1, numlev
-            idof((k-1)*self%shared%n_b_local + i) = &
-                 int(ilon + nlon*(ilat-1) + nlon*nlat*(k-1), PIO_OFFSET_KIND)
-          end do
-        end do
-        call pio_initdecomp(self%iosystem, data_type, (/nlon, nlat, numlev/), &
-             idof(1:self%shared%n_b_local*numlev), self%iodesc_3d)
-        deallocate(idof)
-        self%iodesc_3d_valid = .true.
-        self%iodesc_3d_nlev  = numlev
-        self%iodesc_3d_dtype = data_type
-      end if
-      if (data_type == PIO_REAL) then
-        call pio_write_darray(File, varid, self%iodesc_3d, fld_r4, ierr)
-      else
-        call pio_write_darray(File, varid, self%iodesc_3d, fld_out, ierr)
-      end if
+      call pio_initdecomp(self%iosystem, data_type, (/nlon, nlat, nlev/), &
+           idof(1:self%shared%n_b_local*nlev), self%iodescs(slot))
     end if
+    deallocate(idof)
 
-    if (allocated(fld_r4)) deallocate(fld_r4)
-
-  end subroutine shr_horiz_remap_col_write
+  end subroutine get_iodesc
 
 end module shr_horiz_remap_col_mod

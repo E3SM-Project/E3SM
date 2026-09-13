@@ -1767,6 +1767,19 @@ narrows to `real(r4)` when `data_type == PIO_REAL` before calling
 `pio_write_darray`. The EAM wrapper never needed this because it always
 passes `PIO_DOUBLE`.
 
+### gotcha #56b — never free a PIO decomp mid-file (gotcha #49, in the col driver) (ADDED 2026-09-13)
+
+The EAM wrapper keeps one 2-D and one 3-D decomposition per tape and frees
+the 3-D one whenever the level count changes. That is fine for the EAM tape
+(one 3-D shape) but not in general: a tape carrying both `levgrnd` and
+`levsno` fields would free the decomposition between two writes into the same
+open file, and PIO dereferences the freed decomp when the file is later
+flushed — gotcha #49's crash, from a different direction.
+
+`shr_horiz_remap_col_write` therefore keys a small growable cache on
+`(numlev, data_type)` and never frees mid-run; PIO finalize cleans up. The
+cache is bounded by the number of distinct field shapes on a tape (a handful).
+
 ### gotcha #57 — `errmsg` collides with the use-associated `errMsg` in ELM (ADDED 2026-09-13)
 
 `elmHorizRemapMod` does `use shr_log_mod, only : errMsg => shr_log_errMsg`,
