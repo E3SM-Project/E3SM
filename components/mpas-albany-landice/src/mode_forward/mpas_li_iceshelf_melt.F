@@ -1167,6 +1167,7 @@ module li_iceshelf_melt
     subroutine iceshelf_melt_ismip6(domain, err)
 
       use li_constants, only: oceanFreezingTempDepthDependence
+      use mpas_global_sum_mod, only: mpas_global_sum_nfld
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -1203,7 +1204,9 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
       integer, parameter :: maxNumBasins = 32
       integer, dimension(:), pointer :: cellMask, indexToCellID
-      real(kind=RKIND), dimension(maxNumBasins*2) :: localSums, globalSums
+      real(kind=RKIND), dimension(maxNumBasins*2) :: globalSums
+      real (kind=RKIND), dimension(:,:), allocatable :: basinContrib
+      integer :: basinIndex
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer :: bedTopography
@@ -1220,7 +1223,11 @@ module li_iceshelf_melt
 
       allocate(mean_TF(maxNumBasins))
       allocate(IS_area(maxNumBasins))
+      mean_TF(:) = 0.d0
+      IS_area(:) = 0.d0
 
+      ! NOTE: MALI supports only a single block per MPI task, so basinContrib
+      ! is built and reduced assuming exactly one iteration of the block loop below.
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -1258,8 +1265,8 @@ module li_iceshelf_melt
          ! Get TFdraft field that we will calculate
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
 
-         mean_TF(:) = 0.d0
-         IS_area(:) = 0.d0
+         allocate(basinContrib(nCellsSolve, 2*maxNumBasins))
+         basinContrib(:,:) = 0.0_RKIND
 
          ! Check zOcean for valid values
          if (minval(zOcean) >= 0.0_RKIND) then
@@ -1321,23 +1328,29 @@ module li_iceshelf_melt
                endif
 
                ! 2 -  Mean Thermal forcing in individual basins (NB: fortran norm while basins start at zero):
-               mean_TF(basinNumber(iCell)+1) = mean_TF(basinNumber(iCell)+1) + areaCell(iCell) * TFdraft(iCell)
-               IS_area(basinNumber(iCell)+1) = IS_area(basinNumber(iCell)+1) + areaCell(iCell)
+               ! Contributions are placed into a per-cell, per-basin array and reduced below using a
+               ! reproducible (decomposition-independent) global sum, rather than accumulating a local
+               ! partial sum here and reducing it with a plain MPI_Allreduce (which is not guaranteed
+               ! to be bit-for-bit reproducible across different decompositions).
+               basinIndex = basinNumber(iCell) + 1
+               basinContrib(iCell, basinIndex) = areaCell(iCell) * TFdraft(iCell)
+               basinContrib(iCell, maxNumBasins+basinIndex) = areaCell(iCell)
 
             else
                TFdraft(iCell) = 0.d0
             endif
          enddo
 
+         ! Reproducible (decomposition-independent) global sum of the per-basin thermal-forcing
+         ! numerator and area, across all cells and all MPI tasks.
+         globalSums(:) = mpas_global_sum_nfld(basinContrib, domain % dminfo % comm)
+         mean_TF(:) = globalSums(1:maxNumBasins)
+         IS_area(:) = globalSums(maxNumBasins+1:2*maxNumBasins)
+         deallocate(basinContrib)
+
          block => block % next
       enddo   ! associated(block)
 
-      ! global sum mean_TF and IS_area
-      localSums(1:maxNumBasins) = mean_TF(:)
-      localSums(maxNumBasins+1:2*maxNumBasins) = IS_area(:)
-      call mpas_dmpar_sum_real_array(domain % dminfo, 2*maxNumBasins, localSums(:), globalSums(:))
-      mean_TF(:) = globalSums(1:maxNumBasins)
-      IS_area(:) = globalSums(maxNumBasins+1:2*maxNumBasins)
       do i = 1, maxNumBasins
          if (IS_area(i) > 0.0_RKIND) then
             mean_TF(i) = mean_TF(i) / IS_area(i) ! actual mean TF per basin
