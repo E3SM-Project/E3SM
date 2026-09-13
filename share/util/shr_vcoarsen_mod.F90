@@ -35,7 +35,10 @@ module shr_vcoarsen_mod
 
   ! Level selection
   public :: shr_vcoarsen_select_index    ! extract at a specific level index
-  public :: shr_vcoarsen_select_nearest  ! extract at nearest coordinate value
+  public :: shr_vcoarsen_select_nearest  ! linear interpolation to a coordinate value
+                                         ! (name kept for callers; it brackets the
+                                         !  target and interpolates, falling back to
+                                         !  the nearest end value outside the range)
 
   ! Category aggregation
   public :: shr_vcoarsen_cat_sum     ! sum over categories

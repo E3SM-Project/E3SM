@@ -8205,15 +8205,20 @@ Default: none
 
 <entry id="vcoarsen_select_pres" type="real(50)" category="physics"
        group="eam_vcoarsen_nl" valid_values="" >
-Pressure values (hPa) for nearest-pressure-level selection (e.g., 850,500,200).
-Output fields named BASEat{value}hPa. Unused entries should be -1.
+Pressure levels (hPa) to interpolate to, e.g. 850,500,200. Interpolation is
+linear in pressure between the two bracketing model midpoints, matching EAM's
+own Z500/T850 diagnostics (vertinterp); where the target pressure falls outside
+the column (925/1000 hPa over terrain) the nearest midpoint value is held rather
+than extrapolated. Output fields named BASEat{value}hPa.
+Unused entries should be -1.
 Default: -1.0 (inactive)
 </entry>
 
 <entry id="vcoarsen_select_pres_flds" type="char*34(100)" category="physics"
        group="eam_vcoarsen_nl" valid_values="" >
-Field names for nearest-pressure selection.
-Use 'all' to apply to T, U, V, OMEGA, Z3, Q.
+Field names to interpolate to the vcoarsen_select_pres levels.
+Use 'all' to apply to T, U, V, OMEGA, Z3, Q. 'Z' is accepted as shorthand for
+Z3 (geopotential height above sea level) and yields output named Zat{value}hPa.
 Default: none
 </entry>
 

@@ -41,7 +41,8 @@ list(APPEND share_mct_sources
 # a stub of PIO, but excluded from builds that do not include PIO.
 list(APPEND share_pio_sources
   shr_pio_mod.F90
-  shr_horiz_remap_mod.F90)
+  shr_horiz_remap_mod.F90
+  shr_horiz_remap_col_mod.F90)
 
 sourcelist_to_parent(share_sources)
 sourcelist_to_parent(share_mct_sources)

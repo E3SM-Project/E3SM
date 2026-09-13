@@ -10,7 +10,7 @@ module eam_vcoarsen
   ! Supports five modes of vertical coarsening:
   !   1. Overlap-weighted averaging onto coarser pressure layers (pdel-weighted)
   !   2. Level selection by index (e.g., UatL5)
-  !   3. Level selection by nearest pressure value (e.g., Uat850hPa)
+  !   3. Linear interpolation in pressure to fixed pressure levels (e.g., Uat850hPa)
   !   4. Column integration: sum(field * pdel / g) producing a 2D field (e.g., TOTAL_WATER_INT)
   !   5. Linear interpolation to height above surface (e.g., Uat10m for 10 m wind)
   !
@@ -19,8 +19,8 @@ module eam_vcoarsen
   !   vcoarsen_avg_flds        - fields to average onto coarsened layers
   !   vcoarsen_select_levs     - level indices for level selection (e.g., 1,5,10)
   !   vcoarsen_select_lev_flds - fields for level index selection
-  !   vcoarsen_select_pres     - pressure values in hPa for nearest-level selection
-  !   vcoarsen_select_pres_flds - fields for pressure value selection
+  !   vcoarsen_select_pres     - pressure levels in hPa to interpolate to
+  !   vcoarsen_select_pres_flds - fields to interpolate to those pressure levels
   !   vcoarsen_select_heights   - heights (m) above surface for linear interpolation
   !   vcoarsen_select_height_flds - fields for height interpolation
   !   vcoarsen_int_flds        - fields to column-integrate (sum field*pdel/g)
@@ -63,10 +63,18 @@ module eam_vcoarsen
   integer, parameter :: max_name_len      = 34    ! matches fieldname_len in cam_history
   integer, parameter :: max_fname_len     = 48    ! output field names can be longer
 
-  ! Known 3D state variable names
+  ! Known 3D state variable names. This list is also what 'all' expands to,
+  ! so aliases live in known_state_aliases instead of being repeated here.
   integer, parameter :: n_known_state = 6
   character(len=max_name_len), parameter :: known_state_vars(n_known_state) = &
        (/ 'T     ', 'U     ', 'V     ', 'OMEGA ', 'Z3    ', 'Q     ' /)
+
+  ! Accepted spellings that resolve to one of the above. 'Z' is CF/ACE-style
+  ! shorthand for EAM's Z3 (geopotential height above sea level); requesting it
+  ! yields output named Zat500hPa rather than Z3at500hPa.
+  integer, parameter :: n_known_alias = 1
+  character(len=max_name_len), parameter :: known_state_aliases(n_known_alias) = &
+       (/ 'Z     ' /)
 
   ! Namelist variables
   real(r8) :: vcoarsen_pbounds(max_pbounds)
@@ -262,8 +270,8 @@ contains
              ' levels, ', n_sel_lev_flds, ' fields'
       end if
       if (has_sel_pres) then
-        write(iulog,*) 'eam_vcoarsen_readnl: pressure selection enabled, ', n_sel_pres, &
-             ' pressures, ', n_sel_pres_flds, ' fields'
+        write(iulog,*) 'eam_vcoarsen_readnl: pressure-level interpolation enabled, ', &
+             n_sel_pres, ' levels, ', n_sel_pres_flds, ' fields'
       end if
       if (has_sel_height) then
         write(iulog,*) 'eam_vcoarsen_readnl: height selection enabled, ', n_sel_heights, &
@@ -377,7 +385,7 @@ contains
       end do
     end if
 
-    ! Validate and register pressure-selected fields (unit-preserving)
+    ! Validate and register pressure-interpolated fields (unit-preserving)
     if (has_sel_pres) then
       do i = 1, n_sel_pres_flds
         call validate_field_name(vcoarsen_select_pres_flds(i))
@@ -385,7 +393,8 @@ contains
         do k = 1, n_sel_pres
           call make_sel_pres_name(vcoarsen_select_pres_flds(i), vcoarsen_select_pres(k), fname)
           write(lname, '(A,A,F0.1,A)') trim(vcoarsen_select_pres_flds(i)), &
-               ' at nearest level to ', vcoarsen_select_pres(k), ' hPa'
+               ' at ', vcoarsen_select_pres(k), &
+               ' hPa (linearly interpolated in pressure between the bracketing model midpoints; held at the nearest midpoint value where the target pressure is outside the column, e.g. below ground)'
           call addfld(trim(fname), horiz_only, 'A', trim(src_units), trim(lname), &
                flag_xyfill=.true.)
         end do
@@ -526,7 +535,12 @@ contains
       end do
     end if
 
-    ! --- Nearest pressure selection ---
+    ! --- Linear interpolation to fixed pressure levels ---
+    ! shr_vcoarsen_select_nearest interpolates linearly between the two model
+    ! midpoints bracketing the target, matching EAM's own vertinterp (used for
+    ! Z500/T850/...): no extrapolation, boundary values are copied when the
+    ! target pressure falls outside the column. For 925/1000 hPa over terrain
+    ! that means the lowest model level's value, not an under-ground estimate.
     if (has_sel_pres) then
       ! Build midpoint pressure array
       coord_mid(1:ncol, 1:pver) = state%pmid(1:ncol, 1:pver)
@@ -626,6 +640,7 @@ contains
     use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
     use constituents,   only: cnst_get_ind
     use eam_derived,    only: eam_derived_get_cache
+    use physconst,      only: rga
 
     type(physics_state), intent(in)  :: state
     type(physics_buffer_desc), pointer :: pbuf_chunk(:)
@@ -633,7 +648,7 @@ contains
     real(r8),            intent(out) :: field_out(pcols, pver)
     integer,             intent(in)  :: ncol
 
-    integer :: idx, pbuf_idx, errcode
+    integer :: idx, pbuf_idx, errcode, k
     character(len=max_name_len) :: uname
     real(r8), pointer :: pbuf_fld(:,:)
     logical :: found
@@ -655,8 +670,14 @@ contains
     case ('OMEGA')
       field_out(1:ncol, :) = state%omega(1:ncol, :)
       return
-    case ('Z3')
-      field_out(1:ncol, :) = state%zm(1:ncol, :)
+    case ('Z3', 'Z')
+      ! Geopotential height above SEA LEVEL, matching cam_diagnostics' Z3:
+      ! state%zm is height above the surface, so the surface geopotential has
+      ! to be added back in.  Without it, Z on a pressure surface would be
+      ! short by the terrain height wherever the ground is above sea level.
+      do k = 1, pver
+        field_out(1:ncol, k) = state%zm(1:ncol, k) + state%phis(1:ncol) * rga
+      end do
       return
     case ('Q')
       field_out(1:ncol, :) = state%q(1:ncol, :, 1)
@@ -710,6 +731,16 @@ contains
       end if
     end do
 
+    ! Check accepted aliases of those state variables
+    if (.not. found) then
+      do k = 1, n_known_alias
+        if (trim(uname) == trim(known_state_aliases(k))) then
+          found = .true.
+          exit
+        end if
+      end do
+    end if
+
     ! Check constituents
     if (.not. found) then
       call cnst_get_ind(trim(uname), idx, abrtf=.false.)
@@ -753,7 +784,7 @@ contains
        units_out = 'm/s'
     case ('OMEGA')
        units_out = 'Pa/s'
-    case ('Z3')
+    case ('Z3', 'Z')
        units_out = 'm'
     case ('Q', 'CLDLIQ', 'CLDICE', 'RAINQM', 'SNOWQM', 'STW')
        units_out = 'kg/kg'

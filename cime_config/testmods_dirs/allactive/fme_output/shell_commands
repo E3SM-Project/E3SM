@@ -285,6 +285,17 @@ derived_fld_defs = 'STW=Q+CLDICE+CLDLIQ+RAINQM'
 vcoarsen_level_bounds = 0, 25, 38, 46, 52, 56, 61, 69, 80
 vcoarsen_avg_flds = 'T','U','V','STW','Q'
 
+! Fixed pressure levels (hPa) with linear interpolation in pressure. Same
+! convention as EAM's own Z500/T850 diagnostics (vertinterp): interpolate
+! between the two bracketing model midpoints, and where the target pressure
+! lies outside the column -- 925/1000 hPa over terrain, 50 hPa if the model
+! top is lower -- hold the nearest midpoint value rather than extrapolating.
+! Output names are <FLD>at<P>hPa, e.g. Tat850hPa, Zat500hPa.
+! 'Z' is accepted as shorthand for EAM's Z3 (geopotential height above sea
+! level, i.e. state%zm + PHIS/g).
+vcoarsen_select_pres = 50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000
+vcoarsen_select_pres_flds = 'T','U','V','Z','Q'
+
 ! Height-above-surface linear interpolation (m AGL) for ACE 2 m / 10 m fields.
 ! state%zm is height-above-surface at level midpoints; targets below the
 ! lowest midpoint collapse to the lowest level (no extrapolation).
@@ -305,6 +316,21 @@ fincl${FME_EAM_TAPE} = 'SOLIN:A', 'PHIS',
           'U_0','U_1','U_2','U_3','U_4','U_5','U_6','U_7',
           'V_0','V_1','V_2','V_3','V_4','V_5','V_6','V_7',
           'Q_0','Q_1','Q_2','Q_3','Q_4','Q_5','Q_6','Q_7',
+          'Tat50hPa','Tat100hPa','Tat150hPa','Tat200hPa','Tat250hPa',
+          'Tat300hPa','Tat400hPa','Tat500hPa','Tat600hPa','Tat700hPa',
+          'Tat850hPa','Tat925hPa','Tat1000hPa',
+          'Uat50hPa','Uat100hPa','Uat150hPa','Uat200hPa','Uat250hPa',
+          'Uat300hPa','Uat400hPa','Uat500hPa','Uat600hPa','Uat700hPa',
+          'Uat850hPa','Uat925hPa','Uat1000hPa',
+          'Vat50hPa','Vat100hPa','Vat150hPa','Vat200hPa','Vat250hPa',
+          'Vat300hPa','Vat400hPa','Vat500hPa','Vat600hPa','Vat700hPa',
+          'Vat850hPa','Vat925hPa','Vat1000hPa',
+          'Zat50hPa','Zat100hPa','Zat150hPa','Zat200hPa','Zat250hPa',
+          'Zat300hPa','Zat400hPa','Zat500hPa','Zat600hPa','Zat700hPa',
+          'Zat850hPa','Zat925hPa','Zat1000hPa',
+          'Qat50hPa','Qat100hPa','Qat150hPa','Qat200hPa','Qat250hPa',
+          'Qat300hPa','Qat400hPa','Qat500hPa','Qat600hPa','Qat700hPa',
+          'Qat850hPa','Qat925hPa','Qat1000hPa',
           'Tat2m', 'STWat2m','Qat2m',
           'Uat10m', 'Vat10m',
           'TREFHT', 'QREFHT',
