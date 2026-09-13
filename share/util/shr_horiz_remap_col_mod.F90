@@ -245,9 +245,9 @@ CONTAINS
     real(r8), optional,   intent(in)  :: fillval
     logical,  optional,   intent(in)  :: missing_as_zero
 
-    integer  :: i, k, idx, needed, nlev_packed, base, ierr, klo, khi
+    integer  :: k, ierr
     real(r8) :: lfill, missing_mask
-    logical  :: have_fill, is_missing
+    logical  :: have_fill
     real(r8), allocatable :: lev_out(:,:)
 
     allocate(fld_out(self%shared%n_b_local, numlev))
