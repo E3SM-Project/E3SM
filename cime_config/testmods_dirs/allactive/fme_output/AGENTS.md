@@ -1789,6 +1789,21 @@ gfortran reports it as "Invalid procedure argument" at the *call site* plus
 "'string' argument of 'trim' must be CHARACTER" — neither of which points at
 the actual declaration. The local is named `remap_errmsg`.
 
+### gotcha #57b — a continue run never calls `hist_htapes_build` (ADDED 2026-09-13)
+
+ELM calls `hist_htapes_build` only when `nsrest /= nsrContinue`, and MOSART
+calls `RtmHistHtapesBuild` only for `nsrStartup`/`nsrBranch` — a continue run
+restores the tape definitions from the restart file instead. Remap state is
+module state rebuilt from the namelist each run, so putting the remap init
+inside those routines silently dropped it on every RESUBMIT leg: leg 1 wrote a
+remapped tape, leg 2 wrote a native one under the same file name, with no
+error anywhere.
+
+The init lives in its own routine (`hist_htapes_remap_init` /
+`RtmHistRemapInit`) called unconditionally after the restart read, which is
+where `ntapes` and `tape(t)%dov2xy` are valid on every run type. Anything
+else added to this path later belongs there too, not in the build routine.
+
 ### gotcha #58 — MOSART remapped output is NOT budget-conserving (ADDED 2026-09-13)
 
 The remap produces an area-weighted **mean** of the source cells covering

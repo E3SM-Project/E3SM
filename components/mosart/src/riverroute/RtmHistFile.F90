@@ -89,6 +89,7 @@ module RtmHistFile
   public :: RtmHistAddfld        ! Add a field to the master field list
   public :: RtmHistPrintflds     ! Print summary of master field list
   public :: RtmHistHtapesBuild   ! Initialize history file handler for initial or continue run
+  public :: RtmHistRemapInit     ! Validate file rotation and set up per-tape remapping (all run types)
   public :: RtmHistUpdateHbuf    ! Updates history buffer for all fields and tapes
   public :: RtmHistHtapesWrapup  ! Write history tape(s)
   public :: RtmHistRestart       ! Read/write history file restart data
@@ -221,6 +222,48 @@ contains
 
 !-----------------------------------------------------------------------
 
+  subroutine RtmHistRemapInit ()
+
+    ! !DESCRIPTION:
+    ! Validate the per-tape file rotation policy and initialize per-tape
+    ! horizontal remapping.
+    !
+    ! Called for EVERY run type, unlike RtmHistHtapesBuild, which a continue
+    ! run skips because RtmHistRestart has already restored the tape
+    ! definitions. The remap state is module state rebuilt from the namelist
+    ! each run, so a restart that skipped this would silently fall back to
+    ! writing the tape on the native grid.
+
+    ! !ARGUMENTS:
+    implicit none
+
+    ! !LOCAL VARIABLES:
+    integer :: t                   ! tape index
+    character(len=*),parameter :: subname = 'RtmHistRemapInit'
+    !----------------------------------------------------------
+
+    do t=1,ntapes
+       select case (trim(rtmhist_file_storage_type(t)))
+       case ('num_snapshots', 'one_month', 'one_year')
+          ! ok
+       case default
+          write(iulog,*) trim(subname),' ERROR: rtmhist_file_storage_type(',t,')="', &
+               trim(rtmhist_file_storage_type(t)),'" is not one of ', &
+               '"num_snapshots", "one_month", "one_year"'
+          call shr_sys_abort()
+       end select
+    end do
+
+    do t=1,ntapes
+       if (len_trim(rtmhist_horiz_remap_file(t)) > 0) then
+          call RtmHorizRemapInit(t, trim(rtmhist_horiz_remap_file(t)))
+       end if
+    end do
+
+  end subroutine RtmHistRemapInit
+
+!-----------------------------------------------------------------------
+
   subroutine RtmHistHtapesBuild ()
 
     ! !DESCRIPTION:
@@ -295,28 +338,6 @@ contains
        else
           tape(t)%ncprec = ncd_float
        endif
-    end do
-
-    ! Validate the per-tape file rotation policy
-
-    do t=1,ntapes
-       select case (trim(rtmhist_file_storage_type(t)))
-       case ('num_snapshots', 'one_month', 'one_year')
-          ! ok
-       case default
-          write(iulog,*) trim(subname),' ERROR: rtmhist_file_storage_type(',t,')="', &
-               trim(rtmhist_file_storage_type(t)),'" is not one of ', &
-               '"num_snapshots", "one_month", "one_year"'
-          call shr_sys_abort()
-       end select
-    end do
-
-    ! Initialize per-tape horizontal remapping
-
-    do t=1,ntapes
-       if (len_trim(rtmhist_horiz_remap_file(t)) > 0) then
-          call RtmHorizRemapInit(t, trim(rtmhist_horiz_remap_file(t)))
-       end if
     end do
 
     ! Set time of beginning of current averaging interval

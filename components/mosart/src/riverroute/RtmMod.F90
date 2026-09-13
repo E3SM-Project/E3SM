@@ -28,6 +28,7 @@ module RtmMod
   use RtmTimeManager  , only : get_curr_date, is_end_curr_day, is_end_curr_month, is_first_step, is_first_restart_step, is_last_step
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
   use RtmHistFile     , only : RtmHistUpdateHbuf, RtmHistHtapesWrapup, RtmHistHtapesBuild, &
+                               RtmHistRemapInit,                                 &
                                rtmhist_ndens, rtmhist_mfilt, rtmhist_nhtfrq,     &
                                rtmhist_avgflag_pertape, rtmhist_avgflag_pertape, & 
                                rtmhist_fincl1, rtmhist_fincl2, rtmhist_fincl3,   &
@@ -2056,6 +2057,12 @@ contains
     if (nsrest==nsrStartup .or. nsrest==nsrBranch) then
        call RtmHistHtapesBuild()
     end if
+
+    ! Per-tape file rotation and horizontal remapping are rebuilt from the
+    ! namelist on every run type, including a continue run that skipped
+    ! RtmHistHtapesBuild above (the tape definitions it needs were restored
+    ! from the restart file).
+    call RtmHistRemapInit()
     call RtmHistFldsSet()
     delt_save = 0.0
 

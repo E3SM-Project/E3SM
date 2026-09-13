@@ -132,6 +132,7 @@ module histFileMod
   public :: hist_add_subscript   ! Add a 2d subscript dimension
   public :: hist_printflds       ! Print summary of master field list
   public :: hist_htapes_build    ! Initialize history file handler for initial or continue run
+  public :: hist_htapes_remap_init ! Validate file rotation and set up per-tape remapping (all run types)
   public :: hist_update_hbuf     ! Updates history buffer for all fields and tapes
   public :: hist_htapes_wrapup   ! Write history tape(s)
   public :: hist_restart_ncd     ! Read/write history file restart data
@@ -440,6 +441,62 @@ contains
   end subroutine masterlist_addfld
 
   !-----------------------------------------------------------------------
+  subroutine hist_htapes_remap_init ()
+    !
+    ! !DESCRIPTION:
+    ! Validate the per-tape file rotation policy and initialize per-tape
+    ! horizontal remapping.
+    !
+    ! Called for EVERY run type, unlike hist_htapes_build, which a continue
+    ! run skips because hist_restart_ncd has already restored the tape
+    ! definitions. The remap state is module state rebuilt from the namelist
+    ! each run, so a restart that skipped this would silently fall back to
+    ! writing the tape on the native grid.
+    !
+    ! !USES:
+    use elmHorizRemapMod, only: elm_horiz_remap_init
+    !
+    ! !LOCAL VARIABLES:
+    integer :: t                   ! tape index
+    character(len=*),parameter :: subname = 'hist_htapes_remap_init'
+    !-----------------------------------------------------------------------
+
+    do t=1,ntapes
+       select case (trim(hist_file_storage_type(t)))
+       case ('num_snapshots', 'one_month', 'one_year')
+          ! ok
+       case default
+          write(iulog,*) trim(subname),' ERROR: hist_file_storage_type(',t,')="', &
+               trim(hist_file_storage_type(t)),'" is not one of ', &
+               '"num_snapshots", "one_month", "one_year"'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+    end do
+
+    ! Remapped output replaces the native land grid with the map file's
+    ! lat-lon target grid, so it only makes sense for tapes written on the
+    ! gridcell decomposition.
+    do t=1,ntapes
+       if (len_trim(hist_horiz_remap_file(t)) > 0) then
+          if (.not. tape(t)%dov2xy) then
+             write(iulog,*) trim(subname),' ERROR: hist_horiz_remap_file(',t, &
+                  ') requires hist_dov2xy(',t,')=.true. (1d vector output ', &
+                  'has no horizontal grid to remap from)'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          end if
+          if (hist_type1d_pertape(t) /= ' ') then
+             write(iulog,*) trim(subname),' ERROR: hist_horiz_remap_file(',t, &
+                  ') is incompatible with hist_type1d_pertape(',t,')="', &
+                  trim(hist_type1d_pertape(t)),'"'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          end if
+          call elm_horiz_remap_init(t, trim(hist_horiz_remap_file(t)))
+       end if
+    end do
+
+  end subroutine hist_htapes_remap_init
+
+  !-----------------------------------------------------------------------
   subroutine hist_htapes_build ()
     !
     ! !DESCRIPTION:
@@ -454,7 +511,6 @@ contains
     ! !USES:
     use elm_time_manager, only: get_prev_time
     use elm_varcon      , only: secspday
-    use elmHorizRemapMod, only: elm_horiz_remap_init
     !
     ! !ARGUMENTS:
     !
@@ -503,42 +559,6 @@ contains
        else
           tape(t)%ncprec = ncd_float
        endif
-    end do
-
-    ! Validate the per-tape file rotation policy
-
-    do t=1,ntapes
-       select case (trim(hist_file_storage_type(t)))
-       case ('num_snapshots', 'one_month', 'one_year')
-          ! ok
-       case default
-          write(iulog,*) trim(subname),' ERROR: hist_file_storage_type(',t,')="', &
-               trim(hist_file_storage_type(t)),'" is not one of ', &
-               '"num_snapshots", "one_month", "one_year"'
-          call endrun(msg=errMsg(__FILE__, __LINE__))
-       end select
-    end do
-
-    ! Initialize per-tape horizontal remapping. Remapped output replaces the
-    ! native land grid with the map file's lat-lon target grid, so it only
-    ! makes sense for tapes written on the gridcell decomposition.
-
-    do t=1,ntapes
-       if (len_trim(hist_horiz_remap_file(t)) > 0) then
-          if (.not. tape(t)%dov2xy) then
-             write(iulog,*) trim(subname),' ERROR: hist_horiz_remap_file(',t, &
-                  ') requires hist_dov2xy(',t,')=.true. (1d vector output ', &
-                  'has no horizontal grid to remap from)'
-             call endrun(msg=errMsg(__FILE__, __LINE__))
-          end if
-          if (hist_type1d_pertape(t) /= ' ') then
-             write(iulog,*) trim(subname),' ERROR: hist_horiz_remap_file(',t, &
-                  ') is incompatible with hist_type1d_pertape(',t,')="', &
-                  trim(hist_type1d_pertape(t)),'"'
-             call endrun(msg=errMsg(__FILE__, __LINE__))
-          end if
-          call elm_horiz_remap_init(t, trim(hist_horiz_remap_file(t)))
-       end if
     end do
 
     ! Set time of beginning of current averaging interval

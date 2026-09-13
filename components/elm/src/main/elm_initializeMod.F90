@@ -530,6 +530,7 @@ contains
     use reweightMod           , only : reweight_wrapup
     use subgridWeightsMod     , only : init_subgrid_weights_mod
     use histFileMod           , only : hist_htapes_build, htapes_fieldlist
+    use histFileMod           , only : hist_htapes_remap_init
     use histFileMod           , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     use restFileMod           , only : restFile_getfile, restFile_open, restFile_close
     use restFileMod           , only : restFile_read, restFile_write
@@ -987,6 +988,13 @@ contains
     if (nsrest /= nsrContinue) then
        call hist_htapes_build()
     end if
+
+    ! Per-tape file rotation and horizontal remapping are rebuilt from the
+    ! namelist on every run type, including a continue run that skipped
+    ! hist_htapes_build above (the tape definitions it needs were restored
+    ! from the restart file).
+
+    call hist_htapes_remap_init()
 
     ! ------------------------------------------------------------------------
     ! Initialize variables that are associated with accumulated fields.
