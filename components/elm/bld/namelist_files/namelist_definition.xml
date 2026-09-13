@@ -593,6 +593,38 @@ If TRUE, implies output data on a 2D latitude/longitude grid. False means
 output in 1D vector format.  One setting per history tape series.
 </entry>
 
+<entry id="hist_horiz_remap_file" type="char*256(6)" category="history"
+       group="elm_inparm" valid_values="" >
+Per history tape series: path to an ESMF/SCRIP mapping file. When set, that
+tape is written directly on the map file's regular lat-lon target grid instead
+of the native land grid, removing the offline regrid step for land emulation
+training data. The map's source grid must be the full (ni x nj) land grid --
+e.g. map_r05_to_gaussian_180by360_shifted.nc for r05.
+
+Requires hist_dov2xy=.true. for that tape and is incompatible with
+hist_type1d_pertape. Maps with negative weights (TempestRemap 2nd-order FV,
+patch recovery) are rejected: they are unsafe for the masked remap path.
+
+Cells ELM does not own contribute nothing to the average, so a coastal target
+cell reports the mean over its land part and a target cell with no land gets
+the fill value. A remapped tape carries lon, lat and landfrac (the true land
+fraction of each target cell); the native geometry variables (area, topo,
+landmask, pftmask, topoPerGrid) are omitted.
+Default: ' ' (no remapping)
+</entry>
+
+<entry id="hist_file_storage_type" type="char*16(6)" category="history"
+       group="elm_inparm" valid_values="num_snapshots,one_month,one_year" >
+Per history tape series: how history files are rotated.
+    'num_snapshots' (default) rotate after hist_mfilt time samples, legacy behavior
+    'one_month'     rotate at each calendar month boundary; files named %y-%m.nc
+    'one_year'      rotate at each calendar year boundary; files named %y.nc
+With calendar rotation hist_mfilt acts only as a safety upper bound. Mirrors
+EAM's hist_file_storage_type so all components of an emulation training tape
+share one file cadence.
+Default: 'num_snapshots'
+</entry>
+
 <entry id="hist_empty_htapes" type="logical" category="history"
        group="elm_inparm" valid_values="" >
 If TRUE, indicates do NOT output any default history fields (requires you to use

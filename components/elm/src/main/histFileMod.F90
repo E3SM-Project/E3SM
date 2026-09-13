@@ -81,6 +81,10 @@ module histFileMod
        hist_avgflag_pertape(max_tapes) = (/(' ',ni=1,max_tapes)/)   ! namelist: per tape averaging flag
   character(len=max_namlen), public :: &
        hist_type1d_pertape(max_tapes)  = (/(' ',ni=1,max_tapes)/)   ! namelist: per tape type1d
+  character(len=256), public :: &
+       hist_horiz_remap_file(max_tapes) = ' '            ! namelist: per tape horizontal remap (map file path)
+  character(len=16), public :: &
+       hist_file_storage_type(max_tapes) = 'num_snapshots' ! namelist: per tape file rotation ('num_snapshots', 'one_month', 'one_year')
 
   character(len=max_namlen+2), public :: &
        fincl(max_flds,max_tapes)         ! namelist-equivalence list of fields to add
@@ -115,6 +119,11 @@ module histFileMod
        hist_fexcl6(max_flds) = ' ' ! namelist: list of fields to remove
 
   logical, private :: if_disphist(max_tapes)   ! restart, true => save history file
+
+  ! Calendar-based file rotation (hist_file_storage_type). hist_storage_curr_idx
+  ! holds the calendar month (yr*12+mon) or year that the currently open file
+  ! belongs to; -1 means "not yet known", in which case the next record seeds it.
+  integer, private :: hist_storage_curr_idx(max_tapes) = -1
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: hist_addfld1d        ! Add a 1d single-level field to the master field list
@@ -148,6 +157,7 @@ module histFileMod
   private :: hist_set_snow_field_2d    ! Set values in history field dimensioned by levsno
   private :: list_index                ! Find index of field in exclude list
   private :: set_hist_filename         ! Determine history dataset filenames
+  private :: hist_storage_idx_from_filename ! Recover a file's calendar period from its name
   public  :: getname                   ! Retrieve name portion of input "inname" (PUBLIC for FATES)
   private :: getflag                   ! Retrieve flag
   private :: pointer_index             ! Track data pointer indices
@@ -444,6 +454,7 @@ contains
     ! !USES:
     use elm_time_manager, only: get_prev_time
     use elm_varcon      , only: secspday
+    use elmHorizRemapMod, only: elm_horiz_remap_init
     !
     ! !ARGUMENTS:
     !
@@ -492,6 +503,42 @@ contains
        else
           tape(t)%ncprec = ncd_float
        endif
+    end do
+
+    ! Validate the per-tape file rotation policy
+
+    do t=1,ntapes
+       select case (trim(hist_file_storage_type(t)))
+       case ('num_snapshots', 'one_month', 'one_year')
+          ! ok
+       case default
+          write(iulog,*) trim(subname),' ERROR: hist_file_storage_type(',t,')="', &
+               trim(hist_file_storage_type(t)),'" is not one of ', &
+               '"num_snapshots", "one_month", "one_year"'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end select
+    end do
+
+    ! Initialize per-tape horizontal remapping. Remapped output replaces the
+    ! native land grid with the map file's lat-lon target grid, so it only
+    ! makes sense for tapes written on the gridcell decomposition.
+
+    do t=1,ntapes
+       if (len_trim(hist_horiz_remap_file(t)) > 0) then
+          if (.not. tape(t)%dov2xy) then
+             write(iulog,*) trim(subname),' ERROR: hist_horiz_remap_file(',t, &
+                  ') requires hist_dov2xy(',t,')=.true. (1d vector output ', &
+                  'has no horizontal grid to remap from)'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          end if
+          if (hist_type1d_pertape(t) /= ' ') then
+             write(iulog,*) trim(subname),' ERROR: hist_horiz_remap_file(',t, &
+                  ') is incompatible with hist_type1d_pertape(',t,')="', &
+                  trim(hist_type1d_pertape(t)),'"'
+             call endrun(msg=errMsg(__FILE__, __LINE__))
+          end if
+          call elm_horiz_remap_init(t, trim(hist_horiz_remap_file(t)))
+       end if
     end do
 
     ! Set time of beginning of current averaging interval
@@ -1751,6 +1798,7 @@ contains
     use elm_varctl      , only : version, hostname, username, conventions, source
     use domainMod       , only : ldomain
     use fileutils       , only : get_filename
+    use elmHorizRemapMod, only : elm_horiz_remap_active, elm_horiz_remap_dims
     !
     ! !ARGUMENTS:
     integer, intent(in) :: t                   ! tape index
@@ -1776,6 +1824,9 @@ contains
     integer :: numa                ! total number of atm cells across all processors
     logical :: avoid_pnetcdf       ! whether we should avoid using pnetcdf
     logical :: lhistrest           ! local history restart flag
+    logical :: do_remap            ! true => this tape is written on a remapped lat-lon grid
+    integer :: remap_nlon          ! remapped target grid longitude count
+    integer :: remap_nlat          ! remapped target grid latitude count
     type(file_desc_t) :: lnfid     ! local file id
     character(len=  8) :: curdate  ! current date
     character(len=  8) :: curtime  ! current time
@@ -1882,8 +1933,15 @@ contains
     ! Define dimensions.
     ! Time is an unlimited dimension. Character string is treated as an array of characters.
 
-    ! Global uncompressed dimensions (including non-land points)
-    if (ldomain%isgrid2d) then
+    ! Global uncompressed dimensions (including non-land points).
+    ! A remapped tape replaces the native land grid with the map file's
+    ! lat-lon target grid; the history restart file always stays native.
+    do_remap = elm_horiz_remap_active(t) .and. (.not. lhistrest)
+    if (do_remap) then
+       call elm_horiz_remap_dims(t, remap_nlon, remap_nlat)
+       call ncd_defdim(lnfid, 'lon'   , remap_nlon, dimid)
+       call ncd_defdim(lnfid, 'lat'   , remap_nlat, dimid)
+    else if (ldomain%isgrid2d) then
        call ncd_defdim(lnfid, 'lon'   , ldomain%ni, dimid)
        call ncd_defdim(lnfid, 'lat'   , ldomain%nj, dimid)
     else
@@ -2363,6 +2421,8 @@ contains
     use domainMod       , only : ldomain, lon1d, lat1d
     use elm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use elm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
+    use elmHorizRemapMod, only : elm_horiz_remap_active, elm_horiz_remap_coords
+    use elmHorizRemapMod, only : elm_horiz_remap_write_landfrac
     use FatesInterfaceTypesMod, only : fates_hdim_levsclass
     use FatesInterfaceTypesMod, only : fates_hdim_pfmap_levscpf
     use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscpf
@@ -2438,6 +2498,9 @@ contains
     real(r8), pointer :: histo(:,:)       ! temporary
     integer :: status
     real(r8) :: zsoi_1d(1)
+    integer :: begg, endg                 ! per-proc gridcell bounds (remapped tapes)
+    real(r8), allocatable :: remap_lon(:) ! remapped target grid longitudes
+    real(r8), allocatable :: remap_lat(:) ! remapped target grid latitudes
     character(len=*),parameter :: subname = 'htape_timeconst'
     !-----------------------------------------------------------------------
 
@@ -2694,7 +2757,25 @@ contains
     !***     Grid definition variables ***
     !-------------------------------------------------------------------------------
     ! For define mode -- only do this for first time-sample
-    if (mode == 'define' .and. tape(t)%ntimes == 1) then
+    if (mode == 'define' .and. tape(t)%ntimes == 1 .and. elm_horiz_remap_active(t)) then
+
+       ! Remapped tape: the grid is the map file's lat-lon target grid, so the
+       ! native geometry variables (area, topo, landmask, pftmask, topoPerGrid)
+       ! do not carry over. landfrac does: remapping it with missing cells
+       ! counted as zeros gives the true land fraction of each target cell,
+       ! which is what a consumer needs to mask the tape.
+       call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
+           long_name='coordinate longitude', units='degrees_east', &
+           ncid=nfid(t), missing_value=spval, fill_value=spval)
+       call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
+           long_name='coordinate latitude', units='degrees_north', &
+           ncid=nfid(t), missing_value=spval, fill_value=spval)
+       call ncd_defvar(varname='landfrac', xtype=tape(t)%ncprec, &
+           dim1name='lon', dim2name='lat', &
+           long_name='land fraction of the remapped grid cell', ncid=nfid(t), &
+           missing_value=spval, fill_value=spval)
+
+    else if (mode == 'define' .and. tape(t)%ntimes == 1) then
 
        if (ldomain%isgrid2d) then
           call ncd_defvar(varname='lon', xtype=tape(t)%ncprec, dim1name='lon', &
@@ -2785,6 +2866,16 @@ contains
           end if
        end if
 
+    else if (mode == 'write' .and. elm_horiz_remap_active(t)) then
+
+       call get_proc_bounds(begg, endg)
+       call elm_horiz_remap_coords(t, remap_lon, remap_lat)
+       call ncd_io(varname='lon', data=remap_lon, ncid=nfid(t), flag='write')
+       call ncd_io(varname='lat', data=remap_lat, ncid=nfid(t), flag='write')
+       deallocate(remap_lon, remap_lat)
+       call elm_horiz_remap_write_landfrac(t, nfid(t), 'landfrac', &
+            ldomain%frac(begg:endg), tape(t)%ncprec)
+
     else if (mode == 'write') then
 
        ! Most of this is constant and only needs to be done on tape(t)%ntimes=1
@@ -2818,6 +2909,7 @@ contains
     !
     ! !USES:
     use domainMod , only : ldomain
+    use elmHorizRemapMod, only : elm_horiz_remap_active, elm_horiz_remap_write_field
     !
     ! !ARGUMENTS:
     integer, intent(in) :: t                ! tape index
@@ -2846,8 +2938,12 @@ contains
     character(len=32) :: dim2name        ! temporary
     real(r8), pointer :: histo(:,:)      ! temporary
     real(r8), pointer :: hist1do(:)      ! temporary
+    logical  :: do_remap                 ! true => write this tape on the remapped lat-lon grid
+    integer  :: nlev_out                 ! number of levels handed to the remap writer
     character(len=*),parameter :: subname = 'hfields_write'
 !-----------------------------------------------------------------------
+
+    do_remap = elm_horiz_remap_active(t)
 
     ! Write/define 1d topological info
 
@@ -2895,7 +2991,17 @@ contains
              call endrun(msg=errMsg(__FILE__, __LINE__))
           end select
 
-          if (type1d_out == grlnd) then
+          if (do_remap) then
+             ! Remapped tapes always land on the map file's lat-lon target grid,
+             ! whether or not the native land grid was 2d.
+             if (type1d_out /= grlnd) then
+                write(iulog,*) trim(subname),' ERROR: field ',trim(varname), &
+                     ' has type1d_out=',trim(type1d_out), &
+                     ' but tape ',t,' is horizontally remapped (needs ',trim(grlnd),')'
+                call endrun(msg=errMsg(__FILE__, __LINE__))
+             end if
+             dim1name = 'lon'      ; dim2name = 'lat'
+          else if (type1d_out == grlnd) then
              if (ldomain%isgrid2d) then
                 dim1name = 'lon'      ; dim2name = 'lat'
              else
@@ -2936,6 +3042,21 @@ contains
           ! Determine output buffer
 
           histo => tape(t)%hlist(f)%hbuf
+
+          ! Remapped tapes bypass ncd_io: the data has to go through the
+          ! sparse-matrix remap and out on the target grid's own PIO
+          ! decomposition rather than the native land decomposition.
+          if (do_remap) then
+             if (numdims == 1) then
+                nlev_out = 1
+             else
+                nlev_out = num2d
+             end if
+             call elm_horiz_remap_write_field(t, nfid(t), varname, &
+                  histo(beg1d_out:end1d_out, 1:nlev_out), nlev_out, nt, &
+                  tape(t)%ncprec)
+             cycle
+          end if
 
           ! Allocate dynamic memory
 
@@ -3383,6 +3504,7 @@ contains
     integer :: yrm1                       ! nstep-1 year (0 -> ...)
     integer :: mcsecm1                    ! nstep-1 time of day [seconds]
     real(r8):: time                       ! current time
+    integer :: storage_idx                ! calendar index (yr*12+mon or yr) of the record being written
     character(len=256) :: str             ! global attribute string
     logical :: if_stop                    ! true => last time step of run
     logical, save :: do_3Dtconst = .true. ! true => write out 3D time-constant data
@@ -3432,6 +3554,39 @@ contains
 
           call hfields_normalize(t)
 
+          ! Calendar-aligned file rotation. A record written at, say, Feb 2
+          ! 00:00 covers Feb 1, so the calendar period comes from the previous
+          ! date -- the same convention that puts the last daily mean of a
+          ! month in that month's file rather than the next one's.
+          if (trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+             if (trim(hist_file_storage_type(t)) == 'one_month') then
+                storage_idx = yrm1*12 + monm1
+             else
+                storage_idx = yrm1
+             end if
+             if (hist_storage_curr_idx(t) < 0) then
+                ! Fresh run, or the first record after a restart: adopt the
+                ! period of the file already open, else of this record.
+                if (tape(t)%ntimes > 0) then
+                   call hist_storage_idx_from_filename(locfnh(t), &
+                        hist_file_storage_type(t), hist_storage_curr_idx(t))
+                end if
+                if (hist_storage_curr_idx(t) < 0) hist_storage_curr_idx(t) = storage_idx
+             end if
+             if (storage_idx /= hist_storage_curr_idx(t)) then
+                if (tape(t)%ntimes > 0) then
+                   if (masterproc) then
+                      write(iulog,*) trim(subname),' : Closing local history file ', &
+                           trim(locfnh(t)),' at the calendar boundary (', &
+                           trim(hist_file_storage_type(t)),')'
+                   end if
+                   call ncd_pio_closefile(nfid(t))
+                   tape(t)%ntimes = 0
+                end if
+                hist_storage_curr_idx(t) = storage_idx
+             end if
+          end if
+
           ! Increment current time sample counter.
 
           tape(t)%ntimes = tape(t)%ntimes + 1
@@ -3445,7 +3600,8 @@ contains
           if (tape(t)%ntimes == 1) then
              call t_startf('hist_htapes_wrapup_define')
              locfnh(t) = set_hist_filename (hist_freq=tape(t)%nhtfrq, &
-                                            hist_mfilt=tape(t)%mfilt, hist_file=t)
+                                            hist_mfilt=tape(t)%mfilt, hist_file=t, &
+                                            storage_type=hist_file_storage_type(t))
              if (masterproc) then
                 write(iulog,*) trim(subname),' : Creating history file ', trim(locfnh(t)), &
                      ' at nstep = ',get_nstep()
@@ -4413,7 +4569,51 @@ contains
    end subroutine list_index
 
    !-----------------------------------------------------------------------
-   character(len=256) function set_hist_filename (hist_freq, hist_mfilt, hist_file)
+  subroutine hist_storage_idx_from_filename (fname, storage_type, idx)
+    !
+    ! !DESCRIPTION:
+    ! Recover the calendar period of an already-open history file from its
+    ! name, so that a restart landing exactly on a month or year boundary
+    ! still rotates at the right record instead of appending to the previous
+    ! period's file. Returns -1 if the name does not parse.
+    !
+    ! !ARGUMENTS:
+    character(len=*), intent(in)  :: fname        ! history file name
+    character(len=*), intent(in)  :: storage_type ! 'one_month' or 'one_year'
+    integer         , intent(out) :: idx          ! yr*12+mon, or yr
+    !
+    ! !LOCAL VARIABLES:
+    integer :: ndot, nend, yr, mon, ier
+    character(len=32) :: cdate
+    !-----------------------------------------------------------------------
+
+    idx = -1
+
+    ! Names end in '.<cdate>.nc'; isolate <cdate>.
+    nend = index(fname, '.nc', back=.true.)
+    if (nend <= 1) return
+    ndot = index(fname(1:nend-1), '.', back=.true.)
+    if (ndot < 1 .or. nend-ndot-1 < 4) return
+    cdate = fname(ndot+1:nend-1)
+
+    if (trim(storage_type) == 'one_month') then
+       if (len_trim(cdate) < 7) return
+       read(cdate(1:4), '(i4)', iostat=ier) yr
+       if (ier /= 0) return
+       read(cdate(6:7), '(i2)', iostat=ier) mon
+       if (ier /= 0) return
+       idx = yr*12 + mon
+    else if (trim(storage_type) == 'one_year') then
+       read(cdate(1:4), '(i4)', iostat=ier) yr
+       if (ier /= 0) return
+       idx = yr
+    end if
+
+  end subroutine hist_storage_idx_from_filename
+
+  !-----------------------------------------------------------------------
+   character(len=256) function set_hist_filename (hist_freq, hist_mfilt, hist_file, &
+                                                  storage_type)
      !
      ! !DESCRIPTION:
      ! Determine history dataset filenames.
@@ -4426,11 +4626,13 @@ contains
      integer, intent(in)  :: hist_freq   !history file frequency
      integer, intent(in)  :: hist_mfilt  !history file number of time-samples
      integer, intent(in)  :: hist_file   !history file index
+     character(len=*), intent(in), optional :: storage_type !file rotation policy
      !
      ! !LOCAL VARIABLES:
      !EOP
      character(len=256) :: cdate       !date char string
      character(len=  1) :: hist_index  !p,1 or 2 (currently)
+     character(len= 16) :: lstorage    !local copy of storage_type
      integer :: day                    !day (1 -> 31)
      integer :: mon                    !month (1 -> 12)
      integer :: yr                     !year (0 -> ...)
@@ -4438,7 +4640,19 @@ contains
      character(len=*),parameter :: subname = 'set_hist_filename'
      !-----------------------------------------------------------------------
 
-   if (hist_freq == 0 .and. hist_mfilt == 1) then   !monthly
+   lstorage = 'num_snapshots'
+   if (present(storage_type)) lstorage = storage_type
+
+   ! Calendar-aligned rotation names the file for the period it covers. The
+   ! period is taken from the previous date so that a record written at the
+   ! stroke of a new month still lands in the month it describes.
+   if (trim(lstorage) == 'one_month') then
+      call get_prev_date (yr, mon, day, sec)
+      write(cdate,'(i4.4,"-",i2.2)') yr,mon
+   else if (trim(lstorage) == 'one_year') then
+      call get_prev_date (yr, mon, day, sec)
+      write(cdate,'(i4.4)') yr
+   else if (hist_freq == 0 .and. hist_mfilt == 1) then   !monthly
       call get_prev_date (yr, mon, day, sec)
       write(cdate,'(i4.4,"-",i2.2)') yr,mon
    else                        !other

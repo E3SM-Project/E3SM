@@ -40,12 +40,15 @@ module shr_horiz_remap_col_mod
   !       fraction of the target cell rather than 1.0 everywhere any land
   !       appears.
   !
-  ! Fill values inside the caller's own data (spval columns) follow the same
-  ! rule via the optional `fillval` argument.
+  ! Fill values inside the caller's own data follow the same rule via the
+  ! optional `fillval` argument. Because a multi-level field can be fill in
+  ! some levels and valid in others -- ELM's snow-layer fields are spval in
+  ! exactly the layers that are absent -- such a field is remapped one level at
+  ! a time so each level gets its own mask.
   !
   !-------------------------------------------------------------------------------------------
 
-  use shr_kind_mod,        only: r8 => shr_kind_r8
+  use shr_kind_mod,        only: r8 => shr_kind_r8, r4 => shr_kind_r4
   use shr_horiz_remap_mod, only: shr_horiz_remap_t, SHR_FILL_VALUE
   use pio,                 only: io_desc_t, iosystem_desc_t
 
@@ -238,9 +241,10 @@ CONTAINS
     real(r8), optional,   intent(in)  :: fillval
     logical,  optional,   intent(in)  :: missing_as_zero
 
-    integer  :: i, k, idx, needed, nlev_packed, base, ierr
+    integer  :: i, k, idx, needed, nlev_packed, base, ierr, klo, khi
     real(r8) :: lfill, missing_mask
     logical  :: have_fill, is_missing
+    real(r8), allocatable :: lev_out(:,:)
 
     allocate(fld_out(self%shared%n_b_local, numlev))
     fld_out(:,:) = SHR_FILL_VALUE
@@ -256,7 +260,49 @@ CONTAINS
       if (missing_as_zero) missing_mask = 1.0_r8
     end if
 
-    nlev_packed = numlev + 1   ! field levels + validity mask
+    ! apply_masked carries one validity mask for the whole packed column, which
+    ! is exact only when a column is either valid at every level or fill at
+    ! every level. That holds for a single level, and for the virtual-column
+    ! mask (a column no rank owns is missing at all levels). It does NOT hold
+    ! for a caller fill marker in a multi-level field -- ELM's snow-layer
+    ! fields are spval in exactly the layers that are absent -- so those go one
+    ! level at a time, each with its own mask.
+    if (numlev > 1 .and. have_fill) then
+      allocate(lev_out(self%shared%n_b_local, 1))
+      do k = 1, numlev
+        call pack_levels(self, fld_local, k, k, have_fill, lfill, missing_mask)
+        call self%shared%apply_masked(self%ws_send_buf, 1, lev_out, &
+             self%mpicom, self%npes, ierr)
+        fld_out(:,k) = lev_out(:,1)
+      end do
+      deallocate(lev_out)
+      return
+    end if
+
+    call pack_levels(self, fld_local, 1, numlev, have_fill, lfill, missing_mask)
+
+    call self%shared%apply_masked(self%ws_send_buf, numlev, fld_out, &
+         self%mpicom, self%npes, ierr)
+
+  end subroutine shr_horiz_remap_col_field
+
+  !-------------------------------------------------------------------------------------------
+  subroutine pack_levels(self, fld_local, klo, khi, have_fill, lfill, missing_mask)
+    !
+    ! Fill ws_send_buf with levels klo..khi of fld_local plus one trailing
+    ! validity mask, in the layout apply_masked expects.
+    !
+    class(shr_horiz_remap_col_t), intent(inout) :: self
+    real(r8), intent(in) :: fld_local(:,:)
+    integer,  intent(in) :: klo, khi
+    logical,  intent(in) :: have_fill
+    real(r8), intent(in) :: lfill, missing_mask
+
+    integer :: i, k, idx, base, needed, numlev, nlev_packed
+    logical :: is_missing
+
+    numlev      = khi - klo + 1
+    nlev_packed = numlev + 1
 
     needed = max(1, self%shared%n_send_total * nlev_packed)
     if (.not. allocated(self%ws_send_buf) .or. size(self%ws_send_buf) < needed) then
@@ -269,11 +315,7 @@ CONTAINS
       idx  = self%send_local_idx(i)
 
       is_missing = (idx == 0)
-      if (.not. is_missing .and. have_fill) then
-        ! The caller's own fill marker (ELM/MOSART spval) is z-invariant per
-        ! column, so testing the first level is enough.
-        is_missing = (fld_local(idx, 1) == lfill)
-      end if
+      if (.not. is_missing .and. have_fill) is_missing = (fld_local(idx, klo) == lfill)
 
       if (is_missing) then
         do k = 1, numlev
@@ -282,16 +324,13 @@ CONTAINS
         self%ws_send_buf(base + nlev_packed) = missing_mask
       else
         do k = 1, numlev
-          self%ws_send_buf(base + k) = fld_local(idx, k)
+          self%ws_send_buf(base + k) = fld_local(idx, klo + k - 1)
         end do
         self%ws_send_buf(base + nlev_packed) = 1.0_r8
       end if
     end do
 
-    call self%shared%apply_masked(self%ws_send_buf, numlev, fld_out, &
-         self%mpicom, self%npes, ierr)
-
-  end subroutine shr_horiz_remap_col_field
+  end subroutine pack_levels
 
   !-------------------------------------------------------------------------------------------
   subroutine shr_horiz_remap_col_write(self, File, varid, fld_out, numlev, data_type)
@@ -300,7 +339,7 @@ CONTAINS
     ! and rebuilt only when the level count or data type changes.
     !
     use pio, only: file_desc_t, var_desc_t, pio_initdecomp, pio_freedecomp, &
-                   pio_write_darray, PIO_OFFSET_KIND
+                   pio_write_darray, PIO_OFFSET_KIND, PIO_REAL
 
     class(shr_horiz_remap_col_t), intent(inout) :: self
     type(file_desc_t), intent(inout) :: File
@@ -310,8 +349,17 @@ CONTAINS
     integer,           intent(in)    :: data_type
 
     integer(PIO_OFFSET_KIND), allocatable :: idof(:)
+    real(r4), allocatable :: fld_r4(:,:)
     integer :: i, k, global_row, ilon, ilat, ierr
     integer :: nlat, nlon
+
+    ! pio_initdecomp(PIO_REAL) paired with a real(r8) pio_write_darray writes
+    ! garbage and reports no error, so narrow the data here when the variable
+    ! was defined single precision (ELM/MOSART default to hist_ndens=2).
+    if (data_type == PIO_REAL) then
+      allocate(fld_r4(size(fld_out,1), size(fld_out,2)))
+      fld_r4(:,:) = real(fld_out(:,:), r4)
+    end if
 
     nlat = self%shared%nlat
     nlon = self%shared%nlon
@@ -336,7 +384,11 @@ CONTAINS
         self%iodesc_2d_valid = .true.
         self%iodesc_2d_dtype = data_type
       end if
-      call pio_write_darray(File, varid, self%iodesc_2d, fld_out(:,1), ierr)
+      if (data_type == PIO_REAL) then
+        call pio_write_darray(File, varid, self%iodesc_2d, fld_r4(:,1), ierr)
+      else
+        call pio_write_darray(File, varid, self%iodesc_2d, fld_out(:,1), ierr)
+      end if
     else
       if (self%iodesc_3d_valid .and. &
           (self%iodesc_3d_nlev /= numlev .or. self%iodesc_3d_dtype /= data_type)) then
@@ -362,8 +414,14 @@ CONTAINS
         self%iodesc_3d_nlev  = numlev
         self%iodesc_3d_dtype = data_type
       end if
-      call pio_write_darray(File, varid, self%iodesc_3d, fld_out, ierr)
+      if (data_type == PIO_REAL) then
+        call pio_write_darray(File, varid, self%iodesc_3d, fld_r4, ierr)
+      else
+        call pio_write_darray(File, varid, self%iodesc_3d, fld_out, ierr)
+      end if
     end if
+
+    if (allocated(fld_r4)) deallocate(fld_r4)
 
   end subroutine shr_horiz_remap_col_write
 
