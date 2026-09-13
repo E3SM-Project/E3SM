@@ -44,6 +44,8 @@ EAM wrappers (in `components/eam/src/control/`):
 
 ELM (in `components/elm/src/main/`):
 - `elmHorizRemapMod.F90` -- per-tape remap over the gridcell decomposition
+- `elmVcoarsenMod.F90` -- collapses the levgrnd soil profile and the numrad
+  albedos to 2-d fields so the tape carries lat-lon images only (gotcha #61)
 - `histFileMod.F90` (modified) -- adds `hist_horiz_remap_file` and
   `hist_file_storage_type` namelist entries
 
@@ -1901,6 +1903,66 @@ training tape. Three things about them differ from the atm/ocean pattern:
   the window — fine for training, but do not read them as instantaneous state
   the way `Sa_*` / `Sl_*` fields are.
 
+### gotcha #61 — collapsing ELM's multi-level fields to 2-d (ADDED 2026-09-13)
+
+The FME land tape is meant to be lat-lon images and nothing else, but the
+merged field list brought in the only multi-level fields ELM has here: `TSOI`
+and `H2OSOI` on `levgrnd` (15 levels) and `ALBD`/`ALBI` on `numrad` (2).
+`elmVcoarsenMod` collapses both, registering the results as ordinary 1-d
+history fields so they average, remap and restart like everything else.
+
+**The two kinds are not the same operation.** The soil profile is integrated;
+the radiation bands are not. Visible and near-IR albedo are distinct
+quantities, so averaging them would be meaningless — they are split into
+`ALBD_vis` / `ALBD_nir` (ELM's `numrad` order is 1 = visible, 2 = near-IR).
+
+**Depth bounds, not index ranges.** EAM's vcoarsen offers both; ELM only
+needs depth. The default `0.0, 0.07, 0.28, 1.00` m reproduces ERA5-Land's
+first three soil layers (0-7, 7-28, 28-100 cm), so `TSOI_0/1/2` and
+`H2OSOI_0/1/2` line up with SM1/SM2/SM3-style predictors. Append `2.89` for
+ERA5-Land's fourth layer (100-289 cm); a Noah-MP-style scheme is
+`0.0, 0.07, 0.21, 0.72`. **None of these align with ELM's exponential soil
+grid** (interfaces at 1.75, 4.51, 9.06, 16.55, 28.91, 49.29, 82.89 cm ...),
+which is the whole reason to collapse by depth: `shr_vcoarsen_avg_cols`
+splits a partially covered ELM layer by the fraction inside the bound. An
+index-range scheme would have to be re-derived for every vertical grid.
+
+Verified against the real soil grid (`nlevgrnd=15`, `scalez=0.025`,
+`zecoeff=0.5`) with the ERA5-Land bounds:
+* a constant profile returns exactly, to the last bit — partition of unity;
+* the overlap weights sum to 0.070000 / 0.210000 / 0.720000 m, i.e. the bound
+  thicknesses exactly, so partial layers are split correctly;
+* an all-fill column gives fill in every output layer, and fill in levels
+  9-15 (below 1.38 m) leaves the three shallow layers untouched.
+
+**Known approximation:** for a field linear in depth the result differs from
+the exact depth-mean by up to ~0.05 K over these bounds. That is not a bug —
+ELM's layer values sit at `zsoi` node depths, which are not the geometric
+centres of the exponential layers, so a thickness-weighted mean of node
+samples is not the continuous depth integral. Well below any signal of
+interest, but do not expect bit-exact agreement with an offline integration
+that interpolates first.
+
+**Thickness-weighted MEAN only.** Correct for intensive quantities (a
+temperature, a volumetric water fraction). A per-layer MASS such as `SOILLIQ`
+(kg/m2) needs a SUM, and that mode is deliberately not implemented —
+`validate_soil_field` aborts on any field it does not know rather than
+silently applying the wrong reduction. Adding one means extending both
+`get_soil_source` and `validate_soil_field`; ELM has no name->array registry
+the way EAM has constituents and the physics buffer.
+
+**Two ordering constraints**, both easy to break:
+* `elm_vcoarsen_init` must run after every component `InitHistory` (so the
+  new names reach the masterlist) and before `htapes_fieldlist` resolves
+  `hist_fincl1` against it. It sits right after `elm_inst_biogeochem` in
+  `initialize2`.
+* `elm_vcoarsen_update` must run before `hist_update_hbuf`, or the buffers
+  sample the previous step's values.
+
+`surfalb_vars` is passed into the update rather than taken from
+`elm_instMod`: that module uses `controlMod`, which uses this one for the
+namelist, and the cycle would not compile.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
@@ -1926,6 +1988,9 @@ FME_ROF_ENABLE=TRUE             # Remap the MOSART tape (see gotcha #58 --
 FME_LND_OUTPUT_HOURS=24         # ELM output frequency in hours (default: 24)
 FME_ROF_OUTPUT_HOURS=24         # MOSART output frequency in hours (default: 24)
 FME_LND_STORAGE=one_month       # ELM file rotation (gotcha #59)
+FME_LND_DEPTH_BOUNDS="0.0, 0.07, 0.28, 1.00"
+                                # soil-profile collapse, m (gotcha #61);
+                                # default = ERA5-Land L1/L2/L3
 FME_ROF_STORAGE=one_month       # MOSART file rotation (gotcha #59)
 
 FME_CPL_X2L_ENABLE=.true.       # coupler-native lnd import  (gotcha #60)
@@ -2099,11 +2164,11 @@ NOT done yet:
    a per-level mask check on `TSOI`/`H2OSOI` to confirm gotcha #55's
    per-level path.
 
-4. **Derived fields and vertical coarsening for ELM.** `shr_derived_mod`
-   and `shr_vcoarsen_mod` are component-agnostic but only EAM and MPAS wrap
-   them. ELM's `levgrnd` soil profile is the obvious candidate for
-   coarsening (15 levels -> a handful of thickness-weighted layers) once the
-   emulator spec says how many.
+4. **Derived fields for ELM.** Vertical coarsening is now done
+   (`elmVcoarsenMod`, gotcha #61). `shr_derived_mod`'s expression parser is
+   still EAM/MPAS only — an ELM wrapper would let the tape carry combinations
+   (a total-runoff or a Bowen-ratio field) without a second offline pass. A
+   per-layer-mass SUM reduction is the other open piece of the coarsening.
 
 5. **Field-list review with the land/ROF emulation team.** The ELM list in
    `shell_commands` is the union of the original water/energy set and a list

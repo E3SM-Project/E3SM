@@ -55,6 +55,13 @@ FME_LND_OUTPUT_HOURS=${FME_LND_OUTPUT_HOURS:-24}
 FME_ROF_OUTPUT_HOURS=${FME_ROF_OUTPUT_HOURS:-24}
 # File rotation policy shared with EAM ('one_month', 'one_year', 'num_snapshots')
 FME_LND_STORAGE=${FME_LND_STORAGE:-one_month}
+# Depth boundaries (m) that collapse ELM's 15-level levgrnd soil profile into
+# 2-d layers -- N boundaries give N-1 layers, named TSOI_0.. / H2OSOI_0.. .
+# The default reproduces ERA5-Land's first three soil layers (0-7, 7-28,
+# 28-100 cm) so the output lines up with SM1/SM2/SM3 style predictors.
+# Append 2.89 for ERA5-Land's fourth layer (100-289 cm); a Noah-MP-style
+# scheme would be '0.0, 0.07, 0.21, 0.72'.
+FME_LND_DEPTH_BOUNDS=${FME_LND_DEPTH_BOUNDS:-0.0, 0.07, 0.28, 1.00}
 FME_ROF_STORAGE=${FME_ROF_STORAGE:-one_month}
 
 # Directory containing the gaussian-grid SCRIP map files (180x360 for
@@ -490,22 +497,25 @@ EOF
 #   3. energy fluxes -- note 'FIRE' is ELM's emitted infrared (longwave)
 #      radiation, NOT wildfire
 #   4. water fluxes
-#   5. multi-level soil profile (levgrnd). These are remapped one level at a
-#      time because ELM fill is per level, not per column (AGENTS.md #55).
+#   5. the soil profile and the solar-band albedos, collapsed to 2-d by
+#      elmVcoarsenMod (see FME_LND_DEPTH_BOUNDS below). Nothing on this tape
+#      carries a vertical dimension.
 FME_ELM_FINCL="'TBOT', 'THBOT', 'PBOT', 'QBOT', 'RH', 'WIND', 'ZBOT',
               'RAIN', 'SNOW', 'FLDS',
               'FSDS', 'FSDSVD', 'FSDSND', 'FSDSVI', 'FSDSNI',
               'BCDEP', 'OCDEP', 'DSTDEP',
               'TSA', 'RH2M', 'Q2M', 'U10', 'TG', 'FSNO',
               'H2OSNO', 'SNOWDP', 'SNOWICE', 'SNOWLIQ',
-              'ELAI', 'TLAI', 'TSAI', 'ALBD', 'ALBI',
+              'ELAI', 'TLAI', 'TSAI', 'ALBD_vis', 'ALBD_nir',
+              'ALBI_vis', 'ALBI_nir',
               'ZWT', 'TWS', 'SOILWATER_10CM', 'TSOI_10CM', 'FH2OSFC',
               'FSA', 'FIRA', 'FIRE', 'FSH', 'EFLX_LH_TOT',
               'FCEV', 'FCTR', 'FGR', 'TAUX', 'TAUY',
               'QRUNOFF', 'QOVER', 'QH2OSFC', 'QDRAI', 'QDRAI_PERCH',
               'QRGWL', 'QSNWCPICE', 'QCHARGE', 'QINFL',
               'QSOIL', 'QVEGE', 'QVEGT', 'QINTR', 'QSNOMELT',
-              'TSOI', 'H2OSOI'"
+              'TSOI_0', 'TSOI_1', 'TSOI_2',
+              'H2OSOI_0', 'H2OSOI_1', 'H2OSOI_2'"
 
 # Carbon fluxes exist only for a CN/BGC/FATES land; methane only with -methane.
 # Requesting them against an SP land aborts at startup, so gate on the actual
@@ -533,6 +543,13 @@ hist_nhtfrq  = -${FME_LND_OUTPUT_HOURS}
 hist_mfilt   = 1500
 hist_avgflag_pertape = 'A'
 hist_file_storage_type = '${FME_LND_STORAGE}'
+
+! Collapse the only multi-level fields on this tape so every variable is a
+! plain lat-lon image. TSOI/H2OSOI become thickness-weighted means over the
+! depth bounds below; ALBD/ALBI split into their visible and near-IR bands.
+vcoarsen_depth_bounds = ${FME_LND_DEPTH_BOUNDS}
+vcoarsen_soil_flds = 'TSOI', 'H2OSOI'
+vcoarsen_band_flds = 'ALBD', 'ALBI'
 
 hist_fincl1 = ${FME_ELM_FINCL}
 EOF

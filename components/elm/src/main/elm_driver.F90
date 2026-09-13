@@ -27,6 +27,7 @@ module elm_driver
   use decompMod              , only : get_proc_clumps, get_clump_bounds, get_proc_bounds, bounds_type
   use filterMod              , only : filter, filter_inactive_and_active
   use histFileMod            , only : hist_update_hbuf, hist_htapes_wrapup
+  use elmVcoarsenMod         , only : elm_vcoarsen_update
   use restFileMod            , only : restFile_write, restFile_filename
   use abortutils             , only : endrun
   !
@@ -1526,6 +1527,10 @@ contains
     ! ============================================================================
 
     call t_startf('hbuf')
+    ! Collapse the multi-level fields into their 2-d counterparts before the
+    ! history buffers sample them, so the FME land tape carries lat-lon images
+    ! only. Inert unless vcoarsen_soil_flds / vcoarsen_band_flds are set.
+    call elm_vcoarsen_update(bounds_proc, surfalb_vars)
     call hist_update_hbuf(bounds_proc)
     call t_stopf('hbuf')
 

@@ -593,6 +593,43 @@ If TRUE, implies output data on a 2D latitude/longitude grid. False means
 output in 1D vector format.  One setting per history tape series.
 </entry>
 
+<entry id="vcoarsen_depth_bounds" type="real(21)" category="history"
+       group="elm_inparm" valid_values="" >
+Depth boundaries in METRES, strictly increasing, that collapse ELM's levgrnd
+soil profile into 2-d layers. N boundaries give N-1 output layers named
+&lt;FLD&gt;_0 .. &lt;FLD&gt;_{N-2} (0-based, matching EAM's vcoarsen naming).
+Entries below zero terminate the list.
+
+The reduction is an overlap (thickness) weighted mean between the boundaries,
+so a boundary that falls inside an ELM layer splits it by the covered
+fraction -- the boundaries need not align with the exponential soil grid
+(interfaces at 1.75, 4.51, 9.06, 16.55, 28.91, 49.29, 82.89 cm ...).
+
+0.0, 0.07, 0.28, 1.00 reproduces ERA5-Land's first three soil layers
+(0-7, 7-28, 28-100 cm); append 2.89 for its fourth (100-289 cm).
+Default: -1.0 (inactive)
+</entry>
+
+<entry id="vcoarsen_soil_flds" type="char*64(20)" category="history"
+       group="elm_inparm" valid_values="" >
+levgrnd soil fields to collapse onto vcoarsen_depth_bounds, e.g. 'TSOI',
+'H2OSOI'. The reduction is a thickness-weighted MEAN, which is correct for
+intensive quantities (temperature, volumetric water fraction) and wrong for
+a per-layer mass; unsupported names abort at init rather than being reduced
+the wrong way. Adding a field means extending get_soil_source and
+validate_soil_field in components/elm/src/main/elmVcoarsenMod.F90.
+Default: none (module inert)
+</entry>
+
+<entry id="vcoarsen_band_flds" type="char*64(20)" category="history"
+       group="elm_inparm" valid_values="" >
+numrad (solar band) fields to split into per-band 2-d fields, e.g. 'ALBD',
+'ALBI'. The two bands are distinct quantities rather than a profile to
+integrate, so each is emitted under its own name: &lt;FLD&gt;_vis and
+&lt;FLD&gt;_nir.
+Default: none
+</entry>
+
 <entry id="hist_horiz_remap_file" type="char*256(6)" category="history"
        group="elm_inparm" valid_values="" >
 Per history tape series: path to an ESMF/SCRIP mapping file. When set, that

@@ -22,6 +22,7 @@ module controlMod
   use histFileMod             , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape
   use histFileMod             , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
   use histFileMod             , only: hist_horiz_remap_file, hist_file_storage_type
+  use elmVcoarsenMod          , only: vcoarsen_depth_bounds, vcoarsen_soil_flds, vcoarsen_band_flds
   use histFileMod             , only: hist_fincl4, hist_fincl5, hist_fincl6, hist_fexcl1, hist_fexcl2, hist_fexcl3
   use histFileMod             , only: hist_fexcl4, hist_fexcl5, hist_fexcl6
   use LakeCon                 , only: deepmixing_depthcrit, deepmixing_mixfact
@@ -210,7 +211,8 @@ contains
          hist_fincl4,  hist_fincl5, hist_fincl6, &
          hist_fexcl1,  hist_fexcl2, hist_fexcl3, &
          hist_fexcl4,  hist_fexcl5, hist_fexcl6, &
-         hist_horiz_remap_file, hist_file_storage_type
+         hist_horiz_remap_file, hist_file_storage_type, &
+         vcoarsen_depth_bounds, vcoarsen_soil_flds, vcoarsen_band_flds
     namelist /elm_inparm/ hist_wrtch4diag
 
     ! BGC info
@@ -995,6 +997,9 @@ contains
     call mpi_bcast (hist_type1d_pertape, max_namlen*size(hist_type1d_pertape), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (hist_horiz_remap_file, len(hist_horiz_remap_file(1))*size(hist_horiz_remap_file), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (hist_file_storage_type, len(hist_file_storage_type(1))*size(hist_file_storage_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (vcoarsen_depth_bounds, size(vcoarsen_depth_bounds), MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (vcoarsen_soil_flds, len(vcoarsen_soil_flds(1))*size(vcoarsen_soil_flds), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (vcoarsen_band_flds, len(vcoarsen_band_flds(1))*size(vcoarsen_band_flds), MPI_CHARACTER, 0, mpicom, ier)
     if (use_lch4) then
        call mpi_bcast (hist_wrtch4diag, 1, MPI_LOGICAL, 0, mpicom, ier)
     end if

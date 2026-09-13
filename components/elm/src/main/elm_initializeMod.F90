@@ -531,6 +531,7 @@ contains
     use subgridWeightsMod     , only : init_subgrid_weights_mod
     use histFileMod           , only : hist_htapes_build, htapes_fieldlist
     use histFileMod           , only : hist_htapes_remap_init
+    use elmVcoarsenMod        , only : elm_vcoarsen_init
     use histFileMod           , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     use restFileMod           , only : restFile_getfile, restFile_open, restFile_close
     use restFileMod           , only : restFile_read, restFile_write
@@ -743,6 +744,15 @@ contains
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
     call elm_inst_biogeochem(bounds_proc)
+
+    ! ------------------------------------------------------------------------
+    ! Register the vertically-collapsed (2-d) counterparts of ELM's
+    ! multi-level history fields. Must come after every component InitHistory
+    ! (so it is the last thing added to the masterlist) and before
+    ! htapes_fieldlist resolves the fincl lists against it.
+    ! ------------------------------------------------------------------------
+
+    call elm_vcoarsen_init(bounds_proc)
 
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
