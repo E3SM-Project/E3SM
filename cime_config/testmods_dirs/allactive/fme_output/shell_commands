@@ -467,9 +467,65 @@ EOF
 # ---------------------------------------------------------------------------
 # Tape 1 is the FME land tape: gridcell-averaged (hist_dov2xy) daily output,
 # remapped online onto the same Gaussian grid as EAM/MPAS, in monthly files.
-# Water and energy fields for ELM emulation; the atmospheric forcing fields
-# (RAIN..WIND) are included on the land grid so a land emulator has its inputs
-# and outputs on one tape.
+# The forcing fields are carried on the land grid so a land emulator has its
+# inputs and outputs on one self-consistent tape.
+#
+# NOTE ON NAMES: an unknown name in hist_fincl1 is a FATAL error in ELM
+# (htapes_fieldlist validates every entry against the masterlist and calls
+# endrun). Every field below is registered unconditionally EXCEPT NEE (needs
+# use_cn or use_fates) and NEM (needs use_lch4), which are appended only after
+# checking ELM_BLDNML_OPTS. Verify any addition with:
+#   grep -rn "fname='NEWFIELD'" components/elm/src --include=*.F90
+#
+# The list is assembled here rather than written straight into the heredoc so
+# the conditional fields can be appended; user_nl does not reliably support
+# Fortran-namelist '+=' append syntax, and a '!' comment inside an array value
+# is not safe either, so all commentary lives outside the value.
+#
+# Groups, in list order:
+#   1. atmospheric forcing as ELM receives it (emulator INPUTS). FSDS{V,N}{D,I}
+#      are the direct/diffuse visible/near-IR components of FSDS; *DEP are
+#      aerosol deposition onto the snowpack.
+#   2. surface and canopy state
+#   3. energy fluxes -- note 'FIRE' is ELM's emitted infrared (longwave)
+#      radiation, NOT wildfire
+#   4. water fluxes
+#   5. multi-level soil profile (levgrnd). These are remapped one level at a
+#      time because ELM fill is per level, not per column (AGENTS.md #55).
+FME_ELM_FINCL="'TBOT', 'THBOT', 'PBOT', 'QBOT', 'RH', 'WIND', 'ZBOT',
+              'RAIN', 'SNOW', 'FLDS',
+              'FSDS', 'FSDSVD', 'FSDSND', 'FSDSVI', 'FSDSNI',
+              'BCDEP', 'OCDEP', 'DSTDEP',
+              'TSA', 'RH2M', 'Q2M', 'U10', 'TG', 'FSNO',
+              'H2OSNO', 'SNOWDP', 'SNOWICE', 'SNOWLIQ',
+              'ELAI', 'TLAI', 'TSAI', 'ALBD', 'ALBI',
+              'ZWT', 'TWS', 'SOILWATER_10CM', 'TSOI_10CM', 'FH2OSFC',
+              'FSA', 'FIRA', 'FIRE', 'FSH', 'EFLX_LH_TOT',
+              'FCEV', 'FCTR', 'FGR', 'TAUX', 'TAUY',
+              'QRUNOFF', 'QOVER', 'QH2OSFC', 'QDRAI', 'QDRAI_PERCH',
+              'QRGWL', 'QSNWCPICE', 'QCHARGE', 'QINFL',
+              'QSOIL', 'QVEGE', 'QVEGT', 'QINTR', 'QSNOMELT',
+              'TSOI', 'H2OSOI'"
+
+# Carbon fluxes exist only for a CN/BGC/FATES land; methane only with -methane.
+# Requesting them against an SP land aborts at startup, so gate on the actual
+# ELM build options rather than assuming the compset.
+ELM_OPTS=$(./xmlquery --value ELM_BLDNML_OPTS 2>/dev/null || echo "")
+case "${ELM_OPTS}" in
+  *"-bgc bgc"*|*"-bgc cn"*|*"-bgc fates"*)
+    FME_ELM_FINCL="${FME_ELM_FINCL},
+              'NEE'" ;;
+  *)
+    echo "FME: ELM is not in a CN/BGC/FATES mode -- omitting NEE" ;;
+esac
+case "${ELM_OPTS}" in
+  *-methane*)
+    FME_ELM_FINCL="${FME_ELM_FINCL},
+              'NEM'" ;;
+  *)
+    echo "FME: ELM methane model is off -- omitting NEM" ;;
+esac
+
 cat >> user_nl_elm << EOF
 hist_empty_htapes = .true.
 hist_dov2xy  = .true.
@@ -478,14 +534,7 @@ hist_mfilt   = 1500
 hist_avgflag_pertape = 'A'
 hist_file_storage_type = '${FME_LND_STORAGE}'
 
-hist_fincl1 = 'RAIN', 'SNOW', 'FSDS', 'FLDS', 'TBOT', 'QBOT', 'PBOT', 'WIND',
-              'TSA', 'RH2M', 'TG', 'FSNO', 'ELAI', 'TLAI',
-              'H2OSNO', 'SNOWDP', 'SNOWICE', 'SNOWLIQ', 'QSNOMELT',
-              'TWS', 'ZWT', 'SOILWATER_10CM', 'TSOI_10CM',
-              'FSH', 'EFLX_LH_TOT', 'FSA', 'FIRA', 'FIRE',
-              'QRUNOFF', 'QOVER', 'QDRAI', 'QINFL',
-              'QSOIL', 'QVEGE', 'QVEGT', 'QINTR',
-              'TSOI', 'H2OSOI'
+hist_fincl1 = ${FME_ELM_FINCL}
 EOF
 
 if [ "${FME_LND_ENABLE}" = "TRUE" ]; then

@@ -2105,9 +2105,28 @@ NOT done yet:
    coarsening (15 levels -> a handful of thickness-weighted layers) once the
    emulator spec says how many.
 
-5. **Field-list review with the land/ROF emulation team.** The lists in
-   `shell_commands` are a defensible water/energy starting point, not a
-   spec-checked selection like the SamudrACE atm/ocean lists.
+5. **Field-list review with the land/ROF emulation team.** The ELM list in
+   `shell_commands` is the union of the original water/energy set and a list
+   supplied by a colleague (2026-09-13) — 64 fields, plus `NEE`/`NEM` when the
+   land is in a CN/BGC mode. It has not been checked against a written spec
+   the way the SamudrACE atm/ocean lists were. The MOSART list is still a
+   starting point only.
+
+   Two things to keep in mind when editing it:
+   * **An unknown name in `hist_fincl1` is fatal**, not a warning —
+     `htapes_fieldlist` validates against the masterlist and calls `endrun`.
+     Check a new name with
+     `grep -rn "fname='X'" components/elm/src --include=*.F90` and check
+     whether the registration sits inside a `use_*` conditional; if it does,
+     gate it on `ELM_BLDNML_OPTS` the way `NEE` and `NEM` are.
+   * **`user_nl` `+=` and mid-value `!` comments are not used** — the list is
+     assembled into `FME_ELM_FINCL` in the shell and interpolated once, so the
+     conditional fields can be appended without relying on either.
+
+   Size: the tape now writes ~96 2-D slices per record (62 single-level
+   fields, `ALBD`/`ALBI` on `numrad`, `TSOI`/`H2OSOI` on `levgrnd`), i.e.
+   roughly 25 MB/record at 180x360 -> ~750 MB per monthly file at daily
+   output. Comparable to the EAM tape; budget for it before a 100-yr run.
 
 ### Near-term
 - **Monthly-boundary smoke test for the 5D companion stream
