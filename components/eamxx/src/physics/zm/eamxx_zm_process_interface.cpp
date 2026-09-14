@@ -713,8 +713,6 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.snow_prod,
                                                                   &zm_output.ntprprd,
                                                                   &zm_output.ntsnprd,
-                                                                  &zm_output.flxprec,
-                                                                  &zm_output.flxsnow,
                                                                   &zm_output.zdu,
                                                                   &zm_output.mflx_up,
                                                                   &zm_output.entr_up,
@@ -741,6 +739,8 @@ void ZMDeepConvection::init_buffers(const ATMBufferManager &buffer_manager)
                                                                   &zm_output.prec_flux,
                                                                   &zm_output.snow_flux,
                                                                   &zm_output.mass_flux,
+                                                                  &zm_output.flxprec,
+                                                                  &zm_output.flxsnow,
                                                                 };
   for (auto& v : ptrs_2d_intfc) {
     *v = ZMF::uview_2d<Real>(r_mem, m_ncol, nlev_int);
