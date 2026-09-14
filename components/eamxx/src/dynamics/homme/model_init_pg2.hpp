@@ -1,7 +1,7 @@
 #ifndef EAMXX_MODEL_INIT_PG2_HPP
 #define EAMXX_MODEL_INIT_PG2_HPP
 
-#include "share/data_managers/model_init.hpp"
+#include "dynamics/homme/model_init_homme.hpp"
 
 namespace scream
 {
@@ -38,9 +38,9 @@ namespace scream
 // heuristic) test for "this is one of Homme's remapped state fields" --
 // no hardcoded field list is needed here, and this class needs no
 // knowledge of which fields Homme happens to remap.
-class ModelInitPG2 : public ModelInit {
+class ModelInitPG2 : public ModelInitHomme {
 public:
-  using ModelInit::ModelInit;
+  using ModelInitHomme::ModelInitHomme;
 
 protected:
   std::vector<Field>

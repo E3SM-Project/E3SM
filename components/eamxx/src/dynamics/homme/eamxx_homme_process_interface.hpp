@@ -50,6 +50,24 @@ void init_homme_dyn_state_from_gll_ic (
 // multi-time-level fields as init_homme_dyn_state_from_gll_ic above.
 void copy_dyn_states_to_all_timelevels (std::map<std::string,Field>& dyn_state);
 
+// Makes dyn_state (populated, at this point, only in its n0 time level, from
+// a restart file) fully self-consistent, by copying n0 to all other time
+// levels (see copy_dyn_states_to_all_timelevels above) and recomputing Q
+// (tracer mixing ratio, not itself part of the restart file -- only its
+// mass, Qdp, is) as Qdp/dp3d. Context-only, no atm-proc dependency (dyn_state
+// must contain the same fields as init_homme_dyn_state_from_gll_ic above).
+//
+// This must run before Homme's own initialization (specifically,
+// prim_complete_init1_phase_f90, which HommeDynamics::initialize_impl calls
+// before it gets a chance to call restart_homme_state, its own, later,
+// otherwise-redundant version of this): by the time this runs (well before
+// initialize_impl, see create_requests/set_computed_group_impl),
+// Homme::Context's own views are already aliased to dyn_state, and Homme's
+// own init needs a self-consistent state to work with.
+void finish_homme_dyn_state_restart (
+    const std::shared_ptr<const GridsManager>& grids_manager,
+    std::map<std::string,Field>& dyn_state);
+
 /*
  *  The class responsible to handle the atmosphere dynamics
  *

@@ -97,7 +97,7 @@ HommeGridsManager::do_create_model_init (const ekat::ParameterList& params) cons
     // The PG2 physics grid needs extra care: see model_init_pg2.hpp.
     return std::make_shared<ModelInitPG2>(params);
   }
-  return std::make_shared<ModelInit>(params);
+  return std::make_shared<ModelInitGLL>(params);
 }
 
 void HommeGridsManager::
