@@ -224,7 +224,7 @@ module seq_comm_mct
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
   logical, public :: mb_scm_atm = .false.
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  logical, public :: mb_scm_ocn = .false. ! SCM data ocean is a migrated point cloud
+  logical, public :: mb_scm_ocn = .false. ! SCM data ocean uses migrated single points
   integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   integer, public :: mbintxao ! iMOAB id for intersection mesh between ocean and atmosphere
   integer, public :: mbintxoa ! iMOAB id for intersection mesh between atmosphere and ocean
@@ -235,7 +235,7 @@ module seq_comm_mct
   integer, public :: mbintxal ! iMOAB id for intersection mesh between atmosphere and land
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
-  logical, public :: mb_scm_ice = .false. ! SCM data ice is a migrated point cloud
+  logical, public :: mb_scm_ice = .false. ! SCM data ice uses migrated single points
   integer, public :: mbintxia ! iMOAB id for intersection mesh between ice and atmosphere
   integer, public :: mrofid   ! iMOAB id of moab rof app
   integer, public :: mbrxid   ! iMOAB id of moab rof read from file on coupler pes

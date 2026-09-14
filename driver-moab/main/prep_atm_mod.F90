@@ -393,7 +393,7 @@ contains
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
                if (mb_scm_ocn) then
-                  type1 = 2 ! SCM data ocean is a point cloud
+                  type1 = 2 ! SCM data ocean uses single points
                else
                   type1 = 3 ! FV mesh on coupler OCN
                endif
@@ -749,7 +749,7 @@ contains
          mapper_Fi2a%mbname = 'mapper_Fi2a'
          if ( samegrid_ao ) then ! this case can appear in cice case
             if (mb_scm_ice) then
-               type1 = 2 ! SCM data ice is a point cloud
+               type1 = 2 ! SCM data ice uses single points
             else
                type1 = 3 ! FV mesh for ice
             endif
@@ -934,13 +934,13 @@ contains
             else  ! the same mesh , atm and lnd use the same dofs, but restricted
                ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
                ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm
-               ! land is point cloud in this case, type1 = 2
+               ! land uses single points in this case, type1 = 2
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
                type1 = 3 !  full mesh for land now
                if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
                   type2 = 3  ! fv for target atm
                else
-                  type2 = 2  ! point cloud for spectral
+                  type2 = 2  ! single points for spectral
                endif
                ierr = iMOAB_ComputeCommGraph( mblxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         lnd(1)%cplcompid, atm(1)%cplcompid)
@@ -1290,7 +1290,7 @@ contains
     if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
        ent_type = 1 ! cells (PG atmosphere or dead comps FV mesh)
     else
-       ent_type = 0 ! vertices, spectral point cloud
+       ent_type = 0 ! vertices, spectral single points
     endif
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize

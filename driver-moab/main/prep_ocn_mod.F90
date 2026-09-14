@@ -586,7 +586,7 @@ contains
               if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
                   type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
               else
-                  type1 = 2 ! in the spectral case, the type on coupler will be point cloud
+                  type1 = 2 ! in the spectral case, the coupler uses single points
               endif
 
               type2 = 3;  ! FV mesh on coupler OCN
@@ -716,12 +716,12 @@ contains
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
 
             if (mb_scm_ice) then
-               type1 = 2 ! SCM data ice is a point cloud
+               type1 = 2 ! SCM data ice uses single points
             else
                type1 = 3
             endif
             if (mb_scm_ocn) then
-               type2 = 2 ! SCM data ocean is a point cloud
+               type2 = 2 ! SCM data ocean uses single points
             else
                type2 = 3
             endif

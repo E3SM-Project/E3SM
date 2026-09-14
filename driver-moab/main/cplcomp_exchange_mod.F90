@@ -27,7 +27,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mb_scm_atm
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mb_scm_land    !  logical used to identify land scm case; moab will migrate land then
-  use seq_comm_mct, only : mb_scm_ocn, mb_scm_ice ! SCM data component point clouds
+  use seq_comm_mct, only : mb_scm_ocn, mb_scm_ice ! SCM data component single points
   use seq_comm_mct, only : mb_dead_comps  !  logical to identify dead component configuration
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
@@ -64,8 +64,8 @@ module cplcomp_exchange_mod
    private :: cplcomp_moab_init_rof
     private :: cplcomp_moab_resolve_comm_types
     private :: cplcomp_moab_compute_comm_graph
-    private :: cplcomp_moab_clone_point_cloud
-    private :: cplcomp_moab_create_scm_point_cloud
+    private :: cplcomp_moab_clone_single_points
+    private :: cplcomp_moab_create_scm_single_points
     private :: cplcomp_moab_atm_phys_cid
   !--------------------------------------------------------------------------
   ! Public data
@@ -177,13 +177,13 @@ subroutine  copy_aream_from_area(mbappid)
          ierr  = iMOAB_GetMeshInfo ( mbappid, nvert, nvise, nbl, nsurf, nvisBC )
          ! Use mesh-intrinsic detection: if the mesh has cells, area
          ! lives on cells (domain-file meshes, PG2 ATM, dead comps).
-         ! Point-cloud meshes (spectral ATM) have no cells, so use vertices.
+         ! Single-point meshes (spectral ATM) have no cells, so use vertices.
          ! if (.not.atm_pg_active .and. .not. mb_dead_comps) then
          if (nvise(1) > 0) then
             arrSize  = nvise(1) ! cells
             ent_type = 1 ! cells
          else
-            arrSize  = nvert(1) ! vertices (point cloud)
+            arrSize  = nvert(1) ! vertices (single points)
             ent_type = 0 ! vertices
          endif
          allocate(tagValues(arrSize))
@@ -262,7 +262,7 @@ subroutine  copy_aream_from_area(mbappid)
 
   end subroutine cplcomp_moab_compute_comm_graph
 
-  subroutine cplcomp_moab_clone_point_cloud(src_appid, dst_appid, subname)
+  subroutine cplcomp_moab_clone_single_points(src_appid, dst_appid, subname)
       use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_GetIntTagStorage, &
            iMOAB_CreateVertices, iMOAB_SetIntTagStorage, iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
       use shr_moab_mod, only: mbGetnCells, mbGetEntityType
@@ -292,7 +292,7 @@ subroutine  copy_aream_from_area(mbappid)
       enddo
       if (nlocal > 0) then
          ierr = iMOAB_CreateVertices(dst_appid, 3*nlocal, 3, coords)
-         if (ierr /= 0) call shr_sys_abort(subname//' ERROR creating SCM coupler point cloud')
+         if (ierr /= 0) call shr_sys_abort(subname//' ERROR creating SCM coupler single points')
       endif
       call moab_define_global_id_tag(dst_appid, subname)
       if (nlocal > 0) then
@@ -301,17 +301,17 @@ subroutine  copy_aream_from_area(mbappid)
          if (ierr /= 0) call shr_sys_abort(subname//' ERROR setting SCM coupler GLOBAL_ID')
       endif
       ierr = iMOAB_ResolveSharedEntities(dst_appid, nlocal, gids)
-      if (ierr /= 0) call shr_sys_abort(subname//' ERROR resolving SCM coupler point cloud')
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR resolving SCM coupler single points')
       ierr = iMOAB_UpdateMeshInfo(dst_appid)
-      if (ierr /= 0) call shr_sys_abort(subname//' ERROR updating SCM coupler point cloud')
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR updating SCM coupler single points')
 
       ierr = iMOAB_GetMeshInfo(dst_appid, nvert, nvise, nbl, nsurf, nvisBC)
       if (ierr /= 0 .or. nvert(1) /= nlocal) &
-         call shr_sys_abort(subname//' ERROR validating SCM coupler point cloud')
+         call shr_sys_abort(subname//' ERROR validating SCM coupler single points')
       deallocate(gids, lat, lon, coords)
-  end subroutine cplcomp_moab_clone_point_cloud
+  end subroutine cplcomp_moab_clone_single_points
 
-  subroutine cplcomp_moab_create_scm_point_cloud(appid, mpicom, nx, ny, scmlat, scmlon, subname)
+  subroutine cplcomp_moab_create_scm_single_points(appid, mpicom, nx, ny, scmlat, scmlon, subname)
       use iMOAB, only: iMOAB_CreateVertices, iMOAB_SetIntTagStorage, &
            iMOAB_ResolveSharedEntities, iMOAB_UpdateMeshInfo
       integer, intent(in) :: appid, mpicom, nx, ny
@@ -339,7 +339,7 @@ subroutine  copy_aream_from_area(mbappid)
       enddo
       if (nlocal > 0) then
          ierr=iMOAB_CreateVertices(appid,3*nlocal,3,coords)
-         if (ierr /= 0) call shr_sys_abort(subname//' ERROR creating atmospheric SCM point cloud')
+         if (ierr /= 0) call shr_sys_abort(subname//' ERROR creating atmospheric SCM single points')
       endif
       call moab_define_global_id_tag(appid,subname)
       if (nlocal > 0) then
@@ -347,11 +347,11 @@ subroutine  copy_aream_from_area(mbappid)
          if (ierr /= 0) call shr_sys_abort(subname//' ERROR setting atmospheric SCM GLOBAL_ID')
       endif
       ierr=iMOAB_ResolveSharedEntities(appid,nlocal,gids)
-      if (ierr /= 0) call shr_sys_abort(subname//' ERROR resolving atmospheric SCM point cloud')
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR resolving atmospheric SCM single points')
       ierr=iMOAB_UpdateMeshInfo(appid)
-      if (ierr /= 0) call shr_sys_abort(subname//' ERROR updating atmospheric SCM point cloud')
+      if (ierr /= 0) call shr_sys_abort(subname//' ERROR updating atmospheric SCM single points')
       deallocate(gids,coords)
-  end subroutine cplcomp_moab_create_scm_point_cloud
+  end subroutine cplcomp_moab_create_scm_single_points
 
   subroutine cplcomp_moab_init_atm(infodata, comp, id_old, id_join, mpicom_old, mpicom_new, mpicom_join, dead_comps, partMethod, subname)
 
@@ -383,7 +383,7 @@ subroutine  copy_aream_from_area(mbappid)
       ! Propagate atm_pg_active from the atm component PEs to the coupler PEs across the joint
       ! communicator. atm_pg_active is set by semoab_mod (homme) on atm PEs when fv_nphys > 0;
       ! on disjoint coupler PEs it would otherwise stay at the seq_comm_mct default .false.,
-      ! which makes the comm-graph / mesh-write branches below pick the wrong (point-cloud) path
+      ! which makes the comm-graph / mesh-write branches below pick the wrong single-point path
       ! and produces a mismatched src/tgt graph for ne4pg2-style cases.
       local_pg = 0
       if (atm_pg_active) local_pg = 1
@@ -400,12 +400,12 @@ subroutine  copy_aream_from_area(mbappid)
          ierr  = iMOAB_GetMeshInfo ( mphaid, nvert, nvise, nbl, nsurf, nvisBC )
          comp%mbApCCid = mphaid ! phys atm
          ! Auto-detect: dead FV ATM creates a full RLL mesh with cells,
-         ! while spectral ATM sends only a point cloud (vertices).
+         ! while spectral ATM sends only single points (vertices).
          if (dead_comps) then
             comp%mbGridType = 1 ! cell mesh (dead FV ATM)
             comp%mblsize = nvise(1)
          else
-            comp%mbGridType = 0 ! point cloud (spectral ATM)
+            comp%mbGridType = 0 ! single points (spectral ATM)
             comp%mblsize = nvert(1)
          endif
       endif
@@ -415,7 +415,7 @@ subroutine  copy_aream_from_area(mbappid)
       !  send mesh to coupler
       !!!!  FULL ATM
          if (trim(atm_mesh) == 'none' .and. .not. mb_scm_atm) then ! full non-SCM model
-            if (atm_pg_active) then !  change : send the point cloud phys grid mesh, not coarse mesh,
+            if (atm_pg_active) then ! send the single-point physics grid mesh, not the coarse mesh
                                     !     when atm pg active
                call moab_send_mesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
             else
@@ -431,11 +431,11 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
          !!!!  FULL ATM
          if (mb_scm_atm) then
-            call cplcomp_moab_create_scm_point_cloud(mbaxid, mpicom_new, scm_nx, scm_ny, scmlat, scmlon, subname)
+            call cplcomp_moab_create_scm_single_points(mbaxid, mpicom_new, scm_nx, scm_ny, scmlat, scmlon, subname)
             if (seq_comm_iamroot(CPLID)) &
-               write(logunit,*) subname,'SCM atmosphere coupler point cloud size = ',scm_nx*scm_ny
+               write(logunit,*) subname,'SCM atmosphere coupler single point count = ',scm_nx*scm_ny
          else if (trim(atm_mesh) == 'none') then ! full atm
-            ! will receive either pg2 mesh, or point cloud mesh corresponding to GLL points
+            ! will receive either a pg2 mesh or single points corresponding to GLL points
             ! (mphaid app) for spectral case
             ! this cannot be used for maps (either computed online or read)
             call moab_receive_mesh(mbaxid, mpicom_join, mpigrp_old, id_old, subname)
@@ -464,7 +464,7 @@ subroutine  copy_aream_from_area(mbappid)
             if (atm_pg_active) then! we send mesh from mhpgid app
                call moab_free_sender_buffers(mhpgid, id_join, subname)
             else
-               ! we send mesh from point cloud data
+               ! send the mesh from single-point data
                call moab_free_sender_buffers(mphaid, id_join, subname)
             endif
          endif
@@ -477,7 +477,7 @@ subroutine  copy_aream_from_area(mbappid)
                                  !  components/cam/src/cpl/atm_comp_mct.F90
                                  !  components/data_comps/datm/src/atm_comp_mct.F90 ! line 177 !!
 
-      ! this is not needed for migrating point cloud to point cloud !
+      ! this is not needed for migrating single points to single points
       ! it is needed only after migrating pg2 mesh to cpupler
       call cplcomp_moab_compute_comm_graph(mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
           dead_comps, ((.not. mb_scm_atm) .and. (atm_pg_active .or. dead_comps)), &
@@ -592,10 +592,10 @@ subroutine  copy_aream_from_area(mbappid)
             call moab_receive_mesh(mboxid, mpicom_join, mpigrp_old, id_old, subname)
  !!!!! SCM DATA OCN
          else if (use_atm_coupler_mesh) then
-            ! Point clouds contain no elements for iMOAB_SendMesh to migrate.
-            ! Build an independent point cloud from the complete DP atmosphere
+            ! Single points contain no elements for iMOAB_SendMesh to migrate.
+            ! Build independent single points from the complete DP atmosphere
             ! grid, preserving a distinct ocean communication context.
-            call cplcomp_moab_clone_point_cloud(mbaxid, mboxid, subname)
+            call cplcomp_moab_clone_single_points(mbaxid, mboxid, subname)
             if (seq_comm_iamroot(CPLID)) then
                write(logunit,*) subname, 'SCM DOCN uses atmospheric coupler mesh'
             endif
@@ -724,7 +724,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif
 
       if (mb_scm_land .or. dead_comps) then
-          !  change : send the point cloud land mesh (1 point usually)
+          ! send the single-point land mesh (usually one point)
           !     when mb_scm_land
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (land)
             !  send mesh to coupler then
@@ -894,7 +894,7 @@ subroutine  copy_aream_from_area(mbappid)
          if (migrate_component_mesh) then ! regular element-based ice model
             call moab_receive_mesh(mbixid, mpicom_join, mpigrp_old, id_old, subname)
          else if (use_atm_coupler_mesh) then
-            call cplcomp_moab_clone_point_cloud(mbaxid, mbixid, subname)
+            call cplcomp_moab_clone_single_points(mbaxid, mbixid, subname)
             if (seq_comm_iamroot(CPLID)) then
                write(logunit,*) subname, 'SCM CICE uses atmospheric coupler mesh'
             endif
@@ -1118,7 +1118,7 @@ subroutine  copy_aream_from_area(mbappid)
       endif
 
       ! we are now on joint pes, compute comm graph between rof and coupler model
-      ! typeA=3 for dead comps (full mesh), typeA=2 for regular rof (point cloud)
+      ! typeA=3 for dead comps (full mesh), typeA=2 for regular rof (single points)
       ! typeB=3 always: coupler always has full mesh (loaded from file or received from dead comp)
       call cplcomp_moab_compute_comm_graph(mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
          dead_comps, .true., id_old, id_join, subname, 'rof model')
@@ -1269,7 +1269,7 @@ subroutine  copy_aream_from_area(mbappid)
   !
   ! NOTES:
   !   - For atmosphere component, component-side ID is adjusted by +200 to handle
-  !     point cloud representation
+  !     single-point representation
   !   - Sender buffers are freed after data transfer to conserve memory
   !   - Debug output writes mesh files when MOABDEBUG is defined
   !
@@ -1360,7 +1360,7 @@ subroutine  copy_aream_from_area(mbappid)
 
        !---------------------------------------------------------------------------
        ! Special handling for atmosphere: add 200 to component-side ID
-       ! This offset accounts for the point cloud representation used in
+       ! This offset accounts for the single-point representation used in
        ! atmosphere physics (vs spectral dynamics). The +200 convention matches
        ! the ATM_PHYS_CID offset used elsewhere in the coupler code.
        !---------------------------------------------------------------------------

@@ -515,7 +515,7 @@ contains
           lsize_src = mbGetnCells(mapper%src_mbid)
           lsize_tgt = mbGetnCells(mapper%tgt_mbid)
           if (lsize_src /= lsize_tgt) then
-             call shr_sys_abort(subname//' SCM point-cloud local sizes do not match')
+             call shr_sys_abort(subname//' SCM single point local sizes do not match')
           endif
           src_ent_type = mbGetEntityType(mapper%src_mbid)
           tgt_ent_type = mbGetEntityType(mapper%tgt_mbid)

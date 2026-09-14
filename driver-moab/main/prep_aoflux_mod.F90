@@ -206,10 +206,10 @@ contains
       ! local size of vertices is different from lsize_o
        if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
           arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
-          ent_type = 1 ! cell type now, not a point cloud anymore
+          ent_type = 1 ! cell type rather than single points
        else
           arrSize = nvert(1) * size_list
-          ent_type = 0 ! vertex type now, point cloud 
+          ent_type = 0 ! vertex type for single points
        endif
        allocate(tagValues(arrSize) )
        
