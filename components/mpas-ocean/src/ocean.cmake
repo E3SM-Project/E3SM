@@ -116,6 +116,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_subgrid.F
   core_ocean/shared/mpas_ocn_scaled_dismf.F
   core_ocean/shared/mpas_ocn_scaled_sfwf.F
+  core_ocean/shared/mpas_ocn_fme_horiz_remap.F
 )
 
 set(OCEAN_DRIVER
@@ -282,6 +283,9 @@ list(APPEND RAW_SOURCES
   core_ocean/analysis_members/mpas_ocn_sediment_transport.F
   core_ocean/analysis_members/mpas_ocn_harmonic_analysis.F
   core_ocean/analysis_members/mpas_ocn_conservation_check.F
+  core_ocean/analysis_members/mpas_ocn_fme_depth_coarsening.F
+  core_ocean/analysis_members/mpas_ocn_fme_derived_fields.F
+  core_ocean/analysis_members/mpas_ocn_fme_vertical_reduce.F
   core_ocean/analysis_members/mpas_ocn_analysis_driver.F
 )
 

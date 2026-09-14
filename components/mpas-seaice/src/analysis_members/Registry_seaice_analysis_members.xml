@@ -19,3 +19,4 @@
 #include "Registry_seaice_time_series_stats_monthly.xml"
 #include "Registry_seaice_time_series_stats_climatology.xml"
 #include "Registry_seaice_time_series_stats_custom.xml"
+#include "Registry_seaice_fme_derived_fields.xml"

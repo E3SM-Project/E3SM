@@ -116,5 +116,12 @@
 			<var name="transportVelocityZonal"/>
 			<var name="transportVelocityMeridional"/>
 			<var name="vertTransportVelocityTop"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="surfaceFrictionVelocity"/>
 		</stream>
 	</streams>

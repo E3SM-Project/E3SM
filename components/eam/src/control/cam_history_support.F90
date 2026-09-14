@@ -293,7 +293,27 @@ module cam_history_support
   integer,          parameter         :: maxmdims        = 25  ! arbitrary limit
   type(hist_coord_t),          public :: hist_coords(maxmdims)
 
+  !! Scalar metadata variables (true 0-dim netCDF scalars).
+  !! Use add_hist_scalar to register a constant value that should appear
+  !! in every history file as a 0-dim variable in `data_vars` (xarray)
+  !! / `ncdump` shows as `double name ;`. Mirrors the P0 mechanism
+  !! (cam_history_support.F90 ~line 1630/1777) but available to any
+  !! caller without abusing the formula_terms slot. Hooked into the
+  !! existing per-file define/write phases via write_hist_coord_attrs
+  !! and write_hist_coord_vars so cam_history.F90 needs no changes.
+  type, public :: hist_scalar_t
+     character(len=fieldname_len) :: name      = ''
+     character(len=max_chars)     :: long_name = ''
+     character(len=max_chars)     :: units     = ''
+     real(r8)                     :: value     = 0.0_r8
+  end type hist_scalar_t
+
+  integer, parameter :: maxhistscalars = 64  ! plenty of headroom; 0-dim, no per-rank cost
+  type(hist_scalar_t), public :: hist_scalars(maxhistscalars)
+  integer, public :: registeredhistscalars = 0
+
   public     :: add_hist_coord, add_vert_coord
+  public     :: add_hist_scalar
   public     :: write_hist_coord_attrs, write_hist_coord_vars
   public     :: lookup_hist_coord_indices, hist_coord_find_levels
   public     :: get_hist_coord_index, hist_coord_name, hist_coord_size
@@ -1649,6 +1669,114 @@ contains
   !  coordinates.
   !
   !---------------------------------------------------------------------------
+  subroutine add_hist_scalar(name, value, units, long_name)
+    !---------------------------------------------------------------------------
+    ! Register a true 0-dim scalar metadata variable that will be written
+    ! into every history tape's open file. Idempotent on duplicate name —
+    ! a second call with the same name updates the value/units/long_name
+    ! in place rather than allocating a new slot.
+    !
+    ! Resulting netCDF: `double name ;` with units + long_name attributes
+    ! and the constant value baked in. xarray exposes it under
+    ! `ds.data_vars[name]` (no associated dim).
+    !---------------------------------------------------------------------------
+    character(len=*), intent(in) :: name
+    real(r8),         intent(in) :: value
+    character(len=*), intent(in) :: units
+    character(len=*), intent(in) :: long_name
+
+    integer :: i
+
+    if (len_trim(name) == 0) then
+       call endrun('add_hist_scalar: empty name')
+    end if
+
+    ! Update in place if already registered (allows physics modules to
+    ! refresh values; harmless because scalars are static within a run).
+    do i = 1, registeredhistscalars
+       if (trim(hist_scalars(i)%name) == trim(name)) then
+          hist_scalars(i)%value     = value
+          hist_scalars(i)%units     = units
+          hist_scalars(i)%long_name = long_name
+          return
+       end if
+    end do
+
+    if (registeredhistscalars >= maxhistscalars) then
+       call endrun('add_hist_scalar: exceeded maxhistscalars; bump in cam_history_support.F90')
+    end if
+
+    registeredhistscalars = registeredhistscalars + 1
+    hist_scalars(registeredhistscalars)%name      = name
+    hist_scalars(registeredhistscalars)%value     = value
+    hist_scalars(registeredhistscalars)%units     = units
+    hist_scalars(registeredhistscalars)%long_name = long_name
+  end subroutine add_hist_scalar
+
+  subroutine define_hist_scalars(File)
+    !---------------------------------------------------------------------------
+    ! Define-mode helper: pio_def_var each registered scalar as a 0-dim
+    ! variable + attach long_name/units. Safe to call repeatedly across
+    ! file rotations because pio_inq_varid short-circuits if the var is
+    ! already defined in this File handle. Mirrors the P0 path at the
+    ! top of write_hist_coord_attr (~line 1627-1638).
+    !---------------------------------------------------------------------------
+    use pio,           only: file_desc_t, var_desc_t, pio_double, &
+                             pio_def_var, pio_put_att, pio_inq_varid, &
+                             pio_noerr
+    use cam_pio_utils, only: cam_pio_handle_error
+
+    type(file_desc_t), intent(inout) :: File
+
+    integer          :: i, ierr
+    type(var_desc_t) :: vardesc
+
+    do i = 1, registeredhistscalars
+       ierr = pio_inq_varid(File, trim(hist_scalars(i)%name), vardesc)
+       if (ierr /= PIO_NOERR) then
+          ierr = pio_def_var(File, trim(hist_scalars(i)%name), pio_double, vardesc)
+          call cam_pio_handle_error(ierr, &
+               'define_hist_scalars: pio_def_var failed for ' // &
+               trim(hist_scalars(i)%name))
+          ierr = pio_put_att(File, vardesc, 'long_name', &
+               trim(hist_scalars(i)%long_name))
+          call cam_pio_handle_error(ierr, &
+               'define_hist_scalars: long_name attr failed for ' // &
+               trim(hist_scalars(i)%name))
+          ierr = pio_put_att(File, vardesc, 'units', &
+               trim(hist_scalars(i)%units))
+          call cam_pio_handle_error(ierr, &
+               'define_hist_scalars: units attr failed for ' // &
+               trim(hist_scalars(i)%name))
+       end if
+    end do
+  end subroutine define_hist_scalars
+
+  subroutine write_hist_scalars(File)
+    !---------------------------------------------------------------------------
+    ! Data-mode helper: pio_put_var the constant value for each registered
+    ! scalar. Mirrors the P0 path in write_hist_coord_var (~line 1771-1779).
+    !---------------------------------------------------------------------------
+    use pio,           only: file_desc_t, var_desc_t, pio_put_var, pio_inq_varid
+    use cam_pio_utils, only: cam_pio_handle_error
+
+    type(file_desc_t), intent(inout) :: File
+
+    integer          :: i, ierr
+    type(var_desc_t) :: vardesc
+
+    do i = 1, registeredhistscalars
+       ierr = pio_inq_varid(File, trim(hist_scalars(i)%name), vardesc)
+       call cam_pio_handle_error(ierr, &
+            'write_hist_scalars: pio_inq_varid failed for ' // &
+            trim(hist_scalars(i)%name))
+       ierr = pio_put_var(File, vardesc, hist_scalars(i)%value)
+       call cam_pio_handle_error(ierr, &
+            'write_hist_scalars: pio_put_var failed for ' // &
+            trim(hist_scalars(i)%name))
+    end do
+  end subroutine write_hist_scalars
+
   subroutine write_hist_coord_attrs(File, boundsdim, mdimids, writemdims_in)
     use pio, only: file_desc_t, var_desc_t, pio_put_att,         &
                    pio_bcast_error, pio_internal_error, pio_seterrorhandling, &
@@ -1704,6 +1832,10 @@ contains
       call cam_pio_handle_error(ierr, 'Error writing "long_name" attr for mdimnames in write_hist_coord_attrs')
 
     end if
+
+    ! Define any registered 0-dim scalar metadata vars (add_hist_scalar).
+    ! Done here so cam_history.F90 needs no new call site.
+    call define_hist_scalars(File)
 
     ! Back to I/O or die trying
     call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
@@ -1830,6 +1962,14 @@ contains
       ierr = pio_put_var(File, vardesc, mdimnames)
       call cam_pio_handle_error(ierr, 'Error writing values for mdimnames variable in write_hist_coord_vars')
       deallocate(mdimnames)
+    end if
+
+    ! Write any registered 0-dim scalar metadata vars (add_hist_scalar).
+    ! Done here so cam_history.F90 needs no new call site. Skip on
+    ! restart-history files (writemdims=true) since those don't carry
+    ! data-tape scalar metadata.
+    if (.not. writemdims) then
+       call write_hist_scalars(File)
     end if
 
     ! Back to I/O or die trying

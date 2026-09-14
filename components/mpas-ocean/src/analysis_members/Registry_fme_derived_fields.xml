@@ -1,0 +1,142 @@
+	<nml_record name="AM_fmeDerivedFields" mode="forward;analysis">
+		<nml_option name="config_AM_fmeDerivedFields_enable" type="logical" default_value=".false."
+			description="If true, ocean analysis member fmeDerivedFields is called."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_compute_interval" type="character" default_value="output_interval"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_output_stream" type="character" default_value="fmeDerivedFieldsOutput"
+			description="Name of the stream that the fmeDerivedFields analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_compute_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_write_on_startup" type="logical" default_value=".true."
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_stream_output_interval" type="character" default_value="00-00-01_00:00:00"
+			description="Output interval for the fmeDerivedFields stream. Format: YY-MM-DD_HH:MM:SS"
+			possible_values="Any valid MPAS time interval string"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_horiz_remap_file" type="character" default_value="none"
+			description="Path to ESMF/TempestRemap weight file for horizontal remapping to lat-lon grid. When set, derived fields are also written to a separate remapped NetCDF file."
+			possible_values="Any valid file path or 'none'"
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_time_averaging" type="logical" default_value=".false."
+			description="If true, remapped output fields are time-averaged over the output interval instead of instantaneous. Set compute_interval to a frequent value (e.g. dt) when enabling."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AM_fmeDerivedFields_stream_output_interval_5D" type="character" default_value="none"
+			description="Optional output interval for an additional 5-day-average companion stream (fmeDerivedFieldsOutput5D). Same fields as the primary stream, accumulated from the same per-step samples but written at this longer cadence to a separate file. Set to 'none' or empty to disable. Requires time_averaging=.true.; 5D path is averaged-only."
+			possible_values="Any valid MPAS time interval string or 'none'"
+		/>
+	</nml_record>
+	<packages>
+		<package name="fmeDerivedFieldsAMPKG" description="This package includes variables required for the fmeDerivedFields analysis member."/>
+	</packages>
+	<var_struct name="fmeDerivedFieldsAM" time_levs="1" packages="fmeDerivedFieldsAMPKG">
+		<var name="sst" type="real" dimensions="nCells Time" units="degC"
+			description="Sea surface temperature extracted from top-level temperature tracer"
+		/>
+		<var name="sss" type="real" dimensions="nCells Time" units="PSU"
+			description="Sea surface salinity extracted from top-level salinity tracer"
+		/>
+		<var name="surfaceHeatFluxTotal" type="real" dimensions="nCells Time" units="W m^-2"
+			description="Total surface downward heat flux (shortwave + longwave down + latent + sensible)"
+		/>
+		<var name="snowFluxLf" type="real" dimensions="nCells Time" units="W m^-2"
+			description="snowFlux multiplied by latent heat of fusion (kg m^-2 s^-1 * J kg^-1). Sign convention follows snowFlux."
+		/>
+		<var name="iceRunoffFluxLf" type="real" dimensions="nCells Time" units="W m^-2"
+			description="iceRunoffFlux multiplied by latent heat of fusion. Sign convention follows iceRunoffFlux."
+		/>
+		<var name="riverRunoffFluxTemperature" type="real" dimensions="nCells Time" units="kg degC m^-2 s^-1"
+			description="riverRunoffFlux multiplied by top-layer temperature. Native mass-flux units; divide by reference fresh-water density to convert to m degC s^-1."
+		/>
+	</var_struct>
+	<streams>
+		<!-- output_interval default is daily; override via SourceMods/streams.ocean_forward -->
+		<stream name="fmeDerivedFieldsOutput" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDerivedFields.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-01_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDerivedFieldsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="sst"/>
+			<var name="sss"/>
+			<var name="surfaceHeatFluxTotal"/>
+			<var name="pressureAdjustedSSH"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="longWaveHeatFluxUp"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="surfaceThicknessFlux"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="frazilIceFreshwaterFlux"/>
+			<var name="surfaceFrictionVelocity"/>
+			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
+			<var name="seaIceFreshWaterFlux"/>
+			<var name="seaIceSalinityFlux"/>
+			<var name="riverRunoffFlux"/>
+			<var name="iceRunoffFlux"/>
+			<var name="snowFluxLf"/>
+			<var name="iceRunoffFluxLf"/>
+			<var name="riverRunoffFluxTemperature"/>
+		</stream>
+		<!-- 5-day-average companion stream (output_interval emitted as
+		     "none" by buildnml; AM uses the filename template only). -->
+		<stream name="fmeDerivedFieldsOutput5D" type="output"
+				mode="forward;analysis"
+				precision="single"
+				filename_template="analysis_members/fmeDerivedFields5D.$Y-$M.nc"
+				filename_interval="00-01-00_00:00:00"
+				output_interval="00-00-05_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				packages="fmeDerivedFieldsAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="sst"/>
+			<var name="sss"/>
+			<var name="surfaceHeatFluxTotal"/>
+			<var name="pressureAdjustedSSH"/>
+			<var name="windStressZonal"/>
+			<var name="windStressMeridional"/>
+			<var name="latentHeatFlux"/>
+			<var name="sensibleHeatFlux"/>
+			<var name="shortWaveHeatFlux"/>
+			<var name="longWaveHeatFluxUp"/>
+			<var name="longWaveHeatFluxDown"/>
+			<var name="surfaceThicknessFlux"/>
+			<var name="rainFlux"/>
+			<var name="snowFlux"/>
+			<var name="evaporationFlux"/>
+			<var name="frazilIceFreshwaterFlux"/>
+			<var name="surfaceFrictionVelocity"/>
+			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
+			<var name="seaIceFreshWaterFlux"/>
+			<var name="seaIceSalinityFlux"/>
+			<var name="riverRunoffFlux"/>
+			<var name="iceRunoffFlux"/>
+			<var name="snowFluxLf"/>
+			<var name="iceRunoffFluxLf"/>
+			<var name="riverRunoffFluxTemperature"/>
+		</stream>
+	</streams>

@@ -51,6 +51,7 @@ module cam_history
                                   lookup_hist_coord_indices, get_hist_coord_index
    use sat_hist,            only: is_satfile
    use mo_solar_parms,      only: solar_parms_get, solar_parms_on
+   use horiz_remap_mod,     only: eam_horiz_remap_t
 
   implicit none
   private
@@ -102,7 +103,7 @@ module cam_history
   !
   !   The size of these parameters should match the assignments in restart_vars_setnames and restart_dims_setnames below
   !   
-  integer, parameter :: restartvarcnt              = 38
+  integer, parameter :: restartvarcnt              = 39
   integer, parameter :: restartdimcnt              = 10
   type(rvar_id)      :: restartvars(restartvarcnt)
   type(rdim_id)      :: restartdims(restartdimcnt)
@@ -126,6 +127,13 @@ module cam_history
   integer :: nhtfrq(ptapes) = (/0, (-24, i=2,ptapes)/)  ! history write frequency (0 = monthly)
   integer :: mfilt(ptapes) = 30       ! number of time samples per tape
   integer :: nfils(ptapes)            ! Array of no. of files on current h-file
+
+  ! EAMxx-style calendar-based file rotation. When set to 'one_month' or
+  ! 'one_year', the file is closed and rotated at the calendar boundary
+  ! regardless of mfilt. Default 'num_snapshots' preserves legacy behavior.
+  character(len=16) :: hist_file_storage_type(ptapes) = (/('num_snapshots',i=1,ptapes)/)
+  ! Calendar idx (month or year) of the currently-open file. -1 = empty/unknown.
+  integer :: hist_storage_curr_idx(ptapes) = (/(-1,i=1,ptapes)/)
   integer :: ndens(ptapes) = 2        ! packing density (double (1) or real (2))
   integer :: ncprec(ptapes) = -999    ! netcdf packing parameter based on ndens
   real(r8) :: beg_time(ptapes)        ! time at beginning of an averaging interval
@@ -160,6 +168,10 @@ module cam_history
   logical, public       :: interpolate_output(ptapes) = .false.
   ! The last two history files are not supported for interpolation
   type(interp_info_t)   :: interpolate_info(ptapes - 2)
+
+  ! Horizontal remapping via map file
+  character(len=max_string_len) :: horiz_remap_file(ptapes) = ' '
+  type(eam_horiz_remap_t) :: horiz_remap_data(ptapes)
 
   ! Allowed history averaging flags
   ! This should match namelist_definition.xml => avgflag_pertape (+ ' ')
@@ -562,7 +574,8 @@ CONTAINS
          fwrtpr6, fwrtpr7, fwrtpr8, fwrtpr9, fwrtpr10,                         &
          fwrtpr11,fwrtpr12,fwrtpr13,fwrtpr14,fwrtpr15,                         &
          interpolate_nlat, interpolate_nlon,                                   &
-         interpolate_gridtype, interpolate_type, interpolate_output
+         interpolate_gridtype, interpolate_type, interpolate_output,           &
+         horiz_remap_file, hist_file_storage_type
 
     ! Set namelist defaults (these should match initial values if given)
     fincl(:,:)               = ' '
@@ -587,6 +600,8 @@ CONTAINS
     interpolate_gridtype(:)  = 1
     interpolate_type(:)      = 1
     interpolate_output(:)    = .false.
+    horiz_remap_file(:)      = ' '
+    hist_file_storage_type(:) = 'num_snapshots'
 
     ! Initialize namelist 'temporary variables'
     do f = 1, pflds
@@ -762,10 +777,24 @@ CONTAINS
       ! See the filenames module for more information
       !
       do t = 1, ptapes
+        ! Validate hist_file_storage_type
+        select case (trim(hist_file_storage_type(t)))
+        case ('num_snapshots','one_month','one_year')
+          ! ok
+        case default
+          call endrun('history_readnl: hist_file_storage_type must be ' &
+               // 'num_snapshots, one_month, or one_year, got: ' &
+               // trim(hist_file_storage_type(t)))
+        end select
+
         if ( len_trim(hfilename_spec(t)) == 0 )then
           if ( nhtfrq(t) == 0 )then
-            ! Monthly files
+            ! Monthly average files (one record each)
             hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m.nc'
+          else if ( trim(hist_file_storage_type(t)) == 'one_month' ) then
+            hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m.nc'
+          else if ( trim(hist_file_storage_type(t)) == 'one_year' ) then
+            hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y.nc'
           else
             hfilename_spec(t) = '%c.eam' // trim(inst_suffix) // '.h%t.%y-%m-%d-%s.nc'
           end if
@@ -795,6 +824,20 @@ CONTAINS
         if (is_initfile(t) .and. interpolate_output(t)) then
           write(iulog, *) 'WARNING: Interpolated output not supported for a satellite history file, ignored'
           interpolate_output(t) = .false.
+        end if
+        ! Enforce mutual exclusion of interpolate_output and horiz_remap_file
+        if (interpolate_output(t) .and. len_trim(horiz_remap_file(t)) > 0) then
+          call endrun('history_readnl: interpolate_output and horiz_remap_file '// &
+               'cannot both be set for the same history tape')
+        end if
+        ! Enforce no horiz_remap for sat and IC files
+        if (is_satfile(t) .and. len_trim(horiz_remap_file(t)) > 0) then
+          write(iulog, *) 'WARNING: horiz_remap_file not supported for satellite history file, ignored'
+          horiz_remap_file(t) = ' '
+        end if
+        if (is_initfile(t) .and. len_trim(horiz_remap_file(t)) > 0) then
+          write(iulog, *) 'WARNING: horiz_remap_file not supported for IC history file, ignored'
+          horiz_remap_file(t) = ' '
         end if
       end do
     end if
@@ -836,6 +879,7 @@ CONTAINS
     call mpi_bcast(empty_htapes,1, mpi_logical, masterprocid, mpicom, ierr)
     call mpi_bcast(avgflag_pertape, ptapes, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(hfilename_spec, len(hfilename_spec(1))*ptapes, mpi_character, masterprocid, mpicom, ierr)
+    call mpi_bcast(hist_file_storage_type, len(hist_file_storage_type(1))*ptapes, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(fincl, len(fincl (1,1))*pflds*ptapes, mpi_character, masterprocid, mpicom, ierr)
     call mpi_bcast(fexcl, len(fexcl (1,1))*pflds*ptapes, mpi_character, masterprocid, mpicom, ierr)
 
@@ -848,6 +892,7 @@ CONTAINS
     call mpi_bcast(interpolate_gridtype, t, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(interpolate_type, t, mpi_integer, masterprocid, mpicom, ierr)
     call mpi_bcast(interpolate_output, ptapes, mpi_logical, masterprocid, mpicom, ierr)
+    call mpi_bcast(horiz_remap_file, len(horiz_remap_file(1))*ptapes, mpi_character, masterprocid, mpicom, ierr)
 #endif
 
     ! Setup the interpolate_info structures
@@ -910,7 +955,7 @@ CONTAINS
   end subroutine set_field_dimensions
 
   subroutine setup_interpolation_and_define_vector_complements()
-    use interp_mod, only: setup_history_interpolation
+    use interp_mod,       only: setup_history_interpolation
 
     ! Local variables
     integer :: hf, f, ii, ff
@@ -960,6 +1005,14 @@ CONTAINS
         end if
       end do
     end if
+
+    ! Initialize horizontal remapping from map files
+    do hf = 1, ptapes
+      if (len_trim(horiz_remap_file(hf)) > 0) then
+        call horiz_remap_data(hf)%init(trim(horiz_remap_file(hf)), hf)
+      end if
+    end do
+
   end subroutine setup_interpolation_and_define_vector_complements
 
   subroutine restart_vars_setnames()
@@ -1214,6 +1267,13 @@ CONTAINS
     restartvars(rvindex)%dims(1) = ptapes_dim_ind
 
     rvindex = rvindex + 1
+    restartvars(rvindex)%name = 'horiz_remap_file'
+    restartvars(rvindex)%type = pio_char
+    restartvars(rvindex)%ndims = 2
+    restartvars(rvindex)%dims(1) = max_string_len_dim_ind
+    restartvars(rvindex)%dims(2) = ptapes_dim_ind
+
+    rvindex = rvindex + 1
     restartvars(rvindex)%name = 'meridional_complement'
     restartvars(rvindex)%type = pio_int
     restartvars(rvindex)%ndims = 2
@@ -1374,6 +1434,7 @@ CONTAINS
     type(var_desc_t), pointer ::  interpolate_gridtype_desc
     type(var_desc_t), pointer ::  interpolate_nlat_desc
     type(var_desc_t), pointer ::  interpolate_nlon_desc
+    type(var_desc_t), pointer ::  horiz_remap_file_desc
     type(var_desc_t), pointer ::  meridional_complement_desc
     type(var_desc_t), pointer ::  zonal_complement_desc
 
@@ -1491,6 +1552,7 @@ CONTAINS
     interpolate_gridtype_desc => restartvar_getdesc('interpolate_gridtype')
     interpolate_nlat_desc => restartvar_getdesc('interpolate_nlat')
     interpolate_nlon_desc => restartvar_getdesc('interpolate_nlon')
+    horiz_remap_file_desc => restartvar_getdesc('horiz_remap_file')
 
     meridional_complement_desc => restartvar_getdesc('meridional_complement')
     zonal_complement_desc => restartvar_getdesc('zonal_complement')
@@ -1566,6 +1628,8 @@ CONTAINS
       interp_output(t) = interpolate_info(t)%interp_nlon
     end do
     ierr = pio_put_var(File, interpolate_nlon_desc, interp_output)
+    ! Horizontal remapping file paths
+    ierr = pio_put_var(File, horiz_remap_file_desc, horiz_remap_file)
     ! Registered history coordinates
     start(1) = 1
     do f = 1, registeredmdims
@@ -1780,6 +1844,19 @@ CONTAINS
         interpolate_info(t)%interp_nlon = interp_output(t)
       end if
     end do
+
+    !! horiz_remap_file
+    call pio_seterrorhandling(File, PIO_BCAST_ERROR)
+    ierr = pio_inq_varid(File, 'horiz_remap_file', vdesc)
+    call pio_seterrorhandling(File, PIO_INTERNAL_ERROR)
+    if (ierr == pio_noerr) then
+      block
+        character(len=max_string_len) :: tmp_remap_files(ptapes)
+        tmp_remap_files(:) = ' '
+        ierr = pio_get_var(File, vdesc, tmp_remap_files(1:mtapes))
+        horiz_remap_file(1:min(mtapes,ptapes)) = tmp_remap_files(1:min(mtapes,ptapes))
+      end block
+    end if
 
     !! mdim indices
     allocate(allmdims(maxvarmdims,maxnflds,mtapes))
@@ -2075,6 +2152,14 @@ CONTAINS
           end do
           call cam_pio_closefile(tape(t)%File)
           nfils(t) = 0
+        else if (nfils(t) > 0 .and. &
+                 trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+          ! Calendar-based storage: parse YYYY-MM (or YYYY) out of the open
+          ! file's name and stash in hist_storage_curr_idx so the rotation
+          ! logic in wshist knows whether the next record belongs in the
+          ! current file or a new one. Parse-failure falls back to lazy-init.
+          call parse_calendar_idx_from_filename(nhfil(t), &
+               hist_file_storage_type(t), hist_storage_curr_idx(t))
         end if
       end if
     end do
@@ -2088,6 +2173,45 @@ CONTAINS
 
     return
   end subroutine read_restart_history
+
+  !#######################################################################
+
+  subroutine parse_calendar_idx_from_filename(filename, storage_type, idx)
+    !
+    !-----------------------------------------------------------------------
+    ! Extract the year (one_year) or month (one_month) idx from a history
+    ! filename. Expects names ending in ".YYYY-MM.nc" or ".YYYY.nc".
+    ! Sets idx = -1 on parse failure (caller falls back to lazy-init).
+    !-----------------------------------------------------------------------
+    character(len=*), intent(in)  :: filename
+    character(len=*), intent(in)  :: storage_type
+    integer,          intent(out) :: idx
+
+    integer :: n, ios
+
+    idx = -1
+    n = len_trim(filename)
+    if (n < 8) return
+    if (filename(n-2:n) /= '.nc') return
+
+    select case (trim(storage_type))
+    case ('one_month')
+      ! Pattern: ".YYYY-MM.nc"  (last 11 chars)
+      if (n < 11) return
+      if (filename(n-10:n-10) /= '.') return
+      if (filename(n-5:n-5)   /= '-') return
+      read(filename(n-4:n-3), *, iostat=ios) idx
+      if (ios /= 0) idx = -1
+    case ('one_year')
+      ! Pattern: ".YYYY.nc"  (last 8 chars)
+      if (filename(n-7:n-7) /= '.') return
+      read(filename(n-6:n-3), *, iostat=ios) idx
+      if (ios /= 0) idx = -1
+    case default
+      ! num_snapshots: nothing to parse
+      idx = -1
+    end select
+  end subroutine parse_calendar_idx_from_filename
 
   !#######################################################################
 
@@ -3647,12 +3771,12 @@ end subroutine print_active_fldlst
 
   subroutine h_define (t, restart)
     !
-    !----------------------------------------------------------------------- 
-    ! 
+    !-----------------------------------------------------------------------
+    !
     ! Purpose: Define contents of history file t
-    ! 
+    !
     ! Method: Issue the required netcdf wrapper calls to define the history file contents
-    ! 
+    !
     !-----------------------------------------------------------------------
     use cam_grid_support, only: cam_grid_header_info_t
     use cam_grid_support, only: cam_grid_write_attr, cam_grid_write_var
@@ -3723,6 +3847,7 @@ end subroutine print_active_fldlst
     integer                          :: ierr
     integer,          allocatable    :: mdimids(:)
     logical                          :: interpolate
+    logical                          :: horiz_remap
     logical                          :: patch_output
 
     if(restart) then
@@ -3762,11 +3887,15 @@ end subroutine print_active_fldlst
       !     
       ! interpolate is only supported for unstructured dycores
       interpolate = (interpolate_output(t) .and. (.not. restart))
+      horiz_remap = (horiz_remap_data(t)%is_active() .and. (.not. restart))
       patch_output = (associated(tape(t)%patches) .and. (.not. restart))
 
       ! First define the horizontal grid dims
-      ! Interpolation is special in that we ignore the native grids
-      if(interpolate) then
+      ! Interpolation/remapping is special in that we ignore the native grids
+      if (horiz_remap) then
+        allocate(header_info(1))
+        call cam_grid_write_attr(tape(t)%File, horiz_remap_data(t)%get_grid_id(), header_info(1))
+      else if(interpolate) then
         allocate(header_info(1))
         call cam_grid_write_attr(tape(t)%File, interpolate_info(t)%grid_id, header_info(1))
       else if (patch_output) then
@@ -4030,6 +4159,16 @@ end subroutine print_active_fldlst
         num_hdims=0
         nfils(t)=1
         call sat_hist_define(tape(t)%File)
+      else if (horiz_remap) then
+        ! Horiz remap uses a registered lat-lon grid, same pattern as interpolate
+        if (.not. allocated(header_info)) then
+          call endrun('h_define: header_info not allocated for horiz_remap')
+        end if
+        num_hdims = 2
+        do i = 1, num_hdims
+          dimindex(i) = header_info(1)%get_hdimid(i)
+          nacsdims(i) = header_info(1)%get_hdimid(i)
+        end do
       else if (interpolate) then
         ! Interpolate can't use normal grid code since we are forcing fields
         ! to use interpolate decomp
@@ -4203,7 +4342,9 @@ end subroutine print_active_fldlst
     ! Write time-invariant portion of history header
     !
     if(.not. is_satfile(t)) then
-      if(interpolate) then
+      if(horiz_remap) then
+        call cam_grid_write_var(tape(t)%File, horiz_remap_data(t)%get_grid_id())
+      else if(interpolate) then
         call cam_grid_write_var(tape(t)%File, interpolate_info(t)%grid_id)
       else if((.not. patch_output) .or. restart) then
         do i = 1, size(tape(t)%grid_ids)
@@ -4385,15 +4526,15 @@ end subroutine print_active_fldlst
   subroutine dump_field (f, t, restart)
     use cam_history_support, only: history_patch_t, dim_index_3d
     use cam_grid_support,    only: cam_grid_write_dist_array, cam_grid_dimensions
-    use interp_mod,       only : write_interpolated
+    use interp_mod,          only: write_interpolated
 
     ! Dummy arguments
     integer,     intent(in)    :: f
     integer,     intent(in)    :: t
     logical,     intent(in)    :: restart
     !
-    !----------------------------------------------------------------------- 
-    ! 
+    !-----------------------------------------------------------------------
+    !
     ! Purpose: Write a variable to a history tape using PIO
     !          For restart tapes, also write the accumulation buffer (nacs)
     !
@@ -4413,10 +4554,13 @@ end subroutine print_active_fldlst
     integer                          :: num_patches
     integer                          :: mdimsize   ! Total # on-node elements
     logical                          :: interpolate
+    logical                          :: horiz_remap
     logical                          :: patch_output
     type(history_patch_t), pointer   :: patchptr
+    real(r8), allocatable            :: remapped_fld(:,:)
 
     interpolate = (interpolate_output(t) .and. (.not. restart))
+    horiz_remap = (horiz_remap_data(t)%is_active() .and. (.not. restart))
     patch_output = (associated(tape(t)%patches) .and. (.not. restart))
 
     !!! Get the field's shape and decomposition
@@ -4457,11 +4601,22 @@ end subroutine print_active_fldlst
         if (interpolate) then
           call endrun('dump_field: interpolate incompatible with regional output')
         end if
+        if (horiz_remap) then
+          call endrun('dump_field: horiz_remap incompatible with regional output')
+        end if
         call patchptr%write_var(tape(t)%File, fdecomp, adims(1:nadims),       &
              pio_double, tape(t)%hlist(f)%hbuf, varid)
       else
         ! We are doing output via the field's grid
-        if (interpolate) then
+        if (horiz_remap) then
+          mdimsize = tape(t)%hlist(f)%field%enddim2 - tape(t)%hlist(f)%field%begdim2 + 1
+          if (mdimsize == 0) then
+            mdimsize = tape(t)%hlist(f)%field%numlev
+          end if
+          call horiz_remap_data(t)%remap_field(tape(t)%hlist(f)%hbuf, mdimsize, remapped_fld)
+          call horiz_remap_data(t)%write_field(tape(t)%File, varid, remapped_fld, mdimsize, PIO_DOUBLE)
+          deallocate(remapped_fld)
+        else if (interpolate) then
           mdimsize = tape(t)%hlist(f)%field%enddim2 - tape(t)%hlist(f)%field%begdim2 + 1
           if (mdimsize == 0) then
             mdimsize = tape(t)%hlist(f)%field%numlev
@@ -4612,6 +4767,7 @@ end subroutine print_active_fldlst
 #endif
 
     integer :: yr, mon, day      ! year, month, and day components of a date
+    integer :: cal_rot_idx       ! calendar rotation idx (month or year)
     integer :: nstep             ! current timestep number
     integer :: ncdate            ! current date in integer format [yyyymmdd]
     integer :: ncsec             ! current time of day [seconds]
@@ -4671,6 +4827,39 @@ end subroutine print_active_fldlst
         end if
       end if
       if (hstwr(t) .or. (restart .and. rgnht(t))) then
+        ! ===== EAMxx-style calendar-based file rotation =====
+        ! Close the current file when its stored month/year doesn't match
+        ! this record's month/year. Lazy-init handles the case where the
+        ! curr_idx hasn't been set (e.g. after restart with parse failure).
+        if (.not. is_initfile(file_index=t) .and. .not. restart .and. &
+             nfils(t) > 0 .and. &
+             trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+          if (trim(hist_file_storage_type(t)) == 'one_month') then
+            cal_rot_idx = mon
+          else
+            cal_rot_idx = yr
+          end if
+          if (hist_storage_curr_idx(t) == -1) then
+            hist_storage_curr_idx(t) = cal_rot_idx
+          else if (cal_rot_idx /= hist_storage_curr_idx(t)) then
+            if (masterproc) then
+              write(iulog,'(A,I2,A,A,A,I0,A,I0)') &
+                   'WSHIST: rotating tape ',t,' at calendar boundary (', &
+                   trim(hist_file_storage_type(t)),'), old idx=', &
+                   hist_storage_curr_idx(t),' new idx=',cal_rot_idx
+            end if
+            do f=1,nflds(t)
+              if (associated(tape(t)%hlist(f)%varid)) then
+                deallocate(tape(t)%hlist(f)%varid)
+                nullify(tape(t)%hlist(f)%varid)
+              end if
+            end do
+            call cam_pio_closefile(tape(t)%File)
+            nfils(t) = 0
+            hist_storage_curr_idx(t) = -1
+          end if
+        end if
+        ! ===== end calendar rotation =====
         if(masterproc) then
           if(is_initfile(file_index=t)) then
             write(iulog,100) yr,mon,day,ncsec
@@ -4736,6 +4925,15 @@ end subroutine print_active_fldlst
           else
             nfils(t) = nfils(t) + 1
             start = nfils(t)
+            ! Stamp the calendar idx of this newly-written record
+            if (.not. is_initfile(file_index=t) .and. &
+                 trim(hist_file_storage_type(t)) /= 'num_snapshots') then
+              if (trim(hist_file_storage_type(t)) == 'one_month') then
+                hist_storage_curr_idx(t) = mon
+              else
+                hist_storage_curr_idx(t) = yr
+              end if
+            end if
           end if
           count1 = 1
           ! Setup interpolation data if history file is interpolated
