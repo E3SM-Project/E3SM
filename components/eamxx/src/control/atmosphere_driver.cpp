@@ -622,6 +622,31 @@ void AtmosphereDriver::create_fields()
 
   }
 
+  // Now that the fields are created, add U/V subfields of horiz_winds,
+  // as well as U/V component of surf_mom_flux
+  auto add_component = [&](Field& f, int cmp, const std::string& sf_name) {
+    const auto& gn = f.get_header().get_identifier().get_grid_name();
+    if (m_field_mgr->has_field(sf_name,gn))
+      return;
+
+    auto sf = f.get_component(cmp).alias(sf_name);
+    m_field_mgr->add_field(sf);
+  };
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    auto gn = grid->name();
+    if (m_field_mgr->has_field("horiz_winds", gn)) {
+      auto hw = m_field_mgr->get_field("horiz_winds", gn);
+      add_component(hw,0,"U");
+      add_component(hw,1,"V");
+    }
+    if (m_field_mgr->has_field("surf_mom_flux", gn)) {
+      auto smf = m_field_mgr->get_field("surf_mom_flux", gn);
+      add_component(smf,0,"surf_mom_flux_U");
+      add_component(smf,1,"surf_mom_flux_V");
+    }
+  }
+
   // Now go through the input fields/groups to the atm proc group,
   // and mark them as part of the RESTART/STARTUP/TOPOGRAPHY groups.
   // Skip fields in the ACCUMULATED group, since those are reset to 0
@@ -641,8 +666,20 @@ void AtmosphereDriver::create_fields()
     const auto& fgroups = f.get_header().get_tracking().get_groups_names();
     if (not ekat::contains(fgroups, "ACCUMULATED")) {
       const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-      m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
-      m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
+      const auto& children = f.get_header().get_children();
+      if (children.size()>0) {
+        // We do look for parent fields in startup/restart files.
+        // Simply write/read the individual fields.
+        // So far, this should only affect horiz_winds and surf_mom_flux
+        // (the latter only in eamxx standalone tests)
+        for (auto c : children) {
+          const auto& c_id = c.lock().get_identifier();
+          set_groups(m_field_mgr->get_field(c_id.name(),grid_name));
+        }
+      } else {
+        m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
+        m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
+      }
       if (is_topography_field(f.name())) {
         m_field_mgr->add_to_group(f.name(), grid_name, "TOPOGRAPHY");
       }
@@ -660,38 +697,6 @@ void AtmosphereDriver::create_fields()
     else
       for (const auto& it : g.individual_fields())
         set_groups(it.second);
-  }
-
-  // Now that the fields are created, add U/V subfields of horiz_winds,
-  // as well as U/V component of surf_mom_flux
-  auto add_component = [&](Field& f, int cmp, const std::string& sf_name) {
-    const auto& gn = f.get_header().get_identifier().get_grid_name();
-    if (m_field_mgr->has_field(sf_name,gn))
-      return;
-
-    auto sf = f.get_component(cmp).alias(sf_name);
-    m_field_mgr->add_field(sf);
-
-    // Set subfield as part of the proper groups
-    auto& f_track = f.get_header().get_tracking();
-    if (f_track.has_group("STARTUP"))
-      m_field_mgr->add_to_group(sf_name,gn,"STARTUP");
-    if (f_track.has_group("RESTART"))
-      m_field_mgr->add_to_group(sf_name,gn,"RESTART");
-  };
-  for (auto it : m_grids_manager->get_repo()) {
-    auto grid = it.second;
-    auto gn = grid->name();
-    if (m_field_mgr->has_field("horiz_winds", gn)) {
-      auto hw = m_field_mgr->get_field("horiz_winds", gn);
-      add_component(hw,0,"U");
-      add_component(hw,1,"V");
-    }
-    if (m_field_mgr->has_field("surf_mom_flux", gn)) {
-      auto smf = m_field_mgr->get_field("surf_mom_flux", gn);
-      add_component(smf,0,"surf_mom_flux_U");
-      add_component(smf,1,"surf_mom_flux_V");
-    }
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
