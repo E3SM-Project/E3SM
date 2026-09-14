@@ -1080,7 +1080,7 @@ void AtmosphereDriver::set_initial_conditions ()
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Check which fields need to have an initial condition.
-  strmap_t<strvec_t> ic_fields_names;
+  strmap_t<std::set<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
   // Check which fields should be loaded from the topography file
@@ -1163,18 +1163,28 @@ void AtmosphereDriver::set_initial_conditions ()
       auto children = f.get_header().get_children();
 
       // If this field is the parent of other subfields, we only read from file the subfields.
-      auto add = [&](const std::string& n) {
-        if (not ekat::contains(this_grid_ic_fnames,n)) {
-          this_grid_ic_fnames.push_back(n);
-          m_fields_inited[grid_name].push_back(n);
+      auto add_inited = [&](const std::string& n) {
+        auto& this_grid_inited_fnames = m_fields_inited[grid_name];
+        if (not ekat::contains(this_grid_inited_fnames,n)) {
+          this_grid_inited_fnames.push_back(n);
         }
+      };
+      auto add = [&](const std::string& n) {
+        this_grid_ic_fnames.insert(n);
+        add_inited(n);
       };
       if (children.size()==0) {
         add(fname);
       } else {
+        bool has_leaf_children = false;
         for (auto child : children)
-          if (child.lock()->get_children().size()==0) // Skip children that themselves have children
+          if (child.lock()->get_children().size()==0) { // Skip children that themselves have children
             add (child.lock()->get_identifier().name());
+            has_leaf_children = true;
+          }
+        if (has_leaf_children) {
+          add_inited(fname);
+        }
       }
     }
   };
@@ -1205,35 +1215,21 @@ void AtmosphereDriver::set_initial_conditions ()
   }
   m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
 
-  // Some fields might be the subfield of a group's monolithic field. In that case,
-  // we only need to init one: either the monolithic field, or all the individual subfields.
+  // Some fields might be the subfield of another field (e.g., individual fields in
+  // a group with monolithic allocation, or components of a vector field like horiz_winds).
+  // In that case, we only need to init one: either the monolithic field, or all the individual subfields.
   // So loop over the fields that appear to require loading from file, and remove
-  // them from the list if they are the subfield of a groups monolithic field already inited
+  // them from the list if they are the subfield of another field already inited
   // (perhaps via initialize_constant_field, or copied from another field).
-  for (auto& it1 : ic_fields_names) {
-    const auto& grid_name =  it1.first;
+  for (auto& [grid_name, names] : ic_fields_names) {
+    std::erase_if(names, [&](const std::string& name) {
+      auto f = m_field_mgr->get_field(name, grid_name);
+      auto p = f.get_header().get_parent();
+      if (!p) return false;
 
-    // Note: every time we erase an entry in the vector, all iterators are
-    //       invalidated, so we need to re-start the for loop.
-    bool run_again = true;
-    while (run_again) {
-      run_again = false;
-      auto& names = it1.second;
-      for (auto it2=names.begin(); it2!=names.end(); ++it2) {
-        const auto& fname = *it2;
-        auto f = m_field_mgr->get_field(fname, grid_name);
-        auto p = f.get_header().get_parent();
-        if (p) {
-          const auto& pname = p->get_identifier().name();
-          if (ekat::contains(m_fields_inited[grid_name],pname)) {
-            // The parent is already inited. No need to init this field as well.
-            names.erase(it2);
-            run_again = true;
-            break;
-          }
-        }
-      }
-    }
+      const auto& pname = p->get_identifier().name();
+      return ekat::contains(m_fields_inited[grid_name], pname);
+    });
   }
 
   if (m_iop_data_manager) {
