@@ -1722,8 +1722,10 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
   // Zero-initialized pert wind views (no pert wind data in this parity test)
   view_2d um_pert_d("um_pert", shcol, nlev_packs);
   view_2d vm_pert_d("vm_pert", shcol, nlev_packs);
+  view_2d wthl_leonard_base_d("wthl_leonard_base", shcol, nlev_packs);
   Kokkos::deep_copy(um_pert_d, Pack(0));
   Kokkos::deep_copy(vm_pert_d, Pack(0));
+  Kokkos::deep_copy(wthl_leonard_base_d, Pack(0));
 
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -1743,6 +1745,7 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
     const auto tk_s = ekat::subview(tk_d, i);
     const auto tkh_s = ekat::subview(tkh_d, i);
     const auto wtracer_sfc_s = ekat::subview(wtracer_sfc_d, i);
+    const auto wthl_leonard_base_s = ekat::subview(wthl_leonard_base_d, i);
     const auto thetal_s = ekat::subview(thetal_d, i);
     const auto qw_s = ekat::subview(qw_d, i);
     const auto u_wind_s = ekat::subview(u_wind_d, i);
@@ -1756,6 +1759,7 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
+                                     Scalar(0), Scalar(0), wthl_leonard_base_s,
                                      workspace,
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s,
                                      Scalar(0), Scalar(0), um_pert_s, vm_pert_s);

@@ -4,14 +4,17 @@
 #include "Context.hpp"
 #include "ElementsGeometry.hpp"
 #include "ElementsState.hpp"
+#include "HybridVCoord.hpp"
 #include "ReferenceElement.hpp"
 #include "TimeLevel.hpp"
+#include "Tracers.hpp"
 #include "Types.hpp"
 #include "utilities/ViewUtils.hpp"
 
 // Scream includes
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
+#include "share/physics/eamxx_common_physics_functions.hpp"
 
 // EKAT includes
 #include <ekat_assert.hpp>
@@ -37,29 +40,39 @@ Real local_to_cart_component(
 
 } // anonymous namespace
 
-void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
+void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence ()
 {
   using namespace Homme;
+  using PF = PhysicsFunctions<DefaultDevice>;
 
   constexpr int NGP  = HOMMEXX_NP;
 
   const auto& c      = Context::singleton();
   const auto& state  = c.get<ElementsState>();
   const auto& geom   = c.get<ElementsGeometry>();
+  const auto& hvcoord = c.get<HybridVCoord>();
   const auto& ref_fe = c.get<ReferenceElement>();
   const auto& tl     = c.get<TimeLevel>();
 
   const int nelem       = m_dyn_grid->get_num_local_dofs() / (NGP*NGP);
   const int n0          = tl.n0;
+  const int n0_qdp      = tl.n0_qdp;
+  const int qc_idx      = m_qc_idx;
+  const Real ptop       = hvcoord.ps0 * hvcoord.hybrid_ai0;
   const auto& grad_Ux_field = m_helper_fields.at("grad_Ux_dyn");
   const auto& grad_Ux_layout = grad_Ux_field.get_header().get_identifier().get_layout();
   const int nlev_scalar = grad_Ux_layout.dims().back();
 
   const auto w_int_dyn = state.m_w_i;
+  const auto vtheta_dp_dyn = state.m_vtheta_dp;
+  const auto dp_dyn = state.m_dp3d;
+  const auto& tracers = c.get<Tracers>();
+  const auto qdp_dyn = tracers.qdp;
 
   auto grad_Ux_dyn = m_helper_fields.at("grad_Ux_dyn").template get_view<Real*****>();
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
+  auto wthl_leonard_base_dyn = m_helper_fields.at("wthl_leonard_base_dyn").template get_view<Real****>();
 
   const auto dvv              = ref_fe.get_deriv();
   const auto dinv             = geom.m_dinv;
@@ -70,6 +83,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   using MemberType = typename TeamPolicy::member_type;
   const int ncols = nelem*NGP*NGP;
   const TeamPolicy policy(ncols, Kokkos::AUTO());
+  const auto dsdx_thl_all = m_dsdx_thl_all;
+  const auto dsdy_thl_all = m_dsdy_thl_all;
   const auto dsdx_Ux_all = m_dsdx_Ux_all;
   const auto dsdy_Ux_all = m_dsdy_Ux_all;
   const auto dsdx_Uy_all = m_dsdx_Uy_all;
@@ -78,7 +93,7 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
   const auto dsdy_Uz_all = m_dsdy_Uz_all;
 
   Kokkos::parallel_for(
-      "compute_horizontal_derivs_of_car_velocity",
+      "compute_horizontal_derivs_for_3d_turbulence",
       policy,
       KOKKOS_LAMBDA (const MemberType& team) {
 
@@ -94,6 +109,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
     const auto dsdy_Uy = Kokkos::subview(dsdy_Uy_all, icol, Kokkos::ALL());
     const auto dsdx_Uz = Kokkos::subview(dsdx_Uz_all, icol, Kokkos::ALL());
     const auto dsdy_Uz = Kokkos::subview(dsdy_Uz_all, icol, Kokkos::ALL());
+    const auto dsdx_thl = Kokkos::subview(dsdx_thl_all, icol, Kokkos::ALL());
+    const auto dsdy_thl = Kokkos::subview(dsdy_thl_all, icol, Kokkos::ALL());
 
     // Accumulate reference-element derivatives in the two local horizontal directions.
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
@@ -103,6 +120,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       dsdy_Uy(ilev) = 0;
       dsdx_Uz(ilev) = 0;
       dsdy_Uz(ilev) = 0;
+      dsdx_thl(ilev) = 0;
+      dsdy_thl(ilev) = 0;
     });
     team.team_barrier();
 
@@ -113,6 +132,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       Real dsdy_uy = 0;
       Real dsdx_uz = 0;
       Real dsdy_uz = 0;
+      Real dsdx_theta_l = 0;
+      Real dsdy_theta_l = 0;
 
       for (int kgp = 0; kgp < NGP; ++kgp) {
         // The horizontal stencil uses interface w, so average the two
@@ -136,6 +157,18 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
             Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 0, kgp, jgp, Kokkos::ALL()));
         const auto v_col_view =
             Homme::viewAsReal(Kokkos::subview(state.m_v, ie, n0, 1, kgp, jgp, Kokkos::ALL()));
+        const auto vtheta_dp_row =
+            Homme::viewAsReal(Kokkos::subview(vtheta_dp_dyn, ie, n0, igp, kgp, Kokkos::ALL()));
+        const auto dp_row =
+            Homme::viewAsReal(Kokkos::subview(dp_dyn, ie, n0, igp, kgp, Kokkos::ALL()));
+        const auto qvdp_row =
+            Homme::viewAsReal(Kokkos::subview(qdp_dyn, ie, n0_qdp, 0, igp, kgp, Kokkos::ALL()));
+        const auto vtheta_dp_col =
+            Homme::viewAsReal(Kokkos::subview(vtheta_dp_dyn, ie, n0, kgp, jgp, Kokkos::ALL()));
+        const auto dp_col =
+            Homme::viewAsReal(Kokkos::subview(dp_dyn, ie, n0, kgp, jgp, Kokkos::ALL()));
+        const auto qvdp_col =
+            Homme::viewAsReal(Kokkos::subview(qdp_dyn, ie, n0_qdp, 0, kgp, jgp, Kokkos::ALL()));
 
         const Real u_row = u_row_view(ilev);
         const Real v_row = v_row_view(ilev);
@@ -144,6 +177,32 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
         const Real u_col = u_col_view(ilev);
         const Real v_col = v_col_view(ilev);
         const Real w_col = 0.5 * (w_col_i_real(ilev) + w_col_i_real(ilev + 1));
+        const Real qv_row = qvdp_row(ilev) / dp_row(ilev);
+        const Real qv_col = qvdp_col(ilev) / dp_col(ilev);
+        Real qc_row = 0;
+        Real qc_col = 0;
+        if (qc_idx >= 0) {
+          const auto qcdp_row =
+              Homme::viewAsReal(Kokkos::subview(qdp_dyn, ie, n0_qdp, qc_idx, igp, kgp, Kokkos::ALL()));
+          const auto qcdp_col =
+              Homme::viewAsReal(Kokkos::subview(qdp_dyn, ie, n0_qdp, qc_idx, kgp, jgp, Kokkos::ALL()));
+          qc_row = qcdp_row(ilev) / dp_row(ilev);
+          qc_col = qcdp_col(ilev) / dp_col(ilev);
+        }
+        const Real theta_row =
+            PF::calculate_temperature_from_virtual_temperature(vtheta_dp_row(ilev) / dp_row(ilev), qv_row);
+        const Real theta_col =
+            PF::calculate_temperature_from_virtual_temperature(vtheta_dp_col(ilev) / dp_col(ilev), qv_col);
+        Real p_int_top_row = ptop;
+        Real p_int_top_col = ptop;
+        for (int k = 0; k < ilev; ++k) {
+          p_int_top_row += dp_row(k);
+          p_int_top_col += dp_col(k);
+        }
+        const Real T_row = PF::calculate_T_from_theta(theta_row, p_int_top_row + 0.5*dp_row(ilev));
+        const Real T_col = PF::calculate_T_from_theta(theta_col, p_int_top_col + 0.5*dp_col(ilev));
+        const Real theta_l_row = PF::calculate_thetal_from_theta(theta_row, T_row, qc_row);
+        const Real theta_l_col = PF::calculate_thetal_from_theta(theta_col, T_col, qc_col);
 
         dsdx_ux += dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row);
         dsdy_ux += dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col);
@@ -153,6 +212,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
 
         dsdx_uz += dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row);
         dsdy_uz += dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col);
+        dsdx_theta_l += dvv(jgp,kgp) * theta_l_row;
+        dsdy_theta_l += dvv(igp,kgp) * theta_l_col;
       }
 
       dsdx_Ux(ilev) = dsdx_ux;
@@ -161,6 +222,8 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       dsdy_Uy(ilev) = dsdy_uy;
       dsdx_Uz(ilev) = dsdx_uz;
       dsdy_Uz(ilev) = dsdy_uz;
+      dsdx_thl(ilev) = dsdx_theta_l;
+      dsdy_thl(ilev) = dsdy_theta_l;
     });
     team.team_barrier();
 
@@ -171,10 +234,23 @@ void HommeDynamics::compute_horizontal_derivs_of_car_velocity ()
       grad_Ux_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Ux(ilev) + dinv_ij(0,1) * dsdy_Ux(ilev)) * scale_factor_inv;
       grad_Uy_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Uy(ilev) + dinv_ij(0,1) * dsdy_Uy(ilev)) * scale_factor_inv;
       grad_Uz_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Uz(ilev) + dinv_ij(0,1) * dsdy_Uz(ilev)) * scale_factor_inv;
+      const Real grad_thl_0 = (dinv_ij(0,0) * dsdx_thl(ilev) + dinv_ij(0,1) * dsdy_thl(ilev)) * scale_factor_inv;
 
       grad_Ux_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Ux(ilev) + dinv_ij(1,1) * dsdy_Ux(ilev)) * scale_factor_inv;
       grad_Uy_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Uy(ilev) + dinv_ij(1,1) * dsdy_Uy(ilev)) * scale_factor_inv;
       grad_Uz_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Uz(ilev) + dinv_ij(1,1) * dsdy_Uz(ilev)) * scale_factor_inv;
+      const Real grad_thl_1 = (dinv_ij(1,0) * dsdx_thl(ilev) + dinv_ij(1,1) * dsdy_thl(ilev)) * scale_factor_inv;
+
+      const Real b2_0 = vec_sph2cart(ie, 2, 0, igp, jgp);
+      const Real b2_1 = vec_sph2cart(ie, 2, 1, igp, jgp);
+      const Real b2_2 = vec_sph2cart(ie, 2, 2, igp, jgp);
+      const Real dw_dloc0 = b2_0 * grad_Ux_dyn(ie,0,igp,jgp,ilev)
+                          + b2_1 * grad_Uy_dyn(ie,0,igp,jgp,ilev)
+                          + b2_2 * grad_Uz_dyn(ie,0,igp,jgp,ilev);
+      const Real dw_dloc1 = b2_0 * grad_Ux_dyn(ie,1,igp,jgp,ilev)
+                          + b2_1 * grad_Uy_dyn(ie,1,igp,jgp,ilev)
+                          + b2_2 * grad_Uz_dyn(ie,1,igp,jgp,ilev);
+      wthl_leonard_base_dyn(ie,igp,jgp,ilev) = dw_dloc0 * grad_thl_0 + dw_dloc1 * grad_thl_1;
     });
   });
 

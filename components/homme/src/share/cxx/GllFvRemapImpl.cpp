@@ -340,7 +340,10 @@ f2g_scalar_dp (const KernelVariables& kv, const int nf2, const int np2, const in
 void GllFvRemapImpl
 ::run_dyn_to_fv_phys (const int timeidx, const Phys1T& ps, const Phys1T& phis, const Phys2T& Ts,
                       const Phys2T& omegas, const CPhys3T* shear_strain3d_components_gll_ptr,
-                      const Phys3T* shear_strain3d_components_fv_ptr, const Phys3T& uvs, const Phys3T& qs,
+                      const Phys3T* shear_strain3d_components_fv_ptr,
+                      const CPhys2T* wthl_leonard_base_gll_ptr,
+                      const Phys2T* wthl_leonard_base_fv_ptr,
+                      const Phys3T& uvs, const Phys3T& qs,
                       const Phys2T* dp_fv_out_ptr) {
   // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
 #ifdef MODEL_THETA_L
@@ -357,6 +360,8 @@ void GllFvRemapImpl
   const auto buf20 = m_data.buf2[0];
   const bool remap_strain = shear_strain3d_components_gll_ptr != nullptr &&
                             shear_strain3d_components_fv_ptr != nullptr;
+  const bool remap_wthl_leonard = wthl_leonard_base_gll_ptr != nullptr &&
+                                  wthl_leonard_base_fv_ptr != nullptr;
 
 #ifndef NDEBUG
   const auto nelemd = m_data.nelemd;
@@ -372,6 +377,14 @@ void GllFvRemapImpl
            shear_strain3d_components_gll.extent_int(2) == 6 && shear_strain3d_components_gll.extent_int(3) % packn == 0);
     assert(shear_strain3d_components_fv.extent_int(0) >= nelemd && shear_strain3d_components_fv.extent_int(1) >= nf2 &&
            shear_strain3d_components_fv.extent_int(2) == 6 && shear_strain3d_components_fv.extent_int(3) % packn == 0);
+  }
+  if (remap_wthl_leonard) {
+    const auto& wthl_leonard_base_gll = *wthl_leonard_base_gll_ptr;
+    const auto& wthl_leonard_base_fv = *wthl_leonard_base_fv_ptr;
+    assert(wthl_leonard_base_gll.extent_int(0) >= nelemd && wthl_leonard_base_gll.extent_int(1) >= np2 &&
+           wthl_leonard_base_gll.extent_int(2) % packn == 0);
+    assert(wthl_leonard_base_fv.extent_int(0) >= nelemd && wthl_leonard_base_fv.extent_int(1) >= nf2 &&
+           wthl_leonard_base_fv.extent_int(2) % packn == 0);
   }
   assert(uvs.extent_int(0) >= nelemd && uvs.extent_int(1) >= nf2 && uvs.extent_int(2) == 2 &&
          uvs.extent_int(3) % packn == 0);
@@ -399,6 +412,16 @@ void GllFvRemapImpl
     strain_components_fv = VPhys3T(real2pack(shear_strain3d_components_fv), shear_strain3d_components_fv.extent_int(0),
                                    shear_strain3d_components_fv.extent_int(1), shear_strain3d_components_fv.extent_int(2),
                                    shear_strain3d_components_fv.extent_int(3)/packn);
+  }
+  CVPhys2T wthl_leonard_gll;
+  VPhys2T wthl_leonard_fv;
+  if (remap_wthl_leonard) {
+    const auto& wthl_leonard_base_gll = *wthl_leonard_base_gll_ptr;
+    const auto& wthl_leonard_base_fv = *wthl_leonard_base_fv_ptr;
+    wthl_leonard_gll = CVPhys2T(creal2pack(wthl_leonard_base_gll), wthl_leonard_base_gll.extent_int(0),
+                                wthl_leonard_base_gll.extent_int(1), wthl_leonard_base_gll.extent_int(2)/packn);
+    wthl_leonard_fv = VPhys2T(real2pack(wthl_leonard_base_fv), wthl_leonard_base_fv.extent_int(0),
+                              wthl_leonard_base_fv.extent_int(1), wthl_leonard_base_fv.extent_int(2)/packn);
   }
 
   const auto dp3d = m_state.m_dp3d;
@@ -575,6 +598,13 @@ void GllFvRemapImpl
         loop_ik(ttrf, tvr, [&] (int i, int k) { strain_components_fv(ie,i,icomp,k) = comp_f(i,k); });
         kv.team_barrier();
       }
+    }
+
+    if (remap_wthl_leonard) {
+      remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
+             evucs_np2_nlev(&wthl_leonard_gll(ie,0,0)), evus_np2_nlev(rw1.data()),
+             evus2(&wthl_leonard_fv(ie,0,0), nf2, nlevpk));
+      kv.team_barrier();
     }
 
   };

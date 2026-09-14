@@ -110,6 +110,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                phis,
   const uview_2d<const Pack>& shear_strain3d_components,
   const uview_1d<Pack>&       shear_strain3d,
+  const uview_1d<const Pack>& wthl_leonard_base,
   // Workspace/Local Variables
   const Workspace&             workspace,
   // Input/Output Variables
@@ -247,6 +248,7 @@ void Functions<S,D>::shoc_main_internal(
     update_prognostics_implicit(team,nlev,nlevi,num_qtracers,dtime,dz_zt,   // Input
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
+                                dx,dy,wthl_leonard_base,                    // Input
                                 workspace,                                  // Workspace
                                 thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
                                 uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
@@ -262,6 +264,17 @@ void Functions<S,D>::shoc_main_internal(
                              workspace,                                 // Workspace
                              thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
                              uw_sec,vw_sec,wtke_sec,w_sec);             // Output
+
+    {
+      const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
+      const auto wthl_sec_s = ekat::scalarize(wthl_sec);
+      const Scalar leonard_factor = dx*dy/6;
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevi), [&] (const Int& k) {
+        if (k > 0 && k < nlev) {
+          wthl_sec_s(k) += 0.5*leonard_factor*(wthl_leonard_base_s(k-1) + wthl_leonard_base_s(k));
+        }
+      });
+    }
 
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
@@ -382,6 +395,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_1d<const Scalar>& phis,
   const view_3d<const Pack>& shear_strain3d_components,
   const view_2d<Pack>& shear_strain3d,
+  const view_2d<const Pack>& wthl_leonard_base,
   // Workspace Manager
   WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
@@ -522,6 +536,7 @@ void Functions<S,D>::shoc_main_internal(
     update_prognostics_implicit_disp(shcol,nlev,nlevi,num_qtracers,dtime,dz_zt,  // Input
                                      dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                      vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
+                                     dx,dy,wthl_leonard_base,                    // Input
                                      workspace_mgr,                              // Workspace mgr
                                      thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
                                      uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
@@ -537,6 +552,18 @@ void Functions<S,D>::shoc_main_internal(
                                   workspace_mgr,                             // Workspace
                                   thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
                                   uw_sec,vw_sec,wtke_sec,w_sec);             // Output
+
+    {
+      const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
+      const auto wthl_sec_s = ekat::scalarize(wthl_sec);
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0, shcol*nlevi), KOKKOS_LAMBDA (const Int& idx) {
+        const Int i = idx / nlevi;
+        const Int k = idx % nlevi;
+        if (k > 0 && k < nlev) {
+          wthl_sec_s(i,k) += dx(i)*dy(i)/12*(wthl_leonard_base_s(i,k-1) + wthl_leonard_base_s(i,k));
+        }
+      });
+    }
 
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
@@ -687,6 +714,7 @@ Int Functions<S,D>::shoc_main(
         Kokkos::subview(shoc_input.shear_strain3d_components, i, Kokkos::ALL(), Kokkos::ALL());
     }
     const auto shear_strain3d_s = ekat::subview(shoc_input.shear_strain3d, i);
+    const auto wthl_leonard_base_s = ekat::subview(shoc_input.wthl_leonard_base, i);
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
@@ -730,6 +758,7 @@ Int Functions<S,D>::shoc_main(
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
                        wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
                        shear_strain3d_components_s, shear_strain3d_s,         // Input/Output
+                       wthl_leonard_base_s,                                    // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
@@ -759,6 +788,7 @@ Int Functions<S,D>::shoc_main(
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
     shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis,
     shoc_input.shear_strain3d_components, shoc_input.shear_strain3d, // Input/Output
+    shoc_input.wthl_leonard_base,
     workspace_mgr, // Workspace Manager
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output

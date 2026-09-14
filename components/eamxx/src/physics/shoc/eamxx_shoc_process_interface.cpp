@@ -79,6 +79,7 @@ void SHOCMacrophysics::create_requests()
   if (do_3d_turb) {
     const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
     add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
+    add_field<Required>("wthl_leonard_base", scalar3d_mid, K/(m*s), grid_name, ps);
     add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
     add_field<Computed>("eddy_diff_heat_horiz", scalar3d_mid, m2/s, grid_name, ps);
     add_field<Computed>("eddy_diff_mom_horiz",  scalar3d_mid, m2/s, grid_name, ps);
@@ -306,8 +307,12 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
       ? get_field_out("tke_shear_strain3d").get_view<Pack**>()
       : view_2d(m_dummy_shear_strain3d);
   view_3d_const shear_strain3d_components;
+  view_2d_const wthl_leonard_base;
   if (runtime_options.do_3d_turb) {
     shear_strain3d_components = get_field_in("tke_shear_strain3d_components").get_view<const Pack***>();
+    wthl_leonard_base = get_field_in("wthl_leonard_base").get_view<const Pack**>();
+  } else {
+    wthl_leonard_base = view_2d_const(m_dummy_shear_strain3d);
   }
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").monolithic_field().get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
@@ -394,6 +399,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input.phis        = phis;
   input.shear_strain3d_components = shear_strain3d_components;
   input.shear_strain3d = shear_strain3d;
+  input.wthl_leonard_base = wthl_leonard_base;
 
   // Input/Output Variables
   input_output.host_dse     = shoc_preprocess.shoc_s;

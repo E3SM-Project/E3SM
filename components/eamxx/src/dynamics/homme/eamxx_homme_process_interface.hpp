@@ -82,7 +82,7 @@ protected:
 
   void initialize_impl (const RunType run_type);
 
-  void compute_horizontal_derivs_of_car_velocity ();
+  void compute_horizontal_derivs_for_3d_turbulence ();
   void compute_local_strain_components3d ();
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column
@@ -164,8 +164,8 @@ protected:
                     // if set to 0, no rayleigh friction is applied
 
   // Scratch reused by the 3D turbulence strain kernels when that feature is active.
-  fixed_view_2d_phys m_w_mid_row_all;
-  fixed_view_2d_phys m_w_mid_col_all;
+  fixed_view_2d_phys m_dsdx_thl_all;
+  fixed_view_2d_phys m_dsdy_thl_all;
   fixed_view_2d_phys m_dsdx_Ux_all;
   fixed_view_2d_phys m_dsdy_Ux_all;
   fixed_view_2d_phys m_dsdx_Uy_all;
@@ -173,6 +173,7 @@ protected:
   fixed_view_2d_phys m_dsdx_Uz_all;
   fixed_view_2d_phys m_dsdy_Uz_all;
 
+  int m_qc_idx = -1;
   int m_bfb_hash_nstep;
 };
 

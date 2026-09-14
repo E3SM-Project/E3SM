@@ -31,6 +31,9 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
   const uview_1d<const Pack>& wtracer_sfc,
+  const Scalar&                dx,
+  const Scalar&                dy,
+  const uview_1d<const Pack>& wthl_leonard_base,
   const Workspace&             workspace,
   const uview_1d<Pack>&       thetal,
   const uview_1d<Pack>&       qw,
@@ -92,6 +95,7 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto tke_s          = ekat::scalarize(tke);
   const auto qtracers_rhs_s = ekat::scalarize(qtracers_rhs);
   const auto wtracer_sfc_s  = ekat::scalarize(wtracer_sfc);
+  const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
   const auto um_pert_s      = ekat::scalarize(um_pert);
   const auto vm_pert_s      = ekat::scalarize(vm_pert);
   const auto wind_pert_rhs_s = ekat::scalarize(wind_pert_rhs);
@@ -167,6 +171,22 @@ void Functions<S,D>::update_prognostics_implicit(
     const auto sfc_pack_idx = (nlev-1)%Pack::n;
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, num_qtracers), [&] (const Int& q) {
       qtracers(q, sfc_lev_idx)[sfc_pack_idx] += cmnfac*wtracer_sfc_s(q);
+    });
+  }
+
+  // Add the Leonard heat flux explicitly so the thermo diffusion solve sees
+  // the same w'theta_l' contribution diagnosed for the PDF below.
+  {
+    const Scalar leonard_factor = dx*dy/6;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+      const Scalar flux_top = k == 0
+        ? 0
+        : 0.5*leonard_factor*(wthl_leonard_base_s(k-1) + wthl_leonard_base_s(k));
+      const Scalar flux_bot = k == nlev-1
+        ? 0
+        : 0.5*leonard_factor*(wthl_leonard_base_s(k) + wthl_leonard_base_s(k+1));
+      thetal_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+                   * (rho_zi_s(k+1)*flux_bot - rho_zi_s(k)*flux_top);
     });
   }
 

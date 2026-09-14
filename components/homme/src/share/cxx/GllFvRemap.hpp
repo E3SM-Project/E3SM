@@ -54,6 +54,8 @@ public:
                           const Phys2T& T, const Phys2T& omega,
                           const CPhys3T* strain3d_components_gll,
                           const Phys3T* strain3d_components_fv,
+                          const CPhys2T* wthl_leonard_base_gll,
+                          const Phys2T* wthl_leonard_base_fv,
                           // uv(ie, col, 0 or 1, lev)
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)

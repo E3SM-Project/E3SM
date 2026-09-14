@@ -181,6 +181,7 @@ void HommeDynamics::create_requests ()
     add_field<Required>("eddy_diff_mom_horiz",  pg_scalar3d_mid, m2/s,  pgn,N);
     auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
     add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, 1/s, pgn,N);
+    add_field<Computed>("wthl_leonard_base", pg_scalar3d_mid, K/(m*s), pgn,N);
   }
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
@@ -223,6 +224,7 @@ void HommeDynamics::create_requests ()
     create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
     create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
     create_helper_field("shear_strain3d_components_dyn", {EL,CMP,GP,GP,LEV}, {nelem,6,NP,NP,nlev_mid}, dgn);
+    create_helper_field("wthl_leonard_base_dyn", {EL,GP,GP,LEV}, {nelem,NP,NP,nlev_mid}, dgn);
   }
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
@@ -364,8 +366,8 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
       mem += scratch_col_size;
     };
 
-    assign_scratch(m_w_mid_row_all);
-    assign_scratch(m_w_mid_col_all);
+    assign_scratch(m_dsdx_thl_all);
+    assign_scratch(m_dsdy_thl_all);
     assign_scratch(m_dsdx_Ux_all);
     assign_scratch(m_dsdy_Ux_all);
     assign_scratch(m_dsdx_Uy_all);
@@ -399,6 +401,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (params.do_3d_turbulence) {
     m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0);
     get_field_out("tke_shear_strain3d_components").deep_copy(0);
+    m_helper_fields.at("wthl_leonard_base_dyn").deep_copy(0);
+    get_field_out("wthl_leonard_base").deep_copy(0);
   }
 
   // Complete Homme prim_init1_xyz sequence
@@ -478,6 +482,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
       // Remap horizontal/local strain tensor components from dynamics to physics grid.
       m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
+      m_d2p_remapper->register_field(m_helper_fields.at("wthl_leonard_base_dyn"), get_field_out("wthl_leonard_base"));
     }
 
     m_p2d_remapper->registration_ends();
@@ -575,7 +580,7 @@ void HommeDynamics::run_impl (const double dt)
 
     // This is where we will compute the strain term needed for Shear Production of TKE
     if (params.do_3d_turbulence){
-      compute_horizontal_derivs_of_car_velocity();
+      compute_horizontal_derivs_for_3d_turbulence();
       compute_local_strain_components3d();
     }
 
@@ -618,6 +623,11 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
     params.qsize = qsize;           // Set in the CXX data structure
     set_homme_param("qsize",qsize); // Set in the F90 module
     tracers.init(tracers.num_elems(),qsize);
+    const auto& fields = group.individual_fields();
+    m_qc_idx = -1;
+    if (fields.count("qc") != 0) {
+      m_qc_idx = fields.at("qc").get_header().get_alloc_properties().get_subview_info().slice_idx;
+    }
   }
 }
 

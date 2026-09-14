@@ -62,9 +62,12 @@ void GllFvRemap
                       const Phys2T& T, const Phys2T& omega,
                       const CPhys3T* strain3d_components_gll,
                       const Phys3T* strain3d_components_fv,
+                      const CPhys2T* wthl_leonard_base_gll,
+                      const Phys2T* wthl_leonard_base_fv,
                       const Phys3T& uv, const Phys3T& q, const Phys2T* dp) {
   m_impl->run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
                              strain3d_components_gll, strain3d_components_fv,
+                             wthl_leonard_base_gll, wthl_leonard_base_fv,
                              uv, q, dp);
 }
 

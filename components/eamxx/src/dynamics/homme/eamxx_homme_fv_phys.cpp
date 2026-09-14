@@ -141,8 +141,10 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
     }
     const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
     if (params.do_3d_turbulence) {
-      auto f = get_field_out("tke_shear_strain3d_components",pgn);
-      f.get_header().get_tracking().update_time_stamp(ts);
+      auto strain = get_field_out("tke_shear_strain3d_components",pgn);
+      strain.get_header().get_tracking().update_time_stamp(ts);
+      auto leonard = get_field_out("wthl_leonard_base",pgn);
+      leonard.get_header().get_tracking().update_time_stamp(ts);
     }
     auto Q = get_group_out("tracers",pgn).monolithic_field();
     Q.get_header().get_tracking().update_time_stamp(ts);
@@ -209,12 +211,19 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     const auto strain3d_components_fv = Homme::GllFvRemap::Phys3T(
       get_field_out("tke_shear_strain3d_components", gn).get_view<Real***>().data(),
       nelem, npg, 6, nlev);
+    const auto wthl_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("wthl_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto wthl_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("wthl_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
                            &strain3d_components_gll, &strain3d_components_fv,
+                           &wthl_leonard_base_gll, &wthl_leonard_base_fv,
                            uv, q, &dp);
   } else {
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
-                           nullptr, nullptr, uv, q, &dp);
+                           nullptr, nullptr, nullptr, nullptr, uv, q, &dp);
   }
   Kokkos::fence();
 }
