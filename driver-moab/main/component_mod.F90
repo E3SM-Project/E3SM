@@ -579,7 +579,7 @@ subroutine component_init_areacor_moab (comp, samegrid, mbccid, mbcxid, seq_flds
    logical              , intent(in)    :: samegrid
    integer              , intent(in)    :: mbccid  ! comp side
    integer              , intent(in)    :: mbcxid  ! coupler side
-   ! single-point or FV type, to use vertices or cells for setting/getting area tags and corrections
+   ! point cloud or FV type, to use vertices or cells for setting/getting the area tags and corrections
    character(len=*)     , intent(in)    :: seq_flds_c2x_fluxes, seq_flds_c2x_fields
    !
    ! Local Variables

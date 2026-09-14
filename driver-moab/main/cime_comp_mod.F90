@@ -1626,7 +1626,7 @@ contains
    !         of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
    !         send/receive of the mesh.
    !       for lnd and rof, read the mesh on coupler side from file and
-   !         compute CommGraph between component single points and the coupler version (full mesh)
+   !         compute CommGraph between component (just a point cloud) and coupler version (full mesh)
    !       define c2x, x2c, domain tags
    !       Fill domain info from component using component_exch_moab
    !---------------------------------------------------------------------------------------

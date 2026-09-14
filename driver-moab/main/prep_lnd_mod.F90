@@ -416,7 +416,7 @@ contains
 	    ! land is usually cell on coupler but could be point
             if(mb_scm_land) then
               mlsize = nvert(1)
-              ent_type = 0 ! single points
+              ent_type = 0 ! point cloud
 	    else
               mlsize = nvise(1)
               ent_type = 1 ! cell
@@ -622,7 +622,7 @@ contains
                   type1 = 2 ! in this case, atm is just PC
               endif
               if (mb_scm_land) then
-                type2 = 2 ! single points for land on the coupler side; usually just one point
+                type2 = 2 ! point cloud for land too, on coupler side; just one point, actually
               else
                 type2 = 3;  ! FV mesh on coupler land
               endif

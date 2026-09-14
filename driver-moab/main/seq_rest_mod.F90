@@ -165,7 +165,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
-    use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh uses cells (pg2/FV) or single points (np4)
+    use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh is cells (pg2/FV) or a point cloud (np4)
     use iMOAB,            only: iMOAB_GetGlobalInfo
 
     implicit none
@@ -248,13 +248,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
         if (lnd_present) then
              if(samegrid_al) then
                 ! land is on the atm mesh; max global land id comes from atm.
-                ! A single-point atm mesh (np4) stores land on vertices; a cell atm mesh
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
                 ! (pg2/FV) stores it on elements.  Pick the matching count.
                 ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
                 if (atm_pg_active) then
                    nx_lnd = nge ! atm mesh is cells
                 else
-                   nx_lnd = ngv ! atm mesh uses single points
+                   nx_lnd = ngv ! atm mesh is a point cloud
                 endif
                 call seq_io_read(moab_rest_file, mblxid, 'fractions_lx', &
                    'afrac:lfrac:lfrin', nx=nx_lnd)
@@ -276,13 +276,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              p_l2racc_lm => prep_rof_get_l2racc_lm()
              if(samegrid_al) then
                 ! land is on the atm mesh; max global land id comes from atm.
-                ! A single-point atm mesh (np4) stores land on vertices; a cell atm mesh
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
                 ! (pg2/FV) stores it on elements.  Pick the matching count.
                 ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
                 if (atm_pg_active) then
                    nx_lnd = nge ! atm mesh is cells
                 else
-                   nx_lnd = ngv ! atm mesh uses single points
+                   nx_lnd = ngv ! atm mesh is a point cloud
                 endif
                 call seq_io_read(moab_rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
@@ -427,7 +427,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
     use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
-    use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh uses cells (pg2/FV) or single points (np4)
+    use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh is cells (pg2/FV) or a point cloud (np4)
     use iMOAB,            only: iMOAB_GetGlobalInfo
 
     implicit none
@@ -649,13 +649,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
           if (lnd_present) then
              if(samegrid_al) then
                 ! land is on the atm mesh; max global land id comes from atm.
-                ! A single-point atm mesh (np4) stores land on vertices; a cell atm mesh
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
                 ! (pg2/FV) stores it on elements.  Pick the matching count.
                 ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
                 if (atm_pg_active) then
                    nx_lnd = nge ! atm mesh is cells
                 else
-                   nx_lnd = ngv ! atm mesh uses single points
+                   nx_lnd = ngv ! atm mesh is a point cloud
                 endif
                 call seq_io_write(rest_file, mblxid, 'fractions_lx', &
                  'afrac:lfrac:lfrin', & !  seq_frac_mod: character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
@@ -685,13 +685,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              p_l2racc_lm => prep_rof_get_l2racc_lm()
              if(samegrid_al) then
                 ! land is on the atm mesh; max global land id comes from atm.
-                ! A single-point atm mesh (np4) stores land on vertices; a cell atm mesh
+                ! Point-cloud atm (np4) stores land on vertices; cell atm
                 ! (pg2/FV) stores it on elements.  Pick the matching count.
                 ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
                 if (atm_pg_active) then
                    nx_lnd = nge ! atm mesh is cells
                 else
-                   nx_lnd = ngv ! atm mesh uses single points
+                   nx_lnd = ngv ! atm mesh is a point cloud
                 endif
                 call seq_io_write(rest_file, mblxid, 'l2racc_lx', &
                  trim(tagname), &
