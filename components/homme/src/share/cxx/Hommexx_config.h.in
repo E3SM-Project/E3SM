@@ -24,6 +24,9 @@
 // Whether the debug parts of cxx code should be compiled or not
 #cmakedefine HOMMEXX_DEBUG
 
+// Enable CAAR Optimization
+#cmakedefine HOMMEXX_ENABLE_CAAR_OPT
+
 // Whether the MPI operations have to be performed directly on the device
 #cmakedefine01 HOMMEXX_MPI_ON_DEVICE
 
