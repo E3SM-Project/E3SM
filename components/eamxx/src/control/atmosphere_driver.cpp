@@ -652,9 +652,6 @@ void AtmosphereDriver::create_fields()
   // Skip fields in the ACCUMULATED group, since those are reset to 0
   // at the beginning of each atm step, so there is no need to read
   // them from the IC or restart file.
-  auto is_topography_field = [] (const std::string& name) {
-    return name=="phis" or name=="sgh" or name=="sgh30";
-  };
 
   for (const auto& gn : m_grids_manager->get_grid_names()) {
     m_field_mgr->register_group(GroupRequest("RESTART",gn));
@@ -662,41 +659,17 @@ void AtmosphereDriver::create_fields()
     m_field_mgr->register_group(GroupRequest("TOPOGRAPHY",gn));
   }
 
-  auto set_groups = [&](const Field& f) {
-    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-    if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-      const auto& children = f.get_header().get_children();
-      if (children.size()>0) {
-        // We do look for parent fields in startup/restart files.
-        // Simply write/read the individual fields.
-        // So far, this should only affect horiz_winds and surf_mom_flux
-        // (the latter only in eamxx standalone tests)
-        for (auto c : children) {
-          const auto& c_id = c.lock().get_identifier();
-          set_groups(m_field_mgr->get_field(c_id.name(),grid_name));
-        }
-      } else {
-        m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
-        m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
-      }
-      if (is_topography_field(f.name())) {
-        m_field_mgr->add_to_group(f.name(), grid_name, "TOPOGRAPHY");
-      }
-    }
-  };
-
   // Process input fields
   for (const auto& f : m_atm_process_group->get_fields_in())
-    set_groups(f);
+    set_initialization_groups(f);
 
   // Process input groups
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.has_monolithic_field())
-      set_groups(g.monolithic_field());
+      set_initialization_groups(g.monolithic_field());
     else
       for (const auto& it : g.individual_fields())
-        set_groups(it.second);
+        set_initialization_groups(it.second);
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -1894,6 +1867,36 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
   m_atm_comm.all_reduce(&my_mem_usage_from_os,&max_mem_usage_from_os,1,MPI_MAX);
   m_atm_logger->info("[EAMxx::init] memory usage from OS probing tools: " + std::to_string(max_mem_usage_from_os) + "MB");
 #endif
+}
+
+void AtmosphereDriver::
+set_initialization_groups (const Field& f)
+{
+  auto is_topography_field = [] (const std::string& name) {
+    return name=="phis" or name=="sgh" or name=="sgh30";
+  };
+
+  const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+  if (not ekat::contains(fgroups, "ACCUMULATED")) {
+    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+    const auto& children = f.get_header().get_children();
+    if (children.size()>0) {
+      // We do look for parent fields in startup/restart files.
+      // Simply write/read the individual fields.
+      // So far, this should only affect horiz_winds and surf_mom_flux
+      // (the latter only in eamxx standalone tests)
+      for (auto c : children) {
+        const auto& c_id = c.lock()->get_identifier();
+        set_initialization_groups(m_field_mgr->get_field(c_id.name(),grid_name));
+      }
+    } else {
+      m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
+      m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
+    }
+    if (is_topography_field(f.name())) {
+      m_field_mgr->add_to_group(f.name(), grid_name, "TOPOGRAPHY");
+    }
+  }
 }
 
 }  // namespace control

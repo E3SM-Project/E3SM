@@ -185,6 +185,7 @@ protected:
   void restart_model ();
 
   void register_groups ();
+  void set_initialization_groups (const Field& f);
 
   template<typename T>
   using strmap_t = std::map<std::string,T>;
