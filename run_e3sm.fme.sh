@@ -7,7 +7,7 @@
 # diagnostics, and column-integrated fields for EAM, MPAS-O, and MPAS-SI.
 #
 # Adapted from the standard E3SM run_e3sm.template.sh. Key differences:
-#   * --user-mods-dirs points at cime_config/testmods_dirs/allactive/fme_output
+#   * --user-mods-dirs added and points at cime_config/testmods_dirs/allactive/fme_output
 #   * user_nl() is empty: the testmod is the single source of truth for
 #     EAM/MPAS-O/MPAS-SI namelists -- including the FME AM enable/config and
 #     the disable of non-FME AMs (globalStats, regionalStatistics,
@@ -16,13 +16,16 @@
 #     FME tape.
 #   * Production restart cadence is 5 yr. With the 2026-05-01 restart fix
 #     (append-mode reopen + accumulator sidecar + frame tracking +
-#     compute_on_startup=.false.; see AGENTS.md gotchas #11 and #29) the
+#     compute_on_startup=.false.) the
 #     model is BFB across restart, so the cadence choice is now about
 #     wallclock budget and output-file size rather than restart-clobber
 #     mitigation. 5-yr cadence with monthly file rotation keeps each
 #     restart lookup small while still landing on a year-boundary, which
 #     means leg N+1 always starts a fresh `*.YYYY-01.nc` (no append path
 #     exercised in production).
+#
+#     See cime_config/testmods_dirs/allactive/fme_output/AGENTS.md for more information
+#     and use it when modifying the FME code with an agent.
 
 main() {
 
@@ -122,7 +125,7 @@ if [ "${run}" != "production" ]; then
 else
 
   # Production: 100-yr SamudrACE training data run.
-  # 5-yr segments × 20 = 100 yr. Year-boundary restart means each new leg
+  # 5-yr segments * 20 = 100 yr. Year-boundary restart means each new leg
   # opens a fresh monthly file (`*.YYYY-01.remapped.nc`) with no append
   # logic exercised. The append-mode + sidecar machinery is in place
   # (see AGENTS.md #29) and keeps mid-window restarts safe, but the
