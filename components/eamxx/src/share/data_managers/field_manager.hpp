@@ -147,6 +147,8 @@ public:
     return m_grids_mgr->get_repo().begin()->second;
   }
 
+  const field_repo_type& get_all_repos () const { return m_fields; }
+
   const std::shared_ptr<const GridsManager>&
   get_grids_manager () const { return m_grids_mgr; }
 

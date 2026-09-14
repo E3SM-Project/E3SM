@@ -34,6 +34,7 @@
 
 #include <fstream>
 #include <random>
+#include <ranges>
 
 namespace scream {
 
@@ -1478,6 +1479,24 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
   }
 
+  // Parse all fields with children; if all children have been inited, the parent is also valid
+  auto init_parent = [&](Field& f) {
+    const auto& children = f.get_header().get_children();
+    if (children.size()==0)
+      return;
+
+    bool inited = true;
+    for (auto c : children)
+      inited &= c.lock()->get_tracking().get_time_stamp().is_valid();
+
+    if (inited)
+      f.get_header().get_tracking().update_time_stamp(m_run_t0);
+  };
+  for (auto& repo : std::views::values(m_field_mgr->get_all_repos())) {
+    for (auto& f : std::views::values(repo)) {
+      init_parent(*f);
+    }
+  }
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
