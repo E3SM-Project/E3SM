@@ -1132,55 +1132,32 @@ void AtmosphereDriver::set_initial_conditions ()
       // The IC file is written for the GLL grid, so we only load
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
+      // From the point of view of setting ICs though, these fields ARE read.
       auto& this_grid_ic_fnames = ic_fields_names[grid_name];
       auto children = f.get_header().get_children();
 
-      // If this field is the parent of other subfields, we only read from file the subfields.
-      auto add = [&](const std::string& n) {
-        this_grid_ic_fnames.insert(n);
-        m_fields_inited[grid_name].insert(n);
-      };
-      if (children.size()==0) {
-        add(fname);
-      } else {
-        bool has_leaf_children = false;
-        for (auto child : children)
-          if (child.lock()->get_children().size()==0) { // Skip children that themselves have children
-            add (child.lock()->get_identifier().name());
-            has_leaf_children = true;
-          }
-        if (has_leaf_children) {
-          m_fields_inited[grid_name].insert(fname);
-        }
+      m_fields_inited[grid_name].insert(fname);
+
+      // Only read the field itself if it has no children
+      if (children.size()==0)
+        this_grid_ic_fnames.insert(fname);
+
+      for (auto child : children) {
+        const auto cname = child.lock()->get_identifier().name();
+        this_grid_ic_fnames.insert(cname);
+        m_fields_inited[grid_name].insert(cname);
       }
     }
   };
 
-  // First the individual input fields...
+  // Now process all fields in the STARTUP group
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
-  for (const auto& f : m_atm_process_group->get_fields_in()) {
-    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
-    // each atm step, so there is no need to read them from the IC file.
-    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-    if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      process_ic_field (f);
-    }
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    auto ic_group = m_field_mgr->get_field_group("STARTUP",gn);
+    for (const auto& f : std::views::values(ic_group.individual_fields()))
+      process_ic_field(f);
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
-
-  // ...then the input groups.
-  // NOTE: always process individual fields, NEVER the monolithic one (if present)
-  m_atm_logger->debug("    [EAMxx] Processing input groups ...");
-  for (const auto& g : m_atm_process_group->get_groups_in()) {
-    for (auto it : g.individual_fields()) {
-      const auto& f = it.second;
-      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(fgroups, "ACCUMULATED")) {
-        process_ic_field(f);
-      }
-    }
-  }
-  m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
 
   // Some fields might be the subfield of another field (e.g., individual fields in
   // a group with monolithic allocation, or components of a vector field like horiz_winds).
@@ -1274,34 +1251,6 @@ void AtmosphereDriver::set_initial_conditions ()
     f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
   m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
-
-  // It is possible to have a monolithically allocated group G1=(f1,f2,f3),
-  // where the IC are read from file for f1, f2, and f3. In that case,
-  // the time stamp for the monolithic field of G1 has not be inited, but the data
-  // is valid (all entries have been inited). Let's fix that.
-  m_atm_logger->debug("    [EAMxx] Processing subfields ...");
-  for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.has_monolithic_field()) {
-      auto& track = g.monolithic_field().get_header_ptr()->get_tracking();
-      if (not track.get_time_stamp().is_valid()) {
-        // The groups monolithic field has not been inited. Check if all the subfields
-        // have been inited. If so, init the timestamp of the monlithic field too.
-        const auto& children = track.get_children();
-        bool all_inited = children.size()>0; // If no children, then something is off, so mark as not good
-        for (auto wp : children) {
-          auto sp = wp.lock();
-          if (not sp->get_time_stamp().is_valid()) {
-            all_inited = false;
-            break;
-          }
-        }
-        if (all_inited) {
-          track.update_time_stamp(m_current_ts);
-        }
-      }
-    }
-  }
-  m_atm_logger->debug("    [EAMxx] Processing subfields ... done!");
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
@@ -1875,7 +1824,7 @@ set_initialization_groups (const Field& f)
     const auto& grid_name = f.get_header().get_identifier().get_grid_name();
     const auto& children = f.get_header().get_children();
     if (children.size()>0) {
-      // We do look for parent fields in startup/restart files.
+      // We do NOT look for parent fields in startup/restart files.
       // Simply write/read the individual fields.
       // So far, this should only affect horiz_winds and surf_mom_flux
       // (the latter only in eamxx standalone tests)
