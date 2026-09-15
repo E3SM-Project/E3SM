@@ -29,6 +29,9 @@ set(MPIFC "ftn")
 
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
 
+string(APPEND CMAKE_C_FLAGS_RELEASE       " -debug minimal")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -debug minimal")
+
 # Check for Intel LLVM (ifx) version 2025 or newer
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.0")
@@ -41,3 +44,7 @@ string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
 
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
+
+if (COMP_NAME STREQUAL cice)
+  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=nosnan,arrays")
+endif()
