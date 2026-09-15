@@ -85,24 +85,37 @@ struct WaterIsotopeConstants
   static constexpr int num_species = 5;
 
   // -----------------------------------------------------------------------
-  // Active constants (runtime-selected, non-constexpr)
+  // Active constants (runtime-selected)
   // -----------------------------------------------------------------------
 
   // Diffusivity ratios (D_isotope/D_H2O)
-  Scalar difrm[num_species];
+  static constexpr Scalar IsotopologueDiffusivity_table
+      [DiffusivityFormulation::FormulationCount][num_species] = {
+        { 1.0, 0.9757, 0.9727, 0.9727, 0.9757 }, // Merlivat 1978
+        { 1.0, 0.9839, 0.9691, 0.9691, 0.9839 } // Cappa et al 2003
+  };
 
   // Model standard isotope ratios
-  Scalar rstd[num_species];
+  static constexpr Scalar rstd_table
+      [StandardRatioFormulation::FormulationCount][num_species] = {
+        { 1.0,       1.0,        1.0,      1.0, 1.0 }, // Normalized by VSMOW
+        { 1.0, 155.76e-6, 2005.20e-6, 379.9e-6, 1.0 } // natural abundance
+  };
 
   // Ocean surface enrichment
-  Scalar boce[num_species];
+  static constexpr Scalar boce_table
+    [OceanEnrichmentFormulation::FormulationCount][num_species] = {
+      { 1.0,    1.0,    1.0,    1.0, 1.0 }, // Modern VSMOW
+      { 1.0, 1.0128, 1.0016, 1.0008, 1.0} // LGM
+  };
 
-  // Liquid/vapor equilibrium fractionation coefficients - requires 5 coefficients
-  // Coefficients for alpha = exp(polynomial in T)
-  // HDO uses: alpha = exp(a*T^3 + b*T^2 + c*T + d + e/T^3)
-  // H218O uses: alpha = exp(a/T^3 + b/T^2 + c/T + d)
-  // H217O and HTO are derived from these by power laws
-  // Not all formulations have all coefficients, depends on regression.
+  /* EQUILIBRIUM FRACTIONATION 
+  Liquid/vapor equilibrium fractionation coefficients - requires 5 coefficients
+  Coefficients for alpha = exp(polynomial in T)
+  HDO uses: alpha = exp(a*T^3 + b*T^2 + c*T + d + e/T^3)
+  H218O uses: alpha = exp(a/T^3 + b/T^2 + c/T + d)
+  H217O and HTO are derived from these by power laws
+  Not all formulations have all coefficients, depends on regression used. */
   static constexpr Scalar AlphaLiqVap_CoefA_table
       [LiquidVaporFractionation::FormulationCount][num_species] = {
         { 0.0, 1158.8e-12, 0.35041e6, 0.0, 0.0 }, // Horita and Wesolowski 1994
@@ -129,27 +142,27 @@ struct WaterIsotopeConstants
         { 0.0,        0.0,       0.0, 0.0, 0.0 }  // Majoube 1971
   };
 
-  // Ice/vapor equilibrium fractionation coefficients
-  // Coefficients for alpha = exp(a/T^2 + b/T + c)
-  Scalar alpai[num_species];  // Coefficient A
-  Scalar alpbi[num_species];  // Coefficient B
-  Scalar alpci[num_species];  // Coefficient C
-
+  /* Ice/vapor equilibrium fractionation coefficients
+     Coefficients for alpha = exp(a/T^2 + b/T + c) */
   static constexpr Scalar AlphaIceVap_CoefA_table
       [IceVaporFractionation::FormulationCount][num_species] = {
-        { 0.0, 16289.0, 0.0, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,   16288.0,   0.0, 0.0, 0.0 }  // Majoube 1971
+        { 0.0, 16289.0, 0.0, 0.0, 0.0 }, // Merlivat and Nief 1967/Majoube 1971
+        { 0.0, 16288.0, 0.0, 0.0, 0.0 }  // isoCAM3
   };  
   static constexpr Scalar AlphaIceVap_CoefB_table
       [IceVaporFractionation::FormulationCount][num_species] = {
-        { 0.0, 0.0, 11.839, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,   0.0,   11.839, 0.0, 0.0 }  // Majoube 1971
+        { 0.0, 0.0, 11.839, 0.0, 0.0 }, // Merlivat and Nief 1967/Majoube 1971
+        { 0.0, 0.0, 11.839, 0.0, 0.0 }  // isoCAM3
   };  
   static constexpr Scalar AlphaIceVap_CoefC_table
       [IceVaporFractionation::FormulationCount][num_species] = {
-        { 0.0, -9.45e-2, -28.224e-3, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,  -9.34e-2,   -28.224e-3, 0.0, 0.0 }  // Majoube 1971
+        { 0.0, -9.45e-2, -28.224e-3, 0.0, 0.0 }, // Merlivat and Nief 1967/Majoube 1971
+        { 0.0, -9.34e-2, -28.224e-3, 0.0, 0.0 }  // isoCAM3
   };
+
+
+
+
 
 
   // -----------------------------------------------------------------------
@@ -160,32 +173,37 @@ struct WaterIsotopeConstants
   KOKKOS_INLINE_FUNCTION
   WaterIsotopeConstants(const WaterIsotopeRuntimeOptions& opts) {
     // Select diffusivity formulation
-    const Scalar* diff_src = (opts.diffusivity == DiffusivityFormulation::Cappa2003)
-                              ? difrm_cappa2003 : difrm_merlivat1978;
-    copy_array(difrm, diff_src, num_species);
+    KOKKOS_INLINE_FUNCTION
+    Scalar diff_src(int s) const { return IsotopologueDiffusivity_table[int(opts.diffusivity)][s]; }
 
     // Select standard ratio formulation
-    const Scalar* ratio_src = (opts.standard_ratio == StandardRatioFormulation::NaturalAbundance)
-                               ? rstd_natural_abundance : rstd_normalized;
-    copy_array(rstd, ratio_src, num_species);
+    KOKKOS_INLINE_FUNCTION
+    Scalar ratio_src(int s) const { return rstd_table[int(opts.standard_ratio)][s]; }
 
     // Select ocean enrichment formulation
-    const Scalar* ocean_src = (opts.ocean_enrichment == OceanEnrichmentFormulation::LGM)
-                               ? boce_lgm : boce_none;
-    copy_array(boce, ocean_src, num_species);
+    KOKKOS_INLINE_FUNCTION
+    Scalar ocean_src(int s) const { return boce_table[int(opts.ocean_enrichment)][s]; }
 
     // Select coefficients for liquid/vapor formulation selected
     // TODO: rename apla*l variables throughout.
-    KOKKOS_INLINE_FUNCTION Scalar alpal(int s) const { return AlphaLiqVap_CoefA_table[int(opts.liquid_vapor)][s] } 
-    KOKKOS_INLINE_FUNCTION Scalar alpbl(int s) const { return AlphaLiqVap_CoefB_table[int(opts.liquid_vapor)][s] }
-    KOKKOS_INLINE_FUNCTION Scalar alpcl(int s) const { return AlphaLiqVap_CoefC_table[int(opts.liquid_vapor)][s] }
-    KOKKOS_INLINE_FUNCTION Scalar alpdl(int s) const { return AlphaLiqVap_CoefD_table[int(opts.liquid_vapor)][s] }
-    KOKKOS_INLINE_FUNCTION Scalar alpel(int s) const { return AlphaLiqVap_CoefE_table[int(opts.liquid_vapor)][s] }
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpal(int s) const { return AlphaLiqVap_CoefA_table[int(opts.liquid_vapor)][s]; }
+    KOKKOS_INLINE_FUNCTION 
+    Scalar alpbl(int s) const { return AlphaLiqVap_CoefB_table[int(opts.liquid_vapor)][s]; }
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpcl(int s) const { return AlphaLiqVap_CoefC_table[int(opts.liquid_vapor)][s]; }
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpdl(int s) const { return AlphaLiqVap_CoefD_table[int(opts.liquid_vapor)][s]; }
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpel(int s) const { return AlphaLiqVap_CoefE_table[int(opts.liquid_vapor)][s]; }
     // Ice/vapor
-    KOKKOS_INLINE_FUNCTION Scalar alpai(int s) const { return AlphaIceVap_CoefA_table[int(opts.ice_vapor)][s] } 
-    KOKKOS_INLINE_FUNCTION Scalar alpbi(int s) const { return AlphaIceVap_CoefB_table[int(opts.ice_vapor)][s] }
-    KOKKOS_INLINE_FUNCTION Scalar alpci(int s) const { return AlphaIceVap_CoefC_table[int(opts.ice_vapor)][s] }
-  }
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpai(int s) const { return AlphaIceVap_CoefA_table[int(opts.ice_vapor)][s]; } 
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpbi(int s) const { return AlphaIceVap_CoefB_table[int(opts.ice_vapor)][s]; }
+    KOKKOS_INLINE_FUNCTION
+    Scalar alpci(int s) const { return AlphaIceVap_CoefC_table[int(opts.ice_vapor)][s]; }
+  };
 
   // Default constructor (uses default formulations)
   KOKKOS_INLINE_FUNCTION
@@ -206,95 +224,12 @@ struct WaterIsotopeConstants
     3.0   // HTO (tritium substitution)
   };
 
-private:
-  // -----------------------------------------------------------------------
-  // All formulation data as static constexpr (compile-time constants)
-  // -----------------------------------------------------------------------
-
-  // Diffusivity ratios - Merlivat 1978 (default)
-  static constexpr Scalar difrm_merlivat1978[num_species] = {
-    1.0,     // H216O
-    0.9757,  // HDO
-    0.9727,  // H218O
-    0.9727,  // H217O (TODO: assumed same as H218O)
-    0.9757   // HTO (TODO: assumed same as HDO)
-  };
-
-  // Diffusivity ratios - Cappa et al. 2003
-  static constexpr Scalar difrm_cappa2003[num_species] = {
-    1.0,     // H216O
-    0.9839,  // HDO
-    0.9691,  // H218O
-    0.9691,  // H217O (TODO: assumed same as H218O)
-    0.9839   // HTO (TODO: assumed same as HDO)
-  };
-
-  // Standard ratios - Normalized (default)
-  static constexpr Scalar rstd_normalized[num_species] = {
-    1.0,  // H216O
-    1.0,  // HDO
-    1.0,  // H218O
-    1.0,  // H217O
-    1.0   // HTO
-  };
-
-  // Standard ratios - Natural abundance
-  static constexpr Scalar rstd_natural_abundance[num_species] = {
-    1.0,         // H216O (reference)
-    155.76e-6,   // HDO
-    2005.20e-6,  // H218O
-    379.9e-6,    // H217O
-    1.0          // HTO (TODO: define more robustly)
-  };
-
-  // Ocean surface enrichment - None (default)
-  static constexpr Scalar boce_none[num_species] = {
-    1.0,  // H216O
-    1.0,  // HDO
-    1.0,  // H218O
-    1.0,  // H217O
-    1.0   // HTO
-  };
-
-  // Ocean surface enrichment - LGM
-  static constexpr Scalar boce_lgm[num_species] = {
-    1.0,      // H216O
-    1.0128,   // HDO
-    1.0016,   // H218O
-    1.0008,   // H217O (TODO)
-    1.0       // HTO (TODO)
-  };
-
-  // -----------------------------------------------------------------------
-  // Ice/vapor equilibrium fractionation coefficients
-  // -----------------------------------------------------------------------
-
-  
-  // Helper function to copy arrays
-  KOKKOS_INLINE_FUNCTION
-  void copy_array(Scalar* dest, const Scalar* src, int n) {
-    for (int i = 0; i < n; ++i) {
-      dest[i] = src[i];
-    }
-  }
-
 public:
 
   // -----------------------------------------------------------------------
   // Kinetic fractionation parameters (Merlivat & Jouzel method)
-  // These do not vary by formulation
+  // These do not vary by formulation, so these will not currently be bundled in the same way.
   // -----------------------------------------------------------------------
-
-  // Surface kinetic exchange
-  // From water_isotopes.F90
-  // Note: H216O entries are 0.0 (non-fractionating)
-  static constexpr Scalar aksmc[num_species] = {
-    0.0,      // H216O
-    0.00528,  // HDO
-    0.006,    // H218O
-    0.006,    // H217O (assumed same as H218O)
-    0.00528   // HTO (assumed same as HDO)
-  };
 
   // Parameter A for kinetic fractionation
   static constexpr Scalar akrfa[num_species] = {
@@ -312,6 +247,16 @@ public:
     0.82e-3,    // H218O
     0.82e-3,    // H217O (assumed same as H218O)
     0.7216e-3   // HTO (assumed same as HDO)
+
+  // Surface kinetic exchange
+  // From water_isotopes.F90
+  // Note: H216O entries are 0.0 (non-fractionating)
+  static constexpr Scalar aksmc[num_species] = {
+    0.0,      // H216O
+    0.00528,  // HDO
+    0.006,    // H218O
+    0.006,    // H217O (assumed same as H218O)
+    0.00528   // HTO (assumed same as HDO)
   };
 
   // -----------------------------------------------------------------------

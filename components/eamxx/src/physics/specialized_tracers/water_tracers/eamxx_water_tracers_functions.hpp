@@ -22,7 +22,7 @@ namespace water_tracers {
 // This is a simplified version - the actual species would be defined
 // based on which tracers are active in the simulation
 enum WaterTracerSpecies {
-  H2O_BASE = 0  // Base water (H2O-16)
+  H2O_BASE = 0  // Base water (H216O)
 };
 
 struct WaterTracerFunctions
@@ -31,7 +31,7 @@ struct WaterTracerFunctions
 
   // Minimum water amount for stable ratio computation.
   // From water_tracers.F90 (David Noone): smaller makes scheme more accurate.
-  static constexpr Real wtrc_qmin = sp(1.e-22);
+  static constexpr Real wtrc_qmin = 1.e-22;
 
   // -----------------------------------------------------------------------
   // Standard tracer ratio by species.
@@ -44,7 +44,7 @@ struct WaterTracerFunctions
   {
     // For non-fractionating water tracers, standard ratio is 1.0
     (void)species;  // Unused parameter in this implementation
-    return sp(1.0);
+    return 1.0;
   }
 
   // -----------------------------------------------------------------------
@@ -75,13 +75,13 @@ struct WaterTracerFunctions
     using ekat::abs;  // ADL-compatible abs for Pack<Real,N>
 
     const ScalarT abs_qtot = abs(qtot);
-    const ScalarT qmin = sp(wtrc_qmin);
+    const ScalarT qmin = wtrc_qmin;
 
     // Mask: use standard ratio when total water is below threshold.
     const auto use_standard = (abs_qtot < qmin);
 
     const ScalarT ratio_computed = qtrc / qtot;
-    const ScalarT ratio_standard = sp(wtrc_get_rstd(species));
+    const ScalarT ratio_standard = wtrc_get_rstd(species);
 
     // Blend based on mask (works for both Real and Pack).
     return ekat::impl::merge(use_standard, ratio_standard, ratio_computed);

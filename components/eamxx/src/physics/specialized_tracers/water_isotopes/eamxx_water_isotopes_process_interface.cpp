@@ -14,13 +14,13 @@ WaterIsotopes::WaterIsotopes(const ekat::Comm& comm, const ekat::ParameterList& 
   // Liquid/vapor fractionation formulation
   const std::string lv_form = m_params.get<std::string>(
     "liquid_vapor_formulation", "horita_wesolowski_1994");
-  if (lv_form == "majoube_1971a") {
-    m_runtime_options.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
+  if (lv_form == "majoube_1971") {
+    m_runtime_options.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
   } else if (lv_form == "horita_wesolowski_1994") {
     m_runtime_options.liquid_vapor = wiso::LiquidVaporFractionation::HoritaWesolowski1994;
   } else {
     EKAT_ERROR_MSG("Invalid liquid_vapor_formulation: " + lv_form +
-                   ". Valid options: horita_wesolowski_1994, majoube_1971a");
+                   ". Valid options: horita_wesolowski_1994, majoube_1971");
   }
 
   // Diffusivity formulation
@@ -49,14 +49,14 @@ WaterIsotopes::WaterIsotopes(const ekat::Comm& comm, const ekat::ParameterList& 
 
   // Ocean enrichment formulation
   const std::string ocean_form = m_params.get<std::string>(
-    "ocean_enrichment_formulation", "none");
+    "ocean_enrichment_formulation", "modern");
   if (ocean_form == "lgm") {
     m_runtime_options.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
-  } else if (ocean_form == "none") {
-    m_runtime_options.ocean_enrichment = wiso::OceanEnrichmentFormulation::None;
+  } else if (ocean_form == "modern") {
+    m_runtime_options.ocean_enrichment = wiso::OceanEnrichmentFormulation::Modern;
   } else {
     EKAT_ERROR_MSG("Invalid ocean_enrichment_formulation: " + ocean_form +
-                   ". Valid options: none, lgm");
+                   ". Valid options: modern, lgm");
   }
 
   // Ice/vapor fractionation formulation

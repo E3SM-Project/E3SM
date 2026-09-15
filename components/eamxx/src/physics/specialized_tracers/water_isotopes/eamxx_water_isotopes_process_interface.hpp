@@ -18,8 +18,6 @@ namespace scream
  * By inheriting from WaterTracers, this class reuses all tracer field handling
  * and only needs to override specific fractionation hooks.
  *
- * Note: This is a stub implementation that registers the process. Fractionation
- * physics will be added later.
 */
 
 class WaterIsotopes : public WaterTracers
