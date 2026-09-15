@@ -3,6 +3,7 @@
 
 #include "eamxx_zm_process_interface.hpp"
 #include "share/physics/physics_constants.hpp"
+#include "share/util/eamxx_timing.hpp"
 
 #include <ekat_assert.hpp>
 #include <ekat_team_policy_utils.hpp>
@@ -310,6 +311,7 @@ void ZMDeepConvection::run_impl (const double dt)
 
   //--------------------------------------------------------------------------
   // run the main ZM scheme
+  start_timer("EAMxx::zm::main");
   ZMF::zm_conv_main(zm_opts, m_ncol, nlev_mid, nlev_int, is_first_step, dt,
                     zm_input.T_mid, zm_input.qv, zm_input.omega,
                     zm_input.p_mid, zm_input.p_int, zm_input.p_del,
@@ -327,6 +329,7 @@ void ZMDeepConvection::run_impl (const double dt)
                     zm_output.p_del_mb, zm_output.dsubcld,
                     zm_output.ql, zm_output.rliq, zm_output.rain_prod, zm_output.dlf,
                     zm_output.ktm, zm_output.kbm );
+  stop_timer("EAMxx::zm::main");
 
   //--------------------------------------------------------------------------
   // MCSP modifies tendencies from zm_conv_main() prior to updating the state
