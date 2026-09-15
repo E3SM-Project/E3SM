@@ -1165,7 +1165,9 @@ void AtmosphereDriver::set_initial_conditions ()
   // So loop over the fields that appear to require loading from file, and remove
   // them from the list if they are the subfield of another field already inited
   // (perhaps via initialize_constant_field, or copied from another field).
-  for (auto& [grid_name, names] : ic_fields_names) {
+  for (auto& it : ic_fields_names) {
+    const auto& grid_name = it.first;
+    auto& names = it.second;
     std::erase_if(names, [&](const std::string& name) {
       auto f = m_field_mgr->get_field(name, grid_name);
       auto p = f.get_header().get_parent();
