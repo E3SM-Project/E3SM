@@ -146,8 +146,14 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
       strain.get_header().get_tracking().update_time_stamp(ts);
     }
     if (do_leonard) {
-      auto leonard = get_field_out("wthl_leonard_base",pgn);
-      leonard.get_header().get_tracking().update_time_stamp(ts);
+      auto wthl_leonard = get_field_out("wthl_leonard_base",pgn);
+      wthl_leonard.get_header().get_tracking().update_time_stamp(ts);
+      auto wqt_leonard = get_field_out("wqt_leonard_base",pgn);
+      wqt_leonard.get_header().get_tracking().update_time_stamp(ts);
+      auto uw_leonard = get_field_out("uw_leonard_base",pgn);
+      uw_leonard.get_header().get_tracking().update_time_stamp(ts);
+      auto vw_leonard = get_field_out("vw_leonard_base",pgn);
+      vw_leonard.get_header().get_tracking().update_time_stamp(ts);
     }
     auto Q = get_group_out("tracers",pgn).monolithic_field();
     Q.get_header().get_tracking().update_time_stamp(ts);
@@ -223,9 +229,30 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     const auto wthl_leonard_base_fv = Homme::GllFvRemap::Phys2T(
       get_field_out("wthl_leonard_base", gn).get_view<Real**>().data(),
       nelem, npg, nlev);
+    const auto wqt_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("wqt_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto wqt_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("wqt_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
+    const auto uw_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("uw_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto uw_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("uw_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
+    const auto vw_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("vw_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto vw_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("vw_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
                            &strain3d_components_gll, &strain3d_components_fv,
                            &wthl_leonard_base_gll, &wthl_leonard_base_fv,
+                           &wqt_leonard_base_gll, &wqt_leonard_base_fv,
+                           &uw_leonard_base_gll, &uw_leonard_base_fv,
+                           &vw_leonard_base_gll, &vw_leonard_base_fv,
                            uv, q, &dp);
   } else if (params.do_3d_turbulence) {
     const auto strain3d_components_gll = Homme::GllFvRemap::CPhys3T(
@@ -236,7 +263,8 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
       nelem, npg, 6, nlev);
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
                            &strain3d_components_gll, &strain3d_components_fv,
-                           nullptr, nullptr, uv, q, &dp);
+                           nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+                           uv, q, &dp);
   } else if (do_leonard) {
     const auto wthl_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
       m_helper_fields.at("wthl_leonard_base_dyn").get_view<const Real****>().data(),
@@ -244,12 +272,34 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     const auto wthl_leonard_base_fv = Homme::GllFvRemap::Phys2T(
       get_field_out("wthl_leonard_base", gn).get_view<Real**>().data(),
       nelem, npg, nlev);
+    const auto wqt_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("wqt_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto wqt_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("wqt_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
+    const auto uw_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("uw_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto uw_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("uw_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
+    const auto vw_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("vw_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto vw_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("vw_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
                            nullptr, nullptr,
                            &wthl_leonard_base_gll, &wthl_leonard_base_fv,
+                           &wqt_leonard_base_gll, &wqt_leonard_base_fv,
+                           &uw_leonard_base_gll, &uw_leonard_base_fv,
+                           &vw_leonard_base_gll, &vw_leonard_base_fv,
                            uv, q, &dp);
   } else {
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                           nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
                            nullptr, nullptr, nullptr, nullptr, uv, q, &dp);
   }
   Kokkos::fence();

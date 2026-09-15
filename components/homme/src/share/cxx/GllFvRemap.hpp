@@ -56,6 +56,12 @@ public:
                           const Phys3T* strain3d_components_fv,
                           const CPhys2T* wthl_leonard_base_gll,
                           const Phys2T* wthl_leonard_base_fv,
+                          const CPhys2T* wqt_leonard_base_gll,
+                          const Phys2T* wqt_leonard_base_fv,
+                          const CPhys2T* uw_leonard_base_gll,
+                          const Phys2T* uw_leonard_base_fv,
+                          const CPhys2T* vw_leonard_base_gll,
+                          const Phys2T* vw_leonard_base_fv,
                           // uv(ie, col, 0 or 1, lev)
                           const Phys3T& uv, 
                           // q(ie,col,idx,lev)

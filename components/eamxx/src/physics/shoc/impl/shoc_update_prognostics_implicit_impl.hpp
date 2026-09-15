@@ -35,6 +35,9 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&                dx,
   const Scalar&                dy,
   const uview_1d<const Pack>& wthl_leonard_base,
+  const uview_1d<const Pack>& wqt_leonard_base,
+  const uview_1d<const Pack>& uw_leonard_base,
+  const uview_1d<const Pack>& vw_leonard_base,
   const Workspace&             workspace,
   const uview_1d<Pack>&       thetal,
   const uview_1d<Pack>&       qw,
@@ -97,6 +100,9 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto qtracers_rhs_s = ekat::scalarize(qtracers_rhs);
   const auto wtracer_sfc_s  = ekat::scalarize(wtracer_sfc);
   const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
+  const auto wqt_leonard_base_s = ekat::scalarize(wqt_leonard_base);
+  const auto uw_leonard_base_s = ekat::scalarize(uw_leonard_base);
+  const auto vw_leonard_base_s = ekat::scalarize(vw_leonard_base);
   const auto um_pert_s      = ekat::scalarize(um_pert);
   const auto vm_pert_s      = ekat::scalarize(vm_pert);
   const auto wind_pert_rhs_s = ekat::scalarize(wind_pert_rhs);
@@ -188,6 +194,33 @@ void Functions<S,D>::update_prognostics_implicit(
         : 0.5*leonard_factor*(wthl_leonard_base_s(k) + wthl_leonard_base_s(k+1));
       thetal_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
                    * (rho_zi_s(k+1)*flux_bot - rho_zi_s(k)*flux_top);
+
+      const Scalar wqt_flux_top = k == 0
+        ? 0
+        : 0.5*leonard_factor*(wqt_leonard_base_s(k-1) + wqt_leonard_base_s(k));
+      const Scalar wqt_flux_bot = k == nlev-1
+        ? 0
+        : 0.5*leonard_factor*(wqt_leonard_base_s(k) + wqt_leonard_base_s(k+1));
+      qw_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+               * (rho_zi_s(k+1)*wqt_flux_bot - rho_zi_s(k)*wqt_flux_top);
+
+      const Scalar uw_flux_top = k == 0
+        ? 0
+        : 0.5*leonard_factor*(uw_leonard_base_s(k-1) + uw_leonard_base_s(k));
+      const Scalar uw_flux_bot = k == nlev-1
+        ? 0
+        : 0.5*leonard_factor*(uw_leonard_base_s(k) + uw_leonard_base_s(k+1));
+      u_wind_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+                   * (rho_zi_s(k+1)*uw_flux_bot - rho_zi_s(k)*uw_flux_top);
+
+      const Scalar vw_flux_top = k == 0
+        ? 0
+        : 0.5*leonard_factor*(vw_leonard_base_s(k-1) + vw_leonard_base_s(k));
+      const Scalar vw_flux_bot = k == nlev-1
+        ? 0
+        : 0.5*leonard_factor*(vw_leonard_base_s(k) + vw_leonard_base_s(k+1));
+      v_wind_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+                   * (rho_zi_s(k+1)*vw_flux_bot - rho_zi_s(k)*vw_flux_top);
     });
   }
 

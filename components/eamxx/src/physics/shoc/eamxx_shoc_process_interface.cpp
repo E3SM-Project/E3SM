@@ -86,6 +86,9 @@ void SHOCMacrophysics::create_requests()
   }
   if (do_leonard) {
     add_field<Required>("wthl_leonard_base", scalar3d_mid, K/(m*s), grid_name, ps);
+    add_field<Required>("wqt_leonard_base", scalar3d_mid, (kg/kg)/(m*s), grid_name, ps);
+    add_field<Required>("uw_leonard_base", scalar3d_mid, nondim/s2, grid_name, ps);
+    add_field<Required>("vw_leonard_base", scalar3d_mid, nondim/s2, grid_name, ps);
   }
 
   // Input/Output variables
@@ -312,13 +315,22 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
       : view_2d(m_dummy_shear_strain3d);
   view_3d_const shear_strain3d_components;
   view_2d_const wthl_leonard_base;
+  view_2d_const wqt_leonard_base;
+  view_2d_const uw_leonard_base;
+  view_2d_const vw_leonard_base;
   if (runtime_options.do_3d_turb) {
     shear_strain3d_components = get_field_in("tke_shear_strain3d_components").get_view<const Pack***>();
   }
   if (runtime_options.do_leonard) {
     wthl_leonard_base = get_field_in("wthl_leonard_base").get_view<const Pack**>();
+    wqt_leonard_base = get_field_in("wqt_leonard_base").get_view<const Pack**>();
+    uw_leonard_base = get_field_in("uw_leonard_base").get_view<const Pack**>();
+    vw_leonard_base = get_field_in("vw_leonard_base").get_view<const Pack**>();
   } else {
     wthl_leonard_base = view_2d_const(m_dummy_shear_strain3d);
+    wqt_leonard_base = view_2d_const(m_dummy_shear_strain3d);
+    uw_leonard_base = view_2d_const(m_dummy_shear_strain3d);
+    vw_leonard_base = view_2d_const(m_dummy_shear_strain3d);
   }
   const auto& qtracers            = get_group_out("turbulence_advected_tracers").monolithic_field().get_strided_view<Pack***>();
   const auto& qc                  = get_field_out("qc").get_view<Pack**>();
@@ -406,6 +418,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input.shear_strain3d_components = shear_strain3d_components;
   input.shear_strain3d = shear_strain3d;
   input.wthl_leonard_base = wthl_leonard_base;
+  input.wqt_leonard_base = wqt_leonard_base;
+  input.uw_leonard_base = uw_leonard_base;
+  input.vw_leonard_base = vw_leonard_base;
 
   // Input/Output Variables
   input_output.host_dse     = shoc_preprocess.shoc_s;

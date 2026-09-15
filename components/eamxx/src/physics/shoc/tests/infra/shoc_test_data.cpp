@@ -1760,6 +1760,7 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
                                      false, Scalar(0), Scalar(0), wthl_leonard_base_s,
+                                     wthl_leonard_base_s, wthl_leonard_base_s, wthl_leonard_base_s,
                                      workspace,
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s,
                                      Scalar(0), Scalar(0), um_pert_s, vm_pert_s);
@@ -2558,7 +2559,8 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
                              w_field_d,   wthl_sfc_d,    wqw_sfc_d,     uw_sfc_d,
                              vw_sfc_d,    uw_sfc_pert_d, vw_sfc_pert_d, wtracer_sfc_d,
                              inv_exner_d, phis_d,
-                             shear_strain3d_components_d, shear_strain3d_d};
+                             shear_strain3d_components_d, shear_strain3d_d,
+                             isotropy_d, isotropy_d, isotropy_d, isotropy_d};
   SHF::SHOCInputOutput shoc_input_output{host_dse_d,   tke_d,      thetal_d,       qw_d,
                                          horiz_wind_d, wthv_sec_d, qtracers_cxx_d,
                                          tk_d,         shoc_cldfrac_d, shoc_ql_d, um_pert_d, vm_pert_d };

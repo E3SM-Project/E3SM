@@ -128,8 +128,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_3d<const Pack> shear_strain3d_components;
     // 3D strain term for shear production of TKE [/s2]
     view_2d<Pack> shear_strain3d;
-    // Dycore-computed Leonard heat-flux derivative product [K/(m s)]
+    // Dycore-computed Leonard flux derivative products
     view_2d<const Pack> wthl_leonard_base;
+    view_2d<const Pack> wqt_leonard_base;
+    view_2d<const Pack> uw_leonard_base;
+    view_2d<const Pack> vw_leonard_base;
   };
 
   // This struct stores input/outputs views for shoc_main.
@@ -505,7 +508,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Pack> &zi_grid, const uview_1d<const Pack> &tk,
       const uview_1d<const Pack> &tkh, const Scalar &uw_sfc, const Scalar &vw_sfc,
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const uview_1d<const Pack> &wtracer_sfc,
-      const bool& do_leonard, const Scalar& dx, const Scalar& dy, const uview_1d<const Pack>& wthl_leonard_base,
+      const bool& do_leonard, const Scalar& dx, const Scalar& dy,
+      const uview_1d<const Pack>& wthl_leonard_base,
+      const uview_1d<const Pack>& wqt_leonard_base,
+      const uview_1d<const Pack>& uw_leonard_base,
+      const uview_1d<const Pack>& vw_leonard_base,
       const Workspace &workspace, const uview_1d<Pack> &thetal, const uview_1d<Pack> &qw,
       const uview_2d_strided<Pack> &tracer, const uview_1d<Pack> &tke,
       const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind,
@@ -523,6 +530,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const bool& do_leonard,
       const view_1d<const Scalar>& dx, const view_1d<const Scalar>& dy,
       const view_2d<const Pack>& wthl_leonard_base,
+      const view_2d<const Pack>& wqt_leonard_base,
+      const view_2d<const Pack>& uw_leonard_base,
+      const view_2d<const Pack>& vw_leonard_base,
       const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &thetal, const view_2d<Pack> &qw,
       const view_3d_strided<Pack> &tracer, const view_2d<Pack> &tke, const view_2d<Pack> &u_wind,
       const view_2d<Pack> &v_wind, const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
@@ -755,6 +765,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<const Pack> &shear_strain3d_components,
       const uview_1d<Pack> &shear_strain3d,
       const uview_1d<const Pack> &wthl_leonard_base,
+      const uview_1d<const Pack> &wqt_leonard_base,
+      const uview_1d<const Pack> &uw_leonard_base,
+      const uview_1d<const Pack> &vw_leonard_base,
       // Local Workspace
       const Workspace &workspace,
       // Input/Output Variables
@@ -803,6 +816,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_3d<const Pack> &shear_strain3d_components,
       const view_2d<Pack> &shear_strain3d,
       const view_2d<const Pack> &wthl_leonard_base,
+      const view_2d<const Pack> &wqt_leonard_base,
+      const view_2d<const Pack> &uw_leonard_base,
+      const view_2d<const Pack> &vw_leonard_base,
       // Workspace Manager
       WorkspaceMgr &workspace_mgr,
       // Input/Output Variables

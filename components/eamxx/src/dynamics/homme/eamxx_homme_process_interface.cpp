@@ -157,6 +157,7 @@ void HommeDynamics::create_requests ()
 
   const auto m2 = pow(m,2);
   const auto s2 = pow(s,2);
+  const auto nondim = none;
 
   // Note: qv is needed to transform T<->Theta
 
@@ -187,6 +188,9 @@ void HommeDynamics::create_requests ()
   }
   if (do_leonard) {
     add_field<Computed>("wthl_leonard_base", pg_scalar3d_mid, K/(m*s), pgn,N);
+    add_field<Computed>("wqt_leonard_base", pg_scalar3d_mid, (kg/kg)/(m*s), pgn,N);
+    add_field<Computed>("uw_leonard_base", pg_scalar3d_mid, nondim/s2, pgn,N);
+    add_field<Computed>("vw_leonard_base", pg_scalar3d_mid, nondim/s2, pgn,N);
   }
 
   add_tracer<Updated >("qv", m_phys_grid, kg/kg, N);
@@ -231,6 +235,9 @@ void HommeDynamics::create_requests ()
     create_helper_field("grad_Uy_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
     create_helper_field("grad_Uz_dyn",  {EL,CMP,   GP,GP,LEV}, {nelem,2,    NP,NP,nlev_mid}, dgn);
     create_helper_field("wthl_leonard_base_dyn", {EL,GP,GP,LEV}, {nelem,NP,NP,nlev_mid}, dgn);
+    create_helper_field("wqt_leonard_base_dyn", {EL,GP,GP,LEV}, {nelem,NP,NP,nlev_mid}, dgn);
+    create_helper_field("uw_leonard_base_dyn", {EL,GP,GP,LEV}, {nelem,NP,NP,nlev_mid}, dgn);
+    create_helper_field("vw_leonard_base_dyn", {EL,GP,GP,LEV}, {nelem,NP,NP,nlev_mid}, dgn);
   }
   if (params.do_3d_turbulence) {
     create_helper_field("shear_strain3d_components_dyn", {EL,CMP,GP,GP,LEV}, {nelem,6,NP,NP,nlev_mid}, dgn);
@@ -419,6 +426,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   if (do_leonard) {
     m_helper_fields.at("wthl_leonard_base_dyn").deep_copy(0);
     get_field_out("wthl_leonard_base").deep_copy(0);
+    m_helper_fields.at("wqt_leonard_base_dyn").deep_copy(0);
+    get_field_out("wqt_leonard_base").deep_copy(0);
+    m_helper_fields.at("uw_leonard_base_dyn").deep_copy(0);
+    get_field_out("uw_leonard_base").deep_copy(0);
+    m_helper_fields.at("vw_leonard_base_dyn").deep_copy(0);
+    get_field_out("vw_leonard_base").deep_copy(0);
   }
 
   // Complete Homme prim_init1_xyz sequence
@@ -501,6 +514,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     }
     if (do_leonard) {
       m_d2p_remapper->register_field(m_helper_fields.at("wthl_leonard_base_dyn"), get_field_out("wthl_leonard_base"));
+      m_d2p_remapper->register_field(m_helper_fields.at("wqt_leonard_base_dyn"), get_field_out("wqt_leonard_base"));
+      m_d2p_remapper->register_field(m_helper_fields.at("uw_leonard_base_dyn"), get_field_out("uw_leonard_base"));
+      m_d2p_remapper->register_field(m_helper_fields.at("vw_leonard_base_dyn"), get_field_out("vw_leonard_base"));
     }
 
     m_p2d_remapper->registration_ends();

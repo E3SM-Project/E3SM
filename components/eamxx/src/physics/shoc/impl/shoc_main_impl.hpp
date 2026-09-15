@@ -112,6 +112,9 @@ void Functions<S,D>::shoc_main_internal(
   const uview_2d<const Pack>& shear_strain3d_components,
   const uview_1d<Pack>&       shear_strain3d,
   const uview_1d<const Pack>& wthl_leonard_base,
+  const uview_1d<const Pack>& wqt_leonard_base,
+  const uview_1d<const Pack>& uw_leonard_base,
+  const uview_1d<const Pack>& vw_leonard_base,
   // Workspace/Local Variables
   const Workspace&             workspace,
   // Input/Output Variables
@@ -250,6 +253,7 @@ void Functions<S,D>::shoc_main_internal(
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                 do_leonard,dx,dy,wthl_leonard_base,         // Input
+                                wqt_leonard_base,uw_leonard_base,vw_leonard_base, // Input
                                 workspace,                                  // Workspace
                                 thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
                                 uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
@@ -268,11 +272,20 @@ void Functions<S,D>::shoc_main_internal(
 
     if (do_leonard) {
       const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
+      const auto wqt_leonard_base_s = ekat::scalarize(wqt_leonard_base);
+      const auto uw_leonard_base_s = ekat::scalarize(uw_leonard_base);
+      const auto vw_leonard_base_s = ekat::scalarize(vw_leonard_base);
       const auto wthl_sec_s = ekat::scalarize(wthl_sec);
+      const auto wqw_sec_s = ekat::scalarize(wqw_sec);
+      const auto uw_sec_s = ekat::scalarize(uw_sec);
+      const auto vw_sec_s = ekat::scalarize(vw_sec);
       const Scalar leonard_factor = dx*dy/6;
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevi), [&] (const Int& k) {
         if (k > 0 && k < nlev) {
           wthl_sec_s(k) += 0.5*leonard_factor*(wthl_leonard_base_s(k-1) + wthl_leonard_base_s(k));
+          wqw_sec_s(k) += 0.5*leonard_factor*(wqt_leonard_base_s(k-1) + wqt_leonard_base_s(k));
+          uw_sec_s(k) += 0.5*leonard_factor*(uw_leonard_base_s(k-1) + uw_leonard_base_s(k));
+          vw_sec_s(k) += 0.5*leonard_factor*(vw_leonard_base_s(k-1) + vw_leonard_base_s(k));
         }
       });
     }
@@ -398,6 +411,9 @@ void Functions<S,D>::shoc_main_internal(
   const view_3d<const Pack>& shear_strain3d_components,
   const view_2d<Pack>& shear_strain3d,
   const view_2d<const Pack>& wthl_leonard_base,
+  const view_2d<const Pack>& wqt_leonard_base,
+  const view_2d<const Pack>& uw_leonard_base,
+  const view_2d<const Pack>& vw_leonard_base,
   // Workspace Manager
   WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
@@ -539,6 +555,7 @@ void Functions<S,D>::shoc_main_internal(
                                      dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                      vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                      do_leonard,dx,dy,wthl_leonard_base,         // Input
+                                     wqt_leonard_base,uw_leonard_base,vw_leonard_base, // Input
                                      workspace_mgr,                              // Workspace mgr
                                      thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
                                      uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
@@ -557,12 +574,21 @@ void Functions<S,D>::shoc_main_internal(
 
     if (do_leonard) {
       const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
+      const auto wqt_leonard_base_s = ekat::scalarize(wqt_leonard_base);
+      const auto uw_leonard_base_s = ekat::scalarize(uw_leonard_base);
+      const auto vw_leonard_base_s = ekat::scalarize(vw_leonard_base);
       const auto wthl_sec_s = ekat::scalarize(wthl_sec);
+      const auto wqw_sec_s = ekat::scalarize(wqw_sec);
+      const auto uw_sec_s = ekat::scalarize(uw_sec);
+      const auto vw_sec_s = ekat::scalarize(vw_sec);
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0, shcol*nlevi), KOKKOS_LAMBDA (const Int& idx) {
         const Int i = idx / nlevi;
         const Int k = idx % nlevi;
         if (k > 0 && k < nlev) {
           wthl_sec_s(i,k) += dx(i)*dy(i)/12*(wthl_leonard_base_s(i,k-1) + wthl_leonard_base_s(i,k));
+          wqw_sec_s(i,k) += dx(i)*dy(i)/12*(wqt_leonard_base_s(i,k-1) + wqt_leonard_base_s(i,k));
+          uw_sec_s(i,k) += dx(i)*dy(i)/12*(uw_leonard_base_s(i,k-1) + uw_leonard_base_s(i,k));
+          vw_sec_s(i,k) += dx(i)*dy(i)/12*(vw_leonard_base_s(i,k-1) + vw_leonard_base_s(i,k));
         }
       });
     }
@@ -718,6 +744,9 @@ Int Functions<S,D>::shoc_main(
     }
     const auto shear_strain3d_s = ekat::subview(shoc_input.shear_strain3d, i);
     const auto wthl_leonard_base_s = ekat::subview(shoc_input.wthl_leonard_base, i);
+    const auto wqt_leonard_base_s = ekat::subview(shoc_input.wqt_leonard_base, i);
+    const auto uw_leonard_base_s = ekat::subview(shoc_input.uw_leonard_base, i);
+    const auto vw_leonard_base_s = ekat::subview(shoc_input.vw_leonard_base, i);
     const auto host_dse_s     = ekat::subview(shoc_input_output.host_dse, i);
     const auto tke_s          = ekat::subview(shoc_input_output.tke, i);
     const auto thetal_s       = ekat::subview(shoc_input_output.thetal, i);
@@ -762,6 +791,7 @@ Int Functions<S,D>::shoc_main(
                        wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
                        shear_strain3d_components_s, shear_strain3d_s,         // Input/Output
                        wthl_leonard_base_s,                                    // Input
+                       wqt_leonard_base_s, uw_leonard_base_s, vw_leonard_base_s, // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
                        wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
@@ -792,6 +822,7 @@ Int Functions<S,D>::shoc_main(
     shoc_input.wtracer_sfc, shoc_input.inv_exner, shoc_input.phis,
     shoc_input.shear_strain3d_components, shoc_input.shear_strain3d, // Input/Output
     shoc_input.wthl_leonard_base,
+    shoc_input.wqt_leonard_base, shoc_input.uw_leonard_base, shoc_input.vw_leonard_base,
     workspace_mgr, // Workspace Manager
     shoc_input_output.host_dse, shoc_input_output.tke, shoc_input_output.thetal, shoc_input_output.qw, u_wind_s, v_wind_s, // Input/Output
     shoc_input_output.wthv_sec, shoc_input_output.qtracers, shoc_input_output.tk, shoc_input_output.shoc_cldfrac, // Input/Output

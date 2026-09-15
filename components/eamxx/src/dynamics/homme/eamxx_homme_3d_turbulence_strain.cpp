@@ -73,6 +73,9 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
   auto grad_Uy_dyn = m_helper_fields.at("grad_Uy_dyn").template get_view<Real*****>();
   auto grad_Uz_dyn = m_helper_fields.at("grad_Uz_dyn").template get_view<Real*****>();
   auto wthl_leonard_base_dyn = m_helper_fields.at("wthl_leonard_base_dyn").template get_view<Real****>();
+  auto wqt_leonard_base_dyn = m_helper_fields.at("wqt_leonard_base_dyn").template get_view<Real****>();
+  auto uw_leonard_base_dyn = m_helper_fields.at("uw_leonard_base_dyn").template get_view<Real****>();
+  auto vw_leonard_base_dyn = m_helper_fields.at("vw_leonard_base_dyn").template get_view<Real****>();
 
   const auto dvv              = ref_fe.get_deriv();
   const auto dinv             = geom.m_dinv;
@@ -83,14 +86,6 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
   using MemberType = typename TeamPolicy::member_type;
   const int ncols = nelem*NGP*NGP;
   const TeamPolicy policy(ncols, Kokkos::AUTO());
-  const auto dsdx_thl_all = m_dsdx_thl_all;
-  const auto dsdy_thl_all = m_dsdy_thl_all;
-  const auto dsdx_Ux_all = m_dsdx_Ux_all;
-  const auto dsdy_Ux_all = m_dsdy_Ux_all;
-  const auto dsdx_Uy_all = m_dsdx_Uy_all;
-  const auto dsdy_Uy_all = m_dsdy_Uy_all;
-  const auto dsdx_Uz_all = m_dsdx_Uz_all;
-  const auto dsdy_Uz_all = m_dsdy_Uz_all;
 
   Kokkos::parallel_for(
       "compute_horizontal_derivs_for_3d_turbulence_and_leonard",
@@ -100,30 +95,6 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
     const int ie  =  team.league_rank() / (NGP*NGP);
     const int igp = (team.league_rank() / NGP) % NGP;
     const int jgp =  team.league_rank() % NGP;
-    const int icol = team.league_rank();
-
-    // Grab the scratch storage associated with this (ie,igp,jgp) column.
-    const auto dsdx_Ux = Kokkos::subview(dsdx_Ux_all, icol, Kokkos::ALL());
-    const auto dsdy_Ux = Kokkos::subview(dsdy_Ux_all, icol, Kokkos::ALL());
-    const auto dsdx_Uy = Kokkos::subview(dsdx_Uy_all, icol, Kokkos::ALL());
-    const auto dsdy_Uy = Kokkos::subview(dsdy_Uy_all, icol, Kokkos::ALL());
-    const auto dsdx_Uz = Kokkos::subview(dsdx_Uz_all, icol, Kokkos::ALL());
-    const auto dsdy_Uz = Kokkos::subview(dsdy_Uz_all, icol, Kokkos::ALL());
-    const auto dsdx_thl = Kokkos::subview(dsdx_thl_all, icol, Kokkos::ALL());
-    const auto dsdy_thl = Kokkos::subview(dsdy_thl_all, icol, Kokkos::ALL());
-
-    // Accumulate reference-element derivatives in the two local horizontal directions.
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
-      dsdx_Ux(ilev) = 0;
-      dsdy_Ux(ilev) = 0;
-      dsdx_Uy(ilev) = 0;
-      dsdy_Uy(ilev) = 0;
-      dsdx_Uz(ilev) = 0;
-      dsdy_Uz(ilev) = 0;
-      dsdx_thl(ilev) = 0;
-      dsdy_thl(ilev) = 0;
-    });
-    team.team_barrier();
 
     Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
       Real dsdx_ux = 0;
@@ -134,6 +105,12 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
       Real dsdy_uz = 0;
       Real dsdx_theta_l = 0;
       Real dsdy_theta_l = 0;
+      Real dsdx_qt = 0;
+      Real dsdy_qt = 0;
+      Real dsdx_u = 0;
+      Real dsdy_u = 0;
+      Real dsdx_v = 0;
+      Real dsdy_v = 0;
 
       for (int kgp = 0; kgp < NGP; ++kgp) {
         // The horizontal stencil uses interface w, so average the two
@@ -203,43 +180,43 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
         const Real T_col = PF::calculate_T_from_theta(theta_col, p_int_top_col + 0.5*dp_col(ilev));
         const Real theta_l_row = PF::calculate_thetal_from_theta(theta_row, T_row, qc_row);
         const Real theta_l_col = PF::calculate_thetal_from_theta(theta_col, T_col, qc_col);
+        const Real qt_row = qv_row + qc_row;
+        const Real qt_col = qv_col + qc_col;
 
         dsdx_ux += dvv(jgp,kgp) * local_to_cart_component(row_x, u_row, v_row, w_row);
         dsdy_ux += dvv(igp,kgp) * local_to_cart_component(col_x, u_col, v_col, w_col);
+        dsdx_u += dvv(jgp,kgp) * u_row;
+        dsdy_u += dvv(igp,kgp) * u_col;
 
         dsdx_uy += dvv(jgp,kgp) * local_to_cart_component(row_y, u_row, v_row, w_row);
         dsdy_uy += dvv(igp,kgp) * local_to_cart_component(col_y, u_col, v_col, w_col);
+        dsdx_v += dvv(jgp,kgp) * v_row;
+        dsdy_v += dvv(igp,kgp) * v_col;
 
         dsdx_uz += dvv(jgp,kgp) * local_to_cart_component(row_z, u_row, v_row, w_row);
         dsdy_uz += dvv(igp,kgp) * local_to_cart_component(col_z, u_col, v_col, w_col);
         dsdx_theta_l += dvv(jgp,kgp) * theta_l_row;
         dsdy_theta_l += dvv(igp,kgp) * theta_l_col;
+        dsdx_qt += dvv(jgp,kgp) * qt_row;
+        dsdy_qt += dvv(igp,kgp) * qt_col;
       }
 
-      dsdx_Ux(ilev) = dsdx_ux;
-      dsdy_Ux(ilev) = dsdy_ux;
-      dsdx_Uy(ilev) = dsdx_uy;
-      dsdy_Uy(ilev) = dsdy_uy;
-      dsdx_Uz(ilev) = dsdx_uz;
-      dsdy_Uz(ilev) = dsdy_uz;
-      dsdx_thl(ilev) = dsdx_theta_l;
-      dsdy_thl(ilev) = dsdy_theta_l;
-    });
-    team.team_barrier();
+      const auto dinv_ij = Kokkos::subview(dinv, ie, Kokkos::ALL(), Kokkos::ALL(), igp, jgp);
+      grad_Ux_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_ux + dinv_ij(0,1) * dsdy_ux) * scale_factor_inv;
+      grad_Uy_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_uy + dinv_ij(0,1) * dsdy_uy) * scale_factor_inv;
+      grad_Uz_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_uz + dinv_ij(0,1) * dsdy_uz) * scale_factor_inv;
+      const Real grad_thl_0 = (dinv_ij(0,0) * dsdx_theta_l + dinv_ij(0,1) * dsdy_theta_l) * scale_factor_inv;
+      const Real grad_qt_0 = (dinv_ij(0,0) * dsdx_qt + dinv_ij(0,1) * dsdy_qt) * scale_factor_inv;
+      const Real grad_u_0 = (dinv_ij(0,0) * dsdx_u + dinv_ij(0,1) * dsdy_u) * scale_factor_inv;
+      const Real grad_v_0 = (dinv_ij(0,0) * dsdx_v + dinv_ij(0,1) * dsdy_v) * scale_factor_inv;
 
-    // Convert the reference-element derivatives into physical horizontal
-    // gradients using the inverse metric tensor on this curved element.
-    const auto dinv_ij = Kokkos::subview(dinv, ie, Kokkos::ALL(), Kokkos::ALL(), igp, jgp);
-    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_scalar), [&] (const int ilev) {
-      grad_Ux_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Ux(ilev) + dinv_ij(0,1) * dsdy_Ux(ilev)) * scale_factor_inv;
-      grad_Uy_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Uy(ilev) + dinv_ij(0,1) * dsdy_Uy(ilev)) * scale_factor_inv;
-      grad_Uz_dyn(ie,0,igp,jgp,ilev) = (dinv_ij(0,0) * dsdx_Uz(ilev) + dinv_ij(0,1) * dsdy_Uz(ilev)) * scale_factor_inv;
-      const Real grad_thl_0 = (dinv_ij(0,0) * dsdx_thl(ilev) + dinv_ij(0,1) * dsdy_thl(ilev)) * scale_factor_inv;
-
-      grad_Ux_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Ux(ilev) + dinv_ij(1,1) * dsdy_Ux(ilev)) * scale_factor_inv;
-      grad_Uy_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Uy(ilev) + dinv_ij(1,1) * dsdy_Uy(ilev)) * scale_factor_inv;
-      grad_Uz_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_Uz(ilev) + dinv_ij(1,1) * dsdy_Uz(ilev)) * scale_factor_inv;
-      const Real grad_thl_1 = (dinv_ij(1,0) * dsdx_thl(ilev) + dinv_ij(1,1) * dsdy_thl(ilev)) * scale_factor_inv;
+      grad_Ux_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_ux + dinv_ij(1,1) * dsdy_ux) * scale_factor_inv;
+      grad_Uy_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_uy + dinv_ij(1,1) * dsdy_uy) * scale_factor_inv;
+      grad_Uz_dyn(ie,1,igp,jgp,ilev) = (dinv_ij(1,0) * dsdx_uz + dinv_ij(1,1) * dsdy_uz) * scale_factor_inv;
+      const Real grad_thl_1 = (dinv_ij(1,0) * dsdx_theta_l + dinv_ij(1,1) * dsdy_theta_l) * scale_factor_inv;
+      const Real grad_qt_1 = (dinv_ij(1,0) * dsdx_qt + dinv_ij(1,1) * dsdy_qt) * scale_factor_inv;
+      const Real grad_u_1 = (dinv_ij(1,0) * dsdx_u + dinv_ij(1,1) * dsdy_u) * scale_factor_inv;
+      const Real grad_v_1 = (dinv_ij(1,0) * dsdx_v + dinv_ij(1,1) * dsdy_v) * scale_factor_inv;
 
       const Real b2_0 = vec_sph2cart(ie, 2, 0, igp, jgp);
       const Real b2_1 = vec_sph2cart(ie, 2, 1, igp, jgp);
@@ -251,6 +228,9 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
                           + b2_1 * grad_Uy_dyn(ie,1,igp,jgp,ilev)
                           + b2_2 * grad_Uz_dyn(ie,1,igp,jgp,ilev);
       wthl_leonard_base_dyn(ie,igp,jgp,ilev) = dw_dloc0 * grad_thl_0 + dw_dloc1 * grad_thl_1;
+      wqt_leonard_base_dyn(ie,igp,jgp,ilev) = dw_dloc0 * grad_qt_0 + dw_dloc1 * grad_qt_1;
+      uw_leonard_base_dyn(ie,igp,jgp,ilev) = dw_dloc0 * grad_u_0 + dw_dloc1 * grad_u_1;
+      vw_leonard_base_dyn(ie,igp,jgp,ilev) = dw_dloc0 * grad_v_0 + dw_dloc1 * grad_v_1;
     });
   });
 

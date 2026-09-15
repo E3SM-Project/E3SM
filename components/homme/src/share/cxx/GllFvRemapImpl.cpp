@@ -343,6 +343,12 @@ void GllFvRemapImpl
                       const Phys3T* shear_strain3d_components_fv_ptr,
                       const CPhys2T* wthl_leonard_base_gll_ptr,
                       const Phys2T* wthl_leonard_base_fv_ptr,
+                      const CPhys2T* wqt_leonard_base_gll_ptr,
+                      const Phys2T* wqt_leonard_base_fv_ptr,
+                      const CPhys2T* uw_leonard_base_gll_ptr,
+                      const Phys2T* uw_leonard_base_fv_ptr,
+                      const CPhys2T* vw_leonard_base_gll_ptr,
+                      const Phys2T* vw_leonard_base_fv_ptr,
                       const Phys3T& uvs, const Phys3T& qs,
                       const Phys2T* dp_fv_out_ptr) {
   // Impl only for theta-l until ElementOps is provided in preqx_kokkos.
@@ -362,6 +368,12 @@ void GllFvRemapImpl
                             shear_strain3d_components_fv_ptr != nullptr;
   const bool remap_wthl_leonard = wthl_leonard_base_gll_ptr != nullptr &&
                                   wthl_leonard_base_fv_ptr != nullptr;
+  const bool remap_wqt_leonard = wqt_leonard_base_gll_ptr != nullptr &&
+                                 wqt_leonard_base_fv_ptr != nullptr;
+  const bool remap_uw_leonard = uw_leonard_base_gll_ptr != nullptr &&
+                                uw_leonard_base_fv_ptr != nullptr;
+  const bool remap_vw_leonard = vw_leonard_base_gll_ptr != nullptr &&
+                                vw_leonard_base_fv_ptr != nullptr;
 
 #ifndef NDEBUG
   const auto nelemd = m_data.nelemd;
@@ -385,6 +397,30 @@ void GllFvRemapImpl
            wthl_leonard_base_gll.extent_int(2) % packn == 0);
     assert(wthl_leonard_base_fv.extent_int(0) >= nelemd && wthl_leonard_base_fv.extent_int(1) >= nf2 &&
            wthl_leonard_base_fv.extent_int(2) % packn == 0);
+  }
+  if (remap_wqt_leonard) {
+    const auto& wqt_leonard_base_gll = *wqt_leonard_base_gll_ptr;
+    const auto& wqt_leonard_base_fv = *wqt_leonard_base_fv_ptr;
+    assert(wqt_leonard_base_gll.extent_int(0) >= nelemd && wqt_leonard_base_gll.extent_int(1) >= np2 &&
+           wqt_leonard_base_gll.extent_int(2) % packn == 0);
+    assert(wqt_leonard_base_fv.extent_int(0) >= nelemd && wqt_leonard_base_fv.extent_int(1) >= nf2 &&
+           wqt_leonard_base_fv.extent_int(2) % packn == 0);
+  }
+  if (remap_uw_leonard) {
+    const auto& uw_leonard_base_gll = *uw_leonard_base_gll_ptr;
+    const auto& uw_leonard_base_fv = *uw_leonard_base_fv_ptr;
+    assert(uw_leonard_base_gll.extent_int(0) >= nelemd && uw_leonard_base_gll.extent_int(1) >= np2 &&
+           uw_leonard_base_gll.extent_int(2) % packn == 0);
+    assert(uw_leonard_base_fv.extent_int(0) >= nelemd && uw_leonard_base_fv.extent_int(1) >= nf2 &&
+           uw_leonard_base_fv.extent_int(2) % packn == 0);
+  }
+  if (remap_vw_leonard) {
+    const auto& vw_leonard_base_gll = *vw_leonard_base_gll_ptr;
+    const auto& vw_leonard_base_fv = *vw_leonard_base_fv_ptr;
+    assert(vw_leonard_base_gll.extent_int(0) >= nelemd && vw_leonard_base_gll.extent_int(1) >= np2 &&
+           vw_leonard_base_gll.extent_int(2) % packn == 0);
+    assert(vw_leonard_base_fv.extent_int(0) >= nelemd && vw_leonard_base_fv.extent_int(1) >= nf2 &&
+           vw_leonard_base_fv.extent_int(2) % packn == 0);
   }
   assert(uvs.extent_int(0) >= nelemd && uvs.extent_int(1) >= nf2 && uvs.extent_int(2) == 2 &&
          uvs.extent_int(3) % packn == 0);
@@ -422,6 +458,36 @@ void GllFvRemapImpl
                                 wthl_leonard_base_gll.extent_int(1), wthl_leonard_base_gll.extent_int(2)/packn);
     wthl_leonard_fv = VPhys2T(real2pack(wthl_leonard_base_fv), wthl_leonard_base_fv.extent_int(0),
                               wthl_leonard_base_fv.extent_int(1), wthl_leonard_base_fv.extent_int(2)/packn);
+  }
+  CVPhys2T wqt_leonard_gll;
+  VPhys2T wqt_leonard_fv;
+  if (remap_wqt_leonard) {
+    const auto& wqt_leonard_base_gll = *wqt_leonard_base_gll_ptr;
+    const auto& wqt_leonard_base_fv = *wqt_leonard_base_fv_ptr;
+    wqt_leonard_gll = CVPhys2T(creal2pack(wqt_leonard_base_gll), wqt_leonard_base_gll.extent_int(0),
+                               wqt_leonard_base_gll.extent_int(1), wqt_leonard_base_gll.extent_int(2)/packn);
+    wqt_leonard_fv = VPhys2T(real2pack(wqt_leonard_base_fv), wqt_leonard_base_fv.extent_int(0),
+                             wqt_leonard_base_fv.extent_int(1), wqt_leonard_base_fv.extent_int(2)/packn);
+  }
+  CVPhys2T uw_leonard_gll;
+  VPhys2T uw_leonard_fv;
+  if (remap_uw_leonard) {
+    const auto& uw_leonard_base_gll = *uw_leonard_base_gll_ptr;
+    const auto& uw_leonard_base_fv = *uw_leonard_base_fv_ptr;
+    uw_leonard_gll = CVPhys2T(creal2pack(uw_leonard_base_gll), uw_leonard_base_gll.extent_int(0),
+                              uw_leonard_base_gll.extent_int(1), uw_leonard_base_gll.extent_int(2)/packn);
+    uw_leonard_fv = VPhys2T(real2pack(uw_leonard_base_fv), uw_leonard_base_fv.extent_int(0),
+                            uw_leonard_base_fv.extent_int(1), uw_leonard_base_fv.extent_int(2)/packn);
+  }
+  CVPhys2T vw_leonard_gll;
+  VPhys2T vw_leonard_fv;
+  if (remap_vw_leonard) {
+    const auto& vw_leonard_base_gll = *vw_leonard_base_gll_ptr;
+    const auto& vw_leonard_base_fv = *vw_leonard_base_fv_ptr;
+    vw_leonard_gll = CVPhys2T(creal2pack(vw_leonard_base_gll), vw_leonard_base_gll.extent_int(0),
+                              vw_leonard_base_gll.extent_int(1), vw_leonard_base_gll.extent_int(2)/packn);
+    vw_leonard_fv = VPhys2T(real2pack(vw_leonard_base_fv), vw_leonard_base_fv.extent_int(0),
+                            vw_leonard_base_fv.extent_int(1), vw_leonard_base_fv.extent_int(2)/packn);
   }
 
   const auto dp3d = m_state.m_dp3d;
@@ -604,6 +670,24 @@ void GllFvRemapImpl
       remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
              evucs_np2_nlev(&wthl_leonard_gll(ie,0,0)), evus_np2_nlev(rw1.data()),
              evus2(&wthl_leonard_fv(ie,0,0), nf2, nlevpk));
+      kv.team_barrier();
+    }
+    if (remap_wqt_leonard) {
+      remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
+             evucs_np2_nlev(&wqt_leonard_gll(ie,0,0)), evus_np2_nlev(rw1.data()),
+             evus2(&wqt_leonard_fv(ie,0,0), nf2, nlevpk));
+      kv.team_barrier();
+    }
+    if (remap_uw_leonard) {
+      remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
+             evucs_np2_nlev(&uw_leonard_gll(ie,0,0)), evus_np2_nlev(rw1.data()),
+             evus2(&uw_leonard_fv(ie,0,0), nf2, nlevpk));
+      kv.team_barrier();
+    }
+    if (remap_vw_leonard) {
+      remapd(team, nf2, np2, nlevpk, g2f_remapd, gll_metdet_ie, w_ff, fv_metdet_ie,
+             evucs_np2_nlev(&vw_leonard_gll(ie,0,0)), evus_np2_nlev(rw1.data()),
+             evus2(&vw_leonard_fv(ie,0,0), nf2, nlevpk));
       kv.team_barrier();
     }
 
