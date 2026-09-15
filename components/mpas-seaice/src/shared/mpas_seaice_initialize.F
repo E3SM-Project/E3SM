@@ -638,6 +638,14 @@ contains
     use seaice_constants, only: &
          seaicePuny
 
+    use icepack_intfc, only: &
+         icepack_init_enthalpy, &
+         icepack_enthalpy_snow, &
+         icepack_warnings_aborted
+
+    use seaice_icepack, only: &
+         seaice_icepack_write_warnings
+
     type(block_type), intent(inout) :: &
          block !< Input/Output:
 
@@ -648,21 +656,32 @@ contains
          mesh, &
          tracers, &
          tracers_aggregate, &
-         initial
+         initial, &
+         atmos_coupling, &
+         ocean_coupling
 
     integer, pointer :: &
          nCellsSolve, &
-         nCategories
+         nCategories, &
+         nSnowLayers
 
     real(kind=RKIND), dimension(:), pointer :: &
          latCell, &
-         iceAreaFromFile
+         iceAreaFromFile, &
+         airTemperature, &
+         seaFreezingTemperature
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         initialSalinityProfile, &
+         initialMeltingTemperatureProfile
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
          iceVolumeCategory, &
          snowVolumeCategory, &
-         surfaceTemperature
+         surfaceTemperature, &
+         iceEnthalpy, &
+         snowEnthalpy
 
     real(kind=RKIND), dimension(:), pointer :: &
          iceAreaCell
@@ -687,7 +706,8 @@ contains
 
     integer :: &
          iCell, &
-         iCategory
+         iCategory, &
+         iSnowLayer
 
     call MPAS_pool_get_config(configs, "config_iceArea_from_file_thickness_north", config_iceArea_from_file_thickness_north)
     call MPAS_pool_get_config(configs, "config_iceArea_from_file_thickness_south", config_iceArea_from_file_thickness_south)
@@ -698,9 +718,12 @@ contains
     call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
     call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
     call MPAS_pool_get_subpool(block % structs, "initial", initial)
+     call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
+     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
     call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
     call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+     call MPAS_pool_get_dimension(mesh, "nSnowLayers", nSnowLayers)
 
     call MPAS_pool_get_array(mesh, "latCell", latCell)
     call MPAS_pool_get_array(initial, "iceAreaFromFile", iceAreaFromFile)
@@ -709,6 +732,15 @@ contains
     call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
     call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+     call MPAS_pool_get_array(tracers, "iceEnthalpy", iceEnthalpy, 1)
+     call MPAS_pool_get_array(tracers, "snowEnthalpy", snowEnthalpy, 1)
+
+     call MPAS_pool_get_array(atmos_coupling, "airTemperature", airTemperature)
+
+     call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
+
+     call MPAS_pool_get_array(initial, "initialSalinityProfile", initialSalinityProfile)
+     call MPAS_pool_get_array(initial, "initialMeltingTemperatureProfile", initialMeltingTemperatureProfile)
 
     call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
 
@@ -737,6 +769,11 @@ contains
 
     do iCell = 1, nCellsSolve
 
+           iceEnthalpy(:,:,iCell) = 0.0_RKIND
+           do iSnowLayer = 1, nSnowLayers
+                snowEnthalpy(iSnowLayer,:,iCell) = icepack_enthalpy_snow(0.0_RKIND)
+           enddo ! iSnowLayer
+
        if (iceAreaFromFile(iCell) > seaicePuny) then
 
           ! has ice; no latitude or SST mask is applied here, unlike the
@@ -761,6 +798,16 @@ contains
 
              surfaceTemperature(1,iCategory,iCell) = -1.8_RKIND
 
+             call icepack_init_enthalpy(&
+                  airTemperature(iCell), &
+                  seaFreezingTemperature(iCell), &
+                  initialSalinityProfile(:,iCell), &
+                  initialMeltingTemperatureProfile(:,iCell), &
+                  surfaceTemperature(1,iCategory,iCell), &
+                  iceEnthalpy(:,iCategory,iCell), &
+                  snowEnthalpy(:,iCategory,iCell))
+             call seaice_icepack_write_warnings(icepack_warnings_aborted())
+
           enddo ! iCategory
 
        else
@@ -769,7 +816,7 @@ contains
           iceAreaCategory(1,:,iCell)    = 0.0_RKIND
           iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
           snowVolumeCategory(1,:,iCell) = 0.0_RKIND
-          surfaceTemperature(1,:,iCell) = 0.0_RKIND
+          surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
 
        endif
 
