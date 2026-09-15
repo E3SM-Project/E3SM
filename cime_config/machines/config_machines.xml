@@ -273,7 +273,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
@@ -512,7 +511,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
@@ -922,7 +920,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
@@ -1158,7 +1155,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
@@ -1344,7 +1340,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
@@ -1580,7 +1575,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
     </environment_variables>
