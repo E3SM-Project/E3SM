@@ -3,6 +3,7 @@
 
 #include "zm_functions.hpp" // for ETI only but harmless for GPU
 #include <ekat_subview_utils.hpp>
+#include "share/util/eamxx_timing.hpp"
 
 namespace scream {
 namespace zm {
@@ -83,6 +84,7 @@ void Functions<S,D>::zm_conv_main(
   //----------------------------------------------------------------------------
   // Allocate temporary 2D device views  [ncol, pver] or [ncol, pverp]
   //----------------------------------------------------------------------------
+  start_timer("EAMxx::zm::main::allocation");
   view_2d<Real>
     s_mid    ("s_mid",     ncol, pver),
     q_mid    ("q_mid",     ncol, pver),
@@ -134,6 +136,7 @@ void Functions<S,D>::zm_conv_main(
   // Workspace for sub-functions (max 20 arrays for zm_cloud_properties + entrainment)
   const auto policy = ekat::TeamPolicyFactory<ExeSpace>::get_default_team_policy(ncol, pver);
   WorkspaceManager wsm(pverp, 20, policy);
+  stop_timer("EAMxx::zm::main::allocation");
 
   //============================================================================
   // Kernel 1: Initialize outputs/scalars, convert pressures, find PBL top,
@@ -227,6 +230,7 @@ void Functions<S,D>::zm_conv_main(
   //============================================================================
   // Kernel 2: Compute CAPE (standard parcel using current-step state)
   //============================================================================
+  start_timer("EAMxx::zm::main::cape");
   Kokkos::parallel_for("zm_conv_main_cape", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
     auto ws = wsm.get_workspace(team);
@@ -246,13 +250,20 @@ void Functions<S,D>::zm_conv_main(
                         ekat::subview(t_pcl, i), t_pcl_lcl(i));
   });
   Kokkos::fence();
+  stop_timer("EAMxx::zm::main::cape");
 
   //============================================================================
-  // Kernel 3: Compute DCAPE (using previous-step state) — only when needed
+  // Kernel 3: Compute DCAPE (using previous-step state) - only when needed
+  // Skip columns where cape <= cape_threshold_loc since they cannot trigger convection
   //============================================================================
-  if (!is_first_step && runtime_opt.trig_dcape) {
+  const Real cape_threshold_loc = runtime_opt.cape_threshold;
+  const bool use_dcape_trigger = runtime_opt.trig_dcape && !is_first_step;
+
+  if (use_dcape_trigger) {
+    start_timer("EAMxx::zm::main::dcape");
     Kokkos::parallel_for("zm_conv_main_dcape", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
+      if (cape(i) <= cape_threshold_loc) return;
       const Int prev_msemax_klev_val = msemax_klev(i);
       auto ws = wsm.get_workspace(team);
       compute_dilute_cape(team, ws, runtime_opt,
@@ -274,21 +285,23 @@ void Functions<S,D>::zm_conv_main(
 
     Kokkos::parallel_for("zm_conv_main_dcape_calc", RangePolicy(0, ncol),
       KOKKOS_LAMBDA(const Int i) {
-        dcape(i) = (cape(i) - cape_m1(i)) / time_step;
+        if (cape(i) > cape_threshold_loc) {
+          dcape(i) = (cape(i) - cape_m1(i)) / time_step;
+        }
       });
     Kokkos::fence();
+    stop_timer("EAMxx::zm::main::dcape");
   }
 
   //============================================================================
   // Host: Determine active columns
+  // cape_threshold_loc depends only on runtime_opt / is_first_step (same for all cols)
   //============================================================================
-  const Real cape_threshold_loc = runtime_opt.cape_threshold;
-  const bool use_dcape_trigger = runtime_opt.trig_dcape && !is_first_step;
   int inactive_cnt = 0;
   Kokkos::parallel_reduce("zm_conv_main_active", RangePolicy(0, ncol),
                           KOKKOS_LAMBDA(const Int i, Int& local_inactive) {
       const bool is_active = use_dcape_trigger
-        ? (cape(i) > cape_threshold_loc && dcape(i) > runtime_opt.dcape_threshold)
+        ? (cape(i) > cape_threshold_loc && dcape(i) > ZMC::dcape_threshold)
         : (cape(i) > cape_threshold_loc);
       active(i) = is_active ? 1 : 0;
       if (!is_active) {
@@ -301,7 +314,7 @@ void Functions<S,D>::zm_conv_main(
   Kokkos::fence();
 
   //============================================================================
-  // Kernel 4: Active columns — convert p_del, compute dsubcld, define s/q interfaces
+  // Kernel 4: Active columns - convert p_del, compute dsubcld, define s/q interfaces
   //============================================================================
   Kokkos::parallel_for("zm_conv_main_setup_active", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
@@ -392,7 +405,7 @@ void Functions<S,D>::zm_conv_main(
   Kokkos::fence();
 
   //============================================================================
-  // Kernel 7: Closure — cloud base mass flux
+  // Kernel 7: Closure - cloud base mass flux
   //============================================================================
   Kokkos::parallel_for("zm_conv_main_closure", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
