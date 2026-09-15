@@ -90,7 +90,7 @@ TEST_CASE("runtime_formulation_selection") {
     REQUIRE(constants_none.boce[wiso::HDO] != constants_lgm.boce[wiso::HDO]);
   }
 
-  SECTION("liquid_vapor_formulations") {
+  SECTION("liquid_vapor_fractionation") {
     // Test 1: Default (Horita & Wesolowski 1994)
     WaterIsotopeRuntimeOptions opts_horita;
     WaterIsotopeConstants<Real> constants_horita(opts_horita);
@@ -113,7 +113,7 @@ TEST_CASE("runtime_formulation_selection") {
     REQUIRE(std::abs(constants_horita.alpal[wiso::HDO] - constants_majoube.alpal[wiso::HDO]) > 1e3);
   }
 
-  SECTION("ice_vapor_formulations") {
+  SECTION("ice_vapor_fractionation") {
     // Test 1: Default (Merlivat & Nief 1967)
     WaterIsotopeRuntimeOptions opts_merlivat;
     WaterIsotopeConstants<Real> constants_merlivat(opts_merlivat);
@@ -139,11 +139,11 @@ TEST_CASE("runtime_formulation_selection") {
   SECTION("combined_formulations") {
     // Test using all alternative formulations together
     WaterIsotopeRuntimeOptions opts_alt;
-    opts_alt.liquid_vapor = wiso::LiquidVaporFormulation::Majoube1971a;
+    opts_alt.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
     opts_alt.diffusivity = wiso::DiffusivityFormulation::Cappa2003;
     opts_alt.standard_ratio = wiso::StandardRatioFormulation::NaturalAbundance;
     opts_alt.ocean_enrichment = wiso::OceanEnrichmentFormulation::LGM;
-    opts_alt.ice_vapor = wiso::IceVaporFormulation::IsoCAM3;
+    opts_alt.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
 
     WaterIsotopeConstants<Real> constants_alt(opts_alt);
     WaterIsotopeConstants<Real> constants_default;  // All defaults
