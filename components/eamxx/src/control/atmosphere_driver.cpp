@@ -1076,100 +1076,86 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  // Check which fields need to have an initial condition.
+  // Process all fields in the STARTUP group. For each, either init to
+  // a constant (if provided), add it to list of fields to read from file,
+  // or add it to list of fields to copy from another field.
+  m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   strmap_t<std::set<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
-  // Check which fields should be loaded from the topography file
   strmap_t<strvec_t> topography_file_fields_names;
   strmap_t<strvec_t> topography_eamxx_fields_names;
 
-  // Helper lambda, to reduce code duplication
-  auto process_ic_field = [&](const Field& f) {
-    const auto& fid = f.get_header().get_identifier();
-    const auto& fname = fid.name();
-    const auto& grid_name = fid.get_grid_name();
-
-    if (ic_pl.isParameter(fname)) {
-      // This is the case that the user provided an initialization
-      // for this field in the parameter file.
-      if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
-          ic_pl.isType<std::vector<double>>(fname)) {
-        // Initial condition is a constant
-        initialize_constant_field(fid, ic_pl);
-
-        // Note: f is const, so we can't modify the tracking. So get the same field from the fm
-        auto f_nonconst = m_field_mgr->get_field(fid);
-        f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
-      } else if (ic_pl.isType<std::string>(fname)) {
-        // Initial condition is a string
-        ic_fields_to_copy.push_back(fid);
-      } else {
-        EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
-                        "double or string, or vector double arguments are allowed");
-      }
-      m_fields_inited[grid_name].insert(fname);
-    } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
-      // these fields need to be loaded from the topography file
-	    // - phis is the surface geopotential height
-	    // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
-	    //   needed for turbulent mountain stress scheme (i.e. TMS)
-	    // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
-	    //   needed for orographic gravity wave drag scheme (i.e. GWD)
-      auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
-      auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
-
-      if (fname == "phis") {
-        // For GLL points, phis corresponds to "PHIS_d" in the
-        // topography file. On PG2 grid, dynamics will take care
-        // of computing phis, so do not add to initialized fields.
-        if (grid_name == "physics_pg2") {
-          // Skip
-        } else if (grid_name == "physics_gll" ||
-                   grid_name == "point_grid") {
-          this_grid_topo_file_fnames.push_back("PHIS_d");
-          this_grid_topo_eamxx_fnames.push_back(fname);
-          m_fields_inited[grid_name].insert(fname);
-        } else {
-          EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
-        }
-      } else if (fname == "sgh30") {
-        // The eamxx field "sgh30" is called "SGH30" in the
-        // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
-                        "Error! Requesting sgh30 field on " + grid_name +
-                        " topo file only has sgh30 for physics_pg2.\n");
-        topography_file_fields_names[grid_name].push_back("SGH30");
-        topography_eamxx_fields_names[grid_name].push_back(fname);
-        m_fields_inited[grid_name].insert(fname);
-      } else if (fname == "sgh") {
-        // The eamxx field "sgh" is called "SGH" in the
-        // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
-                        "Error! Requesting sgh field on " + grid_name +
-                        " topo file only has sgh for physics_pg2.\n");
-        topography_file_fields_names[grid_name].push_back("SGH");
-        topography_eamxx_fields_names[grid_name].push_back(fname);
-        m_fields_inited[grid_name].insert(fname);
-      }
-    } else if (not (fvphyshack and grid_name == "physics_pg2")) {
-      // The IC file is written for the GLL grid, so we only load
-      // fields from there. Any other input fields on the PG2 grid
-      // will be properly computed in the dynamics interface.
-      // From the point of view of setting ICs though, these fields ARE read.
-      // Note: fields reaching this point are always leaves (see set_initialization_groups),
-      // so there is no need to handle children here.
-      ic_fields_names[grid_name].insert(fname);
-      m_fields_inited[grid_name].insert(fname);
-    }
-  };
-
-  // Now process all fields in the STARTUP group
-  m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& gn : m_grids_manager->get_grid_names()) {
     auto ic_group = m_field_mgr->get_field_group("STARTUP",gn);
-    for (const auto& f : std::views::values(ic_group.individual_fields()))
-      process_ic_field(f);
+    for (auto& f : std::views::values(ic_group.individual_fields())) {
+      const auto& fid = f.get_header().get_identifier();
+      const auto& fname = fid.name();
+      const auto& grid_name = fid.get_grid_name();
+
+      if (ic_pl.isParameter(fname)) {
+        // This is the case that the user provided an initialization
+        // for this field in the parameter file (either to a constant or to another field).
+        if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
+            ic_pl.isType<std::vector<double>>(fname)) {
+          initialize_constant_field(fid, ic_pl);
+        } else if (ic_pl.isType<std::string>(fname)) {
+          ic_fields_to_copy.push_back(fid);
+        } else {
+          EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
+                          "double or string, or vector double arguments are allowed");
+        }
+        m_fields_inited[grid_name].insert(fname);
+      } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
+        // these fields need to be loaded from the topography file
+        // - phis is the surface geopotential height
+        // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
+        //   needed for turbulent mountain stress scheme (i.e. TMS)
+        // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
+        //   needed for orographic gravity wave drag scheme (i.e. GWD)
+        auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
+        auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
+
+        if (fname == "phis") {
+          // For GLL points, phis corresponds to "PHIS_d" in the
+          // topography file. On PG2 grid, dynamics will take care
+          // of computing phis, so do not add to initialized fields.
+          if (grid_name == "physics_pg2") {
+            // Skip
+          } else if (grid_name == "physics_gll" ||
+                     grid_name == "point_grid") {
+            this_grid_topo_file_fnames.push_back("PHIS_d");
+            this_grid_topo_eamxx_fnames.push_back(fname);
+            m_fields_inited[grid_name].insert(fname);
+          } else {
+            EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
+          }
+        } else if (fname == "sgh30") {
+          // The eamxx field "sgh30" is called "SGH30" in the
+          // topography file and is only available on the PG2 grid.
+          EKAT_ASSERT_MSG(grid_name == "physics_pg2",
+                          "Error! Requesting sgh30 field on " + grid_name +
+                          " topo file only has sgh30 for physics_pg2.\n");
+          topography_file_fields_names[grid_name].push_back("SGH30");
+          topography_eamxx_fields_names[grid_name].push_back(fname);
+          m_fields_inited[grid_name].insert(fname);
+        } else if (fname == "sgh") {
+          // The eamxx field "sgh" is called "SGH" in the
+          // topography file and is only available on the PG2 grid.
+          EKAT_ASSERT_MSG(grid_name == "physics_pg2",
+                          "Error! Requesting sgh field on " + grid_name +
+                          " topo file only has sgh for physics_pg2.\n");
+          topography_file_fields_names[grid_name].push_back("SGH");
+          topography_eamxx_fields_names[grid_name].push_back(fname);
+          m_fields_inited[grid_name].insert(fname);
+        }
+      } else if (not (fvphyshack and grid_name == "physics_pg2")) {
+        // These are GLL grid fields. ICs are read on this grid, and dyn
+        // takes care of remapping to PG2 during process initialization.
+        ic_fields_names[grid_name].insert(fname);
+        m_fields_inited[grid_name].insert(fname);
+      }
+    }
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
@@ -1237,9 +1223,6 @@ void AtmosphereDriver::set_initial_conditions ()
         // lat/lon column to every other column
         m_iop_data_manager->read_fields_from_file_for_iop(file_name,ic_fields,grid);
       }
-      for (auto& f : ic_fields) {
-        f.get_header().get_tracking().update_time_stamp(m_current_ts);
-      }
     }
   }
 
@@ -1262,9 +1245,6 @@ void AtmosphereDriver::set_initial_conditions ()
     auto f_tgt = m_field_mgr->get_field(tgt_fname, gname);
     auto f_src = m_field_mgr->get_field(src_fname, gname);
     f_tgt.deep_copy(f_src);
-
-    // Set the initial time stamp
-    f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
   m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
 
@@ -1305,9 +1285,6 @@ void AtmosphereDriver::set_initial_conditions ()
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
         m_iop_data_manager->read_fields_from_file_for_iop(file_name,topo_fields,grid);
-      }
-      for (auto& f : topo_fields) {
-        f.get_header().get_tracking().update_time_stamp(m_current_ts);
       }
     }
     // Store in provenance list, for later usage in output file metadata
@@ -1412,24 +1389,29 @@ void AtmosphereDriver::set_initial_conditions ()
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
   }
 
-  // Parse all fields with children; if all children have been inited, the parent is also valid
-  auto init_parent = [&](Field& f) {
-    const auto& children = f.get_header().get_children();
-    if (children.size()==0)
-      return;
+  // Initialize the timestamp of all inited fields
+  for (auto& [grid_name,field_names] : m_fields_inited) {
+    for (auto& fname : field_names) {
+      auto f = m_field_mgr->get_field(fname,grid_name);
+      f.get_header().get_tracking().update_time_stamp(m_current_ts);
 
-    bool inited = true;
-    for (auto c : children)
-      inited &= c.lock()->get_tracking().get_time_stamp().is_valid();
+      // Also init the timestamp of children (if any)
+      for (auto& c : f.get_header().get_children())
+        c.lock()->get_tracking().update_time_stamp(m_current_ts);
 
-    if (inited)
-      f.get_header().get_tracking().update_time_stamp(m_run_t0);
-  };
-  for (auto& repo : std::views::values(m_field_mgr->get_all_repos())) {
-    for (auto& f : std::views::values(repo)) {
-      init_parent(*f);
+      // If there is a parent, and all children were inited,
+      // also init the parent's timestamp
+      if (auto p = f.get_header().get_parent(); p!=nullptr) {
+        bool p_inited = true;
+        for (auto c : p->get_children())
+          p_inited &= field_names.count(c.lock()->get_identifier().name())>0;
+
+        if (p_inited)
+          p->get_tracking().update_time_stamp(m_current_ts);
+      }
     }
   }
+
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
@@ -1836,25 +1818,35 @@ set_initialization_groups (const Field& f)
   };
 
   const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-  if (not ekat::contains(fgroups, "ACCUMULATED")) {
-    const auto& grid_name = f.get_header().get_identifier().get_grid_name();
-    const auto& children = f.get_header().get_children();
-    if (children.size()>0) {
-      // We do NOT look for parent fields in startup/restart files.
-      // Simply write/read the individual fields.
-      // So far, this should only affect horiz_winds and surf_mom_flux
-      // (the latter only in eamxx standalone tests)
-      for (auto c : children) {
-        const auto& c_id = c.lock()->get_identifier();
-        set_initialization_groups(m_field_mgr->get_field(c_id.name(),grid_name));
-      }
-    } else {
-      m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
-      m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
+
+  // ACCUMULATED fields are reset at the beginning of a timestep,
+  // so NEVER read from IC/restart file
+  if (ekat::contains(fgroups, "ACCUMULATED"))
+    return;
+
+  const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+
+  // We read from IC/restart ONLY leaf fields. In case both homme and shoc
+  // are present, we do have the turbulence_advected_tracers field, which
+  // is the monolithic field of the homonymous group, and is the child of
+  // the larger tracers field/group. However, it does NOT store children
+  // (indiv fields are the children of the origiinal tracers group).
+  // Hence, we need to check both has_children and is_group to rule out
+  // this special case
+  bool has_children = f.get_header().get_children().size()>0;
+  bool is_group = m_field_mgr->has_group(f.name(),grid_name);
+  if (has_children) {
+    auto children = f.get_header().get_children();
+    for (auto c : children) {
+      const auto& cname = c.lock()->get_identifier().name();
+      set_initialization_groups(m_field_mgr->get_field(cname,grid_name));
     }
-    if (is_topography_field(f.name())) {
-      m_field_mgr->add_to_group(f.name(), grid_name, "TOPOGRAPHY");
-    }
+  } else if (not is_group) {
+    m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
+    m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
+  }
+  if (is_topography_field(f.name())) {
+    m_field_mgr->add_to_group(f.name(), grid_name, "TOPOGRAPHY");
   }
 }
 
