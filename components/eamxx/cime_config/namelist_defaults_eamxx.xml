@@ -596,6 +596,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <f12vmr      > 531.2820e-12 </f12vmr>
       <n2vmr       > 0.7906       </n2vmr>
       <covmr       > 1.0e-7       </covmr>
+      <!-- 1850 values -->
+      <ch4vmr COMPSET="1850.*_SCREAM%BETA.*">798.799e-9</ch4vmr>
+      <co2vmr COMPSET="1850.*_SCREAM%BETA.*">284.297e-6</co2vmr>
+      <n2ovmr COMPSET="1850.*_SCREAM%BETA.*">271.5700e-9</n2ovmr>
+      <f11vmr COMPSET="1850.*_SCREAM%BETA.*">21.7225e-12</f11vmr>
+      <f12vmr COMPSET="1850.*_SCREAM%BETA.*">0.0</f12vmr>
+      <!-- Idealized/RCE -->
       <ch4vmr COMPSET=".*SCREAM%RCE.*" > 1650.e-9 </ch4vmr>
       <co2vmr COMPSET=".*SCREAM%RCE.*" > 348.0e-6 </co2vmr>
       <n2ovmr COMPSET=".*SCREAM%RCE.*" > 306.0e-9 </n2ovmr>
