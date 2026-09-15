@@ -702,12 +702,21 @@ contains
          meanThickness, &
          scaleNorth, &
          scaleSouth, &
-         snowThickness
+         snowThickness, &
+         iceAreaFromFileMin, &
+         iceAreaFromFileMax, &
+         iceAreaCellMin, &
+         iceAreaCellMax, &
+         iceVolumeCellMin, &
+         iceVolumeCellMax, &
+         iceEnthalpyMin, &
+         iceEnthalpyMax
 
     integer :: &
          iCell, &
          iCategory, &
-         iSnowLayer
+         iSnowLayer, &
+         nIceCells
 
     call MPAS_pool_get_config(configs, "config_iceArea_from_file_thickness_north", config_iceArea_from_file_thickness_north)
     call MPAS_pool_get_config(configs, "config_iceArea_from_file_thickness_south", config_iceArea_from_file_thickness_south)
@@ -831,6 +840,49 @@ contains
        iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
 
     enddo ! iCell
+
+    nIceCells = count(iceAreaFromFile(:) > seaicePuny)
+    if (nIceCells > 0) then
+       iceAreaFromFileMin = minval(iceAreaFromFile(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+       iceAreaFromFileMax = maxval(iceAreaFromFile(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+       iceAreaCellMin = minval(iceAreaCell(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+       iceAreaCellMax = maxval(iceAreaCell(:), &
+            mask=iceAreaFromFile(:) > seaicePuny)
+
+       iceVolumeCellMin = huge(iceVolumeCellMin)
+       iceVolumeCellMax = -huge(iceVolumeCellMax)
+       iceEnthalpyMin = huge(iceEnthalpyMin)
+       iceEnthalpyMax = -huge(iceEnthalpyMax)
+       do iCell = 1, nCellsSolve
+          if (iceAreaFromFile(iCell) > seaicePuny) then
+             iceVolumeCellMin = min(iceVolumeCellMin, &
+                  sum(iceVolumeCategory(1,:,iCell)))
+             iceVolumeCellMax = max(iceVolumeCellMax, &
+                  sum(iceVolumeCategory(1,:,iCell)))
+             iceEnthalpyMin = min(iceEnthalpyMin, &
+                  minval(iceEnthalpy(:,:,iCell)))
+             iceEnthalpyMax = max(iceEnthalpyMax, &
+                  maxval(iceEnthalpy(:,:,iCell)))
+          endif
+       enddo ! iCell
+
+       call mpas_log_write(&
+            "iceArea_from_file: input/applied area min/max: $r $r $r $r", &
+            realArgs=(/iceAreaFromFileMin, iceAreaFromFileMax, &
+            iceAreaCellMin, iceAreaCellMax/))
+       call mpas_log_write(&
+            "iceArea_from_file: ice cells and volume min/max: $i $r $r", &
+            intArgs=(/nIceCells/), realArgs=(/iceVolumeCellMin, &
+            iceVolumeCellMax/))
+       call mpas_log_write(&
+            "iceArea_from_file: enthalpy min/max after initialization: $r $r", &
+            realArgs=(/iceEnthalpyMin, iceEnthalpyMax/))
+    else
+       call mpas_log_write("iceArea_from_file: input contains no ice cells")
+    endif
 
   end subroutine init_ice_state_iceArea_from_file!}}}
 
