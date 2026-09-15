@@ -82,7 +82,7 @@ protected:
 
   void initialize_impl (const RunType run_type);
 
-  void compute_horizontal_derivs_for_3d_turbulence ();
+  void compute_horizontal_derivs_for_3d_turbulence_and_leonard ();
   void compute_local_strain_components3d ();
 
   // fv_phys refers to the horizontal finite volume (FV) grid for column

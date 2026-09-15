@@ -90,6 +90,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
+  const bool&                  do_leonard,
   const bool&                  extra_diags,
   // Input Variables
   const Scalar&                dx,
@@ -248,7 +249,7 @@ void Functions<S,D>::shoc_main_internal(
     update_prognostics_implicit(team,nlev,nlevi,num_qtracers,dtime,dz_zt,   // Input
                                 dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
-                                dx,dy,wthl_leonard_base,                    // Input
+                                do_leonard,dx,dy,wthl_leonard_base,         // Input
                                 workspace,                                  // Workspace
                                 thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
                                 uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
@@ -265,7 +266,7 @@ void Functions<S,D>::shoc_main_internal(
                              thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
                              uw_sec,vw_sec,wtke_sec,w_sec);             // Output
 
-    {
+    if (do_leonard) {
       const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
       const auto wthl_sec_s = ekat::scalarize(wthl_sec);
       const Scalar leonard_factor = dx*dy/6;
@@ -375,6 +376,7 @@ void Functions<S,D>::shoc_main_internal(
   const Scalar&                Ckm,
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
+  const bool&                  do_leonard,
   const bool&                  extra_diags,
   // Input Variables
   const view_1d<const Scalar>& dx,
@@ -536,7 +538,7 @@ void Functions<S,D>::shoc_main_internal(
     update_prognostics_implicit_disp(shcol,nlev,nlevi,num_qtracers,dtime,dz_zt,  // Input
                                      dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
                                      vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
-                                     dx,dy,wthl_leonard_base,                    // Input
+                                     do_leonard,dx,dy,wthl_leonard_base,         // Input
                                      workspace_mgr,                              // Workspace mgr
                                      thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
                                      uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
@@ -553,7 +555,7 @@ void Functions<S,D>::shoc_main_internal(
                                   thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
                                   uw_sec,vw_sec,wtke_sec,w_sec);             // Output
 
-    {
+    if (do_leonard) {
       const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
       const auto wthl_sec_s = ekat::scalarize(wthl_sec);
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0, shcol*nlevi), KOKKOS_LAMBDA (const Int& idx) {
@@ -673,6 +675,7 @@ Int Functions<S,D>::shoc_main(
   const bool   shoc_1p5tke   = shoc_runtime.shoc_1p5tke;
   const bool   extra_diags   = shoc_runtime.extra_diags;
   const bool   do_3d_turb    = shoc_runtime.do_3d_turb;
+  const bool   do_leonard    = shoc_runtime.do_leonard;
 
 #ifndef SCREAM_SHOC_SMALL_KERNELS
   using ExeSpace = typename KT::ExeSpace;
@@ -752,7 +755,7 @@ Int Functions<S,D>::shoc_main(
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
                        c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke,                 // Runtime options
-                       do_3d_turb, extra_diags,                               // Runtime options
+                       do_3d_turb, do_leonard, extra_diags,                   // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -782,7 +785,7 @@ Int Functions<S,D>::shoc_main(
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, extra_diags,    // Runtime options
+    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, do_leonard, extra_diags, // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input

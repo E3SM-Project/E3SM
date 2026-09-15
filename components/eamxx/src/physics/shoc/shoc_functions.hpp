@@ -83,6 +83,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool shoc_1p5tke;
     bool extra_diags;
     bool do_3d_turb;
+    bool do_leonard;
   };
 
   // This struct stores input views for shoc_main.
@@ -504,7 +505,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Pack> &zi_grid, const uview_1d<const Pack> &tk,
       const uview_1d<const Pack> &tkh, const Scalar &uw_sfc, const Scalar &vw_sfc,
       const Scalar &wthl_sfc, const Scalar &wqw_sfc, const uview_1d<const Pack> &wtracer_sfc,
-      const Scalar& dx, const Scalar& dy, const uview_1d<const Pack>& wthl_leonard_base,
+      const bool& do_leonard, const Scalar& dx, const Scalar& dy, const uview_1d<const Pack>& wthl_leonard_base,
       const Workspace &workspace, const uview_1d<Pack> &thetal, const uview_1d<Pack> &qw,
       const uview_2d_strided<Pack> &tracer, const uview_1d<Pack> &tke,
       const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind,
@@ -519,6 +520,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_2d<const Pack> &tkh, const view_1d<const Scalar> &uw_sfc,
       const view_1d<const Scalar> &vw_sfc, const view_1d<const Scalar> &wthl_sfc,
       const view_1d<const Scalar> &wqw_sfc, const view_2d<const Pack> &wtracer_sfc,
+      const bool& do_leonard,
       const view_1d<const Scalar>& dx, const view_1d<const Scalar>& dy,
       const view_2d<const Pack>& wthl_leonard_base,
       const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &thetal, const view_2d<Pack> &qw,
@@ -741,7 +743,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &do_3d_turb, const bool &extra_diags,
+      const bool &do_3d_turb, const bool &do_leonard, const bool &extra_diags,
       // Input Variables
       const Scalar &host_dx, const Scalar &host_dy, const uview_1d<const Pack> &zt_grid,
       const uview_1d<const Pack> &zi_grid, const uview_1d<const Pack> &pres,
@@ -788,7 +790,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &do_3d_turb, const bool &extra_diags,
+      const bool &do_3d_turb, const bool &do_leonard, const bool &extra_diags,
       // Input Variables
       const view_1d<const Scalar> &host_dx, const view_1d<const Scalar> &host_dy,
       const view_2d<const Pack> &zt_grid, const view_2d<const Pack> &zi_grid,

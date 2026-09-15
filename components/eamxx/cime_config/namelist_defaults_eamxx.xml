@@ -190,6 +190,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- This value is synchronized with ctl_nl::do_3d_turbulence by
            eamxx_buildnml.py and forwarded by the driver to SHOC. -->
       <do_3d_turbulence_homme type="logical" locked="true">false</do_3d_turbulence_homme>
+      <!-- Leonard is handled in the dycore interface, not the dycore proper,
+           and is forwarded by the driver to SHOC. -->
+      <do_leonard type="logical">false</do_leonard>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
       <enable_column_conservation_checks>false</enable_column_conservation_checks>

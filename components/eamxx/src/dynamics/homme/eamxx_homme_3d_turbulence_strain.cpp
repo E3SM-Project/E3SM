@@ -40,7 +40,7 @@ Real local_to_cart_component(
 
 } // anonymous namespace
 
-void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence ()
+void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence_and_leonard ()
 {
   using namespace Homme;
   using PF = PhysicsFunctions<DefaultDevice>;
@@ -93,7 +93,7 @@ void HommeDynamics::compute_horizontal_derivs_for_3d_turbulence ()
   const auto dsdy_Uz_all = m_dsdy_Uz_all;
 
   Kokkos::parallel_for(
-      "compute_horizontal_derivs_for_3d_turbulence",
+      "compute_horizontal_derivs_for_3d_turbulence_and_leonard",
       policy,
       KOKKOS_LAMBDA (const MemberType& team) {
 

@@ -140,9 +140,12 @@ void HommeDynamics::fv_phys_dyn_to_fv_phys (const util::TimeStamp& ts, const boo
       f.get_header().get_tracking().update_time_stamp(ts);
     }
     const auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+    const bool do_leonard = m_params.get<bool>("do_leonard", false);
     if (params.do_3d_turbulence) {
       auto strain = get_field_out("tke_shear_strain3d_components",pgn);
       strain.get_header().get_tracking().update_time_stamp(ts);
+    }
+    if (do_leonard) {
       auto leonard = get_field_out("wthl_leonard_base",pgn);
       leonard.get_header().get_tracking().update_time_stamp(ts);
     }
@@ -204,7 +207,10 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
     nelem, npg, nlev);
 
   const auto& params = c.get<Homme::SimulationParams>();
-  if (params.do_3d_turbulence) {
+  const bool do_leonard = m_params.isParameter("do_leonard")
+                         ? m_params.get<bool>("do_leonard")
+                         : false;
+  if (params.do_3d_turbulence && do_leonard) {
     const auto strain3d_components_gll = Homme::GllFvRemap::CPhys3T(
       m_helper_fields.at("shear_strain3d_components_dyn").get_view<const Real*****>().data(),
       nelem, NGP*NGP, 6, nlev);
@@ -219,6 +225,27 @@ void HommeDynamics::remap_dyn_to_fv_phys (GllFvRemapTmp* t) const {
       nelem, npg, nlev);
     gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
                            &strain3d_components_gll, &strain3d_components_fv,
+                           &wthl_leonard_base_gll, &wthl_leonard_base_fv,
+                           uv, q, &dp);
+  } else if (params.do_3d_turbulence) {
+    const auto strain3d_components_gll = Homme::GllFvRemap::CPhys3T(
+      m_helper_fields.at("shear_strain3d_components_dyn").get_view<const Real*****>().data(),
+      nelem, NGP*NGP, 6, nlev);
+    const auto strain3d_components_fv = Homme::GllFvRemap::Phys3T(
+      get_field_out("tke_shear_strain3d_components", gn).get_view<Real***>().data(),
+      nelem, npg, 6, nlev);
+    gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                           &strain3d_components_gll, &strain3d_components_fv,
+                           nullptr, nullptr, uv, q, &dp);
+  } else if (do_leonard) {
+    const auto wthl_leonard_base_gll = Homme::GllFvRemap::CPhys2T(
+      m_helper_fields.at("wthl_leonard_base_dyn").get_view<const Real****>().data(),
+      nelem, NGP*NGP, nlev);
+    const auto wthl_leonard_base_fv = Homme::GllFvRemap::Phys2T(
+      get_field_out("wthl_leonard_base", gn).get_view<Real**>().data(),
+      nelem, npg, nlev);
+    gfr.run_dyn_to_fv_phys(time_idx, ps, phis, T, omega,
+                           nullptr, nullptr,
                            &wthl_leonard_base_gll, &wthl_leonard_base_fv,
                            uv, q, &dp);
   } else {

@@ -56,6 +56,7 @@ void SHOCMacrophysics::create_requests()
   const auto s2 = pow(s,2);
   const auto nondim = none;
   const bool do_3d_turb = m_params.get<bool>("do_3d_turbulence_shoc", false);
+  const bool do_leonard = m_params.get<bool>("do_leonard", false);
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
   add_field<Required>("omega",          scalar3d_mid, Pa/s, grid_name, ps);
@@ -79,10 +80,12 @@ void SHOCMacrophysics::create_requests()
   if (do_3d_turb) {
     const auto vector3d_mid_6 = m_grid->get_3d_vector_layout(LEV,6);
     add_field<Required>("tke_shear_strain3d_components", vector3d_mid_6,nondim/s, grid_name, ps);
-    add_field<Required>("wthl_leonard_base", scalar3d_mid, K/(m*s), grid_name, ps);
     add_field<Computed>("tke_shear_strain3d", scalar3d_mid,nondim/s2, grid_name, ps);
     add_field<Computed>("eddy_diff_heat_horiz", scalar3d_mid, m2/s, grid_name, ps);
     add_field<Computed>("eddy_diff_mom_horiz",  scalar3d_mid, m2/s, grid_name, ps);
+  }
+  if (do_leonard) {
+    add_field<Required>("wthl_leonard_base", scalar3d_mid, K/(m*s), grid_name, ps);
   }
 
   // Input/Output variables
@@ -290,6 +293,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz",0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
+  runtime_options.do_leonard    = m_params.get<bool>("do_leonard", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -310,6 +314,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   view_2d_const wthl_leonard_base;
   if (runtime_options.do_3d_turb) {
     shear_strain3d_components = get_field_in("tke_shear_strain3d_components").get_view<const Pack***>();
+  }
+  if (runtime_options.do_leonard) {
     wthl_leonard_base = get_field_in("wthl_leonard_base").get_view<const Pack**>();
   } else {
     wthl_leonard_base = view_2d_const(m_dummy_shear_strain3d);

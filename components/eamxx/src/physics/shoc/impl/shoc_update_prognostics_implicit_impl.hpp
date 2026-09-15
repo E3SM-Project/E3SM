@@ -31,6 +31,7 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&                wthl_sfc,
   const Scalar&                wqw_sfc,
   const uview_1d<const Pack>& wtracer_sfc,
+  const bool&                  do_leonard,
   const Scalar&                dx,
   const Scalar&                dy,
   const uview_1d<const Pack>& wthl_leonard_base,
@@ -176,7 +177,7 @@ void Functions<S,D>::update_prognostics_implicit(
 
   // Add the Leonard heat flux explicitly so the thermo diffusion solve sees
   // the same w'theta_l' contribution diagnosed for the PDF below.
-  {
+  if (do_leonard) {
     const Scalar leonard_factor = dx*dy/6;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
       const Scalar flux_top = k == 0

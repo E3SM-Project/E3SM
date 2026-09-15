@@ -1759,7 +1759,7 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
                                      dz_zt_s, dz_zi_s, rho_zt_s, zt_grid_s,
                                      zi_grid_s, tk_s, tkh_s, uw_sfc_s, vw_sfc_s,
                                      wthl_sfc_s, wqw_sfc_s, wtracer_sfc_s,
-                                     Scalar(0), Scalar(0), wthl_leonard_base_s,
+                                     false, Scalar(0), Scalar(0), wthl_leonard_base_s,
                                      workspace,
                                      thetal_s, qw_s, tracer_s, tke_s, u_wind_s, v_wind_s,
                                      Scalar(0), Scalar(0), um_pert_s, vm_pert_s);

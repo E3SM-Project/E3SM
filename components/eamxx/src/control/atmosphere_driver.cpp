@@ -314,6 +314,7 @@ void AtmosphereDriver::create_grids()
 
   if (m_atm_process_group->has_process("shoc")) {
     setup_shoc_3d_turbulence_link();
+    setup_shoc_leonard_link();
   }
 
   // IOP object needs the grids_manager to have been created, but is then needed in set_grids()
@@ -535,6 +536,22 @@ void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
 
     auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
     shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
+  }
+}
+
+void AtmosphereDriver::setup_shoc_leonard_link ()
+{
+  EKAT_REQUIRE_MSG(m_atm_process_group->has_process("shoc"),
+                   "Error! Attempting to setup Leonard link for "
+                   "SHOC, but SHOC is not defined.\n");
+
+  if (m_atm_process_group->has_process("homme")) {
+    auto homme_process = m_atm_process_group->get_process_nonconst("homme");
+    const bool do_leonard =
+        homme_process->get_params().get<bool>("do_leonard", false);
+
+    auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
+    shoc_process->get_params().set<bool>("do_leonard", do_leonard);
   }
 }
 
