@@ -632,8 +632,11 @@ In `components/eamxx/cime_config/namelist_defaults_scream.xml`, add:
 ## The runtime parameters in the run script
 
 ```bash
-# increase SCREAM_NUM_TRACERS from 10 to 11 (note that scream supports both 128 and 72 levels for low-res)
-./xmlchange SCREAM_CMAKE_OPTIONS="SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 11"
+# increase SCREAM_NUM_TRACERS from 10 to 11
+./xmlchange SCREAM_CMAKE_OPTIONS="SCREAM_NP 4 SCREAM_NUM_TRACERS 11"
+
+# the vertical grid is chosen separately, and sets the number of levels (72 or 128)
+./xmlchange EAMXX_VGRID=L128v4
 
 # add pompei to the list of aerosol processes
 ./atmchange mac_aero_mic::atm_procs_list+=pompei
