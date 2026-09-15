@@ -601,6 +601,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <f12vmr      > 531.2820e-12 </f12vmr>
       <n2vmr       > 0.7906       </n2vmr>
       <covmr       > 1.0e-7       </covmr>
+      <!-- 1850 values -->
+      <ch4vmr COMPSET="1850.*_SCREAM%BETA.*">798.799e-9</ch4vmr>
+      <co2vmr COMPSET="1850.*_SCREAM%BETA.*">284.297e-6</co2vmr>
+      <n2ovmr COMPSET="1850.*_SCREAM%BETA.*">271.5700e-9</n2ovmr>
+      <f11vmr COMPSET="1850.*_SCREAM%BETA.*">21.7225e-12</f11vmr>
+      <f12vmr COMPSET="1850.*_SCREAM%BETA.*">0.0</f12vmr>
+      <!-- Idealized/RCE -->
       <ch4vmr COMPSET=".*SCREAM%RCE.*" > 1650.e-9 </ch4vmr>
       <co2vmr COMPSET=".*SCREAM%RCE.*" > 348.0e-6 </co2vmr>
       <n2ovmr COMPSET=".*SCREAM%RCE.*" > 306.0e-9 </n2ovmr>
@@ -664,6 +671,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*" hgrid=".*pg2">tms,shoc,cld_fraction,mam4_aci,p3</atm_procs_list> <!-- TMS only available for PG2 -->
       <atm_procs_list COMPSET=".*SCREAM.*noAero">shoc,cld_fraction,p3</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM.*noAero" hgrid=".*pg2">tms,shoc,cld_fraction,p3</atm_procs_list> <!-- TMS only available for PG2 -->
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">shoc,cld_fraction,spa,p3</atm_procs_list>
       <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
       <number_of_subcycles hgrid="ne30np4">12</number_of_subcycles>
       <number_of_subcycles hgrid="ne32np4">12</number_of_subcycles>
@@ -693,6 +701,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
       <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
       <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
@@ -961,6 +970,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
     <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">0.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
+    <pgrad_correction  COMPSET=".*SCREAM%BETA.*">0</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
     <se_geometry COMPSET=".*DP-EAMxx">plane</se_geometry>
@@ -1005,6 +1015,7 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon">75</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
+    <theta_advect_form COMPSET=".*SCREAM%BETA.*">2</theta_advect_form>
     <theta_hydrostatic_mode>false</theta_hydrostatic_mode>
     <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
