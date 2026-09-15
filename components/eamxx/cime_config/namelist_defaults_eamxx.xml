@@ -784,7 +784,6 @@ be lost if SCREAM_HACK_XML is not enabled.
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <surf_mom_flux     type="array(real)">0.0,0.0</surf_mom_flux>
     <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
     <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
     <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
