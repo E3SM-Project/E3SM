@@ -950,7 +950,19 @@ void AtmosphereDriver::restart_model ()
         m_fields_inited[gn].insert(fname);
         fields.push_back(f);
       }
-      read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
+      try {
+        read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
+      } catch (std::exception& e) {
+        EKAT_ERROR_MSG (
+            std::string(e.what()) + "\n"
+            "NOTE: if the error above complains about a missing variable 'U' or 'V',\n"
+            "      you may be trying to restart from a restart file created before\n"
+            "      PR #8606 (https://github.com/E3SM-Project/E3SM/pull/8606), which\n"
+            "      changed EAMxx to init/restart 'U'/'V' directly, rather than the\n"
+            "      vector field 'horiz_winds'. See the 'Restart file compatibility'\n"
+            "      section in components/eamxx/docs/user/model_configuration.md for\n"
+            "      instructions on how to convert an old restart file.\n");
+      }
     }
   }
 
