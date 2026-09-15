@@ -1084,14 +1084,14 @@ void AtmosphereDriver::set_initial_conditions ()
         EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
                         "double or string, or vector double arguments are allowed");
       }
-      m_fields_inited[grid_name].push_back(fname);
+      m_fields_inited[grid_name].insert(fname);
     } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
       // these fields need to be loaded from the topography file
-	  // - phis is the surface geopotential height
-	  // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
-	  //   needed for turbulent mountain stress scheme (i.e. TMS)
-	  // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
-	  //   needed for orographic gravity wave drag scheme (i.e. GWD)
+	    // - phis is the surface geopotential height
+	    // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
+	    //   needed for turbulent mountain stress scheme (i.e. TMS)
+	    // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
+	    //   needed for orographic gravity wave drag scheme (i.e. GWD)
       auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
       auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
@@ -1105,7 +1105,7 @@ void AtmosphereDriver::set_initial_conditions ()
                    grid_name == "point_grid") {
           this_grid_topo_file_fnames.push_back("PHIS_d");
           this_grid_topo_eamxx_fnames.push_back(fname);
-          m_fields_inited[grid_name].push_back(fname);
+          m_fields_inited[grid_name].insert(fname);
         } else {
           EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
         }
@@ -1117,7 +1117,7 @@ void AtmosphereDriver::set_initial_conditions ()
                         " topo file only has sgh30 for physics_pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH30");
         topography_eamxx_fields_names[grid_name].push_back(fname);
-        m_fields_inited[grid_name].push_back(fname);
+        m_fields_inited[grid_name].insert(fname);
       } else if (fname == "sgh") {
         // The eamxx field "sgh" is called "SGH" in the
         // topography file and is only available on the PG2 grid.
@@ -1126,7 +1126,7 @@ void AtmosphereDriver::set_initial_conditions ()
                         " topo file only has sgh for physics_pg2.\n");
         topography_file_fields_names[grid_name].push_back("SGH");
         topography_eamxx_fields_names[grid_name].push_back(fname);
-        m_fields_inited[grid_name].push_back(fname);
+        m_fields_inited[grid_name].insert(fname);
       }
     } else if (not (fvphyshack and grid_name == "physics_pg2")) {
       // The IC file is written for the GLL grid, so we only load
@@ -1136,15 +1136,9 @@ void AtmosphereDriver::set_initial_conditions ()
       auto children = f.get_header().get_children();
 
       // If this field is the parent of other subfields, we only read from file the subfields.
-      auto add_inited = [&](const std::string& n) {
-        auto& this_grid_inited_fnames = m_fields_inited[grid_name];
-        if (not ekat::contains(this_grid_inited_fnames,n)) {
-          this_grid_inited_fnames.push_back(n);
-        }
-      };
       auto add = [&](const std::string& n) {
         this_grid_ic_fnames.insert(n);
-        add_inited(n);
+        m_fields_inited[grid_name].insert(n);
       };
       if (children.size()==0) {
         add(fname);
@@ -1156,7 +1150,7 @@ void AtmosphereDriver::set_initial_conditions ()
             has_leaf_children = true;
           }
         if (has_leaf_children) {
-          add_inited(fname);
+          m_fields_inited[grid_name].insert(fname);
         }
       }
     }
