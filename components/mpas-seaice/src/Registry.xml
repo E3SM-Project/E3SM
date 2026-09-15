@@ -2135,7 +2135,7 @@
 			<var name="freezingMeltingPotential"/>
 			<var name="frazilMassFlux"/>
 			<var name="frazilSaltFlux"/>
-			<var name="frazilEnthalpyFlux"/>
+			<var name="frazilHeatFlux"/>
 			<var name="airOceanDragCoefficientRatio"/>
 			<var name="skeletalAlgaeConc"/>
 			<var name="skeletalDOCConc"/>
@@ -2466,7 +2466,7 @@
 			<var name="freezingMeltingPotential"/>
 			<var name="frazilMassFlux"/>
 			<var name="frazilSaltFlux"/>
-			<var name="frazilEnthalpyFlux"/>
+			<var name="frazilHeatFlux"/>
 			<var name="shortwaveScalingFactor"/>
 			<var name="airTemperature"/>
 			<var name="congelation"/>
@@ -4391,7 +4391,7 @@
 		     dimensions="nCells Time"
 		     units="kg m-2 s-1"
 		/>
-		<var name="frazilEnthalpyFlux"
+		<var name="frazilHeatFlux"
 		     type="real"
 		     dimensions="nCells Time"
 		     units="W m-2"

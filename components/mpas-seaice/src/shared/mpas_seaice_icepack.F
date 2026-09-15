@@ -2420,7 +2420,7 @@ subroutine init_column_waves(domain)
          freezingMeltingPotential, &
          frazilMassFlux, &
          frazilSaltFlux, &
-         frazilEnthalpyFlux, &
+         frazilHeatFlux, &
          frazilFormation, &
          rainfallRate, &
          pondFreshWaterFlux, &
@@ -2544,7 +2544,7 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(ocean_coupling, "freezingMeltingPotential", freezingMeltingPotential)
        call MPAS_pool_get_array(ocean_coupling, "frazilMassFlux", frazilMassFlux)
        call MPAS_pool_get_array(ocean_coupling, "frazilSaltFlux", frazilSaltFlux)
-       call MPAS_pool_get_array(ocean_coupling, "frazilEnthalpyFlux", frazilEnthalpyFlux)
+       call MPAS_pool_get_array(ocean_coupling, "frazilHeatFlux", frazilHeatFlux)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
      call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
@@ -2670,7 +2670,7 @@ subroutine init_column_waves(domain)
                d_afsd_weld=dFloeSizeWeld(:,iCell), &
                frazilm=frazilMassFlux(iCell), &
                frazils=frazilSaltFlux(iCell), &
-               frazilh=frazilEnthalpyFlux(iCell))
+               frazilh=frazilHeatFlux(iCell))
 
           do iBioTracers = 1, ciceTracerObject % nBioTracers
              oceanBioFluxes(iBioTracers,iCell) = oceanBioFluxes(iBioTracers,iCell) + oceanBioFluxesTemp(iBioTracers,iCell)

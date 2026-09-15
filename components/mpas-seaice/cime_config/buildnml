@@ -881,7 +881,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="vVelocityGeo"/>')
             lines.append('    <var name="frazilMassFlux"/>')
             lines.append('    <var name="frazilSaltFlux"/>')
-            lines.append('    <var name="frazilEnthalpyFlux"/>')
+            lines.append('    <var name="frazilHeatFlux"/>')
             if ("WW3" in compset or "DWAV%FSD" in compset or "DWAV%ZEROS" in compset):
                 lines.append('    <var name="floeSizeDiameter"/> ')
                 lines.append('    <var name="waveSpectra"/> ')
@@ -945,7 +945,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="frazilFormation"/>')
             lines.append('    <var name="frazilMassFlux"/>')
             lines.append('    <var name="frazilSaltFlux"/>')
-            lines.append('    <var name="frazilEnthalpyFlux"/>')
+            lines.append('    <var name="frazilHeatFlux"/>')
             lines.append('    <var name="snowiceFormation"/>')
             lines.append('    <var name="snowMelt"/>')
             lines.append('    <var name="surfaceIceMelt"/>')

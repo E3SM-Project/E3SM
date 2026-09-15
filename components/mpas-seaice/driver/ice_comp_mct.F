@@ -2168,7 +2168,7 @@ contains
       frazilMassAdjustField,            &
       frazilMassFluxField,              &
       frazilSaltFluxField,              &
-      frazilEnthalpyFluxField,          &
+      frazilHeatFluxField,              &
       uOceanVelocityField,              &
       vOceanVelocityField,              &
       seaSurfaceTiltUField,             &
@@ -2217,7 +2217,7 @@ contains
       freezingMeltingPotential,    &
       frazilMassFlux,              &
       frazilSaltFlux,              &
-      frazilEnthalpyFlux,          &
+      frazilHeatFlux    ,          &
       frazilMassAdjust,            &
       uOceanVelocity,              &
       vOceanVelocity,              &
@@ -2305,7 +2305,7 @@ contains
       call mpas_pool_get_array(oceanCoupling, 'freezingMeltingPotential', freezingMeltingPotential)
       call mpas_pool_get_array(oceanCoupling, 'frazilMassFlux', frazilMassFlux)
       call mpas_pool_get_array(oceanCoupling, 'frazilSaltFlux', frazilSaltFlux)
-      call mpas_pool_get_array(oceanCoupling, 'frazilEnthalpyFlux', frazilEnthalpyFlux)
+      call mpas_pool_get_array(oceanCoupling, 'frazilHeatFlux', frazilHeatFlux)
       call mpas_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
       call mpas_pool_get_array(oceanCoupling, 'uOceanVelocity', uOceanVelocity)
       call mpas_pool_get_array(oceanCoupling, 'vOceanVelocity', vOceanVelocity)
@@ -2394,14 +2394,17 @@ contains
            ! freezingMeltingPotential(i) is the ocean energy associated with frazil formation
            ! when it is positive and frazilMassFlux is positive. Conversely, freezingMeltingPotential(i)
            ! is negative when there is the melting potential in which case frazilMassFlux is zero.
-
-           freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
+           if (x2i_i(index_x2i_Fioo_q, n) < 0.0_RKIND) then
+              freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
+           else
+              freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_frazilh, n)
+           end if
 
            frazilMassFlux(i)           = x2i_i(index_x2i_Fioo_frazil, n)
 
            if (trim(config_frazil_coupling_type) == "omega-fluxes") then
               frazilSaltFlux(i)           = x2i_i(index_x2i_Fioo_frazils, n)
-              frazilEnthalpyFlux(i)       = x2i_i(index_x2i_Fioo_frazilh, n)
+              frazilHeatFlux(i)           = x2i_i(index_x2i_Fioo_frazilh, n)
               frazilMassAdjust(i)         = 0.0_RKIND
 
            ! Now determine the sea ice mass associated with the frazil heat flux given when
@@ -2416,17 +2419,20 @@ contains
 
               frazilMassAdjust(i) = frazilMassFlux(i)-frazilMassFluxRev
               frazilSaltFlux(i) = 0.0_RKIND
-              frazilEnthalpyFlux(i) = 0.0_RKIND
+              frazilHeatFlux(i) = 0.0_RKIND
 
            endif
 
         else ! non-free surface (SOM)
-
-           freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
+           if (x2i_i(index_x2i_Fioo_q, n) < 0.0_RKIND) then
+              freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_q, n)
+           else
+              freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_frazilh, n)
+           end if
 
            frazilMassFlux(i)           = 0.0_RKIND
            frazilSaltFlux(i)           = 0.0_RKIND
-           frazilEnthalpyFlux(i)       = 0.0_RKIND
+           frazilHeatFlux(i)           = 0.0_RKIND
            frazilMassAdjust(i)         = 0.0_RKIND
 
         endif
@@ -2595,7 +2601,7 @@ contains
    call mpas_pool_get_field(oceanCoupling, 'frazilMassAdjust', frazilMassAdjustField)
    call mpas_pool_get_field(oceanCoupling, 'frazilMassFlux', frazilMassFluxField)
    call mpas_pool_get_field(oceanCoupling, 'frazilSaltFlux', frazilSaltFluxField)
-   call mpas_pool_get_field(oceanCoupling, 'frazilEnthalpyFlux', frazilEnthalpyFluxField)
+   call mpas_pool_get_field(oceanCoupling, 'frazilHeatFlux', frazilHeatFluxField)
    call mpas_pool_get_field(oceanCoupling, 'uOceanVelocity', uOceanVelocityField)
    call mpas_pool_get_field(oceanCoupling, 'vOceanVelocity', vOceanVelocityField)
    call mpas_pool_get_field(oceanCoupling, 'seaSurfaceTiltU', seaSurfaceTiltUField)
@@ -2661,7 +2667,7 @@ contains
    call mpas_dmpar_exch_halo_field(frazilMassAdjustField)
    call mpas_dmpar_exch_halo_field(frazilMassFluxField)
    call mpas_dmpar_exch_halo_field(frazilSaltFluxField)
-   call mpas_dmpar_exch_halo_field(frazilEnthalpyFluxField)
+   call mpas_dmpar_exch_halo_field(frazilHeatFluxField)
    call mpas_dmpar_exch_halo_field(uOceanVelocityField)
    call mpas_dmpar_exch_halo_field(vOceanVelocityField)
    call mpas_dmpar_exch_halo_field(seaSurfaceTiltUField)

@@ -3405,20 +3405,19 @@ contains
              ! top layer of the ocean
              else
 
-              surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
-                 pressure=0.0_RKIND,  inLandIceCavity=.false.)
+                surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                  pressure=0.0_RKIND,  inLandIceCavity=.false.)
 
-              seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
+                seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
                               - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
 
+                o2x_o(index_o2x_Fioo_frazilh, n)  = 0.0_RKIND
+                o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              end if
 
-             o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              o2x_o(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
              o2x_o(index_o2x_Fioo_frazils, n) = accumulatedFrazilIceMass(i)/ 1000.0_RKIND * &
                 config_frazil_sea_ice_reference_salinity / ocn_cpl_dt
-             !defined positive to be consistent with Fioo_q when frazil is formed
-             o2x_o(index_o2x_Fioo_frazilh, n) = accumulatedFrazilIceEnergy(i)/ ocn_cpl_dt 
 
           else
 
