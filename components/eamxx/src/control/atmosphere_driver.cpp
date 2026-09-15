@@ -1052,6 +1052,30 @@ void AtmosphereDriver::set_initial_conditions ()
 
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
+  // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
+  // added to the STARTUP group themselves (see set_initialization_groups): only their
+  // subfields are. Hence, an initial condition (constant value or copy-from-field)
+  // specified for the parent field name would be silently ignored. Catch this early,
+  // and ask the user to set each subfield individually instead.
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    for (const auto& it : m_field_mgr->get_repo(gn)) {
+      const auto& f = *it.second;
+      const auto& children = f.get_header().get_children();
+      if (children.size()>0 and ic_pl.isParameter(f.name())) {
+        std::string child_names;
+        for (auto c : children)
+          child_names += c.lock()->get_identifier().name() + " ";
+        EKAT_ERROR_MSG (
+            "Error! Cannot set an initial condition for field '" + f.name() + "' directly, "
+            "since it has subfields.\n"
+            "       Grid name:     " + gn + "\n"
+            "       Field:         " + f.name() + "\n"
+            "       Subfields:     " + child_names + "\n"
+            "       Please, set the initial condition for each subfield individually.\n");
+      }
+    }
+  }
+
   // Check which fields need to have an initial condition.
   strmap_t<std::set<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
@@ -1133,20 +1157,10 @@ void AtmosphereDriver::set_initial_conditions ()
       // fields from there. Any other input fields on the PG2 grid
       // will be properly computed in the dynamics interface.
       // From the point of view of setting ICs though, these fields ARE read.
-      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto children = f.get_header().get_children();
-
+      // Note: fields reaching this point are always leaves (see set_initialization_groups),
+      // so there is no need to handle children here.
+      ic_fields_names[grid_name].insert(fname);
       m_fields_inited[grid_name].insert(fname);
-
-      // Only read the field itself if it has no children
-      if (children.size()==0)
-        this_grid_ic_fnames.insert(fname);
-
-      for (auto child : children) {
-        const auto cname = child.lock()->get_identifier().name();
-        this_grid_ic_fnames.insert(cname);
-        m_fields_inited[grid_name].insert(cname);
-      }
     }
   };
 
