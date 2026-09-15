@@ -185,6 +185,7 @@ protected:
   void restart_model ();
 
   void register_groups ();
+  void set_initialization_groups (const Field& f);
 
   template<typename T>
   using strmap_t = std::map<std::string,T>;
@@ -254,7 +255,7 @@ protected:
   // Current simulation casename
   std::string m_casename;
   // maps grid name to a vector of its initialized fields
-  strmap_t<strvec_t> m_fields_inited;
+  strmap_t<std::set<std::string>> m_fields_inited;
 };
 
 }  // namespace control

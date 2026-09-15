@@ -113,6 +113,9 @@ void FieldManager::register_group (const GroupRequest& req)
     info = std::make_shared<FieldGroupInfo>(req.name);
   info->m_requested_grids.insert(req.grid);
   info->m_monolithic_allocation |= req.monolithic_alloc==MonolithicAlloc::Required;
+
+  if (m_field_groups[req.grid].count(req.name)==0)
+    m_field_groups[req.grid][req.name] = std::make_shared<FieldGroup>(req.name,req.grid);
 }
 
 void FieldManager::
