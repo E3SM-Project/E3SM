@@ -96,6 +96,9 @@ protected:
   Real m_refine_remap_vert_cutoff;
 
   util::TimeInterpolation m_time_interp;
+
+  // Flag to emit the large-dt/tau warning only once
+  mutable bool m_large_dtau_warned = false;
 }; // class Nudging
 
 } // namespace scream
