@@ -39,3 +39,5 @@ endif()
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
 string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
+
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
