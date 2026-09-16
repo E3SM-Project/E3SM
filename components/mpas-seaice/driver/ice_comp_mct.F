@@ -2217,7 +2217,7 @@ contains
       freezingMeltingPotential,    &
       frazilMassFlux,              &
       frazilSaltFlux,              &
-      frazilHeatFlux    ,          &
+      frazilHeatFlux,              &
       frazilMassAdjust,            &
       uOceanVelocity,              &
       vOceanVelocity,              &
