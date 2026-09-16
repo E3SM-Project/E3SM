@@ -2117,7 +2117,7 @@ contains
                            sum(dataGpr(iso0(is):isof(is),ico,ip))
                    end do
                 end if
-             
+
                 write(logunit,*) ' '
                 write(logunit,FAH) subname,trim(str)//' SALT BUDGET ((kg/s)/m^2*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
                 write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
@@ -2131,17 +2131,6 @@ contains
                      sum(dataGpr(f_s:f_s_end,icn,ip)),sum(dataGpr(f_s:f_s_end,ics,ip)),sum(dataGpr(f_s:f_s_end,ico,ip)), &
                      sum(dataGpr(f_s:f_s_end,ica,ip))+sum(dataGpr(f_s:f_s_end,icl,ip))+ &
                      sum(dataGpr(f_s:f_s_end,icn,ip))+sum(dataGpr(f_s:f_s_end,ics,ip))+sum(dataGpr(f_s:f_s_end,ico,ip))
-                write(logunit,*) ' '
-
-                write(logunit,*) ' '
-                write(logunit,FAH) subname,trim(str)//' SALT BUDGET ((kg/s)/m^2*1e8): period = ',trim(pname(ip)),': date = ',cdate,sec
-                write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
-                do nf = f_s, f_s_end
-                   write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
-                        dataGpr(nf,icn,ip),dataGpr(nf,ics,ip),dataGpr(nf,ico,ip), &
-                        dataGpr(nf,ica,ip)+dataGpr(nf,icl,ip)+ &
-                        dataGpr(nf,icn,ip)+dataGpr(nf,ics,ip)+dataGpr(nf,ico,ip)
-                enddo
                 write(logunit,*) ' '
 
              enddo
