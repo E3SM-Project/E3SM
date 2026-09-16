@@ -132,7 +132,7 @@ module seq_diag_mct
   !--- F for field ---
 
   integer(in),parameter :: f_area      = 1     ! area (wrt to unit sphere)
-  integer(in),parameter :: f_hfrz      = 2     ! heat : latent, freezing
+  integer(in),parameter :: f_hfrz      = 2     ! heat : frazil from ocean
   integer(in),parameter :: f_hmelt     = 3     ! heat : latent, melting
   integer(in),parameter :: f_hswnet    = 4     ! heat : short wave, net
   integer(in),parameter :: f_hlwdn     = 5     ! heat : longwave down
@@ -144,43 +144,42 @@ module seq_diag_mct
   integer(in),parameter :: f_hpolar    =11     ! heat : AIS imbalance
   integer(in),parameter :: f_hh2ot     =12     ! heat : water temperature
   integer(in),parameter :: f_hgsmb     =13     ! heat : Greenland ice sheet surface mass balance
-  integer(in),parameter :: f_hfrazo    =14     ! heat : frazil from ocean
-  integer(in),parameter :: f_hfrazi    =15     ! heat : frazil from ice
-  integer(in),parameter :: f_wfrz      =16     ! water: freezing (frazil ocean)
-  integer(in),parameter :: f_wfrzi     =17     ! water: frazil ice
-  integer(in),parameter :: f_wmelt     =18     ! water: melting
-  integer(in),parameter :: f_wrain     =19     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow     =20     ! water: precip, frozen
-  integer(in),parameter :: f_wpolar    =21     ! water: AIS imbalance
-  integer(in),parameter :: f_wgsmb     =22     ! water: Greenland ice sheet surface mass balance
-  integer(in),parameter :: f_wevap     =23     ! water: evaporation
-  integer(in),parameter :: f_wroff     =24     ! water: runoff/flood
-  integer(in),parameter :: f_wioff     =25     ! water: frozen runoff
-  integer(in),parameter :: f_wirrig    =26     ! water: irrigation
-  integer(in),parameter :: f_wfrz_16O  =27     ! water: freezing
-  integer(in),parameter :: f_wmelt_16O =28     ! water: melting
-  integer(in),parameter :: f_wrain_16O =29     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_16O =30     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_16O =31     ! water: evaporation
-  integer(in),parameter :: f_wroff_16O =32     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_16O =33     ! water: frozen runoff
-  integer(in),parameter :: f_wfrz_18O  =34     ! water: freezing
-  integer(in),parameter :: f_wmelt_18O =35     ! water: melting
-  integer(in),parameter :: f_wrain_18O =36     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_18O =37     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_18O =38     ! water: evaporation
-  integer(in),parameter :: f_wroff_18O =39     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_18O =40     ! water: frozen runoff
-  integer(in),parameter :: f_wfrz_HDO  =41     ! water: freezing
-  integer(in),parameter :: f_wmelt_HDO =42     ! water: melting
-  integer(in),parameter :: f_wrain_HDO =43     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_HDO =44     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_HDO =45     ! water: evaporation
-  integer(in),parameter :: f_wroff_HDO =46     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_HDO =47     ! water: frozen runoff
-  integer(in),parameter :: f_salt      =48     ! salt: salinity flux from sea ice
-  integer(in),parameter :: f_sfrazo    =49     ! salt: salinity flux frazil from ocean
-  integer(in),parameter :: f_sfrazi    =50     ! salt: salinity flux frazil from ice
+  integer(in),parameter :: f_hfrazi    =14     ! heat : frazil from ice
+  integer(in),parameter :: f_wfrz      =15     ! water: freezing (frazil ocean)
+  integer(in),parameter :: f_wfrzi     =16     ! water: frazil ice
+  integer(in),parameter :: f_wmelt     =17     ! water: melting
+  integer(in),parameter :: f_wrain     =18     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow     =19     ! water: precip, frozen
+  integer(in),parameter :: f_wpolar    =20     ! water: AIS imbalance
+  integer(in),parameter :: f_wgsmb     =21     ! water: Greenland ice sheet surface mass balance
+  integer(in),parameter :: f_wevap     =22     ! water: evaporation
+  integer(in),parameter :: f_wroff     =23     ! water: runoff/flood
+  integer(in),parameter :: f_wioff     =24     ! water: frozen runoff
+  integer(in),parameter :: f_wirrig    =25     ! water: irrigation
+  integer(in),parameter :: f_wfrz_16O  =26     ! water: freezing
+  integer(in),parameter :: f_wmelt_16O =27     ! water: melting
+  integer(in),parameter :: f_wrain_16O =28     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_16O =29     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_16O =30     ! water: evaporation
+  integer(in),parameter :: f_wroff_16O =31     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_16O =32     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_18O  =33     ! water: freezing
+  integer(in),parameter :: f_wmelt_18O =34     ! water: melting
+  integer(in),parameter :: f_wrain_18O =35     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_18O =36     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_18O =37     ! water: evaporation
+  integer(in),parameter :: f_wroff_18O =38     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_18O =39     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_HDO  =40     ! water: freezing
+  integer(in),parameter :: f_wmelt_HDO =41     ! water: melting
+  integer(in),parameter :: f_wrain_HDO =42     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_HDO =43     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_HDO =44     ! water: evaporation
+  integer(in),parameter :: f_wroff_HDO =45     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_HDO =46     ! water: frozen runoff
+  integer(in),parameter :: f_salt      =47     ! salt: salinity flux from sea ice
+  integer(in),parameter :: f_sfrazo    =48     ! salt: salinity flux frazil from ocean
+  integer(in),parameter :: f_sfrazi    =49     ! salt: salinity flux frazil from ice
   
   integer(in),parameter :: f_size     = f_sfrazi      ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
@@ -203,7 +202,7 @@ module seq_diag_mct
 
        (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-       '      hpolar','    hh2otemp','       hgsmb','      hfrazo','      hfrazi', &
+       '      hpolar','    hh2otemp','       hgsmb','      hfrazi', &
        '     wfreeze','    wfreezei','       wmelt','       wrain','       wsnow', &
        '       wpolar','      wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
@@ -308,7 +307,6 @@ module seq_diag_mct
   integer :: index_o2x_Fioo_frazils
   integer :: index_o2x_Fioo_frazilh
   integer :: index_o2x_Foxo_frazil_li
-  integer :: index_o2x_Fioo_q
   integer :: index_o2x_Foxo_q_li
 
   integer :: index_o2x_Foxo_ismw
@@ -360,7 +358,6 @@ module seq_diag_mct
   integer :: index_x2i_Fioo_frazil
   integer :: index_x2i_Fioo_frazils
   integer :: index_x2i_Fioo_frazilh
-  integer :: index_x2i_Fioo_q
   integer :: index_x2i_Fixx_rofi
 
   integer :: index_g2x_Fogg_rofl
@@ -1501,7 +1498,6 @@ contains
           index_o2x_Fioo_frazils = mct_aVect_indexRA(o2x_o,'Fioo_frazils')
           index_o2x_Fioo_frazilh = mct_aVect_indexRA(o2x_o,'Fioo_frazilh')
           index_o2x_Foxo_frazil_li= mct_aVect_indexRA(o2x_o,'Foxo_frazil_li',perrWith='quiet')
-          index_o2x_Fioo_q       = mct_aVect_indexRA(o2x_o,'Fioo_q')
           index_o2x_Foxo_q_li    = mct_aVect_indexRA(o2x_o,'Foxo_q_li',perrWith='quiet')
           index_o2x_Faoo_h2otemp = mct_aVect_indexRA(o2x_o,'Faoo_h2otemp')
           index_o2x_Foxo_ismw    = mct_aVect_indexRA(o2x_o,'Foxo_ismw',perrWith='quiet')
@@ -1522,8 +1518,7 @@ contains
           ca_c =  dom_o%data%rAttr(kArea,n)
           nf = f_area; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
           nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazil,n))
-          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_q,n))
-          nf = f_hfrazo;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazilh,n))
+          nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,o2x_o%rAttr(index_o2x_Fioo_frazilh,n))
           nf = f_sfrazo;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Fioo_frazils,n)
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_h2otemp,n)
           if (flds_polar) then
@@ -1847,7 +1842,6 @@ contains
           index_x2i_Fioo_frazil = mct_aVect_indexRA(x2i_i,'Fioo_frazil')
           index_x2i_Fioo_frazils= mct_aVect_indexRA(x2i_i,'Fioo_frazils')
           index_x2i_Fioo_frazilh= mct_aVect_indexRA(x2i_i,'Fioo_frazilh')
-          index_x2i_Fioo_q      = mct_aVect_indexRA(x2i_i,'Fioo_q')
           index_x2i_Fixx_rofi   = mct_aVect_indexRA(x2i_i,'Fixx_rofi')
 
           index_x2i_Faxa_rain_16O   = mct_aVect_indexRA(x2i_i,'Faxa_rain_16O', perrWith='quiet')
@@ -1881,10 +1875,8 @@ contains
                (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazil,n))
           nf = f_sfrazo ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
                (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazils,n))
-          nf = f_hfrazo ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-               (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazilh,n))
           nf = f_hfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
-               (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_q,n))
+               (ca_o+ca_i)*max(0.0_r8,x2i_i%rAttr(index_x2i_Fioo_frazilh,n))
 
           if ( flds_wiso_ice_x2i )then
              nf  = f_wrain_16O;
