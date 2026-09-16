@@ -12,6 +12,17 @@
 namespace scream {
 namespace {
 
+template <typename ScalarT>
+bool relative_approx(const ScalarT& computed, 
+                     double expected, 
+                     typename ekat::ScalarTraits<ScalarT>::scalar_type tol)
+{                    
+  using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
+  const auto expected_pack = ScalarT(static_cast<RealT>(expected));
+  const auto rel_err = ekat::abs((computed - expected_pack) / expected_pack);
+  return (rel_err < tol).all();  // Check ALL lanes, not just [0]
+} 
+
 // Independent reference implementations (formulas transcribed independently
 // from the ported code) so this test doubles as a coefficient-transcription
 // guard. T in Kelvin; return the raw table value R_condensed/R_vapor (>= 1).
@@ -54,100 +65,66 @@ const double T_liq[NLIQ] = {233.15, 253.15, 273.15, 283.15, 293.15, 303.15};
 const double T_ice[NICE] = {213.15, 233.15, 243.15, 253.15, 263.15, 273.15};
 
 template <typename ScalarT>
-void run_sweep()
+void run_sweep(
+  const char* phase_name,  // "liquid-vapor" or "ice-vapor"
+  const double* T_array,    // Temperature array
+  int N,                    // Array length
+  std::function<double(double)> ref_hdo,   // HDO reference function
+  std::function<double(double)> ref_o18,   // O18 reference function
+  typename ekat::ScalarTraits<ScalarT>::scalar_type tol,  // Tolerance
+  const wiso::WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants)
 {
-  using WIF     = wiso::WaterIsotopeFractionation;
-  using STraits = ekat::ScalarTraits<ScalarT>;
-  using RealT   = typename STraits::scalar_type;
+  using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
+  using WIF = wiso::WaterIsotopeFractionation;
 
-  // Relative tolerance: tighter in double precision, looser in single.
-  const RealT tol = std::is_same<RealT,double>::value ? 1e-6 : 1e-4;
+  // Choose the alpha function based on phase
+  auto alpha_fn = (std::string(phase_name) == "liquid-vapor")
+    ? WIF::alpha_liquid_vapor<ScalarT>
+    : WIF::alpha_ice_vapor<ScalarT>;
 
-  auto rel_ok = [&](const ScalarT& computed, double expected) {
-    // ScalarT is a Pack of identical lanes (all set from one temperature),
-    // so comparing lane 0 is sufficient and works for Real too.
-    const RealT c = computed[0];
-    return std::abs(c - static_cast<RealT>(expected)) / std::abs(static_cast<RealT>(expected)) < tol;
-  };
-
-  using wiso::CondensedOverVapor;
-  using wiso::VaporOverCondensed;
-  using wiso::H216O;
-  using wiso::HDO;
-  using wiso::H218O;
-  using wiso::H217O;
-  using wiso::HTO;
-
-  // ---- Liquid-vapor sweep ----
   double prev_hdo = 1e30, prev_o18 = 1e30;
-  for (int i = 0; i < NLIQ; ++i) {
-    const ScalarT t(T_liq[i]);
+  for (int i = 0; i < N; ++i) {
+    const ScalarT t(T_array[i]);
 
-    const ScalarT a_hdo = WIF::alpha_liquid_vapor(t, HDO,   CondensedOverVapor);
-    const ScalarT a_o18 = WIF::alpha_liquid_vapor(t, H218O, CondensedOverVapor);
+    const ScalarT a_hdo = alpha_fn(t, wiso::HDO, wiso::CondensedOverVapor,
+constants);
+    const ScalarT a_o18 = alpha_fn(t, wiso::H218O, wiso::CondensedOverVapor,
+constants);
 
-    // Absolute-value checks against the independent reference.
-    REQUIRE( rel_ok(a_hdo, ref_alpl_hdo(T_liq[i])) );
-    REQUIRE( rel_ok(a_o18, ref_alpl_o18(T_liq[i])) );
-
-    // Ordinary water is non-fractionating, exactly.
-    const ScalarT a_16 = WIF::alpha_liquid_vapor(t, H216O, CondensedOverVapor);
+    // All the checks stay EXACTLY as they are now
+    REQUIRE( relative_approx(a_hdo, ref_hdo(T_array[i]), tol) );
+    REQUIRE( relative_approx(a_o18, ref_o18(T_array[i]), tol) );
+    
+    // H216O check
+    const ScalarT a_16 = alpha_fn(t, wiso::H216O, wiso::CondensedOverVapor,
+constants);
     REQUIRE( (a_16 == ScalarT(1)).all() );
-
-    // Direction: VaporOverCondensed is the reciprocal.
-    const ScalarT a_hdo_inv = WIF::alpha_liquid_vapor(t, HDO,   VaporOverCondensed);
-    const ScalarT a_o18_inv = WIF::alpha_liquid_vapor(t, H218O, VaporOverCondensed);
-    REQUIRE( rel_ok(a_hdo_inv, 1.0/ref_alpl_hdo(T_liq[i])) );
-    REQUIRE( rel_ok(a_o18_inv, 1.0/ref_alpl_o18(T_liq[i])) );
-
-    // Derived species power laws.
-    const ScalarT a_17 = WIF::alpha_liquid_vapor(t, H217O, CondensedOverVapor);
-    const ScalarT a_ht = WIF::alpha_liquid_vapor(t, HTO,   CondensedOverVapor);
-    REQUIRE( rel_ok(a_17, std::pow(ref_alpl_o18(T_liq[i]), 0.529)) );
-    REQUIRE( rel_ok(a_ht, std::pow(ref_alpl_hdo(T_liq[i]), 2.0)) );
-
-    // Monotonic decrease toward 1 with increasing T, and alpha >= 1.
+    
+    // Direction checks
+    const ScalarT a_hdo_inv = alpha_fn(t, wiso::HDO, wiso::VaporOverCondensed,
+constants);
+    const ScalarT a_o18_inv = alpha_fn(t, wiso::H218O, wiso::VaporOverCondensed,
+constants);
+    REQUIRE( relative_approx(a_hdo_inv, 1.0/ref_hdo(T_array[i]), tol) );
+    REQUIRE( relative_approx(a_o18_inv, 1.0/ref_o18(T_array[i]), tol) );
+    
+    // Power law checks for H217O and HTO
+    const ScalarT a_17 = alpha_fn(t, wiso::H217O, wiso::CondensedOverVapor,
+constants);
+    const ScalarT a_ht = alpha_fn(t, wiso::HTO, wiso::CondensedOverVapor,
+constants);
+    REQUIRE( relative_approx(a_17, std::pow(ref_o18(T_array[i]), 0.529), tol) );
+    REQUIRE( relative_approx(a_ht, std::pow(ref_hdo(T_array[i]), 2.0), tol) );
+    
+    // Monotonicity and >= 1 checks
     REQUIRE( a_hdo[0] >= RealT(1) );
     REQUIRE( a_o18[0] >= RealT(1) );
     REQUIRE( a_hdo[0] < prev_hdo );
     REQUIRE( a_o18[0] < prev_o18 );
     prev_hdo = a_hdo[0];
     prev_o18 = a_o18[0];
-  }
-
-  // ---- Ice-vapor sweep ----
-  prev_hdo = 1e30; prev_o18 = 1e30;
-  for (int i = 0; i < NICE; ++i) {
-    const ScalarT t(T_ice[i]);
-
-    const ScalarT a_hdo = WIF::alpha_ice_vapor(t, HDO,   CondensedOverVapor);
-    const ScalarT a_o18 = WIF::alpha_ice_vapor(t, H218O, CondensedOverVapor);
-
-    REQUIRE( rel_ok(a_hdo, ref_alpi_hdo(T_ice[i])) );
-    REQUIRE( rel_ok(a_o18, ref_alpi_o18(T_ice[i])) );
-
-    const ScalarT a_16 = WIF::alpha_ice_vapor(t, H216O, CondensedOverVapor);
-    REQUIRE( (a_16 == ScalarT(1)).all() );
-
-    const ScalarT a_hdo_inv = WIF::alpha_ice_vapor(t, HDO,   VaporOverCondensed);
-    const ScalarT a_o18_inv = WIF::alpha_ice_vapor(t, H218O, VaporOverCondensed);
-    REQUIRE( rel_ok(a_hdo_inv, 1.0/ref_alpi_hdo(T_ice[i])) );
-    REQUIRE( rel_ok(a_o18_inv, 1.0/ref_alpi_o18(T_ice[i])) );
-
-    const ScalarT a_17 = WIF::alpha_ice_vapor(t, H217O, CondensedOverVapor);
-    const ScalarT a_ht = WIF::alpha_ice_vapor(t, HTO,   CondensedOverVapor);
-    REQUIRE( rel_ok(a_17, std::pow(ref_alpi_o18(T_ice[i]), 0.529)) );
-    REQUIRE( rel_ok(a_ht, std::pow(ref_alpi_hdo(T_ice[i]), 2.0)) );
-
-    REQUIRE( a_hdo[0] >= RealT(1) );
-    REQUIRE( a_o18[0] >= RealT(1) );
-    REQUIRE( a_hdo[0] < prev_hdo );
-    REQUIRE( a_o18[0] < prev_o18 );
-    prev_hdo = a_hdo[0];
-    prev_o18 = a_o18[0];
-  }
-}
-
+  } 
+} 
 // Exercise the KOKKOS_INLINE_FUNCTION on the device to confirm it is
 // device-callable and gives the same result as the host path.
 void run_on_device()
@@ -171,140 +148,6 @@ void run_on_device()
   REQUIRE( std::abs(out_h(1) - static_cast<Real>(ref_alpi_o18(253.15))) / out_h(1) < tol );
 }
 
-// Test sweep for Majoube1971a liquid-vapor formulation (alternative to Horita).
-template <typename ScalarT>
-void run_sweep_majoube()
-{
-  using WIF     = wiso::WaterIsotopeFractionation;
-  using STraits = ekat::ScalarTraits<ScalarT>;
-  using RealT   = typename STraits::scalar_type;
-
-  // Configure Majoube1971a formulation
-  wiso::WaterIsotopeRuntimeOptions opts;
-  opts.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
-  wiso::WaterIsotopeConstants<RealT> constants(opts);
-
-  // Looser tolerance - Majoube differs by several percent from Horita
-  const RealT tol = std::is_same<RealT,double>::value ? 1e-5 : 1e-3;
-
-  auto rel_ok = [&](const ScalarT& computed, double expected) {
-    const RealT c = computed[0];
-    return std::abs(c - static_cast<RealT>(expected)) / std::abs(static_cast<RealT>(expected)) < tol;
-  };
-
-  using wiso::CondensedOverVapor;
-  using wiso::VaporOverCondensed;
-  using wiso::H216O;
-  using wiso::HDO;
-  using wiso::H218O;
-  using wiso::H217O;
-  using wiso::HTO;
-
-  // Liquid-vapor sweep
-  double prev_hdo = 1e30, prev_o18 = 1e30;
-  for (int i = 0; i < NLIQ; ++i) {
-    const ScalarT t(T_liq[i]);
-
-    const ScalarT a_hdo = WIF::alpha_liquid_vapor(t, HDO,   CondensedOverVapor, constants);
-    const ScalarT a_o18 = WIF::alpha_liquid_vapor(t, H218O, CondensedOverVapor, constants);
-
-    // Absolute-value checks against the independent Majoube reference.
-    REQUIRE( rel_ok(a_hdo, ref_alpl_hdo_majoube(T_liq[i])) );
-    REQUIRE( rel_ok(a_o18, ref_alpl_o18_majoube(T_liq[i])) );
-
-    // Ordinary water is non-fractionating, exactly.
-    const ScalarT a_16 = WIF::alpha_liquid_vapor(t, H216O, CondensedOverVapor, constants);
-    REQUIRE( (a_16 == ScalarT(1)).all() );
-
-    // Direction: VaporOverCondensed is the reciprocal.
-    const ScalarT a_hdo_inv = WIF::alpha_liquid_vapor(t, HDO,   VaporOverCondensed, constants);
-    const ScalarT a_o18_inv = WIF::alpha_liquid_vapor(t, H218O, VaporOverCondensed, constants);
-    REQUIRE( rel_ok(a_hdo_inv, 1.0/ref_alpl_hdo_majoube(T_liq[i])) );
-    REQUIRE( rel_ok(a_o18_inv, 1.0/ref_alpl_o18_majoube(T_liq[i])) );
-
-    // Derived species power laws.
-    const ScalarT a_17 = WIF::alpha_liquid_vapor(t, H217O, CondensedOverVapor, constants);
-    const ScalarT a_ht = WIF::alpha_liquid_vapor(t, HTO,   CondensedOverVapor, constants);
-    REQUIRE( rel_ok(a_17, std::pow(ref_alpl_o18_majoube(T_liq[i]), 0.529)) );
-    REQUIRE( rel_ok(a_ht, std::pow(ref_alpl_hdo_majoube(T_liq[i]), 2.0)) );
-
-    // Monotonic decrease toward 1 with increasing T, and alpha >= 1.
-    REQUIRE( a_hdo[0] >= RealT(1) );
-    REQUIRE( a_o18[0] >= RealT(1) );
-    REQUIRE( a_hdo[0] < prev_hdo );
-    REQUIRE( a_o18[0] < prev_o18 );
-    prev_hdo = a_hdo[0];
-    prev_o18 = a_o18[0];
-  }
-}
-
-// Test sweep for IsoCAM3 ice-vapor formulation (alternative to Merlivat & Nief).
-template <typename ScalarT>
-void run_sweep_isocam3()
-{
-  using WIF     = wiso::WaterIsotopeFractionation;
-  using STraits = ekat::ScalarTraits<ScalarT>;
-  using RealT   = typename STraits::scalar_type;
-
-  // Configure IsoCAM3 formulation
-  wiso::WaterIsotopeRuntimeOptions opts;
-  opts.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
-  wiso::WaterIsotopeConstants<RealT> constants(opts);
-
-  // Tight tolerance - IsoCAM3 differs only slightly from Merlivat (~0.006%)
-  const RealT tol = std::is_same<RealT,double>::value ? 1e-6 : 1e-4;
-
-  auto rel_ok = [&](const ScalarT& computed, double expected) {
-    const RealT c = computed[0];
-    return std::abs(c - static_cast<RealT>(expected)) / std::abs(static_cast<RealT>(expected)) < tol;
-  };
-
-  using wiso::CondensedOverVapor;
-  using wiso::VaporOverCondensed;
-  using wiso::H216O;
-  using wiso::HDO;
-  using wiso::H218O;
-  using wiso::H217O;
-  using wiso::HTO;
-
-  // Ice-vapor sweep
-  double prev_hdo = 1e30, prev_o18 = 1e30;
-  for (int i = 0; i < NICE; ++i) {
-    const ScalarT t(T_ice[i]);
-
-    const ScalarT a_hdo = WIF::alpha_ice_vapor(t, HDO,   CondensedOverVapor, constants);
-    const ScalarT a_o18 = WIF::alpha_ice_vapor(t, H218O, CondensedOverVapor, constants);
-
-    // Absolute-value checks against the independent IsoCAM3 reference.
-    REQUIRE( rel_ok(a_hdo, ref_alpi_hdo_isocam3(T_ice[i])) );
-    REQUIRE( rel_ok(a_o18, ref_alpi_o18_isocam3(T_ice[i])) );
-
-    // Ordinary water is non-fractionating, exactly.
-    const ScalarT a_16 = WIF::alpha_ice_vapor(t, H216O, CondensedOverVapor, constants);
-    REQUIRE( (a_16 == ScalarT(1)).all() );
-
-    // Direction: VaporOverCondensed is the reciprocal.
-    const ScalarT a_hdo_inv = WIF::alpha_ice_vapor(t, HDO,   VaporOverCondensed, constants);
-    const ScalarT a_o18_inv = WIF::alpha_ice_vapor(t, H218O, VaporOverCondensed, constants);
-    REQUIRE( rel_ok(a_hdo_inv, 1.0/ref_alpi_hdo_isocam3(T_ice[i])) );
-    REQUIRE( rel_ok(a_o18_inv, 1.0/ref_alpi_o18_isocam3(T_ice[i])) );
-
-    // Derived species power laws.
-    const ScalarT a_17 = WIF::alpha_ice_vapor(t, H217O, CondensedOverVapor, constants);
-    const ScalarT a_ht = WIF::alpha_ice_vapor(t, HTO,   CondensedOverVapor, constants);
-    REQUIRE( rel_ok(a_17, std::pow(ref_alpi_o18_isocam3(T_ice[i]), 0.529)) );
-    REQUIRE( rel_ok(a_ht, std::pow(ref_alpi_hdo_isocam3(T_ice[i]), 2.0)) );
-
-    // Monotonic decrease toward 1 with increasing T, and alpha >= 1.
-    REQUIRE( a_hdo[0] >= RealT(1) );
-    REQUIRE( a_o18[0] >= RealT(1) );
-    REQUIRE( a_hdo[0] < prev_hdo );
-    REQUIRE( a_o18[0] < prev_o18 );
-    prev_hdo = a_hdo[0];
-    prev_o18 = a_o18[0];
-  }
-}
-
 // Verify that alternative formulations produce measurably different results.
 void verify_formulation_differences()
 {
@@ -318,7 +161,7 @@ void verify_formulation_differences()
   {
     wiso::WaterIsotopeConstants<Real> const_horita;  // Default
     wiso::WaterIsotopeRuntimeOptions opts_maj;
-    opts_maj.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971a;
+    opts_maj.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
     wiso::WaterIsotopeConstants<Real> const_majoube(opts_maj);
 
     Real alpha_horita = wiso::WaterIsotopeFractionation::alpha_liquid_vapor(
@@ -355,33 +198,57 @@ void verify_formulation_differences()
   }
 }
 
-} // anonymous namespace
-
-TEST_CASE("water_isotopes_fractionation", "[water_isotopes]")
-{
-  SECTION("default_formulations") {
-    // Real (as a length-1 pack view via operator[]) and Pack instantiations.
-    run_sweep<ekat::Pack<Real,1>>();
-    run_sweep<ekat::Pack<Real,SCREAM_PACK_SIZE>>();
-    run_on_device();
-  }
-
-  SECTION("alternative_liquid_vapor_formulation") {
-    // Majoube1971a formulation
-    run_sweep_majoube<ekat::Pack<Real,1>>();
-    run_sweep_majoube<ekat::Pack<Real,SCREAM_PACK_SIZE>>();
-  }
-
-  SECTION("alternative_ice_vapor_formulation") {
-    // IsoCAM3 formulation
-    run_sweep_isocam3<ekat::Pack<Real,1>>();
-    run_sweep_isocam3<ekat::Pack<Real,SCREAM_PACK_SIZE>>();
-  }
-
-  SECTION("formulation_differences") {
-    // Cross-formulation comparison
-    verify_formulation_differences();
-  }
+template <typename RealT>
+void run_both_pack_sizes(
+  const char* phase, const double* T_array, int N,
+  std::function<double(double)> ref_hdo, std::function<double(double)> ref_o18,
+  RealT tol, const wiso::WaterIsotopeConstants<RealT>& constants)
+{ 
+  using Pack1 = ekat::Pack<RealT, 1>;
+  using PackN = ekat::Pack<RealT, SCREAM_PACK_SIZE>;
+  
+  run_sweep<Pack1>(phase, T_array, N, ref_hdo, ref_o18, tol, constants);
+  run_sweep<PackN>(phase, T_array, N, ref_hdo, ref_o18, tol, constants);
 }
+
+} // namespace
+
+TEST_CASE("water_isotopes_fractionation") {
+    using Real = scream::Real;
+    using Pack = ekat::Pack;
+    
+    SECTION("default_formulations") {
+      wiso::WaterIsotopeConstants<Real> constants;
+      run_both_pack_sizes("liquid-vapor", T_liq, NLIQ, ref_alpl_hdo, ref_alpl_o18,
+        Real(1e-6), constants);
+      run_both_pack_sizes("ice-vapor", T_ice, NICE, ref_alpi_hdo, ref_alpi_o18,
+        Real(1e-6), constants);
+    }   
+    
+    SECTION("alternative_liquid_vapor") {
+      wiso::WaterIsotopeRuntimeOptions opts;
+      opts.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
+      wiso::WaterIsotopeConstants<Real> constants(opts);
+      run_both_pack_sizes("liquid-vapor", T_liq, NLIQ, ref_alpl_hdo_majoube, 
+        ref_alpl_o18_majoube, Real(1e-6), constants);
+    }
+    
+    SECTION("alternative_ice_vapor") {
+      wiso::WaterIsotopeRuntimeOptions opts;
+      opts.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
+      wiso::WaterIsotopeConstants<Real> constants(opts);
+      run_both_pack_sizes("ice-vapor", T_ice, NICE, ref_alpi_hdo_isocam3, 
+        ref_alpi_o18_isocam3, Real(1e-6), constants);
+    }
+
+    SECTION("device execution") {
+      run_on_device();
+    }
+
+    SECTION("formulation_differences") {
+      verify_formulation_differences();
+    }
+
+  }
 
 } // namespace scream
