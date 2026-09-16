@@ -42,3 +42,5 @@ if (NOT DEBUG)
 endif()
 string(APPEND FFLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CXXFLAGS " -fp-model=consistent")
+
+string (APPEND KOKKOS_OPTIONS " --cxxflags='-include cstdint'")

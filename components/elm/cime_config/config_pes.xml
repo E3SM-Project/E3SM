@@ -218,6 +218,21 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="improv">
+      <pes compset="any" pesize="any">
+        <comment>elm: improv PEs for grid l%1.9x2.5|l%0.9x1.25|l%360x720cru</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="l%0.47x0.63" >
     <mach name="any">
@@ -401,9 +416,9 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="ascent|summit">
+    <mach name="ascent|summit|improv">
       <pes compset="any" pesize="any">
-        <comment>elm: ascent|summit PEs for grid l%r05_*r%r05</comment>
+        <comment>elm: ascent|summit|improv PEs for grid l%r05_*r%r05</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>

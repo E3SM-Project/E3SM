@@ -2231,6 +2231,29 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
+<compiler MACH="dane" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DNO_SHR_VMATH -DCNL </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -llapack -lblas</append>
+  </SLIBS>
+  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
+  <MPI_PATH>/usr/tce/packages/mvapich2/mvapich2-2.3.7-intel-classic-2021.6.0-magic/</MPI_PATH>
+  <NETCDF_PATH>/usr/gdata/e3sm/install/quartz/netcdf-fortran/</NETCDF_PATH>
+  <SLIBS>
+    <append>$SHELL{/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/bin/nf-config --flibs}</append>
+  </SLIBS>
+</compiler>
+
+
 <compiler MACH="theta" COMPILER="gnu">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
