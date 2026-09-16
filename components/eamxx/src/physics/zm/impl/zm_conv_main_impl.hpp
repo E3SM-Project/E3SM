@@ -296,7 +296,6 @@ void Functions<S,D>::zm_conv_main(
   //============================================================================
   // Host: Determine active columns
   //============================================================================
-  const bool use_dcape_trigger = runtime_opt.trig_dcape && !is_first_step;
   int inactive_cnt = 0;
   Kokkos::parallel_reduce("zm_conv_main_active", RangePolicy(0, ncol),
                           KOKKOS_LAMBDA(const Int i, Int& local_inactive) {
