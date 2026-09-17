@@ -280,7 +280,7 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("surf_mom_flux", "40.0,2.0")], case)
+        self._chg_atmconfig([("dgnum", "1,2,3,4")], case)
 
     ###########################################################################
     def test_atmchanges_on_all_matches(self):
