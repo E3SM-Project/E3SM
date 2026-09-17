@@ -5,15 +5,15 @@ if (compile_threaded)
   string(APPEND CMAKE_EXE_LINKER_FLAGS  " -qopenmp")
 endif()
 string(APPEND CMAKE_C_FLAGS         " -fp-model precise")
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -debug minimal")
 string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
 
 string(APPEND CMAKE_CXX_FLAGS         " -fp-model precise")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2 -debug minimal")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -O0 -g")
 
-string(APPEND CMAKE_Fortran_FLAGS " -fpscomp logicals -traceback -convert big_endian -assume byterecl -assume realloc_lhs -fp-model precise")
-string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_Fortran_FLAGS " -fpscomp logicals -traceback -convert big_endian -assume byterecl -ftz -assume realloc_lhs -fp-model source")
+string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -debug minimal")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g")
 
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DHIDE_MPI")
@@ -29,5 +29,4 @@ set(SFC "ifx")
 set(E3SM_LINK_WITH_FORTRAN "TRUE")
 
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
-set(Kokkos_ENABLE_SYCL FALSE CACHE BOOL "")
 
