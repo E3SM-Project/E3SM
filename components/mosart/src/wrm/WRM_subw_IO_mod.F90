@@ -59,6 +59,8 @@ MODULE WRM_subw_IO_mod
      integer :: iunit
      integer :: ncdfid, did, dids(2), ndims, dsize(1), dsizes(2), ier, varid
      integer :: start(2), count(2)
+     integer :: ng1, ng2                ! column block bounds for chunked read
+     integer, parameter :: ngblk = 32   ! columns of gridID_from_Dam read per nf90_get_var call
      integer(kind=PIO_OFFSET_KIND) :: frame
      real(r8) :: peak, prorata , mn, mx                  ! peak value to define the start of operationalyr
      integer :: sgn,curr_sgn, nsc, ct, ct_mx, mth_op , idepend      ! number of sign change
@@ -297,7 +299,20 @@ MODULE WRM_subw_IO_mod
      allocate(temp_gridID_from_Dam(ctlSubwWRM%NDam, maxNumDependentGrid))
      temp_gridID_from_Dam = -99
      ier = nf90_inq_varid(ncdfid,'gridID_from_Dam',varid)
-     ier = nf90_get_var(ncdfid,varid,temp_gridID_from_Dam)
+     if (ier /= NF90_NOERR) then
+        call shr_sys_abort(subname//' ERROR: gridID_from_Dam not found in '//trim(ctlSubwWRM%paraFile))
+     endif
+     ! read in blocks of columns; a single nf90_get_var of the full NDam x maxNumDependentGrid
+     ! field needs a temporary of the same size and can overflow the stack
+     do ng1 = 1, maxNumDependentGrid, ngblk
+        ng2 = min(ng1+ngblk-1, maxNumDependentGrid)
+        start = (/ 1, ng1 /)
+        count = (/ ctlSubwWRM%NDam, ng2-ng1+1 /)
+        ier = nf90_get_var(ncdfid, varid, temp_gridID_from_Dam(:,ng1:ng2), start=start, count=count)
+        if (ier /= NF90_NOERR) then
+           call shr_sys_abort(subname//' ERROR reading gridID_from_Dam from '//trim(ctlSubwWRM%paraFile))
+        endif
+     enddo
      ier = nf90_close(ncdfid)
 
      allocate (WRMUnit%myDamNum(begr:endr))
