@@ -1911,6 +1911,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#restart-file-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart file compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5044,6 +5055,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#restart-file-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart file compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5785,6 +5807,34 @@ fitting however many snapshots are needed in each file
 </ul>
 </li>
 </ul>
+<h2 id="restart-file-compatibility">Restart file compatibility</h2>
+<p>EAMxx's model restart files (the <code>*.scream.r.*.nc</code> files used to resume a run,
+not to be confused with the <em>output stream</em> restart options described above)
+are not guaranteed to remain compatible across EAMxx development: whenever the
+set of fields needed to restart the model changes, an older restart file may
+no longer be usable to resume a run with a newer version of the code.</p>
+<p>For instance, as of
+<a href="https://github.com/E3SM-Project/E3SM/pull/8606">PR #8606</a>, EAMxx
+initializes/restarts the wind components <code>U</code> and <code>V</code> directly, instead of the
+vector field <code>horiz_winds</code> that used to be read/written prior to that PR. If
+you try to restart a run using a restart file created before that PR, EAMxx
+will fail to find <code>U</code>/<code>V</code> in the file, and error out with a message like</p>
+<div class="highlight"><pre><span></span><code>Error! Could not retrieve variable. Variable not found.
+ - filename: /path/to/my.scream.r.nc
+ - varname : U
+ - vars on file : [..., horiz_winds, ...]
+</code></pre></div>
+<p>To convert an old restart file so it can be used with the current code, you
+can use the following <a href="http://nco.sourceforge.net/">NCO</a> commands, which
+extract <code>U</code>/<code>V</code> from <code>horiz_winds</code>, and drop <code>horiz_winds</code> from the file:</p>
+<div class="copy highlight"><pre><span></span><code>ncap2<span class="w"> </span>-O<span class="w"> </span>-s<span class="w"> </span><span class="s2">"U = horiz_winds(:,:,0,:); V = horiz_winds(:,:,1,:)"</span><span class="w"> </span>my.scream.r.nc<span class="w"> </span>temp.nc
+ncks<span class="w"> </span>-O<span class="w"> </span>-x<span class="w"> </span>-v<span class="w"> </span>horiz_winds<span class="w"> </span>temp.nc<span class="w"> </span>temp2.nc
+ncatted<span class="w"> </span>-a<span class="w"> </span>long_name,U,o,c,zonal_velocity<span class="w"> </span>-a<span class="w"> </span>long_name,V,o,c,meridional_velocity<span class="w"> </span>temp2.nc
+mv<span class="w"> </span>temp2.nc<span class="w"> </span>my.scream.r.nc
+</code></pre></div>
+<p>The last command overwrites the original restart file in place, so that
+<code>rpointer.atm</code> (which stores the restart file name) does not need to be
+updated.</p>
 
 
 
