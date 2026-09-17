@@ -200,6 +200,13 @@ set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name 
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
 option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" ON)
 
+# If we're going to pass device pointers to MPI, make sure the underlying MPI
+# installation actually supports that (best-effort check; see the module for caveats).
+if (SCREAM_MPI_ON_DEVICE AND EAMXX_ENABLE_GPU)
+  include(CheckMpiGpuAware)
+  eamxx_check_mpi_gpu_aware()
+endif()
+
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolithic kokkos kernels for ALL components that support them")
 set(SCREAM_P3_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolithic kokkos kernels for P3 only")
 set(SCREAM_SHOC_SMALL_KERNELS ${SCREAM_SMALL_KERNELS} CACHE STRING "Use small, non-monolithic kokkos kernels for SHOC only")
