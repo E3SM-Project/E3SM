@@ -180,12 +180,12 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
-      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
-      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
-      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
-      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
 
