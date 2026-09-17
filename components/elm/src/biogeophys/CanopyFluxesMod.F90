@@ -318,8 +318,8 @@ contains
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
     integer  :: itstoma                              ! counter for stoma iteration [-]
-    logical :: converge_stoma ! logical switch that flags if the tveg loop converged
-    logical :: converge_tveg  ! logical swithc that flags if the stomatal loop converged
+    logical :: converge_stoma ! flags whether the stomatal (photosynthesis) outer loop converged
+    logical :: converge_tveg  ! flags whether the temperature/energy inner loop converged
     logical ::	do_single_loop	! Set this true to reproduce results before
                                 ! refactoring the patch-loops
     
