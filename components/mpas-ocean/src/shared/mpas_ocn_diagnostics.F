@@ -488,10 +488,11 @@ contains
          ! outputs: pressureAdjustedSSH, gradSSH
          if (landIcePressureOn) then
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
-                   pressureAdjustedSSH, gradSSH, landIceDraftForSsh=landIceDraftForSsh )
+                   atmosphericPressure, pressureAdjustedSSH, gradSSH, &
+                   landIceDraftForSsh=landIceDraftForSsh )
         else
             call ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
-                   pressureAdjustedSSH, gradSSH)
+                   atmosphericPressure, pressureAdjustedSSH, gradSSH)
          end if
 
       end if ! full_compute
@@ -2984,7 +2985,8 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_ssh(forcingPool, ssh, seaIcePressure, &
-                pressureAdjustedSSH, gradSSH, landIceDraftForSsh)!{{{
+                atmosphericPressure, pressureAdjustedSSH, gradSSH, &
+                landIceDraftForSsh)!{{{
 
       implicit none
 
@@ -2999,6 +3001,8 @@ contains
          ssh
       real (kind=RKIND), dimension(:), intent(in) :: &
          seaIcePressure
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         atmosphericPressure
       real (kind=RKIND), dimension(:), optional, intent(in) :: &
          landIceDraftForSsh
 
@@ -3025,13 +3029,17 @@ contains
 
       nCells = nCellsHalo( 1 )
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(seaIcePressure, pressureAdjustedSSH, ssh)
+      !$acc parallel loop present(seaIcePressure, atmosphericPressure, &
+      !$acc                       pressureAdjustedSSH, ssh)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCells
-         pressureAdjustedSSH(iCell) = ssh(iCell) + ( seaIcePressure(iCell) / ( gravity * rho_sw ) )
+         pressureAdjustedSSH(iCell) = ssh(iCell) + ( &
+            (seaIcePressure(iCell) + atmosphericPressure(iCell)) / &
+            ( gravity * rho_sw ) &
+         )
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
