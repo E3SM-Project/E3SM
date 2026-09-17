@@ -30,3 +30,10 @@ set(E3SM_LINK_WITH_FORTRAN "TRUE")
 
 string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
 
+if (COMP_NAME STREQUAL gcam)
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-relax")
+  string(APPEND CMAKE_Fortran_FLAGS " -mcmodel=medium")
+  string(APPEND CMAKE_C_FLAGS " -mcmodel=medium")
+  string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
+endif()
+
