@@ -8,6 +8,9 @@
 
 #include <string>
 
+#include "inference_config.hpp"
+#include "tensor.hpp"
+
 namespace emulator {
 namespace inference {
 
@@ -19,21 +22,11 @@ enum class BackendType {
 };
 
 /**
- * @brief Minimal configuration for inference backends.
- */
-struct InferenceConfig {
-  int input_channels = 0;  ///< Number of input features per grid point
-  int output_channels = 0; ///< Number of output features per grid point
-  bool verbose = false;    ///< Enable verbose output (for debugging)
-};
-
-/**
  * @brief Abstract interface for inference backends.
  *
- * Provides a unified API for running neural network inference.
- * All backends:
- * - Accept input as a flat array [batch_size * input_channels]
- * - Produce output as a flat array [batch_size * output_channels]
+ * Provides a unified API for running neural network inference on named
+ * tensors. Nothing here is specific to the caller: a component and a
+ * single parameterization use it the same way.
  *
  * Backends are fully configured on construction (config is passed
  * to the constructor). No separate initialization step is needed.
@@ -44,14 +37,26 @@ public:
   virtual ~InferenceBackend() = default;
 
   /**
-   * @brief Run inference on input data.
+   * @brief Run inference.
+   * @param inputs  Input tensors (usually const views of model memory)
+   * @param outputs Output tensors, written in place
+   * @return true if inference succeeded
+   * @throws InferenceError on misuse, e.g. a shape mismatch
+   */
+  virtual bool infer(const TensorMap &inputs, TensorMap &outputs) = 0;
+
+  /**
+   * @brief Run inference on flat arrays.
+   *
+   * Wraps the arrays as [batch_size, input_channels] and
+   * [batch_size, output_channels] tensors and calls the overload above.
+   *
    * @param inputs  Input data array [batch_size * input_channels]
    * @param outputs Output data array [batch_size * output_channels]
    * @param batch_size Number of samples in the batch
    * @return true if inference succeeded
    */
-  virtual bool infer(const double *inputs, double *outputs,
-                     int batch_size = 1) = 0;
+  bool infer(const double *inputs, double *outputs, int batch_size = 1);
 
   /**
    * @brief Release resources and finalize the backend.

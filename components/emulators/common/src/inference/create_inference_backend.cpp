@@ -4,6 +4,7 @@
  */
 
 #include "create_inference_backend.hpp"
+#include "inference_error.hpp"
 #include "stub_inference_backend.hpp"
 
 namespace emulator {
@@ -14,9 +15,9 @@ create_backend(BackendType type, const InferenceConfig &config) {
   switch (type) {
   case BackendType::STUB:
     return std::make_shared<StubBackend>(config);
-  default:
-    return std::make_shared<StubBackend>(config);
   }
+  // A silent fallback to the stub would run the model with no network.
+  throw InferenceError("Unknown inference backend type.");
 }
 
 } // namespace inference

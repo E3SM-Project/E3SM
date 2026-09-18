@@ -17,15 +17,13 @@ namespace inference {
  * Leaves outputs unchanged. Useful for testing the data pipeline
  * without actual model inference.
  *
- * @param inputs  Input data (unused)
- * @param outputs Output data (unchanged)
- * @param batch_size Number of samples in batch (unused)
+ * @param inputs  Input tensors (unused)
+ * @param outputs Output tensors (unchanged)
  * @return Always returns true
  */
-bool StubBackend::infer(const double *inputs, double *outputs, int batch_size) {
-  (void)inputs;     // Unused
-  (void)outputs;    // Unchanged
-  (void)batch_size; // Unused
+bool StubBackend::infer(const TensorMap &inputs, TensorMap &outputs) {
+  (void)inputs;  // Unused
+  (void)outputs; // Unchanged
 
   // No-op: leave outputs unchanged
   return true;
