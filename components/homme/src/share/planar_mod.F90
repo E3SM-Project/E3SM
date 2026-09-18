@@ -17,7 +17,7 @@ module planar_mod
   use parallel_mod, only : abortmp
   use dimensions_mod, only : np,ne_x,ne_y
   use coordinate_systems_mod, only : cartesian3D_t, cartesian2d_t
-  use control_mod, only : hypervis_scaling, cubed_sphere_map
+  use metric_mod, only : metric_atomic
   use spacecurve_mod, only : GilbertCurve
 
   use physical_constants, only: Lx, Ly, Sx, Sy, dx, dy, dx_ref, dy_ref
@@ -49,7 +49,6 @@ module planar_mod
   ! Private methods
   ! ===============================
   private :: coordinates_atomic
-  private :: metric_atomic
   private :: coriolis_init_atomic
 
 contains
@@ -246,7 +245,7 @@ call initgridedge(GridEdge,GridVertex)
     elem%FaceNum=0
     call coordinates_atomic(elem,gll_points)
 
-    call metric_atomic(elem,gll_points,alpha)
+    call metric_atomic(elem,gll_points,alpha,plane_Dmap)
 
     call coriolis_init_atomic(elem)
 
@@ -333,253 +332,6 @@ call initgridedge(GridEdge,GridVertex)
     D(2,2) = dy/2.0d0
 
   end subroutine plane_Dmap
-
-  ! =========================================
-  ! metric_atomic:
-  !
-  ! Initialize planar metric terms:
-  ! initialize:
-  !         metdet, rmetdet  (analytic)    = detD, 1/detD
-  !         met                (analytic)    D^t D     (symmetric)
-  !         metdet             (analytic)    = detD
-  !         metinv             (analytic)    Dinv Dinv^t  (symmetic)
-  !         D     (from subroutine vmap)
-  !         Dinv  (computed directly from D)
-  !
-  ! ucontra = Dinv * u  =  metinv * ucov
-  ! ucov    = D^t * u   =  met * ucontra
-  !
-  ! we also compute DE = D*E, where
-  ! E = eigenvectors of metinv as a basis      metinv = E LAMBDA E^t
-  !
-  ! ueig = E^t ucov  = E^t D^t u =  (DE)^t u
-  !
-  !
-  ! so if we want to tweak the mapping by a factor alpha (so the weights add up to domain size, for example)
-  ! we take:
-  !    NEW       OLD
-  !       D = sqrt(alpha) D  and then rederive all quantities.
-  !    detD = alpha detD
-  !
-  ! where alpha = domain size/SEMarea, SEMarea = global sum elem(ie)%mv(i,j)*elem(ie)%metdet(i,j)
-  !
-  ! =========================================
-
-  subroutine metric_atomic(elem,gll_points,alpha)
-    use element_mod, only : element_t
-
-    type (element_t) :: elem
-    real(kind=real_kind) :: alpha
-    real (kind=longdouble_kind)      :: gll_points(np)
-    ! Local variables
-    integer ii
-    integer i,j,nn
-    integer iptr
-
-    real (kind=real_kind) :: r         ! distance from origin for point on cube tangent to unit sphere
-
-    real (kind=real_kind) :: const, norm
-    real (kind=real_kind) :: detD      ! determinant of vector field mapping matrix.
-    real (kind=real_kind) :: tmpD(2,2)
-    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
-    integer :: imaxM(2)
-    real (kind=real_kind) :: l1, l2, sc,min_svd,max_svd,max_normDinv
-
-    ! ==============================================
-    ! Initialize differential mapping operator
-    ! to and from vector fields on the physical domain to
-    ! contravariant vector fields on the reference domain
-    ! i.e. dM/dx^i in Sadourney (1972) and it's
-    ! inverse
-    ! ==============================================
-
-    max_svd = 0.0d0
-    max_normDinv = 0.0d0
-    min_svd = 1d99
-    do j=1,np
-       do i=1,np
-
-          call plane_Dmap(elem%D(i,j,:,:),1.0D0,1.0D0,elem%corners3D,cubed_sphere_map)
-
-          ! Numerical metric tensor based on analytic D: met = D^T times D
-          ! (D maps between physical plane and reference element)
-          elem%met(i,j,1,1) = elem%D(i,j,1,1)*elem%D(i,j,1,1) + &
-                              elem%D(i,j,2,1)*elem%D(i,j,2,1)
-          elem%met(i,j,1,2) = elem%D(i,j,1,1)*elem%D(i,j,1,2) + &
-                              elem%D(i,j,2,1)*elem%D(i,j,2,2)
-          elem%met(i,j,2,1) = elem%D(i,j,1,1)*elem%D(i,j,1,2) + &
-                              elem%D(i,j,2,1)*elem%D(i,j,2,2)
-          elem%met(i,j,2,2) = elem%D(i,j,1,2)*elem%D(i,j,1,2) + &
-                              elem%D(i,j,2,2)*elem%D(i,j,2,2)
-
-          ! compute D^-1...
-          ! compute determinant of D mapping matrix... if not zero compute inverse
-
-          detD = elem%D(i,j,1,1)*elem%D(i,j,2,2) - elem%D(i,j,1,2)*elem%D(i,j,2,1)
-
-          elem%Dinv(i,j,1,1) =  elem%D(i,j,2,2)/detD
-          elem%Dinv(i,j,1,2) = -elem%D(i,j,1,2)/detD
-          elem%Dinv(i,j,2,1) = -elem%D(i,j,2,1)/detD
-          elem%Dinv(i,j,2,2) =  elem%D(i,j,1,1)/detD
-
-          ! L2 norm = sqrt max eigenvalue of metinv
-          !         = 1/sqrt(min eigenvalue of met)
-          ! l1 and l2 are eigenvalues of met
-          ! (should both be positive, l1 > l2)
-          l1 = (elem%met(i,j,1,1) + elem%met(i,j,2,2) + sqrt(4.0d0*elem%met(i,j,1,2)*elem%met(i,j,2,1) + &
-              (elem%met(i,j,1,1) - elem%met(i,j,2,2))**2))/2.0d0
-          l2 = (elem%met(i,j,1,1) + elem%met(i,j,2,2) - sqrt(4.0d0*elem%met(i,j,1,2)*elem%met(i,j,2,1) + &
-              (elem%met(i,j,1,1) - elem%met(i,j,2,2))**2))/2.0d0
-          ! Max L2 norm of Dinv is sqrt of max eigenvalue of metinv
-          ! max eigenvalue of metinv is 1/min eigenvalue of met
-          norm = 1.0d0/sqrt(min(abs(l1),abs(l2)))
-          max_svd = max(norm, max_svd)
-          ! Min L2 norm of Dinv is sqrt of min eigenvalue of metinv
-          ! min eigenvalue of metinv is 1/max eigenvalue of met
-          norm = 1.0d0/sqrt(max(abs(l1),abs(l2)))
-          min_svd = min(norm, min_svd)
-
-          ! some kind of pseudo-norm of Dinv
-          ! C = 1/sqrt(2) sqrt( |g^x|^2 + |g^y|^2 + 2*|g^x dot g^y|)
-          !   = 1/sqrt(2) sqrt( |g_x|^2 + |g_y|^2 + 2*|g_x dot g_y|) / J
-          ! g^x = Dinv(:,1)    g_x = D(1,:)
-          ! g^y = Dinv(:,2)    g_y = D(2,:)
-          norm = (2*abs(sum(elem%Dinv(i,j,:,1)*elem%Dinv(i,j,:,2))) + sum(elem%Dinv(i,j,:,1)**2) + sum(elem%Dinv(i,j,:,2)**2))
-          norm = sqrt(norm)
-!          norm = (2*abs(sum(elem%D(1,:,i,j)*elem%D(2,:,i,j))) + sum(elem%D(1,:,i,j)**2) + sum(elem%D(2,:,i,j)**2))
-!          norm = sqrt(norm)/detD
-          max_normDinv = max(norm,max_normDinv)
-
-
-          ! Need inverse of met if not calculated analytically
-          elem%metdet(i,j) = abs(detD)
-          elem%rmetdet(i,j) = 1.0D0/abs(detD)
-
-          elem%metinv(i,j,1,1) =  elem%met(i,j,2,2)/(detD*detD)
-          elem%metinv(i,j,1,2) = -elem%met(i,j,1,2)/(detD*detD)
-          elem%metinv(i,j,2,1) = -elem%met(i,j,2,1)/(detD*detD)
-          elem%metinv(i,j,2,2) =  elem%met(i,j,1,1)/(detD*detD)
-
-          ! matricies for tensor hyper-viscosity
-          ! compute eigenvectors of metinv (probably same as computed above)
-          M = elem%metinv(i,j,:,:)
-
-          eig(1) = (M(1,1) + M(2,2) + sqrt(4.0d0*M(1,2)*M(2,1) + &
-              (M(1,1) - M(2,2))**2))/2.0d0
-          eig(2) = (M(1,1) + M(2,2) - sqrt(4.0d0*M(1,2)*M(2,1) + &
-              (M(1,1) - M(2,2))**2))/2.0d0
-
-          ! use DE to store M - Lambda, to compute eigenvectors
-          DE=M
-          DE(1,1)=DE(1,1)-eig(1)
-          DE(2,2)=DE(2,2)-eig(1)
-
-          imaxM = maxloc(abs(DE))
-          if (maxval(abs(DE))==0) then
-             E(1,1)=1; E(2,1)=0;
-          elseif ( imaxM(1)==1 .and. imaxM(2)==1 ) then
-             E(2,1)=1; E(1,1) = -DE(2,1)/DE(1,1)
-          else   if ( imaxM(1)==1 .and. imaxM(2)==2 ) then
-             E(2,1)=1; E(1,1) = -DE(2,2)/DE(1,2)
-          else   if ( imaxM(1)==2 .and. imaxM(2)==1 ) then
-             E(1,1)=1; E(2,1) = -DE(1,1)/DE(2,1)
-          else   if ( imaxM(1)==2 .and. imaxM(2)==2 ) then
-             E(1,1)=1; E(2,1) = -DE(1,2)/DE(2,2)
-          else
-             call abortmp('Impossible error in planar_mod.F90::metric_atomic()')
-          endif
-
-          ! the other eigenvector is orthgonal:
-          E(1,2)=-E(2,1)
-          E(2,2)= E(1,1)
-
-!normalize columns
-	  E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1)));
-	  E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2)));
-
-
-! OBTAINING TENSOR FOR HV: follows same approach as in cube_mod, with spherical-specific scaling removed
-
-!matrix D*E
-          DE(1,1)=sum(elem%D(i,j,1,:)*E(:,1))
-          DE(1,2)=sum(elem%D(i,j,1,:)*E(:,2))
-          DE(2,1)=sum(elem%D(i,j,2,:)*E(:,1))
-          DE(2,2)=sum(elem%D(i,j,2,:)*E(:,2))
-
-	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0))
-	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0))
-
-!matrix (DE) * Lam^* * Lam , tensor HV when V is applied at each Laplace calculation
-!          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
-!          DEL(1:2,2) = lamStar2*eig(2)*DE(1:2,2)
-
-!matrix (DE) * (Lam^*)^2 * Lam, tensor HV when V is applied only once, at the last Laplace calculation
-!will only work with hyperviscosity, not viscosity
-          DEL(1:2,1) = (lamStar1**2) *eig(1)*DE(1:2,1)
-          DEL(1:2,2) = (lamStar2**2) *eig(2)*DE(1:2,2)
-
-!matrix (DE) * Lam^* * Lam  *E^t *D^t or (DE) * (Lam^*)^2 * Lam  *E^t *D^t
-          V(1,1)=sum(DEL(1,:)*DE(1,:))
-          V(1,2)=sum(DEL(1,:)*DE(2,:))
-          V(2,1)=sum(DEL(2,:)*DE(1,:))
-          V(2,2)=sum(DEL(2,:)*DE(2,:))
-
-	  elem%tensorVisc(i,j,:,:)=V(:,:)
-
-       end do
-    end do
-
-!    see Paul Ullrich writeup:
-!    max_normDinv might be a tighter bound than max_svd for deformed elements
-!    max_svd >= max_normDinv/sqrt(2), with equality holding if |g^x| = |g^y|
-!    elem%normDinv=max_normDinv/sqrt(2)
-
-    ! this norm is consistent with length scales defined below:
-    elem%normDinv=max_svd
-
-
-    ! compute element length scales, based on SVDs, in km:
-    elem%dx_short = 1.0d0/(max_svd*0.5d0*dble(np-1)*1000.0d0)
-    elem%dx_long  = 1.0d0/(min_svd*0.5d0*dble(np-1)*1000.0d0)
-
-    ! Area correction: Bring numerical area from integration weights to
-    ! agreement with geometric area.
-    ! Three different cases:
-    ! (1) alpha == 1, this means that cube_init_atomic wasn't
-    ! called with alpha parameter there will be no correction,
-    ! (2) alpha <> 1 and cubed_sphere_map=0 and correction is so-called
-    ! 'alpha-correction',
-    ! (3) alpha <> 1 and cubed_sphere_map=2 and it is 'epsilon-bubble'
-    ! correction.
-
-    if( cubed_sphere_map == 0 ) then
-       ! alpha correction for cases (1) and (2).
-       elem%D = elem%D * sqrt(alpha)
-       elem%Dinv = elem%Dinv / sqrt(alpha)
-       elem%metdet = elem%metdet * alpha
-       ! replace "elem%rmetdet = elem%rmetdet / alpha" with the one below,
-       ! to ensure that elem%rmetdet = 1/elem%metdet
-       ! elem%rmetdet = elem%rmetdet / alpha
-       elem%rmetdet = 1.0D0/elem%metdet
-       elem%met = elem%met * alpha
-       elem%metinv = elem%metinv / alpha
-    elseif( cubed_sphere_map == 2 ) then
-       ! eps bubble correction for case (3).
-       do j=2,np-1
-         do i=2,np-1
-           elem%D(i,j,:,:) = elem%D(i,j,:,:) * sqrt(alpha)
-           elem%Dinv(i,j,:,:) = elem%Dinv(i,j,:,:) / sqrt(alpha)
-           elem%metdet(i,j) = elem%metdet(i,j) * alpha
-           elem%rmetdet(i,j) = 1.0D0/elem%metdet(i,j)
-           elem%met(i,j,:,:) = elem%met(i,j,:,:) * alpha
-           elem%metinv(i,j,:,:) = elem%metinv(i,j,:,:) / alpha
-         enddo
-       enddo
-    endif ! end of alpha/eps. bubble correction
-
-
-  end subroutine metric_atomic
-
 
   subroutine coriolis_init_atomic(elem)
     use element_mod, only : element_t

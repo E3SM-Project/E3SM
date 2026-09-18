@@ -40,8 +40,9 @@ void ElementsGeometry::init(const int num_elems, const bool alloc_gradphis,
   m_metdet = ExecViewManaged<Real * [NP][NP]>("METDET", m_num_elems);
 
   // tensorVisc/tensorVisc2 are always allocated and copied (the Fortran
-  // side always computes valid values for them, in metric_atomic(), even
-  // when hypervis_scaling/laplace_scaling are 0). Whether the tensor or
+  // side always computes valid values for them, in metric_mod's shared
+  // metric_atomic(), for both geometries, even when
+  // hypervis_scaling/laplace_scaling are 0). Whether the tensor or
   // the constant-coefficient operator is actually used at run time is
   // decided in the timestepping code (see HyperviscosityFunctorImpl's
   // consthv/constsponge).
