@@ -5151,7 +5151,7 @@ contains
           call t_startf('CPL:seq_hist_writeavg')
           call seq_hist_writeavg(infodata, EClock_d, &
                atm, lnd, ice, ocn, rof, glc, wav, iac, histavg_alarm, &
-               trim(cpl_inst_tag))
+               trim(cpl_inst_tag), rofrun_alarm)
           call t_stopf('CPL:seq_hist_writeavg')
 
        endif
