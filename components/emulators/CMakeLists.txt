@@ -16,13 +16,16 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 if(BUILD_EMULATOR_TESTS)
-  # Catch2 from ekat
-  set(CATCH2_INCLUDE_DIR "${EXTERNALS_ROOT}/ekat/extern/Catch2/single_include")
+  # Catch2 from ekat, unless the user points at another copy. ekat fetches
+  # Catch2 when it is configured, so a fresh clone does not have it.
+  if(NOT CATCH2_INCLUDE_DIR)
+    set(CATCH2_INCLUDE_DIR "${EXTERNALS_ROOT}/ekat/extern/Catch2/single_include")
+  endif()
 
   # Verify Catch2 exists
   if(NOT EXISTS "${CATCH2_INCLUDE_DIR}/catch2/catch.hpp")
     message(FATAL_ERROR "Catch2 not found at ${CATCH2_INCLUDE_DIR}. "
-      "Make sure externals/ekat is available.")
+      "Make sure externals/ekat is available, or set CATCH2_INCLUDE_DIR.")
   endif()
 
   # Enable testing at the top level
