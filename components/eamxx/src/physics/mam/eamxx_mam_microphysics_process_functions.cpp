@@ -414,9 +414,13 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     if (config_.compute_gas_phase_chemistry) {
 
     view_3d gas_phase_chemistry_dvmrdt;
+    view_2d imp_sol_outcome_view;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
+      imp_sol_outcome_view = get_field_out("imp_sol_outcome").get_view<Real **>();
     }
+
+    const bool collect_imp_sol_diags = extra_mam4_aero_microphys_diags_;
 
     Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::gas_phase_chemistry", policy,
@@ -439,12 +443,33 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         // extract atm state variables (input)
         const Real temperature = atm.temperature(kk);
         const auto &vmr_kk = ekat::subview(vmr_icol, kk);
+
+        // Call gas_phase_chemistry with ImpSolResult
+        mam4::gas_chemistry::ImpSolResult result;
         mam4::microphysics::gas_phase_chemistry(
-        // in
-        temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
-        het_rates_k.data(),
-        // out
-        vmr_kk);
+          temperature, dt, photo_rates_k.data(), extfrc_k.data(),
+          invariants_k.data(), het_rates_k.data(),
+          vmr_kk, result);
+
+        // Store the solver outcome if diagnostics enabled
+        // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
+        //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
+        if (collect_imp_sol_diags) {
+          imp_sol_outcome_view(icol, kk) = static_cast<Real>(result.outcome);
+        }
+
+        // Check for failure and report as warning (not error)
+        // Outcome values can be inspected in the imp_sol_outcome field
+        if (!result.success()) {
+          Kokkos::printf(
+              "WARNING: imp_sol did not complete chemistry interval at "
+              "icol=%d, lev=%d, outcome=%d, failed_attempts=%d, "
+              "cut_count=%d, accepted_steps=%d, "
+              "requested=%.6e, accepted=%.6e\n",
+              icol, kk, static_cast<int>(result.outcome),
+              result.failed_attempts, result.cut_count, result.accepted_steps,
+              result.requested_interval, result.accepted_interval);
+        }
       });
 
     });
