@@ -200,7 +200,22 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     });
 
     // set photo table ends
-    const auto& col_latitudes = col_latitudes_;
+    // For SCM mode, create a view with constant latitude; otherwise use grid latitudes
+    view_1d col_latitudes_local;
+    if (use_scm_lat_lon_) {
+      col_latitudes_local = view_1d("col_latitudes_scm", ncol_);
+      const Real scm_lat = scm_latitude_;
+      Kokkos::parallel_for("set_scm_lat", ncol_,
+        KOKKOS_LAMBDA(const int i) { col_latitudes_local(i) = scm_lat; });
+      Kokkos::fence();
+    } else {
+      col_latitudes_local = view_1d("col_latitudes_copy", ncol_);
+      const auto& col_lat_orig = col_latitudes_;
+      Kokkos::parallel_for("copy_lat", ncol_,
+        KOKKOS_LAMBDA(const int i) { col_latitudes_local(i) = col_lat_orig(i); });
+      Kokkos::fence();
+    }
+    const auto& col_latitudes = col_latitudes_local;
     const auto& het_rates =het_rates_;
     const auto &cmfdqr       = cmfdqr_;
 

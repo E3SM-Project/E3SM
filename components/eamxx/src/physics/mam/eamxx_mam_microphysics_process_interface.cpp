@@ -62,6 +62,14 @@ MAMMicrophysics::MAMMicrophysics(const ekat::Comm &comm, const ekat::ParameterLi
     config_.linoz.o3_sfc = m_params.get<double>("mam4_o3_sfc");
     config_.linoz.psc_T  = m_params.get<double>("mam4_psc_T");
   }
+
+  // Single-column model (SCM) configuration
+  // If use_scm_lat_lon is true, override grid lat/lon with specified values
+  use_scm_lat_lon_ = m_params.get<bool>("use_scm_lat_lon", false);
+  if (use_scm_lat_lon_) {
+    scm_latitude_  = m_params.get<double>("scm_latitude", 0.0);
+    scm_longitude_ = m_params.get<double>("scm_longitude", 0.0);
+  }
 }
 // ================================================================
 //  SET_GRIDS
@@ -319,9 +327,20 @@ MAMMicrophysics::create_requests()
   {
     const std::string season_wes_file =
         m_params.get<std::string>("mam4_season_wes_file");
-    const auto &clat = col_latitudes_;
-    mam_coupling::find_season_index_reader(season_wes_file, clat,
+    if (use_scm_lat_lon_) {
+      // For SCM: create a view with constant latitude for all columns
+      view_1d clat_scm("clat_scm", ncol_);
+      const Real scm_lat = scm_latitude_;
+      Kokkos::parallel_for("set_scm_lat_for_season", ncol_,
+        KOKKOS_LAMBDA(const int i) { clat_scm(i) = scm_lat; });
+      Kokkos::fence();
+      mam_coupling::find_season_index_reader(season_wes_file, clat_scm,
+                                             index_season_lai_);
+    } else {
+      const auto &clat = col_latitudes_;
+      mam_coupling::find_season_index_reader(season_wes_file, clat,
                                            index_season_lai_);
+    }
   }
 
 }  // set_grids
@@ -829,23 +848,31 @@ void MAMMicrophysics::run_impl(const double dt) {
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0, obliqr,  // in
                    &delta, &eccf);                         // out
   {
-    const auto col_latitudes_host =
-        grid_->get_geometry_data("lat").get_view<const Real *, Host>();
-    const auto col_longitudes_host =
-        grid_->get_geometry_data("lon").get_view<const Real *, Host>();
-    // get a host copy of lat/lon
     // Determine the cosine zenith angle
     // NOTE: Since we are bridging to F90 arrays this must be done on HOST and
     // then deep copied to a device view.
 
     // Now use solar declination to calculate zenith angle for all points
-    for(int i = 0; i < ncol; i++) {
-      Real lat =
-          col_latitudes_host(i) * M_PI / 180.0;  // Convert lat/lon to radians
-      Real lon = col_longitudes_host(i) * M_PI / 180.0;
-      // what's the aerosol microphys frequency?
-      Real temp = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
-      acos_cosine_zenith_host_(i) = acos(temp);
+    if (use_scm_lat_lon_) {
+      // For SCM: use constant lat/lon for all columns
+      const Real lat_rad = scm_latitude_ * M_PI / 180.0;
+      const Real lon_rad = scm_longitude_ * M_PI / 180.0;
+      for(int i = 0; i < ncol; i++) {
+        Real temp = shr_orb_cosz_c2f(calday, lat_rad, lon_rad, delta, dt);
+        acos_cosine_zenith_host_(i) = acos(temp);
+      }
+    } else {
+      const auto col_latitudes_host =
+          grid_->get_geometry_data("lat").get_view<const Real *, Host>();
+      const auto col_longitudes_host =
+          grid_->get_geometry_data("lon").get_view<const Real *, Host>();
+      for(int i = 0; i < ncol; i++) {
+        Real lat =
+            col_latitudes_host(i) * M_PI / 180.0;  // Convert lat/lon to radians
+        Real lon = col_longitudes_host(i) * M_PI / 180.0;
+        Real temp = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+        acos_cosine_zenith_host_(i) = acos(temp);
+      }
     }
     Kokkos::deep_copy(acos_cosine_zenith_, acos_cosine_zenith_host_);
   }

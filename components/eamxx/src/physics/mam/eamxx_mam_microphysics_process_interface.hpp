@@ -107,6 +107,11 @@ class MAMMicrophysics final : public MAMGenericInterface {
   // column areas, latitudes, longitudes
   const_view_1d col_latitudes_;
 
+  // Single-column model (SCM) configuration
+  bool use_scm_lat_lon_ = false;
+  Real scm_latitude_ = 0.0;   // degrees North
+  Real scm_longitude_ = 0.0;  // degrees East
+
   // surface albedo: shortwave, direct
   const_view_1d d_sfc_alb_dir_vis_;
 
