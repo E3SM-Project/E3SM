@@ -261,6 +261,12 @@ MAMMicrophysics::create_requests()
                         vector3d_num_gas_aerosol_constituents, none, grid_name);
     constexpr auto cm2 = m * m / 10000;
     add_field<Computed>("mam4_gas_dry_deposition_flux", vector2d_gas_pcnst, 1 / cm2 / s, grid_name);
+
+    // Diagnostic: implicit solver outcome for gas phase chemistry
+    // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
+    //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
+    // Values 0-1 indicate success; 2-5 indicate failure modes.
+    add_field<Computed>("imp_sol_outcome", scalar3d_mid, none, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -710,11 +716,13 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
       {"mam4_gas_dry_deposition_flux",
       "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
+
+      {"imp_sol_outcome",
+      "Implicit solver outcome for gas phase chemistry: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput, 3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted"},
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
   }
-
 
   // set field property checks for the fields in this process
   /* e.g.
