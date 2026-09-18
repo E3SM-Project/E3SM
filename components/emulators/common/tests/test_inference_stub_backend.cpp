@@ -73,6 +73,16 @@ TEST_CASE("create_backend refuses an unknown type", "[stub_backend]") {
                     InferenceError);
 }
 
+#ifndef EMULATOR_ENABLE_LIBTORCH
+TEST_CASE("create_backend refuses a backend that was not built",
+          "[stub_backend]") {
+  InferenceConfig config;
+
+  REQUIRE_THROWS_WITH(create_backend(BackendType::LIBTORCH, config),
+                      Catch::Contains("EMULATOR_ENABLE_LIBTORCH"));
+}
+#endif
+
 } // namespace test
 } // namespace inference
 } // namespace emulator

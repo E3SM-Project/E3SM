@@ -18,7 +18,8 @@ namespace inference {
  * @brief Enumeration of available inference backend types.
  */
 enum class BackendType {
-  STUB, ///< No-op backend for testing (no ML dependencies)
+  STUB,     ///< No-op backend for testing (no ML dependencies)
+  LIBTORCH, ///< TorchScript module run through LibTorch
 };
 
 /**

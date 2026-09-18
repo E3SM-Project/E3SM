@@ -7,6 +7,10 @@
 #include "inference_error.hpp"
 #include "stub_inference_backend.hpp"
 
+#ifdef EMULATOR_ENABLE_LIBTORCH
+#include "libtorch_inference_backend.hpp"
+#endif
+
 namespace emulator {
 namespace inference {
 
@@ -15,6 +19,13 @@ create_backend(BackendType type, const InferenceConfig &config) {
   switch (type) {
   case BackendType::STUB:
     return std::make_shared<StubBackend>(config);
+  case BackendType::LIBTORCH:
+#ifdef EMULATOR_ENABLE_LIBTORCH
+    return std::make_shared<LibTorchBackend>(config);
+#else
+    throw InferenceError("The LibTorch backend was not built. Reconfigure "
+                         "with -DEMULATOR_ENABLE_LIBTORCH=ON.");
+#endif
   }
   // A silent fallback to the stub would run the model with no network.
   throw InferenceError("Unknown inference backend type.");
