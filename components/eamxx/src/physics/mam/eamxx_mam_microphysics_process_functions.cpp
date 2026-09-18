@@ -458,10 +458,17 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
           imp_sol_outcome_view(icol, kk) = static_cast<Real>(result.outcome);
         }
 
-        // Check for failure and report
+        // Check for failure and report as warning (not error)
+        // Outcome values can be inspected in the imp_sol_outcome field
         if (!result.success()) {
-          EKAT_KERNEL_ERROR_MSG(
-              "ERROR: imp_sol did not complete the requested chemistry interval.\n");
+          Kokkos::printf(
+              "WARNING: imp_sol did not complete chemistry interval at "
+              "icol=%d, lev=%d, outcome=%d, failed_attempts=%d, "
+              "cut_count=%d, accepted_steps=%d, "
+              "requested=%.6e, accepted=%.6e\n",
+              icol, kk, static_cast<int>(result.outcome),
+              result.failed_attempts, result.cut_count, result.accepted_steps,
+              result.requested_interval, result.accepted_interval);
         }
       });
 
