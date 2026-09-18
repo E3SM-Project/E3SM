@@ -76,4 +76,4 @@
 
 [submodule "externals/mam4xx"]
 	path = externals/mam4xx
-	url = git@github.com:eagles-project/mam4xx.git
+	url = git@github.com:E3SM-Project/mam4xx.git
