@@ -54,6 +54,8 @@ void Functions<S,D>::gwd_precalc_rhoi(
     });
   rhoi_kludge(pver) = pint(pver) / (C::Rair.value * t(pver-1));
 
+  team.team_barrier();
+
   // Calculate effective diffusivity and LU decomposition for the
   // vertical diffusion solver.
   gw_ediff (team, workspace, pver, pgwv, init.kbotbg, init.ktop, tend_level, dt,
@@ -69,12 +71,15 @@ void Functions<S,D>::gwd_precalc_rhoi(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         q_nostride(k) = q_stride(k);
       });
+    team.team_barrier();
     gw_diff_tend(team, workspace, pver, init.kbotbg, init.ktop, q_nostride, dt,
                  decomp_ca, decomp_cc, decomp_dnom, decomp_ze, qtgw_nostride);
     Kokkos::parallel_for(
       Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
         qtgw_stride(k) = qtgw_nostride(k);
       });
+    // q_nostride/qtgw_nostride are shared scratch reused by the next tracer
+    team.team_barrier();
   }
 
   // Calculate tendency from diffusing dry static energy (dttdf).
@@ -95,6 +100,8 @@ void Functions<S,D>::gwd_precalc_rhoi(
     Kokkos::TeamVectorRange(team, pver), [&] (const int k) {
       ttgw(k) = dttke(k) + dttdf(k);
     });
+
+  team.team_barrier();
 
   workspace.template release_many_contiguous<7>(
     {&rhoi_kludge, &decomp_ca, &decomp_cc, &decomp_dnom, &decomp_ze, &q_nostride, &qtgw_nostride});

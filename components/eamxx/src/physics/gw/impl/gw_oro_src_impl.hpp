@@ -140,9 +140,11 @@ void Functions<S,D>::gw_oro_src(
   tend_level = pver - 1;
 
   // adjust to c indexing. Up to this point, src_level was used to index into 0:pver arrays
-  Kokkos::single(Kokkos::PerTeam(team), [&] {
-    --src_level;
-  });
+  // NOTE: must run on every team thread -- src_level is a thread-private scalar
+  // owned by the caller, so decrementing it under Kokkos::single would leave
+  // every other thread in the team one level off. See the note in
+  // gw_convect_project_winds.
+  --src_level;
 
   // No spectrum; phase speed is just 0.
   Kokkos::parallel_for(

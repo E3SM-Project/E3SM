@@ -84,6 +84,8 @@ void Functions<S,D>::gwd_project_tau(
       }
     });
 
+  team.team_barrier();
+
   workspace.template release_many_contiguous<2>(
     {&taub, &tauf});
 }

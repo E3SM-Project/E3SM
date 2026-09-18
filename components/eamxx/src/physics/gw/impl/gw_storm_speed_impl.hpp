@@ -47,6 +47,8 @@ void Functions<S,D>::gw_storm_speed(
     uh = ekat::impl::max(uh, Real(-cinit.maxuh));
   });
 
+  team.team_barrier();
+
   // Speeds for critical level filtering.
   if (maxi > mini) {
     umin =  init.pgwv*init.dc;

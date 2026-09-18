@@ -33,9 +33,19 @@ void Functions<S,D>::gw_convect_project_winds(
   const Real v_src = v(init.k_src_wind);
 
   // Get the unit vector components and magnitude at the surface.
-  Kokkos::single(Kokkos::PerTeam(team), [&] {
-    get_unit_vector(u_src, v_src, xv, yv, ubi(init.k_src_wind + 1));
-  });
+  //
+  // NOTE: this must run on *every* team thread, not inside a Kokkos::single.
+  // xv and yv are thread-private scalars owned by the caller (locals in the
+  // team lambda in GWDrag::run_impl), so a single-thread write leaves every
+  // other thread in the team with an uninitialized xv/yv, and no team_barrier
+  // can fix that -- a barrier synchronizes memory, it cannot broadcast a
+  // register. Those threads then go on to compute ubm(k) = dot_2d(...,xv,yv)
+  // and utgw(k) = ubt*xv for whichever levels they own, poisoning the result.
+  // Running it redundantly is cheap and gives every thread the same value;
+  // this matches gw_front_project_winds and gw_oro_src. The ubi() store below
+  // becomes a same-value write from all threads, which is benign.
+  get_unit_vector(u_src, v_src, xv, yv, ubi(init.k_src_wind + 1));
+
   team.team_barrier();
 
   // Project the local wind at midpoints onto the source wind.

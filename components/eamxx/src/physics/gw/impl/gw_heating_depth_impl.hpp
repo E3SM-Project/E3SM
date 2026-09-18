@@ -83,6 +83,8 @@ void Functions<S,D>::gw_heating_depth(
     // Multipy by conversion factor
     maxq0 *= maxq0_conversion_factor;
   });
+
+  team.team_barrier();
 }
 
 } // namespace gw

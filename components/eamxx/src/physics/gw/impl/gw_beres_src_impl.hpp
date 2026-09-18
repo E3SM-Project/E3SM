@@ -77,6 +77,8 @@ void Functions<S,D>::gw_beres_src(
       tau.data()[k] = 0;
     });
 
+  team.team_barrier();
+
   hdepth = 0;
 
 
@@ -116,6 +118,9 @@ void Functions<S,D>::gw_beres_src(
     Kokkos::TeamVectorRange(team, init.cref.size()), [&] (const int l) {
       c(l) = init.cref(l);
     });
+
+  // mini/maxi/uh/maxq0/storm_speed alias this slot and were read just above
+  team.team_barrier();
 
   workspace.release(local_storage);
 }
