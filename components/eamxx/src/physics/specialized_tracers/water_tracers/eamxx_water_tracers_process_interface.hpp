@@ -2,7 +2,7 @@
 #define SCREAM_WATER_TRACERS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
