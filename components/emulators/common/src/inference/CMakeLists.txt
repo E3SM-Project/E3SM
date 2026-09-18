@@ -5,6 +5,8 @@
 
 option(EMULATOR_ENABLE_LIBTORCH
   "Build the LibTorch inference backend (needs a LibTorch install)" OFF)
+option(EMULATOR_ENABLE_PYTHON
+  "Build the Python inference backend (needs the Python development files)" OFF)
 
 set(EMULATOR_INFERENCE_SOURCES
   tensor.cpp
@@ -21,6 +23,11 @@ if(EMULATOR_ENABLE_LIBTORCH)
   list(APPEND EMULATOR_INFERENCE_SOURCES libtorch_inference_backend.cpp)
 endif()
 
+if(EMULATOR_ENABLE_PYTHON)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+  list(APPEND EMULATOR_INFERENCE_SOURCES python_inference_backend.cpp)
+endif()
+
 add_library(emulator_inference ${EMULATOR_INFERENCE_SOURCES})
 
 target_compile_features(emulator_inference PUBLIC cxx_std_17)
@@ -35,4 +42,9 @@ if(EMULATOR_ENABLE_LIBTORCH)
   target_compile_definitions(emulator_inference PUBLIC EMULATOR_ENABLE_LIBTORCH)
   # PUBLIC: TORCH_LIBRARIES carries the C++ ABI flag LibTorch was built with
   target_link_libraries(emulator_inference PUBLIC "${TORCH_LIBRARIES}")
+endif()
+
+if(EMULATOR_ENABLE_PYTHON)
+  target_compile_definitions(emulator_inference PUBLIC EMULATOR_ENABLE_PYTHON)
+  target_link_libraries(emulator_inference PRIVATE Python3::Python)
 endif()

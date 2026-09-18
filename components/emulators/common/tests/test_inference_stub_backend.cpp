@@ -83,6 +83,16 @@ TEST_CASE("create_backend refuses a backend that was not built",
 }
 #endif
 
+#ifndef EMULATOR_ENABLE_PYTHON
+TEST_CASE("create_backend refuses the Python backend if not built",
+          "[stub_backend]") {
+  InferenceConfig config;
+
+  REQUIRE_THROWS_WITH(create_backend(BackendType::PYTHON, config),
+                      Catch::Contains("EMULATOR_ENABLE_PYTHON"));
+}
+#endif
+
 } // namespace test
 } // namespace inference
 } // namespace emulator

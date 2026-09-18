@@ -11,6 +11,10 @@
 #include "libtorch_inference_backend.hpp"
 #endif
 
+#ifdef EMULATOR_ENABLE_PYTHON
+#include "python_inference_backend.hpp"
+#endif
+
 namespace emulator {
 namespace inference {
 
@@ -25,6 +29,13 @@ create_backend(BackendType type, const InferenceConfig &config) {
 #else
     throw InferenceError("The LibTorch backend was not built. Reconfigure "
                          "with -DEMULATOR_ENABLE_LIBTORCH=ON.");
+#endif
+  case BackendType::PYTHON:
+#ifdef EMULATOR_ENABLE_PYTHON
+    return std::make_shared<PythonBackend>(config);
+#else
+    throw InferenceError("The Python backend was not built. Reconfigure "
+                         "with -DEMULATOR_ENABLE_PYTHON=ON.");
 #endif
   }
   // A silent fallback to the stub would run the model with no network.

@@ -20,6 +20,7 @@ namespace inference {
 enum class BackendType {
   STUB,     ///< No-op backend for testing (no ML dependencies)
   LIBTORCH, ///< TorchScript module run through LibTorch
+  PYTHON,   ///< Python model run through an embedded interpreter
 };
 
 /**

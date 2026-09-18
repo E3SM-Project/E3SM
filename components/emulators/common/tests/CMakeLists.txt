@@ -78,3 +78,44 @@ if(EMULATOR_ENABLE_LIBTORCH)
     add_test(NAME inference_libtorch_backend_tests COMMAND test_inference_libtorch_backend)
   endif()
 endif()
+
+# Test for PythonBackend
+#
+# The embedded interpreter needs numpy at run time. If it also has torch,
+# the test runs a torch.nn module as well.
+if(EMULATOR_ENABLE_PYTHON)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy"
+    RESULT_VARIABLE EMULATOR_NUMPY_MISSING OUTPUT_QUIET ERROR_QUIET)
+
+  if(EMULATOR_NUMPY_MISSING)
+    message(WARNING "Skipping the Python backend test: "
+      "'${Python3_EXECUTABLE}' cannot import numpy.")
+  else()
+    add_executable(test_inference_python_backend test_inference_python_backend.cpp)
+    target_link_libraries(test_inference_python_backend PRIVATE emulator_inference)
+    target_include_directories(test_inference_python_backend PRIVATE ${CATCH2_INCLUDE_DIR})
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c
+        "import site; print(':'.join(site.getsitepackages()))"
+      OUTPUT_VARIABLE EMULATOR_PYTHON_SITE_PACKAGES
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    target_compile_definitions(test_inference_python_backend PRIVATE
+      EMULATOR_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
+      EMULATOR_TEST_SITE_PACKAGES="${EMULATOR_PYTHON_SITE_PACKAGES}")
+
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import torch"
+      RESULT_VARIABLE EMULATOR_PYTHON_TORCH_MISSING OUTPUT_QUIET ERROR_QUIET)
+    if(NOT EMULATOR_PYTHON_TORCH_MISSING)
+      target_compile_definitions(test_inference_python_backend PRIVATE
+        EMULATOR_TEST_HAVE_TORCH)
+    endif()
+    add_test(NAME inference_python_backend_tests COMMAND test_inference_python_backend)
+
+    # A relocatable Python does not find its standard library when embedded
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c
+        "import sys; print(sys.base_prefix)"
+      OUTPUT_VARIABLE EMULATOR_PYTHON_HOME OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set_tests_properties(inference_python_backend_tests PROPERTIES
+      ENVIRONMENT "PYTHONHOME=${EMULATOR_PYTHON_HOME}")
+  endif()
+endif()
