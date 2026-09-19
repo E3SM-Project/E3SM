@@ -464,7 +464,7 @@ contains
     use spmdMod         ,  only : masterproc, mpicom
     use elm_varctl      ,  only : import_export_stats_inst, import_export_stats_daily
     use elm_varctl      ,  only : import_export_stats_month, import_export_stats_ann
-    use elm_varctl      ,  only : import_export_stats_ltann
+    use elm_varctl      ,  only : import_export_stats_ltann, import_export_stats_ltend
     use ImportExportStatsMod, only : ImportExportStats_Print
     use perf_mod        ,  only : t_startf, t_stopf, t_barrierf
     use shr_orb_mod     ,  only : shr_orb_decl
@@ -658,7 +658,8 @@ contains
        call t_startf ('lc_lnd_impexp_stats')
        call ImportExportStats_Print(import_export_stats_inst,  &
             import_export_stats_daily, import_export_stats_month, &
-            import_export_stats_ann,   import_export_stats_ltann)
+            import_export_stats_ann,   import_export_stats_ltann, &
+            import_export_stats_ltend, nlend)
        call t_stopf ('lc_lnd_impexp_stats')
 
        ! Advance elm time step
