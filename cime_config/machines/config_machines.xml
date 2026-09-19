@@ -3163,6 +3163,10 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
+    <environment_variables BUILD_THREADED="TRUE">
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
     <environment_variables compiler="intel" mpilib="mvapich2">
       <env name="HDF5_ROOT">/usr/tce/packages/hdf5/hdf5-1.14.0-mvapich2-2.3.7-intel-2025.2.0</env>
       <env name="NETCDF_C_PATH">/usr/tce/packages/netcdf-c/netcdf-c-4.9.0-mvapich2-2.3.7-intel-2025.2.0</env>
