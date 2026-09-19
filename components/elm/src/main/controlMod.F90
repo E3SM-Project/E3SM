@@ -73,6 +73,9 @@ module controlMod
                         use_IM2_hillslope_hydrology, use_petsc_thermal_model, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
+                        do_import_export_stats, import_export_stats_inst, &
+                        import_export_stats_daily, import_export_stats_month, &
+                        import_export_stats_ann, import_export_stats_ltann, &
                         use_lnd_rof_two_way, use_ocn_lnd_one_way, &
                         use_modified_infil, use_polygonal_tundra, use_arctic_init, &
                         iundef, nsrest, rundef, scmlat, scmlon, single_column, &
@@ -380,6 +383,11 @@ contains
     namelist /elm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
+
+    namelist /elm_inparm/ &
+         do_import_export_stats, import_export_stats_inst, &
+         import_export_stats_daily, import_export_stats_month, &
+         import_export_stats_ann, import_export_stats_ltann
  
     namelist /elm_inparm/ & 
          use_atm_downscaling_to_topunit, precip_downscaling_method
@@ -1069,6 +1077,14 @@ contains
     call mpi_bcast (budget_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (budget_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (budget_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
+
+    ! Statistics of fields imported from / exported to the coupler
+    call mpi_bcast (do_import_export_stats    , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_inst  , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_daily , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_month , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
 
     ! land river two way coupling
     call mpi_bcast (use_lnd_rof_two_way   , 1, MPI_LOGICAL, 0, mpicom, ier)

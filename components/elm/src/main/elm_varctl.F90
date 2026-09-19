@@ -568,6 +568,16 @@ module elm_varctl
    integer, public :: budget_ltend = 0
 
    !----------------------------------------------------------
+   ! Statistics of fields imported from / exported to the coupler
+   !----------------------------------------------------------
+   logical, public :: do_import_export_stats     = .false.
+   integer, public :: import_export_stats_inst   = 0
+   integer, public :: import_export_stats_daily  = 0
+   integer, public :: import_export_stats_month  = 1
+   integer, public :: import_export_stats_ann    = 1
+   integer, public :: import_export_stats_ltann  = 1
+
+   !----------------------------------------------------------
    ! land river two way coupling
    !----------------------------------------------------------
    logical, public :: use_lnd_rof_two_way = .false.

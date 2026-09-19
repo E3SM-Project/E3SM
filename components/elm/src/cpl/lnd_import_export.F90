@@ -17,6 +17,7 @@ module lnd_import_export
   use elm_cpl_indices
   use mct_mod
   use seq_flds_mod    , only : rof_sed
+  use ImportExportStatsMod, only : ImportExportStats_Accum, dir_x2l, dir_l2x
   !
   implicit none
   !===============================================================================
@@ -1400,6 +1401,10 @@ contains
     atm2lnd_vars%loaded_bypassdata = 1
 #endif
 
+    ! Statistics of every field received from the coupler. No-op unless
+    ! do_import_export_stats is set.
+    call ImportExportStats_Accum(dir_x2l, bounds, x2l)
+
   end subroutine lnd_import
 
   !===============================================================================
@@ -1552,6 +1557,10 @@ contains
           end do
        end if
     end do
+
+    ! Statistics of every field sent to the coupler. No-op unless
+    ! do_import_export_stats is set, and skipped on the initialization call.
+    call ImportExportStats_Accum(dir_l2x, bounds, l2x)
 
   end subroutine lnd_export
 
