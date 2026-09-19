@@ -2369,6 +2369,25 @@ with one row per field.
 default: 1
 </entry>
 
+<entry id="import_export_stats_ltend"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnostics level of the long-term statistics written at the end of
+each run, covering the whole run regardless of its length or start date. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+Unlike import_export_stats_ltann, which reports the same accumulated statistics
+but only when the model clock reaches January 1, this fires on the last time
+step of the run. A run shorter than a year, or one that stops before January,
+therefore still reports its whole-run envelope.
+default: 1
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- NGEE Arctic Options                                                                       -->
 <!-- ========================================================================================  -->

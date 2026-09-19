@@ -76,6 +76,7 @@ module controlMod
                         do_import_export_stats, import_export_stats_inst, &
                         import_export_stats_daily, import_export_stats_month, &
                         import_export_stats_ann, import_export_stats_ltann, &
+                        import_export_stats_ltend, &
                         use_lnd_rof_two_way, use_ocn_lnd_one_way, &
                         use_modified_infil, use_polygonal_tundra, use_arctic_init, &
                         iundef, nsrest, rundef, scmlat, scmlon, single_column, &
@@ -387,7 +388,8 @@ contains
     namelist /elm_inparm/ &
          do_import_export_stats, import_export_stats_inst, &
          import_export_stats_daily, import_export_stats_month, &
-         import_export_stats_ann, import_export_stats_ltann
+         import_export_stats_ann, import_export_stats_ltann, &
+         import_export_stats_ltend
  
     namelist /elm_inparm/ & 
          use_atm_downscaling_to_topunit, precip_downscaling_method
@@ -1085,6 +1087,7 @@ contains
     call mpi_bcast (import_export_stats_month , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (import_export_stats_ann   , 1, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (import_export_stats_ltann , 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (import_export_stats_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
 
     ! land river two way coupling
     call mpi_bcast (use_lnd_rof_two_way   , 1, MPI_LOGICAL, 0, mpicom, ier)

@@ -576,6 +576,7 @@ module elm_varctl
    integer, public :: import_export_stats_month  = 1
    integer, public :: import_export_stats_ann    = 1
    integer, public :: import_export_stats_ltann  = 1
+   integer, public :: import_export_stats_ltend  = 1
 
    !----------------------------------------------------------
    ! land river two way coupling

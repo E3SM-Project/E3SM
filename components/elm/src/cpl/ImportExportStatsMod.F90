@@ -356,7 +356,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ImportExportStats_Print(stats_print_inst, stats_print_daily, &
-       stats_print_month, stats_print_ann, stats_print_ltann)
+       stats_print_month, stats_print_ann, stats_print_ltann, stats_print_ltend, &
+       last_step)
     !
     ! !DESCRIPTION:
     ! Reduce the task-local accumulators across all tasks, write the tables that are due
@@ -377,6 +378,8 @@ contains
     integer, intent(in) :: stats_print_month
     integer, intent(in) :: stats_print_ann
     integer, intent(in) :: stats_print_ltann
+    integer, intent(in) :: stats_print_ltend
+    logical, intent(in) :: last_step   ! .true. on the final time step of the run
     !
     ! !LOCAL VARIABLES:
     integer :: idir, ip
@@ -399,7 +402,8 @@ contains
     cdate = year*10000 + mon*100 + day
 
     ! A boundary has been crossed when the clock has just rolled over into the next day,
-    ! month or year. p_inst turns over every step; p_inf never does.
+    ! month or year. p_inst turns over every step; p_inf never does, because it holds the
+    ! whole-run envelope that stats_print_ltann and stats_print_ltend both report.
     at_bound(:)      = .false.
     at_bound(p_inst) = .true.
     at_bound(p_day)  = (sec == 0)
@@ -419,6 +423,11 @@ contains
 
        ! Nothing has accumulated into the longer periods yet on the first step.
        if (ip /= p_inst .and. get_nstep() == 1) do_print(ip) = .false.
+
+       ! The end-of-run table reports the whole run, so it fires on the last step
+       ! whatever the date and however short the run was. Without it a run that never
+       ! reaches January 1 would accumulate the all-time envelope and never report it.
+       if (ip == p_inf .and. last_step .and. stats_print_ltend > 0) do_print(ip) = .true.
     end do
 
     any_print = any(do_print(:))
