@@ -3101,7 +3101,7 @@
     <DESC>LLNL Linux Cluster, 112 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mvapich2</MPILIBS>
+    <MPILIBS>openmpi,mvapich2</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/dane</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/p/vast1/e3sm/ccsm3data/inputdata</DIN_LOC_ROOT>
@@ -3142,8 +3142,16 @@
         <command name="load">cmake/3.26.3</command>
         <command name="load">mkl/2022.1.0</command>
         <command name="load">intel/2025.2.0-magic</command>
+      </modules>
+      <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.7</command>
         <command name="load">mvapich2-tce/2.3.7</command>
+        <command name="load">hdf5-parallel/1.14.0</command>
+        <command name="load">netcdf-c-parallel/4.9.0</command>
+        <command name="load">netcdf-fortran-parallel/4.6.0</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">openmpi/4.1.2</command>
         <command name="load">hdf5-parallel/1.14.0</command>
         <command name="load">netcdf-c-parallel/4.9.0</command>
         <command name="load">netcdf-fortran-parallel/4.6.0</command>
@@ -3155,13 +3163,22 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables compiler="intel">
+    <environment_variables compiler="intel" mpilib="mvapich2">
       <env name="HDF5_ROOT">/usr/tce/packages/hdf5/hdf5-1.14.0-mvapich2-2.3.7-intel-2025.2.0</env>
       <env name="NETCDF_C_PATH">/usr/tce/packages/netcdf-c/netcdf-c-4.9.0-mvapich2-2.3.7-intel-2025.2.0</env>
       <env name="NETCDF_FORTRAN_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-mvapich2-2.3.7-intel-2025.2.0</env>
       <env name="PNETCDF_PATH">/usr/workspace/e3sm/apps/pnetcdf/dane-intel-2025.2.0-mvapich2-2.3.7/1.14.1</env>
       <env name="TEMPESTREMAP_ROOT">/usr/workspace/e3sm/apps/tempestremap/dane-intel-2025.2.0-mvapich2-2.3.7/master</env>
       <env name="MOAB_ROOT">/usr/workspace/e3sm/apps/moab/dane-intel-2025.2.0-mvapich2-2.3.7/master</env>
+    </environment_variables>
+    <environment_variables compiler="intel" mpilib="openmpi">
+      <env name="HDF5_ROOT">/usr/tce/packages/hdf5/hdf5-1.14.0-openmpi-4.1.2-intel-2025.2.0</env>
+      <env name="NETCDF_C_PATH">/usr/tce/packages/netcdf-c/netcdf-c-4.9.0-openmpi-4.1.2-intel-2025.2.0</env>
+      <env name="NETCDF_FORTRAN_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.6.0-openmpi-4.1.2-intel-2025.2.0</env>
+      <env name="PNETCDF_PATH">/usr/workspace/e3sm/apps/pnetcdf/dane-intel-2025.2.0-openmpi-4.1.2/1.14.1</env>
+      <env name="TEMPESTREMAP_ROOT">/usr/workspace/e3sm/apps/tempestremap/dane-intel-2025.2.0-openmpi-4.1.2/master</env>
+      <env name="MOAB_ROOT">/usr/workspace/e3sm/apps/moab/dane-intel-2025.2.0-openmpi-4.1.2/master</env>
+      <env name="OMPI_MCA_sharedfp">^lockedfile,individual</env>
     </environment_variables>
   </machine>
 
