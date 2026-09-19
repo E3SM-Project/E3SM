@@ -14,7 +14,7 @@ string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -O0 -g")
 
 string(APPEND CMAKE_Fortran_FLAGS " -fpscomp logicals -traceback -convert big_endian -assume byterecl -ftz -assume realloc_lhs -fp-model source")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -debug minimal")
-string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created")
 
 string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DHIDE_MPI")
 string(APPEND CMAKE_Fortran_FORMAT_FIXED_FLAG " -fixed -132")
@@ -27,8 +27,6 @@ set(SCC "icx")
 set(SCXX "icpx")
 set(SFC "ifx")
 set(E3SM_LINK_WITH_FORTRAN "TRUE")
-
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -lmkl_intel_lp64 -lmkl_sequential -lmkl_core")
 
 if (COMP_NAME STREQUAL gcam)
   string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-relax")
