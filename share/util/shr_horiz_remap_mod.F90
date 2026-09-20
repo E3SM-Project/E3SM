@@ -320,7 +320,7 @@ CONTAINS
     ! Output:
     !   send_gcol_list(1:n_send_total) - global column IDs this rank must send
     !--------------------------------------------------------------------------
-    use mpi, only: MPI_INTEGER, MPI_SUCCESS
+    use mpi, only: MPI_INTEGER, MPI_SUCCESS, MPI_MAX
 
     class(shr_horiz_remap_t), intent(inout) :: rd
     integer, intent(in) :: gcol_to_rank(:)  ! (n_a)
@@ -329,6 +329,7 @@ CONTAINS
     integer, intent(out) :: ierr
 
     integer :: i, r, gcol, owner_rank, irow, j, n_dropped
+    integer :: n_dropped_g, mpierr
     integer, allocatable :: need_from_rank(:), recv_gcols(:)
     integer, allocatable :: gcol_to_recvpos(:)
     integer, allocatable :: recvidx_unsorted(:), row_counts(:), bucket_pos(:)
@@ -358,7 +359,14 @@ CONTAINS
     ! ws_recv_buf at index k-numlev (<=0) -- out of bounds with ierr=0. This
     ! signals a map/mesh mismatch (the map references cells no rank owns); fail
     ! loudly so the caller aborts rather than shipping garbage.
-    if (n_dropped > 0) then
+    ! n_dropped is RANK-LOCAL: n_src_need is derived from this rank's own
+    ! target rows, so one rank can drop a column while others drop none.  The
+    ! MPI_Allgather/MPI_Alltoallv below are collective, so returning here on a
+    ! subset of ranks leaves the rest blocked in a collective forever -- and
+    ! silently, since this path prints nothing.  Agree on the outcome first so
+    ! that either every rank returns with ierr=1 or none does.
+    call mpi_allreduce(n_dropped, n_dropped_g, 1, MPI_INTEGER, MPI_MAX, comm, mpierr)
+    if (n_dropped_g > 0) then
       deallocate(need_from_rank)
       ierr = 1
       return
