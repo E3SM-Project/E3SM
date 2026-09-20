@@ -3498,6 +3498,7 @@ contains
     use elm_varcon      , only : secspday
     use perf_mod        , only : t_startf, t_stopf
     use elm_varpar      , only : nlevgrnd
+    use elmHorizRemapMod, only : elm_horiz_remap_active
     !
     ! !ARGUMENTS:
     logical, intent(in) :: rstwr    ! true => write restart file this step
@@ -3632,11 +3633,29 @@ contains
              ! Define time-constant field variables
              call htape_timeconst(t, mode='define')
 
-             ! Define 3D time-constant field variables only to first primary tape
+             ! Define 3D time-constant field variables only to first primary tape.
+             !
+             ! A horizontally remapped tape is skipped.  htape_timeconst3D writes
+             ! ZSOI/DZSOI/WATSAT/SUCSAT/BSW/HKSAT (and ZLAKE/DZLAKE) straight
+             ! through ncd_io on the NATIVE land decomposition, but a remapped
+             ! tape's lon/lat dims are the map file's target grid, so ncd_getiodesc
+             ! computes fullsize = nlon_tgt*nlat_tgt*nlev against the native gsize
+             ! and aborts ('ERROR in vsize').  These are native soil-column
+             ! properties that the remapped (FME) land tape does not request, and
+             ! elm_horiz_remap_write_field cannot carry them: it is time-record
+             ! based (pio_setframe) while these variables have no time dimension.
              if ( do_3Dtconst .and. t == 1 ) then
-                call htape_timeconst3D(t, &
-                     bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='define')
-                TimeConst3DVars_Filename = trim(locfnh(t))
+                if ( elm_horiz_remap_active(t) ) then
+                   if (masterproc) write(iulog,*) trim(subname), &
+                        ': tape ',t,' is horizontally remapped -- omitting the 3D', &
+                        ' time-constant fields (ZSOI, DZSOI, WATSAT, SUCSAT, BSW,', &
+                        ' HKSAT, ZLAKE, DZLAKE), which exist only on the native', &
+                        ' land grid'
+                else
+                   call htape_timeconst3D(t, &
+                        bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='define')
+                   TimeConst3DVars_Filename = trim(locfnh(t))
+                end if
              end if
 
              ! Define model field variables
@@ -3652,9 +3671,12 @@ contains
           call htape_timeconst(t, mode='write')
 
           ! Write 3D time constant history variables only to first primary tape
+          ! (never defined on a remapped tape -- see the matching guard above)
           if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then
-             call htape_timeconst3D(t, &
-                  bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
+             if ( .not. elm_horiz_remap_active(t) ) then
+                call htape_timeconst3D(t, &
+                     bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
+             end if
              do_3Dtconst = .false.
           end if
 
