@@ -20,3 +20,8 @@ string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
 string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
 
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -init=snan,arrays")
+if (COMP_NAME STREQUAL cice)
+  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=nosnan,arrays")
+endif()
+
