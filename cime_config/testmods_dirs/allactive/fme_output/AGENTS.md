@@ -1963,6 +1963,131 @@ the way EAM has constituents and the physics buffer.
 `elm_instMod`: that module uses `controlMod`, which uses this one for the
 namelist, and the cycle would not compile.
 
+### gotcha #62 — the coupler EXPORTS rode the ocean hook, which a data ocean never reaches (ADDED 2026-09-20)
+
+`a2x`, `i2x` and `o2x` fell through `case default` in `add_stream` onto
+`CPL_FME_PHASE_OCN`. That is correct reasoning for a prognostic ocean — those
+three bundles *are* valid at the ocean hook, and they survive a warm restart
+because `seq_rest` writes `o2x_ox`/`i2x_ix`/`a2x_ax` (the gotcha #60
+argument). What it missed is **where the ocean hook lives**:
+
+```fortran
+if (iamin_CPLID .and. ocn_prognostic) then      ! cime_comp_mod, OCNPREP
+   call prep_ocn_accum_avg(...)
+   call cpl_fme_accum(EClock_d, CPL_FME_PHASE_OCN)
+```
+
+With `DOCN%DOM` — i.e. **every F compset** — `ocn_prognostic` is false, the
+whole OCNPREP block is skipped, and the atmosphere and sea-ice exports never
+accumulate. No file, no error, and `cpl_fme_init` still reports
+`nstreams=16` ACTIVE. On `ne30pg2_r05_IcoswISC30E3r5` + `F2010` this silently
+produced 7 of 16 streams; the same source on `WCYCL20TR` produces 12. If you
+are ever missing streams, diff the produced set against the historical run's
+before suspecting the remap.
+
+Fix: each export samples after **its own** component has run, exactly as
+`l2x`/`r2x` already did — `CPL_FME_PHASE_A2X` at `CPL:ATMPOST`,
+`CPL_FME_PHASE_I2X` at `CPL:ICEPOST`, `CPL_FME_PHASE_O2X` at `CPL:OCNPOSTT`.
+That is ocean-independent *and* fresher, so the gotcha #51/#60 staleness
+argument no longer has to be made for them at all.
+
+`x2o` and `xao` stay on the ocean hook because they are genuinely built by
+`prep_ocn_accum_avg`: with a data ocean they do not exist and cannot be
+written. `cpl_fme_init` now names each one in a WARNING rather than leaving
+the count to imply output that never comes. Expect **12 of 16** streams in an
+F compset and all 16 in WCYCL.
+
+### gotcha #63 — the coupler streams needed gotcha #54's virtual owners too, and the refusal deadlocked (ADDED 2026-09-20)
+
+Two bugs stacked on the same line of `shr_horiz_remap_build_comm`.
+
+`cpl_fme_stream_setup` built `gcol_to_rank` straight from the source gsmap
+and left unowned columns at `-1`. For `x2l`/`l2x` the source is ELM's
+land-only decomposition against a map whose `n_a` spans all 259200 r05 cells
+— precisely gotcha #54 — so the build refused. `shr_horiz_remap_col_mod`
+already solved this for ELM's own history remap; `cpl_fme_mod` now applies
+the same `mod(gcol-1, npes)` virtual owner, with local index 0 packed as
+`(0, mask 0)` so a part-land target cell reports the mean over its land part.
+
+The refusal itself was worse than the missing feature:
+
+```fortran
+do i = 1, rd%n_src_need            ! THIS RANK's needed source columns
+   ...                             ! n_dropped is therefore RANK-LOCAL
+if (n_dropped > 0) then
+   ierr = 1 ; return               ! some ranks return here...
+end if
+call MPI_Allgather(...)            ! ...the rest block here forever
+```
+
+`n_src_need` comes from the rank's own target rows, so one rank can drop a
+column while others drop none. The early return sits in front of
+`MPI_Allgather`/`MPI_Alltoallv`, and that path prints nothing, so the job
+**hangs silently** — every log simply stops, with no error and no traceback.
+Worth knowing how this looks: the last flushed line of `atm.log` was
+byte-identical across three runs (745331 B), which reads like a program
+counter but is only a stdio buffer boundary. `cpl_fme_init` runs *after* all
+`component_init_cc` calls, so the true stall was nowhere near where the logs
+pointed.
+
+`n_dropped` is now `mpi_allreduce`'d (MPI_MAX) before anyone returns, so every
+caller — ELM and MOSART included — either all return or none do. On top of
+that, `cpl_fme_agree_ierr` globalises the outcome of every rank-local check in
+`cpl_fme_stream_setup` that precedes a collective, and reports how many ranks
+failed. A stream can no longer be enabled on some ranks and disabled on
+others, which on its own would deadlock the first `cpl_fme_accum` collective.
+
+### gotcha #64 — ELM's 3-d time-constant fields abort a remapped tape (ADDED 2026-09-20)
+
+`htape_create`, `htape_timeconst` and `hfields_write` all learned about
+`hist_horiz_remap_file`. `htape_timeconst3D` did not. It writes `ZSOI`,
+`DZSOI`, `WATSAT`, `SUCSAT`, `BSW`, `HKSAT` (and `ZLAKE`/`DZLAKE`) through
+plain `ncd_io(dim1name=grlnd)` on the **native** land decomposition, while
+`htape_create` has already declared the file's `lon`/`lat` as the map's target
+grid. `ncd_getiodesc` then computes `fullsize` from the file's dims and
+compares it against the native `gsize`:
+
+```
+ncd_getiodesc ERROR in vsize   972000   259200   3   3   360   180   15
+                               ^target 360x180x15  ^source r05
+```
+
+`972000/259200` is not an integer, so it aborts at `nstep=0` while writing the
+first `elm.h0`. These are native soil-column properties the FME tape never
+requests (`hist_empty_htapes=.true.` plus an explicit `hist_fincl1`), `ZSOI`
+is a globally uniform profile anyway, and `elm_horiz_remap_write_field` cannot
+carry them regardless — it is time-record based (`pio_setframe`) and these
+variables have no time dimension. So they are skipped on a remapped tape, in
+both `define` and `write`, with a masterproc note naming the omitted fields.
+Nothing downstream consumes them: `TimeConst3DVars`/`_Filename` only feed two
+global attributes, both guarded by `len_trim > 0`.
+
+### gotcha #65 — measure throughput over days, never over one day (ADDED 2026-09-20)
+
+A one-day timing run of the production F2010 configuration reported
+`58.15 s/mday` (4.07 SYPD). The steady-state figure is `17.8 s/mday`
+(13.3 SYPD) — the one-day number was **3.3x pessimistic** because a single
+day absorbs every one-time cost: creating all seven history files, the first
+flush of every FME stream, MPAS-SI AM setup, and a full restart write. Sizing
+resubmit legs on it produced ten legs where three were needed.
+
+Measured cost model for `ne30pg2_r05_IcoswISC30E3r5` + `F2010` + this testmod
+at 45 crux nodes (2880 ranks, 64/node), from `tStamp_write ... dt =` in
+`cpl.log`:
+
+| item | cost |
+|---|---|
+| steady state | 17.8 s per model day (1.80 h per model year) |
+| first day of a leg | +4 s (history file creation) |
+| calendar month rotation | +12 s, once per model month |
+| annual restart write | +40 s (~22.8 GB; `elm.r` alone is 14.6 GB) |
+
+A 10-year leg is therefore ~18.6 h, which fits a 24 h `workq-route` wall with
+~5.4 h of margin: `STOP_N=10, RESUBMIT=2` covers 30 years in three legs.
+Adding the three gotcha #62 export streams cost nothing measurable
+(17.76 -> 17.79 s/mday). When you re-measure, drop the first day and any day
+carrying a restart before averaging, or you will repeat the mistake.
+
 ## Runtime Configuration
 
 Both `fme_output` and `fme_legacy_output` testmods accept environment variables:
