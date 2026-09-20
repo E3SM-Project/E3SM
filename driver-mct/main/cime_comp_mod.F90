@@ -135,7 +135,8 @@ module cime_comp_mod
        cpl_fme_restart_write, cpl_fme_final, &
        CPL_FME_PHASE_OCN, CPL_FME_PHASE_ICE, CPL_FME_PHASE_ATM, &
        CPL_FME_PHASE_LND, CPL_FME_PHASE_ROF, &
-       CPL_FME_PHASE_L2X, CPL_FME_PHASE_R2X
+       CPL_FME_PHASE_L2X, CPL_FME_PHASE_R2X, &
+       CPL_FME_PHASE_A2X, CPL_FME_PHASE_I2X, CPL_FME_PHASE_O2X
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
@@ -4086,6 +4087,11 @@ contains
           call prep_rof_accum_atm(timer='CPL:atmpost_acca2r')
        endif
 
+       ! coupler-native FME (atm export phase): sample a2x now that the atm has
+       ! run and returned this step's export.  This used to ride the ocean hook,
+       ! which is skipped entirely when the ocean is not prognostic.
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_A2X)
+
        call component_diag(infodata, atm, flow='c2x', comment= 'recv atm', &
             info_debug=info_debug, timer_diag='CPL:atmpost_diagav')
 
@@ -4176,6 +4182,10 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:OCNPOSTT_BARRIER')
        call t_drvstartf  ('CPL:OCNPOSTT',cplrun=.true.,barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       ! coupler-native FME (ocn export phase): sample o2x after the ocean has
+       ! run.  Works for a data ocean too, unlike the OCNPREP hook.
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_O2X)
 
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
@@ -4771,6 +4781,9 @@ contains
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ICEPOST_BARRIER')
        call t_drvstartf  ('CPL:ICEPOST',cplrun=.true.,barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+       ! coupler-native FME (ice export phase): sample i2x after the ice has run.
+       call cpl_fme_accum(EClock_d, CPL_FME_PHASE_I2X)
 
        call component_diag(infodata, ice, flow='c2x', comment= 'recv ice', &
             info_debug=info_debug, timer_diag='CPL:icepost_diagav')

@@ -51,6 +51,7 @@ module cpl_fme_mod
                                  CL => shr_kind_cl, CS => shr_kind_cs, &
                                  CXX => shr_kind_cxx
   use shr_sys_mod,         only: shr_sys_abort, shr_sys_flush
+  use shr_mpi_mod,         only: shr_mpi_max, shr_mpi_sum
   use shr_cal_mod,         only: shr_cal_date2ymd
   use shr_pio_mod,         only: shr_pio_getiosys, shr_pio_getiotype
   use shr_horiz_remap_mod, only: shr_horiz_remap_t, SHR_FILL_VALUE
@@ -112,6 +113,17 @@ module cpl_fme_mod
   ! sample freshly computed, so cold and warm legs accumulate identically.
   integer, parameter, public :: CPL_FME_PHASE_L2X = 6  ! after the lnd runs (LNDPOST)
   integer, parameter, public :: CPL_FME_PHASE_R2X = 7  ! after the rof runs (ROFRUNPOST)
+  ! a2x / i2x / o2x also get their own post-run phases.  They used to ride the
+  ! ocean hook (CPL_FME_PHASE_OCN), which is correct for a prognostic ocean but
+  ! silently loses them otherwise: the OCNPREP block that carries the ocean hook
+  ! is guarded by `ocn_prognostic`, so in any data-ocean compset (DOCN%DOM, i.e.
+  ! every F case) it never executes and the atmosphere and sea-ice EXPORTS never
+  ! accumulate -- no file, no warning, nstreams still reported ACTIVE.  Sampling
+  ! each export right after its own component has run is both ocean-independent
+  ! and fresher, matching the l2x/r2x treatment above.
+  integer, parameter, public :: CPL_FME_PHASE_A2X = 8  ! after the atm runs (ATMPOST)
+  integer, parameter, public :: CPL_FME_PHASE_I2X = 9  ! after the ice runs (ICEPOST)
+  integer, parameter, public :: CPL_FME_PHASE_O2X = 10 ! after the ocn runs (OCNPOSTT)
 
   !-----------------------------------------------------------------------------
   ! Per-stream monthly lat-lon PIO output file (2D, time-averaged records).
@@ -391,6 +403,7 @@ CONTAINS
     integer,                 intent(in)    :: rof_cpl_dt
 
     integer :: s, ierr, base_dt
+    logical :: locn_prognostic   ! is the ocean component prognostic?
     type(mct_aVect), pointer :: avp(:)
     character(len=*), parameter :: subname = '(cpl_fme_init)'
 
@@ -474,10 +487,19 @@ CONTAINS
     ! read namelist + populate streams(:) (default: all disabled)
     call cpl_fme_read_namelist()
 
+    locn_prognostic = .false.
+
     active = .false.
     do s = 1, nstreams
        if (.not. streams(s)%enabled) cycle
        call cpl_fme_stream_setup(streams(s), EClock, ierr)
+       ! Defence in depth.  cpl_fme_stream_setup already agrees on ierr at each
+       ! point where a rank-local check precedes a collective, but streams(s)%
+       ! enabled must be identical on every rank regardless: if it ever differs,
+       ! the subset that kept the stream enabled deadlocks in the first
+       ! cpl_fme_accum/flush collective of the run.
+       call cpl_fme_agree_ierr(ierr, trim(streams(s)%name), 'stream setup', &
+            announce=.false.)
        if (ierr /= 0) then
           if (cpl_iam == 0) write(logunit,*) subname, &
                ': WARNING disabling stream ', trim(streams(s)%name), &
@@ -498,6 +520,25 @@ CONTAINS
     if (cpl_iam == 0 .and. active) then
        write(logunit,*) subname, ': coupler-native FME output ACTIVE, ', &
             'nstreams=', count(streams(1:nstreams)%enabled)
+    end if
+
+    ! x2o and xao are assembled by prep_ocn_accum_avg, which the driver only
+    ! calls when the ocean is prognostic.  With a data ocean (DOCN%DOM) they can
+    ! never be sampled, so say so plainly rather than leaving the user to work
+    ! out why two of the enabled streams produced no file.
+    call seq_infodata_GetData(infodata, ocn_prognostic=locn_prognostic)
+    if (cpl_iam == 0 .and. .not. locn_prognostic) then
+       do s = 1, nstreams
+          if (.not. streams(s)%enabled) cycle
+          if (trim(streams(s)%bundle) == 'x2o' .or. &
+              trim(streams(s)%bundle) == 'xao') then
+             write(logunit,*) subname, ': WARNING stream ', &
+                  trim(streams(s)%name), ' (bundle ', trim(streams(s)%bundle), &
+                  ') cannot be written because the ocean is not prognostic', &
+                  ' (data ocean): prep_ocn_accum_avg never runs, so this', &
+                  ' bundle is never formed. No file will be produced for it.'
+          end if
+       end do
     end if
 
     ! Cadence sanity (gotcha #52): the cpl-FME reductions assume the ocean
@@ -676,11 +717,64 @@ CONTAINS
       case ('l2x') ; streams(nstreams)%phase = CPL_FME_PHASE_L2X
       case ('x2r') ; streams(nstreams)%phase = CPL_FME_PHASE_ROF
       case ('r2x') ; streams(nstreams)%phase = CPL_FME_PHASE_R2X
+      case ('a2x') ; streams(nstreams)%phase = CPL_FME_PHASE_A2X
+      case ('i2x') ; streams(nstreams)%phase = CPL_FME_PHASE_I2X
+      case ('o2x') ; streams(nstreams)%phase = CPL_FME_PHASE_O2X
+      ! Only x2o and xao are left on the ocean hook: both are built inside
+      ! prep_ocn_accum_avg, so they genuinely do not exist without a
+      ! prognostic ocean (warned about in cpl_fme_init).
       case default ; streams(nstreams)%phase = CPL_FME_PHASE_OCN
       end select
     end subroutine add_stream
 
   end subroutine cpl_fme_read_namelist
+
+  !=============================================================================
+  subroutine cpl_fme_agree_ierr(ierr, stname, stage, announce)
+    !---------------------------------------------------------------------------
+    ! Turn a possibly rank-local setup failure into a global one.
+    !
+    ! cpl_fme_stream_setup interleaves collectives (map read, build_comm,
+    ! pio_initdecomp) with checks that can fail on only some ranks.  If one rank
+    ! returns early while the rest go on, the rest block forever in the next
+    ! collective -- and silently, because the diagnostics are gated on
+    ! cpl_iam == 0 and the failing rank need not be rank 0.  Every such check is
+    ! therefore followed by this agreement.
+    !
+    ! On return ierr holds the same value (the max over cpl_mpicom) everywhere,
+    ! so callers either all continue or all return.
+    !---------------------------------------------------------------------------
+    integer,          intent(inout) :: ierr
+    character(len=*), intent(in)    :: stname   ! stream name, for the message
+    character(len=*), intent(in)    :: stage    ! which check failed
+    logical, optional, intent(in)   :: announce ! default .true.
+
+    integer :: ierr_g, nfail, nfail_g
+    logical :: lannounce
+    character(len=*), parameter :: subname = '(cpl_fme_agree_ierr)'
+
+    call shr_mpi_max(ierr, ierr_g, cpl_mpicom, subname, all=.true.)
+    if (ierr_g == 0) then
+       ierr = 0
+       return
+    end if
+
+    lannounce = .true.
+    if (present(announce)) lannounce = announce
+
+    if (lannounce) then
+       nfail = 0
+       if (ierr /= 0) nfail = 1
+       call shr_mpi_sum(nfail, nfail_g, cpl_mpicom, subname, all=.true.)
+       if (cpl_iam == 0) write(logunit,*) subname, ': ERROR ', trim(stage), &
+            ' failed on ', nfail_g, ' of ', cpl_npes, ' coupler ranks ', &
+            '(ierr=', ierr_g, ') for stream ', trim(stname), &
+            ' -- disabling it on all ranks'
+    end if
+
+    ierr = ierr_g
+
+  end subroutine cpl_fme_agree_ierr
 
   !=============================================================================
   subroutine cpl_fme_stream_setup(st, EClock, ierr)
@@ -751,9 +845,26 @@ CONTAINS
           gcol_to_rank(st%src_gsmap%start(s) + j) = st%src_gsmap%pe_loc(s)
        end do
     end do
+    ! Partial source coverage.  ELM's gsmap covers only the land cells of the
+    ! source grid while the map file is built against the full grid, so a
+    ! target cell can need a source column that no rank owns.  Left at -1 those
+    ! columns make shr_horiz_remap_build_comm refuse the map -- via a
+    ! RANK-LOCAL return taken before its MPI_Allgather, which deadlocks every
+    ! rank that did not trip it.  Give each unowned column a deterministic
+    ! virtual owner, exactly as shr_horiz_remap_col_mod does for ELM's own
+    ! history remap.  A virtual column gets local index 0 below and is packed
+    ! with mask 0, i.e. excluded from its target cell's average, so a
+    ! part-land target cell reports the mean over its land part.
+    do i = 1, st%map%n_a
+       if (gcol_to_rank(i) < 0) gcol_to_rank(i) = mod(i - 1, cpl_npes)
+    end do
     call st%map%build_comm(gcol_to_rank, cpl_mpicom, cpl_iam, cpl_npes, &
          send_gcol_list, ierr)
     deallocate(gcol_to_rank)
+    ! Everything below here is collective over cpl_mpicom (pio_initdecomp in
+    ! particular), so a failure must be agreed on before anyone returns: a
+    ! subset returning early strands the rest in a collective forever.
+    call cpl_fme_agree_ierr(ierr, trim(st%name), 'build_comm')
     if (ierr /= 0) return
 
     ! --- send-side packing: global send gcol -> local aVect column ----------
@@ -769,16 +880,14 @@ CONTAINS
     st%n_send = st%map%n_send_total
     allocate(st%send_local_idx(max(1, st%n_send)))
     do i = 1, st%n_send
+       ! Zero is legal and means "virtual column": this rank was handed a
+       ! source column that no rank owns (see the gcol_to_rank fill-in above).
+       ! It carries no data and is packed with mask 0 in cpl_fme_flush.
        st%send_local_idx(i) = gcol_to_myidx(send_gcol_list(i))
-       if (st%send_local_idx(i) == 0) then
-          if (cpl_iam == 0) write(logunit,*) subname, &
-               ': ERROR send gcol not owned by this rank (map/mesh mismatch)'
-          ierr = 3
-          deallocate(gcol_to_myidx, dof, send_gcol_list)
-          return
-       end if
     end do
     deallocate(gcol_to_myidx, dof, send_gcol_list)
+    call cpl_fme_agree_ierr(ierr, trim(st%name), 'send-side packing')
+    if (ierr /= 0) return
     allocate(st%send_buf(max(1, st%n_send * 2)))   ! numlev=1 -> (val,mask)
 
     ! --- resolve field list against the live source bundle ------------------
@@ -803,10 +912,9 @@ CONTAINS
                ' absent from ', trim(st%bundle), ' -- skipped'
        end if
     end do
-    if (st%nflds == 0) then
-       ierr = 4
-       return
-    end if
+    if (st%nflds == 0) ierr = 4
+    call cpl_fme_agree_ierr(ierr, trim(st%name), 'field-list resolution')
+    if (ierr /= 0) return
 
     ! --- source-space accumulator aVect (one slot per selected field) -------
     call cpl_fme_build_accum_avect(st)
@@ -1033,8 +1141,17 @@ CONTAINS
           fred = rinv          ! flux: divide the running sum by nAccum
        end if
        do i = 1, st%n_send
-          st%send_buf((i-1)*2 + 1) = st%accum%rAttr(f, st%send_local_idx(i)) * fred
-          st%send_buf((i-1)*2 + 2) = 1.0_r8
+          if (st%send_local_idx(i) > 0) then
+             st%send_buf((i-1)*2 + 1) = &
+                  st%accum%rAttr(f, st%send_local_idx(i)) * fred
+             st%send_buf((i-1)*2 + 2) = 1.0_r8
+          else
+             ! Virtual column: no source data on any rank.  Mask 0 keeps it out
+             ! of the target cell's weighted average rather than contributing a
+             ! spurious zero.
+             st%send_buf((i-1)*2 + 1) = 0.0_r8
+             st%send_buf((i-1)*2 + 2) = 0.0_r8
+          end if
        end do
        call st%map%apply_masked(st%send_buf, 1, fld_out, cpl_mpicom, &
             cpl_npes, ierr)
