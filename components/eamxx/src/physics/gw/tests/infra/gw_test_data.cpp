@@ -1019,16 +1019,22 @@ void gw_front_project_winds(GwFrontProjectWindsData& d)
     const auto ubm_c = ekat::subview(ubm_d, i);
     const auto ubi_c = ekat::subview(ubi_d, i);
 
+    // xv/yv are thread-private outputs; publish them to the views once
+    Real xv, yv;
     GWF::gw_front_project_winds(
       team,
       pver,
       kbot,
       u_c,
       v_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       ubm_c,
       ubi_c);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      xv_d(i) = xv;
+      yv_d(i) = yv;
+    });
   });
 
   // Now get arrays
@@ -1173,6 +1179,11 @@ void gw_cm_src(GwCmSrcData& d)
     const auto c_c = ekat::subview(c_d, i);
     const auto frontgf_c = ekat::subview(frontgf_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_cm_src(
       team,
       init_cp,
@@ -1183,14 +1194,21 @@ void gw_cm_src(GwCmSrcData& d)
       u_c,
       v_c,
       frontgf_c,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c);
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays
@@ -1936,6 +1954,11 @@ void gw_oro_src(GwOroSrcData& d)
     const auto ubi_c = ekat::subview(ubi_d, i);
     const auto c_c = ekat::subview(c_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_oro_src(
       team,
       init_cp,
@@ -1950,14 +1973,21 @@ void gw_oro_src(GwOroSrcData& d)
       dpm_c,
       zm_c,
       nm_c,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c);
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays

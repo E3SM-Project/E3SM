@@ -584,8 +584,8 @@ struct Functions
     const uview_1d<const Real>& u,
     const uview_1d<const Real>& v,
     // Outputs
-    Real& xv,
-    Real& yv,
+    Real& xv,  // thread-private: pass per-thread storage, not a view element
+    Real& yv,  // thread-private: pass per-thread storage, not a view element
     const uview_1d<Real>& ubm,
     const uview_1d<Real>& ubi);
 
@@ -614,13 +614,13 @@ struct Functions
     const uview_1d<const Real>& v,
     const uview_1d<const Real>& frontgf,
     // Outputs
-    Int& src_level,
-    Int& tend_level,
+    Int& src_level,  // thread-private: pass per-thread storage, not a view element
+    Int& tend_level,  // thread-private: pass per-thread storage, not a view element
     const uview_2d<Real>& tau,
     const uview_1d<Real>& ubm,
     const uview_1d<Real>& ubi,
-    Real& xv,
-    Real& yv,
+    Real& xv,  // thread-private: pass per-thread storage, not a view element
+    Real& yv,  // thread-private: pass per-thread storage, not a view element
     const uview_1d<Real>& c);
 
   KOKKOS_FUNCTION
@@ -784,13 +784,13 @@ struct Functions
     const uview_1d<const Real>& zm,
     const uview_1d<const Real>& nm,
     // Outputs
-    Int& src_level,
-    Int& tend_level,
+    Int& src_level,  // thread-private: pass per-thread storage, not a view element
+    Int& tend_level,  // thread-private: pass per-thread storage, not a view element
     const uview_2d<Real>& tau,
     const uview_1d<Real>& ubm,
     const uview_1d<Real>& ubi,
-    Real& xv,
-    Real& yv,
+    Real& xv,  // thread-private: pass per-thread storage, not a view element
+    Real& yv,  // thread-private: pass per-thread storage, not a view element
     const uview_1d<Real>& c);
 
   KOKKOS_FUNCTION

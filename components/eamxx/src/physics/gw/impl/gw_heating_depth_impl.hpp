@@ -66,17 +66,20 @@ void Functions<S,D>::gw_heating_depth(
 
   team.team_barrier();
 
-  // Maximum heating rate.
+  // Maximum heating rate. The team reduction hands its result to every
+  // thread, so reduce into a thread-private local and publish maxq0 (which
+  // may be shared) once.
+  Real maxq0_local;
   Kokkos::parallel_reduce(
     Kokkos::TeamVectorRange(team, maxi, mini+1), [&] (const int k, Real& lmax) {
       if (netdt(k) > lmax) {
         lmax = netdt(k);
       }
-    }, Kokkos::Max<Real>(maxq0));
-
-  team.team_barrier();
+    }, Kokkos::Max<Real>(maxq0_local));
 
   Kokkos::single(Kokkos::PerTeam(team), [&] {
+    maxq0 = maxq0_local;
+
     //output max heating rate in K/day
     maxq0_out = maxq0 * 24 * 3600;
 

@@ -47,22 +47,36 @@ void Functions<S,D>::gw_beres_src(
   // views of these values.
   auto local_storage = workspace.take("local_storage");
 
+  // These alias shared workspace, so every write to them (here and in the
+  // helper routines below) must come from a single thread.
+
   // Maximum heating rate.
-  Real& maxq0 = local_storage(0); maxq0 = 0;
+  Real& maxq0 = local_storage(0);
 
   // Bottom/top heating range index.
-  Int& mini = reinterpret_cast<Int&>(local_storage(1)); mini = 0;
-  Int& maxi = reinterpret_cast<Int&>(local_storage(2)); maxi = 0;
+  Int& mini = reinterpret_cast<Int&>(local_storage(1));
+  Int& maxi = reinterpret_cast<Int&>(local_storage(2));
 
   // Mean wind in heating region.
-  Real& uh = local_storage(3); uh = 0;
+  Real& uh = local_storage(3);
 
   // Min/max projected wind value in each column.
-  Real& Umin = local_storage(4); Umin = 0;
-  Real& Umax = local_storage(5); Umax = 0;
+  Real& Umin = local_storage(4);
+  Real& Umax = local_storage(5);
 
   // Speed of convective cells relative to storm.
-  Int& storm_speed = reinterpret_cast<Int&>(local_storage(6)); storm_speed = 0;
+  Int& storm_speed = reinterpret_cast<Int&>(local_storage(6));
+
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    maxq0 = 0;
+    mini = 0;
+    maxi = 0;
+    uh = 0;
+    Umin = 0;
+    Umax = 0;
+    storm_speed = 0;
+  });
+  team.team_barrier();
 
   // note: the heating_altitude_max is probably not needed because there is
   // rarely any convective heating above this level and the performance impact
