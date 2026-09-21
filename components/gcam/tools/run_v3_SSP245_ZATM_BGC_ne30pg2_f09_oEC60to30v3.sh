@@ -54,7 +54,7 @@ readonly CODE_PARENT="${HOME}/e3sm"
 readonly CODE_ROOT="${CODE_PARENT}/${CLONE_NAME}"
 
 # case name and compset
-readonly MYDATE=$(date '+%Y%m%d%H') # use current date if MYDATE is not set to a specific date
+readonly MYDATE=$(date '+%Y%m%d') # use current date if MYDATE is not set to a specific date
 # export COMPSET=SSP245_EAM%CMIP6_ELM%TOPCNPRDCTCBCPHS_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM_BGC%LNDATM
 readonly COMPSET="SSP245_ZATM_BGC" # see long name above
 readonly RESOLUTION="ne30pg2_f09_oEC60to30v3"
