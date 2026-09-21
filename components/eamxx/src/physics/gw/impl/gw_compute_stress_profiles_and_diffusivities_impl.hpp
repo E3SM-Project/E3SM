@@ -149,8 +149,8 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities(
 
 // Serial version: follows the Fortran gwd_compute_stress_profiles_and_diffusivities
 // loop structure exactly. The outer k-loop is strictly serial (tau(k) depends on
-// tau(k+1)), while inner l-loops (over the wave spectrum) are parallelised with
-// TeamVectorRange so the routine still runs efficiently on GPU teams.
+// tau(k+1)) and, together with the inner loops over the wave spectrum, runs on a
+// single team thread (see the WORKAROUND note below).
 //
 // Unlike the parallel version above, there is no two-pass precomputation of tausat/
 // dsat/wrk1/wrk2 for all levels. Instead, each quantity is computed in-place within
@@ -178,9 +178,9 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
   // Inputs/Outputs
   const uview_2d<Real>& tau)
 {
-  // This variant keeps nothing in team-shared scratch (see tausat_at below), so
-  // the workspace argument is unused; it stays in the signature to match the
-  // parallel variant.
+  // This variant keeps nothing in team-shared scratch, so the workspace
+  // argument is unused; it stays in the signature to match the parallel
+  // variant.
   (void)workspace;
 
   // ---------------------------------------------------------------------------
@@ -198,21 +198,20 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
   // __syncthreads() in a serial outer loop) and is not debuggable without
   // CUDA-level tooling.
   //
-  // The workaround is to execute the entire k-loop redundantly on every team
-  // thread (fully serial inside the team) with no inner team-collective
-  // syncs. Every thread computes identical values into tau, so those writes are
-  // benign races (same value), and the cross-iteration tau(pl_idx, k+1)
-  // dependency is satisfied intra-thread (each thread wrote tau(pl_idx, k+1) in
-  // its own previous iteration). This preserves column-level parallelism (still
-  // one team per column) but loses intra-column parallelism over the wave
-  // spectrum.
+  // The workaround is to run the entire k-loop on a single team thread inside
+  // Kokkos::single(PerTeam), with no team-collective syncs inside the loop, and
+  // a single team_barrier after it to publish tau to the rest of the team. This
+  // is the same pattern vd_lu_decomp/vd_lu_solve use for their serial
+  // recurrences. It preserves column-level parallelism (still one team per
+  // column) but gives up intra-column parallelism over the wave spectrum.
   //
-  // IMPORTANT: redundant execution is only safe for values that are identical
-  // on every thread. Any *per-level* scratch shared across the team is NOT safe
-  // here: the threads are not in lockstep, so whichever one is furthest along
-  // overwrites the scratch with values for a different k, which the lagging
-  // threads then read. Nothing in this routine may be cached in the workspace;
-  // see tausat_at below.
+  // NOTE: an earlier version of this workaround ran the loop redundantly on
+  // every team thread. That is a data race even though each thread computes
+  // the same values: threads are not in lockstep, so one thread reads
+  // tau(pl_idx, k+1) while another is still writing it, and unsynchronized
+  // concurrent read/write of the same location is undefined behavior
+  // regardless of the values involved. Every tau element must have exactly one
+  // writer.
   //
   // If the underlying stack issue is fixed (Kokkos / CUDA / driver / EKAT
   // team policy), the parallel variant
@@ -226,13 +225,9 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
 
   // Saturation stress at interface k for wave pl_idx.
   //
-  // NOTE: this is deliberately recomputed on demand rather than cached in a
-  // shared workspace array. Every team thread walks the whole k-loop
-  // redundantly and the threads are not in lockstep across warps, so a shared
-  // per-level scratch buffer is not a "same value" race: whichever thread is
-  // furthest along overwrites it with values for a *different* level, which the
-  // lagging threads then read. The arithmetic below is identical to the cached
-  // version, so answers are unchanged.
+  // Recomputed on demand rather than cached in a workspace array; this keeps
+  // the routine free of team-shared scratch. The arithmetic is identical to
+  // caching it, so answers are unchanged.
   auto tausat_at = [&] (const Int kk, const int pl_idx) -> Real {
     const Real ubmc = ubi(kk) - c(pl_idx);
     if (ubmc * (ubi(kk + 1) - c(pl_idx)) > 0) {
@@ -243,55 +238,58 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
     return 0;
   };
 
-  // Serial outer loop from the source level upward to the model top.
-  // Matches Fortran: do k = maxval(src_level)-1, ktop, -1
-  for (Int k = src_level; k > init.ktop; --k) {
+  // Single writer for every tau element: see the WORKAROUND note above.
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    // Serial outer loop from the source level upward to the model top.
+    // Matches Fortran: do k = maxval(src_level)-1, ktop, -1
+    for (Int k = src_level; k > init.ktop; --k) {
 
-    // -------------------------------------------------------------------------
-    // Stage 2: Diffusivity d for this level
-    // -------------------------------------------------------------------------
-    Real d = GWC::dback;
-    if (init.do_molec_diff) {
-      d += kvtt(k);
-    } else {
-      for (int pl_idx = 0; pl_idx < num_pgwv; ++pl_idx) {
-        const Real ubmc  = ubi(k) - c(pl_idx);
-        const Real dsat  = bfb_square(ubmc / ni(k)) *
-          (init.effkwv * bfb_square(ubmc) /
-           (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
-        const Real dscal = ekat::impl::min((Real)1.0,
-          tau(pl_idx, k+1) / (tausat_at(k, pl_idx) + GWC::taumin));
-        d = ekat::impl::max(d, dscal * dsat);
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // Stage 3: Stress at interface k
-    // -------------------------------------------------------------------------
-    if (k <= init.nbot_molec || !init.do_molec_diff) {
-      for (int pl_idx = 0; pl_idx < num_pgwv; ++pl_idx) {
-        const Real ubmc  = ubi(k) - c(pl_idx);
-        const Real ubmc2 = ekat::impl::max(bfb_square(ubmc), ubmc2mn);
-        const Real mi    = ni(k) / (2 * init.kwv * ubmc2) *
-                           (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
-        const Real wrk   = -2 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
-
-        Real taudmp;
-        if (wrk >= -150 || !init.do_molec_diff) {
-          taudmp = tau(pl_idx, k+1) * Kokkos::exp(wrk);
-        } else {
-          taudmp = 0;
+      // -------------------------------------------------------------------------
+      // Stage 2: Diffusivity d for this level
+      // -------------------------------------------------------------------------
+      Real d = GWC::dback;
+      if (init.do_molec_diff) {
+        d += kvtt(k);
+      } else {
+        for (int pl_idx = 0; pl_idx < num_pgwv; ++pl_idx) {
+          const Real ubmc  = ubi(k) - c(pl_idx);
+          const Real dsat  = bfb_square(ubmc / ni(k)) *
+            (init.effkwv * bfb_square(ubmc) /
+             (GWC::rog * ti(k) * ni(k)) - init.alpha(k));
+          const Real dscal = ekat::impl::min((Real)1.0,
+            tau(pl_idx, k+1) / (tausat_at(k, pl_idx) + GWC::taumin));
+          d = ekat::impl::max(d, dscal * dsat);
         }
-
-        if (taudmp <= GWC::taumin) taudmp = 0;
-        tau(pl_idx, k) = ekat::impl::min(taudmp, tausat_at(k, pl_idx));
       }
-    } else {
-      for (int pl_idx = 0; pl_idx < num_pgwv; ++pl_idx) {
-        tau(pl_idx, k) = ekat::impl::min(tau(pl_idx, k+1), tausat_at(k, pl_idx));
+
+      // -------------------------------------------------------------------------
+      // Stage 3: Stress at interface k
+      // -------------------------------------------------------------------------
+      if (k <= init.nbot_molec || !init.do_molec_diff) {
+        for (int pl_idx = 0; pl_idx < num_pgwv; ++pl_idx) {
+          const Real ubmc  = ubi(k) - c(pl_idx);
+          const Real ubmc2 = ekat::impl::max(bfb_square(ubmc), ubmc2mn);
+          const Real mi    = ni(k) / (2 * init.kwv * ubmc2) *
+                             (init.alpha(k) + bfb_square(ni(k)) / ubmc2 * d);
+          const Real wrk   = -2 * mi * GWC::rog * t(k) * (piln(k + 1) - piln(k));
+
+          Real taudmp;
+          if (wrk >= -150 || !init.do_molec_diff) {
+            taudmp = tau(pl_idx, k+1) * Kokkos::exp(wrk);
+          } else {
+            taudmp = 0;
+          }
+
+          if (taudmp <= GWC::taumin) taudmp = 0;
+          tau(pl_idx, k) = ekat::impl::min(taudmp, tausat_at(k, pl_idx));
+        }
+      } else {
+        for (int pl_idx = 0; pl_idx < num_pgwv; ++pl_idx) {
+          tau(pl_idx, k) = ekat::impl::min(tau(pl_idx, k+1), tausat_at(k, pl_idx));
+        }
       }
     }
-  }
+  });
 
   team.team_barrier();
 }
