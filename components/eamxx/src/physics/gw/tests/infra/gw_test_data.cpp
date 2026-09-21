@@ -1613,6 +1613,12 @@ void gw_beres_src(GwBeresSrcData& d)
     const auto c_c = ekat::subview(c_d, i);
     const auto netdt_c = ekat::subview(netdt_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call. hdepth/maxq0_out are shared outputs that
+    // the kernel writes exactly once, so they can take view elements directly.
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_beres_src(
       team,
       wsm.get_workspace(team),
@@ -1630,16 +1636,23 @@ void gw_beres_src(GwBeresSrcData& d)
       hdepth_min,
       storm_speed_min,
       use_gw_convect_old,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c,
       hdepth_d(i),
       maxq0_out_d(i));
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays

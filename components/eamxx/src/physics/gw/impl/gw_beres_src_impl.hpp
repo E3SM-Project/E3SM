@@ -79,7 +79,12 @@ void Functions<S,D>::gw_beres_src(
 
   team.team_barrier();
 
-  hdepth = 0;
+  // hdepth is a shared output (a view element in GWDrag::run_impl), so it
+  // must have a single writer; gw_heating_depth likewise sets it from a
+  // Kokkos::single.
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    hdepth = 0;
+  });
 
 
   //------------------------------------------------------------------------
