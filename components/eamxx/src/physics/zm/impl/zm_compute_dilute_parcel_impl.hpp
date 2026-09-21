@@ -219,6 +219,7 @@ void Functions<S,D>::compute_dilute_parcel(
   Kokkos::single(Kokkos::PerTeam(team), [&] (Real& val) {
     val = lcl_pmid;
   }, lcl_pmid_bcast);
+  team.team_barrier();
   lcl_pmid = lcl_pmid_bcast;
 
   workspace.template release_many_contiguous<7>(
