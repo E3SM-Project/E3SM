@@ -559,6 +559,10 @@ if ($ice_ic_mode eq 'spunup') {
 add_default($nl, 'config_initial_ice_area');
 add_default($nl, 'config_initial_ice_volume');
 add_default($nl, 'config_initial_snow_volume');
+add_default($nl, 'config_iceArea_from_file_thickness_north');
+add_default($nl, 'config_iceArea_from_file_thickness_south');
+add_default($nl, 'config_iceArea_from_file_add_snow');
+add_default($nl, 'config_iceArea_from_file_snow_thickness');
 if ($wave_comp eq 'ww3') {
    add_default($nl, 'config_initial_latitude_north','val'=>"85");
    add_default($nl, 'config_initial_latitude_south','val'=>"-85");
