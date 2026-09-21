@@ -1259,16 +1259,22 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d)
     const auto ubm_c = ekat::subview(ubm_d, i);
     const auto v_c = ekat::subview(v_d, i);
 
+    // xv/yv are thread-private outputs; publish them to the views once
+    Real xv, yv;
     GWF::gw_convect_project_winds(
       team,
       init_cp,
       pver,
       u_c,
       v_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       ubm_c,
       ubi_c);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      xv_d(i) = xv;
+      yv_d(i) = yv;
+    });
   });
 
   // Now get arrays
