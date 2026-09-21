@@ -212,16 +212,6 @@ void Functions<S,D>::compute_dilute_parcel(
   // caller (e.g. compute_cape_from_parcel).
   team.team_barrier();
 
-  // lcl_pmid may be a thread-local variable in the caller (as in compute_dilute_cape),
-  // in which case only the thread that ran the single block above has the updated
-  // value. Broadcast it so all team threads see the same LCL pressure.
-  Real lcl_pmid_bcast = lcl_pmid;
-  Kokkos::single(Kokkos::PerTeam(team), [&] (Real& val) {
-    val = lcl_pmid;
-  }, lcl_pmid_bcast);
-  team.team_barrier();
-  lcl_pmid = lcl_pmid_bcast;
-
   workspace.template release_many_contiguous<7>(
     {&tmix, &qtmix, &qsmix, &smix, &xsh2o, &ds_xsh2o, &ds_freeze});
 }

@@ -62,12 +62,15 @@ void Functions<S,D>::compute_dilute_cape(
 #endif
 
   // Allocate temporary arrays
-  uview_1d<Real> sp_humidity, temperature, tv, parcel_vtemp;
-  workspace.template take_many_contiguous_unsafe<4>(
-    {"sp_humidity", "temperature", "tv", "parcel_vtemp"},
-    {&sp_humidity, &temperature, &tv, &parcel_vtemp});
+  // lcl_pmid_ws holds the scalar LCL pressure in team-shared memory, because
+  // compute_dilute_parcel updates it from a single thread and all team threads
+  // need to see the updated value in compute_cape_from_parcel
+  uview_1d<Real> sp_humidity, temperature, tv, parcel_vtemp, lcl_pmid_ws;
+  workspace.template take_many_contiguous_unsafe<5>(
+    {"sp_humidity", "temperature", "tv", "parcel_vtemp", "lcl_pmid"},
+    {&sp_humidity, &temperature, &tv, &parcel_vtemp, &lcl_pmid_ws});
 
-  Real lcl_pmid = 0;
+  Real& lcl_pmid = lcl_pmid_ws(0);
   Real mse_max_val = 0;
   Int pblt_ull = 0;
   Int msemax_top_k = 0;
@@ -151,6 +154,7 @@ void Functions<S,D>::compute_dilute_cape(
   }
   // save LCL values for compute_dilute_parcel()
   lcl_klev = msemax_klev;
+  // (compute_dilute_parcel has a team barrier before these are updated by a single thread)
   lcl_pmid = pmid(msemax_klev);
   lcl_temperature = temperature(msemax_klev);
 
@@ -169,8 +173,8 @@ void Functions<S,D>::compute_dilute_cape(
                           parcel_qsat, parcel_temp, parcel_vtemp,
                           eql_klev, cape);
 
-  workspace.template release_many_contiguous<4>(
-    {&sp_humidity, &temperature, &tv, &parcel_vtemp});
+  workspace.template release_many_contiguous<5>(
+    {&sp_humidity, &temperature, &tv, &parcel_vtemp, &lcl_pmid_ws});
 }
 
 } // namespace zm
