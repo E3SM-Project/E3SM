@@ -2,6 +2,7 @@
 #define SHOC_MAIN_IMPL_HPP
 
 #include "shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_moments_emulator_impl.hpp"
 
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_subview_utils.hpp>
@@ -272,6 +273,15 @@ void Functions<S,D>::shoc_main_internal(
                             zt_grid,zi_grid,                        // Input
                             workspace,                              // Workspace
                             w3);                                    // Output
+
+    // First-pass online emulator for w'2 and w'3 below 8 km. Native SHOC remains
+    // responsible for values above the trained range.
+    team.team_barrier();
+    shoc_moments_emulator::apply(nlev,nlevi,
+                                 zi_grid,rho_zt,presi,
+                                 thetal,qw,u_wind,v_wind,shoc_ql,
+                                 wthl_sfc,wqw_sfc,
+                                 w_sec,w3);
 
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
@@ -547,6 +557,23 @@ void Functions<S,D>::shoc_main_internal(
                                  zt_grid,zi_grid,                        // Input
                                  workspace_mgr,                          // Workspace mgr
                                  w3);                                    // Output
+
+    // First-pass online emulator for w'2 and w'3 below 8 km. Native SHOC remains
+    // responsible for values above the trained range.
+    for (Int i = 0; i < shcol; ++i) {
+      shoc_moments_emulator::apply(nlev,nlevi,
+                                   ekat::subview(zi_grid, i),
+                                   ekat::subview(rho_zt, i),
+                                   ekat::subview(presi, i),
+                                   ekat::subview(thetal, i),
+                                   ekat::subview(qw, i),
+                                   ekat::subview(u_wind, i),
+                                   ekat::subview(v_wind, i),
+                                   ekat::subview(shoc_ql, i),
+                                   wthl_sfc(i),wqw_sfc(i),
+                                   ekat::subview(w_sec, i),
+                                   ekat::subview(w3, i));
+    }
 
     // Call the PDF to close on SGS cloud and turbulence
     shoc_assumed_pdf_disp(shcol,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
