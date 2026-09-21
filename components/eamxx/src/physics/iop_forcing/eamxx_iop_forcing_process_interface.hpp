@@ -85,7 +85,7 @@ protected:
                                      const view_1d<Pack>& v,
                                      const view_1d<Pack>& T,
                                      const view_2d<Pack>& Q,
-                                     ekat::LinInterp<Real, Pack::n>& interp);
+                                     const ekat::LinInterp<Real, Pack::n>& interp);
 
   // Apply large scale forcing for temperature and water vapor as provided by the IOP file
   KOKKOS_FUNCTION
