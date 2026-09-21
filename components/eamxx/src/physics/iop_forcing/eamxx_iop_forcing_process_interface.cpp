@@ -161,7 +161,7 @@ advance_iop_subsidence (const MemberType& team,
                         const view_1d<Pack>& v,
                         const view_1d<Pack>& T,
                         const view_2d<Pack>& Q,
-                        ekat::LinInterp<Real, Pack::n>& interp)
+                        const ekat::LinInterp<Real, Pack::n>& interp)
 {
   constexpr Real Rair  = C::Rair.value;
   constexpr Real Cpair = C::Cpair.value;
@@ -365,11 +365,9 @@ void IOPForcing::run_impl (const double dt)
     ColOps::compute_midpoint_delta(team, num_levs, ref_p_int, ref_p_del);
     team.team_barrier();
 
-    auto interp_local = subs_interp;
-
     if (iop_dosubsidence) {
     // Compute subsidence due to large-scale forcing
-      advance_iop_subsidence(team, num_levs, dt, ref_p_mid, omega, ws, u_i, v_i, T_mid_i, Q_i, interp_local);
+      advance_iop_subsidence(team, num_levs, dt, ref_p_mid, omega, ws, u_i, v_i, T_mid_i, Q_i, subs_interp);
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.
