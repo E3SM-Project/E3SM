@@ -1126,7 +1126,7 @@ subroutine prep_ocn_accum_avg_moab(timer_accum)
 
 subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
-    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+    use iMOAB , only : iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_comm_mct , only : mboxid, mbofxid ! ocean and atm-ocean flux instances
     !---------------------------------------------------------------
@@ -1274,8 +1274,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     logical, save :: first_time = .true.
 
-    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
-
     character(CXX) ::tagname
     integer :: ent_type, ierr
 #ifdef MOABDEBUG
@@ -1299,13 +1297,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
 
- ! find out the number of local elements in moab mesh ocean instance on coupler
-    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in getting info '
-         call shr_sys_abort(subname//' error in getting info ')
-    endif
-    lsize = nvise(1) ! number of active cells
+    ! SCM data ocean fields live on vertices, while regular ocean fields live
+    ! on elements. This size must match mbGetEntityType below and is used for
+    ! every merge-array allocation.
+    lsize = mbGetnCells(mboxid)
 
     if (first_time) then
 

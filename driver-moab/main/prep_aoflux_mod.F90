@@ -5,6 +5,7 @@ module prep_aoflux_mod
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: CXX => SHR_KIND_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
+  use shr_moab_mod,     only: mbGetnCells, mbGetEntityType
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
   use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
@@ -156,13 +157,12 @@ contains
        call mct_list_init(temp_list ,seq_flds_xao_fields)
        size_list=mct_list_nitem (temp_list) + 1 ! 1 more for the normalization tag
        call mct_list_clean(temp_list)
-       ! find out the number of local elements in moab mesh
-       ierr  = iMOAB_GetMeshInfo ( mbofxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
-      ! local size of vertices is different from lsize_o
-      ! nvsise(1) is the number of primary elements locally 
-       arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
+       ! Use vertices for the SCM ocean point cloud and elements for regular
+       ! ocean meshes. mbofxid aliases mboxid, so the shared helpers select
+       ! the correct storage using mb_scm_ocn.
+       arrSize = mbGetnCells(mbofxid) * size_list
        allocate(tagValues(arrSize) )
-       ent_type = 1 ! cell type
+       ent_type = mbGetEntityType(mbofxid)
        tagValues = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues)
        deallocate(tagValues)
