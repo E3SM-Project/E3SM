@@ -167,10 +167,10 @@ contains
        write (6,*) 'info: output file is NF_FORMAT_64BIT_OFFSET'
     else if ( ncformat == NF_FORMAT_64BIT_DATA )then
        write (6,*) 'info: output file is NF_FORMAT_64BIT_DATA'
-    else if ( ncformat == NF_FORMAT_NETCDF4 )then
-       write (6,*) 'info: output file is NF_FORMAT_NETCDF4'
-    else if ( ncformat == NF_FORMAT_NETCDF4_CLASSIC )then
-       write (6,*) 'info: output file is NF_FORMAT_NETCDF4_CLASSIC'
+    else if ( ncformat == NF90_FORMAT_NETCDF4 )then
+       write (6,*) 'info: output file is NF90_FORMAT_NETCDF4'
+    else if ( ncformat == NF90_FORMAT_NETCDF4_CLASSIC )then
+       write (6,*) 'info: output file is NF90_FORMAT_NETCDF4_CLASSIC'
     end if
 
     call check_ret (nf90_inq_dimid(ncidi, "column", dimidcols ))
