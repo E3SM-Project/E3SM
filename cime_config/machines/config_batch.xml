@@ -616,6 +616,16 @@
       <batch_submit>/grand/E3SMinput/soft/qsub/throttle</batch_submit>
       <directives>
         <directive> -l select={{ num_nodes }} </directive>
+        <!-- Without an explicit place=, PBS Pro defaults to shared node
+             placement. Two concurrent 45-node jobs (select=45 each) were
+             observed getting overlapping physical nodes from the scheduler
+             -- PBS handed nodes already held by a running job to a second
+             job, which was then killed by the scheduler ~5-12 min later
+             once the conflict was detected ("terminated by Scheduler",
+             exit 143). place=excl reserves each allocated node exclusively
+             for this job, which is what an MPI run pinned with --cpu-bind
+             core requires anyway. -->
+        <directive> -l place=excl </directive>
         <directive> -l filesystems=home:grand:eagle </directive>
       </directives>
       <queues>
