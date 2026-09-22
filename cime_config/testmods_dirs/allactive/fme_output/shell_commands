@@ -50,9 +50,15 @@ FME_MPAS_INTERVAL_5D=${FME_MPAS_INTERVAL_5D:-00-00-05_00:00:00}
 # yet staged in the inputdata tree).
 FME_LND_ENABLE=${FME_LND_ENABLE:-TRUE}
 FME_ROF_ENABLE=${FME_ROF_ENABLE:-TRUE}
-# ELM / MOSART output frequency in hours (EAM convention: negative = hours).
-FME_LND_OUTPUT_HOURS=${FME_LND_OUTPUT_HOURS:-24}
-FME_ROF_OUTPUT_HOURS=${FME_ROF_OUTPUT_HOURS:-24}
+# ELM / MOSART output frequency and averaging, mimicking EAM: 6-hourly by
+# default (was daily), tape default 'I' (instantaneous) with fluxes marked
+# :A per field in the fincl lists below -- the same state/flux split EAM
+# uses (avgflag_pertape='I' + explicit :A on fluxes), so a land or river
+# emulator sees the same sampling convention as the atmosphere.
+FME_LND_OUTPUT_HOURS=${FME_LND_OUTPUT_HOURS:-6}
+FME_ROF_OUTPUT_HOURS=${FME_ROF_OUTPUT_HOURS:-6}
+FME_LND_AVGFLAG=${FME_LND_AVGFLAG:-I}
+FME_ROF_AVGFLAG=${FME_ROF_AVGFLAG:-I}
 # File rotation policy shared with EAM ('one_month', 'one_year', 'num_snapshots')
 FME_LND_STORAGE=${FME_LND_STORAGE:-one_month}
 # Depth boundaries (m) that collapse ELM's 15-level levgrnd soil profile into
@@ -91,9 +97,9 @@ FME_MAPS_DIR=${FME_MAPS_DIR:-$(./xmlquery --value DIN_LOC_ROOT)/fme}
 # x2l/l2x use the LND map and x2r/r2x the ROF map (both r05 in production --
 # the same file ELM and MOSART use for their own FME tapes).
 # The atm streams (x2a, a2x) run at a configurable sub-daily cadence
-# (FME_CPL_ATM_INTERVAL, default 6 h); the land and river streams at
-# FME_CPL_LND_INTERVAL / FME_CPL_ROF_INTERVAL (default daily); the ocean/ice
-# streams have 1D + 5D means.
+# (FME_CPL_ATM_INTERVAL, default 6 h); the land and river streams match it
+# (FME_CPL_LND_INTERVAL / FME_CPL_ROF_INTERVAL, default 6 h, mimicking EAM's
+# cadence); the ocean/ice streams have 1D + 5D means.
 FME_CPL_ENABLE=${FME_CPL_ENABLE:-.true.}         # x2o ocean merged forcing
 FME_CPL_XAO_ENABLE=${FME_CPL_XAO_ENABLE:-.true.} # xao atm-ocean fluxes
 FME_CPL_ICE_ENABLE=${FME_CPL_ICE_ENABLE:-.true.} # x2i sea-ice import
@@ -108,18 +114,23 @@ FME_CPL_R2X_ENABLE=${FME_CPL_R2X_ENABLE:-.true.} # r2x rof export (ROF grid)
 FME_CPL_INTERVAL=${FME_CPL_INTERVAL:-1.0}        # 1D mean window (days)
 FME_CPL_INTERVAL_5D=${FME_CPL_INTERVAL_5D:-5.0}  # 5D mean window (days)
 FME_CPL_ATM_INTERVAL=${FME_CPL_ATM_INTERVAL:-0.25} # atm x2a/a2x window (days; 6 h)
-FME_CPL_LND_INTERVAL=${FME_CPL_LND_INTERVAL:-1.0}  # lnd x2l/l2x window (days)
+# Matches FME_CPL_ATM_INTERVAL (6 h) so the coupler-native land/river exports
+# sample on the same cadence as the atmosphere. 6 h divides evenly into the
+# river coupling step of every compset this testmod targets (3 h, i.e.
+# ROF_NCPL=8/day), so the multiple-of-ROF_NCPL requirement below still holds
+# at this default; re-check it before overriding to something else.
+FME_CPL_LND_INTERVAL=${FME_CPL_LND_INTERVAL:-0.25} # lnd x2l/l2x window (days; 6 h)
 # The river window must be a multiple of the river coupling step (ROF_NCPL is
 # normally coarser than the base step); cpl_fme_init warns if it is not.
-FME_CPL_ROF_INTERVAL=${FME_CPL_ROF_INTERVAL:-1.0}  # rof x2r/r2x window (days)
+FME_CPL_ROF_INTERVAL=${FME_CPL_ROF_INTERVAL:-0.25} # rof x2r/r2x window (days; 6 h)
 # Set FME_CPL_5D_ENABLE=.false. to skip ALL 5-day companion streams.
 FME_CPL_5D_ENABLE=${FME_CPL_5D_ENABLE:-.true.}
 
 echo "FME output configuration:"
 echo "  EAM: ${FME_EAM_OUTPUT_HOURS}-hourly, avgflag=${FME_EAM_AVGFLAG}, mfilt=${FME_EAM_MFILT}, storage=${FME_EAM_STORAGE}"
 echo "  MPAS: interval=${FME_MPAS_INTERVAL}, 5D companion=${FME_MPAS_INTERVAL_5D}"
-echo "  ELM: ${FME_LND_OUTPUT_HOURS}-hourly, storage=${FME_LND_STORAGE}, remap=${FME_LND_ENABLE}"
-echo "  ROF: ${FME_ROF_OUTPUT_HOURS}-hourly, storage=${FME_ROF_STORAGE}, remap=${FME_ROF_ENABLE}"
+echo "  ELM: ${FME_LND_OUTPUT_HOURS}-hourly, avgflag=${FME_LND_AVGFLAG}, storage=${FME_LND_STORAGE}, remap=${FME_LND_ENABLE}"
+echo "  ROF: ${FME_ROF_OUTPUT_HOURS}-hourly, avgflag=${FME_ROF_AVGFLAG}, storage=${FME_ROF_STORAGE}, remap=${FME_ROF_ENABLE}"
 echo "  CPL: enable=${FME_CPL_ENABLE}, ocn 1D=${FME_CPL_INTERVAL}d, ocn 5D=${FME_CPL_INTERVAL_5D}d (5D enable=${FME_CPL_5D_ENABLE})"
 echo "  CPL lnd/rof: x2l=${FME_CPL_X2L_ENABLE} l2x=${FME_CPL_L2X_ENABLE} (${FME_CPL_LND_INTERVAL}d), x2r=${FME_CPL_X2R_ENABLE} r2x=${FME_CPL_R2X_ENABLE} (${FME_CPL_ROF_INTERVAL}d)"
 echo "  MPAS time epoch: auto-discovered at runtime from MPAS_START_TIME / sidecar"
@@ -500,20 +511,27 @@ EOF
 #   5. the soil profile and the solar-band albedos, collapsed to 2-d by
 #      elmVcoarsenMod (see FME_LND_DEPTH_BOUNDS below). Nothing on this tape
 #      carries a vertical dimension.
+#
+# avgflag: mimics EAM's split (see FME_LND_AVGFLAG above). Fields are marked
+# :A (time-averaged) where the underlying quantity is a rate -- precip,
+# radiation, deposition, energy/water/carbon fluxes, momentum stress.
+# Everything else (forcing states, surface/canopy/soil state, LAI, albedo)
+# is left unmarked and inherits the tape default 'I' (instantaneous), same
+# as EAM's PS/TS/T_0../U_0.. etc.
 FME_ELM_FINCL="'TBOT', 'THBOT', 'PBOT', 'QBOT', 'RH', 'WIND', 'ZBOT',
-              'RAIN', 'SNOW', 'FLDS',
-              'FSDS', 'FSDSVD', 'FSDSND', 'FSDSVI', 'FSDSNI',
-              'BCDEP', 'OCDEP', 'DSTDEP',
+              'RAIN:A', 'SNOW:A', 'FLDS:A',
+              'FSDS:A', 'FSDSVD:A', 'FSDSND:A', 'FSDSVI:A', 'FSDSNI:A',
+              'BCDEP:A', 'OCDEP:A', 'DSTDEP:A',
               'TSA', 'RH2M', 'Q2M', 'U10', 'TG', 'FSNO',
               'H2OSNO', 'SNOWDP', 'SNOWICE', 'SNOWLIQ',
               'ELAI', 'TLAI', 'TSAI', 'ALBD_vis', 'ALBD_nir',
               'ALBI_vis', 'ALBI_nir',
               'ZWT', 'TWS', 'SOILWATER_10CM', 'TSOI_10CM', 'FH2OSFC',
-              'FSA', 'FIRA', 'FIRE', 'FSH', 'EFLX_LH_TOT',
-              'FCEV', 'FCTR', 'FGR', 'TAUX', 'TAUY',
-              'QRUNOFF', 'QOVER', 'QH2OSFC', 'QDRAI', 'QDRAI_PERCH',
-              'QRGWL', 'QSNWCPICE', 'QCHARGE', 'QINFL',
-              'QSOIL', 'QVEGE', 'QVEGT', 'QINTR', 'QSNOMELT',
+              'FSA:A', 'FIRA:A', 'FIRE:A', 'FSH:A', 'EFLX_LH_TOT:A',
+              'FCEV:A', 'FCTR:A', 'FGR:A', 'TAUX:A', 'TAUY:A',
+              'QRUNOFF:A', 'QOVER:A', 'QH2OSFC:A', 'QDRAI:A', 'QDRAI_PERCH:A',
+              'QRGWL:A', 'QSNWCPICE:A', 'QCHARGE:A', 'QINFL:A',
+              'QSOIL:A', 'QVEGE:A', 'QVEGT:A', 'QINTR:A', 'QSNOMELT:A',
               'TSOI_0', 'TSOI_1', 'TSOI_2',
               'H2OSOI_0', 'H2OSOI_1', 'H2OSOI_2'"
 
@@ -524,14 +542,14 @@ ELM_OPTS=$(./xmlquery --value ELM_BLDNML_OPTS 2>/dev/null || echo "")
 case "${ELM_OPTS}" in
   *"-bgc bgc"*|*"-bgc cn"*|*"-bgc fates"*)
     FME_ELM_FINCL="${FME_ELM_FINCL},
-              'NEE'" ;;
+              'NEE:A'" ;;
   *)
     echo "FME: ELM is not in a CN/BGC/FATES mode -- omitting NEE" ;;
 esac
 case "${ELM_OPTS}" in
   *-methane*)
     FME_ELM_FINCL="${FME_ELM_FINCL},
-              'NEM'" ;;
+              'NEM:A'" ;;
   *)
     echo "FME: ELM methane model is off -- omitting NEM" ;;
 esac
@@ -541,7 +559,7 @@ hist_empty_htapes = .true.
 hist_dov2xy  = .true.
 hist_nhtfrq  = -${FME_LND_OUTPUT_HOURS}
 hist_mfilt   = 1500
-hist_avgflag_pertape = 'A'
+hist_avgflag_pertape = '${FME_LND_AVGFLAG}'
 hist_file_storage_type = '${FME_LND_STORAGE}'
 
 ! Collapse the only multi-level fields on this tape so every variable is a
@@ -572,16 +590,31 @@ fi
 # river tape is for emulator forcing and diagnostics, not for closing a water
 # budget on the target grid. Use the native tape (FME_ROF_ENABLE=FALSE) when a
 # budget has to close.
+#
+# avgflag: mimics EAM's split (see FME_ROF_AVGFLAG above), but by per-field
+# suffix only -- MOSART has no usable tape-default lever. Every field here
+# is registered with avgflag='A' as ITS OWN source-code default
+# (RtmHistFlds.F90), including the two true states below, and unlike ELM/EAM
+# there is no working way to flip that default for a whole tape: MOSART's
+# Fortran declares rtmhist_avgflag_pertape (RtmHistFile.F90) but it was never
+# added to namelist_definition_mosart.xml, so build-namelist rejects it as an
+# unknown variable the moment user_nl_mosart sets it. The per-field :A/:I
+# suffix bypasses that entirely (RtmHistFile.F90's getflag/htape_addfld
+# chain explicitly accepts an 'I' override regardless of any tape default,
+# the same mechanism ELM and EAM use), so every field below is marked
+# explicitly rather than relying on an unmarked default. Units confirm the
+# classification: discharge/Q* fields are m3/s (rates); STORAGE fields are
+# m3 (amounts).
 cat >> user_nl_mosart << EOF
 rtmhist_empty_htapes = .true.
 rtmhist_nhtfrq = -${FME_ROF_OUTPUT_HOURS}
 rtmhist_mfilt  = 1500
 rtmhist_file_storage_type = '${FME_ROF_STORAGE}'
 
-rtmhist_fincl1 = 'RIVER_DISCHARGE_OVER_LAND_LIQ', 'RIVER_DISCHARGE_TO_OCEAN_LIQ',
-                 'DIRECT_DISCHARGE_TO_OCEAN_LIQ', 'TOTAL_DISCHARGE_TO_OCEAN_LIQ',
-                 'STORAGE_LIQ', 'Main_Channel_STORAGE_LIQ',
-                 'QSUR_LIQ', 'QSUB_LIQ', 'QGWL_LIQ'
+rtmhist_fincl1 = 'RIVER_DISCHARGE_OVER_LAND_LIQ:A', 'RIVER_DISCHARGE_TO_OCEAN_LIQ:A',
+                 'DIRECT_DISCHARGE_TO_OCEAN_LIQ:A', 'TOTAL_DISCHARGE_TO_OCEAN_LIQ:A',
+                 'STORAGE_LIQ:${FME_ROF_AVGFLAG}', 'Main_Channel_STORAGE_LIQ:${FME_ROF_AVGFLAG}',
+                 'QSUR_LIQ:A', 'QSUB_LIQ:A', 'QGWL_LIQ:A'
 EOF
 
 if [ "${FME_ROF_ENABLE}" = "TRUE" ]; then
