@@ -1136,6 +1136,16 @@
       <mask>oQU480</mask>
     </model_grid>
 
+    <model_grid alias="ne4pg2_oQU240">
+      <grid name="atm">ne4np4.pg2</grid>
+      <grid name="lnd">ne4np4.pg2</grid>
+      <grid name="ocnice">oQU240</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU240</mask>
+    </model_grid>
+
     <model_grid alias="ne8_ne8" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne8np4</grid>
       <grid name="lnd">ne8np4</grid>
@@ -3358,9 +3368,9 @@
       <nx>384</nx>
       <ny>1</ny>
       <file grid="atm|lnd" mask="oQU480">domain.lnd.ne4pg2_oQU480.200527.nc</file>
-      <file grid="atm|lnd" mask="oQU240">domain.lnd.ne4pg2_oQU240.190321.nc</file>
+      <file grid="atm|lnd" mask="oQU240">domain.lnd.ne4pg2_oQU240.20260922.nc</file>
       <file grid="ice|ocn" mask="oQU480">domain.ocn.ne4pg2_oQU480.200527.nc</file>
-      <file grid="ice|ocn" mask="oQU240">domain.ocn.ne4pg2_oQU240.190321.nc</file>
+      <file grid="ice|ocn" mask="oQU240">domain.ocn.ne4pg2_oQU240.20260922.nc</file>
       <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.ne4pg2_IcoswISC30E3r5.20260312.nc</file>
       <desc>ne4np4.pg2 is Spectral Elem 7.5-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
@@ -4325,6 +4335,14 @@
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_to_oQU480_bilin.200527.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oQU480/map_oQU480_to_ne4pg2_mono.200527.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oQU480/map_oQU480_to_ne4pg2_mono.200527.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne4np4.pg2" ocn_grid="oQU240">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_to_oQU240_traave.20260921.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_to_oQU240_trbilin.20260921.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne4pg2/map_ne4pg2_to_oQU240_trbilin.20260921.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oQU240/map_oQU240_to_ne4pg2_traave.20260921.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oQU240/map_oQU240_to_ne4pg2_traave.20260921.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne4np4.pg2" ocn_grid="oEC60to30v3">
