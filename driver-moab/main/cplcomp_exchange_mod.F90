@@ -537,7 +537,7 @@ if (single_column .and. .not. scm_multcols) then
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ocn_domain
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      logical :: single_column, scm_multcols, migrate_component_mesh, use_atm_coupler_mesh
+      logical :: single_column, scm_multcols, migrate_ocn_component_mesh, use_atm_coupler_mesh
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -549,7 +549,7 @@ if (single_column .and. .not. scm_multcols) then
       ! unexpanded domain file on the coupler PEs.
       call seq_infodata_GetData(infodata, ocn_domain=ocn_domain, &
            single_column=single_column, scm_multcols=scm_multcols)
-      migrate_component_mesh = trim(ocn_domain) == 'none'
+      migrate_ocn_component_mesh = trim(ocn_domain) == 'none'
       use_atm_coupler_mesh = trim(ocn_domain) /= 'none' .and. (single_column .or. scm_multcols)
       mb_scm_ocn = use_atm_coupler_mesh
 
@@ -575,7 +575,7 @@ if (single_column .and. .not. scm_multcols) then
          endif
          comp%mbApCCid = mpoid ! ocn comp app in moab
 !!!!!  FULL OCN
-         if (migrate_component_mesh) then
+         if (migrate_ocn_component_mesh) then
             !  send mesh to coupler
             call moab_send_mesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod, subname)
             comp%mbGridType = 1 ! active ocean uses cells
@@ -592,7 +592,7 @@ if (single_column .and. .not. scm_multcols) then
          ! migrated mesh gets another app id, moab ocean to coupler (mbox)
          call moab_register_app(appname, mpicom_new, id_join, mboxid, subname)
  !!!!! FULL OCN
-         if (migrate_component_mesh) then
+         if (migrate_ocn_component_mesh) then
             call moab_receive_mesh(mboxid, mpicom_join, mpigrp_old, id_old, subname)
  !!!!! SCM DATA OCN
          else if (use_atm_coupler_mesh) then
@@ -634,7 +634,7 @@ if (single_column .and. .not. scm_multcols) then
       endif
 !!!!!!  OCEAN COMPONENT
       if (mpoid .ge. 0) then  ! we are on component ocn pes
-         if (migrate_component_mesh) then
+         if (migrate_ocn_component_mesh) then
             call moab_free_sender_buffers(mpoid, id_join, subname)
          endif
       endif
@@ -642,6 +642,13 @@ if (single_column .and. .not. scm_multcols) then
 !!!!!! on joint OCN and CPL procs
   !!!!! DATA OCN
       if (use_atm_coupler_mesh) then
+         ! SCM and multicolumn DP runs use a data ocean whose component-side
+         ! representation (mpoid) is a point cloud. The coupler-side ocean
+         ! point cloud (mboxid) was cloned from the complete atmospheric
+         ! coupler mesh above because an element-free point cloud cannot be
+         ! migrated with iMOAB_SendMesh. Build the communication graph here
+         ! by matching GLOBAL_IDs so DOCN fields and domain data can be sent
+         ! from mpoid to the independently registered mboxid application.
          call cplcomp_moab_compute_comm_graph(mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             .false., .false., id_old, id_join, subname, 'SCM data ocn model')
       else if (trim(ocn_domain) /= 'none') then
@@ -649,9 +656,8 @@ if (single_column .and. .not. scm_multcols) then
          call cplcomp_moab_compute_comm_graph(mpoid, mboxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
             dead_comps, .true., id_old, id_join, subname, 'data ocn model')
       endif
-      ! The migrated SCM mesh establishes the communication relation but does
-      ! not populate the coupler-side domain tags. Transfer them explicitly,
-      ! just as the land SCM path does.
+      ! The communication graph does not populate the coupler-side domain
+      ! tags. Transfer them explicitly, just as the land SCM path does.
       call moab_exchange_domain_tags(comp, mpoid, mboxid, 'lat:lon:area:frac:mask', 'domo')
 
 !!!!!!!!! OCEAN 2nd COPY (mbofxid) -- ALIAS of mboxid (robust fix)
@@ -848,7 +854,7 @@ if (single_column .and. .not. scm_multcols) then
       character*200 :: appname, outfile, wopts, ropts, infile
       character(CL) :: ice_domain
       integer :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-      logical :: single_column, scm_multcols, migrate_component_mesh, use_atm_coupler_mesh
+      logical :: single_column, scm_multcols, migrate_ice_component_mesh, use_atm_coupler_mesh
 
       call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
@@ -857,7 +863,7 @@ if (single_column .and. .not. scm_multcols) then
       ! of reloading the unexpanded domain file on the coupler PEs.
       call seq_infodata_GetData(infodata, ice_domain=ice_domain, &
            single_column=single_column, scm_multcols=scm_multcols)
-      migrate_component_mesh = trim(ice_domain) == 'none'
+      migrate_ice_component_mesh = trim(ice_domain) == 'none'
       use_atm_coupler_mesh = trim(ice_domain) /= 'none' .and. (single_column .or. scm_multcols)
       mb_scm_ice = use_atm_coupler_mesh
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
@@ -875,7 +881,7 @@ if (single_column .and. .not. scm_multcols) then
             ierr  = iMOAB_GetMeshInfo ( MPSIID, nvert, nvise, nbl, nsurf, nvisBC )
             comp%mbApCCid = MPSIID ! ice imoab app id
          endif
-         if (migrate_component_mesh) then ! regular element-based ice model
+         if (migrate_ice_component_mesh) then ! regular element-based ice model
             if (dead_comps) then
                comp%mbGridType = 1 ! dead comps create full mesh
                comp%mblsize = nvise(1) ! cells
@@ -895,7 +901,7 @@ if (single_column .and. .not. scm_multcols) then
          appname = "COUPLE_MPASSI"
          ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
          call moab_register_app(appname, mpicom_new, id_join, mbixid, subname)
-         if (migrate_component_mesh) then ! regular element-based ice model
+         if (migrate_ice_component_mesh) then ! regular element-based ice model
             call moab_receive_mesh(mbixid, mpicom_join, mpigrp_old, id_old, subname)
          else if (use_atm_coupler_mesh) then
             call cplcomp_moab_clone_point_cloud(mbaxid, mbixid, subname)
@@ -923,7 +929,7 @@ if (single_column .and. .not. scm_multcols) then
 
       endif
 
-      if (MPSIID .ge. 0 .and. migrate_component_mesh) then  ! we are on component sea ice pes
+      if (MPSIID .ge. 0 .and. migrate_ice_component_mesh) then  ! we are on component sea ice pes
           call moab_free_sender_buffers(MPSIID, id_join, subname)
       endif
 

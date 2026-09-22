@@ -34,7 +34,6 @@ module prep_atm_mod
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use seq_comm_mct, only : num_moab_exports
-  use seq_comm_mct, only : mb_dead_comps
   use seq_comm_mct, only : mb_scm_atm, mb_scm_ocn, mb_scm_ice
 
   !use dimensions_mod, only : np     ! for atmosphere
@@ -113,6 +112,7 @@ module prep_atm_mod
   real (kind=r8) , allocatable, private :: xao_am (:,:)  ! ?
   logical :: compute_maps_online_o2a, compute_maps_online_i2a, compute_maps_online_l2a
   logical :: samegrid_al
+  logical :: atm_coupler_mesh_is_fv
   !================================================================================================
 
 contains
@@ -183,6 +183,10 @@ contains
       cpl_compute_maps_online=cpl_compute_maps_online, &
       esmf_map_flag=esmf_map_flag, &
       dead_comps=dead_comps)
+
+   ! The atmospheric coupler mesh stores fields on elements for PG/FV and
+   ! dead-component meshes, and on vertices for SE and SCM point clouds.
+   atm_coupler_mesh_is_fv = (atm_pg_active .and. .not. mb_scm_atm) .or. dead_comps
 
    allocate(mapper_So2a)
    allocate(mapper_Sof2a)
@@ -323,7 +327,7 @@ contains
                   endif
 ! endif for MOABDEBUG
 #endif
-                  if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+                  if (atm_coupler_mesh_is_fv) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -397,7 +401,7 @@ contains
                else
                   type1 = 3 ! FV mesh on coupler OCN
                endif
-               if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+               if (atm_coupler_mesh_is_fv) then
                   type2 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                else
                   type2 = 2 ! from now on, spectral is on PC on coupler side, too; no mapping allowed, just reorder?
@@ -624,7 +628,7 @@ contains
 
             if (compute_maps_online_i2a) then
                volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-               if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+               if (atm_coupler_mesh_is_fv) then
                   dm2 = "fv"//C_NULL_CHAR
                   dofnameT="GLOBAL_ID"//C_NULL_CHAR
                   orderT = 1 !  fv-fv
@@ -753,7 +757,7 @@ contains
             else
                type1 = 3 ! FV mesh for ice
             endif
-            if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+            if (atm_coupler_mesh_is_fv) then
                type2 = 3
             else
                type2 = 2 ! this is spectral case , PC cloud for atm
@@ -860,7 +864,7 @@ contains
 #endif
                   ! need to compute weigths
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+                  if (atm_coupler_mesh_is_fv) then
                      dm2 = "fv"//C_NULL_CHAR
                      dofnameT="GLOBAL_ID"//C_NULL_CHAR
                      orderT = 1 !  fv-fv
@@ -937,7 +941,7 @@ contains
                ! land is point cloud in this case, type1 = 2
                call seq_comm_getinfo(CPLID, mpigrp=mpigrp_CPLID) ! make sure we have the right MPI group
                type1 = 3 !  full mesh for land now
-               if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+               if (atm_coupler_mesh_is_fv) then
                   type2 = 3  ! fv for target atm
                else
                   type2 = 2  ! point cloud for spectral
@@ -1072,7 +1076,7 @@ contains
                write(logunit,*) subname,' error in getting info '
                call shr_sys_abort(subname//' error in getting info ')
        endif
-       if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+       if (atm_coupler_mesh_is_fv) then
           lsize = nvise(1) ! number of active cells
        else
           lsize = nvert(1) ! for the spectral case, everything is pc from now on
@@ -1287,7 +1291,7 @@ contains
     endif  ! end first-time
 
     !  Get data from MOAB
-    if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
+    if (atm_coupler_mesh_is_fv) then
        ent_type = 1 ! cells (PG atmosphere or dead comps FV mesh)
     else
        ent_type = 0 ! vertices, spectral point cloud
