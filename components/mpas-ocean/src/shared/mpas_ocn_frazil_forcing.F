@@ -718,7 +718,6 @@ contains
               ! salt is released into ocean with the melting frazil
               frazilSalinityTendency(k,iCell) = + meltedThicknessWeightedSaltContent/ dt
 
-              ! ocean fluid temperature is cooled due to melting of frazil
               frazilTemperatureTendency(k,iCell) = - meltedFrazilEnergy / (rho_sw * config_specific_heat_sea_water) / dt
 
               ! keep track of new frazil ice
