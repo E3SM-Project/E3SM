@@ -364,6 +364,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> flux_qir, flux_qit;
     // rain sedimentation
     view_2d<Pack> v_qr, v_nr;
+    view_1d<bool> nucleationPossible, hydrometeorsPresent;
   };
 #endif
 

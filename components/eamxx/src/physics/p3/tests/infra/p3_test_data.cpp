@@ -1476,22 +1476,25 @@ Int p3_main_host(
     inv_rho("inv_rho", nj, nk_pack), ze_ice("ze_ice", nj, nk_pack), ze_rain("ze_rain", nj, nk_pack), prec("prec", nj, nk_pack),
     rho("rho", nj, nk_pack), rhofacr("rhofacr", nj, nk_pack), rhofaci("rhofaci", nj, nk_pack),  acn("acn", nj, nk_pack), qv_sat_l("qv_sat", nj, nk_pack),
     qv_sat_i("qv_sat_i", nj, nk_pack), sup("sup", nj, nk_pack), qv_supersat_i("qv_supersat", nj, nk_pack), tmparr2("tmparr2", nj, nk_pack),
-    exner("exner", nj, nk_pack), diag_vm_qi("diag_vm_qi", nj, nk_pack),
+     exner("exner", nj, nk_pack), diag_equiv_reflectivity("diag_equiv_reflectivity", nj, nk_pack),
+     diag_vm_qi("diag_vm_qi", nj, nk_pack),
     diag_diam_qi("diag_diam_qi", nj, nk_pack), pratot("pratot", nj, nk_pack), prctot("prctot", nj, nk_pack), qtend_ignore("qtend_ignore", nj, nk_pack),
     ntend_ignore("ntend_ignore", nj, nk_pack), mu_c("mu_c", nj, nk_pack), lamc("lamc", nj, nk_pack), qr_evap_tend("qr_evap_tend", nj, nk_pack),
-    v_qc("v_qc", nj, nk_pack), v_nc("v_nc", nj, nk_pack), flux_qx("flux_qx", nj, nk_pack), flux_nx("flux_nx", nj, nk_pack), v_qit("v_qit", nj, nk_pack),
-    v_nit("v_nit", nj, nk_pack), flux_nit("flux_nit", nj, nk_pack), flux_bir("flux_bir", nj, nk_pack), flux_qir("flux_qir", nj, nk_pack),
-    flux_qit("flux_qit", nj, nk_pack), v_qr("v_qr", nj, nk_pack), v_nr("v_nr", nj, nk_pack);
+     v_qc("v_qc", nj, nk_pack), v_nc("v_nc", nj, nk_pack), flux_qx("flux_qx", nj, nk_pack), flux_nx("flux_nx", nj, nk_pack), v_qit("v_qit", nj, nk_pack),
+     v_nit("v_nit", nj, nk_pack), flux_nit("flux_nit", nj, nk_pack), flux_bir("flux_bir", nj, nk_pack), flux_qir("flux_qir", nj, nk_pack),
+     flux_qit("flux_qit", nj, nk_pack), v_qr("v_qr", nj, nk_pack), v_nr("v_nr", nj, nk_pack);
+   P3F::view_1d<bool> nucleationPossible("nucleationPossible", nj),
+     hydrometeorsPresent("hydrometeorsPresent", nj);
 
-  P3F::P3Temporaries temporaries{
+   P3F::P3Temporaries temporaries{
     mu_r, T_atm, lamr, logn0r, nu, cdist, cdist1, cdistr, inv_cld_frac_i,
     inv_cld_frac_l, inv_cld_frac_r, qc_incld, qr_incld, qi_incld, qm_incld,
     nc_incld, nr_incld, ni_incld, bm_incld, inv_dz, inv_rho, ze_ice, ze_rain,
     prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-    tmparr2, exner, diag_vm_qi, diag_diam_qi,
+     tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi,
     pratot, prctot, qtend_ignore, ntend_ignore, mu_c, lamc, qr_evap_tend,
     v_qc, v_nc, flux_qx, flux_nx, v_qit, v_nit, flux_nit, flux_bir, flux_qir,
-    flux_qit, v_qr, v_nr
+     flux_qit, v_qr, v_nr, nucleationPossible, hydrometeorsPresent
   };
 #endif
 

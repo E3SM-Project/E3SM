@@ -39,6 +39,8 @@ class P3Microphysics : public AtmosphereProcess
 
   using uview_1d  = Unmanaged<view_1d>;
   using uview_2d  = Unmanaged<view_2d>;
+  using bview_1d  = typename P3F::view_1d<bool>;
+  using ubview_1d = Unmanaged<bview_1d>;
   using suview_2d = Unmanaged<sview_2d>;
 
 public:
@@ -423,6 +425,7 @@ public:
       mu_c, lamc, qr_evap_tend, v_qc, v_nc, flux_qx, flux_nx,
       v_qit, v_nit, flux_nit, flux_bir, flux_qir, flux_qit,
       v_qr, v_nr;
+    ubview_1d nucleationPossible, hydrometeorsPresent;
 #endif
 
     suview_2d col_location;

@@ -78,9 +78,9 @@ struct Baseline {
 
     Int nerr = 0;
 
-    Int total_duration_microsec = 0;
-
     for (auto ps : params_) {
+      Int total_duration_microsec = 0;
+
       // Run reference p3 on this set of parameters.
       for (Int r = -1; r < ps.repeat; ++r) {
         const auto d = ic::Factory::create(ps.ic, ps.ncol, ps.nlev);
