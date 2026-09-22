@@ -324,6 +324,16 @@ MAMWetscav::create_requests()
     add_field<Required>("zm_entr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft entrainment rate
     add_field<Required>("zm_detr_up", scalar3d_mid, 1 / s, grid_name);         // Updraft detrainment rate
     add_field<Required>("zm_entr_dn", scalar3d_mid, 1 / s, grid_name);         // Downdraft entrainment rate
+
+    // Fields for deep convective precipitation coupling with MAM wetscav
+    // Rain production rate from deep convection [kg/kg/s]
+    add_field<Required>("zm_rain_prod", scalar3d_mid, kg / kg / s, grid_name);
+    // In-cloud liquid water mixing ratio from deep convection [kg/kg]
+    add_field<Required>("zm_ql", scalar3d_mid, kg / kg, grid_name);
+    // Convective mass flux at interfaces — used to derive deep conv cloud fraction
+    add_field<Required>("zm_mass_flux_int", scalar3d_int, kg / m2 / s, grid_name);
+    // Evaporation tendency from deep convective precipitation [kg/kg/s]
+    add_field<Required>("evap_dq_out", scalar3d_mid, kg / kg / s, grid_name);
   }
 
   // ---------------------------------------------------------------------
@@ -524,10 +534,12 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Allocate work array
   init_temporary_views();
   isprx_ = int_view_2d("isprx", ncol_, nlev_);
-  // TODO: Following variables are from convective parameterization (not
-  // implemented yet in EAMxx), so should be zero for now
-  // NOTE:If we use buffer_ to set the following inputs,
-  // we must set these views to zero at every time step.
+  // Convective parameterization fields.
+  // dp_frac_ is always allocated (derived from ZM mass flux when do_convproc_).
+  // rprddp, icwmrdp, and evapcdp alias FM views directly when do_convproc_
+  // is true; otherwise the zero-initialized placeholder views are used.
+  // Shallow convection fields remain zero until a shallow convection scheme is available.
+  // NOTE: These views are zero-initialized by Kokkos::View default construction.
   sh_frac_ = view_2d("sh_frac_", ncol_, nlev_);
 
   // Deep convective cloud fraction [fraction]
@@ -536,20 +548,19 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
   evapcsh_ = view_2d("evapcsh_", ncol_, nlev_);
 
-  // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
-  evapcdp_ = view_2d("evapcdp_", ncol_, nlev_);
-
   // Rain production, shallow convection [kg/kg/s]
   rprdsh_ = view_2d("rprdsh_", ncol_, nlev_);
 
-  // Rain production, deep convection [kg/kg/s]
-  rprddp_ = view_2d("rprddp_", ncol_, nlev_);
-
-  // In cloud water mixing ratio, deep convection
-  icwmrdp_ = view_2d("icwmrdp_", ncol_, nlev_);
-
   // In cloud water mixing ratio, shallow convection
   icwmrsh_ = view_2d("icwmrsh_", ncol_, nlev_);
+
+  // Zero-placeholder views for deep conv fields when convproc is disabled.
+  // When do_convproc_ is true, run_impl reads FM views directly instead.
+  if(!do_convproc_) {
+    rprddp_zero_  = view_2d("rprddp_zero",  ncol_, nlev_);
+    icwmrdp_zero_ = view_2d("icwmrdp_zero", ncol_, nlev_);
+    evapcdp_zero_ = view_2d("evapcdp_zero", ncol_, nlev_);
+  }
   
   // Detraining cloud water from deep convection [kg/kg/s]
   // This will be computed from ZM scheme outputs: dlf = zm_detr_qc + zm_detr_qi
@@ -625,9 +636,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   //----------- Variables from convective scheme -------------
 
-  // TODO: Following variables are from convective parameterization (not
-  // implemented yet in EAMxx), so should be zero for now
-
+  // Shallow convection fields remain zero for now (no shallow scheme in EAMxx).
   auto sh_frac = sh_frac_;
 
   // Deep convective cloud fraction [fraction]
@@ -636,17 +645,8 @@ void MAMWetscav::run_impl(const double dt) {
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
   auto evapcsh = evapcsh_;
 
-  // Evaporation rate of deep convective precipitation >=0. [kg/kg/s]
-  auto evapcdp = evapcdp_;
-
   // Rain production, shallow convection [kg/kg/s]
   auto rprdsh = rprdsh_;
-
-  // Rain production, deep convection [kg/kg/s]
-  auto rprddp = rprddp_;
-
-  // In cloud water mixing ratio, deep convection
-  auto icwmrdp = icwmrdp_;
 
   // In cloud water mixing ratio, shallow convection
   auto icwmrsh = icwmrsh_;
@@ -659,10 +659,24 @@ void MAMWetscav::run_impl(const double dt) {
 
   // Detraining cld H20 from deep convection [kg/kg/s]
   auto dlf = dlf_;
-  
-  // Only compute dlf if convection processing is enabled
+
+  // Deep convection precipitation/cloud fields:
+  // When do_convproc_ is true, rprddp, icwmrdp, and evapcdp alias FM views
+  // directly (avoiding redundant copies). dp_frac is derived from mass flux.
+  // When do_convproc_ is false, they are zero-initialized local views.
+  // These are declared as const_view_2d since they are read-only downstream.
+  const_view_2d rprddp;   // Rain production, deep convection [kg/kg/s]
+  const_view_2d icwmrdp;  // In-cloud water mixing ratio, deep convection [kg/kg]
+  const_view_2d evapcdp;  // Evaporation of deep convective precipitation [kg/kg/s]
+
   if(do_convproc_) {
-    //----------- Variables from ZM deep convection scheme -------------
+    //----------- Deep convection fields from ZM scheme (aliased directly) ---
+    // Rain production rate and in-cloud liquid water from ZM: use FM views
+    // directly to avoid copying data into scratch views.
+    rprddp  = get_field_in("zm_rain_prod").get_view<const Real **>();
+    icwmrdp = get_field_in("zm_ql").get_view<const Real **>();
+    evapcdp = get_field_in("evap_dq_out").get_view<const Real **>();
+
     // Deep convection cloud water detrainment [kg/kg/s]
     // zm_detr_qc and zm_detr_qi are the liquid and ice detrainment tendencies from ZM
     // dlf = total cloud water detrainment (liquid + ice)
@@ -678,6 +692,38 @@ void MAMWetscav::run_impl(const double dt) {
         });
       });
     Kokkos::fence();
+
+    //----------- Derive deep convective cloud fraction from ZM mass flux ---
+    auto zm_mass_flux_int_in = get_field_in("zm_mass_flux_int").get_view<const Real **>();
+
+    Kokkos::parallel_for("compute_dp_frac",
+      policy, KOKKOS_LAMBDA(const ThreadTeam &team) {
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev), [&](int kk) {
+          // Deep convective cloud fraction derived from ZM convective mass flux.
+          // Uses the EAM cloud_fraction.F90 formula:
+          //   dp_frac = max(0, min(dp1*log(1 + dp2*cmfmc_deep), 0.60))
+          // dp1=0.018, dp2=500.0 are E3SM v2 default tuning parameters.
+          // mass_flux is on interface levels (nlev+1); use k+1 interface
+          // (below mid-level k).  Since EAMxx has no shallow convection
+          // yet, cmfmc_deep = total convective mass flux.
+          constexpr Real dp1 = 0.018;
+          constexpr Real dp2 = 500.0;
+          const int kp1 = kk + 1;  // interface index below mid-level kk
+          const Real cmfmc_deep =
+              Kokkos::max(0.0, zm_mass_flux_int_in(icol, kp1));
+          dp_frac(icol, kk) = Kokkos::max(
+              0.0, Kokkos::min(dp1 * Kokkos::log(1.0 + dp2 * cmfmc_deep),
+                               0.60));
+        });
+      });
+    Kokkos::fence();
+  } else {
+    // When convective processing is disabled, use zero-initialized views
+    // so that aero_model_wetdep receives zeros for all deep-conv fields.
+    rprddp  = rprddp_zero_;
+    icwmrdp = icwmrdp_zero_;
+    evapcdp = evapcdp_zero_;
   }
 
   //----------- Variables from macrophysics scheme -------------
