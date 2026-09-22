@@ -94,6 +94,7 @@ contains
 
     use netcdf
     use shr_infnan_mod , only: shr_infnan_isnan
+    use interpinic_mpi_utils , only: masterproc, bcast_int, bcast_logical
 
     implicit none
     include 'netcdf.inc'
@@ -134,10 +135,21 @@ contains
     integer :: dimlen              ! input dimension length       
     integer :: ret                 ! netcdf return code
     integer :: ncformat            ! netcdf file format
+    integer :: clock_beg           ! search timing
+    integer :: clock_end           ! search timing
+    integer :: clock_rate          ! search timing
     character(len=256) :: varname  !variable name
     real(r8), allocatable :: rbufmlo (:,:) !output array
     real(r8), allocatable :: rbufmco (:,:) !output array
     !--------------------------------------------------------------------
+
+    ! Only rank 0 touches netCDF.  The other ranks skip straight to the three
+    ! nearest-neighbour searches below, which is the only work they do; the
+    ! netCDF ids stay invalid on them and are never dereferenced.
+    ncidi = -1
+    ncido = -1
+
+    if (masterproc) then
 
     write (6,*) 'Mapping clm initial data from input to output initial files'
 
@@ -320,24 +332,66 @@ contains
        allPFTSfromSameGC = .true.
     end if
 
+    end if   ! masterproc: end of the serial netCDF setup
+
+    ! Everything the three searches depend on has to reach the other ranks.
+    ! allPFTSfromSameGC comes from a netCDF inquiry above and changes the PFT
+    ! eligibility test, so it must be broadcast.  override_missing comes from
+    ! the command line, which every rank parses identically, but broadcasting
+    ! it is cheaper than relying on that.
+    call bcast_int(numpfts)
+    call bcast_int(numpftso)
+    call bcast_int(numcols)
+    call bcast_int(numcolso)
+    call bcast_int(numldus)
+    call bcast_int(numlduso)
+    call bcast_logical(allPFTSfromSameGC)
+    call bcast_logical(override_missing)
+
+    ! Time each search separately.  The searches are the only parallel section,
+    ! and the output weights make the work per output point uneven, so these
+    ! three numbers are what says whether the decomposition in compute_bounds
+    ! is good enough at a given rank count.
+    call system_clock(count_rate=clock_rate)
+
     ! For each output pft, find the input pft, pftindx, that is closest
 
-    write(6,*)'finding minimum distance for pfts'
+    if (masterproc) write(6,*)'finding minimum distance for pfts'
     allocate(pftindx(numpftso))
+    call system_clock(clock_beg)
     call findMinDistPFTs( ncidi, ncido, pftindx )
+    call system_clock(clock_end)
+    if (masterproc) write(6,'(a,f10.3,a)') ' findMinDistPFTs: ', &
+         real(clock_end-clock_beg,r8)/real(clock_rate,r8), ' s'
 
     ! For each output column, find the input column, colindx, that is closest
 
-    write(6,*)'finding minimum distance for columns'
+    if (masterproc) write(6,*)'finding minimum distance for columns'
     allocate(colindx(numcolso))
+    call system_clock(clock_beg)
     call findMinDistCols( ncidi, ncido, colindx )
+    call system_clock(clock_end)
+    if (masterproc) write(6,'(a,f10.3,a)') ' findMinDistCols: ', &
+         real(clock_end-clock_beg,r8)/real(clock_rate,r8), ' s'
 
     ! For each output landunit, find the input landunit, lduindx, that is closest
 
-    write(6,*)'finding minimum distance for landunits'
+    if (masterproc) write(6,*)'finding minimum distance for landunits'
     allocate(lduindx(numlduso))
+    call system_clock(clock_beg)
     call findMinDistLDUs( ncidi, ncido, lduindx )
-    
+    call system_clock(clock_end)
+    if (masterproc) write(6,'(a,f10.3,a)') ' findMinDistLDUs: ', &
+         real(clock_end-clock_beg,r8)/real(clock_rate,r8), ' s'
+
+    ! The searches are the whole of the parallel section.  The indices are now
+    ! gathered on rank 0, which holds exactly the state a serial run would have
+    ! had, and finishes the job alone.
+    if (.not. masterproc) then
+       deallocate(pftindx, colindx, lduindx)
+       return
+    end if
+
     ! Get list of variables
     call check_ret (nf90_inquire(ncidi, nVariables=nvars ))
     !
@@ -482,13 +536,11 @@ contains
              call handle_error (ret)
           end if
 
-          !$OMP PARALLEL DO PRIVATE (i,j)
           do j  = 1, rtmlat
              do l  = 1, rtmlon
                 if ( shr_infnan_isnan(volr(l,j)) ) volr(l,j) = spval
              end do
           end do
-          !$OMP END PARALLEL DO
 
           write (6,*) 'RTM variable copied over: ', trim(varname)
           call check_ret(nf90_put_var(ncido, varid, volr))
@@ -511,13 +563,11 @@ contains
                    call handle_error (ret)
                 end if
                 call check_ret(nf90_get_var(ncido, varid, rbufmlo))
-                !$OMP PARALLEL DO PRIVATE (n,k)
                 do n = 1, numpftso
                    do k = 1, numrad
                       if ( shr_infnan_isnan(rbufmlo(k,n)) ) rbufmlo(k,n) = spval
                    end do
                 end do
-                !$OMP END PARALLEL DO
                 call check_ret(nf90_put_var(ncido, varid, rbufmlo))
                 write (6,*) 'copied and cleaned variable with numrad dimension: ', trim(varname)
              else
@@ -535,13 +585,11 @@ contains
                    call handle_error (ret)
                 end if
                 call check_ret(nf90_get_var(ncido, varid, rbufmco))
-                !$OMP PARALLEL DO PRIVATE (n,k)
                 do n = 1, numpftso
                    do k = 1, nlevcan
                       if ( shr_infnan_isnan(rbufmco(k,n)) ) rbufmco(k,n) = spval
                    end do
                 end do
-                !$OMP END PARALLEL DO
                 call check_ret(nf90_put_var(ncido, varid, rbufmco))
                 write (6,*) 'copied and cleaned variable with levcan dimension: ', trim(varname)
              else
@@ -595,116 +643,145 @@ contains
   subroutine findMinDistPFTs( ncidi, ncido, pftindx )
 
     ! Find the PFT distances based on the column distances already calculated
+    !
+    ! Parallel structure (see PARALLEL_PLAN.md): rank 0 reads both meshes, the
+    ! input mesh is replicated on every rank, the output mesh is scattered,
+    ! each rank searches its own slice, and the indices are gathered back to
+    ! rank 0.  Output point "no" depends on no other output point, and the
+    ! inner loop order over the input mesh is unchanged, so the answers are
+    ! bit-for-bit identical to a serial run.
 
     use netcdf
+    use interpinic_mpi_utils, only : iam, npes, masterproc, interpinic_abort, &
+                               compute_bounds, bcast_r8_1d, bcast_int_1d, &
+                               scatterv_r8_1d, scatterv_int_1d, gatherv_int_1d
     implicit none
 
     ! ------------------------ arguments ---------------------------------
-    integer , intent(in)  :: ncidi              ! input netCdf id
-    integer , intent(in)  :: ncido              ! output netCDF id  
-    integer , intent(out) :: pftindx(:)         ! vector number
+    integer , intent(in)  :: ncidi              ! input netCdf id  (rank 0 only)
+    integer , intent(in)  :: ncido              ! output netCDF id (rank 0 only)
+    integer , intent(out) :: pftindx(:)         ! vector number (valid on rank 0)
     ! --------------------------------------------------------------------
 
     ! ------------------------ local variables --------------------------
-    real(r8), allocatable :: lati(:)         
-    real(r8), allocatable :: loni(:)         
-    real(r8), allocatable :: cos_lati(:)     
-    real(r8), allocatable :: lato(:)         
-    real(r8), allocatable :: lono(:)         
-    real(r8), allocatable :: cos_lato(:)     
+    ! Input mesh: replicated on every rank
+    real(r8), allocatable :: lati(:)
+    real(r8), allocatable :: loni(:)
+    real(r8), allocatable :: cos_lati(:)
     integer , allocatable :: ltypei(:)
-    integer , allocatable :: ltypeo(:)
     integer , allocatable :: vtypei(:)
-    integer , allocatable :: vtypeo(:)
     real(r8), allocatable :: wti(:)
+
+    ! Output mesh: full copy on rank 0 only, the scatter source
+    real(r8), allocatable :: lato_g(:)
+    real(r8), allocatable :: lono_g(:)
+    integer , allocatable :: ltypeo_g(:)
+    integer , allocatable :: vtypeo_g(:)
+    real(r8), allocatable :: wto_g(:)
+    logical , allocatable :: active(:)
+
+    ! Output mesh: this rank's slice
+    real(r8), allocatable :: lato(:)
+    real(r8), allocatable :: lono(:)
+    real(r8), allocatable :: cos_lato(:)
+    integer , allocatable :: ltypeo(:)
+    integer , allocatable :: vtypeo(:)
     real(r8), allocatable :: wto(:)
-    real(r8) :: dx,dy,distmin,dist    
+    integer , allocatable :: indx(:)
+
+    integer  :: counts(npes)       ! per-rank block sizes
+    integer  :: displs(npes)       ! per-rank block offsets, 0-based
+    real(r8) :: dx,dy,distmin,dist
     integer  :: n,no,nmin,ier
-    integer  :: ret                !NetCDF return code
+    integer  :: ng                 ! length of the rank-0 output arrays
+    integer  :: nloc               ! output points on this rank
+    integer  :: no_beg             ! global index of this rank's first point
     integer  :: varid              !netCDF variable id
     ! --------------------------------------------------------------------
     !
-    ! Distances for PFT's to output index no
+    ! Input mesh: read on rank 0, replicated everywhere
     !
     ier = 0
-    allocate (lati(numpfts), stat=ier)
-    if (ier /= 0) then
-       write(6,*) 'allocation error: lati'
-       call shr_sys_flush(6)
-       stop
-    end if
-    allocate (loni(numpfts), stat=ier)
-    if (ier /= 0) then
-       write(6,*) 'allocation error: loni'
-       call shr_sys_flush(6)
-       stop
-    end if
-    allocate (cos_lati(numpfts), stat=ier)
-    if (ier /= 0) then
-       write(6,*) 'allocation error: cos_lati'
-       call shr_sys_flush(6)
-       stop
-    end if
-    allocate (lato(numpftso), stat=ier)
-    if (ier /= 0) then
-       write(6,*) 'allocation error: lato'
-       call shr_sys_flush(6)
-       stop
-    end if
-    allocate (lono(numpftso), stat=ier)
-    if (ier /= 0) then
-       write(6,*) 'allocation error: lono'
-       call shr_sys_flush(6)
-       stop
-    end if
-    allocate (cos_lato(numpftso), stat=ier)
-    if (ier /= 0) then
-       write(6,*) 'allocation error: cos_lato'
-       call shr_sys_flush(6)
-       stop
+    allocate (lati(numpfts), loni(numpfts), cos_lati(numpfts), &
+              ltypei(numpfts), vtypei(numpfts), wti(numpfts), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistPFTs: allocation error, input mesh')
+
+    if (masterproc) then
+
+       call check_ret(nf90_inq_varid (ncidi, 'pfts1d_lon', varid))
+       call check_ret(nf90_get_var(ncidi, varid, loni))
+
+       call check_ret(nf90_inq_varid (ncidi, 'pfts1d_lat', varid))
+       call check_ret(nf90_get_var(ncidi, varid, lati))
+
+       call check_ret(nf90_inq_varid(ncidi, 'pfts1d_ityplun', varid))
+       call check_ret(nf90_get_var(ncidi, varid, ltypei))
+
+       call check_ret(nf90_inq_varid( ncidi, 'pfts1d_itypveg', varid))
+       call check_ret(nf90_get_var( ncidi, varid, vtypei))
+
+       call check_ret(nf90_inq_varid (ncidi, 'pfts1d_wtxy', varid))
+       call check_ret(nf90_get_var(ncidi, varid, wti))
+
     end if
 
-    allocate (ltypei(numpfts))
-    allocate (vtypei(numpfts))
-    allocate (wti   (numpfts))
-     
-    allocate (ltypeo(numpftso))
-    allocate (vtypeo(numpftso))
-    allocate (wto   (numpftso))
-    
-    ! input 
+    call bcast_r8_1d (loni)
+    call bcast_r8_1d (lati)
+    call bcast_int_1d(ltypei)
+    call bcast_int_1d(vtypei)
+    call bcast_r8_1d (wti)
+    !
+    ! Output mesh: read in full on rank 0, decompose on the output weights,
+    ! then scatter
+    !
+    ng = 0
+    if (masterproc) ng = numpftso
 
-    call check_ret(nf90_inq_varid (ncidi, 'pfts1d_lon', varid))
-    call check_ret(nf90_get_var(ncidi, varid, loni))
+    allocate (lato_g(ng), lono_g(ng), ltypeo_g(ng), vtypeo_g(ng), wto_g(ng), &
+              active(ng), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistPFTs: allocation error, output mesh')
 
-    call check_ret(nf90_inq_varid (ncidi, 'pfts1d_lat', varid))
-    call check_ret(nf90_get_var(ncidi, varid, lati))
+    if (masterproc) then
 
-    call check_ret(nf90_inq_varid(ncidi, 'pfts1d_ityplun', varid))
-    call check_ret(nf90_get_var(ncidi, varid, ltypei))
-    
-    call check_ret(nf90_inq_varid( ncidi, 'pfts1d_itypveg', varid))
-    call check_ret(nf90_get_var( ncidi, varid, vtypei))
-    
-    call check_ret(nf90_inq_varid (ncidi, 'pfts1d_wtxy', varid))
-    call check_ret(nf90_get_var(ncidi, varid, wti))
-    
-    ! output
+       call check_ret(nf90_inq_varid (ncido, 'pfts1d_lon', varid))
+       call check_ret(nf90_get_var(ncido, varid, lono_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'pfts1d_lon', varid))
-    call check_ret(nf90_get_var(ncido, varid, lono))
+       call check_ret(nf90_inq_varid (ncido, 'pfts1d_lat', varid))
+       call check_ret(nf90_get_var(ncido, varid, lato_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'pfts1d_lat', varid))
-    call check_ret(nf90_get_var(ncido, varid, lato))
+       call check_ret(nf90_inq_varid(ncido, 'pfts1d_ityplun', varid))
+       call check_ret(nf90_get_var(ncido, varid, ltypeo_g))
 
-    call check_ret(nf90_inq_varid(ncido, 'pfts1d_ityplun', varid))
-    call check_ret(nf90_get_var(ncido, varid, ltypeo))
-    
-    call check_ret(nf90_inq_varid( ncido, 'pfts1d_itypveg', varid))
-    call check_ret(nf90_get_var( ncido, varid, vtypeo))
-    
-    call check_ret(nf90_inq_varid (ncido, 'pfts1d_wtxy', varid))
-    call check_ret(nf90_get_var(ncido, varid, wto))
+       call check_ret(nf90_inq_varid( ncido, 'pfts1d_itypveg', varid))
+       call check_ret(nf90_get_var( ncido, varid, vtypeo_g))
+
+       call check_ret(nf90_inq_varid (ncido, 'pfts1d_wtxy', varid))
+       call check_ret(nf90_get_var(ncido, varid, wto_g))
+
+       do n = 1, numpftso
+          active(n) = (wto_g(n) > 0._r8)
+       end do
+
+    end if
+
+    call compute_bounds(numpftso, active, counts, displs)
+
+    nloc   = counts(iam+1)
+    no_beg = displs(iam+1) + 1
+
+    ! max(nloc,1) keeps a valid address for ranks handed an empty block
+    allocate (lato(max(nloc,1)), lono(max(nloc,1)), cos_lato(max(nloc,1)), &
+              ltypeo(max(nloc,1)), vtypeo(max(nloc,1)), wto(max(nloc,1)), &
+              indx(max(nloc,1)), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistPFTs: allocation error, local slice')
+
+    call scatterv_r8_1d (lato_g,   counts, displs, lato)
+    call scatterv_r8_1d (lono_g,   counts, displs, lono)
+    call scatterv_int_1d(ltypeo_g, counts, displs, ltypeo)
+    call scatterv_int_1d(vtypeo_g, counts, displs, vtypeo)
+    call scatterv_r8_1d (wto_g,    counts, displs, wto)
+
+    deallocate (lato_g, lono_g, ltypeo_g, vtypeo_g, wto_g, active)
 
     do n = 1, numpfts
        lati(n) = lati(n)*deg2rad
@@ -712,16 +789,16 @@ contains
        cos_lati(n) = cos(lati(n))
     end do
 
-    do n = 1, numpftso
+    do n = 1, nloc
        lato(n) = lato(n)*deg2rad
        lono(n) = lono(n)*deg2rad
        cos_lato(n) = cos(lato(n))
     end do
 
-    write(6,*)'numpftso = ',numpftso,' numpfts= ',numpfts
+    if (masterproc) write(6,*)'numpftso = ',numpftso,' numpfts= ',numpfts
     pftindx(:) = 0
-    !$OMP PARALLEL DO PRIVATE (no,n,nmin,distmin,dx,dy,dist)
-    do no = 1,numpftso
+    indx(:)    = 0
+    do no = 1,nloc
        if (wto(no)>0.) then 
 
           nmin    = 0
@@ -759,16 +836,17 @@ contains
                 end do
                 if ( distmin == spval )then
                    write(*,*) 'findMinDistPFTs: Can not find the closest pft: ',&
-                        ' no,ltypeo,vtypeo=', no,ltypeo(no),vtypeo(no)
-                   stop
+                        ' no,ltypeo,vtypeo=', no_beg+no-1,ltypeo(no),vtypeo(no)
+                   call interpinic_abort('findMinDistPFTs: no closest pft found')
                 end if
              end if
           end if
            
-          pftindx(no) = nmin
+          indx(no) = nmin
        end if  ! end if wto>0 block
     end do
-    !$OMP END PARALLEL DO
+
+    call gatherv_int_1d(indx, counts, displs, pftindx)
 
     deallocate (loni)
     deallocate (lono)
@@ -782,6 +860,7 @@ contains
     deallocate (ltypeo) 
     deallocate (vtypeo)
     deallocate (wto)   
+    deallocate (indx)
     
   end subroutine findMinDistPFTs
 
@@ -790,87 +869,142 @@ contains
   subroutine findMinDistCols( ncidi, ncido, colindx )
 
     ! Find the minimun column distances excluding columns of different type
+    !
+    ! Parallel structure as in findMinDistPFTs: input mesh replicated, output
+    ! mesh scattered, indices gathered back to rank 0.
 
     use netcdf
+    use interpinic_mpi_utils, only : iam, npes, masterproc, interpinic_abort, &
+                               compute_bounds, bcast_r8_1d, bcast_int_1d, &
+                               scatterv_r8_1d, scatterv_int_1d, gatherv_int_1d
     implicit none
 
     ! ------------------------ arguments ---------------------------------
-    integer , intent(in)  :: ncidi              ! input netCdf id
-    integer , intent(in)  :: ncido              ! output netCDF id  
-    integer , intent(out) :: colindx(:)         ! n = colindx(no) 
+    integer , intent(in)  :: ncidi              ! input netCdf id  (rank 0 only)
+    integer , intent(in)  :: ncido              ! output netCDF id (rank 0 only)
+    integer , intent(out) :: colindx(:)         ! n = colindx(no) (valid on rank 0)
     ! --------------------------------------------------------------------
 
     ! ------------------------ local variables --------------------------
-    real(r8), allocatable :: lati(:)         
-    real(r8), allocatable :: loni(:)         
-    real(r8), allocatable :: cos_lati(:)     
-    real(r8), allocatable :: lato(:)         
-    real(r8), allocatable :: lono(:)         
-    real(r8), allocatable :: cos_lato(:)     
+    ! Input mesh: replicated on every rank
+    real(r8), allocatable :: lati(:)
+    real(r8), allocatable :: loni(:)
+    real(r8), allocatable :: cos_lati(:)
     integer , allocatable :: typei(:)
-    integer , allocatable :: typeo(:)
     integer , allocatable :: typei_urb(:)
-    integer , allocatable :: typeo_urb(:)
     real(r8), allocatable :: wti(:)
+
+    ! Output mesh: full copy on rank 0 only, the scatter source
+    real(r8), allocatable :: lato_g(:)
+    real(r8), allocatable :: lono_g(:)
+    integer , allocatable :: typeo_g(:)
+    integer , allocatable :: typeo_urb_g(:)
+    real(r8), allocatable :: wto_g(:)
+    logical , allocatable :: active(:)
+
+    ! Output mesh: this rank's slice
+    real(r8), allocatable :: lato(:)
+    real(r8), allocatable :: lono(:)
+    real(r8), allocatable :: cos_lato(:)
+    integer , allocatable :: typeo(:)
+    integer , allocatable :: typeo_urb(:)
     real(r8), allocatable :: wto(:)
+    integer , allocatable :: indx(:)
+
+    integer  :: counts(npes)       ! per-rank block sizes
+    integer  :: displs(npes)       ! per-rank block offsets, 0-based
     real(r8) :: dx,dy,distmin,dist
-    integer  :: n,no,nmin
+    integer  :: n,no,nmin,ier
+    integer  :: ng                 ! length of the rank-0 output arrays
+    integer  :: nloc               ! output points on this rank
+    integer  :: no_beg             ! global index of this rank's first point
     integer  :: varid   
     logical  :: calcmin
-    integer  :: ret     
     ! --------------------------------------------------------------------
+    !
+    ! Input mesh: read on rank 0, replicated everywhere
+    !
+    ier = 0
+    allocate (lati(numcols), loni(numcols), cos_lati(numcols), &
+              typei(numcols), typei_urb(numcols), wti(numcols), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistCols: allocation error, input mesh')
 
-    allocate (lati(numcols))
-    allocate (lato(numcolso))
+    if (masterproc) then
 
-    allocate (loni(numcols))
-    allocate (lono(numcolso))
+       call check_ret(nf90_inq_varid (ncidi, 'cols1d_lon', varid))
+       call check_ret(nf90_get_var(ncidi, varid, loni))
 
-    allocate (typei_urb(numcols))
-    allocate (typeo_urb(numcolso))
+       call check_ret(nf90_inq_varid (ncidi, 'cols1d_lat', varid))
+       call check_ret(nf90_get_var(ncidi, varid, lati))
 
-    allocate (cos_lati(numcols))
-    allocate (cos_lato(numcolso))
+       call check_ret(nf90_inq_varid (ncidi, 'cols1d_ityplun', varid))
+       call check_ret(nf90_get_var(ncidi, varid, typei))
 
-    allocate (typei(numcols))
-    allocate (typeo(numcolso))
+       call check_ret(nf90_inq_varid (ncidi, 'cols1d_wtxy', varid))
+       call check_ret(nf90_get_var(ncidi, varid, wti))
 
-    allocate (wti(numcols))
-    allocate (wto(numcolso))
+       call check_ret(nf90_inq_varid( ncidi, 'cols1d_ityp', varid ) )
+       call check_ret(nf90_get_var(ncidi, varid, typei_urb))
 
-    ! input
+    end if
 
-    call check_ret(nf90_inq_varid (ncidi, 'cols1d_lon', varid))
-    call check_ret(nf90_get_var(ncidi, varid, loni))
+    call bcast_r8_1d (loni)
+    call bcast_r8_1d (lati)
+    call bcast_int_1d(typei)
+    call bcast_r8_1d (wti)
+    call bcast_int_1d(typei_urb)
+    !
+    ! Output mesh: read in full on rank 0, decompose on the output weights,
+    ! then scatter
+    !
+    ng = 0
+    if (masterproc) ng = numcolso
 
-    call check_ret(nf90_inq_varid (ncidi, 'cols1d_lat', varid))
-    call check_ret(nf90_get_var(ncidi, varid, lati))
+    allocate (lato_g(ng), lono_g(ng), typeo_g(ng), typeo_urb_g(ng), wto_g(ng), &
+              active(ng), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistCols: allocation error, output mesh')
 
-    call check_ret(nf90_inq_varid (ncidi, 'cols1d_ityplun', varid))
-    call check_ret(nf90_get_var(ncidi, varid, typei))
+    if (masterproc) then
 
-    call check_ret(nf90_inq_varid (ncidi, 'cols1d_wtxy', varid))
-    call check_ret(nf90_get_var(ncidi, varid, wti))
+       call check_ret(nf90_inq_varid (ncido, 'cols1d_lon', varid))
+       call check_ret(nf90_get_var(ncido, varid, lono_g))
 
-    call check_ret(nf90_inq_varid( ncidi, 'cols1d_ityp', varid ) )
-    call check_ret(nf90_get_var(ncidi, varid, typei_urb))
+       call check_ret(nf90_inq_varid (ncido, 'cols1d_lat', varid))
+       call check_ret(nf90_get_var(ncido, varid, lato_g))
 
-    ! output
+       call check_ret(nf90_inq_varid (ncido, 'cols1d_ityplun', varid))
+       call check_ret(nf90_get_var(ncido, varid, typeo_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'cols1d_lon', varid))
-    call check_ret(nf90_get_var(ncido, varid, lono))
+       call check_ret(nf90_inq_varid (ncido, 'cols1d_wtxy', varid))
+       call check_ret(nf90_get_var(ncido, varid, wto_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'cols1d_lat', varid))
-    call check_ret(nf90_get_var(ncido, varid, lato))
+       call check_ret(nf90_inq_varid( ncido, 'cols1d_ityp', varid ))
+       call check_ret(nf90_get_var(ncido, varid, typeo_urb_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'cols1d_ityplun', varid))
-    call check_ret(nf90_get_var(ncido, varid, typeo))
+       do n = 1, numcolso
+          active(n) = (wto_g(n) > 0._r8)
+       end do
 
-    call check_ret(nf90_inq_varid (ncido, 'cols1d_wtxy', varid))
-    call check_ret(nf90_get_var(ncido, varid, wto))
+    end if
 
-    call check_ret(nf90_inq_varid( ncido, 'cols1d_ityp', varid ))
-    call check_ret(nf90_get_var(ncido, varid, typeo_urb))
+    call compute_bounds(numcolso, active, counts, displs)
+
+    nloc   = counts(iam+1)
+    no_beg = displs(iam+1) + 1
+
+    ! max(nloc,1) keeps a valid address for ranks handed an empty block
+    allocate (lato(max(nloc,1)), lono(max(nloc,1)), cos_lato(max(nloc,1)), &
+              typeo(max(nloc,1)), typeo_urb(max(nloc,1)), wto(max(nloc,1)), &
+              indx(max(nloc,1)), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistCols: allocation error, local slice')
+
+    call scatterv_r8_1d (lato_g,      counts, displs, lato)
+    call scatterv_r8_1d (lono_g,      counts, displs, lono)
+    call scatterv_int_1d(typeo_g,     counts, displs, typeo)
+    call scatterv_int_1d(typeo_urb_g, counts, displs, typeo_urb)
+    call scatterv_r8_1d (wto_g,       counts, displs, wto)
+
+    deallocate (lato_g, lono_g, typeo_g, typeo_urb_g, wto_g, active)
 
     do n = 1, numcols
        lati(n) = lati(n)*deg2rad
@@ -878,16 +1012,16 @@ contains
        cos_lati(n) = cos(lati(n))
     end do
 
-    do n = 1, numcolso
+    do n = 1, nloc
        lato(n) = lato(n)*deg2rad
        lono(n) = lono(n)*deg2rad
        cos_lato(n) = cos(lato(n))
     end do
 
-    write(6,*)'numcolso = ',numcolso
+    if (masterproc) write(6,*)'numcolso = ',numcolso
     colindx(:) = 0
-    !$OMP PARALLEL DO PRIVATE (no,n,nmin,distmin,dx,dy,dist,calcmin)
-    do no = 1,numcolso
+    indx(:)    = 0
+    do no = 1,nloc
 
        if (wto(no) > 0.) then
 
@@ -930,17 +1064,18 @@ contains
                 end do
                 if (distmin == spval) then
                    write(*,*) 'findMinDistCols: Can not find the closest column: no,typeo=',&
-                        no,typeo(no)
-                   stop
+                        no_beg+no-1,typeo(no)
+                   call interpinic_abort('findMinDistCols: no closest column found')
                 end if
              end if
           end if
              
           ! Determine input column index (nmin) for the given output no value
-          colindx(no) = nmin
+          indx(no) = nmin
        end if
     end do
-    !$OMP END PARALLEL DO
+
+    call gatherv_int_1d(indx, counts, displs, colindx)
 
     deallocate (lati)
     deallocate (lato)
@@ -952,8 +1087,9 @@ contains
     deallocate (typeo)
     deallocate (wti)
     deallocate (wto)
-    deallocate(typei_urb)
-    deallocate(typeo_urb)
+    deallocate (typei_urb)
+    deallocate (typeo_urb)
+    deallocate (indx)
 
   end subroutine findMinDistCols
 
@@ -962,91 +1098,144 @@ contains
   subroutine findMinDistLDUs( ncidi, ncido, lduindx)
 
     ! Find the minimun column distances excluding columns of different type
+    !
+    ! Parallel structure as in findMinDistPFTs: input mesh replicated, output
+    ! mesh scattered, indices gathered back to rank 0.
 
     use netcdf
+    use interpinic_mpi_utils, only : iam, npes, masterproc, interpinic_abort, &
+                               compute_bounds, bcast_r8_1d, bcast_int_1d, &
+                               scatterv_r8_1d, scatterv_int_1d, gatherv_int_1d
     implicit none
 
     ! ------------------------ arguments ---------------------------------
-    integer , intent(in)  :: ncidi              ! input netCdf id
-    integer , intent(in)  :: ncido              ! output netCDF id  
-    integer , intent(out) :: lduindx(:)
+    integer , intent(in)  :: ncidi              ! input netCdf id  (rank 0 only)
+    integer , intent(in)  :: ncido              ! output netCDF id (rank 0 only)
+    integer , intent(out) :: lduindx(:)         ! valid on rank 0
     ! --------------------------------------------------------------------
 
     ! ------------------------ local variables --------------------------
-    real(r8), allocatable :: lati(:)         
-    real(r8), allocatable :: loni(:)         
-    real(r8), allocatable :: cos_lati(:)     
-    real(r8), allocatable :: lato(:)         
-    real(r8), allocatable :: lono(:)         
-    real(r8), allocatable :: cos_lato(:)     
+    ! Input mesh: replicated on every rank
+    real(r8), allocatable :: lati(:)
+    real(r8), allocatable :: loni(:)
+    real(r8), allocatable :: cos_lati(:)
     integer , allocatable :: typei(:)
-    integer , allocatable :: typeo(:)
     real(r8), allocatable :: wti(:)
+
+    ! Output mesh: full copy on rank 0 only, the scatter source
+    real(r8), allocatable :: lato_g(:)
+    real(r8), allocatable :: lono_g(:)
+    integer , allocatable :: typeo_g(:)
+    real(r8), allocatable :: wto_g(:)
+    logical , allocatable :: active(:)
+
+    ! Output mesh: this rank's slice
+    real(r8), allocatable :: lato(:)
+    real(r8), allocatable :: lono(:)
+    real(r8), allocatable :: cos_lato(:)
+    integer , allocatable :: typeo(:)
     real(r8), allocatable :: wto(:)
+    integer , allocatable :: indx(:)
+
+    integer  :: counts(npes)       ! per-rank block sizes
+    integer  :: displs(npes)       ! per-rank block offsets, 0-based
     real(r8) :: dx,dy,distmin,dist
-    integer  :: n,no,nmin
+    integer  :: n,no,nmin,ier
+    integer  :: ng                 ! length of the rank-0 output arrays
+    integer  :: nloc               ! output points on this rank
+    integer  :: no_beg             ! global index of this rank's first point
     integer  :: varid              
-    integer  :: ret                
     ! --------------------------------------------------------------------
+    !
+    ! Input mesh: read on rank 0, replicated everywhere
+    !
+    ier = 0
+    allocate (loni(numldus), lati(numldus), cos_lati(numldus), &
+              typei(numldus), wti(numldus), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistLDUs: allocation error, input mesh')
 
-    allocate (loni(numldus))
-    allocate (lono(numlduso))
+    if (masterproc) then
 
-    allocate (lati(numldus))
-    allocate (lato(numlduso))
+       call check_ret(nf90_inq_varid (ncidi, 'land1d_lon', varid))
+       call check_ret(nf90_get_var (ncidi, varid, loni))
 
-    allocate (cos_lati(numldus))
-    allocate (cos_lato(numlduso))
+       call check_ret(nf90_inq_varid (ncidi, 'land1d_lat', varid))
+       call check_ret(nf90_get_var (ncidi, varid, lati))
 
-    allocate (typei(numldus))
-    allocate (typeo(numlduso))
+       call check_ret(nf90_inq_varid( ncidi, 'land1d_ityplun', varid))
+       call check_ret(nf90_get_var( ncidi, varid, typei))
 
-    allocate (wti(numldus))
-    allocate (wto(numlduso))
-    
-    ! input
+       call check_ret(nf90_inq_varid( ncidi, 'land1d_wtxy', varid))
+       call check_ret(nf90_get_var( ncidi, varid, wti))
 
-    call check_ret(nf90_inq_varid (ncidi, 'land1d_lon', varid))
-    call check_ret(nf90_get_var (ncidi, varid, loni))
+    end if
 
-    call check_ret(nf90_inq_varid (ncidi, 'land1d_lat', varid))
-    call check_ret(nf90_get_var (ncidi, varid, lati))
+    call bcast_r8_1d (loni)
+    call bcast_r8_1d (lati)
+    call bcast_int_1d(typei)
+    call bcast_r8_1d (wti)
+    !
+    ! Output mesh: read in full on rank 0, decompose on the output weights,
+    ! then scatter
+    !
+    ng = 0
+    if (masterproc) ng = numlduso
 
-    call check_ret(nf90_inq_varid( ncidi, 'land1d_ityplun', varid))
-    call check_ret(nf90_get_var( ncidi, varid, typei))
+    allocate (lato_g(ng), lono_g(ng), typeo_g(ng), wto_g(ng), active(ng), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistLDUs: allocation error, output mesh')
 
-    call check_ret(nf90_inq_varid( ncidi, 'land1d_wtxy', varid))
-    call check_ret(nf90_get_var( ncidi, varid, wti))
+    if (masterproc) then
 
-    ! output
+       call check_ret(nf90_inq_varid (ncido, 'land1d_lon', varid))
+       call check_ret(nf90_get_var (ncido, varid, lono_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'land1d_lon', varid))
-    call check_ret(nf90_get_var (ncido, varid, lono))
+       call check_ret(nf90_inq_varid (ncido, 'land1d_lat', varid))
+       call check_ret(nf90_get_var (ncido, varid, lato_g))
 
-    call check_ret(nf90_inq_varid (ncido, 'land1d_lat', varid))
-    call check_ret(nf90_get_var (ncido, varid, lato))
+       call check_ret(nf90_inq_varid( ncido, 'land1d_ityplun', varid))
+       call check_ret(nf90_get_var( ncido, varid, typeo_g))
 
-    call check_ret(nf90_inq_varid( ncido, 'land1d_ityplun', varid))
-    call check_ret(nf90_get_var( ncido, varid, typeo))
+       call check_ret(nf90_inq_varid( ncido, 'land1d_wtxy', varid))
+       call check_ret(nf90_get_var( ncido, varid, wto_g))
 
-    call check_ret(nf90_inq_varid( ncido, 'land1d_wtxy', varid))
-    call check_ret(nf90_get_var( ncido, varid, wto))
-    
+       do n = 1, numlduso
+          active(n) = (wto_g(n) > 0._r8)
+       end do
+
+    end if
+
+    call compute_bounds(numlduso, active, counts, displs)
+
+    nloc   = counts(iam+1)
+    no_beg = displs(iam+1) + 1
+
+    ! max(nloc,1) keeps a valid address for ranks handed an empty block
+    allocate (lato(max(nloc,1)), lono(max(nloc,1)), cos_lato(max(nloc,1)), &
+              typeo(max(nloc,1)), wto(max(nloc,1)), indx(max(nloc,1)), stat=ier)
+    if (ier /= 0) call interpinic_abort('findMinDistLDUs: allocation error, local slice')
+
+    call scatterv_r8_1d (lato_g,  counts, displs, lato)
+    call scatterv_r8_1d (lono_g,  counts, displs, lono)
+    call scatterv_int_1d(typeo_g, counts, displs, typeo)
+    call scatterv_r8_1d (wto_g,   counts, displs, wto)
+
+    deallocate (lato_g, lono_g, typeo_g, wto_g, active)
+
     do n = 1, numldus
        lati(n) = lati(n)*deg2rad
        loni(n) = loni(n)*deg2rad
        cos_lati(n) = cos(lati(n))
     end do
 
-    do n = 1, numlduso
+    do n = 1, nloc
        lato(n) = lato(n)*deg2rad
        lono(n) = lono(n)*deg2rad
        cos_lato(n) = cos(lato(n))
     end do
 
     lduindx(:) = 0
-    !$OMP PARALLEL DO PRIVATE (no,n,nmin,distmin,dx,dy,dist)
-    do no = 1,numlduso
+    indx(:)    = 0
+    do no = 1,nloc
 
        if (wto(no) > 0.) then
           distmin = spval
@@ -1081,16 +1270,17 @@ contains
              end if ! end temporary code
              if ( distmin == spval )then
                 write(*,*) 'findMinDistLDUs: Can not find the closest landunit: ',&
-                     'no,typeo=', no,typeo(no)
-                stop
+                     'no,typeo=', no_beg+no-1,typeo(no)
+                call interpinic_abort('findMinDistLDUs: no closest landunit found')
              end if
           end if
           
-          lduindx(no) = nmin
+          indx(no) = nmin
        end if
 
     end do
-    !$OMP END PARALLEL DO
+
+    call gatherv_int_1d(indx, counts, displs, lduindx)
 
     deallocate (loni)
     deallocate (lono)
@@ -1098,10 +1288,11 @@ contains
     deallocate (lato)
     deallocate (cos_lati)
     deallocate (cos_lato)
-    deallocate(typei)
-    deallocate(typeo)
-    deallocate(wti)
-    deallocate(wto)
+    deallocate (typei)
+    deallocate (typeo)
+    deallocate (wti)
+    deallocate (wto)
+    deallocate (indx)
 
   end subroutine findMinDistLDUs
 
@@ -1534,10 +1725,6 @@ contains
     character(len=16)   :: hostname
     character(len=256)  :: str
     character(len=16000) :: hist
-#ifdef _OPENMP
-    external :: OMP_GET_MAX_THREADS
-    integer :: OMP_GET_MAX_THREADS
-#endif
     !-----------------------------------------------------------------------
 
     call date_and_time (date, time, zone, values)
@@ -1583,15 +1770,11 @@ contains
     ret = nf_put_att_text (ncid, nf_global, 'interpinic_version_Id', numchars, revision_id)
     if (ret/=NF_NOERR) call handle_error (ret)
 
-#ifdef _OPENMP
-    str = 'OMP_NUM_THREADS'
-    ret = nf_put_att_int (ncid, nf_global, str, NF_INT, 1, &
-                   OMP_GET_MAX_THREADS() )
-    if (ret/=NF_NOERR) call handle_error (ret)
-    str = 'TRUE'
-#else
+    ! interpinic is MPI-only; the OpenMP directives it used to carry were never
+    ! compiled by any build in use (Makefile.common has no gfortran branch under
+    ! SMP=TRUE) and have been removed.  The attribute itself is kept, and kept
+    ! at 'FALSE', so output files stay comparable with those of earlier builds.
     str = 'FALSE'
-#endif
     numchars = len_trim (str)
     ret = nf_put_att_text (ncid, nf_global, 'OpenMP', numchars, str)
     if (ret/=NF_NOERR) call handle_error (ret)

@@ -8,7 +8,8 @@
 # INC_NETCDF --- Include directory location of netcdf. (defaults to /usr/local/include)
 # MOD_NETCDF --- Module directory location of netcdf.  (defaults to $LIB_NETCDF)
 # USER_FC ------ Allow user to override the default Fortran compiler specified in Makefile.
-# USER_FCTYP --- Allow user to override the default type of Fortran compiler (linux and USER_FC=ftn only).
+# USER_FCTYP --- Allow user to override the type of Fortran compiler that FFLAGS are
+#                selected from. Needed when USER_FC is an MPI wrapper (mpif90) or ftn.
 # USER_CC ------ Allow user to override the default C compiler specified in Makefile (linux only).
 # USER_LINKER -- Allow user to override the default linker specified in Makefile.
 # USER_CPPDEFS - Additional CPP defines.
@@ -17,7 +18,20 @@
 # USER_LDLAGS -- Additional load flags that the user wishes to set.
 # SMP ---------- Shared memory Multi-processing (TRUE or FALSE) [default is FALSE]
 # OPT ---------- Use optimized options.
+# MPI ---------- Build the MPI-parallel search (TRUE or FALSE) [default is FALSE].
+#                Set USER_FC to the MPI wrapper as well, e.g.
+#                   gmake MPI=TRUE USER_FC=mpif90 USER_FCTYP=gfortran
 #
+# NOTE: this copy of Makefile.common has diverged from the ones under
+#       mkmapgrids/ and mkprocdata_map/, which were byte-identical to it.
+#       interpinic is the only one of the three that builds with MPI.  Two of
+#       the changes below are bug fixes those copies also want:
+#         - compiler flags are now selected on FCTYP rather than FC, so that
+#           FC can be an MPI wrapper whose name says nothing about the
+#           underlying compiler (with FC=mpif90 the Darwin branch used to
+#           match no compiler at all and produce an EMPTY FFLAGS -- not even
+#           -c -- while Linux silently dropped optimization);
+#         - USER_CPPDEFS is no longer discarded when OPT=TRUE.
 #------------------------------------------------------------------------
 
 # Set up special characters
@@ -56,6 +70,11 @@ ifeq ($(SMP),$(null))
   SMP := FALSE
 endif
 
+# Set if the MPI-parallel search will be built
+ifeq ($(MPI),$(null))
+  MPI := FALSE
+endif
+
 CPPDEF := $(USER_CPPDEFS)
 
 # Set optimization on by default
@@ -64,7 +83,11 @@ ifeq ($(OPT),$(null))
 endif
 
 ifeq ($(OPT),TRUE)
-  CPPDEF := -DOPT
+  CPPDEF += -DOPT
+endif
+
+ifeq ($(MPI),TRUE)
+  CPPDEF += -DHAVE_MPI
 endif
 
 # Determine platform 
@@ -148,11 +171,20 @@ ifeq ($(USER_CC),$(null))
   CC := gcc
 endif
 
+# Which set of compiler flags to use.  Kept separate from FC so that FC can be
+# an MPI wrapper (mpif90, mpifort) whose name says nothing about the compiler
+# underneath it.  Defaults to FC, which preserves the previous behaviour.
+ifneq ($(USER_FCTYP),$(null))
+  FCTYP := $(USER_FCTYP)
+else
+  FCTYP := $(FC)
+endif
+
 CFLAGS  := -g -O2
 CPPDEF  += -DSYSDARWIN -DDarwin -DLINUX
 LDFLAGS :=
 
-ifeq ($(FC),g95)
+ifeq ($(FCTYP),g95)
 
    CPPDEF   += -DG95
    FFLAGS   := -c -fno-second-underscore $(CPPDEF) $(cpp_path) -I$(MOD_NETCDF)
@@ -164,7 +196,7 @@ ifeq ($(FC),g95)
 
 endif
 
-ifeq ($(FC),gfortran)
+ifeq ($(FCTYP),gfortran)
 
    CPPDEF   += -DG95
    FFLAGS   := -c -fno-second-underscore $(CPPDEF) $(cpp_path) -I$(MOD_NETCDF) \
@@ -177,7 +209,7 @@ ifeq ($(FC),gfortran)
 
 endif
 
-ifeq ($(FC),ifort)
+ifeq ($(FCTYP),ifort)
 
   CPPDEF  += -DFORTRANUNDERSCORE
   FFLAGS  += -c -ftz -g -fp-model precise $(CPPDEF) $(cpp_path) \
@@ -195,7 +227,7 @@ ifeq ($(FC),ifort)
   endif
 endif
 
-ifeq ($(FC),pgf90)
+ifeq ($(FCTYP),pgf90)
 
   CPPDEF  += -DFORTRANUNDERSCORE
   FFLAGS  += -c $(CPPDEF) $(cpp_path)
@@ -235,15 +267,15 @@ ifeq ($(UNAMES),Linux)
   ifeq ($(USER_FC),$(null))
     FC    := ifort
     FCTYP   := ifort
-  else 
-  ifeq ($(USER_FC),ftn)
-      ifneq ($(USER_FCTYP),$(null))
-         FCTYP := $(USER_FCTYP)
-      else
-         FCTYP := pgf90
-      endif
+  else
+    ifneq ($(USER_FCTYP),$(null))
+      FCTYP := $(USER_FCTYP)
     else
-      FCTYP := $(USER_FC)
+      ifeq ($(USER_FC),ftn)
+        FCTYP := pgf90
+      else
+        FCTYP := $(USER_FC)
+      endif
     endif
   endif
   CPPDEF += -DLINUX -DFORTRANUNDERSCORE
@@ -295,6 +327,16 @@ ifeq ($(UNAMES),Linux)
       LDFLAGS  += -mp
     endif
   endif
+  ifeq ($(FCTYP),gfortran)
+    CC     := gcc
+    FFLAGS += -fno-second-underscore -fno-range-check
+    ifneq ($(OPT),TRUE)
+      FFLAGS += -g -fbounds-check
+    else
+      FFLAGS += -O2
+    endif
+  endif
+
   ifeq ($(FCTYP),ifort)
 
     FFLAGS      += -ftz -g -fp-model precise -convert big_endian -assume byterecl -traceback -FR
