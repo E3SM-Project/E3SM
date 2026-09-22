@@ -39,9 +39,8 @@ string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
 string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
 
-if (COMP_NAME STREQUAL gcam)
-  string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-relax")
-  string(APPEND CMAKE_Fortran_FLAGS " -mcmodel=medium")
-  string(APPEND CMAKE_C_FLAGS " -mcmodel=medium")
-  string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
+string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -fpe0 -init=snan,arrays")
+if (COMP_NAME STREQUAL cice)
+  string(APPEND CMAKE_Fortran_FLAGS_DEBUG " -init=nosnan,arrays")
 endif()
+
