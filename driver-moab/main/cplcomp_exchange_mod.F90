@@ -431,7 +431,11 @@ subroutine  copy_aream_from_area(mbappid)
          call moab_register_app(appname, mpicom_new, id_join, mbaxid, subname)
          !!!!  FULL ATM
          if (mb_scm_atm) then
-            call cplcomp_moab_create_scm_point_cloud(mbaxid, mpicom_new, scm_nx, scm_ny, scmlat, scmlon, subname)
+if (single_column .and. .not. scm_multcols) then
+               call cplcomp_moab_create_scm_point_cloud(mbaxid, mpicom_new, 1, 1, scmlat, scmlon, subname)
+            else
+               call cplcomp_moab_create_scm_point_cloud(mbaxid, mpicom_new, scm_nx, scm_ny, scmlat, scmlon, subname)
+            endif
             if (seq_comm_iamroot(CPLID)) &
                write(logunit,*) subname,'SCM atmosphere coupler point cloud size = ',scm_nx*scm_ny
          else if (trim(atm_mesh) == 'none') then ! full atm
