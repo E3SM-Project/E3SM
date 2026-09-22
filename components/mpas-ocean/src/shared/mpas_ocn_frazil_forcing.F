@@ -712,16 +712,6 @@ contains
               ! salt is released into ocean with the melting frazil
               frazilSalinityTendency(k,iCell) = + meltedThicknessWeightedSaltContent/ dt
 
-              ! NJ: Non-conservative formulation
-              ! ocean fluid temperature is cooled due to melting of frazil
-              !frazilTemperatureTendency(k,iCell) = - ( meltedFrazilIceThickness * config_frazil_heat_of_fusion &
-              !                                   * config_frazil_ice_density ) / (config_specific_heat_sea_water * rho_sw) &
-              !                                   / dt
-              !
-              ! ocean fluid temperature is modified due to mixing of existing water with meltwater at the freezing point
-              !frazilTemperatureTendency(k,iCell) = frazilTemperatureTendency(k,iCell) + &
-              !     meltedFrazilIceThickness * oceanFreezingTemperature / dt
-
               frazilTemperatureTendency(k,iCell) = - meltedFrazilEnergy / (rho_sw * config_specific_heat_sea_water) / dt
 
               ! keep track of new frazil ice
