@@ -80,7 +80,11 @@ private:
   int_view_2d isprx_;
 
   // TODO: Following variables are from convective parameterization (not
-  // implemented yet in EAMxx), so should be zero for now
+  // implemented yet in EAMxx), so should be zero for now.
+  // NOTE: rprddp, icwmrdp, and evapcdp are no longer member variables;
+  // when do_convproc_ is true they alias FM views directly to avoid
+  // redundant copies.  When false, the zero-initialized member views below
+  // serve as placeholders.
 
   view_2d sh_frac_;
 
@@ -90,19 +94,17 @@ private:
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
   view_2d evapcsh_;
 
-  view_2d evapcdp_;
-
   // Rain production, shallow convection [kg/kg/s]
   view_2d rprdsh_;
 
-  // Rain production, deep convection [kg/kg/s]
-  view_2d rprddp_;
-
-  // In cloud water mixing ratio, deep convection
-  view_2d icwmrdp_;
-
   // In cloud water mixing ratio, shallow convection
   view_2d icwmrsh_;
+
+  // Deep convection zero-placeholder views (only allocated when !do_convproc_).
+  // When do_convproc_ is true, run_impl aliases FM views directly instead.
+  view_2d rprddp_zero_;
+  view_2d icwmrdp_zero_;
+  view_2d evapcdp_zero_;
 
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
