@@ -103,6 +103,10 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_mflx_dn",           scalar3d_mid, kg/m2/s,grid_name, pack_size);
   add_field<Computed>("zm_entr_dn",           scalar3d_mid, 1/s,    grid_name, pack_size);
 
+  // Fields needed by MAM wetscav for aerosol convective processing
+  add_field<Computed>("zm_rain_prod",          scalar3d_mid, kg/kg/s,grid_name, pack_size);  // rain production rate (rprddp)
+  add_field<Computed>("zm_ql",                 scalar3d_mid, kg/kg,  grid_name, pack_size);  // in-cloud liquid water (icwmrdp)
+
   add_field<Computed>("mcsp_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("mcsp_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("mcsp_du_out",          scalar3d_mid, m/s/s,  grid_name, pack_size);
@@ -608,6 +612,19 @@ void ZMDeepConvection::run_impl (const double dt)
     detr_up(i,k) = loc_zm_output_detr_up(i,k);
     mflx_dn(i,k) = loc_zm_output_mflx_dn(i,k);
     entr_dn(i,k) = loc_zm_output_entr_dn(i,k);
+  });
+
+  // 3D mid-level output for MAM wetscav coupling
+  const auto& zm_rain_prod_out = get_field_out("zm_rain_prod").get_view<Real**>();
+  const auto& zm_ql_out        = get_field_out("zm_ql").get_view<Real**>();
+  Kokkos::parallel_for("zm_aerosol_coupling_outputs",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    // rain production rate (rprddp in EAM Fortran)
+    zm_rain_prod_out(i,k) = loc_zm_output_rain_prod(i,k);
+    // in-cloud liquid water mixing ratio (icwmrdp in EAM Fortran)
+    zm_ql_out(i,k)        = loc_zm_output_ql(i,k);
   });
 
   // 3D interface output
