@@ -749,22 +749,21 @@ contains
             s = 0.0_RKIND
             call mpas_log_write('HEAT FLUXES: explicit')
             call mpas_log_write('MPAS-Ocean name            W (raw sum)    coupler name    short name         W/m^2 (flux/A)')
-!v=accumulatedFrazilHeatFlux          ; write(m,"('frazilMass * LHF /dt     ',es16.8,' o2x_Fioo_q      hfreeze         ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
 v=accumulatedFrazilHeatFlux          ; write(m,"('frazilMass * LHF /dt     ',es16.8,' o2x_Fioo_frazilh hfreeze         ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedSeaIceHeatFlux          ; write(m,"('seaIceHeatFlux           ',es16.8,' x2o_Fioi_melth  hmelt           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedShortWaveHeatFlux       ; write(m,"('shortWaveHeatFlux        ',es16.8,' x2o_Foxx_swnet  hnetsw          ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedLongWaveHeatFluxDown    ; write(m,"('longWaveHeatFluxDown     ',es16.8,' x2o_Faxa_lwdn   hlwdn           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedLongWaveHeatFluxUp      ; write(m,"('longWaveHeatFluxUp       ',es16.8,' x2o_Foxx_lwup   hlwup           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedLatentHeatFlux          ; write(m,"('latentHeatFlux           ',es16.8,' x2o_Foxx_lat    hlatvap         ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedMeltingSnowHeatFlux     ; write(m,"('snowFlux * LHF           ',es16.8,'                 hlatfus         ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedMeltingIceRunoffHeatFlux; write(m,"('iceRunoffFlux * LHF      ',es16.8,'                 hiroff          ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedSeaIceHeatFlux          ; write(m,"('seaIceHeatFlux           ',es16.8,' x2o_Fioi_melth   hmelt           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedShortWaveHeatFlux       ; write(m,"('shortWaveHeatFlux        ',es16.8,' x2o_Foxx_swnet   hnetsw          ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedLongWaveHeatFluxDown    ; write(m,"('longWaveHeatFluxDown     ',es16.8,' x2o_Faxa_lwdn    hlwdn           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedLongWaveHeatFluxUp      ; write(m,"('longWaveHeatFluxUp       ',es16.8,' x2o_Foxx_lwup    hlwup           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedLatentHeatFlux          ; write(m,"('latentHeatFlux           ',es16.8,' x2o_Foxx_lat     hlatvap         ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedMeltingSnowHeatFlux     ; write(m,"('snowFlux * LHF           ',es16.8,'                  hlatfus         ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedMeltingIceRunoffHeatFlux; write(m,"('iceRunoffFlux * LHF      ',es16.8,'                  hiroff          ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
             if (landIceFreshwaterFluxesOn) then
-v=accumulatedRemovedIceRunoffHeatFlux; write(m,"('removedIceRunoffFlux *LHF',es16.8,'                 hiroff                          ',f16.8)") v,v/A; call mpas_log_write(m);
+v=accumulatedRemovedIceRunoffHeatFlux; write(m,"('removedIceRunoffFlux *LHF',es16.8,'                  hiroff                          ',f16.8)") v,v/A; call mpas_log_write(m);
 v=accumulatedMeltingIceRunoffHeatFlux+accumulatedRemovedIceRunoffHeatFlux
-                                       write(m,"('      SUM: ice runoff*LHF',es16.8,'                 hiroff SUM                      ',f16.8)") v,v/A; call mpas_log_write(m)
+                                       write(m,"('      SUM: ice runoff*LHF',es16.8,'                  hiroff SUM                      ',f16.8)") v,v/A; call mpas_log_write(m)
             endif
-v=accumulatedSensibleHeatFlux        ; write(m,"('sensibleHeatFlux         ',es16.8,' x2o_Foxx_sen    hsen            ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
-v=accumulatedIcebergHeatFlux         ; write(m,"('icebergHeatFlux          ',es16.8,' x2o_Fioi_bergh  hberg           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedSensibleHeatFlux        ; write(m,"('sensibleHeatFlux         ',es16.8,' x2o_Foxx_sen     hsen            ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
+v=accumulatedIcebergHeatFlux         ; write(m,"('icebergHeatFlux          ',es16.8,' x2o_Fioi_bergh   hberg           ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
             if (landIceFreshwaterFluxesOn) then
 v=accumulatedLandIceHeatFlux         ; write(m,"('landIceHeatFlux          ',es16.8,'                                 ',f16.8)") v,v/A; call mpas_log_write(m); s=s+v
             end if
@@ -1117,7 +1116,7 @@ v=accumulatedIcebergTemperatureFlux*rho_sw*cp_sw; write(m,"('IcebergTemperatureF
             c = 1.0e6_RKIND/A
             call mpas_log_write('MASS FLUXES')
             call mpas_log_write('MPAS-Ocean name          kg/s (F)       coupler name     short name     kg/m^2/s*1e6 (F/A)')
-v=accumulatedFrazilFlux            ; write(m,"('frazilFreshwaterFlux   ',es16.8,' o2x_Fioo_frazil  wfreeze        ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
+v=accumulatedFrazilFlux            ; write(m,"('frazilFreshwaterFlux   ',es16.8,' o2x_Fioo_frazilm wfreeze        ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
 v=accumulatedSeaIceFlux            ; write(m,"('seaIceFreshwaterFlux   ',es16.8,' x2o_Fioi_meltw   wmelt          ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
 v=accumulatedRainFlux              ; write(m,"('rainFlux               ',es16.8,' x2o_Faxa_rain    wrain          ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v
 v=accumulatedSnowFlux              ; write(m,"('snowFlux               ',es16.8,' x2o_Faxa_snow    wsnow          ',f16.8)") v,v*c; call mpas_log_write(m); s=s+v

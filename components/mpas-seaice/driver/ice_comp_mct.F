@@ -2051,9 +2051,9 @@ contains
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
 !    o  q        -- ocn frazil heat flux(+) / melt potential(-)
-!    o  frazil   -- ocn frazil mass flux
+!    o  frazilm  -- ocn frazil mass flux
 !    o  frazils  -- ocn frazil salt flux
-!    o  frazilh  -- ocn frazil enthalpy flux (+)
+!    o  frazilh  -- ocn frazil energy flux (+)
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
@@ -2400,7 +2400,7 @@ contains
               freezingMeltingPotential(i) = x2i_i(index_x2i_Fioo_frazilh, n)
            end if
 
-           frazilMassFlux(i)           = x2i_i(index_x2i_Fioo_frazil, n)
+           frazilMassFlux(i)           = x2i_i(index_x2i_Fioo_frazilm, n)
 
            if (trim(config_frazil_coupling_type) == "omega-fluxes") then
               frazilSaltFlux(i)           = x2i_i(index_x2i_Fioo_frazils, n)
@@ -3069,7 +3069,7 @@ contains
             i2x_i(index_i2x_Fioi_melth  ,n) = oceanHeatFlux(i)
             i2x_i(index_i2x_Fioi_swpen  ,n) = oceanShortwaveFlux(i)
             i2x_i(index_i2x_Fioi_meltw  ,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
-            i2x_i(index_i2x_Fioi_frazil ,n) = frazilMassAdjust(i)/ailohi
+            i2x_i(index_i2x_Fioi_frazilm,n) = frazilMassAdjust(i)/ailohi
             i2x_i(index_i2x_Fioi_salt   ,n) = oceanSaltFlux(i) + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
             i2x_i(index_i2x_Fioi_frazils,n) = seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust(i)/ailohi
             i2x_i(index_i2x_Fioi_frazilh,n) = 0.0_RKIND

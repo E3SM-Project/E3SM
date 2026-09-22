@@ -1313,7 +1313,7 @@ contains
     integer(in)              :: lSize         ! size of mesh
     real(r8)                 :: ca_i,ca_o,ca_c  ! area of a grid cell
     real(r8), allocatable    :: area_data(:), ofrac_data(:), ifrac_data(:)
-    real(r8), allocatable    :: fld_frazil(:), fld_h2otemp(:)
+    real(r8), allocatable    :: fld_frazilm(:), fld_h2otemp(:)
     real(r8), allocatable    :: fld_frazils(:), fld_frazilh(:)
     real(r8), allocatable    :: fld_frazil_li(:), fld_q_li(:)
     real(r8), allocatable    :: fld_ismw(:), fld_rrofl(:), fld_rrofi(:), fld_ismh(:), fld_rrofih(:)
@@ -1322,7 +1322,7 @@ contains
     real(r8), allocatable    :: fld_melth(:), fld_meltw(:), fld_bergh(:), fld_bergw(:)
     real(r8), allocatable    :: fld_swnet(:), fld_lwdn(:), fld_rain(:), fld_snow(:)
     real(r8), allocatable    :: fld_rofl(:), fld_rofi(:), fld_salt(:)
-    real(r8), allocatable    :: fld_frazili(:), fld_frazilsi(:), fld_frazilhi(:)
+    real(r8), allocatable    :: fld_frazilmi(:), fld_frazilsi(:), fld_frazilhi(:)
     real(r8), allocatable    :: fld_meltw_16O(:), fld_meltw_18O(:), fld_meltw_HDO(:)
     real(r8), allocatable    :: fld_rain_16O(:),  fld_rain_18O(:),  fld_rain_HDO(:)
     real(r8), allocatable    :: fld_snow_16O(:),  fld_snow_18O(:),  fld_snow_HDO(:)
@@ -1374,9 +1374,9 @@ contains
     end if
 
     if (present(do_o2x)) then
-       allocate(fld_frazil(lSize), fld_h2otemp(lSize))
+       allocate(fld_frazilm(lSize), fld_h2otemp(lSize))
        allocate(fld_frazilh(lSize), fld_frazils(lSize))
-       call mbGetCellTagVals(mboxid, 'Fioo_frazil',  fld_frazil,  lSize)
+       call mbGetCellTagVals(mboxid, 'Fioo_frazilm',  fld_frazilm,  lSize)
        call mbGetCellTagVals(mboxid, 'Fioo_frazils', fld_frazils, lSize)
        call mbGetCellTagVals(mboxid, 'Fioo_frazilh', fld_frazilh, lSize)
        call mbGetCellTagVals(mboxid, 'Faoo_h2otemp', fld_h2otemp, lSize)
@@ -1397,7 +1397,7 @@ contains
           ca_i =  area_data(n) * ifrac_data(n)
           ca_c =  area_data(n)
           nf = f_area;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
-          nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,fld_frazil(n))
+          nf = f_wfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_o+ca_i)*max(0.0_r8,fld_frazilm(n))
           nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,fld_frazilh(n))
           nf = f_sfrazo; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*max(0.0_r8,fld_frazils(n))
           nf = f_hh2ot; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_h2otemp(n)
@@ -1411,7 +1411,7 @@ contains
              nf = f_hpolar; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_c*fld_rrofih(n)
           end if
        end do
-       deallocate(fld_frazil, fld_h2otemp, fld_frazilh, fld_frazils)
+       deallocate(fld_frazilm, fld_h2otemp, fld_frazilh, fld_frazils)
        if (flds_polar) deallocate(fld_frazil_li, fld_q_li, fld_ismw, fld_rrofl, fld_rrofi, fld_ismh, fld_rrofih)
     end if
 
@@ -1471,7 +1471,7 @@ contains
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_bergh(lSize), fld_bergw(lSize))
        allocate(fld_swnet(lSize), fld_lwdn(lSize), fld_rain(lSize), fld_snow(lSize))
        allocate(fld_rofl(lSize), fld_rofi(lSize), fld_salt(lSize))
-       allocate(fld_frazili(lSize), fld_frazilhi(lSize), fld_frazilsi(lSize))
+       allocate(fld_frazilmi(lSize), fld_frazilhi(lSize), fld_frazilsi(lSize))
     ! if model is not prognostic, need to make sure these fields are zero
        if(ocn_prognostic) then
          call mbGetCellTagVals(mboxid, 'Fioi_melth',  fld_melth,   lSize)
@@ -1484,7 +1484,7 @@ contains
          call mbGetCellTagVals(mboxid, 'PFioi_bergh', fld_bergh,   lSize)
          call mbGetCellTagVals(mboxid, 'PFioi_bergw', fld_bergw,   lSize)
          call mbGetCellTagVals(mboxid, 'Fioi_salt',   fld_salt,    lSize)
-         call mbGetCellTagVals(mboxid, 'Fioi_frazil', fld_frazili, lSize)
+         call mbGetCellTagVals(mboxid, 'Fioi_frazilm',fld_frazilmi,lSize)
          call mbGetCellTagVals(mboxid, 'Fioi_frazilh',fld_frazilhi,lSize)
          call mbGetCellTagVals(mboxid, 'Fioi_frazils',fld_frazilsi,lSize)
        else
@@ -1498,7 +1498,7 @@ contains
          fld_bergh(:) = 0.0_r8
          fld_bergw(:) = 0.0_r8
          fld_salt(:) = 0.0_r8
-         fld_frazili(:) = 0.0_r8
+         fld_frazilmi(:) = 0.0_r8
          fld_frazilhi(:) = 0.0_r8
          fld_frazilsi(:) = 0.0_r8
        endif
@@ -1542,7 +1542,7 @@ contains
           nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rofl(n)
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_rofi(n)
           nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_salt(n)
-          nf = f_wfrzi ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazili(n)
+          nf = f_wfrzi ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazilmi(n)
           nf = f_hfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazilhi(n)
           nf = f_sfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*fld_frazilsi(n)
           if ( flds_wiso_ocn ) then
@@ -1583,7 +1583,7 @@ contains
        deallocate(fld_melth, fld_meltw, fld_bergh, fld_bergw)
        deallocate(fld_swnet, fld_lwdn, fld_rain, fld_snow)
        deallocate(fld_rofl, fld_rofi, fld_salt)
-       deallocate(fld_frazili, fld_frazilhi, fld_frazilsi)
+       deallocate(fld_frazilmi, fld_frazilhi, fld_frazilsi)
        if (flds_wiso_ocn) then
           deallocate(fld_meltw_16O, fld_meltw_18O, fld_meltw_HDO)
           deallocate(fld_rain_16O,  fld_rain_18O,  fld_rain_HDO)
@@ -1634,11 +1634,11 @@ contains
     real(r8), allocatable    :: fld_lwup(:), fld_lat(:), fld_sen(:), fld_evap(:)
     real(r8), allocatable    :: fld_meltw_16O(:), fld_meltw_18O(:), fld_meltw_HDO(:)
     real(r8), allocatable    :: fld_evap_16O(:),  fld_evap_18O(:),  fld_evap_HDO(:)
-    real(r8), allocatable    :: fld_lwdn(:), fld_rain(:), fld_snow(:), fld_frazil(:), fld_rofi(:)
+    real(r8), allocatable    :: fld_lwdn(:), fld_rain(:), fld_snow(:), fld_frazilm(:), fld_rofi(:)
     real(r8), allocatable    :: fld_rain_16O(:), fld_rain_18O(:), fld_rain_HDO(:)
     real(r8), allocatable    :: fld_snow_16O(:), fld_snow_18O(:), fld_snow_HDO(:), fld_salt(:)
     real(r8), allocatable    :: fld_frazilh(:), fld_frazils(:)
-    real(r8), allocatable    :: fld_frazili(:), fld_frazilhi(:), fld_frazilsi(:)
+    real(r8), allocatable    :: fld_frazilmi(:), fld_frazilhi(:), fld_frazilsi(:)
     logical,save             :: first_time        = .true.
     logical,save             :: flds_wiso_ice     = .false.
     logical,save             :: flds_wiso_ice_x2i = .false.
@@ -1678,7 +1678,7 @@ contains
 
     if (present(do_i2x)) then
        allocate(fld_melth(lSize), fld_meltw(lSize), fld_swpen(lSize), fld_swnet(lSize))
-       allocate(fld_frazili(lSize), fld_frazilhi(lSize), fld_frazilsi(lSize))
+       allocate(fld_frazilmi(lSize), fld_frazilhi(lSize), fld_frazilsi(lSize))
        allocate(fld_lwup(lSize), fld_lat(lSize), fld_sen(lSize), fld_evap(lSize), fld_salt(lSize))
        call mbGetCellTagVals(mbixid, 'Fioi_melth',  fld_melth,   lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_meltw',  fld_meltw,   lSize)
@@ -1689,7 +1689,7 @@ contains
        call mbGetCellTagVals(mbixid, 'Faii_sen',    fld_sen,     lSize)
        call mbGetCellTagVals(mbixid, 'Faii_evap',   fld_evap,    lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_salt',   fld_salt,    lSize)
-       call mbGetCellTagVals(mbixid, 'Fioi_frazil', fld_frazili, lSize)
+       call mbGetCellTagVals(mbixid, 'Fioi_frazilm', fld_frazilmi,lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_frazilh',fld_frazilhi,lSize)
        call mbGetCellTagVals(mbixid, 'Fioi_frazils',fld_frazilsi,lSize)
        if ( flds_wiso_ice ) then
@@ -1719,7 +1719,7 @@ contains
           nf = f_wmelt ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_meltw(n)
           nf = f_wevap ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_evap(n)
           nf = f_salt  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_salt(n)
-          nf = f_wfrzi ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_frazili(n)
+          nf = f_wfrzi ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_frazilmi(n)
           nf = f_sfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*fld_frazilsi(n)
           nf = f_hfrazi; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_frazilhi(n)
           if ( flds_wiso_ice ) then
@@ -1739,7 +1739,7 @@ contains
        end do
        deallocate(fld_melth, fld_meltw, fld_swpen, fld_swnet)
        deallocate(fld_lwup, fld_lat, fld_sen, fld_evap, fld_salt)
-       deallocate(fld_frazili, fld_frazilsi, fld_frazilhi)
+       deallocate(fld_frazilmi, fld_frazilsi, fld_frazilhi)
        if (flds_wiso_ice) then
           deallocate(fld_meltw_16O, fld_meltw_18O, fld_meltw_HDO)
           deallocate(fld_evap_16O,  fld_evap_18O,  fld_evap_HDO)
@@ -1748,12 +1748,12 @@ contains
 
     if (present(do_x2i)) then
        allocate(fld_lwdn(lSize), fld_rain(lSize), fld_snow(lSize))
-       allocate(fld_frazil(lSize), fld_rofi(lSize))
+       allocate(fld_frazilm(lSize), fld_rofi(lSize))
        allocate(fld_frazilh(lSize), fld_frazils(lSize))
        call mbGetCellTagVals(mbixid, 'Faxa_lwdn',   fld_lwdn,   lSize)
        call mbGetCellTagVals(mbixid, 'Faxa_rain',   fld_rain,   lSize)
        call mbGetCellTagVals(mbixid, 'Faxa_snow',   fld_snow,   lSize)
-       call mbGetCellTagVals(mbixid, 'Fioo_frazil', fld_frazil, lSize)
+       call mbGetCellTagVals(mbixid, 'Fioo_frazilm',fld_frazilm,lSize)
        call mbGetCellTagVals(mbixid, 'Fioo_frazilh',fld_frazilh,lSize)
        call mbGetCellTagVals(mbixid, 'Fioo_frazils',fld_frazils,lSize)
        call mbGetCellTagVals(mbixid, 'Fixx_rofi',   fld_rofi,   lSize)
@@ -1781,7 +1781,7 @@ contains
           nf = f_wsnow; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_snow(n)
           nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i*fld_rofi(n)
           nf = f_wfrz ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
-               (ca_o+ca_i)*max(0.0_r8,fld_frazil(n))
+               (ca_o+ca_i)*max(0.0_r8,fld_frazilm(n))
           nf = f_hfrz;  budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - &
                (ca_o+ca_i)*max(0.0_r8,fld_frazilh(n))
           nf = f_sfrazo; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + &
@@ -1809,7 +1809,7 @@ contains
        budg_dataL(f_hlatf,ic,ip) = -budg_dataL(f_wsnow,ic,ip)*shr_const_latice
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
 
-       deallocate(fld_lwdn, fld_rain, fld_snow, fld_frazil, fld_rofi)
+       deallocate(fld_lwdn, fld_rain, fld_snow, fld_frazilm, fld_rofi)
        deallocate(fld_frazils, fld_frazilh)
        if (flds_wiso_ice_x2i) then
           deallocate(fld_rain_16O, fld_rain_18O, fld_rain_HDO)

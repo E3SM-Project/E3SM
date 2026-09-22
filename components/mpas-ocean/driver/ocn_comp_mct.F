@@ -3417,16 +3417,16 @@ contains
                 o2x_o(index_o2x_Fioo_q, n)  = seaIceEnergy(i) / ocn_cpl_dt
              endif
 
-             if (index_o2x_Fioo_frazil /= 0) then
-                o2x_o(index_o2x_Fioo_frazil, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+             if (index_o2x_Fioo_frazilm /= 0) then
+                o2x_o(index_o2x_Fioo_frazilm, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
                 o2x_o(index_o2x_Fioo_frazils, n) = accumulatedFrazilIceMass(i)/ 1000.0_RKIND * &
                    config_frazil_sea_ice_reference_salinity / ocn_cpl_dt
              endif
 
           else
 
-             if (index_o2x_Fioo_frazil /= 0) then
-                o2x_o(index_o2x_Fioo_frazil, n) = 0.0_RKIND
+             if (index_o2x_Fioo_frazilm /= 0) then
+                o2x_o(index_o2x_Fioo_frazilm, n) = 0.0_RKIND
                 o2x_o(index_o2x_Fioo_frazils, n) = 0.0_RKIND
              endif
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then

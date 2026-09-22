@@ -20,7 +20,7 @@ module mpaso_cpl_indices
   integer :: index_o2x_So_dhdy
   integer :: index_o2x_Fioo_q
   integer :: index_o2x_Foxo_q_li
-  integer :: index_o2x_Fioo_frazil
+  integer :: index_o2x_Fioo_frazilm
   integer :: index_o2x_Fioo_frazils
   integer :: index_o2x_Fioo_frazilh
   integer :: index_o2x_Foxo_frazil_li
@@ -216,7 +216,7 @@ contains
     index_o2x_So_dhdy       = mct_avect_indexra(o2x,'So_dhdy')
     index_o2x_Fioo_q        = mct_avect_indexra(o2x,'Fioo_q',perrWith='quiet')
     index_o2x_Foxo_q_li     = mct_avect_indexra(o2x,'Foxo_q_li',perrWith='quiet')
-    index_o2x_Fioo_frazil   = mct_avect_indexra(o2x,'Fioo_frazil',perrWith='quiet')
+    index_o2x_Fioo_frazilm  = mct_avect_indexra(o2x,'Fioo_frazilm',perrWith='quiet')
     index_o2x_Fioo_frazils  = mct_avect_indexra(o2x,'Fioo_frazils',perrWith='quiet')
     index_o2x_Fioo_frazilh  = mct_avect_indexra(o2x,'Fioo_frazilh',perrWith='quiet')
     index_o2x_Foxo_frazil_li= mct_avect_indexra(o2x,'Foxo_frazil_li',perrWith='quiet')

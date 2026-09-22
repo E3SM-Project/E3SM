@@ -1594,12 +1594,12 @@ contains
     call metadata_set(attname, longname, stdname, units)
 
     ! Ocean frazil production
-    call seq_flds_add(o2x_fluxes,"Fioo_frazil")
-    call seq_flds_add(x2i_fluxes,"Fioo_frazil")
+    call seq_flds_add(o2x_fluxes,"Fioo_frazilm")
+    call seq_flds_add(x2i_fluxes,"Fioo_frazilm")
     longname = 'Ocean frazil production'
     stdname  = 'ocean_frazil_ice_production'
     units    = 'kg m-2 s-1'
-    attname  = 'Fioo_frazil'
+    attname  = 'Fioo_frazilm'
     call metadata_set(attname, longname, stdname, units)
 
     ! Ocean frazil salt flux
@@ -1730,12 +1730,12 @@ contains
     call metadata_set(attname, longname, stdname, units)
 
     ! Frazil Mass flux
-    call seq_flds_add(i2x_fluxes,"Fioi_frazil")
-    call seq_flds_add(x2o_fluxes,"Fioi_frazil")
+    call seq_flds_add(i2x_fluxes,"Fioi_frazilm")
+    call seq_flds_add(x2o_fluxes,"Fioi_frazilm")
     longname = 'Frazil mass flux'
     stdname  = 'frazil_mass_flux_into_sea_water'
     units    = 'kg m-2 s-1'
-    attname  = 'Fioi_frazil'
+    attname  = 'Fioi_frazilm'
     call metadata_set(attname, longname, stdname, units)
 
     ! Frazil Salt flux

@@ -35,7 +35,7 @@ module mpassi_cpl_indices
   integer :: index_i2x_Fioi_melth      ! heat  flux from melting ice (<0)
   integer :: index_i2x_Fioi_meltw      ! water flux from melting ice
   integer :: index_i2x_Fioi_salt       ! salt  flux from melting  ice
-  integer :: index_i2x_Fioi_frazil     ! water flux from frazil ice
+  integer :: index_i2x_Fioi_frazilm    ! water flux from frazil ice
   integer :: index_i2x_Fioi_frazils    ! salt  flux from frazil ice
   integer :: index_i2x_Fioi_frazilh    ! heat  flux from frazil ice
   integer :: index_i2x_Fioi_taux       ! ice/ocn stress, zonal
@@ -90,7 +90,7 @@ module mpassi_cpl_indices
   integer :: index_x2i_Faxa_swvdf      ! sw: vis diffuse downward
   integer :: index_x2i_Faxa_swnet      ! sw: net
   integer :: index_x2i_Fioo_q          ! ocn freezing melting potential
-  integer :: index_x2i_Fioo_frazil     ! ocn frazil ice mass flux
+  integer :: index_x2i_Fioo_frazilm    ! ocn frazil ice mass flux
   integer :: index_x2i_Fioo_frazils    ! ocn frazil ice salt flux
   integer :: index_x2i_Fioo_frazilh    ! ocn frazil heat flux
   integer :: index_x2i_Faxa_bcphidry   ! flux: Black Carbon hydrophilic dry deposition
@@ -181,7 +181,7 @@ contains
     index_i2x_Fioi_melth    = mct_avect_indexra(i2x,'Fioi_melth')
     index_i2x_Fioi_meltw    = mct_avect_indexra(i2x,'Fioi_meltw')
     index_i2x_Fioi_salt     = mct_avect_indexra(i2x,'Fioi_salt')
-    index_i2x_Fioi_frazil   = mct_avect_indexra(i2x,'Fioi_frazil')
+    index_i2x_Fioi_frazilm  = mct_avect_indexra(i2x,'Fioi_frazilm')
     index_i2x_Fioi_frazils  = mct_avect_indexra(i2x,'Fioi_frazils')
     index_i2x_Fioi_frazilh  = mct_avect_indexra(i2x,'Fioi_frazilh')
     index_i2x_Fioi_taux     = mct_avect_indexra(i2x,'Fioi_taux')
@@ -235,7 +235,7 @@ contains
     index_x2i_Faxa_swndf    = mct_avect_indexra(x2i,'Faxa_swndf')
     index_x2i_Faxa_swvdf    = mct_avect_indexra(x2i,'Faxa_swvdf')
     index_x2i_Fioo_q        = mct_avect_indexra(x2i,'Fioo_q')
-    index_x2i_Fioo_frazil   = mct_avect_indexra(x2i,'Fioo_frazil')
+    index_x2i_Fioo_frazilm  = mct_avect_indexra(x2i,'Fioo_frazilm')
     index_x2i_Fioo_frazils  = mct_avect_indexra(x2i,'Fioo_frazils')
     index_x2i_Fioo_frazilh  = mct_avect_indexra(x2i,'Fioo_frazilh')
     index_x2i_Faxa_bcphidry = mct_avect_indexra(x2i,'Faxa_bcphidry')
