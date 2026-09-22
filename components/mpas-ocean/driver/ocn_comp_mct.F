@@ -3399,7 +3399,6 @@ contains
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
 
               seaIceEnergy(i) = accumulatedFrazilIceEnergy(i)
-              !accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
 
              ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
              ! top layer of the ocean
@@ -3422,7 +3421,6 @@ contains
              o2x_o(index_o2x_Fioo_frazil, n) = 0.0_RKIND
              if (trim(config_land_ice_flux_mode) == 'standalone' .or. trim(config_land_ice_flux_mode) == 'data') then
                 o2x_o(index_o2x_Foxo_q_li, n) = accumulatedFrazilIceEnergy(i) / ocn_cpl_dt
-                !accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion / ocn_cpl_dt
                 o2x_o(index_o2x_Foxo_frazil_li, n) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
              endif
 
