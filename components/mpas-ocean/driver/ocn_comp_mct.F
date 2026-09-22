@@ -3400,12 +3400,13 @@ contains
              if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
 
              ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
+
              seaIceEnergy(i) = accumulatedFrazilIceEnergy(i)
              if (index_o2x_Fioo_frazilh /= 0) o2x_o(index_o2x_Fioo_frazilh, n) = seaIceEnergy(i)/ocn_cpl_dt
 
              ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
              ! top layer of the ocean
-          else if (index_o2x_Fioo_q /= 0) then
+          else if (index_o2x_Fioo_q /= 0 .and. accumulatedFrazilIceMass(i) .LE. 0.0_RKIND) then
 
              surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
                 pressure=0.0_RKIND,  inLandIceCavity=.false.)
