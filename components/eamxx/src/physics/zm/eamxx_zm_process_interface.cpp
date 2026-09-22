@@ -419,6 +419,20 @@ void ZMDeepConvection::run_impl (const double dt)
   // initialize intermediate output tendencies for zm_conv_evap()
   zm_output.init_tmp(m_ncol, nlev_mid);
 
+  // Zero evap_ds/dq_out for all columns before zm_conv_evap.
+  // zm_conv_evap only writes these for active columns (early-return guard),
+  // so inactive columns would otherwise retain stale values from a previous
+  // timestep when convection was active.  init_tmp cannot be used because it
+  // is also called before zm_transport_momentum, which would wipe the values
+  // that zm_conv_evap just wrote.
+  Kokkos::parallel_for("zm_zero_evap_out",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    loc_zm_output_evap_ds_out(i,k) = 0;
+    loc_zm_output_evap_dq_out(i,k) = 0;
+  });
+
   // perform the convective evaporation calculations
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
