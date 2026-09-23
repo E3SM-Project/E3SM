@@ -32,26 +32,22 @@ struct EmulatorCreateConfig {
   const char* calendar;
 };
 
-/**
- * @brief Description for the grid decomposition
- *
- * Fields:
- * - grid_type: structured/unstructured
- * - nx:
- * - ny
- * - num_local_cols
- * - num_global_cols
- * - col_gids
- * - lat
- * - lon
- * - area
- */
+inline constexpr std::size_t EMULATOR_DIM_NAME_LENGTH = 64;
+
+struct EmulatorDimensionDesc {
+  char name[EMULATOR_DIM_NAME_LENGTH];
+  int local_extent;
+  int global_extent;
+};
+
 struct EmulatorGridDesc {
   int grid_type;
   int nx;
   int ny;
-  int num_local_cols;
-  int num_global_cols;
+
+  int num_dimensions;
+  const EmulatorDimensionDesc* dimensions;
+
   const int* col_gids;
   const double* lat;
   const double* lon;

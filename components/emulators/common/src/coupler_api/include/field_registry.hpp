@@ -1,6 +1,7 @@
 #ifndef E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #define E3SM_COUPLER_API_FIELD_REGISTRY_HPP
 #include <cstddef>
+#include <ekat_yaml.hpp>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -24,8 +25,7 @@ std::string to_string(const MergeType merge_type);
 /**
  * @brief (C++ version) Attributes of Field to be registered
  * Fields:
- * - component: component that defines it
- * - name: name of field
+ * - name: name of fieldam
  * - long_name: long name for field
  * - standard_name: standardized name for field
  * - units: units
@@ -37,10 +37,13 @@ struct RegisteredFieldAttributes {
   std::string units;
 };
 
+const RegisteredFieldAttributes read_attributes(const ekat::ParameterList& params);
+std::string to_string(const RegisteredFieldAttributes& attr,
+                      std::string_view spaces);
+
 using FieldID = std::size_t;
 
-template<typename T>
-struct FieldBuffer{
+template <typename T> struct FieldBuffer {
   FieldID id;
   std::span<T> data;
 };
@@ -48,6 +51,13 @@ struct FieldBuffer{
 using ImportBuffer = FieldBuffer<const double>;
 using ExportBuffer = FieldBuffer<double>;
 
+
+/**
+  FieldRole role;
+  std::string component;
+  RegisteredFieldAttributes attributes;
+  std::size_t size = 0;
+ */
 struct RegisteredField {
   FieldRole role;
   std::string component;
@@ -71,7 +81,7 @@ public:
   const RegisteredField& get(FieldID id) const;
 
   FieldID get_id(const std::string& component,
-                                const std::string& field_name) const;
+                 const std::string& field_name) const;
 
   bool contains(const std::string& component,
                 const std::string& field_name) const;

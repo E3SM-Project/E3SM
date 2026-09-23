@@ -78,5 +78,5 @@ endif()
 
 # Add subdirectories
 add_subdirectory(common)
-add_subdirectory(emulatoratm)
-add_subdirectory(driver)
+# add_subdirectory(emulatoratm)
+# add_subdirectory(driver)

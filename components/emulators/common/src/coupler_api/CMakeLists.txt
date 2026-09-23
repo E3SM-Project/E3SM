@@ -18,12 +18,9 @@ target_include_directories(coupler_api
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
-target_link_libraries(coupler_api PRIVATE ekat::YamlParser)
+target_link_libraries(coupler_api PUBLIC ekat::YamlParser)
 
-target_compile_features(coupler_api
-  PUBLIC
-    cxx_std_20
-)
+target_compile_features(coupler_api PUBLIC cxx_std_20)
 
 add_library(E3SM::coupler_api ALIAS coupler_api)
 if(BUILD_EMULATOR_TESTS)
