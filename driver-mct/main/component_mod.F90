@@ -31,7 +31,8 @@ module component_mod
   use mct_mod   ! mct_ wrappers for mct lib
   use perf_mod
   use ESMF
-  use seq_flds_mod, only: nan_check_component_fields
+  use seq_flds_mod, only: nan_check_component_fields, bounds_check_component_fields
+  use shr_bounds_mod, only: shr_bounds_check, shr_bounds_report
   implicit none
 
 #include <mpif.h>
@@ -52,6 +53,7 @@ module component_mod
   public :: component_final               ! mct and esmf versions
   public :: component_exch
   public :: component_diag
+  public :: component_bounds_report
 
 
   !--------------------------------------------------------------------------
@@ -787,6 +789,14 @@ contains
                 call check_fields(comp(eci), eci)
                 call t_drvstopf ('check_fields')
              endif
+             if (trim(bounds_check_component_fields) /= 'off' .and. &
+                 associated(comp(eci)%dom_cc) .and. associated(comp(eci)%c2x_cc%rattr)) then
+                call t_drvstartf ('check_bounds')
+                call shr_bounds_check(comp(eci)%bounds, comp(eci)%ntype, comp(eci)%c2x_cc, &
+                     comp(eci)%dom_cc, comp(eci)%gsmap_cc, comp(eci)%mpicom_compid, &
+                     abort_on_violation=(trim(bounds_check_component_fields) == 'abort'))
+                call t_drvstopf ('check_bounds')
+             endif
              call t_unset_prefixf()
 
              if ((phase == 1) .and. present(seq_flds_c2x_fluxes)) then
@@ -1008,5 +1018,30 @@ contains
     endif
 
   end subroutine component_diag
+
+  !===============================================================================
+
+  subroutine component_bounds_report(comp, iamroot_cpl)
+
+    !---------------------------------------------------------------
+    ! Write the bounds-check statistics of each instance to the
+    ! coupler log and reset them. Must be called by all driver pes.
+    !
+    ! Arguments
+    type(component_type), intent(inout) :: comp(:)
+    logical             , intent(in)    :: iamroot_cpl
+    !
+    ! Local Variables
+    integer :: eci
+    !---------------------------------------------------------------
+
+    do eci = 1,size(comp)
+       if (comp(eci)%present .and. comp(eci)%iamin_cplallcompid) then
+          call shr_bounds_report(comp(eci)%bounds, trim(comp(eci)%ntype)//trim(comp(eci)%suffix), &
+               comp(eci)%mpicom_cplallcompid, iamroot_cpl, logunit)
+       end if
+    enddo
+
+  end subroutine component_bounds_report
 
 end module component_mod

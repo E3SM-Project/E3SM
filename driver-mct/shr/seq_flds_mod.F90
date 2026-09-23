@@ -291,6 +291,7 @@ module seq_flds_mod
 
   ! namelist variables
   logical :: nan_check_component_fields
+  character(len=8) :: bounds_check_component_fields  ! 'off', 'report' or 'abort'
 
   !----------------------------------------------------------------------------
 contains
@@ -416,7 +417,8 @@ contains
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, flds_polar, flds_tf, &
          glc_nec, glc_nzoc, ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
-         nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
+         nan_check_component_fields, bounds_check_component_fields, &
+         rof_heat, atm_flux_method, atm_gustiness, &
          rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way, ocn_lnd_one_way, rof_sed, &
          wav_ocn_coup, wav_atm_coup, wav_ice_coup, wav_nfreq, add_iac_to_cplstate
 
@@ -457,6 +459,7 @@ contains
        wav_nfreq = 0
        seq_flds_i2o_per_cat = .false.
        nan_check_component_fields = .false.
+       bounds_check_component_fields = 'report'
        rof_heat = .false.
        atm_flux_method = 'explicit'
        atm_gustiness = .false.
@@ -484,6 +487,12 @@ contains
        end do
        close(unitn)
        call shr_file_freeUnit( unitn )
+       if (trim(bounds_check_component_fields) /= 'off'    .and. &
+           trim(bounds_check_component_fields) /= 'report' .and. &
+           trim(bounds_check_component_fields) /= 'abort') then
+          call shr_sys_abort(subname//"ERROR: bounds_check_component_fields must be "// &
+               "'off', 'report' or 'abort', not '"//trim(bounds_check_component_fields)//"'")
+       end if
     end if
     call shr_mpi_bcast(flds_co2a    , mpicom)
     call shr_mpi_bcast(flds_co2b    , mpicom)
@@ -499,6 +508,7 @@ contains
     call shr_mpi_bcast(wav_nfreq , mpicom)
     call shr_mpi_bcast(seq_flds_i2o_per_cat, mpicom)
     call shr_mpi_bcast(nan_check_component_fields, mpicom)
+    call shr_mpi_bcast(bounds_check_component_fields, mpicom)
     call shr_mpi_bcast(rof_heat    , mpicom)
     call shr_mpi_bcast(atm_flux_method, mpicom)
     call shr_mpi_bcast(atm_gustiness, mpicom)

@@ -1,0 +1,83 @@
+# Field Limits Dictionary
+#
+# Physical limits on fields that components send to the coupler (c2x). Each
+# entry is keyed by the coupler field name defined in
+# driver-mct/shr/seq_flds_mod.F90 (and driver-moab) and records:
+#
+#   component      : the component that sends the field (atm, lnd, ice, ocn, ...)
+#   units          : units, in the coupler's convention (must match seq_flds_mod)
+#   min, max       : limits; omit either for no limit on that side
+#   min_inclusive,
+#   max_inclusive  : whether the limit value itself is allowed (default: true)
+#   where_positive : optional coupler field of the same component; the check
+#                    only applies where that field is > 0 (e.g. ice fraction)
+#   owner          : who owns the limit (the component that knows the physics)
+#   reason         : optional; why the limit holds, where it isn't obvious
+#
+# Signs follow the coupler convention: fluxes are positive downward (into the
+# surface), so upward longwave (lwup) is negative.
+#
+# Do not edit share/util/shr_field_limits_mod.F90 by hand. After editing this
+# file, regenerate it with:
+#
+#   python share/gen_field_limits.py
+#
+# The generator also checks every entry against seq_flds_mod.F90 of both drivers.
+
+field_limits:
+  version_number: 0.1.0
+  institution: E3SM Project
+  description: Physical limits on fields sent from components to the coupler
+
+  fields:
+
+    # atm
+    Sa_tbot:    {component: atm, units: K, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_ptem:    {component: atm, units: K, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_pbot:    {component: atm, units: Pa, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_pslv:    {component: atm, units: Pa, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_dens:    {component: atm, units: kg m-3, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_shum:    {component: atm, units: kg kg-1, min: 0.0, owner: atm}
+    Faxa_rainc: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_rainl: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_snowc: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_snowl: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_swvdr: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swndr: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swvdf: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swndf: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swnet:
+      {component: atm, units: W m-2, min: -1.0e-10, owner: atm,
+       reason: "EAM computes net shortwave as down minus up; round-off gives values near -1e-14."}
+    Faxa_lwdn:  {component: atm, units: W m-2, min: 0.0, owner: atm}
+
+    # lnd
+    Sl_t:       {component: lnd, units: K, min: 0.0, min_inclusive: false, owner: lnd}
+    Sl_tref:    {component: lnd, units: K, min: 0.0, min_inclusive: false, owner: lnd}
+    Sl_avsdr:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_anidr:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_avsdf:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_anidf:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_snowh:   {component: lnd, units: m, min: 0.0, owner: lnd}
+    Fall_swnet: {component: lnd, units: W m-2, min: 0.0, owner: lnd}
+    Fall_lwup:
+      {component: lnd, units: W m-2, max: 0.0, owner: lnd,
+       reason: "Emitted longwave is upward, so non-positive in the coupler's downward-positive convention (E3SM issue #8436)."}
+
+    # ice; surface state is only meaningful where there is ice
+    Si_t:       {component: ice, units: K, min: 0.0, min_inclusive: false, where_positive: Si_ifrac, owner: ice}
+    Si_tref:    {component: ice, units: K, min: 0.0, min_inclusive: false, where_positive: Si_ifrac, owner: ice}
+    Si_avsdr:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_anidr:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_avsdf:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_anidf:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_ifrac:   {component: ice, units: '1', min: 0.0, max: 1.0, owner: ice}
+    Si_snowh:   {component: ice, units: m, min: 0.0, owner: ice}
+    Faii_swnet: {component: ice, units: W m-2, min: 0.0, owner: ice}
+    Faii_lwup:
+      {component: ice, units: W m-2, max: 0.0, owner: ice,
+       reason: "Emitted longwave is upward, so non-positive in the coupler's downward-positive convention."}
+
+    # ocn
+    So_t:           {component: ocn, units: K, min: 0.0, min_inclusive: false, owner: ocn}
+    So_frac_h2oocn: {component: ocn, units: '-', min: 0.0, max: 1.0, owner: ocn}

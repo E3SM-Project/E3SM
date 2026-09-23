@@ -254,6 +254,23 @@
     </values>
   </entry>
 
+  <entry id="bounds_check_component_fields">
+    <type>char</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <valid_values>off,report,abort</valid_values>
+    <desc>
+      Check fields passed to the coupler against the limits in share/field_limits.yaml.
+      off: no check. report: once per model day and at the end of the run,
+      write each checked field's min, max (with location) and number of
+      out-of-bounds values to the coupler log. abort: as report, and also
+      abort on the first out-of-bounds value.
+    </desc>
+    <values>
+      <value>report</value>
+    </values>
+  </entry>
+
   <entry id="rof_heat">
     <type>logical</type>
     <category>seq_flds</category>
