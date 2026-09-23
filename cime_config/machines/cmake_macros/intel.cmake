@@ -13,7 +13,8 @@ string(APPEND CMAKE_CXX_FLAGS         " -fp-model precise")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise -O2 -debug minimal")
 string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -O0 -g")
 
-string(APPEND CMAKE_Fortran_FLAGS " -traceback -convert big_endian -assume byterecl -ftz -assume realloc_lhs -fp-model source")
+string(APPEND CMAKE_Fortran_FLAGS " -traceback -convert big_endian -assume byterecl -ftz -assume realloc_lhs -fp-model=consistent -fimf-use-svml -DHAVE_ERF_INTRINSICS")
+
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -debug minimal")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -check bounds -check pointers -check noarg_temp_created")
 

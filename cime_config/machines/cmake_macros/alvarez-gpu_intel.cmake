@@ -15,7 +15,4 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     endif()
 endif()
 
-string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
-string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
-string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
