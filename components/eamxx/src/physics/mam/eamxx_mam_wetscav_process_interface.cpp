@@ -566,16 +566,6 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
   // This will be computed from ZM scheme outputs: dlf = zm_detr_qc + zm_detr_qi
   dlf_ = view_2d("dlf_", ncol_, nlev_);
 
-  // Shallow convection detrainment [kg/kg/s]
-  // NOTE: EAMxx does not yet have a shallow convection scheme implemented.
-  // This is initialized to zero and will be updated when shallow convection is added.
-  dlfsh_ = view_2d("dlfsh_", ncol_, nlev_);
-  
-  // Shallow convection entrainment/(entrainment+detrainment) ratio
-  // NOTE: Also not available without a shallow convection scheme.
-  // Initialized to zero for now.
-  sh_e_ed_ratio_ = view_2d("sh_e_ed_ratio_", ncol_, nlev_);
-
   // Temporary view for pressure thickness in mb (converted from Pa)
   dp_tmp_ = view_2d("dp_tmp", ncol_, nlev_);
   
@@ -650,12 +640,6 @@ void MAMWetscav::run_impl(const double dt) {
 
   // In cloud water mixing ratio, shallow convection
   auto icwmrsh = icwmrsh_;
-
-  // Shallow convection detrainment (initialized to zero in initialize_impl)
-  auto dlfsh = dlfsh_;
-
-  // Shallow convection entrainment/(entrainment+detrainment) ratio (initialized to zero)
-  auto sh_e_ed_ratio = sh_e_ed_ratio_;
 
   // Detraining cld H20 from deep convection [kg/kg/s]
   auto dlf = dlf_;
@@ -852,7 +836,7 @@ void MAMWetscav::run_impl(const double dt) {
         // Convection processing variables - only initialize if enabled
         Kokkos::View<Real*> scratch1Dviews[mam4::ConvProc::Col1DViewInd::NumScratch];
         const_view_1d mu_icol, md_icol, eu_icol, du_icol, ed_icol;
-        const_view_1d dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol;
+        const_view_1d dp_icol, p_del_dry_icol;
         int ktop = 0;
         int kbot = 0;
         
@@ -883,8 +867,6 @@ void MAMWetscav::run_impl(const double dt) {
         if(do_convproc) {
           dp_icol = dp_tmp_icol;
           p_del_dry_icol = ekat::subview(pseudo_density_dry, icol);
-          dlfsh_icol = ekat::subview(dlfsh, icol);
-          sh_e_ed_ratio_icol = ekat::subview(sh_e_ed_ratio, icol);
           ktop = Kokkos::round(zm_jt_in(icol));
           kbot = Kokkos::round(zm_jcbot_in(icol));
         } 
@@ -906,7 +888,7 @@ void MAMWetscav::run_impl(const double dt) {
            // Convection mass flux parameters
            scratch1Dviews,
            mu_icol, md_icol, du_icol, eu_icol, ed_icol,
-           dp_icol, p_del_dry_icol, dlfsh_icol, sh_e_ed_ratio_icol,
+           dp_icol, p_del_dry_icol,
            ktop, kbot,
            convproc_do_aer, convproc_do_gas,
            species_class, mmtoo_prevap_resusp,
