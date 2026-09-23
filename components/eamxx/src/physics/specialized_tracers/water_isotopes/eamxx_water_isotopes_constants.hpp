@@ -24,7 +24,7 @@ namespace wiso {
  * Formulations are now selected at runtime via WaterIsotopeRuntimeOptions.
  * See README.md for details on available formulations and their scientific references.
  *
- * Default formulations: Horita & Wesolowski 1994 (liquid/vapor), Merlivat 1978 (diffusivity),
+ * Default formulations: Horita & Wesolowski 1994 (liquid/vapor),
  *                       Normalized ratios, No ocean enrichment,
  *                       Merlivat & Nief 1967 + Majoube 1971 (ice/vapor)
  */
@@ -198,23 +198,23 @@ struct WaterIsotopeConstants
   // Select coefficients for liquid/vapor formulation selected
   // TODO: rename apla*l variables throughout.
   KOKKOS_INLINE_FUNCTION
-  Scalar alpal(int s) const { return AlphaLiqVap_CoefA_table[int(opts_.liquid_vapor)][s]; }
+  Scalar AlphaLiqVap_CoefA(int s) const { return AlphaLiqVap_CoefA_table[int(opts_.liquid_vapor)][s]; }
   KOKKOS_INLINE_FUNCTION
-  Scalar alpbl(int s) const { return AlphaLiqVap_CoefB_table[int(opts_.liquid_vapor)][s]; }
+  Scalar AlphaLiqVap_CoefB(int s) const { return AlphaLiqVap_CoefB_table[int(opts_.liquid_vapor)][s]; }
   KOKKOS_INLINE_FUNCTION
-  Scalar alpcl(int s) const { return AlphaLiqVap_CoefC_table[int(opts_.liquid_vapor)][s]; }
+  Scalar AlphaLiqVap_CoefC(int s) const { return AlphaLiqVap_CoefC_table[int(opts_.liquid_vapor)][s]; }
   KOKKOS_INLINE_FUNCTION
-  Scalar alpdl(int s) const { return AlphaLiqVap_CoefD_table[int(opts_.liquid_vapor)][s]; }
+  Scalar AlphaLiqVap_CoefD(int s) const { return AlphaLiqVap_CoefD_table[int(opts_.liquid_vapor)][s]; }
   KOKKOS_INLINE_FUNCTION
-  Scalar alpel(int s) const { return AlphaLiqVap_CoefE_table[int(opts_.liquid_vapor)][s]; }
+  Scalar AlphaLiqVap_CoefE(int s) const { return AlphaLiqVap_CoefE_table[int(opts_.liquid_vapor)][s]; }
 
   // Ice/vapor
   KOKKOS_INLINE_FUNCTION
-  Scalar alpai(int s) const { return AlphaIceVap_CoefA_table[int(opts_.ice_vapor)][s]; }
+  Scalar AlphaIceVap_CoefA(int s) const { return AlphaIceVap_CoefA_table[int(opts_.ice_vapor)][s]; }
   KOKKOS_INLINE_FUNCTION
-  Scalar alpbi(int s) const { return AlphaIceVap_CoefB_table[int(opts_.ice_vapor)][s]; }
+  Scalar AlphaIceVap_CoefB(int s) const { return AlphaIceVap_CoefB_table[int(opts_.ice_vapor)][s]; }
   KOKKOS_INLINE_FUNCTION
-  Scalar alpci(int s) const { return AlphaIceVap_CoefC_table[int(opts_.ice_vapor)][s]; }
+  Scalar AlphaIceVap_CoefC(int s) const { return AlphaIceVap_CoefC_table[int(opts_.ice_vapor)][s]; }
 
   // -----------------------------------------------------------------------
   // Molecular properties (species-indexed arrays) - always same
@@ -231,55 +231,7 @@ struct WaterIsotopeConstants
     2.0   // HTO (tritium substitution)
   };
 
-public:
 
-  // -----------------------------------------------------------------------
-  // Kinetic fractionation parameters (Merlivat & Jouzel method)
-  // These do not vary by formulation, so these will not currently be bundled in the same way.
-  // -----------------------------------------------------------------------
-
-  // Parameter A for kinetic fractionation
-  static constexpr Scalar akrfa[num_species] = {
-    0.0,        // H216O
-    0.2508e-3,  // HDO
-    0.285e-3,   // H218O
-    0.285e-3,   // H217O (assumed same as H218O)
-    0.2508e-3   // HTO (assumed same as HDO)
-  };
-
-  // Parameter B for kinetic fractionation
-  static constexpr Scalar akrfb[num_species] = {
-    0.0,        // H216O
-    0.7216e-3,  // HDO
-    0.82e-3,    // H218O
-    0.82e-3,    // H217O (assumed same as H218O)
-    0.7216e-3   // HTO (assumed same as HDO)
-  };
-
-  // Surface kinetic exchange
-  // From water_isotopes.F90
-  // Note: H216O entries are 0.0 (non-fractionating)
-  static constexpr Scalar aksmc[num_species] = {
-    0.0,      // H216O
-    0.00528,  // HDO
-    0.006,    // H218O
-    0.006,    // H217O (assumed same as H218O)
-    0.00528   // HTO (assumed same as HDO)
-  };
-
-  // -----------------------------------------------------------------------
-  // Physical constants for kinetic calculations
-  // -----------------------------------------------------------------------
-  // RPF - check if these already exist in physics constants, and if 
-  // there are more precise values available.
-  // Molecular diffusivity of air [m2/s]
-  // From water_isotopes.F90 line 215
-  static constexpr Scalar MolecularDiffusivityAir = 2.36e-5;
-
-  // Dynamic viscosity of air [Pa*s or kg/(m*s)]
-  // From water_isotopes.F90 line 216
-  // Assumed constant, TODO replace with temperature-dependent formulation
-  static constexpr Scalar DynamicViscosityAir = 1.7e-5;
 };
 
 // Convenience alias for Real precision

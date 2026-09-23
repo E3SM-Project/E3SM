@@ -114,20 +114,20 @@ public:
         // HDO: alpha = exp(a*T³ + b*T² + c*T + d + e/T³)
         const ScalarT t2 = temp * temp;
         const ScalarT t3 = t2 * temp;
-        return exp(constants.alpal(HDO) * t3 +
-                   constants.alpbl(HDO) * t2 +
-                   constants.alpcl(HDO) * temp +
-                   constants.alpdl(HDO) +
-                   constants.alpel(HDO) / t3);
+        return exp(constants.AlphaLiqVap_CoefA(HDO) * t3 +
+                   constants.AlphaLiqVap_CoefB(HDO) * t2 +
+                   constants.AlphaLiqVap_CoefC(HDO) * temp +
+                   constants.AlphaLiqVap_CoefD(HDO) +
+                   constants.AlphaLiqVap_CoefE(HDO) / t3);
       } else {  // H218O
         // H218O: alpha = exp(a/T³ + b/T² + c/T + d)
         const ScalarT it  = RealT(1) / temp;
         const ScalarT it2 = it * it;
         const ScalarT it3 = it2 * it;
-        return exp(constants.alpal(H218O) * it3 +
-                   constants.alpbl(H218O) * it2 +
-                   constants.alpcl(H218O) * it +
-                   constants.alpdl(H218O));
+        return exp(constants.AlphaLiqVap_CoefA(H218O) * it3 +
+                   constants.AlphaLiqVap_CoefB(H218O) * it2 +
+                   constants.AlphaLiqVap_CoefC(H218O) * it +
+                   constants.AlphaLiqVap_CoefD(H218O));
       }
     };
   
@@ -170,9 +170,9 @@ public:
       // Both species use same form: alpha = exp(a/T² + b/T + c)
       const ScalarT it  = RealT(1) / temp;
       const ScalarT it2 = it * it;
-      return exp(constants.alpai(sp) * it2 +
-                 constants.alpbi(sp) * it +
-                 constants.alpci(sp));
+      return exp(constants.AlphaIceVap_CoefA(sp) * it2 +
+                 constants.AlphaIceVap_CoefB(sp) * it +
+                 constants.AlphaIceVap_CoefC(sp));
     };
 
     // Use the common helper

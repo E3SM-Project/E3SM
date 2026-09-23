@@ -96,8 +96,8 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeConstants<Real> constants_horita(opts_horita);
 
     // Verify Horita & Wesolowski 1994 values for HDO coefficient A
-    REQUIRE(std::abs(constants_horita.alpal(wiso::HDO) - Real(1158.8e-12)) < 1e-16);
-    REQUIRE(std::abs(constants_horita.alpel(wiso::HDO) - Real(2.9992e6)) < 1e-1);
+    REQUIRE(std::abs(constants_horita.AlphaLiqVap_CoefA(wiso::HDO) - Real(1158.8e-12)) < 1e-16);
+    REQUIRE(std::abs(constants_horita.AlphaLiqVap_CoefE(wiso::HDO) - Real(2.9992e6)) < 1e-1);
 
     // Test 2: Majoube 1971
     WaterIsotopeRuntimeOptions opts_majoube;
@@ -105,12 +105,12 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeConstants<Real> constants_majoube(opts_majoube);
 
     // Verify Majoube 1971a values for HDO coefficient A
-    REQUIRE(std::abs(constants_majoube.alpal(wiso::HDO) - Real(24.844e3)) < 1e-1);
+    REQUIRE(std::abs(constants_majoube.AlphaLiqVap_CoefA(wiso::HDO) - Real(24.844e3)) < 1e-1);
     // Majoube doesn't use E coefficient
-    REQUIRE(constants_majoube.alpel(wiso::HDO) == Real(0.0));
+    REQUIRE(constants_majoube.AlphaLiqVap_CoefE(wiso::HDO) == Real(0.0));
 
     // Verify they differ significantly
-    REQUIRE(std::abs(constants_horita.alpal(wiso::HDO) - constants_majoube.alpal(wiso::HDO)) > 1e3);
+    REQUIRE(std::abs(constants_horita.AlphaLiqVap_CoefA(wiso::HDO) - constants_majoube.AlphaLiqVap_CoefA(wiso::HDO)) > 1e3);
   }
 
   SECTION("ice_vapor_fractionation") {
@@ -119,8 +119,8 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeConstants<Real> constants_merlivat(opts_merlivat);
 
     // Verify Merlivat & Nief 1967 values for HDO coefficient A
-    REQUIRE(std::abs(constants_merlivat.alpai(wiso::HDO) - Real(16289.0)) < 1e-1);
-    REQUIRE(std::abs(constants_merlivat.alpci(wiso::HDO) - Real(-9.45e-2)) < 1e-4);
+    REQUIRE(std::abs(constants_merlivat.AlphaIceVap_CoefA(wiso::HDO) - Real(16289.0)) < 1e-1);
+    REQUIRE(std::abs(constants_merlivat.AlphaIceVap_CoefC(wiso::HDO) - Real(-9.45e-2)) < 1e-4);
 
     // Test 2: isoCAM3
     WaterIsotopeRuntimeOptions opts_isocam3;
@@ -128,12 +128,12 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeConstants<Real> constants_isocam3(opts_isocam3);
 
     // Verify isoCAM3 values for HDO coefficient A
-    REQUIRE(std::abs(constants_isocam3.alpai(wiso::HDO) - Real(16288.0)) < 1e-1);
-    REQUIRE(std::abs(constants_isocam3.alpci(wiso::HDO) - Real(-9.34e-2)) < 1e-4);
+    REQUIRE(std::abs(constants_isocam3.AlphaIceVap_CoefA(wiso::HDO) - Real(16288.0)) < 1e-1);
+    REQUIRE(std::abs(constants_isocam3.AlphaIceVap_CoefC(wiso::HDO) - Real(-9.34e-2)) < 1e-4);
 
     // Verify they differ (slightly, but measurably)
-    REQUIRE(constants_merlivat.alpai(wiso::HDO) != constants_isocam3.alpai(wiso::HDO));
-    REQUIRE(constants_merlivat.alpci(wiso::HDO) != constants_isocam3.alpci(wiso::HDO));
+    REQUIRE(constants_merlivat.AlphaIceVap_CoefA(wiso::HDO) != constants_isocam3.AlphaIceVap_CoefA(wiso::HDO));
+    REQUIRE(constants_merlivat.AlphaIceVap_CoefC(wiso::HDO) != constants_isocam3.AlphaIceVap_CoefC(wiso::HDO));
   }
 
   SECTION("combined_formulations") {
@@ -152,8 +152,8 @@ TEST_CASE("runtime_formulation_selection") {
     REQUIRE(constants_alt.diff_src(wiso::HDO) != constants_default.diff_src(wiso::HDO));
     REQUIRE(constants_alt.ratio_src(wiso::HDO) != constants_default.ratio_src(wiso::HDO));
     REQUIRE(constants_alt.ocean_src(wiso::HDO) != constants_default.ocean_src(wiso::HDO));
-    REQUIRE(constants_alt.alpal(wiso::HDO) != constants_default.alpal(wiso::HDO));
-    REQUIRE(constants_alt.alpai(wiso::HDO) != constants_default.alpai(wiso::HDO));
+    REQUIRE(constants_alt.AlphaLiqVap_CoefA(wiso::HDO) != constants_default.AlphaLiqVap_CoefA(wiso::HDO));
+    REQUIRE(constants_alt.AlphaIceVap_CoefA(wiso::HDO) != constants_default.AlphaIceVap_CoefA(wiso::HDO));
   }
 
   SECTION("fractionation_with_runtime_constants") {
