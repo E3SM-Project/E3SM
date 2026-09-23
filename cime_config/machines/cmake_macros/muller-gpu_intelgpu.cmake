@@ -22,8 +22,6 @@ set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
 
-string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
-
 # Check for Intel LLVM (ifx) version 2025 or newer
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL "2025.0")
@@ -31,6 +29,4 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
     endif()
 endif()
 
-string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
-string(APPEND CMAKE_Fortran_FLAGS " -DHAVE_ERF_INTRINSICS")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
