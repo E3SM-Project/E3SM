@@ -41,10 +41,10 @@ Options to gmake:
 gmake OPT=FALSE    # will compile with debug compiler options on
 gmake MPI=TRUE     # will compile the MPI-parallel search (see above)
 
-Note: interpinic used to carry OpenMP directives, and Makefile.common still
-accepts SMP=TRUE.  Those directives were never compiled by any build in
-current use -- Makefile.common has no gfortran branch under SMP=TRUE -- and
-have been removed.  Use MPI=TRUE instead.
+Note: interpinic used to carry OpenMP directives, enabled with SMP=TRUE.  They
+have been removed in favour of MPI, and SMP=TRUE is now a hard error rather
+than silently adding OpenMP flags to a source tree with no OpenMP in it.  Use
+MPI=TRUE instead.
 
 See Also: See the models/lnd/clm/tools/README file for more notes about setting
           the path for NetCDF and running with shared-memory parallelism.

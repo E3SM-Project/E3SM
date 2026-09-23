@@ -16,7 +16,7 @@
 # USER_CFLAGS -- Additional C compiler flags that the user wishes to set.
 # USER_FFLAGS -- Additional Fortran compiler flags that the user wishes to set.
 # USER_LDLAGS -- Additional load flags that the user wishes to set.
-# SMP ---------- Shared memory Multi-processing (TRUE or FALSE) [default is FALSE]
+# SMP ---------- No longer supported; SMP=TRUE is now a hard error. Use MPI.
 # OPT ---------- Use optimized options.
 # MPI ---------- Build the MPI-parallel search (TRUE or FALSE) [default is FALSE].
 #                Set USER_FC to the MPI wrapper as well, e.g.
@@ -65,9 +65,19 @@ ifneq ($(USER_CC),$(null))
   CC := $(USER_CC)
 endif
 
-# Set if Shared memory multi-processing will be used
+# Shared memory multi-processing.  interpinic's OpenMP directives have been
+# removed in favour of MPI, so SMP=TRUE can no longer do anything: it would add
+# OpenMP compiler and linker flags to a source tree that contains no OpenMP,
+# producing a binary that runs serially while reporting OpenMP='TRUE'-shaped
+# expectations to the user.  Fail instead of doing that quietly.  (For gfortran
+# SMP=TRUE was always inert -- there is no gfortran branch in the SMP handling
+# below -- but for ifort and pgf90 it did previously take effect.)
 ifeq ($(SMP),$(null))
   SMP := FALSE
+endif
+
+ifeq ($(SMP),TRUE)
+  $(error SMP=TRUE is no longer supported: interpinic's OpenMP directives were removed in favour of MPI. Use MPI=TRUE USER_FC=<mpi wrapper> USER_FCTYP=<compiler> instead.)
 endif
 
 # Set if the MPI-parallel search will be built
