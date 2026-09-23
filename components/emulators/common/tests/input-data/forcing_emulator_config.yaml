@@ -1,0 +1,45 @@
+emulator:
+  name: forcing-emulator
+  type: component
+  model:
+    path: unused.pt
+    input_layout: FeatureMajor
+    output_layout: FeatureMajor
+
+sample_space:
+  dimensions:
+    - column
+    - soil_levels
+
+inputs:
+  surface_flux:
+    name: surface_flux
+    attributes:
+      attname: surface_flux
+      longname: Surface Flux to atm
+      stdname: energy
+      units: W m-2
+    dimensions:
+      - column
+
+outputs:
+  temperature:
+    name: temperature
+    attributes:
+      attname: temperature
+      longname: Atmospheric temperature
+      stdname: air_temperature
+      units: K
+    dimensions:
+      - column
+
+  soil_moisture:
+    name: soil_moisture
+    attributes:
+      attname: soil_moisture
+      longname: Soil Moisture
+      stdname: soil_moisture
+      units: h2o kg m-2
+    dimensions:
+      - column
+      - soil_levels

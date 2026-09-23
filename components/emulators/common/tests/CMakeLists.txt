@@ -1,13 +1,11 @@
+enable_testing()
 # Common tests
-# Test for emulator_registry
-add_executable(test_emulator_registry test_emulator_registry.cpp)
-target_link_libraries(test_emulator_registry PRIVATE emulator_common Catch2)
-add_test(NAME emulator_registry_tests COMMAND test_emulator_registry)
 
-# Test for emulator
-add_executable(test_emulator test_emulator.cpp)
-target_link_libraries(test_emulator PRIVATE emulator_common Catch2)
-add_test(NAME emulator_tests COMMAND test_emulator)
+# # Test for emulator
+add_executable(test_initialization test_emulator.cpp)
+target_link_libraries(test_initialization PRIVATE emulator_common Catch2)
+target_compile_definitions(test_initialization PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input-data")
+add_test(NAME emulator_initialization COMMAND test_initialization)
 
 # Test for InferenceConfig and utilities
 add_executable(test_inference_config test_inference_config.cpp)
@@ -23,6 +21,15 @@ add_test(NAME inference_stub_backend_tests COMMAND test_inference_stub_backend)
 add_executable(test_inference_tensor test_inference_tensor.cpp)
 target_link_libraries(test_inference_tensor PRIVATE emulator_inference)
 add_test(NAME inference_tensor_tests COMMAND test_inference_tensor)
+add_executable(test_emulator_coupling test_emulator_coupling.cpp)
+target_link_libraries(test_emulator_coupling PRIVATE emulator_common Catch2)
+target_compile_definitions(test_emulator_coupling PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input-data")
+add_test(NAME emulator_coupling COMMAND test_emulator_coupling)
+
+add_executable(test_emulator_config test_emulator_config.cpp)
+target_link_libraries(test_emulator_config PRIVATE emulator_common Catch2)
+target_compile_definitions(test_emulator_config PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/input-data")
+add_test(NAME test_emulator_config COMMAND test_emulator_config)
 
 # Test for FpeGuard
 add_executable(test_fpe_guard test_fpe_guard.cpp)

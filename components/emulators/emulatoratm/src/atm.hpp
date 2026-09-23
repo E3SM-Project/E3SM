@@ -10,8 +10,8 @@
 #ifndef EMULATORATM_HPP
 #define EMULATORATM_HPP
 
-#include "emulator.hpp"
 #include "emulator_c_api.hpp"
+#include <emulator.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -29,105 +29,19 @@ namespace emulator {
  * Currently assumes a structured lat-lon grid. Grid dimensions (nx, ny)
  * are read from atm_in and used to compute the total global column count
  * as nx * ny. Lat/lon coordinates are stored and passed to MCT in degrees.
- *
- * ## Lifecycle
- * 1. Constructor creates EmulatorAtm with ATM_COMP type
- * 2. create_instance() sets MPI, comp_id, parses config for grid dims
- * 3. set_grid_data() sets spatial decomposition (optional override)
- * 4. init_coupling_indices() parses MCT field lists
- * 5. setup_coupling() sets buffer pointers
- * 6. initialize() loads model and reads initial conditions
- * 7. run() executes time steps (import -> inference -> export)
- * 8. finalize() cleans up resources
  */
 class EmulatorAtm : public Emulator {
 public:
   EmulatorAtm();
-  ~EmulatorAtm() override = default;
+  ~EmulatorAtm() = default;
 
-  // =========================================================================
-  // Setup methods (called before initialize)
-  // =========================================================================
-
-  /**
-   * @brief Set MPI communicator, component ID, and run settings.
-   */
-  void create_instance(int comm, int comp_id,
-                       const std::string &input_file,
-                       const std::string &log_file,
-                       int run_type, int start_ymd, int start_tod);
-
-  /**
-   * @brief Set grid decomposition data from driver.
-   */
-  void set_grid_data(const EmulatorGridDesc& grid) override;
-
-  /**
-   * @brief Initialize coupling field indices from MCT field lists.
-   */
-  void init_coupling_indices(const std::vector<std::string> &export_fields,
-                             const std::vector<std::string> &import_fields) override;
-
-  /**
-   * @brief Set up coupling buffer pointers from MCT.
-   */
-  void setup_coupling(const CouplingDesc& cpl) override;
-
-  // =========================================================================
-  // Accessors
-  // =========================================================================
-
-  int get_num_local_cols() const override { return m_num_local_cols; }
-  int get_num_global_cols() const override { return m_num_global_cols; }
-  int get_nx() const override { return m_nx; }
-  int get_ny() const override { return m_ny; }
-  void get_local_col_gids(int *gids) const override;
-  void get_cols_latlon(double *lat, double *lon) const override;
-  void get_cols_area(double *area) const override;
-
+  void init_data() override;
 protected:
   // Virtual methods from Emulator base
-  void init_impl() override;
   void run_impl(int dt) override;
   void final_impl() override;
   void print_extra_info(std::ostream& os) const override {};
 
-private:
-  // =========================================================================
-  // Grid and decomposition
-  // =========================================================================
-  int m_nx = 0;                ///< Grid x-dimension
-  int m_ny = 0;                ///< Grid y-dimension
-  int m_num_local_cols = 0;    ///< Local columns on this rank
-  int m_num_global_cols = 0;   ///< Total global columns
-  std::vector<int> m_col_gids; ///< Global IDs for local columns
-  std::vector<double> m_lat;   ///< Latitude [degrees]
-  std::vector<double> m_lon;   ///< Longitude [degrees]
-  std::vector<double> m_area;  ///< Cell areas
-
-  // =========================================================================
-  // Coupling
-  // =========================================================================
-  double *m_import_data = nullptr; ///< MCT import buffer pointer
-  double *m_export_data = nullptr; ///< MCT export buffer pointer
-  int m_num_imports = 0;           ///< Number of import fields
-  int m_num_exports = 0;           ///< Number of export fields
-
-  // =========================================================================
-  // Configuration
-  // =========================================================================
-  int m_comm = 0;              ///< MPI communicator
-  std::string m_input_file;    ///< Path to atm_in config file
-  std::string m_log_file;      ///< Path to log file
-  int m_run_type = 0;          ///< Run type (startup/continue/branch)
-
-  // =========================================================================
-  // Helper methods
-  // =========================================================================
-  void import_coupling_fields();
-  void export_coupling_fields();
-  void prepare_inputs();
-  void process_outputs();
 };
 
 } // namespace emulator

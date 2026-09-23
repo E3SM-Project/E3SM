@@ -1,216 +1,76 @@
-// Catch2 v2 single header
+#include "test_emulator.hpp"
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "emulator.hpp"
-#include "emulator_registry.hpp"
-#include "emulator_c_api.hpp"
+#include <emulator.hpp>
+#include <emulator_c_api.hpp>
+#include <emulator_config.hpp>
+#include <mpi.h>
 
 namespace emulator {
-namespace test {
+namespace tests {
 
-// Concrete implementation for testing
-class TestEmulator : public Emulator {
-public:
-  TestEmulator(EmulatorType type = EmulatorType::ATM, 
-               int id = -1, const std::string &name = "")
-      : Emulator(type,0, id, name) {}
+TEST_CASE("Emulator initialization builds field layout") {
 
-  // Track calls for verification
-  bool init_called = false;
-  bool run_called = false;
-  bool final_called = false;
-  int last_dt = 0;
+  const std::filesystem::path config_file =
+      TEST_DATA_DIR "/simple_emulator_config.yaml";
 
-   // New pure virtuals from Emulator: give simple stub impls
-  void set_grid_data(const EmulatorGridDesc&) override {}
-  void setup_coupling(const CouplingDesc& ) override {}
-  void init_coupling_indices(const std::vector<std::string> &export_fields,
-                                     const std::vector<std::string> &import_fields ) override {}
+  TestEmulator emu{
+      CreateConfig{.path = std::move(config_file), .grid = make_test_grid()}};
 
-  int get_num_local_cols()  const override { return 0; }
-  int get_num_global_cols() const override { return 0; }
-  int get_nx()              const override { return 0; }
-  int get_ny()              const override { return 0; }
+  REQUIRE(emu.is_initialized());
+  REQUIRE(emu.name() == "lnd-emulator");
+  REQUIRE(emu.type() == emulator::EmulatorType::Component);
 
-  void get_local_col_gids(int* ) const override {}
-  void get_cols_latlon(double*, double* ) const override {}
-  void get_cols_area(double* ) const override {}
+  REQUIRE(emu.field_descriptors().size() == 3);
 
-protected:
-  void init_impl() override { init_called = true; }
-  void run_impl(int dt) override {
-    run_called = true;
-    last_dt = dt;
-  }
-  void final_impl() override { final_called = true; }
-};
+  SECTION("temperature field") {
+    const auto& field = emu.get_field_descriptor("temperature");
 
-// Test emulators for different EmulatorTypes
-class TestOcnEmulator : public Emulator {
-public:
-  TestOcnEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::OCN, 0, id, name) {}
+    REQUIRE(field.role == emulator::ModelFieldRole::Input);
+    REQUIRE(field.size == 4);
 
-protected:
-  void init_impl() override {}
-  void run_impl(int) override {}
-  void final_impl() override {}
-};
+    const std::vector<std::string> expected{"column"};
+    REQUIRE(field.config.dimensions == expected);
 
-class TestIceEmulator : public Emulator {
-public:
-  TestIceEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::ICE, 0,id, name) {}
-
-protected:
-  void init_impl() override {}
-  void run_impl(int) override {}
-  void final_impl() override {}
-};
-
-class TestLndEmulator : public Emulator {
-public:
-  TestLndEmulator(int id = -1, const std::string &name = "")
-      : Emulator(EmulatorType::LND,0, id, name) {}
-
-protected:
-  void init_impl() override {}
-  void run_impl(int) override {}
-  void final_impl() override {}
-};
-
-TEST_CASE("Emulator construction", "[emulator]") {
-  TestEmulator emu;
-  REQUIRE(emu.type() == EmulatorType::ATM);
-  REQUIRE(emu.id() == -1);
-  REQUIRE(emu.name().empty());
-  REQUIRE_FALSE(emu.is_initialized());
-  REQUIRE(emu.step_count() == 0);
-}
-
-TEST_CASE("Emulator construction with args", "[emulator]") {
-  TestEmulator emu(EmulatorType::ATM, 42, "test_atm");
-  REQUIRE(emu.id() == 42);
-  REQUIRE(emu.name() == "test_atm");
-}
-
-TEST_CASE("Emulator different types", "[emulator]") {
-
-  TestEmulator atm(EmulatorType::ATM);
-  TestEmulator ocn(EmulatorType::OCN);
-  TestEmulator ice(EmulatorType::ICE);
-  TestEmulator lnd(EmulatorType::LND);
-
-  REQUIRE(atm.type() == EmulatorType::ATM);
-  REQUIRE(ocn.type() == EmulatorType::OCN);
-  REQUIRE(ice.type() == EmulatorType::ICE);
-  REQUIRE(lnd.type() == EmulatorType::LND);
-}
-
-TEST_CASE("Emulator lifecycle", "[emulator]") {
-  TestEmulator emu(EmulatorType::ATM, 1, "test");
-
-  SECTION("initialize calls init_impl") {
-    REQUIRE_FALSE(emu.init_called);
-    emu.initialize();
-    REQUIRE(emu.init_called);
-    REQUIRE(emu.is_initialized());
+    REQUIRE(emu.get_field("temperature").size() == 4);
   }
 
-  SECTION("run calls run_impl and increments step count") {
-    emu.initialize();
-    REQUIRE(emu.step_count() == 0);
+  SECTION("soil-moisture field") {
+    const auto& field = emu.get_field_descriptor("soil_moisture");
 
-    emu.run(3600);
-    REQUIRE(emu.run_called);
-    REQUIRE(emu.last_dt == 3600);
-    REQUIRE(emu.step_count() == 1);
+    REQUIRE(field.role == emulator::ModelFieldRole::Input);
+    REQUIRE(field.size == 12);
 
-    emu.run(1800);
-    REQUIRE(emu.step_count() == 2);
+    const std::vector<std::string> expected{
+        "column",
+        "soil_levels",
+    };
+    REQUIRE(field.config.dimensions == expected);
+
+    REQUIRE(emu.get_field("soil_moisture").size() == 12);
   }
 
-  SECTION("finalize calls final_impl") {
-    emu.initialize();
-    REQUIRE_FALSE(emu.final_called);
-    emu.finalize();
-    REQUIRE(emu.final_called);
-    REQUIRE_FALSE(emu.is_initialized());
+  SECTION("surface-flux field") {
+    const auto& field = emu.get_field_descriptor("surface_flux");
+
+    REQUIRE(field.role == emulator::ModelFieldRole::Output);
+    REQUIRE(field.size == 4);
+
+    REQUIRE(emu.get_field("surface_flux").size() == 4);
+  }
+
+  SECTION("flat buffers have calculated sizes") {
+    REQUIRE(emu.input_fields().size() == 16);
+    REQUIRE(emu.output_fields().size() == 4);
+
+    REQUIRE(std::ranges::all_of(emu.input_fields(),
+                                [](double value) { return value == 0.0; }));
+
+    REQUIRE(std::ranges::all_of(emu.output_fields(),
+                                [](double value) { return value == 0.0; }));
   }
 }
 
-TEST_CASE("Emulator error handling", "[emulator]") {
-  TestEmulator emu(EmulatorType::ATM,1, "test");
-
-  SECTION("run before initialize throws") {
-    REQUIRE_THROWS_AS(emu.run(100), std::runtime_error);
-  }
-
-  SECTION("double initialize throws") {
-    emu.initialize();
-    REQUIRE_THROWS_AS(emu.initialize(), std::runtime_error);
-  }
-
-  SECTION("finalize without initialize is safe") {
-    REQUIRE_NOTHROW(emu.finalize());
-  }
-
-  SECTION("re-initialization after finalize works") {
-    emu.initialize();
-    REQUIRE(emu.is_initialized());
-    emu.run(100);
-    REQUIRE(emu.step_count() == 1);
-
-    emu.finalize();
-    REQUIRE_FALSE(emu.is_initialized());
-
-    // Re-initialize and verify it works
-    emu.initialize();
-    REQUIRE(emu.is_initialized());
-    emu.run(200);
-    REQUIRE(emu.step_count() == 2); // step count persists
-  }
-}
-
-TEST_CASE("Emulator with EmulatorRegistry", "[emulator][integration]") {
-  auto &reg = EmulatorRegistry::instance();
-  reg.clean_up();
-
-  // Create emulator via registry with name
-  auto &emu = reg.create<TestEmulator>("test_emu", EmulatorType::ATM, 99, "registry_test");
-
-  REQUIRE(reg.has("test_emu"));
-  REQUIRE(emu.type() == EmulatorType::ATM);
-  REQUIRE(emu.id() == 99);
-
-  // Use emulator from registry
-  emu.initialize();
-  emu.run(100);
-
-  // Verify through registry access
-  const auto &ref = reg.get<TestEmulator>("test_emu");
-  REQUIRE(ref.id() == 99);
-  REQUIRE(ref.step_count() == 1);
-
-  // Test get_mut
-  auto &mut_ref = reg.get_mut<TestEmulator>("test_emu");
-  mut_ref.run(200);
-  REQUIRE(ref.step_count() == 2);
-
-  reg.clean_up();
-}
-
-TEST_CASE("EmulatorRegistry get_mut throws for unknown name",
-          "[emulator_registry]") {
-  auto &reg = EmulatorRegistry::instance();
-  reg.clean_up();
-
-  REQUIRE_THROWS_AS(reg.get_mut<TestEmulator>("nonexistent"),
-                    std::runtime_error);
-
-  reg.clean_up();
-}
-
-} // namespace test
+} // namespace tests
 } // namespace emulator

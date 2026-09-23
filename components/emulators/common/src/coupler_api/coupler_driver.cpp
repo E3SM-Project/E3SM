@@ -1,3 +1,4 @@
+#include "process.hpp"
 #include <algorithm>
 #include <coupler_driver.hpp>
 #include <iostream>
@@ -29,10 +30,10 @@ AnyComponent& CouplerDriver::get_component(std::string_view name) {
     throw std::runtime_error("Invalid component requested" + std::string(name));
 }
 
-void CouplerDriver::run_component(std::string_view name) {
+void CouplerDriver::run_component(std::string_view name, const ProcessRunOpts opts) {
   auto& comp = get_component(name);
   import_component(name);
-  comp.run();
+  comp.run(opts);
   export_component(name);
 }
 

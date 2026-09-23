@@ -6,102 +6,10 @@
 #include <field_registry.hpp>
 #include <string_view>
 #include <vector>
+#include <process.hpp>
 
 namespace e3sm::coupler::test {
 
-struct FieldBinding {
-  FieldID id;
-  std::span<double> data;
-};
-
-class CouplingAdapter {
-public:
-  void register_coupled_field(FieldRegistry& registry, RegisteredField metadata,
-                              std::span<double> data) {
-    const auto id = registry.register_field(std::move(metadata));
-
-    fields_.push_back({
-        .id = id,
-        .data = data,
-    });
-  }
-
-  void configure(const ActiveCouplingFields& plan) {
-    active_exports_ = resolve(plan.export_ids);
-    active_imports_ = resolve(plan.import_ids);
-  }
-
-  void export_fields(std::span<ExportBuffer> buffers) const {
-    if (buffers.size() != active_exports_.size()) {
-      throw std::runtime_error("Incorrect number of export buffers");
-    }
-
-    for (std::size_t i = 0; i < buffers.size(); ++i) {
-      const auto& local = active_exports_[i];
-      auto& remote = buffers[i];
-
-      if (local.id != remote.id) {
-        throw std::runtime_error("Export field ID mismatch");
-      }
-
-      if (local.data.size() != remote.data.size()) {
-        throw std::runtime_error("Export field size mismatch");
-      }
-
-      std::ranges::copy(local.data, remote.data.begin());
-    }
-  }
-
-  void import_fields(std::span<const ImportBuffer> buffers) {
-    if (buffers.size() != active_imports_.size()) {
-      throw std::runtime_error("Incorrect number of import buffers");
-    }
-
-    for (std::size_t i = 0; i < buffers.size(); ++i) {
-      auto& local = active_imports_[i];
-      const auto& remote = buffers[i];
-
-      if (local.id != remote.id) {
-        throw std::runtime_error("Import field ID mismatch");
-      }
-
-      if (local.data.size() != remote.data.size()) {
-        throw std::runtime_error("Import field size mismatch");
-      }
-
-      std::ranges::copy(remote.data, local.data.begin());
-    }
-  }
-
-private:
-  /**
-   * @brief Helper to resolve the FieldBinding corresponding to a FieldID
-   * */
-  std::vector<FieldBinding> resolve(std::span<const FieldID> ids) const {
-    std::vector<FieldBinding> result;
-    result.reserve(ids.size());
-
-    for (FieldID id : ids) {
-      auto it = std::ranges::find_if(
-          fields_, [id](const FieldBinding& field) { return field.id == id; });
-
-      if (it == fields_.end()) {
-        throw std::runtime_error(
-            "Coupling configuration references unknown field");
-      }
-
-      result.push_back(*it);
-    }
-
-    return result;
-  }
-
-  std::vector<FieldBinding> fields_;
-  std::vector<FieldBinding> active_exports_;
-  std::vector<FieldBinding> active_imports_;
-};
-
-// FAKE COMPONENTS
 
 class FakeAtmosphere {
 public:
@@ -177,7 +85,7 @@ public:
     coupling_.import_fields(buffers);
   }
 
-  void run() {
+  void run(const ProcessRunOpts opts) {
     for (std::size_t i = 0; i < temperature_.size(); ++i) {
       temperature_[i] = 280.0 + static_cast<double>(i);
       precipitation_[i] = 0.1 * static_cast<double>(i);
@@ -263,7 +171,7 @@ public:
         surface_flux_);
   }
 
-  void run() {
+  void run(const ProcessRunOpts) {
     for (std::size_t i = 0; i < surface_flux_.size(); ++i) {
       surface_flux_[i] = 2.0 * precipitation_[i];
     }

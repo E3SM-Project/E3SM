@@ -1,0 +1,42 @@
+emulator:
+  name: lnd-emulator
+  type: component
+  model:
+    path: land_model.pt
+    input_layout: SampleMajor
+    output_layout: FeatureMajor
+
+sample_space:
+  dimensions:
+  - column
+  - soil_levels
+
+inputs:
+  temperature:
+    attributes:
+      attname: temperature
+      longname: Atmospheric temperature
+      stdname: air_temperature
+      units: K
+    dimensions:
+      - column
+
+  soil_moisture:
+    attributes:
+      attname: soil_moisture
+      longname: Soil Moisture
+      stdname: soil_moisture
+      units: h2o kg m-2
+    dimensions:
+    - column
+    - soil_levels
+
+outputs:
+  surface_flux:
+    attributes:
+      attname: surface_flux
+      longname: Surface Flux to atm
+      stdname: energy
+      units: W m-2
+    dimensions:
+    - column
