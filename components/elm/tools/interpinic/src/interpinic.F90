@@ -94,7 +94,8 @@ contains
 
     use netcdf
     use shr_infnan_mod , only: shr_infnan_isnan
-    use interpinic_mpi_utils , only: masterproc, bcast_int, bcast_logical
+    use interpinic_mpi_utils , only: masterproc, bcast_int, bcast_logical, &
+                                    interpinic_abort
 
     implicit none
     include 'netcdf.inc'
@@ -198,7 +199,7 @@ contains
     if (dimlen/=nlevsno) then
        write (6,*) 'error: input and output nlevsno values disagree'
        write (6,*) 'input nlevsno = ',nlevsno,' output nlevsno = ',dimlen
-       stop
+       call interpinic_abort('input and output nlevsno values disagree')
     end if
 
     ret = nf90_inq_dimid(ncidi, "levsno1", dimidsno1)
@@ -209,7 +210,7 @@ contains
        if (dimlen/=nlevsno1) then
           write (6,*) 'error: input and output nlevsno1 values disagree'
           write (6,*) 'input nlevsno1 = ',nlevsno1,' output nlevsno1 = ',dimlen
-          stop
+          call interpinic_abort('input and output nlevsno1 values disagree')
        end if
     else
        write (6,*) 'levsno1 dimension does NOT exist on the input dataset'
@@ -225,7 +226,7 @@ contains
        if (dimlen/=nlevcan) then
           write (6,*) 'error: input and output nlevcan values disagree'
           write (6,*) 'input nlevcan = ',nlevcan,' output nlevcan = ',dimlen
-          stop
+          call interpinic_abort('input and output nlevcan values disagree')
        end if
     else
        write (6,*) 'levcan dimension does NOT exist on the input dataset'
@@ -253,7 +254,7 @@ contains
           if (dimlen/=nlevmon) then
              write (6,*) 'error: input and output nlevmon values disagree'
              write (6,*) 'input nlevmon = ',nlevmon,' output nlevmon = ',dimlen
-             stop
+             call interpinic_abort('input and output nlevmon values disagree')
           end if
        end if
     else
@@ -269,7 +270,7 @@ contains
     if (dimlen/=nlevlak) then
        write (6,*) 'error: input and output nlevlak values disagree'
        write (6,*) 'input nlevlak = ',nlevlak,' output nlevlak = ',dimlen
-       stop
+       call interpinic_abort('input and output nlevlak values disagree')
     end if
 
     call check_ret (nf90_inq_dimid(ncidi, "levtot", dimidtot ))
@@ -297,7 +298,8 @@ contains
     if (ret/=NF90_NOERR) call handle_error (ret)
     ret = nf90_inquire_dimension(ncidi, dimidrad, len=dimlen)
     if (dimlen/=numrad) then
-       write (6,*) 'error: input numrad dimension size does not equal ',numrad; stop
+       write (6,*) 'error: input numrad dimension size does not equal ',numrad
+       call interpinic_abort('input numrad dimension size mismatch')
     end if
     allocate( rbufmlo(numrad,numpftso) )
     allocate( rbufmco(nlevcan,numpftso) )
@@ -308,12 +310,14 @@ contains
        call check_ret (nf90_inq_dimid(ncidi, "rtmlon", dimidrtmlon))
        call check_ret (nf90_inquire_dimension(ncidi, dimidrtmlon, len=dimlen))
        if (dimlen/=rtmlon) then
-          write (6,*) 'error: input rtmlon does not equal ',rtmlon; stop
+          write (6,*) 'error: input rtmlon does not equal ',rtmlon
+          call interpinic_abort('input rtmlon mismatch')
        end if
        call check_ret (nf90_inq_dimid(ncidi, "rtmlat", dimidrtmlat))
        call check_ret (nf90_inquire_dimension(ncidi, dimidrtmlat, len=dimlen))
        if (dimlen/=rtmlat) then
-          write (6,*) 'error: input rtmlat does not equal ',rtmlat; stop
+          write (6,*) 'error: input rtmlat does not equal ',rtmlat
+          call interpinic_abort('input rtmlat mismatch')
        end if
     else
        dimidrtmlat = -1
@@ -509,7 +513,8 @@ contains
           else if ( xtype == NF90_DOUBLE )then
              call interp_sl_real( varname, ncidi, ncido, nvec=nvecin, nveco=nvecout )
           else
-             write (6,*) 'error: variable is not of type double or integer'; stop
+             write (6,*) 'error: variable is not of type double or integer'
+             call interpinic_abort('variable is not of type double or integer')
           end if
 
        ! For RTM variables
@@ -551,7 +556,7 @@ contains
 
           if ( xtype /= NF90_DOUBLE )then
              write (6,*) 'error: 2D variable is not of double type:', trim(varname)
-             stop
+             call interpinic_abort('2D variable is not of double type')
           end if
           if ( dimids(1) == dimidrad )then
              if ( dimids(2) == dimidpft )then
@@ -599,7 +604,8 @@ contains
           end if
           if ( dimids(2) /= dimidcols .and. dimids(2) /= dimidpft )then
              write (6,*) 'error: variable = ', varname
-             write (6,*) 'error: variables second dimension is not recognized'; stop
+             write (6,*) 'error: variables second dimension is not recognized'
+             call interpinic_abort('variable second dimension is not recognized')
           end if
           if ( dimids(1) == dimidlak )then
              call interp_ml_real(varname, ncidi, ncido, &
@@ -621,7 +627,8 @@ contains
                                  nlev=nlevmon, nlev_o=nlevmon, nvec=numcols, nveco=numcolso)
           else
              write (6,*) 'error: variable = ', varname
-             write (6,*) 'error: variables first dimension is not recognized'; stop
+             write (6,*) 'error: variables first dimension is not recognized'
+             call interpinic_abort('variable first dimension is not recognized')
           end if
        else
           write (6,*) 'Skipping variable NOT 1 or 2D: ', trim(varname)
@@ -1301,6 +1308,7 @@ contains
   subroutine interp_ml_real (varname, ncidi, ncido, nlev, nlev_o, nvec, nveco)
 
     use netcdf
+    use interpinic_mpi_utils, only : interpinic_abort
     implicit none
     include 'netcdf.inc'
 
@@ -1359,14 +1367,14 @@ contains
           end do
        else
           write(*,*) 'no data was written: subroutine interp_ml_real'
-          stop
+          call interpinic_abort('interp_ml_real: no data written')
        end if
     else
        !!! here we repeat variables at the depth of nsoil for each of the new levels
        nlev_diff = nlev_o - nlev
        if (nlev_diff .lt. 0 ) then
           write(*,*) 'error: new grid must be longer than old grid'
-          stop
+          call interpinic_abort('new grid must be longer than old grid')
        end if
        if (nvec == numcols) then
           do no = 1, nveco
@@ -1388,7 +1396,7 @@ contains
           end do
        else
           write(*,*) 'no data was written: subroutine interp_ml_real'
-          stop
+          call interpinic_abort('interp_ml_real: no data written')
        end if
     endif
 
@@ -1410,6 +1418,7 @@ contains
     use netcdf
     use shr_infnan_mod , only: shr_infnan_isnan
 
+    use interpinic_mpi_utils, only : interpinic_abort
     implicit none
     include 'netcdf.inc'
 
@@ -1552,7 +1561,7 @@ contains
        end do                !output data land loop
     else
        write(*,*) 'subroutine interp_sl_real: no data written to variable ',varname       
-       stop
+       call interpinic_abort('interp_sl_real: no data written')
     end if
 
     call check_ret(nf90_inq_varid (ncido, varname, varid))
@@ -1575,6 +1584,7 @@ contains
   subroutine interp_sl_int (varname, ncidi, ncido, nvec, nveco)
 
     use netcdf
+    use interpinic_mpi_utils, only : interpinic_abort
     implicit none
     include 'netcdf.inc'
 
@@ -1679,7 +1689,7 @@ contains
 
        write(*,*) 'subroutine interp_sl_int: no data written to typeo,vtypeo,no=', &
                    typeo(no),vtypeo(no),no
-       stop
+       call interpinic_abort('interp_sl_int: no data written')
 
     end if
 
@@ -1797,24 +1807,26 @@ contains
   !=======================================================================
 
   subroutine check_ret(ret)
+    use interpinic_mpi_utils, only : interpinic_abort
     implicit none
     include 'netcdf.inc'
     integer, intent(in) :: ret
     if (ret /= NF_NOERR) then
        write(6,*)'netcdf error rcode = ', ret,' error = ', NF_STRERROR(ret)
-       call abort()
+       call interpinic_abort('netCDF error')
     end if
   end subroutine check_ret
 
   !=======================================================================
  
   subroutine handle_error (ret)
+    use interpinic_mpi_utils, only : interpinic_abort
     implicit none
     include 'netcdf.inc'
     integer ret
     write(6,*) "NetCDF error code = ", ret
     write(6,*) nf_strerror (ret)
-    call abort
+    call interpinic_abort('netCDF error')
   end subroutine handle_error
 
 end module interpinic
