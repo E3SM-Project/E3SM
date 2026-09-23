@@ -17,3 +17,6 @@ set(USE_SYCL "TRUE")
 
 # Override the value TRUE set by intelgpu.cmake (via intel.cmake)
 set(E3SM_LINK_WITH_FORTRAN "FALSE")
+
+# EAMxx ignores generic CMAKE_CXX_FLAGS, includes CMAKE_CXX_FLAGS_[RELEASE,DEBUG]
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise")
