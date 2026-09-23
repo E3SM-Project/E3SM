@@ -109,12 +109,6 @@ private:
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
 
-  // Shallow convection detrainment (not available in EAMxx yet)
-  view_2d dlfsh_;
-
-  // Shallow convection entrainment/(entrainment+detrainment) ratio
-  view_2d sh_e_ed_ratio_;
-
   // Temporary view for pressure thickness in mb (converted from Pa)
   view_2d dp_tmp_;
 
