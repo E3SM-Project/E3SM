@@ -87,6 +87,19 @@ contains
 
     masterproc = (iam == 0)
 
+    ! Say plainly what this binary is.  Without it there is no way to tell from
+    ! a log whether a run is using every rank it was given, or whether a serial
+    ! binary was launched under srun (in which case every rank redundantly
+    ! computes the whole problem and they all write the same output file).
+    if (masterproc) then
+#ifdef HAVE_MPI
+       write(6,'(a,i0,a)') ' interpinic: MPI build, running on ', npes, ' rank(s)'
+#else
+       write(6,'(a)') ' interpinic: SERIAL build (compiled without -DHAVE_MPI)'
+#endif
+       call shr_sys_flush(6)
+    end if
+
   end subroutine mpi_initialize
 
   !=======================================================================
@@ -148,7 +161,7 @@ contains
     integer, intent(out) :: counts(:)     ! dimension(npes)
     integer, intent(out) :: displs(:)     ! dimension(npes), 0-based
 
-    integer :: n, p, nact, acc, tgt
+    integer :: n, p, nact, acc, tgt, nmin, nmax
 
     if (masterproc) then
 
@@ -180,6 +193,25 @@ contains
        end do
 
        counts(p+1) = ntot - displs(p+1)
+
+       ! Report the balance actually achieved.  counts is the block size; what
+       ! costs time is the number of ACTIVE points in each block, so report
+       ! that -- a large max/min spread here is what would justify revisiting
+       ! this decomposition.
+       nmin = huge(0)
+       nmax = 0
+       do p = 1, npes
+          acc = 0
+          do n = displs(p)+1, displs(p)+counts(p)
+             if (active(n)) acc = acc + 1
+          end do
+          nmin = min(nmin, acc)
+          nmax = max(nmax, acc)
+       end do
+       write(6,'(a,i0,a,i0,a,i0,a)') '   decomposition: ', ntot, ' points (', &
+            nact, ' active) over ', npes, ' rank(s)'
+       write(6,'(a,i0,a,i0)') '   active points per rank: min ', nmin, ' max ', nmax
+       call shr_sys_flush(6)
 
     end if
 
