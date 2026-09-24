@@ -11,7 +11,7 @@ module restart_dynamics
   implicit none
 
   type(var_desc_t) :: udesc, vdesc, tdesc, psdesc, phisdesc, timedesc, &
-                      Wdesc, PHINHdesc
+                      Wdesc, PHINHdesc, dp3ddesc
 
   type(var_desc_t) :: FQpsdesc, omegadesc
 
@@ -74,6 +74,7 @@ CONTAINS
 
     ierr = PIO_Def_Var(File, 'OMEGA', pio_double, (/ncol_dimid, nlev_dimid/), omegadesc)
     ierr = PIO_Def_Var(File, 'PS', pio_double, (/ncol_dimid, timelevels_dimid/), PSdesc)
+    ierr = PIO_Def_Var(File, 'dp3d', pio_double, (/ncol_dimid, nlev_dimid/), dp3ddesc)
     ierr = PIO_Def_Var(File, 'PHIS', pio_double, (/ncol_dimid/), phisdesc)
 
     allocate(qdesc_dp(qsize_d))
@@ -200,6 +201,18 @@ CONTAINS
     end do
     call PIO_Setframe(File,PSdesc, t)
     call PIO_Write_Darray(File,PSdesc,iodesc2d, var2d,ierr)
+
+!$omp parallel do private(ie, k, j, i)
+    do ie=1,nelemd
+       do k=1,nlev
+          do j=1,np
+             do i=1,np
+                var3d(i,j,ie,k) = elem(ie)%state%dp3d(i,j,k,tl)
+             end do
+          end do
+       end do
+    end do
+    call PIO_Write_Darray(File,dp3ddesc,iodesc3d,var3d,ierr)
 
     ! Write the U component of Velocity
 !$omp parallel do private(ie, k, j, i)
@@ -364,7 +377,8 @@ CONTAINS
     use element_mod, only : element_t
     use pio, only : file_desc_t, pio_global, pio_double, pio_offset_kind, &
          pio_get_att, pio_inq_dimid, pio_inq_dimlen, pio_initdecomp, pio_inq_varid, &
-         pio_read_darray, pio_setframe, file_desc_t, io_desc_t, pio_double
+         pio_read_darray, pio_setframe, pio_seterrorhandling, pio_return_error, &
+         file_desc_t, io_desc_t
     use dyn_comp, only : dyn_init1, dyn_init2, frontgf_idx, frontga_idx
     use phys_grid, only: phys_grid_init
     use physpkg, only: phys_register
@@ -380,6 +394,7 @@ CONTAINS
     use control_mod,            only: qsplit
     use time_mod,               only: TimeLevel_Qdp
     use phys_grid_ctem,   only: phys_grid_ctem_reg
+    use hycoef, only: hyai, hybi, ps0
 
     !
     ! Input arguments
@@ -398,7 +413,8 @@ CONTAINS
     integer(kind=pio_offset_kind), parameter :: t = 1
     integer :: i, k, cnt, st, en, tl, tlQdp, ii, jj, s2d, q, j
     integer :: timelevel_dimid, timelevel_chk
-    integer :: npes_se
+    integer :: npes_se, old_pio_error_handling
+    logical :: has_dp3d_restart
 !    type(file_desc_t) :: ncid
 !    integer :: ncid
 
@@ -500,6 +516,14 @@ CONTAINS
 
     ierr = PIO_Inq_varid(File, 'PS', psdesc)
 
+    ! A missing dp3d field is expected in legacy restart files. PIO's default
+    ! error mode aborts on an unsuccessful inquiry, so temporarily request the
+    ! error code and restore the prior mode immediately afterward.
+    call PIO_SetErrorHandling(File, PIO_RETURN_ERROR, old_pio_error_handling)
+    ierr = PIO_Inq_varid(File, 'dp3d', dp3ddesc)
+    call PIO_SetErrorHandling(File, old_pio_error_handling)
+    has_dp3d_restart = (ierr == 0)
+
     ierr = PIO_Inq_varid(File, 'PHIS', phisdesc)
 
 #ifdef MODEL_THETA_L
@@ -567,6 +591,28 @@ CONTAINS
           end do
        end do
     end do
+
+    do ie=1,nelemd
+       do k=1,nlev
+          elem(ie)%state%dp3d(:,:,k,tl) = &
+               (hyai(k+1)-hyai(k))*ps0 + &
+               (hybi(k+1)-hybi(k))*elem(ie)%state%ps_v(:,:,tl)
+       end do
+    end do
+    if (has_dp3d_restart) then
+       call pio_read_darray(File, dp3ddesc, iodesc3d, var3d, ierr)
+       cnt=0
+       do k=1,nlev
+          do ie=1,nelemd
+             do j=1,np
+                do i=1,np
+                   cnt=cnt+1
+                   elem(ie)%state%dp3d(i,j,k,tl) = var3d(cnt)
+                end do
+             end do
+          end do
+       end do
+    end if
 
     call pio_setframe(File,udesc, t)
     call pio_read_darray(File, udesc, iodesc3d, var3d, ierr)
