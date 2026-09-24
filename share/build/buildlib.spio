@@ -206,6 +206,7 @@ def buildlib(bldroot, installpath, case):
 
     cmake_opts += "-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON "
     cmake_opts += f"-DGPTL_PATH:STRING={installpath} "
+    cmake_opts += f"-DCMAKE_INSTALL_PREFIX:STRING={installpath} "
     cmake_opts += "-DPIO_ENABLE_TESTS:BOOL=OFF -DPIO_USE_MALLOC:BOOL=ON "
     cmake_opts += f"-DUSER_CMAKE_MODULE_PATH:LIST={cimeroot}/CIME/non_py/src/CMake "
 
@@ -294,7 +295,8 @@ def buildlib(bldroot, installpath, case):
                 for item in glob.glob(os.path.join(pio_bld_dir, "pio", glob_to_copy)):
                     safe_copy(item, "{}/include".format(installpath))
     else:
-        manual_install_lib(pio_bld_dir, installpath, exeroot, adios_found)
+        #manual_install_lib(pio_bld_dir, installpath, exeroot, adios_found)
+        run_bld_cmd_ensure_logging(f"cmake --install .", logger, from_dir=pio_bld_dir)
 
     # make sure case pio_typename valid_values is set correctly
     expect(expect_string_found, "CIME models require NETCDF in PIO build")
