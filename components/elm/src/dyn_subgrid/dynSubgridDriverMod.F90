@@ -41,6 +41,7 @@ module dynSubgridDriverMod
   use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
   use ColumnType          , only : col_pp
   use VegetationType      , only : veg_pp
+   use topounit_varcon      , only : max_topounits
   use elm_varctl          , only : iulog
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -434,13 +435,13 @@ contains
     ! dynHarvest_ini() has not been called but we still need
     ! harvest_rates.  Should we switch on do_harvest == .false.?
     if (.not. get_do_harvest()) then
-       allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+      allocate(harvest_rates(num_harvest_vars,max_topounits,bounds%begg:bounds%endg),stat=ier)
        if (ier /= 0) then
           call endrun(msg=' allocation error for harvest: '//errMsg(__FILE__, &
                           __LINE__))
        end if
 
-       harvest_rates(:,:) = 0._r8
+      harvest_rates(:,:,:) = 0._r8
     end if
 
     if ( maxpatch_pft /= numpft+1 ) then

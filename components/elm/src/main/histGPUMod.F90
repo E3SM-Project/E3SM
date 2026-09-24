@@ -48,7 +48,7 @@ module histGPUMod
      integer, pointer :: c2l_scale_type => null() ! scale factor when averaging column to landunit
      integer, pointer :: l2g_scale_type => null() ! scale factor when averaging landunit to gridcell
      integer, pointer :: l2t_scale_type => null() ! scale factor when averaging landunit to topounit
-     character(len=16), pointer :: t2g_scale_type => null() ! scale factor when averaging topounit to gridcell
+   integer, pointer :: t2g_scale_type => null() ! scale factor when averaging topounit to gridcell
      integer, pointer :: no_snow_behavior => null()        ! for multi-layer snow fields, flag saying how to treat times when a given snow layer is absent
      !
      character(len=1), pointer  :: avgflag => null()   ! time averaging flag

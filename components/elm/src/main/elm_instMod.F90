@@ -451,9 +451,8 @@ contains
          col_es%t_soisno(begc:endc, -nlevsno+1:) )
 
     call grc_ws%Init(bounds_proc%begg_all, bounds_proc%endg_all)
-	call top_ws%Init(bounds_proc%begt_all, bounds_proc%endt_all)
     call lun_ws%Init(bounds_proc%begl_all, bounds_proc%endl_all)
-    call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, &
+   call col_ws%Init(bounds_proc%begc, bounds_proc%endc, &
          h2osno_col(begc:endc),                    &
          snow_depth_col(begc:endc),                &
          soilstate_vars%watsat_col(begc:endc, 1:))

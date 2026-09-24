@@ -127,7 +127,8 @@ contains
        
        ! For each gridcell in clump, create the correct number of topounits       
        do gdc = bounds_clump%begg, bounds_clump%endg
-          call set_topounit(gdc, ti, ldomain%num_tunits_per_grd(gdc) )
+          call set_topounit(gdc, ti, ldomain%num_tunits_per_grd(gdc), &
+               ldomain%latc(gdc), ldomain%lonc(gdc))
        end do
 
        ! With all topounits defined, next place landunits

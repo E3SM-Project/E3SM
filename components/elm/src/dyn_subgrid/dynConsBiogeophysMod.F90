@@ -78,7 +78,7 @@ contains
              liq1 => grc_ws%liq1 ,&
              ice1 => grc_ws%ice1 ,&
              heat1 => grc_es%heat1 ,&
-             liquid_water_temp1 => grc_es%liquid_water_temp1 &
+          liquid_water_temp1 => grc_es%liquid_water_temp1 ,&
              ! TKT for TGU level
 			 liq1_tgu => top_ws%liq1 ,&
              ice1_tgu => top_ws%ice1 ,&

@@ -150,7 +150,7 @@ contains
      type(bounds_type), intent(in) :: bounds
      real(r8), intent(in)  :: parr( bounds%begp: )   ! patch array
      real(r8), intent(out) :: carr(bounds%begc:)   ! column array
-     integer, intent(in) :: p2c_scale_type ! scale type
+   character(len=*), intent(in) :: p2c_scale_type ! scale type
      !
      ! !LOCAL VARIABLES:
      integer  :: p,c,index   ! indices

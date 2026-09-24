@@ -1071,14 +1071,14 @@ module TopounitDataType
     !
     ! !ARGUMENTS:
     class(topounit_water_state) :: this
+    integer, intent(in) :: begt   ! beginning topographic unit index
+    integer, intent(in) :: endt   ! ending topographic unit index
     !------------------------------------------------------------------------
     deallocate(this%liq1)
     deallocate(this%liq2)
     deallocate(this%ice1)
     deallocate(this%ice2)
     deallocate(this%tws )
-    integer, intent(in) :: begt   ! beginning topographic unit index
-    integer, intent(in) :: endt   ! ending topographic unit index
     deallocate(this%from_uphill)
   end subroutine clean_top_ws
 

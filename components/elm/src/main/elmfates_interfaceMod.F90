@@ -1352,7 +1352,10 @@ contains
       ! Nutrient uptake fluxes have been accumulating with each short
       ! timestep, here, we unload them from the boundary condition
       ! structures into the cohort structures.
-      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+       nitr_suppl = carbon_only .or. carbonphosphorus_only
+       phos_suppl = carbon_only .or. carbonnitrogen_only
+       call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in, &
+          nitr_suppl, phos_suppl)
       
       ! Distribute any seeds from neighboring gridcells into the current gridcell
       ! Global seed availability array populated by WrapGlobalSeedDispersal call

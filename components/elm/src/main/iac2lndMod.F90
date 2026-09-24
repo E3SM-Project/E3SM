@@ -196,7 +196,7 @@ contains
        ! land unit type 1 is vegetated land unit
        ! just need to make sure that the values are <= 1
 
-       harvest_rates(:,begg:endg) = 0._r8
+      harvest_rates(:,1,begg:endg) = 0._r8
        do g = begg,endg
          do c = bounds%begc, bounds%endc
             if (col_pp%is_soil(c) .and. col_pp%gridcell(c) .eq. g) then
@@ -205,7 +205,7 @@ contains
                    if (.not.(col_pp%wtgcell(c) .eq. 0._r8)) then
                       ! Note harvest_rates is one-offset in h 
                       ! or not?
-                      harvest_rates(h+1,g) = this%harvest_frac(g,h) / col_pp%wtgcell(c)
+                      harvest_rates(h+1,1,g) = this%harvest_frac(g,h) / col_pp%wtgcell(c)
                    end if
                 end do
              end if
