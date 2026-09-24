@@ -50,6 +50,40 @@ OR
 
     return args.buildroot, args.installpath, args.caseroot
 
+###############################################################################
+def manual_install_lib(blddir, installroot, exeroot, install_adios):
+###############################################################################
+    globs_to_copy = [
+        os.path.join("src", "clib", "libpioc.*"),
+        os.path.join("src", "flib", "libpiof.*"),
+        os.path.join("src", "flib_legacy", "libpiof.*"),
+        os.path.join("src", "clib", "*.h"),
+        os.path.join("src", "flib", "*.mod"),
+        os.path.join("src", "flib_legacy", "*.mod"),
+    ]
+    # ADIOS requires an ADIOS to NetCDF conversion library/exe
+    if install_adios:
+        globs_to_copy.append(os.path.join("tools","adios2pio-nm","libadios2pio-nm-lib.*"))
+        globs_to_copy.append(os.path.join("tools","adios2pio-nm","adios2pio-nm.exe"))
+    for glob_to_copy in globs_to_copy:
+        installed_file_time = 0
+        for item in glob.glob(os.path.join(blddir, glob_to_copy)):
+            if item.endswith(".a") or item.endswith(".so"):
+                installdir = "lib"
+            else:
+                installdir = "include"
+            if item.endswith(".exe"):
+                # FIXME: Move executables into a bin/util dir
+                # Currently we are moving the SCORPIO util exes to the same
+                # dir as e3sm.exe (the EXEROOT) - ignoring installroot/installpath
+                installed_file = os.path.join(exeroot,os.path.basename(item))
+            else:
+                installed_file = os.path.join(installroot,installdir,os.path.basename(item))
+            item_time = os.path.getmtime(item)
+            if os.path.isfile(installed_file):
+                installed_file_time = os.path.getmtime(installed_file)
+            if item_time > installed_file_time:
+                safe_copy(item, installed_file)
 
 ###############################################################################
 def buildlib(bldroot, installpath, case):
@@ -260,37 +294,7 @@ def buildlib(bldroot, installpath, case):
                 for item in glob.glob(os.path.join(pio_bld_dir, "pio", glob_to_copy)):
                     safe_copy(item, "{}/include".format(installpath))
     else:
-        globs_to_copy = [
-            os.path.join("src", "clib", "libpioc.*"),
-            os.path.join("src", "flib", "libpiof.*"),
-            os.path.join("src", "flib_legacy", "libpiof.*"),
-            os.path.join("src", "clib", "*.h"),
-            os.path.join("src", "flib", "*.mod"),
-            os.path.join("src", "flib_legacy", "*.mod"),
-        ]
-        # ADIOS requires an ADIOS to NetCDF conversion library/exe
-        if adios_found:
-            globs_to_copy.append(os.path.join("tools","adios2pio-nm","libadios2pio-nm-lib.*"))
-            globs_to_copy.append(os.path.join("tools","adios2pio-nm","adios2pio-nm.exe"))
-        for glob_to_copy in globs_to_copy:
-            installed_file_time = 0
-            for item in glob.glob(os.path.join(pio_bld_dir, glob_to_copy)):
-                if item.endswith(".a") or item.endswith(".so"):
-                    installdir = "lib"
-                else:
-                    installdir = "include"
-                if item.endswith(".exe"):
-                    # FIXME: Move executables into a bin/util dir
-                    # Currently we are moving the SCORPIO util exes to the same
-                    # dir as e3sm.exe (the EXEROOT) - ignoring installpath
-                    installed_file = os.path.join(exeroot,os.path.basename(item))
-                else:
-                    installed_file = os.path.join(installpath,installdir,os.path.basename(item))
-                item_time = os.path.getmtime(item)
-                if os.path.isfile(installed_file):
-                    installed_file_time = os.path.getmtime(installed_file)
-                if item_time > installed_file_time:
-                    safe_copy(item, installed_file)
+        manual_install_lib(pio_bld_dir, installpath, exeroot, adios_found)
 
     # make sure case pio_typename valid_values is set correctly
     expect(expect_string_found, "CIME models require NETCDF in PIO build")
