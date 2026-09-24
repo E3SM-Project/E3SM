@@ -475,13 +475,14 @@ contains
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !  TENSOR, RESOLUTION-AWARE HYPERVISCOSITY
-    !  The tensorVisc() array is computed in cube_mod.F90
+    !  The tensorVisc() array is computed in metric_mod.F90::metric_atomic(),
+    !  shared by both the spherical and planar geometries.
     !  this block of code will DSS it so the tensor if C0
     !  and also make it bilinear in each element.
     !  Oksana Guba
     !
     !  The tensorVisc_2() array (used by the sponge-layer/nu_top tensor
-    !  viscosity, controlled by laplace_scaling) is computed in cube_mod.F90
+    !  viscosity, controlled by laplace_scaling) is computed alongside it
     !  in the same way as tensorVisc, and is DSS'd/bilinearized below with
     !  an independent block, gated on laplace_scaling rather than
     !  hypervis_scaling (the two controls are independent of one another).
