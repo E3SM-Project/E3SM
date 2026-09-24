@@ -1019,16 +1019,22 @@ void gw_front_project_winds(GwFrontProjectWindsData& d)
     const auto ubm_c = ekat::subview(ubm_d, i);
     const auto ubi_c = ekat::subview(ubi_d, i);
 
+    // xv/yv are thread-private outputs; publish them to the views once
+    Real xv, yv;
     GWF::gw_front_project_winds(
       team,
       pver,
       kbot,
       u_c,
       v_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       ubm_c,
       ubi_c);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      xv_d(i) = xv;
+      yv_d(i) = yv;
+    });
   });
 
   // Now get arrays
@@ -1173,6 +1179,11 @@ void gw_cm_src(GwCmSrcData& d)
     const auto c_c = ekat::subview(c_d, i);
     const auto frontgf_c = ekat::subview(frontgf_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_cm_src(
       team,
       init_cp,
@@ -1183,14 +1194,21 @@ void gw_cm_src(GwCmSrcData& d)
       u_c,
       v_c,
       frontgf_c,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c);
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays
@@ -1259,16 +1277,22 @@ void gw_convect_project_winds(GwConvectProjectWindsData& d)
     const auto ubm_c = ekat::subview(ubm_d, i);
     const auto v_c = ekat::subview(v_d, i);
 
+    // xv/yv are thread-private outputs; publish them to the views once
+    Real xv, yv;
     GWF::gw_convect_project_winds(
       team,
       init_cp,
       pver,
       u_c,
       v_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       ubm_c,
       ubi_c);
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      xv_d(i) = xv;
+      yv_d(i) = yv;
+    });
   });
 
   // Now get arrays
@@ -1607,6 +1631,12 @@ void gw_beres_src(GwBeresSrcData& d)
     const auto c_c = ekat::subview(c_d, i);
     const auto netdt_c = ekat::subview(netdt_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call. hdepth/maxq0_out are shared outputs that
+    // the kernel writes exactly once, so they can take view elements directly.
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_beres_src(
       team,
       wsm.get_workspace(team),
@@ -1624,16 +1654,23 @@ void gw_beres_src(GwBeresSrcData& d)
       hdepth_min,
       storm_speed_min,
       use_gw_convect_old,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c,
       hdepth_d(i),
       maxq0_out_d(i));
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays
@@ -1917,6 +1954,11 @@ void gw_oro_src(GwOroSrcData& d)
     const auto ubi_c = ekat::subview(ubi_d, i);
     const auto c_c = ekat::subview(c_d, i);
 
+    // src_level/tend_level/xv/yv are thread-private outputs; publish them to
+    // the views once after the call
+    Int src_level, tend_level;
+    Real xv, yv;
+
     GWF::gw_oro_src(
       team,
       init_cp,
@@ -1931,14 +1973,21 @@ void gw_oro_src(GwOroSrcData& d)
       dpm_c,
       zm_c,
       nm_c,
-      src_level_d(i),
-      tend_level_d(i),
+      src_level,
+      tend_level,
       tau_c,
       ubm_c,
       ubi_c,
-      xv_d(i),
-      yv_d(i),
+      xv,
+      yv,
       c_c);
+
+    Kokkos::single(Kokkos::PerTeam(team), [&] {
+      src_level_d(i)  = src_level;
+      tend_level_d(i) = tend_level;
+      xv_d(i)         = xv;
+      yv_d(i)         = yv;
+    });
   });
 
   // Now get arrays

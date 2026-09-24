@@ -102,11 +102,15 @@ void Functions<S,D>::gw_drag_prof(
     src_level, ubi, c, rhoi,
     ni, kvtt, t, ti, piln, tau);
 
+  team.team_barrier();
+
   // Tau projected in the four cardinal directions, for the momentum
   // conservation routine and for diagnostic output.
   if ( pgwv > 0) {
     gwd_project_tau(team, workspace, init, pver, pgwv, tend_level, tau, ubi, c, xv, yv, taucd);
   }
+
+  team.team_barrier();
 
   //------------------------------------------------------------------------
   // Compute the tendencies from the stress divergence.
@@ -115,6 +119,8 @@ void Functions<S,D>::gw_drag_prof(
   gwd_compute_tendencies_from_stress_divergence(
     team, workspace, init, pver, pgwv, do_taper, dt, effgw, tend_level, max_level,
     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw);
+
+  team.team_barrier();
 
   if (pgwv > 0) {
      // Precalculate rhoi for the following routines. We have rhoi, but

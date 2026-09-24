@@ -96,7 +96,16 @@ void Functions<S,D>::gw_oro_src(
   nsrc = nsrc / dpsrc;
 
   // Get the unit vector components and magnitude at the surface.
-  get_unit_vector(usrc, vsrc, xv, yv, ubi(pver));
+  // xv and yv are thread-private outputs: every team thread computes its own
+  // copy, since every thread needs them for the projections. The magnitude
+  // goes to the shared ubi array, so it is published once. See the note in
+  // gw_convect_project_winds.
+  // ubi(pver) is read below (after a barrier) to set the source strength.
+  Real src_wind_mag;
+  get_unit_vector(usrc, vsrc, xv, yv, src_wind_mag);
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    ubi(pver) = src_wind_mag;
+  });
 
   // Project the local wind at midpoints onto the source wind.
   Kokkos::parallel_for(
@@ -108,7 +117,9 @@ void Functions<S,D>::gw_oro_src(
 
   // Compute the interface wind projection by averaging the midpoint winds.
   // Use the top level wind at the top interface.
-  ubi(0) = ubm(0);
+  Kokkos::single(Kokkos::PerTeam(team), [&] {
+    ubi(0) = ubm(0);
+  });
 
   midpoint_interp(team, ubm, ekat::subview(ubi, Kokkos::pair<int, int>{1, pver}));
 
@@ -140,9 +151,11 @@ void Functions<S,D>::gw_oro_src(
   tend_level = pver - 1;
 
   // adjust to c indexing. Up to this point, src_level was used to index into 0:pver arrays
-  Kokkos::single(Kokkos::PerTeam(team), [&] {
-    --src_level;
-  });
+  // NOTE: must run on every team thread -- src_level is a thread-private scalar
+  // owned by the caller, so decrementing it under Kokkos::single would leave
+  // every other thread in the team one level off. See the note in
+  // gw_convect_project_winds.
+  --src_level;
 
   // No spectrum; phase speed is just 0.
   Kokkos::parallel_for(
