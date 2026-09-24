@@ -908,13 +908,17 @@ contains
 #ifdef CAM
     ! initialize dp3d from ps_v.  CAM IC/restart code reads ps_v, doesn't
     ! have access to hvcoord to compute dp3d:
-    do ie=nets,nete
-       do k=1,nlev
-          elem(ie)%state%dp3d(:,:,k,tl%n0)=&
-               ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-       enddo
-    end do
+    ! A restart reader has already restored dp3d (or reconstructed it from ps_v
+    ! when reading an older restart without the dp3d variable).
+    if (runtype /= 1) then
+       do ie=nets,nete
+          do k=1,nlev
+             elem(ie)%state%dp3d(:,:,k,tl%n0)=&
+                  ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+                  ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
+          enddo
+       end do
+    end if
 #endif
 
 
@@ -1930,6 +1934,5 @@ contains
   end subroutine set_prescribed_scm
     
 end module prim_driver_base
-
 
 

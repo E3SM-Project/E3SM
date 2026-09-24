@@ -47,7 +47,7 @@ contains
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
     use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
-    use control_mod,      only : prescribed_wind
+    use control_mod,      only : prescribed_wind, runtype
     !
     ! Inputs
     !
@@ -76,8 +76,8 @@ contains
     ! Init the kokkos views
     call prim_init_elements_views (elem)
 
-    ! Initialize dp3d from ps_v
-    call initialize_dp3d_from_ps_c ()
+    ! Restart reads restore dp3d; only reconstruct it for new/branch runs.
+    if (runtype /= 1) call initialize_dp3d_from_ps_c ()
 
     if (prescribed_wind == 1) then
        call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
