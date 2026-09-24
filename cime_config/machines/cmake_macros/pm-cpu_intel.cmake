@@ -29,6 +29,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM")
 endif()
 
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
+string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise") # and manually add precise
 string(APPEND CMAKE_Fortran_FLAGS " -fp-model=consistent -fimf-use-svml")
 #  string(APPEND FFLAGS " -qno-opt-dynamic-align")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g -traceback")
@@ -40,5 +41,4 @@ if (COMP_NAME STREQUAL gcam)
   string(APPEND CMAKE_Fortran_FLAGS " -mcmodel=medium")
   string(APPEND CMAKE_C_FLAGS " -mcmodel=medium")
   string(APPEND CMAKE_CXX_FLAGS " -DNDEBUG")
-  string(APPEND CMAKE_C_FLAGS " -fp-model=consistent")
 endif()
