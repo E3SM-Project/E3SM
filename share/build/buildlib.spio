@@ -254,15 +254,15 @@ def buildlib(bldroot, installpath, case):
     for line in cache_file:
         if re.search(expect_string, line):
             expect_string_found = True
-        if re.search(pnetcdf_string, line):
+        elif re.search(pnetcdf_string, line):
             pnetcdf_found = True
-        if re.search(netcdf4_string, line):
+        elif re.search(netcdf4_string, line):
             netcdf4_parallel_found = True
-        if re.search(netcdf4_nczarr_string, line):
+        elif re.search(netcdf4_nczarr_string, line):
             netcdf4_nczarr_found = True
-        if re.search(adios_string, line):
+        elif re.search(adios_string, line):
             adios_found = True
-        if re.search(hdf5_string, line):
+        elif re.search(hdf5_string, line):
             hdf5_found = True
 
     #manual_install_lib(pio_bld_dir, installpath, exeroot, adios_found)
