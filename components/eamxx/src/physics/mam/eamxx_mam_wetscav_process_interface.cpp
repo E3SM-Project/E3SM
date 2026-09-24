@@ -404,6 +404,9 @@ MAMWetscav::create_requests()
 
   // Aerosol wet deposition (cloud water) [kg/m2/s]
   add_field<Computed>("aerdepwetcw", scalar2d_pcnst, kg / m2 / s, grid_name);
+
+  // Aerosol wet deposition from convective processing (interstitial) [kg/m2/s]
+  add_field<Computed>("aerdepwetis_convproc", scalar2d_pcnst, kg / m2 / s, grid_name);
 }
 
 // ================================================================
@@ -480,6 +483,7 @@ void MAMWetscav::initialize_impl(const RunType run_type) {
       {"precip_total_tend", {-1e10, 1e10}},      // FIXME
       {"aerdepwetcw", {-1e10, 1e10}},            // FIXME
       {"aerdepwetis", {-1e10, 1e10}},            // FIXME
+      {"aerdepwetis_convproc", {-1e10, 1e10}},  // FIXME
       {"fracis", {-1e10, 1e10}},                 // FIXME
       {"qaerwat", {-1e10, 1e10}}                 // FIXME
   };
@@ -730,6 +734,7 @@ void MAMWetscav::run_impl(const double dt) {
 
   const auto aerdepwetis = get_field_out("aerdepwetis").get_view<Real **>();
   const auto aerdepwetcw = get_field_out("aerdepwetcw").get_view<Real **>();
+  const auto aerdepwetis_convproc = get_field_out("aerdepwetis_convproc").get_view<Real **>();
 
   const auto wet_geometric_mean_diameter_i =
       get_field_out("dgnumwet").get_view<Real ***>();
@@ -822,6 +827,7 @@ void MAMWetscav::run_impl(const double dt) {
         const auto dlf_icol   = ekat::subview(dlf, icol);
         auto aerdepwetis_icol = ekat::subview(aerdepwetis, icol);
         auto aerdepwetcw_icol = ekat::subview(aerdepwetcw, icol);
+        auto aerdepwetis_convproc_icol = ekat::subview(aerdepwetis_convproc, icol);
         auto work_icol        = ekat::subview(work, icol);
         auto wet_diameter_icol =
             ekat::subview(wet_geometric_mean_diameter_i, icol);
@@ -885,6 +891,8 @@ void MAMWetscav::run_impl(const double dt) {
             wet_diameter_icol, dry_diameter_icol, qaerwat_icol, wetdens_icol,
             // output
             aerdepwetis_icol, aerdepwetcw_icol, work_icol, isprx_icol,
+           // output: convective aerosol wet deposition (interstitial)
+           aerdepwetis_convproc_icol,
            // Convection mass flux parameters
            scratch1Dviews,
            mu_icol, md_icol, du_icol, eu_icol, ed_icol,
