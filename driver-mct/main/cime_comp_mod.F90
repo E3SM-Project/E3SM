@@ -176,6 +176,7 @@ module cime_comp_mod
   use component_mod,      only: component_run, component_final
   use component_mod,      only: component_init_areacor, component_init_aream
   use component_mod,      only: component_exch, component_diag
+  use component_mod,      only: component_bounds_report
 
   ! prep routines (includes mapping routines between components and merging routines)
   use prep_lnd_mod
@@ -197,6 +198,7 @@ module cime_comp_mod
 
   ! --- control variables ---
   use seq_flds_mod,  only   : rof_heat
+  use seq_flds_mod,  only   : bounds_check_component_fields
 
   implicit none
 
@@ -3620,6 +3622,26 @@ contains
           endif
        endif
        call t_drvstopf  ('CPL:TSTAMP_WRITE',cplrun=.true.)
+
+       !----------------------------------------------------------
+       !| Bounds-check report on fields sent to the coupler
+       !----------------------------------------------------------
+
+       if (trim(bounds_check_component_fields) /= 'off' .and. (tod == 0 .or. stop_alarm)) then
+          call t_drvstartf ('CPL:BOUNDS_REPORT',cplrun=.true.)
+          if (iamroot_CPLID) then
+             write(logunit,'(a,i10,i6)') ' bounds_check: model date = ',ymd,tod
+          endif
+          call component_bounds_report(atm, iamroot_CPLID)
+          call component_bounds_report(lnd, iamroot_CPLID)
+          call component_bounds_report(ice, iamroot_CPLID)
+          call component_bounds_report(ocn, iamroot_CPLID)
+          call component_bounds_report(rof, iamroot_CPLID)
+          call component_bounds_report(glc, iamroot_CPLID)
+          call component_bounds_report(wav, iamroot_CPLID)
+          call component_bounds_report(iac, iamroot_CPLID)
+          call t_drvstopf  ('CPL:BOUNDS_REPORT',cplrun=.true.)
+       endif
 
        call t_stopf  ('CPL:RUN_LOOP', hashint(1))
 

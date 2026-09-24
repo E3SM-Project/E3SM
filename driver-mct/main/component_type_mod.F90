@@ -13,6 +13,7 @@ module component_type_mod
   use seq_comm_mct     , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct     , only: num_inst_ocn, num_inst_ice, num_inst_glc
   use seq_comm_mct     , only: num_inst_wav, num_inst_esp, num_inst_iac
+  use shr_bounds_mod   , only: shr_bounds_type
   use mct_mod
 
   implicit none
@@ -96,6 +97,7 @@ module component_type_mod
      character(len=1)                :: oneletterid
      character(len=3)                :: ntype
      character(len=seq_comm_namelen) :: name
+     type(shr_bounds_type)           :: bounds  ! bounds-check statistics on c2x_cc
   end type component_type
 
   public :: component_type
