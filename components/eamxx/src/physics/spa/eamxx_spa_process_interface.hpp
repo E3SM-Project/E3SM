@@ -45,13 +45,13 @@ public:
   std::shared_ptr<DataInterpolation>    m_data_interpolation;
 
   // number of horizontal columns and vertical levels
-  int ncol_, nlev_;
+  int m_ncol, m_nlev;
 
   // number of shortwave and longwave bands
-  int nswbands_, nlwbands_;
+  int m_nswbands, m_nlwbands;
 
   // layer thickness
-  view_2d dz_;
+  view_2d m_dz;
 
 }; // class SPA
 

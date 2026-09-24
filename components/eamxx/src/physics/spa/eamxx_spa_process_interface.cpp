@@ -29,24 +29,24 @@ void SPA::create_requests()
   m_model_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_model_grid->name();
 
-  ncol_ = m_model_grid->get_num_local_dofs();
-  nlev_ = m_model_grid->get_num_vertical_levels();
+  m_ncol = m_model_grid->get_num_local_dofs();
+  m_nlev = m_model_grid->get_num_vertical_levels();
 
   // Get bands info from file, and log it
   const auto spa_data_file = m_params.get<std::string>("spa_data_file");
-  nswbands_ = scorpio::get_dimlen(spa_data_file,"swband");
-  nlwbands_ = scorpio::get_dimlen(spa_data_file,"lwband");
+  m_nswbands = scorpio::get_dimlen(spa_data_file,"swband");
+  m_nlwbands = scorpio::get_dimlen(spa_data_file,"lwband");
   this->log(LogLevel::info,
       "SPA data file bands dimensions:\n"
-      "  - num sw bands: " + std::to_string(nswbands_) + "\n"
-      "  - num lw bands: " + std::to_string(nlwbands_) + "\n");
+      "  - num sw bands: " + std::to_string(m_nswbands) + "\n"
+      "  - num lw bands: " + std::to_string(m_nlwbands) + "\n");
 
   // Define the different field layouts that will be used for this process
   auto scalar3d_mid    = m_model_grid->get_3d_scalar_layout(LEV);
   auto scalar2d        = m_model_grid->get_2d_scalar_layout();
   auto scalar1d_mid    = m_model_grid->get_vertical_layout(LEV);
-  auto scalar3d_swband = m_model_grid->get_3d_vector_layout(LEV,nswbands_,"swband");
-  auto scalar3d_lwband = m_model_grid->get_3d_vector_layout(LEV,nlwbands_,"lwband");
+  auto scalar3d_swband = m_model_grid->get_3d_vector_layout(LEV,m_nswbands,"swband");
+  auto scalar3d_lwband = m_model_grid->get_3d_vector_layout(LEV,m_nlwbands,"lwband");
 
   // Set of fields used strictly as input
   add_field<Required>("p_mid",          scalar3d_mid, Pa,    grid_name, ps);
@@ -93,7 +93,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_data_interpolation->create_vert_remapper (vremap_data);
   m_data_interpolation->init_time_interpolation (start_of_step_ts(),DataInterpolation::Linear);
 
-  dz_ = view_2d("dz_", ncol_, nlev_);
+  m_dz = view_2d("m_dz", m_ncol, m_nlev);
 
   // Set property checks for fields in this process
   using FWI = FieldWithinIntervalCheck;
@@ -119,10 +119,10 @@ void SPA::run_impl (const double /* dt */)
   m_data_interpolation->run(end_of_step_ts());
 
   // Convert aerosol extinction (m^-1) to layer optical depth (unitless) by multiplying layer depth (m)
-  const int ncol = ncol_;
-  const int nlev = nlev_;
-  const int nswbands = nswbands_;
-  const int nlwbands = nlwbands_;
+  const int ncol = m_ncol;
+  const int nlev = m_nlev;
+  const int nswbands = m_nswbands;
+  const int nlwbands = m_nlwbands;
 
   const auto p_mid          = get_field_in ("p_mid").get_view<const Real**>();
   const auto pseudo_density = get_field_in ("pseudo_density").get_view<const Real**>();
@@ -130,7 +130,7 @@ void SPA::run_impl (const double /* dt */)
   const auto qv             = get_field_in ("qv").get_view<const Real**>();
   auto aero_tau_sw    = get_field_out("aero_tau_sw").get_view<Real***>();
   auto aero_tau_lw    = get_field_out("aero_tau_lw").get_view<Real***>();
-  auto dz = dz_;
+  auto dz = m_dz;
 
   const auto policy = TPF::get_default_team_policy(ncol, nlev);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const MemberType& team) {
