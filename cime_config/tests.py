@@ -365,6 +365,7 @@ _TESTS = {
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
+            "ERS.ne4pg2_u03-oi240-lr240.WCYCL1850NS",
             "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
             )
