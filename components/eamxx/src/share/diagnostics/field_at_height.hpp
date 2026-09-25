@@ -34,6 +34,13 @@ protected:
   std::string    m_z_suffix;
   std::string    m_field_name;
 
+  // Names of the (mid/int) level-index diagnostics we could depend on;
+  // only one of the two is actually used, decided in initialize_impl,
+  // once we know whether the input field lives on LEV or ILEV.
+  std::string    m_index_name_mid;
+  std::string    m_index_name_int;
+  std::string    m_index_name;
+
   Real           m_z;
 };
 
