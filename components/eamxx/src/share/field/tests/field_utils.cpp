@@ -93,9 +93,86 @@ TEST_CASE("field_utils") {
       } else {
         REQUIRE(not views_are_equal(f1,f2));
       }
+    }
 
-      // On all ranks, the *global* comparison should fail
-      REQUIRE(not views_are_equal(f1,f2,&comm));
+    // Tolerance-based comparison. Use two fresh, plain (unpacked) fields,
+    // filled identically on every rank, so this part does not depend on
+    // parallel_test/am_i_root.
+    {
+      FieldIdentifier fid_t ("field_t", {tags,dims}, m/s, "some_grid");
+      Field ft1(fid_t), ft2(fid_t);
+      ft1.allocate_view();
+      ft2.allocate_view();
+      ft1.deep_copy(1.0);
+      ft2.deep_copy(1.0);
+      REQUIRE(views_are_equal(ft1,ft2));
+
+      constexpr Real delta = 1e-3;
+      ft2.deep_copy(1.0+delta);
+      REQUIRE(not views_are_equal(ft1,ft2));
+      REQUIRE(not views_are_equal(ft1,ft2,Real(delta/2)));
+      REQUIRE(views_are_equal(ft1,ft2,Real(2*delta)));
+    }
+
+    // Masked comparison. Again use fresh, plain fields, identical on every
+    // rank.
+    {
+      FieldIdentifier fid_m ("field_m", {tags,dims}, m/s, "some_grid");
+      Field fm1(fid_m), fm2(fid_m);
+      fm1.allocate_view();
+      fm2.allocate_view();
+      fm1.deep_copy(1.0);
+      fm2.deep_copy(1.0);
+
+      fm1.create_valid_mask();
+      fm2.create_valid_mask();
+      auto m1v = fm1.get_valid_mask().get_view<int**>();
+      auto m2v = fm2.get_valid_mask().get_view<int**>();
+      auto v2m = fm2.get_view<Real**>();
+
+      // Mark the last level invalid, identically on both fields.
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        for (int j=0; j<dim1; ++j) {
+          m1v(i,j) = (j<dim1-1) ? 1 : 0;
+          m2v(i,j) = (j<dim1-1) ? 1 : 0;
+        }
+      });
+      Kokkos::fence();
+
+      // Masks agree, and data agrees everywhere: fields compare equal.
+      REQUIRE(views_are_equal(fm1,fm2));
+
+      // Perturb fm2 ONLY at the invalid (last) level: since that entry is
+      // masked out on both fields, it must not affect the comparison.
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        v2m(i,dim1-1) += 1234.5;
+      });
+      Kokkos::fence();
+      REQUIRE(views_are_equal(fm1,fm2));
+
+      // A difference at a VALID entry must still be caught.
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        v2m(i,0) += 1234.5;
+      });
+      Kokkos::fence();
+      REQUIRE(not views_are_equal(fm1,fm2));
+      Kokkos::parallel_for(kt::RangePolicy(0,dim0),
+                           KOKKOS_LAMBDA(int i) {
+        v2m(i,0) -= 1234.5;
+      });
+      Kokkos::fence();
+      REQUIRE(views_are_equal(fm1,fm2)); // back to agreeing
+
+      // Only one field masked: the comparison still pass if the two
+      // field agree where the mask is valid
+      Field fu(fid_m);
+      fu.allocate_view();
+      fu.deep_copy(fm1); // same data as fm1
+      fu.deep_copy(-123,fm1.get_valid_mask(),true); // Random value where fm1 is invalid
+      REQUIRE(views_are_equal(fm1,fu));
     }
   }
 

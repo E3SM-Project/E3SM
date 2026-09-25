@@ -7,8 +7,11 @@
 namespace scream {
 
 // Check that two fields store the same entries.
-// NOTE: if the field is padded, padding entries are NOT checked.
-bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm = nullptr);
+//  - fields MUST have the same layout
+//  - if either field (or both) is masked, only entries with nonzero mask are compared
+//  - if a field is padded, entries in the padding are NOT checked
+//  - the fields are compared pointwise with the provided (absolute) tolerance
+bool views_are_equal(const Field& f1, const Field& f2, const Real tol = 0);
 
 // Uniform or normal randomization utils
 void randomize_uniform (const Field& f, int seed,
