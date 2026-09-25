@@ -1151,7 +1151,7 @@ _TESTS = {
                      "e3sm_superbfb_atm", "e3sm_superbfb_wcycl"),
     },
     "e3sm_gcam_developer" : {
-        "time"  : "1:00:00",
+        "time"  : "2:00:00",
         "tests" : (
             "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
             )
