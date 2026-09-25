@@ -53,6 +53,9 @@ _TESTS = {
             "ERS_Ld150.ELM_USRDAT.I1850CNPRDCTCBC.elm-snowveg_arctic",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_default_I1850CNPRDCTCBC",
             "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_codetest_I1850CNPRDCTCBC",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_arctic_codetest_I1850CNPRDCTCBC",
+            "ERS.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_arctic_onsetgdd_I1850CNPRDCTCBC",
+            "ERS_Ly5.ELM_USRDAT.I1850CNPRDCTCBC.elm-usrpft_arctic_maxpft12_I1850CNPRDCTCBC",
             "ERS.1x1_icycape.I1850GSWCNPRDCTCBC.elm-polygonal_tundra",
             "SMS_Ly1.ELM_USRDAT.I1850CNPRDCTCBC.elm-kilocraft",
             )
