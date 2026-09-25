@@ -88,6 +88,8 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_cape",              scalar2d,     J/kg,   grid_name);
   add_field<Computed>("zm_dcape",             scalar2d,   J/kg/s,   grid_name);
   add_field<Computed>("zm_activity",          scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_jt",                scalar2d,     none,   grid_name);
+  add_field<Computed>("zm_jcbot",             scalar2d,     none,   grid_name);
 
   add_field<Computed>("zm_detr_qc",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
   add_field<Computed>("zm_detr_qi",           scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -100,6 +102,10 @@ void ZMDeepConvection::create_requests ()
   add_field<Computed>("zm_detr_up",           scalar3d_mid, 1/s,    grid_name, pack_size);
   add_field<Computed>("zm_mflx_dn",           scalar3d_mid, kg/m2/s,grid_name, pack_size);
   add_field<Computed>("zm_entr_dn",           scalar3d_mid, 1/s,    grid_name, pack_size);
+
+  // Fields needed by MAM wetscav for aerosol convective processing
+  add_field<Computed>("zm_rain_prod",          scalar3d_mid, kg/kg/s,grid_name, pack_size);  // rain production rate (rprddp)
+  add_field<Computed>("zm_ql",                 scalar3d_mid, kg/kg,  grid_name, pack_size);  // in-cloud liquid water (icwmrdp)
 
   add_field<Computed>("mcsp_ds_out",          scalar3d_mid, K/s,    grid_name, pack_size);
   add_field<Computed>("mcsp_dq_out",          scalar3d_mid, kg/kg/s,grid_name, pack_size);
@@ -413,6 +419,20 @@ void ZMDeepConvection::run_impl (const double dt)
   // initialize intermediate output tendencies for zm_conv_evap()
   zm_output.init_tmp(m_ncol, nlev_mid);
 
+  // Zero evap_ds/dq_out for all columns before zm_conv_evap.
+  // zm_conv_evap only writes these for active columns (early-return guard),
+  // so inactive columns would otherwise retain stale values from a previous
+  // timestep when convection was active.  init_tmp cannot be used because it
+  // is also called before zm_transport_momentum, which would wipe the values
+  // that zm_conv_evap just wrote.
+  Kokkos::parallel_for("zm_zero_evap_out",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    loc_zm_output_evap_ds_out(i,k) = 0;
+    loc_zm_output_evap_dq_out(i,k) = 0;
+  });
+
   // perform the convective evaporation calculations
   Kokkos::parallel_for(team_policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
     const Int i = team.league_rank();
@@ -579,13 +599,17 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_cape       = get_field_out("zm_cape")    .get_view<Real*>();
   const auto& zm_dcape      = get_field_out("zm_dcape")   .get_view<Real*>();
   const auto& zm_activity   = get_field_out("zm_activity").get_view<Real*>();
+  const auto& zm_jt         = get_field_out("zm_jt")      .get_view<Real*>();
+  const auto& zm_jcbot      = get_field_out("zm_jcbot")   .get_view<Real*>();
   Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
     zm_prec    (i) = loc_zm_output_prec    (i);
     zm_snow    (i) = loc_zm_output_snow    (i);
     zm_cape    (i) = loc_zm_output_cape    (i);
     zm_dcape   (i) = loc_zm_output_dcape   (i);
     zm_activity(i) = loc_zm_output_activity(i);
-  });
+    zm_jt      (i) = loc_zm_output_jt      (i);
+    zm_jcbot   (i) = loc_zm_output_jcbot   (i);
+ });
 
   // 3D mid-level output
   const auto& mflx_up = get_field_out("zm_mflx_up").get_view<Real**>();
@@ -602,6 +626,19 @@ void ZMDeepConvection::run_impl (const double dt)
     detr_up(i,k) = loc_zm_output_detr_up(i,k);
     mflx_dn(i,k) = loc_zm_output_mflx_dn(i,k);
     entr_dn(i,k) = loc_zm_output_entr_dn(i,k);
+  });
+
+  // 3D mid-level output for MAM wetscav coupling
+  const auto& zm_rain_prod_out = get_field_out("zm_rain_prod").get_view<Real**>();
+  const auto& zm_ql_out        = get_field_out("zm_ql").get_view<Real**>();
+  Kokkos::parallel_for("zm_aerosol_coupling_outputs",
+    KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
+    const int i = idx/nlev_mid;
+    const int k = idx%nlev_mid;
+    // rain production rate (rprddp in EAM Fortran)
+    zm_rain_prod_out(i,k) = loc_zm_output_rain_prod(i,k);
+    // in-cloud liquid water mixing ratio (icwmrdp in EAM Fortran)
+    zm_ql_out(i,k)        = loc_zm_output_ql(i,k);
   });
 
   // 3D interface output

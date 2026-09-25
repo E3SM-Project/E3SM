@@ -27,6 +27,8 @@ class MAMWetscav : public MAMGenericInterface
   using view_2d      = typename KT::template view_2d<Real>;
   using view_2d_host = typename KT::template view_2d<Real>::host_mirror_type;
   using int_view_2d  = typename KT::template view_2d<int>;
+  using const_view_1d = typename KT::template view_1d<const Real>;
+  using const_view_2d = typename KT::template view_2d<const Real>;
 
   // a thread team dispatched to a single vertical column
   using ThreadTeam = mam4::ThreadTeam;
@@ -74,10 +76,15 @@ private:
 
   // Work arrays
   view_2d work_;
+  view_2d work_convproc_;  // Separate work array for convection processing scratch1Dviews
   int_view_2d isprx_;
 
   // TODO: Following variables are from convective parameterization (not
-  // implemented yet in EAMxx), so should be zero for now
+  // implemented yet in EAMxx), so should be zero for now.
+  // NOTE: rprddp, icwmrdp, and evapcdp are no longer member variables;
+  // when do_convproc_ is true they alias FM views directly to avoid
+  // redundant copies.  When false, the zero-initialized member views below
+  // serve as placeholders.
 
   view_2d sh_frac_;
 
@@ -87,22 +94,23 @@ private:
   // Evaporation rate of shallow convective precipitation >=0. [kg/kg/s]
   view_2d evapcsh_;
 
-  view_2d evapcdp_;
-
   // Rain production, shallow convection [kg/kg/s]
   view_2d rprdsh_;
-
-  // Rain production, deep convection [kg/kg/s]
-  view_2d rprddp_;
-
-  // In cloud water mixing ratio, deep convection
-  view_2d icwmrdp_;
 
   // In cloud water mixing ratio, shallow convection
   view_2d icwmrsh_;
 
+  // Deep convection zero-placeholder views (only allocated when !do_convproc_).
+  // When do_convproc_ is true, run_impl aliases FM views directly instead.
+  view_2d rprddp_zero_;
+  view_2d icwmrdp_zero_;
+  view_2d evapcdp_zero_;
+
   // Detraining cld H20 from deep convection [kg/kg/s]
   view_2d dlf_;
+
+  // Temporary view for pressure thickness in mb (converted from Pa)
+  view_2d dp_tmp_;
 
   int num_2d_scratch_ = 39;
   //
@@ -138,6 +146,18 @@ private:
 
   // activation_fraction_in_cloud_conv_ is convection activation fraction
   Real activation_fraction_in_cloud_conv_ = 0.40;
+
+  // convproc_do_aer: Enable aerosol processing in convection
+  bool convproc_do_aer_ = false;
+
+  // convproc_do_gas: Enable gas processing in convection
+  bool convproc_do_gas_ = false;
+
+  // do_convproc: Combined flag for any convection processing
+  bool do_convproc_ = false;
+
+  // ConvProc configuration for species classification and resuspension mapping
+  mam4::ConvProc::Config convproc_config_;
 
 }; // class MAMWetscav
 
