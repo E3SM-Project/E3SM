@@ -279,7 +279,7 @@ void Functions<S,D>::shoc_main_internal(
     team.team_barrier();
     shoc_moments_emulator::apply(nlev,nlevi,
                                  zi_grid,rho_zt,presi,
-                                 thetal,qw,u_wind,v_wind,shoc_ql,
+                                 thetal,qw,u_wind,v_wind,
                                  wthl_sfc,wqw_sfc,
                                  w_sec,w3);
 
@@ -569,7 +569,6 @@ void Functions<S,D>::shoc_main_internal(
                                    ekat::subview(qw, i),
                                    ekat::subview(u_wind, i),
                                    ekat::subview(v_wind, i),
-                                   ekat::subview(shoc_ql, i),
                                    wthl_sfc(i),wqw_sfc(i),
                                    ekat::subview(w_sec, i),
                                    ekat::subview(w3, i));
