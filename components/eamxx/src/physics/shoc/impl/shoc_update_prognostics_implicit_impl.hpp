@@ -55,12 +55,22 @@ void Functions<S,D>::update_prognostics_implicit(
   // 1d allocations
   uview_1d<Pack> tmpi, tkh_zi,
                   tk_zi, rho_zi,
-                  rdp_zt;
+                  rdp_zt,
+                  tkh_thl_zi, tkh_qw_zi,
+                  tk_u_zi, tk_v_zi,
+                  wthl_leonard_res, wqt_leonard_res,
+                  uw_leonard_res, vw_leonard_res;
   uview_1d<Scalar> du_workspace, dl_workspace, d_workspace;
 
-  workspace.template take_many_contiguous_unsafe<5>(
-    {"tmpi", "tkh_zi", "tk_zi", "rho_zi", "rdp_zt"},
-    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt});
+  workspace.template take_many_contiguous_unsafe<13>(
+    {"tmpi", "tkh_zi", "tk_zi", "rho_zi", "rdp_zt",
+     "tkh_thl_zi", "tkh_qw_zi", "tk_u_zi", "tk_v_zi",
+     "wthl_leonard_res", "wqt_leonard_res", "uw_leonard_res",
+     "vw_leonard_res"},
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt,
+     &tkh_thl_zi, &tkh_qw_zi, &tk_u_zi, &tk_v_zi,
+     &wthl_leonard_res, &wqt_leonard_res, &uw_leonard_res,
+     &vw_leonard_res});
 
   workspace.template take_many_contiguous_unsafe<3, Scalar>(
     {"du_workspace", "dl_workspace", "d_workspace"},
@@ -70,34 +80,43 @@ void Functions<S,D>::update_prognostics_implicit(
   auto d  = Kokkos::subview(d_workspace,  Kokkos::make_pair(0,nlev));
 
   // 2d allocations for solver RHS
-  const int num_wind_transpose_packs = ekat::npack<Pack>(2);
   const int num_qtracers_transpose_packs = ekat::npack<Pack>(num_qtracers+3);
 
-  const int n_wind_slots = num_wind_transpose_packs*Pack::n;
+  const int n_one_var_slots = Pack::n;
   const int n_trac_slots = num_qtracers_transpose_packs*Pack::n;
 
-  const auto wind_slot    = workspace.template take_macro_block<Scalar>("wind_slot",n_wind_slots);
-  const auto wind_pert_slot = workspace.template take_macro_block<Scalar>("wind_pert_slot",n_wind_slots);
+  const auto u_slot = workspace.template take_macro_block<Scalar>("u_slot",n_one_var_slots);
+  const auto v_slot = workspace.template take_macro_block<Scalar>("v_slot",n_one_var_slots);
+  const auto u_pert_slot = workspace.template take_macro_block<Scalar>("u_pert_slot",n_one_var_slots);
+  const auto v_pert_slot = workspace.template take_macro_block<Scalar>("v_pert_slot",n_one_var_slots);
+  const auto thl_slot = workspace.template take_macro_block<Scalar>("thl_slot",n_one_var_slots);
+  const auto qw_slot = workspace.template take_macro_block<Scalar>("qw_slot",n_one_var_slots);
   const auto tracers_slot = workspace.template take_macro_block<Scalar>("tracers_slot",n_trac_slots);
 
   // Reshape 2d views
-  const auto wind_rhs     = uview_2d<Pack>(reinterpret_cast<Pack*>(wind_slot.data()),
-                                            nlev, num_wind_transpose_packs);
-  const auto wind_pert_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(wind_pert_slot.data()),
-                                            nlev, num_wind_transpose_packs);
+  const auto u_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(u_slot.data()), nlev, 1);
+  const auto v_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(v_slot.data()), nlev, 1);
+  const auto u_pert_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(u_pert_slot.data()), nlev, 1);
+  const auto v_pert_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(v_pert_slot.data()), nlev, 1);
+  const auto thl_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(thl_slot.data()), nlev, 1);
+  const auto qw_rhs = uview_2d<Pack>(reinterpret_cast<Pack*>(qw_slot.data()), nlev, 1);
   const auto qtracers_rhs  = uview_2d<Pack>(reinterpret_cast<Pack*>(tracers_slot.data()),
                                             nlev, num_qtracers_transpose_packs);
 
   // scalarized versions of some views will be needed
   const auto rdp_zt_s       = ekat::scalarize(rdp_zt);
   const auto rho_zi_s       = ekat::scalarize(rho_zi);
+  const auto dz_zi_s        = ekat::scalarize(dz_zi);
   const auto u_wind_s       = ekat::scalarize(u_wind);
   const auto v_wind_s       = ekat::scalarize(v_wind);
-  const auto wind_rhs_s     = ekat::scalarize(wind_rhs);
+  const auto u_rhs_s        = ekat::scalarize(u_rhs);
+  const auto v_rhs_s        = ekat::scalarize(v_rhs);
   const auto thetal_s       = ekat::scalarize(thetal);
   const auto qw_s           = ekat::scalarize(qw);
   const auto tke_s          = ekat::scalarize(tke);
   const auto qtracers_rhs_s = ekat::scalarize(qtracers_rhs);
+  const auto thl_rhs_s      = ekat::scalarize(thl_rhs);
+  const auto qw_rhs_s       = ekat::scalarize(qw_rhs);
   const auto wtracer_sfc_s  = ekat::scalarize(wtracer_sfc);
   const auto wthl_leonard_base_s = ekat::scalarize(wthl_leonard_base);
   const auto wqt_leonard_base_s = ekat::scalarize(wqt_leonard_base);
@@ -105,7 +124,18 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto vw_leonard_base_s = ekat::scalarize(vw_leonard_base);
   const auto um_pert_s      = ekat::scalarize(um_pert);
   const auto vm_pert_s      = ekat::scalarize(vm_pert);
-  const auto wind_pert_rhs_s = ekat::scalarize(wind_pert_rhs);
+  const auto u_pert_rhs_s   = ekat::scalarize(u_pert_rhs);
+  const auto v_pert_rhs_s   = ekat::scalarize(v_pert_rhs);
+  const auto tkh_thl_zi_s   = ekat::scalarize(tkh_thl_zi);
+  const auto tkh_qw_zi_s    = ekat::scalarize(tkh_qw_zi);
+  const auto tk_u_zi_s      = ekat::scalarize(tk_u_zi);
+  const auto tk_v_zi_s      = ekat::scalarize(tk_v_zi);
+  const auto tkh_zi_s       = ekat::scalarize(tkh_zi);
+  const auto tk_zi_s        = ekat::scalarize(tk_zi);
+  const auto wthl_leonard_res_s = ekat::scalarize(wthl_leonard_res);
+  const auto wqt_leonard_res_s = ekat::scalarize(wqt_leonard_res);
+  const auto uw_leonard_res_s = ekat::scalarize(uw_leonard_res);
+  const auto vw_leonard_res_s = ekat::scalarize(vw_leonard_res);
 
   // linearly interpolate tkh, tk, and air density onto the interface grids
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
@@ -181,57 +211,87 @@ void Functions<S,D>::update_prognostics_implicit(
     });
   }
 
-  // Add the Leonard heat flux explicitly so the thermo diffusion solve sees
-  // the same w'theta_l' contribution diagnosed for the PDF below.
-  if (do_leonard) {
+  // Split each Leonard flux into a down-gradient part folded into the
+  // implicit diffusion coefficient and a residual flux applied explicitly.
+  {
     const Scalar leonard_factor = dx*dy/6;
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-      const Scalar flux_top = k == 0
-        ? 0
-        : 0.5*leonard_factor*(wthl_leonard_base_s(k-1) + wthl_leonard_base_s(k));
-      const Scalar flux_bot = k == nlev-1
-        ? 0
-        : 0.5*leonard_factor*(wthl_leonard_base_s(k) + wthl_leonard_base_s(k+1));
-      thetal_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
-                   * (rho_zi_s(k+1)*flux_bot - rho_zi_s(k)*flux_top);
+    const Scalar min_down_grad = 1e-20;
 
-      const Scalar wqt_flux_top = k == 0
-        ? 0
-        : 0.5*leonard_factor*(wqt_leonard_base_s(k-1) + wqt_leonard_base_s(k));
-      const Scalar wqt_flux_bot = k == nlev-1
-        ? 0
-        : 0.5*leonard_factor*(wqt_leonard_base_s(k) + wqt_leonard_base_s(k+1));
-      qw_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
-               * (rho_zi_s(k+1)*wqt_flux_bot - rho_zi_s(k)*wqt_flux_top);
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevi), [&] (const Int& k) {
+      tkh_thl_zi_s(k) = tkh_zi_s(k);
+      tkh_qw_zi_s(k)  = tkh_zi_s(k);
+      tk_u_zi_s(k)    = tk_zi_s(k);
+      tk_v_zi_s(k)    = tk_zi_s(k);
 
-      const Scalar uw_flux_top = k == 0
-        ? 0
-        : 0.5*leonard_factor*(uw_leonard_base_s(k-1) + uw_leonard_base_s(k));
-      const Scalar uw_flux_bot = k == nlev-1
-        ? 0
-        : 0.5*leonard_factor*(uw_leonard_base_s(k) + uw_leonard_base_s(k+1));
-      u_wind_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
-                   * (rho_zi_s(k+1)*uw_flux_bot - rho_zi_s(k)*uw_flux_top);
+      wthl_leonard_res_s(k) = 0;
+      wqt_leonard_res_s(k)  = 0;
+      uw_leonard_res_s(k)   = 0;
+      vw_leonard_res_s(k)   = 0;
 
-      const Scalar vw_flux_top = k == 0
-        ? 0
-        : 0.5*leonard_factor*(vw_leonard_base_s(k-1) + vw_leonard_base_s(k));
-      const Scalar vw_flux_bot = k == nlev-1
-        ? 0
-        : 0.5*leonard_factor*(vw_leonard_base_s(k) + vw_leonard_base_s(k+1));
-      v_wind_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
-                   * (rho_zi_s(k+1)*vw_flux_bot - rho_zi_s(k)*vw_flux_top);
+      if (do_leonard && k > 0 && k < nlev) {
+        const Scalar inv_dz = 1/dz_zi_s(k);
+
+        const Scalar wthl_flux = 0.5*leonard_factor
+                               * (wthl_leonard_base_s(k-1) + wthl_leonard_base_s(k));
+        const Scalar dthl_dz_down = -(thetal_s(k-1) - thetal_s(k))*inv_dz;
+        const Scalar kadd_thl = (ekat::abs(dthl_dz_down) > min_down_grad && wthl_flux*dthl_dz_down > 0)
+                              ? wthl_flux/dthl_dz_down : 0;
+        tkh_thl_zi_s(k) += kadd_thl;
+        wthl_leonard_res_s(k) = wthl_flux - kadd_thl*dthl_dz_down;
+
+        const Scalar wqt_flux = 0.5*leonard_factor
+                              * (wqt_leonard_base_s(k-1) + wqt_leonard_base_s(k));
+        const Scalar dqw_dz_down = -(qw_s(k-1) - qw_s(k))*inv_dz;
+        const Scalar kadd_qw = (ekat::abs(dqw_dz_down) > min_down_grad && wqt_flux*dqw_dz_down > 0)
+                             ? wqt_flux/dqw_dz_down : 0;
+        tkh_qw_zi_s(k) += kadd_qw;
+        wqt_leonard_res_s(k) = wqt_flux - kadd_qw*dqw_dz_down;
+
+        const Scalar uw_flux = 0.5*leonard_factor
+                             * (uw_leonard_base_s(k-1) + uw_leonard_base_s(k));
+        const Scalar du_dz_down = -(u_wind_s(k-1) - u_wind_s(k))*inv_dz;
+        const Scalar kadd_u = (ekat::abs(du_dz_down) > min_down_grad && uw_flux*du_dz_down > 0)
+                            ? uw_flux/du_dz_down : 0;
+        tk_u_zi_s(k) += kadd_u;
+        uw_leonard_res_s(k) = uw_flux - kadd_u*du_dz_down;
+
+        const Scalar vw_flux = 0.5*leonard_factor
+                             * (vw_leonard_base_s(k-1) + vw_leonard_base_s(k));
+        const Scalar dv_dz_down = -(v_wind_s(k-1) - v_wind_s(k))*inv_dz;
+        const Scalar kadd_v = (ekat::abs(dv_dz_down) > min_down_grad && vw_flux*dv_dz_down > 0)
+                            ? vw_flux/dv_dz_down : 0;
+        tk_v_zi_s(k) += kadd_v;
+        vw_leonard_res_s(k) = vw_flux - kadd_v*dv_dz_down;
+      }
     });
   }
 
-  // Store RHS values in wind_rhs, wind_pert_rhs, and qtracers_rhs for 1st, 2nd, and 3rd solve respectively
+  if (do_leonard) {
+    team.team_barrier();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
+      thetal_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+                   * (rho_zi_s(k+1)*wthl_leonard_res_s(k+1)
+                   -  rho_zi_s(k)*wthl_leonard_res_s(k));
+      qw_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+               * (rho_zi_s(k+1)*wqt_leonard_res_s(k+1)
+               -  rho_zi_s(k)*wqt_leonard_res_s(k));
+      u_wind_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+                   * (rho_zi_s(k+1)*uw_leonard_res_s(k+1)
+                   -  rho_zi_s(k)*uw_leonard_res_s(k));
+      v_wind_s(k) += dtime*C::gravit.value*rdp_zt_s(k)
+                   * (rho_zi_s(k+1)*vw_leonard_res_s(k+1)
+                   -  rho_zi_s(k)*vw_leonard_res_s(k));
+    });
+  }
+
+  // Store RHS values for variable-specific solves.
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-    wind_rhs_s(k,0) = u_wind_s(k);
-    wind_rhs_s(k,1) = v_wind_s(k);
+    u_rhs_s(k,0) = u_wind_s(k);
+    v_rhs_s(k,0) = v_wind_s(k);
 
-    wind_pert_rhs_s(k,0) = u_wind_s(k) + um_pert_s(k);
-    wind_pert_rhs_s(k,1) = v_wind_s(k) + vm_pert_s(k);
+    u_pert_rhs_s(k,0) = u_wind_s(k) + um_pert_s(k);
+    v_pert_rhs_s(k,0) = v_wind_s(k) + vm_pert_s(k);
 
     // The rhs version of the tracers is the transpose of the input/output layout
     const auto lev_idx = k/Pack::n;
@@ -242,27 +302,45 @@ void Functions<S,D>::update_prognostics_implicit(
     qtracers_rhs_s(k, num_qtracers)   = thetal_s(k);
     qtracers_rhs_s(k, num_qtracers+1) = qw_s(k);
     qtracers_rhs_s(k, num_qtracers+2) = tke_s(k);
+    thl_rhs_s(k,0) = thetal_s(k);
+    qw_rhs_s(k,0) = qw_s(k);
   });
 
   // march u_wind and v_wind one step forward using implicit solver
   {
-    // Call decomp for momentum variables
-    vd_shoc_decomp(team, nlev, tk_zi, tmpi, rdp_zt, dtime, ksrf, du, dl, d);
+    // Call decomp for u-wind
+    vd_shoc_decomp(team, nlev, tk_u_zi, tmpi, rdp_zt, dtime, ksrf, du, dl, d);
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, wind_rhs);
+    vd_shoc_solve(team, du, dl, d, u_rhs);
+
+    // Call decomp for v-wind
+    team.team_barrier();
+    vd_shoc_decomp(team, nlev, tk_v_zi, tmpi, rdp_zt, dtime, ksrf, du, dl, d);
+
+    // Solve
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, v_rhs);
   }
 
   // march um_pert and vm_pert one step forward using implicit solver
   {
-    // Call decomp for perturbed momentum variables
+    // Call decomp for perturbed u-wind
     team.team_barrier();
-    vd_shoc_decomp(team, nlev, tk_zi, tmpi, rdp_zt, dtime, ksrf_pert, du, dl, d);
+    vd_shoc_decomp(team, nlev, tk_u_zi, tmpi, rdp_zt, dtime, ksrf_pert, du, dl, d);
 
     // Solve
     team.team_barrier();
-    vd_shoc_solve(team, du, dl, d, wind_pert_rhs);
+    vd_shoc_solve(team, du, dl, d, u_pert_rhs);
+
+    // Call decomp for perturbed v-wind
+    team.team_barrier();
+    vd_shoc_decomp(team, nlev, tk_v_zi, tmpi, rdp_zt, dtime, ksrf_pert, du, dl, d);
+
+    // Solve
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, v_pert_rhs);
   }
 
   // march temperature, total water, tke,and tracers one step forward using implicit solver
@@ -275,16 +353,30 @@ void Functions<S,D>::update_prognostics_implicit(
     // Solve
     team.team_barrier();
     vd_shoc_solve(team, du, dl, d, qtracers_rhs);
+
+    // Solve theta_l with any down-gradient Leonard contribution included in tkh.
+    team.team_barrier();
+    vd_shoc_decomp(team, nlev, tkh_thl_zi, tmpi, rdp_zt, dtime, 0, du, dl, d);
+
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, thl_rhs);
+
+    // Solve total water with any down-gradient Leonard contribution included in tkh.
+    team.team_barrier();
+    vd_shoc_decomp(team, nlev, tkh_qw_zi, tmpi, rdp_zt, dtime, 0, du, dl, d);
+
+    team.team_barrier();
+    vd_shoc_solve(team, du, dl, d, qw_rhs);
   }
 
   // Copy RHS values back into output variables
   team.team_barrier();
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&] (const Int& k) {
-    u_wind_s(k) = wind_rhs_s(k, 0);
-    v_wind_s(k) = wind_rhs_s(k, 1);
+    u_wind_s(k) = u_rhs_s(k, 0);
+    v_wind_s(k) = v_rhs_s(k, 0);
 
-    um_pert_s(k) = wind_pert_rhs_s(k, 0) - u_wind_s(k);
-    vm_pert_s(k) = wind_pert_rhs_s(k, 1) - v_wind_s(k);
+    um_pert_s(k) = u_pert_rhs_s(k, 0) - u_wind_s(k);
+    vm_pert_s(k) = v_pert_rhs_s(k, 0) - v_wind_s(k);
 
     // Transpose tracers back to  input/output layout
     const auto lev_idx = k/Pack::n;
@@ -292,8 +384,8 @@ void Functions<S,D>::update_prognostics_implicit(
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
       qtracers(q, lev_idx)[pack_idx] = qtracers_rhs_s(k, q);
     });
-    thetal_s(k) = qtracers_rhs_s(k, num_qtracers);
-    qw_s(k)     = qtracers_rhs_s(k, num_qtracers+1);
+    thetal_s(k) = thl_rhs_s(k, 0);
+    qw_s(k)     = qw_rhs_s(k, 0);
     tke_s(k)    = qtracers_rhs_s(k, num_qtracers+2);
   });
 
@@ -301,12 +393,19 @@ void Functions<S,D>::update_prognostics_implicit(
   // Release temporary variables from the workspace
   team.team_barrier();
   workspace.template release_macro_block<Scalar>(tracers_slot,n_trac_slots);
-  workspace.template release_macro_block<Scalar>(wind_pert_slot,n_wind_slots);
-  workspace.template release_macro_block<Scalar>(wind_slot,n_wind_slots);
+  workspace.template release_macro_block<Scalar>(qw_slot,n_one_var_slots);
+  workspace.template release_macro_block<Scalar>(thl_slot,n_one_var_slots);
+  workspace.template release_macro_block<Scalar>(v_pert_slot,n_one_var_slots);
+  workspace.template release_macro_block<Scalar>(u_pert_slot,n_one_var_slots);
+  workspace.template release_macro_block<Scalar>(v_slot,n_one_var_slots);
+  workspace.template release_macro_block<Scalar>(u_slot,n_one_var_slots);
   workspace.template release_many_contiguous<3,Scalar>(
     {&du_workspace, &dl_workspace, &d_workspace});
-  workspace.template release_many_contiguous<5>(
-    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt});
+  workspace.template release_many_contiguous<13>(
+    {&tmpi, &tkh_zi, &tk_zi, &rho_zi, &rdp_zt,
+     &tkh_thl_zi, &tkh_qw_zi, &tk_u_zi, &tk_v_zi,
+     &wthl_leonard_res, &wqt_leonard_res, &uw_leonard_res,
+     &vw_leonard_res});
 }
 
 } // namespace shoc

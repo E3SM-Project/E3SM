@@ -181,9 +181,9 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 
   // Number of Reals needed by the WorkspaceManager passed to shoc_main
   const auto policy       = TPF::get_default_team_policy(m_num_cols, nlev_packs);
-  const int n_wind_slots  = ekat::npack<Pack>(2)*Pack::n;
+  const int n_one_var_slots = Pack::n;
   const int n_trac_slots  = ekat::npack<Pack>(m_num_tracers+3)*Pack::n;
-  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 20+(2*n_wind_slots+n_trac_slots), policy);
+  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 28+(6*n_one_var_slots+n_trac_slots), policy);
 
   return interface_request + wsm_request;
 }
@@ -265,9 +265,9 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   // Compute workspace manager size to check used memory
   // vs. requested memory
   const auto policy      = TPF::get_default_team_policy(m_num_cols, nlev_packs);
-  const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
+  const int n_one_var_slots = Pack::n;
   const int n_trac_slots = ekat::npack<Pack>(m_num_tracers+3)*Pack::n;
-  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 20+(2*n_wind_slots+n_trac_slots), policy)/sizeof(Pack);
+  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 28+(6*n_one_var_slots+n_trac_slots), policy)/sizeof(Pack);
   s_mem += wsm_size;
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -520,10 +520,10 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Pack>(m_num_levs);
   const auto nlevi_packs = ekat::npack<Pack>(m_num_levs+1);
-  const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
+  const int n_one_var_slots = Pack::n;
   const int n_trac_slots = ekat::npack<Pack>(m_num_tracers+3)*Pack::n;
   const auto default_policy = TPF::get_default_team_policy(m_num_cols, nlev_packs);
-  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 20+(2*n_wind_slots+n_trac_slots), default_policy);
+  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 28+(6*n_one_var_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
   // maximum number of levels in pbl from surface

@@ -1714,9 +1714,9 @@ void update_prognostics_implicit_host(Int shcol, Int nlev, Int nlevi, Int num_tr
   });
 
   // Local variable workspace
-  const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
+  const int n_one_var_slots = Pack::n;
   const int n_trac_slots = ekat::npack<Pack>(num_tracer+3)*Pack::n;
-  const int tmp_var_size = 8+2*n_wind_slots+n_trac_slots;
+  const int tmp_var_size = 16+6*n_one_var_slots+n_trac_slots;
   ekat::WorkspaceManager<Pack, KT::Device> workspace_mgr(nlevi_packs, tmp_var_size, policy);
 
   // Zero-initialized pert wind views (no pert wind data in this parity test)
@@ -2605,9 +2605,9 @@ Int shoc_main_host(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npb
 #endif
 
   // Create local workspace
-  const int n_wind_slots = ekat::npack<Pack>(2)*Pack::n;
+  const int n_one_var_slots = Pack::n;
   const int n_trac_slots = ekat::npack<Pack>(num_qtracers+3)*Pack::n;
-  ekat::WorkspaceManager<Pack, SHF::KT::Device> workspace_mgr(nlevi_packs, 14+(2*n_wind_slots+n_trac_slots), policy);
+  ekat::WorkspaceManager<Pack, SHF::KT::Device> workspace_mgr(nlevi_packs, 22+(6*n_one_var_slots+n_trac_slots), policy);
 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                workspace_mgr, shoc_runtime_options,
