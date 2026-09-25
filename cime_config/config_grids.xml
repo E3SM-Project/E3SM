@@ -3944,6 +3944,7 @@
       <file grid="atm|lnd" mask="IcoswISC30E3r5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_IcoswISC30E3r5.250918.nc</file>
       <file grid="lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_tx01.201025.nc</file>
       <file grid="atm" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_tx01.201025.nc</file>
+      <file grid="lnd" mask="MAB45to5rr1">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_MAB45to5rr1.20260401.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
