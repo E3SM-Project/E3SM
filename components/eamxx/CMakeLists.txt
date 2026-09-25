@@ -115,8 +115,10 @@ if (Kokkos_ENABLE_SYCL)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
 endif ()
 
-if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+if (NOT SCREAM_CIME_BUILD)
+  if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
+    set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+  endif()
 endif()
 
 ####################################################################
@@ -458,10 +460,12 @@ endif()
 ####################################################################
 
 # Set compiler-specific flags. Do it BEFORE ekat, so ekat gets the flags too
-include(EkatSetCompilerFlags)
-ResetFlags()
-SetCommonFlags()
-SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
+if (NOT SCREAM_CIME_BUILD)
+  include(EkatSetCompilerFlags)
+  ResetFlags()
+  SetCommonFlags()
+  SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
+endif()
 
 # We will use the sharedlib one in CIME builds
 if (NOT SCREAM_CIME_BUILD)
@@ -501,23 +505,26 @@ if (NOT SCREAM_CIME_BUILD)
   add_subdirectory(${EKAT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/ekat)
 endif()
 
-include(EkatMpiUtils)
-# We should avoid cxx bindings in mpi; they are already deprecated,
-# and can cause headaches at link time, cause they require -lmpi_cxx
-# (for openpmi; -lmpicxx for mpich) flag.
-DisableMpiCxxBindings()
 
-if (SCREAM_DOUBLE_PRECISION)
-  if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Intel" OR "${CMAKE_Fortran_COMPILER_ID}" STREQUAL "IntelLLVM")
-    set(SCREAM_Fortran_FLAGS -real-size 64)
-  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Cray")
-    set(SCREAM_Fortran_FLAGS -s default32 -eZ)
-  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
-    #set(SCREAM_Fortran_FLAGS -real-size=8 -double-size=8) # these are nvidia flags, but dont need, already supports IEEE 754 floating-point standard
-  elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
-    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
-  else() # default, currently same as GNU
-    set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
+if (NOT SCREAM_CIME_BUILD)
+  include(EkatMpiUtils)
+  # We should avoid cxx bindings in mpi; they are already deprecated,
+  # and can cause headaches at link time, cause they require -lmpi_cxx
+  # (for openpmi; -lmpicxx for mpich) flag.
+  DisableMpiCxxBindings()
+
+  if (SCREAM_DOUBLE_PRECISION)
+    if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Intel" OR "${CMAKE_Fortran_COMPILER_ID}" STREQUAL "IntelLLVM")
+      set(SCREAM_Fortran_FLAGS -real-size 64)
+    elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "Cray")
+      set(SCREAM_Fortran_FLAGS -s default32 -eZ)
+    elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
+      #set(SCREAM_Fortran_FLAGS -real-size=8 -double-size=8) # these are nvidia flags, but dont need, already supports IEEE 754 floating-point standard
+    elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
+      set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
+    else() # default, currently same as GNU
+      set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
+    endif()
   endif()
 endif()
 

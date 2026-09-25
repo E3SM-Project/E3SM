@@ -122,7 +122,7 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 # Find dependencies
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/find_dep_packages.cmake)
 
-# Scream manages its own flags
+# Eamxx manages its own build
 build_eamxx()
 
 # Emulator components manage their own build
