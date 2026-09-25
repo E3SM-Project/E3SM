@@ -40,13 +40,6 @@ WaterIsotopes::WaterIsotopes(const ekat::Comm& comm, const ekat::ParameterList& 
         {"majoube_1971", wiso::LiquidVaporFractionation::Majoube1971}
       });
 
-  // Diffusivity formulation
-  m_runtime_options.diffusivity = parse_option<wiso::DiffusivityFormulation>(
-    m_params, "diffusivity_formulation", "merlivat_1978", {
-      {"merlivat_1978",wiso::DiffusivityFormulation::Merlivat1978},
-      {"cappa_2003",wiso::DiffusivityFormulation::Cappa2003}
-    });
-
   // Standard ratio formulation
   m_runtime_options.standard_ratio = parse_option<wiso::StandardRatioFormulation>(
     m_params,"standard_ratio_formulation", "normalized", {

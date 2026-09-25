@@ -14,7 +14,7 @@ namespace wiso {
  * These constants define isotopic fractionation behavior, molecular properties,
  * and reference ratios for water isotope tracers.
  *
- * All species-specific constants are arrays indexed by WisoSpecies enum:
+ * All species-specific constants are arrays indexed by WaterIsotopologues enum:
  *   H216O = 0 ("ordinary water," non-fractionating)
  *   HDO   = 1 (singly deuterated water, HD16O)
  *   H218O = 2 (oxygen-18 substituted water, H218O)
@@ -29,23 +29,97 @@ namespace wiso {
  *                       Merlivat & Nief 1967 + Majoube 1971 (ice/vapor)
  */
 
-// ============================================================================
-// Runtime configuration enums and struct
-// ============================================================================
+// Define water isotopologue species
+enum class WaterIsotopologues {
+  H216O = 0,  // ordinary water; alpha == 1
+  HDO   = 1,  // HD16O (deuterium)
+  H218O = 2,  // H218O (oxygen-18)
+  H217O = 3,  // H217O; = alpha(H218O)^0.529 (Schoenemann et al. 2014)
+  HTO   = 4,  // HT16O (tritiated water); = alpha(HDO)^2.0 (isoCAM3 assumption)
+  Count
+};
 
-// Liquid/vapor equilibrium fractionation formulation
+// Substituted element. Indexes the coefficient tables below.
+enum class IsoElement { Hydrogen = 0, Oxygen = 1, Count };
+
+// Condensed phase of the vapor <-> condensate equilibrium.
+enum class CondensedPhase { Liquid = 0, Ice = 1, Count };
+
+/* Coefficients of the temperature polynomial:
+
+     10^3 * ln(alpha) = T3*T^3 + T2*T^2 + T1*T + T0
+                        + T_1/T + T_2/T^2 + T_3/T^3 + T_4/T^4 + T_6/T^6
+
+   Not every formulation uses every term; unused terms are 0. T_4 and T_6 are
+   currently zero in every formulation below, but are used in coefficient
+   sets to be added. */
+struct PolynomialCoefficients {
+  Real T3, T2, T1, T0, T_1, T_2, T_3, T_4, T_6;
+};
+
+// set boundaries from polynomial regression
+struct TemperatureBounds {
+  Real Tmin, Tmax;  // [K] range of the published regression
+};
+
+struct EquilibriumFractionationCoefficients {
+  TemperatureBounds      tbounds;
+  PolynomialCoefficients coeffs;
+};
+
+// Liquid/vapor equilibrium fractionation formulation options
 enum class LiquidVaporFractionation {
   HoritaWesolowski1994 = 0,  // Default: Horita & Wesolowski (1994)
   Majoube1971 = 1,           // Alternative: Majoube (1971)
   FormulationCount
 };
 
-// Diffusivity ratio formulation
-enum class DiffusivityFormulation {
-  Merlivat1978 = 0,  // Default: Merlivat (1978)
-  Cappa2003 = 1,     // Alternative: Cappa et al. (2003)
+// Ice/vapor equilibrium fractionation formulation options
+enum class IceVaporFractionation {
+  MerlivatNief1967 = 0,  // Default: Merlivat & Nief (1967) HDO + Majoube (1971) O18
+  IsoCAM3 = 1,           // Alternative: isoCAM3 formulation
   FormulationCount
 };
+
+// Coefficient tables, indexed [formulation][element]. 
+static constexpr EquilibriumFractionationCoefficients
+alpha_eq_liq_table[etoi(LiquidVaporFractionation::FormulationCount)]
+                  [etoi(IsoElement::Count)] = {
+  // Horita & Wesolowski (1994), 0-364 C
+  { /* Hydrogen */ {{273.15, 637.15}, {1.1588e-6, -1.6201e-3, 7.9484e-1, -1.6104e2, 0., 0., 2.9992e9, 0., 0.}},
+    /* Oxygen   */ {{273.15, 637.15}, {0., 0., 0., -7.685, 6.7123e3, -1.6664e6, 3.5041e8, 0., 0.}} },
+  // Majoube (1971), 0-100 C
+  { /* Hydrogen */ {{273.15, 373.15}, {0., 0., 0., 5.2612e1, -7.6248e4, 2.4844e7, 0., 0., 0.}},
+    /* Oxygen   */ {{273.15, 373.15}, {0., 0., 0., -2.0667, -4.156e2, 1.137e6, 0., 0., 0.}} }
+};
+
+static constexpr EquilibriumFractionationCoefficients
+alpha_eq_ice_table[etoi(IceVaporFractionation::FormulationCount)]
+                  [etoi(IsoElement::Count)] = {
+  // Default: two different studies, one per element.
+  { /* Hydrogen */ {{233.15, 273.15}, {0., 0., 0., -9.45e1, 0., 1.6289e7, 0., 0., 0.}},  // Merlivat & Nief (1967), -40..0 C
+    /* Oxygen   */ {{239.75, 273.15}, {0., 0., 0., -2.8224e1, 1.1839e4, 0., 0., 0., 0.}} },  // Majoube (1971), NOT M&N
+  // isoCAM3: same functional fits, extrapolated to -70 C.
+  { /* Hydrogen */ {{203.15, 273.15}, {0., 0., 0., -9.34e1, 0., 1.6288e7, 0., 0., 0.}},
+    /* Oxygen   */ {{203.15, 273.15}, {0., 0., 0., -2.8224e1, 1.1839e4, 0., 0., 0., 0.}} }
+};
+
+// Provenance strings, for logging. Host-only: deliberately not part of the
+// device-side payload (carrying them would grow the kernel closure).
+static constexpr const char* liquid_vapor_ref
+    [etoi(LiquidVaporFractionation::FormulationCount)] = {
+  "Horita & Wesolowski (1994)",
+  "Majoube (1971)"
+};
+static constexpr const char* ice_vapor_ref
+    [etoi(IceVaporFractionation::FormulationCount)] = {
+  "Merlivat & Nief (1967) [HDO] + Majoube (1971) [H218O]",
+  "isoCAM3"
+};
+
+// ============================================================================
+// Runtime configuration enums and struct
+// ============================================================================
 
 // Standard isotope ratio formulation
 enum class StandardRatioFormulation {
@@ -61,17 +135,9 @@ enum class OceanEnrichmentFormulation {
   FormulationCount
 };
 
-// Ice/vapor equilibrium fractionation formulation
-enum class IceVaporFractionation {
-  MerlivatNief1967 = 0,  // Default: Merlivat & Nief (1967) HDO + Majoube (1971) O18
-  IsoCAM3 = 1,           // Alternative: isoCAM3 formulation
-  FormulationCount
-};
-
 // Runtime configuration struct - holds user's formulation choices
 struct WaterIsotopeRuntimeOptions {
   LiquidVaporFractionation liquid_vapor = LiquidVaporFractionation::HoritaWesolowski1994;
-  DiffusivityFormulation diffusivity = DiffusivityFormulation::Merlivat1978;
   StandardRatioFormulation standard_ratio = StandardRatioFormulation::Normalized;
   OceanEnrichmentFormulation ocean_enrichment = OceanEnrichmentFormulation::Modern;
   IceVaporFractionation ice_vapor = IceVaporFractionation::MerlivatNief1967;
@@ -83,18 +149,11 @@ struct WaterIsotopeConstants
   using Real = Scalar;
 
   // Number of isotope species
-  static constexpr int num_species = 5;
+  static constexpr int num_species = etoi(WaterIsotopologues::Count);
 
   // -----------------------------------------------------------------------
   // Active constants (runtime-selected)
   // -----------------------------------------------------------------------
-
-  // Diffusivity ratios (D_isotope/D_H2O)
-  static constexpr Scalar IsotopologueDiffusivity_table
-      [etoi(DiffusivityFormulation::FormulationCount)][num_species] = {
-        { 1.0, 0.9757, 0.9727, 0.9727, 0.9757 }, // Merlivat 1978
-        { 1.0, 0.9839, 0.9691, 0.9691, 0.9839 } // Cappa et al 2003
-  };
 
   // Model standard isotope ratios
   static constexpr Scalar rstd_table
@@ -110,127 +169,68 @@ struct WaterIsotopeConstants
       { 1.0, 1.0128, 1.0016, 1.0008, 1.0} // LGM
   };
 
-  /* EQUILIBRIUM FRACTIONATION 
-  Liquid/vapor equilibrium fractionation coefficients - requires 5 coefficients
-  Coefficients for alpha = exp(polynomial in T)
-  HDO uses: alpha = exp(a*T^3 + b*T^2 + c*T + d + e/T^3)
-  H218O uses: alpha = exp(a/T^3 + b/T^2 + c/T + d)
-  H217O and HTO are derived from these by power laws
-  Not all formulations have all coefficients, depends on regression used. */
-  static constexpr Scalar AlphaLiqVap_CoefA_table
-      [etoi(LiquidVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0, 1158.8e-12, 0.35041e6, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,   24.844e3,   1.137e3, 0.0, 0.0 }  // Majoube 1971
-  };
-  static constexpr Scalar AlphaLiqVap_CoefB_table
-      [etoi(LiquidVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0, -1620.1e-9, -1.6664e3, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,    -76.248,   -0.4156, 0.0, 0.0 }  // Majoube 1971
-  };
-  static constexpr Scalar AlphaLiqVap_CoefC_table
-      [etoi(LiquidVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0,  794.84e-6,    6.7123, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,  52.612e-3,-2.0667e-3, 0.0, 0.0 }  // Majoube 1971
-  };
-  static constexpr Scalar AlphaLiqVap_CoefD_table
-      [etoi(LiquidVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0, -161.04e-3, -7.685e-3, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,        0.0,       0.0, 0.0, 0.0 }  // Majoube 1971
-  };
-  static constexpr Scalar AlphaLiqVap_CoefE_table
-      [etoi(LiquidVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0,   2.9992e6,       0.0, 0.0, 0.0 }, // Horita and Wesolowski 1994
-        { 0.0,        0.0,       0.0, 0.0, 0.0 }  // Majoube 1971
-  };
-
-  /* Ice/vapor equilibrium fractionation coefficients
-     Coefficients for alpha = exp(a/T^2 + b/T + c) */
-  static constexpr Scalar AlphaIceVap_CoefA_table
-      [etoi(IceVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0, 16289.0, 0.0, 0.0, 0.0 }, // Merlivat and Nief 1967/Majoube 1971
-        { 0.0, 16288.0, 0.0, 0.0, 0.0 }  // isoCAM3
-  };  
-  static constexpr Scalar AlphaIceVap_CoefB_table
-      [etoi(IceVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0, 0.0, 11.839, 0.0, 0.0 }, // Merlivat and Nief 1967/Majoube 1971
-        { 0.0, 0.0, 11.839, 0.0, 0.0 }  // isoCAM3
-  };  
-  static constexpr Scalar AlphaIceVap_CoefC_table
-      [etoi(IceVaporFractionation::FormulationCount)][num_species] = {
-        { 0.0, -9.45e-2, -28.224e-3, 0.0, 0.0 }, // Merlivat and Nief 1967/Majoube 1971
-        { 0.0, -9.34e-2, -28.224e-3, 0.0, 0.0 }  // isoCAM3
-  };
-
   // -----------------------------------------------------------------------
   // Runtime-selected formulation options
   // -----------------------------------------------------------------------
 
   WaterIsotopeRuntimeOptions opts_;
 
+private:
+  // Equilibrium fractionation coefficients for the *selected* formulations,
+  // resolved once on construction and stored by value.
+  EquilibriumFractionationCoefficients
+    eq_[etoi(CondensedPhase::Count)][etoi(IsoElement::Count)];
+
+public:
   // -----------------------------------------------------------------------
   // Constructors
   // -----------------------------------------------------------------------
 
   // Constructor with runtime options (selects formulations)
   KOKKOS_INLINE_FUNCTION
-  WaterIsotopeConstants(const WaterIsotopeRuntimeOptions& opts) : opts_(opts) {}
+  WaterIsotopeConstants(const WaterIsotopeRuntimeOptions& opts) : opts_(opts) {
+    for (int e = 0; e < etoi(IsoElement::Count); ++e) {
+      eq_[etoi(CondensedPhase::Liquid)][e] =
+          alpha_eq_liq_table[etoi(opts.liquid_vapor)][e];
+      eq_[etoi(CondensedPhase::Ice)][e] =
+          alpha_eq_ice_table[etoi(opts.ice_vapor)][e];
+    }
+  }
 
   // Default constructor (uses default formulations)
   KOKKOS_INLINE_FUNCTION
   WaterIsotopeConstants() : WaterIsotopeConstants(WaterIsotopeRuntimeOptions{}) {}
-    
+
   // -----------------------------------------------------------------------
   // Accessors (select table row based on stored runtime options)
   // -----------------------------------------------------------------------
 
-  // Select diffusivity formulation
-  KOKKOS_INLINE_FUNCTION
-  Scalar diff_src(int s) const { return IsotopologueDiffusivity_table[int(opts_.diffusivity)][s]; }
-
   // Select standard ratio formulation
   KOKKOS_INLINE_FUNCTION
-  Scalar ratio_src(int s) const { return rstd_table[int(opts_.standard_ratio)][s]; }
+  Scalar ratio_src(WaterIsotopologues s) const { return rstd_table[int(opts_.standard_ratio)][etoi(s)]; }
 
   // Select ocean enrichment formulation
   KOKKOS_INLINE_FUNCTION
-  Scalar ocean_src(int s) const { return boce_table[int(opts_.ocean_enrichment)][s]; }
+  Scalar ocean_src(WaterIsotopologues s) const { return boce_table[int(opts_.ocean_enrichment)][etoi(s)]; }
 
-  // Select coefficients for liquid/vapor formulation selected
-  // TODO: rename apla*l variables throughout.
+  // Which element's coefficient set a species uses.
   KOKKOS_INLINE_FUNCTION
-  Scalar AlphaLiqVap_CoefA(int s) const { return AlphaLiqVap_CoefA_table[int(opts_.liquid_vapor)][s]; }
-  KOKKOS_INLINE_FUNCTION
-  Scalar AlphaLiqVap_CoefB(int s) const { return AlphaLiqVap_CoefB_table[int(opts_.liquid_vapor)][s]; }
-  KOKKOS_INLINE_FUNCTION
-  Scalar AlphaLiqVap_CoefC(int s) const { return AlphaLiqVap_CoefC_table[int(opts_.liquid_vapor)][s]; }
-  KOKKOS_INLINE_FUNCTION
-  Scalar AlphaLiqVap_CoefD(int s) const { return AlphaLiqVap_CoefD_table[int(opts_.liquid_vapor)][s]; }
-  KOKKOS_INLINE_FUNCTION
-  Scalar AlphaLiqVap_CoefE(int s) const { return AlphaLiqVap_CoefE_table[int(opts_.liquid_vapor)][s]; }
+  static IsoElement element_of(WaterIsotopologues s) {
+    return (s == WaterIsotopologues::HDO || s == WaterIsotopologues::HTO) ? IsoElement::Hydrogen : IsoElement::Oxygen;
+  }
 
-  // Ice/vapor
+  // Equilibrium fractionation polynomial coefficients 
   KOKKOS_INLINE_FUNCTION
-  Scalar AlphaIceVap_CoefA(int s) const { return AlphaIceVap_CoefA_table[int(opts_.ice_vapor)][s]; }
+  const PolynomialCoefficients& alpha_eq_coeffs(CondensedPhase p, IsoElement e) const {
+    return eq_[etoi(p)][etoi(e)].coeffs;
+  }
+
+  // Temperature range [K] over which the selected regression was fitted.
+  // Outside it the polynomial is an extrapolation, not a fit.
   KOKKOS_INLINE_FUNCTION
-  Scalar AlphaIceVap_CoefB(int s) const { return AlphaIceVap_CoefB_table[int(opts_.ice_vapor)][s]; }
-  KOKKOS_INLINE_FUNCTION
-  Scalar AlphaIceVap_CoefC(int s) const { return AlphaIceVap_CoefC_table[int(opts_.ice_vapor)][s]; }
-
-  // -----------------------------------------------------------------------
-  // Molecular properties (species-indexed arrays) - always same
-  // -----------------------------------------------------------------------
-
-  // Isotopic substitutions (mass-dependent factor)
-  // Ported from CAM6 water_isotopes.F90
-  // C++: expanded to 5 elements with H217O and HTO derived values
-  static constexpr Scalar fisub[num_species] = {
-    1.0,  // H216O (non-fractionating)
-    2.0,  // HDO (deuterium substitution)
-    1.0,  // H218O (oxygen substitution)
-    1.0,  // H217O (oxygen substitution, same as H218O)
-    2.0   // HTO (tritium substitution)
-  };
-
+  const TemperatureBounds& tbounds(CondensedPhase p, IsoElement e) const {
+    return eq_[etoi(p)][etoi(e)].tbounds;
+  }
 
 };
 
