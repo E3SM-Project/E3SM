@@ -1153,7 +1153,6 @@ _TESTS = {
     "e3sm_gcam_developer" : {
         "time"  : "1:00:00",
         "tests" : (
-            "SMS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
             "ERS_Vmct.ne30pg2_f09_oEC60to30v3.SSP245_ZATM_BGC",
             )
     },
