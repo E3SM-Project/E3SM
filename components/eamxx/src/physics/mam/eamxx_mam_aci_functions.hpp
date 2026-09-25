@@ -92,7 +92,8 @@ void compute_subgrid_scale_velocities(
 }
 
 void compute_nucleate_ice_tendencies(
-    const mam4::NucleateIce &nucleate_ice, mam4::ThreadTeamPolicy team_policy,
+    mam4::ThreadTeamPolicy team_policy, const mam4::AeroConfig &aero_config,
+    const mam4::NucleateIce &nucleate_ice,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
     const mam_coupling::AerosolState &dry_aero, const MAMAci::view_2d wsubice,
     const MAMAci::view_2d aitken_dry_dia, const int nlev, const double dt,
@@ -155,12 +156,12 @@ void compute_nucleate_ice_tendencies(
         // grab views from the buffer to store tendencies, not used as all
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);  // not used
-        const mam4::AeroConfig aero_config(nucleate_ice.aero_species);
         const Real t = 0;  // not used
         nucleate_ice.compute_tendencies(aero_config, team, t, dt, atm,
                                         surf, progs, diags, tends);
       });
 }
+
 void store_liquid_cloud_fraction(
     const int ncol,
     const mam_coupling::DryAtmosphere &dry_atmosphere,
@@ -191,7 +192,7 @@ void store_liquid_cloud_fraction(
 }
 
 void call_function_dropmixnuc(
-    mam4::ThreadTeamPolicy team_policy, const Real dt,
+    mam4::ThreadTeamPolicy team_policy, const mam4::AeroConfig& aero_config, const Real dt,
     mam_coupling::DryAtmosphere &dry_atmosphere, const MAMAci::view_2d rpdel,
     const MAMAci::const_view_2d kvh_mid, const MAMAci::view_2d kvh_int,
     const MAMAci::view_2d wsub, const MAMAci::view_2d cloud_frac,
@@ -271,7 +272,7 @@ void call_function_dropmixnuc(
   //---------------------------------------------------------------------------
   // ## Initialize the ndrop class.
   //---------------------------------------------------------------------------
-  const int ntot_amode = mam_coupling::num_aero_modes();
+  const int ntot_amode = mam4::AeroConfig::num_modes();
   Real exp45logsig[ntot_amode] = {}, alogsig[ntot_amode] = {},
        num2vol_ratio_min_nmodes[ntot_amode] = {},
        num2vol_ratio_max_nmodes[ntot_amode] = {};
@@ -285,7 +286,7 @@ void call_function_dropmixnuc(
       KOKKOS_LAMBDA(const mam4::ThreadTeam &team) {
         const int icol = team.league_rank();
         MAMAci::view_3d raercol_cw_view = ekat::subview(loc_raercol_cw, icol);
-	MAMAci::view_3d raercol_view    = ekat::subview(loc_raercol, icol);
+        MAMAci::view_3d raercol_view    = ekat::subview(loc_raercol, icol);
         MAMAci::view_2d qqcw_view       = ekat::subview(qqcw_fld_work_loc, icol);
         MAMAci::view_2d ptend_q_view    = ekat::subview(loc_ptend_q, icol);
         MAMAci::view_2d coltend_view    = ekat::subview(loc_coltend, icol);
@@ -326,7 +327,7 @@ void call_function_dropmixnuc(
 
               // get the start index for aerosols species in the state_q array
               const int istart = mam4::utils::aero_start_ind();
-              for (int m = 0, s = istart; m < mam4::AeroConfig::num_modes(); ++m, ++s) {
+              for (int m = 0, s = istart; m < aero_config.num_modes(); ++m, ++s) {
                 for (int a = 0; a < mam4::num_species_mode(m); ++a, ++s) 
                   state_q_work_loc(icol, klev, s) = progs_at_col.q_aero_i[m][a](klev);
                 state_q_work_loc(icol, klev, s) = progs_at_col.n_mode_i[m](klev);
@@ -336,11 +337,11 @@ void call_function_dropmixnuc(
               // NOTE: The layout for qqcw array is based on mam_idx in
               // dropmixnuc. To mimic that, we are using the following for-loops
               int ind_qqcw = 0;
-              for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+              for(int m = 0; m < aero_config.num_modes(); ++m) {
                 qqcw_view(ind_qqcw, klev) =
                     dry_aero.cld_aero_nmr[m](icol, klev);
                 ++ind_qqcw;
-                for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+                for(int a = 0; a < aero_config.num_aerosol_ids(); ++a) {
                   if(dry_aero.cld_aero_mmr[m][a].data()) {
                     qqcw_view(ind_qqcw, klev) =
                         dry_aero.cld_aero_mmr[m][a](icol, klev);
@@ -383,14 +384,15 @@ void call_function_dropmixnuc(
 
 // Update cloud borne aerosols
 void update_cloud_borne_aerosols(
+    const mam4::AeroConfig &aero_config,
     const MAMAci::view_3d qqcw_fld_work,
     // output
     mam_coupling::AerosolState &dry_aero) {
   int ind_qqcw = 0;
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config.num_modes(); ++m) {
     Kokkos::deep_copy(dry_aero.cld_aero_nmr[m], Kokkos::subview(qqcw_fld_work, Kokkos::ALL(), ind_qqcw, Kokkos::ALL()));
     ++ind_qqcw;
-    for(int a = 0; a < mam_coupling::num_aero_species(); ++a) {
+    for(int a = 0; a < aero_config.num_aerosol_ids(); ++a) {
       if(dry_aero.cld_aero_mmr[m][a].data()) {
         Kokkos::deep_copy(dry_aero.cld_aero_mmr[m][a], Kokkos::subview(qqcw_fld_work, Kokkos::ALL(), ind_qqcw, Kokkos::ALL()));
         ++ind_qqcw;
@@ -401,6 +403,7 @@ void update_cloud_borne_aerosols(
 
 // Update interstitial aerosols using tendencies- cols and levs
 void update_interstitial_aerosols(
+    const mam4::AeroConfig &aero_config,
     const int ncol,
     const MAMAci::view_3d ptend_q, const int nlev,
     const Real dt,
@@ -410,7 +413,7 @@ void update_interstitial_aerosols(
   int s_idx = mam4::aero_model::pcnst - mam4::ndrop::ncnst_tot;
 
   // loop through all modes and species
-  for(int m = 0; m < mam_coupling::num_aero_modes(); ++m) {
+  for(int m = 0; m < aero_config.num_modes(); ++m) {
     for(int a = 0; a < mam4::num_species_mode(m); ++a) {
       // mass mixing ratio of species "a" of mode "m"
       auto aero_mmr = dry_aero.int_aero_mmr[m][a];
@@ -439,8 +442,8 @@ void update_interstitial_aerosols(
 }
 
 void call_hetfrz_compute_tendencies(
-    mam4::ThreadTeamPolicy team_policy, mam4::Hetfrz &hetfrz_,
-    mam_coupling::DryAtmosphere &dry_atm_,
+    mam4::ThreadTeamPolicy team_policy, const mam4::AeroConfig &aero_config,
+    mam4::Hetfrz &hetfrz_, mam_coupling::DryAtmosphere &dry_atm_,
     mam_coupling::AerosolState &dry_aero_, MAMAci::view_3d factnum,
     const double dt, const int nlev,
     // output
@@ -510,7 +513,7 @@ void call_hetfrz_compute_tendencies(
         // values are store in diags above.
         const mam4::Tendencies tends(nlev);
         const Real t = 0;  // not used
-        hetfrz.compute_tendencies(hetfrz.aero_config, team, t, dt, atm, surf,
+        hetfrz.compute_tendencies(aero_config, team, t, dt, atm, surf,
                                   progs, diags, tends);
       });
 }

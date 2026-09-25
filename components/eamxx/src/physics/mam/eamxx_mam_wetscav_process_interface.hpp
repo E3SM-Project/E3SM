@@ -69,9 +69,6 @@ private:
   // Local variables
   // ------------------------------------------------
 
-  // aerosol metadata
-  mam4::AeroConfig aero_config_;
-
   // Work arrays
   view_2d work_;
   int_view_2d isprx_;

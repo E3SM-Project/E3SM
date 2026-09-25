@@ -11,7 +11,7 @@
 namespace scream {
 
 MAMOptics::MAMOptics(const ekat::Comm &comm, const ekat::ParameterList &params)
-    : MAMGenericInterface(comm, params), aero_config_() {
+    : MAMGenericInterface(comm, params) {
   check_fields_intervals_ =
       m_params.get<bool>("create_fields_interval_checks", false);
 }
