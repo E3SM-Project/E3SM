@@ -9,8 +9,12 @@
 namespace scream {
 
 void f_z_src(const Real y0, const Real m, const Field& z_data, Field& out_data);
-void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data, Field& out_data);
-bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol, const bool msg = true);
+// out_data must already have a valid mask (see Field::create_valid_mask):
+// this sets both its data and its mask, matching HeightLevelIndex/
+// FieldAtHeight's rule (see height_level_index.hpp): invalid above the
+// top entry always, invalid below the bottom entry unless extrapolating.
+void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data,
+            Field& out_data, const bool extrapolate_bottom);
 
 TEST_CASE("field_at_height")
 {
@@ -72,6 +76,12 @@ TEST_CASE("field_at_height")
   s_tgt.allocate_view();
   v_tgt.allocate_view();
 
+  // FieldAtHeight's output always has a valid mask (see
+  // field_at_height.cpp), so these hand-computed reference fields need
+  // one too, for views_are_equal to compare them.
+  s_tgt.create_valid_mask();
+  v_tgt.create_valid_mask();
+
   s_mid.get_header().get_tracking().update_time_stamp(t0);
   s_int.get_header().get_tracking().update_time_stamp(t0);
   v_mid.get_header().get_tracking().update_time_stamp(t0);
@@ -112,6 +122,24 @@ TEST_CASE("field_at_height")
     auto diag = factory.create("FieldAtheight",comm,pl, grid);
     diag->set_input_field(f);
     diag->set_input_field(z);
+
+    // FieldAtHeight now depends on the (mid/int) bracket-index field
+    // computed by HeightLevelIndex. Compute the variant matching z here,
+    // and feed it in, since this test builds the diag by hand (rather
+    // than through the io-stream machinery, which resolves such
+    // dependencies automatically).
+    const std::string layer = z.name().substr(z.name().size()-3)=="mid" ? "mid" : "int";
+    ekat::ParameterList idx_pl;
+    idx_pl.set("surface_reference",surf_ref);
+    idx_pl.set("height_value",std::to_string(h));
+    idx_pl.set("height_units",std::string("m"));
+    idx_pl.set("vertical_layer",layer);
+    auto idx_diag = factory.create("HeightLevelIndex",comm,idx_pl,grid);
+    idx_diag->set_input_field(z);
+    idx_diag->initialize();
+    idx_diag->compute(t0);
+    diag->set_input_field(idx_diag->get());
+
     diag->initialize();
     diag->compute(t0);
     diag->get().sync_to_host();
@@ -180,6 +208,10 @@ TEST_CASE("field_at_height")
     const auto mid_src = surf_ref == "sealevel" ? z_mid : h_mid;
     const auto int_src = surf_ref == "sealevel" ? z_int : h_int;
     const int  max_surf_4test = surf_ref == "sealevel" ? max_surf : 0;
+    // "above surface" extrapolates below the bottom entry; "above sealevel"
+    // does not (see HeightLevelIndex). Either way, above the top entry is
+    // always invalid, which f_z_tgt accounts for on its own.
+    const bool extrapolate_bottom = surf_ref == "surface";
     for (int irun=0; irun<nruns; ++irun) {
 
       // Randomize fields using f_z_src function defined above:
@@ -196,56 +228,72 @@ TEST_CASE("field_at_height")
       {
         print("    -> scalar midpoint field...............\n");
         auto d = run_diag(s_mid,mid_src,z_tgt,surf_ref);
-        f_z_tgt(inter,slope,z_tgt,mid_src,s_tgt);
-        REQUIRE (views_are_approx_equal(d,s_tgt,tol));
+        f_z_tgt(inter,slope,z_tgt,mid_src,s_tgt,extrapolate_bottom);
+        REQUIRE (views_are_equal(d,s_tgt,tol));
         print("    -> scalar midpoint field............... OK!\n");
       }
       {
         print("    -> scalar interface field...............\n");
         auto d = run_diag (s_int,int_src,z_tgt,surf_ref);
-        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
-        REQUIRE (views_are_approx_equal(d,s_tgt,tol));
+        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt,extrapolate_bottom);
+        REQUIRE (views_are_equal(d,s_tgt,tol));
         print("    -> scalar interface field............... OK!\n");
       }
       {
         print("    -> vector midpoint field...............\n");
         auto d = run_diag (v_mid,mid_src,z_tgt,surf_ref);
-        f_z_tgt(inter,slope,z_tgt,mid_src,v_tgt);
-        REQUIRE (views_are_approx_equal(d,v_tgt,tol));
+        f_z_tgt(inter,slope,z_tgt,mid_src,v_tgt,extrapolate_bottom);
+        REQUIRE (views_are_equal(d,v_tgt,tol));
         print("    -> vector midpoint field............... OK!\n");
       }
       {
         print("    -> vector interface field...............\n");
         auto d = run_diag (v_int,int_src,z_tgt,surf_ref);
-        f_z_tgt(inter,slope,z_tgt,int_src,v_tgt);
-        REQUIRE (views_are_approx_equal(d,v_tgt,tol));
+        f_z_tgt(inter,slope,z_tgt,int_src,v_tgt,extrapolate_bottom);
+        REQUIRE (views_are_equal(d,v_tgt,tol));
         print("    -> vector interface field............... OK!\n");
       }
       {
         print("    -> Forced fail, give incorrect location...............\n");
         const int z_tgt_adj = (z_tgt+max_surf_4test)/2;
         auto d = run_diag(s_int,int_src,z_tgt_adj,surf_ref);
-        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
-        REQUIRE (!views_are_approx_equal(d,s_tgt,tol,false));
+        f_z_tgt(inter,slope,z_tgt,int_src,s_tgt,extrapolate_bottom);
+        REQUIRE (!views_are_equal(d,s_tgt,tol));
         print("    -> Forced fail, give incorrect location............... OK!\n");
       }
     }
-    {
-      print("    -> Forced extrapolation at top...............\n");
-      auto slope = pdf_m(engine); 
+    // A target above the top entry is always flagged as invalid, regardless
+    // of the surface reference (matches FieldAtPressureLevel at the model
+    // top). A target below the bottom entry extrapolates for "above
+    // surface" heights (always well defined near the surface), but is
+    // flagged as invalid for "above sealevel" heights (e.g. a target
+    // elevation below a mountain's surface is not well defined).
+    auto check_invalid = [&](const Real z, const char* what) {
+      print(std::string("    -> Forced out-of-range at ")+what+"...............\n");
+      auto d = run_diag(s_int,int_src,z,surf_ref);
+      REQUIRE (d.has_valid_mask());
+      auto mask = d.get_valid_mask();
+      mask.sync_to_host();
+      auto mask_v = mask.get_view<const int*,Host>();
+      for (int icol=0; icol<ncols; ++icol) {
+        REQUIRE (mask_v(icol)==0);
+      }
+      print(std::string("    -> Forced out-of-range at ")+what+"............... OK!\n");
+    };
+    check_invalid(2*z_top,"top");
+    if (surf_ref=="surface") {
+      print("    -> Forced extrapolation at bot...............\n");
+      auto slope = pdf_m(engine);
       auto inter = pdf_y0(engine);
       f_z_src(inter, slope, int_src, s_int);
-      z_tgt = 2*z_top;
-      auto dtop = run_diag(s_int,int_src,z_tgt,surf_ref);
-      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
-      REQUIRE (views_are_approx_equal(dtop,s_tgt,tol));
-      print("    -> Forced extrapolation at top............... OK!\n");
-      print("    -> Forced extrapolation at bot...............\n");
       z_tgt = 0;
       auto dbot = run_diag(s_int,int_src,z_tgt,surf_ref);
-      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt);
-      REQUIRE (views_are_approx_equal(dbot,s_tgt,tol));
+      f_z_tgt(inter,slope,z_tgt,int_src,s_tgt,extrapolate_bottom);
+      REQUIRE (views_are_equal(dbot,s_tgt,tol));
       print("    -> Forced extrapolation at bot............... OK!\n");
+    } else {
+      // Strictly below every column's surface height (zsurf_v is in [0,(ncols-1)*surf_slope]).
+      check_invalid(-1,"bot");
     }
     printf(" -> Testing for a reference height above %s... OK!\n",surf_ref.c_str());
   }
@@ -280,64 +328,58 @@ void f_z_src(const Real y0, const Real m, const Field& z_data, Field& out_data) 
   out_data.sync_to_dev();
 }
 //-------------------------------
-// Calculate the target data.  Note expression here must match the f_z_src abovel
-void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data, Field& out_data) {
+// Calculate the target data, AND the target mask (out_data must already
+// have a valid mask). Note expression here must match the f_z_src above,
+// and the validity rule must match HeightLevelIndex/FieldAtHeight: above
+// the top entry is always invalid; below the bottom entry is invalid
+// unless extrapolate_bottom.
+void f_z_tgt(const Real y0, const Real m, const Real z_target, const Field& z_data,
+            Field& out_data, const bool extrapolate_bottom) {
   using namespace ShortFieldTagsNames;
   const auto layout = out_data.get_header().get_identifier().get_layout();
   const auto& z_view = z_data.get_view<const Real**,Host>();
   const auto& zdims = z_data.get_header().get_identifier().get_layout().dims();
+  auto mask = out_data.get_valid_mask();
   if (layout.has_tag(CMP)) { // Is a vector layout, meaning different dims than z_target.
     const auto& dims = layout.dims();
     const auto& out_view = out_data.get_view<Real**,Host>();
+    const auto& mask_view = mask.get_view<int**,Host>();
     for (int ii=0; ii<dims[0]; ++ii) {
+      // Check if FieldAtHeight would have had to extrapolate:
+      const bool top_oob = z_target > z_view(ii,0);
+      const bool bot_oob = z_target < z_view(ii,zdims[1]-1);
+      const int valid = (not top_oob and (not bot_oob or extrapolate_bottom)) ? 1 : 0;
       for (int nd=0; nd<dims[1]; ++nd) {
-        // Check if FieldAtHeight would have had to extrapolate:
-	if (z_target > z_view(ii,0)) {
+        if (top_oob) {
           out_view(ii,nd) = y0 + m*(nd+1)*z_view(ii,0);
-	} else if ( z_target < z_view(ii,zdims[1]-1)) {
+        } else if (bot_oob) {
           out_view(ii,nd) = y0 + m*(nd+1)*z_view(ii,zdims[1]-1);
-	} else {
+        } else {
           out_view(ii,nd) = y0 + m*(nd+1)*z_target;
-	}
+        }
+        mask_view(ii,nd) = valid;
       }
     }
   } else { // Not a vector output, easier to deal with
     const auto& dims = layout.dims();
     const auto& out_view = out_data.get_view<Real*,Host>();
+    const auto& mask_view = mask.get_view<int*,Host>();
     for (int ii=0; ii<dims[0]; ++ii) {
       // Check if FieldAtHeight would have had to extrapolate:
-      if (z_target > z_view(ii,0)) {
+      const bool top_oob = z_target > z_view(ii,0);
+      const bool bot_oob = z_target < z_view(ii,zdims[1]-1);
+      if (top_oob) {
         out_view(ii) = y0 + m*z_view(ii,0);
-      } else if ( z_target < z_view(ii,zdims[1]-1)) {
+      } else if (bot_oob) {
         out_view(ii) = y0 + m*z_view(ii,zdims[1]-1);
       } else {
         out_view(ii) = y0 + m*z_target;
       }
+      mask_view(ii) = (not top_oob and (not bot_oob or extrapolate_bottom)) ? 1 : 0;
     }
   }
   out_data.sync_to_dev();
-}
-/*-----------------------------------------------------------------------------------------------*/
-bool views_are_approx_equal(const Field& f0, const Field& f1, const Real tol, const bool msg)
-{
-  const auto& l0    = f0.get_header().get_identifier().get_layout();
-  const auto& l1    = f1.get_header().get_identifier().get_layout();
-  EKAT_REQUIRE_MSG(l0==l1,"Error! views_are_approx_equal - the two fields don't have matching layouts.");
-  // Take advantage of field utils update, min and max to assess the max difference between the two fields
-  // simply.
-  auto ft = f0.clone(CloneFlags::CopyData);
-  ft.update(f1,1.0,-1.0);
-  auto d_min = field_min(ft).as<Real>();
-  auto d_max = field_max(ft).as<Real>();
-  if (std::abs(d_min) > tol or std::abs(d_max) > tol) {
-    if (msg) {
-      printf("The two copies of (%16s) are NOT approx equal within a tolerance of %e.\n     The min and max errors are %e and %e respectively.\n",f0.name().c_str(),tol,d_min,d_max);
-    }
-    return false;
-  } else {
-    return true;
-  }
-
+  mask.sync_to_dev();
 }
 
 } // namespace scream
