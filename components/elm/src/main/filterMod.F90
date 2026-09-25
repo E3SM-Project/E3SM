@@ -13,6 +13,7 @@ module filterMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use abortutils     , only : endrun
   use elm_varctl     , only : iulog
+  use elm_varctl     , only : use_fates
   use decompMod      , only : bounds_type  
   use GridcellType   , only : grc_pp
   use LandunitType   , only : lun_pp                
@@ -293,6 +294,7 @@ contains
     integer :: f, fn       ! general indices
     integer :: g           !gridcell index
     integer :: t           !topounit index
+    logical :: is_soilnopcropp
     !------------------------------------------------------------------------
 
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
@@ -420,7 +422,16 @@ contains
        t =veg_pp%topounit(p)
        if (top_pp%active(t)) then
           if (veg_pp%active(p) .or. include_inactive) then
-             if (.not. iscft(veg_pp%itype(p))) then
+             if(use_fates)then
+                is_soilnopcropp = .true.
+             else
+                if (.not. iscft(veg_pp%itype(p))) then
+                   is_soilnopcropp = .true.
+                else
+                   is_soilnopcropp = .false.
+                end if
+             end if
+             if(is_soilnopcropp) then
                 l =veg_pp%landunit(p)
                 if (veg_pp%is_on_soil_col(p) .or. veg_pp%is_on_crop_col(p)) then
                    fnc = fnc + 1
