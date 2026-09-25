@@ -54,3 +54,34 @@ salloc --nodes 1 --qos interactive --time 01:00:00 --constraint cpu --account e3
 
 srun -n 1 ./mksurfdata_map < namelist
 ```
+
+## Modifications for use on Chrysalis
+
+The general instructions above also apply to use on Chrysalis. To build the necessary executable on Chrysalis, 
+use the following instructions.
+
+```bash
+# Chrysalis modules (intel-classic + openmpi, the E3SM default stack)
+source /gpfs/fs1/soft/chrysalis/spack/opt/spack/linux-centos8-x86_64/gcc-9.3.0/lmod-8.3-5be73rg/lmod/lmod/init/sh
+module load perl/5.32.0-bsnc6lt intel/20.0.4-kodw73g intel-mkl/2020.4.304-g2qaxzf \
+            openmpi/4.1.6-2mm63n2 hdf5/1.10.7-4cghwvq netcdf-c/4.7.4-4qjdadt \
+            netcdf-fortran/4.5.3-qozrykr parallel-netcdf/1.11.0-icrpxty
+
+# assuming you are starting from the root level of your E3SM source code
+cd components/elm/tools/mksurfdata_map/src
+make clean
+
+# NetCDF / HDF5 paths derived from the loaded modules
+export INC_NETCDF=$(nf-config --includedir)
+export MOD_NETCDF=$INC_NETCDF
+export LIB_NETCDF=$(nf-config --prefix)/lib
+export USER_LDFLAGS="-L$(nc-config --prefix)/lib -lnetcdf \
+  -L$(dirname $(dirname $(which h5dump)))/lib -lhdf5_hl -lhdf5"
+
+USER_FC=ifort make VERBOSE=1
+
+# update data input directory path for LCRC  
+DIN_LOC_ROOT=/lcrc/group/e3sm/data/inputdata
+```
+
+
