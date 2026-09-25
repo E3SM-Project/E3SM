@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-import sys, os
+import sys, os, re
 
 _CIMEROOT = os.environ.get("CIMEROOT")
 if _CIMEROOT is None:
@@ -31,6 +31,20 @@ def buildlib(bldroot, installpath, case):
     cmake_args_dict = {}
     for item in it:
         cmake_args_dict[item] = next(it)
+
+    # derive the compile-time level count from the vertical grid version
+    vgrid = case.get_value("EAMXX_VGRID")
+    expect(vgrid is not None,
+            "EAMXX_VGRID is not set for this case. Cases created before the switch to\n"
+            "EAMXX_VGRID must be re-created.")
+    m = re.match(r"L([0-9]+)", vgrid)
+    expect(m is not None,
+           f"Could not parse a level count from EAMXX_VGRID '{vgrid}'.\n"
+           "Vertical grid names must begin with 'L' followed by the number of levels.")
+    expect("SCREAM_NUM_VERTICAL_LEV" not in cmake_args_dict,
+            "SCREAM_NUM_VERTICAL_LEV is set in SCREAM_CMAKE_OPTIONS, but the level count\n"
+            "is now derived from EAMXX_VGRID. Please, remove it and set EAMXX_VGRID instead.")
+    cmake_args_dict["SCREAM_NUM_VERTICAL_LEV"] = m.groups()[0]
 
     if case.get_value("EXTRA_DEBUG"):
         expect(case.get_value("DEBUG"), "EXTRA_DEBUG is On but DEBUG is Off? Makes no sense.")
