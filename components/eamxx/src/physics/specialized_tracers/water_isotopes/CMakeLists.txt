@@ -26,3 +26,8 @@ target_link_libraries(water_isotopes PRIVATE water_tracers)
 if (TARGET eamxx_physics)
   target_link_libraries(eamxx_physics INTERFACE water_isotopes)
 endif()
+
+# Unit tests (skipped in library-only builds).
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
