@@ -27,6 +27,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : seq_comm_iamin
   use seq_comm_mct,     only : num_moab_exports
   use seq_comm_mct,     only : mb_dead_comps
+  use seq_comm_mct,     only : mb_scm_atm, mb_scm_ocn, mb_scm_ice
 
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
@@ -37,6 +38,7 @@ module prep_ocn_mod
   use t_drv_timers_mod
   use mct_mod
   use perf_mod
+  use shr_moab_mod, only: mbGetnCells, mbGetEntityType
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
   use iso_c_binding
@@ -386,8 +388,7 @@ contains
           write(logunit,*) subname,' cant get size of ocn mesh'
           call shr_sys_abort(subname//' ERROR in getting size of ocn mesh')
        endif
-         ! ocn is cell mesh on coupler side
-       mlsize = nvise(1)
+       mlsize = mbGetnCells(mboxid)
        allocate(x2oacc_om(mlsize, noflds))
        x2oacc_om_cnt = 0
        x2oacc_om(:,:)=0.
@@ -476,7 +477,7 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB mesh intersection completed between ATM and OCN with id:', idintx
                   end if
-                  if (atm_pg_active .or. mb_dead_comps) then
+                  if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
                      type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
                   else
                      type1 = 1 ! This projection works (CGLL to FV), but reverse does not (FV - CGLL)
@@ -507,7 +508,7 @@ contains
 
                if (compute_maps_online_a2o) then
                   volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL;
-                  if (atm_pg_active .or. mb_dead_comps) then
+                  if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
                      dm1 = "fv"//C_NULL_CHAR
                      dofnameS="GLOBAL_ID"//C_NULL_CHAR
                      orderS = 1 !  fv-fv
@@ -582,7 +583,7 @@ contains
                ! and viceversa, based on element GLOBAL_ID matching. In order to seamless produce the
                ! permutation operator, we will compute a communication graph between ATM and OCN DoFs on the
                ! coupler.
-              if (atm_pg_active .or. mb_dead_comps) then
+              if ((atm_pg_active .and. .not. mb_scm_atm) .or. mb_dead_comps) then
                   type1 = 3; ! FV for ATM; CGLL does not work correctly in parallel at the moment
               else
                   type1 = 2 ! in the spectral case, the type on coupler will be point cloud
@@ -714,8 +715,16 @@ contains
             !   that is computed here
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
 
-            type1 = 3
-            type2 = 3 ! FV-FV graph
+            if (mb_scm_ice) then
+               type1 = 2 ! SCM data ice is a point cloud
+            else
+               type1 = 3
+            endif
+            if (mb_scm_ocn) then
+               type2 = 2 ! SCM data ocean is a point cloud
+            else
+               type2 = 3
+            endif
             ! iMOAB: compute the communication graph for ICE-OCN, based on the same global id
             ! it will be a simple permutation from ice mesh directly to ocean, using the comm graph computed here
             ! NOTE: This operation will result in a similar shuffling like MCT's rearrange
@@ -811,9 +820,8 @@ contains
             write(logunit,*) subname,' cant get size of ocn mesh'
             call shr_sys_abort(subname//' ERROR in getting size of ocn mesh')
          endif
-         ! ocn is cell mesh on coupler side
-         mlsize = nvise(1)
-         ent_type = 1 ! cell
+         mlsize = mbGetnCells(mboxid)
+         ent_type = mbGetEntityType(mboxid)
          ! zero out the values just for r2x fields, on ocean instance
          nrflds = mct_aVect_nRattr(r2x_ox(1)) ! this is the size of r2x_fields
          arrsize = nrflds*mlsize
@@ -1030,7 +1038,7 @@ contains
     ! this method is called after merge, so it is not really necessary, because
     ! x2o_om should be saved between these calls
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
-    ent_type = 1  ! cell type
+    ent_type = mbGetEntityType(mboxid)
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting x2o_om array  ')
@@ -1095,7 +1103,7 @@ subroutine prep_ocn_accum_avg_moab(timer_accum)
        !call mct_avect_copy(x2oacc_ox(eoi), x2o_ox)
        ! modify the tags
        tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
-       ent_type = 1  ! cell type
+       ent_type = mbGetEntityType(mboxid)
        ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize_x2o_om , ent_type, x2o_om)
        if (ierr .ne. 0) then
             call shr_sys_abort(subname//' error in setting x2o_om array  ')
@@ -1118,7 +1126,7 @@ subroutine prep_ocn_accum_avg_moab(timer_accum)
 
 subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
-    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+    use iMOAB , only : iMOAB_GetDoubleTagStorage, &
      iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_comm_mct , only : mboxid, mbofxid ! ocean and atm-ocean flux instances
     !---------------------------------------------------------------
@@ -1266,8 +1274,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     logical, save :: first_time = .true.
 
-    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
-
     character(CXX) ::tagname
     integer :: ent_type, ierr
 #ifdef MOABDEBUG
@@ -1291,13 +1297,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
 
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
 
- ! find out the number of local elements in moab mesh ocean instance on coupler
-    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
-    if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in getting info '
-         call shr_sys_abort(subname//' error in getting info ')
-    endif
-    lsize = nvise(1) ! number of active cells
+    ! SCM data ocean fields live on vertices, while regular ocean fields live
+    ! on elements. This size must match mbGetEntityType below and is used for
+    ! every merge-array allocation.
+    lsize = mbGetnCells(mboxid)
 
     if (first_time) then
 
@@ -1726,7 +1729,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox, timer_mrg)
    !  kor = mct_aVect_indexRa(fractions_ox,"ofrad",perrWith=subName)
 
     ! fill with fractions from ocean instance
-    ent_type = 1 ! cells
+    ent_type = mbGetEntityType(mboxid)
     tagname = 'afrac:ifrac:ofrac:ifrad:ofrad'//C_NULL_CHAR
     arrsize = 5 * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize, ent_type, fractions_om)
