@@ -32,6 +32,27 @@ foreach (MACRO_FILE ${UNIVERSAL_MACRO} ${COMPILER_MACRO} ${MACHINE_MACRO} ${COMP
   endif()
 endforeach()
 
+# When building the eamxx component, also source the eamxx-specific machine
+# file (if one exists) so that eamxx picks up settings such as EKAT/Kokkos
+# includes and MPI launcher configuration. These are appended AFTER the CIME
+# macros so eamxx uses the E3SM-provided compiler and flag settings by default,
+# with eamxx-specific additions layered on top. Prefer a machine+compiler file
+# over a plain machine file, and fall back to common.cmake if neither exists.
+if (COMP_NAME STREQUAL "eamxx")
+  set(EAMXX_MACH_FILES_DIR ${SRCROOT}/components/eamxx/cmake/machine-files)
+  set(EAMXX_MACHINE_COMPILER_MACRO ${EAMXX_MACH_FILES_DIR}/${MACH}-${COMPILER}.cmake)
+  set(EAMXX_MACHINE_MACRO          ${EAMXX_MACH_FILES_DIR}/${MACH}.cmake)
+  set(EAMXX_COMMON_MACRO           ${EAMXX_MACH_FILES_DIR}/common.cmake)
+  if (EXISTS ${EAMXX_MACHINE_COMPILER_MACRO})
+    include(${EAMXX_MACHINE_COMPILER_MACRO})
+  elseif (EXISTS ${EAMXX_MACHINE_MACRO})
+    include(${EAMXX_MACHINE_MACRO})
+  elseif (EXISTS ${EAMXX_COMMON_MACRO})
+    include(${EAMXX_COMMON_MACRO})
+    common_setup()
+  endif()
+endif()
+
 if (CONVERT_TO_MAKE)
   get_cmake_property(VARS_AFTER VARIABLES)
 
