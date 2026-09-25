@@ -78,6 +78,7 @@ is an honest analogue.
 | `X.isel(lev=-1)` | `X_at_model_bot` |
 | `X.interp(p_mid=500, units='hPa')` | `X_at_500hPa` |
 | `X.interp(z_mid=10, reference='surface')` | `X_at_10m_above_surface` |
+| `X.interp(z_mid=1000, reference='sealevel')` | `X_at_1000m_above_sealevel` |
 | `X.mean('col')` | `X_horiz_avg` |
 | `X.mean('lev')` | `X_vert_avg` |
 | `X.sum('lev')` | `X_vert_sum` |
@@ -98,6 +99,18 @@ Notes:
 - `interp` takes exactly one of `p_mid` or `z_mid`, named after the coordinate
   as in xarray. `units` defaults to `Pa` and `m` respectively; `reference`
   (`'surface'` or `'sealevel'`, default `'sealevel'`) applies to `z_mid` only.
+- **A target outside a column's data range is filled with the missing-value
+  marker, except near the surface with `reference='surface'`.** `interp(p_mid=..)`
+  fills at either end: there is no meaningful way to extrapolate past the model
+  top or below the surface in pressure space. `interp(z_mid=.., reference='sealevel')`
+  does the same at both ends, since a target elevation can legitimately sit
+  below a mountain's surface, where the quantity is not defined. But
+  `interp(z_mid=.., reference='surface')` is expected to always be well formed
+  close to the ground -- `wind_speed_at_2m_above_surface` should mean something
+  even when the lowest model level sits well above 2m -- so it *extrapolates*
+  using the nearest level instead of filling when the target is below the
+  bottom entry. That exception is for the near-surface end only: above the
+  model top, `reference='surface'` fills too, exactly like the other two cases.
 - **`shift` looks BACK in time**, following xarray's sign convention: a positive
   shift moves data forward, so `shift(time=1)` is the value from the *previous*
   step. `shift(time=-1)` would be the value from a step *ahead*, which a running
