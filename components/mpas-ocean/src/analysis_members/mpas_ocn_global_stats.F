@@ -258,7 +258,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux, landIceFreshwaterFlux, landIceFreshwaterFluxTotal
       real (kind=RKIND), dimension(:), pointer :: accumulatedLandIceMass, accumulatedLandIceHeat, &
-          accumulatedLandIceFrazilMass, frazilIceFreshwaterFlux
+          accumulatedLandIceFrazilMass, accumulatedLandIceFrazilEnergy, frazilIceFreshwaterFlux
 
       real (kind=RKIND), dimension(:,:), pointer :: frazilLayerThicknessTendency
 
@@ -380,6 +380,7 @@ contains
          call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMass, 1)
          call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeat, 1)
          call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMass, 1)
+         call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilEnergy', accumulatedLandIceFrazilEnergy, 1)
 
 
          allocate(areaEdge(1:nEdgesSolve))
@@ -1044,6 +1045,21 @@ contains
             maxes_tmp(variableIndex) = 0.0_RKIND
          end if
 
+         ! accumulatedLandIceFrazilEnergy
+         variableIndex = variableIndex + 1
+         if (landIceFluxesPkgActive .and. frazilIcePkgActive) then
+            call ocn_compute_field_area_weighted_local_stats_surface(dminfo, nCellsSolve, &
+                         landIceFloatingArea, &
+                         accumulatedLandIceFrazilEnergy(1:nCellsSolve), sums_tmp(variableIndex), &
+                         sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
+                         maxes_tmp(variableIndex))
+         else
+            sums_tmp(variableIndex) = 0.0_RKIND
+            sumSquares_tmp(variableIndex) = 0.0_RKIND
+            mins_tmp(variableIndex) = 0.0_RKIND
+            maxes_tmp(variableIndex) = 0.0_RKIND
+         end if
+
          ! frazilIceFreshwaterFlux
          variableIndex = variableIndex + 1
          if ( associated(frazilIceFreshwaterFlux) ) then
@@ -1368,6 +1384,16 @@ contains
       end if
 
       ! accumulatedLandIceFrazilMass
+      variableIndex = variableIndex + 1
+      if (landIceFluxesPkgActive .and. frazilIcePkgActive .and. landIceFloatingAreaSum > 0.0_RKIND) then
+         averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
+         rms(variableIndex) = sqrt(sumSquares(variableIndex)/(landIceFloatingAreaSum))
+      else
+         averages(variableIndex) = 0.0_RKIND
+         rms(variableIndex) = 0.0_RKIND
+      end if
+
+      ! accumulatedLandIceFrazilEnergy
       variableIndex = variableIndex + 1
       if (landIceFluxesPkgActive .and. frazilIcePkgActive .and. landIceFloatingAreaSum > 0.0_RKIND) then
          averages(variableIndex) = sums(variableIndex)/(landIceFloatingAreaSum)
