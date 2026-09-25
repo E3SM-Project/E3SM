@@ -75,12 +75,16 @@ module seq_rest_mod
 
   use seq_flds_mod, only: seq_flds_a2x_fields, seq_flds_xao_fields, seq_flds_o2x_fields, seq_flds_x2o_fields
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_r2x_fields
+  use seq_flds_mod, only: seq_flds_g2x_fields
 
   use prep_rof_mod, only: prep_rof_get_o2racc_om ! return a pointer to a moab matrix
 
   use prep_rof_mod, only: prep_rof_get_l2racc_lm_cnt
   use prep_rof_mod, only: prep_rof_get_l2racc_lm
   use prep_rof_mod, only: prep_rof_get_sharedFieldsLndRof
+  use prep_glc_mod, only: prep_glc_get_l2gacc_lm_cnt
+  use prep_glc_mod, only: prep_glc_get_l2gacc_lm
+  use prep_glc_mod, only: prep_glc_get_sharedFieldsLndGlc
   implicit none
 
   private
@@ -163,7 +167,7 @@ contains
 
 subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
-    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid, mbgxid ! coupler side instances
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
     use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh is cells (pg2/FV) or a point cloud (np4)
     use iMOAB,            only: iMOAB_GetGlobalInfo
@@ -185,6 +189,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
 
     integer (in), pointer   :: l2racc_lm_cnt
+    integer (in), pointer   :: l2gacc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
     integer (in)   :: ngv, nge ! global num vertices / elements from iMOAB_GetGlobalInfo
     integer (in)   ::  ierr
@@ -192,6 +197,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2racc_om
     real(r8), dimension(:,:), pointer  :: p_l2racc_lm
+    real(r8), dimension(:,:), pointer  :: p_l2gacc_lm
 
     character(len=*), parameter :: subname = "(seq_rest_mb_read) "
 
@@ -311,15 +317,37 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                  matrix = p_o2racc_om )
              call seq_io_read(moab_rest_file, o2racc_om_cnt, 'o2racc_ox_cnt')
        end if
-! MOABTODO
-!        if (lnd_present .and. glc_prognostic) then
-!
-!           l2gacc_lx     => prep_glc_get_l2gacc_lx()
-!           l2gacc_lx_cnt => prep_glc_get_l2gacc_lx_cnt()
-!           call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
-!           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
-!        end if
+       if (lnd_present .and. glc_prognostic) then
+             tagname = prep_glc_get_sharedFieldsLndGlc()
+             l2gacc_lm_cnt => prep_glc_get_l2gacc_lm_cnt()
+             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
+             if(samegrid_al) then
+                ! land is on the atm mesh; max global land id comes from atm.
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
+                if (atm_pg_active) then
+                   nx_lnd = nge ! atm mesh is cells
+                else
+                   nx_lnd = ngv ! atm mesh is a point cloud
+                endif
+                call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
+                 trim(tagname), &
+                 matrix = p_l2gacc_lm, nx=nx_lnd)
+             else if(samegrid_lr) then
+               ! land is on the rof mesh; max global land id comes from rof.
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
+               nx_lnd = nge
+               call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
+                trim(tagname), &
+                matrix = p_l2gacc_lm, nx=nx_lnd)
+             else
+                call seq_io_read(moab_rest_file, mblxid, 'l2gacc_lx', &
+                 trim(tagname), &
+                 matrix = p_l2gacc_lm )
+             endif
+             call seq_io_read(rest_file, l2gacc_lm_cnt ,'l2gacc_lx_cnt')
+       end if
 
+! MOABTODO (deferred with the rest of the ocn<->glc coupling)
 !        if (ocn_c2_glcshelf) then
 !           gsmap         => component_get_gsmap_cx(glc(1))
 !           x2gacc_gx     => prep_glc_get_x2gacc_gx()
@@ -359,12 +387,13 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
            call seq_io_read(moab_rest_file, mbrxid, 'r2x_rx', &
                trim(seq_flds_r2x_fields) )
        endif
+       if (glc_present) then
+           call seq_io_read(moab_rest_file, mbgxid, 'fractions_gx', &
+               'gfrac:lfrac') ! fraclist_g = 'gfrac:lfrac'
+           call seq_io_read(moab_rest_file, mbgxid, 'g2x_gx', &
+               trim(seq_flds_g2x_fields) )
+       endif
 !MOABTODO
-!        if (glc_present) then
-!           gsmap => component_get_gsmap_cx(glc(1))
-!           call seq_io_read(rest_file, gsmap, fractions_gx, 'fractions_gx')
-!           call seq_io_read(rest_file, glc, 'c2x', 'g2x_gx')
-!        endif
 !        if (wav_present) then
 !           gsmap => component_get_gsmap_cx(wav(1))
 !           call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
@@ -425,7 +454,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
                tag, samegrid_al, samegrid_lr, rest_file)
 
-    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid, mbgxid ! coupler side instances
     use seq_comm_mct ,    only: num_moab_exports ! it is used only as a counter for moab h5m files
     use seq_comm_mct,     only: atm_pg_active ! whether the atm/lnd mesh is cells (pg2/FV) or a point cloud (np4)
     use iMOAB,            only: iMOAB_GetGlobalInfo
@@ -475,6 +504,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     integer (in), pointer   :: x2oacc_om_cnt ! replacement, moab version for x2oacc_ox_cnt
 
     integer (in), pointer   :: l2racc_lm_cnt
+    integer (in), pointer   :: l2gacc_lm_cnt
     integer (in)   :: nx_lnd ! will be used if land and atm are on same grid
     integer (in)   :: lnd_nx, lnd_ny ! global land grid dims (from infodata), for non-samegrid land restart I/O
     integer (in)   :: ngv, nge ! global num vertices / elements from iMOAB_GetGlobalInfo
@@ -483,6 +513,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
     real(r8), dimension(:,:), pointer  :: p_x2oacc_om
     real(r8), dimension(:,:), pointer  :: p_o2racc_om
     real(r8), dimension(:,:), pointer  :: p_l2racc_lm
+    real(r8), dimension(:,:), pointer  :: p_l2gacc_lm
     character(len=*),parameter :: subname = "(seq_rest_mb_write) "
 
     !-------------------------------------------------------------------------------
@@ -723,16 +754,38 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
              call seq_io_write(rest_file, o2racc_om_cnt, 'o2racc_ox_cnt', &
                   whead=whead, wdata=wdata)
           end if
-! MOABTODO
-!           if (lnd_present .and. glc_prognostic) then
-!              gsmap         => component_get_gsmap_cx(lnd(1))
-!              l2gacc_lx     => prep_glc_get_l2gacc_lx()
-!              l2gacc_lx_cnt => prep_glc_get_l2gacc_lx_cnt()
-!              call seq_io_write(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
-!                   whead=whead, wdata=wdata)
-!           end if
+          if (lnd_present .and. glc_prognostic) then
+             tagname = prep_glc_get_sharedFieldsLndGlc()
+             l2gacc_lm_cnt => prep_glc_get_l2gacc_lm_cnt()
+             p_l2gacc_lm => prep_glc_get_l2gacc_lm()
+             if(samegrid_al) then
+                ! land is on the atm mesh; max global land id comes from atm.
+                ierr = iMOAB_GetGlobalInfo(mbaxid, ngv, nge)
+                if (atm_pg_active) then
+                   nx_lnd = nge ! atm mesh is cells
+                else
+                   nx_lnd = ngv ! atm mesh is a point cloud
+                endif
+                call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
+                 trim(tagname), &
+                 whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=nx_lnd)
+             else if(samegrid_lr) then
+               ! land is on the rof mesh; max global land id comes from rof.
+               ierr = iMOAB_GetGlobalInfo(mbrxid, ngv, nge)
+               nx_lnd = nge
+               call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
+                trim(tagname), &
+                whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=nx_lnd)
+             else
+                ! land on its own (masked) grid: size PIO global dim from infodata land dims
+                call seq_io_write(rest_file, mblxid, 'l2gacc_lx', &
+                 trim(tagname), &
+                 whead=whead, wdata=wdata, matrix = p_l2gacc_lm, nx=lnd_nx, ny=lnd_ny )
+             endif
+             call seq_io_write(rest_file, l2gacc_lm_cnt, 'l2gacc_lx_cnt', &
+                  whead=whead, wdata=wdata)
+          end if
+! MOABTODO (deferred with the rest of the ocn<->glc coupling)
 !           if (ocn_c2_glcshelf) then
 !              gsmap         => component_get_gsmap_cx(glc(1))
 !              x2gacc_gx => prep_glc_get_x2gacc_gx()
@@ -781,14 +834,15 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
                trim(seq_flds_r2x_fields), &
                whead=whead, wdata=wdata)
          endif
+         if (glc_present) then
+            call seq_io_write(rest_file, mbgxid, 'fractions_gx', &
+               'gfrac:lfrac', & ! fraclist_g = 'gfrac:lfrac'
+               whead=whead, wdata=wdata)
+            call seq_io_write(rest_file, mbgxid, 'g2x_gx', &
+               trim(seq_flds_g2x_fields), &
+               whead=whead, wdata=wdata)
+         endif
 ! MOABTODO
-!           if (glc_present) then
-!              gsmap  => component_get_gsmap_cx(glc(1))
-!              call seq_io_write(rest_file, gsmap, fractions_gx, 'fractions_gx', &
-!                   whead=whead, wdata=wdata)
-!              call seq_io_write(rest_file, glc, 'c2x', 'g2x_gx', &
-!                   whead=whead, wdata=wdata)
-!           endif
 !           if (wav_present) then
 !              gsmap  => component_get_gsmap_cx(wav(1))
 !              call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
@@ -818,7 +872,7 @@ subroutine seq_rest_mb_read(rest_file, infodata, samegrid_al, samegrid_lr)
 
 #ifdef MOABDEBUG
   subroutine  write_moab_state ( before_reading ) ! debug, write files
-    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid ! coupler side instances
+    use seq_comm_mct,     only: mbaxid, mbixid, mboxid, mblxid, mbrxid, mbofxid, mbgxid ! coupler side instances
     use seq_comm_mct,     only: num_moab_exports
     use iso_c_binding
     use iMOAB, only:  iMOAB_WriteMesh
