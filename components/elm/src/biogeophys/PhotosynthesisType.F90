@@ -357,6 +357,13 @@ contains
 
        this%lmrcanopy_patch(p) =  0.0_r8
 
+       ! These nominal resistance values will be overwritten
+       ! during the canopy flux iteration process upon first
+       ! use. We just need something that wont break
+       ! the model on the first guess
+       this%rssun_patch(p) = 1.e-5
+       this%rssha_patch(p) = 1.e-5
+
        this%alphapsnsun_patch(p) = spval
        this%alphapsnsha_patch(p) = spval
 
@@ -405,7 +412,15 @@ contains
        call restartvar(ncid=ncid, flag=flag, varname='rc13_psnsha', xtype=ncd_double,  &
             dim1name='pft', long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%rc13_psnsha_patch)
-    endif
+
+    end if
+    call restartvar(ncid=ncid, flag=flag, varname='rssun_patch',xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%rssun_patch)
+    
+    call restartvar(ncid=ncid, flag=flag, varname='rssha_patch',xtype=ncd_double,  &
+         dim1name='pft', long_name='', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%rssha_patch)
 
   end subroutine Restart
   !------------------------------------------------------------------------------
