@@ -150,6 +150,7 @@
     <OS>Linux</OS>
     <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -172,6 +173,17 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
@@ -217,10 +229,14 @@
         <command name="unload">darshan</command>
       </modules>
 
-      <modules compiler="gnu">
+      <modules compiler="gnu" mpilib="mpich">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/14</command>
         <command name="load">cray-libsci/25.09.0</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="intel">
@@ -245,13 +261,22 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules>
+      <modules mpilib="mpich">
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">craype/2.7.35</command>
+        <command name="load">openmpi/5.0.7</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="unload">cray-libsci</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
     </module_system>
 
@@ -260,16 +285,23 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables>
+    <environment_variables mpilib="mpich">
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
+      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
+      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="STK_UNKNOWN_PATTERN_EXCHANGER">Prepost</env> <!-- issue with STK -->
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
@@ -352,6 +384,8 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
+    <MPILIBS compiler="gnugpu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -380,6 +414,18 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
@@ -469,7 +515,7 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules>
+      <modules mpilib="mpich">
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
@@ -477,6 +523,15 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">craype/2.7.35</command>
+        <command name="load">openmpi/5.0.7</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules compiler="gnu.*" mpilib="openmpi">
+        <command name="unload">cray-libsci</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel.*">
@@ -489,14 +544,22 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables>
+    <environment_variables mpilib="mpich">
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
+      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
+      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -504,13 +567,13 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu">
+    <environment_variables compiler="gnugpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="nvidiagpu">
+    <environment_variables compiler="nvidiagpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intelgpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
@@ -784,6 +847,7 @@
     <OS>Linux</OS>
     <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -806,6 +870,17 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
@@ -851,10 +926,14 @@
         <command name="unload">darshan</command>
       </modules>
 
-      <modules compiler="gnu">
+      <modules compiler="gnu" mpilib="mpich">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/14</command>
         <command name="load">cray-libsci/25.09.0</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="intel">
@@ -879,13 +958,22 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules>
+      <modules mpilib="mpich">
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">craype/2.7.35</command>
+        <command name="load">openmpi/5.0.7</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="unload">cray-libsci</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
     </module_system>
@@ -895,16 +983,23 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables>
+    <environment_variables mpilib="mpich">
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-      <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
+      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
+      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
+      <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -984,6 +1079,8 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
+    <MPILIBS compiler="gnugpu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -1012,6 +1109,18 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
@@ -1101,7 +1210,7 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules>
+      <modules mpilib="mpich">
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
@@ -1109,6 +1218,15 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">craype/2.7.35</command>
+        <command name="load">openmpi/5.0.7</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules compiler="gnu.*" mpilib="openmpi">
+        <command name="unload">cray-libsci</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel.*">
@@ -1121,14 +1239,22 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables>
+    <environment_variables mpilib="mpich">
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
+      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
+      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -1136,13 +1262,13 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu">
+    <environment_variables compiler="gnugpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="nvidiagpu">
+    <environment_variables compiler="nvidiagpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intelgpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
@@ -1193,6 +1319,7 @@
     <OS>Linux</OS>
     <COMPILERS>intel,gnu,nvidia,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -1215,6 +1342,17 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
@@ -1260,10 +1398,14 @@
         <command name="unload">darshan</command>
       </modules>
 
-      <modules compiler="gnu">
+      <modules compiler="gnu" mpilib="mpich">
         <command name="load">PrgEnv-gnu/8.6.0</command>
         <command name="load">gcc-native/14</command>
         <command name="load">cray-libsci/25.09.0</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="load">PrgEnv-gnu/8.6.0</command>
+        <command name="load">gcc-native/14</command>
       </modules>
 
       <modules compiler="intel">
@@ -1288,13 +1430,22 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules>
+      <modules mpilib="mpich">
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">craype/2.7.35</command>
+        <command name="load">openmpi/5.0.7</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules compiler="gnu" mpilib="openmpi">
+        <command name="unload">cray-libsci</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
     </module_system>
 
@@ -1303,16 +1454,23 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables>
+    <environment_variables mpilib="mpich">
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
+      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
+      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -1392,6 +1550,8 @@
     <OS>Linux</OS>
     <COMPILERS>gnugpu,gnu,nvidiagpu,nvidia,intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
+    <MPILIBS compiler="gnu">mpich,openmpi</MPILIBS>
+    <MPILIBS compiler="gnugpu">mpich,openmpi</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>e3sm,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
@@ -1420,6 +1580,18 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+        <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="openmpi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi"> --mpi=pmix</arg>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
         <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
@@ -1509,7 +1681,7 @@
         <command name="load">craype-accel-host</command>
       </modules>
 
-      <modules>
+      <modules mpilib="mpich">
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
@@ -1517,6 +1689,15 @@
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules mpilib="openmpi">
+        <command name="load">craype/2.7.35</command>
+        <command name="load">openmpi/5.0.7</command>
+        <command name="load">cmake/3.30.2</command>
+      </modules>
+      <modules compiler="gnu.*" mpilib="openmpi">
+        <command name="unload">cray-libsci</command>
+        <command name="load">cray-libsci/25.09.0</command>
       </modules>
 
       <modules compiler="intel.*">
@@ -1529,14 +1710,21 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
 
-    <environment_variables>
+    <environment_variables mpilib="mpich">
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
+    </environment_variables>
+    <environment_variables mpilib="openmpi">
+      <env name="HDF5_ROOT">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/hdf5</env>
+      <env name="NETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/netcdf</env>
+      <env name="PNETCDF_PATH">/global/cfs/cdirs/e3sm/3rdparty/netcdf/openmpi-5.0.7/gcc-native-14/pnetcdf</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
@@ -1544,13 +1732,13 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
-    <environment_variables compiler="gnugpu">
+    <environment_variables compiler="gnugpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="nvidiagpu">
+    <environment_variables compiler="nvidiagpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
-    <environment_variables compiler="intelgpu">
+    <environment_variables compiler="intelgpu" mpilib="mpich">
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
