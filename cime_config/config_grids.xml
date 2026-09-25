@@ -4588,8 +4588,8 @@
     <gridmap atm_grid="ne30np4.pg2" lnd_grid="1.9x2.5">
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_TO_1.9x2.5_aave.241125.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30pg2/map_ne30pg2_TO_1.9x2.5_aave.241125.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/0.9x1.25/map_1.9x2.5_TO_ne30pg2_aave.241125.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/0.9x1.25/map_1.9x2.5_TO_ne30pg2_aave.241125.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne30pg2_aave.241125.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_ne30pg2_aave.241125.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4.pg2" lnd_grid="0.9x1.25">
