@@ -114,17 +114,12 @@ TEST_CASE("binary_ops") {
   tgt_mask.scale(qv.get_valid_mask());
   REQUIRE (views_are_equal(tgt_mask,plus_diag_f.get_valid_mask()));
 
-  qv.update(qc,1,1,tgt_mask);
-  qv.deep_copy(0,tgt_mask,true);
-  plus_diag_f.deep_copy(0,tgt_mask,true);
-  REQUIRE (views_are_equal(plus_diag_f,qv));
+  qv.update(qc,1,1);
+  auto tol = std::numeric_limits<Real>::epsilon()*1e2*0;
+  REQUIRE (views_are_equal(plus_diag_f,qv,tol));
 
   // constant*constant diag
   REQUIRE (rgas_diag_f.get_view<Real,Host>()()==physics::Constants<Real>::dictionary().at("Rgas").value);
-
-  // redundant, why not
-  qc.update(qv, 1, 1);
-  views_are_equal(qc, plus_diag_f);
 }
 
 }  // namespace scream
