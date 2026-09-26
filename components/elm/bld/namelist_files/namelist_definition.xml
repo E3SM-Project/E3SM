@@ -2220,6 +2220,123 @@ default: 0
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options for statistics of fields imported from / exported to the coupler         -->
+<!-- ========================================================================================  -->
+
+<entry id="do_import_export_stats"
+       type="logical"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values=".true.,.false."
+       value=".false.">
+logical that turns on min/max/mean/standard-deviation statistics, plus NaN and Inf
+counts, for every field ELM imports from and exports to the coupler. The statistics are
+written to the land log file on the frequencies set by the import_export_stats_* variables.
+False means the statistics will never be computed or written.
+The fields are discovered automatically from the coupler attribute vectors, so no code
+change is needed when a coupling field is added.
+Note: this diagnostic is not supported in CPL_BYPASS builds and will abort during
+initialization if requested there. The accumulators are not written to the restart file,
+so a restart resets any partially accumulated period.
+</entry>
+
+<entry id="import_export_stats_inst"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnostics level of the instantaneous (every land model time step) statistics of the fields
+imported from and exported to the coupler. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+Warning: at level 1 this writes roughly 200 lines to the land log file on
+every time step, and is intended for debugging only.
+default: 0
+</entry>
+
+<entry id="import_export_stats_daily"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="0">
+sets the diagnostics level of the daily statistics of the fields
+imported from and exported to the coupler. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+default: 0
+</entry>
+
+<entry id="import_export_stats_month"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnostics level of the monthly statistics of the fields
+imported from and exported to the coupler. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+default: 1
+</entry>
+
+<entry id="import_export_stats_ann"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnostics level of the annual statistics of the fields
+imported from and exported to the coupler. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+default: 1
+</entry>
+
+<entry id="import_export_stats_ltann"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnostics level of the long-term (whole run so far, written annually) statistics of the fields
+imported from and exported to the coupler. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+default: 1
+</entry>
+
+<entry id="import_export_stats_ltend"
+       type="integer"
+       category="import_export_stats"
+       group="elm_inparm"
+       valid_values="0,1"
+       value="1">
+sets the diagnostics level of the long-term statistics written at the end of
+each run, covering the whole run regardless of its length or start date. [0,1],
+written only if do_import_export_stats variable is .true.,
+0=none,
+1=+one table each for the imported (x2l) and exported (l2x) fields,
+with one row per field.
+Unlike import_export_stats_ltann, which reports the same accumulated statistics
+but only when the model clock reaches January 1, this fires on the last time
+step of the run. A run shorter than a year, or one that stops before January,
+therefore still reports its whole-run envelope.
+default: 1
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- NGEE Arctic Options                                                                       -->
 <!-- ========================================================================================  -->
 
