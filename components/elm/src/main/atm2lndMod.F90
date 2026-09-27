@@ -12,7 +12,7 @@ module atm2lndMod
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_megan_mod  , only : shr_megan_mechcomps_n
   use elm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval, mm_epsilon
   use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
   use abortutils     , only : endrun
@@ -159,8 +159,8 @@ contains
          call Qsat(tbot_c,pbot_c,es_c,dum1,qs_c,dum2)
 
          qbot_c = qbot_g*(qs_c/qs_g)
-         egcm_c = qbot_c*pbot_c/(0.622+0.378*qbot_c)
-         rhos_c = (pbot_c-0.378*egcm_c) / (rair*tbot_c)
+         egcm_c = qbot_c*pbot_c/(mm_epsilon+(1._r8 - mm_epsilon)*qbot_c)
+         rhos_c = (pbot_c-(1._r8 - mm_epsilon)*egcm_c) / (rair*tbot_c)
 
          forc_t_c(c)    = tbot_c
          forc_th_c(c)   = thbot_c
