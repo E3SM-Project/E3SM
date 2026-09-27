@@ -506,8 +506,8 @@ contains
     call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
 
     qbot_t = qbot_g*(qs_t/qs_g)
-    egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
-    rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
+    egcm_t = qbot_t*pbot_t/(mm_epsilon+(1._r8 - mm_epsilon)*qbot_t)
+    rhos_t = (pbot_t-(1._r8 - mm_epsilon)*egcm_t) / (rair*tbot_t)
 
     top_as%tbot(t) = tbot_t
     top_as%thbot(t) = thbot_t

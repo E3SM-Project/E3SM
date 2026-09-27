@@ -7,7 +7,7 @@ Module SoilHydrologyType
   use abortutils            , only : endrun
   use elm_varpar            , only : nlevgrnd, nlayer, nlayert, nlevsoi
   use elm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace
-  use elm_varcon            , only : zsoi, dzsoi, zisoi, spval
+  use elm_varcon            , only : zsoi, dzsoi, zisoi, spval, mm_h2o_to_mpa
   use elm_varctl            , only : iulog, use_lnd_rof_two_way
   use SharedParamsMod     , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
@@ -773,7 +773,7 @@ contains
 
        soilhydrology_vars%phi_s_col(c,i) = &
             -(exp((1.54_r8 - 0.0095_r8*sandvic(i) + &
-            0.0063_r8*(100.0_r8-sandvic(i)-clayvic(i)))*log(10.0_r8))*9.8e-5_r8)
+            0.0063_r8*(100.0_r8-sandvic(i)-clayvic(i)))*log(10.0_r8))*10._r8*mm_h2o_to_mpa) ! cm H2O -> MPa
 
     end do ! end of loop over layers
 
