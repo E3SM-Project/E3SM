@@ -216,7 +216,7 @@ contains
 
      !compute the kinetic viscosity
      mu      = mu0 * (T0+C)/(temp+C) * (temp/T0)**(1.5)/rho !m^2 s^-1
-     diffh2o = 0.229e-4_r8*(temp/273.15_r8)**1.75_r8        !m^2 s^-1
+     diffh2o = 0.229e-4_r8*(temp/SHR_CONST_TKFRZ)**1.75_r8        !m^2 s^-1
      sc      = mu/diffh2o                                   !schmidt number
 
      cc      = 2._r8/vkc*(Sc/Prandtl)**(2._r8/3._r8)

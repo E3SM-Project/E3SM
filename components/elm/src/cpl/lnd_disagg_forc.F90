@@ -12,7 +12,7 @@ module lnd_disagg_forc
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_megan_mod  , only : shr_megan_mechcomps_n
   use elm_varpar     , only : numrad, ndst, nlevgrnd !ndst = number of dust bins.
-  use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varcon     , only : rair, grav, cpair, hfus, tfrz, spval, mm_epsilon
   use elm_varctl     , only : iulog, use_c13, use_cn, use_lch4, iulog, precip_downscaling_method
   use elm_cpl_indices
   use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
@@ -160,7 +160,7 @@ contains
     sum_wtslw_g = 0.
     
     sum_of_hrise = 0.
-    t_th = 273.15_r8   ! Freezing temperature in K
+    t_th = tfrz        ! Freezing temperature in K
     Ta_th1 = 273.65_r8 ! Lowest threshold for snow calculation
     Ta_th2 = 275.15_r8 ! Middle threshold for rain/snow partitioning
     Ta_th3 = 275.65_r8 ! Highest threshold for rain/snow partitioning
@@ -235,14 +235,14 @@ contains
              else
                 e = esati(tdc(top_as%tbot(t)))
              end if
-             qvsat = 0.622_r8*e / (top_as%pbot(t) - 0.378_r8*e)
+             qvsat = mm_epsilon*e / (top_as%pbot(t) - (1._r8 - mm_epsilon)*e)
              top_as%rhbot(t) = 100.0_r8*(top_as%qbot(t) / qvsat)
              ! partial pressure of oxygen (Pa)
              top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
              ! air density (kg/m**3) - uses a temporary calculation
              ! of water vapor pressure (Pa)
-             vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
-             top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+             vp = top_as%qbot(t) * top_as%pbot(t)  / (mm_epsilon + (1._r8 - mm_epsilon) * top_as%qbot(t))
+             top_as%rhobot(t) = (top_as%pbot(t) - (1._r8 - mm_epsilon) * vp) / (rair * top_as%tbot(t))
 
              top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
              top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
@@ -268,8 +268,8 @@ contains
              top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
              ! air density (kg/m**3) - uses a temporary calculation
              ! of water vapor pressure (Pa)
-             vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
-             top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+             vp = top_as%qbot(t) * top_as%pbot(t)  / (mm_epsilon + (1._r8 - mm_epsilon) * top_as%qbot(t))
+             top_as%rhobot(t) = (top_as%pbot(t) - (1._r8 - mm_epsilon) * vp) / (rair * top_as%tbot(t))
              top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
              top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
              top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
@@ -352,14 +352,14 @@ contains
        else
           e = esati(tdc(top_as%tbot(t)))
        end if
-       qvsat = 0.622_r8*e / (top_as%pbot(t) - 0.378_r8*e)
+       qvsat = mm_epsilon*e / (top_as%pbot(t) - (1._r8 - mm_epsilon)*e)
        top_as%rhbot(t) = 100.0_r8*(top_as%qbot(t) / qvsat)
        ! partial pressure of oxygen (Pa)
        top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
        ! air density (kg/m**3) - uses a temporary calculation
        ! of water vapor pressure (Pa)
-       vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
-       top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+       vp = top_as%qbot(t) * top_as%pbot(t)  / (mm_epsilon + (1._r8 - mm_epsilon) * top_as%qbot(t))
+       top_as%rhobot(t) = (top_as%pbot(t) - (1._r8 - mm_epsilon) * vp) / (rair * top_as%tbot(t))
 
        top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
        top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
@@ -387,14 +387,14 @@ contains
              else
                 e = esati(tdc(top_as%tbot(t)))
              end if
-             qvsat = 0.622_r8*e / (top_as%pbot(t) - 0.378_r8*e)
+             qvsat = mm_epsilon*e / (top_as%pbot(t) - (1._r8 - mm_epsilon)*e)
              top_as%rhbot(t) = 100.0_r8*(top_as%qbot(t) / qvsat)
              ! partial pressure of oxygen (Pa)
              top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
              ! air density (kg/m**3) - uses a temporary calculation
              ! of water vapor pressure (Pa)
-             vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
-             top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+             vp = top_as%qbot(t) * top_as%pbot(t)  / (mm_epsilon + (1._r8 - mm_epsilon) * top_as%qbot(t))
+             top_as%rhobot(t) = (top_as%pbot(t) - (1._r8 - mm_epsilon) * vp) / (rair * top_as%tbot(t))
 
           end do
 
