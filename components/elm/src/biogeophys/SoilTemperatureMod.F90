@@ -29,7 +29,7 @@ module SoilTemperatureMod
   use VegetationDataType, only : veg_ef, veg_wf
   use timeinfoMod
   use perf_mod, only: t_startf, t_stopf
-  use shr_const_mod            , only : SHR_CONST_PI
+  use elm_varcon               , only : rpi
   use GridcellType             , only : grc_pp
   !
   ! !PUBLIC TYPES:
@@ -1611,7 +1611,7 @@ contains
          lwrad_emit_h2osfc(c)  =    emg(c) * sb * t_h2osfc(c)**4
 
          if (use_finetop_rad .and. (.not. lun_pp%urbpoi(l))) then
-            deg2rad = SHR_CONST_PI/180._r8
+            deg2rad = rpi/180._r8
             slope_rad = slope_deg(g) * deg2rad
             lwrad_emit(c) = lwrad_emit(c) / cos(slope_rad)
             dlwrad_emit(c) = dlwrad_emit(c) / cos(slope_rad)

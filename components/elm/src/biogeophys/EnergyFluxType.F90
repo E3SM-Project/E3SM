@@ -330,7 +330,7 @@ contains
     !
     ! !USES:
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use shr_const_mod   , only : SHR_CONST_TKFRZ
+    use elm_varcon      , only : tfrz
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use elm_varcon      , only : denice, denh2o, sb
     use landunit_varcon , only : istice, istwet, istsoil, istdlak, istice_mec

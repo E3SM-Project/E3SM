@@ -233,7 +233,7 @@ contains
     ! Initialize time constant variables and cold start conditions
     !
     ! !USES:
-    use shr_const_mod   , only : shr_const_pi, SHR_CONST_TKFRZ
+    use elm_varcon      , only : rpi, tfrz
     use shr_log_mod     , only : errMsg => shr_log_errMsg
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
@@ -583,11 +583,11 @@ contains
             d = 0.0
             do p = 1,4
                fd   = 0.5*(1.0_r8+shr_spfn_erf(d/(micro_sigma(c)*sqrt(2.0)))) - this%pc(g)
-               dfdd = exp(-d**2/(2.0*micro_sigma(c)**2))/(micro_sigma(c)*sqrt(2.0*shr_const_pi))
+               dfdd = exp(-d**2/(2.0*micro_sigma(c)**2))/(micro_sigma(c)*sqrt(2.0*rpi))
                d    = d - fd/dfdd
             enddo
             this%h2osfc_thresh_col(c) = 0.5*d*(1.0_r8+shr_spfn_erf(d/(micro_sigma(c)*sqrt(2.0)))) + &
-                 micro_sigma(c)/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*micro_sigma(c)**2))
+                 micro_sigma(c)/sqrt(2.0*rpi)*exp(-d**2/(2.0*micro_sigma(c)**2))
             this%h2osfc_thresh_col(c) = 1.e3_r8 * this%h2osfc_thresh_col(c) !convert to mm from meters
          else
             this%h2osfc_thresh_col(c) = 0._r8

@@ -59,7 +59,7 @@ contains
     use landunit_varcon   , only : istsoil, istice, istwet, istdlak, istice_mec
     use landunit_varcon   , only : isturb_tbd, isturb_hd, isturb_md, istcrop
     use elm_varctl        , only : create_glacier_mec_landunit
-    use shr_const_mod     , only : SHR_CONST_PI
+    use elm_varcon        , only : rpi
     !
     ! !LOCAL VARIABLES:
     integer :: nc,ti,li,ci,pi,gdc,topounit, topo_ind      ! indices
@@ -219,8 +219,8 @@ contains
           grc_pp%area(gdc)   = ldomain%area(gdc)
           grc_pp%latdeg(gdc) = ldomain%latc(gdc) 
           grc_pp%londeg(gdc) = ldomain%lonc(gdc) 
-          grc_pp%lat(gdc)    = grc_pp%latdeg(gdc) * SHR_CONST_PI/180._r8  
-          grc_pp%lon(gdc)    = grc_pp%londeg(gdc) * SHR_CONST_PI/180._r8
+          grc_pp%lat(gdc)    = grc_pp%latdeg(gdc) * rpi/180._r8  
+          grc_pp%lon(gdc)    = grc_pp%londeg(gdc) * rpi/180._r8
 
           grc_pp%stdev_elev(gdc)     = ldomain%stdev_elev(gdc)
           grc_pp%sky_view(gdc)       = ldomain%sky_view(gdc)

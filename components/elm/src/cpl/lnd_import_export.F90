@@ -37,7 +37,7 @@ contains
     use elm_varcon       , only: rair, o2_molar_const, c13ratio, mm_epsilon
     use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
-    use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL, SHR_CONST_PI
+    use elm_varcon       , only: tfrz, sb, rpi
     use domainMod        , only: ldomain
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
@@ -139,7 +139,7 @@ contains
     !
     ! function declarations
     !
-    tdc(t) = min( 50._r8, max(-50._r8,(t-SHR_CONST_TKFRZ)) )
+    tdc(t) = min( 50._r8, max(-50._r8,(t-tfrz)) )
     esatw(t) = 100._r8*(a0+t*(a1+t*(a2+t*(a3+t*(a4+t*(a5+t*a6))))))
     esati(t) = 100._r8*(b0+t*(b1+t*(b2+t*(b3+t*(b4+t*(b5+t*b6))))))
     !---------------------------------------------------------------------------
@@ -488,7 +488,7 @@ contains
               do m = 1,12
                 var_month_mean(m) = var_month_mean(m)/var_month_count(m)
                 !calculate offset and linear bias factors for temperature and precipitation
-                if (v .eq. 1) atm2lnd_vars%var_offset(v,g,m) = (site_metdata(6,m)+SHR_CONST_TKFRZ) - var_month_mean(m)
+                if (v .eq. 1) atm2lnd_vars%var_offset(v,g,m) = (site_metdata(6,m)+tfrz) - var_month_mean(m)
                 if (v .eq. 5 .and. var_month_mean(m) .gt. 0) &     
                       atm2lnd_vars%var_mult(v,g,m) = (site_metdata(7,m))/(caldaym(m+1)-caldaym(m))/24._r8/ &
                                                       3600._r8 / var_month_mean(m)
@@ -607,7 +607,7 @@ contains
                                                      atm2lnd_vars%var_mult(3,g,mon) + atm2lnd_vars%var_offset(3,g,mon), 1e-9_r8)
 
         if (atm2lnd_vars%metsource == 2) then  !convert RH to qbot                             
-          if (tbot > SHR_CONST_TKFRZ) then
+          if (tbot > tfrz) then
             e = esatw(tdc(tbot))
           else
             e = esati(tdc(tbot))
@@ -626,7 +626,7 @@ contains
             e =  atm2lnd_vars%forc_pbot_not_downscaled_grc(g) * atm2lnd_vars%forc_q_not_downscaled_grc(g) / &
                  (mm_epsilon + (1._r8 - mm_epsilon) * atm2lnd_vars%forc_q_not_downscaled_grc(g) )
             ea = 0.70_R8 + 5.95e-05_R8 * 0.01_R8 * e * exp(1500.0_R8/tbot)
-            atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ea * SHR_CONST_STEBOL * tbot**4
+            atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ea * sb * tbot**4
         end if 
 
         !Shortwave radiation (cosine zenith angle interpolation)
@@ -634,7 +634,7 @@ contains
         if (thishr < 0) thishr=thishr+24
         thismin = mod((tod-get_step_size()/2)/60, 60)
         thiscosz = max(cos(szenith(ldomain%lonc(g),ldomain%latc(g),0,int(thiscalday),thishr,thismin,0)* &
-                        SHR_CONST_PI/180.0d0), 0.001d0)
+                        rpi/180.0d0), 0.001d0)
         avgcosz = 0d0
         if (atm2lnd_vars%npf(4) - 1._r8 .gt. 1e-3) then 
           swrad_period_len   = get_step_size()*nint(atm2lnd_vars%npf(4))
@@ -648,7 +648,7 @@ contains
             if (thishr > 23) thishr=thishr-24  
             thismin = mod((swrad_period_start+(tm-1)*get_step_size()+get_step_size()/2)/60, 60) 
             avgcosz  = avgcosz + max(cos(szenith(ldomain%lonc(g),ldomain%latc(g),0,int(thiscalday),thishr, thismin, 0) &
-                       *SHR_CONST_PI/180.0d0), 0.001d0)/atm2lnd_vars%npf(4)
+                       *rpi/180.0d0), 0.001d0)/atm2lnd_vars%npf(4)
           end do
         else
           avgcosz = thiscosz
@@ -707,7 +707,7 @@ contains
                                         atm2lnd_vars%add_offsets(13)))*atm2lnd_vars%var_mult(13,g,mon) + &
                                           atm2lnd_vars%var_offset(13,g,mon)), 0.0_r8)
         else
-          frac = (atm2lnd_vars%forc_t_not_downscaled_grc(g) - SHR_CONST_TKFRZ)*0.5_R8       ! ramp near freezing
+          frac = (atm2lnd_vars%forc_t_not_downscaled_grc(g) - tfrz)*0.5_R8       ! ramp near freezing
           frac = min(1.0_R8,max(0.0_R8,frac))           ! bound in [0,1]
           !Don't interpolate rainfall data
           forc_rainc = 0.1_R8 * frac * max((((atm2lnd_vars%atm_input(5,g,1,tindex(5,2))*atm2lnd_vars%scale_factors(5)+ &
@@ -1085,7 +1085,7 @@ contains
           top_as%zbot(topo)    = atm2lnd_vars%forc_hgt_grc(g)                   ! zgcmxy    Atm state m
           top_as%windbot(topo) = sqrt(top_as%ubot(topo)**2 + top_as%vbot(topo)**2)
           ! Relative humidity (percent)
-          if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
+          if (top_as%tbot(topo) > tfrz) then
              e = esatw(tdc(top_as%tbot(topo)))
           else
              e = esati(tdc(top_as%tbot(topo)))
@@ -1197,7 +1197,7 @@ contains
               top_as%windbot(topo) = sqrt(top_as%windbot(topo)**2 + top_as%ugust(topo)**2)
            end if
            ! Relative humidity (percent)
-           if (top_as%tbot(topo) > SHR_CONST_TKFRZ) then
+           if (top_as%tbot(topo) > tfrz) then
             e = esatw(tdc(top_as%tbot(topo)))
            else
             e = esati(tdc(top_as%tbot(topo)))
@@ -1287,7 +1287,7 @@ contains
        
        atm2lnd_vars%forc_rain_not_downscaled_grc(g)  = forc_rainc + forc_rainl
        atm2lnd_vars%forc_snow_not_downscaled_grc(g)  = forc_snowc + forc_snowl
-       if (forc_t > SHR_CONST_TKFRZ) then
+       if (forc_t > tfrz) then
           e = esatw(tdc(forc_t))
        else
           e = esati(tdc(forc_t))
@@ -1572,7 +1572,7 @@ double precision function szenith(xcoor, ycoor, ltm, jday, hr, min, offset)
   !Used in coupler bypass mode to compute inerpolation for incoming solar
 
   use shr_kind_mod , only: r8 => shr_kind_r8, cl=>shr_kind_cl
-  use shr_const_mod, only: SHR_CONST_PI
+  use elm_varcon, only: rpi
   implicit none
   !inputs
   real(r8) xcoor, ycoor, offset_min
@@ -1582,7 +1582,7 @@ double precision function szenith(xcoor, ycoor, ltm, jday, hr, min, offset)
   real(r8) hangle, harad, saltrad, saltdeg, sazirad, sazideg
   real(r8) szendeg,szenrad
   
-  real(r8), parameter :: pi = SHR_CONST_PI
+  real(r8), parameter :: pi = rpi
   offset_min = offset/60d0   !note assumes 1hr or smaller timestep
   min = min - offset_min  
    

@@ -62,7 +62,7 @@ contains
     use elm_time_manager, only : get_nstep
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
-    use shr_const_mod   , only : SHR_CONST_TKFRZ
+    use elm_varcon      , only : tfrz
     use landunit_varcon , only : istice_mec 
     use elm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
@@ -145,7 +145,7 @@ contains
     !
     ! function declarations
     !
-    tdc(temp) = min( 50._r8, max(-50._r8,(temp-SHR_CONST_TKFRZ)) )                       ! Taken from lnd_import_export.F90
+    tdc(temp) = min( 50._r8, max(-50._r8,(temp-tfrz)) )                       ! Taken from lnd_import_export.F90
     esatw(temp) = 100._r8*(a0+temp*(a1+temp*(a2+temp*(a3+temp*(a4+temp*(a5+temp*a6)))))) ! Taken from lnd_import_export.F90
     esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6)))))) ! Taken from lnd_import_export.F90
     !-----------------------------------------------------------------------
@@ -240,7 +240,7 @@ contains
                 top_as%windbot(t) = sqrt(top_as%windbot(t)**2 + top_as%ugust(t)**2)
              end if
              ! Relative humidity (percent)
-             if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+             if (top_as%tbot(t) > tfrz) then
                 e = esatw(tdc(top_as%tbot(t)))
              else
                 e = esati(tdc(top_as%tbot(t)))
@@ -369,7 +369,7 @@ contains
           top_as%windbot(t) = sqrt(top_as%windbot(t)**2 + top_as%ugust(t)**2)
        end if
        ! Relative humidity (percent)
-       if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+       if (top_as%tbot(t) > tfrz) then
           e = esatw(tdc(top_as%tbot(t)))
        else
           e = esati(tdc(top_as%tbot(t)))
@@ -404,7 +404,7 @@ contains
              top_as%qbot(t) = top_as%qbot(t) * qbot_norm_g
 
              ! Relative humidity (percent)
-             if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+             if (top_as%tbot(t) > tfrz) then
                 e = esatw(tdc(top_as%tbot(t)))
              else
                 e = esati(tdc(top_as%tbot(t)))
@@ -801,7 +801,7 @@ contains
     use elm_time_manager, only : get_nstep
     use elm_varcon      , only : rair, cpair, grav, lapse_glcmec
     use elm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
-    use shr_const_mod   , only : SHR_CONST_TKFRZ
+    use elm_varcon      , only : tfrz
     use landunit_varcon , only : istice_mec 
     use elm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
@@ -883,7 +883,7 @@ contains
     !
     ! function declarations
     !
-    tdc(temp) = min( 50._r8, max(-50._r8,(temp-SHR_CONST_TKFRZ)) )                       ! Taken from lnd_import_export.F90
+    tdc(temp) = min( 50._r8, max(-50._r8,(temp-tfrz)) )                       ! Taken from lnd_import_export.F90
     esatw(temp) = 100._r8*(a0+temp*(a1+temp*(a2+temp*(a3+temp*(a4+temp*(a5+temp*a6)))))) ! Taken from lnd_import_export.F90
     esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6)))))) ! Taken from lnd_import_export.F90
     !-----------------------------------------------------------------------
@@ -972,7 +972,7 @@ contains
              ! Horizontal windspeed (m/s)
              top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
              ! Relative humidity (percent)
-             if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+             if (top_as%tbot(t) > tfrz) then
                 e = esatw(tdc(top_as%tbot(t)))
              else
                 e = esati(tdc(top_as%tbot(t)))
@@ -1093,7 +1093,7 @@ contains
           top_as%windbot(t) = sqrt(top_as%windbot(t)**2 + top_as%ugust(t)**2)
        end if
        ! Relative humidity (percent)
-       if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+       if (top_as%tbot(t) > tfrz) then
           e = esatw(tdc(top_as%tbot(t)))
        else
           e = esati(tdc(top_as%tbot(t)))
@@ -1128,7 +1128,7 @@ contains
              top_as%qbot(t) = top_as%qbot(t) * qbot_norm_g
 
              ! Relative humidity (percent)
-             if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+             if (top_as%tbot(t) > tfrz) then
                 e = esatw(tdc(top_as%tbot(t)))
              else
                 e = esati(tdc(top_as%tbot(t)))

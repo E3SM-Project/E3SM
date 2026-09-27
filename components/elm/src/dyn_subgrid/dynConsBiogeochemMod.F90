@@ -66,7 +66,7 @@ contains
     ! dynamic pft-weights.
     !
     ! !USES:
-    use shr_const_mod      , only : SHR_CONST_PDB
+    use elm_varcon         , only : pdb
     use landunit_varcon    , only : istsoil, istcrop
     use elm_varpar         , only : nlevdecomp, max_patch_per_col
     use pftvarcon          , only : pconv, pprod10, pprod100
