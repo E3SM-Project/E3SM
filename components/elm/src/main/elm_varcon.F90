@@ -13,6 +13,7 @@ module elm_varcon
   use shr_const_mod , only: SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH
   use shr_const_mod , only: SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY
   use shr_const_mod , only: SHR_CONST_RGAS, SHR_CONST_PSTD, SHR_CONST_MWC
+  use shr_const_mod , only: SHR_CONST_MWWV, SHR_CONST_MWDAIR
   use elm_varpar    , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
   use elm_varpar    , only: ngases
   use elm_varpar    , only: nlayer
@@ -72,9 +73,7 @@ module elm_varcon
   real(r8) :: tlsai_crit = 2.0_r8                           ! critical value of elai+esai for which aerodynamic parameters are maximum
   real(r8) :: watmin = 0.01_r8                              ! minimum soil moisture (mm)
 
-  real(r8), parameter :: mm_epsilon = 0.622_r8              ! Molar mass ratio (water:dry air)
-                                                            !   This is set to 0.622 for bit-for-bit compatibility, but
-                                                            !   this should be defined as SHR_CONST_MWWV/SHR_CONST_MWDAIR
+  real(r8), parameter :: mm_epsilon = SHR_CONST_MWWV/SHR_CONST_MWDAIR ! Molar mass ratio (water:dry air)
 
   real(r8) :: re = SHR_CONST_REARTH*0.001_r8                ! radius of earth (km)
 
