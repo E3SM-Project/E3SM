@@ -880,7 +880,6 @@ contains
     use elm_varpar , only : nlevdecomp, nlevdecomp_full, crop_prog, nlevgrnd
     use elm_varctl , only : hist_wrtch4diag
     use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp 
-    use tracer_varcon    , only : is_active_betr_bgc
     use elm_varctl,  only : get_carbontag
     !
     ! !ARGUMENTS:
@@ -1115,7 +1114,7 @@ contains
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
     use elm_time_manager , only : is_restart
     use elm_varcon       , only : c13ratio, c14ratio
-    use elm_varctl       , only : use_lch4, use_betr
+    use elm_varctl       , only : use_lch4
     use restUtilMod
     use ncdio_pio
 
@@ -1588,8 +1587,6 @@ contains
     use elm_varcon       , only : secspday
     use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
     use subgridAveMod    , only : p2c
-    use tracer_varcon    , only : is_active_betr_bgc
-    use MathfuncMod      , only : dot_sum
     use elm_varpar       , only : nlevdecomp_full
     !
     ! !ARGUMENTS:
@@ -1996,8 +1993,7 @@ contains
        this%som_c_leached_col(c)      = 0._r8
     end do
 
-    if ( (.not. is_active_betr_bgc           ) .and. &
-         (.not. (use_pflotran .and. pf_cmode))) then
+    if ((.not. (use_pflotran .and. pf_cmode))) then
 
        ! vertically integrate HR and decomposition cascade fluxes
        do k = 1, ndecomp_cascade_transitions
@@ -2014,12 +2010,6 @@ contains
        end do
 
 
-    elseif (is_active_betr_bgc) then
-
-       do fc = 1, num_soilc
-          c = filter_soilc(fc)
-          this%hr_col(c) = dot_sum(this%hr_vr_col(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
-       enddo
     endif
     
     ! some zeroing
@@ -2208,94 +2198,92 @@ contains
        end do
     end do
 
-    if  (.not. is_active_betr_bgc) then
 
-       ! _col(cWDC_HR) - coarse woody debris heterotrophic respiration
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%cwdc_hr_col(c) = 0._r8
-       end do
+    ! _col(cWDC_HR) - coarse woody debris heterotrophic respiration
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%cwdc_hr_col(c) = 0._r8
+    end do
 
-       ! _col(cWDC_LOSS) - coarse woody debris C loss
-       do l = 1, ndecomp_pools
-          if ( is_cwd(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%cwdc_loss_col(c) = &
-                     this%cwdc_loss_col(c) + &
-                     this%m_decomp_cpools_to_fire_col(c,l)
-             end do
-          end if
-       end do
-
-       do k = 1, ndecomp_cascade_transitions
-          if ( is_cwd(decomp_cascade_con%cascade_donor_pool(k)) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%cwdc_loss_col(c) = &
-                     this%cwdc_loss_col(c) + &
-                     this%decomp_cascade_ctransfer_col(c,k)
-             end do
-          end if
-       end do
-
-       if (.not.(use_pflotran .and. pf_cmode)) then
-          ! (LITTERC_LOSS) - litter C loss
+    ! _col(cWDC_LOSS) - coarse woody debris C loss
+    do l = 1, ndecomp_pools
+       if ( is_cwd(l) ) then
           do fc = 1,num_soilc
              c = filter_soilc(fc)
-             this%litterc_loss_col(c) = this%lithr_col(c)
-          end do
-       end if !(.not.(use_pflotran .and. pf_cmode))
-
-       do l = 1, ndecomp_pools
-          if ( is_litter(l) ) then
-             do fc = 1,num_soilc
-                 c = filter_soilc(fc)
-                 this%litterc_loss_col(c) = &
-                    this%litterc_loss_col(c) + &
-                    this%m_decomp_cpools_to_fire_col(c,l)
-             end do
-          end if
-       end do
-    
- 
-       do k = 1, ndecomp_cascade_transitions
-         if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
-           do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%litterc_loss_col(c) = &
-                  this%litterc_loss_col(c) + &
-                  this%decomp_cascade_ctransfer_col(c,k)
-           end do
-         end if
-       end do
-
-       if (use_pflotran .and. pf_cmode) then
-          ! note: the follwoing should be useful to non-pflotran-coupled, but seems cause 1 BFB test unmatching.
-          ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
-          do l = 1, ndecomp_pools
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%decomp_cpools_leached_col(c,l) = 0._r8
-             end do
-             do j = 1, nlev
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%decomp_cpools_leached_col(c,l) = &
-                     this%decomp_cpools_leached_col(c,l) + &
-                     this%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
-                end do
-             end do
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%som_c_leached_col(c) = &
-                   this%som_c_leached_col(c) + &
-                   this%decomp_cpools_leached_col(c,l)
-             end do
+             this%cwdc_loss_col(c) = &
+                  this%cwdc_loss_col(c) + &
+                  this%m_decomp_cpools_to_fire_col(c,l)
           end do
        end if
+    end do
 
+    do k = 1, ndecomp_cascade_transitions
+       if ( is_cwd(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%cwdc_loss_col(c) = &
+                  this%cwdc_loss_col(c) + &
+                  this%decomp_cascade_ctransfer_col(c,k)
+          end do
+       end if
+    end do
+
+    if (.not.(use_pflotran .and. pf_cmode)) then
+       ! (LITTERC_LOSS) - litter C loss
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%litterc_loss_col(c) = this%lithr_col(c)
+       end do
+    end if !(.not.(use_pflotran .and. pf_cmode))
+
+    do l = 1, ndecomp_pools
+       if ( is_litter(l) ) then
+          do fc = 1,num_soilc
+              c = filter_soilc(fc)
+              this%litterc_loss_col(c) = &
+                 this%litterc_loss_col(c) + &
+                 this%m_decomp_cpools_to_fire_col(c,l)
+          end do
+       end if
+    end do
+    
+ 
+    do k = 1, ndecomp_cascade_transitions
+      if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+        do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%litterc_loss_col(c) = &
+               this%litterc_loss_col(c) + &
+               this%decomp_cascade_ctransfer_col(c,k)
+        end do
+      end if
+    end do
+
+    if (use_pflotran .and. pf_cmode) then
+       ! note: the follwoing should be useful to non-pflotran-coupled, but seems cause 1 BFB test unmatching.
+       ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
+       do l = 1, ndecomp_pools
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_cpools_leached_col(c,l) = 0._r8
+          end do
+          do j = 1, nlev
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%decomp_cpools_leached_col(c,l) = &
+                  this%decomp_cpools_leached_col(c,l) + &
+                  this%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
+             end do
+          end do
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%som_c_leached_col(c) = &
+                this%som_c_leached_col(c) + &
+                this%decomp_cpools_leached_col(c,l)
+          end do
+       end do
     end if
+
     
     ! debug
     do fc = 1,num_soilc
@@ -2557,7 +2545,6 @@ end subroutine CSummary_interface
 
   !summarize heterotrophic respiration for methane calculation
   !
-    use tracer_varcon    , only : is_active_betr_bgc
     use elm_varpar       , only : nlevdecomp, ndecomp_pools, ndecomp_cascade_transitions
   ! !ARGUMENTS:
     class(carbonflux_type) :: this
@@ -2631,8 +2618,7 @@ end subroutine CSummary_interface
        end if
     enddo
 
-    if ( (.not. is_active_betr_bgc           ) .and. &
-         (.not. (use_pflotran .and. pf_cmode))) then
+    if ((.not. (use_pflotran .and. pf_cmode))) then
       ! vertically integrate HR and decomposition cascade fluxes
       do k = 1, ndecomp_cascade_transitions
 

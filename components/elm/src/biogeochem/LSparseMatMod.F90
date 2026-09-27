@@ -3,8 +3,8 @@ module LSparseMatMod
 
   ! !USES:
   ! sparse matrix capability
-  use bshr_kind_mod , only : r8 => shr_kind_r8
-  use bshr_log_mod  , only : errMsg => shr_log_errMsg
+  use shr_kind_mod  , only : r8 => shr_kind_r8
+  use shr_log_mod   , only : errMsg => shr_log_errMsg
   use elm_varctl    , only : iulog
 implicit none
   private
@@ -288,8 +288,6 @@ contains
     ! !DESCRIPTION:
     ! calculate limiting factor from each primary state variable
     !
-    use BetrstatusType     , only : betr_status_type
-    use betr_constants     , only : betr_errmsg_len
     implicit none
     ! !ARGUMENTS:
     class(lom_type), intent(in) :: this
@@ -301,7 +299,6 @@ contains
     real(r8), intent(out) :: pscal(1:nprimvars)
     logical,  intent(out) :: lneg
     integer,  intent(out) :: errinfo
-    character(len=betr_errmsg_len) :: msg
 
     ! !LOCAL VARIABLES:
     real(r8) :: yt
@@ -335,7 +332,6 @@ contains
     ! !DESCRIPTION:
     ! calculate limiting factor for each reaction
     ! !USES:
-    use BetrstatusType     , only : betr_status_type
     implicit none
     ! !ARGUMENTS:
     class(lom_type), intent(in) :: this
