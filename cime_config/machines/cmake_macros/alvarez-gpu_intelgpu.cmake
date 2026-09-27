@@ -26,19 +26,7 @@ set(CMAKE_CUDA_ARCHITECTURES "80")
 set(MPICC "cc")
 set(MPICXX "CC")
 set(MPIFC "ftn")
-set(SCC "icx")
-set(SCXX "icpx")
-set(SFC "ifx")
 
-# The Intel LLVM icpx on this system does not support -fp-model=source (set by intelgpu.cmake).
-# Reset CXX flags and replicate the correct set, same approach as alvarez-cpu_intel.cmake.
-set(CMAKE_CXX_FLAGS " ")
-if (compile_threaded)
-  string(APPEND CMAKE_CXX_FLAGS " -qopenmp")
-endif()
-string(APPEND CMAKE_CXX_FLAGS_DEBUG " -O0 -g")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
-string(APPEND CMAKE_CXX_FLAGS " -fp-model=precise")
 string(APPEND CMAKE_CXX_FLAGS " -fp-model=consistent")
 
 # Check for Intel LLVM (ifx) version 2025 or newer
