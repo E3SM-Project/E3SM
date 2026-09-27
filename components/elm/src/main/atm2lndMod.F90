@@ -460,7 +460,7 @@ contains
     ! !USES:
     use domainMod       , only : ldomain
     use shr_orb_mod
-    use shr_const_mod   , only : SHR_CONST_PI
+    use elm_varcon      , only : rpi
     use elm_varpar      , only : numrad, ndir_horizon_angle
     !
     ! !ARGUMENTS:
@@ -513,7 +513,7 @@ contains
          forc_lwrad_pp_grc  => atm2lnd_vars%forc_lwrad_not_downscaled_pp_grc  &
          )
 
-     deg2rad = SHR_CONST_PI/180._r8
+     deg2rad = rpi/180._r8
 
       ! Initialize column forcing (needs to be done for ALL active columns)
      do g = bounds%begg, bounds%endg
@@ -563,7 +563,7 @@ contains
             endif
             
             ! Find horizion angle towards the sun
-            dd = nint(saa(g) / (2._r8*SHR_CONST_PI) * ndir_horizon_angle) + 1
+            dd = nint(saa(g) / (2._r8*rpi) * ndir_horizon_angle) + 1
             if (dd > ndir_horizon_angle) dd = 1
             horizon_angle_twd_sun_rad = horizon_angle_deg(g,dd) * deg2rad
 

@@ -61,7 +61,7 @@ contains
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
-    use shr_const_mod       , only : SHR_CONST_G, SHR_CONST_CPDAIR
+    use elm_varcon          , only : grav, cpair
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
@@ -191,7 +191,7 @@ contains
     real(r8) :: qsat_ref2m                                           ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT                                            ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     !
-    real(r8), parameter :: lapse_rate = SHR_CONST_G/SHR_CONST_CPDAIR ! Dry adiabatic lapse rate (K/m)
+    real(r8), parameter :: lapse_rate = grav/cpair ! Dry adiabatic lapse rate (K/m)
     real(r8), parameter :: dtaumin = 0.01_r8      ! max limit for stress convergence [Pa]
     integer, parameter  :: itmin = 3              ! minimum number of iterations
     integer, parameter  :: itmax = 30             ! maximum number of iterations

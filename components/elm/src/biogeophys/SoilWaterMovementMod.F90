@@ -252,7 +252,7 @@ contains
       !$acc routine seq
     use elm_varctl           , only : use_var_soil_thick
     use shr_kind_mod         , only : r8 => shr_kind_r8
-    use shr_const_mod        , only : SHR_CONST_TKFRZ, SHR_CONST_LATICE, SHR_CONST_G
+    use elm_varcon           , only : tfrz, hfus, grav
     use decompMod            , only : bounds_type
     use elm_varcon           , only : wimp,grav,hfus,tfrz
     use elm_varcon           , only : e_ice,denh2o, denice

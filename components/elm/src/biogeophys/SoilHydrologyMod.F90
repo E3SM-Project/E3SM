@@ -298,7 +298,7 @@ contains
      !
      ! !USES:
       !$acc routine seq
-     use shr_const_mod    , only : shr_const_pi
+     use elm_varcon       , only : rpi
      use elm_varpar       , only : nlayer, nlayert
      use elm_varpar       , only : nlevsoi, nlevgrnd
      use elm_varcon       , only : denh2o, denice, roverg, wimp, mu, tfrz

@@ -298,7 +298,7 @@ contains
     !
     ! !USES:
     use shr_kind_mod   , only : r8 => shr_kind_r8
-    use shr_const_mod  , only : SHR_CONST_TKFRZ
+    use elm_varcon     , only : tfrz
     use elm_varcon     , only : denice, denh2o, sb
     use landunit_varcon, only : istice, istwet, istsoil, istdlak, istice_mec
     use column_varcon  , only : icol_road_imperv, icol_roof, icol_sunwall
@@ -377,7 +377,7 @@ contains
     ! !USES 
     use accumulMod       , only : init_accum_field
     use elm_time_manager , only : get_step_size
-    use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
+    use elm_varcon       , only : secspday, tfrz
     !
     ! !ARGUMENTS:
     class(temperature_type) :: this
@@ -425,7 +425,7 @@ contains
   subroutine UpdateAccVars (this, bounds)
     !
     ! USES
-    use shr_const_mod    , only : SHR_CONST_CDAY, SHR_CONST_TKFRZ
+    use elm_varcon       , only : secspday, tfrz
     use elm_time_manager , only : get_step_size, get_nstep, is_end_curr_day, get_curr_date
     use accumulMod       , only : update_accum_field, extract_accum_field, accumResetVal
     !

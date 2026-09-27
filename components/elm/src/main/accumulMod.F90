@@ -95,7 +95,7 @@ contains
     ! o initial value of accumulated field
     !
     ! !USES:
-    use shr_const_mod, only: SHR_CONST_CDAY
+    use elm_varcon, only: secspday
     use elm_time_manager, only : get_step_size
     use decompMod, only : get_proc_bounds, get_proc_global
     !
@@ -156,7 +156,7 @@ contains
     accum(nf)%initval = init_value
     accum(nf)%period  = accum_period
     if (accum(nf)%period < 0) then
-       accum(nf)%period = -accum(nf)%period * nint(SHR_CONST_CDAY) / get_step_size()
+       accum(nf)%period = -accum(nf)%period * nint(secspday) / get_step_size()
     end if
 
     select case (trim(subgrid_type))

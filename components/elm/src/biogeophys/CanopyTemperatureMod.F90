@@ -11,7 +11,7 @@ module CanopyTemperatureMod
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use shr_const_mod        , only : SHR_CONST_PI
+  use elm_varcon           , only : rpi
   use decompMod            , only : bounds_type
   use elm_varctl           , only : iulog, use_fates, use_finetop_rad
   use PhotosynthesisMod    , only : Photosynthesis, PhotosynthesisTotal, Fractionation
@@ -75,7 +75,7 @@ contains
     use column_varcon      , only : icol_road_imperv, icol_road_perv
     use landunit_varcon    , only : istice, istice_mec, istwet, istsoil, istdlak, istcrop, istdlak
     use elm_varpar         , only : nlevgrnd, nlevurb, nlevsno, nlevsoi
-    use shr_const_mod   , only : SHR_CONST_PI
+    use elm_varcon      , only : rpi
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -203,7 +203,7 @@ contains
          tssbef           =>    col_es%t_ssbef                          & ! Output: [real(r8) (:,:) ] soil/snow temperature before update (K)
          )
 
-      deg2rad = SHR_CONST_PI/180._r8
+      deg2rad = rpi/180._r8
       do j = -nlevsno+1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)

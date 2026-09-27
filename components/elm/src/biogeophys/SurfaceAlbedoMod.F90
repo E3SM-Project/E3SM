@@ -93,7 +93,7 @@ contains
       !$acc routine seq
     use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad, use_top_solar_rad
     use shr_orb_mod
-    use shr_const_mod   , only : SHR_CONST_PI
+    use elm_varcon      , only : rpi
 
     !
     ! !ARGUMENTS:
@@ -241,7 +241,7 @@ contains
 
     ! Cosine solar zenith angle for next time step
 
-    deg2rad = SHR_CONST_PI/180._r8
+    deg2rad = rpi/180._r8
     if (.not. use_finetop_rad) then
        do g = bounds%begg,bounds%endg
           coszen_gcell(g) = shr_orb_cosz (nextsw_cday, grc_pp%lat(g), grc_pp%lon(g), declinp1)
@@ -1165,7 +1165,7 @@ contains
      use elm_varpar, only : numrad, nlevcan
      use elm_varcon, only : omegas, tfrz, betads, betais
      use elm_varctl, only : iulog, use_top_solar_rad
-     use shr_const_mod   , only : SHR_CONST_PI
+     use elm_varcon      , only : rpi
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds
@@ -1265,7 +1265,7 @@ contains
           ftii          =>    surfalb_vars%ftii_patch               & ! Output: [real(r8) (:,:) ]  down diffuse flux below canopy per unit diffuse flx
           )
 
-    deg2rad = SHR_CONST_PI/180._r8
+    deg2rad = rpi/180._r8
     ! Calculate two-stream parameters that are independent of waveband:
     ! chil, gdir, twostext, avmu, and temp0 and temp2 (used for asu)
 
@@ -1726,7 +1726,7 @@ contains
 ! !USES:
     use shr_orb_mod
     use elm_varctl  , only: iulog
-    use shr_const_mod, only: SHR_CONST_PI
+    use elm_varcon, only: rpi
 
 !
 ! !ARGUMENTS:
@@ -1748,7 +1748,7 @@ contains
 ! !OTHER LOCAL VARIABLES:
 !
     real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
-    real(r8), parameter :: pi = SHR_CONST_PI          ! pi
+    real(r8), parameter :: pi = rpi          ! pi
     integer  :: fp,fc,g,c,p                               ! indices
     integer  :: ib                                        ! band index
     integer  :: ic                                        ! 0=unit incoming direct; 1=unit incoming diffuse

@@ -50,7 +50,7 @@ contains
     use landunit_varcon  , only : istsoil, istcrop
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv
     use subgridAveMod    , only : p2c
-    use shr_const_mod      , only : SHR_CONST_PI
+    use elm_varcon         , only : rpi
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -165,7 +165,7 @@ contains
          slope_deg               => grc_pp%slope_deg           &
          )
 
-      deg2rad = SHR_CONST_PI/180._r8
+      deg2rad = rpi/180._r8
 
          dtime = dtime_mod
       call t_startf('bgp2_loop_1')

@@ -625,7 +625,7 @@ contains
     !
     ! !USES:
     use shr_infnan_mod   , only : isnan => shr_infnan_isnan, nan => shr_infnan_nan, assignment(=)
-    use shr_const_mod    , only : SHR_CONST_PDB
+    use elm_varcon       , only : pdb
     use elm_time_manager , only : is_restart, get_nstep
     use elm_varcon       , only : c13ratio, c14ratio
     use elm_varctl       , only : spinup_mortality_factor, spinup_state
