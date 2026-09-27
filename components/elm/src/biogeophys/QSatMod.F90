@@ -72,6 +72,7 @@ contains
     ! !USES:
     use shr_kind_mod , only: r8 => shr_kind_r8
     use shr_const_mod, only: SHR_CONST_TKFRZ
+    use elm_varcon   , only: mm_epsilon
     !
     ! !ARGUMENTS:
     implicit none
@@ -113,8 +114,8 @@ contains
     esdT  = esdT  * 100._r8            ! pa/K
 
     
-    vp    = 1.0_r8   / (p - 0.378_r8*es)
-    vp1   = 0.622_r8 * vp
+    vp    = 1.0_r8   / (p - (1._r8 - mm_epsilon)*es)
+    vp1   = mm_epsilon * vp
     vp2   = vp1   * vp
 
     qs    = es    * vp1             ! kg/kg

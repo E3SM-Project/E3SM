@@ -12,7 +12,7 @@ module SedYieldMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use elm_varcon        , only : dzsoi_decomp
-  use elm_varcon        , only : grav, denh2o, rpi
+  use elm_varcon        , only : grav, denh2o, rpi, secspday
   use elm_varcon        , only : ispval
   use elm_varpar        , only : mxpft, nlevsno, max_patch_per_col
   use elm_varpar        , only : nlevslp
@@ -235,7 +235,7 @@ contains
             Es_Pcrp = 1.e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_Pcrp  ! kg/m2/s
 
             ! snow scaling factor from T factor of BQART
-            Qs = 8.64e4_r8 * qflx_surf(c)                ! mm/d
+            Qs = secspday * qflx_surf(c)                ! mm/d
             Qss = (1._r8 - 0.7846_r8*frac_sno(c)) * Qs   ! mm/d
 
             Es_Q = 0._r8

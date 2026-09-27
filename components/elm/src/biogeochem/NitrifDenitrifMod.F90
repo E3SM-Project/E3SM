@@ -145,7 +145,6 @@ contains
     real(r8) :: rij_kro_beta          !  Arah and Vinten 1995
     real(r8) :: rij_kro_gamma         !  Arah and Vinten 1995
     real(r8) :: rij_kro_delta         !  Arah and Vinten 1995
-    real(r8) :: rho_w  = 1.e3_r8                   ! (kg/m3)
     real(r8), parameter :: smallparameter = 1.E-20_r8
     real(r8) :: r_max
     real(r8) :: r_min(bounds%begc:bounds%endc,1:nlevdecomp)
@@ -257,8 +256,8 @@ contains
                ! use rijtema and kroess model after Riley et al., 2000
                ! caclulated r_psi as a function of psi
 
-               r_min(c,j) = 2 * surface_tension_water / (rho_w * grav * abs(soilpsi(c,j)))
-               r_max = 2 * surface_tension_water / (rho_w * grav * 0.1_r8)
+               r_min(c,j) = 2 * surface_tension_water / (denh2o * grav * abs(soilpsi(c,j)))
+               r_max = 2 * surface_tension_water / (denh2o * grav * 0.1_r8)
                r_psi(c,j) = sqrt(r_min(c,j) * r_max)
                ratio_diffusivity_water_gas(c,j) = (d_con_g(2,1) + d_con_g(2,2)*t_soisno(c,j) ) * 1.e-4_r8 / &
                     ((d_con_w(2,1) + d_con_w(2,2)*t_soisno(c,j) + d_con_w(2,3)*t_soisno(c,j)**2) * 1.e-9_r8)
@@ -274,7 +273,7 @@ contains
                endif
 
                if (anoxia_wtsat) then ! Average saturated fraction values into anaerobic_frac(c,j).
-                  r_min_sat = 2._r8 * surface_tension_water / (rho_w * grav * abs(grav * 1.e-6_r8 * sucsat(c,j)))
+                  r_min_sat = 2._r8 * surface_tension_water / (denh2o * grav * abs(grav * 1.e-6_r8 * sucsat(c,j)))
                   r_psi_sat = sqrt(r_min_sat * r_max)
                   if (o2_decomp_depth_sat(c,j) /= spval .and. conc_o2_sat(c,j) /= spval .and. &
                        o2_decomp_depth_sat(c,j) > smallparameter) then

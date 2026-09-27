@@ -34,7 +34,7 @@ contains
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file, use_atm_downscaling_to_topunit
     use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
     use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
-    use elm_varcon       , only: rair, o2_molar_const, c13ratio
+    use elm_varcon       , only: rair, o2_molar_const, c13ratio, mm_epsilon
     use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
     use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
@@ -612,7 +612,7 @@ contains
           else
             e = esati(tdc(tbot))
           end if
-          qsat           = 0.622_r8*e / (atm2lnd_vars%forc_pbot_not_downscaled_grc(g) - 0.378_r8*e)
+          qsat           = mm_epsilon*e / (atm2lnd_vars%forc_pbot_not_downscaled_grc(g) - (1._r8 - mm_epsilon)*e)
           atm2lnd_vars%forc_q_not_downscaled_grc(g) = qsat * atm2lnd_vars%forc_q_not_downscaled_grc(g) / 100.0_r8
         end if
 
@@ -624,7 +624,7 @@ contains
         if (atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) .le. 50 .or. atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) .ge. 600) then 
         !Longwave radiation (calculated from air temperature, humidity)
             e =  atm2lnd_vars%forc_pbot_not_downscaled_grc(g) * atm2lnd_vars%forc_q_not_downscaled_grc(g) / &
-                 (0.622_R8 + 0.378_R8 * atm2lnd_vars%forc_q_not_downscaled_grc(g) )
+                 (mm_epsilon + (1._r8 - mm_epsilon) * atm2lnd_vars%forc_q_not_downscaled_grc(g) )
             ea = 0.70_R8 + 5.95e-05_R8 * 0.01_R8 * e * exp(1500.0_R8/tbot)
             atm2lnd_vars%forc_lwrad_not_downscaled_grc(g) = ea * SHR_CONST_STEBOL * tbot**4
         end if 
@@ -1090,13 +1090,13 @@ contains
           else
              e = esati(tdc(top_as%tbot(topo)))
           end if
-          qsat           = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
+          qsat           = mm_epsilon*e / (top_as%pbot(topo) - (1._r8 - mm_epsilon)*e)
           top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
           ! partial pressure of oxygen (Pa)
           top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
           ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
-          vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
-          top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
+          vp = top_as%qbot(topo) * top_as%pbot(topo)  / (mm_epsilon + (1._r8 - mm_epsilon) * top_as%qbot(topo))
+          top_as%rhobot(topo) = (top_as%pbot(topo) - (1._r8 - mm_epsilon) * vp) / (rair * top_as%tbot(topo))
           top_af%rain(topo)    = forc_rainc + forc_rainl            ! sum of convective and large-scale rain
           top_af%snow(topo)    = forc_snowc + forc_snowl            ! sum of convective and large-scale snow
           top_af%solad(topo,2) = atm2lnd_vars%forc_solad_grc(g,2)   ! forc_sollxy  Atm flux  W/m^2
@@ -1202,13 +1202,13 @@ contains
            else
             e = esati(tdc(top_as%tbot(topo)))
            end if
-           qsat = 0.622_r8*e / (top_as%pbot(topo) - 0.378_r8*e)
+           qsat = mm_epsilon*e / (top_as%pbot(topo) - (1._r8 - mm_epsilon)*e)
            top_as%rhbot(topo) = 100.0_r8*(top_as%qbot(topo) / qsat)
            ! partial pressure of oxygen (Pa)
            top_as%po2bot(topo) = o2_molar_const * top_as%pbot(topo)
            ! air density (kg/m**3) - uses a temporary calculation of water vapor pressure (Pa)
-           vp = top_as%qbot(topo) * top_as%pbot(topo)  / (0.622_r8 + 0.378_r8 * top_as%qbot(topo))
-           top_as%rhobot(topo) = (top_as%pbot(topo) - 0.378_r8 * vp) / (rair * top_as%tbot(topo))
+           vp = top_as%qbot(topo) * top_as%pbot(topo)  / (mm_epsilon + (1._r8 - mm_epsilon) * top_as%qbot(topo))
+           top_as%rhobot(topo) = (top_as%pbot(topo) - (1._r8 - mm_epsilon) * vp) / (rair * top_as%tbot(topo))
          
            ! second, all the flux forcings
            top_af%rain(topo)    = forc_rainc + forc_rainl       ! sum of convective and large-scale rain
@@ -1277,9 +1277,9 @@ contains
        atm2lnd_vars%forc_hgt_u_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of wind [m]
        atm2lnd_vars%forc_hgt_t_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of temperature [m]
        atm2lnd_vars%forc_hgt_q_grc(g) = atm2lnd_vars%forc_hgt_grc(g)    !observational height of humidity [m]
-       atm2lnd_vars%forc_vp_grc(g)    = forc_q * forc_pbot  / (0.622_r8 + 0.378_r8 * forc_q)
+       atm2lnd_vars%forc_vp_grc(g)    = forc_q * forc_pbot  / (mm_epsilon + (1._r8 - mm_epsilon) * forc_q)
        atm2lnd_vars%forc_rho_not_downscaled_grc(g) = &
-            (forc_pbot - 0.378_r8 * atm2lnd_vars%forc_vp_grc(g)) / (rair * forc_t)
+            (forc_pbot - (1._r8 - mm_epsilon) * atm2lnd_vars%forc_vp_grc(g)) / (rair * forc_t)
        atm2lnd_vars%forc_po2_grc(g)   = o2_molar_const * forc_pbot
        atm2lnd_vars%forc_wind_grc(g)  = sqrt(atm2lnd_vars%forc_u_grc(g)**2 + atm2lnd_vars%forc_v_grc(g)**2)
        atm2lnd_vars%forc_solar_grc(g) = atm2lnd_vars%forc_solad_grc(g,1) + atm2lnd_vars%forc_solai_grc(g,1) + &
@@ -1292,7 +1292,7 @@ contains
        else
           e = esati(tdc(forc_t))
        end if
-       qsat           = 0.622_r8*e / (forc_pbot - 0.378_r8*e)
+       qsat           = mm_epsilon*e / (forc_pbot - (1._r8 - mm_epsilon)*e)
        atm2lnd_vars%forc_rh_grc(g) = 100.0_r8*(forc_q / qsat)
        ! Make sure relative humidity is properly bounded
        ! atm2lnd_vars%forc_rh_grc(g) = min( 100.0_r8, atm2lnd_vars%forc_rh_grc(g) )

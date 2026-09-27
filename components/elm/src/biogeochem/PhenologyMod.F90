@@ -398,7 +398,7 @@ contains
 
     ! set the global parameter for livewood turnover rate
     ! define as an annual fraction (0.7), and convert to fraction per second
-    lwtop=PhenolParamsInst%lwtop/31536000.0_r8 !annual fraction converted to per second
+    lwtop=PhenolParamsInst%lwtop/(365._r8*secspday) !annual fraction converted to per second
 
     ! -----------------------------------------
     ! Call any subroutine specific initialization routines
@@ -1210,7 +1210,7 @@ contains
                end if
                ! Require cumulative precipitation threshold for onset
                ! Dahlin et al., Biogeosciences 2015.
-               if (prec10(t) * 86400._r8 * 10._r8 < PhenolParamsInst%cumprec_onset .and. nu_com .eq. 'RD') then
+               if (prec10(t) * secspday * 10._r8 < PhenolParamsInst%cumprec_onset .and. nu_com .eq. 'RD') then
                   onset_flag(p) = 0._r8
                end if
 
@@ -2162,7 +2162,7 @@ contains
             if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
                if (t_ref2m_min_inst(p) /= spval .and. t_ref2m_max_inst(p) /= spval) then
                   onset_gdd(p) = onset_gdd(p) + (max( ((t_ref2m_min_inst(p) + t_ref2m_max_inst(p))/2.0_r8) &
-                                              - (baset(ivt(p)) + 273.15_r8), 0._r8))*fracday
+                                              - (baset(ivt(p)) + SHR_CONST_TKFRZ), 0._r8))*fracday
                end if
             end if
 

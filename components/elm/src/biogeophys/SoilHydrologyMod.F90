@@ -302,7 +302,7 @@ contains
      use elm_varpar       , only : nlayer, nlayert
      use elm_varpar       , only : nlevsoi, nlevgrnd
      use elm_varcon       , only : denh2o, denice, roverg, wimp, mu, tfrz
-     use elm_varcon       , only : pondmx, watmin
+     use elm_varcon       , only : pondmx, watmin, secspday
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_sunwall, icol_shadewall, icol_road_perv
      use landunit_varcon  , only : istsoil, istcrop, ilowcenpoly, iflatcenpoly, ihighcenpoly
      use elm_time_manager , only : get_step_size, get_nstep
@@ -589,7 +589,7 @@ contains
                    else
                       k_wet = 24.925_r8 * (710.3_r8*meangradz(c)**2_r8 - 28.736_r8*meangradz(c) + 12.74_r8)
                    endif
-                   qflx_h2osfc_surf(c) = k_wet * (swc - vdep) / 86400_r8 ! coefficients estimated for mm/day; convert from mm/day -> mm/s
+                   qflx_h2osfc_surf(c) = k_wet * (swc - vdep) / secspday ! coefficients estimated for mm/day; convert from mm/day -> mm/s
                    qflx_h2osfc_surf(c) = min(qflx_h2osfc_surf(c), (swc - vdep)*1000_r8/dtime)
                 else
                    qflx_h2osfc_surf(c) = 0._r8

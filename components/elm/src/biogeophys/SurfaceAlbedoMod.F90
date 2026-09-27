@@ -1726,6 +1726,7 @@ contains
 ! !USES:
     use shr_orb_mod
     use elm_varctl  , only: iulog
+    use shr_const_mod, only: SHR_CONST_PI
 
 !
 ! !ARGUMENTS:
@@ -1747,7 +1748,7 @@ contains
 ! !OTHER LOCAL VARIABLES:
 !
     real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
-    real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
+    real(r8), parameter :: pi = SHR_CONST_PI          ! pi
     integer  :: fp,fc,g,c,p                               ! indices
     integer  :: ib                                        ! band index
     integer  :: ic                                        ! 0=unit incoming direct; 1=unit incoming diffuse
