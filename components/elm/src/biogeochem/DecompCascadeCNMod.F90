@@ -998,7 +998,7 @@ contains
            else if (year < 40 .and. spinup_state == 1) then
                cnstate_vars%scalaravg_col(c,:) = cnstate_vars%scalaravg_col(c,:) + &
                      (t_scalar(c,4) * w_scalar(c,4) * o_scalar(c,4) * depth_scalar(c,4) ) &
-                     * dt / (86400._r8 * 365._r8 * 20._r8)
+                     * dt / (secspday * 365._r8 * 20._r8)
            else
                if (cnstate_vars%scalaravg_col(c,4) < 1.0e-3) then
                     cnstate_vars%scalaravg_col(c,:) = 1.0_r8
