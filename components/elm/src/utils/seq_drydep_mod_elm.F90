@@ -19,8 +19,7 @@ module seq_drydep_mod_elm
   use shr_sys_mod,   only : shr_sys_abort
   use shr_log_mod,   only : s_loglev  => shr_log_Level
   use shr_kind_mod,  only : r8 => shr_kind_r8, CS => SHR_KIND_CS, CX => SHR_KIND_CX
-  use shr_const_mod, only : SHR_CONST_G, SHR_CONST_RDAIR, &
-       SHR_CONST_CPDAIR, SHR_CONST_MWWV
+  use elm_varcon, only : grav, rair, cpair, mwwv
 
   implicit none
   save
@@ -492,7 +491,7 @@ module seq_drydep_mod_elm
        ,1.e+03_r8,      0._r8,0._r8     ,    0._r8,0._r8     ,    0._r8  &
        /)
 
-  real(r8), private, parameter :: wh2o = SHR_CONST_MWWV
+  real(r8), private, parameter :: wh2o = mwwv
   real(r8), private, parameter :: mol_wgts(n_species_table) = &
        (/ 47.9981995_r8, 34.0135994_r8, 17.0067997_r8, 33.0061989_r8, 28.0104008_r8, &
        16.0405998_r8, 47.0320015_r8, 48.0393982_r8, 30.0251999_r8, 46.0246010_r8, &

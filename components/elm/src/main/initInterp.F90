@@ -6,7 +6,7 @@ module initInterpMod
   !----------------------------------------------------------------------- 
 
   use shr_kind_mod   , only: r8 => shr_kind_r8, r4 => shr_kind_r4
-  use shr_const_mod  , only: SHR_CONST_PI, SHR_CONST_REARTH
+  use elm_varcon     , only: rpi, rearth
   use shr_sys_mod    , only: shr_sys_flush
   use shr_infnan_mod , only: shr_infnan_isnan
   use shr_log_mod    , only : errMsg => shr_log_errMsg
@@ -577,7 +577,7 @@ contains
     ! local variables
     integer              :: n
     integer, pointer     :: itemp(:) 
-    real(r8), parameter  :: deg2rad  = SHR_CONST_PI/180._r8
+    real(r8), parameter  :: deg2rad  = rpi/180._r8
     !-----------------------------------------------------------------------
 
     subgrid%name = dimname
@@ -659,7 +659,7 @@ contains
     ! local variables
     integer              :: n
     integer , pointer    :: itemp(:) 
-    real(r8), parameter  :: deg2rad  = SHR_CONST_PI/180._r8
+    real(r8), parameter  :: deg2rad  = rpi/180._r8
     !-----------------------------------------------------------------------
 
     subgrid%name = dimname

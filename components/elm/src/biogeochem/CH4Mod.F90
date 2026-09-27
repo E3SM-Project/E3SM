@@ -12,7 +12,7 @@ module CH4Mod
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_infnan_mod     , only : nan => shr_infnan_nan
   use shr_log_mod        , only : errMsg => shr_log_errMsg
-  use shr_const_mod      , only : SHR_CONST_RGAS, SHR_CONST_PSTD
+  use elm_varcon         , only : rgas, oneatm
   use elm_varpar         , only : nlevsoi, ngases, nlevsno, nlevdecomp
   use elm_varcon         , only : denh2o, denice, tfrz, grav, spval, rgas, grlnd
   use elm_varcon         , only : catomw, s_con, d_con_w, d_con_g, c_h_inv, kh_theta, kh_tbase
@@ -47,7 +47,7 @@ module CH4Mod
 
   ! Non-tunable constants
   real(r8) :: rgasm  ! J/mol.K; rgas / 1000; will be set below
-  real(r8), parameter :: rgasLatm = SHR_CONST_RGAS/SHR_CONST_PSTD ! L.atm/mol.K
+  real(r8), parameter :: rgasLatm = rgas/oneatm ! L.atm/mol.K
   !$acc declare copyin(rgasLatm)
   !$acc declare copyin(rgasm)
 

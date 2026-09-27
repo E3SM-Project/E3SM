@@ -6,7 +6,7 @@ module SedYieldMod
   ! Tan, Z., et al. (2022), Representing global soil erosion and sediment 
   ! flux in Earth System Models, J. Adv. Model. Earth Sy., 14, e2021MS002756. 
   !
-  use shr_const_mod     , only : T0 => SHR_CONST_TKFRZ
+  use elm_varcon        , only : tfrz
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use abortutils        , only : endrun
@@ -199,7 +199,7 @@ contains
             
             Es_P = 0._r8    ! detachment by throughfall + leap drip
             Es_Pcrp = 0._r8 ! cropland detachment by throughfall + leap drip
-            if (forc_t(t)>T0 .and. forc_rain(t)>0._r8) then
+            if (forc_t(t)>tfrz .and. forc_rain(t)>0._r8) then
                fungrvl = 1._r8 - 0.01_r8 * fgrvl(c,1)
                do p = col_pp%pfti(c), col_pp%pftf(c)
                   if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then

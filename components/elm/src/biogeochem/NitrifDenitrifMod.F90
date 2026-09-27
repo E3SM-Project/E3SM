@@ -4,9 +4,9 @@ module NitrifDenitrifMod
   ! Calculate nitrification and denitrification rates
   !
   use shr_kind_mod        , only : r8 => shr_kind_r8
-  use shr_const_mod       , only : SHR_CONST_TKFRZ
+  use elm_varcon          , only : tfrz
   use shr_log_mod         , only : errMsg => shr_log_errMsg
-  use shr_const_mod       , only : SHR_CONST_TKFRZ
+  use elm_varcon          , only : tfrz
   use elm_varpar          , only : nlevgrnd,nlevdecomp
   use elm_varcon          , only : rpi, denh2o, dzsoi, zisoi, grav
   use elm_varcon          , only : d_con_g, d_con_w, spval, secspday
@@ -319,7 +319,7 @@ contains
             pot_f_nit_vr(c,j)  = pot_f_nit_vr(c,j) * (1._r8 - anaerobic_frac(c,j))
 
             ! limit to non-frozen soil layers
-            if ( t_soisno(c,j) <= SHR_CONST_TKFRZ .and. no_frozen_nitrif_denitrif) then
+            if ( t_soisno(c,j) <= tfrz .and. no_frozen_nitrif_denitrif) then
                pot_f_nit_vr(c,j) = 0._r8
             endif
 
@@ -351,7 +351,7 @@ contains
             f_denit_base_vr(c,j) = max(min(fmax_denit_carbonsubstrate_vr(c,j), fmax_denit_nitrate_vr(c,j)),0._r8)
 
             ! limit to non-frozen soil layers
-            if ( t_soisno(c,j) <= SHR_CONST_TKFRZ .and. no_frozen_nitrif_denitrif ) then
+            if ( t_soisno(c,j) <= tfrz .and. no_frozen_nitrif_denitrif ) then
                f_denit_base_vr(c,j) = 0._r8
             endif
 
