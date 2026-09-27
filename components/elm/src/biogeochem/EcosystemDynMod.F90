@@ -35,8 +35,8 @@ module EcosystemDynMod
   use VegetationDataType  , only : veg_ps, veg_pf
   use ELMFatesInterfaceMod  , only : hlm_fates_interface_type
   use elm_instMod  , only : alm_fates
-  ! bgc interface & pflotran
-  use elm_varctl         , only : use_elm_interface, use_elm_bgc, use_pflotran, pf_cmode, pf_hmode
+  ! bgc interface
+  use elm_varctl         , only : use_elm_interface, use_elm_bgc
   use VerticalProfileMod , only : decomp_vertprofiles
   use AllocationMod      , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl         , only : nu_com, use_pheno_flux_limiter
@@ -67,7 +67,7 @@ module EcosystemDynMod
   public :: EcosystemDynInit          ! Ecosystem dynamics initialization
   public :: EcosystemDynLeaching      ! Ecosystem dynamics: phenology, vegetation, doing N leaching
   !----------------------------------------------------------------------
-  ! bgc&th interface & pflotran:
+  ! bgc&th interface:
   ! EcosystemDynNoLeaching is divided into 2 subroutines:
   public :: EcosystemDynNoLeaching1   ! Ecosystem dynamics: phenology, vegetation, before doing soil_bgc
   public :: EcosystemDynNoLeaching2   ! Ecosystem dynamics: phenology, vegetation, after doing soil_bgc & before doing N leaching
@@ -194,12 +194,9 @@ contains
     end if
 
     !-----------------------------------------------------------------------
-    ! pflotran: when both 'pf-bgc' and 'pf-h' on, no need to call CLM-CN's N leaching module
-    if (.not. (pf_cmode .and. pf_hmode)) then
-     call NitrogenLeaching(num_soilc, filter_soilc, dt)
+    call NitrogenLeaching(num_soilc, filter_soilc, dt)
 
-     call PhosphorusLeaching(num_soilc, filter_soilc, dt)
-    end if !(.not. (pf_cmode .and. pf_hmode))
+    call PhosphorusLeaching(num_soilc, filter_soilc, dt)
        !-----------------------------------------------------------------------
 
     call t_startf('CNUpdate3')
@@ -463,7 +460,6 @@ contains
     
     !-------------------------------------------------------------------------------------------------
     ! Allocation1 is always called (w/ or w/o use_elm_interface)
-    ! pflotran: call 'Allocation1' to obtain potential N demand for support initial GPP
     if(.not.use_fates)then
 
        call t_startf('CNAllocation - phase-1')
@@ -571,9 +567,7 @@ contains
 
     call t_startf('SoilLittDecompAlloc2')
     !----------------------------------------------------------------
-    ! SoilLittDecompAlloc2 is called by both elm-bgc & pflotran
-    ! pflotran: call 'SoilLittDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
-    ! pflotran & elm-bgc : 'Allocation3_AG' and vertically integrate net and gross mineralization fluxes
+    ! SoilLittDecompAlloc2: 'Allocation3_AG' and vertically integrate net and gross mineralization fluxes
     call SoilLittDecompAlloc2 (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,           &
              photosyns_vars, canopystate_vars, soilstate_vars,         &
              cnstate_vars, ch4_vars,                  &

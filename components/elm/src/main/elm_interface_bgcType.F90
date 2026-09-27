@@ -16,7 +16,7 @@ module elm_interface_bgcType
   type, public :: elm_interface_bgc_datatype
 
      ! elm_varpar
-     integer                    :: nlevdecomp_full                          ! num of CLM soil layers that are mapped to/from PFLOTRAN
+     integer                    :: nlevdecomp_full                          ! num of CLM soil layers in the interface
      integer                    :: ndecomp_pools                            ! num of decomposition pools
 
      ! decomp_cascade_con
@@ -149,7 +149,7 @@ module elm_interface_bgcType
      real(r8),  pointer :: fpg_p_col                                (:)     ! col fraction of potential gpp (no units)
 
      !------------------------------------------------------------------------------------------
-     ! pflotran variables: BEGIN
+     ! additional interface variables: BEGIN
      !------------------------------------------------------------------------------------------
      ! bgc rates/fluxes (previous time-step) to decomposition pools
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
@@ -194,7 +194,7 @@ module elm_interface_bgcType
      real(r8), pointer :: soil_begnb_min_col                        (:)     ! soil mineral nitrogen mass, beginning of time step (gN/m**2) = no3 + nh4 + nh4sorb
 
      !------------------------------------------------------------------------------------------
-     ! pflotran variables: END
+     ! additional interface variables: END
      !------------------------------------------------------------------------------------------
 
 
@@ -386,7 +386,7 @@ contains
     allocate(this%fpg_p_col                 (begc:endc))                    ; this%fpg_p_col                    (:)   = nan
 
     !------------------------------------------------------------------------------------------
-    ! pflotran variables: BEGIN
+    ! additional interface variables: BEGIN
     !------------------------------------------------------------------------------------------
     ! bgc rates/fluxes to decomposition pools
     allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
@@ -434,7 +434,7 @@ contains
     allocate(this%soil_begnb_min_col            (begc:endc))                ; this%soil_begnb_min_col            (:)   = ival
 
     !------------------------------------------------------------------------------------------
-    ! pflotran variables: END
+    ! additional interface variables: END
     !------------------------------------------------------------------------------------------
 
   end subroutine InitAllocate

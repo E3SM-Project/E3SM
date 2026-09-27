@@ -13,8 +13,6 @@ module ExternalModelConstants
   integer, public, parameter :: EM_ID_FATES                                      = 101
   integer, parameter, public :: EM_FATES_SUNFRAC_STAGE                           = 102
 
-  integer, public, parameter :: EM_ID_PFLOTRAN                                   = 200
-
   integer, public, parameter :: EM_ID_VSFM                                       = 300
   integer, parameter, public :: EM_VSFM_SOIL_HYDRO_STAGE                         = 301
 

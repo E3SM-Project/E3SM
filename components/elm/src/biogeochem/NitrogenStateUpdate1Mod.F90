@@ -17,8 +17,6 @@ module NitrogenStateUpdate1Mod
   use ColumnDataType         , only : col_ns, col_nf
   use VegetationType         , only : veg_pp
   use VegetationDataType     , only : veg_ns, veg_nf
-  ! bgc interface & pflotran:
-  use elm_varctl             , only : use_pflotran, pf_cmode
   ! forest fertilization experiment
   use elm_time_manager       , only : get_curr_date
   use CNStateType            , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
@@ -140,120 +138,118 @@ contains
 
       ! column-level fluxes
 
-      if (.not.(use_pflotran .and. pf_cmode)) then
 
-         do j = 1, nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
 
-               ! N deposition and fixation (put all into NH4 pool)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
+            ! N deposition and fixation (put all into NH4 pool)
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%ndep_to_sminn(c)*dt * ndep_prof(c,j)
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%nfix_to_sminn(c)*dt * nfixation_prof(c,j)
 
-               ! plant to litter fluxes
-               ! phenology and dynamic landcover fluxes
-               if(.not.use_fates) then
-                  col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
-                       col_nf%phenology_n_to_litr_met_n(c,j) * dt
+            ! plant to litter fluxes
+            ! phenology and dynamic landcover fluxes
+            if(.not.use_fates) then
+               col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
+                    col_nf%phenology_n_to_litr_met_n(c,j) * dt
 
-                  col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
-                       col_nf%phenology_n_to_litr_cel_n(c,j) * dt
+               col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
+                    col_nf%phenology_n_to_litr_cel_n(c,j) * dt
 
-                  col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
-                       col_nf%phenology_n_to_litr_lig_n(c,j) * dt
-               end if
-            end do
-         end do
-
-         ! repeating N dep and fixation for crops
-         if ( crop_prog )then
-            do j = 1, nlevdecomp
-
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  ! N deposition and fixation (put all into NH4 pool)
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
-                  col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
-               end do
-            end do
-         end if
-
-         ! decomposition fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-
-                  col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                       col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
-                       col_nf%decomp_cascade_ntransfer_vr(c,j,k) * dt
-               end do
-            end do
-         end do
-
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1, nlevdecomp
-                  ! column loop
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-
-                     col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) = &
-                          col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) + &
-                          (col_nf%decomp_cascade_ntransfer_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
-                  end do
-               end do
-            else  ! terminal transitions
-               do j = 1, nlevdecomp
-                  ! column loop
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                          col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
-                          col_nf%decomp_cascade_sminn_flux_vr(c,j,k) * dt
-                  end do
-               end do
+               col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
+                    col_nf%phenology_n_to_litr_lig_n(c,j) * dt
             end if
          end do
+      end do
 
+      ! repeating N dep and fixation for crops
+      if ( crop_prog )then
+         do j = 1, nlevdecomp
+
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               ! N deposition and fixation (put all into NH4 pool)
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%fert_to_sminn(c)*dt * ndep_prof(c,j)
+               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%soyfixn_to_sminn(c)*dt * nfixation_prof(c,j)
+            end do
+         end do
+      end if
+
+      ! decomposition fluxes
+      do k = 1, ndecomp_cascade_transitions
          do j = 1, nlevdecomp
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
 
-               ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
-
-               ! immobilization fluxes
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
-
-               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%actual_immob_no3_vr(c,j)*dt
-
-               ! plant uptake fluxes
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%smin_nh4_to_plant_vr(c,j)*dt
-
-               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%smin_no3_to_plant_vr(c,j)*dt
-
-               ! Account for nitrification fluxes
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%f_nit_vr(c,j) * dt
-
-               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_nf%f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
-
-               ! Account for denitrification fluxes
-               col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
-
-               ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
-               col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
-
-               ! update diagnostic total
-               col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
-
-            end do ! end of column loop
+               col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                    col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
+                    col_nf%decomp_cascade_ntransfer_vr(c,j,k) * dt
+            end do
          end do
+      end do
 
-      endif  
+      do k = 1, ndecomp_cascade_transitions
+         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
+            do j = 1, nlevdecomp
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+
+                  col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) = &
+                       col_nf%decomp_npools_sourcesink(c,j,cascade_receiver_pool(k)) + &
+                       (col_nf%decomp_cascade_ntransfer_vr(c,j,k) + col_nf%decomp_cascade_sminn_flux_vr(c,j,k)) * dt
+               end do
+            end do
+         else  ! terminal transitions
+            do j = 1, nlevdecomp
+               ! column loop
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                       col_nf%decomp_npools_sourcesink(c,j,cascade_donor_pool(k)) - &
+                       col_nf%decomp_cascade_sminn_flux_vr(c,j,k) * dt
+               end do
+            end do
+         end if
+      end do
+
+      do j = 1, nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+
+            ! mineralization fluxes (divert a fraction of this stream to nitrification flux, add the rest to NH4 pool)
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%gross_nmin_vr(c,j)*dt
+
+            ! immobilization fluxes
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%actual_immob_nh4_vr(c,j)*dt
+
+            col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%actual_immob_no3_vr(c,j)*dt
+
+            ! plant uptake fluxes
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%smin_nh4_to_plant_vr(c,j)*dt
+
+            col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%smin_no3_to_plant_vr(c,j)*dt
+
+            ! Account for nitrification fluxes
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) - col_nf%f_nit_vr(c,j) * dt
+
+            col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_nf%f_nit_vr(c,j) * dt * (1._r8 - nitrif_n2o_loss_frac)
+
+            ! Account for denitrification fluxes
+            col_ns%smin_no3_vr(c,j) = col_ns%smin_no3_vr(c,j) - col_nf%f_denit_vr(c,j) * dt
+
+            ! flux that prevents N limitation (when Carbon_only is set; put all into NH4)
+            col_ns%smin_nh4_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_nf%supplement_to_sminn_vr(c,j)*dt
+
+            ! update diagnostic total
+            col_ns%sminn_vr(c,j) = col_ns%smin_nh4_vr(c,j) + col_ns%smin_no3_vr(c,j)
+
+         end do ! end of column loop
+      end do
+
 
       ! forest fertilization
       call get_curr_date(kyr, kmo, kda, mcsec)

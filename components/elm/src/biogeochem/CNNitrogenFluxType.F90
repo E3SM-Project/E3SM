@@ -13,8 +13,8 @@ module CNNitrogenFluxType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  ! bgc interface & pflotran:
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  ! bgc interface:
+  use elm_varctl             , only : use_elm_interface, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -361,10 +361,9 @@ module CNNitrogenFluxType
      real(r8), pointer :: avail_retransn_patch                      (:)     ! N flux available from retranslocation pool (gN/m2/s)
      real(r8), pointer :: plant_nalloc_patch                        (:)     ! total allocated N flux (gN/m2/s)
 
-     ! bgc interface/pflotran
+     ! bgc interface
      !------------------------------------------------------------------------
      real(r8), pointer :: plant_ndemand_col                         (:)     ! col N flux required to support initial GPP (gN/m2/s)
-     ! pflotran
      real(r8), pointer :: plant_ndemand_vr_col                      (:,:)   ! col vertically-resolved N flux required to support initial GPP (gN/m3/s)
 
      real(r8), pointer :: f_ngas_decomp_vr_col                      (:,:)   ! col vertically-resolved N emission from excess mineral N pool due to mineralization (gN/m3/s)
@@ -373,13 +372,12 @@ module CNNitrogenFluxType
      real(r8), pointer :: f_ngas_nitri_col                          (:)     ! col vertically-resolved N emission from nitrification (gN/m2/s)
      real(r8), pointer :: f_ngas_denit_vr_col                       (:,:)   ! col vertically-resolved N emission from denitrification (gN/m3/s)
      real(r8), pointer :: f_ngas_denit_col                          (:)     ! col vertically-resolved N emission from denitrification (gN/m2/s)
-    ! (from PF bgc disgassing-solving)
      real(r8), pointer :: f_n2o_soil_vr_col                         (:,:)   ! col flux of N2o from soil-N processes [gN/m^3/s]
      real(r8), pointer :: f_n2o_soil_col                            (:)     ! col flux of N2o from soil-N processes [gN/m^2/s]
      real(r8), pointer :: f_n2_soil_vr_col                          (:,:)   ! col flux of N2 from soil-N processes [gN/m^3/s]
      real(r8), pointer :: f_n2_soil_col                             (:)     ! col flux of N2 from soil-N processes [gN/m^2/s]
 
-      ! for PF-bgc mass-balance error checking
+      ! for mass-balance error checking
      real(r8), pointer :: externaln_to_decomp_npools_col            (:,:,:) ! col net N fluxes associated with litter/som-adding/removal to decomp pools (gN/m3/s)
                                                                             ! (sum of all external N additions and removals, excluding decomposition/hr).
      real(r8), pointer :: externaln_to_decomp_delta_col             (:)     ! col summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gN/m2)
@@ -452,7 +450,6 @@ module CNNitrogenFluxType
      procedure , private :: InitHistory
      procedure , private :: InitCold
 
-     procedure , private :: NSummary_interface
 
   end type nitrogenflux_type
   !------------------------------------------------------------------------
@@ -820,7 +817,7 @@ contains
     allocate(this%avail_retransn_patch        (begp:endp)) ;    this%avail_retransn_patch        (:) = nan
     allocate(this%plant_nalloc_patch          (begp:endp)) ;    this%plant_nalloc_patch          (:) = nan
 
-    ! bgc interface & pflotran
+    ! bgc interface
     !------------------------------------------------------------------------
     allocate(this%plant_ndemand_col           (begc:endc))                   ; this%plant_ndemand_col                (:)    = nan
     allocate(this%plant_ndemand_vr_col        (begc:endc,1:nlevdecomp_full)) ; this%plant_ndemand_vr_col             (:,:)  = nan
@@ -1002,8 +999,6 @@ contains
     use elm_varpar, only : crop_prog
     use restUtilMod
     use ncdio_pio
-    ! pflotran
-!    use elm_varctl, only : use_pflotran, pf_cmode, pf_hmode
     !
     ! !ARGUMENTS:
     class (nitrogenflux_type) :: this
@@ -1017,13 +1012,11 @@ contains
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
 
-    ! pflotran
     integer :: k
     character(len=128) :: varname   ! temporary
     !------------------------------------------------------------------------
 
 
-    ! pflotran
     !------------------------------------------------------------------------
     !------------------------------------------------------------------------
 
@@ -1097,235 +1090,6 @@ contains
 
   end subroutine Summary
 
-!-------------------------------------------------------------------------------------------------
-! !INTERFACE:
-subroutine NSummary_interface(this,bounds,num_soilc, filter_soilc)
-!
-! !DESCRIPTION:
-! bgc interface & pflotran:
-! On the radiation time step, perform column-level nitrogen
-! summary calculations, which mainly from PFLOTRAN bgc coupling
-!
-! !USES:
-   use elm_varpar  , only: nlevdecomp_full, ndecomp_pools
-   use elm_varpar  , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-   use elm_time_manager    , only : get_step_size
-
-!   use elm_varctl    , only: pf_hmode
-!
-! !ARGUMENTS:
-   implicit none
-   class (nitrogenflux_type)       :: this
-   type(bounds_type) ,  intent(in) :: bounds
-   integer,             intent(in) :: num_soilc       ! number of soil columns in filter
-   integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
-!
-! !CALLED FROM:
-! subroutine NSummary (if pflotran coupled) vertically from 1 to 'nlevdecomp_full' (not 'nlevdecomp')
-!
-!
-! !LOCAL VARIABLES:
-   integer :: c,j, l      ! indices
-   integer :: fc          ! column filter indices
-   real(r8):: dtime             ! radiation time step (seconds)
-
-   ! set time steps
-    dtime = real( get_step_size(), r8 )
-      ! nitrification-denitrification rates (not yet passing out from PF, but will)
-      !------------------------------------------------
-      ! NOT used currently
-      do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%f_nit_col(c)   = 0._r8
-         this%f_denit_col(c) = 0._r8
-         do j = 1, nlevdecomp_full
-            this%f_nit_vr_col(c,j) = 0._r8
-            this%f_nit_col(c)  = this%f_nit_col(c) + &
-                                 this%f_nit_vr_col(c,j)*dzsoi_decomp(j)
-
-            this%f_denit_vr_col(c,j) = 0._r8
-            this%f_denit_col(c) = this%f_denit_col(c) + &
-                                 this%f_denit_vr_col(c,j)*dzsoi_decomp(j)
-
-         end do
-         this%denit_col(c)      = this%f_denit_col(c)
-
-       end do
-      !end------------------------------------------------
-
-       ! the following are from pflotran bgc, and vertically down to 'nlevdecomp_full'
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%f_n2_soil_col(c)    = 0._r8
-          this%f_n2o_soil_col(c)   = 0._r8
-          this%f_ngas_decomp_col(c)= 0._r8
-          this%f_ngas_nitri_col(c) = 0._r8
-          this%f_ngas_denit_col(c) = 0._r8
-          this%smin_no3_leached_col(c) = 0._r8
-          this%smin_no3_runoff_col(c)  = 0._r8
-          this%sminn_leached_col(c)    = 0._r8
-
-          do j = 1, nlevdecomp_full
-
-            ! all N2/N2O gas exchange between atm. and soil (i.e., dissolving - degassing)
-            this%f_n2_soil_col(c)  = this%f_n2_soil_col(c) + &
-                                  this%f_n2_soil_vr_col(c,j)*dzsoi_decomp(j)
-            this%f_n2o_soil_col(c) = this%f_n2o_soil_col(c) + &
-                                  this%f_n2o_soil_vr_col(c,j)*dzsoi_decomp(j)
-
-            ! all N2/N2O production from soil bgc N processes (mineralization-nitrification-denitrification)
-            ! note: those are directly dissolved into aq. gas species, which would be exchanging with atm.
-            this%f_ngas_decomp_col(c) = this%f_ngas_decomp_col(c) + &
-                                     this%f_ngas_decomp_vr_col(c,j)*dzsoi_decomp(j)
-            this%f_ngas_nitri_col(c)  = this%f_ngas_nitri_col(c) + &
-                                     this%f_ngas_nitri_vr_col(c,j)*dzsoi_decomp(j)
-            this%f_ngas_denit_col(c)  = this%f_ngas_denit_col(c) + &
-                                     this%f_ngas_denit_vr_col(c,j)*dzsoi_decomp(j)
-
-            ! leaching/runoff fluxes summed vertically
-            ! (1) if not hydroloy-coupled, advection from CLM-CN, plus diffusion from PF
-            ! (2) if hydrology-coupled, all from PF (i.e. 'no3_net_transport_vr_col');
-            this%smin_no3_leached_col(c) = this%smin_no3_leached_col(c) + &
-                                        this%no3_net_transport_vr_col(c,j) * dzsoi_decomp(j)
-
-            if(.not. pf_hmode) then ! this is from CLM-CN's leaching subroutine
-                this%smin_no3_leached_col(c) = this%smin_no3_leached_col(c) + &
-                                        this%smin_no3_leached_vr_col(c,j) * dzsoi_decomp(j)
-                this%smin_no3_runoff_col(c)  = this%smin_no3_runoff_col(c) + &
-                                        this%smin_no3_runoff_vr_col(c,j) * dzsoi_decomp(j)
-            endif
-
-            ! assign all no3-N leaching/runof,including diffusion from PF, to all mineral-N
-            this%sminn_leached_vr_col(c,j) = this%smin_no3_leached_vr_col(c,j) + &
-                                             this%smin_no3_runoff_vr_col(c,j) +  &
-                                        this%nh4_net_transport_vr_col(c,j) * dzsoi_decomp(j)
-
-            this%sminn_leached_col(c) = this%sminn_leached_col(c) + &
-                                        this%sminn_leached_vr_col(c,j)*dzsoi_decomp(j)
-
-          end do !j = 1, nlevdecomp_full
-
-          ! for balance-checking
-          this%denit_col(c)     = this%f_ngas_denit_col(c)
-          this%f_n2o_nit_col(c) = this%f_ngas_decomp_col(c) + this%f_ngas_nitri_col(c)
-
-      end do !fc = 1,num_soilc
-
-
-       ! summarize at column-level vertically-resolved littering/removal for PFLOTRAN bgc input needs
-       ! first it needs to save the total column-level N rate btw plant pool and decomposible pools at previous time step
-       ! for adjusting difference when doing balance check
-
-       do fc = 1,num_soilc
-         c = filter_soilc(fc)
-         this%externaln_to_decomp_delta_col(c) = 0._r8
-         do j = 1, nlevdecomp_full
-            do l = 1, ndecomp_pools
-               this%externaln_to_decomp_delta_col(c) =    &
-                  this%externaln_to_decomp_delta_col(c) + &
-                    this%externaln_to_decomp_npools_col(c,j,l)*dzsoi_decomp(j)
-            end do
-
-         end do
-       end do
-
-       ! do the initialization for the following variable here.
-       ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
-       do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%externaln_to_decomp_npools_col(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
-       end do
-
-       ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools
-       do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            do j = 1, nlevdecomp_full
-                do l = 1, ndecomp_pools
-                ! for litter C pools
-                if (l==i_met_lit) then
-                   this%externaln_to_decomp_npools_col(c,j,l) =              &
-                       this%externaln_to_decomp_npools_col(c,j,l)            &
-                        + this%phenology_n_to_litr_met_n_col(c,j)            &
-                        + this%dwt_frootn_to_litr_met_n_col(c,j)             &
-                        + this%gap_mortality_n_to_litr_met_n_col(c,j)        &
-                        + this%harvest_n_to_litr_met_n_col(c,j)              &
-                        + this%m_n_to_litr_met_fire_col(c,j)                 
-
-                elseif (l==i_cel_lit) then
-                   this%externaln_to_decomp_npools_col(c,j,l) =              &
-                       this%externaln_to_decomp_npools_col(c,j,l)            &
-                        + this%phenology_n_to_litr_cel_n_col(c,j)            &
-                        + this%dwt_frootn_to_litr_cel_n_col(c,j)             &
-                        + this%gap_mortality_n_to_litr_cel_n_col(c,j)        &
-                        + this%harvest_n_to_litr_cel_n_col(c,j)              &
-                        + this%m_n_to_litr_cel_fire_col(c,j)                  
-
-                elseif (l==i_lig_lit) then
-                   this%externaln_to_decomp_npools_col(c,j,l) =              &
-                       this%externaln_to_decomp_npools_col(c,j,l)            &
-                        + this%phenology_n_to_litr_lig_n_col(c,j)            &
-                        + this%dwt_frootn_to_litr_lig_n_col(c,j)             &
-                        + this%gap_mortality_n_to_litr_lig_n_col(c,j)        &
-                        + this%harvest_n_to_litr_lig_n_col(c,j)              &
-                        + this%m_n_to_litr_lig_fire_col(c,j)                 
-
-                ! for cwd
-                elseif (l==i_cwd) then
-                   this%externaln_to_decomp_npools_col(c,j,l) =              &
-                       this%externaln_to_decomp_npools_col(c,j,l)            &
-                        + this%dwt_livecrootn_to_cwdn_col(c,j)               &
-                        + this%dwt_deadcrootn_to_cwdn_col(c,j)               &
-                        + this%gap_mortality_n_to_cwdn_col(c,j)              &
-                        + this%harvest_n_to_cwdn_col(c,j)                    &
-                        + this%fire_mortality_n_to_cwdn_col(c,j)
-
-                end if
-
-             ! the following is the net changes of plant N to decompible N poools between time-step
-             ! in pflotran, decomposible N pools increments ARE from previous time-step (saved above);
-             ! while, in CLM-CN all plant N pools are updated with current N fluxes among plant and ground/soil.
-             ! therefore, when do balance check it is needed to adjust the time-lag of changes.
-                this%externaln_to_decomp_delta_col(c) =   &
-                            this%externaln_to_decomp_delta_col(c) - &
-                            this%externaln_to_decomp_npools_col(c,j,l)*dzsoi_decomp(j)
-
-                if (abs(this%externaln_to_decomp_npools_col(c,j,l))<=1.e-21_r8) then
-                    this%externaln_to_decomp_npools_col(c,j,l) = 0._r8
-                end if
-
-             end do !l = 1, ndecomp_pools
-          end do !j = 1, nlevdecomp_full
-       end do !fc = 1,num_soilc
-
-
-       ! if pflotran hydrology NOT coupled, need to do:
-       ! saving for (next time-step) possible including of RT mass-transfer in PFLOTRAN bgc coupling.
-       ! (NOT USED anymore - 04/26/2017)
-       if (.not. pf_hmode) then
-          do j = 1, nlevdecomp_full
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%no3_net_transport_vr_col(c,j) = this%smin_no3_runoff_vr_col(c,j) + &
-                                               this%smin_no3_leached_vr_col(c,j)
-             end do
-          end do
-       else
-          do j = 1, nlevdecomp_full
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%no3_net_transport_vr_col(c,j) = 0._r8
-             end do
-          end do
-       end if
-
-       ! change the sign so that it is the increments from the previous time-step (unit: g/m2/s)
-       do fc = 1, num_soilc
-          c = filter_soilc(fc)
-          this%externaln_to_decomp_delta_col(c) = -this%externaln_to_decomp_delta_col(c)
-       end do
-
-end subroutine NSummary_interface
-!-------------------------------------------------------------------------------------------------
 
 end module CNNitrogenFluxType
 

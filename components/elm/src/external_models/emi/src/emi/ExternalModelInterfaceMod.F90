@@ -41,7 +41,6 @@ module ExternalModelInterfaceMod
 
   ! Index of the various external models (EMs) in a simulation
   integer :: index_em_fates
-  integer :: index_em_pflotran
   integer :: index_em_stub
   integer :: index_em_vsfm
   integer :: index_em_ptm
@@ -66,9 +65,6 @@ contains
     !
     ! !USES:
     use elm_varctl, only : use_fates
-#ifndef FATES_VIA_EMI
-    use elm_varctl, only : use_pflotran
-#endif
     use elm_varctl, only : use_em_stub
     !
     implicit none
@@ -79,7 +75,6 @@ contains
     ! Initializes
     num_em               = 0
     index_em_fates       = 0
-    index_em_pflotran    = 0
     index_em_stub        = 0
     index_em_vsfm        = 0
 
@@ -92,15 +87,6 @@ contains
        allocate(em_fates)
     endif
 
-#ifndef FATES_VIA_EMI
-    ! Is PFLOTRAN active?
-    if (use_pflotran) then
-       num_em            = num_em + 1
-       index_em_pflotran = num_em
-    endif
-
-#endif
-
     ! Is Stub EM active?
     if (use_em_stub) then
        num_em            = num_em + 1
@@ -111,7 +97,6 @@ contains
     if ( masterproc ) then
        write(iulog,*) 'Number of External Models = ', num_em
        write(iulog,*) '  Is FATES present?    ',(index_em_fates    >0)
-       write(iulog,*) '  Is PFLOTRAN present? ',(index_em_pflotran >0)
        write(iulog,*) '  Is Stub EM present?  ',(index_em_stub     >0)
     endif
 
@@ -141,7 +126,6 @@ contains
     ! !USES:
     use ExternalModelConstants, only : EM_INITIALIZATION_STAGE
     use ExternalModelConstants, only : EM_ID_FATES
-    use ExternalModelConstants, only : EM_ID_PFLOTRAN
     use ExternalModelConstants, only : EM_ID_VSFM
     use ExternalModelConstants, only : EM_ID_PTM
     use ExternalModelConstants, only : EM_ID_STUB
@@ -211,8 +195,6 @@ contains
           call EMI_Setup_Data_List(e2l_driver_list(iem), bounds_clump)
        enddo
        !$OMP END PARALLEL DO
-
-    case (EM_ID_PFLOTRAN)
 
     case (EM_ID_VSFM)
 
@@ -437,7 +419,6 @@ contains
     !
     ! !USES:
     use ExternalModelConstants , only : EM_ID_FATES
-    use ExternalModelConstants , only : EM_ID_PFLOTRAN
     use ExternalModelConstants , only : EM_ID_VSFM
     use ExternalModelConstants , only : EM_ID_PTM
     use ExternalModelConstants , only : EM_ID_STUB
@@ -494,8 +475,6 @@ contains
     select case (em_id)
     case (EM_ID_FATES)
        index_em = index_em_fates
-    case (EM_ID_PFLOTRAN)
-       index_em = index_em_pflotran
     case (EM_ID_VSFM)
        index_em = index_em_vsfm
     case (EM_ID_PTM)
@@ -679,8 +658,6 @@ contains
     case (EM_ID_FATES)
        call em_fates%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), &
             e2l_driver_list(iem), bounds_clump)
-
-    case (EM_ID_PFLOTRAN)
 
     case (EM_ID_VSFM)
        call endrun('VSFM is on but code was not compiled with -DUSE_PETSC_LIB')

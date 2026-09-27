@@ -14,8 +14,8 @@ module NitrogenStateUpdate3Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationDataType  , only : veg_ns, veg_nf
-  ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode, use_fates
+  ! bgc interface:
+  use elm_varctl          , only : use_fates
   !
   implicit none
   save
@@ -60,24 +60,19 @@ contains
                  ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
                
             col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
-            if (use_pflotran .and. pf_cmode) then 
-               col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
-            end if
 
-            if (.not.(use_pflotran .and. pf_cmode)) then
-                ! column level nitrogen fluxes from fire
-                ! pft-level wood to column-level CWD (uncombusted wood)
-                col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) &
-                     + col_nf%fire_mortality_n_to_cwdn(c,j) * dt
+            ! column level nitrogen fluxes from fire
+            ! pft-level wood to column-level CWD (uncombusted wood)
+            col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) &
+                 + col_nf%fire_mortality_n_to_cwdn(c,j) * dt
 
-                ! pft-level wood to column-level litter (uncombusted wood)
-                col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) &
-                     + col_nf%m_n_to_litr_met_fire(c,j)* dt
-                col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) &
-                     + col_nf%m_n_to_litr_cel_fire(c,j)* dt
-                col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) &
-                     + col_nf%m_n_to_litr_lig_fire(c,j)* dt
-            end if !(.not.(use_pflotran .and. pf_cmode))
+            ! pft-level wood to column-level litter (uncombusted wood)
+            col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) &
+                 + col_nf%m_n_to_litr_met_fire(c,j)* dt
+            col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) &
+                 + col_nf%m_n_to_litr_cel_fire(c,j)* dt
+            col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) &
+                 + col_nf%m_n_to_litr_lig_fire(c,j)* dt
          end do ! end of column loop
       end do
 

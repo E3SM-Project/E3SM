@@ -30,7 +30,7 @@ module elm_interface_thType
      real(r8), pointer :: t_soisno_col                              (:,:)   ! col soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
      real(r8), pointer :: t_grnd_col                                (:)     ! col ground(-air interface averaged) temperature (Kelvin)
      real(r8), pointer :: t_h2osfc_col                              (:)     ! col surface-water temperature [Kelvin]
-     real(r8), pointer :: t_nearsurf_col                            (:)     ! col mixed air/veg. temperature near ground surface (for coupling with PFLOTRAN as BC)
+     real(r8), pointer :: t_nearsurf_col                            (:)     ! col mixed air/veg. temperature near ground surface
 
      ! canopystate_vars
      integer , pointer :: alt_indx_col                              (:)     ! col current depth of thaw
@@ -129,7 +129,7 @@ contains
     allocate(this%alt_indx_col          (begc:endc))                        ; this%alt_indx_col         (:)   = huge(1)
 
     !------------------------------------------------------------------------------------------
-    ! pflotran variables: BEGIN
+    ! additional interface variables: BEGIN
     !------------------------------------------------------------------------------------------
     ! waterflux_vars:
     allocate(this%qflx_top_soil_col     (begc:endc))                        ; this%qflx_top_soil_col     (:)   = ival

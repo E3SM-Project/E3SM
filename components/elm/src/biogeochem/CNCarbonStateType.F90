@@ -25,8 +25,8 @@ module CNCarbonStateType
   use SpeciesMod           , only : species_from_string
   use dynPatchStateUpdaterMod, only : patch_state_updater_type
 
-  ! bgc interface & pflotran
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
+  ! bgc interface
+  use elm_varctl             , only : use_elm_interface
   
   ! 
   ! !PUBLIC TYPES:
@@ -917,7 +917,6 @@ contains
     ! column level summary
 
      nlev = nlevdecomp
-     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
 
       ! vertically integrate each of the decomposing C pools

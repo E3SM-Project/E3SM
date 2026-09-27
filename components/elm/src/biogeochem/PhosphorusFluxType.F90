@@ -13,8 +13,8 @@ module PhosphorusFluxType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType              , only : veg_pp
-  ! bgc interface & pflotran:
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, pf_hmode, use_vertsoilc
+  ! bgc interface:
+  use elm_varctl             , only : use_elm_interface, use_vertsoilc
   ! 
   ! !PUBLIC TYPES:
   implicit none
@@ -305,11 +305,11 @@ module PhosphorusFluxType
      real(r8), pointer :: avail_retransp_patch                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
      real(r8), pointer :: plant_palloc_patch                        (:)     ! total allocated P flux (gP/m2/s)
 
-     ! clm_interface & pflotran
+     ! clm_interface
      !------------------------------------------------------------------------
      real(r8), pointer :: plant_pdemand_col                         (:)     ! col P flux required to support initial GPP (gN/m2/s)
      real(r8), pointer :: plant_pdemand_vr_col                      (:,:)   ! col vertically-resolved P flux required to support initial GPP (gP/m3/s)
-     ! for PF-bgc mass-balance error checking
+     ! for mass-balance error checking
      real(r8), pointer :: externalp_to_decomp_ppools_col            (:,:,:) ! col net N fluxes associated with litter/som-adding/removal to decomp pools (gP/m3/s)
                                                                             ! (sum of all external P additions and removals, excluding decomposition/hr).
      real(r8), pointer :: externalp_to_decomp_delta_col             (:)     ! col summarized net N i/o changes associated with litter/som-adding/removal to decomp pools  btw time-step (gP/m2)
@@ -354,7 +354,7 @@ module PhosphorusFluxType
      procedure , private :: InitAllocate
      procedure , private :: InitHistory
      procedure , private :: InitCold
-     ! bgc & pflotran interface
+     ! bgc interface
 
   end type phosphorusflux_type
   !------------------------------------------------------------------------
@@ -503,12 +503,11 @@ contains
     logical :: readvar      ! determine if variable is on initial file
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
-    ! pflotran
     integer :: k
     character(len=128) :: varname   ! temporary
     !------------------------------------------------------------------------
 
-    ! clm_interface & pflotran
+    ! clm_interface
     !------------------------------------------------------------------------
     !------------------------------------------------------------------------
   end subroutine Restart
@@ -561,8 +560,6 @@ contains
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
     use subgridAveMod , only: p2c
-    ! pflotran
-!    use elm_varctl    , only: use_pflotran, pf_cmode
     !
     ! !ARGUMENTS:
     class (phosphorusflux_type) :: this

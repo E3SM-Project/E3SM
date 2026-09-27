@@ -20,7 +20,6 @@ module CNNitrogenStateType
   use LandunitType           , only : lun_pp                
   use ColumnType             , only : col_pp                
   use VegetationType         , only : veg_pp
-  use elm_varctl             , only : use_pflotran, pf_cmode
   use elm_varctl             , only : nu_com, use_crop
   use dynPatchStateUpdaterMod, only : patch_state_updater_type               
   use SpeciesMod           , only : CN_SPECIES_N
@@ -113,7 +112,6 @@ module CNNitrogenStateType
      real(r8), pointer :: endnb_grc                    (:)     ! grid cell nitrogen mass, end of time step (gN/m**2)
      real(r8), pointer :: errnb_grc                    (:)     ! grid cell nitrogen balance error for the timestep (gN/m**2)
 
-     ! for newly-added coupled codes with pflotran (it should be included in total 'sminn' defined above when doing summation)
      real(r8), pointer :: smin_nh4sorb_vr_col          (:,:)   ! col (gN/m3) vertically-resolved soil mineral NH4 absorbed
      real(r8), pointer :: smin_nh4sorb_col             (:)     ! col (gN/m2) soil mineral NH4 pool absorbed
 
@@ -662,15 +660,9 @@ contains
           do j = 1, nlevdecomp_full
              this%smin_nh4_vr_col(c,j) = 0._r8
              this%smin_no3_vr_col(c,j) = 0._r8
-             if(use_pflotran .and. pf_cmode) then
-                this%smin_nh4sorb_vr_col(c,j) = 0._r8
-             end if
           end do
           this%smin_nh4_col(c) = 0._r8
           this%smin_no3_col(c) = 0._r8
-          if(use_pflotran .and. pf_cmode) then
-             this%smin_nh4sorb_col(c) = 0._r8
-          end if
 
           this%totlitn_col(c)    = 0._r8
           this%totsomn_col(c)    = 0._r8
@@ -883,9 +875,6 @@ contains
 
        this%smin_no3_col(i) = value_column
        this%smin_nh4_col(i) = value_column
-       if(use_pflotran .and. pf_cmode) then
-          this%smin_nh4sorb_col(i) = value_column
-       end if
 
        this%totlitn_col(i)     = value_column
        this%totsomn_col(i)     = value_column
@@ -902,9 +891,6 @@ contains
           this%ntrunc_vr_col(i,j)      = value_column
           this%smin_no3_vr_col(i,j) = value_column
           this%smin_nh4_vr_col(i,j) = value_column
-          if(use_pflotran .and. pf_cmode) then
-             this%smin_nh4sorb_vr_col(i,j) = value_column
-          end if
        end do
     end do
 
@@ -1046,15 +1032,11 @@ contains
 
    ! vertically integrate NO3 NH4 N2O pools
    nlev = nlevdecomp
-   if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%smin_no3_col(c) = 0._r8
       this%smin_nh4_col(c) = 0._r8
-      if(use_pflotran .and. pf_cmode) then
-         this%smin_nh4sorb_col(c) = 0._r8
-      end if
    end do
    do j = 1, nlev
       do fc = 1,num_soilc
@@ -1066,11 +1048,6 @@ contains
          this%smin_nh4_col(c) = &
               this%smin_nh4_col(c) + &
               this%smin_nh4_vr_col(c,j) * dzsoi_decomp(j)
-         if(use_pflotran .and. pf_cmode) then
-            this%smin_nh4sorb_col(c) = &
-                 this%smin_nh4sorb_col(c) + &
-                 this%smin_nh4sorb_vr_col(c,j) * dzsoi_decomp(j)
-         end if
       end do
    end do
 

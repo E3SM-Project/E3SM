@@ -47,15 +47,6 @@ module domainMod
      real(r8),pointer :: terrain_config(:) ! mean of (terrain configuration factor / cos(slope))
      real(r8),pointer :: sinsl_cosas(:)    ! sin(slope)*cos(aspect) / cos(slope)
      real(r8),pointer :: sinsl_sinas(:)    ! sin(slope)*sin(aspect) / cos(slope)
-     
-     ! pflotran:beg-----------------------------------------------------
-     integer          :: nv           ! number of vertices
-     real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
-     real(r8),pointer :: lonv(:,:)    ! longitude of grid cell's vertices (deg)
-     real(r8)         :: lon0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
-     real(r8)         :: lat0         ! the origin lon/lat (Most western/southern corner, if not globally covered grids; OR -180W(360E)/-90N)
-
-     ! pflotran:end-----------------------------------------------------
   end type domain_type
 
   type(domain_type)    , public :: ldomain
@@ -133,24 +124,6 @@ contains
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
 
-    ! pflotran:beg-----------------------------------------------------
-    ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
-    if (domain%nv > 0 .and. domain%nv /= huge(1)) then
-       if(.not.associated(domain%lonv)) then
-           allocate(domain%lonv(nb:ne, 1:domain%nv), stat=ier)
-           if (ier /= 0) &
-           call shr_sys_abort('domain_init ERROR: allocate lonv ')
-           domain%lonv     = nan
-       endif
-       if(.not.associated(domain%latv)) then
-           allocate(domain%latv(nb:ne, 1:domain%nv))
-           if (ier /= 0) &
-           call shr_sys_abort('domain_init ERROR: allocate latv ')
-           domain%latv     = nan
-       endif
-    end if
-    ! pflotran:end-----------------------------------------------------
-
     if (present(elmlevel)) then
        domain%elmlevel = elmlevel
     else
@@ -227,24 +200,6 @@ end subroutine domain_init
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
 
-       ! pflotran:beg-----------------------------------------------------
-       ! 'nv' is user-defined, so it must be initialized or assigned value prior to call this subroutine
-       if (domain%nv > 0 .and. domain%nv /= huge(1)) then
-          if (associated(domain%lonv)) then
-             deallocate(domain%lonv, stat=ier)
-             if (ier /= 0) &
-             call shr_sys_abort('domain_clean ERROR: deallocate lonv ')
-             nullify(domain%lonv)
-          endif
-
-          if (associated(domain%latv)) then
-             deallocate(domain%latv, stat=ier)
-             if (ier /= 0) &
-             call shr_sys_abort('domain_clean ERROR: deallocate latv ')
-             nullify(domain%latv)
-          endif
-       endif
-       ! pflotran:beg-----------------------------------------------------
 
     else
        if (masterproc) then

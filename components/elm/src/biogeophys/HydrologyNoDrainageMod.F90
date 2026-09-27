@@ -41,7 +41,6 @@ contains
   subroutine HydrologyNoDrainage(bounds, &
        num_nolakec, filter_nolakec, &
        num_hydrologyc, filter_hydrologyc, &
-       num_hydrononsoic, filter_hydrononsoic, &
        num_urbanc, filter_urbanc, &
        num_snowc, filter_snowc, &
        num_nosnowc, filter_nosnowc, canopystate_vars, &
@@ -68,7 +67,7 @@ contains
     use landunit_varcon      , only : istice, istwet, istsoil, istice_mec, istcrop, istdlak
     use column_varcon        , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall
     use column_varcon        , only : icol_shadewall
-    use elm_varctl           , only : use_cn, use_fates, use_pflotran, pf_hmode, use_fan
+    use elm_varctl           , only : use_cn, use_fates, use_fan
     use elm_varpar           , only : nlevgrnd, nlevsno, nlevsoi, nlevurb
     use SnowHydrologyMod     , only : SnowCompaction, CombineSnowLayers, DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use SnowHydrologyMod     , only : SnowWater, BuildSnowFilter 
@@ -84,8 +83,6 @@ contains
     integer                  , intent(in)    :: filter_nolakec(:)    ! column filter for non-lake points
     integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
-    integer                  , intent(in)    :: num_hydrononsoic        ! number of non-soil landunit points in hydrology filter
-    integer                  , intent(in)    :: filter_hydrononsoic(:)  ! column filter for non-soil hydrology points
     integer                  , intent(in)    :: num_urbanc           ! number of column urban points in column filter
     integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
     integer                  , intent(inout) :: num_snowc            ! number of column snow points
@@ -192,23 +189,9 @@ contains
       call SurfaceRunoff(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
            soilhydrology_vars, soilstate_vars, dtime)
 
-      !------------------------------------------------------------------------------------
-      if (use_pflotran .and. pf_hmode) then
-
-        call Infiltration(bounds, num_hydrononsoic, filter_hydrononsoic,          &
-             num_urbanc, filter_urbanc, atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, &
-             energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
-
-      else
-      !------------------------------------------------------------------------------------
-
-        call Infiltration(bounds, num_hydrologyc, filter_hydrologyc,              &
-             num_urbanc, filter_urbanc, atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, &
-             energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
-
-      !------------------------------------------------------------------------------------
-      end if
-      !------------------------------------------------------------------------------------
+      call Infiltration(bounds, num_hydrologyc, filter_hydrologyc,              &
+           num_urbanc, filter_urbanc, atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, &
+           energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       !!TODO:  need to fix the waterstate_vars dependence here.
 #ifndef _OPENACC
@@ -227,22 +210,8 @@ contains
       if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &
                                                       soilstate_vars)
 #endif
-      !------------------------------------------------------------------------------------
-      if (use_pflotran .and. pf_hmode) then
-
-        call SoilWater(bounds, num_hydrononsoic, filter_hydrononsoic, &
-            num_urbanc, filter_urbanc, &
-            soilhydrology_vars, soilstate_vars, dtime)
-
-      else
-      !------------------------------------------------------------------------------------
-
-        call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-            soilhydrology_vars, soilstate_vars, dtime)
-
-      !------------------------------------------------------------------------------------
-      end if
-      !------------------------------------------------------------------------------------
+      call SoilWater(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+          soilhydrology_vars, soilstate_vars, dtime)
 
       if ( use_fan ) then 
          ! use the saved value to calculate the tendency
@@ -258,22 +227,8 @@ contains
               soilhydrology_vars)
       end if
 
-      !------------------------------------------------------------------------------------
-      if (use_pflotran .and. pf_hmode) then
-
-        call WaterTable(bounds, num_hydrononsoic, filter_hydrononsoic, &
-           num_urbanc, filter_urbanc, &
-           soilhydrology_vars, soilstate_vars, dtime)
-
-      else
-      !------------------------------------------------------------------------------------
-
-        call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-           soilhydrology_vars, soilstate_vars, dtime)
-
-      !------------------------------------------------------------------------------------
-      end if
-      !------------------------------------------------------------------------------------
+      call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
+         soilhydrology_vars, soilstate_vars, dtime)
 
 
 #ifndef _OPENACC
@@ -449,8 +404,7 @@ contains
          end do
       end do
 
-      if ( (use_cn .or. use_fates) .and. &
-         .not.(use_pflotran .and. pf_hmode) ) then
+      if ( use_cn .or. use_fates ) then
          ! Update soilpsi.
          ! ZMS: Note this could be merged with the following loop updating smp_l in the future.
          do j = 1, nlevgrnd

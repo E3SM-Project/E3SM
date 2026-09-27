@@ -15,8 +15,6 @@ module CarbonStateUpdate3Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
   use VegetationDataType     , only : vegetation_carbon_state, vegetation_carbon_flux
-  ! bgc interface & pflotran:
-  use elm_varctl       , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -55,24 +53,22 @@ contains
     !-----------------------------------------------------------------------
 
       ! column level carbon fluxes from fire
-      if (.not.(use_pflotran .and. pf_cmode)) then
-          do j = 1, nlevdecomp
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                ! pft-level wood to column-level CWD (uncombusted wood)
-                col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) &
-                     + col_cf%fire_mortality_c_to_cwdc(c,j) * dt
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            ! pft-level wood to column-level CWD (uncombusted wood)
+            col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) &
+                 + col_cf%fire_mortality_c_to_cwdc(c,j) * dt
 
-                ! pft-level wood to column-level litter (uncombusted wood)
-                col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) &
-                     + col_cf%m_c_to_litr_met_fire(c,j)* dt
-                col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) &
-                     + col_cf%m_c_to_litr_cel_fire(c,j)* dt
-                col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) &
-                     + col_cf%m_c_to_litr_lig_fire(c,j)* dt
-             end do
-          end do
-      end if !(.not.(use_pflotran .and. pf_cmode))
+            ! pft-level wood to column-level litter (uncombusted wood)
+            col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) &
+                 + col_cf%m_c_to_litr_met_fire(c,j)* dt
+            col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) &
+                 + col_cf%m_c_to_litr_cel_fire(c,j)* dt
+            col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) &
+                 + col_cf%m_c_to_litr_lig_fire(c,j)* dt
+         end do
+      end do
 
       ! litter and CWD losses to fire
       do l = 1, ndecomp_pools

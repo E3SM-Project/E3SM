@@ -66,7 +66,7 @@ module controlMod
                         use_c13, use_c14, fates_paramfile, use_fates, &
                         use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
-                        use_elm_interface, use_elm_bgc, use_pflotran, &
+                        use_elm_interface, use_elm_bgc, &
                         use_hydrstress, domain_decomp_type, &
                         use_IM2_hillslope_hydrology, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
@@ -162,7 +162,6 @@ contains
     use elm_time_manager          , only : set_timemgr_init, get_timemgr_defaults
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
-    use elm_interface_pflotranMod , only : elm_pf_readnl
     
     implicit none
     
@@ -350,8 +349,8 @@ contains
     namelist /elm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
          co2_file, aero_file,const_climate_hist
 
-    ! bgc & pflotran interface
-    namelist /elm_inparm/ use_elm_interface, use_elm_bgc, use_pflotran
+    ! bgc interface
+    namelist /elm_inparm/ use_elm_interface, use_elm_bgc
 
     namelist /elm_inparm/ use_dynroot
 
@@ -586,26 +585,9 @@ contains
        end if
 
        ! ----------------------------------------------------------------------
-       ! bgc & pflotran interface
+       ! bgc interface
        if(.not.use_elm_interface) then
             use_elm_bgc     = .false.
-            use_pflotran    = .false.
-       else
-       ! use_elm_interface
-            if (use_elm_bgc) then
-                use_pflotran = .false.
-            end if
-
-            if (use_pflotran) then
-                use_elm_bgc = .false.
-            end if
-       end if
-
-       if (use_pflotran) then
-          if (use_var_soil_thick) then
-             call endrun(msg='ERROR: use_var_soil_thick and use_pflotran cannot both be set to true.'//&
-                      errMsg(__FILE__, __LINE__))
-          end if
        end if
 
        if (use_lnd_rof_two_way) then
@@ -632,10 +614,6 @@ contains
     ! ----------------------------------------------------------------------
 
     call control_spmd()
-
-    if (use_pflotran) then
-       call elm_pf_readnl(NLFilename)
-    end if
 
     ! ----------------------------------------------------------------------
     ! consistency checks
@@ -962,10 +940,9 @@ contains
     ! hillslope connectivity via topounits
     call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)
 
-    ! bgc & pflotran interface
+    ! bgc interface
     call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_pflotran, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     !cpl_bypass
      call mpi_bcast (metdata_type,   len(metdata_type),   MPI_CHARACTER, 0, mpicom, ier)

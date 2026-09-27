@@ -32,20 +32,16 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
   use ELMFatesInterfaceMod   , only : hlm_fates_interface_type
-  ! clm interface & pflotran:
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl             , only : use_cn, use_fates
   use elm_instMod            , only : alm_fates
   !
   implicit none
   save
-  private :: CNvariables_nan4pf  !pflotran
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
    public :: readSoilLittDecompParams
   public :: SoilLittDecompAlloc
-  ! pflotran
   public :: SoilLittDecompAlloc2
   !
   type, public :: CNDecompParamsType
@@ -568,10 +564,9 @@ contains
        cnstate_vars, ch4_vars, crop_vars, atm2lnd_vars, dt)
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
-    ! bgc interface & pflotran:
-    ! (1) Simplified codes of SoilLittDecompAlloc subroutine for coupling with pflotran
-    ! (2) call Allocation3_PlantCNPAlloc
-    ! (3) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
+    ! bgc interface:
+    ! (1) call Allocation3_PlantCNPAlloc
+    ! (2) calculate net_nmin(c), gross_nmin(c), net_pmin(c), gross_pmin(c)
     !-----------------------------------------------------------------------------
 
     ! !USES:
@@ -598,11 +593,6 @@ contains
     ! !LOCAL VARIABLES:
     integer :: fc, c, j                                     ! indices
 !    real(r8):: col_plant_ndemand(bounds%begc:bounds%endc)   ! column-level vertically-integrated plant N demand (gN/m2/s)
-    real(r8) :: smin_nh4_to_plant_vr_loc(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: smin_no3_to_plant_vr_loc(bounds%begc:bounds%endc,1:nlevdecomp)
-
-    ! For methane code
-    real(r8):: hrsum(bounds%begc:bounds%endc,1:nlevdecomp)                                             !sum of HR (gC/m2/s)
 
     !-----------------------------------------------------------------------
 
@@ -652,106 +642,6 @@ contains
             !------------------------------------------------------------------
             ! 'call decomp_vertprofiles()' moved to EcosystemDynNoLeaching1
             !------------------------------------------------------------------
-            smin_nh4_to_plant_vr_loc(:,:) = 0._r8
-            smin_no3_to_plant_vr_loc(:,:) = 0._r8
-
-
-      ! MUST have already updated needed bgc variables from PFLOTRAN by this point
-      if(use_elm_interface.and.use_pflotran.and.pf_cmode) then
-         ! fpg calculation
-         do fc=1,num_soilc
-            c = filter_soilc(fc)
-            sminn_to_plant(c)       = 0._r8
-            do j = 1, nlevdecomp           ! sum up actual and potential column-level N fluxes to plant
-               sminn_to_plant(c)    = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
-            end do
-         end do
-         do fc=1,num_soilc
-            c = filter_soilc(fc)
-            ! calculate the fraction of potential growth that can be
-            ! acheived with the N available to plants
-            if (plant_ndemand_col(c) > 0.0_r8) then
-               fpg(c) = max(0._r8,sminn_to_plant(c)) / plant_ndemand_col(c)
-               fpg(c) = min(1._r8, fpg(c))
-            else
-               fpg(c) = 1.0_r8
-            end if
-         end do
-
-         ! fpi calculation
-         do fc=1,num_soilc
-            c = filter_soilc(fc)
-            potential_immob(c) = 0._r8
-            actual_immob(c)    = 0._r8
-            do j = 1, nlevdecomp
-               if (potential_immob_vr(c,j) > 0.0_r8) then
-                  fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
-                  potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j)*dzsoi_decomp(j)
-                  actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j)*dzsoi_decomp(j)
-               else
-                  fpi_vr(c,j) = 0.0_r8
-               end if
-            end do
-         end do
-         do fc=1,num_soilc
-            c = filter_soilc(fc)
-            if (potential_immob(c) > 0.0_r8) then
-               fpi(c) = max(0._r8,actual_immob(c)) / potential_immob(c)
-               fpi(c) = min(1._r8, fpi(c))
-            else
-               fpi(c) = 1.0_r8
-            end if
-         end do
-
-
-         if (use_lch4) then
-            ! Add up potential hr for methane calculations
-            ! potential hr is not available from PFLOTRAN, so here temporarily as actual hr
-            ! in the end, this methane module will be moving into PFLOTRAN as well
-
-            do j = 1,nlevdecomp
-               do fc = 1, num_soilc
-                  c = filter_soilc(fc)
-                  phr_vr(c,j) = hr_vr(c,j)
-               end do
-            end do
-
-            ! Calculate total fraction of potential HR, for methane code
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  hrsum(c,j) = hr_vr(c,j)
-               end do
-            end do
-
-            ! Nitrogen limitation / (low)-moisture limitation
-            do j = 1,nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  if (phr_vr(c,j) > 0._r8) then
-                     fphr(c,j) = hrsum(c,j) / phr_vr(c,j) * w_scalar(c,j)
-                     fphr(c,j) = max(fphr(c,j), 0.01_r8) ! Prevent overflow errors for 0 respiration
-                  else
-                     fphr(c,j) = 1._r8
-                  end if
-               end do
-            end do
-         end if
-
-         ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
-         call CNvariables_nan4pf(bounds, num_soilc, filter_soilc, &
-                        num_soilp, filter_soilp)
-
-         ! save variables before updating
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            do j = 1,nlevdecomp
-                smin_no3_to_plant_vr_loc(c,j) = smin_no3_to_plant_vr(c,j)
-                smin_nh4_to_plant_vr_loc(c,j) = smin_nh4_to_plant_vr(c,j)
-            end do
-         end do
-
-      end if !if(use_elm_interface.and.use_pflotran.and.pf_cmode)
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
@@ -772,20 +662,6 @@ contains
       end if
       !------------------------------------------------------------------
 
-    if(use_pflotran.and.pf_cmode) then
-    ! in PlantCNPAlloc():
-    ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
-    ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
-      do fc = 1,num_soilc
-           c = filter_soilc(fc)
-           do j = 1,nlevdecomp
-               smin_no3_vr(c,j) = smin_no3_vr(c,j) - (smin_no3_to_plant_vr(c,j) - smin_no3_to_plant_vr_loc(c,j))*dt
-               smin_nh4_vr(c,j) = smin_nh4_vr(c,j) - (smin_nh4_to_plant_vr(c,j) - smin_nh4_to_plant_vr_loc(c,j))*dt
-               smin_no3_vr(c,j) = max(0._r8, smin_no3_vr(c,j))
-               smin_nh4_vr(c,j) = max(0._r8, smin_nh4_vr(c,j))
-            end do
-      end do
-    end if !(use_pflotran.and.pf_cmode)
     !------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
       do fc=1,num_soilc
@@ -810,59 +686,6 @@ contains
 
   !-------------------------------------------------------------------------------------------------
   !
-  subroutine CNvariables_nan4pf (bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-  !
-  !DESCRIPTION:
-  !  CN variables not available from PFLOTRAN, some of which may be output and may cause issues,
-  !  if not properly set.
-  !
-  !USES:
-    use elm_varctl   , only: carbon_only, carbonnitrogen_only
-    use elm_varpar   , only: nlevdecomp, ndecomp_cascade_transitions
-   !
-   !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
-    integer                  , intent(in)    :: num_soilc          ! number of soil columns in filter
-    integer                  , intent(in)    :: filter_soilc(:)    ! filter for soil columns
-    integer                  , intent(in)    :: num_soilp          ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:)    ! filter for soil patches
-   !
-   !CALLED FROM:
-   !
-   !LOCAL VARIABLES:
-   integer :: c,j,k,fc          !indices
-   !
-   !-----------------------------------------------------------------------
-   associate (&
-         decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ctransfer_vr      =>    col_cf%decomp_cascade_ctransfer_vr        , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
-         decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr        & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
-   )
-   ! set zeros for those variables NOT available from PFLOTRAN
-   ! (TODO) will check 'zero' or '-9999' is better.
-
-   do fc = 1,num_soilc
-      c = filter_soilc(fc)
-      do j = 1,nlevdecomp
-         do k = 1, ndecomp_cascade_transitions
-            decomp_cascade_ctransfer_vr(c,j,k) = 0._r8
-            decomp_cascade_ntransfer_vr(c,j,k) = 0._r8
-            decomp_cascade_hr_vr(c,j,k)        = 0._r8
-         end do
-      end do
-
-   end do
-
-   ! pflotran not yet support phosphous cycle
-   if ( carbon_only .or.  carbonnitrogen_only  ) then
-      call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
-
-      call veg_pf%SetValues( num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
-      call col_pf%SetValues( num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
-   end if
-
-  end associate
-  end subroutine CNvariables_nan4pf
+!--------------------------------------------------------------------------------------
 
 end module SoilLittDecompMod

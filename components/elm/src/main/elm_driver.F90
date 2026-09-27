@@ -160,19 +160,13 @@ module elm_driver
   use FanStreamMod           , only : fanstream_interp
 
   !----------------------------------------------------------------------------
-  ! bgc interface & pflotran:
+  ! bgc interface:
   use elm_varctl             , only : use_elm_interface
   use elm_instMod            , only : elm_interface_data
   use elm_interface_funcsMod , only : get_elm_data
-  ! (1) clm_bgc through interface
+  ! clm_bgc through interface
   use elm_varctl             , only : use_elm_bgc
   use elm_interface_funcsMod , only : elm_bgc_run, update_bgc_data_elm2elm
-  ! (2) pflotran
-  use elm_time_manager            , only : nsstep, nestep
-  use elm_varctl                  , only : use_pflotran, pf_cmode, pf_hmode, pf_tmode
-  use elm_interface_funcsMod      , only : update_bgc_data_pf2elm, update_th_data_pf2elm
-  use elm_interface_pflotranMod   , only : elm_pf_run, elm_pf_write_restart
-  use elm_interface_pflotranMod   , only : elm_pf_finalize
   !----------------------------------------------------------------------------
   use WaterBudgetMod              , only : WaterBudget_Reset, WaterBudget_Run, WaterBudget_Accum, WaterBudget_Print
   use WaterBudgetMod              , only : WaterBudget_SetBeginningMonthlyStates
@@ -895,7 +889,6 @@ contains
        call HydrologyNoDrainage(bounds_clump,                                &
             filter(nc)%num_nolakec, filter(nc)%nolakec,                      &
             filter(nc)%num_hydrologyc, filter(nc)%hydrologyc,                &
-            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic,            &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
@@ -1037,29 +1030,7 @@ contains
                         ch4_vars)
 
 
-              if (use_pflotran .and. pf_cmode) then
-                 call t_startf('pflotran')
-                 ! -------------------------------------------------------------------------
-                 ! PFLOTRAN calling for solving below-ground and ground-surface processes,
-                 ! including thermal, hydrological and biogeochemical processes
-                 ! STEP-2: (1) pass data from elm_interface_data to pflotran
-                 ! STEP-2: (2) run pflotran
-                 ! STEP-2: (3) update elm_interface_data from pflotran
-                 ! -------------------------------------------------------------------------
-                 call elm_pf_run(elm_interface_data, bounds_clump, filter, nc)
-
-                 ! STEP-3: update CLM from elm_interface_data
-                 call update_bgc_data_pf2elm(elm_interface_data%bgc,         &
-                        bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc, &
-                        filter(nc)%num_soilp, filter(nc)%soilp,              &
-                        cnstate_vars, carbonflux_vars, carbonstate_vars,     &
-                        nitrogenflux_vars, nitrogenstate_vars,               &
-                        phosphorusflux_vars, phosphorusstate_vars,           &
-                        ch4_vars)
-
-                 call t_stopf('pflotran')
-
-              elseif (use_elm_bgc) then
+              if (use_elm_bgc) then
                  call t_startf('elm-bgc via interface')
                  ! -------------------------------------------------------------------------
                  ! run elm-bgc (SoilLittDecompAlloc) through interface
@@ -1086,7 +1057,7 @@ contains
                         phosphorusflux_vars, phosphorusstate_vars,           &
                         ch4_vars)
                  call t_stopf('elm-bgc via interface')
-              end if !if (use_pflotran .and. pf_cmode)
+              end if !if (use_elm_bgc)
           end if !if (use_elm_interface)
           !--------------------------------------------------------------------------------
 
@@ -1163,28 +1134,13 @@ contains
 
        call t_startf('hydro2 drainage')
 
-       if (use_elm_interface .and. (use_pflotran .and. pf_hmode)) then
-         ! pflotran only works on 'soilc' (already done above).
-         ! here for non-soil hydrology columns
-         call HydrologyDrainage(bounds_clump,                     &
-            filter(nc)%num_nolakec, filter(nc)%nolakec,           &
-            filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic, &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,             &
-            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
-            atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars,             &
-            soilhydrology_vars, soilstate_vars)
-
-       else
-
-         call HydrologyDrainage(bounds_clump,                 &
-            filter(nc)%num_nolakec, filter(nc)%nolakec,       &
-            filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,         &
-            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &
-            atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars,         &
-            soilhydrology_vars, soilstate_vars)
-
-       end if
+       call HydrologyDrainage(bounds_clump,                 &
+          filter(nc)%num_nolakec, filter(nc)%nolakec,       &
+          filter(nc)%num_hydrologyc, filter(nc)%hydrologyc, &
+          filter(nc)%num_urbanc, filter(nc)%urbanc,         &
+          filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &
+          atm2lnd_vars, glc2lnd_vars, ocn2lnd_vars,         &
+          soilhydrology_vars, soilstate_vars)
 
        call t_stopf('hydro2 drainage')
 
@@ -1475,23 +1431,11 @@ contains
                photosyns_vars, soilhydrology_vars,     &
                soilstate_vars, solarabs_vars, surfalb_vars,  &
                sedflux_vars, alm_fates, crop_vars, rdate=rdate )
-         
-         !----------------------------------------------
-         ! pflotran (off now)
-         ! if (use_pflotran) then
-         !     call elm_pf_write_restart(rdate)
-         ! end if
-         !----------------------------------------------
-
 
           call t_stopf('elm_drv_io_wrest')
        end if
        call t_stopf('elm_drv_io')
 
-    end if
-
-    if (use_pflotran .and. nstep>=nestep) then
-       call elm_pf_finalize()
     end if
 
   end subroutine elm_drv

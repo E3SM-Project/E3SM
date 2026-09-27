@@ -14,8 +14,6 @@ module PhosphorusStateUpdate1Mod
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
   use VegetationType              , only : veg_pp
-  ! bgc interface & pflotran:
-  use elm_varctl             , only : use_pflotran, pf_cmode
   use elm_varctl             , only : nu_com
   ! forest fertilization experiment
   use elm_time_manager       , only : get_curr_date
@@ -135,11 +133,6 @@ contains
 
 
       ! column-level fluxes
-
-      !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-      ! if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
 
          if(.not.use_fates)then
             do j = 1, nlevdecomp

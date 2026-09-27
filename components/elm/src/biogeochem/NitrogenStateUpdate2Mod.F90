@@ -15,8 +15,6 @@ module NitrogenStateUpdate2Mod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_ns, veg_nf
   use pftvarcon           , only : iscft
-  ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode
   !
   implicit none
   save
@@ -53,23 +51,21 @@ contains
     !-----------------------------------------------------------------------
       
     ! column-level nitrogen fluxes from gap-phase mortality
-      if (.not.(use_pflotran .and. pf_cmode)) then
-         do j = 1, nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+      do j = 1, nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
 
-               col_ns%decomp_npools_vr(c,j,i_met_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%gap_mortality_n_to_litr_met_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%gap_mortality_n_to_litr_cel_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%gap_mortality_n_to_litr_lig_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cwd)     = &
-                    col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%gap_mortality_n_to_cwdn(c,j)       * dt
-            end do
+            col_ns%decomp_npools_vr(c,j,i_met_lit) = &
+                 col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%gap_mortality_n_to_litr_met_n(c,j) * dt
+            col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
+                 col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%gap_mortality_n_to_litr_cel_n(c,j) * dt
+            col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
+                 col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%gap_mortality_n_to_litr_lig_n(c,j) * dt
+            col_ns%decomp_npools_vr(c,j,i_cwd)     = &
+                 col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%gap_mortality_n_to_cwdn(c,j)       * dt
          end do
+      end do
 
-     endif
 
       ! patch -level nitrogen fluxes from gap-phase mortality
 
@@ -133,24 +129,22 @@ contains
          ivt => veg_pp%itype        & ! Input:  [integer  (:) ]  pft vegetation type
          )
 
-      if (.not.(use_pflotran .and. pf_cmode)) then
-         ! column-level nitrogen fluxes from harvest mortality
+      ! column-level nitrogen fluxes from harvest mortality
 
-         do j = 1,nlevdecomp
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
-               col_ns%decomp_npools_vr(c,j,i_met_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%harvest_n_to_litr_met_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%harvest_n_to_litr_cel_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
-                    col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%harvest_n_to_litr_lig_n(c,j) * dt
-               col_ns%decomp_npools_vr(c,j,i_cwd)     = &
-                    col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%harvest_n_to_cwdn(c,j)       * dt
-            end do
+      do j = 1,nlevdecomp
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            col_ns%decomp_npools_vr(c,j,i_met_lit) = &
+                 col_ns%decomp_npools_vr(c,j,i_met_lit) + col_nf%harvest_n_to_litr_met_n(c,j) * dt
+            col_ns%decomp_npools_vr(c,j,i_cel_lit) = &
+                 col_ns%decomp_npools_vr(c,j,i_cel_lit) + col_nf%harvest_n_to_litr_cel_n(c,j) * dt
+            col_ns%decomp_npools_vr(c,j,i_lig_lit) = &
+                 col_ns%decomp_npools_vr(c,j,i_lig_lit) + col_nf%harvest_n_to_litr_lig_n(c,j) * dt
+            col_ns%decomp_npools_vr(c,j,i_cwd)     = &
+                 col_ns%decomp_npools_vr(c,j,i_cwd)     + col_nf%harvest_n_to_cwdn(c,j)       * dt
          end do
+      end do
 
-      endif
 
       ! patch-level nitrogen fluxes from harvest mortality
 

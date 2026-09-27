@@ -16,7 +16,7 @@ module CNCarbonFluxType
   use ColumnType             , only : col_pp                
   use LandunitType           , only : lun_pp
   use elm_varctl             , only : nu_com
-  use elm_varctl             , only : use_elm_interface, use_pflotran, pf_cmode, use_vertsoilc
+  use elm_varctl             , only : use_elm_interface, use_vertsoilc
   use AnnualFluxDribbler     , only : annual_flux_dribbler_type, annual_flux_dribbler_gridcell
   ! 
   ! !PUBLIC TYPES:
@@ -424,7 +424,7 @@ module CNCarbonFluxType
      ! C4MIP output variable
      real(r8), pointer :: plant_c_to_cwdc                 (:) ! sum of gap, fire, dynamic land use, and harvest mortality, plant carbon flux to CWD
 
-     ! new variables for elm_interface_funcsMod & pflotran
+     ! new variables for elm_interface_funcsMod
      !------------------------------------------------------------------------
      real(r8), pointer :: externalc_to_decomp_cpools_col            (:,:,:) ! col (gC/m3/s) net C fluxes associated with litter/som-adding/removal to decomp pools
                                                                             ! (sum of all external C additions and removals, excluding decomposition/hr).
@@ -449,8 +449,6 @@ module CNCarbonFluxType
      procedure , private :: InitAllocate 
      procedure , private :: InitHistory
      procedure , private :: InitCold
-     ! bgc & pflotran interface
-     procedure , private :: CSummary_interface
   end type carbonflux_type
   !------------------------------------------------------------------------
 
@@ -856,7 +854,7 @@ contains
      ! C4MIP output variable
      allocate(this%plant_c_to_cwdc       (begc:endc)) ; this%plant_c_to_cwdc       (:)  =nan
 
-     ! clm_interface & pflotran
+     ! clm_interface
      !------------------------------------------------------------------------
      allocate(this%externalc_to_decomp_cpools_col(begc:endc,1:nlevdecomp_full,1:ndecomp_pools))
      this%externalc_to_decomp_cpools_col(:,:,:) = spval
@@ -1118,8 +1116,6 @@ contains
     use restUtilMod
     use ncdio_pio
 
-    ! pflotran
-!    use elm_varctl       , only : use_pflotran, pf_cmode, use_vertsoilc
     !
     ! !ARGUMENTS:
     class (carbonflux_type) :: this
@@ -1131,7 +1127,6 @@ contains
     integer :: j,c ! indices
     logical :: readvar      ! determine if variable is on initial file
 
-    ! pflotran
     integer :: k
     real(r8), pointer :: ptr2d(:,:) ! temp. pointers for slicing larger arrays
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
@@ -1497,7 +1492,6 @@ contains
        end do
     end do
 
-    ! pflotran
     do k = 1, ndecomp_pools
        do j = 1, nlevdecomp_full
           do fi = 1,num_column
@@ -1984,7 +1978,6 @@ contains
     ! column soil variables
     ! column variables
     nlev = nlevdecomp
-    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
     ! some zeroing
     do fc = 1,num_soilc
@@ -1993,24 +1986,22 @@ contains
        this%som_c_leached_col(c)      = 0._r8
     end do
 
-    if ((.not. (use_pflotran .and. pf_cmode))) then
 
-       ! vertically integrate HR and decomposition cascade fluxes
-       do k = 1, ndecomp_cascade_transitions
+    ! vertically integrate HR and decomposition cascade fluxes
+    do k = 1, ndecomp_cascade_transitions
 
-       do j = 1,nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
+    do j = 1,nlev
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
 
-                this%decomp_cascade_ctransfer_col(c,k) = &
-                     this%decomp_cascade_ctransfer_col(c,k) + &
-                     this%decomp_cascade_ctransfer_vr_col(c,j,k) * dzsoi_decomp(j) 
-             end do
+             this%decomp_cascade_ctransfer_col(c,k) = &
+                  this%decomp_cascade_ctransfer_col(c,k) + &
+                  this%decomp_cascade_ctransfer_vr_col(c,j,k) * dzsoi_decomp(j) 
           end do
        end do
+    end do
 
 
-    endif
     
     ! some zeroing
     do fc = 1,num_soilc
@@ -2018,11 +2009,7 @@ contains
        this%somhr_col(c)              = 0._r8
        this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
-       if (.not. (use_pflotran .and. pf_cmode)) then
-       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in EcosystemDynNoLeaching2
-       ! thus 'hr_vr_col' should NOT be set to 0
             this%hr_vr_col(c,1:nlevdecomp) = 0._r8
-       end if
     enddo
 
       ! vertically integrate HR and decomposition cascade fluxes
@@ -2076,22 +2063,16 @@ contains
         end do
       end do
 
-    ! bgc interface & pflotran:
+    ! bgc interface:
     !----------------------------------------------------------------
-    if (use_elm_interface.and. (use_pflotran .and. pf_cmode)) then
-        call CSummary_interface(this, bounds, num_soilc, filter_soilc)
-    endif
-    if(.not. (use_pflotran .and. pf_cmode))then
-       ! total heterotrophic respiration (HR)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%hr_col(c) = &
-               this%lithr_col(c) + &
-               this%somhr_col(c)
-       end do
+    ! total heterotrophic respiration (HR)
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%hr_col(c) = &
+            this%lithr_col(c) + &
+            this%somhr_col(c)
+    end do
 
-    end if
-    ! CSummary_interface: hr_col(c) will be used below
     !----------------------------------------------------------------
 
     do fc = 1,num_soilc
@@ -2228,13 +2209,11 @@ contains
        end if
     end do
 
-    if (.not.(use_pflotran .and. pf_cmode)) then
-       ! (LITTERC_LOSS) - litter C loss
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%litterc_loss_col(c) = this%lithr_col(c)
-       end do
-    end if !(.not.(use_pflotran .and. pf_cmode))
+    ! (LITTERC_LOSS) - litter C loss
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%litterc_loss_col(c) = this%lithr_col(c)
+    end do
 
     do l = 1, ndecomp_pools
        if ( is_litter(l) ) then
@@ -2259,30 +2238,6 @@ contains
       end if
     end do
 
-    if (use_pflotran .and. pf_cmode) then
-       ! note: the follwoing should be useful to non-pflotran-coupled, but seems cause 1 BFB test unmatching.
-       ! add up all vertical transport tendency terms and calculate total som leaching loss as the sum of these
-       do l = 1, ndecomp_pools
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%decomp_cpools_leached_col(c,l) = 0._r8
-          end do
-          do j = 1, nlev
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%decomp_cpools_leached_col(c,l) = &
-                  this%decomp_cpools_leached_col(c,l) + &
-                  this%decomp_cpools_transport_tendency_col(c,j,l) * dzsoi_decomp(j)
-             end do
-          end do
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%som_c_leached_col(c) = &
-                this%som_c_leached_col(c) + &
-                this%decomp_cpools_leached_col(c,l)
-          end do
-       end do
-    end if
 
     
     ! debug
@@ -2313,193 +2268,6 @@ contains
   end associate
 end subroutine Summary
 
-!-------------------------------------------------------------------------------------------------
-! !INTERFACE:
-subroutine CSummary_interface(this, bounds, num_soilc, filter_soilc)
-!
-! !DESCRIPTION:
-! bgc interface & pflotran:
-! On the radiation time step, perform column-level carbon
-! summary calculations, which mainly from PFLOTRAN bgc
-!
-! !USES:
-   use shr_sys_mod, only: shr_sys_flush
-   use elm_varpar , only: nlevdecomp_full,ndecomp_pools,ndecomp_cascade_transitions
-   use elm_varpar , only: i_met_lit, i_cel_lit, i_lig_lit, i_cwd
-   use elm_time_manager    , only : get_step_size
-!
-! !ARGUMENTS:
-   implicit none
-   class(carbonflux_type)          :: this
-   type(bounds_type) ,  intent(in) :: bounds
-   integer,             intent(in) :: num_soilc       ! number of soil columns in filter
-   integer,             intent(in) :: filter_soilc(:) ! filter for soil columns
-!
-! !CALLED FROM:
-! subroutine Summary (if plotran bgc coupled with CLM-CN
-!
-! LOCAL VARIABLES:
-   real(r8) :: dtime                ! time-step (s)
-   integer :: c,j,l                 ! indices
-   integer :: fc                    ! column filter indices
-
-    associate(&
-        is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
-        is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
-        is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool
-        )
-
-    dtime = get_step_size()
-!---------------------------------------------------------------------------------------------------
-   ! total heterotrophic respiration (HR)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%hr_col(c) = 0._r8
-          do j = 1,nlevdecomp_full
-             this%hr_col(c) = this%hr_col(c) + &
-                this%hr_vr_col(c,j) * dzsoi_decomp(j)
-          end do
-       end do
-
-       ! new variable to account for co2 exchange (not all HR goes to atm at current time-step)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%f_co2_soil_col(c) = 0._r8
-       end do
-       do j = 1,nlevdecomp_full
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%f_co2_soil_col(c) = this%f_co2_soil_col(c) + &
-                this%f_co2_soil_vr_col(c,j) * dzsoi_decomp(j)
-          end do
-       end do
-
-
-    ! ---------------------------------------------------------
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%cwdc_hr_col(c)      = 0._r8
-          this%cwdc_loss_col(c)    = 0._r8
-          this%litterc_loss_col(c) = 0._r8
-       end do
-
-       do l = 1, ndecomp_pools
-          if ( is_cwd(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                do j = 1, nlevdecomp_full
-                   this%cwdc_loss_col(c) = &
-                      this%cwdc_loss_col(c) + &
-                      this%decomp_cpools_sourcesink_col(c,j,l) / dtime
-                end do
-             end do
-          end if
-
-          if ( is_litter(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                do j = 1, nlevdecomp_full
-                   this%litterc_loss_col(c) = &
-                      this%litterc_loss_col(c) + &
-                      this%decomp_cpools_sourcesink_col(c,j,l) / dtime
-                end do
-             end do
-          end if
-
-       end do
-
-   ! add up all vertically-resolved addition/removal rates (gC/m3/s) of decomp_pools for PFLOTRAN-bgc
-    ! (note: this can be for general purpose, although here added an 'if...endif' block for PF-bgc)
-    ! first, need to save the total plant C adding/removing to decomposing pools at previous time-step
-    ! for calculating the net changes, which are used to do balance check
-
-    do fc = 1, num_soilc
-        c = filter_soilc(fc)
-        this%externalc_to_decomp_delta_col(c) = 0._r8
-        do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp_full
-            this%externalc_to_decomp_delta_col(c) = this%externalc_to_decomp_delta_col(c) + &
-                                this%externalc_to_decomp_cpools_col(c,j,l)*dzsoi_decomp(j)
-          end do
-        end do
-    end do
-    !
-    ! do the initialization for the following variable here.
-    ! DON'T do so in the beginning of CLM-CN time-step (otherwise the above saved will not work)
-
-    do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%externalc_to_decomp_cpools_col(c, 1:nlevdecomp_full, 1:ndecomp_pools) = 0._r8
-    end do
-
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       do l = 1, ndecomp_pools
-          do j = 1, nlevdecomp_full
-             ! for litter C pools
-             if (l==i_met_lit) then
-                this%externalc_to_decomp_cpools_col(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools_col(c,j,l)               &
-                        + this%phenology_c_to_litr_met_c_col(c,j)            &
-                        + this%dwt_frootc_to_litr_met_c_col(c,j)             &
-                        + this%gap_mortality_c_to_litr_met_c_col(c,j)        &
-                        + this%harvest_c_to_litr_met_c_col(c,j)              &
-                        + this%m_c_to_litr_met_fire_col(c,j)                 
-
-             elseif (l==i_cel_lit) then
-                this%externalc_to_decomp_cpools_col(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools_col(c,j,l)               &
-                        + this%phenology_c_to_litr_cel_c_col(c,j)            &
-                        + this%dwt_frootc_to_litr_cel_c_col(c,j)             &
-                        + this%gap_mortality_c_to_litr_cel_c_col(c,j)        &
-                        + this%harvest_c_to_litr_cel_c_col(c,j)              &
-                        + this%m_c_to_litr_cel_fire_col(c,j)                 
-
-             elseif (l==i_lig_lit) then
-                this%externalc_to_decomp_cpools_col(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools_col(c,j,l)               &
-                        + this%phenology_c_to_litr_lig_c_col(c,j)            &
-                        + this%dwt_frootc_to_litr_lig_c_col(c,j)             &
-                        + this%gap_mortality_c_to_litr_lig_c_col(c,j)        &
-                        + this%harvest_c_to_litr_lig_c_col(c,j)              &
-                        + this%m_c_to_litr_lig_fire_col(c,j)                 
-
-             ! for cwd
-             elseif (l==i_cwd) then
-                this%externalc_to_decomp_cpools_col(c,j,l) =                 &
-                    this%externalc_to_decomp_cpools_col(c,j,l)               &
-                        + this%dwt_livecrootc_to_cwdc_col(c,j)               &
-                        + this%dwt_deadcrootc_to_cwdc_col(c,j)               &
-                        + this%gap_mortality_c_to_cwdc_col(c,j)              &
-                        + this%harvest_c_to_cwdc_col(c,j)                    &
-                        + this%fire_mortality_c_to_cwdc_col(c,j)             
-
-             end if
-
-             ! the following is the net changes of plant C to decompible C poools between time-step
-             ! in pflotran, decomposible C pools increments ARE from previous time-step (saved above);
-             ! while, in CLM-CN all plant C pools are updated with current C fluxes among plant and ground/soil.
-             ! therefore, when do balance check it is needed to adjust the time-lag of changes.
-             this%externalc_to_decomp_delta_col(c) = this%externalc_to_decomp_delta_col(c) - &
-                                this%externalc_to_decomp_cpools_col(c,j,l)*dzsoi_decomp(j)
-
-             if (abs(this%externalc_to_decomp_cpools_col(c,j,l))<=1.e-20_r8) then
-                 this%externalc_to_decomp_cpools_col(c,j,l) = 0._r8
-             end if
-
-          end do
-       end do
-    end do
-
-    ! change the sign so that it is the increments from the previous time-step (unit: from g/m2/s)
-    do fc = 1, num_soilc
-       c = filter_soilc(fc)
-       this%externalc_to_decomp_delta_col(c) = -this%externalc_to_decomp_delta_col(c)
-    end do
-
-    end associate
-end subroutine CSummary_interface
-!-------------------------------------------------------------------------------------------------
 
   !------------------------------------------------------------  
   subroutine summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
@@ -2611,66 +2379,60 @@ end subroutine CSummary_interface
        this%somhr_col(c)              = 0._r8
        this%lithr_col(c)              = 0._r8
        this%decomp_cascade_hr_col(c,1:ndecomp_cascade_transitions)= 0._r8
-       if (.not. (use_pflotran .and. pf_cmode)) then
-       ! pflotran has returned 'hr_vr_col(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in EcosystemDynNoLeaching2
-       ! thus 'hr_vr_col' should NOT be set to 0
             this%hr_vr_col(c,1:nlevdecomp) = 0._r8
-       end if
     enddo
 
-    if ((.not. (use_pflotran .and. pf_cmode))) then
-      ! vertically integrate HR and decomposition cascade fluxes
-      do k = 1, ndecomp_cascade_transitions
+    ! vertically integrate HR and decomposition cascade fluxes
+    do k = 1, ndecomp_cascade_transitions
 
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
+     do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
 
-             this%decomp_cascade_hr_col(c,k) = &
-                this%decomp_cascade_hr_col(c,k) + &
-                this%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j)
+           this%decomp_cascade_hr_col(c,k) = &
+              this%decomp_cascade_hr_col(c,k) + &
+              this%decomp_cascade_hr_vr_col(c,j,k) * dzsoi_decomp(j)
 
-          end do
-       end do
-      end do
+        end do
+     end do
+    end do
 
-      ! litter heterotrophic respiration (LITHR)
-      do k = 1, ndecomp_cascade_transitions
-        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%lithr_col(c) = &
-              this%lithr_col(c) + &
-              this%decomp_cascade_hr_col(c,k)
-          end do
-        end if
-      end do
+    ! litter heterotrophic respiration (LITHR)
+    do k = 1, ndecomp_cascade_transitions
+      if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+        do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%lithr_col(c) = &
+            this%lithr_col(c) + &
+            this%decomp_cascade_hr_col(c,k)
+        end do
+      end if
+    end do
 
-      ! soil organic matter heterotrophic respiration (SOMHR)
-      do k = 1, ndecomp_cascade_transitions
-        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%somhr_col(c) = &
-              this%somhr_col(c) + &
-              this%decomp_cascade_hr_col(c,k)
-          end do
-        end if
-      end do
+    ! soil organic matter heterotrophic respiration (SOMHR)
+    do k = 1, ndecomp_cascade_transitions
+      if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+        do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%somhr_col(c) = &
+            this%somhr_col(c) + &
+            this%decomp_cascade_hr_col(c,k)
+        end do
+      end if
+    end do
 
-      ! total heterotrophic respiration, vertically resolved (HR)
+    ! total heterotrophic respiration, vertically resolved (HR)
 
-      do k = 1, ndecomp_cascade_transitions
-        do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%hr_vr_col(c,j) = &
-                this%hr_vr_col(c,j) + &
-                this%decomp_cascade_hr_vr_col(c,j,k)
-          end do
+    do k = 1, ndecomp_cascade_transitions
+      do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%hr_vr_col(c,j) = &
+              this%hr_vr_col(c,j) + &
+              this%decomp_cascade_hr_vr_col(c,j,k)
         end do
       end do
-    endif
+    end do
 
     end associate
   end subroutine summary_cflux_for_ch4

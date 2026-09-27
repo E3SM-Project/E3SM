@@ -708,7 +708,7 @@ contains
           w_scalar       => col_cf%w_scalar  , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
           o_scalar       => col_cf%o_scalar  , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
           decomp_k       => col_cf%decomp_k  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
-          decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)    ! pflotran (0 for atm. co2)
+          decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)
           )
 
        mino2lim = ParamsShareInst%mino2lim
@@ -762,7 +762,7 @@ contains
        i_soil3 = 7
        i_soil4 = 8
 
-       ! pflotran:beg---saving kd (NOT ad scaled) for passing to pflotran bgc decomposition sandboxes
+       ! Saving kd (NOT ad scaled)
        decomp_k_pools(i_litr1) = k_l1 / dt
        decomp_k_pools(i_litr2) = k_l2 / dt
        decomp_k_pools(i_litr3) = k_l3 / dt
@@ -771,7 +771,6 @@ contains
        decomp_k_pools(i_soil2) = k_s2 / dt
        decomp_k_pools(i_soil3) = k_s3 / dt
        decomp_k_pools(i_soil4) = k_s4 / dt
-       ! pflotran:end
 
        ! The following code implements the acceleration part of the AD spinup
        ! algorithm, by multiplying all of the SOM decomposition base rates by 10.0.

@@ -149,7 +149,6 @@ contains
     use elm_varcon, only : spval, re
     use domainMod , only : domain_type, domain_init, domain_clean, lon1d, lat1d
     use fileutils , only : getfil
-    use elm_varctl, only : use_pflotran
     !
     ! !ARGUMENTS:
     integer          ,intent(in)    :: begg, endg 
@@ -171,16 +170,11 @@ contains
     logical :: isgrid2d                     ! true => file is 2d lat/lon
     logical :: istype_domain                ! true => input file is of type domain
     real(r8), allocatable :: rdata2d(:,:)   ! temporary
-    real(r8), allocatable :: rdata3d(:,:,:) ! temporary  ! pflotran
     character(len=16) :: vname              ! temporary
     character(len=256):: locfn              ! local file name
     integer :: n                            ! indices
     real(r8):: eps = 1.0e-12_r8             ! lat/lon error tolerance
 
-    ! pflotran:beg-----------------------------
-    integer :: j, np, nv
-
-    ! pflotran:end-----------------------------
     character(len=32) :: subname = 'surfrd_get_grid'     ! subroutine name
 !-----------------------------------------------------------------------
 
@@ -196,15 +190,6 @@ contains
 
     ! Determine dimensions
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
-    
-    ! pflotran:beg-----------------------------------------------
-    call ncd_inqdlen(ncid, dimid, nv, 'nv')
-    if (nv>0) then
-       ldomain%nv = nv
-    else
-       ldomain%nv = 0
-    endif
-    ! pflotran:end-----------------------------------------------
 
     ! Determine isgrid2d flag for domain
     ldomain%set = .false.
@@ -233,21 +218,6 @@ contains
        call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: yc NOT on file'//errMsg(__FILE__, __LINE__))
-
-       ! pflotran:beg-----------------------------------------------
-       ! user-defined grid-cell vertices (ususally 'nv' is 4,
-       ! but for future use, we set the following if condition of 'nv>=3' so that possible to use TIN grids
-       if (ldomain%nv>=3 .and. use_pflotran) then
-          call ncd_io(ncid=ncid, varname='xv', flag='read', data=ldomain%lonv, &
-            dim1name=grlnd, readvar=readvar)
-          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: xv  NOT on file'//errMsg(__FILE__, __LINE__))
-
-          call ncd_io(ncid=ncid, varname='yv', flag='read', data=ldomain%latv, &
-            dim1name=grlnd, readvar=readvar)
-          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: yv  NOT on file'//errMsg(__FILE__, __LINE__))
-
-       end if
-       ! pflotran:end-----------------------------------------------
     else
        call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
             dim1name=grlnd, readvar=readvar)
@@ -260,27 +230,10 @@ contains
        call ncd_io(ncid=ncid, varname= 'LATIXY', flag='read', data=ldomain%latc, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: LATIXY NOT on file'//errMsg(__FILE__, __LINE__))
-
-       ! pflotran:beg-----------------------------------------------
-       ! user-defined grid-cell vertices (ususally 'nv' is 4,
-       ! but for future use, we set the following if condition of 'nv>=3' so that possible to use TIN grids
-       if (ldomain%nv>=3 .and. use_pflotran) then
-
-          call ncd_io(ncid=ncid, varname='LONGV', flag='read', data=ldomain%lonv, &
-            dim1name=grlnd, readvar=readvar)
-          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: LONGV  NOT on file'//errMsg(__FILE__, __LINE__))
-
-          call ncd_io(ncid=ncid, varname='LATIV', flag='read', data=ldomain%latv, &
-            dim1name=grlnd, readvar=readvar)
-          if (.not. readvar) call endrun( msg=trim(subname)//' ERROR: LATIV  NOT on file'//errMsg(__FILE__, __LINE__))
-
-       end if
-       ! pflotran:end-----------------------------------------------
     end if
 
     
-    ! let lat1d/lon1d data available for all grid-types, if coupled with PFLOTRAN.
-    if (isgrid2d .or. use_pflotran) then
+    if (isgrid2d) then
        allocate(rdata2d(ni,nj), lon1d(ni), lat1d(nj))
        if (istype_domain) then
           vname = 'xc'
@@ -297,79 +250,7 @@ contains
        call ncd_io(ncid=ncid, varname=trim(vname), data=rdata2d, flag='read', readvar=readvar)
        lat1d(:) = rdata2d(1,:)
        deallocate(rdata2d)
-
-       ! pflotran:beg-----------------------------------------------
-       ! find the origin of ldomain, if vertices of first grid known
-       if (use_pflotran) then
-         ldomain%lon0 = -9999._r8
-         ldomain%lat0 = -9999._r8
-         if (ldomain%nv==4 .and. ldomain%nv /= huge(1)) then
-          allocate(rdata3d(ni,nj,nv))
-          if (istype_domain) then
-             vname = 'xv'
-          else
-             vname = 'LONGV'
-          end if
-
-          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
-
-          if (readvar) then
-            ldomain%lon0 = 0._r8
-            np=0
-            do j=1,nv
-               ! may have issue if mixed longitude values (i.e. 0~360 or -180~180)
-               if ( ni>1 .and. &
-                    ( (rdata3d(1,1,j) < lon1d(1) .and. rdata3d(1,1,j) < lon1d(2)) .or. &
-                      (rdata3d(1,1,j) > lon1d(1) .and. rdata3d(1,1,j) > lon1d(2)) ) ) then
-                 np = np + 1
-                 ldomain%lon0 = ldomain%lon0+rdata3d(1,1,j)
-
-               else if (ni==1 .and. rdata3d(1,1,j)<lon1d(1)) then  !either side should be OK
-                 np = np + 1
-                 ldomain%lon0 = ldomain%lon0+rdata3d(1,1,j)
-               end if
-            end do
-            if (np>0) then
-              ldomain%lon0 = ldomain%lon0/np
-            else
-              ldomain%lon0 = -9999._r8
-            end if
-          end if
-
-          !
-          if (istype_domain) then
-             vname = 'yv'
-          else
-             vname = 'LATIV'
-          end if
-          call ncd_io(ncid=ncid, varname=trim(vname), data=rdata3d, flag='read', readvar=readvar)
-          if (readvar) then
-            ldomain%lat0 = 0._r8
-            np=0
-            do j=1,nv
-               if ( nj>1 .and. &
-                    ( (rdata3d(1,1,j) < lat1d(1) .and. rdata3d(1,1,j) < lat1d(2)) .or. &
-                      (rdata3d(1,1,j) > lat1d(1) .and. rdata3d(1,1,j) > lat1d(2)) ) ) then
-                 np = np + 1
-                 ldomain%lat0 = ldomain%lat0+rdata3d(1,1,j)
-
-               else if (nj==1 .and. rdata3d(1,1,j)<lat1d(1)) then  !either side should be OK
-                 np = np + 1
-                 ldomain%lat0 = ldomain%lat0+rdata3d(1,1,j)
-               end if
-            end do
-            if (np>0) then
-              ldomain%lat0 = ldomain%lat0/np
-            else
-              ldomain%lat0 = -9999._r8
-            end if
-          end if
-          !
-          deallocate(rdata3d)
-         end if
-       end if
-       ! pflotran:end-----------------------------------------------
-    end if  ! if (isgrid2d .or. use_pflotran)
+    end if  ! if (isgrid2d)
 
 
 
@@ -640,7 +521,6 @@ contains
     end if
 
     call ncd_inqfdims(ncid, isgrid2d, ni, nj, ns)
-    surfdata_domain%nv = 0   ! must be initialized to 0 here prior to call 'domain_init'
     surfdata_domain%set = .false.
     call domain_init(surfdata_domain, isgrid2d, ni, nj, begg, endg, elmlevel=grlnd)
 

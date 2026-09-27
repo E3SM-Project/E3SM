@@ -17,8 +17,6 @@ module PhosphorusStateUpdate3Mod
   use PhosphorusStateType , only : phosphorusstate_type
   use PhosphorusFLuxType  , only : phosphorusflux_type
   use soilorder_varcon    , only : smax,ks_sorption
-  ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode
   use elm_varctl          , only : nu_com
   use elm_varctl          , only : ECA_Pconst_RGspin
   use VegetationPropertiesType      , only : veg_vp

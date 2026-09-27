@@ -2078,11 +2078,6 @@ sub process_namelist_inline_logic {
   setup_logic_lai_streams($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
 
   #########################################
-  # namelist group: clm_pflotran_inparm   #
-  #########################################
-  setup_logic_pflotran($opts, $nl_flags, $definition, $defaults, $nl, $physv);
-
-  #########################################
   # namelist group: elm_mosart_coupling   #
   #########################################
   setup_elm_mosart_coupling($opts, $nl_flags, $definition, $defaults, $nl);
@@ -3336,25 +3331,6 @@ sub setup_logic_snowpack {
 }
 
 #-------------------------------------------------------------------------------
-sub setup_logic_pflotran {
-    # clm_pflotran_inparm
-    # PFLOTRAN model if bgc=CN or CNDV and CLM4.5 physics
-    #
-    my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-
-
-  if ( $nl_flags->{'use_pflotran'}  eq '.true.' ) {
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_inputdir' );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pflotran_prefix' );
-    #
-    # Check if $pflotran_prefix is set in $inputdata_rootdir/$pflotran      #
-    my $pflotran_inputdir = $nl->get_value('pflotran_inputdir');
-    my $pflotran_prefix = $nl->get_value('pflotran_prefix');
-    # (TODO) something here, but not yet at this momment.
-  }
-} # end setup_logic_pflotran
-
-#-------------------------------------------------------------------------------
 sub setup_elm_mosart_coupling {
   my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
 
@@ -3601,7 +3577,7 @@ sub write_output_files {
   {
     @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm
                  elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks
-                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm elm_mosart);
+                 elmu_inparm elm_soilstate_inparm elm_mosart);
     #@groups = qw(elm_inparm elm_canopyhydrology_inparm elm_soilhydrology_inparm
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on

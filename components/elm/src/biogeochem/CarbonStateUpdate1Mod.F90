@@ -10,7 +10,7 @@ module CarbonStateUpdate1Mod
   use elm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varcon              , only : dzsoi_decomp
   use elm_varctl              , only : nu_com, use_c13, use_c14
-  use elm_varctl              , only : use_pflotran, pf_cmode, use_fates
+  use elm_varctl              , only : use_fates
   use pftvarcon               , only : iscft
   use CNDecompCascadeConType  , only : decomp_cascade_type
   use CNStateType             , only : cnstate_type
@@ -215,52 +215,50 @@ contains
           col_cs%decomp_som2c_vr(c,1:nlevdecomp) = col_cs%decomp_cpools_vr(c,1:nlevdecomp,6)
       end do
 
-      if (.not.(use_pflotran .and. pf_cmode)) then
 
-         ! plant to litter fluxes
-         if(.not.use_fates)then
+      ! plant to litter fluxes
+      if(.not.use_fates)then
+         do j = 1,nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               ! phenology and dynamic land cover fluxes
+               col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
+                    col_cf%phenology_c_to_litr_met_c(c,j) * dt
+               col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
+                    col_cf%phenology_c_to_litr_cel_c(c,j) * dt
+               col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
+                    col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+            end do
+         end do
+      end if
+
+      ! litter and SOM HR fluxes
+      do k = 1, ndecomp_cascade_transitions
+         do j = 1,nlevdecomp
+            ! column loop
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) = &
+                    col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) &
+                    - ( col_cf%decomp_cascade_hr_vr(c,j,k) + col_cf%decomp_cascade_ctransfer_vr(c,j,k)) *dt
+            end do
+         end do
+      end do
+      do k = 1, ndecomp_cascade_transitions
+         if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
             do j = 1,nlevdecomp
                ! column loop
                do fc = 1,num_soilc
                   c = filter_soilc(fc)
-                  ! phenology and dynamic land cover fluxes
-                  col_cf%decomp_cpools_sourcesink(c,j,i_met_lit) = &
-                       col_cf%phenology_c_to_litr_met_c(c,j) * dt
-                  col_cf%decomp_cpools_sourcesink(c,j,i_cel_lit) = &
-                       col_cf%phenology_c_to_litr_cel_c(c,j) * dt
-                  col_cf%decomp_cpools_sourcesink(c,j,i_lig_lit) = &
-                       col_cf%phenology_c_to_litr_lig_c(c,j) * dt
+                  col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) = &
+                       col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
+                       + col_cf%decomp_cascade_ctransfer_vr(c,j,k)*dt
                end do
             end do
          end if
+      end do
 
-         ! litter and SOM HR fluxes
-         do k = 1, ndecomp_cascade_transitions
-            do j = 1,nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) = &
-                       col_cf%decomp_cpools_sourcesink(c,j,cascade_donor_pool(k)) &
-                       - ( col_cf%decomp_cascade_hr_vr(c,j,k) + col_cf%decomp_cascade_ctransfer_vr(c,j,k)) *dt
-               end do
-            end do
-         end do
-         do k = 1, ndecomp_cascade_transitions
-            if ( cascade_receiver_pool(k) /= 0 ) then  ! skip terminal transitions
-               do j = 1,nlevdecomp
-                  ! column loop
-                  do fc = 1,num_soilc
-                     c = filter_soilc(fc)
-                     col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) = &
-                          col_cf%decomp_cpools_sourcesink(c,j,cascade_receiver_pool(k)) &
-                          + col_cf%decomp_cascade_ctransfer_vr(c,j,k)*dt
-                  end do
-               end do
-            end if
-         end do
-
-      endif   
 
       if (.not.use_fates) then
 

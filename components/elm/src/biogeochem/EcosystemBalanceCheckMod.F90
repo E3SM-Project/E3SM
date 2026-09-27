@@ -23,8 +23,6 @@ module EcosystemBalanceCheckMod
   use subgridAveMod       , only : p2c, c2g, unity
   ! soil erosion
   use elm_varctl          , only : use_erosion, ero_ccycle
-  ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
   use elm_time_manager    , only : get_curr_date
   use CNStateType         , only : fert_type , fert_continue, fert_dose, fert_start, fert_end
@@ -212,7 +210,6 @@ contains
          col_hrv_xsmrpool_to_atm   =>    col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             =>    col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
          som_c_yield               =>    col_cf%somc_yield                , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss by erosion
-         col_decompc_delta         =>    col_cf%externalc_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          col_cinputs               =>    col_cf%cinputs                   , & ! Output: [real(r8) (:)]  column-level C inputs (gC/m2/s)
          col_coutputs              =>    col_cf%coutputs                  , & ! Output: [real(r8) (:)]  column-level C outputs (gC/m2/s)
          col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
@@ -273,13 +270,6 @@ contains
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs(c) - col_coutputs(c))*dt - (col_endcb(c) - col_begcb(c))
 
-         ! adjusting the time-lag of org. C increments to decomposing pools when coupled with PFLOTRAN bgc
-         ! (because PF bgc uses the extern C as sink (in, + ) at previous time-step,
-         ! but note that it includes possible negative adding)
-         if (use_pflotran .and. pf_cmode) then
-            col_errcb(c) = col_errcb(c) - col_decompc_delta(c)*dt
-            ! here is '-' adjustment. It says that the adding to PF decomp c pools was less.
-         end if
 
          ! check for significant errors
          if (abs(col_errcb(c)) > balance_check_tolerance) then
@@ -307,14 +297,6 @@ contains
 
           if (ero_ccycle) then
              write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-          end if
-
-          if (use_pflotran .and. pf_cmode) then
-             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-          end if
-
-          if (use_pflotran .and. pf_cmode) then
-             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
           end if
 
           call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -382,8 +364,6 @@ contains
          som_n_leached             =>    col_nf%som_n_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
          som_n_yield               =>    col_nf%somn_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
          supplement_to_plantn      =>    veg_nf%supplement_to_plantn      , &
-         ! pflotran:
-         col_decompn_delta         =>    col_nf%externaln_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
          col_ninputs               =>    col_nf%ninputs                   , & ! Output: [real(r8) (:)]  column-level N inputs (gN/m2/s)
          col_noutputs              =>    col_nf%noutputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
@@ -462,12 +442,7 @@ contains
 
          col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
             
-         if(use_pflotran .and. pf_cmode) then
-            ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
-            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-         else
-            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
-         endif
+         col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
             
 
 
@@ -487,13 +462,6 @@ contains
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
 
-         ! adjusting the time-lag of org. N increments to decomposing pools when coupled with PFLOTRAN bgc
-         ! (because PF bgc uses the extern N sink (in, +) at previous time-step,
-         ! but note that it includes possible negative adding)
-         if (use_pflotran .and. pf_cmode) then
-            col_errnb(c) = col_errnb(c) - col_decompn_delta(c)*dt
-            ! here is '-' adjustment. It says that the adding to PF decomp n pools was less.
-         end if
 
          if (abs(col_errnb(c)) > balance_check_tolerance) then
             err_found = .true.
@@ -531,9 +499,6 @@ contains
             write(iulog,*)'erosion               = ',som_n_yield(c)*dt
          end if
 
-         if (use_pflotran .and. pf_cmode) then
-            write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
-         end if
          call endrun(msg=errMsg(__FILE__, __LINE__))
 #endif
 

@@ -117,7 +117,7 @@ module elm_time_manager
    private :: init_calendar
    private :: init_clock
 !    private :: calc_nestep
-   public  :: calc_nestep    !pflotran
+   public  :: calc_nestep
    private :: timemgr_print
    private :: TimeGetymd
    private :: check_timemgr_initialized
@@ -638,7 +638,6 @@ contains
 
     tm_first_restart_step = .true.
 
-    ! pflotran: nsstep
     ! save the first restart 'nstep'
     nsstep = get_nstep()
 

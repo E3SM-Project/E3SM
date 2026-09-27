@@ -102,7 +102,6 @@ module EnergyFluxType
      ! Latent heat
      real(r8), pointer :: htvp_col                (:)   ! latent heat of vapor of water (or sublimation) [j/kg]
 
-     ! for couplig with pflotran
      real(r8), pointer :: eflx_soil_grnd_col      (:)   ! col integrated soil ground heat flux (W/m2)  [+ = into ground]
      real(r8), pointer :: eflx_rnet_soil_col      (:)   ! col soil net (sw+lw) radiation flux (W/m2) [+ = into soil]
      real(r8), pointer :: eflx_fgr0_soil_col      (:)   ! col soil-air heat flux (W/m2) [+ = into soil]
@@ -244,7 +243,6 @@ contains
 
     allocate( this%htvp_col                (begc:endc))             ; this%htvp_col                (:)   = spval
 
-    ! for coupling with pflotran
     allocate( this%eflx_soil_grnd_col      (begc:endc))             ; this%eflx_soil_grnd_col      (:)   = spval
     allocate( this%eflx_rnet_soil_col      (begc:endc))             ; this%eflx_rnet_soil_col      (:)   = spval
     allocate( this%eflx_fgr0_soil_col      (begc:endc))             ; this%eflx_fgr0_soil_col      (:)   = spval

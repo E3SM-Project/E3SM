@@ -2220,12 +2220,6 @@ this mask will have smb calculated over the entire global land surface
 <domain_decomp_type>round_robin</domain_decomp_type>
 
 <!-- =========================================  -->
-<!-- Defaults for clm_pflotran_inparm interface -->
-<!-- =========================================  -->
-<pflotran_inputdir>pflotran</pflotran_inputdir>
-<pflotran_prefix>pflotran_clm</pflotran_prefix>
-
-<!-- =========================================  -->
 <!-- Defaults for FATES interface -->
 <!-- =========================================  -->
 <fates_spitfire_mode            use_fates=".true.">0</fates_spitfire_mode>

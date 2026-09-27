@@ -4328,7 +4328,7 @@
       prefered location). -->
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <!-- for CLM-PFLOTRAN coupling, the PETSC_PATH must be defined specifically upon machines -->
+    <!-- PETSC_PATH must be defined specifically upon machines -->
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="PETSC_PATH">/software/user_tools/current/cades-ccsi/petsc4pf/openmpi-1.10-gcc-5.3</env>
     </environment_variables>

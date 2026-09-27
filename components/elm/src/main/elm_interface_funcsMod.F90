@@ -100,17 +100,12 @@ module elm_interface_funcsMod
 
   ! STEP-3.x: elm_interface_data -> clm vars
   ! update clm variables from elm_interface_data,
-  ! e.g., called in 'update_bgc_data_elm2elm' and 'update_bgc_data_pf2elm'
-  ! specific bgc-module (e.g., PFLOTRAN) requires certain combination of these subroutines
+  ! e.g., called in 'update_bgc_data_elm2elm'
+  ! specific bgc-module requires certain combination of these subroutines
   private   :: update_bgc_state_decomp
-  private   :: update_bgc_state_smin
-  private   :: update_bgc_flux_decomp_sourcesink
   private   :: update_bgc_flux_decomp_cascade
   private   :: update_bgc_flux_smin
   private   :: update_bgc_flux_nitdenit
-  private   :: update_bgc_flux_gas_pf
-  private   :: update_soil_moisture
-  private   :: update_soil_temperature
 
   !--------------------------------------------------------------------------------------
   ! (2) SPECIFIC SUBROUTINES: used by a specific soil BGC module
@@ -121,13 +116,6 @@ module elm_interface_funcsMod
                                         ! STEP-2.2: eun clm-bgc module                                             ; see SoilLittDecompAlloc in SoilLittDecompMod
   private   :: elm_bgc_update_data      ! STEP-2.3: elm-bgc module-> elm_interface_data                            ; called in elm_bgc_run
   public    :: update_bgc_data_elm2elm  ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
-
-  ! (2.2) Specific Subroutines for CLM-PFLOTRAN Coupling: update clm variables from pflotran
-  ! if (use_elm_interface .and. use_pflotran)
-  public    :: update_bgc_data_pf2elm   ! STEP-3:   elm_interface_data  -> clm vars                                ; called in clm_driver
-                                        ! STEP-2:   see 'elm_pf_run' in elm_interface_pflotranMod
-
-  public    :: update_th_data_pf2elm
   !--------------------------------------------------------------------------------------
 
 contains
@@ -743,136 +731,6 @@ contains
   end subroutine get_elm_bgc_flux
 !--------------------------------------------------------------------------------------
 
-!--------------------------------------------------------------------------------------
-  subroutine update_soil_moisture(elm_idata_th,     &
-           bounds, num_soilc, filter_soilc,   &
-           soilstate_vars, waterstate_vars)
-
-  !
-  ! !DESCRIPTION:
-  !
-  !
-  ! !USES:
-
-  ! !ARGUMENTS:
-    implicit none
-
-    type(bounds_type), intent(in) :: bounds
-    integer, intent(in) :: num_soilc        ! number of column soil points in column filter
-    integer, intent(in) :: filter_soilc(:)  ! column filter for soil points
-    type(soilstate_type), intent(inout)  :: soilstate_vars
-    type(waterstate_type), intent(inout) :: waterstate_vars
-
-    type(elm_interface_th_datatype), intent(in) :: elm_idata_th
-
-  ! !LOCAL VARIABLES:
-    integer  :: fc, c, j, g, gcount      ! indices
-
-  !EOP
-  !-----------------------------------------------------------------------
-    associate ( &
-         soilpsi_col    =>  soilstate_vars%soilpsi_col          , &
-         !
-         h2osoi_liq_col =>  col_ws%h2osoi_liq      , &
-         h2osoi_ice_col =>  col_ws%h2osoi_ice      , &
-         h2osoi_vol_col =>  col_ws%h2osoi_vol        &
-    )
-
-    do fc = 1,num_soilc
-        c = filter_soilc(fc)
-
-        soilpsi_col(c,:)    =  elm_idata_th%soilpsi_col(c,:)
-
-        h2osoi_liq_col(c,:) =  elm_idata_th%h2osoi_liq_col(c,:)
-        h2osoi_ice_col(c,:) =  elm_idata_th%h2osoi_ice_col(c,:)
-        h2osoi_vol_col(c,:) =  elm_idata_th%h2osoi_vol_col(c,:)
-    end do
-
-    end associate
-  end subroutine update_soil_moisture
-!--------------------------------------------------------------------------------------
-
-!--------------------------------------------------------------------------------------
-  subroutine update_soil_temperature(elm_idata_th,     &
-           bounds, num_soilc, filter_soilc,            &
-           temperature_vars)
-
-  !
-  ! !DESCRIPTION:
-  !
-  !
-  ! !USES:
-
-  ! !ARGUMENTS:
-    implicit none
-
-    type(bounds_type)                   , intent(in)    :: bounds
-    integer                             , intent(in)    :: num_soilc        ! number of column soil points in column filter
-    integer                             , intent(in)    :: filter_soilc(:)  ! column filter for soil points
-    type(temperature_type)              , intent(inout) :: temperature_vars
-    type(elm_interface_th_datatype)     , intent(in)    :: elm_idata_th
-
-  ! !LOCAL VARIABLES:
-    integer  :: fc, c, j, g, gcount      ! indices
-
-  !EOP
-  !-----------------------------------------------------------------------
-    associate ( &
-         t_soisno   => col_es%t_soisno   & ! snow-soil temperature (Kelvin)
-    )
-
-    do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        t_soisno(c,:)   = elm_idata_th%t_soisno_col(c,:)
-    end do
-
-    end associate
-  end subroutine update_soil_temperature
-!--------------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------------
-  subroutine update_th_data_pf2elm(elm_idata_th,           &
-           bounds, num_soilc, filter_soilc,                &
-           waterstate_vars, waterflux_vars,                &
-           temperature_vars, energyflux_vars,              &
-           soilstate_vars, soilhydrology_vars)
-
-    ! USES
-    use elm_varctl          , only : use_pflotran, pf_tmode, pf_hmode
-
-    implicit none
-
-    ! !ARGUMENTS:
-    type(bounds_type)           , intent(in)    :: bounds
-    integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    type(waterstate_type)       , intent(inout) :: waterstate_vars
-    type(waterflux_type)        , intent(inout) :: waterflux_vars
-    type(temperature_type)      , intent(inout) :: temperature_vars
-    type(soilstate_type)        , intent(inout) :: soilstate_vars
-    type(soilhydrology_type)    , intent(inout) :: soilhydrology_vars
-    type(energyflux_type)       , intent(inout) :: energyflux_vars
-
-    type(elm_interface_th_datatype), intent(in) :: elm_idata_th
-
-    !-----------------------------------------------------------------------
-
-    character(len=256) :: subname = "update_th_data_pf2elm"
-
-    if (pf_tmode) then
-        call update_soil_temperature(elm_idata_th,      &
-                   bounds, num_soilc, filter_soilc,     &
-                   temperature_vars)
-    end if
-
-    if (pf_hmode) then
-        call update_soil_moisture(elm_idata_th,         &
-                   bounds, num_soilc, filter_soilc,     &
-                   soilstate_vars, waterstate_vars)
-    end if
-
-  end subroutine update_th_data_pf2elm
-!--------------------------------------------------------------------------------------
-
 
 !--------------------------------------------------------------------------------------
   subroutine update_bgc_state_decomp(elm_bgc_data,  &
@@ -917,107 +775,6 @@ contains
 
     end associate
   end subroutine update_bgc_state_decomp
-!--------------------------------------------------------------------------------------
-
-!--------------------------------------------------------------------------------------
-    subroutine update_bgc_state_smin(elm_bgc_data,      &
-           bounds, num_soilc, filter_soilc,             &
-           nitrogenstate_vars, phosphorusstate_vars)
-
-    use CNDecompCascadeConType, only : decomp_cascade_con
-    use elm_time_manager, only : get_step_size
-
-    implicit none
-
-    type(bounds_type)           , intent(in)    :: bounds
-    integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-
-    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
-    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
-
-    type(elm_interface_bgc_datatype), intent(in) :: elm_bgc_data
-
-    character(len=256) :: subname = "update_bgc_state_smin"
-
-    integer  :: fc,c,j
-
-!------------------------------------------------------------------------------------
-     !
-     associate ( &
-     sminn_vr           => col_ns%sminn_vr           , &
-     smin_no3_vr        => col_ns%smin_no3_vr        , &
-     smin_nh4_vr        => col_ns%smin_nh4_vr        , &
-     smin_nh4sorb_vr    => col_ns%smin_nh4sorb_vr    , &
-
-     solutionp_vr       => col_ps%solutionp_vr     , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil solution P
-     labilep_vr         => col_ps%labilep_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil labile mineral P
-     secondp_vr         => col_ps%secondp_vr       , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil secondary mineralP
-     sminp_vr           => col_ps%sminp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil mineral P = solutionp + labilep + second
-     occlp_vr           => col_ps%occlp_vr         , & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil occluded mineral P
-     primp_vr           => col_ps%primp_vr           & ! [real(r8) (:,:)   ! col (gP/m3) vertically-resolved soil primary mineral P
-
-     )
-! ------------------------------------------------------------------------
-!
-    do fc = 1, num_soilc
-        c = filter_soilc(fc)
-            smin_no3_vr(c,:)        = elm_bgc_data%smin_no3_vr_col(c,:)
-            smin_nh4_vr(c,:)        = elm_bgc_data%smin_nh4_vr_col(c,:)
-            smin_nh4sorb_vr(c,:)    = elm_bgc_data%smin_nh4sorb_vr_col(c,:)
-            sminn_vr(c,:)           = elm_bgc_data%sminn_vr_col(c,:)
-
-            solutionp_vr(c,:)       = elm_bgc_data%solutionp_vr_col(c,:)
-            labilep_vr(c,:)         = elm_bgc_data%labilep_vr_col(c,:)
-            secondp_vr(c,:)         = elm_bgc_data%secondp_vr_col(c,:)
-            sminp_vr(c,:)           = elm_bgc_data%sminp_vr_col(c,:)
-            occlp_vr(c,:)           = elm_bgc_data%occlp_vr_col(c,:)
-            primp_vr(c,:)           = elm_bgc_data%primp_vr_col(c,:)
-    end do
-
-    end associate
-  end subroutine update_bgc_state_smin
-!--------------------------------------------------------------------------------------
-
-!--------------------------------------------------------------------------------------
-    subroutine update_bgc_flux_decomp_sourcesink(elm_bgc_data,       &
-           bounds, num_soilc, filter_soilc,                          &
-           carbonflux_vars, nitrogenflux_vars,                       &
-           phosphorusflux_vars)
-
-    use CNDecompCascadeConType, only : decomp_cascade_con
-
-    implicit none
-
-    type(bounds_type)           , intent(in)    :: bounds
-    integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
-
-    type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
-
-    integer :: fc, c, j, k
-    character(len=256) :: subname = "update_bgc_flux_decomp_sourcesink"
-
-    associate ( &
-     decomp_cpools_sourcesink_vr  => col_cf%decomp_cpools_sourcesink    , &
-     decomp_npools_sourcesink_vr  => col_nf%decomp_npools_sourcesink  , &
-     decomp_ppools_sourcesink_vr  => col_pf%decomp_ppools_sourcesink  &
-     )
-
-    do fc = 1, num_soilc
-        c = filter_soilc(fc)
-            do k = 1, ndecomp_pools
-                decomp_cpools_sourcesink_vr(c,:,k) = elm_bgc_data%decomp_cpools_sourcesink_col(c,:,k)
-                decomp_npools_sourcesink_vr(c,:,k) = elm_bgc_data%decomp_npools_sourcesink_col(c,:,k)
-                decomp_ppools_sourcesink_vr(c,:,k) = elm_bgc_data%decomp_ppools_sourcesink_col(c,:,k)
-            end do
-    end do
-    end associate
-    end subroutine update_bgc_flux_decomp_sourcesink
 !--------------------------------------------------------------------------------------
 
 !--------------------------------------------------------------------------------------
@@ -1125,8 +882,8 @@ contains
      sminn_to_denit_excess_vr     => col_nf%sminn_to_denit_excess_vr  , & ! Output: [real(r8) (:,:) ]
      supplement_to_sminn_vr       => col_nf%supplement_to_sminn_vr    , & ! Output: [real(r8) (:,:) ]
 
-     no3_net_transport_vr         => col_nf%no3_net_transport_vr      , & ! Output: updated from PF, if coupled
-     nh4_net_transport_vr         => col_nf%nh4_net_transport_vr      , & ! Output: updated from PF, if coupled
+     no3_net_transport_vr         => col_nf%no3_net_transport_vr      , & ! Output
+     nh4_net_transport_vr         => col_nf%nh4_net_transport_vr      , & ! Output
 
      potential_immob_p            => col_pf%potential_immob_p       , & ! Output: [real(r8) (:)   ]
      actual_immob_p               => col_pf%actual_immob_p          , & ! Output: [real(r8) (:)   ]
@@ -1183,7 +940,7 @@ contains
         potential_immob_p_vr(c,:)   = elm_bgc_data%potential_immob_p_vr_col(c,:)
         actual_immob_p_vr(c,:)      = elm_bgc_data%actual_immob_p_vr_col(c,:)
         gross_pmin_vr(c,:)          = elm_bgc_data%gross_pmin_vr_col(c,:)
-        net_pmin_vr(c,:)            = elm_bgc_data%net_pmin_vr_col(c,:)     !NOT available in PF
+        net_pmin_vr(c,:)            = elm_bgc_data%net_pmin_vr_col(c,:)
 
       end do
     end associate
@@ -1231,115 +988,6 @@ contains
     end associate
     end subroutine update_bgc_flux_nitdenit
 !--------------------------------------------------------------------------------------
-
-!--------------------------------------------------------------------------------------
-  subroutine update_bgc_flux_gas_pf(elm_bgc_data,  &
-     bounds, num_soilc, filter_soilc,              &
-     carbonflux_vars, nitrogenflux_vars)
-
-     ! PFLOTRAN gas fluxes
-     implicit none
-
-     type(bounds_type)                  , intent(in)    :: bounds
-     integer                            , intent(in)    :: num_soilc       ! number of soil columns in filter
-     integer                            , intent(in)    :: filter_soilc(:) ! filter for soil columns
-
-     type(carbonflux_type)              , intent(inout) :: carbonflux_vars
-     type(nitrogenflux_type)            , intent(inout) :: nitrogenflux_vars
-     type(elm_interface_bgc_datatype)   , intent(in)    :: elm_bgc_data
-
-     !character(len=256) :: subname = "get_pf_bgc_gaslosses"
-
-     integer  :: fc, c, g, j
-
-!------------------------------------------------------------------------------------
-    associate ( &
-     hr_vr                        => col_cf%hr_vr              , &
-     f_co2_soil_vr                => col_cf%f_co2_soil_vr      , &
-     f_n2o_soil_vr                => col_nf%f_n2o_soil_vr    , &
-     f_n2_soil_vr                 => col_nf%f_n2_soil_vr     , &
-     f_ngas_decomp_vr             => col_nf%f_ngas_decomp_vr , &
-     f_ngas_nitri_vr              => col_nf%f_ngas_nitri_vr  , &
-     f_ngas_denit_vr              => col_nf%f_ngas_denit_vr    &
-     )
-! ------------------------------------------------------------------------
-    do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        f_co2_soil_vr(c,:)         = elm_bgc_data%f_co2_soil_vr_col(c,:)
-        f_n2_soil_vr(c,:)          = elm_bgc_data%f_n2_soil_vr_col(c,:)
-        f_n2o_soil_vr(c,:)         = elm_bgc_data%f_n2o_soil_vr_col(c,:)
-
-        hr_vr(c,:)                 = elm_bgc_data%hr_vr_col(c,:)
-        f_ngas_decomp_vr(c,:)      = elm_bgc_data%f_ngas_decomp_vr_col(c,:)
-        f_ngas_nitri_vr(c,:)       = elm_bgc_data%f_ngas_nitri_vr_col(c,:)
-        f_ngas_denit_vr(c,:)       = elm_bgc_data%f_ngas_denit_vr_col(c,:)
-
-     enddo ! do c = begc, endc
-!
-    end associate
-  end subroutine update_bgc_flux_gas_pf
-!--------------------------------------------------------------------------------------
-
-!--------------------------------------------------------------------------------------
-  subroutine update_bgc_data_pf2elm(elm_bgc_data, bounds,         &
-           num_soilc, filter_soilc,                               &
-           num_soilp, filter_soilp,                               &
-           cnstate_vars, carbonflux_vars, carbonstate_vars,       &
-           nitrogenflux_vars, nitrogenstate_vars,                 &
-           phosphorusflux_vars, phosphorusstate_vars,             &
-           ch4_vars)
-    ! USES
-    use elm_varctl          , only : use_pflotran, pf_cmode
-
-    implicit none
-
-    ! !ARGUMENTS:
-    type(bounds_type)           , intent(in)    :: bounds
-    integer                     , intent(in)    :: num_soilc         ! number of soil columns in filter
-    integer                     , intent(in)    :: filter_soilc(:)   ! filter for soil columns
-    integer                     , intent(in)    :: num_soilp         ! number of soil patches in filter
-    integer                     , intent(in)    :: filter_soilp(:)   ! filter for soil patches
-
-    type(cnstate_type)          , intent(inout) :: cnstate_vars
-    type(carbonflux_type)       , intent(inout) :: carbonflux_vars
-    type(carbonstate_type)      , intent(inout) :: carbonstate_vars
-    type(nitrogenflux_type)     , intent(inout) :: nitrogenflux_vars
-    type(nitrogenstate_type)    , intent(inout) :: nitrogenstate_vars
-    type(phosphorusflux_type)   , intent(inout) :: phosphorusflux_vars
-    type(phosphorusstate_type)  , intent(inout) :: phosphorusstate_vars
-    type(ch4_type)              , intent(inout) :: ch4_vars
-
-    type(elm_interface_bgc_datatype), intent(in):: elm_bgc_data
-
-    !-----------------------------------------------------------------------
-
-    character(len=256) :: subname = "update_bgc_data_pf2elm"
-
-
-    if (pf_cmode) then
-        ! bgc_state_decomp is updated in CLM
-        ! by passing bgc_flux_decomp_sourcesink into SoilLittVertTransp
-        call update_bgc_flux_decomp_sourcesink(elm_bgc_data,    &
-                    bounds, num_soilc, filter_soilc,            &
-                    carbonflux_vars, nitrogenflux_vars,         &
-                    phosphorusflux_vars)
-
-        call update_bgc_state_smin(elm_bgc_data,                &
-                    bounds, num_soilc, filter_soilc,            &
-                    nitrogenstate_vars, phosphorusstate_vars)
-
-        call update_bgc_flux_smin(elm_bgc_data,                 &
-                    bounds, num_soilc, filter_soilc,            &
-                    cnstate_vars,                               &
-                    nitrogenflux_vars, phosphorusflux_vars)
-
-        call update_bgc_flux_gas_pf(elm_bgc_data,               &
-                    bounds, num_soilc, filter_soilc,            &
-                    carbonflux_vars, nitrogenflux_vars)
-
-    end if
-
-  end subroutine update_bgc_data_pf2elm
 
 !--------------------------------------------------------------------------------------
 

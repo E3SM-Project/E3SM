@@ -2022,7 +2022,7 @@ topounit level. Based on the IM2 implementation from NGEE Arctic project.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options related to the bgc & pflotran interface                                  -->
+<!-- Namelist options related to the bgc interface                                             -->
 <!-- ========================================================================================  -->
 
 <entry id="use_elm_interface" type="logical" category="default_settings"
@@ -2033,21 +2033,6 @@ topounit level. Based on the IM2 implementation from NGEE Arctic project.
 <entry id="use_elm_bgc" type="logical" category="default_settings"
     group="elm_inparm" valid_values="">
     Runtime flag to turn on/off clm-bgc.
-</entry>
-
-<entry id="use_pflotran" type="logical" category="default_settings"
-    group="elm_inparm" valid_values="">
-    Runtime flag to turn on/off pflotran interface.
-</entry>
-
-<entry id="pflotran_inputdir" type="char*256" category="elm_pflotran"
-    group="elm_pflotran_inparm" valid_values="" >
-    pflotran input directory in which $pflotran_prefix.in and files contained should be located, but not yet done.
-</entry>
-
-<entry id="pflotran_prefix" type="char*256" category="elm_pflotran"
-    group="elm_pflotran_inparm" valid_values="" >
-    pflotran file prefix.
 </entry>
 
 <!-- ========================================================================================  -->

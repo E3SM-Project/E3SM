@@ -529,9 +529,8 @@ contains
     use glc2lndMod            , only : glc2lnd_type
     use lnd2glcMod            , only : lnd2glc_type
     use SoilWaterRetentionCurveFactoryMod   , only : create_soil_water_retention_curve
-    use elm_varctl                          , only : use_elm_interface, use_pflotran
+    use elm_varctl                          , only : use_elm_interface
     use elm_varctl                          , only : fates_spitfire_mode
-    use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
     use elm_time_manager      , only : is_restart
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     use FATESFireFactoryMod   , only : scalar_lightning
@@ -1064,15 +1063,11 @@ contains
 
     !------------------------------------------------------------
     ! initialize clm_bgc_interface_data_type
-    call t_startf('init_elm_interface_data & pflotran')
+    call t_startf('init_elm_interface_data')
     if (use_elm_interface) then
         call elm_interface_data%Init(bounds_proc)
-        ! PFLOTRAN initialization
-        if (use_pflotran) then
-            call elm_pf_interface_init(bounds_proc)
-        end if
     end if
-    call t_stopf('init_elm_interface_data & pflotran')
+    call t_stopf('init_elm_interface_data')
     !------------------------------------------------------------
 
     !------------------------------------------------------------

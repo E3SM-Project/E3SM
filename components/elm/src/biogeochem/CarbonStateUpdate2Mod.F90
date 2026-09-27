@@ -10,7 +10,6 @@ module CarbonStateUpdate2Mod
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use pftvarcon        , only : iscft
-  use elm_varctl       , only : use_pflotran, pf_cmode
   use VegetationType           , only : veg_pp
   use VegetationType        , only : veg_pp
   use ColumnDataType         , only : column_carbon_state, column_carbon_flux
@@ -55,26 +54,24 @@ contains
 
 
 
-     if ((.not.(use_pflotran .and. pf_cmode))) then
-         ! column level carbon fluxes from gap-phase mortality
-         do j = 1,nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+     ! column level carbon fluxes from gap-phase mortality
+     do j = 1,nlevdecomp
+        ! column loop
+        do fc = 1,num_soilc
+           c = filter_soilc(fc)
 
-               ! column gap mortality fluxes
-               col_cs%decomp_cpools_vr(c,j,i_met_lit) = &
-                    col_cs%decomp_cpools_vr(c,j,i_met_lit) + col_cf%gap_mortality_c_to_litr_met_c(c,j) * dt
-               col_cs%decomp_cpools_vr(c,j,i_cel_lit) = &
-                    col_cs%decomp_cpools_vr(c,j,i_cel_lit) + col_cf%gap_mortality_c_to_litr_cel_c(c,j) * dt
-               col_cs%decomp_cpools_vr(c,j,i_lig_lit) = &
-                    col_cs%decomp_cpools_vr(c,j,i_lig_lit) + col_cf%gap_mortality_c_to_litr_lig_c(c,j) * dt
-               col_cs%decomp_cpools_vr(c,j,i_cwd) = &
-                    col_cs%decomp_cpools_vr(c,j,i_cwd) + col_cf%gap_mortality_c_to_cwdc(c,j) * dt
+           ! column gap mortality fluxes
+           col_cs%decomp_cpools_vr(c,j,i_met_lit) = &
+                col_cs%decomp_cpools_vr(c,j,i_met_lit) + col_cf%gap_mortality_c_to_litr_met_c(c,j) * dt
+           col_cs%decomp_cpools_vr(c,j,i_cel_lit) = &
+                col_cs%decomp_cpools_vr(c,j,i_cel_lit) + col_cf%gap_mortality_c_to_litr_cel_c(c,j) * dt
+           col_cs%decomp_cpools_vr(c,j,i_lig_lit) = &
+                col_cs%decomp_cpools_vr(c,j,i_lig_lit) + col_cf%gap_mortality_c_to_litr_lig_c(c,j) * dt
+           col_cs%decomp_cpools_vr(c,j,i_cwd) = &
+                col_cs%decomp_cpools_vr(c,j,i_cwd) + col_cf%gap_mortality_c_to_cwdc(c,j) * dt
 
-            end do
-         end do
-      endif
+        end do
+     end do
 
 
       ! patch loop
@@ -143,28 +140,26 @@ contains
 
       ! set time steps
 
-      if (.not.(use_pflotran .and. pf_cmode)) then
-         ! column level carbon fluxes from harvest mortality
-         do j = 1, nlevdecomp
-            ! column loop
-            do fc = 1,num_soilc
-               c = filter_soilc(fc)
+      ! column level carbon fluxes from harvest mortality
+      do j = 1, nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
 
-               ! column harvest fluxes
-               col_cs%decomp_cpools_vr(c,j,i_met_lit) = &
-                    col_cs%decomp_cpools_vr(c,j,i_met_lit) + col_cf%harvest_c_to_litr_met_c(c,j) * dt
-               col_cs%decomp_cpools_vr(c,j,i_cel_lit) = &
-                    col_cs%decomp_cpools_vr(c,j,i_cel_lit) + col_cf%harvest_c_to_litr_cel_c(c,j) * dt
-               col_cs%decomp_cpools_vr(c,j,i_lig_lit) = &
-                    col_cs%decomp_cpools_vr(c,j,i_lig_lit) + col_cf%harvest_c_to_litr_lig_c(c,j) * dt
-               col_cs%decomp_cpools_vr(c,j,i_cwd) = &
-                    col_cs%decomp_cpools_vr(c,j,i_cwd) + col_cf%harvest_c_to_cwdc(c,j)  * dt
+            ! column harvest fluxes
+            col_cs%decomp_cpools_vr(c,j,i_met_lit) = &
+                 col_cs%decomp_cpools_vr(c,j,i_met_lit) + col_cf%harvest_c_to_litr_met_c(c,j) * dt
+            col_cs%decomp_cpools_vr(c,j,i_cel_lit) = &
+                 col_cs%decomp_cpools_vr(c,j,i_cel_lit) + col_cf%harvest_c_to_litr_cel_c(c,j) * dt
+            col_cs%decomp_cpools_vr(c,j,i_lig_lit) = &
+                 col_cs%decomp_cpools_vr(c,j,i_lig_lit) + col_cf%harvest_c_to_litr_lig_c(c,j) * dt
+            col_cs%decomp_cpools_vr(c,j,i_cwd) = &
+                 col_cs%decomp_cpools_vr(c,j,i_cwd) + col_cf%harvest_c_to_cwdc(c,j)  * dt
 
-               ! wood to product pools - states updated in WoodProducts()
-            end do
+            ! wood to product pools - states updated in WoodProducts()
          end do
+      end do
 
-      endif
 
       ! patch loop
       do fp = 1,num_soilp

@@ -474,31 +474,13 @@ module elm_varctl
   !$acc declare copyin(use_erosion)
   !$acc declare copyin(ero_ccycle )
   !-----------------------------------------------------------------------
-  ! bgc & pflotran interface
+  ! bgc interface
   !
   logical, public :: use_elm_interface  = .false.
   logical, public :: use_elm_bgc        = .false.
-  logical, public :: use_pflotran       = .false.
-  logical, public :: pf_surfaceflow     = .false.
 
   !$acc declare copyin(use_elm_interface)
   !$acc declare copyin(use_elm_bgc      )
-  !$acc declare copyin(use_pflotran     )
-  !$acc declare copyin(pf_surfaceflow   )
-
-  ! the following switches will allow flexibility of coupling CLM with PFLOTRAN (which in fact runs in 3 modes individually or coupled)
-  logical, public :: pf_cmode      = .false.                 ! switch for 'C' mode coupling (will be updated in interface)
-  logical, public :: pf_hmode      = .false.                 ! switch for 'H' mode coupling (will be updated in interface)
-  logical, public :: pf_tmode      = .false.                 ! switch for 'T' mode coupling (will be updated in interface)
-  logical, public :: pf_frzmode    = .false.                 ! switch for 'freezing' mode availablity in PF-thmode (will be updated in interface)
-  logical, public :: initth_pf2clm = .false.                 ! switch for initializing CLM TH states from pflotran
-  integer, public :: pf_elmnstep0  = 0                       ! the ELM timestep of start/restart
-  !$acc declare copyin(pf_cmode     )
-  !$acc declare copyin(pf_hmode     )
-  !$acc declare copyin(pf_tmode     )
-  !$acc declare copyin(pf_frzmode   )
-  !$acc declare copyin(initth_pf2clm)
-  !$acc declare copyin(pf_clmnstep0 )
 
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode

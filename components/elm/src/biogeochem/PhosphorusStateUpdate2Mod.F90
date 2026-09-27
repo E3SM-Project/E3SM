@@ -13,8 +13,6 @@ module PhosphorusStateUpdate2Mod
   !use PhosphorusFLuxType  , only : phosphorusflux_type
   use VegetationType           , only : veg_pp
   use pftvarcon           , only : iscft
-  ! bgc interface & pflotran:
-  use elm_varctl          , only : use_pflotran, pf_cmode
   use ColumnDataType      , only : col_ps, col_pf
   use VegetationDataType  , only : veg_ps, veg_pf
   !
@@ -52,11 +50,6 @@ contains
     integer  :: fp,fc   ! lake filter indices
     !-----------------------------------------------------------------------
 
-
-      !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-!      if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
 
       ! column-level phosporus fluxes from gap-phase mortality
       do j = 1, nlevdecomp
@@ -140,11 +133,6 @@ contains
 
          )
 
-      !------------------------------------------------------------------
-      ! if coupled with pflotran, the following updates are NOT needed
-      if (.not.(use_pflotran .and. pf_cmode)) then
-      !------------------------------------------------------------------
-
       ! column-level phosporus fluxes from harvest mortality
 
       do j = 1,nlevdecomp
@@ -160,7 +148,6 @@ contains
                  col_ps%decomp_ppools_vr(c,j,i_cwd)     + col_pf%harvest_p_to_cwdp(c,j)       * dt
          end do
       end do
-      endif ! if (.not.(use_pflotran .and. pf_cmode))
       !------------------------------------------------------------------
 
       ! patch-level phosporus fluxes from harvest mortality

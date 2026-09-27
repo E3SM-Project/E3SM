@@ -29,8 +29,8 @@ module AllocationMod
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cs, veg_ns, veg_nf, veg_ps, veg_pf
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
-  ! bgc interface & pflotran module switches
-  use elm_varctl          , only: use_elm_interface,use_elm_bgc, use_pflotran, pf_cmode
+  ! bgc interface module switches
+  use elm_varctl          , only: use_elm_interface, use_elm_bgc
   use elm_varctl          , only : nu_com
   use SoilStatetype       , only : soilstate_type
   use elm_varctl          , only : NFIX_PTASE_plant
@@ -49,7 +49,6 @@ module AllocationMod
   !
   implicit none
   save
-  ! pflotran
   private :: calc_nuptake_prof
   private :: calc_puptake_prof
   !
@@ -458,17 +457,6 @@ contains
          call calc_nuptake_prof(num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
          call calc_puptake_prof(num_soilc, filter_soilc, cnstate_vars, puptake_prof)
       end if
-
-      ! pflotran will need an input from CN: modified 'sum_ndemand_vr' ('potential_immob' excluded).
-      if (use_elm_interface.and.use_pflotran .and. pf_cmode) then
-         do j = 1, nlevdecomp
-            do fc=1, num_soilc
-               c = filter_soilc(fc)
-               plant_ndemand_vr_col(c,j) = plant_ndemand_col(c) * nuptake_prof(fc,j)
-               plant_pdemand_vr_col(c,j) = plant_pdemand_col(c) * puptake_prof(fc,j)
-            end do
-         end do
-      endif
 
     end associate
 
@@ -3148,7 +3136,7 @@ contains
 
   !-------------------------------------------------------------------------------------------------
   subroutine calc_nuptake_prof(num_soilc, filter_soilc, cnstate_vars, nuptake_prof)
-     ! bgc interface & pflotran:
+     ! bgc interface:
      ! nuptake_prof is used in Allocation1, 2, 3
      ! !USES:
      use elm_varpar       , only: nlevdecomp
@@ -3172,62 +3160,34 @@ contains
           ! column loops to resolve plant/heterotroph competition for mineral N
 
           !$acc enter data create(sminn_tot(1:num_soilc))
-         if( .not. (use_pflotran .and. pf_cmode) ) then
 
-          !$acc parallel loop independent gang worker default(present) private(sum1,c)
-          do fc=1,num_soilc
-             sum1 = 0._r8
-             c = filter_soilc(fc)
-             !$acc loop vector reduction(+:sum1) private(sminn_vr_loc)
-             do j = 1, nlevdecomp
-                sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
-                sum1 = sum1 + sminn_vr_loc * dzsoi_decomp(j)
-             end do
-             sminn_tot(fc) = sum1
-          end do
+         !$acc parallel loop independent gang worker default(present) private(sum1,c)
+         do fc=1,num_soilc
+            sum1 = 0._r8
+            c = filter_soilc(fc)
+            !$acc loop vector reduction(+:sum1) private(sminn_vr_loc)
+            do j = 1, nlevdecomp
+               sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
+               sum1 = sum1 + sminn_vr_loc * dzsoi_decomp(j)
+            end do
+            sminn_tot(fc) = sum1
+         end do
 
-          !$acc parallel loop independent gang default(present)
-          do j = 1, nlevdecomp
-             !$acc loop worker vector independent private(c,sminn_vr_loc)
-             do fc=1,num_soilc
-                c = filter_soilc(fc)
-                sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
-                if (sminn_tot(fc)  >  0._r8) then
-                    !original:  nuptake_prof(fc,j) = sminn_vr(c,j) / sminn_tot(c)
-                   nuptake_prof(fc,j) = sminn_vr_loc / sminn_tot(fc)
-                else
-                   nuptake_prof(fc,j) = nfixation_prof(c,j)
-                end if
-             end do
-          end do
-
-          end if
-          if(use_pflotran .and. pf_cmode) then
+         !$acc parallel loop independent gang default(present)
+         do j = 1, nlevdecomp
+            !$acc loop worker vector independent private(c,sminn_vr_loc)
             do fc=1,num_soilc
-               sum1 = 0._r8
                c = filter_soilc(fc)
-               do j = 1, nlevdecomp
-                  sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
-                  sum1 = sum1 + sminn_vr_loc * dzsoi_decomp(j) &
-                           *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
-               end do
-               sminn_tot(fc) = sum1
-             end do
-            !
-             do j = 1, nlevdecomp
-              do fc=1,num_soilc
-                 c = filter_soilc(fc)
-                 sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
+               sminn_vr_loc = smin_no3_vr(c,j) + smin_nh4_vr(c,j)
+               if (sminn_tot(fc)  >  0._r8) then
+                   !original:  nuptake_prof(fc,j) = sminn_vr(c,j) / sminn_tot(c)
+                  nuptake_prof(fc,j) = sminn_vr_loc / sminn_tot(fc)
+               else
+                  nuptake_prof(fc,j) = nfixation_prof(c,j)
+               end if
+            end do
+         end do
 
-                 if (sminn_tot(fc)  >  0._r8) then
-                    nuptake_prof(fc,j) = sminn_vr_loc/ sminn_tot(fc) &
-                          *(nfixation_prof(c,j)*dzsoi_decomp(j))         ! weighted by froot fractions in annual max. active layers
-                 else
-                    nuptake_prof(fc,j) = nfixation_prof(c,j)
-                 end if
-              end do
-           end do
-         end if
        !$acc exit data delete(sminn_tot(1:num_soilc))
 
      end associate
@@ -3236,7 +3196,7 @@ contains
 
   !-------------------------------------------------------------------------------------------------
   subroutine calc_puptake_prof(num_soilc, filter_soilc, cnstate_vars, puptake_prof)
-    ! bgc interface & pflotran:
+    ! bgc interface:
     ! puptake_prof is used in Allocation1, 2, & 3
     ! !USES:
     use elm_varpar       , only: nlevdecomp
