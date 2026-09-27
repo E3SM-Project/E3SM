@@ -12,7 +12,7 @@ module DecompCascadeCNMod
   use elm_varpar             , only : nlevsoi, nlevgrnd, nlevdecomp, ndecomp_cascade_transitions, ndecomp_pools
   use elm_varpar             , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use elm_varctl             , only : iulog, spinup_state, anoxia, use_lch4, use_vertsoilc
-  use elm_varcon             , only : zsoi, spval
+  use elm_varcon             , only : zsoi, spval, mm_h2o_to_mpa
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
   use SharedParamsMod        , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard
@@ -852,7 +852,7 @@ contains
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
                 if (j==1) w_scalar(c,:) = 0._r8
-                maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+                maxpsi = sucsat(c,j) * (-mm_h2o_to_mpa)
                 psi = min(soilpsi(c,j),maxpsi)
                 ! decomp only if soilpsi is higher than minpsi
                 if (psi > minpsi) then
@@ -937,7 +937,7 @@ contains
           do j = 1,nlevdecomp
              do fc = 1,num_soilc
                 c = filter_soilc(fc)
-                maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+                maxpsi = sucsat(c,j) * (-mm_h2o_to_mpa)
                 psi = min(soilpsi(c,j),maxpsi)
                 ! decomp only if soilpsi is higher than minpsi
                 if (psi > minpsi) then

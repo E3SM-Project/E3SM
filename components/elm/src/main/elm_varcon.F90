@@ -12,7 +12,7 @@ module elm_varcon
   use shr_const_mod , only: SHR_CONST_LATSUB,SHR_CONST_LATICE,SHR_CONST_RHOFW
   use shr_const_mod , only: SHR_CONST_RHOICE,SHR_CONST_TKFRZ,SHR_CONST_REARTH
   use shr_const_mod , only: SHR_CONST_PDB, SHR_CONST_PI, SHR_CONST_CDAY
-  use shr_const_mod , only: SHR_CONST_RGAS, SHR_CONST_PSTD
+  use shr_const_mod , only: SHR_CONST_RGAS, SHR_CONST_PSTD, SHR_CONST_MWC
   use elm_varpar    , only: numrad, nlevgrnd, nlevlak, nlevdecomp_full
   use elm_varpar    , only: ngases
   use elm_varpar    , only: nlayer
@@ -91,6 +91,8 @@ module elm_varcon
   !------------------------------------------------------------------
 
   real(r8), parameter :: pa_to_kpa = 0.001_r8               ! Conversion factor (Pa to kPa) [kPa/Pa]
+  real(r8), parameter :: mm_h2o_to_mpa = &                  ! Conversion factor (mm H2O head to MPa) [MPa/mm]
+       SHR_CONST_RHOFW * SHR_CONST_G * 1.e-9_r8
 
   ! These are tunable constants from clm2_3
 
@@ -200,7 +202,7 @@ module elm_varcon
   !------------------------------------------------------------------
   ! Note some of these constants are also used in CNNitrifDenitrifMod
 
-  real(r8), parameter :: catomw = 12.011_r8     ! molar mass of C atoms (g/mol)
+  real(r8), parameter :: catomw = SHR_CONST_MWC ! molar mass of C atoms (g/mol)
   real(r8), parameter :: natomw = 14.007_r8     ! molar mass of N atoms (g/mol)
   
   real(r8) :: s_con(ngases,4)    ! Schmidt # calculation constants (spp, #)

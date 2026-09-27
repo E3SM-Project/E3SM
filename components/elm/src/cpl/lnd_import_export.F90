@@ -37,7 +37,7 @@ contains
     use elm_varcon       , only: rair, o2_molar_const, c13ratio, mm_epsilon
     use elm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
-    use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL
+    use shr_const_mod    , only: SHR_CONST_TKFRZ, SHR_CONST_STEBOL, SHR_CONST_PI
     use domainMod        , only: ldomain
     use shr_kind_mod     , only: r8 => shr_kind_r8, CL => shr_kind_CL
     use fileutils        , only: getavu, relavu
@@ -634,7 +634,7 @@ contains
         if (thishr < 0) thishr=thishr+24
         thismin = mod((tod-get_step_size()/2)/60, 60)
         thiscosz = max(cos(szenith(ldomain%lonc(g),ldomain%latc(g),0,int(thiscalday),thishr,thismin,0)* &
-                        3.14159265358979/180.0d0), 0.001d0)
+                        SHR_CONST_PI/180.0d0), 0.001d0)
         avgcosz = 0d0
         if (atm2lnd_vars%npf(4) - 1._r8 .gt. 1e-3) then 
           swrad_period_len   = get_step_size()*nint(atm2lnd_vars%npf(4))
@@ -648,7 +648,7 @@ contains
             if (thishr > 23) thishr=thishr-24  
             thismin = mod((swrad_period_start+(tm-1)*get_step_size()+get_step_size()/2)/60, 60) 
             avgcosz  = avgcosz + max(cos(szenith(ldomain%lonc(g),ldomain%latc(g),0,int(thiscalday),thishr, thismin, 0) &
-                       *3.14159265358979/180.0d0), 0.001d0)/atm2lnd_vars%npf(4)
+                       *SHR_CONST_PI/180.0d0), 0.001d0)/atm2lnd_vars%npf(4)
           end do
         else
           avgcosz = thiscosz
@@ -1572,6 +1572,7 @@ double precision function szenith(xcoor, ycoor, ltm, jday, hr, min, offset)
   !Used in coupler bypass mode to compute inerpolation for incoming solar
 
   use shr_kind_mod , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use shr_const_mod, only: SHR_CONST_PI
   implicit none
   !inputs
   real(r8) xcoor, ycoor, offset_min
@@ -1581,8 +1582,7 @@ double precision function szenith(xcoor, ycoor, ltm, jday, hr, min, offset)
   real(r8) hangle, harad, saltrad, saltdeg, sazirad, sazideg
   real(r8) szendeg,szenrad
   
-  real pi
-  parameter(pi = 3.14159265358979)
+  real(r8), parameter :: pi = SHR_CONST_PI
   offset_min = offset/60d0   !note assumes 1hr or smaller timestep
   min = min - offset_min  
    

@@ -9,6 +9,7 @@ module MaintenanceRespMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use elm_varpar          , only : nlevgrnd
   use shr_const_mod       , only : SHR_CONST_TKFRZ
+  use elm_varcon          , only : catomw
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
   use shr_log_mod         , only : errMsg => shr_log_errMsg
@@ -174,8 +175,8 @@ contains
 
          tc = Q10**((t_ref2m(p)-SHR_CONST_TKFRZ - 20.0_r8)/10.0_r8)
          if (frac_veg_nosno(p) == 1) then
-            leaf_mr(p) = lmrsun(p) * laisun(p) * 12.011e-6_r8 + &
-                         lmrsha(p) * laisha(p) * 12.011e-6_r8
+            leaf_mr(p) = lmrsun(p) * laisun(p) * (catomw * 1.e-6_r8) + &
+                         lmrsha(p) * laisha(p) * (catomw * 1.e-6_r8)
 
          else !nosno
              leaf_mr(p) = 0._r8
