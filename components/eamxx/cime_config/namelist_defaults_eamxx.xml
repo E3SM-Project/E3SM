@@ -34,9 +34,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     Selector info will not be duplicated in the processed $case/namelist_scream.xml file.
   -->
   <selectors>
-    <selector name="hgrid" case_env="ATM_GRID"/>
-    <selector name="dyn" case_env="CAM_TARGET"/>
-    <selector name="vgrid" case_env="EAMXX_VGRID"/>
+    <selector name="dyn"       case_env="CAM_TARGET"/>
+    <selector name="hgrid"     case_env="ATM_GRID"/>
+    <selector name="vgrid"     case_env="EAMXX_VGRID"/>
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
@@ -715,40 +715,39 @@ be lost if SCREAM_HACK_XML is not enabled.
     <filename type="file">UNSET</filename>
     <!-- L72 for testing -->
     <filename hgrid="ne4np4"   vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20260813.nc</filename>
+    <filename hgrid="ne30np4"  vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20260813.nc</filename>
+    <filename hgrid="ne120np4" vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20260813.nc</filename>
     <filename hgrid="ne4np4"   vgrid="L72" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20260813.nc</filename>
     <filename hgrid="ne4np4"   vgrid="L72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne4np4L72_c20260813.nc</filename>
-    <filename hgrid="ne30np4"  vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20260813.nc</filename>
     <filename hgrid="ne30np4"  vgrid="L72" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam_ne30np4L72_c20260813.nc</filename>
-    <filename hgrid="ne120np4" vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20260813.nc</filename>
 
     <!-- new L128v4 -->
-    <filename hgrid="ne4np4"    vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128v4_20260911.nc</filename>
-    <filename hgrid="ne30np4"   vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128v4_20260911.nc</filename>
-    <filename hgrid="ne32np4"   vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128v4_v3.LR.amip_0101.eam.i.2000-01-01-00000.20260911.nc</filename>
-    <filename hgrid="ne64np4"   vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128v4_v3.LR.amip_0101.eam.i.2000-01-01-00000.20260911.nc</filename>
-    <filename hgrid="ne120np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128v4_20260911.nc</filename>
-    <filename hgrid="ne128np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128v4_v3.LR.amip_0101.eam.i.2000-01-01-00000.20260911.nc</filename>
-    <filename hgrid="ne256np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128v4_ifs-20200120_20260911.nc</filename>
-    <filename hgrid="ne512np4"  vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128v4_20260911.nc</filename>
-    <filename hgrid="ne1024np4" vgrid="L128v4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128v4_era5-20131001-topoadj-16x_20260911.nc</filename>
-    <filename hgrid="ne256np4"  vgrid="L128v4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128v4_era5_aer_c20260911.nc</filename>
-    <filename hgrid="ne1024np4" vgrid="L128v4" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128v4_20260911.nc</filename>
-    <filename hgrid="ne1024np4" vgrid="L128v4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128v4_ifs-20200120-topoadjx6t_20260911.nc</filename>
+    <filename hgrid="ne4np4"    vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne4np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne30np4"   vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne30np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne32np4"   vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne64np4"   vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne120np4"  vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne120np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne128np4"  vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne256np4"  vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne256np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne512np4"  vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne512np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v4" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne1024np4L128v4_ERA5-20190101_c20260922.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v4" COMPSET=".*SCREAM%DYAMOND-2">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne1024np4L128v4_ERA5-20200120_c20260922.nc</filename>
 
     <!-- old L128 (original for SCREAM) -->
-    <filename hgrid="ne4np4"    vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20260813.nc</filename>
-    <filename hgrid="ne30np4"   vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20260813.nc</filename>
-    <filename hgrid="ne32np4"   vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20260813.nc</filename>
-    <filename hgrid="ne64np4"   vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20260813.nc</filename>
-    <filename hgrid="ne120np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20260813.nc</filename>
-    <filename hgrid="ne128np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20260813.nc</filename>
-    <filename hgrid="ne256np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20260813.nc</filename>
-    <filename hgrid="ne512np4"  vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20260813.nc</filename>
-    <filename hgrid="ne1024np4" vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20260813.nc</filename>
+    <filename hgrid="ne4np4"    vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L128_20260813.nc</filename>
+    <filename hgrid="ne30np4"   vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20260813.nc</filename>
+    <filename hgrid="ne32np4"   vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne32np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20260813.nc</filename>
+    <filename hgrid="ne64np4"   vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne64np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20260813.nc</filename>
+    <filename hgrid="ne120np4"  vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20260813.nc</filename>
+    <filename hgrid="ne128np4"  vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/eamxxi_ne128np4L128.v3.LR.amip_0101.eam.i.2000-01-01-00000.20260813.nc</filename>
+    <filename hgrid="ne256np4"  vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20260813.nc</filename>
+    <filename hgrid="ne512np4"  vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20260813.nc</filename>
+    <filename hgrid="ne1024np4" vgrid="L128v1" >${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20260813.nc</filename>
     <filename hgrid="ne256np4"  vgrid="L128v1" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_era5_aer_c20260813.nc</filename>
     <filename hgrid="ne1024np4" vgrid="L128v1" COMPSET=".*SCREAM%MAM4xx.*">${DIN_LOC_ROOT}/atm/scream/init/screami_mam4xx_ne1024np4L128_20260813.nc</filename>
     <filename hgrid="ne1024np4" vgrid="L128v1" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20260813.nc</filename>
 
+    <!-- RRM grids -->
     <filename hgrid="ne0np4_conus_x4v1_lowcon" vgrid="L72"   >${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_20260813.nc</filename>
     <filename hgrid="ne0np4_CAx32v1"           vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/screami_CAx32v1np4L128_hiccup-era5-20150101_20260813.ncpdq.nc</filename>
 
