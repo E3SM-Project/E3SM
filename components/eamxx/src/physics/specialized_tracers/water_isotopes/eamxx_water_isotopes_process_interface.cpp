@@ -23,6 +23,8 @@ namespace {
 
     EKAT_ERROR_MSG("Invalid " + key + ": '" + value +
                    "'. Valid options: " + ekat::join(valid_opts, ", "));
+    return choices.begin()->second;  // unreachable; silences -Wreturn-type warning
+                                   
   }
 }
 // =========================================================================================

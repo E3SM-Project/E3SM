@@ -22,7 +22,6 @@ namespace wiso {
  *   HTO   = 4 (tritiated water, HT16O)
  *
  * Formulations are now selected at runtime via WaterIsotopeRuntimeOptions.
- * See README.md for details on available formulations and their scientific references.
  *
  * Default formulations: Horita & Wesolowski 1994 (liquid/vapor),
  *                       Normalized ratios, No ocean enrichment,
@@ -116,6 +115,7 @@ static constexpr const char* ice_vapor_ref
   "Merlivat & Nief (1967) [HDO] + Majoube (1971) [H218O]",
   "isoCAM3"
 };
+//TODO: Write these to log.
 
 // ============================================================================
 // Runtime configuration enums and struct
@@ -146,7 +146,6 @@ struct WaterIsotopeRuntimeOptions {
 template <typename Scalar>
 struct WaterIsotopeConstants
 {
-  using Real = Scalar;
 
   // Number of isotope species
   static constexpr int num_species = etoi(WaterIsotopologues::Count);
@@ -159,7 +158,7 @@ struct WaterIsotopeConstants
   static constexpr Scalar rstd_table
       [etoi(StandardRatioFormulation::FormulationCount)][num_species] = {
         { 1.0,       1.0,        1.0,      1.0, 1.0 }, // Normalized by VSMOW
-        { 1.0, 155.76e-6, 2005.20e-6, 379.9e-6, 1.0 } // natural abundance
+        { 0.9976, 155.76e-6, 2005.20e-6, 379.9e-6, 1.0 } // natural abundance
   };
 
   // Ocean surface enrichment
@@ -173,9 +172,8 @@ struct WaterIsotopeConstants
   // Runtime-selected formulation options
   // -----------------------------------------------------------------------
 
-  WaterIsotopeRuntimeOptions opts_;
-
 private:
+  WaterIsotopeRuntimeOptions opts_;
   // Equilibrium fractionation coefficients for the *selected* formulations,
   // resolved once on construction and stored by value.
   EquilibriumFractionationCoefficients

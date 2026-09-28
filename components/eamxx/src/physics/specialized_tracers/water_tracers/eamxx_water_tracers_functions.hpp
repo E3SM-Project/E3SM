@@ -72,19 +72,21 @@ struct WaterTracerFunctions
                             const ScalarT& qtrc,
                             const ScalarT& qtot)
   {
-    using ekat::abs;  // ADL-compatible abs for Pack<Real,N>
+    using ekat::abs;
 
     const ScalarT abs_qtot = abs(qtot);
     const ScalarT qmin = wtrc_qmin;
 
     // Mask: use standard ratio when total water is below threshold.
     const auto use_standard = (abs_qtot < qmin);
-
-    const ScalarT ratio_computed = qtrc / qtot;
-    const ScalarT ratio_standard = wtrc_get_rstd(species);
-
-    // Blend based on mask (works for both Real and Pack).
-    return ekat::impl::merge(use_standard, ratio_standard, ratio_computed);
+    ScalarT out(tracer_ratio);
+    const qstd = wtrc_get_rstd(species);
+    
+    // mask out divide by zero possibilities
+    const ScalarT denom = LaneTraits<ScalarT>::select(qtot, !use_standard, qstd);
+    
+    out.set(!use_standard, qtrc / denom);
+    return out;
   }
 };
 

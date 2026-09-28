@@ -76,6 +76,7 @@ TEST_CASE("runtime_formulation_selection") {
     // Verify Horita & Wesolowski 1994 hydrogen coefficients. NOTE the per-mil
     // convention: the table holds 10^3 * ln(alpha), so each value is 1000x the
     // corresponding coefficient of ln(alpha).
+    // RPF note - do these tests add much? Consider rethinking them.
     const auto& horita_h = constants_horita.alpha_eq_coeffs(CondensedPhase::Liquid,
                                                             IsoElement::Hydrogen);
     REQUIRE(std::abs(horita_h.T3 - Real(1.1588e-6)) < 1e-12);

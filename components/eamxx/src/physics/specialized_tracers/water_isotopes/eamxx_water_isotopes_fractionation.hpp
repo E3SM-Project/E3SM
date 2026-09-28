@@ -25,7 +25,7 @@ namespace wiso {
  * packs and std for plain scalars (matching PhysicsFunctions::exner_function).
  *
  * Convention: alpha *usually* constructed such that it is >=1, and 
- * the follow this convention:
+ * thus follows:
  *   alpha = R_condensed / R_vapor  (>= 1),
  * i.e. the heavy isotope is preferentially retained in the condensed phase.
  * However, there are cases in the literature where alpha is defined differently,
@@ -175,11 +175,11 @@ private:
         break;
       case WaterIsotopologues::H217O:
         // Derived from H218O via mass-dependent fractionation
-        alpha = pow(base_alpha(t, WaterIsotopologues::H218O), RealT(H217O_exponent));
+        alpha = ekat::pow(base_alpha(t, WaterIsotopologues::H218O), RealT(H217O_exponent));
         break;
       case WaterIsotopologues::HTO:
         // Derived from HDO via mass-dependent fractionation
-        alpha = pow(base_alpha(t, WaterIsotopologues::HDO), RealT(HTO_exponent));
+        alpha = ekat::pow(base_alpha(t, WaterIsotopologues::HDO), RealT(HTO_exponent));
         break;
       case WaterIsotopologues::H216O:
       default:
@@ -228,9 +228,8 @@ public:
 
       // Bounds are per (phase, element): the default ice formulation draws its
       // two rows from two different studies with different fitted ranges.
-      check_temperature(temp, constants.tbounds(phase, el), range_mask, caller);
-
       const ScalarT t_live = LT::select(temp, range_mask, ScalarT(RealT(T_lane_fill)));
+      check_temperature(t_live, constants.tbounds(phase, el), range_mask, caller);
 
       return exp(RealT(1e-3) *
                  ln_alpha_permil(t_live, constants.alpha_eq_coeffs(phase, el)));
