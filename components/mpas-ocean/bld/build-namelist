@@ -61,6 +61,7 @@ OPTIONS
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
      -ocn_bgc              ocean BGC configuration
+     -ocn_sediment         ocean sediments active
      -ocn_co2_type         how atm co2 is set within MPASO
      -atm_co2_const_val    value of atm co2 if ocn_co2_type = constant
      -ice_bgc              check for coupling with sea ice BGC
@@ -117,6 +118,7 @@ my %opts = ( help          => 0,
              decomp_prefix => undef,
              date_stamp    => undef,
              ocn_bgc       => undef,
+             ocn_sediment  => undef,
              ocn_co2_type      => undef,
              atm_co2_const_val => undef,
              ice_bgc       => undef,
@@ -144,6 +146,7 @@ GetOptions(
     "decomp_prefix=s" => \$opts{'decomp_prefix'},
     "date_stamp=s"    => \$opts{'date_stamp'},
     "ocn_bgc=s"       => \$opts{'ocn_bgc'},
+    "ocn_sediment=s"  => \$opts{'ocn_sediment'},
     "ocn_co2_type=s"      => \$opts{'ocn_co2_type'},
     "atm_co2_const_val=s" => \$opts{'atm_co2_const_val'},
     "ice_bgc=s"       => \$opts{'ice_bgc'},
@@ -188,6 +191,7 @@ my $OCN_SGR       = $opts{'ocn_sgr'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
 my $ocn_bgc       = $opts{'ocn_bgc'};
+my $ocn_sediment  = $opts{'ocn_sediment'};
 my $ocn_co2_type      = $opts{'ocn_co2_type'};
 my $atm_co2_const_val = $opts{'atm_co2_const_val'};
 my $ice_bgc       = $opts{'ice_bgc'};
@@ -1244,8 +1248,11 @@ add_default($nl, 'config_use_ecosysTracers_iron_solubility_file');
 ###############################################
 # Namelist group: tracer_forcing_sedimentTracers #
 ###############################################
-
-add_default($nl, 'config_use_sedimentTracers');
+if ($ocn_sediment eq 'ocn_sediment' ) {
+    add_default($nl, 'config_use_sedimentTracers', 'val'=>".true.");
+} else {
+    add_default($nl, 'config_use_sedimentTracers', 'val'=>".false.");
+}
 add_default($nl, 'config_sediment_tracer_count');
 add_default($nl, 'config_sediment_sinking_rate_1');
 add_default($nl, 'config_sediment_sinking_rate_2');

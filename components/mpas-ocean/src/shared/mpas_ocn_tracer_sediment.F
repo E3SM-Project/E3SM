@@ -246,9 +246,10 @@ module ocn_tracer_sediment
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_sediment_tend(statePool, forcingPool, meshPool, &
-                                       sedimentTracers, sedimentTend,    &
-                                       layerThickness, dt, timeLevel,    &
-                                       nCellsSolve, err) !{{{
+                                       sedimentTracers, sedimentTend, &
+                                       kineticEnergyCell, layerThickEdgeDrag, &
+                                       layerThickness, dt, &
+                                       timeLevel, nCellsSolve, err) !{{{
 
       type (mpas_pool_type), intent(in) :: statePool
       type (mpas_pool_type), intent(inout) :: forcingPool
@@ -265,6 +266,8 @@ module ocn_tracer_sediment
          sedimentTend      !< (nClass, nVertLevels, nCells)
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
+         kineticEnergyCell, &
+         layerThickEdgeDrag, &
          layerThickness    !< (nVertLevels, nCells)
 
       !-----------------------------------------------------------------
@@ -274,9 +277,7 @@ module ocn_tracer_sediment
       type (mpas_pool_type), pointer :: sedimentAuxiliary
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-         normalVelocity,    &
-         kineticEnergyCell, &
-         layerThickEdgeDrag
+         normalVelocity
 
       real (kind=RKIND), dimension(:), pointer :: &
          bottomStressCellSediment, &
@@ -295,8 +296,6 @@ module ocn_tracer_sediment
       call mpas_pool_get_subpool(forcingPool, 'sedimentAuxiliary', sedimentAuxiliary)
 
       call mpas_pool_get_array(statePool,   'normalVelocity',    normalVelocity,    timeLevel)
-      call mpas_pool_get_array(statePool,   'kineticEnergyCell', kineticEnergyCell, timeLevel)
-      call mpas_pool_get_array(meshPool,    'layerThickEdgeDrag', layerThickEdgeDrag)
 
       call mpas_pool_get_array(sedimentAuxiliary, 'bottomStressCellSediment', bottomStressCellSediment)
       call mpas_pool_get_array(sedimentAuxiliary, 'sedimentBedMass1',      sedimentBedMass1)

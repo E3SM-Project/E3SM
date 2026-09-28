@@ -105,7 +105,6 @@ module ocn_time_integration_rk4
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: meshPool
-      type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: provisStatePool
       type (mpas_pool_type), pointer :: provisTracersPool
       type (mpas_pool_type), pointer :: verticalMeshPool
@@ -234,7 +233,6 @@ module ocn_time_integration_rk4
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
          call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)

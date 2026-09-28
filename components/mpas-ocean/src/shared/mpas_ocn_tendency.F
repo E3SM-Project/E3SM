@@ -1023,7 +1023,8 @@ contains
          !
          if ( groupName == 'sedimentTracers' ) then
             call ocn_tracer_sediment_tend(statePool, forcingPool, meshPool, &
-                                          tracerGroup, tracerGroupTend,     &
+                                          tracerGroup, tracerGroupTend, &
+                                          kineticEnergyCell, layerThickEdgeDrag, &
                                           layerThickness, dt, timeLevel,    &
                                           nCellsOwned, err)
 

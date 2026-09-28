@@ -2951,7 +2951,6 @@
 			 description="salinity tendency due to surface restoring"
 		/>
 		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-
 			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="C s^-1" name_in_code="temperatureSurfaceFluxTendency"
 				description="potential temperature tendency due to surface fluxes"
 			/>
@@ -3042,7 +3041,6 @@
 		<var_array name="surfaceVelocity" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
 			<var name="surfaceVelocityZonal" array_group="vel_zonal" units="m s^-1"
 				 description="Zonal surface velocity reconstructed at cell centers"
-
 			/>
 			<var name="surfaceVelocityMeridional" array_group="vel_meridional" units="m s^-1"
 				 description="Meridional surface velocity reconstructed at cell centers"
@@ -3067,7 +3065,6 @@
 			 description="z-coordinate of the top of the layer"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 		/>
-
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" units="kg m^-3"
 			 description="density"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
@@ -3092,7 +3089,6 @@
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
 		/>
-
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" units="s^-2"
 			 description="Brunt Vaisala frequency defined at the center (horizontally) and top (vertically) of cell"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
@@ -3129,7 +3125,6 @@
 		<var name="vertTransportVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal total tracer-transport velocity."
 			 packages="forwardMode;analysisMode"
-
 		/>
 		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
@@ -3168,8 +3163,6 @@
 		<var name="upwindFactor" type="real" dimensions="nEdges Time" units="1"
 			description="The fraction of horizontal advection that is upwinded. Range from 0 (centered) to 1 (fully upwind)"
 		/>
-
-
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^-2"
 			 description="kinetic energy of horizontal velocity on cells"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"

@@ -150,6 +150,19 @@
         <desc>Option to describe the MPASO wave coupling</desc>
  </entry>
 
+  <entry id="MPASO_SEDIMENTS">
+        <type>char</type>
+        <valid_values>false,true</valid_values>
+        <default_value>false</default_value>
+        <values>
+           <value compset="MPASO_">false</value>
+           <value compset="MPASO%*SED">true</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to activate the MPASO sediment submodule</desc>
+ </entry>
+
   <entry id="MPASO_USE_PETSC">
         <type>logical</type>
         <valid_values>FALSE,TRUE</valid_values>

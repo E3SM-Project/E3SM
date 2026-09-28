@@ -3194,7 +3194,7 @@ module ocn_time_integration_si
       type (mpas_pool_type), pointer :: &
          statePool,         &! structure holding state variables
          meshPool,          &! structure holding mesh variables
-         diagnosticsPool     ! structure holding diagnostic variables
+         diagnosticsPool
 
       integer, pointer :: nVertLevels
 
