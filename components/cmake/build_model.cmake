@@ -269,6 +269,10 @@ macro(build_model COMP_CLASS COMP_NAME)
       endif()
     endforeach()
 
+    if (TARGET hdf5 AND MPILIB STREQUAL "openmpi" AND MACH MATCHES "^(pm|muller|alvarez)-")
+      target_link_libraries(${TARGET_NAME} hdf5)
+    endif()
+
     # driver-mct/main sources (e.g. cime_comp_mod.F90) use netcdf directly, but
     # the component libraries only link netcdf PRIVATEly (via csm_share), so
     # its usage requirements (e.g. include dirs for netcdf.mod) do not
