@@ -374,7 +374,7 @@ _TESTS = {
         "time"    : "0:120:00",
         "tests"   : (
             "HOMME_P24.f19_g16_rx1.A",
-            "HOMMEBFB_P24.f19_g16_rx1.A",
+            "HOMMEBFB.f19_g16_rx1.A",
             )
         },
 
