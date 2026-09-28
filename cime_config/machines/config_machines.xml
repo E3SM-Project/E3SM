@@ -3622,7 +3622,7 @@
       <modules>
         <command name="use">/lus/flare/projects/E3SMinput/soft/modulefiles</command>
         <command name="load">cmake/3.31.11</command>
-        <command name="load">oneapi/release/2025.3.1</command>
+        <command name="load">oneapi/release/2026.1.0</command>
         <command name="load">netcdf-c/4.9.3</command>
         <command name="load">netcdf-fortran/4.6.2</command>
         <command name="load">moab/5.6.0</command>
