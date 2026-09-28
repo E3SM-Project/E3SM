@@ -36,7 +36,9 @@ void Functions<Real,DefaultDevice>
   const view_1d<const Scalar>& uw_sfc_pert,
   const view_1d<const Scalar>& vw_sfc_pert,
   const view_2d<Pack>&        um_pert,
-  const view_2d<Pack>&        vm_pert)
+  const view_2d<Pack>&        vm_pert,
+  const view_2d<const Pack>&  wthl_sec_res,
+  const view_2d<const Pack>&  wqw_sec_res)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -71,7 +73,9 @@ void Functions<Real,DefaultDevice>
                                 uw_sfc_pert(i),
                                 vw_sfc_pert(i),
                                 ekat::subview(um_pert, i),
-                                ekat::subview(vm_pert, i));
+                                ekat::subview(vm_pert, i),
+                                ekat::subview(wthl_sec_res, i),
+                                ekat::subview(wqw_sec_res, i));
   });
 }
 

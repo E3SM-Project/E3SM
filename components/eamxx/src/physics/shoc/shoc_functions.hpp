@@ -506,7 +506,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d_strided<Pack> &tracer, const uview_1d<Pack> &tke,
       const uview_1d<Pack> &u_wind, const uview_1d<Pack> &v_wind,
       const Scalar& uw_sfc_pert, const Scalar& vw_sfc_pert,
-      const uview_1d<Pack>& um_pert, const uview_1d<Pack>& vm_pert);
+      const uview_1d<Pack>& um_pert, const uview_1d<Pack>& vm_pert,
+      const uview_1d<const Pack>& wthl_sec_res, const uview_1d<const Pack>& wqw_sec_res);
 #ifdef SCREAM_SHOC_SMALL_KERNELS
   static void update_prognostics_implicit_disp(
       const Int &shcol, const Int &nlev, const Int &nlevi, const Int &num_tracer,
@@ -519,7 +520,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const WorkspaceMgr &workspace_mgr, const view_2d<Pack> &thetal, const view_2d<Pack> &qw,
       const view_3d_strided<Pack> &tracer, const view_2d<Pack> &tke, const view_2d<Pack> &u_wind,
       const view_2d<Pack> &v_wind, const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
-      const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert);
+      const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert,
+      const view_2d<const Pack>& wthl_sec_res, const view_2d<const Pack>& wqw_sec_res);
 #endif
 
   KOKKOS_FUNCTION

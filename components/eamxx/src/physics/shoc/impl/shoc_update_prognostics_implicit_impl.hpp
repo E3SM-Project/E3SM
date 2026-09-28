@@ -41,7 +41,9 @@ void Functions<S,D>::update_prognostics_implicit(
   const Scalar&               uw_sfc_pert,
   const Scalar&               vw_sfc_pert,
   const uview_1d<Pack>&       um_pert,
-  const uview_1d<Pack>&       vm_pert)
+  const uview_1d<Pack>&       vm_pert,
+  const uview_1d<const Pack>& wthl_sec_res,
+  const uview_1d<const Pack>& wqw_sec_res)
 {
   // Define temporary variables via the WorkspaceManager
 
@@ -84,6 +86,7 @@ void Functions<S,D>::update_prognostics_implicit(
   // scalarized versions of some views will be needed
   const auto rdp_zt_s       = ekat::scalarize(rdp_zt);
   const auto rho_zi_s       = ekat::scalarize(rho_zi);
+  const auto zt_grid_s      = ekat::scalarize(zt_grid);
   const auto u_wind_s       = ekat::scalarize(u_wind);
   const auto v_wind_s       = ekat::scalarize(v_wind);
   const auto wind_rhs_s     = ekat::scalarize(wind_rhs);
@@ -95,6 +98,8 @@ void Functions<S,D>::update_prognostics_implicit(
   const auto um_pert_s      = ekat::scalarize(um_pert);
   const auto vm_pert_s      = ekat::scalarize(vm_pert);
   const auto wind_pert_rhs_s = ekat::scalarize(wind_pert_rhs);
+  const auto wthl_sec_res_s = ekat::scalarize(wthl_sec_res);
+  const auto wqw_sec_res_s  = ekat::scalarize(wqw_sec_res);
 
   // linearly interpolate tkh, tk, and air density onto the interface grids
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
@@ -185,8 +190,11 @@ void Functions<S,D>::update_prognostics_implicit(
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(team, num_qtracers), [&] (const Int& q) {
       qtracers_rhs_s(k, q) = qtracers(q, lev_idx)[pack_idx];
     });
-    qtracers_rhs_s(k, num_qtracers)   = thetal_s(k);
-    qtracers_rhs_s(k, num_qtracers+1) = qw_s(k);
+    const auto cg_fac = zt_grid_s(k) <= sp(8000.0) ? dtime*C::gravit.value*rdp_zt_s(k) : sp(0.0);
+    const auto wthl_cg_div = cg_fac*(rho_zi_s(k+1)*wthl_sec_res_s(k+1) - rho_zi_s(k)*wthl_sec_res_s(k));
+    const auto wqw_cg_div  = cg_fac*(rho_zi_s(k+1)*wqw_sec_res_s(k+1)  - rho_zi_s(k)*wqw_sec_res_s(k));
+    qtracers_rhs_s(k, num_qtracers)   = thetal_s(k) + wthl_cg_div;
+    qtracers_rhs_s(k, num_qtracers+1) = qw_s(k) + wqw_cg_div;
     qtracers_rhs_s(k, num_qtracers+2) = tke_s(k);
   });
 

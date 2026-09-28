@@ -155,10 +155,13 @@ void Functions<S,D>::shoc_main_internal(
 {
 
   // Define temporary variables
-  uview_1d<Pack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi;
-  workspace.template take_many_and_reset<5>(
-    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi"},
-    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
+  uview_1d<Pack> rho_zt, shoc_qv, shoc_tabs, dz_zt, dz_zi,
+                 emu_w_sec, emu_w3, emu_wthl_sec_res, emu_wqw_sec_res;
+  workspace.template take_many_and_reset<9>(
+    {"rho_zt", "shoc_qv", "shoc_tabs", "dz_zt", "dz_zi",
+     "emu_w_sec", "emu_w3", "emu_wthl_sec_res", "emu_wqw_sec_res"},
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi,
+     &emu_w_sec, &emu_w3, &emu_wthl_sec_res, &emu_wqw_sec_res});
 
   // Local scalars
   Scalar se_b{0},   ke_b{0},   wv_b{0}, wl_b{0},
@@ -202,6 +205,14 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_temperature(team,nlev,thetal,  // Input
                              shoc_ql,inv_exner, // Input
                              shoc_tabs);        // Output
+
+    team.team_barrier();
+    shoc_moments_emulator::predict(nlev,nlevi,
+                                   zi_grid,rho_zt,presi,
+                                   thetal,qw,u_wind,v_wind,shoc_ql,
+                                   wthl_sfc,wqw_sfc,
+                                   emu_w_sec,emu_w3,
+                                   emu_wthl_sec_res,emu_wqw_sec_res);
 
     team.team_barrier();
     shoc_diag_obklen(uw_sfc,vw_sfc,     // Input
@@ -250,7 +261,8 @@ void Functions<S,D>::shoc_main_internal(
                                 vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                 workspace,                                  // Workspace
                                 thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
-                                uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
+                                uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert, // Input/Output
+                                emu_wthl_sec_res, emu_wqw_sec_res);         // Input
 
     // Diagnose the second order moments
     diag_second_shoc_moments(team,nlev,nlevi,
@@ -274,14 +286,12 @@ void Functions<S,D>::shoc_main_internal(
                             workspace,                              // Workspace
                             w3);                                    // Output
 
-    // First-pass online emulator for w'2 and w'3 below 8 km. Native SHOC remains
-    // responsible for values above the trained range.
+    // Add emulator counter-gradient fluxes to the diagnosed fluxes and replace
+    // w'2/w'3 below the trained range before the PDF closure consumes them.
     team.team_barrier();
-    shoc_moments_emulator::apply(nlev,nlevi,
-                                 zi_grid,rho_zt,presi,
-                                 thetal,qw,u_wind,v_wind,
-                                 wthl_sfc,wqw_sfc,
-                                 w_sec,w3);
+    shoc_moments_emulator::add_countergradient_flux(nlevi,wthl_sec,emu_wthl_sec_res);
+    shoc_moments_emulator::add_countergradient_flux(nlevi,wqw_sec,emu_wqw_sec_res);
+    shoc_moments_emulator::overwrite_moments_below_cutoff(nlevi,zi_grid,emu_w_sec,emu_w3,w_sec,w3);
 
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
@@ -344,8 +354,9 @@ void Functions<S,D>::shoc_main_internal(
           pblh);                          // Output
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<5>(
-    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi});
+  workspace.template release_many_contiguous<9>(
+    {&rho_zt, &shoc_qv, &shoc_tabs, &dz_zt, &dz_zi,
+     &emu_w_sec, &emu_w3, &emu_wthl_sec_res, &emu_wqw_sec_res});
 }
 #else
 template<typename S, typename D>
@@ -451,6 +462,12 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Pack>& dz_zt,
   const view_2d<Pack>& dz_zi)
 {
+  const Int nlevi_packs = ekat::npack<Pack>(nlevi);
+  view_2d<Pack> emu_w_sec("emu_w_sec", shcol, nlevi_packs);
+  view_2d<Pack> emu_w3("emu_w3", shcol, nlevi_packs);
+  view_2d<Pack> emu_wthl_sec_res("emu_wthl_sec_res", shcol, nlevi_packs);
+  view_2d<Pack> emu_wqw_sec_res("emu_wqw_sec_res", shcol, nlevi_packs);
+
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
   const auto s_shoc_ql = ekat::scalarize(shoc_ql);
@@ -488,6 +505,23 @@ void Functions<S,D>::shoc_main_internal(
     compute_shoc_temperature_disp(shcol,nlev,thetal,  // Input
                                   shoc_ql,inv_exner, // Input
                                   shoc_tabs);        // Output
+
+    for (Int i = 0; i < shcol; ++i) {
+      shoc_moments_emulator::predict(nlev,nlevi,
+                                     ekat::subview(zi_grid, i),
+                                     ekat::subview(rho_zt, i),
+                                     ekat::subview(presi, i),
+                                     ekat::subview(thetal, i),
+                                     ekat::subview(qw, i),
+                                     ekat::subview(u_wind, i),
+                                     ekat::subview(v_wind, i),
+                                     ekat::subview(shoc_ql, i),
+                                     wthl_sfc(i),wqw_sfc(i),
+                                     ekat::subview(emu_w_sec, i),
+                                     ekat::subview(emu_w3, i),
+                                     ekat::subview(emu_wthl_sec_res, i),
+                                     ekat::subview(emu_wqw_sec_res, i));
+    }
 
     shoc_diag_obklen_disp(shcol, nlev,
                           uw_sfc,vw_sfc,     // Input
@@ -534,7 +568,8 @@ void Functions<S,D>::shoc_main_internal(
                                      vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
                                      workspace_mgr,                              // Workspace mgr
                                      thetal,qw,qtracers,tke,u_wind,v_wind,       // Input/Output
-                                     uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert);// Input/Output
+                                     uw_sfc_pert, vw_sfc_pert, um_pert, vm_pert, // Input/Output
+                                     emu_wthl_sec_res, emu_wqw_sec_res);         // Input
 
     // Diagnose the second order moments
     diag_second_shoc_moments_disp(shcol,nlev,nlevi,
@@ -558,20 +593,21 @@ void Functions<S,D>::shoc_main_internal(
                                  workspace_mgr,                          // Workspace mgr
                                  w3);                                    // Output
 
-    // First-pass online emulator for w'2 and w'3 below 8 km. Native SHOC remains
-    // responsible for values above the trained range.
+    // Add emulator counter-gradient fluxes to the diagnosed fluxes and replace
+    // w'2/w'3 below the trained range before the PDF closure consumes them.
     for (Int i = 0; i < shcol; ++i) {
-      shoc_moments_emulator::apply(nlev,nlevi,
-                                   ekat::subview(zi_grid, i),
-                                   ekat::subview(rho_zt, i),
-                                   ekat::subview(presi, i),
-                                   ekat::subview(thetal, i),
-                                   ekat::subview(qw, i),
-                                   ekat::subview(u_wind, i),
-                                   ekat::subview(v_wind, i),
-                                   wthl_sfc(i),wqw_sfc(i),
-                                   ekat::subview(w_sec, i),
-                                   ekat::subview(w3, i));
+      shoc_moments_emulator::add_countergradient_flux(nlevi,
+                                                      ekat::subview(wthl_sec, i),
+                                                      ekat::subview(emu_wthl_sec_res, i));
+      shoc_moments_emulator::add_countergradient_flux(nlevi,
+                                                      ekat::subview(wqw_sec, i),
+                                                      ekat::subview(emu_wqw_sec_res, i));
+      shoc_moments_emulator::overwrite_moments_below_cutoff(nlevi,
+                                                            ekat::subview(zi_grid, i),
+                                                            ekat::subview(emu_w_sec, i),
+                                                            ekat::subview(emu_w3, i),
+                                                            ekat::subview(w_sec, i),
+                                                            ekat::subview(w3, i));
     }
 
     // Call the PDF to close on SGS cloud and turbulence
