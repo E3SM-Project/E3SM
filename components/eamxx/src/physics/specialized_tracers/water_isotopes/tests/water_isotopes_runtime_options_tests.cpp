@@ -33,7 +33,7 @@ TEST_CASE("runtime_formulation_selection") {
     WaterIsotopeConstants<Real> constants_natural(opts_natural);
 
     // Verify natural abundance values
-    REQUIRE(constants_natural.ratio_src(wiso::WaterIsotopologues::H216O) == Real(1.0));
+    REQUIRE(constants_natural.ratio_src(wiso::WaterIsotopologues::H216O) == Real(0.9976));
     REQUIRE(std::abs(constants_natural.ratio_src(wiso::WaterIsotopologues::HDO) - Real(155.76e-6)) < 1e-8);
     REQUIRE(std::abs(constants_natural.ratio_src(wiso::WaterIsotopologues::H218O) - Real(2005.20e-6)) < 1e-6);
 

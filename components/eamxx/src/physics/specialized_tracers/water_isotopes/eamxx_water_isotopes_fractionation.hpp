@@ -175,11 +175,11 @@ private:
         break;
       case WaterIsotopologues::H217O:
         // Derived from H218O via mass-dependent fractionation
-        alpha = ekat::pow(base_alpha(t, WaterIsotopologues::H218O), RealT(H217O_exponent));
+        alpha = pow(base_alpha(t, WaterIsotopologues::H218O), RealT(H217O_exponent));
         break;
       case WaterIsotopologues::HTO:
         // Derived from HDO via mass-dependent fractionation
-        alpha = ekat::pow(base_alpha(t, WaterIsotopologues::HDO), RealT(HTO_exponent));
+        alpha = pow(base_alpha(t, WaterIsotopologues::HDO), RealT(HTO_exponent));
         break;
       case WaterIsotopologues::H216O:
       default:
