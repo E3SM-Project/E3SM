@@ -2,7 +2,6 @@
 #define SCREAM_PRESCRIBED_AEROSOL_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "share/physics/eamxx_common_physics_functions.hpp"
 
 namespace scream
 {

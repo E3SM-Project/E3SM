@@ -1,5 +1,6 @@
 #include "eamxx_spa_process_interface.hpp"
 
+#include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/algorithm/eamxx_data_interpolation.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
