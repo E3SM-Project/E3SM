@@ -715,7 +715,7 @@
     <mach name="pm-cpu|muller-cpu|alvarez-cpu">
       <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP -->
-      <pes compset=".*EAM.+ELM.+DOCN" pesize="S">
+      <pes compset="^(?!.*GCAM).*EAM.+ELM.+DOCN" pesize="S">
         <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 1 node, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -727,7 +727,7 @@
           <ntasks_cpl>128</ntasks_cpl>
         </ntasks>
       </pes>
-      <pes compset=".*EAM.+ELM.+DOCN" pesize="M">
+      <pes compset="^(?!.*GCAM).*EAM.+ELM.+DOCN" pesize="M">
         <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 8 nodes, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -739,7 +739,7 @@
           <ntasks_cpl>1024</ntasks_cpl>
         </ntasks>
       </pes>
-      <pes compset=".*EAM.+ELM.+DOCN" pesize="L">
+      <pes compset="^(?!.*GCAM).*EAM.+ELM.+DOCN" pesize="L">
         <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 22 nodes, 128x1 </comment>
         <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -751,7 +751,7 @@
           <ntasks_cpl>2816</ntasks_cpl>
         </ntasks>
       </pes>
-      <pes compset=".*EAM.+ELM.+DOCN" pesize="XL">
+      <pes compset="^(?!.*GCAM).*EAM.+ELM.+DOCN" pesize="XL">
         <comment> pm-cpu: -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 45 nodes, 120x1 </comment>
         <MAX_MPITASKS_PER_NODE>120</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -761,6 +761,20 @@
           <ntasks_ice>5400</ntasks_ice>
           <ntasks_ocn>5400</ntasks_ocn>
           <ntasks_cpl>5400</ntasks_cpl>
+        </ntasks>
+      </pes>
+      <pes compset=".*EAM.+ELM.+DOCN.+GCAM.*" pesize="any">
+        <comment>pm-cpu: GCAM on ne30pg2_oEC60to30v3, one node (GCAM serial), 128x1</comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>128</ntasks_atm>
+          <ntasks_lnd>128</ntasks_lnd>
+          <ntasks_rof>128</ntasks_rof>
+          <ntasks_ice>128</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_cpl>128</ntasks_cpl>
+          <ntasks_iac>1</ntasks_iac>
+          <ntasks_esp>1</ntasks_esp>
         </ntasks>
       </pes>
     </mach>
