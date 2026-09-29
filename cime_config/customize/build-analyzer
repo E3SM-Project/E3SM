@@ -8,7 +8,7 @@ of the form:
 
     Target XXX built in Y.Z seconds
 
-and prints them sorted by build time (longest first).
+and prints them sorted by build time (longest last).
 
 If a second log file is provided, the script instead reports how each
 target's build time has changed between the two logs, along with the
@@ -21,7 +21,7 @@ import sys, re, argparse
 TARGET_RE = re.compile(r"^Target (.+) built in (\d+(?:\.\d+)?) seconds\s*$")
 
 GREEN = "\033[32m"
-RED = "\033[31m"
+RED   = "\033[31m"
 RESET = "\033[0m"
 
 ###############################################################################
@@ -63,7 +63,7 @@ def compare_logs(logfile1, logfile2):
         delta = (t2 if t2 is not None else 0.0) - (t1 if t1 is not None else 0.0)
         diffs.append((target, t1, t2, delta))
 
-    diffs.sort(key=lambda item: item[1])
+    diffs.sort(key=lambda item: (item[1] if item[1] is not None else item[2]))
 
     for target, t1, t2, delta in diffs:
         t1_str = f"{t1:f}" if t1 is not None else "MISSING"
@@ -125,6 +125,9 @@ def _main_func(description):
         entries = parse_log(args.logfile)
         for target, seconds in entries:
             print(f"Target {target} built in {seconds:f} seconds")
+        total = sum(item[1] for item in entries)
+        print(f"\nTotal: {total:f}")
+
     else:
         compare_logs(args.logfile, args.logfile2)
 
