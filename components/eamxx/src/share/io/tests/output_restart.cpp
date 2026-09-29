@@ -36,7 +36,7 @@ get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs);
 void randomize_fields (const FieldManager& fm, int seed);
 
 void time_advance (const FieldManager& fm,
-                   const std::list<ekat::CaseInsensitiveString>& fnames,
+                   const std::vector<std::string>& fnames,
                    const int dt);
 
 TEST_CASE("output_restart","io")
@@ -59,7 +59,10 @@ TEST_CASE("output_restart","io")
   auto fm0 = get_test_fm(grid);
   randomize_fields(*fm0,seed);
 
-  const auto& out_fields = fm0->get_group_info("output").m_fields_names;
+  auto out_group = fm0->get_field_group("output");
+  std::vector<std::string> out_fields;
+  for (auto it : out_group.individual_fields())
+    out_fields.push_back(it.first);
 
   // Initialize the pio_subsystem for this test:
   scorpio::init_subsystem(comm);
@@ -229,7 +232,7 @@ get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs)
 }
 /*===================================================================================================*/
 void time_advance (const FieldManager& fm,
-                   const std::list<ekat::CaseInsensitiveString>& fnames,
+                   const std::vector<std::string>& fnames,
                    const int dt) {
   for (const auto& fname : fnames) {
     auto f  = fm.get_field(fname);

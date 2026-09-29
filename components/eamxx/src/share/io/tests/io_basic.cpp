@@ -104,6 +104,8 @@ get_fm (const std::shared_ptr<const AbstractGrid>& grid,
     FID fid("f_"+std::to_string(count),fl,ekat::units::none,grid->name());
     Field f(fid);
     f.allocate_view();
+    if (count==0)
+      f.get_header().set_may_be_filled(true);
     auto& str_atts = f.get_header().get_extra_data<stratts_t>("io: string attributes");
     str_atts["test"] = f.name();
     randomize_discrete (f,seed++,values);
@@ -265,8 +267,14 @@ void read (const std::string& avg_type, const std::string& freq_units,
 
   // Check that the expected metadata was appropriately set for each variable
   for (const auto& f: fields_in) {
-    auto att_fill = scorpio::get_attribute<float>(filename,f.name(),"_FillValue");
-    REQUIRE(att_fill==constants::fill_value<Real>);
+    // Only f_0 had "may_be_filled()==true", which is what IO uses to determine
+    // if adding the "_FillValue" att or not
+    auto has_fv = scorpio::has_attribute(filename,f.name(),"_FillValue");
+    REQUIRE (has_fv==(f.name()=="f_0"));
+    if (has_fv) {
+      auto att_fill = scorpio::get_attribute<float>(filename,f.name(),"_FillValue");
+      REQUIRE(att_fill==constants::fill_value<Real>);
+    }
 
     auto att_str = scorpio::get_attribute<std::string>(filename,f.name(),"test");
     REQUIRE (att_str==f.name());

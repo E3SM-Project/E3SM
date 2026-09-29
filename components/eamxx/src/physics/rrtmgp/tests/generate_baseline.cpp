@@ -22,8 +22,9 @@ std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-co
 std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
 
 int main (int argc, char** argv) {
-    MPI_Init(&argc,&argv);
-
+  MPI_Init(&argc,&argv);
+  scream::initialize_eamxx_session(argc, argv);
+  {
     using namespace ekat::logger;
     using logger_t = Logger<LogNoFile,LogRootRank>;
 
@@ -49,9 +50,6 @@ int main (int argc, char** argv) {
     }
     std::string inputfile(argv[1]);
     std::string baseline(argv[2]);
-
-    // Initialize kernel launcher
-    scream::init_kls();
 
     // Get reference fluxes from input file; do this here so we can get ncol dimension
     r2d sw_flux_up_ref;
@@ -211,9 +209,10 @@ int main (int argc, char** argv) {
 
     gas_concs.reset();
     interface_t::rrtmgp_finalize();
-    scream::finalize_kls();
 
-    MPI_Finalize();
+  }
+  scream::finalize_eamxx_session();
+  MPI_Finalize();
 
-    return 0;
+  return 0;
 }

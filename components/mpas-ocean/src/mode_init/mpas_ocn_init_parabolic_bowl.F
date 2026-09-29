@@ -14,7 +14,7 @@
 !> \date   May-June 2022
 !> \details
 !>  This module contains the routines for initializing the
-!>  parabolic bowl initial condition (Thacker's problem)
+!>  parabolic bowl initial condition (Thackers problem)
 !>
 !
 !-----------------------------------------------------------------------
@@ -327,6 +327,7 @@ contains
        call ocn_subgrid_init(domain,iErr)
        call ocn_init_subgrid_calculations(domain, &
                                           ocn_init_parabolic_bowl_bathymetry, &
+                                          ocn_init_parabolic_bowl_drag, &
                                           ocn_init_parabolic_bowl_velocity, &
                                           ocn_init_parabolic_bowl_ssh, &
                                           config_parabolic_bowl_subgrid_refinement_level, &
@@ -470,6 +471,33 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_parabolic_bowl_bathymetry!}}}
+
+   !***********************************************************************
+!
+!  routine ocn_init_parabolic_bowl_drag
+!
+!> \brief   Compute drag
+!> \author  Steven Brus, D. Wirasaet
+!> \date    September 2025
+!> \details Return the value of the drag at a given x,y point
+!>  
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_parabolic_bowl_drag(x, y, drag)!{{{
+           
+      implicit none 
+
+      real (kind=RKIND), intent(in) :: x, y
+      real (kind=RKIND), intent(out) :: drag
+
+   !--------------------------------------------------------------------
+
+      drag = 0.0_RKIND 
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_init_parabolic_bowl_drag!}}}
 
 !***********************************************************************
 !

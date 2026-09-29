@@ -177,8 +177,8 @@ void HommeDynamics::create_requests ()
   add_field<Computed>("p_dry_mid",          pg_scalar3d_mid, Pa,    pgn,N);
   add_field<Computed>("omega",              pg_scalar3d_mid, Pa/s,  pgn,N);
   if (params.do_3d_turbulence) {
-    add_field<Required>("eddy_diff_heat",     pg_scalar3d_mid, m2/s,  pgn,N);
-    add_field<Required>("eddy_diff_mom",      pg_scalar3d_mid, m2/s,  pgn,N);
+    add_field<Required>("eddy_diff_heat_horiz", pg_scalar3d_mid, m2/s,  pgn,N);
+    add_field<Required>("eddy_diff_mom_horiz",  pg_scalar3d_mid, m2/s,  pgn,N);
     auto pg_shear_components_mid = m_phys_grid->get_3d_vector_layout(LEV,6);
     add_field<Computed>("tke_shear_strain3d_components", pg_shear_components_mid, 1/s, pgn,N);
   }
@@ -418,10 +418,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
       get_field_out("pseudo_density",pgn).get_header().get_tracking().get_providers().size()==1,
       "Error! Someone other than dynamics is trying to update the pseudo_density.\n");
 
-  // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
-  EKAT_REQUIRE_MSG(not get_group_out("Q",pgn).m_info->empty(),
-    "Error! There should be at least one tracer (qv) in the tracers group.\n");
-
   // Create remaining internal fields
   constexpr int NGP  = HOMMEXX_NP;
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
@@ -457,7 +453,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     // ftype!=FORCING_0:
     //  1) remap Q_pgn->FQ_dyn
     // Remap Q directly into FQ, tendency computed in pre_process step
-    m_p2d_remapper->register_field(*get_group_out("Q",pgn).m_monolithic_field,m_helper_fields.at("FQ_dyn"));
+    m_p2d_remapper->register_field(get_group_out("Q",pgn).monolithic_field(),m_helper_fields.at("FQ_dyn"));
     m_p2d_remapper->register_field(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
 
     // FM has 3 components on dyn grid, but only 2 on phys grid
@@ -472,13 +468,13 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->register_field(get_internal_field("v_dyn"),get_field_out("horiz_winds"));
     m_d2p_remapper->register_field(get_internal_field("dp3d_dyn"), get_field_out("pseudo_density"));
     m_d2p_remapper->register_field(get_internal_field("ps_dyn"), get_field_out("ps"));
-    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",pgn).m_monolithic_field);
+    m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),get_group_out("Q",pgn).monolithic_field());
     m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
     if (params.do_3d_turbulence) {
       // Remap SHOC eddy diffusivities from physics grid to dynamics grid.
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom",pgn),m_helper_fields.at("Km_dyn"));
-      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat",pgn),m_helper_fields.at("Kh_dyn"));
+      m_p2d_remapper->register_field(get_field_in("eddy_diff_mom_horiz",pgn),m_helper_fields.at("Km_dyn"));
+      m_p2d_remapper->register_field(get_field_in("eddy_diff_heat_horiz",pgn),m_helper_fields.at("Kh_dyn"));
 
       // Remap horizontal/local strain tensor components from dynamics to physics grid.
       m_d2p_remapper->register_field(m_helper_fields.at("shear_strain3d_components_dyn"), get_field_out("tke_shear_strain3d_components"));
@@ -532,7 +528,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
 
-  add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_monolithic_field,m_phys_grid,0,true);
+  add_postcondition_check<LowerBound>(get_group_out("Q",pgn).monolithic_field(),m_phys_grid,0,true);
   add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,100.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,30000.0, 120000.0,false);
@@ -581,8 +577,6 @@ void HommeDynamics::run_impl (const double dt)
     if (params.do_3d_turbulence){
       compute_horizontal_derivs_of_car_velocity();
       compute_local_strain_components3d();
-    } else if (params.do_3d_turbulence) {
-      m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0.0);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
@@ -613,10 +607,14 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
   const auto& c = Homme::Context::singleton();
         auto& tracers = c.get<Homme::Tracers>();
 
-  if (group.m_info->m_group_name=="tracers") {
+  if (group.name()=="tracers") {
+    // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
+    const int qsize = group.size();
+    EKAT_REQUIRE_MSG(qsize,
+      "Error! There should be at least one tracer (qv) in the tracers group.\n");
+
     // Set runtime number of tracers in Homme
     auto& params = c.get<Homme::SimulationParams>();
-    const int qsize = group.m_info->size();
     params.qsize = qsize;           // Set in the CXX data structure
     set_homme_param("qsize",qsize); // Set in the F90 module
     tracers.init(tracers.num_elems(),qsize);
@@ -764,7 +762,7 @@ void HommeDynamics::homme_post_process (const double dt) {
   const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
   const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
   const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
-  const auto Q_view   = get_group_out("Q",pgn).m_monolithic_field->get_view<Pack***>();
+  const auto Q_view   = get_group_out("Q",pgn).monolithic_field().get_view<Pack***>();
 
   const auto T_view  = get_field_out("T_mid").get_view<Pack**>();
   const auto T_prev_view = m_helper_fields.at("FT_phys").get_view<Pack**>();
@@ -917,6 +915,7 @@ void HommeDynamics::init_homme_views () {
   msg << "   nu_div: " << params.nu_div << "\n";
   msg << "   hypervis_order: " << params.hypervis_order << "\n";
   msg << "   hypervis_subcycle: " << params.hypervis_subcycle << "\n";
+  msg << "   horiz_turb_subcycle: " << params.horiz_turb_subcycle << "\n";
   msg << "   hypervis_subcycle_tom: " << params.hypervis_subcycle_tom << "\n";
   msg << "   hypervis_scaling: " << params.hypervis_scaling << "\n";
   msg << "   nu_ratio1: " << params.nu_ratio1 << "\n";
@@ -1105,7 +1104,7 @@ void HommeDynamics::restart_homme_state () {
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
-    auto Q_old = *get_group_in("Q",pgn).m_monolithic_field;
+    auto Q_old = get_group_in("Q",pgn).monolithic_field();
     m_ic_remapper->register_field(Q_old,Q_dyn);
 
     // Grab qv_ref_old from Q_old
@@ -1211,7 +1210,7 @@ void HommeDynamics::initialize_homme_state () {
   m_ic_remapper->register_field(get_field_in("ps",rgn),get_internal_field("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),get_internal_field("vtheta_dp_dyn"));
-  m_ic_remapper->register_field(*get_group_in("tracers",rgn).m_monolithic_field,m_helper_fields.at("Q_dyn"));
+  m_ic_remapper->register_field(get_group_in("tracers",rgn).monolithic_field(),m_helper_fields.at("Q_dyn"));
   m_ic_remapper->registration_ends();
   m_ic_remapper->remap_fwd();
 

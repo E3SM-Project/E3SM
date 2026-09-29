@@ -107,6 +107,15 @@ _TESTS = {
             )
         },
 
+    "e3sm_land_integration" : {
+        "tests" : (
+            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850GSWCNPPHSWFMCROP.elm-elm_gsw_I1850GSWCNPPHSWFMCROP",
+            "ERS_D.ne30pg2_r05_EC30to60E2r2.I1850WCCNPPHSWFMCROP.elm-elm_wc_I1850WCCNPPHSWFMCROP",
+            "ERS.ne30pg2_r05_EC30to60E2r2.I20TRWCCNPPHSWFMCROP.elm-elm_wc_I20TRWCCNPPHSWFMCROP",
+            "PEM_Ld3.ne30pg2_r05_EC30to60E2r2.I20TRGSWCNPPHSWFMCROP.elm-elm_gsw_I20TRGSWCNPPHSWFMCROP--pemod-omp1",
+            )
+        },
+
     "e3sm_atm_developer" : {
         "inherit" : ("eam_theta_pg2"),
         "tests"   : (
@@ -308,6 +317,7 @@ _TESTS = {
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-freshwater_tracers",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-lat_dep_diffusivity",
             "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-leith_viscosity",
+            "SMS_D_Ld1.T62_oQU240.GMPAS-IAF.mpaso-gm_geometric",
             "ERS_Ld5_D.T62_oQU240.GMPAS-IAF.mpaso-conservation_check",
             "ERS_Ld5_PS.ne30pg2_r05_IcoswISC30E3r5.CRYO1850-DISMF.mpaso-scaled_dib_dismf",
             "SMS_PS.ne30pg2_r05_IcoswISC30E3r5.WCYCL1850.mpaso-frazil_ice_porosity",
@@ -369,7 +379,7 @@ _TESTS = {
         },
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm", "e3sm_land_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",

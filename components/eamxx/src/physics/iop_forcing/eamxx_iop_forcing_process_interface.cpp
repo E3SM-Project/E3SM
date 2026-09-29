@@ -61,18 +61,18 @@ IOPForcing::create_requests()
 void IOPForcing::
 set_computed_group_impl (const FieldGroup& group)
 {
-  EKAT_REQUIRE_MSG(group.m_info->size() >= 1,
+  EKAT_REQUIRE_MSG(group.size() >= 1,
                    "Error! IOPForcing requires at least qv as tracer input.\n");
 
-  const auto& name = group.m_info->m_group_name;
+  const auto& name = group.name();
 
   EKAT_REQUIRE_MSG(name=="tracers",
     "Error! IOPForcing was not expecting a field group called '" << name << "\n");
 
-  EKAT_REQUIRE_MSG(group.m_info->m_monolithic_allocation,
+  EKAT_REQUIRE_MSG(group.has_monolithic_field(),
       "Error! IOPForcing expects a monolithic allocation for tracers.\n");
 
-  m_num_tracers = group.m_info->size();
+  m_num_tracers = group.size();
 }
 // =========================================================================================
 size_t IOPForcing::requested_buffer_size_in_bytes() const
@@ -161,7 +161,7 @@ advance_iop_subsidence (const MemberType& team,
                         const view_1d<Pack>& v,
                         const view_1d<Pack>& T,
                         const view_2d<Pack>& Q,
-                        ekat::LinInterp<Real, Pack::n>& interp)
+                        const ekat::LinInterp<Real, Pack::n>& interp)
 {
   constexpr Real Rair  = C::Rair.value;
   constexpr Real Cpair = C::Cpair.value;
@@ -278,7 +278,7 @@ void IOPForcing::run_impl (const double dt)
   const auto horiz_winds = get_field_out("horiz_winds").get_view<Pack***>();
   const auto T_mid = get_field_out("T_mid").get_view<Pack**>();
   const auto qv = get_field_out("qv").get_view<Pack**>();
-  const auto Q = get_group_out("tracers").m_monolithic_field->get_view<Pack***>();
+  const auto Q = get_group_out("tracers").monolithic_field().get_view<Pack***>();
 
   // Load data from IOP files, if necessary
   // TODO: this is using the TS from the beg of the step. Should it use end_of_step_ts() instead?
@@ -365,11 +365,9 @@ void IOPForcing::run_impl (const double dt)
     ColOps::compute_midpoint_delta(team, num_levs, ref_p_int, ref_p_del);
     team.team_barrier();
 
-    auto interp_local = subs_interp;
-
     if (iop_dosubsidence) {
     // Compute subsidence due to large-scale forcing
-      advance_iop_subsidence(team, num_levs, dt, ref_p_mid, omega, ws, u_i, v_i, T_mid_i, Q_i, interp_local);
+      advance_iop_subsidence(team, num_levs, dt, ref_p_mid, omega, ws, u_i, v_i, T_mid_i, Q_i, subs_interp);
     }
 
     // Update T and qv according to large scale forcing as specified in IOP file.

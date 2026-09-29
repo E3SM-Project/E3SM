@@ -34,6 +34,7 @@
 
 #include <fstream>
 #include <random>
+#include <ranges>
 
 namespace scream {
 
@@ -417,9 +418,9 @@ void AtmosphereDriver::reset_accumulated_fields ()
     }
 
     auto accum_group = m_field_mgr->get_field_group("ACCUMULATED", grid_name);
-    for (auto f_it : accum_group.m_individual_fields) {
-      auto& track = f_it.second->get_header().get_tracking();
-      f_it.second->deep_copy(zero);
+    for (auto f_it : accum_group.individual_fields()) {
+      auto& track = f_it.second.get_header().get_tracking();
+      f_it.second.deep_copy(zero);
       track.set_accum_start_time(m_current_ts);
     }
   }
@@ -530,7 +531,8 @@ void AtmosphereDriver::setup_shoc_3d_turbulence_link ()
 
   if (m_atm_process_group->has_process("homme")) {
     auto homme_process = m_atm_process_group->get_process_nonconst("homme");
-    const bool do_3d_turbulence = homme_process->get_params().get("do_3d_turbulence", false);
+    const bool do_3d_turbulence =
+        homme_process->get_params().get<bool>("do_3d_turbulence_homme", false);
 
     auto shoc_process = m_atm_process_group->get_process_nonconst("shoc");
     shoc_process->get_params().set<bool>("do_3d_turbulence_shoc", do_3d_turbulence);
@@ -618,12 +620,30 @@ void AtmosphereDriver::create_fields()
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
     m_field_mgr->add_field(f);
 
-    // Internal fields have their group names set by the processes that create them.
-    // Hence, simply add them to all the groups they are marked as part of
-    const auto& ftrack = f.get_header().get_tracking();
-    const auto& fid    = f.get_header().get_identifier();
-    for (const auto& gn : ftrack.get_groups_names()) {
-      m_field_mgr->add_to_group(fid, gn);
+  }
+
+  // Now that the fields are created, add U/V subfields of horiz_winds,
+  // as well as U/V component of surf_mom_flux
+  auto add_component = [&](Field& f, int cmp, const std::string& sf_name) {
+    const auto& gn = f.get_header().get_identifier().get_grid_name();
+    if (m_field_mgr->has_field(sf_name,gn))
+      return;
+
+    auto sf = f.get_component(cmp).alias(sf_name);
+    m_field_mgr->add_field(sf);
+  };
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    auto gn = grid->name();
+    if (m_field_mgr->has_field("horiz_winds", gn)) {
+      auto hw = m_field_mgr->get_field("horiz_winds", gn);
+      add_component(hw,0,"U");
+      add_component(hw,1,"V");
+    }
+    if (m_field_mgr->has_field("surf_mom_flux", gn)) {
+      auto smf = m_field_mgr->get_field("surf_mom_flux", gn);
+      add_component(smf,0,"surf_mom_flux_U");
+      add_component(smf,1,"surf_mom_flux_V");
     }
   }
 
@@ -632,33 +652,24 @@ void AtmosphereDriver::create_fields()
   // Skip fields in the ACCUMULATED group, since those are reset to 0
   // at the beginning of each atm step, so there is no need to read
   // them from the IC or restart file.
-  auto is_topography_field = [] (const std::string& name) {
-    return name=="phis" or name=="sgh" or name=="sgh30";
-  };
 
-  auto set_groups = [&](const Field& f) {
-    const auto& fid = f.get_header().get_identifier();
-    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-    if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      m_field_mgr->add_to_group(fid, "RESTART");
-      m_field_mgr->add_to_group(fid, "STARTUP");
-      if (is_topography_field(fid.name())) {
-        m_field_mgr->add_to_group(fid, "TOPOGRAPHY");
-      }
-    }
-  };
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    m_field_mgr->register_group(GroupRequest("RESTART",gn));
+    m_field_mgr->register_group(GroupRequest("STARTUP",gn));
+    m_field_mgr->register_group(GroupRequest("TOPOGRAPHY",gn));
+  }
 
   // Process input fields
   for (const auto& f : m_atm_process_group->get_fields_in())
-    set_groups(f);
+    set_initialization_groups(f);
 
   // Process input groups
   for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field)
-      set_groups(*g.m_monolithic_field);
+    if (g.has_monolithic_field())
+      set_initialization_groups(g.monolithic_field());
     else
-      for (const auto& it : g.m_individual_fields)
-        set_groups(*it.second);
+      for (const auto& it : g.individual_fields())
+        set_initialization_groups(it.second);
   }
 
   auto& driver_options_pl = m_atm_params.sublist("driver_options");
@@ -905,49 +916,6 @@ initialize_fields ()
     set_initial_conditions ();
   }
 
-  // Now that IC have been read, add U/V subfields of horiz_winds,
-  // as well as U/V component of surf_mom_flux
-  // NOTE: if you add them _before_ the IC read, set_initial_conditions
-  //       will skip horiz_winds, and only process U/V, which, being
-  //       missing in the IC file, would cause horiz_winds=0.
-  for (auto it : m_grids_manager->get_repo()) {
-    auto grid = it.second;
-    auto gn = grid->name();
-    auto fm = m_field_mgr;
-    if (fm->has_field("horiz_winds", gn)) {
-      using namespace ShortFieldTagsNames;
-      auto hw = fm->get_field("horiz_winds", gn);
-      const auto& fid = hw.get_header().get_identifier();
-      const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_component_idx();
-      const auto& units = fid.get_units();
-      auto U = hw.subfield("U",units,vec_dim,0);
-      auto V = hw.subfield("V",units,vec_dim,1);
-      if (not fm->has_field("U", gn)) {
-        fm->add_field(U);
-      }
-      if (not fm->has_field("V", gn)) {
-        fm->add_field(V);
-      }
-    }
-    if (fm->has_field("surf_mom_flux", gn)) {
-      using namespace ShortFieldTagsNames;
-      auto hw = fm->get_field("surf_mom_flux", gn);
-      const auto& fid = hw.get_header().get_identifier();
-      const auto& layout = fid.get_layout();
-      const int vec_dim = layout.get_vector_component_idx();
-      const auto& units = fid.get_units();
-      auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
-      auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
-      if (not fm->has_field("surf_mom_flux_U", gn)) {
-        fm->add_field(surf_mom_flux_U);
-      }
-      if (not fm->has_field("surf_mom_flux_V", gn)) {
-        fm->add_field(surf_mom_flux_V);
-      }
-    }
-  }
-
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
@@ -973,28 +941,33 @@ void AtmosphereDriver::restart_model ()
 
   for (auto& gn : m_grids_manager->get_grid_names()) {
     if (fvphyshack and gn == "physics_gll") continue;
-    if (not m_field_mgr->has_group("RESTART", gn)) {
-      // No field needs to be restarted on this grid.
-      continue;
-    }
-    const auto& restart_fnames = m_field_mgr->get_group_info("RESTART", gn).m_fields_names;
-    std::vector<Field> fields;
-    for (const auto& fn : restart_fnames) {
-      // If the field has a parent, and the parent is also in the RESTART group,
-      // then skip it, since restarting the parent will restart the child too
-      auto f = m_field_mgr->get_field(fn,gn);
-      auto p = f.get_header().get_parent();
-      if (p and ekat::contains(p->get_tracking().get_groups_names(),"RESTART")) {
-        continue;
+
+    auto restart_group = m_field_mgr->get_field_group("RESTART", gn);
+    if (restart_group.size()>0) {
+      auto grid = m_grids_manager->get_grid(gn);
+      std::vector<Field> fields;
+      for (auto [fname,f] : restart_group.individual_fields()) {
+        m_fields_inited[gn].insert(fname);
+        fields.push_back(f);
       }
-      fields.push_back(m_field_mgr->get_field(fn,gn));
-    }
-    auto grid = m_grids_manager->get_grid(gn);
-    read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
-    for (auto& f : fields) {
-      f.get_header().get_tracking().update_time_stamp(m_current_ts);
+      try {
+        read_fields(filename,fields,grid->get_partitioned_dim_gids(),m_atm_comm);
+      } catch (std::exception& e) {
+        EKAT_ERROR_MSG (
+            std::string(e.what()) + "\n"
+            "NOTE: if the error above complains about a missing variable 'U' or 'V',\n"
+            "      you may be trying to restart from a restart file created before\n"
+            "      PR #8606 (https://github.com/E3SM-Project/E3SM/pull/8606), which\n"
+            "      changed EAMxx to init/restart 'U'/'V' directly, rather than the\n"
+            "      vector field 'horiz_winds'. See the 'Restart file compatibility'\n"
+            "      section in components/eamxx/docs/user/model_configuration.md for\n"
+            "      instructions on how to convert an old restart file.\n");
+      }
     }
   }
+
+  // Initialize the timestamp of all restarted fields
+  initialize_time_stamps();
 
   for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
@@ -1084,176 +1057,130 @@ void AtmosphereDriver::set_initial_conditions ()
 
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
-  // Check which fields need to have an initial condition.
-  strmap_t<strvec_t> ic_fields_names;
+  // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
+  // added to the STARTUP group themselves (see set_initialization_groups): only their
+  // subfields are. Hence, an initial condition (constant value or copy-from-field)
+  // specified for the parent field name would be silently ignored. Catch this early,
+  // and ask the user to set each subfield individually instead.
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    for (const auto& it : m_field_mgr->get_repo(gn)) {
+      const auto& f = *it.second;
+      const auto& children = f.get_header().get_children();
+      if (children.size()>0 and ic_pl.isParameter(f.name())) {
+        std::string child_names;
+        for (auto c : children)
+          child_names += c.lock()->get_identifier().name() + " ";
+        EKAT_ERROR_MSG (
+            "Error! Cannot set an initial condition for field '" + f.name() + "' directly, "
+            "since it has subfields.\n"
+            "       Grid name:     " + gn + "\n"
+            "       Field:         " + f.name() + "\n"
+            "       Subfields:     " + child_names + "\n"
+            "       Please, set the initial condition for each subfield individually.\n");
+      }
+    }
+  }
+
+  // Process all fields in the STARTUP group. For each, either init to
+  // a constant (if provided), add it to list of fields to read from file,
+  // or add it to list of fields to copy from another field.
+  m_atm_logger->debug("    [EAMxx] Processing input fields ...");
+  strmap_t<std::set<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
-  // Check which fields should be loaded from the topography file
   strmap_t<strvec_t> topography_file_fields_names;
   strmap_t<strvec_t> topography_eamxx_fields_names;
 
-  // Helper lambda, to reduce code duplication
-  auto process_ic_field = [&](const Field& f) {
-    const auto& fid = f.get_header().get_identifier();
-    const auto& fname = fid.name();
-    const auto& grid_name = fid.get_grid_name();
+  for (const auto& gn : m_grids_manager->get_grid_names()) {
+    auto ic_group = m_field_mgr->get_field_group("STARTUP",gn);
+    for (auto& f : std::views::values(ic_group.individual_fields())) {
+      const auto& fid = f.get_header().get_identifier();
+      const auto& fname = fid.name();
+      const auto& grid_name = fid.get_grid_name();
 
-    if (ic_pl.isParameter(fname)) {
-      // This is the case that the user provided an initialization
-      // for this field in the parameter file.
-      if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
-          ic_pl.isType<std::vector<double>>(fname)) {
-        // Initial condition is a constant
-        initialize_constant_field(fid, ic_pl);
-
-        // Note: f is const, so we can't modify the tracking. So get the same field from the fm
-        auto f_nonconst = m_field_mgr->get_field(fid);
-        f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
-      } else if (ic_pl.isType<std::string>(fname)) {
-        // Initial condition is a string
-        ic_fields_to_copy.push_back(fid);
-      } else {
-        EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
-                        "double or string, or vector double arguments are allowed");
-      }
-      m_fields_inited[grid_name].push_back(fname);
-    } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
-      // these fields need to be loaded from the topography file
-	  // - phis is the surface geopotential height
-	  // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
-	  //   needed for turbulent mountain stress scheme (i.e. TMS)
-	  // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
-	  //   needed for orographic gravity wave drag scheme (i.e. GWD)
-      auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
-      auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
-
-      if (fname == "phis") {
-        // For GLL points, phis corresponds to "PHIS_d" in the
-        // topography file. On PG2 grid, dynamics will take care
-        // of computing phis, so do not add to initialized fields.
-        if (grid_name == "physics_pg2") {
-          // Skip
-        } else if (grid_name == "physics_gll" ||
-                   grid_name == "point_grid") {
-          this_grid_topo_file_fnames.push_back("PHIS_d");
-          this_grid_topo_eamxx_fnames.push_back(fname);
-          m_fields_inited[grid_name].push_back(fname);
+      if (ic_pl.isParameter(fname)) {
+        // This is the case that the user provided an initialization
+        // for this field in the parameter file (either to a constant or to another field).
+        if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
+            ic_pl.isType<std::vector<double>>(fname)) {
+          initialize_constant_field(fid, ic_pl);
+        } else if (ic_pl.isType<std::string>(fname)) {
+          ic_fields_to_copy.push_back(fid);
         } else {
-          EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
+          EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
+                          "double or string, or vector double arguments are allowed");
         }
-      } else if (fname == "sgh30") {
-        // The eamxx field "sgh30" is called "SGH30" in the
-        // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
-                        "Error! Requesting sgh30 field on " + grid_name +
-                        " topo file only has sgh30 for physics_pg2.\n");
-        topography_file_fields_names[grid_name].push_back("SGH30");
-        topography_eamxx_fields_names[grid_name].push_back(fname);
-        m_fields_inited[grid_name].push_back(fname);
-      } else if (fname == "sgh") {
-        // The eamxx field "sgh" is called "SGH" in the
-        // topography file and is only available on the PG2 grid.
-        EKAT_ASSERT_MSG(grid_name == "physics_pg2",
-                        "Error! Requesting sgh field on " + grid_name +
-                        " topo file only has sgh for physics_pg2.\n");
-        topography_file_fields_names[grid_name].push_back("SGH");
-        topography_eamxx_fields_names[grid_name].push_back(fname);
-        m_fields_inited[grid_name].push_back(fname);
-      }
-    } else if (not (fvphyshack and grid_name == "physics_pg2")) {
-      // The IC file is written for the GLL grid, so we only load
-      // fields from there. Any other input fields on the PG2 grid
-      // will be properly computed in the dynamics interface.
-      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto c = f.get_header().get_children();
-      if (c.size()==0) {
-        // If this field is the parent of other subfields, we only read from file the subfields.
-        if (not ekat::contains(this_grid_ic_fnames,fname)) {
-          this_grid_ic_fnames.push_back(fname);
-          m_fields_inited[grid_name].push_back(fname);
-        }
-      } else if (fvphyshack and grid_name == "physics_gll") {
-        // [CGLL ICs in pg2] I tried doing something like this in
-        // HommeDynamics::set_grids, but I couldn't find the means to get the
-        // list of fields. I think the issue is that you can't access group
-        // objects until some registration period ends. So instead do it here,
-        // where the list is definitely available.
-        for (const auto& e : c) {
-          const auto f = e.lock();
-          const auto& fid = f->get_identifier();
-          const auto& fname = fid.name();
-          if (ic_pl.isParameter(fname) and ic_pl.isType<double>(fname)) {
-            initialize_constant_field(fid, ic_pl);
-          } else {
-            this_grid_ic_fnames.push_back(fname);
-          }
-          m_fields_inited[grid_name].push_back(fname);
-        }
-      }
-    }
-  };
+        m_fields_inited[grid_name].insert(fname);
+      } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
+        // these fields need to be loaded from the topography file
+        // - phis is the surface geopotential height
+        // - sgh30 - sub-grid std dev of surface height (on phys grid) between source grid and a 3km ref grid
+        //   needed for turbulent mountain stress scheme (i.e. TMS)
+        // - sgh - sub-grid std dev of surface height (on phys grid) between source grid and target grid
+        //   needed for orographic gravity wave drag scheme (i.e. GWD)
+        auto& this_grid_topo_file_fnames = topography_file_fields_names[grid_name];
+        auto& this_grid_topo_eamxx_fnames = topography_eamxx_fields_names[grid_name];
 
-  // First the individual input fields...
-  m_atm_logger->debug("    [EAMxx] Processing input fields ...");
-  for (const auto& f : m_atm_process_group->get_fields_in()) {
-    // Skip ACCUMULATED fields: those are reset to 0 at the beginning of
-    // each atm step, so there is no need to read them from the IC file.
-    const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-    if (not ekat::contains(fgroups, "ACCUMULATED")) {
-      process_ic_field (f);
+        if (fname == "phis") {
+          // For GLL points, phis corresponds to "PHIS_d" in the
+          // topography file. On PG2 grid, dynamics will take care
+          // of computing phis, so do not add to initialized fields.
+          if (grid_name == "physics_pg2") {
+            // Skip
+          } else if (grid_name == "physics_gll" ||
+                     grid_name == "point_grid") {
+            this_grid_topo_file_fnames.push_back("PHIS_d");
+            this_grid_topo_eamxx_fnames.push_back(fname);
+            m_fields_inited[grid_name].insert(fname);
+          } else {
+            EKAT_ERROR_MSG ("Error! Requesting phis on an unknown grid: " + grid_name + ".\n");
+          }
+        } else if (fname == "sgh30") {
+          // The eamxx field "sgh30" is called "SGH30" in the
+          // topography file and is only available on the PG2 grid.
+          EKAT_ASSERT_MSG(grid_name == "physics_pg2",
+                          "Error! Requesting sgh30 field on " + grid_name +
+                          " topo file only has sgh30 for physics_pg2.\n");
+          topography_file_fields_names[grid_name].push_back("SGH30");
+          topography_eamxx_fields_names[grid_name].push_back(fname);
+          m_fields_inited[grid_name].insert(fname);
+        } else if (fname == "sgh") {
+          // The eamxx field "sgh" is called "SGH" in the
+          // topography file and is only available on the PG2 grid.
+          EKAT_ASSERT_MSG(grid_name == "physics_pg2",
+                          "Error! Requesting sgh field on " + grid_name +
+                          " topo file only has sgh for physics_pg2.\n");
+          topography_file_fields_names[grid_name].push_back("SGH");
+          topography_eamxx_fields_names[grid_name].push_back(fname);
+          m_fields_inited[grid_name].insert(fname);
+        }
+      } else if (not (fvphyshack and grid_name == "physics_pg2")) {
+        // These are GLL grid fields. ICs are read on this grid, and dyn
+        // takes care of remapping to PG2 during process initialization.
+        ic_fields_names[grid_name].insert(fname);
+        m_fields_inited[grid_name].insert(fname);
+      }
     }
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
-  // ...then the input groups
-  m_atm_logger->debug("    [EAMxx] Processing input groups ...");
-  for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      const auto& mf = *g.m_monolithic_field;
-      const auto& mfgroups = mf.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(mfgroups, "ACCUMULATED")) {
-        process_ic_field(mf);
-      }
-    }
-    for (auto it : g.m_individual_fields) {
-      const auto& f = *it.second;
-      const auto& fgroups = f.get_header().get_tracking().get_groups_names();
-      if (not ekat::contains(fgroups, "ACCUMULATED")) {
-        process_ic_field(f);
-      }
-    }
-  }
-  m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
-
-  // Some fields might be the subfield of a group's monolithic field. In that case,
-  // we only need to init one: either the monolithic field, or all the individual subfields.
+  // Some fields might be the subfield of another field (e.g., individual fields in
+  // a group with monolithic allocation, or components of a vector field like horiz_winds).
+  // In that case, we only need to init one: either the monolithic field, or all the individual subfields.
   // So loop over the fields that appear to require loading from file, and remove
-  // them from the list if they are the subfield of a groups monolithic field already inited
+  // them from the list if they are the subfield of another field already inited
   // (perhaps via initialize_constant_field, or copied from another field).
-  for (auto& it1 : ic_fields_names) {
-    const auto& grid_name =  it1.first;
+  for (auto& it : ic_fields_names) {
+    const auto& grid_name = it.first;
+    auto& names = it.second;
+    std::erase_if(names, [&](const std::string& name) {
+      auto f = m_field_mgr->get_field(name, grid_name);
+      auto p = f.get_header().get_parent();
+      if (!p) return false;
 
-    // Note: every time we erase an entry in the vector, all iterators are
-    //       invalidated, so we need to re-start the for loop.
-    bool run_again = true;
-    while (run_again) {
-      run_again = false;
-      auto& names = it1.second;
-      for (auto it2=names.begin(); it2!=names.end(); ++it2) {
-        const auto& fname = *it2;
-        auto f = m_field_mgr->get_field(fname, grid_name);
-        auto p = f.get_header().get_parent();
-        if (p) {
-          const auto& pname = p->get_identifier().name();
-          if (ekat::contains(m_fields_inited[grid_name],pname)) {
-            // The parent is already inited. No need to init this field as well.
-            names.erase(it2);
-            run_again = true;
-            break;
-          }
-        }
-      }
-    }
+      const auto& pname = p->get_identifier().name();
+      return ekat::contains(m_fields_inited[grid_name], pname);
+    });
   }
 
   if (m_iop_data_manager) {
@@ -1301,9 +1228,6 @@ void AtmosphereDriver::set_initial_conditions ()
         // lat/lon column to every other column
         m_iop_data_manager->read_fields_from_file_for_iop(file_name,ic_fields,grid);
       }
-      for (auto& f : ic_fields) {
-        f.get_header().get_tracking().update_time_stamp(m_current_ts);
-      }
     }
   }
 
@@ -1326,39 +1250,8 @@ void AtmosphereDriver::set_initial_conditions ()
     auto f_tgt = m_field_mgr->get_field(tgt_fname, gname);
     auto f_src = m_field_mgr->get_field(src_fname, gname);
     f_tgt.deep_copy(f_src);
-
-    // Set the initial time stamp
-    f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
   m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
-
-  // It is possible to have a monolithically allocated group G1=(f1,f2,f3),
-  // where the IC are read from file for f1, f2, and f3. In that case,
-  // the time stamp for the monolithic field of G1 has not be inited, but the data
-  // is valid (all entries have been inited). Let's fix that.
-  m_atm_logger->debug("    [EAMxx] Processing subfields ...");
-  for (const auto& g : m_atm_process_group->get_groups_in()) {
-    if (g.m_monolithic_field) {
-      auto& track = g.m_monolithic_field->get_header().get_tracking();
-      if (not track.get_time_stamp().is_valid()) {
-        // The groups monolithic field has not been inited. Check if all the subfields
-        // have been inited. If so, init the timestamp of the monlithic field too.
-        const auto& children = track.get_children();
-        bool all_inited = children.size()>0; // If no children, then something is off, so mark as not good
-        for (auto wp : children) {
-          auto sp = wp.lock();
-          if (not sp->get_time_stamp().is_valid()) {
-            all_inited = false;
-            break;
-          }
-        }
-        if (all_inited) {
-          track.update_time_stamp(m_current_ts);
-        }
-      }
-    }
-  }
-  m_atm_logger->debug("    [EAMxx] Processing subfields ... done!");
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
@@ -1397,9 +1290,6 @@ void AtmosphereDriver::set_initial_conditions ()
         // For IOP enabled, we load from file and copy data from the closest
         // lat/lon column to every other column
         m_iop_data_manager->read_fields_from_file_for_iop(file_name,topo_fields,grid);
-      }
-      for (auto& f : topo_fields) {
-        f.get_header().get_tracking().update_time_stamp(m_current_ts);
       }
     }
     // Store in provenance list, for later usage in output file metadata
@@ -1503,6 +1393,9 @@ void AtmosphereDriver::set_initial_conditions ()
 
     m_atm_logger->info("    [EAMxx] Adding random perturbation to ICs ... done!");
   }
+
+  // Initialize the timestamp of all inited fields
+  initialize_time_stamps();
 
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
@@ -1724,8 +1617,8 @@ void AtmosphereDriver::run (const int dt) {
     }
 
     auto rescale_group = m_field_mgr->get_field_group("DIVIDE_BY_DT", gname);
-    for (auto f_it : rescale_group.m_individual_fields) {
-      f_it.second->scale(Real(1) / dt);
+    for (auto f_it : rescale_group.individual_fields()) {
+      f_it.second.scale(Real(1) / dt);
     }
   }
 
@@ -1900,6 +1793,72 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
   m_atm_comm.all_reduce(&my_mem_usage_from_os,&max_mem_usage_from_os,1,MPI_MAX);
   m_atm_logger->info("[EAMxx::init] memory usage from OS probing tools: " + std::to_string(max_mem_usage_from_os) + "MB");
 #endif
+}
+
+void AtmosphereDriver::
+set_initialization_groups (const Field& f)
+{
+  auto is_topography_field = [] (const std::string& name) {
+    return name=="phis" or name=="sgh" or name=="sgh30";
+  };
+
+  const auto& fgroups = f.get_header().get_tracking().get_groups_names();
+
+  // ACCUMULATED fields are reset at the beginning of a timestep,
+  // so NEVER read from IC/restart file
+  if (ekat::contains(fgroups, "ACCUMULATED"))
+    return;
+
+  const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+
+  // We read from IC/restart ONLY leaf fields. In case both homme and shoc
+  // are present, we do have the turbulence_advected_tracers field, which
+  // is the monolithic field of the homonymous group, and is the child of
+  // the larger tracers field/group. However, it does NOT store children
+  // (indiv fields are the children of the origiinal tracers group).
+  // Hence, we need to check both has_children and is_group to rule out
+  // this special case
+  bool has_children = f.get_header().get_children().size()>0;
+  bool is_group = m_field_mgr->has_group(f.name(),grid_name);
+  if (has_children) {
+    auto children = f.get_header().get_children();
+    for (auto c : children) {
+      const auto& cname = c.lock()->get_identifier().name();
+      set_initialization_groups(m_field_mgr->get_field(cname,grid_name));
+    }
+  } else if (not is_group) {
+    m_field_mgr->add_to_group(f.name(), grid_name, "STARTUP");
+    m_field_mgr->add_to_group(f.name(), grid_name, "RESTART");
+  }
+  if (is_topography_field(f.name())) {
+    m_field_mgr->add_to_group(f.name(), grid_name, "TOPOGRAPHY");
+  }
+}
+
+void AtmosphereDriver::
+initialize_time_stamps ()
+{
+  for (auto& [grid_name,field_names] : m_fields_inited) {
+    for (auto& fname : field_names) {
+      auto f = m_field_mgr->get_field(fname,grid_name);
+      f.get_header().get_tracking().update_time_stamp(m_current_ts);
+
+      // Also init the timestamp of children (if any)
+      for (auto& c : f.get_header().get_children())
+        c.lock()->get_tracking().update_time_stamp(m_current_ts);
+
+      // If there is a parent, and all children were inited,
+      // also init the parent's timestamp
+      if (auto p = f.get_header().get_parent(); p!=nullptr) {
+        bool p_inited = true;
+        for (auto c : p->get_children())
+          p_inited &= field_names.count(c.lock()->get_identifier().name())>0;
+
+        if (p_inited)
+          p->get_tracking().update_time_stamp(m_current_ts);
+      }
+    }
+  }
 }
 
 }  // namespace control

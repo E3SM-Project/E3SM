@@ -5,6 +5,7 @@ endif()
 string(APPEND CMAKE_C_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2")
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -g")
+string(REPLACE "-Ktrap=fp" "-Ktrap=divz,ovf" CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG}")
 
 set(HOMME_QUAD_PREC FALSE CACHE BOOL "") # nvidia does not seem to support QUAD
 

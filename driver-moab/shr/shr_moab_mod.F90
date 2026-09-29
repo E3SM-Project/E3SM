@@ -49,6 +49,17 @@ contains
    character(*), parameter   :: subname = '(mbGetnCells) '
 !-----------------------------------------------------------------------
 !
+   ! An unset app id (-1) means the component/mesh is absent, so it has no
+   ! cells.  Return early rather than calling into iMOAB: iMOAB_GetMeshInfo
+   ! indexes context.appDatas with the id and would silently insert a default
+   ! entry for -1 (appDatas is a std::map, so this is not currently an error,
+   ! but it pollutes the map and would become out-of-bounds if that container
+   ! ever changed).  Returning here also avoids the mbaxid/mblxid comparisons
+   ! below spuriously matching when those ids are themselves unset.
+   if (moabid < 0) then
+      mbGetnCells = 0
+      return
+   endif
 
    ierr  = iMOAB_GetMeshInfo ( moabid, nvert, nvise, nbl, nsurf, nvisBC );
 

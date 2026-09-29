@@ -23,10 +23,8 @@ namespace py = pybind11;
 ekat::logger::LogLevel str2LogLevel (const std::string& s) {
   using namespace ekat::logger;
 
-  ekat::logger::LogLevel log_level;
-  if (s=="off") {
-    log_level = LogLevel::off;
-  } else if (s=="trace") {
+  ekat::logger::LogLevel log_level = LogLevel::off;
+  if (s=="trace") {
     log_level = LogLevel::trace;
   } else if (s=="debug") {
     log_level = LogLevel::debug;
@@ -326,9 +324,9 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
 
 void AtmosphereProcess::set_required_group (const FieldGroup& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (has_required_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_required_group(group.name(),group.grid_name()),
     "Error! This atmosphere process does not require the input group.\n"
-    "   group name: " + group.m_info->m_group_name + "\n"
+    "   group name: " + group.name() + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
@@ -338,11 +336,11 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as customer if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_monolithic_field) {
-        add_me_as_customer(*group.m_monolithic_field);
+      if (group.has_monolithic_field()) {
+        add_me_as_customer(group.monolithic_field());
       } else {
-        for (auto& it : group.m_individual_fields) {
-          add_me_as_customer(*it.second);
+        for (auto& it : group.individual_fields()) {
+          add_me_as_customer(it.second);
         }
       }
     }
@@ -355,9 +353,9 @@ void AtmosphereProcess::set_required_group (const FieldGroup& group) {
 
 void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   // Sanity check
-  EKAT_REQUIRE_MSG (has_computed_group(group.m_info->m_group_name,group.grid_name()),
+  EKAT_REQUIRE_MSG (has_computed_group(group.name(),group.grid_name()),
     "Error! This atmosphere process does not compute the input group.\n"
-    "   group name: " + group.m_info->m_group_name + "\n"
+    "   group name: " + group.name() + "\n"
     "   grid name : " + group.grid_name() + "\n"
     "   atm process: " + this->name() + "\n"
     "Something is wrong up the call stack. Please, contact developers.\n");
@@ -367,11 +365,11 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
     // AtmosphereProcessGroup is just a "container" of *real* atm processes,
     // so don't add me as provider if I'm an atm proc group.
     if (this->type()!=AtmosphereProcessType::Group) {
-      if (group.m_monolithic_field) {
-        add_me_as_provider(*group.m_monolithic_field);
+      if (group.has_monolithic_field()) {
+        add_me_as_provider(group.monolithic_field());
       } else {
-        for (auto& it : group.m_individual_fields) {
-          add_me_as_provider(*it.second);
+        for (auto& it : group.individual_fields()) {
+          add_me_as_provider(it.second);
         }
       }
     }
@@ -449,9 +447,9 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_in) {
-          for (const auto& f : g.m_individual_fields) {
-            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
-              print_field_hyperslab (*f.second,tags,idx,ss);
+          for (const auto& it : g.individual_fields()) {
+            if (it.second.get_header().get_identifier().get_layout().has_tags(tags)) {
+              print_field_hyperslab (it.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
             }
           }
@@ -464,9 +462,9 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           }
         }
         for (const auto& g : m_groups_out) {
-          for (const auto& f : g.m_individual_fields) {
-            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
-              print_field_hyperslab (*f.second,tags,idx,ss);
+          for (const auto& it : g.individual_fields()) {
+            if (it.second.get_header().get_identifier().get_layout().has_tags(tags)) {
+              print_field_hyperslab (it.second,tags,idx,ss);
               ss << " -----------------------------------------------------------------------\n";
             }
           }
@@ -613,11 +611,11 @@ void AtmosphereProcess::update_time_stamps () {
     f.get_header().get_tracking().update_time_stamp(t);
   }
   for (auto& g : m_groups_out) {
-    if (g.m_monolithic_field) {
-      g.m_monolithic_field->get_header().get_tracking().update_time_stamp(t);
+    if (g.has_monolithic_field()) {
+      g.monolithic_field().get_header().get_tracking().update_time_stamp(t);
     } else {
-      for (auto& f : g.m_individual_fields) {
-        f.second->get_header().get_tracking().update_time_stamp(t);
+      for (auto& it : g.individual_fields()) {
+        it.second.get_header().get_tracking().update_time_stamp(t);
       }
     }
   }
@@ -832,25 +830,25 @@ void AtmosphereProcess::set_fields_and_groups_pointers () {
     m_fields_out_pointers[fid.name()][fid.get_grid_name()] = &f;
   }
   for (auto& g : m_groups_in) {
-    const auto& group_name = g.m_info->m_group_name;
+    const auto& group_name = g.name();
     m_groups_in_pointers[group_name][g.grid_name()] = &g;
     // Also add pointers for individual fields in the group and monolithic field (if present)
-    for (const auto& [fn,fp] : g.m_individual_fields) {
-      m_fields_in_pointers[fn][g.grid_name()] = fp.get();
+    for (auto& [fn,f] : g.individual_fields()) {
+      m_fields_in_pointers[fn][g.grid_name()] = &f;
     }
-    if (g.m_monolithic_field) {
-      m_fields_in_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+    if (g.has_monolithic_field()) {
+      m_fields_in_pointers[group_name][g.grid_name()] = &g.monolithic_field();
     }
   }
   for (auto& g : m_groups_out) {
-    const auto& group_name = g.m_info->m_group_name;
+    const auto& group_name = g.name();
     m_groups_out_pointers[group_name][g.grid_name()] = &g;
     // Also add pointers for individual fields in the group and monolithic field (if present)
-    for (const auto& [fn,fp] : g.m_individual_fields) {
-      m_fields_out_pointers[fn][g.grid_name()] = fp.get();
+    for (auto& [fn,f] : g.individual_fields()) {
+      m_fields_out_pointers[fn][g.grid_name()] = &f;
     }
-    if (g.m_monolithic_field) {
-      m_fields_out_pointers[group_name][g.grid_name()] = g.m_monolithic_field.get();
+    if (g.has_monolithic_field()) {
+      m_fields_out_pointers[group_name][g.grid_name()] = &g.monolithic_field();
     }
   }
   for (auto& f : m_internal_fields) {
@@ -1020,7 +1018,7 @@ get_group_in_impl(const std::string& group_name, const std::string& grid_name) c
         "   group name: " + group_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
-  static FieldGroup g("");
+  static FieldGroup g("ERROR","ERROR");
   return g;
 }
 
@@ -1043,7 +1041,7 @@ get_group_in_impl(const std::string& group_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   group name: " + group_name + "\n");
   }
-  static FieldGroup g("");
+  static FieldGroup g("ERROR","ERROR");
   return g;
 }
 
@@ -1060,7 +1058,7 @@ get_group_out_impl(const std::string& group_name, const std::string& grid_name) 
         "   group name: " + group_name + "\n"
         "   grid name: " + grid_name + "\n");
   }
-  static FieldGroup g("");
+  static FieldGroup g("ERROR","ERROR");
   return g;
 }
 
@@ -1083,7 +1081,7 @@ get_group_out_impl(const std::string& group_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   group name: " + group_name + "\n");
   }
-  static FieldGroup g("");
+  static FieldGroup g("ERROR","ERROR");
   return g;
 }
 
@@ -1148,18 +1146,17 @@ void AtmosphereProcess
 
 void AtmosphereProcess
 ::remove_group (const std::string& group_name, const std::string& grid_name) {
-  typedef std::list<FieldGroup>::iterator It;
-  const auto rmg = [&] (std::list<FieldGroup>& fields, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
-    std::vector<It> rm_its;
-    for (It it = fields.begin(); it != fields.end(); ++it) {
-      if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
-        rm_its.push_back(it);
+  const auto rmg = [&] (std::list<FieldGroup>& groups, strmap_t<strmap_t<FieldGroup*>>& ptrs) {
+    for (auto it = groups.begin(); it != groups.end();) {
+      if (it->name() == group_name and it->grid_name() == grid_name) {
         ptrs[group_name][grid_name] = nullptr;
-        for (auto& kv : it->m_individual_fields)
+        for (auto& kv : it->individual_fields())
           remove_field(kv.first, grid_name);
+        it = groups.erase(it);
+      } else {
+        ++it;
       }
     }
-    for (auto& it : rm_its) fields.erase(it);
   };
   rmg(m_groups_in, m_groups_in_pointers);
   rmg(m_groups_out, m_groups_out_pointers);
@@ -1221,12 +1218,12 @@ void AtmosphereProcess::add_py_fields (const FieldGroup& group)
 {
 #ifdef EAMXX_HAS_PYTHON
   if (m_py_module.has_value()) {
-    if (group.m_monolithic_field) {
-      const auto& f = group.m_monolithic_field;
-      add_py_fields(*f);
+    if (group.has_monolithic_field()) {
+      const auto& f = group.monolithic_field();
+      add_py_fields(f);
     } else {
-      for (const auto& [name,f] : group.m_individual_fields) {
-        add_py_fields(*f);
+      for (const auto& [name,f] : group.individual_fields()) {
+        add_py_fields(f);
       }
     }
   }

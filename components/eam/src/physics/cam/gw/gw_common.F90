@@ -553,8 +553,9 @@ end subroutine gwd_project_tau
 
 !==========================================================================
 
-subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, &
-     lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
+subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
+     dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, t, nm, &
+     xv, yv, tau, gwut, utgw, vtgw, effgw_loc_in, use_tau_limiter)
 
   !------------------------------Arguments--------------------------------
   ! Column and gravity wave spectrum dimensions.
@@ -585,6 +586,15 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
   ! Unit vectors of source wind (zonal and meridional components).
   real(r8), intent(in) :: xv(ncol), yv(ncol)
 
+  ! Alternative effgw that varies with location - overrides scalar effgw
+  real(r8), intent(in), optional :: effgw_loc_in(ncol)
+
+  ! flag to use minimum limit on gwut. Optional (and placed at the end of
+  ! the argument list) so that existing positional callers, such as the
+  ! EAMxx standalone GW unit-test bridge, continue to compile unmodified;
+  ! omitting it preserves the pre-existing (limiter disabled) behavior.
+  logical(btype), intent(in), optional :: use_tau_limiter
+
   ! Wave Reynolds stress.
   real(r8), intent(inout) :: tau(ncol,-pgwv:pgwv,0:pver)
 
@@ -601,6 +611,28 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
 
   ! Polar taper.
   real(r8) :: ptaper(ncol)
+
+  ! Efficiency parameter for each column
+  real(r8) :: effgw_col(ncol)
+
+  ! Local resolution of the optional use_tau_limiter flag.
+  logical(btype) :: use_tau_limiter_loc
+
+  real(r8), parameter :: ubtl_magnitude_min = 1.e-15_r8
+  !-----------------------------------------------------------------------
+
+  ! Override scalar effgw with a column-varying value, if provided
+  if (present(effgw_loc_in)) then
+    effgw_col(1:ncol) = effgw_loc_in(1:ncol)
+  else
+    effgw_col(1:ncol) = effgw
+  endif
+
+  if (present(use_tau_limiter)) then
+    use_tau_limiter_loc = use_tau_limiter
+  else
+    use_tau_limiter_loc = .false.
+  endif
 
   if (do_taper) then    ! taper CM only
      do l=1, ncol
@@ -641,11 +673,18 @@ subroutine gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, d
         ubtl = min(ubtl, umcfac * abs(c(:,l)-ubm(:,k)) / dt)
         ubtl = min(ubtl, tndmax)
 
+        ! Protection on small ubtl to prevent floating point issues
+        if (use_tau_limiter_loc) then
+          where( abs(ubtl) < ubtl_magnitude_min )
+            ubtl = 0._r8
+          end where
+        end if
+
         where (k <= tend_level)
 
            ! Save tendency for each wave (for later computation of kzz),
            ! applying efficiency and taper:
-           gwut(:,k,l) = sign(ubtl, c(:,l)-ubm(:,k)) * effgw * ptaper
+           gwut(:,k,l) = sign(ubtl, c(:,l)-ubm(:,k)) * effgw_col * ptaper
 
         end where
 
@@ -788,10 +827,11 @@ end subroutine gwd_precalc_rhoi
 !==========================================================================
 
 subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
-     lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
-     piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
-     effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
-     ttgw, qtgw, taucd,   egwdffi,   gwut, dttdf, dttke)
+                        lat,           t,    ti,  pmid, pint, dpm,   rdpm, &
+                        piln, rhoi,    nm,   ni,  ubm,  ubi,  xv,    yv,   &
+                        effgw,      c, kvtt, q,   dse,  tau,  utgw,  vtgw, &
+                        ttgw, qtgw, taucd,   egwdffi,   gwut, dttdf, dttke, &
+                        effgw_loc_in, use_tau_limiter)
 
   !-----------------------------------------------------------------------
   ! Solve for the drag profile from the multiple gravity wave drag
@@ -871,6 +911,15 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   real(r8), intent(out) :: dttdf(ncol,pver)
   real(r8), intent(out) :: dttke(ncol,pver)
 
+  ! Alternative effgw that varies with location - overrides scalar effgw
+  real(r8), intent(in), optional :: effgw_loc_in(ncol)
+
+  ! flag to use minimum limit on gwut. Optional (and placed at the end of
+  ! the argument list) so that existing positional callers, such as the
+  ! EAMxx standalone GW unit-test bridge, continue to compile unmodified;
+  ! omitting it preserves the pre-existing (limiter disabled) behavior.
+  logical(btype), intent(in), optional :: use_tau_limiter
+
   !------------------------------------------------------------------------
 
   ! Initialize gravity wave drag tendencies to zero.
@@ -896,8 +945,9 @@ subroutine gw_drag_prof(ncol, ngwv, src_level, tend_level, do_taper, dt, &
   !------------------------------------------------------------------------
   ! Compute the tendencies from the stress divergence.
   !------------------------------------------------------------------------
-  call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, dt, effgw, tend_level, &
-       lat, dpm, rdpm, c, ubm, t, nm, xv, yv, tau, gwut, utgw, vtgw)
+  call gwd_compute_tendencies_from_stress_divergence(ncol, ngwv, do_taper, &
+       dt, effgw, tend_level, lat, dpm, rdpm, c, ubm, &
+       t, nm, xv, yv, tau, gwut, utgw, vtgw, effgw_loc_in, use_tau_limiter)
 
   if (ngwv > 0) then
 

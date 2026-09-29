@@ -47,7 +47,7 @@ bool scalar_operand (const std::string& s, Real& value, ekat::units::Units& unit
     return true;
   }
   if (str2real(s,value)) {
-    units = ekat::units::Units::nondimensional();
+    units = ekat::units::none;
     return true;
   }
   return false;

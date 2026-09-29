@@ -22,7 +22,7 @@ TEST_CASE("P3DataIterator", "p3") {
     REQUIRE(f.extent[1] == nlev);
     REQUIRE(f.extent[2] == 1);
     REQUIRE(f.data == d->qv.data());
-    REQUIRE(f.size == nlev);
+    REQUIRE(static_cast<int>(f.size) == nlev);
   }
 }
 

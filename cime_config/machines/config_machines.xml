@@ -177,13 +177,13 @@
         <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
         <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
-    </arguments>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -248,17 +248,10 @@
       <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-      </modules>
-      <modules DEBUG="FALSE">
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
+        <command name="load">cmake/3.30.2</command>
       </modules>
     </module_system>
 
@@ -273,15 +266,12 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
       <env name="STK_UNKNOWN_PATTERN_EXCHANGER">Prepost</env> <!-- issue with STK -->
-    </environment_variables>
-    <environment_variables DEBUG="TRUE">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -306,8 +296,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2026.05.21/gcc/14.3; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2026.05.21/gcc/14.3; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -396,13 +386,13 @@
         <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu-bind=cores"; else echo "--cpu-bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
         <arg name="gpu-bind"> $SHELL{mpn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [ 64 -le $mpn ]; then echo $CIMEROOT/../cime_config/machines/scripts/pm-gpu_set_affinity_npergpu.sh $mpn; fi;} </arg>
-    </arguments>
+      </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -483,21 +473,14 @@
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
       </modules>
 
       <modules compiler="intel.*">
         <command name="unload">cray-libsci</command>
-      </modules>
-      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-      </modules>
-      <modules DEBUG="FALSE">
-        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -512,7 +495,6 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
@@ -532,13 +514,13 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidiagpu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
@@ -548,6 +530,9 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -829,10 +814,10 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -897,18 +882,12 @@
       <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-      </modules>
-      <modules DEBUG="FALSE">
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
+        <command name="load">cmake/3.30.2</command>
       </modules>
+
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -922,14 +901,11 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
-    </environment_variables>
-    <environment_variables DEBUG="TRUE">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -952,8 +928,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1045,10 +1021,10 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -1129,21 +1105,14 @@
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
       </modules>
 
       <modules compiler="intel.*">
         <command name="unload">cray-libsci</command>
-      </modules>
-      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-      </modules>
-      <modules DEBUG="FALSE">
-        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -1158,12 +1127,9 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-    </environment_variables>
-    <environment_variables DEBUG="TRUE">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -1180,10 +1146,13 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="nvidiagpu">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
@@ -1193,6 +1162,9 @@
     </environment_variables>
     <environment_variables compiler="gnu">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnu; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="nvidia">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="gnu.*" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/gcc-native-12.3/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1251,10 +1223,10 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -1319,17 +1291,10 @@
       <modules>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
-        <command name="load">cmake/3.30.2</command>
-      </modules>
-      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-      </modules>
-      <modules DEBUG="FALSE">
         <command name="load">cray-hdf5-parallel/1.14.3.7</command>
         <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.19</command>
+        <command name="load">cmake/3.30.2</command>
       </modules>
     </module_system>
 
@@ -1344,14 +1309,11 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="MPICH_SMP_SINGLE_COPY_MODE">CMA</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7207 -->
-    </environment_variables>
-    <environment_variables DEBUG="TRUE">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -1374,8 +1336,8 @@
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/sz/2.1.12.5/gcc-native-12.3; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /global/cfs/cdirs/e3sm/3rdparty/zfp/1.0.1/gcc-native-12.3; else echo "$ZFP_ROOT"; fi}</env>
       <env name="BLA_VENDOR">Generic</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2024.03.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/15.1.1/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /global/common/software/e3sm/albany/2025.11.14/gcc/12.3; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /global/common/software/e3sm/trilinos/2025.10.01/gcc/12.3; else echo "$Trilinos_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="nvidia" mpilib="mpich">
       <env name="PKG_CONFIG_PATH">/global/cfs/cdirs/e3sm/3rdparty/protobuf/21.6/nvidia-24.5/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}</env>
@@ -1467,10 +1429,10 @@
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/cray/pe/lmod/8.7.60/init/perl</init_path>
-      <init_path lang="python">/opt/cray/pe/lmod/8.7.60/init/python</init_path>
-      <init_path lang="sh">/opt/cray/pe/lmod/8.7.60/init/sh</init_path>
-      <init_path lang="csh">/opt/cray/pe/lmod/8.7.60/init/csh</init_path>
+      <init_path lang="perl">/opt/cray/pe/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/opt/cray/pe/lmod/lmod/init/python</init_path>
+      <init_path lang="sh">/opt/cray/pe/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/lmod/lmod/init/csh</init_path>
       <cmd_path lang="perl">/opt/cray/pe/lmod/lmod/libexec/lmod perl</cmd_path>
       <cmd_path lang="python">/opt/cray/pe/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
@@ -1551,21 +1513,14 @@
         <command name="load">cray-libsci/25.09.0</command>
         <command name="load">craype/2.7.35</command>
         <command name="load">cray-mpich/9.0.1</command>
+        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
         <command name="load">cmake/3.30.2</command>
       </modules>
 
       <modules compiler="intel.*">
         <command name="unload">cray-libsci</command>
-      </modules>
-      <modules DEBUG="TRUE"> <!-- https://github.com/E3SM-Project/E3SM/issues/8062 -->
-        <command name="load">cray-hdf5-parallel/1.12.2.9</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.0.9</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.13</command>
-      </modules>
-      <modules DEBUG="FALSE">
-        <command name="load">cray-hdf5-parallel/1.14.3.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.9.2.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.3.19</command>
       </modules>
     </module_system>
 
@@ -1580,12 +1535,9 @@
       <env name="MPICH_MPIIO_DVS_MAXNODES">1</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="FI_MR_CACHE_MONITOR">kdreg2</env>
-      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
       <env name="NETCDF_PATH">$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</env>
       <env name="PNETCDF_PATH">$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</env>
-    </environment_variables>
-    <environment_variables DEBUG="TRUE">
-      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/7117 -->
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env> <!-- https://github.com/E3SM-Project/E3SM/issues/8650 -->
     </environment_variables>
     <environment_variables BUILD_THREADED="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
@@ -1602,10 +1554,13 @@
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu ; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/gnugpu; else echo "$MOAB_ROOT"; fi}</env>
+    </environment_variables>
+    <environment_variables compiler="nvidiagpu">
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intelgpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu ; else echo "$MOAB_ROOT"; fi}</env>
+      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intelgpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <environment_variables compiler="intel" DEBUG="TRUE">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/intel-debug; else echo "$MOAB_ROOT"; fi}</env>
@@ -1618,9 +1573,6 @@
     </environment_variables>
     <environment_variables compiler="nvidia">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidia; else echo "$MOAB_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="nvidiagpu">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /global/cfs/cdirs/e3sm/software/moab/nvidiagpu; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -2148,8 +2100,8 @@
     <NODENAME_REGEX>^[a-fA-F0-9]{12}$</NODENAME_REGEX>
     <OS>LINUX</OS>
     <PROXY>proxy.sandia.gov:80</PROXY>
-    <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>openmpi</MPILIBS>
+    <COMPILERS>gnu,intel,gnugpu</COMPILERS>
+    <MPILIBS>openmpi,mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/tmp</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/e3sm/data/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/e3sm/data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -2162,6 +2114,7 @@
     <SUPPORTED_BY>lbertag at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -2856,15 +2809,12 @@
     </environment_variables>
     <environment_variables compiler="gnu" mpilib="openmpi">
       <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/gnu; else echo "$MOAB_ROOT"; fi}</env>
-      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2024.03.26/gcc/9.2.0; else echo "$Albany_ROOT"; fi}</env>
-      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/15.1.1/gcc/9.2.0; else echo "$Trilinos_ROOT"; fi}</env>
+      <env name="Albany_ROOT">$SHELL{if [ -z "$Albany_ROOT" ]; then echo /lcrc/group/e3sm/soft/albany/2026.05.26/gcc/11.2.0; else echo "$Albany_ROOT"; fi}</env>
+      <env name="Trilinos_ROOT">$SHELL{if [ -z "$Trilinos_ROOT" ]; then echo /lcrc/group/e3sm/soft/trilinos/17.0.0/gcc/11.2.0; else echo "$Trilinos_ROOT"; fi}</env>
       <env name="ADIOS2_ROOT">$SHELL{if [ -z "$ADIOS2_ROOT" ]; then echo /lcrc/soft/climate/adios2/2.10.2/openmpi-4.1.6/gcc-11.2.0; else echo "$ADIOS2_ROOT"; fi}</env>
       <env name="BLOSC2_ROOT">$SHELL{if [ -z "$BLOSC2_ROOT" ]; then echo /lcrc/soft/climate/c-blosc2/2.15.2/gcc-11.2.0; else echo "$BLOSC2_ROOT"; fi}</env>
       <env name="SZ_ROOT">$SHELL{if [ -z "$SZ_ROOT" ]; then echo /lcrc/soft/climate/sz/2.1.12.5/gcc-11.2.0; else echo "$SZ_ROOT"; fi}</env>
       <env name="ZFP_ROOT">$SHELL{if [ -z "$ZFP_ROOT" ]; then echo /lcrc/soft/climate/zfp/1.0.1/gcc-11.2.0; else echo "$ZFP_ROOT"; fi}</env>
-    </environment_variables>
-    <environment_variables compiler="oneapi-ifx" mpilib="openmpi">
-      <env name="MOAB_ROOT">$SHELL{if [ -z "$MOAB_ROOT" ]; then echo /lcrc/soft/climate/moab/chrysalis/intel-oneapi-compilers-2025.2.0; else echo "$MOAB_ROOT"; fi}</env>
     </environment_variables>
   </machine>
 
@@ -3144,7 +3094,7 @@
   <machine MACH="dane">
     <DESC>LLNL Linux Cluster, 112 pes/node, batch system is Slurm</DESC>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx</COMPILERS>
+    <COMPILERS>intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3smtest</PROJECT>
     <CIME_OUTPUT_ROOT>/p/lustre2/$USER/e3sm_scratch/dane</CIME_OUTPUT_ROOT>
@@ -3186,7 +3136,7 @@
         <command name="load">cmake/3.26.3</command>
         <command name="load">mkl/2022.1.0</command>
       </modules>
-      <modules compiler="oneapi-ifx">
+      <modules compiler="intel">
         <command name="load">intel/2023.2.1-magic</command>
 	<command name="use">/usr/workspace/e3sm/spack/dane/intel/modules/Core</command>
 	<command name="load">intel-oneapi-runtime/2023.2.0</command>
@@ -3204,7 +3154,7 @@
     <environment_variables>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
       <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
       <env name="NETCDF_C_PATH">$ENV{NETCDF_C_PATH}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{NETCDF_FORTRAN_PATH}</env>
@@ -3311,7 +3261,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
+    <COMPILERS>intel,intelgpu,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
@@ -3325,11 +3275,11 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">96</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intel">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">48</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intel">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intelgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -3403,14 +3353,14 @@
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifxgpu">
+    <environment_variables compiler="intelgpu">
       <env name="SYCL_DEVICE_FILTER">opencl</env>
       <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
       <env name="SYCL_CACHE_PERSISTENT">0</env>
       <env name="GATOR_INITIAL_MB">4000MB</env>
       <env name="GATOR_DISABLE">0</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
       <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
     </environment_variables>
@@ -3526,7 +3476,7 @@
     <DESC>ANL Sunspot Test and Development System (TDS), batch system is pbspro</DESC>
     <NODENAME_REGEX>uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,gnu</COMPILERS>
+    <COMPILERS>intel,intelgpu,gnu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CHARGE_ACCOUNT>CSC249ADSE15_CNDA</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gila/CSC249ADSE15_CNDA/performance_archive</SAVE_TIMING_DIR>
@@ -3543,9 +3493,9 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>208</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>104</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intelgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
@@ -3571,7 +3521,7 @@
         <modules compiler="!gnu">
           <command name="load">oneapi/eng-compiler/2024.07.30.002</command>
         </modules>
-        <modules compiler="oneapi-ifxgpu">
+        <modules compiler="intelgpu">
           <command name="load">kokkos/4.4.01-omp-sycl</command>
         </modules>
         <modules compiler="gnu">
@@ -3591,7 +3541,7 @@
      <environment_variables mpilib="mpich" DEBUG="TRUE">
         <env name="HYDRA_TOPO_DEBUG">1</env>
      </environment_variables>
-     <environment_variables compiler="oneapi-ifxgpu">
+     <environment_variables compiler="intelgpu">
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
         <env name="romio_cb_read">disable</env>
@@ -3604,7 +3554,7 @@
         <env name="ZES_ENABLE_SYSMAN">1</env>
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>
@@ -3627,7 +3577,7 @@
     <DESC>ALCF Aurora, 10624 nodes, 2x52c SPR, 6x2s PVC, 2x512GB DDR5, 2x64GB CPU-HBM, 6x128GB GPU-HBM, Slingshot 11, PBSPro</DESC>
     <NODENAME_REGEX>aurora-uan-.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifxgpu,oneapi-ifx</COMPILERS>
+    <COMPILERS>intelgpu,intel</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>E3SM_Dec</PROJECT>
     <SAVE_TIMING_DIR>/lus/flare/projects/E3SMinput/baselines</SAVE_TIMING_DIR>
@@ -3644,9 +3594,9 @@
     <BATCH_SYSTEM>pbspro</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>102</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="intelgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>102</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">12</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="intelgpu">12</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpiexec</executable>
@@ -3693,7 +3643,7 @@
         <env name="PALS_RPC_TIMEOUT">240</env>
         <env name="RLIMITS"> </env>
      </environment_variables>
-     <environment_variables compiler="oneapi-ifxgpu">
+     <environment_variables compiler="intelgpu">
         <env name="MPIR_CVAR_ENABLE_GPU">1</env>
         <env name="romio_cb_read">disable</env>
         <env name="romio_cb_write">disable</env>
@@ -3708,7 +3658,7 @@
         <!-- <env name="ZE_FLAT_DEVICE_HIERARCHY">FLAT</env>
         <env name="ZEX_NUMBER_OF_CCS">0:4,1:4,2:4,3:4:4:4,5:4,6:4,7:4,8:4,9:4,10:4,11:4</env>-->
     </environment_variables>
-    <environment_variables compiler="oneapi-ifx">
+    <environment_variables compiler="intel">
         <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
         <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
         <env name="MPIR_CVAR_ENABLE_GPU">0</env>

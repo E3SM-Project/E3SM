@@ -75,7 +75,3 @@ ELSE()
   SET (MKLROOT $ENV{MKLROOT} CACHE FILEPATH "")
   SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 ENDIF()
-
-#FIXME: Remove when updating to Kokkos 5, then
-#       homme will inherit c++20 from Kokkos.
-set(CMAKE_CXX_STANDARD 20)

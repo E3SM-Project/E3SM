@@ -2,7 +2,7 @@
 include(${CMAKE_CURRENT_LIST_DIR}/ghci-snl.cmake)
 
 # Set SCREAM_MACHINE
-set(SCREAM_MACHINE ghci-snl-oneapi CACHE STRING "")
+set(SCREAM_MACHINE ghci-snl-intel CACHE STRING "")
 
 # We use MKL instead of blas here
 option(HOMME_USE_MKL "Whether to use Intel's MKL/oneMKL instead of blas/lapack" ON)

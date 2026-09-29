@@ -410,7 +410,7 @@
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch"
 					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
-					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'"
+					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch', 'geometric'"
 		/>
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^-1"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
@@ -459,6 +459,21 @@
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
+                <nml_option name="config_GM_geometric_alpha" type="real" default_value="0.030" units="constant"
+                                        description="Configured GEOMETRIC efficiency"
+                />
+                <nml_option name="config_GM_geometric_eddyDiff" type="real" default_value="600.0" units="m^2 s^-1"
+                                        description="Eddy diffusivity for the depth-integrated parameterized eddy energy"
+                />
+                <nml_option name="config_GM_geometric_dissipation" type="real" default_value="90.0" units="days"
+                                        description="Number of days to dissipate the depth-integrated parameterized eddy energy"
+                />
+                <nml_option name="config_GM_geometric_backgroundEddyEnergy" type="real" default_value="0.1" units="m^3 s^-2"
+                                        description="Background total depth-integrated parameterized eddy energy"
+                />
+                <nml_option name="config_GM_geometric_maximumEddyEnergy" type="real" default_value="1000.0" units="m^3 s^-2"
+                                        description="Maximum total depth-integrated parameterized eddy energy"
+                />
 		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
@@ -1810,10 +1825,114 @@
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
-	<nml_record name="init_mode_subgrid">
+	<nml_record name="init_mode_subgrid" mode="init">
 		<nml_option name="config_subgrid_table_levels" type="integer" default_value="-1"
 					description="Number of levels in subgrid lookup tables"
 					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition."
+		/>
+		<nml_option name="config_subgrid_topography_extrapolation_method" type="character" default_value="nearest" units="unitless"
+					description="extrapolation method"
+					possible_values="nearest/constant"
+		/>
+		<nml_option name="config_subgrid_topography_extrapolation_constant_value" type="real" default_value="-1.0e10" units="unitless"
+					description="value to be used in the extrapolcation method if it is set to constant"
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
+					description="Whether to include thin layer in subgrid tables"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_subgrid_edge_bathymetry_max_pixel" type="logical" default_value=".true." units="unitless"
+					description="Use maximum elevation pixels as subgrid bathymetry on cell edges"
+					possible_values=".true. or .false."
+	    />
+		<nml_option name="config_subgrid_refinement_level" type="integer" default_value="3" units="unitless"
+					description="Level of refinement to evaluate subgrid bathymety"
+					possible_values="Any positive integer number"
+	    />	
+		<nml_option name="config_subgrid_ssh_table_min" type="real" default_value="-8.0" units="meters"
+					description="value to be used in the minimum sea surface height in the subgrid lookup table"
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_ssh_table_max" type="real" default_value="8.0" units="meters"
+					description="value to be used in the maximum sea surface height in the subgrid lookup table"
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_topography_source" type="character" default_value="xy_file" units="unitless"
+					description="If 'latlon_file/xy_file', reads in topography from file specified in config_subgrid_topography_file"
+					possible_values="'latlon_file' or 'xy_file'"
+		/>
+		<nml_option name="config_subgrid_topography_file" type="character" default_value="none" units="unitless"
+					description="Path to the topography initial condition file."
+					possible_values="path/to/topography/file.nc"
+		/>
+		<nml_option name="config_subgrid_topography_latlon_degrees"  type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if the Lat/Lon fields for topography should be converted to radians. True means input is degrees, false means input is radians."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_subgrid_topography_nlat_dimname" type="character" default_value="y" units="unitless"
+					description="Dimension name for the latitude in the topography file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_nlon_dimname" type="character" default_value="x" units="unitless"
+					description="Dimension name for the longitude in the topography file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_lat_varname" type="character" default_value="y" units="unitless"
+					description="Variable name for the latitude in the topography file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_lon_varname" type="character" default_value="x" units="unitless"
+					description="Variable name for the longitude in the topography file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_topography_varname" type="character" default_value="Band1" units="unitless"
+					description="Variable name for the topography in the topography file."
+					possible_values="Variable name from input file."
+	    />
+		<nml_option name="config_subgrid_topography_fill_value" type="real" default_value="99999" units="unitless"
+					description="fill value in the topography file."
+					possible_values="any real number"
+		/>
+		<nml_option name="config_subgrid_topography_positive" type="character" default_value="up" units="unitless"
+					description="direction in which the topo value is positive"
+					possible_values="up/down"
+		/>
+		<nml_option name="config_subgrid_lulc_source" type="character" default_value="xy_file" units="unitless"
+					description="If 'latlon_file/xy_file', reads in lulc from file specified in config_subgrid_lulc_file"
+					possible_values="'latlon_file' or 'xy_file'"
+		/>
+		<nml_option name="config_subgrid_lulc_file" type="character" default_value="none" units="unitless"
+					description="Path to the lulc initial condition file."
+					possible_values="path/to/lulc/file.nc"
+		/>
+		<nml_option name="config_subgrid_lulc_latlon_degrees"  type="logical" default_value=".false." units="unitless"
+					description="Logical flag that controls if the Lat/Lon fields for lulc should be converted to radians. True means input is degrees, false means input is radians."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_subgrid_lulc_nlat_dimname" type="character" default_value="y" units="unitless"
+					description="Dimension name for the latitude in the lulc file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_nlon_dimname" type="character" default_value="x" units="unitless"
+					description="Dimension name for the longitude in the lulc file."
+					possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_lat_varname" type="character" default_value="y" units="unitless"
+					description="Variable name for the latitude in the lulc file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_lon_varname" type="character" default_value="x" units="unitless"
+					description="Variable name for the longitude in the lulc file."
+					possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_subgrid_lulc_varname" type="character" default_value="Band1" units="unitless"
+					description="Variable name for the lulc in the lulc file."
+					possible_values="Variable name from input file."
+	    />
+		<nml_option name="config_subgrid_lulc_fill_value" type="real" default_value="99999" units="unitless"
+					description="fill value in the lulc file."
+					possible_values="any real number"
 		/>
 	</nml_record>
 	<packages>
@@ -1843,6 +1962,7 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+                <package name="gmGeometric" description="This package is for GEOMETRIC GM parameterization variables, which are only needed at lower resolutions."/>
 		<package name="submeso" description="This package is for submesoscale eddy (MLE) variables, needed at resolutions greater than O(1km)"/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
@@ -2144,6 +2264,7 @@
 			<var name="lowFreqDivergence"/>
 			<var name="normalBarotropicVelocity"/>
 			<var name="vertCoordMovementWeights"/>
+                        <var name="totalParamEddyEnergy" packages="gmGeometric" />
 			<var name="xtime"/>
 			<var_array name="nonLocalSurfaceTracerFlux"/>
 			<var name="simulationStartTime"/>
@@ -2157,6 +2278,7 @@
 			<var name="atmosphericPressure"/>
 			<var name="normalVelocityTendOld" packages="splitAB2TimeIntegrator" />
 			<var name="CoriolisTermOld" packages="splitAB2TimeIntegrator" />
+                        <var name="totalParamEddyEnergyTendOld" packages="gmGeometric" />
 			<var_array name="tracersSurfaceValue"/>
 			<var_array name="surfaceVelocity"/>
 			<var_array name="SSHGradient"/>
@@ -2617,6 +2739,21 @@
 			 description="The layerThickness after the Lagrangian step, prior to remapping."
 			 packages="verticalRemapPKG"
 		/>
+                <!-- FIELDS FOR GEOMETRIC GM parameterization -->
+                <var name="totalParamEddyEnergy" type="real" dimensions="nCells Time" units="m^3 s^-2"
+                         description="The vertically integrated total parameterized eddy energy used in the GEOMETRIC GM parameterization option."
+                         missing_value="FILLVAL" missing_value_mask="cellMask"
+                         packages="gmGeometric"
+                />
+                <!-- FIELDS FOR SUBGIRD WETTING/DRYING -->
+		<var name="wetFractionCell" type="real" dimensions="nCells Time" units="m"
+			 description="Wet fraction for each cell"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="wetFractionEdge" type="real" dimensions="nEdges Time" units="m"
+			 description="Wet fraction for each edge"
+			 packages="subgridWetDryPKG"
+		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">
 		<var name="latCell" type="real" dimensions="nCells" units="radians"
@@ -2913,6 +3050,18 @@
 			 description="Pre-computed wet fraction for each edge at given ssh value"
 			 packages="subgridWetDryPKG"
 		/>
+		<var name="subgridSshDragEdgeTableRange" type="real" dimensions="R3 nEdges" units="m"
+			 description="Range of ssh values used for edge drag lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridDragEdgeTable" type="real" dimensions="nSubgridTableLevels nEdges" units="m"
+			 description="Pre-computed drag coefficient for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridEdgeArea" type="real" dimensions="nEdges" units="radians^2"
+			 description="Area of triangular region between edge vertices and cell center on each side of edge"
+			 packages="subgridWetDryPKG"
+		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"
@@ -2950,6 +3099,10 @@
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="thicknessFilter"
 		/>
+                <var name="tendTotalParamEddyEnergy" type="real" dimensions="nCells Time" units="m^3 s^-3" name_in_code="totalParamEddyEnergy"
+                         description="time tendency of the vertically integrated total parameterized eddy energy"
+                         packages="gmGeometric"
+                />
 	</var_struct>
 	<var_struct name="diagnostics" time_levs="1">
 		<var name="xtime" type="text" dimensions="Time"
@@ -3537,6 +3690,10 @@
 			 description="Rossby Radius, computed in GM routine for some settings"
 			 packages="gm"
 		/>
+                <var name="totalParamEddyEnergyTendOld" type="real" dimensions="nCells Time" units="m^3 s^-3"
+                        description="time tendency of the vertically integrated total parameterized eddy energy in GEOMETRIC GM paramterization"
+                        packages="gmGeometric"
+                />
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>

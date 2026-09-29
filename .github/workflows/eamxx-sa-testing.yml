@@ -33,7 +33,7 @@ on:
         options:
           - gnu-openmp
           - gnu-cuda
-          - oneapi-openmp
+          - intel-openmp
           - all
       bless:
         description: 'Generate baselines'
@@ -108,21 +108,21 @@ jobs:
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
-  oneapi-openmp:
+  intel-openmp:
     if: |
       ${{
         github.event_name != 'workflow_dispatch' ||
         (
-          github.event.inputs.job_to_run == 'oneapi-openmp' ||
+          github.event.inputs.job_to_run == 'intel-openmp' ||
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl, oneapi]
+    runs-on:  [self-hosted, ghci-snl, intel]
     strategy:
       fail-fast: false
       matrix:
         build_type: [opt]
-    name: oneapi-openmp / ${{ matrix.build_type }}
+    name: intel-openmp / ${{ matrix.build_type }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -136,7 +136,7 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
-          machine: ghci-snl-oneapi
+          machine: ghci-snl-intel
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON

@@ -17,7 +17,7 @@ public:
 
   void create_dag (const group_type& atm_procs);
 
-  using grid_field_map = std::map<std::string,std::vector<std::string>>;
+  using grid_field_map = std::map<std::string,std::set<std::string>>;
   void process_initial_conditions(const grid_field_map &ic_inited);
 
   void init_atm_proc_nodes(const group_type& atm_procs);
