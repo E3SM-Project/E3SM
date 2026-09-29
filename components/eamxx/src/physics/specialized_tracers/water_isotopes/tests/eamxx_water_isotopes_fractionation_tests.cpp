@@ -25,54 +25,92 @@ bool relative_approx(const ScalarT& computed,
   return (rel_err < tol).all();  // Check ALL lanes, not just [0]
 } 
 
-// Independent reference implementations (formulas transcribed independently
-// from the ported code) so this test doubles as a coefficient-transcription
-// guard. T in Kelvin; return the raw table value R_condensed/R_vapor (>= 1).
-double ref_alpl_hdo(double t) {
-  return std::exp(1158.8e-12*t*t*t - 1620.1e-9*t*t + 794.84e-6*t - 161.04e-3
-                  + 2.9992e6/(t*t*t));
-}
-double ref_alpl_o18(double t) {
-  return std::exp(0.35041e6/(t*t*t) - 1.6664e3/(t*t) + 6.7123/t - 7.685e-3);
-}
-double ref_alpi_hdo(double t) {
-  return std::exp(16289.0/(t*t) - 9.45e-2);
-}
-double ref_alpi_o18(double t) {
-  return std::exp(11.839/t - 28.224e-3);
-}
+/* Expected alpha values, transcribed from fractionation_factors.xlsx (columns
+   Q-X, the "Temperature checks (Kelvin)" block). Each entry below is one
+   coefficient set as the spreadsheet tabulates it: the reference row it came
+   from, the temperatures at which that row is inside its own fitted range, and
+   the resulting R_condensed/R_vapor (>= 1).
 
-// Majoube 1971 reference implementations (alternative liquid-vapor formulation).
-// alpha = exp(A/T^2 + B/T + C)
-double ref_alpl_hdo_majoube(double t) {
-  return std::exp(24.844e3/(t*t) - 76.248/t + 52.612e-3);
-}
-double ref_alpl_o18_majoube(double t) {
-  return std::exp(1.137e3/(t*t) - 0.4156/t - 2.0667e-3);
-}
+   Holding the spreadsheet's own numbers -- rather than re-transcribing the
+   polynomial into C++ a second time -- keeps the check external to the code
+   under test. The spreadsheet evaluates the coefficients in expanded form
+   (sum of A*T^k) while the implementation uses Horner, so the tolerance need
+   only absorb two evaluation orders of the same polynomial, not any physics
+   uncertainty.
 
-// IsoCAM3 reference implementations (alternative ice-vapor formulation).
-// alpha = exp(A/T^2 + B/T + C)
-double ref_alpi_hdo_isocam3(double t) {
-  return std::exp(16288.0/(t*t) - 9.34e-2);
-}
-double ref_alpi_o18_isocam3(double t) {
-  return std::exp(11.839/t - 28.224e-3);  // Same as Merlivat for O18
-}
+   The tables are indexed by the formulation enum and sized by its
+   FormulationCount, so adding a formulation extends the sweep automatically:
+   the test iterates every enumerator rather than naming them. A new enumerator
+   with no row here fails `expected_is_populated` with a pointer to this
+   comment, rather than silently going unexercised.
 
-// Temperature sweeps.
-constexpr int NLIQ = 6;
-constexpr int NICE = 6;
-const double T_liq[NLIQ] = {233.15, 253.15, 273.15, 283.15, 293.15, 303.15};
-const double T_ice[NICE] = {213.15, 233.15, 243.15, 253.15, 263.15, 273.15};
+   Temperatures are whole Kelvin because the spreadsheet's range test is
+   C_column + 273, not + 273.15. The T = 273 columns therefore land 0.15 K
+   below the implementation's liquid-phase Tmin of 273.15 K and will trip the
+   debug-only "extrapolating" warning. That is a 0.15 K disagreement about
+   where 0 C is, not a failing check.
+
+   To add or regenerate a row: read columns Q-X of the spreadsheet row named in
+   `reference`, skipping any cell that reads "WARN" (out of range). The Hydrogen
+   and Oxygen rows of a formulation must contribute the same temperature list,
+   so keep only the columns in range for both. */
+constexpr int MAX_TEMPS = 8;
+
+struct AlphaTable {
+  const char* reference = nullptr;  // spreadsheet row this came from
+  int n = 0;                        // number of in-range temperatures
+  double T[MAX_TEMPS] = {};         // [K]
+  double hdo[MAX_TEMPS] = {};       // alpha for HDO      (Hydrogen coeff row)
+  double o18[MAX_TEMPS] = {};       // alpha for H2(18)O  (Oxygen coeff row)
+};
+
+// Indexed by LiquidVaporFractionation.
+const AlphaTable
+liq_expected[etoi(wiso::LiquidVaporFractionation::FormulationCount)] = {
+  // Horita & Wesolowski (1994). Spreadsheet rows 12 (D) and 7 (18O).
+  { "Horita & Wesolowski 1994, L-V", 5,
+    {273.0, 283.0, 293.0, 303.0, 400.0},
+    {1.1120343706807947, 1.0971744958332408, 1.0845303130660782,
+     1.073696101136939,  1.0188817475908205},
+    {1.0118347780075725, 1.0107441038943008, 1.0097913949759019,
+     1.0089533859591724, 1.004164554003981} },
+  // Majoube (1971). Spreadsheet rows 14 (D) and 8 (18O).
+  { "Majoube 1971, L-V", 4,
+    {273.0, 283.0, 293.0, 303.0},
+    {1.1125581992610687, 1.0978890989567374, 1.0852080906796728, 1.0741973311576687},
+    {1.0117350842524433, 1.0107184907529774, 1.0098068293810731, 1.0089862254523621} }
+};
+
+// Indexed by IceVaporFractionation.
+const AlphaTable
+ice_expected[etoi(wiso::IceVaporFractionation::FormulationCount)] = {
+  /* Default: the two elements come from two different studies with different
+     fitted ranges (Merlivat & Nief 1971 for D, Majoube 1971 for 18O), so this
+     row keeps only the temperatures in range for both.
+     Spreadsheet rows 17 (D) and 9 (18O). */
+  { "Merlivat & Nief 1971 [D] + Majoube 1971 [18O], I-V", 3,
+    {248.0, 263.0, 273.0},
+    {1.1857133338327439, 1.1514196623562765, 1.1320829093330054},
+    {1.0197055439585383, 1.016932973832859,  1.01525752585485} },
+  // isoCAM3. Spreadsheet rows 18 (D) and 19 (18O).
+  { "isoCAM3, I-V", 4,
+    {223.0, 248.0, 263.0, 273.0},
+    {1.2638154003170829, 1.1869990364206471, 1.1526702561788347, 1.1333136792477154},
+    {1.0251774156985261, 1.0197055439585383, 1.016932973832859,  1.01525752585485} }
+};
+
+/* An enumerator added to LiquidVaporFractionation/IceVaporFractionation without
+   a matching row above leaves a default-constructed entry. Catch that here so
+   the gap reads as "add the expected values" rather than as a vacuous pass. */
+bool expected_is_populated(const AlphaTable& t)
+{
+  return t.reference != nullptr && t.n > 0 && t.n <= MAX_TEMPS;
+}
 
 template <typename ScalarT>
 void run_sweep(
   const char* phase_name,  // "liquid-vapor" or "ice-vapor"
-  const double* T_array,    // Temperature array
-  int N,                    // Array length
-  std::function<double(double)> ref_hdo,   // HDO reference function
-  std::function<double(double)> ref_o18,   // O18 reference function
+  const AlphaTable& expected,  // Tabulated reference values
   typename ekat::ScalarTraits<ScalarT>::scalar_type tol,  // Tolerance
   const wiso::WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants)
 {
@@ -88,18 +126,25 @@ void run_sweep(
                             : WIF::alpha_ice_vapor<ScalarT>(t, species, dir, constants);
   };
 
+  INFO("reference: " << expected.reference);
+
   double prev_hdo = 1e30, prev_o18 = 1e30;
-  for (int i = 0; i < N; ++i) {
-    const ScalarT t(T_array[i]);
+  for (int i = 0; i < expected.n; ++i) {
+    const double T_i    = expected.T[i];
+    const double ref_hdo = expected.hdo[i];
+    const double ref_o18 = expected.o18[i];
+    INFO("T = " << T_i << " K");
+
+    const ScalarT t(T_i);
 
     const ScalarT a_hdo = alpha_fn(t, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor,
 constants);
     const ScalarT a_o18 = alpha_fn(t, wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor,
 constants);
 
-    REQUIRE( relative_approx(a_hdo, ref_hdo(T_array[i]), tol) );
-    REQUIRE( relative_approx(a_o18, ref_o18(T_array[i]), tol) );
-    
+    REQUIRE( relative_approx(a_hdo, ref_hdo, tol) );
+    REQUIRE( relative_approx(a_o18, ref_o18, tol) );
+
     // H216O check
     const ScalarT a_16 = alpha_fn(t, wiso::WaterIsotopologues::H216O, wiso::CondensedOverVapor,
 constants);
@@ -110,16 +155,16 @@ constants);
 constants);
     const ScalarT a_o18_inv = alpha_fn(t, wiso::WaterIsotopologues::H218O, wiso::VaporOverCondensed,
 constants);
-    REQUIRE( relative_approx(a_hdo_inv, 1.0/ref_hdo(T_array[i]), tol) );
-    REQUIRE( relative_approx(a_o18_inv, 1.0/ref_o18(T_array[i]), tol) );
+    REQUIRE( relative_approx(a_hdo_inv, 1.0/ref_hdo, tol) );
+    REQUIRE( relative_approx(a_o18_inv, 1.0/ref_o18, tol) );
     
     // Power law checks for H217O and HTO
     const ScalarT a_17 = alpha_fn(t, wiso::WaterIsotopologues::H217O, wiso::CondensedOverVapor,
 constants);
     const ScalarT a_ht = alpha_fn(t, wiso::WaterIsotopologues::HTO, wiso::CondensedOverVapor,
 constants);
-    REQUIRE( relative_approx(a_17, std::pow(ref_o18(T_array[i]), 0.529), tol) );
-    REQUIRE( relative_approx(a_ht, std::pow(ref_hdo(T_array[i]), 2.0), tol) );
+    REQUIRE( relative_approx(a_17, std::pow(ref_o18, 0.529), tol) );
+    REQUIRE( relative_approx(a_ht, std::pow(ref_hdo, 2.0), tol) );
 
     // Monotonicity and >= 1 checks
     REQUIRE( a_hdo[0] >= RealT(1) );
@@ -128,8 +173,21 @@ constants);
     REQUIRE( a_o18[0] < prev_o18 );
     prev_hdo = a_hdo[0];
     prev_o18 = a_o18[0];
-  } 
-} 
+    }
+}
+
+// Index of a given temperature within a table, so the device check below can
+// name the temperature it wants instead of carrying a magic index that would
+// silently shift if a spreadsheet column moved in or out of range. Returns -1
+// if absent; the caller asserts.
+int index_of_T(const AlphaTable& tbl, double T)
+{
+  for (int i = 0; i < tbl.n; ++i) {
+    if (tbl.T[i] == T) return i;
+  }
+  return -1;
+}
+
 // Exercise the KOKKOS_INLINE_FUNCTION on the device to confirm it is
 // device-callable and gives the same result as the host path.
 void run_on_device()
@@ -138,13 +196,26 @@ void run_on_device()
   using KT  = ekat::KokkosTypes<DefaultDevice>;
   using view_1d = typename KT::template view_1d<Real>;
 
+  // The kernel below default-constructs its constants, so check against the
+  // default formulations' rows. 273 K is tabulated for both, so one temperature
+  // covers both device calls.
+  const wiso::WaterIsotopeRuntimeOptions defaults;
+  const AlphaTable& liq = liq_expected[etoi(defaults.liquid_vapor)];
+  const AlphaTable& ice = ice_expected[etoi(defaults.ice_vapor)];
+
+  const double T_chk = 273.0;
+  const int i_liq = index_of_T(liq, T_chk);
+  const int i_ice = index_of_T(ice, T_chk);
+  REQUIRE( i_liq >= 0 );
+  REQUIRE( i_ice >= 0 );
+
   view_1d out("wiso_alpha_device", 2);
   // Constructed inside the kernel to confirm the resolving constructor itself is
   // device-callable, not just the evaluator.
   Kokkos::parallel_for("wiso_frac_device", 1, KOKKOS_LAMBDA(const int /*i*/) {
     wiso::WaterIsotopeConstants<Real> constants;
-    out(0) = WIF::alpha_liquid_vapor(Real(273.15), wiso::WaterIsotopologues::HDO,   wiso::CondensedOverVapor, constants);
-    out(1) = WIF::alpha_ice_vapor  (Real(253.15), wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor, constants);
+    out(0) = WIF::alpha_liquid_vapor(Real(T_chk), wiso::WaterIsotopologues::HDO,   wiso::CondensedOverVapor, constants);
+    out(1) = WIF::alpha_ice_vapor   (Real(T_chk), wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor, constants);
   });
   Kokkos::fence();
 
@@ -152,11 +223,19 @@ void run_on_device()
   Kokkos::deep_copy(out_h, out);
 
   const Real tol = std::is_same<Real,double>::value ? 1e-6 : 1e-4;
-  REQUIRE( std::abs(out_h(0) - static_cast<Real>(ref_alpl_hdo(273.15))) / out_h(0) < tol );
-  REQUIRE( std::abs(out_h(1) - static_cast<Real>(ref_alpi_o18(253.15))) / out_h(1) < tol );
+  REQUIRE( std::abs(out_h(0) - static_cast<Real>(liq.hdo[i_liq])) / out_h(0) < tol );
+  REQUIRE( std::abs(out_h(1) - static_cast<Real>(ice.o18[i_ice])) / out_h(1) < tol );
 }
 
-// Verify that alternative formulations produce measurably different results.
+/* Verify that alternative formulations produce measurably different results.
+
+   Deliberately pair-specific rather than an all-pairs loop over the enums: the
+   bounds below are calibrated per pair, and "the formulations must differ" is
+   not true in general. The two ice formulations share an identical Oxygen
+   coefficient row (both take H2(18)O from Majoube 1971 and differ only in D),
+   so an all-pairs "must differ" assertion would fail on O18 today. Adding a
+   formulation does not require touching this function -- it just will not be
+   compared here; add a block if the new pairing is worth asserting. */
 void verify_formulation_differences()
 {
   using Real = scream::Real;
@@ -262,15 +341,14 @@ void verify_dead_lane_fpe_safety()
 
 template <typename RealT>
 void run_both_pack_sizes(
-  const char* phase, const double* T_array, int N,
-  std::function<double(double)> ref_hdo, std::function<double(double)> ref_o18,
+  const char* phase, const AlphaTable& expected,
   RealT tol, const wiso::WaterIsotopeConstants<RealT>& constants)
-{ 
+{
   using Pack1 = ekat::Pack<RealT, 1>;
   using PackN = ekat::Pack<RealT, SCREAM_PACK_SIZE>;
-  
-  run_sweep<Pack1>(phase, T_array, N, ref_hdo, ref_o18, tol, constants);
-  run_sweep<PackN>(phase, T_array, N, ref_hdo, ref_o18, tol, constants);
+
+  run_sweep<Pack1>(phase, expected, tol, constants);
+  run_sweep<PackN>(phase, expected, tol, constants);
 }
 
 } // namespace
@@ -278,35 +356,59 @@ void run_both_pack_sizes(
 TEST_CASE("water_isotopes_fractionation") {
     using Real = scream::Real;
 
-    /* Every sweep below compares against an independently transcribed reference,
-       so the tolerance only needs to absorb the difference between two
-       evaluation orders of the same polynomial (Horner here, expanded in the
-       reference), not any physics uncertainty. Observed worst case is ~1.4 ulp,
-       so this leaves ample margin in both precisions. */
+    /* Every sweep below compares against alpha values tabulated externally in
+       fractionation_factors.xlsx, so the tolerance only needs to absorb the
+       difference between two evaluation orders of the same polynomial (Horner
+       here, expanded sum-of-powers in the spreadsheet), not any physics
+       uncertainty. Observed worst case is ~1 ulp, so this leaves ample margin
+       in both precisions. */
     const Real tight_tol = std::is_same<Real,double>::value ? Real(1e-12) : Real(1e-5);
 
-    SECTION("default_formulations") {
-      wiso::WaterIsotopeConstants<Real> constants;
-      run_both_pack_sizes("liquid-vapor", T_liq, NLIQ, ref_alpl_hdo, ref_alpl_o18,
-        tight_tol, constants);
-      run_both_pack_sizes("ice-vapor", T_ice, NICE, ref_alpi_hdo, ref_alpi_o18,
-        tight_tol, constants);
+    /* Sweep every enumerator, not a hand-written list of them, so adding a
+       formulation to either enum brings it under test as soon as its expected
+       values are added to the table above. */
+    SECTION("all_liquid_vapor_formulations") {
+      for (int f = 0; f < etoi(wiso::LiquidVaporFractionation::FormulationCount); ++f) {
+        const auto formulation = static_cast<wiso::LiquidVaporFractionation>(f);
+        INFO("liquid-vapor formulation index " << f << " ("
+             << wiso::liquid_vapor_ref[f] << ")");
+        REQUIRE( expected_is_populated(liq_expected[f]) );
+
+        wiso::WaterIsotopeRuntimeOptions opts;
+        opts.liquid_vapor = formulation;
+        wiso::WaterIsotopeConstants<Real> constants(opts);
+        run_both_pack_sizes("liquid-vapor", liq_expected[f], tight_tol, constants);
+      }
     }
 
-    SECTION("alternative_liquid_vapor") {
-      wiso::WaterIsotopeRuntimeOptions opts;
-      opts.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
-      wiso::WaterIsotopeConstants<Real> constants(opts);
-      run_both_pack_sizes("liquid-vapor", T_liq, NLIQ, ref_alpl_hdo_majoube,
-        ref_alpl_o18_majoube, tight_tol, constants);
+    SECTION("all_ice_vapor_formulations") {
+      for (int f = 0; f < etoi(wiso::IceVaporFractionation::FormulationCount); ++f) {
+        const auto formulation = static_cast<wiso::IceVaporFractionation>(f);
+        INFO("ice-vapor formulation index " << f << " ("
+             << wiso::ice_vapor_ref[f] << ")");
+        REQUIRE( expected_is_populated(ice_expected[f]) );
+
+        wiso::WaterIsotopeRuntimeOptions opts;
+        opts.ice_vapor = formulation;
+        wiso::WaterIsotopeConstants<Real> constants(opts);
+        run_both_pack_sizes("ice-vapor", ice_expected[f], tight_tol, constants);
+      }
     }
-    
-    SECTION("alternative_ice_vapor") {
-      wiso::WaterIsotopeRuntimeOptions opts;
-      opts.ice_vapor = wiso::IceVaporFractionation::IsoCAM3;
-      wiso::WaterIsotopeConstants<Real> constants(opts);
-      run_both_pack_sizes("ice-vapor", T_ice, NICE, ref_alpi_hdo_isocam3,
-        ref_alpi_o18_isocam3, tight_tol, constants);
+
+    /* The loops above cover the defaults only because the default enumerators
+       happen to be index 0 of each enum. Assert that rather than assume it: a
+       reordering that moved the default would otherwise leave the
+       default-constructed path -- the one production uses -- unswept. */
+    SECTION("defaults_are_covered") {
+      wiso::WaterIsotopeRuntimeOptions defaults;
+      REQUIRE( expected_is_populated(liq_expected[etoi(defaults.liquid_vapor)]) );
+      REQUIRE( expected_is_populated(ice_expected[etoi(defaults.ice_vapor)]) );
+
+      wiso::WaterIsotopeConstants<Real> constants;  // default-constructed
+      run_both_pack_sizes("liquid-vapor",
+        liq_expected[etoi(defaults.liquid_vapor)], tight_tol, constants);
+      run_both_pack_sizes("ice-vapor",
+        ice_expected[etoi(defaults.ice_vapor)], tight_tol, constants);
     }
 
     SECTION("device execution") {
