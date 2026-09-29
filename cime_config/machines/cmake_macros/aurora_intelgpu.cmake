@@ -20,3 +20,9 @@ set(E3SM_LINK_WITH_FORTRAN "FALSE")
 
 # EAMxx ignores generic CMAKE_CXX_FLAGS, includes CMAKE_CXX_FLAGS_[RELEASE,DEBUG]
 string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model precise")
+
+# 'just' -g may lead to linker internal errors and/or huge builds out of quotas
+string(APPEND CMAKE_C_FLAGS_DEBUG   " -fno-system-debug")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -fno-system-debug")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " --offload-compress")
+
