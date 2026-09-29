@@ -1496,6 +1496,7 @@ contains
          leafc_xfer         =>    veg_cs%leafc_xfer            , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
          crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf     , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
+         crop_seedc_to_leaf_noop => veg_cf%crop_seedc_to_leaf_noop, & ! Output: [real(r8) (:) ]  (gC/m2/s) no-op seed source (mass balance check)
 
          fert_counter       =>    veg_nf%fert_counter         , & ! Output: [real(r8) (:) ]  >0 fertilize; <=0 not (seconds)
          leafn_xfer         =>    veg_ns%leafn_xfer          , & ! Output: [real(r8) (:) ]  (gN/m2)   leaf N transfer
@@ -1647,6 +1648,13 @@ contains
                   harvdate(p)    = NOT_Harvested
                   harvday(p)     = NOT_Harvested
                   gddmaturity(p) = hybgdd(ivt(p))
+                  if (leafc_xfer(p) == 1._r8) then
+                     ! planting assignment below is a no-op; the seed deficit will be
+                     ! charged without a matching vegetation gain (mass balance check)
+                     crop_seedc_to_leaf_noop(p) = crop_seedc_to_leaf_noop(p) + leafc_xfer(p)/dt
+                  else
+                     crop_seedc_to_leaf_noop(p) = 0._r8
+                  end if
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p)  = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
                   crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
@@ -1681,6 +1689,11 @@ contains
                   harvday(p)     = NOT_Harvested
                   harvdate(p)    = NOT_Harvested
                   gddmaturity(p) = hybgdd(ivt(p))
+                  if (leafc_xfer(p) == 1._r8) then
+                     crop_seedc_to_leaf_noop(p) = crop_seedc_to_leaf_noop(p) + leafc_xfer(p)/dt
+                  else
+                     crop_seedc_to_leaf_noop(p) = 0._r8
+                  end if
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p)  = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
                   crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
@@ -1751,6 +1764,11 @@ contains
                      end if
                      if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
 
+                     if (leafc_xfer(p) == 1._r8) then
+                        crop_seedc_to_leaf_noop(p) = crop_seedc_to_leaf_noop(p) + leafc_xfer(p)/dt
+                     else
+                        crop_seedc_to_leaf_noop(p) = 0._r8
+                     end if
                      leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                      leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
                      crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
@@ -1775,6 +1793,11 @@ contains
                   end if
                   if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
 
+                  if (leafc_xfer(p) == 1._r8) then
+                     crop_seedc_to_leaf_noop(p) = crop_seedc_to_leaf_noop(p) + leafc_xfer(p)/dt
+                  else
+                     crop_seedc_to_leaf_noop(p) = 0._r8
+                  end if
                   leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
                   crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
@@ -1941,6 +1964,7 @@ contains
                   offset_counter(p) = dt
                else                      ! plant never emerged from the ground
                   crop_seedc_to_leaf(p) = crop_seedc_to_leaf(p) - leafc_xfer(p)/dt
+                  crop_seedc_to_leaf_noop(p) = 0._r8 ! planting transfers fully reverted
                   crop_seedn_to_leaf(p) = crop_seedn_to_leaf(p) - leafn_xfer(p)/dt
                   crop_seedp_to_leaf(p) = crop_seedp_to_leaf(p) - leafp_xfer(p)/dt
                   leafc_xfer(p) = 0._r8  ! revert planting transfers
@@ -1974,6 +1998,7 @@ contains
          else   ! crop not live
             ! next 2 lines conserve mass if leaf*_xfer > 0 due to interpinic
             crop_seedc_to_leaf(p) = crop_seedc_to_leaf(p) - leafc_xfer(p)/dt
+            crop_seedc_to_leaf_noop(p) = 0._r8 ! planting transfers fully reverted
             crop_seedn_to_leaf(p) = crop_seedn_to_leaf(p) - leafn_xfer(p)/dt
             crop_seedp_to_leaf(p) = crop_seedp_to_leaf(p) - leafp_xfer(p)/dt
             onset_counter(p) = 0._r8
@@ -2061,6 +2086,7 @@ contains
          leafc_xfer         =>    veg_cs%leafc_xfer                   , & ! Output: [real(r8) (:) ]  (gC/m2)   leaf C transfer
 
          crop_seedc_to_leaf =>    veg_cf%crop_seedc_to_leaf           , & ! Output: [real(r8) (:) ]  (gC/m2/s) seed source to PFT-level
+         crop_seedc_to_leaf_noop => veg_cf%crop_seedc_to_leaf_noop, & ! Output: [real(r8) (:) ]  (gC/m2/s) no-op seed source (mass balance check)
 
          synthfert          =>    veg_nf%synthfert                    , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
          manure             =>    veg_nf%manure                       , & ! Output: [real(r8) (:) ]  (gN/m2/s) manure applied each timestep
@@ -2219,6 +2245,7 @@ contains
          else     ! crop not live
             ! next 2 lines conserve mass if leaf*_xfer > 0 due to interpinic
             crop_seedc_to_leaf(p) = crop_seedc_to_leaf(p) - leafc_xfer(p)/dt
+            crop_seedc_to_leaf_noop(p) = 0._r8 ! planting transfers fully reverted
             crop_seedn_to_leaf(p) = crop_seedn_to_leaf(p) - leafn_xfer(p)/dt
             crop_seedp_to_leaf(p) = crop_seedp_to_leaf(p) - leafp_xfer(p)/dt
             onset_counter(p) = 0._r8

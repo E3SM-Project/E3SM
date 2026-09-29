@@ -7,7 +7,7 @@ module elm_instMod
   use abortutils                 , only : endrun
   use decompMod                  , only : bounds_type, get_proc_bounds
   use elm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
-  use elm_varctl , only : iulog
+  use elm_varctl                 , only : iulog,use_debug
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -66,6 +66,7 @@ module elm_instMod
   use ColumnDataType             , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType             , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType             , only : col_ns, col_nf
+  use DebugToolsMod              , only : Init_Debug_tools
   use ColumnDataType             , only : col_ps, col_pf
   use VegetationType             , only : veg_pp
   use VegetationDataType         , only : veg_es, veg_ef, veg_ws, veg_wf
@@ -172,6 +173,10 @@ contains
        call vocemis_vars%Init(bounds_proc)
     end if
 
+    if(use_debug)then
+      call Init_Debug_tools(bounds_proc)
+    endif
+    
     if (use_cn .or. use_fates) then
 
        ! Note - always initialize the memory for the c13_cs and

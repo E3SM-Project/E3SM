@@ -67,7 +67,6 @@ module ColumnDataType
   real(r8), public :: nfix_timeconst = -1.2345_r8
   !$acc declare copyin(nfix_timeconst)
   !
-
   !-----------------------------------------------------------------------
   ! Define the data structure that holds energy state information at the column level.
   !-----------------------------------------------------------------------
@@ -235,6 +234,8 @@ module ColumnDataType
     real(r8), pointer :: totsomc_end          (:)    => null()
     real(r8), pointer :: decomp_som2c_vr      (:,:)  => null()
     real(r8), pointer :: cropseedc_deficit    (:)    => null()
+    real(r8), pointer :: leafc_xfer            (:)    => null() ! (gC/m2) column leaf C transfer, p2c of patch leafc_xfer (crop seed mass balance check)
+    real(r8), pointer :: leafc_xfer_beg        (:)    => null() ! (gC/m2) column leaf C transfer at beginning of timestep (crop seed mass balance check)
 
   contains
     procedure, public :: Init    => col_cs_init
@@ -279,6 +280,8 @@ module ColumnDataType
     real(r8), pointer :: plant_nbuffer            (:)     => null() ! (gN/m2) plant nitrogen buffer, (gN/m2), used to exchange info with betr
     real(r8), pointer :: seedn                    (:)     => null() ! (gN/m2) column-level pool for seeding new Patches
     real(r8), pointer :: cropseedn_deficit        (:)     => null() ! (gN/m2) column-level pool for seed N deficit (negative pool)
+    real(r8), pointer :: leafn_xfer               (:)     => null() ! (gN/m2) column leaf N transfer, p2c of patch leafn_xfer (crop seed mass balance check)
+    real(r8), pointer :: leafn_xfer_beg           (:)     => null() ! (gN/m2) column leaf N transfer at beginning of timestep (crop seed mass balance check)
     real(r8), pointer :: prod1n                   (:)     => null() ! (gN/m2) crop product N pool, 1-year lifespan
     real(r8), pointer :: prod10n                  (:)     => null() ! (gN/m2) wood product N pool, 10-year lifespan
     real(r8), pointer :: prod100n                 (:)     => null() ! (gN/m2) wood product N pool, 100-year lifespan
@@ -403,6 +406,8 @@ module ColumnDataType
     real(r8), pointer :: cwdp_end                 (:)      => null()
     real(r8), pointer :: totsomp_end              (:)      => null()
     real(r8), pointer :: cropseedp_deficit        (:)      => null() ! (gP/m2) negative pool tracking seed P for DWT
+    real(r8), pointer :: leafp_xfer               (:)      => null() ! (gP/m2) column leaf P transfer, p2c of patch leafp_xfer (crop seed mass balance check)
+    real(r8), pointer :: leafp_xfer_beg           (:)      => null() ! (gP/m2) column leaf P transfer at beginning of timestep (crop seed mass balance check)
     real(r8), pointer :: som1p                    (:)      => null()
     real(r8), pointer :: som2p                    (:)      => null()
     real(r8), pointer :: som3p                    (:)      => null()
@@ -667,6 +672,10 @@ module ColumnDataType
     real(r8), pointer :: hrv_xsmrpool_to_atm                   (:)     => null() ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
     real(r8), pointer :: plant_to_litter_cflux		             (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_cwd_cflux		                 (:)     => null() ! for the purpose of mass balance check
+    real(r8), pointer :: totprodc_in                             (:)     => null() ! for the purpose of mass balance check: sum of all fluxes into product pools (gC/m2/s)
+    real(r8), pointer :: totprodc_out                            (:)     => null() ! for the purpose of mass balance check: sum of all fluxes out of product pools (gC/m2/s)
+    real(r8), pointer :: totpftc_in                              (:)     => null() ! for the purpose of mass balance check: sum of all fluxes into vegetation pools (gC/m2/s)
+    real(r8), pointer :: totpftc_out                             (:)     => null() ! for the purpose of mass balance check: sum of all fluxes out of vegetation pools (gC/m2/s)
     ! Temporary and annual sums
     real(r8), pointer :: annsum_npp                            (:)     => null() ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
     ! C4MIP output variable
@@ -681,6 +690,8 @@ module ColumnDataType
     real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
     real(r8), pointer :: f_co2_soil                            (:)     => null() ! total soil-atm. CO2 exchange (gC/m2/s)
 
+    real(r8), pointer :: crop_seedc_to_leaf                    (:) => null()   !(gC/m2/s) seed source to leaf, for crops
+    real(r8), pointer :: crop_seedc_to_leaf_noop               (:) => null()   !(gC/m2/s) seed source to leaf for crops, only counted when the paired leafc_xfer state assignment is a no-op (mass balance check)
   contains
     procedure, public :: Init       => col_cf_init
     procedure, public :: Restart    => col_cf_restart
@@ -709,6 +720,8 @@ module ColumnDataType
     real(r8), pointer :: harvest_n_to_litr_lig_n               (:,:)   => null() ! N fluxes associated with harvest to litter lignin pool (gN/m3/s)
     real(r8), pointer :: harvest_n_to_cwdn                     (:,:)   => null() ! N fluxes associated with harvest to CWD pool (gN/m3/s)
     real(r8), pointer :: hrv_cropn_to_prod1n                   (:)     => null() ! crop N harvest mortality to 1-yr product pool (gN/m2/s)
+    real(r8), pointer :: crop_seedn_to_leaf                    (:)     => null() ! (gN/m2/s) seed source to leaf, for crops
+    real(r8), pointer :: crop_seedn_to_leaf_noop               (:)     => null() ! (gN/m2/s) no-op seed source to leaf, for crops (mass balance check)
     ! fire N fluxes
     real(r8), pointer :: m_decomp_npools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing N fire loss (gN/m3/s)
     real(r8), pointer :: m_decomp_npools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing N fire loss (gN/m2/s)
@@ -935,6 +948,8 @@ module ColumnDataType
     real(r8), pointer :: harvest_p_to_litr_lig_p               (:,:)   => null() ! P fluxes associated with harvest to litter lignin pool (gP/m3/s)
     real(r8), pointer :: harvest_p_to_cwdp                     (:,:)   => null() ! P fluxes associated with harvest to CWD pool (gP/m3/s)
     real(r8), pointer :: hrv_cropp_to_prod1p                   (:)     => null() ! crop P harvest mortality to 1-yr product pool (gP/m2/s)
+    real(r8), pointer :: crop_seedp_to_leaf                    (:)     => null() ! (gP/m2/s) seed source to leaf, for crops
+    real(r8), pointer :: crop_seedp_to_leaf_noop               (:)     => null() ! (gP/m2/s) no-op seed source to leaf, for crops (mass balance check)
     real(r8), pointer :: m_decomp_ppools_to_fire_vr            (:,:,:) => null() ! vertically-resolved decomposing P fire loss (gP/m3/s)
     real(r8), pointer :: m_decomp_ppools_to_fire               (:,:)   => null() ! vertically-integrated (diagnostic) decomposing P fire loss (gP/m2/s)
     real(r8), pointer :: fire_ploss                            (:)     => null() ! total column-level fire P loss (gP/m2/s)
@@ -1097,7 +1112,7 @@ module ColumnDataType
   !------------------------------------------------------------------------
 
 contains
-
+     
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column energy state data structure
   !------------------------------------------------------------------------
@@ -2181,6 +2196,8 @@ contains
     allocate(this%totlitc_end          (begc:endc))     ; this%totlitc_end          (:)     = spval
     allocate(this%totsomc_end          (begc:endc))     ; this%totsomc_end          (:)     = spval
     allocate(this%cropseedc_deficit    (begc:endc))     ; this%cropseedc_deficit    (:)     = spval
+    allocate(this%leafc_xfer           (begc:endc))     ; this%leafc_xfer           (:)     = spval
+    allocate(this%leafc_xfer_beg       (begc:endc))     ; this%leafc_xfer_beg       (:)     = spval
     allocate(this%decomp_cpools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_vr (:,:,:) = spval
     allocate(this%ctrunc_vr        (begc:endc,1:nlevdecomp_full))                 ; this%ctrunc_vr        (:,:)   = spval
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = spval
@@ -3375,6 +3392,8 @@ contains
     allocate(this%plant_nbuffer         (begc:endc))                     ; this%plant_nbuffer         (:)   = spval
     allocate(this%seedn                 (begc:endc))                     ; this%seedn                 (:)   = spval
     allocate(this%cropseedn_deficit     (begc:endc))                     ; this%cropseedn_deficit     (:)   = spval
+    allocate(this%leafn_xfer            (begc:endc))                     ; this%leafn_xfer            (:)   = spval
+    allocate(this%leafn_xfer_beg        (begc:endc))                     ; this%leafn_xfer_beg        (:)   = spval
     allocate(this%prod1n                (begc:endc))                     ; this%prod1n                (:)   = spval
     allocate(this%prod10n               (begc:endc))                     ; this%prod10n               (:)   = spval
     allocate(this%prod100n              (begc:endc))                     ; this%prod100n              (:)   = spval
@@ -4676,6 +4695,8 @@ contains
     allocate(this%cwdp_end             (begc:endc))                   ; this%cwdp_end             (:)   = spval
     allocate(this%totsomp_end          (begc:endc))                   ; this%totsomp_end          (:)   = spval
     allocate(this%cropseedp_deficit    (begc:endc))                   ; this%cropseedp_deficit    (:)   = spval
+    allocate(this%leafp_xfer            (begc:endc))                   ; this%leafp_xfer            (:)   = spval
+    allocate(this%leafp_xfer_beg       (begc:endc))                   ; this%leafp_xfer_beg       (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ps
@@ -6236,6 +6257,8 @@ contains
     allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = spval
     allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = spval
     allocate(this%prod1c_loss                       (begc:endc))                  ; this%prod1c_loss                  (:)   = spval
+    allocate(this%crop_seedc_to_leaf                (begc:endc))                  ; this%crop_seedc_to_leaf           (:)   = spval
+    allocate(this%crop_seedc_to_leaf_noop           (begc:endc))                  ; this%crop_seedc_to_leaf_noop      (:)   = spval
     allocate(this%prod10c_loss                      (begc:endc))                  ; this%prod10c_loss                 (:)   = spval
     allocate(this%prod100c_loss                     (begc:endc))                  ; this%prod100c_loss                (:)   = spval
     allocate(this%product_closs                     (begc:endc))                  ; this%product_closs                (:)   = spval
@@ -6272,6 +6295,10 @@ contains
     allocate(this%hrv_xsmrpool_to_atm               (begc:endc))                  ; this%hrv_xsmrpool_to_atm          (:)   = spval
     allocate(this%plant_to_litter_cflux             (begc:endc))                  ; this%plant_to_litter_cflux        (:)   = spval
     allocate(this%plant_to_cwd_cflux	             (begc:endc))                  ; this%plant_to_cwd_cflux		       (:)    = spval
+    allocate(this%totprodc_in                       (begc:endc))                  ; this%totprodc_in                  (:)   = spval
+    allocate(this%totprodc_out                      (begc:endc))                  ; this%totprodc_out                 (:)   = spval
+    allocate(this%totpftc_in                        (begc:endc))                  ; this%totpftc_in                   (:)   = spval
+    allocate(this%totpftc_out                       (begc:endc))                  ; this%totpftc_out                  (:)   = spval
     allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = spval
     ! C4MIP output variable
      allocate(this%plant_c_to_cwdc                  (begc:endc))                  ; this%plant_c_to_cwdc              (:)  = spval
@@ -6731,6 +6758,11 @@ contains
         call hist_addfld1d (fname='PROD1C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 1-yr crop product pool', &
               ptr_col=this%prod1c_loss, default='inactive')
+
+       this%crop_seedc_to_leaf(begc:endc) = spval        
+       call hist_addfld1d (fname='CROP_SEEDC_TO_LEAF_col', units='gC/m^2/s', &
+             avgflag='A', long_name='crop seed source to leaf', &
+              ptr_col=this%crop_seedc_to_leaf, default='inactive')
 
        this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_MET_C', units='gC/m^2/s',  type2d='levdcmp', &
@@ -7744,23 +7776,77 @@ contains
         this%plant_to_cwd_cflux(c) = 0._r8
         do j = 1, nlev
             this%plant_to_litter_cflux(c) = &
-                this%plant_to_litter_cflux(c)  + &
-                this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_cflux(c) = &
-                this%plant_to_cwd_cflux(c) + &
-                this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
-        end do
-    end do
+                this%plant_to_litter_cflux(c)           +( &
+                this%phenology_c_to_litr_met_c(c,j)     +  &
+                this%phenology_c_to_litr_cel_c(c,j)     +  &
+                this%phenology_c_to_litr_lig_c(c,j)     +  &
+                this%gap_mortality_c_to_litr_met_c(c,j) +  &
+                this%gap_mortality_c_to_litr_cel_c(c,j) +  &
+                this%gap_mortality_c_to_litr_lig_c(c,j) +  &
+                this%m_c_to_litr_met_fire(c,j)          +  &
+                this%m_c_to_litr_cel_fire(c,j)          +  &
+                this%m_c_to_litr_lig_fire(c,j)          +  &
+                this%dwt_frootc_to_litr_met_c(c,j)      +  &
+                this%dwt_frootc_to_litr_cel_c(c,j)      +  &
+                this%dwt_frootc_to_litr_lig_c(c,j)      +  &
+                this%harvest_c_to_litr_met_c(c,j)       +  & 
+                this%harvest_c_to_litr_cel_c(c,j)       +  & 
+                this%harvest_c_to_litr_lig_c(c,j)          )*dzsoi_decomp(j)
 
+
+            this%plant_to_cwd_cflux(c) =               &
+                this%plant_to_cwd_cflux(c)          + (&
+                this%gap_mortality_c_to_cwdc(c,j)   +  &
+                this%fire_mortality_c_to_cwdc(c,j)  +  &
+                this%dwt_livecrootc_to_cwdc(c,j)    +  &     
+                this%dwt_deadcrootc_to_cwdc(c,j)    +  &
+                this%harvest_c_to_cwdc(c,j))* dzsoi_decomp(j)                  
+        
+        end do
+
+        ! total product-pool flux summary (for mass balance check)
+        ! gains: crop harvest to 1-yr pool, wood harvest to 10/100-yr pools,
+        !        dynamic landcover product gains
+        this%totprodc_in(c) = &
+             this%hrv_cropc_to_prod1c(c)            + &
+             this%hrv_deadstemc_to_prod10c(c)       + &
+             this%hrv_deadstemc_to_prod100c(c)      + &
+             this%dwt_prod10c_gain(c)               + &
+             this%dwt_prod100c_gain(c)              + &
+             this%dwt_crop_productc_gain(c)
+
+        ! losses: decomposition losses from the product pools
+        this%totprodc_out(c) = &
+             this%prod1c_loss(c)                    + &
+             this%prod10c_loss(c)                   + &
+             this%prod100c_loss(c)
+
+        ! total vegetation (totpftc) flux summary (for mass balance check)
+        ! gains: photosynthesis and crop seed input at planting
+        ! (note: dwt_seedc_to_leaf seeding from the gridcell seedc pool during
+        !  dynamic landcover change exists only at the veg/gridcell level and
+        !  is not captured here)
+        this%totpftc_in(c) = &
+             this%gpp(c)                            + &
+             this%crop_seedc_to_leaf(c)
+
+        ! losses: autotrophic respiration (incl crop xsmrpool_to_atm and
+        ! xsmrpool_turnover via the veg ar summary), fire combustion,
+        ! plant-to-litter and plant-to-CWD transfers, harvest to product
+        ! pools, land-use harvest xsmrpool to atmosphere, and landcover
+        ! conversion flux to atmosphere
+        this%totpftc_out(c) = &
+             this%ar(c)                             + &
+             this%fire_closs(c)                     + &
+             this%plant_to_litter_cflux(c)          + &
+             this%plant_to_cwd_cflux(c)             + &
+             this%hrv_deadstemc_to_prod10c(c)       + &
+             this%hrv_deadstemc_to_prod100c(c)      + &
+             this%hrv_cropc_to_prod1c(c)            + &
+             this%hrv_xsmrpool_to_atm(c)            + &
+             this%dwt_conv_cflux(c)
+
+    end do
     end associate
 
   end subroutine col_cf_summary
@@ -7981,6 +8067,10 @@ contains
        this%vegfire(i)               = value_column
        this%wood_harvestc(i)         = value_column
        this%hrv_xsmrpool_to_atm(i)   = value_column
+       this%totprodc_in(i)           = value_column
+       this%totprodc_out(i)          = value_column
+       this%totpftc_in(i)            = value_column
+       this%totpftc_out(i)           = value_column
     end do
   
     if(use_crop) then 
@@ -7998,6 +8088,8 @@ contains
          this%somc_erode(i)                = value_column
          this%somc_deposit(i)              = value_column
          this%somc_yield(i)                = value_column
+         this%crop_seedc_to_leaf(i)        = value_column
+         this%crop_seedc_to_leaf_noop(i)   = value_column
       enddo 
     end if 
     
@@ -8346,6 +8438,8 @@ contains
     allocate(this%hrv_deadstemn_to_prod10n        (begc:endc))                   ; this%hrv_deadstemn_to_prod10n       (:)   = spval
     allocate(this%hrv_deadstemn_to_prod100n       (begc:endc))                   ; this%hrv_deadstemn_to_prod100n      (:)   = spval
     allocate(this%hrv_cropn_to_prod1n             (begc:endc))                   ; this%hrv_cropn_to_prod1n            (:)   = spval
+    allocate(this%crop_seedn_to_leaf              (begc:endc))                   ; this%crop_seedn_to_leaf             (:)   = spval
+    allocate(this%crop_seedn_to_leaf_noop         (begc:endc))                   ; this%crop_seedn_to_leaf_noop        (:)   = spval
     allocate(this%sminn_to_plant                  (begc:endc))                   ; this%sminn_to_plant	               (:)   = spval
     allocate(this%potential_immob                 (begc:endc))                   ; this%potential_immob                (:)   = spval
     allocate(this%actual_immob                    (begc:endc))                   ; this%actual_immob                   (:)   = spval
@@ -9559,6 +9653,8 @@ contains
        this%hrv_deadstemn_to_prod10n(i)  = value_column
        this%hrv_deadstemn_to_prod100n(i) = value_column
        this%hrv_cropn_to_prod1n(i)       = value_column
+       this%crop_seedn_to_leaf(i)        = value_column
+       this%crop_seedn_to_leaf_noop(i)   = value_column
        this%prod10n_loss(i)              = value_column
        this%prod100n_loss(i)             = value_column
        this%prod1n_loss(i)               = value_column
@@ -10271,6 +10367,8 @@ contains
     allocate(this%hrv_deadstemp_to_prod10p         (begc:endc))                   ; this%hrv_deadstemp_to_prod10p      (:)   = spval
     allocate(this%hrv_deadstemp_to_prod100p        (begc:endc))                   ; this%hrv_deadstemp_to_prod100p     (:)   = spval
     allocate(this%hrv_cropp_to_prod1p              (begc:endc))                   ; this%hrv_cropp_to_prod1p           (:)   = spval
+    allocate(this%crop_seedp_to_leaf              (begc:endc))                    ; this%crop_seedp_to_leaf             (:)   = spval
+    allocate(this%crop_seedp_to_leaf_noop         (begc:endc))                    ; this%crop_seedp_to_leaf_noop        (:)   = spval
     allocate(this%sminp_to_plant                   (begc:endc))                   ; this%sminp_to_plant                (:)   = spval
     allocate(this%potential_immob_p                (begc:endc))                   ; this%potential_immob_p             (:)   = spval
     allocate(this%actual_immob_p                   (begc:endc))                   ; this%actual_immob_p                (:)   = spval
@@ -11111,6 +11209,8 @@ contains
        this%hrv_deadstemp_to_prod10p(i)  = value_column
        this%hrv_deadstemp_to_prod100p(i) = value_column
        this%hrv_cropp_to_prod1p(i)       = value_column
+       this%crop_seedp_to_leaf(i)        = value_column
+       this%crop_seedp_to_leaf_noop(i)   = value_column
        this%prod10p_loss(i)              = value_column
        this%prod100p_loss(i)             = value_column
        this%product_ploss(i)             = value_column

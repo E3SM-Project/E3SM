@@ -10,17 +10,18 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use elm_varctl          , only : iulog, use_fates, use_fan
+  use elm_varctl          , only : iulog, use_fates, use_fan, use_debug
   use elm_time_manager    , only : get_step_size,get_nstep
   use elm_varpar          , only : crop_prog
   use elm_varpar          , only : nlevdecomp
+  use elm_varpar          , only : max_patch_per_col
   use elm_varcon          , only : dzsoi_decomp
-  use elm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com, use_crop
   use elm_varctl          , only : ECA_Pconst_RGspin
   use spmdMod             , only : masterproc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use elm_varpar          , only: ndecomp_cascade_transitions
-  use subgridAveMod       , only : p2c, c2g, unity
+  use subgridAveMod       , only : p2c, c2g, unity 
   ! soil erosion
   use elm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
@@ -39,9 +40,10 @@ module EcosystemBalanceCheckMod
   use ColumnDataType      , only : column_carbon_state, column_carbon_flux
   use ColumnDataType      , only : column_nitrogen_state, column_nitrogen_flux
   use ColumnDataType      , only : column_phosphorus_state, column_phosphorus_flux
+  use ColumnDataType      , only : col_cs, col_cf, col_ns, col_nf, col_ps, col_pf
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
-
+  use VegetationDataType  , only : veg_cf, veg_nf, veg_pf, veg_cs, veg_ns, veg_ps
+  use DebugToolsMod      
   use timeinfoMod
 
   !
@@ -87,6 +89,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: c     ! indices
+    integer :: p     ! patch index
     integer :: fc   ! lake filter indices
     !-----------------------------------------------------------------------
 
@@ -101,6 +104,18 @@ contains
          col_begcb(c) = totcolc(c)
       end do
 
+      ! snapshot the beginning-of-timestep leaf transfer pool; the p2c in
+      ! veg_cs_summary (called just before, in the begin phase) has filled
+      ! col_cs%leafc_xfer with the pre-dynamics patch average. Used by
+      ! ColCBalanceCheck and GridCBalanceCheck for the crop seed output term.
+      ! (the end-of-step veg_cs%Summary refreshes col_cs%leafc_xfer but not
+      !  this _beg copy)
+      do c = bounds%begc, bounds%endc
+         col_cs%leafc_xfer_beg(c) = col_cs%leafc_xfer(c)
+      end do
+
+      call EnterCMassDebug(bounds, num_soilc, filter_soilc, col_cs, veg_cs)
+      
     end associate
 
   end subroutine BeginColCBalance
@@ -133,6 +148,14 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begnb(c) = totcoln(c)
+      end do
+
+      ! snapshot the beginning-of-timestep leaf N transfer pool; the p2c in
+      ! veg_ns_summary (called just before, in the begin phase) has filled
+      ! col_ns%leafn_xfer with the pre-dynamics patch average. Used by
+      ! ColNBalanceCheck for the crop seed output term.
+      do c = bounds%begc, bounds%endc
+         col_ns%leafn_xfer_beg(c) = col_ns%leafn_xfer(c)
       end do
 
     end associate
@@ -174,6 +197,14 @@ contains
          col_begpb(c) = totcolp(c)
       end do
 
+      ! snapshot the beginning-of-timestep leaf P transfer pool; the p2c in
+      ! veg_ps_summary (called just before, in the begin phase) has filled
+      ! col_ps%leafp_xfer with the pre-dynamics patch average. Used by
+      ! ColPBalanceCheck for the crop seed output term.
+      do c = bounds%begc, bounds%endc
+         col_ps%leafp_xfer_beg(c) = col_ps%leafp_xfer(c)
+      end do
+
     end associate
 
   end subroutine BeginColPBalance
@@ -211,6 +242,8 @@ contains
          col_prod100c_loss         =>    col_cf%prod100c_loss             , & ! Input:  [real(r8) (:) ]  (gC/m2/s) 100-year wood C harvested
          col_hrv_xsmrpool_to_atm   =>    col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             =>    col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
+         col_crop_seedc_to_leaf    =>    col_cf%crop_seedc_to_leaf   , & ! Input:  [real(r8) (:) ]  (gC/m^2/s) seed source to leaf, for crops
+         col_leafc_xfer_beg        =>    col_cs%leafc_xfer_beg        , & ! Input:  [real(r8) (:) ]  (gC/m2) p2c of beg-of-step leafc_xfer (crop seed mass balance check)
          som_c_yield               =>    col_cf%somc_yield                , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss by erosion
          col_decompc_delta         =>    col_cf%externalc_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          col_cinputs               =>    col_cf%cinputs                   , & ! Output: [real(r8) (:)]  column-level C inputs (gC/m2/s)
@@ -268,7 +301,16 @@ contains
          if (ero_ccycle) then
             col_coutputs(c) = col_coutputs(c) + som_c_yield(c)
          end if
-
+         
+         if (use_crop)then
+            ! crop seed output term: the planting charge against cropseedc_deficit
+            ! that is not backed by a leafc_xfer vegetation gain. Exact for columns
+            ! whose planting patches share the same beginning-of-step leafc_xfer
+            ! (in particular single-patch crop columns); zero when no planting fired.
+            if (col_crop_seedc_to_leaf(c) > 0._r8) then
+               col_coutputs(c) = col_coutputs(c) + col_leafc_xfer_beg(c)/dt
+            end if
+         endif
 
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs(c) - col_coutputs(c))*dt - (col_endcb(c) - col_begcb(c))
@@ -282,7 +324,8 @@ contains
          end if
 
          ! check for significant errors
-         if (abs(col_errcb(c)) > balance_check_tolerance) then
+         if (abs(col_errcb(c)) > balance_check_tolerance .and. &
+           abs(col_errcb(c))>1.E-9_R8*MAX(col_endcb(c),col_begcb(c))) then
             err_found = .true.
             err_index = c
          end if
@@ -304,7 +347,13 @@ contains
           write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
           write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
           write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
-
+          write(iulog,*)'seed                  = ',col_cs%seedc(c)
+          write(iulog,*)'totabgc               = ',col_cs%totabgc(c)
+          if (use_crop) then
+            write(iulog,*)'cropseedc_deficit     = ',col_cs%cropseedc_deficit(c)
+            write(iulog,*)'col_crop_seedc_to_leaf=',col_cf%crop_seedc_to_leaf(c)*dt
+            write(iulog,*)'crop_seedc_to_leaf=',col_cf%crop_seedc_to_leaf(c)*dt
+          endif
           if (ero_ccycle) then
              write(iulog,*)'erosion               = ',som_c_yield(c)*dt
           end if
@@ -313,8 +362,8 @@ contains
              write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
           end if
 
-          if (use_pflotran .and. pf_cmode) then
-             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+          if (use_debug) then
+             call DebugCMassBal(c, col_cs, col_cf, veg_cs,veg_cf)
           end if
 
           call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -348,6 +397,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: c,err_index,j,p  ! indices
+    integer :: pi                ! patch loop index
     integer :: fc             ! lake filter indices
     logical :: err_found      ! error flag
     real(r8):: dt             ! radiation time step (seconds)
@@ -368,6 +418,8 @@ contains
          soyfixn_to_sminn          =>    col_nf%soyfixn_to_sminn          , & ! Input:  [real(r8) (:)]
          fan_totnin                =>    col_nf%fan_totnin                , & ! Input:  [real(r8) (:)]  (gN/m2/s) total N input into the FAN pools
          fan_totnout               =>    col_nf%fan_totnout               , & ! Input:  [real(r8) (:)]  (gN/m2/s) total N output from the FAN pools
+         col_crop_seedn_to_leaf    =>    col_nf%crop_seedn_to_leaf   , & ! Input:  [real(r8) (:) ]  (gN/m^2/s) seed source to leaf, for crops
+         col_leafn_xfer_beg        =>    col_ns%leafn_xfer_beg        , & ! Input:  [real(r8) (:) ]  (gN/m2) p2c of beg-of-step leafn_xfer (crop seed mass balance check)
          supplement_to_sminn       =>    col_nf%supplement_to_sminn       , & ! Input:  [real(r8) (:)]  supplemental N supply (gN/m2/s)
          denit                     =>    col_nf%denit                     , & ! Input:  [real(r8) (:)]  total rate of denitrification (gN/m2/s)
          sminn_leached             =>    col_nf%sminn_leached             , & ! Input:  [real(r8) (:)]  soil mineral N pool loss to leaching (gN/m2/s)
@@ -490,6 +542,13 @@ contains
             col_noutputs(c) = col_noutputs(c) + som_n_yield(c)
          end if
 
+         if (use_crop)then
+            ! crop seed output term (see ColCBalanceCheck for the derivation)
+            if (col_crop_seedn_to_leaf(c) > 0._r8) then
+               col_noutputs(c) = col_noutputs(c) + col_leafn_xfer_beg(c)/dt
+            end if
+         endif
+
          ! calculate the total column-level nitrogen balance error for this time step
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
@@ -569,6 +628,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: c,err_index,j,k,p  ! indices
+    integer :: pi                  ! patch loop index
     integer :: fc             ! lake filter indices
     logical :: err_found      ! error flag
     real(r8):: dt             ! radiation time step (seconds)
@@ -606,7 +666,8 @@ contains
          col_prod100p_loss         => col_pf%prod100p_loss             , & ! Input:  [real(r8) (:) ]  100-yr wood product harvested (gP/m2/s)
          col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
          col_poutputs              => col_pf%poutputs                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
-
+         col_crop_seedp_to_leaf    =>    col_pf%crop_seedp_to_leaf   , & ! Input:  [real(r8) (:) ]  (gP/m^2/s) seed source to leaf, for crops
+         col_leafp_xfer_beg        =>    col_ps%leafp_xfer_beg        , & ! Input:  [real(r8) (:) ]  (gP/m2) p2c of beg-of-step leafp_xfer (crop seed mass balance check)         
          col_begpb                 => col_ps%begpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          col_endpb                 => col_ps%endpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
          col_errpb                 => col_ps%errpb                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
@@ -624,8 +685,10 @@ contains
 
       ! set time steps
       dt = dtime_mod
-      kyr = year_curr; kmo = mon_curr; kda = day_curr; mcsec = secs_curr;
+
       err_found = .false.
+
+
 
       if(.not.use_fates)then
          call p2c(bounds,num_soilc,filter_soilc, &
@@ -731,6 +794,13 @@ contains
                secondp_yield(c) !+ occlp_yield(c) + primp_yield(c)
          end if
 
+         if (use_crop)then
+            ! crop seed output term (see ColCBalanceCheck for the derivation)
+            if (col_crop_seedp_to_leaf(c) > 0._r8) then
+               col_poutputs(c) = col_poutputs(c) + col_leafp_xfer_beg(c)/dt
+            end if
+         endif
+
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
               (col_endpb(c) - col_begpb(c))
@@ -808,7 +878,8 @@ contains
          beg_totlitc           =>  grc_cs%beg_totlitc           , & ! Output: [real(r8) (:)] (gC/m2) total column litter carbon
          beg_totprodc          =>  grc_cs%beg_totprodc          , & ! Output: [real(r8) (:)] (gC/m2) total column wood product carbon
          beg_ctrunc            =>  grc_cs%beg_ctrunc            , & ! Output: [real(r8) (:)] (gC/m2) total column truncation carbon sink
-         beg_cropseedc_deficit =>  grc_cs%beg_cropseedc_deficit   & ! Output: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         beg_cropseedc_deficit =>  grc_cs%beg_cropseedc_deficit   , & ! Output: [real(r8) (:)] (gC/m2) column carbon pool for seeding new growth
+         beg_leafc_xfer        =>  grc_cs%beg_leafc_xfer           & ! Output: [real(r8) (:)] (gC/m2) leaf C transfer pool at begining of the time step (crop seed mass balance check)
          )
 
       call c2g(bounds, totcolc(bounds%begc:bounds%endc), begcb_grc(bounds%begg:bounds%endg), &
@@ -838,6 +909,9 @@ contains
       call c2g(bounds, cropseedc_deficit(bounds%begc:bounds%endc), beg_cropseedc_deficit(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
+      call c2g(bounds, col_cs%leafc_xfer_beg(bounds%begc:bounds%endc), beg_leafc_xfer(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
     end associate
 
   end subroutine BeginGridCBalance
@@ -859,8 +933,9 @@ contains
     type(gridcell_carbon_state), intent(inout) :: grc_cs
     type(gridcell_carbon_flux) , intent(inout) :: grc_cf
     !
-    integer             :: g, nstep
+    integer             :: c, g, nstep
     real(r8)            :: dt
+    real(r8)            :: seed_loss_col(bounds%begc:bounds%endc) ! (gC/m2/s) column planting loss
     !-----------------------------------------------------------------------
 
     associate(                                                       &
@@ -956,6 +1031,20 @@ contains
       call c2g(bounds, col_som_c_yield(bounds%begc:bounds%endc), grc_som_c_yield(bounds%begg:bounds%endg), &
                c2l_scale_type = 'unity', l2g_scale_type = 'unity')  
 
+      ! Apply the planting condition at column level, as in ColCBalanceCheck.
+      ! Testing an averaged flux would include pools from non-planting columns.
+      dt = real(get_step_size(), r8)
+      seed_loss_col(:) = 0._r8
+      if (use_crop) then
+         do c = bounds%begc, bounds%endc
+            if (col_cf%crop_seedc_to_leaf(c) > 0._r8) then
+               seed_loss_col(c) = col_cs%leafc_xfer_beg(c)/dt
+            end if
+         end do
+      end if
+      call c2g(bounds, seed_loss_col, grc_cf%crop_seed_closs(bounds%begg:bounds%endg), &
+               c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
       if (use_fates) then 
         call c2g(bounds, col_cf%litfall(bounds%begc:bounds%endc), grc_cinputs(bounds%begg:bounds%endg), &
              c2l_scale_type = 'unity', l2g_scale_type = 'unity')
@@ -985,6 +1074,9 @@ contains
          if (ero_ccycle) then
             grc_coutputs(g) = grc_coutputs(g) + grc_som_c_yield(g)
          end if
+
+         ! Use the same aggregated loss in the instantaneous and period budgets.
+         grc_coutputs(g) = grc_coutputs(g) + grc_cf%crop_seed_closs(g)
 
          grc_errcb(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (end_totc(g) - beg_totc(g))
 
@@ -1042,10 +1134,14 @@ contains
 
     associate(                                         &
          totcoln   => col_ns%totcoln , & ! Input:  [real(r8) (:)]  (gN/m2) total column nitrogen, incl veg
-         begnb_grc => grc_ns%begnb     & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         begnb_grc => grc_ns%begnb     , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
+         beg_leafn_xfer => grc_ns%beg_leafn_xfer & ! Output: [real(r8) (:)] leaf N transfer pool at begining of the time step (crop seed mass balance check)
          )
 
       call c2g(bounds, totcoln(bounds%begc:bounds%endc), begnb_grc(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', l2g_scale_type = 'unity')
+
+      call c2g(bounds, col_ns%leafn_xfer_beg(bounds%begc:bounds%endc), beg_leafn_xfer(bounds%begg:bounds%endg), &
            c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
     end associate
@@ -1068,12 +1164,15 @@ contains
 
     associate(                                           &
          totcolp   => col_ps%totcolp , & ! Input:  [real(r8) (:)]  (gP/m2) total column phosphorus, incl veg
-         begpb_grc => grc_ps%begpb     & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         begpb_grc => grc_ps%begpb     , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
+         beg_leafp_xfer => grc_ps%beg_leafp_xfer & ! Output: [real(r8) (:)] leaf P transfer pool at begining of the time step (crop seed mass balance check)
          )
 
       call c2g(bounds, totcolp(bounds%begc:bounds%endc), begpb_grc(bounds%begg:bounds%endg), &
            c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
+      call c2g(bounds, col_ps%leafp_xfer_beg(bounds%begc:bounds%endc), beg_leafp_xfer(bounds%begg:bounds%endg), &
+           c2l_scale_type = 'unity', l2g_scale_type = 'unity')
 
     end associate
 
@@ -1108,9 +1207,9 @@ contains
          dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_cinputs               =>    grc_cf%cinputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
          grc_coutputs              =>    grc_cf%coutputs              , & ! Output: [real(r8) (:)]  grid-level C outputs (gC/m2/s)
-         begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
-         endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
+         begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
+         endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:)]  carbon mass, end of time step (gC/m**2)
+         errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:)]  carbon balance error for the time step (gC/m**2)
          )
 
       ! set time steps
@@ -1134,6 +1233,8 @@ contains
          grc_coutputs(g) = &
               dwt_conv_cflux_grc(g)
 
+         ! This check brackets only dynSubgrid_driver. Crop planting happens
+         ! later in the timestep; its previous-step flux does not belong here.
 
          errcb_grc(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (endcb_grc(g) - begcb_grc(g))
 
@@ -1219,6 +1320,8 @@ contains
          grc_noutputs(g) = &
               dwt_conv_nflux_grc(g)
 
+         ! This check brackets only dynSubgrid_driver. Crop planting happens
+         ! later in the timestep; its previous-step flux does not belong here.
 
          errnb_grc(g) = (grc_ninputs(g) - grc_noutputs(g))*dt - (endnb_grc(g) - begnb_grc(g))
 
@@ -1310,6 +1413,8 @@ contains
          grc_poutputs(g) = &
               dwt_conv_pflux_grc(g)
 
+         ! This check brackets only dynSubgrid_driver. Crop planting happens
+         ! later in the timestep; its previous-step flux does not belong here.
 
          errpb_grc(g) = (grc_pinputs(g) - grc_poutputs(g))*dt - (endpb_grc(g) - begpb_grc(g))
 

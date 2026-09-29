@@ -53,7 +53,9 @@ module CNPBudgetMod
   integer, parameter :: f_dwt_seedc_to_leaf    = 11
   integer, parameter :: f_dwt_seedc_to_deadstem= 12
 
-  integer, parameter, public :: c_f_size = f_dwt_seedc_to_deadstem
+  ! Carbon arrays have their own indices; retain the nitrogen index offsets below.
+  integer, parameter :: f_crop_seed_closs = 13
+  integer, parameter, public :: c_f_size = f_crop_seed_closs
 
   character(len=51), parameter :: c_f_name(c_f_size) = &
        (/&
@@ -68,7 +70,8 @@ module CNPBudgetMod
        '                                         SOM C loss', &
        '          flux to atmosphere due to dynamic weights', &
        '         seed source to leaf due to dynamic weights', &
-       '   seed source to dead steam due to dynamic weights'  &
+       '   seed source to dead steam due to dynamic weights', &
+       '                  crop seed loss during planting   '  &
        /)
        
        
@@ -663,6 +666,9 @@ contains
          nf = f_dwt_conv_cflux        ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_dwt_conv_cflux(g)        *af
          nf = f_dwt_seedc_to_leaf     ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + grc_dwt_seedc_to_leaf(g)     *af
          nf = f_dwt_seedc_to_deadstem ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) + grc_dwt_seedc_to_deadstem(g) *af
+
+         ! Match the planting loss included in GridCBalanceCheck and errcb.
+         nf = f_crop_seed_closs ; budg_fluxL(nf,ip) = budg_fluxL(nf,ip) - grc_cf%crop_seed_closs(g)*af
 
          ! states
          ns = s_totc_beg              ; budg_stateL(ns,ip) = budg_stateL(ns,ip) + beg_totc(g)              *af

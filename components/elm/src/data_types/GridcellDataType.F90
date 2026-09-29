@@ -119,6 +119,8 @@ module GridcellDataType
     real(r8), pointer :: beg_totprodc          (:) => null() ! (gC/m2) total wood product C at begining of the time step
     real(r8), pointer :: beg_ctrunc            (:) => null() ! (gC/m2) column-level sink for C truncation at begining of the time step
     real(r8), pointer :: beg_cropseedc_deficit (:) => null() ! (gC/m2) crop seed C deficit at begining of the time step
+    real(r8), pointer :: beg_leafc_xfer        (:) => null() ! (gC/m2) leaf C transfer pool at begining of the time step (crop seed mass balance check)
+    real(r8), pointer :: end_leafc_xfer        (:) => null() ! (gC/m2) leaf C transfer pool at end of the time step (crop seed mass balance check)
     real(r8), pointer :: end_totc              (:) => null() ! (gC/m2) total carbon, including veg and cpool at end of the time step
     real(r8), pointer :: end_totpftc           (:) => null() ! (gC/m2) total carbon, including cpool at end of the time step
     real(r8), pointer :: end_cwdc              (:) => null() ! (gC/m2) Diagnostic: coarse woody debris C at end of the time step
@@ -137,6 +139,7 @@ module GridcellDataType
   ! Define the data structure that holds carbon flux information at the gridcell level.
   !-----------------------------------------------------------------------
   type, public :: gridcell_carbon_flux
+    real(r8), pointer :: crop_seed_closs(:) => null() ! (gC/m2/s) planting loss used by balance checks
     real(r8), pointer :: dwt_seedc_to_leaf         (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_seedc_to_deadstem     (:) => null()  ! (gC/m2/s) dwt_seedc_to_leaf_patch summed to the gridcell-level
     real(r8), pointer :: dwt_conv_cflux            (:) => null()  ! (gC/m2/s) dwt_conv_cflux_patch summed to the gridcell-level
@@ -171,6 +174,8 @@ module GridcellDataType
     real(r8), pointer :: begnb          (:) => null()   ! (gNm2) nitrogen mass, beginning of time step
     real(r8), pointer :: endnb          (:) => null()   ! (gNm2) nitrogen mass, end of time step 
     real(r8), pointer :: errnb          (:) => null()   ! (gNm2) nitrogen balance error for the timestep
+    real(r8), pointer :: beg_leafn_xfer (:) => null()   ! (gN/m2) leaf N transfer pool at begining of the time step (crop seed mass balance check)
+    real(r8), pointer :: end_leafn_xfer (:) => null()   ! (gN/m2) leaf N transfer pool at end of the time step (crop seed mass balance check)
 
   contains
     procedure, public :: Init    => grc_ns_init
@@ -204,6 +209,8 @@ module GridcellDataType
     real(r8), pointer :: begpb                    (:)     ! phosphorus mass, beginning of time step (gP/m**2)
     real(r8), pointer :: endpb                    (:)     ! phosphorus mass, end of time step (gP/m**2)
     real(r8), pointer :: errpb                    (:)     ! phosphorus balance error for the timestep (gP/m**2)
+    real(r8), pointer :: beg_leafp_xfer           (:)     ! (gP/m2) leaf P transfer pool at begining of the time step (crop seed mass balance check)
+    real(r8), pointer :: end_leafp_xfer           (:)     ! (gP/m2) leaf P transfer pool at end of the time step (crop seed mass balance check)
   contains
     procedure, public :: Init    => grc_ps_init
     procedure, public :: Clean   => grc_ps_clean
@@ -568,6 +575,8 @@ contains
     allocate(this%beg_totprodc          (begg:endg));     this%beg_totprodc          (:) = spval
     allocate(this%beg_ctrunc            (begg:endg));     this%beg_ctrunc            (:) = spval
     allocate(this%beg_cropseedc_deficit (begg:endg));     this%beg_cropseedc_deficit (:) = spval
+    allocate(this%beg_leafc_xfer (begg:endg));            this%beg_leafc_xfer (:) = spval
+    allocate(this%end_leafc_xfer (begg:endg));            this%end_leafc_xfer (:) = spval
 
     allocate(this%end_totc              (begg:endg));     this%end_totc              (:) = spval
     allocate(this%end_totpftc           (begg:endg));     this%end_totpftc           (:) = spval
@@ -692,6 +701,7 @@ contains
     allocate(this%hrv_deadstemc_to_prod10c     (begg:endg)) ; this%hrv_deadstemc_to_prod10c  (:) = spval
     allocate(this%hrv_deadstemc_to_prod100c    (begg:endg)) ; this%hrv_deadstemc_to_prod100c (:) = spval
     allocate(this%cinputs                      (begg:endg)) ; this%cinputs                   (:) = spval
+    allocate(this%crop_seed_closs(begg:endg)); this%crop_seed_closs(:) = 0._r8
     allocate(this%coutputs                     (begg:endg)) ; this%coutputs                  (:) = spval
     allocate(this%gpp                          (begg:endg)) ; this%gpp                       (:) = spval
     allocate(this%er                           (begg:endg)) ; this%er                        (:) = spval
@@ -907,6 +917,7 @@ contains
     class(gridcell_carbon_flux) :: this
     !------------------------------------------------------------------------
 
+    deallocate(this%crop_seed_closs)
   end subroutine grc_cf_clean
 
   !------------------------------------------------------------------------
@@ -927,6 +938,8 @@ contains
     !-----------------------------------------------------------------------
     allocate(this%seedn   (begg:endg));     this%seedn   (:) = spval
     allocate(this%begnb   (begg:endg));     this%begnb   (:) = spval
+    allocate(this%beg_leafn_xfer (begg:endg)); this%beg_leafn_xfer (:) = spval
+    allocate(this%end_leafn_xfer (begg:endg)); this%end_leafn_xfer (:) = spval
     allocate(this%endnb   (begg:endg));     this%endnb   (:) = spval
     allocate(this%errnb   (begg:endg));     this%errnb   (:) = spval
 
@@ -1077,6 +1090,8 @@ contains
     !-----------------------------------------------------------------------
     allocate(this%seedp   (begg:endg)) ; this%seedp   (:) = spval
     allocate(this%begpb   (begg:endg)) ; this%begpb   (:) = spval
+    allocate(this%beg_leafp_xfer (begg:endg)) ; this%beg_leafp_xfer (:) = spval
+    allocate(this%end_leafp_xfer (begg:endg)) ; this%end_leafp_xfer (:) = spval
     allocate(this%endpb   (begg:endg)) ; this%endpb   (:) = spval
     allocate(this%errpb   (begg:endg)) ; this%errpb   (:) = spval
     
