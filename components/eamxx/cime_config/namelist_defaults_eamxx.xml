@@ -982,7 +982,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- updated nu_top for L128v4 when laplace_scaling > 0 (tensor viscosity) -->
     <nu_top vgrid="L128v4" >5e-7</nu_top>
     <nu_top vgrid="L128v4" COMPSET=".*DP-EAMxx">1.0e4</nu_top>
-    <tom_sponge_start type="real" doc="Starting height of the sponge layer, in hPa.">15.0</tom_sponge_start>
+    <tom_sponge_start type="real" vgrid="L128v1" doc="sponge layer bot pressure [hPa]">0.0</tom_sponge_start>
+    <tom_sponge_start type="real" vgrid="L128v4" doc="sponge layer bot pressure [hPa]">15.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
