@@ -155,14 +155,14 @@ struct WaterIsotopeConstants
   // -----------------------------------------------------------------------
 
   // Model standard isotope ratios
-  static constexpr Scalar rstd_table
+  static constexpr Scalar StandardIsotopeRatio_table
       [etoi(StandardRatioFormulation::FormulationCount)][num_species] = {
         { 1.0,       1.0,        1.0,      1.0, 1.0 }, // Normalized by VSMOW
         { 0.9976, 155.76e-6, 2005.20e-6, 379.9e-6, 1.0 } // natural abundance
   };
 
   // Ocean surface enrichment
-  static constexpr Scalar boce_table
+  static constexpr Scalar SurfaceOceanEnrichment_table
     [etoi(OceanEnrichmentFormulation::FormulationCount)][num_species] = {
       { 1.0,    1.0,    1.0,    1.0, 1.0 }, // Modern VSMOW
       { 1.0, 1.0128, 1.0016, 1.0008, 1.0} // LGM
@@ -205,11 +205,11 @@ public:
 
   // Select standard ratio formulation
   KOKKOS_INLINE_FUNCTION
-  Scalar ratio_src(WaterIsotopologues s) const { return rstd_table[int(opts_.standard_ratio)][etoi(s)]; }
+  Scalar std_iso_ratio(WaterIsotopologues s) const { return StandardIsotopeRatio_table[int(opts_.standard_ratio)][etoi(s)]; }
 
   // Select ocean enrichment formulation
   KOKKOS_INLINE_FUNCTION
-  Scalar ocean_src(WaterIsotopologues s) const { return boce_table[int(opts_.ocean_enrichment)][etoi(s)]; }
+  Scalar mean_ocean_enrichment(WaterIsotopologues s) const { return SurfaceOceanEnrichment_table[int(opts_.ocean_enrichment)][etoi(s)]; }
 
   // Which element's coefficient set a species uses.
   KOKKOS_INLINE_FUNCTION
