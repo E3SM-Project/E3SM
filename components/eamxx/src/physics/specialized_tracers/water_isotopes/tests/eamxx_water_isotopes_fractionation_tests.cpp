@@ -19,9 +19,7 @@ bool relative_approx(const ScalarT& computed,
                      double expected, 
                      typename ekat::ScalarTraits<ScalarT>::scalar_type tol)
 {                    
-  using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
-  const auto expected_pack = ScalarT(static_cast<RealT>(expected));
-  const auto rel_err = ekat::abs((computed - expected_pack) / expected_pack);
+  const auto rel_err = ekat::abs((computed - expected) / expected);
   return (rel_err < tol).all();  // Check ALL lanes, not just [0]
 } 
 
