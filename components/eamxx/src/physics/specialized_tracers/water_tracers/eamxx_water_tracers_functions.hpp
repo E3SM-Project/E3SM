@@ -18,6 +18,13 @@ namespace water_tracers {
  * Real and an ekat::Pack<Real,N>.
  */
 
+// Water tracer species enumeration - needed for wtrc_get_rstd
+// This is a simplified version - the actual species would be defined
+// based on which tracers are active in the simulation
+enum WaterTracerSpecies {
+  H2O_BASE = 0  // Base water (H216O)
+};
+
 // Minimum water amount for stable ratio computation.
 // From water_tracers.F90 (David Noone): smaller makes scheme more accurate.
 static constexpr Real wtrc_qmin = 1.e-22;
