@@ -844,14 +844,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
 
     <fraction_landuse type="real" doc="Fractional land use for drydeposition of gasses and aerosols [fraction]">0.0</fraction_landuse>
-    <!-- default ne1024 initial condition files do not have these, so init to zero here -->
-    <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
-    <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
-    <nc hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
-    <ni hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
+
+    <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
+    <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
+    <nc type="real">0.0</nc>
+    <ni type="real">0.0</ni>
+
+    <!-- only certain grids are missing the ozone field - so initialize to zero -->
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
