@@ -280,7 +280,8 @@ class TestBuildnml(unittest.TestCase):
         """
         case = self._common_case
 
-        self._chg_atmconfig([("dgnum", "1,2,3,4")], case)
+        # Array of scalar and vector constant initializations (vector values use ';' as separator)
+        self._chg_atmconfig([("initial_conditions::constant_fields", "qr:1e-6,tke:0.5,dgnum:1;2;3;4")], case)
 
     ###########################################################################
     def test_atmchanges_on_all_matches(self):
