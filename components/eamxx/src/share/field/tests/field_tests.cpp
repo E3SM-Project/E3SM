@@ -399,7 +399,6 @@ TEST_CASE("field", "") {
     auto check_values = [&](const Field& fb, const Field& src_f) {
       REQUIRE (fb.get_header().get_identifier().get_layout().congruent(tgt));
       REQUIRE (fb.is_read_only());
-      fb.sync_to_host();
       auto vb = fb.get_strided_view<const Real***,Host>();
       auto vs = src_f.get_strided_view<const Real**,Host>();
       for (int i=0; i<ncol; ++i)
@@ -431,7 +430,6 @@ TEST_CASE("field", "") {
       randomize_uniform (g,seed++);
       g.sync_to_host();
       auto gb = g.broadcast(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev}));
-      gb.sync_to_host();
       auto vb = gb.get_strided_view<const Real***,Host>();
       auto vg = g.get_strided_view<const Real*,Host>();
       for (int i=0; i<ncol; ++i)
@@ -444,7 +442,6 @@ TEST_CASE("field", "") {
       sc.deep_copy(3.0);
       sc.sync_to_host();
       auto sb = sc.broadcast(tgt);
-      sb.sync_to_host();
       auto vsb = sb.get_strided_view<const Real***,Host>();
       for (int i=0; i<ncol; ++i)
         for (int j=0; j<ncmp; ++j)
@@ -480,6 +477,8 @@ TEST_CASE("field", "") {
       REQUIRE_THROWS (fb.get_strided_view<Real***,Host>());
       REQUIRE_THROWS (fb.get_view<const Real***,Host>());
       REQUIRE_THROWS (fb.deep_copy(1.0));
+      REQUIRE_THROWS (fb.sync_to_host());   // sync the source instead
+      REQUIRE_THROWS (fb.sync_to_dev());
     }
 
     SECTION ("mask") {
@@ -496,7 +495,6 @@ TEST_CASE("field", "") {
       const auto& mb = fb.get_valid_mask();
       REQUIRE (mb.get_header().get_identifier().get_layout().congruent(tgt));
       REQUIRE (mb.data_type()==DataType::IntType);
-      mb.sync_to_host();
       auto vm = mb.get_strided_view<const int***,Host>();
       auto vs = mask.get_strided_view<const int**,Host>();
       for (int i=0; i<ncol; ++i)
