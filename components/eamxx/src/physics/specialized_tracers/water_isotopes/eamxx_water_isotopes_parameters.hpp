@@ -8,13 +8,13 @@ namespace scream {
 namespace wiso {
 
 /*
- * Physical constants for water isotopologues.
+ * Physical parameters for water isotopologues.
  *
  * Ported from the Fortran module water_isotopes.F90
- * These constants define isotopic fractionation behavior, molecular properties,
+ * These parameters define isotopic fractionation behavior, molecular properties,
  * and reference ratios for water isotope tracers.
  *
- * All species-specific constants are arrays indexed by WaterIsotopologues enum:
+ * All species-specific parameters are arrays indexed by WaterIsotopologues enum:
  *   H216O = 0 ("ordinary water," non-fractionating)
  *   HDO   = 1 (singly deuterated water, HD16O)
  *   H218O = 2 (oxygen-18 substituted water, H218O)
@@ -151,7 +151,7 @@ struct WaterIsotopeParameters
   static constexpr int num_species = etoi(WaterIsotopologues::Count);
 
   // -----------------------------------------------------------------------
-  // Active constants (runtime-selected)
+  // Active parameters (runtime-selected)
   // -----------------------------------------------------------------------
 
   // Model standard isotope ratios

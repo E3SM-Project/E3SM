@@ -157,7 +157,7 @@ public:
   //   alpha = exp( 1e-3 * (10^3 * ln alpha) )
   //
   // t is in Kelvin. The coefficient row is chosen by (phase, substituted
-  // element) from the formulation held in `constants`; the 1e-3 undoes the
+  // element) from the formulation held in `iso_params`; the 1e-3 undoes the
   // per-mil convention the source publications tabulate in.
   //
   // range_mask selects the lanes holding real data. Lanes outside it are

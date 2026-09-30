@@ -165,7 +165,7 @@ TEST_CASE("runtime_formulation_selection") {
             iso_params_default.alpha_eq_coeffs(wiso::CondensedPhase::Ice, wiso::IsoElement::Hydrogen).T_2);
   }
 
-  SECTION("fractionation_with_runtime_constants") {
+  SECTION("fractionation_with_runtime_parameters") {
     // Test that fractionation functions produce different results with different formulations
     using Pack1 = ekat::Pack<Real,1>;
     const Pack1 temp = Pack1(273.15);  // 0°C
