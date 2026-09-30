@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+
+"""
+A script to parse an e3sm build log and report per-target build times.
+
+This scans the provided log file for lines emitted by e3sm_compile_wrap.py
+of the form:
+
+    Target XXX built in Y.Z seconds
+
+and prints them sorted by build time (longest last).
+
+If a second log file is provided, the script instead reports how each
+target's build time has changed between the two logs, along with the
+change in total build time. The first log file will be considered the
+reference and the second will be the compare.
+"""
+
+import sys, re, argparse
+
+TARGET_RE = re.compile(r"^Target (.+) built in (\d+(?:\.\d+)?) seconds\s*$")
+
+GREEN = "\033[32m"
+RED   = "\033[31m"
+RESET = "\033[0m"
+
+###############################################################################
+def colorize(text, pct):
+###############################################################################
+    if pct is None:
+        return text
+    if pct <= -10.0:
+        return f"{GREEN}{text}{RESET}"
+    if pct >= 10.0:
+        return f"{RED}{text}{RESET}"
+    return text
+
+###############################################################################
+def parse_log(filepath):
+###############################################################################
+    entries = []
+    with open(filepath, "r") as fd:
+        for line in fd:
+            m = TARGET_RE.match(line.strip())
+            if m is not None:
+                entries.append((m.group(1), float(m.group(2))))
+
+    entries.sort(key=lambda item: item[1])
+    return entries
+
+###############################################################################
+def compare_logs(logfile1, logfile2):
+###############################################################################
+    entries1 = dict(parse_log(logfile1))
+    entries2 = dict(parse_log(logfile2))
+
+    all_targets = set(entries1) | set(entries2)
+
+    diffs = []
+    for target in all_targets:
+        t1 = entries1.get(target)
+        t2 = entries2.get(target)
+        delta = (t2 if t2 is not None else 0.0) - (t1 if t1 is not None else 0.0)
+        diffs.append((target, t1, t2, delta))
+
+    diffs.sort(key=lambda item: (item[1] if item[1] is not None else item[2]))
+
+    for target, t1, t2, delta in diffs:
+        t1_str = f"{t1:f}" if t1 is not None else "MISSING"
+        t2_str = f"{t2:f}" if t2 is not None else "MISSING"
+        if t1 is not None and t1 > 0.0 and t2 is not None:
+            pct = (delta / t1) * 100.0
+            pct_str = f"{pct:+.2f}%"
+        else:
+            pct = None
+            pct_str = "N/A"
+        line = (
+            f"Target {target}: {t1_str} -> {t2_str} seconds "
+            f"(delta {delta:+f}, {pct_str})"
+        )
+        print(colorize(line, pct))
+
+    total1 = sum(entries1.values())
+    total2 = sum(entries2.values())
+    total_delta = total2 - total1
+    if total1 > 0.0:
+        total_pct = (total_delta / total1) * 100.0
+        total_pct_str = f"{total_pct:+.2f}%"
+    else:
+        total_pct = None
+        total_pct_str = "N/A"
+    total_line = (
+        f"\nTotal: {total1:f} -> {total2:f} seconds "
+        f"(delta {total_delta:+f}, {total_pct_str})"
+    )
+    print(colorize(total_line, total_pct))
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage=f"{args[0]} <build-log-file> [<build-log-file2>]",
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument("logfile", help="Path to the build log file to parse")
+
+    parser.add_argument(
+        "logfile2",
+        nargs="?",
+        default=None,
+        help="Optional second build log file. When provided, the script "
+             "compares per-target and total build times between the two logs.",
+    )
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    args = parse_command_line(sys.argv, description)
+
+    if args.logfile2 is None:
+        entries = parse_log(args.logfile)
+        for target, seconds in entries:
+            print(f"Target {target} built in {seconds:f} seconds")
+        total = sum(item[1] for item in entries)
+        print(f"\nTotal: {total:f}")
+
+    else:
+        compare_logs(args.logfile, args.logfile2)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func(__doc__)
