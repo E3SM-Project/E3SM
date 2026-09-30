@@ -847,8 +847,16 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
     <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
-    <nc type="real">0.0</nc>
-    <ni type="real">0.0</ni>
+    <qc vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
+    <qi vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
+    <nc vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
+    <ni vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+    <nc vgrid="L128v1" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
+    <ni vgrid="L128v1" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
+
+    <!-- new default initial conditions for L128v4 do not have nc/ni fieds, so initialize to zero -->
+    <nc vgrid="L128v4" type="real">0.0</nc>
+    <ni vgrid="L128v4" type="real">0.0</ni>
 
     <!-- only certain grids are missing the ozone field - so initialize to zero -->
     <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
