@@ -1055,7 +1055,47 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->info("  [EAMxx] set_initial_conditions ...");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
-  auto& ic_pl = m_atm_params.sublist("initial_conditions");
+  // Work on a copy, so that we can add to it the entries coming from 'constant_fields'
+  // without altering the params list stored in the driver (which ends up in the provenance)
+  auto ic_pl = m_atm_params.sublist("initial_conditions");
+
+  // Constant initialization can also be specified as an array of "name:value" strings
+  //   constant_fields: [qr:0.0, nr:0.0, pbl_height:2000.0]
+  // Each entry is equivalent to an individual parameter 'name: value' in this list,
+  // but, being an array, entries can be added/removed by the user at will.
+  // NOTE: entries that do not match any field needing initialization are ignored,
+  //       just like individual parameters are.
+  if (ic_pl.isParameter("constant_fields")) {
+    auto trim = [](const std::string& s) {
+      const auto b = s.find_first_not_of(" \t");
+      const auto e = s.find_last_not_of(" \t");
+      return b==std::string::npos ? std::string() : s.substr(b,e-b+1);
+    };
+    for (const auto& entry : ic_pl.get<strvec_t>("constant_fields")) {
+      const auto pos = entry.find(':');
+      EKAT_REQUIRE_MSG (pos!=std::string::npos and pos>0 and pos+1<entry.size(),
+          "Error! Invalid entry in initial_conditions::constant_fields.\n"
+          "       Entry: '" + entry + "'\n"
+          "       Expected format: 'field_name:value'\n");
+      const auto name = trim(entry.substr(0,pos));
+      const auto val_str = trim(entry.substr(pos+1));
+      EKAT_REQUIRE_MSG (not ic_pl.isParameter(name),
+          "Error! Field '" + name + "' has an initial condition specified both in\n"
+          "       initial_conditions::constant_fields and as an individual entry.\n");
+      double val;
+      try {
+        size_t idx;
+        val = std::stod(val_str,&idx);
+        EKAT_REQUIRE_MSG (idx==val_str.size(), "trailing characters");
+      } catch (...) {
+        EKAT_ERROR_MSG (
+            "Error! Invalid value in initial_conditions::constant_fields.\n"
+            "       Entry: '" + entry + "'\n"
+            "       Expected format: 'field_name:value' (value must be a real number)\n");
+      }
+      ic_pl.set<double>(name,val);
+    }
+  }
 
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
   // added to the STARTUP group themselves (see set_initialization_groups): only their

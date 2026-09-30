@@ -24,10 +24,7 @@ initial_conditions:
   tke: 0.0
   qm: 0.0
   bm: 0.0
-  sfc_alb_dir_vis: 0.0
-  sfc_alb_dir_nir: 0.0
-  sfc_alb_dif_vis: 0.0
-  sfc_alb_dif_nir: 0.0
+  constant_fields: ["sfc_alb_dir_vis:0.0", "sfc_alb_dir_nir:0.0", "sfc_alb_dif_vis:0.0", "sfc_alb_dif_nir:0.0"]
   landfrac: 0.5
 
 eamxx:

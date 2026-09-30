@@ -359,6 +359,24 @@ Any atmosphere process that was previously in the list but is no longer in it
 will be removed from the generated `namelist_defaults.xml`
 (and `eamxx_input.yaml`) files, along with all their nested parameters.
 
+### Initializing fields to a constant value
+
+Fields that need to be initialized, but are not present in the initial condition
+file, can be set to a constant value via the `initial_conditions::constant_fields`
+array. Each entry has the form `field_name:value`:
+
+``` {.shell .copy}
+./atmchange initial_conditions::constant_fields+=my_field:1.5
+./atmchange initial_conditions::constant_fields-=tke:0.0
+```
+
+Since these are entries of an array, they can be both added and removed
+(which is not possible for individual XML parameters). Entries that do not match
+any field in need of initialization are ignored. A field cannot appear both in
+`constant_fields` and as an individual entry of `initial_conditions`
+(the latter is still supported, and is needed for vector-valued constants
+or for values that depend on the grid/compset).
+
 ## Model Output
 
 EAMxx allows the user to configure the desired model output via
