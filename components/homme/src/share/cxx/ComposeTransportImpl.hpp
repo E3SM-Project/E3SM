@@ -86,6 +86,7 @@ struct ComposeTransportImpl {
     Real nu_q, hv_scaling, dp_tol, deta_tol;
     bool independent_time_steps;
     bool do_3d_turbulence;
+    bool do_leonard;
 
     // buf1o and buf1e point to the same memory, sized to the larger of the
     // two. They are used in different parts of the code.
@@ -108,7 +109,7 @@ struct ComposeTransportImpl {
     Data ()
       : nelemd(-1), qsize(-1), limiter_option(9), cdr_check(0), hv_q(0),
         hv_subcycle_q(0), hv_subcycle_q_sgs(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
-        independent_time_steps(false), do_3d_turbulence(false)
+        independent_time_steps(false), do_3d_turbulence(false), do_leonard(false)
     {}
   };
 
@@ -157,7 +158,7 @@ struct ComposeTransportImpl {
                const ExecViewUnmanaged<Scalar*[2][NP][NP][NUM_LEV]>& v);
 
   void advance_hypervis_scalar(const Real dt);
-  void advance_horizontal_turbulent_diffusion_scalar(const Real dt);
+  void advance_horizontal_turbulent_diffusion_scalar(const int np1, const Real dt);
 
   int run_trajectory_unit_tests();
   int run_enhanced_trajectory_unit_tests();

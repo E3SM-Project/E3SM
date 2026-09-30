@@ -47,18 +47,27 @@ Real get_local_laplace_metric_ct (const Real a, const Real b, const Real c, cons
 
 } // namespace
 
-void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const Real dt_q) {
+void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const int np1, const Real dt_q) {
   const auto dt = dt_q / m_data.hv_subcycle_q_sgs;
   const auto qsize = m_data.qsize;
   const auto Qtens = m_tracers.qtens_biharmonic;
   const auto Q = m_tracers.Q;
+  const auto v = m_state.m_v;
   const auto Kh = m_derived.m_turb_diff_heat;
   const auto dinv = m_geometry.m_dinv;
   const auto spheremp = m_geometry.m_spheremp;
+  const auto metdet = m_geometry.m_metdet;
+  const Real scale_factor = m_geometry.m_scale_factor;
   const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
   const Real lambda_vis = get_lambda_vis_ct();
   const auto tu_ne_qsize = m_tu_ne_qsize;
+  const auto tu_ne = m_tu_ne;
   const auto sphere_ops = m_sphere_ops;
+  const bool do_leonard = m_data.do_leonard;
+  const auto buf2a = m_data.buf2[0];
+  const auto buf2b = m_data.buf2[1];
+  const auto buf2c = m_data.buf2[2];
+  const auto buf2d = m_data.buf2[3];
 
   for (int it = 0; it < m_data.hv_subcycle_q_sgs; ++it) {
     { // Qtens = Q
@@ -127,6 +136,73 @@ void ComposeTransportImpl::advance_horizontal_turbulent_diffusion_scalar (const 
     // Halo exchange Q and apply rspheremp.
     Kokkos::fence();
     m_horiz_turb_dss_be[1]->exchange(m_geometry.m_rspheremp);
+
+    if (do_leonard) {
+      {
+        const auto f = KOKKOS_LAMBDA (const MT& team) {
+          KernelVariables kv(team, tu_ne);
+          const auto qv = Homme::subview(Q, kv.ie, 0);
+          const auto u = Homme::subview(v, kv.ie, np1, 0);
+          const auto vv = Homme::subview(v, kv.ie, np1, 1);
+          S2Nlev grad_qv(Homme::subview(buf2a, kv.team_idx).data());
+          S2Nlev grad_u(Homme::subview(buf2b, kv.team_idx).data());
+          S2Nlev grad_v(Homme::subview(buf2c, kv.team_idx).data());
+          S2Nlev leonard_flux(Homme::subview(buf2d, kv.team_idx).data());
+
+          sphere_ops.gradient_sphere(kv, qv, grad_qv);
+          sphere_ops.gradient_sphere(kv, u, grad_u);
+          sphere_ops.gradient_sphere(kv, vv, grad_v);
+
+          Kokkos::parallel_for(
+            Kokkos::TeamThreadRange(kv.team, NP*NP),
+            [&] (const int idx) {
+              const int i = idx / NP;
+              const int j = idx % NP;
+              const Real leonard_factor = metdet(kv.ie,i,j)
+                                         * scale_factor * scale_factor / 12.0;
+              Kokkos::parallel_for(
+                Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+                [&] (const int lev) {
+                  leonard_flux(0,i,j,lev) =
+                      leonard_factor * (grad_u(0,i,j,lev) * grad_qv(0,i,j,lev)
+                                      + grad_u(1,i,j,lev) * grad_qv(1,i,j,lev));
+                  leonard_flux(1,i,j,lev) =
+                      leonard_factor * (grad_v(0,i,j,lev) * grad_qv(0,i,j,lev)
+                                      + grad_v(1,i,j,lev) * grad_qv(1,i,j,lev));
+                });
+            });
+
+          kv.team_barrier();
+          sphere_ops.divergence_sphere_wk(kv, leonard_flux, Homme::subview(Qtens, kv.ie, 0));
+        };
+        Kokkos::parallel_for(m_tp_ne, f);
+      }
+
+      Kokkos::fence();
+      m_horiz_turb_dss_be[0]->exchange();
+
+      Kokkos::fence();
+
+      {
+        const auto f = KOKKOS_LAMBDA (const int idx) {
+          int ie, i, j, lev;
+          idx_ie_ij_nlev<num_lev_pack>(idx, ie, i, j, lev);
+          auto qv_new = Q(ie,0,i,j,lev) * spheremp(ie,i,j);
+          for (int s = 0; s < VECTOR_SIZE; ++s) {
+            const int phys_lev = lev * VECTOR_SIZE + s;
+            if (phys_lev < NUM_PHYSICAL_LEV) {
+              qv_new[s] = (Q(ie,0,i,j,lev)[s] * spheremp(ie,i,j)
+                           - dt * Qtens(ie,0,i,j,lev)[s]);
+            }
+          }
+          Q(ie,0,i,j,lev) = qv_new;
+        };
+        launch_ie_ij_nlev<num_lev_pack>(f);
+      }
+
+      Kokkos::fence();
+      m_horiz_turb_dss_be[1]->exchange(m_geometry.m_rspheremp);
+    }
   }
 }
 

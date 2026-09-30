@@ -44,6 +44,7 @@ struct SimulationParams
   bool      use_cpstar;
   bool      theta_hydrostatic_mode;   // Only for theta model
   bool      do_3d_turbulence;
+  bool      do_leonard = false;
 
   double    tom_sponge_start = 0.0;   // start of TOM sponge layer, in hPa (0 = use ptop)
   double    dcmip16_mu;               // Only for theta model
@@ -117,6 +118,7 @@ inline void SimulationParams::print (std::ostream& out) {
   out << "   disable_diagnostics: " << (disable_diagnostics ? "yes" : "no") << "\n";
   out << "   theta_hydrostatic_mode: " << (theta_hydrostatic_mode ? "yes" : "no") << "\n";
   out << "   do_3d_turbulence: " << (do_3d_turbulence ? "yes" : "no") << "\n";
+  out << "   do_leonard: " << (do_leonard ? "yes" : "no") << "\n";
   out << "   tom_sponge_start: " << tom_sponge_start << "\n";
   out << "   prescribed_wind: " << (prescribed_wind ? "yes" : "no") << "\n";
   out << "   nsplit: " << nsplit << "\n";

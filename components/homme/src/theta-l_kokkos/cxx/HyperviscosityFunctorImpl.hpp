@@ -15,6 +15,7 @@
 #include "ElementOps.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
+#include "ReferenceElement.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
 
@@ -43,7 +44,8 @@ public:
                        const Real nu_ratio1_in, const Real nu_ratio2_in, const Real nu_top_in,
                        const Real nu_in, const Real nu_p_in, const Real nu_s_in,
                        const Real hypervis_scaling_in, bool do_3d_turbulence_in,
-                       const double tom_sponge_start_in, const Real laplace_scaling_in = 0.0)
+                       const bool do_leonard_in, const double tom_sponge_start_in,
+                       const Real laplace_scaling_in = 0.0)
                       : hypervis_subcycle(hypervis_subcycle_in) 
                       , horiz_turb_subcycle(horiz_turb_subcycle_in)
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
@@ -53,6 +55,7 @@ public:
                       , consthv(hypervis_scaling_in == 0)
                       , constsponge(laplace_scaling_in == 0)
                       , do_3d_turbulence(do_3d_turbulence_in)
+                      , do_leonard(do_3d_turbulence_in && do_leonard_in)
                       , tom_sponge_start(tom_sponge_start_in) {}
 
     const int   hypervis_subcycle;
@@ -60,6 +63,7 @@ public:
     const int   hypervis_subcycle_tom;
 
     bool do_3d_turbulence;
+    bool do_leonard;
 
     Real  nu_ratio1;
     Real  nu_ratio2;
@@ -423,6 +427,7 @@ protected:
   ElementsDerivedState  m_derived;
   ElementsGeometry      m_geometry;
   SphereOperators       m_sphere_ops;
+  ExecViewManaged<const Real[NP][NP]> m_deriv;
   ElementOps            m_elem_ops;
   EquationOfState       m_eos;
   Buffers               m_buffers;

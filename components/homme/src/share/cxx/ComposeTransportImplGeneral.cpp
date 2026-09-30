@@ -61,6 +61,7 @@ void ComposeTransportImpl::reset (const SimulationParams& params) {
                 &m_data.limiter_option, &m_data.cdr_check, &m_data.geometry_type,
                 &m_data.trajectory_nsubstep, &m_data.trajectory_nvelocity,
                 &m_data.diagnostics, &m_data.do_3d_turbulence);
+  m_data.do_leonard = m_data.do_3d_turbulence && params.do_leonard;
 
   if (independent_time_steps != m_data.independent_time_steps or
       m_data.nelemd != num_elems or m_data.qsize != params.qsize) {
@@ -253,7 +254,7 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
   // SGS horizontal turbulent diffusion for all tracers.
   if (m_data.do_3d_turbulence) {
     GPTLstart("compose_horizturb_scalar");
-    advance_horizontal_turbulent_diffusion_scalar(dt);
+    advance_horizontal_turbulent_diffusion_scalar(tl.np1, dt);
     Kokkos::fence();
     GPTLstop("compose_horizturb_scalar");
   }

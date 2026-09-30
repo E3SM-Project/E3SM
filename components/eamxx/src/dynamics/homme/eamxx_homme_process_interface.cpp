@@ -305,6 +305,9 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
 
   auto& c       = Context::singleton();
   auto& params  = c.get<SimulationParams>();
+  params.do_leonard = m_params.isParameter("do_leonard")
+                    ? m_params.get<bool>("do_leonard")
+                    : false;
 
   const auto num_elems = c.get<Elements>().num_elems();
   const auto num_tracers = c.get<Tracers>().num_tracers();
@@ -364,7 +367,7 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   using namespace Homme;
   auto& c = Context::singleton();
   auto& fbm  = c.get<FunctorsBuffersManager>();
-  const auto& params = c.get<SimulationParams>();
+  auto& params = c.get<SimulationParams>();
 
   // Reset Homme buffer to use AD buffer memory.
   // Internally, homme will actually initialize its own buffers.
@@ -375,7 +378,10 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   fbm.allocate(mem, fbm_size);
   mem += fbm_size;
 
-  const bool do_leonard = m_params.get<bool>("do_leonard", false);
+  params.do_leonard = m_params.isParameter("do_leonard")
+                    ? m_params.get<bool>("do_leonard")
+                    : false;
+  const bool do_leonard = params.do_leonard;
   if (params.do_3d_turbulence || do_leonard) {
     constexpr int np2 = HOMMEXX_NP*HOMMEXX_NP;
     const int ncols = c.get<Elements>().num_elems()*np2;
@@ -412,13 +418,16 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Grab handles of some Homme data structure
   const auto& c       = Homme::Context::singleton();
-  const auto& params  = c.get<Homme::SimulationParams>();
+  auto& params  = c.get<Homme::SimulationParams>();
+  params.do_leonard = m_params.isParameter("do_leonard")
+                    ? m_params.get<bool>("do_leonard")
+                    : false;
 
   // The first fv_phys D->P remap during initialization happens before the
   // dycore has computed these diagnostic components, so start from a benign
   // value. Homme overwrites them after each dynamics step when their
   // corresponding feature is enabled.
-  const bool do_leonard = m_params.get<bool>("do_leonard", false);
+  const bool do_leonard = params.do_leonard;
   if (params.do_3d_turbulence) {
     m_helper_fields.at("shear_strain3d_components_dyn").deep_copy(0);
     get_field_out("tke_shear_strain3d_components").deep_copy(0);
@@ -603,6 +612,9 @@ void HommeDynamics::run_impl (const double dt)
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
+    params.do_leonard = m_params.isParameter("do_leonard")
+                      ? m_params.get<bool>("do_leonard")
+                      : false;
 
     Kokkos::fence();
     homme_pre_process (dt);
@@ -613,7 +625,7 @@ void HommeDynamics::run_impl (const double dt)
     }
 
     // This is where we will compute the strain term needed for Shear Production of TKE
-    const bool do_leonard = m_params.get<bool>("do_leonard", false);
+    const bool do_leonard = params.do_leonard;
     if (params.do_3d_turbulence || do_leonard) {
       compute_horizontal_derivs_for_3d_turbulence_and_leonard();
     }
