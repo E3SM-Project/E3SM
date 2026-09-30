@@ -23,11 +23,10 @@ bool relative_approx(const ScalarT& computed,
   return (rel_err < tol).all();  // Check ALL lanes, not just [0]
 } 
 
-/* Expected alpha values, transcribed from fractionation_factors.xlsx (columns
-   Q-X, the "Temperature checks (Kelvin)" block). Each entry below is one
-   coefficient set as the spreadsheet tabulates it: the reference row it came
-   from, the temperatures at which that row is inside its own fitted range, and
-   the resulting R_condensed/R_vapor (>= 1).
+/* Expected alpha values, transcribed from manual calculations from literature 
+   sources. Each entry below is one coefficient set as the spreadsheet tabulates it: 
+   the reference row it came from, the temperatures at which that row is inside its 
+   own fitted range, and the resulting R_condensed/R_vapor (>= 1). (from a spreadsheet)
 
    Holding the spreadsheet's own numbers -- rather than re-transcribing the
    polynomial into C++ a second time -- keeps the check external to the code
@@ -41,17 +40,7 @@ bool relative_approx(const ScalarT& computed,
    the test iterates every enumerator rather than naming them. A new enumerator
    with no row here fails `expected_is_populated` with a pointer to this
    comment, rather than silently going unexercised.
-
-   Temperatures are whole Kelvin because the spreadsheet's range test is
-   C_column + 273, not + 273.15. The T = 273 columns therefore land 0.15 K
-   below the implementation's liquid-phase Tmin of 273.15 K and will trip the
-   debug-only "extrapolating" warning. That is a 0.15 K disagreement about
-   where 0 C is, not a failing check.
-
-   To add or regenerate a row: read columns Q-X of the spreadsheet row named in
-   `reference`, skipping any cell that reads "WARN" (out of range). The Hydrogen
-   and Oxygen rows of a formulation must contribute the same temperature list,
-   so keep only the columns in range for both. */
+ */
 constexpr int MAX_TEMPS = 8;
 
 struct AlphaTable {
@@ -212,8 +201,10 @@ void run_on_device()
   // device-callable, not just the evaluator.
   Kokkos::parallel_for("wiso_frac_device", 1, KOKKOS_LAMBDA(const int /*i*/) {
     wiso::WaterIsotopeConstants<Real> constants;
-    out(0) = WIF::alpha_liquid_vapor(Real(T_chk), wiso::WaterIsotopologues::HDO,   wiso::CondensedOverVapor, constants);
-    out(1) = WIF::alpha_ice_vapor   (Real(T_chk), wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor, constants);
+    out(0) = WIF::alpha_liquid_vapor(ekat::Pack<Real, 1>(T_chk), wiso::WaterIsotopologues::HDO,   
+                                     wiso::CondensedOverVapor, constants)[0];
+    out(1) = WIF::alpha_ice_vapor   (ekat::Pack<Real, 1>(T_chk), wiso::WaterIsotopologues::H218O,
+                                     wiso::CondensedOverVapor, constants)[0];
   });
   Kokkos::fence();
 
@@ -236,11 +227,11 @@ void run_on_device()
    compared here; add a block if the new pairing is worth asserting. */
 void verify_formulation_differences()
 {
-  using Real = scream::Real;
+  using Pack1 = ekat::Pack<Real,1>;
 
   // Representative temperatures
-  const Real t_warm = Real(293.15);  // 20°C (liquid)
-  const Real t_cold = Real(243.15);  // -30°C (ice)
+  const Pack1 t_warm = Pack1(293.15);  // 20°C (liquid)
+  const Pack1 t_cold = Pack1(243.15);  // -30°C (ice)
 
   /* Liquid-vapor: Horita & Wesolowski vs Majoube.
 
@@ -260,9 +251,9 @@ void verify_formulation_differences()
     wiso::WaterIsotopeConstants<Real> const_majoube(opts_maj);
 
     Real alpha_horita = wiso::WaterIsotopeFractionation::alpha_liquid_vapor(
-      t_warm, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_horita);
+      t_warm, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_horita)[0];
     Real alpha_majoube = wiso::WaterIsotopeFractionation::alpha_liquid_vapor(
-      t_warm, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_majoube);
+      t_warm, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_majoube)[0];
 
     Real rel_diff = std::abs(alpha_horita - alpha_majoube) / alpha_horita;
 
@@ -282,9 +273,9 @@ void verify_formulation_differences()
     wiso::WaterIsotopeConstants<Real> const_isocam3(opts_iso);
 
     Real alpha_merlivat = wiso::WaterIsotopeFractionation::alpha_ice_vapor(
-      t_cold, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_merlivat);
+      t_cold, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_merlivat)[0];
     Real alpha_isocam3 = wiso::WaterIsotopeFractionation::alpha_ice_vapor(
-      t_cold, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_isocam3);
+      t_cold, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, const_isocam3)[0];
 
     Real rel_diff = std::abs(alpha_merlivat - alpha_isocam3) / alpha_merlivat;
 
@@ -302,7 +293,6 @@ void verify_formulation_differences()
    works, not just that the masked lane's numeric result looks fine. */
 void verify_dead_lane_fpe_safety()
 {
-  using Real = scream::Real;
   using WIF  = wiso::WaterIsotopeFractionation;
 
   if (SCREAM_PACK_SIZE < 2) {

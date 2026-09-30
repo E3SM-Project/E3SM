@@ -1,11 +1,11 @@
 #ifndef EAMXX_WATER_ISOTOPES_FRACTIONATION_HPP
 #define EAMXX_WATER_ISOTOPES_FRACTIONATION_HPP
 
-#include "share/core/eamxx_types.hpp"  // for scream::Real and scream::sp()
+#include "share/core/eamxx_types.hpp"
 #include "eamxx_water_isotopes_constants.hpp"  // WaterIsotopologues, coefficient tables
 
 #include <ekat_pack.hpp>
-#include <ekat_pack_math.hpp>  // ekat::exp/ekat::pow overloads for ekat::Pack (found via ADL)
+#include <ekat_pack_math.hpp>  // ekat::exp/ekat::pow overloads for ekat::Pack
 #include <ekat_kernel_assert.hpp>  // EKAT_KERNEL_REQUIRE_MSG
 
 #include <cmath>  // std::exp/std::pow for the plain-Real path
@@ -20,9 +20,10 @@ namespace wiso {
  * and wiso_alpi, original author David Noone). These are pure, device-callable
  * functions of temperature only; species is selected by a scalar enum (uniform
  * across a Pack, so no per-lane masking is needed for that). Templated on
- * ScalarT so they work for both a plain Real and an ekat::Pack<Real,N>: exp()
- * and pow() are called unqualified so ADL selects the ekat::Pack overloads for
- * packs and std for plain scalars (matching PhysicsFunctions::exner_function).
+ * ScalarT, which must be an ekat::Pack<Real,N> for some N -- N=1 stands in for
+ * the scalar case, per EKAT's own convention (see e.g. p3_functions.hpp). exp()
+ * and pow() are called unqualified so ADL selects the ekat::Pack overloads,
+ * which exist for any N including 1.
  *
  * Convention: alpha *usually* constructed such that it is >=1, and 
  * thus follows:
@@ -40,47 +41,6 @@ enum WisoAlphaDir {
   CondensedOverVapor = 0,  // raw table value R_condensed/R_vapor (>= 1)
   VaporOverCondensed = 1   // reciprocal, R_vapor/R_condensed (<= 1)
 };
-
-namespace impl {
-
-/* Pairs ScalarT with its "which lanes are live" type: ekat::Mask<N> for a
-   Pack<T,N>, a plain bool for a bare scalar. This lets the temperature guard
-   and the padded-lane neutralization below be written once and used from both
-   the packed physics path and the scalar unit tests. */
-template <typename ScalarT>
-struct LaneTraits {
-  using mask_type = bool;
-
-  KOKKOS_INLINE_FUNCTION static mask_type all_lanes() { return true; }
-  KOKKOS_INLINE_FUNCTION static bool any(const mask_type& m) { return m; }
-  KOKKOS_INLINE_FUNCTION static mask_type is_nan(const ScalarT& v) {
-    return ekat::impl::is_nan(v);
-  }
-  KOKKOS_INLINE_FUNCTION
-  static ScalarT select(const ScalarT& v, const mask_type& live, const ScalarT& fill) {
-    return live ? v : fill;
-  }
-};
-
-template <typename T, int N>
-struct LaneTraits<ekat::Pack<T,N>> {
-  using mask_type = ekat::Mask<N>;
-
-  KOKKOS_INLINE_FUNCTION static mask_type all_lanes() { return mask_type(true); }
-  KOKKOS_INLINE_FUNCTION static bool any(const mask_type& m) { return m.any(); }
-  KOKKOS_INLINE_FUNCTION static mask_type is_nan(const ekat::Pack<T,N>& v) {
-    return ekat::isnan(v);
-  }
-  KOKKOS_INLINE_FUNCTION
-  static ekat::Pack<T,N> select(const ekat::Pack<T,N>& v, const mask_type& live,
-                                const ekat::Pack<T,N>& fill) {
-    ekat::Pack<T,N> out(fill);
-    out.set(live, v);
-    return out;
-  }
-};
-
-} // namespace impl
 
 struct WaterIsotopeFractionation
 {
@@ -114,21 +74,20 @@ private:
   static void check_temperature(
       const ScalarT& t,
       const TemperatureBounds& b,
-      const typename impl::LaneTraits<ScalarT>::mask_type& range_mask,
+      const ekat::Mask<ScalarT::n>& range_mask,
       const char* caller)
   {
     using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
-    using LT    = impl::LaneTraits<ScalarT>;
 
     // isnan is tested separately: every comparison against NaN is false, so the
     // bounds test alone would let NaN through.
-    const auto bad = (LT::is_nan(t) || t < RealT(T_implausible)) && range_mask;
-    EKAT_KERNEL_REQUIRE_MSG(!LT::any(bad), caller);
+    const auto bad = (ekat::isnan(t) || t < RealT(T_implausible)) && range_mask;
+    EKAT_KERNEL_REQUIRE_MSG(!bad.any(), caller);
 
 #ifndef NDEBUG
     const auto extrapolating =
         (t < RealT(b.Tmin) || t > RealT(b.Tmax)) && range_mask;
-    if (LT::any(extrapolating)) {
+    if (extrapolating.any()) {
       Kokkos::printf("WARNING: %s: T outside the fitted range [%g, %g] K;"
                      " extrapolating\n",
                      caller, double(b.Tmin), double(b.Tmax));
@@ -204,8 +163,8 @@ public:
   // range_mask selects the lanes holding real data. Lanes outside it are
   // skipped by the temperature guard and replaced with an in-range value before
   // the 1/T terms are formed, so NaN padding left behind by upstream physics
-  // cannot raise a spurious FPE. Callers holding a fully-populated pack (or a
-  // bare scalar) may use the overload that omits it.
+  // cannot raise a spurious FPE. Callers holding a fully-populated pack (N=1
+  // scalar callers always are) may use the overload that omits it.
   // -----------------------------------------------------------------------
   template <typename ScalarT>
   KOKKOS_INLINE_FUNCTION
@@ -215,20 +174,19 @@ public:
       const CondensedPhase phase,
       const WisoAlphaDir dir,
       const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants,
-      const typename impl::LaneTraits<ScalarT>::mask_type& range_mask =
-          impl::LaneTraits<ScalarT>::all_lanes(),
+      const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true),
       const char* caller = "wiso::alpha_equilibrium")
   {
     using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
     using Constants = WaterIsotopeConstants<RealT>;
-    using LT = impl::LaneTraits<ScalarT>;
 
     auto base = [&](const ScalarT& temp, WaterIsotopologues sp) -> ScalarT {
       const IsoElement el = Constants::element_of(sp);
 
       // Bounds are per (phase, element): the default ice formulation draws its
       // two rows from two different studies with different fitted ranges.
-      const ScalarT t_live = LT::select(temp, range_mask, ScalarT(RealT(T_lane_fill)));
+      ScalarT t_live{RealT(T_lane_fill)};
+      t_live.set(range_mask, temp);
       check_temperature(t_live, constants.tbounds(phase, el), range_mask, caller);
 
       return exp(RealT(1e-3) *
@@ -249,8 +207,7 @@ public:
       const WaterIsotopologues species,
       const WisoAlphaDir dir,
       const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants,
-      const typename impl::LaneTraits<ScalarT>::mask_type& range_mask =
-          impl::LaneTraits<ScalarT>::all_lanes())
+      const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
     return alpha_equilibrium(t, species, CondensedPhase::Liquid, dir, constants,
                              range_mask, "wiso::alpha_liquid_vapor");
@@ -263,8 +220,7 @@ public:
       const WaterIsotopologues species,
       const WisoAlphaDir dir,
       const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants,
-      const typename impl::LaneTraits<ScalarT>::mask_type& range_mask =
-          impl::LaneTraits<ScalarT>::all_lanes())
+      const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
     return alpha_equilibrium(t, species, CondensedPhase::Ice, dir, constants,
                              range_mask, "wiso::alpha_ice_vapor");

@@ -5,6 +5,8 @@
 
 #include "share/core/eamxx_types.hpp"
 
+#include <ekat_pack.hpp>
+
 #include <cmath>
 
 namespace scream {
@@ -15,7 +17,6 @@ using wiso::WaterIsotopeRuntimeOptions;
 using wiso::WaterIsotopeFractionation;
 
 TEST_CASE("runtime_formulation_selection") {
-  using Real = scream::Real;
 
   SECTION("standard_ratio_formulations") {
     // Test 1: Default (Normalized)
@@ -166,20 +167,21 @@ TEST_CASE("runtime_formulation_selection") {
 
   SECTION("fractionation_with_runtime_constants") {
     // Test that fractionation functions produce different results with different formulations
-    const Real temp = Real(273.15);  // 0°C
+    using Pack1 = ekat::Pack<Real,1>;
+    const Pack1 temp = Pack1(273.15);  // 0°C
 
     // Horita & Wesolowski 1994
     WaterIsotopeRuntimeOptions opts_horita;
     WaterIsotopeConstants<Real> constants_horita(opts_horita);
     Real alpha_lv_horita = WaterIsotopeFractionation::alpha_liquid_vapor(
-      temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, constants_horita);
+      temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, constants_horita)[0];
 
     // Majoube 1971
     WaterIsotopeRuntimeOptions opts_majoube;
     opts_majoube.liquid_vapor = wiso::LiquidVaporFractionation::Majoube1971;
     WaterIsotopeConstants<Real> constants_majoube(opts_majoube);
     Real alpha_lv_majoube = WaterIsotopeFractionation::alpha_liquid_vapor(
-      temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, constants_majoube);
+      temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, constants_majoube)[0];
 
     // Verify they produce different fractionation factors
     REQUIRE(alpha_lv_horita != alpha_lv_majoube);
@@ -194,20 +196,21 @@ TEST_CASE("runtime_formulation_selection") {
   SECTION("phase_wrappers_match_generic_form") {
     // The phase-specific spellings must be exactly the generic evaluator with
     // the phase pinned -- they add no logic, so they must not add any drift.
-    const Real temp = Real(263.15);
+    using Pack1 = ekat::Pack<Real,1>;
+    const Pack1 temp = Pack1(263.15);
     WaterIsotopeConstants<Real> constants;
 
-    REQUIRE(WaterIsotopeFractionation::alpha_liquid_vapor(
+    REQUIRE((WaterIsotopeFractionation::alpha_liquid_vapor(
               temp, wiso::WaterIsotopologues::HDO, wiso::CondensedOverVapor, constants) ==
             WaterIsotopeFractionation::alpha_equilibrium(
               temp, wiso::WaterIsotopologues::HDO, wiso::CondensedPhase::Liquid,
-              wiso::CondensedOverVapor, constants));
+              wiso::CondensedOverVapor, constants)).all());
 
-    REQUIRE(WaterIsotopeFractionation::alpha_ice_vapor(
+    REQUIRE((WaterIsotopeFractionation::alpha_ice_vapor(
               temp, wiso::WaterIsotopologues::H218O, wiso::CondensedOverVapor, constants) ==
             WaterIsotopeFractionation::alpha_equilibrium(
               temp, wiso::WaterIsotopologues::H218O, wiso::CondensedPhase::Ice,
-              wiso::CondensedOverVapor, constants));
+              wiso::CondensedOverVapor, constants)).all());
   }
 }
 

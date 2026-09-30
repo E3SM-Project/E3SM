@@ -1,7 +1,7 @@
 #ifndef EAMXX_WATER_ISOTOPES_CONSTANTS_HPP
 #define EAMXX_WATER_ISOTOPES_CONSTANTS_HPP
 
-#include "share/core/eamxx_types.hpp"  // for scream::Real
+#include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_utils.hpp"
 
 namespace scream {
