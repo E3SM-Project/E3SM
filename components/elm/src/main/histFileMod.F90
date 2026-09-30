@@ -1751,7 +1751,9 @@ contains
     use landunit_varcon , only : max_lunit, max_non_poly_lunit
     use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile, use_polygonal_tundra
     use elm_varctl      , only : version, hostname, username, conventions, source
+    use elm_varctl      , only : restart_file_type
     use domainMod       , only : ldomain
+    use restCompactMod  , only : restCompact_dimset
     use fileutils       , only : get_filename
     !
     ! !ARGUMENTS:
@@ -1898,6 +1900,12 @@ contains
     call ncd_defdim(lnfid, trim(namel), numl, dimid)
     call ncd_defdim(lnfid, trim(namec), numc, dimid)
     call ncd_defdim(lnfid, trim(namep), nump, dimid)
+
+    ! History restart files are written with the restart file, so they use the
+    ! compact map built for it
+    if (lhistrest .and. trim(restart_file_type) == 'compact') then
+       call restCompact_dimset(lnfid)
+    end if
 
     ! "level" dimensions
     call ncd_defdim(lnfid, 'levgrnd', nlevgrnd, dimid)

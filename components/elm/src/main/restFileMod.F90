@@ -18,6 +18,7 @@ module restFileMod
   use elm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
   use elm_varctl           , only : use_erosion
   use elm_varctl           , only : create_glacier_mec_landunit, iulog 
+  use elm_varctl           , only : restart_file_type, single_column, scm_multcols
   use elm_varcon           , only : c13ratio, c14ratio
   use elm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use CH4Mod               , only : ch4_type
@@ -48,6 +49,8 @@ module restFileMod
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
+  use restCompactMod       , only : restCompact_build_map, restCompact_dimset, restCompact_ids
+  use restCompactMod       , only : restCompact_read_map, restart_file_type_attname
   use BeTRSimulationELM    , only : betr_simulation_elm_type
   use CropType             , only : crop_type
   use GridcellDataType     , only : grc_wf
@@ -144,12 +147,21 @@ contains
     type(file_desc_t) :: ncid ! netcdf id
     integer :: i       ! index
     logical :: ptrfile ! write out the restart pointer file
+    logical :: compact ! write column/pft data only for active columns/pfts
     !-----------------------------------------------------------------------
 
     if ( present(noptr) )then
        ptrfile = .not. noptr
     else
        ptrfile = .true.
+    end if
+
+    ! Only restart files written during the run (which have rdate) can be compact.
+    ! The template file for init_interp is filled by initInterp, which needs the
+    ! default layout.
+    compact = trim(restart_file_type) == 'compact' .and. present(rdate)
+    if (compact) then
+       call restCompact_build_map(bounds)
     end if
 
     ! --------------------------------------------
@@ -162,13 +174,17 @@ contains
     ! Define dimensions and variables
     ! --------------------------------------------
 
-    call restFile_dimset ( ncid )
+    call restFile_dimset ( ncid, compact )
 
     ! Define restart file variables
 
     call timemgr_restart_io(ncid, flag='define')
 
     call SubgridRest(bounds, ncid, flag='define' )
+
+    if (compact) then
+       call restCompact_ids(bounds, ncid, flag='define')
+    end if
 
     call accumulRest( ncid, flag='define' )
 
@@ -306,6 +322,10 @@ contains
     call timemgr_restart_io( ncid, flag='write' )
 
     call SubgridRest(bounds, ncid, flag='write' )
+
+    if (compact) then
+       call restCompact_ids(bounds, ncid, flag='write')
+    end if
 
     call accumulRest( ncid, flag='write' )
 
@@ -507,6 +527,7 @@ contains
     integer           :: i            ! index
     integer           :: nclumps      ! number of clumps on this processor
     type(bounds_type) :: bounds_clump ! clump-level bounds
+    logical           :: compact      ! true => file is a compact restart file
     !-----------------------------------------------------------------------
 
     ! Open file
@@ -516,6 +537,14 @@ contains
     ! Read file
 
     call restFile_dimcheck( ncid )
+
+    ! For a compact file, build the map used to read its column/pft variables
+
+    call restCompact_read_map(bounds, ncid, compact)
+    if (compact .and. (single_column .or. scm_multcols)) then
+       call endrun(msg=' ERROR: compact restart files are not supported in single column mode'//&
+            errMsg(__FILE__, __LINE__))
+    end if
 
     call SubgridRest(bounds, ncid, flag='read')
 
@@ -909,7 +938,7 @@ contains
   end function restFile_filename
 
   !------------------------------------------------------------------------
-  subroutine restFile_dimset( ncid )
+  subroutine restFile_dimset( ncid, compact )
     !
     ! !DESCRIPTION:
     ! Read/Write initial data from/to netCDF instantaneous initial data file
@@ -928,6 +957,7 @@ contains
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
+    logical          , intent(in)    :: compact  ! true => column/pft data only for active columns/pfts
     !
     ! !LOCAL VARIABLES:
     integer :: dimid               ! netCDF dimension id
@@ -957,6 +987,11 @@ contains
     if ( use_fates ) then
        call ncd_defdim(ncid , nameCohort , numCohort      ,  dimid)
     endif
+    if ( compact ) then
+       call restCompact_dimset(ncid)
+    else
+       call ncd_putatt(ncid, ncd_global, restart_file_type_attname, 'default')
+    end if
 
     call ncd_defdim(ncid , 'levgrnd' , nlevgrnd       ,  dimid)
     call ncd_defdim(ncid , 'levurb'  , nlevurb        ,  dimid)
@@ -1133,7 +1168,7 @@ contains
     ! !USES:
     use decompMod,  only : get_proc_global
     use elm_varpar, only : nlevsno, nlevlak, nlevgrnd, nlevurb
-    use elm_varctl, only : single_column, nsrest, nsrStartup
+    use elm_varctl, only : nsrest, nsrStartup
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid

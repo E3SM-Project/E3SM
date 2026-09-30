@@ -16,6 +16,7 @@ module initInterpMod
   use restUtilMod    , only: iflag_interp, iflag_copy, iflag_skip
   use restUtilMod    , only: iflag_noswitchdim, iflag_switchdim
   use elm_varcon     , only: spval, re
+  use elm_varcon     , only: namec_compact
   use ncdio_pio
   use pio
 
@@ -127,6 +128,8 @@ contains
     logical , pointer  :: grc_activei(:), grc_activeo(:) 
     integer , pointer  :: sgridindex(:)
     logical , pointer  :: activei(:), activeo(:)
+    integer            :: dimid
+    logical            :: compact_input
     !--------------------------------------------------------------------
 
     if (masterproc) then
@@ -140,6 +143,13 @@ contains
 
     call ncd_pio_openfile (ncidi, trim(filei) , 0)
     call ncd_pio_openfile (ncido, trim(fileo),  ncd_write)
+
+    call ncd_inqdid(ncidi, namec_compact, dimid, dimexist=compact_input)
+    if (compact_input) then
+       call endrun(msg=' ERROR: '//trim(filei)//' is a compact restart file, which cannot be'// &
+            ' interpolated; use a restart file written with restart_file_type = default'// &
+            errMsg(__FILE__, __LINE__))
+    end if
 
     ! --------------------------------------------
     ! Determine dimensions and error checks on dimensions

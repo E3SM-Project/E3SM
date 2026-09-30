@@ -67,7 +67,7 @@ module controlMod
                         use_betr, use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
                         use_elm_interface, use_elm_bgc, use_pflotran, &
-                        use_hydrstress, domain_decomp_type, &
+                        use_hydrstress, domain_decomp_type, restart_file_type, &
                         use_IM2_hillslope_hydrology, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
@@ -363,6 +363,8 @@ contains
     namelist /elm_inparm/ use_hydrstress
 
     namelist /elm_inparm/ domain_decomp_type
+
+    namelist /elm_inparm/ restart_file_type
 
     namelist /elm_inparm/ &
          use_IM2_hillslope_hydrology
@@ -685,6 +687,11 @@ contains
             errMsg(__FILE__, __LINE__))
     end if
 
+    if (trim(restart_file_type) /= 'default' .and. trim(restart_file_type) /= 'compact') then
+       call endrun(msg=' ERROR: restart_file_type must be default or compact'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+
     ! Single Column
     if ( single_column .and. (scmlat == rundef  .or. scmlon == rundef ) ) then
        call endrun(msg=' ERROR:: single column mode on -- but scmlat and scmlon are NOT set'//&
@@ -972,6 +979,7 @@ contains
 
     ! domain decomposition
     call mpi_bcast (domain_decomp_type, len(domain_decomp_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (restart_file_type, len(restart_file_type), MPI_CHARACTER, 0, mpicom, ier)
 
     ! hillslope connectivity via topounits
     call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1222,6 +1230,7 @@ contains
     write(iulog,*) 'Restart parameters:'
     write(iulog,*)'   restart pointer file directory     = ',trim(rpntdir)
     write(iulog,*)'   restart pointer file name          = ',trim(rpntfil)
+    write(iulog,*)'   restart file type                  = ',trim(restart_file_type)
     write(iulog,*) 'model physics parameters:'
 
     if ( trim(co2_type) == 'constant' )then

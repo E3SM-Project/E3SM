@@ -182,6 +182,15 @@ module decompMod
   type(mct_gsMap)  ,public,target :: gsMap_col_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_patch_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_cohort_gdc2glo
+
+  ! Compact restart map (built by restCompactMod, used by ncdio_pio). For the
+  ! m-th local column (pft), the 1-based index into the compact restart
+  ! dimension, or 0 if that column (pft) is not written to compact files.
+  integer, allocatable, public :: col_compact_gindex(:)
+  integer, allocatable, public :: pft_compact_gindex(:)
+  integer, public :: numc_compact = 0       ! total number of columns in compact files
+  integer, public :: nump_compact = 0       ! total number of pfts in compact files
+  integer, public :: compact_map_epoch = 0  ! incremented each time the map is rebuilt; 0 => no map
   !------------------------------------------------------------------------------
 
 contains
