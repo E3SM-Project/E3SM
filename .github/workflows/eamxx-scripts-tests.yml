@@ -41,7 +41,7 @@ defaults:
 
 jobs:
   gnu:
-    runs-on:  [self-hosted, gnu, ghci-snl]
+    runs-on:  [self-hosted, gnu, e3sm]
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -55,7 +55,7 @@ jobs:
         run: |
           cd components/eamxx
           if [ "${{ env.submit }}" == "true" ]; then
-            ./scripts/scripts-ctest-driver -s -m ghci-snl-gnu
+            ./scripts/scripts-ctest-driver -s -m ghci-gnu
           else
-            ./scripts/scripts-ctest-driver -m ghci-snl-gnu
+            ./scripts/scripts-ctest-driver -m ghci-gnu
           fi
