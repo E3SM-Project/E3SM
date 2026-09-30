@@ -46,18 +46,19 @@ def add_param(docs, scope, item):
 
     docs.new_line(f"* {scope}{item.tag}:")
 
-    pdoc = item.attrib['doc'] if 'doc' in item.attrib.keys() else "**MISSING**"
+    # NOTE: the split-then-join trick is to allow the XML file to have
+    # multi-line (and indented!) doc strings (for readability)
+    raw_doc = item.attrib.get('doc')
+    pdoc = " ".join(raw_doc.split()) if raw_doc else "**MISSING**"
     docs.new_line(f"    - description: {pdoc}")
 
-    ptype = item.attrib['type'] if 'type' in item.attrib.keys() else "**MISSING**"
+    ptype = item.attrib.get('type',"**MISSING**")
     docs.new_line(f"    - type: {ptype}")
 
-    pvalid = item.attrib['valid_values'] if 'valid_values' in item.attrib.keys() else None
-    if pvalid is not None:
+    if pvalid := item.attrib.get('valid_values'):
         docs.new_line(f"    - valid values: {pvalid}")
 
-    pconstr = item.attrib['constraints'] if 'constraints' in item.attrib.keys() else None
-    if pconstr is not None:
+    if pconstr := item.attrib.get('constraints'):
         docs.new_line(f"    - constraints: {pconstr}")
 
 ###########################################################################

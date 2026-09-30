@@ -440,6 +440,12 @@ def parse_change(change):
     ('a', '2', False, True)
     >>> parse_change("a=hello")
     ('a', 'hello', False, False)
+    >>> parse_change("a=b=2")
+    ('a', 'b=2', False, False)
+    >>> parse_change("a+=b=2")
+    ('a', 'b=2', True, False)
+    >>> parse_change("a-=b=2")
+    ('a', 'b=2', False, True)
     """
     tokens = change.split('+=')
     if len(tokens)==2:
@@ -452,7 +458,9 @@ def parse_change(change):
             remove_this = True
         else:
             remove_this = False
-            tokens = change.split('=')
+            # Only split on the first '=': the value may contain '=' too
+            # (e.g., entries of array(string) params like 'field=value')
+            tokens = change.split('=',1)
 
     expect (len(tokens)==2,
         f"Invalid change request '{change}'. Valid formats are:\n"

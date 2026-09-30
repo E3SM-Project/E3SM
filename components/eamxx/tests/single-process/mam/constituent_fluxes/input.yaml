@@ -26,13 +26,14 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  phis : 1.0
   #These should come from the input file
 
   #we should get the following variables from other processes
-  pbl_height : 1.0
-  constituent_fluxes: 1.e-5
-  z_mam4_int : 0.0
+  force_constant_fields:
+    - "constituent_fluxes=1.e-5"
+    - "phis=1"
+    - "pbl_height=1"
+    - "z_mam4_int=0"
 
 # The parameters for I/O control
 scorpio:

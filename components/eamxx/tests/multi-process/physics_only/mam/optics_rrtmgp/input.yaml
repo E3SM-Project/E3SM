@@ -47,8 +47,9 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  pbl_height : 1.0
-  z_mam4_int : 0.0
+  force_constant_fields:
+    - "pbl_height=1"
+    - "z_mam4_int=0"
 
 # The parameters for I/O control
 scorpio:

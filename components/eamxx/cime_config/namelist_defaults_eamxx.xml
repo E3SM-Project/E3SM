@@ -765,100 +765,91 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
-    <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
+    <!-- For aquaplanet run, unset the topography_filename (phis=0 is set in force_constant_fields below) -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
-    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
-    <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
-    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
-    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
-    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
-    <cldfrac_liq       >0.0</cldfrac_liq>
-    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
-    <eddy_diff_mom     >0.0</eddy_diff_mom>
-    <eddy_diff_heat    >0.0</eddy_diff_heat>
-    <eddy_diff_mom_horiz>0.0</eddy_diff_mom_horiz>
-    <eddy_diff_heat_horiz>0.0</eddy_diff_heat_horiz>
-    <T_prev_micro_step >0.0</T_prev_micro_step>
-    <qv_prev_micro_step>0.0</qv_prev_micro_step>
-    <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
-    <qr                >0.0</qr>
-    <nr                >0.0</nr>
-    <qm                >0.0</qm>
-    <bm                >0.0</bm>
-    <ni_activated      >0.0</ni_activated>
-    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
-    <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
-    <tke               >0.0</tke>
-    <!-- ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized -->
-    <pbl_height        >2000.0</pbl_height>
-    <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
-    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
-    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
-    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
-    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
-    <surf_sens_flux    >0.0</surf_sens_flux>
-    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
-    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
-    <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
-    <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
-    <wetdens type="array(real)" doc="Wet density of interstitial aerosol [kg/m3]">5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22</wetdens>
-    <constituent_fluxes type="real">0.0</constituent_fluxes>
-    <bc_c1 type="real">0.0</bc_c1>
-    <bc_c3 type="real">0.0</bc_c3>
-    <bc_c4 type="real">0.0</bc_c4>
-    <dst_c1 type="real">0.0</dst_c1>
-    <dst_c3 type="real">0.0</dst_c3>
-    <so4_c1 type="real">0.0</so4_c1>
-    <so4_c2 type="real">0.0</so4_c2>
-    <so4_c3 type="real">0.0</so4_c3>
-    <pom_c1 type="real">0.0</pom_c1>
-    <pom_c3 type="real">0.0</pom_c3>
-    <pom_c4 type="real">0.0</pom_c4>
-    <soa_c1 type="real">0.0</soa_c1>
-    <soa_c2 type="real">0.0</soa_c2>
-    <soa_c3 type="real">0.0</soa_c3>
-    <nacl_c1 type="real">0.0</nacl_c1>
-    <nacl_c2 type="real">0.0</nacl_c2>
-    <nacl_c3 type="real">0.0</nacl_c3>
-    <mom_c1 type="real">0.0</mom_c1>
-    <mom_c2 type="real">0.0</mom_c2>
-    <mom_c3 type="real">0.0</mom_c3>
-    <mom_c4 type="real">0.0</mom_c4>
-    <num_c1 type="real">0.0</num_c1>
-    <num_c2 type="real">0.0</num_c2>
-    <num_c3 type="real">0.0</num_c3>
-    <num_c4 type="real">0.0</num_c4>
-    <z_mam4_int type="real">0.0</z_mam4_int>
-    <!-- Surface fluxes for the land model from MAM4xx wet scavenging-->
-    <wetdep_hydrophilic_bc type="real">1e-5</wetdep_hydrophilic_bc>
-    <drydep_hydrophilic_bc type="real">1e-5</drydep_hydrophilic_bc>
-    <wetdep_hydrophilic_oc type="real">1e-5</wetdep_hydrophilic_oc>
-    <drydep_hydrophilic_oc type="real">1e-5</drydep_hydrophilic_oc>
-    <wetdep_dust_bin1 type="real">1e-5</wetdep_dust_bin1>
-    <wetdep_dust_bin2 type="real">1e-5</wetdep_dust_bin2>
-    <wetdep_dust_bin3 type="real">1e-5</wetdep_dust_bin3>
-    <wetdep_dust_bin4 type="real">1e-5</wetdep_dust_bin4>
+    <!-- Fields that we need to initialize, but may not be in the initial condition (IC) file, are inited here.
+         Constants are set via arrays of "field_name=value" entries. For vector fields, the value can be a
+         ';'-separated list, with one entry per component (e.g., "dgnum:1e-7;2e-8;3e-7;4e-8").
+         There are two arrays:
+          - force_constant_fields:    the field is ALWAYS set to the constant, even if it is in the IC file
+          - fallback_constant_fields: the field is set to the constant ONLY IF it is not in the IC file
+                                      (if it is in the IC file, it is read from there)
+         If a field is in both arrays, the forced constant wins.
+         Entries that do not match any field in need of initialization are ignored. Being arrays, entries can
+         be added/removed with atmchange (quote the argument if it contains ';'):
+           ./atmchange initial_conditions::fallback_constant_fields-=tke=0
+           ./atmchange initial_conditions::force_constant_fields+=my_field=1
+         Conditional (e.g., grid-dependent) entries can be appended to the base list via action="append".
+         NOTE: fields cannot be set with individual entries (e.g., <qr>0.0</qr>).
+         Notes on the fallback entries below:
+          - surf_evap: TODO, delete this when the IC fixes come in
+          - microphysics fields not on IC are set to zero; this is consistent with EAM init
+          - tke: SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file
+          - pbl_height: ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized
+          - sfc_alb_*, surf_sens_flux, surf_lw_flux_up: should be provided by surface models, but we init here
+            to keep AD from reading from file
+          - dgnum (dry aerosol particles diameters, one per mode [m]): MAM4xx-ACI needs it, currently set to
+            aitken model nominal diameter; remove it once all of MAM4xx is integrated
+          - dgnumwet: wet aerosol particles diameters [m]; wetdens: wet density of interstitial aerosol [kg/m3]
+          - MAM4xx aerosol fields, constituent_fluxes, z_mam4_int, fraction_landuse [fraction]
+          - wetdep_*/drydep_*: surface fluxes for the land model from MAM4xx wet scavenging -->
+    <force_constant_fields type="array(string)" doc="Fields to always initialize to a constant (even if in the IC file), as 'name=value' entries"/>
+    <!-- For aquaplanet run, set phis=0 (see also topography_filename above) -->
+    <force_constant_fields COMPSET=".*SCREAM%AQUA.*">phis=0</force_constant_fields>
 
-    <fraction_landuse type="real" doc="Fractional land use for drydeposition of gasses and aerosols [fraction]">0.0</fraction_landuse>
+    <!-- TODO: some of these can be deleted once we can tell the AD that some fields can be inited by procs -->
+    <fallback_constant_fields type="array(string)"
+      doc="Fields to initialize to a constant if they are not in the IC file.
+           The syntax is 'name=value' for scalar fields. For vector fields,
+           if different components need different values, use the syntax 'name=value1;value2;...;valueN',
+           otherwise use the same syntax as for scalar fields."
+    >
+      surf_evap=0, precip_liq_surf_mass=0, precip_ice_surf_mass=0,
+      cldfrac_liq=0, sgs_buoy_flux=0, eddy_diff_mom=0, eddy_diff_heat=0,
+      eddy_diff_mom_horiz=0, eddy_diff_heat_horiz=0, T_prev_micro_step=0, qv_prev_micro_step=0,
+      qr=0, nr=0, qm=0, bm=0, ni_activated=0, nc_nuceat_tend=0,
+      tke=0,
+      pbl_height=2000,
+      <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
+      sfc_alb_dir_vis=0, sfc_alb_dir_nir=0, sfc_alb_dif_vis=0, sfc_alb_dif_nir=0,
+      surf_sens_flux=0, surf_lw_flux_up=0,
+      <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
+      dgnum=1.37146e-07;3.45899e-08;1.00000e-06;9.99601e-08,
+      dgnumwet=1.37452e-07;3.46684e-08;1.00900e-06;9.99601e-08,
+      wetdens=5.08262e-12;1.54035e-13;3.09018e-13;9.14710e-22,
+      constituent_fluxes=0,
+      bc_c1=0, bc_c3=0, bc_c4=0, dst_c1=0, dst_c3=0,
+      so4_c1=0, so4_c2=0, so4_c3=0, pom_c1=0, pom_c3=0, pom_c4=0,
+      soa_c1=0, soa_c2=0, soa_c3=0, nacl_c1=0, nacl_c2=0, nacl_c3=0,
+      mom_c1=0, mom_c2=0, mom_c3=0, mom_c4=0, num_c1=0, num_c2=0, num_c3=0, num_c4=0,
+      z_mam4_int=0,
+      wetdep_hydrophilic_bc=1e-5, drydep_hydrophilic_bc=1e-5, wetdep_hydrophilic_oc=1e-5, drydep_hydrophilic_oc=1e-5,
+      wetdep_dust_bin1=1e-5, wetdep_dust_bin2=1e-5, wetdep_dust_bin3=1e-5, wetdep_dust_bin4=1e-5,
+      fraction_landuse=0,
+    </fallback_constant_fields>
 
-    <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
-    <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
-    <qc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
-    <nc vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
-    <ni vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
+    <!-- Grid/compset dependent entries -->
+    <!-- default ne256+ initial condition files do not have these, so init to zero here -->
+    <fallback_constant_fields vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4" action="append">
+        qc=0, qi=0
+    </fallback_constant_fields>
+    <fallback_constant_fields vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1" action="append">
+        nc=0, ni=0
+    </fallback_constant_fields>
+    <fallback_constant_fields vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4" action="append">
+        nc=0, ni=0
+    </fallback_constant_fields>
+    <fallback_constant_fields vgrid="L128v4" action="append">
+        nc=0, ni=0
+    </fallback_constant_fields>
+    <fallback_constant_fields hgrid="ne0np4_conus_x4v1_lowcon" action="append">
+        o3_volume_mix_ratio=0
+    </fallback_constant_fields>
 
-    <!-- new default initial conditions for L128v4 do not have nc/ni fieds, so initialize to zero -->
-    <nc vgrid="L128v4" type="real">0.0</nc>
-    <ni vgrid="L128v4" type="real">0.0</ni>
-
-    <!-- only certain grids are missing the ozone field - so initialize to zero -->
-    <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+    <copy_fields type="array(string)" doc="Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries"/>
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>

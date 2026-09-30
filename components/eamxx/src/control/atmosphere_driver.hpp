@@ -175,7 +175,7 @@ public:
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
-  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
+  void initialize_constant_field(const FieldIdentifier& fid, const std::vector<double>& values);
 protected:
 
   void report_res_dep_memory_footprint () const;
