@@ -15,8 +15,6 @@ time_stepping:
 initial_conditions:
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  pbl_height : 1.0
-  phis : 1.0
 
   #variables required for shoc
   constant_fields:
@@ -36,13 +34,15 @@ initial_conditions:
     - "ram1:0.45506166067091662E+002"
     - "dgnumwet:0.41417721820867320E-007"
     - "wetdens:0.15100083211582764E+004"
+    - "pbl_height:1.0"
+    - "phis:1.0"
+    - "z_mam4_int:0.0"
 
   #variables required for p3
 
   #variables required for mam4_aci
 
   #mam4 drydep
-  z_mam4_int : 0.0
 
 eamxx:
   atm_procs_list: [homme,physics]

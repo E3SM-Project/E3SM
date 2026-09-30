@@ -76,13 +76,13 @@ initial_conditions:
     - "aero_tau_sw:0.0"
     - "aero_tau_lw:0.0"
     - "dgnum:1e-3"
+    - "z_mam4_int:0.0"
 
   #variables required for p3
 
   #variables required for rrtmgp
 
   #variables required for mam4_aci
-  z_mam4_int : 0.0
 
 # The parameters for I/O control
 scorpio:

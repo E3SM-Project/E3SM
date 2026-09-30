@@ -63,11 +63,11 @@ initial_conditions:
     - "hetfrz_contact_nucleation_tend:0.1"
     - "hetfrz_deposition_nucleation_tend:0.1"
     - "dgnum:1e-3"
+    - "z_mam4_int:0.0"
 
   #variable required for p3
 
   #variables required for mam4_aci
-  z_mam4_int : 0.0
 
 # The parameters for I/O control
 scorpio:

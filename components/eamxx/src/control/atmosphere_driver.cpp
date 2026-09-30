@@ -32,6 +32,7 @@
 #include <unistd.h>
 #endif
 
+#include <cmath>
 #include <fstream>
 #include <map>
 #include <random>
@@ -1487,7 +1488,16 @@ initialize_constant_field(const FieldIdentifier& fid,
   // each component is inited to the corresponding entry of the array.
   const auto& name = fid.name();
   if (values.size()==1) {
-    f.deep_copy(values[0]);
+    if (f.data_type()==DataType::IntType) {
+      // Integer fields cannot be set from a double (narrowing conversion)
+      EKAT_REQUIRE_MSG (values[0]==std::round(values[0]),
+          "Error! Non-integer initial condition value for an integer field.\n"
+          "       Field: " + name + "\n"
+          "       Value: " + std::to_string(values[0]) + "\n");
+      f.deep_copy(static_cast<int>(values[0]));
+    } else {
+      f.deep_copy(values[0]);
+    }
     return;
   }
 
