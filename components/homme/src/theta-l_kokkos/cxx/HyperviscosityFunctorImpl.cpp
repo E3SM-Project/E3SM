@@ -220,9 +220,9 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
   // Number of scalar/vector int/mid buffers needed, with size nelems
-  const int mid_vectors_nelems = 1;
+  const int mid_vectors_nelems = 2;
   const int int_scalars_nelems = 0 + (m_process_nh_vars ? 1 : 0);
-  const int mid_scalars_nelems = 2 + (m_process_nh_vars ? 2 : 0);
+  const int mid_scalars_nelems = 5 + (m_process_nh_vars ? 2 : 0);
 
   const int size = m_num_elems*(mid_scalars_nelems*size_mid_scalar +
                                 mid_vectors_nelems*size_mid_vector +
@@ -249,6 +249,15 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.ttens = decltype(m_buffers.ttens)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
+  m_buffers.theta_leonard_tens = decltype(m_buffers.theta_leonard_tens)(mem,nelems);
+  mem += size_mid_scalar*nelems;
+
+  m_buffers.u_leonard_tens = decltype(m_buffers.u_leonard_tens)(mem,nelems);
+  mem += size_mid_scalar*nelems;
+
+  m_buffers.v_leonard_tens = decltype(m_buffers.v_leonard_tens)(mem,nelems);
+  mem += size_mid_scalar*nelems;
+
   if (m_process_nh_vars) {
     m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
     mem += size_mid_scalar*nelems;
@@ -261,6 +270,9 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   }
 
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
+  mem += size_mid_vector*nelems;
+
+  m_buffers.leonard_flux = decltype(m_buffers.leonard_flux)(mem,nelems);
   mem += size_mid_vector*nelems;
 
   const int used_mem = reinterpret_cast<Real*>(mem)-mem_in;
@@ -728,68 +740,6 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
                               Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1),
                               Homme::subview(m_buffers.ttens,kv.ie));
 
-  if (m_data.do_leonard) {
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(kv.team,NP*NP),
-      [&] (const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
-
-        const auto flux = Homme::subview(m_buffers.vtens,kv.ie);
-        const auto theta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1);
-        const auto vel = Homme::subview(m_state.m_v,kv.ie,m_data.np1);
-        const auto dinv = m_geometry.m_dinv;
-        const Real scale_factor_inv = 1.0 / m_geometry.m_scale_factor;
-        const Real leonard_factor = m_geometry.m_metdet(kv.ie,igp,jgp)
-                                  * m_geometry.m_scale_factor
-                                  * m_geometry.m_scale_factor / 12.0;
-
-        Kokkos::parallel_for(
-          Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-          [&] (const int ilev) {
-            Scalar dsdx_theta = Scalar(0);
-            Scalar dsdy_theta = Scalar(0);
-            Scalar dsdx_u = Scalar(0);
-            Scalar dsdy_u = Scalar(0);
-            Scalar dsdx_v = Scalar(0);
-            Scalar dsdy_v = Scalar(0);
-
-            for (int kgp = 0; kgp < NP; ++kgp) {
-              dsdx_theta += m_deriv(jgp,kgp) * theta(igp,kgp,ilev);
-              dsdy_theta += m_deriv(igp,kgp) * theta(kgp,jgp,ilev);
-              dsdx_u += m_deriv(jgp,kgp) * vel(0,igp,kgp,ilev);
-              dsdy_u += m_deriv(igp,kgp) * vel(0,kgp,jgp,ilev);
-              dsdx_v += m_deriv(jgp,kgp) * vel(1,igp,kgp,ilev);
-              dsdy_v += m_deriv(igp,kgp) * vel(1,kgp,jgp,ilev);
-            }
-
-            const Scalar grad_theta_0 = (dinv(kv.ie,0,0,igp,jgp) * dsdx_theta
-                                       + dinv(kv.ie,0,1,igp,jgp) * dsdy_theta) * scale_factor_inv;
-            const Scalar grad_theta_1 = (dinv(kv.ie,1,0,igp,jgp) * dsdx_theta
-                                       + dinv(kv.ie,1,1,igp,jgp) * dsdy_theta) * scale_factor_inv;
-            const Scalar grad_u_0 = (dinv(kv.ie,0,0,igp,jgp) * dsdx_u
-                                   + dinv(kv.ie,0,1,igp,jgp) * dsdy_u) * scale_factor_inv;
-            const Scalar grad_u_1 = (dinv(kv.ie,1,0,igp,jgp) * dsdx_u
-                                   + dinv(kv.ie,1,1,igp,jgp) * dsdy_u) * scale_factor_inv;
-            const Scalar grad_v_0 = (dinv(kv.ie,0,0,igp,jgp) * dsdx_v
-                                   + dinv(kv.ie,0,1,igp,jgp) * dsdy_v) * scale_factor_inv;
-            const Scalar grad_v_1 = (dinv(kv.ie,1,0,igp,jgp) * dsdx_v
-                                   + dinv(kv.ie,1,1,igp,jgp) * dsdy_v) * scale_factor_inv;
-
-            flux(0,igp,jgp,ilev) = leonard_factor * (grad_u_0 * grad_theta_0
-                                                   + grad_u_1 * grad_theta_1);
-            flux(1,igp,jgp,ilev) = leonard_factor * (grad_v_0 * grad_theta_0
-                                                   + grad_v_1 * grad_theta_1);
-          });
-      });
-
-    kv.team_barrier();
-    m_sphere_ops.divergence_sphere_wk(kv,
-                                      Homme::subview(m_buffers.vtens,kv.ie),
-                                      Homme::subview(m_buffers.dptens,kv.ie));
-    kv.team_barrier();
-  }
-
   if (m_process_nh_vars) {
     // Laplacian of vertical velocity
     m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
@@ -802,6 +752,96 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
                                          1.0, // no nu_ratio here, we want plain Lap(v)
                                          Homme::subview(m_state.m_v,kv.ie,m_data.np1),
                                          Homme::subview(m_buffers.vtens,kv.ie));
+
+  if (m_data.do_leonard) {
+    const auto assemble_leonard_flux = [&] (const int target) {
+      Kokkos::parallel_for(
+        Kokkos::TeamThreadRange(kv.team,NP*NP),
+        [&] (const int idx) {
+          const int igp = idx / NP;
+          const int jgp = idx % NP;
+
+          const auto flux = Homme::subview(m_buffers.leonard_flux,kv.ie);
+          const auto theta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1);
+          const auto vel = Homme::subview(m_state.m_v,kv.ie,m_data.np1);
+          const auto dinv = m_geometry.m_dinv;
+          const Real leonard_factor = m_geometry.m_metdet(kv.ie,igp,jgp)
+                                    * m_geometry.m_scale_factor
+                                    * m_geometry.m_scale_factor / 12.0;
+
+          Kokkos::parallel_for(
+            Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+            [&] (const int ilev) {
+              Scalar dsdx_theta = Scalar(0);
+              Scalar dsdy_theta = Scalar(0);
+              Scalar dsdx_u = Scalar(0);
+              Scalar dsdy_u = Scalar(0);
+              Scalar dsdx_v = Scalar(0);
+              Scalar dsdy_v = Scalar(0);
+
+              for (int kgp = 0; kgp < NP; ++kgp) {
+                dsdx_theta += m_deriv(jgp,kgp) * theta(igp,kgp,ilev);
+                dsdy_theta += m_deriv(igp,kgp) * theta(kgp,jgp,ilev);
+                dsdx_u += m_deriv(jgp,kgp) * vel(0,igp,kgp,ilev);
+                dsdy_u += m_deriv(igp,kgp) * vel(0,kgp,jgp,ilev);
+                dsdx_v += m_deriv(jgp,kgp) * vel(1,igp,kgp,ilev);
+                dsdy_v += m_deriv(igp,kgp) * vel(1,kgp,jgp,ilev);
+              }
+
+              const Scalar grad_theta_0 = (dinv(kv.ie,0,0,igp,jgp) * dsdx_theta
+                                         + dinv(kv.ie,0,1,igp,jgp) * dsdy_theta) * scale_factor_inv;
+              const Scalar grad_theta_1 = (dinv(kv.ie,1,0,igp,jgp) * dsdx_theta
+                                         + dinv(kv.ie,1,1,igp,jgp) * dsdy_theta) * scale_factor_inv;
+              const Scalar grad_u_0 = (dinv(kv.ie,0,0,igp,jgp) * dsdx_u
+                                     + dinv(kv.ie,0,1,igp,jgp) * dsdy_u) * scale_factor_inv;
+              const Scalar grad_u_1 = (dinv(kv.ie,1,0,igp,jgp) * dsdx_u
+                                     + dinv(kv.ie,1,1,igp,jgp) * dsdy_u) * scale_factor_inv;
+              const Scalar grad_v_0 = (dinv(kv.ie,0,0,igp,jgp) * dsdx_v
+                                     + dinv(kv.ie,0,1,igp,jgp) * dsdy_v) * scale_factor_inv;
+              const Scalar grad_v_1 = (dinv(kv.ie,1,0,igp,jgp) * dsdx_v
+                                     + dinv(kv.ie,1,1,igp,jgp) * dsdy_v) * scale_factor_inv;
+
+              if (target == 0) {
+                flux(0,igp,jgp,ilev) = leonard_factor * (grad_u_0 * grad_theta_0
+                                                       + grad_u_1 * grad_theta_1);
+                flux(1,igp,jgp,ilev) = leonard_factor * (grad_v_0 * grad_theta_0
+                                                       + grad_v_1 * grad_theta_1);
+              } else if (target == 1) {
+                flux(0,igp,jgp,ilev) = leonard_factor * (grad_u_0 * grad_u_0
+                                                       + grad_u_1 * grad_u_1);
+                flux(1,igp,jgp,ilev) = leonard_factor * (grad_v_0 * grad_u_0
+                                                       + grad_v_1 * grad_u_1);
+              } else {
+                flux(0,igp,jgp,ilev) = leonard_factor * (grad_u_0 * grad_v_0
+                                                       + grad_u_1 * grad_v_1);
+                flux(1,igp,jgp,ilev) = leonard_factor * (grad_v_0 * grad_v_0
+                                                       + grad_v_1 * grad_v_1);
+              }
+            });
+        });
+    };
+
+    assemble_leonard_flux(0);
+    kv.team_barrier();
+    m_sphere_ops.divergence_sphere_wk(kv,
+                                      Homme::subview(m_buffers.leonard_flux,kv.ie),
+                                      Homme::subview(m_buffers.theta_leonard_tens,kv.ie));
+    kv.team_barrier();
+
+    assemble_leonard_flux(1);
+    kv.team_barrier();
+    m_sphere_ops.divergence_sphere_wk(kv,
+                                      Homme::subview(m_buffers.leonard_flux,kv.ie),
+                                      Homme::subview(m_buffers.u_leonard_tens,kv.ie));
+    kv.team_barrier();
+
+    assemble_leonard_flux(2);
+    kv.team_barrier();
+    m_sphere_ops.divergence_sphere_wk(kv,
+                                      Homme::subview(m_buffers.leonard_flux,kv.ie),
+                                      Homme::subview(m_buffers.v_leonard_tens,kv.ie));
+    kv.team_barrier();
+  }
 
   kv.team_barrier();
 
@@ -830,7 +870,9 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
       const auto utens  = Homme::subview(m_buffers.vtens,kv.ie,0,igp,jgp);
       const auto vtens  = Homme::subview(m_buffers.vtens,kv.ie,1,igp,jgp);
       const auto ttens  = Homme::subview(m_buffers.ttens,kv.ie,igp,jgp);
-      const auto theta_leonard_tens = Homme::subview(m_buffers.dptens,kv.ie,igp,jgp);
+      const auto theta_leonard_tens = Homme::subview(m_buffers.theta_leonard_tens,kv.ie,igp,jgp);
+      const auto u_leonard_tens = Homme::subview(m_buffers.u_leonard_tens,kv.ie,igp,jgp);
+      const auto v_leonard_tens = Homme::subview(m_buffers.v_leonard_tens,kv.ie,igp,jgp);
 
       const auto Km = Homme::subview(m_derived.m_turb_diff_mom,kv.ie,igp,jgp);
       const auto Kh = Homme::subview(m_derived.m_turb_diff_heat,kv.ie,igp,jgp);
@@ -895,6 +937,8 @@ void HyperviscosityFunctorImpl::operator() (const TagSGSTurbLaplace&, const Team
           ttens(k)  *= xf_h;
           if (m_data.do_leonard) {
             ttens(k) -= m_data.dt_hvs_sgs * theta_leonard_tens(k);
+            utens(k) -= m_data.dt_hvs_sgs * u_leonard_tens(k);
+            vtens(k) -= m_data.dt_hvs_sgs * v_leonard_tens(k);
           }
 
           if (m_process_nh_vars) {

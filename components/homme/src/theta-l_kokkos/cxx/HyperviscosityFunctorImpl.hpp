@@ -93,7 +93,11 @@ public:
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    ttens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    theta_leonard_tens;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    u_leonard_tens;
+    ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    v_leonard_tens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
+    ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> leonard_flux;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  turb_diff_mom_i;
   };//buffers
 
