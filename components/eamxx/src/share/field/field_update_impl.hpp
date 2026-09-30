@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_UPDATE_IMPL_HPP
 
 #include "share/field/field.hpp"
+#include "share/field/field_dispatch.hpp"
 
 namespace scream
 {
@@ -89,197 +90,23 @@ update_impl (const Field& x, const ST alpha, const ST beta, const ST gamma) cons
   const auto& dims = layout.dims();
 
   // Must handle the case where one of the two views is strided (or both)
-  const auto x_lr_ok = x.get_header().get_alloc_properties().allows_layout_right();
-  const auto y_lr_ok = get_header().get_alloc_properties().allows_layout_right();
-  switch (layout.rank()) {
-    case 0:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST>(),
-                         x.get_view<const XST>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST>(),
-                         x.get_view<const XST>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST>(),
-                         x.get_strided_view<const XST>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST>(),
-                         x.get_strided_view<const XST>(),
-                         alpha,beta,gamma,dims);
-      break;
-    case 1:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST*>(),
-                         x.get_view<const XST*>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST*>(),
-                         x.get_view<const XST*>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST*>(),
-                         x.get_strided_view<const XST*>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST*>(),
-                         x.get_strided_view<const XST*>(),
-                         alpha,beta,gamma,dims);
-      break;
-    case 2:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST**>(),
-                         x.get_view<const XST**>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST**>(),
-                         x.get_view<const XST**>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST**>(),
-                         x.get_strided_view<const XST**>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST**>(),
-                         x.get_strided_view<const XST**>(),
-                         alpha,beta,gamma,dims);
-      break;
-    case 3:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST***>(),
-                         x.get_view<const XST***>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST***>(),
-                         x.get_view<const XST***>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST***>(),
-                         x.get_strided_view<const XST***>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST***>(),
-                         x.get_strided_view<const XST***>(),
-                         alpha,beta,gamma,dims);
-      break;
-    case 4:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST****>(),
-                         x.get_view<const XST****>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST****>(),
-                         x.get_view<const XST****>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST****>(),
-                         x.get_strided_view<const XST****>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST****>(),
-                         x.get_strided_view<const XST****>(),
-                         alpha,beta,gamma,dims);
-      break;
-    case 5:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST*****>(),
-                         x.get_view<const XST*****>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST*****>(),
-                         x.get_view<const XST*****>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST*****>(),
-                         x.get_strided_view<const XST*****>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST*****>(),
-                         x.get_strided_view<const XST*****>(),
-                         alpha,beta,gamma,dims);
-      break;
-    case 6:
-      if (x_lr_ok and y_lr_ok)
-        details::cvh<CM>(get_view<ST******>(),
-                         x.get_view<const XST******>(),
-                         alpha,beta,gamma,dims);
-      else if (x_lr_ok)
-        details::cvh<CM>(get_strided_view<ST******>(),
-                         x.get_view<const XST******>(),
-                         alpha,beta,gamma,dims);
-      else if (y_lr_ok)
-        details::cvh<CM>(get_view<ST******>(),
-                         x.get_strided_view<const XST******>(),
-                         alpha,beta,gamma,dims);
-      else
-        details::cvh<CM>(get_strided_view<ST******>(),
-                         x.get_strided_view<const XST******>(),
-                         alpha,beta,gamma,dims);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Rank not supported in update_field.\n"
-          " - x name: " + x.name() + "\n"
-          " - y name: " + name() + "\n");
-  }
+  details::dispatch_views(layout.rank(),
+    [&](const auto& y_view, const auto& x_view) {
+      details::cvh<CM>(y_view,x_view,alpha,beta,gamma,dims);
+    },
+    details::as<ST>(*this), details::as<const XST>(x));
   Kokkos::fence();
 }
 
 template<typename ST>
 void Field::deep_copy_impl (const ST value) const
 {
-  const auto rank = get_header().get_identifier().get_layout().rank();
-  const auto lr_ok = get_header().get_alloc_properties().allows_layout_right();
-
-  switch (rank) {
-    case 0:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST>(),value);
-      break;
-    case 1:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST*>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST*>(),value);
-      break;
-    case 2:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST**>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST**>(),value);
-      break;
-    case 3:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST***>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST***>(),value);
-      break;
-    case 4:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST****>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST****>(),value);
-      break;
-    case 5:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST*****>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST*****>(),value);
-      break;
-    case 6:
-      if (lr_ok)
-        Kokkos::deep_copy(get_view<ST******>(),value);
-      else
-        Kokkos::deep_copy(get_strided_view<ST******>(),value);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
-  }
+  details::dispatch_views(get_header().get_identifier().get_layout().rank(),
+    [&](const auto& view) {
+      Kokkos::deep_copy(view,value);
+    },
+    details::as<ST>(*this));
 }
-
 
 } // namespace scream
 

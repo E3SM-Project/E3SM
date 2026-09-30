@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_UPDATE_MASKED_HPP
 
 #include "share/field/field.hpp"
+#include "share/field/field_dispatch.hpp"
 
 namespace scream
 {
@@ -167,171 +168,12 @@ update_masked (const Field& x, const ST alpha, const ST beta, const ST gamma, co
   const auto& layout = x.get_header().get_identifier().get_layout();
   const auto& dims = layout.dims();
 
-  // Must handle the case where one of the two views is strided (or both)
-  const auto x_lr_ok = x.get_header().get_alloc_properties().allows_layout_right();
-  const auto y_lr_ok = get_header().get_alloc_properties().allows_layout_right();
-  const auto m_lr_ok = mask.get_header().get_alloc_properties().allows_layout_right();
-  switch (layout.rank()) {
-    case 0:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST>(),x.get_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int>())
-                : details::cvmh<CM>(get_view<ST>(),x.get_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST>(),x.get_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int>())
-                : details::cvmh<CM>(get_strided_view<ST>(),x.get_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST>(),x.get_strided_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int>())
-                : details::cvmh<CM>(get_view<ST>(),x.get_strided_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST>(),x.get_strided_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int>())
-                : details::cvmh<CM>(get_strided_view<ST>(),x.get_strided_view<const XST>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int>());
-      break;
-    case 1:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST*>(),x.get_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*>())
-                : details::cvmh<CM>(get_view<ST*>(),x.get_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST*>(),x.get_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*>())
-                : details::cvmh<CM>(get_strided_view<ST*>(),x.get_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST*>(),x.get_strided_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*>())
-                : details::cvmh<CM>(get_view<ST*>(),x.get_strided_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST*>(),x.get_strided_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*>())
-                : details::cvmh<CM>(get_strided_view<ST*>(),x.get_strided_view<const XST*>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*>());
-      break;
-    case 2:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST**>(),x.get_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int**>())
-                : details::cvmh<CM>(get_view<ST**>(),x.get_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int**>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST**>(),x.get_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int**>())
-                : details::cvmh<CM>(get_strided_view<ST**>(),x.get_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int**>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST**>(),x.get_strided_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int**>())
-                : details::cvmh<CM>(get_view<ST**>(),x.get_strided_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int**>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST**>(),x.get_strided_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int**>())
-                : details::cvmh<CM>(get_strided_view<ST**>(),x.get_strided_view<const XST**>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int**>());
-      break;
-    case 3:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST***>(),x.get_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int***>())
-                : details::cvmh<CM>(get_view<ST***>(),x.get_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int***>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST***>(),x.get_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int***>())
-                : details::cvmh<CM>(get_strided_view<ST***>(),x.get_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int***>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST***>(),x.get_strided_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int***>())
-                : details::cvmh<CM>(get_view<ST***>(),x.get_strided_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int***>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST***>(),x.get_strided_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int***>())
-                : details::cvmh<CM>(get_strided_view<ST***>(),x.get_strided_view<const XST***>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int***>());
-      break;
-    case 4:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST****>(),x.get_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int****>())
-                : details::cvmh<CM>(get_view<ST****>(),x.get_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int****>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST****>(),x.get_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int****>())
-                : details::cvmh<CM>(get_strided_view<ST****>(),x.get_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int****>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST****>(),x.get_strided_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int****>())
-                : details::cvmh<CM>(get_view<ST****>(),x.get_strided_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int****>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST****>(),x.get_strided_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int****>())
-                : details::cvmh<CM>(get_strided_view<ST****>(),x.get_strided_view<const XST****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int****>());
-      break;
-    case 5:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST*****>(),x.get_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*****>())
-                : details::cvmh<CM>(get_view<ST*****>(),x.get_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*****>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST*****>(),x.get_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*****>())
-                : details::cvmh<CM>(get_strided_view<ST*****>(),x.get_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*****>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST*****>(),x.get_strided_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*****>())
-                : details::cvmh<CM>(get_view<ST*****>(),x.get_strided_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*****>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST*****>(),x.get_strided_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int*****>())
-                : details::cvmh<CM>(get_strided_view<ST*****>(),x.get_strided_view<const XST*****>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int*****>());
-      break;
-    case 6:
-      if (x_lr_ok and y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST******>(),x.get_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int******>())
-                : details::cvmh<CM>(get_view<ST******>(),x.get_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int******>());
-      else if (x_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST******>(),x.get_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int******>())
-                : details::cvmh<CM>(get_strided_view<ST******>(),x.get_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int******>());
-      else if (y_lr_ok)
-        m_lr_ok ? details::cvmh<CM>(get_view<ST******>(),x.get_strided_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int******>())
-                : details::cvmh<CM>(get_view<ST******>(),x.get_strided_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int******>());
-      else
-        m_lr_ok ? details::cvmh<CM>(get_strided_view<ST******>(),x.get_strided_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_view<const int******>())
-                : details::cvmh<CM>(get_strided_view<ST******>(),x.get_strided_view<const XST******>(),
-                                    alpha,beta,gamma,dims,mask.get_strided_view<const int******>());
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Rank not supported in update_masked.\n"
-          " - x name: " + x.name() + "\n"
-          " - y name: " + name() + "\n"
-          " - m name: " + mask.name() + "\n");
-  }
+  // Must handle the case where any of the views is strided
+  details::dispatch_views(layout.rank(),
+    [&](const auto& y_view, const auto& x_view, const auto& m_view) {
+      details::cvmh<CM>(y_view,x_view,alpha,beta,gamma,dims,m_view);
+    },
+    details::as<ST>(*this), details::as<const XST>(x), details::as<const int>(mask));
   Kokkos::fence();
 }
 
@@ -339,71 +181,13 @@ template<bool negate_mask, typename ST>
 void Field::deep_copy_masked (const ST value, const Field& mask) const
 {
   const auto& layout = get_header().get_identifier().get_layout();
-  const auto  rank   = layout.rank();
   const auto& dims   = layout.dims();
-  const auto lr_ok = get_header().get_alloc_properties().allows_layout_right();
-  const auto m_lr_ok = mask.get_header().get_alloc_properties().allows_layout_right();
 
-  switch (rank) {
-    case 0:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST>(),value,dims,mask.get_view<const int>())
-                : details::svm<negate_mask>(get_view<ST>(),value,dims,mask.get_strided_view<const int>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST>(),value,dims,mask.get_view<const int>())
-                : details::svm<negate_mask>(get_strided_view<ST>(),value,dims,mask.get_strided_view<const int>());
-      break;
-    case 1:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST*>(),value,dims,mask.get_view<const int*>())
-                : details::svm<negate_mask>(get_view<ST*>(),value,dims,mask.get_strided_view<const int*>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST*>(),value,dims,mask.get_view<const int*>())
-                : details::svm<negate_mask>(get_strided_view<ST*>(),value,dims,mask.get_strided_view<const int*>());
-      break;
-    case 2:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST**>(),value,dims,mask.get_view<const int**>())
-                : details::svm<negate_mask>(get_view<ST**>(),value,dims,mask.get_strided_view<const int**>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST**>(),value,dims,mask.get_view<const int**>())
-                : details::svm<negate_mask>(get_strided_view<ST**>(),value,dims,mask.get_strided_view<const int**>());
-      break;
-    case 3:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST***>(),value,dims,mask.get_view<const int***>())
-                : details::svm<negate_mask>(get_view<ST***>(),value,dims,mask.get_strided_view<const int***>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST***>(),value,dims,mask.get_view<const int***>())
-                : details::svm<negate_mask>(get_strided_view<ST***>(),value,dims,mask.get_strided_view<const int***>());
-      break;
-    case 4:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST****>(),value,dims,mask.get_view<const int****>())
-                : details::svm<negate_mask>(get_view<ST****>(),value,dims,mask.get_strided_view<const int****>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST****>(),value,dims,mask.get_view<const int****>())
-                : details::svm<negate_mask>(get_strided_view<ST****>(),value,dims,mask.get_strided_view<const int****>());
-      break;
-    case 5:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST*****>(),value,dims,mask.get_view<const int*****>())
-                : details::svm<negate_mask>(get_view<ST*****>(),value,dims,mask.get_strided_view<const int*****>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST*****>(),value,dims,mask.get_view<const int*****>())
-                : details::svm<negate_mask>(get_strided_view<ST*****>(),value,dims,mask.get_strided_view<const int*****>());
-      break;
-    case 6:
-      if (lr_ok)
-        m_lr_ok ? details::svm<negate_mask>(get_view<ST******>(),value,dims,mask.get_view<const int******>())
-                : details::svm<negate_mask>(get_view<ST******>(),value,dims,mask.get_strided_view<const int******>());
-      else
-        m_lr_ok ? details::svm<negate_mask>(get_strided_view<ST******>(),value,dims,mask.get_view<const int******>())
-                : details::svm<negate_mask>(get_strided_view<ST******>(),value,dims,mask.get_strided_view<const int******>());
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank in 'deep_copy'.\n");
-  }
+  details::dispatch_views(layout.rank(),
+    [&](const auto& y_view, const auto& m_view) {
+      details::svm<negate_mask>(y_view,value,dims,m_view);
+    },
+    details::as<ST>(*this), details::as<const int>(mask));
   Kokkos::fence();
 }
 
