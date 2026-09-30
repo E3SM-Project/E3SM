@@ -24,6 +24,7 @@
 #include "number_path.hpp"
 #include "aerocom_cld.hpp"
 #include "field_prev.hpp"
+#include "field_broadcast.hpp"
 #include "field_over_dt.hpp"
 #include "horiz_avg.hpp"
 #include "vert_contract.hpp"
@@ -59,6 +60,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("NumberPath",&create_diagnostic<NumberPath>);
   diag_factory.register_product("AeroComCld",&create_diagnostic<AeroComCld>);
   diag_factory.register_product("FieldPrev",&create_diagnostic<FieldPrev>);
+  diag_factory.register_product("FieldBroadcast",&create_diagnostic<FieldBroadcast>);
   diag_factory.register_product("FieldOverDt",&create_diagnostic<FieldOverDt>);
   diag_factory.register_product("HorizAvg",&create_diagnostic<HorizAvg>);
   diag_factory.register_product("VertContract",&create_diagnostic<VertContract>);

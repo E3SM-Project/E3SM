@@ -124,6 +124,11 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     SOURCES field_prev_test.cpp
   )
 
+  # Test field_broadcast
+  CreateDiagTest(field_broadcast
+    SOURCES field_broadcast_test.cpp
+  )
+
   # Test field_over_dt
   CreateDiagTest(field_over_dt
     SOURCES field_over_dt_test.cpp
