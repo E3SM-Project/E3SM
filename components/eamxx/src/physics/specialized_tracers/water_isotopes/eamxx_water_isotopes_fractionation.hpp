@@ -2,7 +2,7 @@
 #define EAMXX_WATER_ISOTOPES_FRACTIONATION_HPP
 
 #include "share/core/eamxx_types.hpp"
-#include "eamxx_water_isotopes_constants.hpp"  // WaterIsotopologues, coefficient tables
+#include "eamxx_water_isotopes_parameters.hpp"  // WaterIsotopologues, coefficient tables
 
 #include <ekat_pack.hpp>
 #include <ekat_pack_math.hpp>  // ekat::exp/ekat::pow overloads for ekat::Pack
@@ -173,24 +173,24 @@ public:
       const WaterIsotopologues species,
       const CondensedPhase phase,
       const WisoAlphaDir dir,
-      const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants,
+      const WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params,
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true),
       const char* caller = "wiso::alpha_equilibrium")
   {
     using RealT = typename ekat::ScalarTraits<ScalarT>::scalar_type;
-    using Constants = WaterIsotopeConstants<RealT>;
+    using Params = WaterIsotopeParameters<RealT>;
 
     auto base = [&](const ScalarT& temp, WaterIsotopologues sp) -> ScalarT {
-      const IsoElement el = Constants::element_of(sp);
+      const IsoElement el = Params::element_of(sp);
 
       // Bounds are per (phase, element): the default ice formulation draws its
       // two rows from two different studies with different fitted ranges.
       ScalarT t_live{RealT(T_lane_fill)};
       t_live.set(range_mask, temp);
-      check_temperature(t_live, constants.tbounds(phase, el), range_mask, caller);
+      check_temperature(t_live, iso_params.tbounds(phase, el), range_mask, caller);
 
       return exp(RealT(1e-3) *
-                 ln_alpha_permil(t_live, constants.alpha_eq_coeffs(phase, el)));
+                 ln_alpha_permil(t_live, iso_params.alpha_eq_coeffs(phase, el)));
     };
 
     return compute_alpha(t, species, dir, base);
@@ -206,10 +206,10 @@ public:
       const ScalarT& t,
       const WaterIsotopologues species,
       const WisoAlphaDir dir,
-      const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants,
+      const WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params,
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
-    return alpha_equilibrium(t, species, CondensedPhase::Liquid, dir, constants,
+    return alpha_equilibrium(t, species, CondensedPhase::Liquid, dir, iso_params,
                              range_mask, "wiso::alpha_liquid_vapor");
   }
 
@@ -219,10 +219,10 @@ public:
       const ScalarT& t,
       const WaterIsotopologues species,
       const WisoAlphaDir dir,
-      const WaterIsotopeConstants<typename ekat::ScalarTraits<ScalarT>::scalar_type>& constants,
+      const WaterIsotopeParameters<typename ekat::ScalarTraits<ScalarT>::scalar_type>& iso_params,
       const ekat::Mask<ScalarT::n>& range_mask = ekat::Mask<ScalarT::n>(true))
   {
-    return alpha_equilibrium(t, species, CondensedPhase::Ice, dir, constants,
+    return alpha_equilibrium(t, species, CondensedPhase::Ice, dir, iso_params,
                              range_mask, "wiso::alpha_ice_vapor");
   }
 };

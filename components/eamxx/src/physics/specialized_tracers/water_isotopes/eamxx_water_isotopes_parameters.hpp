@@ -1,5 +1,5 @@
-#ifndef EAMXX_WATER_ISOTOPES_CONSTANTS_HPP
-#define EAMXX_WATER_ISOTOPES_CONSTANTS_HPP
+#ifndef EAMXX_WATER_ISOTOPES_PARAMETERS_HPP
+#define EAMXX_WATER_ISOTOPES_PARAMETERS_HPP
 
 #include "share/core/eamxx_types.hpp"
 #include "share/util/eamxx_utils.hpp"
@@ -144,7 +144,7 @@ struct WaterIsotopeRuntimeOptions {
 };
 
 template <typename Scalar>
-struct WaterIsotopeConstants
+struct WaterIsotopeParameters
 {
 
   // Number of isotope species
@@ -186,7 +186,7 @@ public:
 
   // Constructor with runtime options (selects formulations)
   KOKKOS_INLINE_FUNCTION
-  WaterIsotopeConstants(const WaterIsotopeRuntimeOptions& opts) : opts_(opts) {
+  WaterIsotopeParameters(const WaterIsotopeRuntimeOptions& opts) : opts_(opts) {
     for (int e = 0; e < etoi(IsoElement::Count); ++e) {
       eq_[etoi(CondensedPhase::Liquid)][e] =
           alpha_eq_liq_table[etoi(opts.liquid_vapor)][e];
@@ -197,7 +197,7 @@ public:
 
   // Default constructor (uses default formulations)
   KOKKOS_INLINE_FUNCTION
-  WaterIsotopeConstants() : WaterIsotopeConstants(WaterIsotopeRuntimeOptions{}) {}
+  WaterIsotopeParameters() : WaterIsotopeParameters(WaterIsotopeRuntimeOptions{}) {}
 
   // -----------------------------------------------------------------------
   // Accessors (select table row based on stored runtime options)
@@ -233,9 +233,9 @@ public:
 };
 
 // Convenience alias for Real precision
-using WaterIsotopeConstantsReal = WaterIsotopeConstants<Real>;
+using WaterIsotopeParametersReal = WaterIsotopeParameters<Real>;
 
 } // namespace wiso
 } // namespace scream
 
-#endif // EAMXX_WATER_ISOTOPES_CONSTANTS_HPP
+#endif // EAMXX_WATER_ISOTOPES_PARAMETERS_HPP
