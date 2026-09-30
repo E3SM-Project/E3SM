@@ -25,7 +25,7 @@
   <entry id="EAMXX_VGRID">
     <type>char</type>
     <valid_values>L72,L128v1,L128v4</valid_values>
-    <default_value>L128v4</default_value>
+    <default_value>L128v1</default_value>
     <values match='last'>
       <value compset="_SCREAM%MAM4xx">L128v1</value>
     </values>
