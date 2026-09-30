@@ -750,18 +750,21 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
-    <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
+    <!-- For aquaplanet run, unset the topography_filename (phis=0 is set in constant_fields below) -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
-    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
     <!-- Fields that we need to initialize, but are not in an initial condition file, need to be inited here.
-         Constant values are set via an array of "field_name:value" entries. Entries that do not match any
-         field in need of initialization are ignored. Being an array, entries can be added/removed with atmchange:
+         Constant values are set via the constant_fields array of "field_name:value" entries. For vector fields,
+         the value can be a ';'-separated list, with one entry per component (e.g., "dgnum:1e-7;2e-8;3e-7;4e-8").
+         Entries that do not match any field in need of initialization are ignored. Being an array, entries can
+         be added/removed with atmchange (quote the argument if it contains ';'):
            ./atmchange initial_conditions::constant_fields-=tke:0.0
            ./atmchange initial_conditions::constant_fields+=my_field:1.0
-         Fields needing a vector of values, or a grid/compset-dependent value, can still be set as individual entries.
+         Conditional (e.g., grid-dependent) entries can be appended to the base list via append="last".
+         To initialize a field as a copy of another field, use the copy_fields array ("tgt_name:src_name").
+         NOTE: fields cannot be set with individual entries (e.g., <qr>0.0</qr>).
          Notes on the entries below:
           - surf_evap: TODO, delete this when the IC fixes come in
           - microphysics fields not on IC are set to zero; this is consistent with EAM init
@@ -769,6 +772,9 @@ be lost if SCREAM_HACK_XML is not enabled.
           - pbl_height: ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized
           - sfc_alb_*, surf_sens_flux, surf_lw_flux_up: should be provided by surface models, but we init here
             to keep AD from reading from file
+          - dgnum (dry aerosol particles diameters, one per mode [m]): MAM4xx-ACI needs it, currently set to
+            aitken model nominal diameter; remove it once all of MAM4xx is integrated
+          - dgnumwet: wet aerosol particles diameters [m]; wetdens: wet density of interstitial aerosol [kg/m3]
           - MAM4xx aerosol fields, constituent_fluxes, z_mam4_int, fraction_landuse [fraction]
           - wetdep_*/drydep_*: surface fluxes for the land model from MAM4xx wet scavenging -->
     <constant_fields type="array(string)" doc="Fields to initialize to a constant, as 'name:value' entries">
@@ -785,21 +791,21 @@ be lost if SCREAM_HACK_XML is not enabled.
       soa_c1:0.0, soa_c2:0.0, soa_c3:0.0, nacl_c1:0.0, nacl_c2:0.0, nacl_c3:0.0,
       mom_c1:0.0, mom_c2:0.0, mom_c3:0.0, mom_c4:0.0, num_c1:0.0, num_c2:0.0, num_c3:0.0, num_c4:0.0,
       wetdep_hydrophilic_bc:1e-5, drydep_hydrophilic_bc:1e-5, wetdep_hydrophilic_oc:1e-5, drydep_hydrophilic_oc:1e-5,
-      wetdep_dust_bin1:1e-5, wetdep_dust_bin2:1e-5, wetdep_dust_bin3:1e-5, wetdep_dust_bin4:1e-5
+      wetdep_dust_bin1:1e-5, wetdep_dust_bin2:1e-5, wetdep_dust_bin3:1e-5, wetdep_dust_bin4:1e-5,
+      dgnum:1.37146e-07;3.45899e-08;1.00000e-06;9.99601e-08,
+      dgnumwet:1.37452e-07;3.46684e-08;1.00900e-06;9.99601e-08,
+      wetdens:5.08262e-12;1.54035e-13;3.09018e-13;9.14710e-22
     </constant_fields>
-    <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
-    <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
-    <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
-    <wetdens type="array(real)" doc="Wet density of interstitial aerosol [kg/m3]">5.08262e-12 ,1.54035e-13 ,3.09018e-13 ,9.14710e-22</wetdens>
-    <!-- default ne1024 initial condition files do not have these, so init to zero here -->
+    <!-- Grid/compset dependent entries -->
+    <!-- default ne256+ initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
-    <qc hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
-    <nc hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
-    <ni hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
-    <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+    <constant_fields hgrid="ne256np4|ne512np4|ne1024np4" append="last">qc:0.0, qi:0.0, nc:0.0, ni:0.0</constant_fields>
+    <constant_fields hgrid="ne32np4|ne64np4|ne128np4|ne0np4_CAx32v1" append="last">nc:0.0, ni:0.0</constant_fields>
+    <constant_fields hgrid="ne0np4_conus_x4v1_lowcon" append="last">o3_volume_mix_ratio:0.0</constant_fields>
+    <!-- For aquaplanet run, set phis=0 (see also topography_filename above) -->
+    <constant_fields COMPSET=".*SCREAM%AQUA.*" append="last">phis:0.0</constant_fields>
+
+    <copy_fields type="array(string)" doc="Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries"/>
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>

@@ -33,6 +33,7 @@
 #endif
 
 #include <fstream>
+#include <map>
 #include <random>
 #include <ranges>
 
@@ -279,7 +280,7 @@ void AtmosphereDriver::create_grids()
   // The GridsManager might load some geometric data from IC file.
   // To avoid having to pass the same data twice in the input file,
   // we have the AD add the IC file name to the GM params
-  const auto& ic_pl = m_atm_params.sublist("initial_conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
   if (m_run_type==RunType::Restart) {
     // Restarted run -> read geo data from restart file
     const auto& provenance = m_atm_params.sublist("provenance");
@@ -1055,46 +1056,80 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->info("  [EAMxx] set_initial_conditions ...");
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 
-  // Work on a copy, so that we can add to it the entries coming from 'constant_fields'
-  // without altering the params list stored in the driver (which ends up in the provenance)
-  auto ic_pl = m_atm_params.sublist("initial_conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
-  // Constant initialization can also be specified as an array of "name:value" strings
-  //   constant_fields: [qr:0.0, nr:0.0, pbl_height:2000.0]
-  // Each entry is equivalent to an individual parameter 'name: value' in this list,
-  // but, being an array, entries can be added/removed by the user at will.
-  // NOTE: entries that do not match any field needing initialization are ignored,
-  //       just like individual parameters are.
-  if (ic_pl.isParameter("constant_fields")) {
-    auto trim = [](const std::string& s) {
-      const auto b = s.find_first_not_of(" \t");
-      const auto e = s.find_last_not_of(" \t");
-      return b==std::string::npos ? std::string() : s.substr(b,e-b+1);
+  // Only these parameters are allowed in the initial_conditions list. In particular, fields
+  // cannot be set via individual entries (e.g., 'qr: 0.0'): use constant_fields/copy_fields.
+  {
+    const strvec_t valid_params = {
+      "filename", "topography_filename", "constant_fields", "copy_fields",
+      "perturbed_fields", "generate_perturbation_random_seed",
+      "perturbation_random_seed", "perturbation_limit", "perturbation_minimum_pressure"
     };
-    for (const auto& entry : ic_pl.get<strvec_t>("constant_fields")) {
+    for (const auto& n : ic_pl.param_names()) {
+      EKAT_REQUIRE_MSG (ekat::contains(valid_params,n),
+          "Error! Unrecognized parameter in the initial_conditions list: '" + n + "'.\n"
+          "       To initialize a field to a constant, use initial_conditions::constant_fields\n"
+          "       (entries 'name:value', or 'name:v1;v2;...' for vector fields), and to initialize it\n"
+          "       as a copy of another field, use initial_conditions::copy_fields (entries 'tgt:src').\n");
+    }
+  }
+
+  // Constant initialization is specified via the constant_fields array of strings, with entries
+  //   name:value            (all entries of the field are set to 'value')
+  //   name:v1;v2;...;vN     (for vector fields, component i is set to vi)
+  // Copy initialization is specified via the copy_fields array, with entries
+  //   tgt_name:src_name
+  // NOTE: entries that do not match any field needing initialization are ignored.
+  auto trim = [](const std::string& s) {
+    const auto b = s.find_first_not_of(" \t");
+    const auto e = s.find_last_not_of(" \t");
+    return b==std::string::npos ? std::string() : s.substr(b,e-b+1);
+  };
+  auto parse_entries = [&](const std::string& pname) {
+    std::map<std::string,std::string> entries;
+    if (not ic_pl.isParameter(pname)) {
+      return entries;
+    }
+    for (const auto& entry : ic_pl.get<strvec_t>(pname)) {
       const auto pos = entry.find(':');
-      EKAT_REQUIRE_MSG (pos!=std::string::npos and pos>0 and pos+1<entry.size(),
-          "Error! Invalid entry in initial_conditions::constant_fields.\n"
+      const auto name = trim(entry.substr(0,pos));
+      const auto val  = pos==std::string::npos ? std::string() : trim(entry.substr(pos+1));
+      EKAT_REQUIRE_MSG (not name.empty() and not val.empty(),
+          "Error! Invalid entry in initial_conditions::" + pname + ".\n"
           "       Entry: '" + entry + "'\n"
           "       Expected format: 'field_name:value'\n");
-      const auto name = trim(entry.substr(0,pos));
-      const auto val_str = trim(entry.substr(pos+1));
-      EKAT_REQUIRE_MSG (not ic_pl.isParameter(name),
-          "Error! Field '" + name + "' has an initial condition specified both in\n"
-          "       initial_conditions::constant_fields and as an individual entry.\n");
-      double val;
-      try {
-        size_t idx;
-        val = std::stod(val_str,&idx);
-        EKAT_REQUIRE_MSG (idx==val_str.size(), "trailing characters");
-      } catch (...) {
-        EKAT_ERROR_MSG (
-            "Error! Invalid value in initial_conditions::constant_fields.\n"
-            "       Entry: '" + entry + "'\n"
-            "       Expected format: 'field_name:value' (value must be a real number)\n");
-      }
-      ic_pl.set<double>(name,val);
+      EKAT_REQUIRE_MSG (entries.count(name)==0,
+          "Error! Field '" + name + "' appears more than once in initial_conditions::" + pname + ".\n");
+      entries[name] = val;
     }
+    return entries;
+  };
+
+  std::map<std::string,std::vector<double>> constant_values;
+  for (const auto& [name,val] : parse_entries("constant_fields")) {
+    std::vector<double> values;
+    for (const auto& v : ekat::split(val,';')) {
+      size_t idx = 0;
+      double d = 0;
+      try {
+        d = std::stod(trim(v),&idx);
+      } catch (...) {
+        idx = 0;
+      }
+      EKAT_REQUIRE_MSG (idx>0 and idx==trim(v).size(),
+          "Error! Invalid value in initial_conditions::constant_fields.\n"
+          "       Field: '" + name + "'\n"
+          "       Value: '" + val + "'\n"
+          "       Expected a real number, or a ';'-separated list of real numbers.\n");
+      values.push_back(d);
+    }
+    constant_values[name] = values;
+  }
+  const auto copy_sources = parse_entries("copy_fields");
+  for (const auto& [name,src] : copy_sources) {
+    EKAT_REQUIRE_MSG (constant_values.count(name)==0,
+        "Error! Field '" + name + "' appears in both initial_conditions::constant_fields and copy_fields.\n");
   }
 
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
@@ -1106,7 +1141,8 @@ void AtmosphereDriver::set_initial_conditions ()
     for (const auto& it : m_field_mgr->get_repo(gn)) {
       const auto& f = *it.second;
       const auto& children = f.get_header().get_children();
-      if (children.size()>0 and ic_pl.isParameter(f.name())) {
+      if (children.size()>0 and
+          (constant_values.count(f.name())>0 or copy_sources.count(f.name())>0)) {
         std::string child_names;
         for (auto c : children)
           child_names += c.lock()->get_identifier().name() + " ";
@@ -1138,18 +1174,13 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& fname = fid.name();
       const auto& grid_name = fid.get_grid_name();
 
-      if (ic_pl.isParameter(fname)) {
-        // This is the case that the user provided an initialization
-        // for this field in the parameter file (either to a constant or to another field).
-        if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
-            ic_pl.isType<std::vector<double>>(fname)) {
-          initialize_constant_field(fid, ic_pl);
-        } else if (ic_pl.isType<std::string>(fname)) {
-          ic_fields_to_copy.push_back(fid);
-        } else {
-          EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
-                          "double or string, or vector double arguments are allowed");
-        }
+      if (constant_values.count(fname)>0) {
+        // The user requested a constant initialization for this field
+        initialize_constant_field(fid, constant_values.at(fname));
+        m_fields_inited[grid_name].insert(fname);
+      } else if (copy_sources.count(fname)>0) {
+        // The user requested this field to be a copy of another field
+        ic_fields_to_copy.push_back(fid);
         m_fields_inited[grid_name].insert(fname);
       } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
         // these fields need to be loaded from the topography file
@@ -1277,7 +1308,7 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& tgt_fname = tgt_fid.name();
     const auto& gname = tgt_fid.get_grid_name();
 
-    const auto& src_fname = ic_pl.get<std::string>(tgt_fname);
+    const auto& src_fname = copy_sources.at(tgt_fname);
 
     // The field must exist in the fm on the input field's grid
     EKAT_REQUIRE_MSG (m_field_mgr->has_field(src_fname, gname),
@@ -1443,63 +1474,60 @@ void AtmosphereDriver::set_initial_conditions ()
 
 void AtmosphereDriver::
 initialize_constant_field(const FieldIdentifier& fid,
-                          const ekat::ParameterList& ic_pl)
+                          const std::vector<double>& values)
 {
   auto f = m_field_mgr->get_field(fid);
-  // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 
   // For vector fields, we allow either single value init or vector value init.
   // That is, both these are ok
-  //   fname: val
-  //   fname: [val1,...,valN]
+  //   name:val
+  //   name:val1;...;valN
   // In the first case, all entries of the field are inited to val, while in the latter,
   // each component is inited to the corresponding entry of the array.
   const auto& name = fid.name();
-  if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
-    const auto idim = layout.get_vector_component_idx();
-    const auto vec_dim = layout.get_vector_dim();
-    const auto& values = ic_pl.get<std::vector<double>>(name);
-    EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
-        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
-        "       Field dimension: " + std::to_string(vec_dim) + "\n"
-        "       Array dimenions: " + std::to_string(values.size()) + "\n");
+  if (values.size()==1) {
+    f.deep_copy(values[0]);
+    return;
+  }
 
-    if (layout.rank()==2 && idim==1) {
-      // We cannot use 'get_component' for views of rank 2 with vector dimension
-      // striding fastest, since we would not get a LayoutRight view. For these views,
-      // simply do a manual loop
-      using kt = Field::kt_dev;
-      typename kt::view_1d<double> data("data",vec_dim);
-      auto data_h = Kokkos::create_mirror_view(data);
-      for (int i=0; i<vec_dim; ++i) {
-        data_h(i) = values[i];
-      }
-      Kokkos::deep_copy(data,data_h);
+  EKAT_REQUIRE_MSG (layout.is_vector_layout(),
+      "Error! Multiple initial condition values provided for a non-vector field.\n"
+      "       Field:       " + name + "\n"
+      "       Num. values: " + std::to_string(values.size()) + "\n");
+  const auto idim = layout.get_vector_component_idx();
+  const auto vec_dim = layout.get_vector_dim();
+  EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
+      "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+      "       Field dimension: " + std::to_string(vec_dim) + "\n"
+      "       Array dimenions: " + std::to_string(values.size()) + "\n");
 
-      const int n = layout.dim(0);
-      auto v = f.get_view<double**>();
-      Kokkos::parallel_for(typename kt::RangePolicy(0,n),
-                           KOKKOS_LAMBDA(const int i) {
-        for (int j=0; j<vec_dim; ++j) {
-          v(i,j) = data(j);
-        }
-      });
-    } else {
-      // Extract a subfield for each component. This is not "too" expensive, expecially
-      // considering that this code is executed during initialization only.
-      for (int comp=0; comp<vec_dim; ++comp) {
-        auto f_i = f.get_component(comp);
-        f_i.deep_copy(values[comp]);
-      }
+  if (layout.rank()==2 && idim==1) {
+    // We cannot use 'get_component' for views of rank 2 with vector dimension
+    // striding fastest, since we would not get a LayoutRight view. For these views,
+    // simply do a manual loop
+    using kt = Field::kt_dev;
+    typename kt::view_1d<double> data("data",vec_dim);
+    auto data_h = Kokkos::create_mirror_view(data);
+    for (int i=0; i<vec_dim; ++i) {
+      data_h(i) = values[i];
     }
+    Kokkos::deep_copy(data,data_h);
+
+    const int n = layout.dim(0);
+    auto v = f.get_view<double**>();
+    Kokkos::parallel_for(typename kt::RangePolicy(0,n),
+                         KOKKOS_LAMBDA(const int i) {
+      for (int j=0; j<vec_dim; ++j) {
+        v(i,j) = data(j);
+      }
+    });
   } else {
-    if (ic_pl.isType<int>(name)) {
-      const auto& value = ic_pl.get<int>(name);
-      f.deep_copy(value);
-    } else {
-      const auto& value = ic_pl.get<double>(name);
-      f.deep_copy(value);
+    // Extract a subfield for each component. This is not "too" expensive, expecially
+    // considering that this code is executed during initialization only.
+    for (int comp=0; comp<vec_dim; ++comp) {
+      auto f_i = f.get_component(comp);
+      f_i.deep_copy(values[comp]);
     }
   }
 }

@@ -47,12 +47,13 @@ initial_conditions:
   # we should get the following variables from other processes
   pbl_height : 1.0
   dstflx : 0.0
-  ocnfrac:   0.10000000000000000E+001
-  sst: 0.30178553874977507E+003
-  cldfrac_tot: 0.138584624960092
-  U: -0.24988988196194634E+000
-  V: -0.23959782871450760E+000
-  constituent_fluxes: 0.0
+  constant_fields:
+    - "ocnfrac:0.10000000000000000E+001"
+    - "sst:0.30178553874977507E+003"
+    - "cldfrac_tot:0.138584624960092"
+    - "U:-0.24988988196194634E+000"
+    - "V:-0.23959782871450760E+000"
+    - "constituent_fluxes:0.0"
   z_mam4_int : 0.0
 # The parameters for I/O control
 scorpio:

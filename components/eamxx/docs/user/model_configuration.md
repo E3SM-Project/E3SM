@@ -363,19 +363,27 @@ will be removed from the generated `namelist_defaults.xml`
 
 Fields that need to be initialized, but are not present in the initial condition
 file, can be set to a constant value via the `initial_conditions::constant_fields`
-array. Each entry has the form `field_name:value`:
+array. Each entry has the form `field_name:value`. For vector fields, one can either
+provide a single value (used for all components), or a `;`-separated list with one
+value per component:
 
 ``` {.shell .copy}
 ./atmchange initial_conditions::constant_fields+=my_field:1.5
+./atmchange initial_conditions::constant_fields+="my_vector_field:1.5;2.5"
 ./atmchange initial_conditions::constant_fields-=tke:0.0
 ```
 
 Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
-any field in need of initialization are ignored. A field cannot appear both in
-`constant_fields` and as an individual entry of `initial_conditions`
-(the latter is still supported, and is needed for vector-valued constants
-or for values that depend on the grid/compset).
+any field in need of initialization are ignored.
+
+Similarly, `initial_conditions::copy_fields` initializes fields as a copy of other
+fields, with entries of the form `tgt_field_name:src_field_name`.
+
+!!! note
+    Fields can *only* be initialized through these two arrays: setting a field with an
+    individual entry (e.g., `initial_conditions::qr=0.0`) is not supported, and
+    EAMxx will error out if the `initial_conditions` list contains unrecognized parameters.
 
 ## Model Output
 
