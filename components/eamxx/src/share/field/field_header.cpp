@@ -167,4 +167,31 @@ create_subfield_header(const FieldIdentifier& id,
   return fh;
 }
 
+std::shared_ptr<FieldHeader>
+FieldHeader::broadcast (const FieldLayout& tgt)
+{
+  EKAT_REQUIRE_MSG (not is_broadcast(),
+      "Error! Cannot broadcast a field that is already a broadcast.\n");
+
+  const auto& src = m_identifier.get_layout();
+  auto [can_broadcast, dim_map] = src.broadcast(tgt);
+  EKAT_REQUIRE_MSG (can_broadcast,
+      "Error! Cannot broadcast to the provided target layout.\n"
+      " - src field name: " + m_identifier.name() + "\n"
+      " - src layout: " + src.to_string() + "\n"
+      " - tgt layout: " + tgt.to_string() + "\n");
+
+  auto fh = std::make_shared<FieldHeader>(m_identifier.clone().reset_layout(tgt));
+
+  // Same tracking as the source: a broadcast is just a different view of the same data
+  fh->m_tracking = m_tracking;
+  fh->m_alloc_prop = std::make_shared<FieldAllocProp>(m_alloc_prop->broadcast(tgt));
+
+  fh->set_extra_data("bcast_src",shared_from_this());
+  fh->set_extra_data("bcast_map",dim_map);
+  fh->set_may_be_filled(may_be_filled());
+
+  return fh;
+}
+
 } // namespace scream

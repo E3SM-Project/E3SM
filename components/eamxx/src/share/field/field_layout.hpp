@@ -9,6 +9,7 @@
 #include <ekat_assert.hpp>
 
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace scream
@@ -151,6 +152,15 @@ public:
 
   FieldLayout clone() const;
   FieldLayout transpose () const;
+
+  // Returns a pair with
+  //  - first: whether *this can indeed be broadcasted to tgt
+  //  - second: a vector with length tgt.rank(), with:
+  //     - vec[i] = -1 if the i-th dim of tgt is not in *this (i.e., it is a broadcasted dim)
+  //     - vec[i] = the position in *this of the i-th dim of tgt otherwise
+  // This layout can be broadcasted to tgt if its tags/extents are an ordered subset of tgt's ones.
+  // NOTE: if the same tag/extent appears multiple times, dims are matched greedily, left to right.
+  std::pair<bool,std::vector<int>> broadcast (const FieldLayout& tgt) const;
 
   // NOTE: congruent does not check the tags names. It only checks
   //       rank, m_tags, and m_dims. Use operator== if names are important

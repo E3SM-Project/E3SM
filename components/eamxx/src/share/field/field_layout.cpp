@@ -214,6 +214,19 @@ FieldLayout FieldLayout::transpose() const
   return flt;
 }
 
+std::pair<bool,std::vector<int>> FieldLayout::broadcast (const FieldLayout& tgt) const
+{
+  // Greedily match the dims of *this (in order) with those of tgt
+  std::vector<int> dim_map(tgt.rank(),-1);
+  int isrc = 0;
+  for (int itgt=0; itgt<tgt.rank() and isrc<rank(); ++itgt) {
+    if (tgt.tag(itgt)==m_tags[isrc] and tgt.dim(itgt)==m_dims[isrc]) {
+      dim_map[itgt] = isrc++;
+    }
+  }
+  return std::make_pair(isrc==rank(),dim_map);
+}
+
 FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)
 {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");

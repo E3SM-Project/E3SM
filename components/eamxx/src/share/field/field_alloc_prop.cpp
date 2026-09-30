@@ -88,6 +88,21 @@ subview (const int idim, const int k, const bool dynamic) const {
   return props;
 }
 
+FieldAllocProp FieldAllocProp::broadcast (const layout_type& tgt) const
+{
+  EKAT_REQUIRE_MSG (is_committed(),
+      "Error! Broadcast requires alloc properties to be committed.\n");
+
+  FieldAllocProp props(*this);
+  props.m_layout = tgt.clone();
+
+  // Broadcasting is done via stride-0 views, so neither contiguity nor LayoutRight hold
+  props.m_contiguous = false;
+  props.m_allows_layout_right = false;
+
+  return props;
+}
+
 FieldAllocProp FieldAllocProp::subview(const int idim,
                                        const int index_beg,
                                        const int index_end) const {

@@ -89,6 +89,100 @@ TEST_CASE ("update") {
     }
   }
 
+  SECTION ("broadcast") {
+    // f_real/f_int have layout (COL,CMP,LEV). Use rhs with fewer dims, broadcasted by the caller
+    FieldLayout xl_cl ({COL,LEV},{ncol,nlev});
+    FieldLayout xl_c  ({COL},{ncol});
+    FieldLayout xl_l  ({LEV},{nlev});
+
+    // Get x(i,j,k) for the broadcasted entries (using the original layout)
+    auto xval = [&](const Field& x, const int i, const int k) {
+      x.sync_to_host();
+      const auto& l = x.get_header().get_identifier().get_layout();
+      if (l.rank()==2) return x.get_strided_view<const Real**,Host>()(i,k);
+      if (l.tags()[0]==COL) return x.get_strided_view<const Real*,Host>()(i);
+      return x.get_strided_view<const Real*,Host>()(k);
+    };
+
+    for (const auto& xl : {xl_cl,xl_c,xl_l}) {
+      Field x (FieldIdentifier("x",xl,kg,"some_grid"),true);
+      randomize_uniform (x,seed++,1.0,2.0);
+      auto xb = x.broadcast(f_real);
+
+      f_real.sync_to_host();
+      auto y0 = f_real.get_strided_view<const Real***,Host>();
+
+      auto check = [&](const Field& y, auto&& expected) {
+        y.sync_to_host();
+        auto yv = y.get_strided_view<const Real***,Host>();
+        for (int i=0; i<ncol; ++i)
+          for (int j=0; j<ncmp; ++j)
+            for (int k=0; k<nlev; ++k)
+              REQUIRE_THAT (yv(i,j,k), Catch::Matchers::WithinRel(expected(i,j,k),1e-12));
+      };
+
+      { // scale
+        Field y = f_real.clone(CloneFlags::CopyData);
+        y.scale(xb);
+        check (y,[&](int i,int j,int k){ return y0(i,j,k)*xval(x,i,k); });
+      }
+      { // scale_inv
+        Field y = f_real.clone(CloneFlags::CopyData);
+        y.scale_inv(xb);
+        check (y,[&](int i,int j,int k){ return y0(i,j,k)/xval(x,i,k); });
+      }
+      { // update
+        Field y = f_real.clone(CloneFlags::CopyData);
+        y.update(xb,2.0,3.0);
+        check (y,[&](int i,int j,int k){ return 2*xval(x,i,k)+3*y0(i,j,k); });
+      }
+      { // masked
+        Field mask (fid_i.clone("mask"),true);
+        mask.deep_copy(1);
+        mask.subfield(COL,0).deep_copy(0);
+
+        Field y = f_real.clone(CloneFlags::CopyData);
+        y.scale(xb,mask);
+        check (y,[&](int i,int j,int k){ return i==0 ? y0(i,j,k) : y0(i,j,k)*xval(x,i,k); });
+      }
+      { // src_mask
+        // The broadcast of a masked field stores the broadcasted mask
+        // Mask out the first entry of the first dim of x
+        x.create_valid_mask(Field::MaskInit::Valid);
+        x.get_valid_mask().subfield(0,0).deep_copy(0);
+        auto xbm = x.broadcast(f_real);
+        const bool first_is_col = xl.tags()[0]==COL;
+
+        Field y = f_real.clone(CloneFlags::CopyData);
+        y.scale(xbm,xbm.get_valid_mask());
+        check (y,[&](int i,int j,int k){
+          const bool masked_out = first_is_col ? i==0 : k==0;
+          return masked_out ? y0(i,j,k) : y0(i,j,k)*xval(x,i,k);
+        });
+      }
+    }
+
+    // Int fields
+    Field xi (FieldIdentifier("xi",xl_cl,kg,"some_grid",DataType::IntType),true);
+    randomize_uniform (xi,seed++,1,5);
+    Field yi = f_int.clone(CloneFlags::CopyData);
+    yi.scale(xi.broadcast(f_int));
+    yi.sync_to_host(); f_int.sync_to_host(); xi.sync_to_host();
+    auto yiv = yi.get_strided_view<const int***,Host>();
+    auto fiv = f_int.get_strided_view<const int***,Host>();
+    auto xiv = xi.get_strided_view<const int**,Host>();
+    for (int i=0; i<ncol; ++i)
+      for (int j=0; j<ncmp; ++j)
+        for (int k=0; k<nlev; ++k)
+          REQUIRE (yiv(i,j,k)==fiv(i,j,k)*xiv(i,k));
+
+    // Non-broadcasted rhs with different layout is still an error, and a broadcast cannot be the lhs
+    Field x (FieldIdentifier("x",xl_cl,kg,"some_grid"),true);
+    Field y = f_real.clone();
+    REQUIRE_THROWS (y.scale(x));
+    REQUIRE_THROWS (x.broadcast(f_real).scale(1.0));
+  }
+
   SECTION ("max-min") {
     SECTION ("real") {
       Field one = f_real.clone();

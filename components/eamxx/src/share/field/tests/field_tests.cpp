@@ -387,6 +387,124 @@ TEST_CASE("field", "") {
     REQUIRE (views_are_equal(f3.get_valid_mask(),zeros));
     REQUIRE (f3.get_valid_mask().name()=="my_mask");
   }
+  SECTION ("broadcast") {
+    const int ncol = 3, ncmp = 2, nlev = 5;
+    FieldIdentifier sfid ("src", {{COL,LEV},{ncol,nlev}}, m/s, "some_grid");
+    FieldLayout tgt ({COL,CMP,LEV},{ncol,ncmp,nlev});
+
+    Field f (sfid,true);
+    randomize_uniform (f,seed++);
+    f.sync_to_host();
+
+    auto check_values = [&](const Field& fb, const Field& src_f) {
+      REQUIRE (fb.get_header().get_identifier().get_layout().congruent(tgt));
+      REQUIRE (fb.is_read_only());
+      fb.sync_to_host();
+      auto vb = fb.get_strided_view<const Real***,Host>();
+      auto vs = src_f.get_strided_view<const Real**,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vb(i,j,k)==vs(i,k));
+    };
+
+    SECTION ("values") {
+      auto fb = f.broadcast(tgt);
+      check_values(fb,f);
+
+      // No new allocation: same underlying data
+      REQUIRE (fb.get_internal_view_data<const Real>()==f.get_internal_view_data<const Real>());
+
+      // Shortcut with field as target
+      Field t (FieldIdentifier("t",tgt,m/s,"some_grid"),true);
+      check_values (f.broadcast(t),f);
+
+      // Broadcasting to the same layout is a no-op (but the result is read-only)
+      auto fc = f.broadcast(f);
+      REQUIRE (fc.is_read_only());
+      REQUIRE (views_are_equal(fc,f));
+    }
+
+    SECTION ("other_layouts") {
+      // Broadcast along the first and last dims
+      Field g (FieldIdentifier("g",{{CMP},{ncmp}},m/s,"some_grid"),true);
+      randomize_uniform (g,seed++);
+      g.sync_to_host();
+      auto gb = g.broadcast(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev}));
+      gb.sync_to_host();
+      auto vb = gb.get_strided_view<const Real***,Host>();
+      auto vg = g.get_strided_view<const Real*,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vb(i,j,k)==vg(j));
+
+      // Scalar layout can be broadcasted to anything
+      Field sc (FieldIdentifier("s",FieldLayout::scalar(),m/s,"some_grid"),true);
+      sc.deep_copy(3.0);
+      sc.sync_to_host();
+      auto sb = sc.broadcast(tgt);
+      sb.sync_to_host();
+      auto vsb = sb.get_strided_view<const Real***,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vsb(i,j,k)==3.0);
+    }
+
+    SECTION ("subfield") {
+      // Source with non-trivial strides
+      Field p (FieldIdentifier("p",{{COL,CMP,LEV},{ncol,ncmp,nlev}},m/s,"some_grid"),true);
+      randomize_uniform (p,seed++);
+      auto sf = p.subfield(CMP,1);   // layout (COL,LEV)
+      sf.sync_to_host();
+      check_values (sf.broadcast(tgt),sf);
+    }
+
+    SECTION ("errors") {
+      // Not allocated
+      Field na (sfid);
+      REQUIRE_THROWS (na.broadcast(tgt));
+
+      // Incompatible extents, tags, order, or larger source rank
+      REQUIRE_THROWS (f.broadcast(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev+1})));
+      REQUIRE_THROWS (f.broadcast(FieldLayout({COL,CMP},{ncol,ncmp})));
+      REQUIRE_THROWS (f.broadcast(FieldLayout({LEV,CMP,COL},{nlev,ncmp,ncol})));
+      REQUIRE_THROWS (f.broadcast(FieldLayout({COL},{ncol})));
+
+      // Cannot broadcast a broadcast
+      auto fb = f.broadcast(tgt);
+      REQUIRE_THROWS (fb.broadcast(FieldLayout({COL,CMP,LEV,GP},{ncol,ncmp,nlev,2})));
+
+      // Broadcasted field is read-only and only supports strided views
+      REQUIRE_THROWS (fb.get_strided_view<Real***,Host>());
+      REQUIRE_THROWS (fb.get_view<const Real***,Host>());
+      REQUIRE_THROWS (fb.deep_copy(1.0));
+    }
+
+    SECTION ("mask") {
+      // No mask in the source => no mask in the broadcast
+      REQUIRE (not f.broadcast(tgt).has_valid_mask());
+
+      auto& mask = f.create_valid_mask(Field::MaskInit::Valid);
+      mask.subfield(COL,0).deep_copy(0);
+      mask.sync_to_host();
+
+      auto fb = f.broadcast(tgt);
+      REQUIRE (fb.has_valid_mask());
+
+      const auto& mb = fb.get_valid_mask();
+      REQUIRE (mb.get_header().get_identifier().get_layout().congruent(tgt));
+      REQUIRE (mb.data_type()==DataType::IntType);
+      mb.sync_to_host();
+      auto vm = mb.get_strided_view<const int***,Host>();
+      auto vs = mask.get_strided_view<const int**,Host>();
+      for (int i=0; i<ncol; ++i)
+        for (int j=0; j<ncmp; ++j)
+          for (int k=0; k<nlev; ++k)
+            REQUIRE (vm(i,j,k)==vs(i,k));
+    }
+  }
 }
 
 } // anonymous namespace

@@ -3,6 +3,8 @@
 
 #include "share/field/field.hpp"
 
+#include <array>
+
 namespace scream
 {
 
@@ -24,6 +26,10 @@ auto Field::get_view () const
   // Make sure input field is allocated
   EKAT_REQUIRE_MSG(is_allocated(),
       "Error! Cannot extract a field's view before allocation happens.\n");
+
+  EKAT_REQUIRE_MSG (not m_header->is_broadcast(),
+      "Error! Broadcast fields can only be accessed via get_strided_view.\n"
+      " - field name: " + name() + "\n");
 
   EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<DstValueType>::value,
       "Error! Cannot get a view to non-const data if the field is read-only.\n");
@@ -95,6 +101,46 @@ get_strided_view_type<DT, HD> {
     EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
                     "Error! Source field allocation is not compatible with the "
                     "requested value type.\n");
+
+    // Check if this field is a broadcast of another field
+    if (m_header->is_broadcast()) {
+      // Get the strided view of the source field (whose rank is smaller than DstRank),
+      // and build a rank-DstRank view, with the same pointer, and stride 0 along
+      // the broadcasted dims. NOTE: we MUST build the src field, since only the Field
+      // structure can build the original view (from which we grab the strides)
+      Field src;
+      src.m_header = m_header->template get_extra_data<std::shared_ptr<FieldHeader>>("bcast_src");
+      src.m_data   = m_data;
+      const auto& dim_map = m_header->template get_extra_data<std::vector<int>>("bcast_map");
+      const int src_rank = src.m_header->get_identifier().get_layout().rank();
+
+      DstValueType* ptr = nullptr;
+      std::array<size_t,MaxRank> src_strides = {0};
+      auto get_src_strides = [&](const auto& v) {
+        ptr = v.data();
+        for (int i=0; i<src_rank; ++i) {
+          src_strides[i] = v.stride(i);
+        }
+      };
+      switch (src_rank) {
+        case 0: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,0>,HD>()); break;
+        case 1: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,1>,HD>()); break;
+        case 2: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,2>,HD>()); break;
+        case 3: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,3>,HD>()); break;
+        case 4: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,4>,HD>()); break;
+        case 5: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,5>,HD>()); break;
+        default:
+          EKAT_ERROR_MSG ("Error! Unexpected source rank in broadcast field.\n"
+                          " - field name: " + name() + "\n");
+      }
+
+      Kokkos::LayoutStride kl;
+      for (int i=0; i<DstRank; ++i) {
+        kl.dimension[i] = fl.dim(i);
+        kl.stride[i]    = dim_map[i]>=0 ? src_strides[dim_map[i]] : 0;
+      }
+      return DstView(ptr,kl);
+    }
 
     // Check if this field is a subview of another field
     const auto parent = m_header->get_parent();
