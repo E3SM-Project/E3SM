@@ -381,7 +381,7 @@ Similarly, `initial_conditions::copy_fields` initializes fields as a copy of oth
 fields, with entries of the form `tgt_field_name:src_field_name`.
 
 !!! note
-    Fields can *only* be initialized through these two arrays: setting a field with an
+    Fields can _only_ be initialized through these two arrays: setting a field with an
     individual entry (e.g., `initial_conditions::qr=0.0`) is not supported, and
     EAMxx will error out if the `initial_conditions` list contains unrecognized parameters.
 
