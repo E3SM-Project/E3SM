@@ -342,8 +342,6 @@ void run_both_pack_sizes(
 } // namespace
 
 TEST_CASE("water_isotopes_fractionation") {
-    using Real = scream::Real;
-
     /* Every sweep below compares against alpha values tabulated externally in
        fractionation_factors.xlsx, so the tolerance only needs to absorb the
        difference between two evaluation orders of the same polynomial (Horner
