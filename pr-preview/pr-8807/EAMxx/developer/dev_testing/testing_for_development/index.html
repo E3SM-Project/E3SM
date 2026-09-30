@@ -5440,10 +5440,11 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 <span class="w">  </span><span class="nt">filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}</span>
 <span class="w">  </span><span class="nt">topography_filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}</span>
 
-<span class="w">  </span><span class="c1"># other variables to pass as input</span>
-<span class="w">  </span><span class="nt">num_ABC </span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42.0</span>
-<span class="w">  </span><span class="nt">num_XYZ </span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.618</span>
-<span class="w">  </span><span class="nt">&lt;input_variable&gt; </span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;value&gt;</span>
+<span class="w">  </span><span class="c1"># other variables to initialize to a constant (vector fields: "name:v1;v2;...")</span>
+<span class="w">  </span><span class="nt">constant_fields</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"num_ABC:42.0"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"num_XYZ:1.618"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"&lt;input_variable&gt;:&lt;value&gt;"</span>
 <span class="c1"># The parameters for I/O control</span>
 <span class="nt">scorpio</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">output_yaml_files</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"output.yaml"</span><span class="p p-Indicator">]</span>

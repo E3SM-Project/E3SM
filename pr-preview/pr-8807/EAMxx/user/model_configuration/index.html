@@ -5497,16 +5497,24 @@ will be removed from the generated <code>namelist_defaults.xml</code>
 <h3 id="initializing-fields-to-a-constant-value">Initializing fields to a constant value</h3>
 <p>Fields that need to be initialized, but are not present in the initial condition
 file, can be set to a constant value via the <code>initial_conditions::constant_fields</code>
-array. Each entry has the form <code>field_name:value</code>:</p>
+array. Each entry has the form <code>field_name:value</code>. For vector fields, one can either
+provide a single value (used for all components), or a <code>;</code>-separated list with one
+value per component:</p>
 <div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>initial_conditions::constant_fields+<span class="o">=</span>my_field:1.5
+./atmchange<span class="w"> </span>initial_conditions::constant_fields+<span class="o">=</span><span class="s2">"my_vector_field:1.5;2.5"</span>
 ./atmchange<span class="w"> </span>initial_conditions::constant_fields-<span class="o">=</span>tke:0.0
 </code></pre></div>
 <p>Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
-any field in need of initialization are ignored. A field cannot appear both in
-<code>constant_fields</code> and as an individual entry of <code>initial_conditions</code>
-(the latter is still supported, and is needed for vector-valued constants
-or for values that depend on the grid/compset).</p>
+any field in need of initialization are ignored.</p>
+<p>Similarly, <code>initial_conditions::copy_fields</code> initializes fields as a copy of other
+fields, with entries of the form <code>tgt_field_name:src_field_name</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Fields can <em>only</em> be initialized through these two arrays: setting a field with an
+individual entry (e.g., <code>initial_conditions::qr=0.0</code>) is not supported, and
+EAMxx will error out if the <code>initial_conditions</code> list contains unrecognized parameters.</p>
+</div>
 <h2 id="model-output">Model Output</h2>
 <p>EAMxx allows the user to configure the desired model output via
 <a href="https://yaml.org/">YAML</a> files,
