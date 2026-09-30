@@ -4,15 +4,17 @@ if (compile_threaded)
   string(APPEND CMAKE_CXX_FLAGS " -qopenmp")
   string(APPEND CMAKE_EXE_LINKER_FLAGS  " -qopenmp")
 endif()
-string(APPEND CMAKE_C_FLAGS         " -fp-model precise")
-string(APPEND CMAKE_C_FLAGS_RELEASE " -O2 -debug minimal")
-string(APPEND CMAKE_C_FLAGS_DEBUG   " -O0 -g")
+string(APPEND CMAKE_C_FLAGS         " -fp-model=consistent")
+string(APPEND CMAKE_C_FLAGS_RELEASE " -fp-model=consistent -O2 -debug minimal")
+string(APPEND CMAKE_C_FLAGS_DEBUG   " -fp-model=consistent -O0 -g")
 
-string(APPEND CMAKE_CXX_FLAGS         " -fp-model precise")
-string(APPEND CMAKE_CXX_FLAGS_RELEASE " -O2 -debug minimal")
-string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -O0 -g")
+# EAMxx ignores generic CMAKE_CXX_FLAGS, includes CMAKE_CXX_FLAGS_[RELEASE,DEBUG]
+string(APPEND CMAKE_CXX_FLAGS         " -fp-model=consistent")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -fp-model=consistent -O2 -debug minimal")
+string(APPEND CMAKE_CXX_FLAGS_DEBUG   " -fp-model=consistent -O0 -g")
 
-string(APPEND CMAKE_Fortran_FLAGS " -traceback -convert big_endian -assume byterecl -ftz -assume realloc_lhs -fp-model source")
+string(APPEND CMAKE_Fortran_FLAGS " -traceback -convert big_endian -assume byterecl -ftz -assume realloc_lhs -fp-model=consistent -fimf-use-svml -DHAVE_ERF_INTRINSICS")
+
 string(APPEND CMAKE_Fortran_FLAGS_RELEASE " -O2 -debug minimal")
 string(APPEND CMAKE_Fortran_FLAGS_DEBUG   " -O0 -g -check bounds -check pointers -check noarg_temp_created")
 
