@@ -340,34 +340,34 @@ class Compy(Machine):
         cls.batch = "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm"
 
 ###############################################################################
-class GHCISNLGNU(Machine):
+class GHCIGNU(Machine):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base("ghci-snl-gnu")
-        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-gnu"
+        super().setup_base("ghci-gnu")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-gnu"
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB"]
 
 ###############################################################################
-class GHCISNLIntel(Machine):
+class GHCIIntel(Machine):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base("ghci-snl-intel")
-        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-intel"
+        super().setup_base("ghci-intel")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-intel"
         cls.env_setup = ["export GATOR_INITIAL_MB=4000MB",
                          "export OMPI_MCA_io=romio321"]
 
 ###############################################################################
-class GHCISNLCuda(Machine):
+class GHCICuda(Machine):
 ###############################################################################
     concrete = True
     @classmethod
     def setup(cls):
-        super().setup_base(name="ghci-snl-cuda")
-        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-snl-cuda"
+        super().setup_base(name="ghci-cuda")
+        cls.baselines_dir = "/projects/e3sm/data/baselines/scream/ghci-cuda"
         cls.gpu_arch = "cuda"
         cls.num_run_res = int(run_cmd_no_fail("nvidia-smi --query-gpu=name --format=csv,noheader | wc -l"))
 
