@@ -1201,6 +1201,10 @@ void AtmosphereDriver::set_initial_conditions ()
   // phis, sgh30, sgh are not read from the IC file, but from the topography file
   const bool has_topo_file = ic_pl.isParameter("topography_filename") and
                              ic_pl.get<std::string>("topography_filename")!="UNSET";
+  // Fields (by name, so that fields on multiple grids are only logged once) for which we want to tell
+  // the user what happened, to help spot a forgotten entry or a custom IC file not being used
+  std::set<std::string> forced_fields;
+  std::set<std::string> fallback_fields_found_in_file;
   strmap_t<std::set<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
@@ -1215,13 +1219,19 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& grid_name = fid.get_grid_name();
 
       const bool is_topo_field = fname=="phis" or fname=="sgh30" or fname=="sgh";
-      const bool use_fallback = fallback_values.count(fname)>0 and
-                                not (is_topo_field ? has_topo_file : in_ic_file(fname));
+      const bool has_fallback = fallback_values.count(fname)>0;
+      const bool in_file = has_fallback and (is_topo_field ? has_topo_file : in_ic_file(fname));
+      const bool use_fallback = has_fallback and not in_file;
+
+      if (in_file) {
+        fallback_fields_found_in_file.insert(fname);
+      }
 
       if (force_values.count(fname)>0) {
         // The user requested a constant initialization for this field, regardless of the IC file
         initialize_constant_field(fid, force_values.at(fname));
         m_fields_inited[grid_name].insert(fname);
+        forced_fields.insert(fname);
       } else if (use_fallback) {
         // The field is not in the IC file, so we fall back to the constant provided by the user
         initialize_constant_field(fid, fallback_values.at(fname));
@@ -1283,6 +1293,17 @@ void AtmosphereDriver::set_initial_conditions ()
   }
   if (ic_file_opened) {
     scorpio::release_file(ic_file_name);
+  }
+
+  for (const auto& fname : forced_fields) {
+    m_atm_logger->info("    [EAMxx] Field '" + fname + "' is set to a constant (force_constant_fields); "
+                       "any value in the IC file is ignored.");
+  }
+  for (const auto& fname : fallback_fields_found_in_file) {
+    const bool is_topo_field = fname=="phis" or fname=="sgh30" or fname=="sgh";
+    m_atm_logger->info("    [EAMxx] Field '" + fname + "' will be read from the " +
+                       (is_topo_field ? "topography" : "IC") +
+                       " file: its fallback constant (fallback_constant_fields) is not used.");
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 

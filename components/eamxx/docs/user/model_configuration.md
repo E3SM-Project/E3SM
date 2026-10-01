@@ -388,6 +388,11 @@ The order of operations is: fields in `force_constant_fields` are set first; the
 fields in `fallback_constant_fields` that are not in the IC file are set; finally,
 all remaining fields are read from the IC file.
 
+To help catch a forgotten entry or a custom IC file that is not being used, EAMxx logs
+one line (at `info` level) for each field in `force_constant_fields` (whose IC file value, if any,
+is ignored), and for each field in `fallback_constant_fields` that is found in the IC file
+(so its fallback constant is not used).
+
 Similarly, `initial_conditions::copy_fields` initializes fields as a copy of other
 fields, with entries of the form `tgt_field_name:src_field_name`.
 
