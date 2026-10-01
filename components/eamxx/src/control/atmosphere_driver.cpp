@@ -1085,6 +1085,7 @@ void AtmosphereDriver::set_initial_conditions ()
   //  - force_constant_fields:    the field is ALWAYS set to the constant, even if it is in the IC file
   //  - fallback_constant_fields: the field is set to the constant ONLY IF it is not in the IC file
   //                              (if it is, the field is read from the file)
+  //  If a field is in both, the forced constant wins.
   // Copy initialization is specified via the copy_fields array, with entries
   //   tgt_name:src_name
   // NOTE: entries that do not match any field needing initialization are ignored.
@@ -1140,15 +1141,13 @@ void AtmosphereDriver::set_initial_conditions ()
   const auto fallback_values = parse_constants("fallback_constant_fields");
   const auto copy_sources    = parse_entries("copy_fields");
 
-  // A field can only be listed in one of the arrays
-  for (const auto& [name,v] : force_values) {
-    EKAT_REQUIRE_MSG (fallback_values.count(name)==0 and copy_sources.count(name)==0,
-        "Error! Field '" + name + "' appears in more than one of initial_conditions::force_constant_fields,\n"
-        "       fallback_constant_fields, and copy_fields.\n");
-  }
-  for (const auto& [name,v] : fallback_values) {
-    EKAT_REQUIRE_MSG (copy_sources.count(name)==0,
-        "Error! Field '" + name + "' appears in both initial_conditions::fallback_constant_fields and copy_fields.\n");
+  // A field CAN be in both force_ and fallback_constant_fields: the forced constant wins. This allows
+  // users to force a field for a single run, without having to remove it from the (default) fallback list.
+  // A field in copy_fields, however, cannot be in any of the constant arrays.
+  for (const auto& [name,src] : copy_sources) {
+    EKAT_REQUIRE_MSG (force_values.count(name)==0 and fallback_values.count(name)==0,
+        "Error! Field '" + name + "' appears in both initial_conditions::copy_fields and one of\n"
+        "       force_constant_fields/fallback_constant_fields.\n");
   }
 
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
@@ -1219,7 +1218,9 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& grid_name = fid.get_grid_name();
 
       const bool is_topo_field = fname=="phis" or fname=="sgh30" or fname=="sgh";
-      const bool has_fallback = fallback_values.count(fname)>0;
+      const bool is_forced = force_values.count(fname)>0;
+      // If the field is forced, its fallback (if any) is irrelevant, so don't even check the IC file
+      const bool has_fallback = not is_forced and fallback_values.count(fname)>0;
       const bool in_file = has_fallback and (is_topo_field ? has_topo_file : in_ic_file(fname));
       const bool use_fallback = has_fallback and not in_file;
 
@@ -1227,7 +1228,7 @@ void AtmosphereDriver::set_initial_conditions ()
         fallback_fields_found_in_file.insert(fname);
       }
 
-      if (force_values.count(fname)>0) {
+      if (is_forced) {
         // The user requested a constant initialization for this field, regardless of the IC file
         initialize_constant_field(fid, force_values.at(fname));
         m_fields_inited[grid_name].insert(fname);

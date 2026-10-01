@@ -762,6 +762,7 @@ be lost if SCREAM_HACK_XML is not enabled.
           - force_constant_fields:    the field is ALWAYS set to the constant, even if it is in the IC file
           - fallback_constant_fields: the field is set to the constant ONLY IF it is not in the IC file
                                       (if it is in the IC file, it is read from there)
+         If a field is in both arrays, the forced constant wins.
          Entries that do not match any field in need of initialization are ignored. Being arrays, entries can
          be added/removed with atmchange (quote the argument if it contains ';'):
            ./atmchange initial_conditions::fallback_constant_fields-=tke:0.0
