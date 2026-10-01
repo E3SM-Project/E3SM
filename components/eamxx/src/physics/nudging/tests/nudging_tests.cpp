@@ -182,7 +182,9 @@ TEST_CASE("nudging_tests") {
           fine_h(icol,2*ilev+1) = (fine_h(icol,2*ilev)+fine_h(icol,2*ilev+2))/2;
         }
         if (not in_bounds) {
-          fine_h(icol,top) *= 0.5;
+          // For pmid: the target top pressure is out-of-bounds (half the first data level).
+          // For data fields: constant extrapolation at top means the value stays as data[0].
+          if (is_pmid) fine_h(icol,top) *= 0.5;
           fine_h(icol,bot) *= is_pmid ? 2 : 1;
         }
       }
