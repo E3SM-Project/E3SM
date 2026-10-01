@@ -264,7 +264,7 @@ contains
     integer  :: fnorig                 ! number of values in pft filter copy
     integer  :: fporig(num_nolu_vegp)  ! temporary filter
     integer  :: fnold                       ! temporary copy of pft count
-    integer  :: f                           ! filter index
+    integer  :: filter_index                ! filter index
     logical  :: found                       ! error flag for canopy above forcing hgt
     integer  :: index                       ! patch index for error
     real(r8) :: egvf                        ! effective green vegetation fraction
@@ -307,8 +307,8 @@ contains
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
-    integer :: filterp(num_nolu_vegp)  ! filter for iteration loop
-    integer :: converged(num_nolu_vegp), num_unconverged 
+    integer :: iter_filterp(num_nolu_vegp), iter_filter_map(num_nolu_vegp)  ! filter for iteration loop
+    integer :: num_unconverged 
 
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -332,6 +332,9 @@ contains
          forc_t               => top_as%tbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric temperature (Kelvin)
          forc_u               => top_as%ubot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in east direction (m/s)
          forc_v               => top_as%vbot                               , & ! Input:  [real(r8) (:)   ]  atmospheric wind speed in north direction (m/s)
+         wsresp               => top_as%wsresp                             , & ! Input:  [real(r8) (:)   ]  response of wind to surface stress (m/s/Pa)
+         tau_est              => top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
+         ugust                => top_as%ugust                              , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
          forc_pco2            => top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)
          forc_pc13o2          => top_as%pc13o2bot                          , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)
          forc_po2             => top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)
@@ -506,32 +509,33 @@ contains
 
       !$acc enter data create(del(:), efeb(:), wtlq0(:),wtalq(:), &
       !$acc    wtgq(:), wtaq0(:), obuold(:),dayl_factor(:),check_for_irrig(:),zldis(:) ) 
-      !$acc enter data create(filterp(:))
+      !$acc enter data create(iter_filterp(:), iter_filter_map(:))
 
       ! Initialize
       !$acc parallel loop independent gang vector private(p) default(present) present(btran(:), btran2(:))
-      do f = 1, fn
-         filterp(f) = filter_nolu_vegp(f) 
-         p = filterp(f)
-         del(f)    = 0._r8  ! change in leaf temperature from previous iteration
-         efeb(f)   = 0._r8  ! latent head flux from leaf for previous iteration
-         wtlq0(f)  = 0._r8
-         wtalq(f)  = 0._r8
-         wtgq(f)   = 0._r8
-         wtaq0(f)  = 0._r8
-         obuold(f) = 0._r8
+      do filter_index = 1, fn
+         iter_filterp(filter_index) = filter_nolu_vegp(filter_index) 
+         iter_filter_map(filter_index) = filter_index
+         p = iter_filterp(filter_index)
+         del(filter_index)    = 0._r8  ! change in leaf temperature from previous iteration
+         efeb(filter_index)   = 0._r8  ! latent head flux from leaf for previous iteration
+         wtlq0(filter_index)  = 0._r8
+         wtalq(filter_index)  = 0._r8
+         wtgq(filter_index)   = 0._r8
+         wtaq0(filter_index)  = 0._r8
+         obuold(filter_index) = 0._r8
          btran(p)  = btran0
          btran2(p)  = btran0
       end do
 
       ! calculate daylength control for Vcmax
       !$acc parallel loop independent gang vector private(p,g) default(present)
-      do f = 1, fn
-         p=filter_nolu_vegp(f)
+      do filter_index = 1, fn
+         p=filter_nolu_vegp(filter_index)
          g=veg_pp%gridcell(p)
          ! calculate dayl_factor as the ratio of (current:max dayl)^2
          ! set a minimum of 0.01 (1%) for the dayl_factor
-         dayl_factor(f)=min(1._r8,max(0.01_r8,(dayl(g)*dayl(g))/(max_dayl(g)*max_dayl(g))))
+         dayl_factor(filter_index)=min(1._r8,max(0.01_r8,(dayl(g)*dayl(g))/(max_dayl(g)*max_dayl(g))))
       end do
       ! -----------------------------------------------------------------
       ! Time step initialization of photosynthesis variables
@@ -594,7 +598,7 @@ contains
          call calc_root_moist_stress(bounds,     &
               nlevgrnd = nlevgrnd,               &
               fn = fn,                           &
-              filterp = filter_nolu_vegp,                 &
+              iter_filterp = filter_nolu_vegp,                 &
               canopystate_vars=canopystate_vars, &
               energyflux_vars=energyflux_vars,   &
               soilstate_vars=soilstate_vars      &
@@ -608,8 +612,8 @@ contains
       ! in this case, we'll irrigate by 0 for the given number of time steps
 
       !$acc parallel loop independent gang vector default(present) present(btran(:),elai(:),n_irrig_steps_left(:), irrig_rate(:)) private(p,g,local_time,seconds_since_irrig_start_time)
-      do f = 1, fn
-         p = filter_nolu_vegp(f)
+      do filter_index = 1, fn
+         p = filter_nolu_vegp(filter_index)
          g = veg_pp%gridcell(p)
          if ( .not.veg_pp%is_fates(p)             .and. &
               irrigated(veg_pp%itype(p)) == 1._r8 .and. &
@@ -620,14 +624,14 @@ contains
             seconds_since_irrig_start_time = modulo(local_time - irrig_start_time, isecspday)
             if (seconds_since_irrig_start_time < dtime_mod) then
                ! it's time to start irrigating
-               check_for_irrig(f)    = .true.
+               check_for_irrig(filter_index)    = .true.
                n_irrig_steps_left(p) = irrig_nsteps_per_day
                irrig_rate(p)         = 0._r8  ! reset; we'll add to this later
             else
-               check_for_irrig(f)    = .false.
+               check_for_irrig(filter_index)    = .false.
             end if
          else  ! non-irrig pft or elai<=irrig_min_lai or btran>irrig_btran_thresh
-            check_for_irrig(f)       = .false.
+            check_for_irrig(filter_index)       = .false.
          end if
 
       end do
@@ -640,11 +644,11 @@ contains
       ! check_for_irrig = false
       ! frozen_soil(1:fn) = .false.
       !$acc parallel loop independent gang worker default(present) private(p,c,g)
-      do f = 1, fn
-         p = filter_nolu_vegp(f)
+      do filter_index = 1, fn
+         p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
-         if (check_for_irrig(f)) then
+         if (check_for_irrig(filter_index)) then
             !$acc loop vector reduction(+:sum1) private(vol_liq_so,h2osoi_liq_so,h2osoi_liq_sat,deficit)
             do j = 1,nlevgrnd
                ! if level L was frozen, then we don't look at any levels below L
@@ -673,8 +677,8 @@ contains
       ! Modify aerodynamic parameters for sparse/dense canopy (X. Zeng)
       !$acc parallel loop independent gang vector default(present) private(p,c,egvf,lt) &
       !$acc present(z0qv(:),forc_hgt_u_patch(:),elai(:),displa(:),esai(:),z0hv(:),z0mg(:),z0mv(:))
-      do f = 1, fn
-         p = filter_nolu_vegp(f)
+      do filter_index = 1, fn
+         p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
 
          lt = min(elai(p)+esai(p), tlsai_crit)
@@ -685,7 +689,7 @@ contains
          z0qv(p)   = z0mv(p)
 
          !!Moved this here to allow async compute/data create w/ loop below
-         zldis(f) = forc_hgt_u_patch(p) - displa(p)
+         zldis(filter_index) = forc_hgt_u_patch(p) - displa(p)
 
       end do
 
@@ -695,17 +699,17 @@ contains
       !$acc  wta0(:), err(:), det(:))
 
       !$acc parallel loop independent gang vector default(present) private(p,c,t,g,deldT) present(thm(:),emv(:))
-      do f = 1, fn
-         p = filter_nolu_vegp(f)
+      do filter_index = 1, fn
+         p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
 
          ! Net absorbed longwave radiation by canopy and ground
          ! =air+bir*t_veg**4+cir*t_grnd(c)**4
-         air(f) =   emv(p) * (1._r8+(1._r8-emv(p))*(1._r8-emg(c))) * forc_lwrad(t)
-         bir(f) = - (2._r8-emv(p)*(1._r8-emg(c))) * emv(p) * sb
-         cir(f) =   emv(p)*emg(c)*sb
+         air(filter_index) =   emv(p) * (1._r8+(1._r8-emv(p))*(1._r8-emg(c))) * forc_lwrad(t)
+         bir(filter_index) = - (2._r8-emv(p)*(1._r8-emg(c))) * emv(p) * sb
+         cir(filter_index) =   emv(p)*emg(c)*sb
 
          if (use_finetop_rad) then
             slope_rad = slope_deg(g) * deg2rad
@@ -715,24 +719,24 @@ contains
          ! Saturated vapor pressure, specific humidity, and their derivatives
          ! at the leaf surface
 
-         call QSat (t_veg(p), forc_pbot(t), el(f), deldT, qsatl(f), qsatldT(f))
+         call QSat (t_veg(p), forc_pbot(t), el(filter_index), deldT, qsatl(filter_index), qsatldT(filter_index))
 
          ! Determine atmospheric co2 and o2
 
-         co2(f) = forc_pco2(t)
-         o2(f)  = forc_po2(t)
+         co2(filter_index) = forc_pco2(t)
+         o2(filter_index)  = forc_po2(t)
 
          ! Initialize flux profile
-         nmozsgn(f) = 0
+         nmozsgn(filter_index) = 0
 
-         taf(f) = (t_grnd(c) + thm(p))/2._r8
-         qaf(f) = (forc_q(t)+qg(c))/2._r8
+         taf(filter_index) = (t_grnd(c) + thm(p))/2._r8
+         qaf(filter_index) = (forc_q(t)+qg(c))/2._r8
 
-         ur(f)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
-         dth(f)   = thm(p)-taf(f)
-         dqh(f)   = forc_q(t)-qaf(f)
-         delq(f)  = qg(c) - qaf(f)
-         dthv(f)  = dth(f)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(f)
+         ur(filter_index)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
+         dth(filter_index)   = thm(p)-taf(filter_index)
+         dqh(filter_index)   = forc_q(t)-qaf(filter_index)
+         delq(filter_index)  = qg(c) - qaf(filter_index)
+         dthv(filter_index)  = dth(filter_index)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(filter_index)
 
       end do
 
@@ -745,14 +749,13 @@ contains
       
       !$acc enter data create(converged(:) ) 
       !$acc parallel loop independent gang vector default(present) private(p,c)
-      do f = 1, fn
-         p = filter_nolu_vegp(f)
+      do filter_index = 1, fn
+         p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
-         converged(f) = 0 
-         ! Initialize Monin-Obukhov length and wind speed
 
+         ! Initialize Monin-Obukhov length and wind speed
          num_iter(p) = 0._r8
-         call MoninObukIni(ur(f), thv(c), dthv(f), zldis(f), z0mv(p), um(f), obu(f))
+         call MoninObukIni(ur(filter_index), thv(c), dthv(filter_index), zldis(filter_index), z0mv(p), um(filter_index), obu(filter_index))
 
       end do
 
@@ -770,33 +773,33 @@ contains
       ITERATION : do while (itlef <= itmax .and. num_unconverged > 0)
         !$acc update device(itlef)  
         !$acc parallel loop independent gang vector  default(present)
-        do f = 1, fn
-            if(converged(f)) cycle
-            p = filterp(f)
+        do filter_index = 1, fn
+            if(converged(filter_index)) cycle
+            p = iter_filterp(filter_index)
             call FrictionVelocity_noloop ( &
                         displa(p), z0mv(p), z0hv(p), z0qv(p), &
-                        obu(f), itlef+1, ur(f), um(f), ustar(f), &
-                        temp1(f), temp2(f), temp12m(f), temp22m(f), fm(f), &
+                        obu(filter_index), itlef+1, ur(filter_index), um(filter_index), ustar(filter_index), &
+                        temp1(filter_index), temp2(filter_index), temp12m(filter_index), temp22m(filter_index), fm(filter_index), &
                         forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
                         vds(p), u10(p), u10_elm(p), va(p), fv(p))
         end do
         !$acc parallel loop independent gang vector default(present) private(p,c,t,g,&
         !$acc  cf, w,csoilb,ri, ricsoilc, csoilcn) present(ram1(:), rb1(:), rhaf(:),grnd_ch4_cond(:),t_veg(:),elai(:),btran(:),&
         !$acc  esai(:), temp2(:), htop(:), dleaf_patch(:), rah(:,:))
-        do f = 1, fn
-           if(converged(f)) cycle
-           p = filterp(f)
+        do filter_index = 1, fn
+           p = iter_filterp(filter_index)
+
            c = veg_pp%column(p)
            t = veg_pp%topounit(p)
            g = veg_pp%gridcell(p)
 
-            tlbef(f) = t_veg(p) !not used right now?
-            del2(f) = del(f)   ! also not used in this loop
+            tlbef(filter_index) = t_veg(p) !not used right now?
+            del2(filter_index) = del(filter_index)   ! also not used in this loop
 
             ! Determine aerodynamic resistances
-            ram1(p)  = 1._r8/(ustar(f)*ustar(f)/um(f))
-            rah(f,above_canopy) = 1._r8/(temp1(f)*ustar(f))
-            raw(f,above_canopy) = 1._r8/(temp2(f)*ustar(f))
+            ram1(p)  = 1._r8/(ustar(filter_index)*ustar(filter_index)/um(filter_index))
+            rah(filter_index,above_canopy) = 1._r8/(temp1(filter_index)*ustar(filter_index))
+            raw(filter_index,above_canopy) = 1._r8/(temp2(filter_index)*ustar(filter_index))
 
             ! Forbid removing more than 99% of wind speed in a time step.
             ! This is mainly to avoid convergence issues since this is such a
@@ -810,7 +813,7 @@ contains
             end if
 
             ! Bulk boundary layer resistance of leaves
-            uaf(f) = um(f)*sqrt( 1._r8/(ram1(p)*um(f)) )
+            uaf(filter_index) = um(filter_index)*sqrt( 1._r8/(ram1(p)*um(filter_index)) )
 
             ! Use pft parameter for leaf characteristic width
             ! dleaf_patch if this is not an ed patch.
@@ -821,9 +824,9 @@ contains
             end if
 
 
-            cf  = 0.01_r8/(sqrt(uaf(f))*sqrt( dleaf_patch(p) ))
-            rb(f)  = 1._r8/(cf*uaf(f))
-            rb1(p) = rb(f) !NOTE: this doesn't need to be updated every iteration
+            cf  = 0.01_r8/(sqrt(uaf(filter_index))*sqrt( dleaf_patch(p) ))
+            rb(filter_index)  = 1._r8/(cf*uaf(filter_index))
+            rb1(p) = rb(filter_index) !NOTE: this doesn't need to be updated every iteration
 
             ! Parameterization for variation of csoilc with canopy density from
             ! X. Zeng, University of Arizona
@@ -833,15 +836,15 @@ contains
             ! changed by K.Sakaguchi from here
             ! transfer coefficient over bare soil is changed to a local variable
             ! just for readability of the code (from line 680)
-            csoilb = (vkc/(0.13_r8*(z0mg(c)*uaf(f)/1.5e-5_r8)**0.45_r8))
+            csoilb = (vkc/(0.13_r8*(z0mg(c)*uaf(filter_index)/1.5e-5_r8)**0.45_r8))
 
             !compute the stability parameter for ricsoilc  ("S" in Sakaguchi&Zeng,2008)
 
-            ri = ( grav*htop(p) * (taf(f) - t_grnd(c)) ) / (taf(f) * uaf(f) **2.00_r8)
+            ri = ( grav*htop(p) * (taf(filter_index) - t_grnd(c)) ) / (taf(filter_index) * uaf(filter_index) **2.00_r8)
 
             !! modify csoilc value (0.004) if the under-canopy is in stable condition
 
-            if ( (taf(f) - t_grnd(c) ) > 0._r8) then
+            if ( (taf(filter_index) - t_grnd(c) ) > 0._r8) then
                ! decrease the value of csoilc by dividing it with (1+gamma*min(S, 10.0))
                ! ria ("gmanna" in Sakaguchi&Zeng, 2008) is a constant (=0.5)
                ricsoilc = csoilc / (1.00_r8 + ria*min( ri, 10.0_r8) )
@@ -852,18 +855,18 @@ contains
 
             !! Sakaguchi changes for stability formulation ends here
 
-            rah(f,below_canopy) = 1._r8/(csoilcn*uaf(f))
-            raw(f,below_canopy) = rah(f,below_canopy)
+            rah(filter_index,below_canopy) = 1._r8/(csoilcn*uaf(filter_index))
+            raw(filter_index,below_canopy) = rah(filter_index,below_canopy)
             if (use_lch4) then
-               grnd_ch4_cond(p) = 1._r8/(raw(f,above_canopy)+raw(f,below_canopy))
+               grnd_ch4_cond(p) = 1._r8/(raw(filter_index,above_canopy)+raw(filter_index,below_canopy))
             end if
 
             ! Stomatal resistances for sunlit and shaded fractions of canopy.
             ! Done each iteration to account for differences in eah, tv.
 
-            svpts(f) = el(f)                         ! pa
-            eah(f) = forc_pbot(t) * qaf(f) / 0.622_r8   ! pa
-            rhaf(p) = eah(f)/svpts(f)
+            svpts(filter_index) = el(filter_index)                         ! pa
+            eah(filter_index) = forc_pbot(t) * qaf(filter_index) / 0.622_r8   ! pa
+            rhaf(p) = eah(filter_index)/svpts(filter_index)
 
          ! Modification for shrubs proposed by X.D.Z
          ! Equivalent modification for soy following AgroIBIS
@@ -884,21 +887,21 @@ contains
 
 
          if ( use_fates ) then
-            call alm_fates%wrap_photosynthesis(bounds, fn, filterp(1:fn), &
+            call alm_fates%wrap_photosynthesis(bounds, fn, iter_filterp(1:fn), &
                   svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
                   co2(begp:endp), rb(begp:endp), dayl_factor(begp:endp), &
                   atm2lnd_vars, canopystate_vars, photosyns_vars)
          else ! not use_fates
 
             if ( use_hydrstress ) then
-               call PhotosynthesisHydraulicStress (bounds, fn, filterp, &
+               call PhotosynthesisHydraulicStress (bounds, fn, iter_filterp, &
                     svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), bsun(begp:endp), &
                     bsha(begp:endp), btran(begp:endp), dayl_factor(begp:endp), &
                     qsatl(begp:endp), qaf(begp:endp),     &
-                    atm2lnd_vars, soilstate_vars, surfalb_vars, solarabs_vars,    &
+                     soilstate_vars, surfalb_vars, solarabs_vars,    &
                     canopystate_vars, photosyns_vars)
             else
-              call Photosynthesis(bounds,num_nolu_vegp,filterp,converged(1:num_nolu_vegp),&
+              call Photosynthesis(bounds,num_nolu_vegp,iter_filterp,converged(1:num_nolu_vegp),&
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sun', &
@@ -913,13 +916,13 @@ contains
             end if
 
             if ( use_c13 ) then
-               call Fractionation (bounds, fn, filterp, &
+               call Fractionation (bounds, fn, iter_filterp, &
                      cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
             endif
 
             !$acc parallel loop independent gang vector default(present) private(p,c)
-            do f = 1, fn
-               p = filterp(f)
+            do filter_index = 1, fn
+               p = iter_filterp(filter_index)
                c = veg_pp%column(p)
                ! soybean (crop with N fixation)
                if (crop(veg_pp%itype(p)) >= 1 .and. nfixer(veg_pp%itype(p)) == 1) then
@@ -928,7 +931,7 @@ contains
             end do
 
             if ( .not. use_hydrstress ) then
-               call Photosynthesis(bounds,fn,filterp,converged, &
+               call Photosynthesis(bounds,fn,iter_filterp,converged, &
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp),rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sha', &
@@ -943,7 +946,7 @@ contains
             end if
 
             if ( use_c13 ) then
-               call Fractionation (bounds, fn, filterp,  &
+               call Fractionation (bounds, fn, iter_filterp,  &
                      cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 0)
             end if
 
@@ -952,9 +955,9 @@ contains
          !$acc parallel loop independent gang vector default(present) present(laisun(:),&
          !$acc  thm(:), canopy_cond(:),temp2(:), frac_veg_nosno(:), esai(:), fdry(:), wta0(:), h2ocan(:), &
          !$acc  laisha(:),rssha(:),btran(:), fwet(:), qflx_evap_veg(:), qflx_tran_veg(:),sabv(:), eflx_sh_veg(:) )
-         do f = 1, fn
-            if(converged(f)) cycle 
-            p = filterp(f)
+         do filter_index = 1, fn
+            if(converged(filter_index)) cycle 
+            p = iter_filterp(filter_index)
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
@@ -962,32 +965,32 @@ contains
             ! Sensible heat conductance for air, leaf and ground
             ! Moved the original subroutine in-line...
 
-            wta    = 1._r8/rah(f,above_canopy)  ! air
-            wtl    = (elai(p)+esai(p))/rb(f)    ! leaf
-            wtg(f) = 1._r8/rah(f,below_canopy)  ! ground
-            wtshi  = 1._r8/(wta+wtl+wtg(f))
-            wtl0(f) = wtl*wtshi         ! leaf
-            wtg0    = wtg(f)*wtshi      ! ground
-            wta0(f) = wta*wtshi         ! air
+            wta    = 1._r8/rah(filter_index,above_canopy)  ! air
+            wtl    = (elai(p)+esai(p))/rb(filter_index)    ! leaf
+            wtg(filter_index) = 1._r8/rah(filter_index,below_canopy)  ! ground
+            wtshi  = 1._r8/(wta+wtl+wtg(filter_index))
+            wtl0(filter_index) = wtl*wtshi         ! leaf
+            wtg0    = wtg(filter_index)*wtshi      ! ground
+            wta0(filter_index) = wta*wtshi         ! air
 
-            wtga    = wta0(f)+wtg0      ! ground + air
-            wtal(f) = wta0(f)+wtl0(f)   ! air + leaf
+            wtga    = wta0(filter_index)+wtg0      ! ground + air
+            wtal(filter_index) = wta0(filter_index)+wtl0(filter_index)   ! air + leaf
 
             ! Fraction of potential evaporation from leaf
 
             if (fdry(p) > 0._r8) then
-               rppdry  = fdry(p)*rb(f)*(laisun(p)/(rb(f)+rssun(p)) + &
-                    laisha(p)/(rb(f)+rssha(p)))/elai(p)
+               rppdry  = fdry(p)*rb(filter_index)*(laisun(p)/(rb(filter_index)+rssun(p)) + &
+                    laisha(p)/(rb(filter_index)+rssha(p)))/elai(p)
             else
                rppdry = 0._r8
             end if
 
             ! Calculate canopy conductance for methane / oxygen (e.g. stomatal conductance & leaf bdy cond)
             if (use_lch4) then
-               canopy_cond(p) = (laisun(p)/(rb(f)+rssun(p)) + laisha(p)/(rb(f)+rssha(p)))/max(elai(p), 0.01_r8)
+               canopy_cond(p) = (laisun(p)/(rb(filter_index)+rssun(p)) + laisha(p)/(rb(filter_index)+rssha(p)))/max(elai(p), 0.01_r8)
             end if
 
-            efpot = forc_rho(t)*wtl*(qsatl(f)-qaf(f))
+            efpot = forc_rho(t)*wtl*(qsatl(filter_index)-qaf(filter_index))
             ! When the hydraulic stress parameterization is active calculate rpp
             ! but not transpiration
             if ( use_hydrstress ) then
@@ -1026,66 +1029,66 @@ contains
             ! Air has same conductance for both sensible and latent heat.
             ! Moved the original subroutine in-line...
 
-            wtaq    = frac_veg_nosno(p)/raw(f,above_canopy)             ! air
-            wtlq    = frac_veg_nosno(p)*(elai(p)+esai(p))/rb(f) * rpp   ! leaf
+            wtaq    = frac_veg_nosno(p)/raw(filter_index,above_canopy)             ! air
+            wtlq    = frac_veg_nosno(p)*(elai(p)+esai(p))/rb(filter_index) * rpp   ! leaf
 
             !Litter layer resistance. Added by K.Sakaguchi
             snow_depth_c = z_dl ! critical depth for 100% litter burial by snow (=litter thickness)
             fsno_dl = snow_depth(c)/snow_depth_c    ! effective snow cover for (dry)plant litter
             elai_dl = lai_dl*(1._r8 - min(fsno_dl,1._r8)) ! exposed (dry)litter area index
-            rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(f)) ! dry litter layer resistance
+            rdl = ( 1._r8 - exp(-elai_dl) ) / ( 0.004_r8*uaf(filter_index)) ! dry litter layer resistance
 
             ! add litter resistance and Lee and Pielke 1992 beta
-            if (delq(f) < 0._r8) then  !dew. Do not apply beta for negative flux (follow old rsoil)
-               wtgq(f) = frac_veg_nosno(p)/(raw(f,below_canopy)+rdl)
+            if (delq(filter_index) < 0._r8) then  !dew. Do not apply beta for negative flux (follow old rsoil)
+               wtgq(filter_index) = frac_veg_nosno(p)/(raw(filter_index,below_canopy)+rdl)
             else
                if (do_soilevap_beta()) then
-                  wtgq(f) = soilbeta(c)*frac_veg_nosno(p)/(raw(f,below_canopy)+rdl)
+                  wtgq(filter_index) = soilbeta(c)*frac_veg_nosno(p)/(raw(filter_index,below_canopy)+rdl)
                endif
             end if
 
-            wtsqi   = 1._r8/(wtaq+wtlq+wtgq(f))
+            wtsqi   = 1._r8/(wtaq+wtlq+wtgq(filter_index))
 
-            wtgq0    = wtgq(f)*wtsqi      ! ground
-            wtlq0(f) = wtlq*wtsqi         ! leaf
-            wtaq0(f) = wtaq*wtsqi         ! air
+            wtgq0    = wtgq(filter_index)*wtsqi      ! ground
+            wtlq0(filter_index) = wtlq*wtsqi         ! leaf
+            wtaq0(filter_index) = wtaq*wtsqi         ! air
 
-            wtgaq    = wtaq0(f)+wtgq0     ! air + ground
-            wtalq(f) = wtaq0(f)+wtlq0(f)  ! air + leaf
+            wtgaq    = wtaq0(filter_index)+wtgq0     ! air + ground
+            wtalq(filter_index) = wtaq0(filter_index)+wtlq0(filter_index)  ! air + leaf
 
             dc1 = forc_rho(t)*cpair*wtl
             dc2 = hvap*forc_rho(t)*wtlq
 
-            efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(f)*thm(p))
-            efe(f) = dc2*(wtgaq*qsatl(f)-wtgq0*qg(c)-wtaq0(f)*forc_q(t))
+            efsh   = dc1*(wtga*t_veg(p)-wtg0*t_grnd(c)-wta0(filter_index)*thm(p))
+            efe(filter_index) = dc2*(wtgaq*qsatl(filter_index)-wtgq0*qg(c)-wtaq0(filter_index)*forc_q(t))
 
             ! Evaporation flux from foliage
 
             erre = 0._r8
-            if (efe(f)*efeb(f) < 0._r8) then
-               efeold = efe(f)
-               efe(f)  = 0.1_r8*efeold
-               erre = efe(f) - efeold
+            if (efe(filter_index)*efeb(filter_index) < 0._r8) then
+               efeold = efe(filter_index)
+               efe(filter_index)  = 0.1_r8*efeold
+               erre = efe(filter_index) - efeold
             end if
             ! fractionate ground emitted longwave
             lw_grnd=(frac_sno(c)*t_soisno(c,snl(c)+1)**4 &
                  +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
                  +frac_h2osfc(c)*t_h2osfc(c)**4)
 
-            dt_veg(f) = (sabv(p) + air(f) + bir(f)*t_veg(p)**4 + &
-                 cir(f)*lw_grnd - efsh - efe(f)) / &
-                 (- 4._r8*bir(f)*t_veg(p)**3 +dc1*wtga +dc2*wtgaq*qsatldT(f))
-            t_veg(p) = tlbef(f) + dt_veg(f)
-            dels = dt_veg(f)
-            del(f)  = abs(dels)
-            err(f) = 0._r8
-            if (del(f) > delmax) then
-               dt_veg(f) = delmax*dels/del(f)
-               t_veg(p) = tlbef(f) + dt_veg(f)
-               err(f) = sabv(p) + air(f) + bir(f)*tlbef(f)**3*(tlbef(f) + &
-                    4._r8*dt_veg(f)) + cir(f)*lw_grnd - &
-                    (efsh + dc1*wtga*dt_veg(f)) - (efe(f) + &
-                    dc2*wtgaq*qsatldT(f)*dt_veg(f))
+            dt_veg(filter_index) = (sabv(p) + air(filter_index) + bir(filter_index)*t_veg(p)**4 + &
+                 cir(filter_index)*lw_grnd - efsh - efe(filter_index)) / &
+                 (- 4._r8*bir(filter_index)*t_veg(p)**3 +dc1*wtga +dc2*wtgaq*qsatldT(filter_index))
+            t_veg(p) = tlbef(filter_index) + dt_veg(filter_index)
+            dels = dt_veg(filter_index)
+            del(filter_index)  = abs(dels)
+            err(filter_index) = 0._r8
+            if (del(filter_index) > delmax) then
+               dt_veg(filter_index) = delmax*dels/del(filter_index)
+               t_veg(p) = tlbef(filter_index) + dt_veg(filter_index)
+               err(filter_index) = sabv(p) + air(filter_index) + bir(filter_index)*tlbef(filter_index)**3*(tlbef(filter_index) + &
+                    4._r8*dt_veg(filter_index)) + cir(filter_index)*lw_grnd - &
+                    (efsh + dc1*wtga*dt_veg(filter_index)) - (efe(filter_index) + &
+                    dc2*wtgaq*qsatldT(filter_index)*dt_veg(filter_index))
             end if
 
             ! Fluxes from leaves to canopy space
@@ -1093,8 +1096,8 @@ contains
             ! result in an imbalance in "hvap*qflx_evap_veg" and
             ! "efe + dc2*wtgaq*qsatdt_veg"
 
-            efpot = forc_rho(t)*wtl*(wtgaq*(qsatl(f)+qsatldT(f)*dt_veg(f)) &
-                 -wtgq0*qg(c)-wtaq0(f)*forc_q(t))
+            efpot = forc_rho(t)*wtl*(wtgaq*(qsatl(filter_index)+qsatldT(filter_index)*dt_veg(filter_index)) &
+                 -wtgq0*qg(c)-wtaq0(filter_index)*forc_q(t))
             qflx_evap_veg(p) = rpp*efpot
 
             ! Calculation of evaporative potentials (efpot) and
@@ -1119,61 +1122,61 @@ contains
 
             ! The energy loss due to above two limits is added to
             ! the sensible heat flux.
-            eflx_sh_veg(p) = efsh + dc1*wtga*dt_veg(f) + err(f) + erre + hvap*ecidif
+            eflx_sh_veg(p) = efsh + dc1*wtga*dt_veg(filter_index) + err(filter_index) + erre + hvap*ecidif
 
             ! Re-calculate saturated vapor pressure, specific humidity, and their
             ! derivatives at the leaf surface
 
-            call QSat(t_veg(p), forc_pbot(t), el(f), deldT, qsatl(f), qsatldT(f))
+            call QSat(t_veg(p), forc_pbot(t), el(filter_index), deldT, qsatl(filter_index), qsatldT(filter_index))
 
             ! Update vegetation/ground surface temperature, canopy air
             ! temperature, canopy vapor pressure, aerodynamic temperature, and
             ! Monin-Obukhov stability parameter for next iteration.
 
-            taf(f) = wtg0*t_grnd(c) + wta0(f)*thm(p) + wtl0(f)*t_veg(p)
-            qaf(f) = wtlq0(f)*qsatl(f) + wtgq0*qg(c) + forc_q(t)*wtaq0(f)
+            taf(filter_index) = wtg0*t_grnd(c) + wta0(filter_index)*thm(p) + wtl0(filter_index)*t_veg(p)
+            qaf(filter_index) = wtlq0(filter_index)*qsatl(filter_index) + wtgq0*qg(c) + forc_q(t)*wtaq0(filter_index)
 
             ! Update Obukhov length scale and wind speed including the
             ! stability effect
 
-            dth(f) = thm(p)-taf(f)
-            dqh(f) = forc_q(t)-qaf(f)
-            delq(f) = wtalq(f)*qg(c)-wtlq0(f)*qsatl(f)-wtaq0(f)*forc_q(t)
+            dth(filter_index) = thm(p)-taf(filter_index)
+            dqh(filter_index) = forc_q(t)-qaf(filter_index)
+            delq(filter_index) = wtalq(filter_index)*qg(c)-wtlq0(filter_index)*qsatl(filter_index)-wtaq0(filter_index)*forc_q(t)
 
-            tstar = temp1(f)*dth(f)
-            qstar = temp2(f)*dqh(f)
+            tstar = temp1(filter_index)*dth(filter_index)
+            qstar = temp2(filter_index)*dqh(filter_index)
 
             thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
 
-            zeta = zldis(f)*vkc*grav*thvstar/(ustar(f)**2*thv(c))
+            zeta = zldis(filter_index)*vkc*grav*thvstar/(ustar(filter_index)**2*thv(c))
             if (zeta >= 0._r8) then     !stable
                zeta = min(2._r8,max(zeta,0.01_r8))
-               um(f) = max(ur(f),0.1_r8)
+               um(filter_index) = max(ur(filter_index),0.1_r8)
             else                     !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
                if ((.not. atm_gustiness) .or. force_land_gustiness) then
-                  wc = beta*(-grav*ustar(f)*thvstar*zii/thv(c))**0.333_r8
+                  wc = beta*(-grav*ustar(filter_index)*thvstar*zii/thv(c))**0.333_r8
                   ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
-                  um(f) = sqrt(ur(f)*ur(f)+wc*wc)
+                  um(filter_index) = sqrt(ur(filter_index)*ur(filter_index)+wc*wc)
                else
-                  um(f) = max(ur(f),0.1_r8)
+                  um(filter_index) = max(ur(filter_index),0.1_r8)
                end if
             end if
-            obu(f) = zldis(f)/zeta
+            obu(filter_index) = zldis(filter_index)/zeta
 
-            if (obuold(f)*obu(f) < 0._r8) nmozsgn(f) = nmozsgn(f)+1
-            if (nmozsgn(f) >= 4) obu(f) = zldis(f)/(-0.01_r8)
-            obuold(f) = obu(f)
+            if (obuold(filter_index)*obu(filter_index) < 0._r8) nmozsgn(filter_index) = nmozsgn(filter_index)+1
+            if (nmozsgn(filter_index) >= 4) obu(filter_index) = zldis(filter_index)/(-0.01_r8)
+            obuold(filter_index) = obu(filter_index)
 
          end do   ! end of filtered pft loop
 
          !$acc parallel loop independent gang vector default(present) private(p,t)
-         do f = 1, fn
-           if(converged(f)) cycle 
-           p = filterp(f)
+         do filter_index = 1, fn
+           if(converged(filter_index)) cycle 
+           p = iter_filterp(filter_index)
            t = veg_pp%topounit(p)
            !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
-           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(f)/(uaf(f)**2._r8+1.e-10_r8)   
+           lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(filter_index)/(uaf(filter_index)**2._r8+1.e-10_r8)   
          enddo
 
          ! Test for convergence
@@ -1183,15 +1186,15 @@ contains
             num_unconverged = 0 
             !$acc parallel loop independent gang vector default(present) private(p) present(det(1:fn), dele(1:fn)) &
             !$acc   copy(num_unconverged) reduction(+:num_unconverged) 
-            do f = 1, fn
-               if(converged(f)) cycle   
-               p = filterp(f)
+            do filter_index = 1, fn
+               if(converged(filter_index)) cycle   
+               p = iter_filterp(filter_index)
                num_iter(p) = real(itlef,r8)
-               dele(f) = abs(efe(f) - efeb(f))
-               efeb(f) = efe(f)
-               det(f)  = max(del(f),del2(f))
-               if((det(f) < dtmin .and. dele(f) < dlemin)) then 
-                  converged(f) = 1
+               dele(filter_index) = abs(efe(filter_index) - efeb(filter_index))
+               efeb(filter_index) = efe(filter_index)
+               det(filter_index)  = max(del(filter_index),del2(filter_index))
+               if((det(filter_index) < dtmin .and. dele(filter_index) < dlemin)) then 
+                  converged(filter_index) = 1
                else
                  num_unconverged = num_unconverged + 1  
                end if 
@@ -1202,8 +1205,8 @@ contains
       call t_stopf('can_iter')
       
       !$acc parallel loop independent gang vector default(present)
-      do f = 1, num_nolu_vegp
-         p = filter_nolu_vegp(f)
+      do filter_index = 1, num_nolu_vegp
+         p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
          g = veg_pp%gridcell(p)
@@ -1214,45 +1217,45 @@ contains
               +(1._r8-frac_sno(c)-frac_h2osfc(c))*t_soisno(c,1)**4 &
               +frac_h2osfc(c)*t_h2osfc(c)**4)
 
-         err(f) = sabv(p) + air(f) + bir(f)*tlbef(f)**3*(tlbef(f) + 4._r8*dt_veg(f)) &
-              + cir(f)*lw_grnd - eflx_sh_veg(p) - hvap*qflx_evap_veg(p)
+         err(filter_index) = sabv(p) + air(filter_index) + bir(filter_index)*tlbef(filter_index)**3*(tlbef(filter_index) + 4._r8*dt_veg(filter_index)) &
+              + cir(filter_index)*lw_grnd - eflx_sh_veg(p) - hvap*qflx_evap_veg(p)
 
          ! Fluxes from ground to canopy space
 
-         delt    = wtal(f)*t_grnd(c)-wtl0(f)*t_veg(p)-wta0(f)*thm(p)
+         delt    = wtal(filter_index)*t_grnd(c)-wtl0(filter_index)*t_veg(p)-wta0(filter_index)*thm(p)
          taux(p) = -forc_rho(t)*forc_u(t)/ram1(p)
          tauy(p) = -forc_rho(t)*forc_v(t)/ram1(p)
-         eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(f)*delt
+         eflx_sh_grnd(p) = cpair*forc_rho(t)*wtg(filter_index)*delt
 
          ! compute individual sensible heat fluxes
-         delt_snow = wtal(f)*t_soisno(c,snl(c)+1)-wtl0(f)*t_veg(p)-wta0(f)*thm(p)
-         eflx_sh_snow(p) = cpair*forc_rho(t)*wtg(f)*delt_snow
+         delt_snow = wtal(filter_index)*t_soisno(c,snl(c)+1)-wtl0(filter_index)*t_veg(p)-wta0(filter_index)*thm(p)
+         eflx_sh_snow(p) = cpair*forc_rho(t)*wtg(filter_index)*delt_snow
 
-         delt_soil  = wtal(f)*t_soisno(c,1)-wtl0(f)*t_veg(p)-wta0(f)*thm(p)
-         eflx_sh_soil(p) = cpair*forc_rho(t)*wtg(f)*delt_soil
+         delt_soil  = wtal(filter_index)*t_soisno(c,1)-wtl0(filter_index)*t_veg(p)-wta0(filter_index)*thm(p)
+         eflx_sh_soil(p) = cpair*forc_rho(t)*wtg(filter_index)*delt_soil
 
-         delt_h2osfc  = wtal(f)*t_h2osfc(c)-wtl0(f)*t_veg(p)-wta0(f)*thm(p)
-         eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(f)*delt_h2osfc
-         qflx_evap_soi(p) = forc_rho(t)*wtgq(f)*delq(f)
+         delt_h2osfc  = wtal(filter_index)*t_h2osfc(c)-wtl0(filter_index)*t_veg(p)-wta0(filter_index)*thm(p)
+         eflx_sh_h2osfc(p) = cpair*forc_rho(t)*wtg(filter_index)*delt_h2osfc
+         qflx_evap_soi(p) = forc_rho(t)*wtgq(filter_index)*delq(filter_index)
 
          ! compute individual latent heat fluxes
-         delq_snow = wtalq(f)*qg_snow(c)-wtlq0(f)*qsatl(f)-wtaq0(f)*forc_q(t)
-         qflx_ev_snow(p) = forc_rho(t)*wtgq(f)*delq_snow
+         delq_snow = wtalq(filter_index)*qg_snow(c)-wtlq0(filter_index)*qsatl(filter_index)-wtaq0(filter_index)*forc_q(t)
+         qflx_ev_snow(p) = forc_rho(t)*wtgq(filter_index)*delq_snow
 
-         delq_soil = wtalq(f)*qg_soil(c)-wtlq0(f)*qsatl(f)-wtaq0(f)*forc_q(t)
-         qflx_ev_soil(p) = forc_rho(t)*wtgq(f)*delq_soil
+         delq_soil = wtalq(filter_index)*qg_soil(c)-wtlq0(filter_index)*qsatl(filter_index)-wtaq0(filter_index)*forc_q(t)
+         qflx_ev_soil(p) = forc_rho(t)*wtgq(filter_index)*delq_soil
 
-         delq_h2osfc = wtalq(f)*qg_h2osfc(c)-wtlq0(f)*qsatl(f)-wtaq0(f)*forc_q(t)
-         qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(f)*delq_h2osfc
+         delq_h2osfc = wtalq(filter_index)*qg_h2osfc(c)-wtlq0(filter_index)*qsatl(filter_index)-wtaq0(filter_index)*forc_q(t)
+         qflx_ev_h2osfc(p) = forc_rho(t)*wtgq(filter_index)*delq_h2osfc
 
          ! 2 m height air temperature
 
-         t_ref2m(p) = thm(p) + temp1(f)*dth(f)*(1._r8/temp12m(f) - 1._r8/temp1(f))
+         t_ref2m(p) = thm(p) + temp1(filter_index)*dth(filter_index)*(1._r8/temp12m(filter_index) - 1._r8/temp1(filter_index))
          t_ref2m_r(p) = t_ref2m(p)
 
          ! 2 m height specific humidity
 
-         q_ref2m(p) = forc_q(t) + temp2(f)*dqh(f)*(1._r8/temp22m(f) - 1._r8/temp2(f))
+         q_ref2m(p) = forc_q(t) + temp2(filter_index)*dqh(filter_index)*(1._r8/temp22m(filter_index) - 1._r8/temp2(filter_index))
 
          ! 2 m height relative humidity
 
@@ -1266,25 +1269,25 @@ contains
 
             ! Downward longwave radiation below the canopy
             dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
-                  emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(f) + 4._r8*dt_veg(f))/cos(slope_rad)
+                  emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(filter_index) + 4._r8*dt_veg(filter_index))/cos(slope_rad)
 
             ! Upward longwave radiation above the canopy
             ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
-                + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(f)**3*(tlbef(f) + &
-                4._r8*dt_veg(f))/cos(slope_rad) + emg(c)*(1._r8-emv(p))*sb*lw_grnd/cos(slope_rad))
+                + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(filter_index)**3*(tlbef(filter_index) + &
+                4._r8*dt_veg(filter_index))/cos(slope_rad) + emg(c)*(1._r8-emv(p))*sb*lw_grnd/cos(slope_rad))
          else
             dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
                   emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))
 
             ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
-                + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(f)**3*(tlbef(f) + &
-                4._r8*dt_veg(f)) + emg(c)*(1._r8-emv(p))*sb*lw_grnd)
+                + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(filter_index)**3*(tlbef(filter_index) + &
+                4._r8*dt_veg(filter_index)) + emg(c)*(1._r8-emv(p))*sb*lw_grnd)
          endif
 
          ! Derivative of soil energy flux with respect to soil temperature
 
-         cgrnds(p) = cgrnds(p) + cpair*forc_rho(t)*wtg(f)*wtal(f)
-         cgrndl(p) = cgrndl(p) + forc_rho(t)*wtgq(f)*wtalq(f)*dqgdT(c)
+         cgrnds(p) = cgrnds(p) + cpair*forc_rho(t)*wtg(filter_index)*wtal(filter_index)
+         cgrndl(p) = cgrndl(p) + forc_rho(t)*wtgq(filter_index)*wtalq(filter_index)*dqgdT(c)
          cgrnd(p)  = cgrnds(p) + cgrndl(p)*htvp(c)
 
          ! Update dew accumulation (kg/m2)
@@ -1311,8 +1314,8 @@ contains
 
       if ( use_fates ) then
 
-        call alm_fates%wrap_accumulatefluxes(bounds,fn,filterp(1:fn))
-        call alm_fates%wrap_hydraulics_drive(bounds,fn,filterp(1:fn),soilstate_vars, &
+        call alm_fates%wrap_accumulatefluxes(bounds,fn,iter_filterp(1:fn))
+        call alm_fates%wrap_hydraulics_drive(bounds,fn,iter_filterp(1:fn),soilstate_vars, &
                                             solarabs_vars,energyflux_vars)
       else
 
@@ -1324,12 +1327,12 @@ contains
          fnold = num_nolu_vegp
          fn = 0
          !$acc parallel loop independent gang vector default(present) 
-         do f = 1, fnold
-            p = filterp(f)
-            if (abs(err(f)) > 0.1_r8) then
+         do filter_index = 1, fnold
+            p = iter_filterp(filter_index)
+            if (abs(err(filter_index)) > 0.1_r8) then
                fn = fn + 1
-               filterp(fn) = p
-               write(iulog,*), 'energy balance in canopy ',p,', err=',err(f)
+               iter_filterp(fn) = p
+               write(iulog,*) 'energy balance in canopy ',p,', err=',err(filter_index)
                write(iulog,*) "sabv  :", sabv(p) 
                write(iulog,*) "air   :",air(p)
                write(iulog,*) "bir   :" ,bir(p)
@@ -1351,7 +1354,7 @@ contains
       !$acc  temp1(:), temp2(:),temp12m(:),&
       !$acc  temp22m(:),ustar(:), um(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
       !$acc  tlbef(:), del(:),del2(:),svpts(:),eah(:),wta0(:), err(:), dt_veg(:) ,wtg(:), &
-      !$acc  wtal(:), wtl0(:), efe(:), det(:), dele(:), fm(:), converged(:)  )
+      !$acc  wtal(:), wtl0(:), efe(:), det(:), dele(:), fm(:)  )
       !$acc exit data delete(time,irrig_nsteps_per_day, itlef) 
     end associate
 
