@@ -5513,8 +5513,9 @@ value per component.</p>
 </code></pre></div>
 <p>Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
-any field in need of initialization are ignored. A field cannot appear in more than one
-of the arrays.</p>
+any field in need of initialization are ignored. A field can be in both arrays, in which case
+the forced constant wins: this allows to force a field for a single run, without having to remove
+it from the fallback list. A field in <code>copy_fields</code> cannot be in either constant array.</p>
 <p>The order of operations is: fields in <code>force_constant_fields</code> are set first; then
 fields in <code>fallback_constant_fields</code> that are not in the IC file are set; finally,
 all remaining fields are read from the IC file.</p>
