@@ -1060,25 +1060,31 @@ void AtmosphereDriver::set_initial_conditions ()
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Only these parameters are allowed in the initial_conditions list. In particular, fields
-  // cannot be set via individual entries (e.g., 'qr: 0.0'): use constant_fields/copy_fields.
+  // cannot be set via individual entries (e.g., 'qr: 0.0'): use the *_constant_fields/copy_fields arrays.
   {
     const strvec_t valid_params = {
-      "filename", "topography_filename", "constant_fields", "copy_fields",
+      "filename", "topography_filename",
+      "force_constant_fields", "fallback_constant_fields", "copy_fields",
       "perturbed_fields", "generate_perturbation_random_seed",
       "perturbation_random_seed", "perturbation_limit", "perturbation_minimum_pressure"
     };
     for (const auto& n : ic_pl.param_names()) {
       EKAT_REQUIRE_MSG (ekat::contains(valid_params,n),
           "Error! Unrecognized parameter in the initial_conditions list: '" + n + "'.\n"
-          "       To initialize a field to a constant, use initial_conditions::constant_fields\n"
-          "       (entries 'name:value', or 'name:v1;v2;...' for vector fields), and to initialize it\n"
-          "       as a copy of another field, use initial_conditions::copy_fields (entries 'tgt:src').\n");
+          "       To initialize a field to a constant, use initial_conditions::force_constant_fields\n"
+          "       (always used) or initial_conditions::fallback_constant_fields (used only if the field\n"
+          "       is not in the IC file). Entries are 'name:value', or 'name:v1;v2;...' for vector fields.\n"
+          "       To initialize a field as a copy of another field, use initial_conditions::copy_fields\n"
+          "       (entries 'tgt:src').\n");
     }
   }
 
-  // Constant initialization is specified via the constant_fields array of strings, with entries
+  // Constant initialization is specified via two arrays of strings, with entries
   //   name:value            (all entries of the field are set to 'value')
   //   name:v1;v2;...;vN     (for vector fields, component i is set to vi)
+  //  - force_constant_fields:    the field is ALWAYS set to the constant, even if it is in the IC file
+  //  - fallback_constant_fields: the field is set to the constant ONLY IF it is not in the IC file
+  //                              (if it is, the field is read from the file)
   // Copy initialization is specified via the copy_fields array, with entries
   //   tgt_name:src_name
   // NOTE: entries that do not match any field needing initialization are ignored.
@@ -1106,31 +1112,43 @@ void AtmosphereDriver::set_initial_conditions ()
     }
     return entries;
   };
-
-  std::map<std::string,std::vector<double>> constant_values;
-  for (const auto& [name,val] : parse_entries("constant_fields")) {
-    std::vector<double> values;
-    for (const auto& v : ekat::split(val,';')) {
-      size_t idx = 0;
-      double d = 0;
-      try {
-        d = std::stod(trim(v),&idx);
-      } catch (...) {
-        idx = 0;
+  auto parse_constants = [&](const std::string& pname) {
+    std::map<std::string,std::vector<double>> constants;
+    for (const auto& [name,val] : parse_entries(pname)) {
+      std::vector<double> values;
+      for (const auto& v : ekat::split(val,';')) {
+        size_t idx = 0;
+        double d = 0;
+        try {
+          d = std::stod(trim(v),&idx);
+        } catch (...) {
+          idx = 0;
+        }
+        EKAT_REQUIRE_MSG (idx>0 and idx==trim(v).size(),
+            "Error! Invalid value in initial_conditions::" + pname + ".\n"
+            "       Field: '" + name + "'\n"
+            "       Value: '" + val + "'\n"
+            "       Expected a real number, or a ';'-separated list of real numbers.\n");
+        values.push_back(d);
       }
-      EKAT_REQUIRE_MSG (idx>0 and idx==trim(v).size(),
-          "Error! Invalid value in initial_conditions::constant_fields.\n"
-          "       Field: '" + name + "'\n"
-          "       Value: '" + val + "'\n"
-          "       Expected a real number, or a ';'-separated list of real numbers.\n");
-      values.push_back(d);
+      constants[name] = values;
     }
-    constant_values[name] = values;
+    return constants;
+  };
+
+  const auto force_values    = parse_constants("force_constant_fields");
+  const auto fallback_values = parse_constants("fallback_constant_fields");
+  const auto copy_sources    = parse_entries("copy_fields");
+
+  // A field can only be listed in one of the arrays
+  for (const auto& [name,v] : force_values) {
+    EKAT_REQUIRE_MSG (fallback_values.count(name)==0 and copy_sources.count(name)==0,
+        "Error! Field '" + name + "' appears in more than one of initial_conditions::force_constant_fields,\n"
+        "       fallback_constant_fields, and copy_fields.\n");
   }
-  const auto copy_sources = parse_entries("copy_fields");
-  for (const auto& [name,src] : copy_sources) {
-    EKAT_REQUIRE_MSG (constant_values.count(name)==0,
-        "Error! Field '" + name + "' appears in both initial_conditions::constant_fields and copy_fields.\n");
+  for (const auto& [name,v] : fallback_values) {
+    EKAT_REQUIRE_MSG (copy_sources.count(name)==0,
+        "Error! Field '" + name + "' appears in both initial_conditions::fallback_constant_fields and copy_fields.\n");
   }
 
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
@@ -1143,7 +1161,8 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& f = *it.second;
       const auto& children = f.get_header().get_children();
       if (children.size()>0 and
-          (constant_values.count(f.name())>0 or copy_sources.count(f.name())>0)) {
+          (force_values.count(f.name())>0 or fallback_values.count(f.name())>0 or
+           copy_sources.count(f.name())>0)) {
         std::string child_names;
         for (auto c : children)
           child_names += c.lock()->get_identifier().name() + " ";
@@ -1159,9 +1178,29 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   // Process all fields in the STARTUP group. For each, either init to
-  // a constant (if provided), add it to list of fields to read from file,
-  // or add it to list of fields to copy from another field.
+  // a constant (forced, or fallback if the field is not in the IC file),
+  // add it to list of fields to read from file, or add it to list of fields
+  // to copy from another field.
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
+
+  // To decide whether a fallback constant is needed, we need to know if a field is in the IC file.
+  // The file is opened lazily (only if there is a fallback entry to check), and just once.
+  const bool has_ic_file = ic_pl.isParameter("filename");
+  const std::string ic_file_name = has_ic_file ? ic_pl.get<std::string>("filename") : "";
+  bool ic_file_opened = false;
+  auto in_ic_file = [&](const std::string& vname) {
+    if (not has_ic_file) {
+      return false;
+    }
+    if (not ic_file_opened) {
+      scorpio::register_file(ic_file_name,scorpio::FileMode::Read);
+      ic_file_opened = true;
+    }
+    return scorpio::has_var(ic_file_name,vname);
+  };
+  // phis, sgh30, sgh are not read from the IC file, but from the topography file
+  const bool has_topo_file = ic_pl.isParameter("topography_filename") and
+                             ic_pl.get<std::string>("topography_filename")!="UNSET";
   strmap_t<std::set<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
 
@@ -1175,9 +1214,17 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& fname = fid.name();
       const auto& grid_name = fid.get_grid_name();
 
-      if (constant_values.count(fname)>0) {
-        // The user requested a constant initialization for this field
-        initialize_constant_field(fid, constant_values.at(fname));
+      const bool is_topo_field = fname=="phis" or fname=="sgh30" or fname=="sgh";
+      const bool use_fallback = fallback_values.count(fname)>0 and
+                                not (is_topo_field ? has_topo_file : in_ic_file(fname));
+
+      if (force_values.count(fname)>0) {
+        // The user requested a constant initialization for this field, regardless of the IC file
+        initialize_constant_field(fid, force_values.at(fname));
+        m_fields_inited[grid_name].insert(fname);
+      } else if (use_fallback) {
+        // The field is not in the IC file, so we fall back to the constant provided by the user
+        initialize_constant_field(fid, fallback_values.at(fname));
         m_fields_inited[grid_name].insert(fname);
       } else if (copy_sources.count(fname)>0) {
         // The user requested this field to be a copy of another field
@@ -1233,6 +1280,9 @@ void AtmosphereDriver::set_initial_conditions ()
         m_fields_inited[grid_name].insert(fname);
       }
     }
+  }
+  if (ic_file_opened) {
+    scorpio::release_file(ic_file_name);
   }
   m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 

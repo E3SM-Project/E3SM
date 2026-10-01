@@ -43,7 +43,7 @@ initial_conditions:
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
-  constant_fields:
+  force_constant_fields:
     - "pbl_height:0.0"
     - "ocnfrac:0.10000000000000000E+001"
     - "sst:0.30178553874977507E+003"

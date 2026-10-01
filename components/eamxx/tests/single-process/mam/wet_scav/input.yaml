@@ -27,7 +27,7 @@ initial_conditions:
   # The name of the file containing the initial conditions for this test.
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_MAM4xx_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  constant_fields:
+  force_constant_fields:
     - "pbl_height:25.0"
     - "precip_total_tend:1e-5"
     - "nevapr:1e-5"

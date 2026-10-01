@@ -750,22 +750,26 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
     <!-- Special case with non x6t or 16x topography file -->
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
-    <!-- For aquaplanet run, unset the topography_filename (phis=0 is set in constant_fields below) -->
+    <!-- For aquaplanet run, unset the topography_filename (phis=0 is set in force_constant_fields below) -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
-    <!-- Fields that we need to initialize, but are not in an initial condition file, need to be inited here.
-         Constant values are set via the constant_fields array of "field_name:value" entries. For vector fields,
-         the value can be a ';'-separated list, with one entry per component (e.g., "dgnum:1e-7;2e-8;3e-7;4e-8").
-         Entries that do not match any field in need of initialization are ignored. Being an array, entries can
+    <!-- Fields that we need to initialize, but may not be in the initial condition (IC) file, are inited here.
+         Constants are set via arrays of "field_name:value" entries. For vector fields, the value can be a
+         ';'-separated list, with one entry per component (e.g., "dgnum:1e-7;2e-8;3e-7;4e-8").
+         There are two arrays:
+          - force_constant_fields:    the field is ALWAYS set to the constant, even if it is in the IC file
+          - fallback_constant_fields: the field is set to the constant ONLY IF it is not in the IC file
+                                      (if it is in the IC file, it is read from there)
+         Entries that do not match any field in need of initialization are ignored. Being arrays, entries can
          be added/removed with atmchange (quote the argument if it contains ';'):
-           ./atmchange initial_conditions::constant_fields-=tke:0.0
-           ./atmchange initial_conditions::constant_fields+=my_field:1.0
+           ./atmchange initial_conditions::fallback_constant_fields-=tke:0.0
+           ./atmchange initial_conditions::force_constant_fields+=my_field:1.0
          Conditional (e.g., grid-dependent) entries can be appended to the base list via append="last".
          To initialize a field as a copy of another field, use the copy_fields array ("tgt_name:src_name").
          NOTE: fields cannot be set with individual entries (e.g., <qr>0.0</qr>).
-         Notes on the entries below:
+         Notes on the fallback entries below:
           - surf_evap: TODO, delete this when the IC fixes come in
           - microphysics fields not on IC are set to zero; this is consistent with EAM init
           - tke: SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file
@@ -777,7 +781,10 @@ be lost if SCREAM_HACK_XML is not enabled.
           - dgnumwet: wet aerosol particles diameters [m]; wetdens: wet density of interstitial aerosol [kg/m3]
           - MAM4xx aerosol fields, constituent_fluxes, z_mam4_int, fraction_landuse [fraction]
           - wetdep_*/drydep_*: surface fluxes for the land model from MAM4xx wet scavenging -->
-    <constant_fields type="array(string)" doc="Fields to initialize to a constant, as 'name:value' entries">
+    <force_constant_fields type="array(string)" doc="Fields to always initialize to a constant (even if in the IC file), as 'name:value' entries"/>
+    <!-- For aquaplanet run, set phis=0 (see also topography_filename above) -->
+    <force_constant_fields COMPSET=".*SCREAM%AQUA.*">phis:0.0</force_constant_fields>
+    <fallback_constant_fields type="array(string)" doc="Fields to initialize to a constant if they are not in the IC file, as 'name:value' entries">
       surf_evap:0.0, precip_liq_surf_mass:0.0, precip_ice_surf_mass:0.0,
       cldfrac_liq:0.0, sgs_buoy_flux:0.0, eddy_diff_mom:0.0, eddy_diff_heat:0.0,
       eddy_diff_mom_horiz:0.0, eddy_diff_heat_horiz:0.0, T_prev_micro_step:0.0, qv_prev_micro_step:0.0,
@@ -795,15 +802,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       dgnum:1.37146e-07;3.45899e-08;1.00000e-06;9.99601e-08,
       dgnumwet:1.37452e-07;3.46684e-08;1.00900e-06;9.99601e-08,
       wetdens:5.08262e-12;1.54035e-13;3.09018e-13;9.14710e-22
-    </constant_fields>
+    </fallback_constant_fields>
     <!-- Grid/compset dependent entries -->
     <!-- default ne256+ initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
-    <constant_fields hgrid="ne256np4|ne512np4|ne1024np4" append="last">qc:0.0, qi:0.0, nc:0.0, ni:0.0</constant_fields>
-    <constant_fields hgrid="ne32np4|ne64np4|ne128np4|ne0np4_CAx32v1" append="last">nc:0.0, ni:0.0</constant_fields>
-    <constant_fields hgrid="ne0np4_conus_x4v1_lowcon" append="last">o3_volume_mix_ratio:0.0</constant_fields>
-    <!-- For aquaplanet run, set phis=0 (see also topography_filename above) -->
-    <constant_fields COMPSET=".*SCREAM%AQUA.*" append="last">phis:0.0</constant_fields>
+    <fallback_constant_fields hgrid="ne256np4|ne512np4|ne1024np4" append="last">qc:0.0, qi:0.0, nc:0.0, ni:0.0</fallback_constant_fields>
+    <fallback_constant_fields hgrid="ne32np4|ne64np4|ne128np4|ne0np4_CAx32v1" append="last">nc:0.0, ni:0.0</fallback_constant_fields>
+    <fallback_constant_fields hgrid="ne0np4_conus_x4v1_lowcon" append="last">o3_volume_mix_ratio:0.0</fallback_constant_fields>
 
     <copy_fields type="array(string)" doc="Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries"/>
 

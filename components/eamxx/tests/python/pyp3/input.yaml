@@ -26,7 +26,7 @@ grids_manager:
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  constant_fields:
+  force_constant_fields:
     - "precip_liq_surf_mass:0.0"
     - "precip_ice_surf_mass:0.0"
 

@@ -44,7 +44,7 @@ initial_conditions:
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
   # we should get the following variables from other processes
-  constant_fields:
+  force_constant_fields:
     - "ocnfrac:0.10000000000000000E+001"
     - "sst:0.30178553874977507E+003"
     - "cldfrac_tot:0.138584624960092"

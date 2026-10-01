@@ -361,27 +361,38 @@ will be removed from the generated `namelist_defaults.xml`
 
 ### Initializing fields to a constant value
 
-Fields that need to be initialized, but are not present in the initial condition
-file, can be set to a constant value via the `initial_conditions::constant_fields`
-array. Each entry has the form `field_name:value`. For vector fields, one can either
+Fields can be initialized to a constant value via two arrays in the `initial_conditions` list.
+Each entry has the form `field_name:value`. For vector fields, one can either
 provide a single value (used for all components), or a `;`-separated list with one
-value per component:
+value per component.
+
+- `initial_conditions::force_constant_fields`: the field is **always** set to the constant,
+  even if it is present in the initial condition (IC) file.
+- `initial_conditions::fallback_constant_fields`: the field is set to the constant **only if it
+  is not in the IC file**. If it is, the field is read from the file. This is how the defaults
+  initialize fields that are not stored in the standard IC files, while still allowing a user
+  to provide them in a custom IC file.
 
 ``` {.shell .copy}
-./atmchange initial_conditions::constant_fields+=my_field:1.5
-./atmchange initial_conditions::constant_fields+="my_vector_field:1.5;2.5"
-./atmchange initial_conditions::constant_fields-=tke:0.0
+./atmchange initial_conditions::fallback_constant_fields+=my_field:1.5
+./atmchange initial_conditions::force_constant_fields+="my_vector_field:1.5;2.5"
+./atmchange initial_conditions::fallback_constant_fields-=tke:0.0
 ```
 
 Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
-any field in need of initialization are ignored.
+any field in need of initialization are ignored. A field cannot appear in more than one
+of the arrays.
+
+The order of operations is: fields in `force_constant_fields` are set first; then
+fields in `fallback_constant_fields` that are not in the IC file are set; finally,
+all remaining fields are read from the IC file.
 
 Similarly, `initial_conditions::copy_fields` initializes fields as a copy of other
 fields, with entries of the form `tgt_field_name:src_field_name`.
 
 !!! note
-    Fields can _only_ be initialized through these two arrays: setting a field with an
+    Fields can _only_ be initialized through these arrays: setting a field with an
     individual entry (e.g., `initial_conditions::qr=0.0`) is not supported, and
     EAMxx will error out if the `initial_conditions` list contains unrecognized parameters.
 

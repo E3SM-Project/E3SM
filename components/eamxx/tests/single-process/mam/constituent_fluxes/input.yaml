@@ -29,7 +29,7 @@ initial_conditions:
   #These should come from the input file
 
   #we should get the following variables from other processes
-  constant_fields:
+  force_constant_fields:
     - "constituent_fluxes:1.e-5"
     - "phis:1.0"
     - "pbl_height:1.0"

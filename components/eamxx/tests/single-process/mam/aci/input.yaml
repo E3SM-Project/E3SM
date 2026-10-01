@@ -33,7 +33,7 @@ initial_conditions:
   #These should come from the input file
 
   #we should get the following variables from other processes
-  constant_fields:
+  force_constant_fields:
     - "dgnum:4.362354500358337E-008"
     - "cldfrac_liq_prev:0.138584624960092"
     - "eddy_diff_heat:0.620820118789603"
