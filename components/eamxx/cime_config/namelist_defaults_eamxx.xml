@@ -532,10 +532,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- For internal testing only -->
     <test_only inherit="atm_proc_base">
       <my_param type="array(integer)">1,2</my_param>
-      <my_param vgrid="L128" append="base">3,4</my_param>
-      <my_param vgrid="L128" append="last">5,6</my_param>
-      <my_param vgrid="L72"  append="last">3,4</my_param>
-      <my_param vgrid="L72"  append="base">5,6</my_param>
+      <my_param vgrid="L128" action="append">3,4</my_param>
+      <my_param vgrid="L72"  action="append">3,4</my_param>
+      <my_param vgrid="L72"  action="remove">3</my_param>
     </test_only>
 
     <!-- Simple Prescribed Aerosols (SPA) -->

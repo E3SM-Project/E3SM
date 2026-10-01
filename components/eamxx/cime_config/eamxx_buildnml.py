@@ -44,7 +44,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "append")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "action")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):
@@ -440,6 +440,64 @@ def evaluate_selectors(element, case, ez_selectors):
     True
     >>> get_child(inherit,'ivar').attrib.get('doc')=='an integer'
     True
+    >>> ############## ARRAY ACTIONS #####################
+    >>> xml_act = '''
+    ... <namelist_defaults>
+    ...   <a type="array(integer)">1,2</a>
+    ...   <a nlev="128" action="append">3,4</a>
+    ...   <a nlev="128" action="remove">2</a>
+    ...   <a nlev="64" action="append">5</a>
+    ...   <b type="array(string)">x,y,z</b>
+    ...   <b grid="ne4ne4" action="remove">y,x</b>
+    ...   <c type="array(integer)">1,2</c>
+    ...   <c grid="ne4ne4">7,8</c>
+    ... </namelist_defaults>
+    ... '''
+    >>> act = ET.fromstring(xml_act)
+    >>> evaluate_selectors(act,case,selectors_good)
+    >>> get_child(act,'a').text=="1,3,4"
+    True
+    >>> get_child(act,'b').text=="z"
+    True
+    >>> get_child(act,'c').text=="7,8"
+    True
+    >>> get_child(act,'b').attrib['type']=='array(string)'
+    True
+    >>> ############## EMPTY ARRAYS #####################
+    >>> empty = ET.fromstring('<n><a type="array(integer)"></a><a grid="ne4ne4" action="append">1</a><b type="array(integer)">1</b><b grid="ne4ne4" action="remove">1</b><b nlev="128" action="append">2,3</b></n>')
+    >>> evaluate_selectors(empty,case,selectors_good)
+    >>> get_child(empty,'a').text=="1"
+    True
+    >>> get_child(empty,'b').text=="2,3"
+    True
+    >>> ############## BAD ACTIONS #####################
+    >>> bad_act = ET.fromstring('<n><a type="array(integer)">1,2</a><a grid="ne4ne4" action="remove">3</a></n>')
+    >>> evaluate_selectors(bad_act,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Cannot remove '3' from 'a': expected exactly one occurrence, found 0. Curr entries: 1,2
+    >>> bad_act = ET.fromstring('<n><a type="array(integer)">1,2,2</a><a grid="ne4ne4" action="remove">2</a></n>')
+    >>> evaluate_selectors(bad_act,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Cannot remove '2' from 'a': expected exactly one occurrence, found 2. Curr entries: 1,2,2
+    >>> bad_act = ET.fromstring('<n><a type="array(integer)">1,2</a><a grid="ne4ne4" action="prepend">3</a></n>')
+    >>> evaluate_selectors(bad_act,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Unrecognized value for 'action' attribute
+      param name  : a
+      action value: prepend
+      valid values: append, remove
+    <BLANKLINE>
+    >>> bad_act = ET.fromstring('<n><a type="integer">1</a><a grid="ne4ne4" action="append">3</a></n>')
+    >>> evaluate_selectors(bad_act,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'action' metadata attribute is only supported for entries of array type
+     param name: a
+     param type: integer
+    >>> bad_act = ET.fromstring('<n><a type="array(integer)" action="append">1</a></n>')
+    >>> evaluate_selectors(bad_act,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'append' action for 'a' requires a previously selected value to modify
+     Selector element attributes: {'type': 'array(integer)', 'action': 'append'}
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad1 = '''
     ... <selectors_xml>
@@ -503,7 +561,6 @@ def evaluate_selectors(element, case, ez_selectors):
 
     selected_child = {} # elem_name -> evaluated XML element
     children_to_remove = []
-    child_base_value = {} # map elme name to values to be appended to if append=="base"
     child_type  = {} # map elme name to its type (since only first entry may have type specified)
     for child in element:
         # Note: in our system, an XML element is either a "node" (has children)
@@ -520,21 +577,19 @@ def evaluate_selectors(element, case, ez_selectors):
             if child_name not in child_type:
                 child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
 
-            is_array = child_type[child_name].startswith("array")
-            expect (is_array or "append" not in selectors.keys(),
-                    "The 'append' metadata attribute is only supported for entries of array type\n"
-                    f" param name: {child_name}\n"
-                    f" param type: {child_type[child_name]}")
-
-            append = selectors["append"] if "append" in selectors.keys() else "no"
-            expect (append in ["no","base","last"],
-                    "Unrecognized value for 'append' attribute\n" +
-                    f"  param name  : {child_name}\n" +
-                    f"  append value: {append}\n" +
-                     "  valid values: base, last\n")
+            action = selectors.get("action")
+            if action is not None:
+                expect (child_type[child_name].startswith("array"),
+                        "The 'action' metadata attribute is only supported for entries of array type\n"
+                        f" param name: {child_name}\n"
+                        f" param type: {child_type[child_name]}")
+                expect (action in ["append","remove"],
+                        "Unrecognized value for 'action' attribute\n"
+                        f"  param name  : {child_name}\n"
+                        f"  action value: {action}\n"
+                        "  valid values: append, remove\n")
             if selectors:
                 all_match = True
-                had_case_selectors = False
                 for sel_name, sel_value in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
                     if sel_name in METADATA_ATTRIBS:
@@ -544,7 +599,6 @@ def evaluate_selectors(element, case, ez_selectors):
                                         f"The 'type' attribute of {child_name} is not consistent across different selectors")
                         continue
 
-                    had_case_selectors = True
                     selectors_matched = evaluate_selector(sel_name, sel_value, ez_selectors, case, child_name)
                     if not selectors_matched:
                         all_match = False
@@ -558,37 +612,42 @@ def evaluate_selectors(element, case, ez_selectors):
                         # We replace orig_child with child (rather than updating orig_child
                         # in-place) so that the surviving element retains the selector
                         # attributes of the matching variant, e.g. for diagnostics.
-                        if append=="base":
-                            expect(child_name in child_base_value,
-                                   f"'append=base' used for '{child_name}' but no default "
-                                   f"(base) element was defined. "
-                                   f"Selector element attributes: {dict(child.attrib)}")
-                            new_text = child_base_value[child_name] + "," + child.text
-                        elif append=="last":
-                            new_text = orig_child.text + "," + child.text
+                        if action=="append":
+                            new_list = [] if not orig_child.text else orig_child.text.strip().split(",")
+                            new_list.append(child.text)
+                            new_text = ",".join(new_list)
+                        elif action=="remove":
+                            new_list = [] if not orig_child.text else [item.strip() for item in orig_child.text.split(",")]
+                            items = [item.strip() for item in child.text.split(",")]
+                            for item in items:
+                                expect(new_list.count(item)==1,
+                                       f"Cannot remove '{item}' from '{child_name}': expected exactly one occurrence, "
+                                       f"found {new_list.count(item)}. Curr entries: {orig_child.text}")
+                                new_list.remove(item)
+                            new_text = ",".join(new_list)
                         else:
                             new_text = child.text
                         # Copy non-selector metadata from the previously selected element
                         # to the newly selected one (if not already set on the new element).
                         # This allows metadata (e.g. constraints, doc) to be defined only
                         # on the default element and inherited by all selector-specific variants.
+                        # ('action' is specific to each element, so it is never inherited)
                         for attr in METADATA_ATTRIBS:
-                            if attr in orig_child.attrib and attr not in child.attrib:
+                            if attr!="action" and attr in orig_child.attrib and attr not in child.attrib:
                                 child.attrib[attr] = orig_child.attrib[attr]
                         child.text = new_text
                         children_to_remove.append(orig_child)
                         selected_child[child_name] = child
 
                     else:
-                        # If all selectors were the METADATA_ATTRIB ones, then this is the "base" value
-                        if not had_case_selectors:
-                            child_base_value[child_name] = child.text
+                        expect (action is None,
+                                f"The '{action}' action for '{child_name}' requires a previously selected value to modify\n"
+                                f" Selector element attributes: {dict(child.attrib)}")
                         selected_child[child_name] = child
 
             else:
                 expect(child_name not in selected_child,
                        "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
-                child_base_value[child_name] = child.text
                 selected_child[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
@@ -1206,7 +1265,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                    f"   frequency_units: {units}\n"
                    f"   ATM_NCPL: {case.get_value('ATM_NCPL')}\n"
                    f" This yields dt_atm={dt_atm} > dt_output={dt_out}. Please, adjust 'frequency' and/or 'frequency_units'\n")
-        
+
         # Check for duplicate output file signatures
         prefix = content['filename_prefix']
         avg_type = content['averaging_type'].upper()
@@ -1224,7 +1283,7 @@ def do_cime_vars_on_yaml_output_files(case, caseroot):
                 f"    - frequency_units: {units}\n"
                 f"    - filename_prefix: {prefix}\n"
                 f"  This would cause both outputs to write to the same NetCDF file.\n"
-                f"  Please modify one of the YAML files to use a different prefix or output frequency.")            
+                f"  Please modify one of the YAML files to use a different prefix or output frequency.")
         file_signatures.append((fn, signature))
 
         ordered_dump(content, open(dst_yaml, "w"))

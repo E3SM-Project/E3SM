@@ -191,22 +191,22 @@ class TestBuildnml(unittest.TestCase):
     def test_nml_defaults_append(self):
     ###########################################################################
         """
-        Test that the append attribute for array-type params in namelist defaults works as expected
+        Test that the action attribute (append/remove) for array-type params in namelist defaults works as expected
         """
         case = self._common_case
 
         # Add test_only proc
         self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
 
-        # Test case 1: append to base, then to last. Should give all 3 entries stacked
+        # Test case 1: append only
         run_cmd_no_fail("./xmlchange EAMXX_VGRID=L128v4", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
-        self._get_values(case,"my_param","1,2,3,4,5,6")
+        self._get_values(case,"my_param","1,2,3,4")
 
-        # Test case 2: append to last, then to base. Should give 1st and 3rd entry
+        # Test case 2: append, then remove one of the appended entries
         run_cmd_no_fail("./xmlchange EAMXX_VGRID=L72", from_dir=case)
         run_cmd_no_fail("./case.setup", from_dir=case)
-        self._get_values(case,"my_param","1,2,5,6")
+        self._get_values(case,"my_param","1,2,4")
 
         # Restore the default vgrid, since this case is shared with the other tests
         run_cmd_no_fail("./xmlchange EAMXX_VGRID=L128v4", from_dir=case)
