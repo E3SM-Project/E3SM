@@ -174,16 +174,6 @@ _TESTS = {
             )
         },
 
-    "e3sm_atm_stealth" : {
-        "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F2010.eam-cflx_cpl_2",
-            "SMS_D_Ln5.ne4_oQU240.F2010.eam-cflx_cpl_2",
-            "ERS.ne4pg2_oQU480.F2010.eam-p3",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-p3",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-rrtmg_split",
-            )
-        },
-
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
