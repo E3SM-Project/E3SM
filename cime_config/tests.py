@@ -184,6 +184,7 @@ _TESTS = {
             "SMS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             "ERP_Ld3.ne4pg2_ne4pg2.FIDEAL.allactive-pioroot1",
             "ERS_Ld5.ne4pg2_oQU480.F2010.eam-sathist_F2010",
+            "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             "ERS_Ld5.ne4pg2_oQU480.F2010xx-ZM",
             )
         },
@@ -282,7 +283,6 @@ _TESTS = {
             "ERS_Vmct.ne30pg2_r05_IcoswISC30E3r5_gis4to40.MALISIA",
             "ERS_Vmct_Ld5.TL319_oQU240wLI_ais8to30.MPAS_LISIO_JRA1p5.mpaso-ocn_glcshelf",
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
-            "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
             "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
@@ -298,7 +298,7 @@ _TESTS = {
         },
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration", "e3sm_rrm", "e3sm_land_integration"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_rrm", "e3sm_land_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne4pg2_oQU480.WCYCL1850NS",
@@ -344,15 +344,6 @@ _TESTS = {
     "e3sm_rrm" : {
         "tests" : (
             "SMS_D_Ln5.conusx4v1pg2_r05_IcoswISC30E3r5.F2010",
-            )
-        },
-
-    #e3sm MMF tests for development
-    "e3sm_mmf_integration" : {
-        "tests" : (
-            "ERP_Ln9.ne4pg2_oQU480.WCYCL20TRNS-MMF1.allactive-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
-            "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
         },
 
@@ -918,7 +909,6 @@ _TESTS = {
 
     "e3sm_gpucxx" : {
         "tests"    : (
-            "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72",
             "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
