@@ -27,10 +27,6 @@ auto Field::get_view () const
   EKAT_REQUIRE_MSG(is_allocated(),
       "Error! Cannot extract a field's view before allocation happens.\n");
 
-  EKAT_REQUIRE_MSG (not m_header->is_broadcast(),
-      "Error! Broadcast fields can only be accessed via get_strided_view.\n"
-      " - field name: " + name() + "\n");
-
   EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<DstValueType>::value,
       "Error! Cannot get a view to non-const data if the field is read-only.\n");
 
@@ -203,6 +199,10 @@ auto Field::get_ND_view () const
   const auto& fl = m_header->get_identifier().get_layout();
   EKAT_REQUIRE_MSG (N==1 || N==fl.rank(),
       "Error! Input Rank must either be 1 (flat array) or the actual field rank.\n");
+
+  EKAT_REQUIRE_MSG (m_header->get_alloc_properties().allows_layout_right(),
+    "Error! Cannot build a LayoutRight view of this field; use get_strided_view.\n"
+    " - field name: " + name() + "\n");
 
   // Check if this field is a subview of another field
   const auto parent = m_header->get_parent();
