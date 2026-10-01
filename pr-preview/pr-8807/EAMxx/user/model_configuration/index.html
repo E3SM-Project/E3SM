@@ -5518,6 +5518,10 @@ of the arrays.</p>
 <p>The order of operations is: fields in <code>force_constant_fields</code> are set first; then
 fields in <code>fallback_constant_fields</code> that are not in the IC file are set; finally,
 all remaining fields are read from the IC file.</p>
+<p>To help catch a forgotten entry or a custom IC file that is not being used, EAMxx logs
+one line (at <code>info</code> level) for each field in <code>force_constant_fields</code> (whose IC file value, if any,
+is ignored), and for each field in <code>fallback_constant_fields</code> that is found in the IC file
+(so its fallback constant is not used).</p>
 <p>Similarly, <code>initial_conditions::copy_fields</code> initializes fields as a copy of other
 fields, with entries of the form <code>tgt_field_name:src_field_name</code>.</p>
 <div class="admonition note">
