@@ -847,12 +847,12 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
     <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
-    <qc vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni vgrid="L128v1" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
-    <nc vgrid="L128v1" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
-    <ni vgrid="L128v1" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
+    <qc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
+    <qi vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
+    <nc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
+    <ni vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+    <nc vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
+    <ni vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
 
     <!-- new default initial conditions for L128v4 do not have nc/ni fieds, so initialize to zero -->
     <nc vgrid="L128v4" type="real">0.0</nc>
@@ -961,7 +961,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
     <laplace_scaling>UNSET</laplace_scaling>
-    <laplace_scaling vgrid="L128v1|L72">0.0</laplace_scaling>
+    <laplace_scaling vgrid="L72"   >0.0</laplace_scaling>
+    <laplace_scaling vgrid="L128v1">0.0</laplace_scaling>
     <laplace_scaling vgrid="L128v4">1.0</laplace_scaling>
     <!-- DP is less stable when using laplace_scaling=1, so keep the old sponge layer settings -->
     <laplace_scaling vgrid="L128v4" COMPSET=".*DP-EAMxx">0.0</laplace_scaling>
@@ -989,8 +990,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- updated nu_top for L128v4 when laplace_scaling > 0 (tensor viscosity) -->
     <nu_top vgrid="L128v4" >5e-7</nu_top>
     <nu_top vgrid="L128v4" COMPSET=".*DP-EAMxx">1.0e4</nu_top>
-    <tom_sponge_start type="real" vgrid="L128v1" doc="sponge layer bot pressure [hPa]">0.0</tom_sponge_start>
-    <tom_sponge_start type="real" vgrid="L128v4" doc="sponge layer bot pressure [hPa]">15.0</tom_sponge_start>
+    <tom_sponge_start type="real" doc="sponge layer bot pressure [hPa]">UNSET</tom_sponge_start>
+    <tom_sponge_start type="real" vgrid="L72"    >0.0</tom_sponge_start>
+    <tom_sponge_start type="real" vgrid="L128v1" >0.0</tom_sponge_start>
+    <tom_sponge_start type="real" vgrid="L128v4" >15.0</tom_sponge_start>
     <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
