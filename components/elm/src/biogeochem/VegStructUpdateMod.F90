@@ -82,6 +82,8 @@ contains
 
     associate(                                                            &
          ivt                =>  veg_pp%itype                         ,       & ! Input:  [integer  (:) ] pft vegetation type
+         woody              =>  veg_vp%woody                  ,       & ! Input:  [real(r8) (:) ] binary flag for woody lifeform (1=woody, 0=not woody)
+         nonvascular        =>  veg_vp%nonvascular            ,       & ! Input:  [integer  (:) ] nonvascluar lifeform (0 - vascular, 1=moss, 2=lichen, etc)
          slatop             =>  veg_vp%slatop                 ,       & ! Input:  [real(r8) (:) ] specific leaf area at top of canopy, projected area basis [m^2/gC]
          dsladlai           =>  veg_vp%dsladlai               ,       & ! Input:  [real(r8) (:) ] dSLA/dLAI, projected area basis [m^2/gC]
          z0mr               =>  veg_vp%z0mr                   ,       & ! Input:  [real(r8) (:) ] ratio of momentum roughness length to canopy top height (-)
@@ -210,8 +212,17 @@ contains
 
                ! grasses
 
+               if(nonvascular(ivt(p)) == 1) then
+               ! moss: ranging from 0.02 - 0.1 m
+                 htop(p) = max(0.02_r8, min(0.10_r8, tlai(p) * 0.10_r8)) ! (TODO: requires further literature study on this)
+               elseif(nonvascular(ivt(p)) == 2) then
+               ! lichen: ususally composited onto/into surface (rock, bare soil, or even plant trunk/branch).
+               !         here only considering on bare/rock surface ones, i.e. distinguishable as fraction of land as one type of coverage.
+                 htop(p) = 0.01_r8
+               else
                ! height for grasses depends only on LAI
-               htop(p) = max(0.25_r8, tlai(p) * 0.25_r8)
+                 htop(p) = max(0.25_r8, tlai(p) * 0.25_r8)
+               endif
 
                htop(p) = min(htop(p),(forc_hgt_u_patch(p)/(displar(ivt(p))+z0mr(ivt(p))))-3._r8)
 
