@@ -123,10 +123,10 @@ public:
   // strided views of the result have stride 0 along those dims).
   // The tags/extents of this field's layout must be an ordered subset of those of tgt.
   // NOTE: the result can only be accessed via get_strided_view (not get_view).
-  Field broadcast (const FieldLayout& tgt) const;
+  Field broadcast_to (const FieldLayout& tgt) const;
 
   // Shortcut of the above, so you don't need to grab the tgt layout
-  Field broadcast (const Field& tgt) const;
+  Field broadcast_like (const Field& tgt) const;
 
   // Creates a new field with a pristine header (no providers/customers).
   // Clone behavior is controlled by flags: by default (CloneFlags::None),

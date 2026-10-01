@@ -214,7 +214,7 @@ FieldLayout FieldLayout::transpose() const
   return flt;
 }
 
-std::pair<bool,std::vector<int>> FieldLayout::broadcast (const FieldLayout& tgt) const
+std::optional<std::vector<int>> FieldLayout::broadcast_map (const FieldLayout& tgt) const
 {
   // Greedily match the dims of *this (in order) with those of tgt
   std::vector<int> dim_map(tgt.rank(),-1);
@@ -224,7 +224,9 @@ std::pair<bool,std::vector<int>> FieldLayout::broadcast (const FieldLayout& tgt)
       dim_map[itgt] = isrc++;
     }
   }
-  return std::make_pair(isrc==rank(),dim_map);
+  if (isrc!=rank())
+    return std::nullopt;
+  return dim_map;
 }
 
 FieldLayout& FieldLayout::rename_dim (const int idim, const std::string& n)

@@ -408,7 +408,7 @@ TEST_CASE("field", "") {
     };
 
     SECTION ("values") {
-      auto fb = f.broadcast(tgt);
+      auto fb = f.broadcast_to(tgt);
       check_values(fb,f);
 
       // No new allocation: same underlying data
@@ -416,10 +416,10 @@ TEST_CASE("field", "") {
 
       // Shortcut with field as target
       Field t (FieldIdentifier("t",tgt,m/s,"some_grid"),true);
-      check_values (f.broadcast(t),f);
+      check_values (f.broadcast_like(t),f);
 
       // Broadcasting to the same layout is a no-op (but the result is read-only)
-      auto fc = f.broadcast(f);
+      auto fc = f.broadcast_like(f);
       REQUIRE (fc.is_read_only());
       REQUIRE (views_are_equal(fc,f));
     }
@@ -429,7 +429,7 @@ TEST_CASE("field", "") {
       Field g (FieldIdentifier("g",{{CMP},{ncmp}},m/s,"some_grid"),true);
       randomize_uniform (g,seed++);
       g.sync_to_host();
-      auto gb = g.broadcast(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev}));
+      auto gb = g.broadcast_to(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev}));
       auto vb = gb.get_strided_view<const Real***,Host>();
       auto vg = g.get_strided_view<const Real*,Host>();
       for (int i=0; i<ncol; ++i)
@@ -441,7 +441,7 @@ TEST_CASE("field", "") {
       Field sc (FieldIdentifier("s",FieldLayout::scalar(),m/s,"some_grid"),true);
       sc.deep_copy(3.0);
       sc.sync_to_host();
-      auto sb = sc.broadcast(tgt);
+      auto sb = sc.broadcast_to(tgt);
       auto vsb = sb.get_strided_view<const Real***,Host>();
       for (int i=0; i<ncol; ++i)
         for (int j=0; j<ncmp; ++j)
@@ -455,23 +455,23 @@ TEST_CASE("field", "") {
       randomize_uniform (p,seed++);
       auto sf = p.subfield(CMP,1);   // layout (COL,LEV)
       sf.sync_to_host();
-      check_values (sf.broadcast(tgt),sf);
+      check_values (sf.broadcast_to(tgt),sf);
     }
 
     SECTION ("errors") {
       // Not allocated
       Field na (sfid);
-      REQUIRE_THROWS (na.broadcast(tgt));
+      REQUIRE_THROWS (na.broadcast_to(tgt));
 
       // Incompatible extents, tags, order, or larger source rank
-      REQUIRE_THROWS (f.broadcast(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev+1})));
-      REQUIRE_THROWS (f.broadcast(FieldLayout({COL,CMP},{ncol,ncmp})));
-      REQUIRE_THROWS (f.broadcast(FieldLayout({LEV,CMP,COL},{nlev,ncmp,ncol})));
-      REQUIRE_THROWS (f.broadcast(FieldLayout({COL},{ncol})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({COL,CMP,LEV},{ncol,ncmp,nlev+1})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({COL,CMP},{ncol,ncmp})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({LEV,CMP,COL},{nlev,ncmp,ncol})));
+      REQUIRE_THROWS (f.broadcast_to(FieldLayout({COL},{ncol})));
 
       // Cannot broadcast a broadcast
-      auto fb = f.broadcast(tgt);
-      REQUIRE_THROWS (fb.broadcast(FieldLayout({COL,CMP,LEV,GP},{ncol,ncmp,nlev,2})));
+      auto fb = f.broadcast_to(tgt);
+      REQUIRE_THROWS (fb.broadcast_to(FieldLayout({COL,CMP,LEV,GP},{ncol,ncmp,nlev,2})));
 
       // Broadcasted field is read-only and only supports strided views
       REQUIRE_THROWS (fb.get_strided_view<Real***,Host>());
@@ -483,13 +483,13 @@ TEST_CASE("field", "") {
 
     SECTION ("mask") {
       // No mask in the source => no mask in the broadcast
-      REQUIRE (not f.broadcast(tgt).has_valid_mask());
+      REQUIRE (not f.broadcast_to(tgt).has_valid_mask());
 
       auto& mask = f.create_valid_mask(Field::MaskInit::Valid);
       mask.subfield(COL,0).deep_copy(0);
       mask.sync_to_host();
 
-      auto fb = f.broadcast(tgt);
+      auto fb = f.broadcast_to(tgt);
       REQUIRE (fb.has_valid_mask());
 
       const auto& mb = fb.get_valid_mask();

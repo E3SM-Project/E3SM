@@ -108,21 +108,18 @@ get_strided_view_type<DT, HD> {
       // and build a rank-DstRank view, with the same pointer, and stride 0 along
       // the broadcasted dims. NOTE: we MUST build the src field, since only the Field
       // structure can build the original view (from which we grab the strides)
-      Field src;
-      src.m_header = m_header->template get_extra_data<std::shared_ptr<FieldHeader>>("bcast_src");
-      src.m_data   = m_data;
-      const auto& dim_map = m_header->template get_extra_data<std::vector<int>>("bcast_map");
-      const int src_rank = src.m_header->get_identifier().get_layout().rank();
+      const auto& src = m_header->template get_extra_data<Field>("bcast_src");
+      const auto& src_layout = src.get_header().get_identifier().get_layout();
 
       DstValueType* ptr = nullptr;
       std::array<size_t,MaxRank> src_strides = {0};
       auto get_src_strides = [&](const auto& v) {
         ptr = v.data();
-        for (int i=0; i<src_rank; ++i) {
+        for (int i=0; i<src_layout.rank(); ++i) {
           src_strides[i] = v.stride(i);
         }
       };
-      switch (src_rank) {
+      switch (src_layout.rank()) {
         case 0: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,0>,HD>()); break;
         case 1: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,1>,HD>()); break;
         case 2: get_src_strides(src.get_strided_view<data_nd_t<DstValueType,2>,HD>()); break;
@@ -134,6 +131,9 @@ get_strided_view_type<DT, HD> {
                           " - field name: " + name() + "\n");
       }
 
+      auto tgt_layout = m_header->get_identifier().get_layout();
+      // We already check broadcast works when we created this field
+      auto dim_map = src_layout.broadcast_map(tgt_layout).value();
       Kokkos::LayoutStride kl;
       for (int i=0; i<DstRank; ++i) {
         kl.dimension[i] = fl.dim(i);

@@ -107,7 +107,7 @@ TEST_CASE ("update") {
     for (const auto& xl : {xl_cl,xl_c,xl_l}) {
       Field x (FieldIdentifier("x",xl,kg,"some_grid"),true);
       randomize_uniform (x,seed++,1.0,2.0);
-      auto xb = x.broadcast(f_real);
+      auto xb = x.broadcast_like(f_real);
 
       f_real.sync_to_host();
       auto y0 = f_real.get_strided_view<const Real***,Host>();
@@ -150,7 +150,7 @@ TEST_CASE ("update") {
         // Mask out the first entry of the first dim of x
         x.create_valid_mask(Field::MaskInit::Valid);
         x.get_valid_mask().subfield(0,0).deep_copy(0);
-        auto xbm = x.broadcast(f_real);
+        auto xbm = x.broadcast_like(f_real);
         const bool first_is_col = xl.tags()[0]==COL;
 
         Field y = f_real.clone(CloneFlags::CopyData);
@@ -166,7 +166,7 @@ TEST_CASE ("update") {
     Field xi (FieldIdentifier("xi",xl_cl,kg,"some_grid",DataType::IntType),true);
     randomize_uniform (xi,seed++,1,5);
     Field yi = f_int.clone(CloneFlags::CopyData);
-    yi.scale(xi.broadcast(f_int));
+    yi.scale(xi.broadcast_like(f_int));
     yi.sync_to_host(); f_int.sync_to_host(); xi.sync_to_host();
     auto yiv = yi.get_strided_view<const int***,Host>();
     auto fiv = f_int.get_strided_view<const int***,Host>();
@@ -180,7 +180,7 @@ TEST_CASE ("update") {
     Field x (FieldIdentifier("x",xl_cl,kg,"some_grid"),true);
     Field y = f_real.clone();
     REQUIRE_THROWS (y.scale(x));
-    REQUIRE_THROWS (x.broadcast(f_real).scale(1.0));
+    REQUIRE_THROWS (x.broadcast_like(f_real).scale(1.0));
   }
 
   SECTION ("max-min") {

@@ -174,8 +174,8 @@ FieldHeader::broadcast (const FieldLayout& tgt)
       "Error! Cannot broadcast a field that is already a broadcast.\n");
 
   const auto& src = m_identifier.get_layout();
-  auto [can_broadcast, dim_map] = src.broadcast(tgt);
-  EKAT_REQUIRE_MSG (can_broadcast,
+  auto dim_map = src.broadcast_map(tgt);
+  EKAT_REQUIRE_MSG (dim_map.has_value(),
       "Error! Cannot broadcast to the provided target layout.\n"
       " - src field name: " + m_identifier.name() + "\n"
       " - src layout: " + src.to_string() + "\n"
@@ -185,10 +185,10 @@ FieldHeader::broadcast (const FieldLayout& tgt)
 
   // Same tracking as the source: a broadcast is just a different view of the same data
   fh->m_tracking = m_tracking;
+
+  // The alloc props bcast will simply be marked as non-contiguous and NOT LayoutRight-compatible
   fh->m_alloc_prop = std::make_shared<FieldAllocProp>(m_alloc_prop->broadcast(tgt));
 
-  fh->set_extra_data("bcast_src",shared_from_this());
-  fh->set_extra_data("bcast_map",dim_map);
   fh->set_may_be_filled(may_be_filled());
 
   return fh;
