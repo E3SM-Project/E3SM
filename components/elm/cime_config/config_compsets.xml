@@ -839,6 +839,11 @@
  </compset>
 
   <compset>
+    <alias>I1850GSWCNPRDCTCBCTOPPHSWFMCROP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCTOPPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
    <alias>I20TRGSWCNPPHSWFMCROP</alias>
    <lname>20TR_DATM%GSWP3v1_ELM%CNPRDCTCBCPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
  </compset>
@@ -846,6 +851,11 @@
     <compset>
     <alias>I1850WCCNPPHSWFMCROP</alias>
     <lname>1850_DATM%E3SMWCv2_ELM%CNPRDCTCBCPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>I1850WCCNPRDCTCBCTOPPHSWFMCROP</alias>
+    <lname>1850_DATM%E3SMWCv2_ELM%CNPRDCTCBCTOPPHSWFMCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <compset>
