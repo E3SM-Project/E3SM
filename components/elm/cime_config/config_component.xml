@@ -119,6 +119,7 @@
       <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCTGU" >20thC_TGU_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCPHSTGUWFM" >20thC_PHSTGUWFM_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCTOPPHSWFMCROP" >20thC_TOPPHSWFMCROP_transient</value>
     </values>
     <group>run_component_elm</group>
     <file>env_run.xml</file>
