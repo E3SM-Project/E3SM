@@ -7138,8 +7138,13 @@
 <li>type: file</li>
 </ul>
 </li>
-<li>initial_conditions::constant_fields:<ul>
-<li>description: Fields to initialize to a constant, as 'name:value' entries</li>
+<li>initial_conditions::force_constant_fields:<ul>
+<li>description: Fields to always initialize to a constant (even if in the IC file), as 'name:value' entries</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+<li>initial_conditions::fallback_constant_fields:<ul>
+<li>description: Fields to initialize to a constant if they are not in the IC file, as 'name:value' entries</li>
 <li>type: array(string)</li>
 </ul>
 </li>

@@ -5495,23 +5495,34 @@ Any atmosphere process that was previously in the list but is no longer in it
 will be removed from the generated <code>namelist_defaults.xml</code>
 (and <code>eamxx_input.yaml</code>) files, along with all their nested parameters.</p>
 <h3 id="initializing-fields-to-a-constant-value">Initializing fields to a constant value</h3>
-<p>Fields that need to be initialized, but are not present in the initial condition
-file, can be set to a constant value via the <code>initial_conditions::constant_fields</code>
-array. Each entry has the form <code>field_name:value</code>. For vector fields, one can either
+<p>Fields can be initialized to a constant value via two arrays in the <code>initial_conditions</code> list.
+Each entry has the form <code>field_name:value</code>. For vector fields, one can either
 provide a single value (used for all components), or a <code>;</code>-separated list with one
-value per component:</p>
-<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>initial_conditions::constant_fields+<span class="o">=</span>my_field:1.5
-./atmchange<span class="w"> </span>initial_conditions::constant_fields+<span class="o">=</span><span class="s2">"my_vector_field:1.5;2.5"</span>
-./atmchange<span class="w"> </span>initial_conditions::constant_fields-<span class="o">=</span>tke:0.0
+value per component.</p>
+<ul>
+<li><code>initial_conditions::force_constant_fields</code>: the field is <strong>always</strong> set to the constant,
+  even if it is present in the initial condition (IC) file.</li>
+<li><code>initial_conditions::fallback_constant_fields</code>: the field is set to the constant <strong>only if it
+  is not in the IC file</strong>. If it is, the field is read from the file. This is how the defaults
+  initialize fields that are not stored in the standard IC files, while still allowing a user
+  to provide them in a custom IC file.</li>
+</ul>
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>initial_conditions::fallback_constant_fields+<span class="o">=</span>my_field:1.5
+./atmchange<span class="w"> </span>initial_conditions::force_constant_fields+<span class="o">=</span><span class="s2">"my_vector_field:1.5;2.5"</span>
+./atmchange<span class="w"> </span>initial_conditions::fallback_constant_fields-<span class="o">=</span>tke:0.0
 </code></pre></div>
 <p>Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
-any field in need of initialization are ignored.</p>
+any field in need of initialization are ignored. A field cannot appear in more than one
+of the arrays.</p>
+<p>The order of operations is: fields in <code>force_constant_fields</code> are set first; then
+fields in <code>fallback_constant_fields</code> that are not in the IC file are set; finally,
+all remaining fields are read from the IC file.</p>
 <p>Similarly, <code>initial_conditions::copy_fields</code> initializes fields as a copy of other
 fields, with entries of the form <code>tgt_field_name:src_field_name</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Fields can <em>only</em> be initialized through these two arrays: setting a field with an
+<p>Fields can <em>only</em> be initialized through these arrays: setting a field with an
 individual entry (e.g., <code>initial_conditions::qr=0.0</code>) is not supported, and
 EAMxx will error out if the <code>initial_conditions</code> list contains unrecognized parameters.</p>
 </div>
