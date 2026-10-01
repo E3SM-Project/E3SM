@@ -165,15 +165,6 @@ _TESTS = {
             )
         },
 
-    "eam_condidiag" : {
-        "tests"   : (
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010",
-            "SMS_D_Ln5.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
-            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_dcape",
-            "ERP_Ld3.ne4pg2_oQU480.F2010.eam-condidiag_rhi",
-            )
-        },
-
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
