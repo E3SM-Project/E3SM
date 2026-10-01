@@ -363,6 +363,7 @@ void AtmosphereOutput::init()
     // when calling Field's update methods
     if (m_avg_type!=OutputAvgType::Instant or
         fh.get_alloc_properties().get_padding()>0 or
+        not fh.get_alloc_properties().contiguous()>0 or
         fh.get_parent()!=nullptr) {
       Field copy(fid);
       copy.allocate_view();
