@@ -114,6 +114,7 @@
       <value compset="1850.*_*CNPRDCTCBCWFM" >1850_WFM_control</value>
       <value compset="1850.*_*CNPRDCTCBCTGU" >1850_TGU_control</value>
       <value compset="1850.*_*CNPRDCTCBCPHSTGUWFM" >1850_PHSTGUWFM_control</value>
+      <value compset="1850.*_*CNPRDCTCBCTOPPHSWFMCROP" >1850_TOPPHSWFMCROP_control</value>
       <value compset="20TR.*_*CNPRDCTCBCPHS" >20thC_PHS_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCTGU" >20thC_TGU_transient</value>
@@ -160,6 +161,7 @@
       <value compset="_ELM%[^_]*CNPECACTCBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPRDCTCBCTOP">-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -solar_rad_scheme top</value>
       <value compset="_ELM%[^_]*CNPRDCTCBCPHSWFMCROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress -irrig .true. -tw_irr_on -crop </value>
+      <value compset="_ELM%[^_]*CNPRDCTCBCTOPPHSWFMCROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -hydrstress -irrig .true. -tw_irr_on -crop -solar_rad_scheme top</value>
       <value compset="_ELM%[^_]*CNPRDCTCBCWFMCROP" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane -crop  -irrig .true. -tw_irr_on </value>
       <value compset="_ELM%[^_]*CNECACNTBC" >-bgc bgc -nutrient cn  -nutrient_comp_pathway eca -soil_decomp century -methane </value>
       <value compset="_ELM%[^_]*CNPECACNTBC">-bgc bgc -nutrient cnp -nutrient_comp_pathway eca -soil_decomp century -methane </value>
@@ -275,6 +277,7 @@
     <desc compset="_ELM%[^_]*CNPECACTCBC">C-N-P, nutrient competition via equilibrium chemistry approximation, ctc soil cascade with black carbon deposition :</desc>
     <desc compset="_ELM%[^_]*CNPECACNTBC">C-N-P, nutrient competition via equilibrium chemistry approximation, cnt soil cascade with black carbon deposition :</desc>
     <desc compset="_ELM%[^_]*CNPRDCTCBCTOP" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition and subgrid solar radiation parameterization :</desc>
+    <desc compset="_ELM%[^_]*CNPRDCTCBCTOPPHSWFMCROP" >C-N-P, nutrient competition via relative demand, ctc soil cascade with black carbon deposition, subgrid solar radiation parameterization, plant hydraulics, irrigation and prognostic crop :</desc>
   </description>
 
   <help>
