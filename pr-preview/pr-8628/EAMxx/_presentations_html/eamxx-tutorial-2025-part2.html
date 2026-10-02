@@ -1045,8 +1045,11 @@ POMPEI::<span class="hljs-built_in">POMPEI</span>(<span class="hljs-type">const<
 ;background-color:#fff;background-image:url('./background.png');background-position:center;background-repeat:no-repeat;background-size:cover;" data-marpit-pagination-total="31">
 <header></header>
 <h2 id="the-runtime-parameters-in-the-run-script">The runtime parameters in the run script</h2>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash"><span class="hljs-comment"># increase SCREAM_NUM_TRACERS from 10 to 11 (note that scream supports both 128 and 72 levels for low-res)</span>
-./xmlchange SCREAM_CMAKE_OPTIONS=<span class="hljs-string">&quot;SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 11&quot;</span>
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-bash"><span class="hljs-comment"># increase SCREAM_NUM_TRACERS from 10 to 11</span>
+./xmlchange SCREAM_CMAKE_OPTIONS=<span class="hljs-string">&quot;SCREAM_NP 4 SCREAM_NUM_TRACERS 11&quot;</span>
+
+<span class="hljs-comment"># the vertical grid is chosen separately, and sets the number of levels (72 or 128)</span>
+./xmlchange EAMXX_VGRID=L128v4
 
 <span class="hljs-comment"># add pompei to the list of aerosol processes</span>
 ./atmchange mac_aero_mic::atm_procs_list+=pompei
