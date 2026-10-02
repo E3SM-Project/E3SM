@@ -11,9 +11,9 @@ module VegetationDataType
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc
   use abortutils      , only : endrun
-  use elm_time_manager, only : is_restart, get_nstep, is_first_restart_step, get_step_size
+  use elm_time_manager, only : is_restart, get_nstep, is_first_restart_step 
   use elm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
-  use elm_varpar      , only : nlevdecomp, nlevdecomp_full, max_patch_per_col
+  use elm_varpar      , only : nlevdecomp, nlevdecomp_full
   use elm_varcon      , only : spval, ispval, sb
   use elm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
@@ -632,7 +632,6 @@ module VegetationDataType
 
     ! crop fluxes
     real(r8), pointer :: crop_seedc_to_leaf                  (:) => null()    ! (gC/m2/s) seed source to leaf, for crops
-    real(r8), pointer :: crop_seedc_to_leaf_noop             (:) => null()    ! (gC/m2/s) seed source to leaf for crops, only counted when the paired leafc_xfer state assignment is a no-op (mass balance check)
 
     ! CN dynamic landcover fluxes
     real(r8), pointer :: dwt_seedc_to_leaf                   (:) => null()    ! (gC/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
@@ -821,7 +820,6 @@ module VegetationDataType
     real(r8), pointer :: nfix_to_plantn                      (:)   => null()  ! nitrogen fixation goes to plant
     ! dynamic landcover fluxes
     real(r8), pointer :: crop_seedn_to_leaf                  (:)   => null()  ! (gN/m2/s) seed source to leaf, for crops
-    real(r8), pointer :: crop_seedn_to_leaf_noop             (:)   => null()  ! (gN/m2/s) no-op seed source to leaf, for crops (mass balance check)
     real(r8), pointer :: dwt_seedn_to_leaf                   (:)   => null()  ! (gN/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
     real(r8), pointer :: dwt_seedn_to_deadstem               (:)   => null()  ! (gN/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
     real(r8), pointer :: dwt_conv_nflux                      (:)   => null()  ! (gN/m2/s) conversion N flux (immediate loss to atm); although this is a patch-level flux, it is expressed per unit GRIDCELL area
@@ -992,7 +990,6 @@ module VegetationDataType
     real(r8), pointer :: wood_harvestp                       (:)     ! total P losses to wood product pools (gP/m2/s)
     real(r8), pointer :: biochem_pmin_to_plant               (:)     ! biochemical P mineralization directly goes to plant (gP/m2/s)
     real(r8), pointer :: crop_seedp_to_leaf                  (:)     ! (gP/m2/s) seed source to leaf, for crops
-    real(r8), pointer :: crop_seedp_to_leaf_noop             (:)     ! (gP/m2/s) no-op seed source to leaf, for crops (mass balance check)
     real(r8), pointer :: dwt_seedp_to_leaf                   (:)     ! (gP/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
     real(r8), pointer :: dwt_seedp_to_deadstem               (:)     ! (gP/m2/s) seed source to patch-level; although this is a patch-level flux, it is expressed per unit GRIDCELL area
     real(r8), pointer :: dwt_conv_pflux                      (:)     ! (gP/m2/s) conversion N flux (immediate loss to atm); although this is a patch-level flux, it is expressed per unit GRIDCELL area
@@ -3563,8 +3560,6 @@ module VegetationDataType
       totvegc_col    => col_cs%totvegc, &
       totvegc_abg_patch  => this%totvegc_abg , &
       totvegc_abg_col    => col_cs%totvegc_abg, &
-      leafc_xfer_patch   => this%leafc_xfer , &
-      leafc_xfer_col     => col_cs%leafc_xfer, &
       cropseedc_deficit_patch  => this%cropseedc_deficit ,&
       cropseedc_deficit_col    => col_cs%cropseedc_deficit &
       )
@@ -3654,12 +3649,6 @@ module VegetationDataType
          totvegc_abg_patch(bounds%begp:bounds%endp), &
          totvegc_abg_col(bounds%begc:bounds%endc))
 
-    ! p2c of the leaf C transfer pool, needed by the crop seed mass balance
-    ! check (BeginColCBalance copies this into col_cs%leafc_xfer_beg)
-    call p2c(bounds, num_soilc, filter_soilc, &
-         leafc_xfer_patch(bounds%begp:bounds%endp), &
-         leafc_xfer_col(bounds%begc:bounds%endc))
-
     if (use_crop) then
        call p2c(bounds, num_soilc, filter_soilc, &
             cropseedc_deficit_patch(bounds%begp:bounds%endp), &
@@ -3698,7 +3687,6 @@ module VegetationDataType
     !------------------------------------------------------------------------
 
   end subroutine veg_cs_clean
-
 
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean vegetation nitrogen state data structure
@@ -4254,9 +4242,7 @@ module VegetationDataType
      totpftn_patch  => this%totpftn   , &
      totpftn_col    => col_ns%totpftn, &
      cropseedn_deficit_patch  => this%cropseedn_deficit , &
-     cropseedn_deficit_col    => col_ns%cropseedn_deficit, &
-     leafn_xfer_patch         => this%leafn_xfer        , &
-     leafn_xfer_col           => col_ns%leafn_xfer &
+     cropseedn_deficit_col    => col_ns%cropseedn_deficit &
       )
 
     do fp = 1,num_soilp
@@ -4321,12 +4307,6 @@ module VegetationDataType
    call p2c(bounds, num_soilc, filter_soilc, &
         totpftn_patch(bounds%begp:bounds%endp) , &
         totpftn_col(bounds%begc:bounds%endc))
-
-   ! p2c of the leaf N transfer pool, needed by the crop seed mass balance
-   ! check (BeginColNBalance copies this into col_ns%leafn_xfer_beg)
-   call p2c(bounds, num_soilc, filter_soilc, &
-        leafn_xfer_patch(bounds%begp:bounds%endp) , &
-        leafn_xfer_col(bounds%begc:bounds%endc))
 
    if (use_crop) then
       call p2c(bounds, num_soilc, filter_soilc, &
@@ -5012,9 +4992,7 @@ module VegetationDataType
      totpftp_patch  => this%totpftp   , &
      totpftp_col    => col_ps%totpftp, &
      cropseedp_deficit_patch  => this%cropseedp_deficit , &
-     cropseedp_deficit_col    => col_ps%cropseedp_deficit, &
-     leafp_xfer_patch         => this%leafp_xfer        , &
-     leafp_xfer_col           => col_ps%leafp_xfer &
+     cropseedp_deficit_col    => col_ps%cropseedp_deficit &
       )
     do fp = 1,num_soilp
        p = filter_soilp(fp)
@@ -5075,12 +5053,6 @@ module VegetationDataType
    call p2c(bounds, num_soilc, filter_soilc, &
         totpftp_patch(bounds%begp:bounds%endp) , &
         totpftp_col(bounds%begc:bounds%endc) )
-
-   ! p2c of the leaf P transfer pool, needed by the crop seed mass balance
-   ! check (BeginColPBalance copies this into col_ps%leafp_xfer_beg)
-   call p2c(bounds, num_soilc, filter_soilc, &
-        leafp_xfer_patch(bounds%begp:bounds%endp) , &
-        leafp_xfer_col(bounds%begc:bounds%endc) )
 
    if (use_crop) then
       call p2c(bounds, num_soilc, filter_soilc, &
@@ -5924,7 +5896,6 @@ module VegetationDataType
        allocate(this%woodc_loss                          (begp:endp)) ;    this%woodc_loss                           (:) = spval
        allocate(this%fire_closs                          (begp:endp)) ;    this%fire_closs                           (:) = spval
        allocate(this%crop_seedc_to_leaf                  (begp:endp)) ;    this%crop_seedc_to_leaf                   (:) = spval
-       allocate(this%crop_seedc_to_leaf_noop             (begp:endp)) ;    this%crop_seedc_to_leaf_noop              (:) = spval
     end if ! .not use fates
 
     allocate(this%dwt_seedc_to_leaf                   (begp:endp)) ;    this%dwt_seedc_to_leaf                    (:) = spval
@@ -8192,9 +8163,7 @@ module VegetationDataType
       hrv_xsmrpool_to_atm_patch => this%hrv_xsmrpool_to_atm , &
       hrv_xsmrpool_to_atm_col   => col_cf_input%hrv_xsmrpool_to_atm,   &
       crop_seedc_to_leaf_patch => this%crop_seedc_to_leaf, &
-      crop_seedc_to_leaf_col => col_cf_input%crop_seedc_to_leaf, &
-      crop_seedc_to_leaf_noop_patch => this%crop_seedc_to_leaf_noop, &
-      crop_seedc_to_leaf_noop_col => col_cf_input%crop_seedc_to_leaf_noop &
+      crop_seedc_to_leaf_col => col_cf_input%crop_seedc_to_leaf &
       )
 
     if (use_fates) return
@@ -8543,10 +8512,6 @@ module VegetationDataType
          crop_seedc_to_leaf_patch(bounds%begp:bounds%endp), &
          crop_seedc_to_leaf_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds,num_soilc, filter_soilc, &
-         crop_seedc_to_leaf_noop_patch(bounds%begp:bounds%endp), &
-         crop_seedc_to_leaf_noop_col(bounds%begc:bounds%endc))
-
     end associate
 
   end subroutine veg_cf_summary
@@ -8786,7 +8751,6 @@ module VegetationDataType
           this%transfer_grain_gr(i)       = value_patch
           this%grainc_storage_to_xfer(i)  = value_patch
           this%crop_seedc_to_leaf(i)      = value_patch
-          this%crop_seedc_to_leaf_noop(i) = value_patch
        end do
     end if
 
@@ -8987,7 +8951,6 @@ module VegetationDataType
     allocate(this%soyfixn                             (begp:endp)) ; this%soyfixn                             (:) = spval
     allocate(this%nfix_to_plantn                      (begp:endp)) ; this%nfix_to_plantn                      (:) = spval
     allocate(this%crop_seedn_to_leaf                  (begp:endp)) ; this%crop_seedn_to_leaf                  (:) = spval
-    allocate(this%crop_seedn_to_leaf_noop             (begp:endp)) ; this%crop_seedn_to_leaf_noop             (:) = spval
     allocate(this%dwt_seedn_to_leaf                   (begp:endp)) ; this%dwt_seedn_to_leaf                   (:) = spval
     allocate(this%dwt_seedn_to_deadstem               (begp:endp)) ; this%dwt_seedn_to_deadstem               (:) = spval
     allocate(this%dwt_conv_nflux                      (begp:endp)) ; this%dwt_conv_nflux                      (:) = spval
@@ -9734,7 +9697,6 @@ module VegetationDataType
        this%hrv_nloss_litter(i)                    = value_patch
        this%sen_nloss_litter(i)                    = value_patch
        this%crop_seedn_to_leaf(i)                  = value_patch
-       this%crop_seedn_to_leaf_noop(i)             = value_patch
        this%livestemn_to_litter(i)                 = value_patch
     end do
 
@@ -9779,9 +9741,7 @@ module VegetationDataType
       wood_harvestn_patch =>  this%wood_harvestn, &
       wood_harvestn_col   => col_nf%wood_harvestn ,&
       crop_seedn_to_leaf_patch => this%crop_seedn_to_leaf, &
-      crop_seedn_to_leaf_col => col_nf%crop_seedn_to_leaf, &
-      crop_seedn_to_leaf_noop_patch => this%crop_seedn_to_leaf_noop, &
-      crop_seedn_to_leaf_noop_col => col_nf%crop_seedn_to_leaf_noop &
+      crop_seedn_to_leaf_col => col_nf%crop_seedn_to_leaf &
       )
 
     do fp = 1,num_soilp
@@ -9926,10 +9886,6 @@ module VegetationDataType
     call p2c(bounds, num_soilc, filter_soilc, &
          crop_seedn_to_leaf_patch(bounds%begp:bounds%endp), &
          crop_seedn_to_leaf_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         crop_seedn_to_leaf_noop_patch(bounds%begp:bounds%endp), &
-         crop_seedn_to_leaf_noop_col(bounds%begc:bounds%endc))
 
    end associate
 
@@ -10097,7 +10053,6 @@ module VegetationDataType
     allocate(this%fert_p                              (begp:endp)) ; this%fert_p                              (:) = 0.d0
     allocate(this%fert_p_counter                      (begp:endp)) ; this%fert_p_counter                      (:) = spval
     allocate(this%crop_seedp_to_leaf                  (begp:endp)) ; this%crop_seedp_to_leaf                  (:) = spval
-    allocate(this%crop_seedp_to_leaf_noop             (begp:endp)) ; this%crop_seedp_to_leaf_noop             (:) = spval
     allocate(this%dwt_seedp_to_leaf                   (begp:endp)) ; this%dwt_seedp_to_leaf                   (:) = spval
     allocate(this%dwt_seedp_to_deadstem               (begp:endp)) ; this%dwt_seedp_to_deadstem               (:) = spval
     allocate(this%dwt_conv_pflux                      (begp:endp)) ; this%dwt_conv_pflux                      (:) = spval
@@ -10836,7 +10791,6 @@ module VegetationDataType
           this%grainp_storage_to_xfer(i)           = value_patch
           this%frootp_to_retransp(i)               = value_patch
           this%crop_seedp_to_leaf(i)               = value_patch
-          this%crop_seedp_to_leaf_noop(i)          = value_patch
        end do
     end if
 
@@ -10863,9 +10817,7 @@ module VegetationDataType
       wood_harvestp_patch  => this%wood_harvestp ,&
       wood_harvestp_col => col_pf%wood_harvestp ,&
       crop_seedp_to_leaf_patch => this%crop_seedp_to_leaf, &
-      crop_seedp_to_leaf_col => col_pf%crop_seedp_to_leaf, &
-      crop_seedp_to_leaf_noop_patch => this%crop_seedp_to_leaf_noop, &
-      crop_seedp_to_leaf_noop_col => col_pf%crop_seedp_to_leaf_noop &
+      crop_seedp_to_leaf_col => col_pf%crop_seedp_to_leaf &
       )
     do fp = 1,num_soilp
        p = filter_soilp(fp)
@@ -11011,10 +10963,6 @@ module VegetationDataType
     call p2c(bounds, num_soilc, filter_soilc, &
          crop_seedp_to_leaf_patch(bounds%begp:bounds%endp), &
          crop_seedp_to_leaf_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         crop_seedp_to_leaf_noop_patch(bounds%begp:bounds%endp), &
-         crop_seedp_to_leaf_noop_col(bounds%begc:bounds%endc))
 
     end associate
 
