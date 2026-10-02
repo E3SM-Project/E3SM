@@ -12,7 +12,7 @@ module elm_initializeMod
   use elm_varctl       , only : nsrest, nsrStartup, nsrContinue, nsrBranch
   use elm_varctl       , only : create_glacier_mec_landunit, iulog, iac_present
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
-  use elm_varctl       , only : use_fates, use_betr, use_fates_sp, use_fan, use_fates_luh, use_finetop_rad
+  use elm_varctl       , only : use_fates, use_fates_sp, use_fan, use_fates_luh, use_finetop_rad
   use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd
   use elm_varsur       , only : fert_cft, fert_p_cft, wt_polygon
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
@@ -21,7 +21,6 @@ module elm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
-  use BeTRSimulationELM, only : create_betr_simulation_elm
   use SoilLittVertTranspMod, only : CreateLitterTransportList
   use ColumnConnectionSetType, only : c2c_connections
   use iso_c_binding
@@ -533,9 +532,7 @@ contains
     use elm_varctl                          , only : use_elm_interface, use_pflotran
     use elm_varctl                          , only : fates_spitfire_mode
     use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
-    use tracer_varcon         , only : is_active_betr_bgc
     use elm_time_manager      , only : is_restart
-    use ELMbetrNLMod          , only : betr_namelist_buffer
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     use FATESFireFactoryMod   , only : scalar_lightning
     use FanStreamMod          , only : fanstream_init, fanstream_interp
@@ -682,16 +679,6 @@ contains
 
     call elm_inst_biogeophys(bounds_proc)
 
-    if(use_betr)then
-      !allocate memory for betr simulator
-      allocate(ep_betr, source=create_betr_simulation_elm())
-      !set internal filters for betr
-      call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, col_ws, betr_namelist_buffer, masterproc)
-      is_active_betr_bgc = ep_betr%do_soibgc()
-    else
-      allocate(ep_betr, source=create_betr_simulation_elm())
-    endif
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
@@ -708,15 +695,13 @@ contains
     call readPrivateParameters()
 
     if (use_cn .or. use_fates) then
-       if (.not. is_active_betr_bgc)then
-          if (use_century_decomp) then
-           ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
-             call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
-          else
-           ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
-             call init_decompcascade_cn(bounds_proc, cnstate_vars)
-          end if
-       endif
+       if (use_century_decomp) then
+        ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
+          call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
+       else
+        ! Note that init_decompcascade_cn needs cnstate_vars to be initialized
+          call init_decompcascade_cn(bounds_proc, cnstate_vars)
+       end if
     endif
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
@@ -844,7 +829,7 @@ contains
                ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
                photosyns_vars, soilhydrology_vars,                          &
                soilstate_vars, solarabs_vars, surfalb_vars,                 &
-               sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
+               sedflux_vars, alm_fates, glc2lnd_vars, crop_vars)
 
          call WaterBudget_Reset('all')
          if (use_cn) then
@@ -862,7 +847,7 @@ contains
             ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars ,&
             photosyns_vars, soilhydrology_vars,                          &
             soilstate_vars, solarabs_vars, surfalb_vars,                 &
-            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
+            sedflux_vars, alm_fates, glc2lnd_vars, crop_vars)
 
     end if
 
@@ -885,16 +870,13 @@ contains
                glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
        end do
        !$OMP END PARALLEL DO
-       if(use_betr)then
-         call ep_betr%set_active(bounds_proc, col_pp)
-       endif
        ! Create new template file using cold start
        call restFile_write(bounds_proc, finidat_interp_dest,             &
             atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
             ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
             photosyns_vars, soilhydrology_vars,          &
             soilstate_vars, solarabs_vars, surfalb_vars, &
-            sedflux_vars, ep_betr, alm_fates, crop_vars)
+            sedflux_vars, alm_fates, crop_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
@@ -906,7 +888,7 @@ contains
             ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
             photosyns_vars, soilhydrology_vars,            &
             soilstate_vars, solarabs_vars, surfalb_vars,   &
-            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
+            sedflux_vars, alm_fates, glc2lnd_vars, crop_vars)
 
        ! Reset finidat to now be finidat_interp_dest
        ! (to be compatible with routines still using finidat)
@@ -922,9 +904,6 @@ contains
     end do
     !$OMP END PARALLEL DO
 
-    if(use_betr)then
-      call ep_betr%set_active(bounds_proc, col_pp)
-    endif
     ! ------------------------------------------------------------------------
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------

@@ -11,7 +11,6 @@ include_directories(${CMAKE_BINARY_DIR}/emi_data_types)
 include_directories(${CMAKE_BINARY_DIR}/emi_data_definition)
 include_directories(${CMAKE_BINARY_DIR}/emi_data_exchange)
 include_directories(${CMAKE_BINARY_DIR}/em/base)
-include_directories(${CMAKE_BINARY_DIR}/em/betr)
 include_directories(${CMAKE_BINARY_DIR}/em/fates)
 include_directories(${CMAKE_BINARY_DIR}/emi)
 

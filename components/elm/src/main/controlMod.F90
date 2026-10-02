@@ -64,7 +64,7 @@ module controlMod
                         subgridflag, irrigate, tw_irr, extra_gw_irr, &
                         firrig_data, all_active, mpi_sync_nstep_freq, &
                         use_c13, use_c14, fates_paramfile, use_fates, &
-                        use_betr, use_lai_streams, metdata_type, metdata_bypass, &
+                        use_lai_streams, metdata_type, metdata_bypass, &
                         metdata_biases, co2_file, aero_file, &
                         use_elm_interface, use_elm_bgc, use_pflotran, &
                         use_hydrstress, domain_decomp_type, &
@@ -163,7 +163,6 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use elm_interface_pflotranMod , only : elm_pf_readnl
-    use ELMBeTRNLMod              , only : betr_readNL
     
     implicit none
     
@@ -330,8 +329,6 @@ contains
           fates_electron_transport_model,               &
           fates_lu_transition_logic,                    &
           fates_history_dimlevel
-
-    namelist /elm_inparm / use_betr
 
     namelist /elm_inparm / use_lai_streams
 
@@ -611,11 +608,6 @@ contains
           end if
        end if
 
-       if (use_betr .and. use_var_soil_thick ) then
-          call endrun(msg=' ERROR: use_var_soil_thick and use_betr cannot both be set to true.'//&
-                   errMsg(__FILE__, __LINE__))
-       end if
-
        if (use_lnd_rof_two_way) then
           if (lnd_rof_coupling_nstep < 1) then
           call endrun(msg=' ERROR: lnd_rof_coupling_nstep cannot be smaller than 1.'//&
@@ -644,10 +636,6 @@ contains
     if (use_pflotran) then
        call elm_pf_readnl(NLFilename)
     end if
-
-    if (use_betr) then
-       call betr_readNL( NLFilename, use_c13, use_c14, nsoilorder)
-    endif
 
     ! ----------------------------------------------------------------------
     ! consistency checks
@@ -866,8 +854,6 @@ contains
     call mpi_bcast (fates_history_dimlevel, 2, MPI_INTEGER, 0, mpicom, ier)
     call mpi_bcast (fates_lu_transition_logic, 1, MPI_INTEGER, 0, mpicom, ier)
     
-    call mpi_bcast (use_betr, 1, MPI_LOGICAL, 0, mpicom, ier)
-
     call mpi_bcast (use_lai_streams, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1079,7 +1065,6 @@ contains
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
-    write(iulog,*) '    use_betr = ', use_betr
     write(iulog,*) '    use_IM2_hillslope_hydrology = ', use_IM2_hillslope_hydrology
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method

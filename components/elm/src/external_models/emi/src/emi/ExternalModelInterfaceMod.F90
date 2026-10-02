@@ -40,7 +40,6 @@ module ExternalModelInterfaceMod
   integer :: nclumps
 
   ! Index of the various external models (EMs) in a simulation
-  integer :: index_em_betr
   integer :: index_em_fates
   integer :: index_em_pflotran
   integer :: index_em_stub
@@ -68,7 +67,6 @@ contains
     ! !USES:
     use elm_varctl, only : use_fates
 #ifndef FATES_VIA_EMI
-    use elm_varctl, only : use_betr
     use elm_varctl, only : use_pflotran
 #endif
     use elm_varctl, only : use_em_stub
@@ -80,7 +78,6 @@ contains
 
     ! Initializes
     num_em               = 0
-    index_em_betr        = 0
     index_em_fates       = 0
     index_em_pflotran    = 0
     index_em_stub        = 0
@@ -96,12 +93,6 @@ contains
     endif
 
 #ifndef FATES_VIA_EMI
-    ! Is BeTR active?
-    if (use_betr) then
-       num_em            = num_em + 1
-       index_em_betr     = num_em
-    endif
-
     ! Is PFLOTRAN active?
     if (use_pflotran) then
        num_em            = num_em + 1
@@ -119,7 +110,6 @@ contains
 
     if ( masterproc ) then
        write(iulog,*) 'Number of External Models = ', num_em
-       write(iulog,*) '  Is BeTR present?     ',(index_em_betr     >0)
        write(iulog,*) '  Is FATES present?    ',(index_em_fates    >0)
        write(iulog,*) '  Is PFLOTRAN present? ',(index_em_pflotran >0)
        write(iulog,*) '  Is Stub EM present?  ',(index_em_stub     >0)
@@ -150,7 +140,6 @@ contains
     !
     ! !USES:
     use ExternalModelConstants, only : EM_INITIALIZATION_STAGE
-    use ExternalModelConstants, only : EM_ID_BETR
     use ExternalModelConstants, only : EM_ID_FATES
     use ExternalModelConstants, only : EM_ID_PFLOTRAN
     use ExternalModelConstants, only : EM_ID_VSFM
@@ -167,8 +156,6 @@ contains
     use elm_instMod           , only : waterflux_inst
     use elm_instMod           , only : waterstate_inst
 #endif
-    use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
-    use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
     use decompMod             , only : get_clump_bounds
     use ColumnType            , only : col_pp
     use LandunitType          , only : lun_pp
@@ -199,31 +186,6 @@ contains
     em_stage = EM_INITIALIZATION_STAGE
 
     select case (em_id)
-    case (EM_ID_BETR)
-
-       ! -------------------------------------------------------------
-       ! Data need during timestepping
-       ! -------------------------------------------------------------
-
-       ! Note: Each thread will exchange exactly the same data between
-       !       ALM and FATES
-       do clump_rank = 1, nclumps
-          iem = (index_em_betr-1)*nclumps + clump_rank
-          call EM_BETR_Populate_L2E_List(l2e_driver_list(iem))
-          call EM_BETR_Populate_E2L_List(e2l_driver_list(iem))
-       enddo
-
-       !$OMP PARALLEL DO PRIVATE (clump_rank, iem, bounds_clump)
-       do clump_rank = 1, nclumps
-
-          call get_clump_bounds(clump_rank, bounds_clump)
-          iem = (index_em_betr-1)*nclumps + clump_rank
-
-          call EMI_Setup_Data_List(l2e_driver_list(iem), bounds_clump)
-          call EMI_Setup_Data_List(e2l_driver_list(iem), bounds_clump)
-       enddo
-       !$OMP END PARALLEL DO
-
     case (EM_ID_FATES)
 
        ! -------------------------------------------------------------
@@ -474,7 +436,6 @@ contains
     ! !DESCRIPTION:
     !
     ! !USES:
-    use ExternalModelConstants , only : EM_ID_BETR
     use ExternalModelConstants , only : EM_ID_FATES
     use ExternalModelConstants , only : EM_ID_PFLOTRAN
     use ExternalModelConstants , only : EM_ID_VSFM
@@ -489,7 +450,6 @@ contains
     use CanopyStateType        , only : canopystate_type
     use EnergyFluxType         , only : energyflux_type
     use CNCarbonStateType      , only : carbonstate_type
-    use ExternalModelBETRMod   , only : EM_BETR_Solve
     use decompMod              , only : get_clump_bounds
     !
     implicit none
@@ -532,8 +492,6 @@ contains
 
     ! Find the index_em
     select case (em_id)
-    case (EM_ID_BETR)
-       index_em = index_em_betr
     case (EM_ID_FATES)
        index_em = index_em_fates
     case (EM_ID_PFLOTRAN)
@@ -718,10 +676,6 @@ contains
     if (present(dt))          dtime = dt
 
     select case (em_id)
-    case (EM_ID_BETR)
-       call EM_BETR_Solve(em_stage, dtime, nstep, bounds_clump, l2e_driver_list(iem), &
-            e2l_driver_list(iem), bounds_clump)
-
     case (EM_ID_FATES)
        call em_fates%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), &
             e2l_driver_list(iem), bounds_clump)

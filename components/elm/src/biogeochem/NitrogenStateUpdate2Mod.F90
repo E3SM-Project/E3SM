@@ -39,7 +39,6 @@ contains
     ! no science equations. This increases readability and maintainability
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -54,8 +53,7 @@ contains
     !-----------------------------------------------------------------------
       
     ! column-level nitrogen fluxes from gap-phase mortality
-      if ( .not. is_active_betr_bgc .and. &
-           .not.(use_pflotran .and. pf_cmode)) then
+      if (.not.(use_pflotran .and. pf_cmode)) then
          do j = 1, nlevdecomp
             do fc = 1,num_soilc
                c = filter_soilc(fc)
@@ -118,7 +116,6 @@ contains
     ! no science equations. This increases readability and maintainability
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -136,8 +133,7 @@ contains
          ivt => veg_pp%itype        & ! Input:  [integer  (:) ]  pft vegetation type
          )
 
-      if (.not. is_active_betr_bgc .and. &
-           .not.(use_pflotran .and. pf_cmode)) then
+      if (.not.(use_pflotran .and. pf_cmode)) then
          ! column-level nitrogen fluxes from harvest mortality
 
          do j = 1,nlevdecomp
