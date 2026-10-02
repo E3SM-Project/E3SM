@@ -303,15 +303,16 @@ subroutine zm_conv_mcsp_tend( pcols, ncol, pver, pverp, &
                   if (do_mcsp_q) mcsp_tend_q(i,k) = -1*zm_param%mcsp_q_coeff * bfb_sin(2.0_r8*zm_const%pi*(pdepth_mid_k/pdepth_total))
                   ! Momentum tendencies are scaled by the storm-relative shear vector so
                   ! mcsp_mom_coeff is a dimensionless O(0.01-0.1) fraction rather than a
-                  ! raw acceleration. The implied wind increment over the step is
-                  !   du = -mcsp_mom_coeff * shear_u * cos(...)   ->  tend_u = du / ztodt
-                  ! The leading minus sign makes the forcing up-gradient (amplifying the
-                  ! shear), consistent with organized-convection momentum transport
+                  ! raw acceleration. The resulting wind tendency is
+                  !   du/dt = -mcsp_mom_coeff * shear_u * cos(...) / mcsp_mom_tau
+                  ! where mcsp_mom_tau is a fixed timescale.
+                  ! The leading minus sign makes the forcing up-gradient when mcsp_mom_coeff>0
+                  ! (amplifying shear), consistent with organized-convection momentum transport
                   ! (Moncrieff), and bounds the KE correction.
                   if (do_mcsp_mom) then
                      cos_struct = bfb_cos(zm_const%pi*(pdepth_mid_k/pdepth_total))
-                     mcsp_tend_u(i,k) = -1*zm_param%mcsp_mom_coeff * shear_u(i) * cos_struct / ztodt
-                     mcsp_tend_v(i,k) = -1*zm_param%mcsp_mom_coeff * shear_v(i) * cos_struct / ztodt
+                     mcsp_tend_u(i,k) = -1*zm_param%mcsp_mom_coeff * shear_u(i) * cos_struct / zm_param%mcsp_mom_tau
+                     mcsp_tend_v(i,k) = -1*zm_param%mcsp_mom_coeff * shear_v(i) * cos_struct / zm_param%mcsp_mom_tau
                   end if
 
                   ! scale the vertical structure by the ZM heating/drying tendencies

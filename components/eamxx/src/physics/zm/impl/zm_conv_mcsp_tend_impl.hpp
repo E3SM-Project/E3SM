@@ -159,16 +159,18 @@ void Functions<S,D>::zm_conv_mcsp_tend(
             if (do_mcsp_q) mcsp_tend_q(k) = -1 * runtime_opt.mcsp_q_coeff * std::sin(2 * PC::Pi * (pdepth_mid_k / pdepth_total));
             // Momentum tendencies are scaled by the storm-relative shear vector so
             // mcsp_mom_coeff is a dimensionless O(0.01-0.1) fraction rather than a
-            // raw acceleration. The implied wind increment over the step is
-            //   du = -mcsp_mom_coeff * shear_u * cos(...)   ->  tend_u = du / ztodt
+            // raw acceleration. The resulting wind tendency is
+            //   du/dt = -mcsp_mom_coeff * shear_u * cos(...) / MCSP_mom_tau
+            // where MCSP_mom_tau is a fixed timescale (rather than the physics time
+            // step) so the forcing does not depend on the model time step.
             // The leading minus sign makes the forcing up-gradient (amplifying the
             // shear), consistent with organized-convection momentum transport
             // (Moncrieff). Using the shear components keeps the tendency aligned
             // with the shear vector and bounds the KE correction.
             if (do_mcsp_mom) {
               const Real cos_struct = std::cos(PC::Pi * (pdepth_mid_k / pdepth_total));
-              mcsp_tend_u(k) = -1 * runtime_opt.mcsp_mom_coeff * shear_u * cos_struct / ztodt;
-              mcsp_tend_v(k) = -1 * runtime_opt.mcsp_mom_coeff * shear_v * cos_struct / ztodt;
+              mcsp_tend_u(k) = -1 * runtime_opt.mcsp_mom_coeff * shear_u * cos_struct / ZMC::MCSP_mom_tau;
+              mcsp_tend_v(k) = -1 * runtime_opt.mcsp_mom_coeff * shear_v * cos_struct / ZMC::MCSP_mom_tau;
             }
 
             // scale the vertical structure by the ZM heating/drying tendencies

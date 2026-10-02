@@ -123,6 +123,7 @@ struct Functions {
     static inline constexpr Real MCSP_t_coeff_default      = 0.3;      // default MCSP temperature coefficient
     static inline constexpr Real MCSP_q_coeff_default      = 0.0;      // default MCSP sp. humidity coefficient
     static inline constexpr Real MCSP_mom_coeff_default    = 0.0;      // default MCSP momentum coefficient (fraction of shear)
+    static inline constexpr Real MCSP_mom_tau              = 3600.0;   // MCSP momentum tendency timescale [s]
     // Default values for ZmRuntimeOpt fields
     static inline constexpr Real alfa                      = 0.14;     // default downdraft proportionality factor
     static inline constexpr Real ke                        = 2.5E-6;   // default evaporation efficiency
