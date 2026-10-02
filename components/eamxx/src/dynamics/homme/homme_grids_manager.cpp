@@ -318,6 +318,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance)
     auto dx_short_f = phys_grid->create_geometry_data("dx_short",scalar0d,rad);
     dx_short_f.get_view<Real,Host>()() = get_dx_short_f90(0);
     dx_short_f.sync_to_dev();
+    dx_short_f.get_header().set_extra_data("io_output_if_dim_exists", std::string("NEVER"));
   }
 
   phys_grid->m_disambiguation_suffix = type;
