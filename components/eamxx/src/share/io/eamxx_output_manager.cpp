@@ -144,16 +144,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       for (const auto& fn : grid->get_geometry_data_names()) {
         const auto& f = grid->get_geometry_data(fn);
 
-        if (f.rank()==0) {
-          // Right now, this only happens for `dx_short`, a single scalar
-          // coming from iop. Since that scalar is easily recomputed
-          // upon restart, we can skip this
-          // NOTE: without this, the code crash while attempting to get a
-          //       pio decomp for this var, since there are no dimensions.
-          //       Perhaps you can explore setting the var as a global att
-          continue;
-        } else if (f.get_header().has_extra_data("save_as_geo_data") and
-                   not f.get_header().get_extra_data<bool>("save_as_geo_data")) {
+        if (f.get_header().has_extra_data("save_as_geo_data") and
+            not f.get_header().get_extra_data<bool>("save_as_geo_data")) {
           // This field is NOT to be saved as geo data
           continue;
         }
