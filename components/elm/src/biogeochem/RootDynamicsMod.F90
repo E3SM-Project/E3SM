@@ -9,6 +9,7 @@ module RootDynamicsMod
   use shr_kind_mod        , only : r8 => shr_kind_r8
   use elm_varpar          , only : nlevsoi, nlevgrnd
   use elm_varctl          , only : use_vertsoilc
+  use elm_varcon          , only : mm_h2o_to_mpa
   use decompMod           , only : bounds_type
   use pftvarcon           , only : noveg, iscft, roota_par, rootb_par, root_dmx, evergreen
   use CanopyStateType     , only: canopystate_type
@@ -159,7 +160,7 @@ contains
          p = filter_soilp(f)
          c = pcolumn(p)
          do j = 1,nlevsoi
-            maxpsi = sucsat(c,j) * (-9.8e-6_r8)
+            maxpsi = sucsat(c,j) * (-mm_h2o_to_mpa)
             psi = min(soilpsi(c,j),maxpsi)
             if (psi > minpsi) then
 

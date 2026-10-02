@@ -12,6 +12,7 @@ module lnd2atmMod
   use shr_fan_mod          , only : shr_fan_to_atm
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varcon           , only : catomw, mwco2
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit, use_fan
   use elm_varctl           , only : use_lnd_rof_two_way, use_finetop_rad
   use tracer_varcon        , only : is_active_betr_bgc
@@ -253,11 +254,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: g, lvl             ! index
-    real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
-    real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
-    real(r8), parameter :: amCO2 = amC + 2.0_r8*amO ! Atomic mass number for CO2
     ! The following converts g of C to kg of CO2
-    real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (amCO2/amC)
+    real(r8), parameter :: convertgC2kgCO2 = 1.0e-3_r8 * (mwco2/catomw)
     !------------------------------------------------------------------------
     associate( &
       t_ref2m     => veg_es%t_ref2m , &

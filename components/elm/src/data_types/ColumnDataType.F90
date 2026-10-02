@@ -7,8 +7,8 @@ module ColumnDataType
   !
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_infnan_mod  , only : isnan => shr_infnan_isnan,nan => shr_infnan_nan, assignment(=)
-  use shr_const_mod   , only : SHR_CONST_TKFRZ
-  use shr_const_mod   , only : SHR_CONST_PDB
+  use elm_varcon      , only : tfrz
+  use elm_varcon      , only : pdb
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use shr_sys_mod     , only : shr_sys_flush
   use abortutils      , only : endrun
@@ -1799,7 +1799,7 @@ contains
           do j = 1, nlevs
              this%h2osoi_vol(c,j) = min(this%h2osoi_vol(c,j), watsat_input(c,j))
 
-             if (col_es%t_soisno(c,j) <= SHR_CONST_TKFRZ) then
+             if (col_es%t_soisno(c,j) <= tfrz) then
                 this%h2osoi_ice(c,j) = col_pp%dz(c,j)*denice*this%h2osoi_vol(c,j)
                 this%h2osoi_liq(c,j) = 0._r8
              else
@@ -2753,9 +2753,9 @@ contains
        ! set some constants for C13 ratios
        c3_del13c = -28._r8
        c4_del13c = -13._r8
-       c3_r1 = SHR_CONST_PDB + ((c3_del13c*SHR_CONST_PDB)/1000._r8)
+       c3_r1 = pdb + ((c3_del13c*pdb)/1000._r8)
        c3_r2 = c3_r1/(1._r8 + c3_r1)
-       c4_r1 = SHR_CONST_PDB + ((c4_del13c*SHR_CONST_PDB)/1000._r8)
+       c4_r1 = pdb + ((c4_del13c*pdb)/1000._r8)
        c4_r2 = c4_r1/(1._r8 + c4_r1)
        do k = 1, ndecomp_pools
           varname = trim(decomp_cascade_con%decomp_pool_name_restart(k))//'c_13'

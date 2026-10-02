@@ -36,7 +36,7 @@ contains
     ! !USES:
     use shr_infnan_mod, only : nan => shr_infnan_nan, &
                                assignment(=)
-    use shr_const_mod , only : SHR_CONST_PI
+    use elm_varcon    , only : rpi
     !
     ! !ARGUMENTS:
     real(r8), intent(in) :: lat    ! latitude (radians)
@@ -53,7 +53,7 @@ contains
     real(r8), parameter :: lat_epsilon = 10._r8 * epsilon(1._r8)
 
     ! Define an offset pole as slightly less than pi/2 to avoid problems with cos(lat) being negative
-    real(r8), parameter :: pole = SHR_CONST_PI/2.0_r8
+    real(r8), parameter :: pole = rpi/2.0_r8
     real(r8), parameter :: offset_pole = pole - lat_epsilon
     !-----------------------------------------------------------------------
 

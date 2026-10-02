@@ -402,7 +402,7 @@ contains
     ! Stability function for rib < 0.
     !
     ! !USES:
-    use shr_const_mod, only: SHR_CONST_PI
+    use elm_varcon, only: rpi
     !
     ! !ARGUMENTS:
     implicit none
@@ -415,7 +415,7 @@ contains
     chik2 = sqrt(1._r8-16._r8*zeta)
     chik = sqrt(chik2)
     StabilityFunc1 = 2._r8*log((1._r8+chik)*0.5_r8) &
-         + log((1._r8+chik2)*0.5_r8)-2._r8*atan(chik)+SHR_CONST_PI*0.5_r8
+         + log((1._r8+chik2)*0.5_r8)-2._r8*atan(chik)+rpi*0.5_r8
 
   end function StabilityFunc1
 
@@ -426,7 +426,7 @@ contains
     ! Stability function for rib < 0.
     !
     ! !USES:
-    use shr_const_mod, only: SHR_CONST_PI
+    use elm_varcon, only: rpi
     !
     ! !ARGUMENTS:
     implicit none

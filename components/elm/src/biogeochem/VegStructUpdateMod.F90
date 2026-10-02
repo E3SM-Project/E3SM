@@ -6,7 +6,7 @@ module VegStructUpdateMod
   ! !USES:
   use shr_kind_mod         , only: r8 => shr_kind_r8
   use shr_sys_mod          , only : shr_sys_flush
-  use shr_const_mod        , only : SHR_CONST_PI
+  use elm_varcon           , only : rpi
   use elm_varctl           , only : iulog
   use VegetationPropertiesType     , only : veg_vp
   use FrictionVelocityType , only : frictionvel_type
@@ -161,10 +161,10 @@ contains
                ! change from default values set in pftvarcon.F90
                if (spinup_state >= 1) then
                  htop(p) = ((3._r8 * deadstemc(p) * spinup_mortality_factor * taper(ivt(p)) * taper(ivt(p)))/ &
-                      (SHR_CONST_PI * stocking(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
+                      (rpi * stocking(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
                else
                  htop(p) = ((3._r8 * deadstemc(p) * taper(ivt(p)) * taper(ivt(p)))/ &
-                      (SHR_CONST_PI * stocking(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
+                      (rpi * stocking(ivt(p)) * dwood(ivt(p))))**(1._r8/3._r8)
                end if
 
                ! Peter Thornton, 5/3/2004

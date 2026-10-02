@@ -140,7 +140,7 @@ CONTAINS
     !
     ! !USES:
       !$acc routine seq
-    use shr_const_mod  , only : tmelt => shr_const_tkfrz
+    use elm_varcon     , only : tfrz
     use seq_drydep_mod , only : seq_drydep_setHCoeff, mapping, drat, foxd
     use seq_drydep_mod , only : rcls, h2_a, h2_b, h2_c, ri, rac, rclo, rlu, rgss, rgso
     use landunit_varcon, only : istsoil, istice, istice_mec, istdlak, istwet
@@ -369,7 +369,7 @@ CONTAINS
 
             ! saturation specific humidity
             !
-            es = 611_r8*exp(5414.77_r8*((1._r8/tmelt)-(1._r8/sfc_temp)))
+            es = 611_r8*exp(5414.77_r8*((1._r8/tfrz)-(1._r8/sfc_temp)))
             ws = .622_r8*es/(pg-es)
             qs = ws/(1._r8+ws)
 
@@ -377,7 +377,7 @@ CONTAINS
             if( qs <= spec_hum ) then
                has_dew = .true.
             end if
-            if( sfc_temp < tmelt ) then
+            if( sfc_temp < tfrz ) then
                has_dew = .false.
             end if
 
@@ -394,8 +394,8 @@ CONTAINS
             !
             crs = 1.e36_r8
 
-            tc = sfc_temp - tmelt
-            if(sfc_temp > tmelt.and.sfc_temp < 313.15_r8) then
+            tc = sfc_temp - tfrz
+            if(sfc_temp > tfrz.and.sfc_temp < 313.15_r8) then
                crs = (1._r8+(200._r8/(solar_flux+.1_r8))**2) * (400._r8/(tc*(40._r8-tc)))
             endif
             !
@@ -511,7 +511,7 @@ CONTAINS
                !
                ! no effect if sfc_temp < O C
                !
-               non_freezing: if(sfc_temp > tmelt) then
+               non_freezing: if(sfc_temp > tfrz) then
 
                   if( has_dew ) then
                      rlux_o3 = 1._r8/((1._r8/3000._r8)+(1._r8/(3._r8*rlu(index_season,wesveg))))

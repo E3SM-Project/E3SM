@@ -8,7 +8,7 @@ Module HydrologyNoDrainageMod
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
   use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers, use_firn_percolation_and_compaction
-  use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
+  use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval, mm_h2o_to_mpa
   use atm2lndType       , only : atm2lnd_type
   use ocn2lndType       , only : ocn2lnd_type
   use lnd2atmType       , only : lnd2atm_type
@@ -483,7 +483,7 @@ contains
 
                   ! use the same contants used in the supercool so that psi for frozen soils is consistent
                   fsattmp = max(vwc/watsat(c,j), 0.001_r8)
-                  psi = sucsat(c,j) * (-9.8e-6_r8) * (fsattmp)**(-bsw(c,j))  ! Mpa
+                  psi = sucsat(c,j) * (-mm_h2o_to_mpa) * (fsattmp)**(-bsw(c,j))  ! Mpa
                   soilpsi(c,j) = min(max(psi,-15.0_r8),0._r8)
 
                else

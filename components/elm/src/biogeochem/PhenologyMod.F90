@@ -398,7 +398,7 @@ contains
 
     ! set the global parameter for livewood turnover rate
     ! define as an annual fraction (0.7), and convert to fraction per second
-    lwtop=PhenolParamsInst%lwtop/31536000.0_r8 !annual fraction converted to per second
+    lwtop=PhenolParamsInst%lwtop/(365._r8*secspday) !annual fraction converted to per second
 
     ! -----------------------------------------
     ! Call any subroutine specific initialization routines
@@ -583,7 +583,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use shr_const_mod   , only: SHR_CONST_TKFRZ, SHR_CONST_PI
+    use elm_varcon      , only: tfrz, rpi
     use elm_varcon      , only: secspday
     !
     ! !ARGUMENTS:
@@ -725,7 +725,7 @@ contains
             lgsf(p) = 0._r8
 
             ! onset gdd sum from Biome-BGC, v4.1.2
-            crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(annavg_t2m(p) - SHR_CONST_TKFRZ))
+            crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(annavg_t2m(p) - tfrz))
 
             ! set flag for solstice period (winter->summer = 1, summer->winter = 0)
             if (dayl(g) >= prev_dayl(g)) then
@@ -840,8 +840,8 @@ contains
                ! then accumulate growing degree days for onset trigger
 
                soilt = t_soisno(c,3)
-               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               if (onset_gddflag(p) == 1.0_r8 .and. soilt > tfrz) then
+                  onset_gdd(p) = onset_gdd(p) + (soilt-tfrz)*fracday
                end if
 
                ! set onset_flag if critical growing degree-day sum is exceeded
@@ -926,7 +926,7 @@ contains
     ! !USES:
       !$acc routine seq
     use elm_varcon       , only : secspday
-    use shr_const_mod    , only : SHR_CONST_TKFRZ, SHR_CONST_PI
+    use elm_varcon       , only : tfrz, rpi
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
@@ -1078,7 +1078,7 @@ contains
             psi = soilpsi(c,3)
 
             ! onset gdd sum from Biome-BGC, v4.1.2
-            crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(annavg_t2m(p) - SHR_CONST_TKFRZ))
+            crit_onset_gdd = exp(4.8_r8 + 0.13_r8*(annavg_t2m(p) - tfrz))
 
 
             ! update offset_counter and test for the end of the offset period
@@ -1166,7 +1166,7 @@ contains
                ! dormancy period (only if the freeze flag has not previously been set
                ! for this dormancy period
 
-               if (onset_gddflag(p) == 0._r8 .and. soilt < SHR_CONST_TKFRZ) onset_fdd(p) = onset_fdd(p) + fracday
+               if (onset_gddflag(p) == 0._r8 .and. soilt < tfrz) onset_fdd(p) = onset_fdd(p) + fracday
 
                ! if the number of freezing degree days exceeds a critical value,
                ! then onset will require both wet soils and a critical soil
@@ -1183,8 +1183,8 @@ contains
                ! if the freeze flag is set, and if the soil is above freezing
                ! then accumulate growing degree days for onset trigger
 
-               if (onset_gddflag(p) == 1._r8 .and. soilt > SHR_CONST_TKFRZ) then
-                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+               if (onset_gddflag(p) == 1._r8 .and. soilt > tfrz) then
+                  onset_gdd(p) = onset_gdd(p) + (soilt-tfrz)*fracday
                end if
 
                ! if soils are wet, accumulate soil water index for onset trigger
@@ -1210,7 +1210,7 @@ contains
                end if
                ! Require cumulative precipitation threshold for onset
                ! Dahlin et al., Biogeosciences 2015.
-               if (prec10(t) * 86400._r8 * 10._r8 < PhenolParamsInst%cumprec_onset .and. nu_com .eq. 'RD') then
+               if (prec10(t) * secspday * 10._r8 < PhenolParamsInst%cumprec_onset .and. nu_com .eq. 'RD') then
                   onset_flag(p) = 0._r8
                end if
 
@@ -1289,13 +1289,13 @@ contains
                end if
 
                ! decrease freezing day accumulator for warm soil
-               if (offset_fdd(p) > 0._r8 .and. soilt > SHR_CONST_TKFRZ) then
+               if (offset_fdd(p) > 0._r8 .and. soilt > tfrz) then
                   offset_fdd(p) = offset_fdd(p) - fracday
                   offset_fdd(p) = max(0._r8, offset_fdd(p))
                end if
 
                ! increase freezing day accumulator for cold soil
-               if (soilt <= SHR_CONST_TKFRZ) then
+               if (soilt <= tfrz) then
                   offset_fdd(p) = offset_fdd(p) + fracday
 
                   ! if freezing degree day sum is greater than critical value, initiate offset
@@ -1995,7 +1995,7 @@ contains
     ! !DESCRIPTION:
     ! Code based on ORCHIDEE-MICT-BIOENERGY model (Li et al., 2018)
     ! !USES:
-    use shr_const_mod    , only : SHR_CONST_TKFRZ
+    use elm_varcon       , only : tfrz
     use elm_time_manager , only : get_curr_calday, get_days_per_year
     use pftvarcon        , only : gddmin, hybgdd, lfemerg, baset, nsugarcane, nsugarcaneirrig
     use pftvarcon        , only : minplanttemp, planttemp, senestemp, min_days_senes
@@ -2162,7 +2162,7 @@ contains
             if (ivt(p)==nsugarcane .or. ivt(p)==nsugarcaneirrig) then
                if (t_ref2m_min_inst(p) /= spval .and. t_ref2m_max_inst(p) /= spval) then
                   onset_gdd(p) = onset_gdd(p) + (max( ((t_ref2m_min_inst(p) + t_ref2m_max_inst(p))/2.0_r8) &
-                                              - (baset(ivt(p)) + 273.15_r8), 0._r8))*fracday
+                                              - (baset(ivt(p)) + tfrz), 0._r8))*fracday
                end if
             end if
 
@@ -2179,8 +2179,8 @@ contains
                   ! if the gdd flag is set, and if the soil is above freezing
                   ! then accumulate growing degree days for onset trigger
                   soilt = t_soisno(c,3)
-                  if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-                     onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
+                  if (onset_gddflag(p) == 1.0_r8 .and. soilt > tfrz) then
+                     onset_gdd(p) = onset_gdd(p) + (soilt-tfrz)*fracday
                   end if
                end if
 

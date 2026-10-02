@@ -194,7 +194,7 @@ contains
 
 
       if (do_et_bnf) then
-         secspyr = dayspyr * 86400._r8
+         secspyr = dayspyr * secspday
 
          do fc = 1, num_soilc
             c =filter_soilc(fc)
@@ -602,7 +602,7 @@ contains
     ! N2 fixation is based on Fisher 2010 GBC doi:10.1029/2009GB003621; Wang 2007 GBC doi:10.1029/2006GB002797; and Grand 2012 ecosys model
     !
     ! !USES:
-    use elm_varcon       , only : secspday, spval
+    use elm_varcon       , only : secspday, spval, tfrz
     use pftvarcon        , only : noveg
 
     !
@@ -648,8 +648,8 @@ contains
           do p = col_pp%pfti(c), col_pp%pftf(c)
               if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                   ! calculate c cost of n2 fixation: fisher 2010 gbc doi:10.1029/2009gb003621
-                  r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-273.15_r8)*(1.0_r8-0.5_r8&
-                       *(t_soi10cm_col(c)-273.15_r8)/25.15_r8))-2.0_r8)
+                  r_fix = -6.25_r8*(exp(-3.62_r8 + 0.27_r8*(t_soi10cm_col(c)-tfrz)*(1.0_r8-0.5_r8&
+                       *(t_soi10cm_col(c)-tfrz)/25.15_r8))-2.0_r8)
                   ! calculate c cost of root n uptake: rastetter 2001, ecosystems, 4(4), 369-388.
                   r_nup = benefit_pgpp_pleafc(p) / max(pnup_pfrootc(p),1e-20_r8)
                   ! calculate fraction of root that is nodulated: wang 2007 gbc doi:10.1029/2006gb002797

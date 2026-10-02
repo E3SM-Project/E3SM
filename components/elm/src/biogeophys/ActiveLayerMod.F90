@@ -6,7 +6,7 @@ module ActiveLayerMod
   !
   ! !USES:
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_const_mod   , only : SHR_CONST_TKFRZ
+  use elm_varcon      , only : tfrz
   use elm_varctl      , only : iulog, spinup_state, use_polygonal_tundra
   use TemperatureType , only : temperature_type
   use CanopyStateType , only : canopystate_type
@@ -45,7 +45,7 @@ contains
     !  initialized to valid values, so I think this is okay.
     !
     ! !USES:
-    use shr_const_mod    , only : SHR_CONST_TKFRZ
+    use elm_varcon       , only : tfrz
     use elm_varpar       , only : nlevgrnd
     use elm_time_manager , only : get_curr_date, get_step_size
     use elm_varctl       , only : iulog
@@ -130,14 +130,14 @@ contains
          ! note that this will put talik in with active layer
          ! a different way of doing this could be to keep track of how long a given layer has ben frozen for,
          ! and define ALT as the first layer that has been frozen for less than 2 years.
-         if (t_soisno(c,nlevgrnd) > SHR_CONST_TKFRZ ) then
+         if (t_soisno(c,nlevgrnd) > tfrz ) then
             alt(c) = zsoi(nlevgrnd)
             alt_indx(c) = nlevgrnd
          else
             k_frz=0
             found_thawlayer = .false.
             do j=nlevgrnd-1,1,-1
-               if ( ( t_soisno(c,j) > SHR_CONST_TKFRZ ) .and. .not. found_thawlayer ) then
+               if ( ( t_soisno(c,j) > tfrz ) .and. .not. found_thawlayer ) then
                   k_frz=j
                   found_thawlayer = .true.
                endif
@@ -149,7 +149,7 @@ contains
                z2 = zsoi(k_frz+1)
                t1 = t_soisno(c,k_frz)
                t2 = t_soisno(c,k_frz+1)
-               alt(c) = z1 + (t1-SHR_CONST_TKFRZ)*(z2-z1)/(t1-t2)
+               alt(c) = z1 + (t1-tfrz)*(z2-z1)/(t1-t2)
                alt_indx(c) = k_frz
             else
                alt(c)=0._r8

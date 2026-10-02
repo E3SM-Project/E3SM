@@ -42,7 +42,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use shr_const_mod        , only : SHR_CONST_RGAS
+    use elm_varcon           , only : rgas
     use shr_flux_mod         , only : shr_flux_update_stress
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o

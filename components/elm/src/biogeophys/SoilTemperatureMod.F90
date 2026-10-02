@@ -32,7 +32,7 @@ module SoilTemperatureMod
   use ExternalModelConstants   , only : EM_ID_PTM
   use ExternalModelConstants   , only : EM_PTM_TBASED_SOLVE_STAGE
   use ExternalModelInterfaceMod, only : EMI_Driver
-  use shr_const_mod            , only : SHR_CONST_PI
+  use elm_varcon               , only : rpi
   use GridcellType             , only : grc_pp
 
   !! Needed beacuse EMI is still using them as arguments
@@ -825,7 +825,6 @@ contains
     real(r8) :: fl                        ! volume fraction of liquid or unfrozen water to total water
     real(r8) :: satw                      ! relative total water content of soil.
     real(r8) :: zh2osfc
-    real(r8), parameter :: rho_ice     = 917._r8
     real(r8) :: k_snw_vals(5)
     real(r8) :: k_snw_tmps(5)
     real(r8) :: k_snw_coe1(5)
@@ -927,7 +926,7 @@ contains
                     bw(c,j) = (h2osoi_ice(c,j) + h2osoi_liq(c,j)) / (frac_sno(c) * dz(c,j))
 
                        do i = 1, 5
-                            k_snw_vals(i) = k_snw_coe1(i) * (bw(c,j) / rho_ice)**2 - k_snw_coe2(i) * (bw(c,j) / rho_ice) + k_snw_coe3(i)
+                            k_snw_vals(i) = k_snw_coe1(i) * (bw(c,j) / denice)**2 - k_snw_coe2(i) * (bw(c,j) / denice) + k_snw_coe3(i)
                        end do
 
                        do i = 1, size(k_snw_tmps) - 1
@@ -1789,7 +1788,7 @@ contains
          lwrad_emit_h2osfc(c)  =    emg(c) * sb * t_h2osfc(c)**4
 
          if (use_finetop_rad .and. (.not. lun_pp%urbpoi(l))) then
-            deg2rad = SHR_CONST_PI/180._r8
+            deg2rad = rpi/180._r8
             slope_rad = slope_deg(g) * deg2rad
             lwrad_emit(c) = lwrad_emit(c) / cos(slope_rad)
             dlwrad_emit(c) = dlwrad_emit(c) / cos(slope_rad)
