@@ -615,9 +615,9 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction(const Real dt, const Sca
   const ScalarT u2 = u_wind*u_wind;
   const ScalarT v2 = v_wind*v_wind;
 
-  u_wind += c1*u_wind;
-  v_wind += c1*v_wind;
-  T_mid  += c3*(u2 + v2)/cp;
+  u_wind += c1*u_wind*dt;
+  v_wind += c1*v_wind*dt;
+  T_mid  += c3*(u2 + v2)*dt/cp;
 }
 
 template<typename DeviceT>
