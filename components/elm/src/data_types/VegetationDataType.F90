@@ -9739,9 +9739,7 @@ module VegetationDataType
       fire_nloss_patch => this%fire_nloss ,&
       fire_nloss_col   => col_nf%fire_nloss_p2c ,&
       wood_harvestn_patch =>  this%wood_harvestn, &
-      wood_harvestn_col   => col_nf%wood_harvestn ,&
-      crop_seedn_to_leaf_patch => this%crop_seedn_to_leaf, &
-      crop_seedn_to_leaf_col => col_nf%crop_seedn_to_leaf &
+      wood_harvestn_col   => col_nf%wood_harvestn &
       )
 
     do fp = 1,num_soilp
@@ -9882,10 +9880,6 @@ module VegetationDataType
     call p2c(bounds, num_soilc, filter_soilc, &
          wood_harvestn_patch(bounds%begp:bounds%endp) , &
          wood_harvestn_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         crop_seedn_to_leaf_patch(bounds%begp:bounds%endp), &
-         crop_seedn_to_leaf_col(bounds%begc:bounds%endc))
 
    end associate
 
@@ -10815,9 +10809,7 @@ module VegetationDataType
       fire_ploss_patch => this%fire_ploss      ,&
       fire_ploss_col   => col_pf%fire_ploss_p2c ,&
       wood_harvestp_patch  => this%wood_harvestp ,&
-      wood_harvestp_col => col_pf%wood_harvestp ,&
-      crop_seedp_to_leaf_patch => this%crop_seedp_to_leaf, &
-      crop_seedp_to_leaf_col => col_pf%crop_seedp_to_leaf &
+      wood_harvestp_col => col_pf%wood_harvestp &
       )
     do fp = 1,num_soilp
        p = filter_soilp(fp)
@@ -10959,10 +10951,6 @@ module VegetationDataType
     call p2c(bounds, num_soilc, filter_soilc, &
          wood_harvestp_patch(bounds%begp:bounds%endp) , &
          wood_harvestp_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         crop_seedp_to_leaf_patch(bounds%begp:bounds%endp), &
-         crop_seedp_to_leaf_col(bounds%begc:bounds%endc))
 
     end associate
 

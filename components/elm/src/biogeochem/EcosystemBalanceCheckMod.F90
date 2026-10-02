@@ -20,7 +20,7 @@ module EcosystemBalanceCheckMod
   use spmdMod             , only : masterproc
   use CNDecompCascadeConType , only : decomp_cascade_con
   use elm_varpar          , only: ndecomp_cascade_transitions
-  use subgridAveMod       , only : p2c, c2g, unity 
+  use subgridAveMod       , only : p2c, c2g, unity
   ! soil erosion
   use elm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
@@ -42,7 +42,7 @@ module EcosystemBalanceCheckMod
   use ColumnDataType      , only : col_cs, col_cf, col_ns, col_nf, col_ps, col_pf
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf, veg_cs, veg_ns, veg_ps
-  use DebugToolsMod      
+  use DebugToolsMod
   use timeinfoMod
 
   !
@@ -103,7 +103,7 @@ contains
       end do
 
       call EnterCMassDebug(bounds, num_soilc, filter_soilc, col_cs, veg_cs)
-      
+
     end associate
 
   end subroutine BeginColCBalance
@@ -271,7 +271,7 @@ contains
          if (ero_ccycle) then
             col_coutputs(c) = col_coutputs(c) + som_c_yield(c)
          end if
-         
+
 
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs(c) - col_coutputs(c))*dt - (col_endcb(c) - col_begcb(c))
@@ -312,8 +312,7 @@ contains
           write(iulog,*)'totabgc               = ',col_cs%totabgc(c)
           if (use_crop) then
             write(iulog,*)'cropseedc_deficit     = ',col_cs%cropseedc_deficit(c)
-            write(iulog,*)'col_crop_seedc_to_leaf=',col_cf%crop_seedc_to_leaf(c)*dt
-            write(iulog,*)'crop_seedc_to_leaf=',col_cf%crop_seedc_to_leaf(c)*dt
+            write(iulog,*)'crop_seedc_to_leaf    = ',col_cf%crop_seedc_to_leaf(c)*dt
           endif
           if (ero_ccycle) then
              write(iulog,*)'erosion               = ',som_c_yield(c)*dt
@@ -1118,9 +1117,9 @@ contains
          dwt_seedc_to_deadstem_grc =>    grc_cf%dwt_seedc_to_deadstem , & ! Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_cinputs               =>    grc_cf%cinputs               , & ! Output: [real(r8) (:)]  grid-level C inputs (gC/m2/s)
          grc_coutputs              =>    grc_cf%coutputs              , & ! Output: [real(r8) (:)]  grid-level C outputs (gC/m2/s)
-         begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:)]  carbon mass, beginning of time step (gC/m**2)
-         endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:)]  carbon mass, end of time step (gC/m**2)
-         errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:)]  carbon balance error for the time step (gC/m**2)
+         begcb_grc                 =>    grc_cs%begcb                , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
+         endcb_grc                 =>    grc_cs%endcb                , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
+         errcb_grc                 =>    grc_cs%errcb                  & ! Output: [real(r8) (:) ]  carbon balance error for the time step (gC/m**2)
          )
 
       ! set time steps
@@ -1143,6 +1142,7 @@ contains
 
          grc_coutputs(g) = &
               dwt_conv_cflux_grc(g)
+
 
          errcb_grc(g) = (grc_cinputs(g) - grc_coutputs(g))*dt - (endcb_grc(g) - begcb_grc(g))
 
@@ -1227,6 +1227,7 @@ contains
 
          grc_noutputs(g) = &
               dwt_conv_nflux_grc(g)
+
 
          errnb_grc(g) = (grc_ninputs(g) - grc_noutputs(g))*dt - (endnb_grc(g) - begnb_grc(g))
 
@@ -1317,6 +1318,7 @@ contains
 
          grc_poutputs(g) = &
               dwt_conv_pflux_grc(g)
+
 
          errpb_grc(g) = (grc_pinputs(g) - grc_poutputs(g))*dt - (endpb_grc(g) - begpb_grc(g))
 
