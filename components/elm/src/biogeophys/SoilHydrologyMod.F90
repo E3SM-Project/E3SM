@@ -1096,6 +1096,7 @@ contains
      use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use elm_varctl       , only : use_var_soil_thick, use_firn_percolation_and_compaction
+     use elm_varctl       , only : use_subsurface_drainage
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
      use LandunitType     , only : lun_pp
@@ -1464,6 +1465,8 @@ contains
                    rsub_top_max = min(10._r8 * sin((rpi/180.) * col_pp%topo_slope(c)), rsub_top_globalmax)
                 end if
              endif
+             ! no topographic drainage (e.g. closed-domain tests with no-flow boundaries)
+             if (.not. use_subsurface_drainage) rsub_top_max = 0._r8
              if (use_vichydro) then
                 ! ARNO model for the bottom soil layer (based on bottom soil layer
                 ! moisture from previous time step

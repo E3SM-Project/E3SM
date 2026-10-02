@@ -445,7 +445,9 @@ contains
     call col_ws%Init(bounds_proc%begc_all, bounds_proc%endc_all, bounds_proc%endc, &
          h2osno_col(begc:endc),                    &
          snow_depth_col(begc:endc),                &
-         soilstate_vars%watsat_col(begc:endc, 1:))
+         soilstate_vars%watsat_col(begc:endc, 1:), &
+         sucsat_input=soilstate_vars%sucsat_col(begc:endc, 1:), &
+         bsw_input=soilstate_vars%bsw_col(begc:endc, 1:))
     call veg_ws%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
     call waterflux_vars%init(bounds_proc)

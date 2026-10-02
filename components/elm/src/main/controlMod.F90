@@ -71,6 +71,7 @@ module controlMod
                         use_IM2_hillslope_hydrology, &
                         use_lateral_subsurface_flow, lateral_unsat_flow, &
                         lateral_hk_anisotropy, lateral_theta_watertable, &
+                        soil_layer_thickness, hydrostatic_init_zwt, use_subsurface_drainage, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
                         use_lnd_rof_two_way, use_ocn_lnd_one_way, &
@@ -372,6 +373,9 @@ contains
     namelist /elm_inparm/ &
          use_lateral_subsurface_flow, lateral_unsat_flow, &
          lateral_hk_anisotropy, lateral_theta_watertable
+
+    namelist /elm_inparm/ &
+         soil_layer_thickness, hydrostatic_init_zwt, use_subsurface_drainage
 
     namelist /elm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
@@ -1011,6 +1015,11 @@ contains
     call mpi_bcast (lateral_hk_anisotropy, 1, MPI_REAL8, 0, mpicom, ier)
     call mpi_bcast (lateral_theta_watertable, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    ! soil layer structure and cold-start soil water
+    call mpi_bcast (soil_layer_thickness, size(soil_layer_thickness), MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (hydrostatic_init_zwt, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (use_subsurface_drainage, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     ! bgc & pflotran interface
     call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1121,6 +1130,15 @@ contains
        write(iulog,*) '    lateral_unsat_flow = ', lateral_unsat_flow
        write(iulog,*) '    lateral_hk_anisotropy = ', lateral_hk_anisotropy
        write(iulog,*) '    lateral_theta_watertable = ', lateral_theta_watertable
+    end if
+    if (soil_layer_thickness(1) > 0._r8) then
+       write(iulog,*) '    soil_layer_thickness = ', pack(soil_layer_thickness, soil_layer_thickness > 0._r8)
+    end if
+    if (hydrostatic_init_zwt >= 0._r8) then
+       write(iulog,*) '    hydrostatic_init_zwt = ', hydrostatic_init_zwt
+    end if
+    if (.not. use_subsurface_drainage) then
+       write(iulog,*) '    use_subsurface_drainage = ', use_subsurface_drainage
     end if
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method

@@ -2089,6 +2089,31 @@ If TRUE (default), diagnose the water table depth from soil moisture when
 use_lateral_subsurface_flow is TRUE.
 </entry>
 
+<entry id="soil_layer_thickness" type="real(100)" category="elm_physics"
+       group="elm_inparm" >
+Thickness (m) of each ground layer, from the surface down. If set, exactly
+nlevgrnd positive values must be given; they replace the default exponential
+soil layer structure. Layers 1 to nlevsoi are hydrologically active (nlevsoi
+is set by the nlevsoi dimension of the surface dataset). Unset by default.
+</entry>
+
+<entry id="hydrostatic_init_zwt" type="real" category="elm_physics"
+       group="elm_inparm" >
+Water table depth (m) used for a cold start (no initial-condition file).
+If non-negative, the water table of soil and crop columns is set to this
+depth and soil moisture is set to hydrostatic equilibrium with it using the
+Clapp-Hornberger retention curve: saturated within the capillary fringe and
+below the water table, and theta_sat*(s/psi_sat)^(-1/b) above it, where s is
+the height above the water table. Off (negative) by default.
+</entry>
+
+<entry id="use_subsurface_drainage" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+If TRUE (default), soil columns lose water through topographic (SIMTOP)
+subsurface drainage. Set to FALSE for closed-domain tests with no-flow
+boundaries.
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface                                  -->
 <!-- ========================================================================================  -->

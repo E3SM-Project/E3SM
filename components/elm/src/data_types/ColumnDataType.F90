@@ -1389,20 +1389,24 @@ contains
   !------------------------------------------------------------------------
   ! Subroutines to initialize and clean column water state data structure
   !------------------------------------------------------------------------
-  subroutine col_ws_init(this, begc, endc, endc_owned, h2osno_input, snow_depth_input, watsat_input)
+  subroutine col_ws_init(this, begc, endc, endc_owned, h2osno_input, snow_depth_input, watsat_input, &
+       sucsat_input, bsw_input)
     !
-    use elm_varctl  , only : use_lake_wat_storage, use_arctic_init
+    use elm_varctl  , only : use_lake_wat_storage, use_arctic_init, hydrostatic_init_zwt
     ! !ARGUMENTS:
     class(column_water_state) :: this
     integer , intent(in)      :: begc,endc, endc_owned
     real(r8), intent(in)      :: h2osno_input(begc:)
     real(r8), intent(in)      :: snow_depth_input(begc:)
     real(r8), intent(in)      :: watsat_input(begc:, 1:)          ! volumetric soil water at saturation (porosity)
+    real(r8), intent(in), optional :: sucsat_input(begc:, 1:)     ! saturated soil matric potential (mm); for hydrostatic_init_zwt
+    real(r8), intent(in), optional :: bsw_input(begc:, 1:)        ! Clapp and Hornberger "b"; for hydrostatic_init_zwt
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer  :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
     real(r8)           :: snowbd      ! temporary calculation of snow bulk density (kg/m3)
     real(r8)           :: fmelt       ! snowbd/100
+    real(r8)           :: suction     ! height above the water table for hydrostatic initialization (mm)
     integer            :: c,l,j,nlevs,nlevbed, ncells
     !------------------------------------------------------------------------
 
@@ -1761,6 +1765,16 @@ contains
                    endif
                    if (use_polygonal_tundra) then
                      this%frac_melted(c,j) = 0._r8
+                   end if
+                   ! hydrostatic equilibrium with a water table at hydrostatic_init_zwt (Clapp-Hornberger)
+                   if (hydrostatic_init_zwt >= 0._r8 .and. present(sucsat_input) .and. present(bsw_input)) then
+                      suction = (hydrostatic_init_zwt - col_pp%z(c,j))*1.e3_r8   ! height above the water table (mm)
+                      if (suction <= sucsat_input(c,j)) then
+                         this%h2osoi_vol(c,j) = watsat_input(c,j)
+                      else
+                         this%h2osoi_vol(c,j) = watsat_input(c,j) * &
+                              (suction/sucsat_input(c,j))**(-1._r8/bsw_input(c,j))
+                      end if
                    end if
                 endif
              end do

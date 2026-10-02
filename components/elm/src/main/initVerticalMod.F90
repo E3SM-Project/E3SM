@@ -19,6 +19,7 @@ module initVerticalMod
   use elm_varctl     , only : fsurdat, iulog, use_var_soil_thick
   use elm_varctl     , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers, use_extrasnowlayers
   use elm_varctl     , only : use_erosion, use_polygonal_tundra
+  use elm_varctl     , only : soil_layer_thickness
   use elm_varcon     , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, grlnd
   use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
   use landunit_varcon, only : istdlak, istice_mec
@@ -197,6 +198,24 @@ contains
        zisoi(j) = 0.5_r8*(zsoi(j)+zsoi(j+1))         !interface depths
     enddo
     zisoi(nlevgrnd) = zsoi(nlevgrnd) + 0.5_r8*dzsoi(nlevgrnd)
+
+    ! Optionally replace the soil layer structure with user-specified thicknesses
+    if (soil_layer_thickness(1) > 0._r8) then
+       if (any(soil_layer_thickness(1:nlevgrnd) <= 0._r8) .or. &
+            any(soil_layer_thickness(nlevgrnd+1:) > 0._r8)) then
+          call shr_sys_abort(' ERROR: soil_layer_thickness must have exactly nlevgrnd positive values'//&
+               errMsg(__FILE__, __LINE__))
+       end if
+       zisoi(0) = 0._r8
+       do j = 1, nlevgrnd
+          dzsoi(j) = soil_layer_thickness(j)
+          zisoi(j) = zisoi(j-1) + dzsoi(j)
+          zsoi(j)  = 0.5_r8*(zisoi(j-1) + zisoi(j))
+       end do
+       if (masterproc) then
+          write(iulog, *) 'initVertical: soil layer thicknesses set from soil_layer_thickness'
+       end if
+    end if
 
     if (masterproc) then
        write(iulog, *) 'zsoi', zsoi(:) 

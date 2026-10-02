@@ -240,6 +240,7 @@ contains
     use shr_spfn_mod    , only : shr_spfn_erf
     use shr_kind_mod    , only : r8 => shr_kind_r8
     use elm_varctl      , only : fsurdat, iulog, use_vichydro, use_var_soil_thick
+    use elm_varctl      , only : hydrostatic_init_zwt
     use elm_varpar      , only : nlevsoi, nlevgrnd, nlevsno, nlevlak, nlevurb
     use elm_varcon      , only : denice, denh2o, sb, bdsno
     use elm_varcon      , only : h2osno_max, zlnd, tfrz, spval
@@ -339,6 +340,16 @@ contains
                 this%zwt_perched_col(c) = col_pp%zi(c,nlevsoi)
                 this%frost_table_col(c) = col_pp%zi(c,nlevsoi)
              end if
+          end if
+       end do
+    end if
+
+    ! Optional cold-start water table for soil and crop columns (soil moisture is set
+    ! to hydrostatic equilibrium with it in col_ws_init)
+    if (hydrostatic_init_zwt >= 0._r8) then
+       do c = bounds%begc,bounds%endc
+          if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+             this%zwt_col(c) = hydrostatic_init_zwt
           end if
        end do
     end if

@@ -477,6 +477,14 @@ module elm_varctl
   logical , public :: lateral_theta_watertable    = .true.   ! diagnose the water table from soil moisture
 
   !-----------------------------------------------------------------------
+  ! Soil layer structure and cold-start soil water (used by idealized tests)
+  !-----------------------------------------------------------------------
+  integer , parameter, public :: max_soil_layer_thickness = 100
+  real(r8), public :: soil_layer_thickness(max_soil_layer_thickness) = -1._r8 ! user-specified soil layer thicknesses (m); unset if <= 0
+  real(r8), public :: hydrostatic_init_zwt = -1._r8                           ! cold-start water table depth (m) for hydrostatic soil moisture; off if < 0
+  logical , public :: use_subsurface_drainage = .true.                        ! if false, no topographic (SIMTOP) subsurface drainage
+
+  !-----------------------------------------------------------------------
   ! flux limiter for phenology flux calculation
   logical, public :: use_pheno_flux_limiter = .false.
 
