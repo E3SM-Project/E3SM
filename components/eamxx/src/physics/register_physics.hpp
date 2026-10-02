@@ -17,6 +17,9 @@
 #ifdef EAMXX_HAS_GW
 #include "physics/gw/eamxx_gw_process_interface.hpp"
 #endif
+#ifdef EAMXX_HAS_RAYLEIGH_FRICTION
+#include "physics/rayleigh_friction/eamxx_rayleigh_friction_process_interface.hpp"
+#endif
 #ifdef EAMXX_HAS_CLD_FRACTION
 #include "physics/cld_fraction/eamxx_cld_fraction_process_interface.hpp"
 #endif
@@ -75,6 +78,9 @@ inline void register_physics () {
 #endif
 #ifdef EAMXX_HAS_GW
   proc_factory.register_product("gw",&create_atmosphere_process<GWDrag>);
+#endif
+#ifdef EAMXX_HAS_RAYLEIGH_FRICTION
+  proc_factory.register_product("rayleigh_friction",&create_atmosphere_process<RayleighFriction>);
 #endif
 #ifdef EAMXX_HAS_CLD_FRACTION
   proc_factory.register_product("cld_fraction",&create_atmosphere_process<CldFraction>);

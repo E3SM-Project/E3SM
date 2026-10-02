@@ -196,6 +196,11 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- true means 2 more calls to AllReduce after dycore -->
       <enable_energy_fixer_debug_info type="logical" doc="Prints debug info that energy fixer indeed fixed energy (cost of an MPI reduce)">false</enable_energy_fixer_debug_info>
       <bfb_hash type="integer">18</bfb_hash>
+      <!-- Rayleigh friction applied by Homme on the physics grid. This is separate from
+           the rayleigh_friction physics process; set decay time to 0 when using that process. -->
+      <rayleigh_friction_vertical_level type="integer" doc="Vertical level (1-based, 1=model top) at which the Homme Rayleigh friction profile is centered">2</rayleigh_friction_vertical_level>
+      <rayleigh_friction_range type="real" doc="Width of the Homme Rayleigh friction profile in levels. If 0, set to (rayleigh_friction_vertical_level-1)/2">0.0</rayleigh_friction_range>
+      <rayleigh_friction_decay_time type="real" doc="Approximate Homme Rayleigh friction decay time at model top [days]. If 0, no Rayleigh friction is applied">5.0</rayleigh_friction_decay_time>
     </homme>
 
     <!-- P3 microphysics -->
@@ -688,6 +693,15 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Turbulent Mountain Stress -->
     <tms inherit="atm_proc_base"/>
+
+    <!-- Rayleigh Friction -->
+    <!-- NOTE: Homme also applies Rayleigh friction by default. Use
+         ./atmchange homme::rayleigh_friction_decay_time=0 to avoid applying it twice. -->
+    <rayleigh_friction inherit="atm_proc_base">
+      <rayleigh_friction_vertical_level type="integer" doc="Vertical level (1-based, 1=model top) at which the Rayleigh friction profile is centered">2</rayleigh_friction_vertical_level>
+      <rayleigh_friction_range type="real" doc="Width of the Rayleigh friction profile in levels. If 0, set to (rayleigh_friction_vertical_level-1)/2">0.0</rayleigh_friction_range>
+      <rayleigh_friction_decay_time type="real" doc="Approximate Rayleigh friction decay time at model top [days]. If 0, no Rayleigh friction is applied">5.0</rayleigh_friction_decay_time>
+    </rayleigh_friction>
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
