@@ -307,8 +307,14 @@ contains
     real(r8) :: prev_tau(bounds%begp:bounds%endp) ! Previous iteration tau
     real(r8) :: prev_tau_diff(bounds%begp:bounds%endp) ! Previous difference in iteration tau
     real(r8) :: slope_rad, deg2rad
+    ! iter_filterp(1:fn) holds the patch index "p" for patches still iterating (unconverged).
+    ! iter_filter_map(1:fn) holds, for each entry, the ORIGINAL compressed filter_index
+    ! (i.e. its position in filter_nolu_vegp) which is how all the num_nolu_vegp-sized
+    ! local arrays below (del, rb, obu, etc.) are permanently indexed. As patches converge,
+    ! iter_filterp/iter_filter_map are compacted (fn shrinks) but the local arrays are not
+    ! moved, so iter_filter_map must be used to address them.
     integer :: iter_filterp(num_nolu_vegp), iter_filter_map(num_nolu_vegp)  ! filter for iteration loop
-    integer :: num_unconverged 
+    integer :: active_index                                                ! position within the compacted iteration filter
 
     ! Indices for raw and rah
     integer, parameter :: above_canopy = 1         ! Above canopy
@@ -747,7 +753,6 @@ contains
          end if
       end if
       
-      !$acc enter data create(converged(:) ) 
       !$acc parallel loop independent gang vector default(present) private(p,c)
       do filter_index = 1, fn
          p = filter_nolu_vegp(filter_index)
@@ -760,7 +765,6 @@ contains
       end do
 
       ! Set counter for leaf temperature iteration (itlef)
-      num_unconverged = num_nolu_vegp  
       itlef = 0
       !$acc enter data copyin(itlef) create(temp1(:), temp2(:),temp12m(:),&
       !$acc    temp22m(:),ustar(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
@@ -770,12 +774,12 @@ contains
       ! Begin stability iteration
       call t_startf('can_iter')
       event = 'can_iter'
-      ITERATION : do while (itlef <= itmax .and. num_unconverged > 0)
+      ITERATION : do while (itlef <= itmax .and. fn > 0)
         !$acc update device(itlef)  
-        !$acc parallel loop independent gang vector  default(present)
-        do filter_index = 1, fn
-            if(converged(filter_index)) cycle
-            p = iter_filterp(filter_index)
+        !$acc parallel loop independent gang vector  default(present) private(p,filter_index)
+        do active_index = 1, fn
+            p = iter_filterp(active_index)
+            filter_index = iter_filter_map(active_index)
             call FrictionVelocity_noloop ( &
                         displa(p), z0mv(p), z0hv(p), z0qv(p), &
                         obu(filter_index), itlef+1, ur(filter_index), um(filter_index), ustar(filter_index), &
@@ -783,11 +787,12 @@ contains
                         forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
                         vds(p), u10(p), u10_elm(p), va(p), fv(p))
         end do
-        !$acc parallel loop independent gang vector default(present) private(p,c,t,g,&
+        !$acc parallel loop independent gang vector default(present) private(p,filter_index,c,t,g,&
         !$acc  cf, w,csoilb,ri, ricsoilc, csoilcn) present(ram1(:), rb1(:), rhaf(:),grnd_ch4_cond(:),t_veg(:),elai(:),btran(:),&
         !$acc  esai(:), temp2(:), htop(:), dleaf_patch(:), rah(:,:))
-        do filter_index = 1, fn
-           p = iter_filterp(filter_index)
+        do active_index = 1, fn
+           p = iter_filterp(active_index)
+           filter_index = iter_filter_map(active_index)
 
            c = veg_pp%column(p)
            t = veg_pp%topounit(p)
@@ -885,7 +890,6 @@ contains
 
         end do
 
-
          if ( use_fates ) then
             call alm_fates%wrap_photosynthesis(bounds, fn, iter_filterp(1:fn), &
                   svpts(begp:endp), eah(begp:endp), o2(begp:endp), &
@@ -901,7 +905,7 @@ contains
                      soilstate_vars, surfalb_vars, solarabs_vars,    &
                     canopystate_vars, photosyns_vars)
             else
-              call Photosynthesis(bounds,num_nolu_vegp,iter_filterp,converged(1:num_nolu_vegp),&
+              call Photosynthesis(bounds,fn,iter_filterp,iter_filter_map,num_nolu_vegp,&
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sun', &
@@ -921,8 +925,8 @@ contains
             endif
 
             !$acc parallel loop independent gang vector default(present) private(p,c)
-            do filter_index = 1, fn
-               p = iter_filterp(filter_index)
+            do active_index = 1, fn
+               p = iter_filterp(active_index)
                c = veg_pp%column(p)
                ! soybean (crop with N fixation)
                if (crop(veg_pp%itype(p)) >= 1 .and. nfixer(veg_pp%itype(p)) == 1) then
@@ -931,7 +935,7 @@ contains
             end do
 
             if ( .not. use_hydrstress ) then
-               call Photosynthesis(bounds,fn,iter_filterp,converged, &
+               call Photosynthesis(bounds,fn,iter_filterp,iter_filter_map,num_nolu_vegp, &
                         svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
                         co2(1:num_nolu_vegp),rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
                         surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sha', &
@@ -952,12 +956,12 @@ contains
 
          end if ! end of if use_fates
 
-         !$acc parallel loop independent gang vector default(present) present(laisun(:),&
+         !$acc parallel loop independent gang vector default(present) private(p,filter_index) present(laisun(:),&
          !$acc  thm(:), canopy_cond(:),temp2(:), frac_veg_nosno(:), esai(:), fdry(:), wta0(:), h2ocan(:), &
          !$acc  laisha(:),rssha(:),btran(:), fwet(:), qflx_evap_veg(:), qflx_tran_veg(:),sabv(:), eflx_sh_veg(:) )
-         do filter_index = 1, fn
-            if(converged(filter_index)) cycle 
-            p = iter_filterp(filter_index)
+         do active_index = 1, fn
+            p = iter_filterp(active_index)
+            filter_index = iter_filter_map(active_index)
             c = veg_pp%column(p)
             t = veg_pp%topounit(p)
             g = veg_pp%gridcell(p)
@@ -1170,34 +1174,37 @@ contains
 
          end do   ! end of filtered pft loop
 
-         !$acc parallel loop independent gang vector default(present) private(p,t)
-         do filter_index = 1, fn
-           if(converged(filter_index)) cycle 
-           p = iter_filterp(filter_index)
+         !$acc parallel loop independent gang vector default(present) private(p,filter_index,t)
+         do active_index = 1, fn
+           p = iter_filterp(active_index)
+           filter_index = iter_filter_map(active_index)
            t = veg_pp%topounit(p)
            !laminar boundary resistance for h2o over leaf, should I make this consistent for latent heat calculation?
            lbl_rsc_h2o(p) = getlblcef(forc_rho(t),t_veg(p))*uaf(filter_index)/(uaf(filter_index)**2._r8+1.e-10_r8)   
          enddo
 
-         ! Test for convergence
+         ! Test for convergence.
+         ! Compact iter_filterp/iter_filter_map in place, keeping only the patches that have
+         ! NOT yet converged; fn shrinks to the new active count. This loop has a sequential
+         ! write-index dependency (fn_new), so it must run in order.
          itlef = itlef+1
          if (itlef > itmin) then
-            fnold = 0 
-            num_unconverged = 0 
-            !$acc parallel loop independent gang vector default(present) private(p) present(det(1:fn), dele(1:fn)) &
-            !$acc   copy(num_unconverged) reduction(+:num_unconverged) 
-            do filter_index = 1, fn
-               if(converged(filter_index)) cycle   
-               p = iter_filterp(filter_index)
+            fnold = fn
+            fn = 0
+            !$acc parallel loop seq default(present) private(p,filter_index) present(det(1:fnold), dele(1:fnold))
+            do active_index = 1, fnold
+               p = iter_filterp(active_index)
+               filter_index = iter_filter_map(active_index)
                num_iter(p) = real(itlef,r8)
                dele(filter_index) = abs(efe(filter_index) - efeb(filter_index))
                efeb(filter_index) = efe(filter_index)
                det(filter_index)  = max(del(filter_index),del2(filter_index))
-               if((det(filter_index) < dtmin .and. dele(filter_index) < dlemin)) then 
-                  converged(filter_index) = 1
-               else
-                 num_unconverged = num_unconverged + 1  
-               end if 
+               if (.not. (det(filter_index) < dtmin .and. dele(filter_index) < dlemin)) then
+                  ! still unconverged: keep it in the compacted filter for the next iteration
+                  fn = fn + 1
+                  iter_filterp(fn)     = p
+                  iter_filter_map(fn)  = filter_index
+               end if
             end do
          end if
       end do ITERATION     ! End stability iteration
@@ -1314,8 +1321,8 @@ contains
 
       if ( use_fates ) then
 
-        call alm_fates%wrap_accumulatefluxes(bounds,fn,iter_filterp(1:fn))
-        call alm_fates%wrap_hydraulics_drive(bounds,fn,iter_filterp(1:fn),soilstate_vars, &
+        call alm_fates%wrap_accumulatefluxes(bounds,num_nolu_vegp,filter_nolu_vegp(1:num_nolu_vegp))
+        call alm_fates%wrap_hydraulics_drive(bounds,num_nolu_vegp,filter_nolu_vegp(1:num_nolu_vegp),soilstate_vars, &
                                             solarabs_vars,energyflux_vars)
       else
 
@@ -1328,7 +1335,7 @@ contains
          fn = 0
          !$acc parallel loop independent gang vector default(present) 
          do filter_index = 1, fnold
-            p = iter_filterp(filter_index)
+            p = filter_nolu_vegp(filter_index)
             if (abs(err(filter_index)) > 0.1_r8) then
                fn = fn + 1
                iter_filterp(fn) = p

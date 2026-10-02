@@ -29,10 +29,10 @@ module SoilMoistStressMod
   private :: normalize_test
   !
   ! !PRIVATE DATA MEMBERS:
-  integer ::   root_moist_stress_method
+  integer, public ::   root_moist_stress_method
   integer, parameter :: moist_stress_clm_default  = 0  !default method for calculating root moisture stress
-  logical,  private :: perchroot     = .false.  ! true => btran is based only on unfrozen soil levels
-  logical,  private :: perchroot_alt = .false.  ! true => btran is based on active layer (defined over two years);
+  logical,  public :: perchroot     = .false.  ! true => btran is based only on unfrozen soil levels
+  logical,  public :: perchroot_alt = .false.  ! true => btran is based on active layer (defined over two years);
   !$acc declare create(perchroot)
   !$acc declare create(perchroot_alt)
 

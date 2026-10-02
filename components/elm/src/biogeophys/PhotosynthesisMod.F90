@@ -199,7 +199,7 @@ contains
 
 
   !------------------------------------------------------------------------------
-  subroutine Photosynthesis ( bounds, fn, filterp,converged, &
+  subroutine Photosynthesis ( bounds, fn, filterp, filter_map, norig, &
        esat_tv, eair, oair, cair, rb, btran, &
        dayl_factor, surfalb_vars, solarabs_vars, &
        canopystate_vars, photosyns_vars, phase, &
@@ -221,16 +221,17 @@ contains
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
-    integer                , intent(in)    :: fn                   ! size of pft filter
-    integer                , intent(in)    :: filterp(1:fn)          ! patch filter
-    integer                , intent(in)    :: converged(1:fn) 
-    real(r8)               , intent(in)    :: esat_tv( 1:fn )      ! saturation vapor pressure at t_veg (Pa) [pft]
-    real(r8)               , intent(in)    :: eair(1:fn)           ! vapor pressure of canopy air (Pa) [pft]
-    real(r8)               , intent(in)    :: oair(1:fn)           ! Atmospheric O2 partial pressure (Pa) [pft]
-    real(r8)               , intent(in)    :: cair(1:fn)           ! Atmospheric CO2 partial pressure (Pa) [pft]
-    real(r8)               , intent(in)    :: rb( 1:fn )           ! boundary layer resistance (s/m) [pft]
+    integer                , intent(in)    :: fn                   ! size of pft filter (number of still-active patches)
+    integer                , intent(in)    :: filterp(1:fn)          ! patch filter (active, unconverged patches)
+    integer                , intent(in)    :: filter_map(1:fn)       ! maps active-filter position -> original compressed index into the norig-sized arrays below
+    integer                , intent(in)    :: norig                  ! size of the original (uncompacted) per-patch arrays below
+    real(r8)               , intent(in)    :: esat_tv( 1:norig )   ! saturation vapor pressure at t_veg (Pa) [pft]
+    real(r8)               , intent(in)    :: eair(1:norig)        ! vapor pressure of canopy air (Pa) [pft]
+    real(r8)               , intent(in)    :: oair(1:norig)        ! Atmospheric O2 partial pressure (Pa) [pft]
+    real(r8)               , intent(in)    :: cair(1:norig)        ! Atmospheric CO2 partial pressure (Pa) [pft]
+    real(r8)               , intent(in)    :: rb( 1:norig )        ! boundary layer resistance (s/m) [pft]
     real(r8)               , intent(in)    :: btran( bounds%begp: )! transpiration wetness factor (0 to 1) [pft]
-    real(r8)               , intent(in)    :: dayl_factor( 1:fn )  ! scalar (0-1) for daylength
+    real(r8)               , intent(in)    :: dayl_factor( 1:norig )  ! scalar (0-1) for daylength
     type(surfalb_type)     , intent(inout) :: surfalb_vars
     type(solarabs_type)    , intent(inout) :: solarabs_vars
     type(canopystate_type) , intent(inout) :: canopystate_vars
@@ -306,6 +307,7 @@ contains
 
     ! Other
     integer  :: f,p,c,t,iv        ! indices
+    integer  :: og                ! original compressed filter index for caller-compressed arrays
     real(r8) :: cf                ! s m**2/umol -> s/m
     real(r8) :: gb                ! leaf boundary layer conductance (m/s)
     real(r8) :: cs                ! CO2 partial pressure at leaf surface (Pa)
@@ -439,10 +441,10 @@ contains
       !$acc end serial 
       !$acc enter data create(jmax_z(:,:), lnc(:),kn(:),psn_wc_z(:,:),psn_wj_z(:,:), psn_wp_z(:,:) )
 
-      !$acc parallel loop independent gang vector default(present) private(p,c,t,i_type,kc25,ko25,sco,cp25)
+      !$acc parallel loop independent gang vector default(present) private(p,og,c,t,i_type,kc25,ko25,sco,cp25)
       do f = 1, fn
-         if(converged(f)) cycle
          p = filterp(f)
+         og = filter_map(f)
          c = veg_pp%column(p)
          t = veg_pp%topounit(p)
          i_type = veg_pp%itype(p)
@@ -469,7 +471,7 @@ contains
          kc25 = (404.9_r8 / 1.e06_r8) * forc_pbot(t)
          ko25 = (278.4_r8 / 1.e03_r8) * forc_pbot(t)
          sco  = 0.5_r8 * 0.209_r8 / (42.75_r8 / 1.e06_r8)
-         cp25 = 0.5_r8 * oair(f) / sco
+         cp25 = 0.5_r8 * oair(og) / sco
 
          kc(p) = kc25 * ft(t_veg(p), veg_vp%kcha(i_type) )!79430._r8
          ko(p) = ko25 * ft(t_veg(p), veg_vp%koha(i_type) )!36380._r8
@@ -485,15 +487,15 @@ contains
       !$acc btran(:),leafn(:),kp_z(:,:),lmr_z(:,:), par_z(:,:),nrad(:),vcmaxcint(:),&
       !$acc vcmax_z(:,:),t10(:),leafp(:),tpu_z(:,:),tlai_z(:,:),alphapsn(:),c3flag(:))
       do f = 1, fn
-         if(converged(f)) cycle
          p = filterp(f)
+         og = filter_map(f)
          i_type = veg_pp%itype(p)
          if ( .not. nu_com_leaf_physiology) then
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(f) = 1._r8 / (slatop(i_type) * leafcn(i_type))
 
             ! vcmax25 at canopy top, as in CN but using lnc at top of the canopy
-            vcmax25top = lnc(f) * flnr(i_type) * fnr * act25 * dayl_factor(f)
+            vcmax25top = lnc(f) * flnr(i_type) * fnr * act25 * dayl_factor(og)
             if (.not. use_cn) then
                vcmax25top = vcmax25top * fnitr(i_type)
             else if ( Carbon_only ) then
@@ -508,7 +510,7 @@ contains
             if ( Carbon_only  .or.  carbonphosphorus_only ) then
 
                lnc(f) = 1._r8 / (slatop(i_type) * leafcn(i_type))
-               vcmax25top = lnc(f) * flnr(i_type) * fnr * act25 * dayl_factor(f)
+               vcmax25top = lnc(f) * flnr(i_type) * fnr * act25 * dayl_factor(og)
                vcmax25top = vcmax25top * fnitr(i_type)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
 
@@ -546,7 +548,7 @@ contains
                   lnc(f) = 0.0_r8
                end if
 
-               vcmax25top = (i_vcmax(i_type) + s_vcmax(i_type) * lnc(f)) * dayl_factor(f)
+               vcmax25top = (i_vcmax(i_type) + s_vcmax(i_type) * lnc(f)) * dayl_factor(og)
                jmax25top = (2.59_r8 - 0.035_r8*min(max((t10(p)-tfrz),11._r8),35._r8)) * vcmax25top
                vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
                jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
@@ -588,8 +590,8 @@ contains
                      lpc = min(max(lpc,0.014_r8),0.85_r8) ! based on doi: 10.1002/ece3.1173
                      vcmax25top = exp(vcmax_np1(i_type) + vcmax_np2(i_type)*log(lnc(f)) + &
                           vcmax_np3(i_type)*log(lpc) + vcmax_np4(i_type)*log(lnc(f))*log(lpc ))&
-                          * dayl_factor(f)
-                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc )) * dayl_factor(f)
+                          * dayl_factor(og)
+                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc )) * dayl_factor(og)
                      vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
                      jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
                   else
@@ -614,10 +616,10 @@ contains
          ! But not used as defined here if using sun/shade big leaf code. Instead,
          ! will use canopy integrated scaling factors from SurfaceAlbedo.
 
-         if (dayl_factor(f) .eq. 0._r8) then
+         if (dayl_factor(og) .eq. 0._r8) then
             kn(f) =  0._r8
          else
-            kn(f) = exp(0.00963_r8 * vcmax25top/dayl_factor(f) - 2.43_r8)
+            kn(f) = exp(0.00963_r8 * vcmax25top/dayl_factor(og) - 2.43_r8)
          end if
 
          if (use_cn) then
@@ -736,8 +738,8 @@ contains
       !$acc c3flag(:),nrad(:),bbb(:),rh_leaf(:),ap(:,:),ac(:,:),ag(:,:),psn_z(:,:),&
       !$acc rs_z(:,:),an(:,:),aj(:,:),ci_z(p,:))
       do f = 1, fn
-         if(converged(f)) cycle
          p = filterp(f)
+         og = filter_map(f)
          
          !$acc loop seq 
          do iv = 1, nrad(p)
@@ -747,7 +749,7 @@ contains
 
             ! Leaf boundary layer conductance, umol/m**2/s
             cf = forc_pbot(t)/(rgas*1.e-3_r8*tgcm(p))*1.e06_r8
-            gb = 1._r8/rb(f)
+            gb = 1._r8/rb(og)
             gb_mol(p) = gb * cf
 
             ! Loop through canopy layers (above snow). Only do calculations if daytime
@@ -770,8 +772,8 @@ contains
             else                                     ! day time
 
                !now the constraint is no longer needed, Jinyun Tang
-               ceair = min( eair(f),  esat_tv(f) )
-               rh_can = ceair / esat_tv(f)
+               ceair = min( eair(og),  esat_tv(og) )
+               rh_can = ceair / esat_tv(og)
 
                ! Electron transport rate for C3 plants. Convert par from W/m2 to
                ! umol photons/m**2/s using the factor 4.6
@@ -785,9 +787,9 @@ contains
 
                ! Iterative loop for ci beginning with initial guess
                if (c3flag(p)) then
-                  ci_z(p,iv) = 0.7_r8 * cair(f)
+                  ci_z(p,iv) = 0.7_r8 * cair(og)
                else
-                  ci_z(p,iv) = 0.4_r8 * cair(f)
+                  ci_z(p,iv) = 0.4_r8 * cair(og)
                end if
 
                niter = 0
@@ -799,7 +801,7 @@ contains
                ciold = ci_z(p,iv)
 
                !find ci and stomatal conductance
-               call hybrid(ciold, p, iv, c, t, gb_mol(p), je, cair(f), oair(f), &
+               call hybrid(ciold, p, iv, c, t, gb_mol(p), je, cair(og), oair(og), &
                     lmr_z(p,iv), par_z(p,iv), rh_can, gs_mol(p,iv), niter, &
                     photosyns_vars)
 
@@ -808,9 +810,9 @@ contains
 
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
-               cs = cair(f) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
+               cs = cair(og) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
-               ci_z(p,iv) = cair(f) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
+               ci_z(p,iv) = cair(og) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
 
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
@@ -843,7 +845,7 @@ contains
 
                ! Compare with Ball-Berry model: gs_mol = m * an * hs/cs p + b
 
-               hs = (gb_mol(p)*ceair + gs_mol(p,iv)*esat_tv(f)) / ((gb_mol(p)+gs_mol(p,iv))*esat_tv(f))
+               hs = (gb_mol(p)*ceair + gs_mol(p,iv)*esat_tv(og)) / ((gb_mol(p)+gs_mol(p,iv))*esat_tv(og))
                rh_leaf(p) = hs
                gs_mol_err = mbb(p)*max(an(p,iv), 0._r8)*hs/cs*forc_pbot(t) + bbb(p)
                if (abs(gs_mol(p,iv)-gs_mol_err) > 1.e-01_r8) then
@@ -865,8 +867,8 @@ contains
       !$acc lai_z(:,:),nrad(:),rs_z(:,:),rs(:),psn_z(:,:),psn_wp(:),psn_wc(:),&
       !$acc psn_wj(:),lmr(:),lmr_z(:,:),psn(:)) 
       do f = 1, fn
-         if(converged(f)) cycle
          p = filterp(f)
+         og = filter_map(f)
          psncan = 0._r8
          psncan_wc = 0._r8
          psncan_wj = 0._r8
@@ -881,7 +883,7 @@ contains
             psncan_wj = psncan_wj + psn_wj_z(f,iv) * lai_z(p,iv)
             psncan_wp = psncan_wp + psn_wp_z(f,iv) * lai_z(p,iv)
             lmrcan = lmrcan + lmr_z(p,iv) * lai_z(p,iv)
-            gscan = gscan + lai_z(p,iv) / (rb(f)+rs_z(p,iv))
+            gscan = gscan + lai_z(p,iv) / (rb(og)+rs_z(p,iv))
             laican = laican + lai_z(p,iv)
          end do
          if (laican > 0._r8) then
@@ -890,7 +892,7 @@ contains
             psn_wj(p) = psncan_wj / laican
             psn_wp(p) = psncan_wp / laican
             lmr(p) = lmrcan / laican
-            rs(p) = laican / gscan - rb(f)
+            rs(p) = laican / gscan - rb(og)
          else
             psn(p) =  0._r8
             psn_wc(p) =  0._r8
