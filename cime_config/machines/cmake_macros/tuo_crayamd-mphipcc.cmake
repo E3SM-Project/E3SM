@@ -10,12 +10,19 @@ set(SCC  "${MPICC}")
 set(SCXX "${MPICXX}")
 set(SFC  "${MPIFC}")
 
+if (compile_threaded)
+  string(APPEND CMAKE_C_FLAGS " -fopenmp")
+  string(APPEND CMAKE_Fortran_FLAGS " -fopenmp")
+  string(APPEND CMAKE_CXX_FLAGS " -fopenmp")
+  string(APPEND CMAKE_EXE_LINKER_FLAGS " -fopenmp")
+endif()
+
 if (COMP_NAME STREQUAL gptl)
 	string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
 
 # required to resolve bshr_infnan_mod.F90 compile issue
-string(APPEND CPPDEFS " -DCPRCRAY")
+string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
 
 set(USE_HIP "TRUE")
 

@@ -239,9 +239,9 @@
     <depend_separator>:</depend_separator>
     <walltime_format>%Mm</walltime_format>
     <submit_args>
-      <arg flag="--time" name="60m"/>
-      <arg flag="--queue" name="$JOB_QUEUE"/>
-      <arg flag="--bank" name="$PROJECT"/>
+      <arg flag="--time-limit" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="-B" name="$PROJECT"/>
     </submit_args>
     <directives>
       <directive> --job-name={{ job_id }}</directive>
