@@ -217,7 +217,7 @@ _TESTS = {
         "tests" : (
             "SMS_Ln5.ne30pg2_r05_IcoswISC30E3r5.F2010.eam-wcprod_F2010",
             "SMS_Ld1.ne30pg2_r05_IcoswISC30E3r5.F20TR.eam-wcprod_F20TR",
-            "SMS_Lh4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
+            "SMS_Lh4.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-output-prod",
             )
         },
 
@@ -285,7 +285,7 @@ _TESTS = {
             "SMS_P12x2.ne4pg2_oQU480.WCYCL1850NS.allactive-mach_mods",
             "ERS_Vmoab.ne4pg2_oQU480.WCYCL1850NS",
             "SMS_Lh4.ne4_ne4.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-fixer_debug_output",
-            "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-prod",
+            "SMS_Lh4.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-preset-1--eamxx-output-prod",
             )
         },
 
@@ -681,7 +681,7 @@ _TESTS = {
             "REP_Ld5.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-preset-6",
             "SMS.ne30pg2_EC30to60E2r2.WCYCLXX2010",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-L128--eamxx-sl_nsubstep2",
-            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
+            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-output-prod",
             "SMS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-hremap_nudged",
             )
     },
@@ -777,10 +777,10 @@ _TESTS = {
         "tests" : (
             "SMS.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128",
             #"PEM_Ld1.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128", # second test hits OOM, need either P2048 or change def pelayout
-            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-prod",
-            "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-prod",
+            "ERS_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-L128--eamxx-output-prod",
+            "SMS_D_Lh6.ne120pg2_ne120pg2.F2010-SCREAMv1.eamxx-output-prod",
             "SMS.ne256pg2_ne256pg2.F2010-SCREAMv1",
-            "ERS_Lh6.ne256pg2_ne256pg2.F2010-SCREAMv1.eamxx-prod"
+            "ERS_Lh6.ne256pg2_ne256pg2.F2010-SCREAMv1.eamxx-output-prod"
             )
     },
 
@@ -788,7 +788,7 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "SMS_Ld1.ne512pg2_ne512pg2.F2010-SCREAMv1",
-            "ERS_Lh6.ne512pg2_ne512pg2.F2010-SCREAMv1.eamxx-prod",
+            "ERS_Lh6.ne512pg2_ne512pg2.F2010-SCREAMv1.eamxx-output-prod",
             "SMS_Ld1.ne1024pg2_ne1024pg2.F2010-SCREAMv1"
             )
     },
@@ -911,7 +911,7 @@ _TESTS = {
         "tests"    : (
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-SCREAMv1",
             "ERS.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72",
-            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-prod",
+            "ERS.ne30pg2_ne30pg2.F2010-SCREAMv1.eamxx-output-prod",
                  )
     },
 

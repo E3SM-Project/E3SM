@@ -85,8 +85,8 @@ jobs:
             short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
           - full_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci-snl_gnu.eamxx-L72
             short_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_gnu.eamxx-prod
-            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_gnu.eamxx-output-prod
+            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod
       fail-fast: false
     name: gnu / ${{ matrix.test.short_name }}
     steps:
@@ -135,8 +135,8 @@ jobs:
     strategy:
       matrix:
         test:
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_intel.eamxx-prod
-            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_intel.eamxx-output-prod
+            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod
       fail-fast: false
     name: intel / ${{ matrix.test.short_name }}
     steps:
@@ -185,8 +185,8 @@ jobs:
     strategy:
       matrix:
         test:
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_gnugpu.eamxx-prod
-            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
+          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci-snl_gnugpu.eamxx-output-prod
+            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-output-prod
       fail-fast: false
     name: gnugpu / ${{ matrix.test.short_name }}
     steps:
