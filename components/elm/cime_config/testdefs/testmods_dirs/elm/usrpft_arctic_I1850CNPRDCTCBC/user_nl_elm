@@ -1,0 +1,7 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_6x1pt_kougarok-NGEE_TransA_simyr1850_c20201008-sub12.nc'
+! below is user-pft file example, developed by B. Sulman et al. (2021)
+! 12(+2) arctic PFTs: not_vegetated, arctic_lichen, arctic_bryophyte, (arctic_needleleaf_tree, arctic_broadleaf_tree,)
+!                 arctic_evergreen_shrub_dwarf, arctic_evergreen_shrub_tall,
+!                 arctic_deciduous_shrub_dwarf, arctic_deciduous_shrub_low, arctic_deciduous_shrub_tall, arctic_decidous_shrub_alder,
+!                 arctic_forb, arctic_dry_graminoid, arctic_wet_graminoid
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params_c180524-sub12_updated20240201.nc'
