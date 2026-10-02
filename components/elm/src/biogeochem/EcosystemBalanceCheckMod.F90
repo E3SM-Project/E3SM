@@ -10,7 +10,7 @@ module EcosystemBalanceCheckMod
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use decompMod           , only : bounds_type
   use abortutils          , only : endrun
-  use elm_varctl          , only : iulog, use_fates, use_fan, use_debug
+  use elm_varctl          , only : iulog, use_fates, use_fan
   use elm_time_manager    , only : get_step_size,get_nstep
   use elm_varpar          , only : crop_prog
   use elm_varpar          , only : nlevdecomp
@@ -39,10 +39,8 @@ module EcosystemBalanceCheckMod
   use ColumnDataType      , only : column_carbon_state, column_carbon_flux
   use ColumnDataType      , only : column_nitrogen_state, column_nitrogen_flux
   use ColumnDataType      , only : column_phosphorus_state, column_phosphorus_flux
-  use ColumnDataType      , only : col_cs, col_cf, col_ns, col_nf, col_ps, col_pf
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_cf, veg_nf, veg_pf, veg_cs, veg_ns, veg_ps
-  use DebugToolsMod
+  use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
   use timeinfoMod
 
   !
@@ -101,8 +99,6 @@ contains
          c = filter_soilc(fc)
          col_begcb(c) = totcolc(c)
       end do
-
-      call EnterCMassDebug(bounds, num_soilc, filter_soilc, col_cs, veg_cs)
 
     end associate
 
@@ -320,10 +316,6 @@ contains
 
           if (use_pflotran .and. pf_cmode) then
              write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-          end if
-
-          if (use_debug) then
-             call DebugCMassBal(c, col_cs, col_cf, veg_cs,veg_cf)
           end if
 
           call endrun(msg=errMsg(__FILE__, __LINE__))
