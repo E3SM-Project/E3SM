@@ -77,10 +77,11 @@ type :: zm_param_t
    real(r8) :: accr_fac        = unset_r8    ! ZM microphysics enhancement factor for droplet-rain accretion
    real(r8) :: micro_dcs       = unset_r8    ! ZM microphysics size threshold for cloud ice to snow autoconversion [m]
    ! MCSP parameters
-   logical  :: mcsp_enabled       = .false.  ! flag for mesoscale coherent structure parameterization (MSCP)
-   real(r8) :: mcsp_t_coeff       = 0        ! MCSP coefficient for temperature tendencies
-   real(r8) :: mcsp_q_coeff       = 0        ! MCSP coefficient for specific humidity tendencies
-   real(r8) :: mcsp_mom_coeff     = 0        ! MCSP momentum coefficient (dimensionless fraction of the shear)
+   logical  :: mcsp_enabled        = .false. ! flag for mesoscale coherent structure parameterization (MSCP)
+   real(r8) :: mcsp_t_coeff        = 0       ! MCSP coefficient for temperature tendencies
+   real(r8) :: mcsp_q_coeff        = 0       ! MCSP coefficient for specific humidity tendencies
+   real(r8) :: mcsp_mom_coeff      = 0       ! MCSP momentum coefficient (dimensionless fraction of the shear)
+   real(r8) :: mcsp_mom_tau        = 3600._r8 ! MCSP momentum tendency timescale [s]
    logical  :: mcsp_use_full_shear = .false. ! use full (u,v) shear vector instead of zonal-only shear (default preserves E3SMv3)
 end type zm_param_t
 
