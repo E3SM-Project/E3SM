@@ -741,7 +741,8 @@ contains
 
                ! if this is the end of the offset_period, reset phenology
                ! flags and indices
-               if (offset_counter(p) == 0.0_r8) then
+               ! Restarted counters can be out of phase with the current timestep.
+               if (offset_counter(p) <= 0.0_r8) then
                   ! this code block was originally handled by call cn_offset_cleanup(p)
                   ! inlined during vectorization
 
@@ -763,7 +764,8 @@ contains
 
                ! if this is the end of the onset period, reset phenology
                ! flags and indices
-               if (onset_counter(p) == 0.0_r8) then
+               ! Restarted counters can be out of phase with the current timestep.
+               if (onset_counter(p) <= 0.0_r8) then
                   ! this code block was originally handled by call cn_onset_cleanup(p)
                   ! inlined during vectorization
 
@@ -1088,7 +1090,8 @@ contains
 
                ! if this is the end of the offset_period, reset phenology
                ! flags and indices
-               if (offset_counter(p) == 0._r8) then
+               ! Restarted counters can be out of phase with the current timestep.
+               if (offset_counter(p) <= 0._r8) then
                   ! this code block was originally handled by call cn_offset_cleanup(p)
                   ! inlined during vectorization
                   offset_flag(p) = 0._r8
@@ -1109,7 +1112,8 @@ contains
 
                ! if this is the end of the onset period, reset phenology
                ! flags and indices
-               if (onset_counter(p) == 0.0_r8) then
+               ! Restarted counters can be out of phase with the current timestep.
+               if (onset_counter(p) <= 0.0_r8) then
                   ! this code block was originally handled by call cn_onset_cleanup(p)
                   ! inlined during vectorization
                   onset_flag(p) = 0._r8
@@ -2811,10 +2815,12 @@ contains
             ! The transfer rate is a linearly decreasing function of time,
             ! going to zero on the last timestep of the onset period
 
-            if (onset_counter(p) == dt .or. (use_crop .and. percrop(ivt(p)) == 1.0_r8) ) then
+            ! Cap the smooth transfer rate so one timestep cannot consume more
+            ! than the remaining xfer pool if a restarted counter is out of phase.
+            if (use_crop .and. percrop(ivt(p)) == 1.0_r8) then
                t1 = 1.0_r8 / dt
             else
-               t1 = 2.0_r8 / (onset_counter(p))
+               t1 = min(2.0_r8 / onset_counter(p), 1.0_r8 / dt)
             end if
             leafc_xfer_to_leafc(p)   = t1 * leafc_xfer(p)
             frootc_xfer_to_frootc(p) = t1 * frootc_xfer(p)
@@ -3207,10 +3213,11 @@ contains
          ! only calculate fluxes during offset period
          if (offset_flag(p) == 1._r8) then
 
-            if (offset_counter(p) == dt) then
+            ! Treat a positive remainder shorter than this timestep as the final step.
+            if (offset_counter(p) <= dt) then
                t1 = 1.0_r8 / dt
                if (iscft(ivt(p))) then
-               ! this assumes that offset_counter == dt for crops
+               ! this assumes crop offsets are one-timestep events
                ! if this were ever changed, we'd need to add code to the "else"
                   leafc_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafc(p)) + cpool_to_leafc(p))
                   frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
@@ -3220,17 +3227,17 @@ contains
                   frootc_to_litter(p) = t1 * frootc(p) + cpool_to_frootc(p)
                end if
             else
-               t1 = dt * 2.0_r8 / (offset_counter(p) * offset_counter(p))
+               t1 = min(dt * 2.0_r8 / (offset_counter(p) * offset_counter(p)), 1.0_r8 / dt)
                leafc_to_litter(p)  = prev_leafc_to_litter(p)  + t1*(leafc(p)  - prev_leafc_to_litter(p)*offset_counter(p))
                frootc_to_litter(p) = prev_frootc_to_litter(p) + t1*(frootc(p) - prev_frootc_to_litter(p)*offset_counter(p))
             end if
 
             if ( nu_com .eq. 'RD') then
                if (iscft(ivt(p))) then
-                  if (offset_counter(p) == dt) then
+                  if (offset_counter(p) <= dt) then
                       t1 = 1.0_r8 / dt
 
-                     ! this assumes that offset_counter == dt for crops
+                     ! this assumes crop offsets are one-timestep events
                      ! if this were ever changed, we'd need to add code to the
                      ! "else"
                      leafn_to_litter(p) = (t1 * leafn(p) + npool_to_leafn(p)) - hrv_leafn_to_prod1n(p)
@@ -3258,10 +3265,10 @@ contains
                   frootp_to_litter(p) = frootc_to_litter(p) / frootcp(ivt(p))
                end if
             else
-               if (offset_counter(p) == dt) then
+               if (offset_counter(p) <= dt) then
                   t1 = 1.0_r8 / dt
                   if (iscft(ivt(p))) then
-                     ! this assumes that offset_counter == dt for crops
+                     ! this assumes crop offsets are one-timestep events
                      ! if this were ever changed, we'd need to add code to the "else"
                      leafn_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafn(p)) + npool_to_leafn(p))
                      leafp_to_litter(p) = (1.0_r8 - presharv(ivt(p))) * ((t1 * leafp(p)) + ppool_to_leafp(p))
