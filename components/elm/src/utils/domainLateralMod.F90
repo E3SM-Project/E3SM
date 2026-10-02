@@ -50,12 +50,20 @@ module domainLateralMod
   end type domainlateral_type
 
   type(domainlateral_type)    , public :: ldomain_lateral
+
+  ! MOAB tags used by NatVegColumnRealDataHaloExchange, defined on first use
+  ! and reused on later calls with the same tag name
+  integer, parameter                            :: max_column_tags = 32
+  integer                                       :: num_column_tags = 0
+  character(len=64)                             :: column_tag_names(max_column_tags)
+  type(twoD_real_data_for_moab), target         :: column_tags(max_column_tags)
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public domainlateral_init                 ! initializes
   public setup_twoD_real_data_for_moab
   public GridLevelIntegerDataHaloExchange
   public GridLevelRealDataHaloExchange
+  public NatVegColumnRealDataHaloExchange
   !
   !EOP
   !------------------------------------------------------------------------------
@@ -289,6 +297,108 @@ contains
     end do
 
   end subroutine GridLevelRealDataHaloExchange
+
+  !------------------------------------------------------------------------------
+  function GetColumnTag(tag_name, num_comp) result(tag)
+    !
+    ! DESCRIPTION:
+    ! Returns the MOAB tag registered under 'tag_name', defining it on first use.
+    ! A tag name must always be used with the same number of components.
+    !
+    implicit none
+    !
+    character(len=*), intent(in)          :: tag_name
+    integer         , intent(in)          :: num_comp
+    type(twoD_real_data_for_moab), pointer :: tag
+    !
+    integer :: i
+
+    do i = 1, num_column_tags
+       if (trim(column_tag_names(i)) == trim(tag_name)) then
+          tag => column_tags(i)
+          if (tag%num_comp /= num_comp) then
+             call endrun('GetColumnTag: MOAB tag '//trim(tag_name)// &
+                  ' reused with a different number of components.')
+          end if
+          return
+       end if
+    end do
+
+    if (num_column_tags == max_column_tags) then
+       call endrun('GetColumnTag: increase max_column_tags in domainLateralMod.')
+    end if
+
+    num_column_tags = num_column_tags + 1
+    column_tag_names(num_column_tags) = tag_name
+    tag => column_tags(num_column_tags)
+    call setup_twoD_real_data_for_moab(mlndghostid, tag_name, num_comp, moab_gcell%num_ghosted, tag)
+
+  end function GetColumnTag
+
+  !------------------------------------------------------------------------------
+  subroutine NatVegColumnRealDataHaloExchange(bounds_proc, tag_name, data)
+    !
+    ! DESCRIPTION:
+    ! Fills ghost columns of 'data' with the values of the owning MPI rank.
+    !
+    ! Only naturally vegetated (istsoil) columns take part, and each grid cell is
+    ! assumed to have at most one such column, which is the column that ghost grid
+    ! cells carry. data(c,:) holds all components for column c; values for owned
+    ! columns are not modified. All components are exchanged in a single MPI round.
+    !
+    use decompMod       , only : bounds_type
+    use ColumnType      , only : col_pp
+    use landunit_varcon , only : istsoil
+    !
+    implicit none
+    !
+    ! ARGUMENTS:
+    type(bounds_type) , intent(in)    :: bounds_proc                   ! processor bounds
+    character(len=*)  , intent(in)    :: tag_name                      ! MOAB tag name; reused across calls
+    real(r8)          , intent(inout) :: data(bounds_proc%begc_all:,:) ! [column, component]
+    !
+    ! LOCAL VARIABLES:
+    type(twoD_real_data_for_moab), pointer :: tag
+    real(r8), pointer                      :: data_g(:,:)
+    logical , pointer                      :: has_col(:)
+    integer                                :: c, g, num_comp
+
+    num_comp = size(data, 2)
+    tag => GetColumnTag(tag_name, num_comp)
+
+    allocate(data_g(bounds_proc%begg:bounds_proc%endg_all, num_comp))
+    allocate(has_col(bounds_proc%begg:bounds_proc%endg))
+    data_g(:,:) = 0._r8
+    has_col(:)  = .false.
+
+    ! pack owned columns into grid-cell order
+    do c = bounds_proc%begc, bounds_proc%endc
+       if (col_pp%itype(c) == istsoil) then
+          g = col_pp%gridcell(c)
+          if (has_col(g)) then
+             call endrun('NatVegColumnRealDataHaloExchange: more than one naturally '// &
+                  'vegetated column in a grid cell.')
+          end if
+          has_col(g)   = .true.
+          data_g(g, :) = data(c, :)
+       end if
+    end do
+
+    call GridLevelRealDataHaloExchange(tag, bounds_proc%begg, bounds_proc%endg, &
+         bounds_proc%endg_all, data_g)
+
+    ! unpack ghost columns
+    do c = bounds_proc%endc + 1, bounds_proc%endc_all
+       if (col_pp%itype(c) == istsoil) then
+          g = col_pp%gridcell(c)
+          data(c, :) = data_g(g, :)
+       end if
+    end do
+
+    deallocate(data_g)
+    deallocate(has_col)
+
+  end subroutine NatVegColumnRealDataHaloExchange
 
 #else
 
