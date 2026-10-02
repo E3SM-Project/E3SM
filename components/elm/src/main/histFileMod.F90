@@ -1203,8 +1203,9 @@ contains
              nacs(k,1) = 1
           end do
        case ('A') ! Time average
-          ! create mappings for array slice pointers (which go from 1 to size(field) rather than beg1d to end1d)
-          if ( end1d .eq. ubound(field,1) ) then
+          ! create mappings for array slice pointers (which go from 1 to size(field) rather than beg1d to end1d).
+          ! Test the lower bound: arrays that include ghost cells extend beyond end1d.
+          if ( beg1d .eq. lbound(field,1) ) then
              k_offset = 0
           else
              k_offset = 1 - beg1d 
@@ -1600,8 +1601,9 @@ contains
     character(len=*), parameter :: subname = 'hist_set_snow_field_2d'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(field_out, 1) == end1d), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(field_in , 1) == end1d), errMsg(__FILE__, __LINE__))
+    ! Fields may include ghost cells beyond end1d; only beg1d:end1d is processed
+    SHR_ASSERT_ALL((ubound(field_out, 1) >= end1d), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(field_in , 1) >= end1d), errMsg(__FILE__, __LINE__))
     SHR_ASSERT_ALL((ubound(field_out, 2) == ubound(field_in, 2)), errMsg(__FILE__, __LINE__))
 
     associate(&
