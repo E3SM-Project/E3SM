@@ -345,11 +345,17 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   // Create vcoords fields
   auto layout_mid = dyn_grid->get_vertical_layout(LEV);
   auto layout_int = dyn_grid->get_vertical_layout(ILEV);
+  auto mbar = (ekat::units::bar/1000).rename("mb");
 
   auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,ekat::units::none);
   auto hybi = dyn_grid->create_geometry_data("hybi",layout_int,ekat::units::none);
   auto hyam = dyn_grid->create_geometry_data("hyam",layout_mid,ekat::units::none);
   auto hybm = dyn_grid->create_geometry_data("hybm",layout_mid,ekat::units::none);
+  auto lev  = dyn_grid->create_geometry_data("lev", layout_mid,mbar);
+  auto ilev = dyn_grid->create_geometry_data("ilev",layout_int,mbar);
+  auto P0   = dyn_grid->create_geometry_data("P0", FieldLayout::scalar(), ekat::units::Pa);
+  const auto p0_val = physics::Constants<Real>::P0.value;
+  P0.deep_copy(p0_val);
 
   read_fields(filename,{hyai, hybi, hyam, hybm});
 
@@ -361,6 +367,30 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
                          hybi.get_internal_view_data<Real,Host>(),
                          hyam.get_internal_view_data<Real,Host>(),
                          hybm.get_internal_view_data<Real,Host>());
+
+  using stratts_t = std::map<std::string,std::string>;
+  auto& lev_io_atts  = lev.get_header().get_extra_data<stratts_t>("io: string attributes");
+  auto& ilev_io_atts = ilev.get_header().get_extra_data<stratts_t>("io: string attributes");
+  lev_io_atts["formula_terms"] = "a: hyam b: hybm p0: P0 ps: ps" ;
+  ilev_io_atts["formula_terms"] = "a: hyai b: hybi p0: P0 ps: ps" ;
+  lev_io_atts["positive"] = "down";
+  ilev_io_atts["positive"] = "down";
+
+  // Build lev from hyam and hybm
+  auto hyam_v = hyam.get_view<const Real*,Host>();
+  auto hybm_v = hybm.get_view<const Real*,Host>();
+  auto hyai_v = hyai.get_view<const Real*,Host>();
+  auto hybi_v = hybi.get_view<const Real*,Host>();
+  auto lev_v  = lev.get_view<Real*,Host>();
+  auto ilev_v = ilev.get_view<Real*,Host>();
+  auto num_v_levs = dyn_grid->get_num_vertical_levels();
+  for (int ii=0;ii<num_v_levs;ii++) {
+    lev_v(ii)  = 0.01*p0_val*(hyam_v(ii)+hybm_v(ii));
+    ilev_v(ii) = 0.01*p0_val*(hyai_v(ii)+hybi_v(ii));
+  }
+  ilev_v(num_v_levs) = 0.01*p0_val*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
+  lev.sync_to_dev();
+  ilev.sync_to_dev();
 }
 
 void HommeGridsManager::
