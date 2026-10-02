@@ -22,16 +22,8 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
   const int nlevs = l_in.dim(l_in.rank() - 1);
 
-  // To avoid duplicating code for the 1d and 2d weight cases,
-  // we use a view to access the weight ahead of time
-  Field::view_dev_t<const ST*> w1d;
-  Field::view_dev_t<const ST**> w2d;
-  auto w_is_1d = l_w.rank() == 1;
-  if(w_is_1d) {
-    w1d = weight.get_view<const ST *>();
-  } else {
-    w2d = weight.get_view<const ST **>();
-  }
+  // A broadcasted version of weight, with same layout as f_in
+  auto bweight = weight.broadcast(f_in);
 
   switch(l_in.rank()) {
     case 1: {
@@ -39,6 +31,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
       auto mask = is_masked ? f_in.get_valid_mask().get_view<const int *>() : mask_t {};
       auto v_in  = f_in.get_view<const ST *>();
+      auto w_in  = bweight.get_strided_view<const ST *>();
       auto v_out = f_out.get_view<ST>();
 
       auto policy = Kokkos::RangePolicy<Field::device_t::execution_space>(0,nlevs);
@@ -46,7 +39,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
       auto reducer = Kokkos::Sum<ST>(n);
       auto accum = KOKKOS_LAMBDA(const int i, ST &acc) {
         if (not is_masked or mask(i))
-          acc += w1d(i) * v_in(i);
+          acc += w_in(i) * v_in(i);
       };
       Kokkos::parallel_reduce(f_out.name(), policy, accum, reducer);
       Kokkos::deep_copy(v_out, n);
@@ -56,6 +49,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
       auto mask  = is_masked ? f_in.get_valid_mask().get_view<const int **>() : mask_t{};
       auto v_in  = f_in.get_view<const ST **>();
+      auto w_in  = bweight.get_strided_view<const ST **>();
       auto v_out = f_out.get_view<ST *>();
       auto d0    = l_in.dim(0);
 
@@ -65,8 +59,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
         ST n = 0;
         auto inner = [&](int j, ST &acc) {
           if (not is_masked or mask(i,j)) {
-            auto w = w_is_1d ? w1d(j) : w2d(i, j);
-            acc += w * v_in(i, j);
+            acc += w_in(i, j) * v_in(i, j);
           }
         };
         auto tvr = Kokkos::TeamVectorRange(tm, nlevs);
@@ -81,6 +74,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
 
       auto mask  = is_masked ? f_in.get_valid_mask().get_view<const int ***>() : mask_t{};
       auto v_in  = f_in.get_view<const ST ***>();
+      auto w_in  = bweight.get_strided_view<const ST ***>();
       auto v_out = f_out.get_view<ST **>();
       auto d0    = l_in.dim(0);
       auto d1    = l_in.dim(1);
@@ -93,8 +87,7 @@ void vert_contraction(const Field &f_out, const Field &f_in, const Field &weight
         ST n = 0;
         auto inner = [&](int k, ST &acc) {
           if (not is_masked or mask(i,j,k)) {
-            auto w = w_is_1d ? w1d(k) : w2d(i, k);
-            acc += w * v_in(i, j, k);
+            acc += w_in(i, j, k) * v_in(i, j, k);
           }
         };
         auto tvr = Kokkos::TeamVectorRange(tm, nlevs);

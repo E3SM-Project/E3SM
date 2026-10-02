@@ -294,6 +294,23 @@ TEST_CASE("create_diag")
     REQUIRE_THROWS (create_diagnostic("T_mid.isel(lev='model_top')",grid));
   }
 
+  SECTION ("dexpr_broadcast") {
+    auto d1 = create_diagnostic("T_mid.broadcast(qv)",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldBroadcast>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("field_name")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("target_name")=="qv");
+
+    // Both the receiver and the target can be expressions
+    auto d2 = create_diagnostic("(qc+qv).broadcast(T_mid*2)",grid);
+    REQUIRE (d2->get_params().get<std::string>("field_name")=="(qc+qv)");
+    REQUIRE (d2->get_params().get<std::string>("target_name")=="(T_mid*2)");
+
+    // Exactly one positional arg, no keywords
+    REQUIRE_THROWS (create_diagnostic("T_mid.broadcast()",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.broadcast(qv,qc)",grid));
+    REQUIRE_THROWS (create_diagnostic("T_mid.broadcast(like=qv)",grid));
+  }
+
   SECTION ("dexpr_interp") {
     auto d1 = create_diagnostic("T_mid.interp(p_mid=500,units='hPa')",grid);
     REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(d1)!=nullptr);

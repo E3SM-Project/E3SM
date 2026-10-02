@@ -141,6 +141,8 @@ TEST_CASE ("io_with_expressions")
         "half := qvT/2",
         // A method call
         "col_qv := qv.mean('lev')",
+        // A method call on a method call, bringing the column mean back to a 3d layout
+        "col_qv_3d := qv.mean('lev').broadcast(qv)",
         // Regression: expands to T_mid_minus_T_mid_prev_over_dt, so the diag
         // names its field after the expansion. Without an explicit output
         // name the stream throws during setup.
@@ -187,6 +189,7 @@ TEST_CASE ("io_with_expressions")
   REQUIRE (scorpio::has_var(filename,"shifted"));
   REQUIRE (scorpio::has_var(filename,"half"));
   REQUIRE (scorpio::has_var(filename,"col_qv"));
+  REQUIRE (scorpio::has_var(filename,"col_qv_3d"));
   // The one that used to throw during setup
   REQUIRE (scorpio::has_var(filename,"T_mid_atm_backtend"));
   // An 'aliases' entry is an intermediate: resolved, used, but not written
@@ -205,8 +208,9 @@ TEST_CASE ("io_with_expressions")
   Field shifted (FieldIdentifier("shifted",layout3d, kg/kg*K, gname));
   Field half    (FieldIdentifier("half",   layout3d, kg/kg*K, gname));
   Field col_qv  (FieldIdentifier("col_qv", layout2d, kg/kg,   gname));
+  Field col_qv_3d (FieldIdentifier("col_qv_3d", layout3d, kg/kg, gname));
   Field backtend(FieldIdentifier("T_mid_atm_backtend",layout3d, K/s, gname));
-  for (auto* f : {&prod,&shifted,&half,&col_qv,&backtend}) {
+  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend}) {
     f->allocate_view();
     f->get_header().get_tracking().update_time_stamp(t0);
   }
@@ -214,7 +218,7 @@ TEST_CASE ("io_with_expressions")
   FieldReader reader;
   reader.set_file_specs(filename);
   reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-  reader.set_fields({prod,shifted,half,col_qv,backtend});
+  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend});
 
   const int nlocal = grid->get_num_local_dofs();
   for (int n=1; n<=nsteps; ++n) {
@@ -223,11 +227,13 @@ TEST_CASE ("io_with_expressions")
     shifted.sync_to_host();
     half.sync_to_host();
     col_qv.sync_to_host();
+    col_qv_3d.sync_to_host();
     backtend.sync_to_host();
     auto prod_h     = prod.get_view<const Real**,Host>();
     auto shifted_h  = shifted.get_view<const Real**,Host>();
     auto half_h     = half.get_view<const Real**,Host>();
     auto col_qv_h   = col_qv.get_view<const Real*,Host>();
+    auto col_qv_3d_h = col_qv_3d.get_view<const Real**,Host>();
     auto backtend_h = backtend.get_view<const Real**,Host>();
 
     for (int i=0; i<nlocal; ++i) {
@@ -245,6 +251,9 @@ TEST_CASE ("io_with_expressions")
         REQUIRE (backtend_h(i,k)==1);
       }
       REQUIRE (col_qv_h(i)==qv_col_sum/nlevs);
+      for (int k=0; k<nlevs; ++k) {
+        REQUIRE (col_qv_3d_h(i,k)==col_qv_h(i));
+      }
     }
   }
   reader.clean_up();

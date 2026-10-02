@@ -89,6 +89,7 @@ is an honest analogue.
 | `X.shift(time=1)` | `X_prev` |
 | `X.over_dt()` | `X_over_dt` |
 | `X.tend()` | `X_atm_backtend` |
+| `X.broadcast(Y)` | (none) |
 
 Notes:
 
@@ -106,6 +107,12 @@ Notes:
   of history is kept.
 - `mean('col')` is always area weighted, so `weights` does not apply to it.
   `weights` for `'lev'` is `'dp'` or `'dz'`.
+- `broadcast` repeats `X` along the dimensions of `Y` that `X` lacks, so that
+  `X` can be combined with `Y`. E.g., `dp.broadcast(horiz_winds)` would produce
+  a version of `dp` (call it `dp_bcast`) with layout `(ncol,2,lev)`, where
+  `dp_bcast(i,:,k)==dp(i,k)`. The layout of `X` must be an ordered subset of
+  that of `Y`. Notice that `Y` is only used for its layout, its values are
+  never read.
 - `where` takes a single comparison. `and`/`or` are not supported; chain
   `where(..)` calls instead.
 - **`mask` and `lev` are placeholders, not fields.** Neither exists in the field
