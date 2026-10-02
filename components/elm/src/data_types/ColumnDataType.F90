@@ -667,10 +667,6 @@ module ColumnDataType
     real(r8), pointer :: hrv_xsmrpool_to_atm                   (:)     => null() ! column excess MR pool harvest mortality (gC/m2/s) (p2c)
     real(r8), pointer :: plant_to_litter_cflux		             (:)     => null() ! for the purpose of mass balance check
     real(r8), pointer :: plant_to_cwd_cflux		                 (:)     => null() ! for the purpose of mass balance check
-    real(r8), pointer :: totprodc_in                             (:)     => null() ! for the purpose of mass balance check: sum of all fluxes into product pools (gC/m2/s)
-    real(r8), pointer :: totprodc_out                            (:)     => null() ! for the purpose of mass balance check: sum of all fluxes out of product pools (gC/m2/s)
-    real(r8), pointer :: totpftc_in                              (:)     => null() ! for the purpose of mass balance check: sum of all fluxes into vegetation pools (gC/m2/s)
-    real(r8), pointer :: totpftc_out                             (:)     => null() ! for the purpose of mass balance check: sum of all fluxes out of vegetation pools (gC/m2/s)
     ! Temporary and annual sums
     real(r8), pointer :: annsum_npp                            (:)     => null() ! col annual sum of NPP, averaged from pft-level (gC/m2/yr)
     ! C4MIP output variable
@@ -6278,10 +6274,6 @@ contains
     allocate(this%hrv_xsmrpool_to_atm               (begc:endc))                  ; this%hrv_xsmrpool_to_atm          (:)   = spval
     allocate(this%plant_to_litter_cflux             (begc:endc))                  ; this%plant_to_litter_cflux        (:)   = spval
     allocate(this%plant_to_cwd_cflux	             (begc:endc))                  ; this%plant_to_cwd_cflux		       (:)    = spval
-    allocate(this%totprodc_in                       (begc:endc))                  ; this%totprodc_in                  (:)   = spval
-    allocate(this%totprodc_out                      (begc:endc))                  ; this%totprodc_out                 (:)   = spval
-    allocate(this%totpftc_in                        (begc:endc))                  ; this%totpftc_in                   (:)   = spval
-    allocate(this%totpftc_out                       (begc:endc))                  ; this%totpftc_out                  (:)   = spval
     allocate(this%annsum_npp                        (begc:endc))                  ; this%annsum_npp                   (:)   = spval
     ! C4MIP output variable
      allocate(this%plant_c_to_cwdc                  (begc:endc))                  ; this%plant_c_to_cwdc              (:)  = spval
@@ -7787,48 +7779,6 @@ contains
         
         end do
 
-        ! total product-pool flux summary (for mass balance check)
-        ! gains: crop harvest to 1-yr pool, wood harvest to 10/100-yr pools,
-        !        dynamic landcover product gains
-        this%totprodc_in(c) = &
-             this%hrv_cropc_to_prod1c(c)            + &
-             this%hrv_deadstemc_to_prod10c(c)       + &
-             this%hrv_deadstemc_to_prod100c(c)      + &
-             this%dwt_prod10c_gain(c)               + &
-             this%dwt_prod100c_gain(c)              + &
-             this%dwt_crop_productc_gain(c)
-
-        ! losses: decomposition losses from the product pools
-        this%totprodc_out(c) = &
-             this%prod1c_loss(c)                    + &
-             this%prod10c_loss(c)                   + &
-             this%prod100c_loss(c)
-
-        ! total vegetation (totpftc) flux summary (for mass balance check)
-        ! gains: photosynthesis and crop seed input at planting
-        ! (note: dwt_seedc_to_leaf seeding from the gridcell seedc pool during
-        !  dynamic landcover change exists only at the veg/gridcell level and
-        !  is not captured here)
-        this%totpftc_in(c) = &
-             this%gpp(c)                            + &
-             this%crop_seedc_to_leaf(c)
-
-        ! losses: autotrophic respiration (incl crop xsmrpool_to_atm and
-        ! xsmrpool_turnover via the veg ar summary), fire combustion,
-        ! plant-to-litter and plant-to-CWD transfers, harvest to product
-        ! pools, land-use harvest xsmrpool to atmosphere, and landcover
-        ! conversion flux to atmosphere
-        this%totpftc_out(c) = &
-             this%ar(c)                             + &
-             this%fire_closs(c)                     + &
-             this%plant_to_litter_cflux(c)          + &
-             this%plant_to_cwd_cflux(c)             + &
-             this%hrv_deadstemc_to_prod10c(c)       + &
-             this%hrv_deadstemc_to_prod100c(c)      + &
-             this%hrv_cropc_to_prod1c(c)            + &
-             this%hrv_xsmrpool_to_atm(c)            + &
-             this%dwt_conv_cflux(c)
-
     end do
     end associate
 
@@ -8050,10 +8000,6 @@ contains
        this%vegfire(i)               = value_column
        this%wood_harvestc(i)         = value_column
        this%hrv_xsmrpool_to_atm(i)   = value_column
-       this%totprodc_in(i)           = value_column
-       this%totprodc_out(i)          = value_column
-       this%totpftc_in(i)            = value_column
-       this%totpftc_out(i)           = value_column
     end do
   
     if(use_crop) then 
