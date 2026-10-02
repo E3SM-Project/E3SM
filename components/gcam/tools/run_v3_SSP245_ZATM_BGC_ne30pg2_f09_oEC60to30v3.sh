@@ -291,7 +291,7 @@ fetch_code() {
 
     # Bring in all submodule components
     # to reduce clone size, exclude submodule history by adding --depth=1
-    git submodule update --init --recursive
+    git submodule update --init --recursive --depth=1
 
     # Check out submodule branches if necessary
     #cd components/gcam/src
