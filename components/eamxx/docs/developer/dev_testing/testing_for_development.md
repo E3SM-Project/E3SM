@@ -224,10 +224,13 @@ Defining the test behavior and pass/fail criteria requires 3 files:
       filename: ${EAMXX_DATA_DIR}/init/${inject_ash_IC_file}
       topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
 
-      # other variables to pass as input
-      num_ABC : 42.0
-      num_XYZ : 1.618
-      <input_variable> : <value>
+      # other variables to initialize to a constant, regardless of the IC file
+      # (vector fields: "name:v1;v2;..."). Use fallback_constant_fields to only
+      # set them if they are not in the IC file.
+      force_constant_fields:
+        - "num_ABC:42.0"
+        - "num_XYZ:1.618"
+        - "<input_variable>:<value>"
     # The parameters for I/O control
     scorpio:
       output_yaml_files: ["output.yaml"]

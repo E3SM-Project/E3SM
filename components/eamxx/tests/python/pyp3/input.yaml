@@ -26,8 +26,9 @@ grids_manager:
 initial_conditions:
   # The name of the file containing the initial conditions for this test.
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
+  force_constant_fields:
+    - "precip_liq_surf_mass:0.0"
+    - "precip_ice_surf_mass:0.0"
 
 # The parameters for I/O control
 # Note: only cxx executable uses this, so hard-code the name of the output yaml file

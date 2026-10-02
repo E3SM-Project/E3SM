@@ -359,6 +359,49 @@ Any atmosphere process that was previously in the list but is no longer in it
 will be removed from the generated `namelist_defaults.xml`
 (and `eamxx_input.yaml`) files, along with all their nested parameters.
 
+### Initializing fields to a constant value
+
+Fields can be initialized to a constant value via two arrays in the `initial_conditions` list.
+Each entry has the form `field_name:value`. For vector fields, one can either
+provide a single value (used for all components), or a `;`-separated list with one
+value per component.
+
+- `initial_conditions::force_constant_fields`: the field is **always** set to the constant,
+  even if it is present in the initial condition (IC) file.
+- `initial_conditions::fallback_constant_fields`: the field is set to the constant **only if it
+  is not in the IC file**. If it is, the field is read from the file. This is how the defaults
+  initialize fields that are not stored in the standard IC files, while still allowing a user
+  to provide them in a custom IC file.
+
+``` {.shell .copy}
+./atmchange initial_conditions::fallback_constant_fields+=my_field:1.5
+./atmchange initial_conditions::force_constant_fields+="my_vector_field:1.5;2.5"
+./atmchange initial_conditions::fallback_constant_fields-=tke:0.0
+```
+
+Since these are entries of an array, they can be both added and removed
+(which is not possible for individual XML parameters). Entries that do not match
+any field in need of initialization are ignored. A field can be in both arrays, in which case
+the forced constant wins: this allows to force a field for a single run, without having to remove
+it from the fallback list. A field in `copy_fields` cannot be in either constant array.
+
+The order of operations is: fields in `force_constant_fields` are set first; then
+fields in `fallback_constant_fields` that are not in the IC file are set; finally,
+all remaining fields are read from the IC file.
+
+To help catch a forgotten entry or a custom IC file that is not being used, EAMxx logs
+one line (at `info` level) for each field in `force_constant_fields` (whose IC file value, if any,
+is ignored), and for each field in `fallback_constant_fields` that is found in the IC file
+(so its fallback constant is not used).
+
+Similarly, `initial_conditions::copy_fields` initializes fields as a copy of other
+fields, with entries of the form `tgt_field_name:src_field_name`.
+
+!!! note
+    Fields can _only_ be initialized through these arrays: setting a field with an
+    individual entry (e.g., `initial_conditions::qr=0.0`) is not supported, and
+    EAMxx will error out if the `initial_conditions` list contains unrecognized parameters.
+
 ## Model Output
 
 EAMxx allows the user to configure the desired model output via
