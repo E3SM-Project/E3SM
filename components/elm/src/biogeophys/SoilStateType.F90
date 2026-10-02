@@ -158,7 +158,7 @@ contains
     allocate(this%hksat_col            (begc_all:endc_all,nlevgrnd))    ; this%hksat_col            (:,:) = spval
     allocate(this%hksat_min_col        (begc:endc,nlevgrnd))            ; this%hksat_min_col        (:,:) = spval
     allocate(this%hk_l_col             (begc:endc,nlevgrnd))            ; this%hk_l_col             (:,:) = spval
-    allocate(this%smp_l_col            (begc:endc,nlevgrnd))            ; this%smp_l_col            (:,:) = spval
+    allocate(this%smp_l_col            (begc_all:endc_all,nlevgrnd))    ; this%smp_l_col            (:,:) = spval
     allocate(this%smpmin_col           (begc:endc))                     ; this%smpmin_col           (:)   = spval
 
     allocate(this%bsw_col              (begc_all:endc_all,nlevgrnd))    ; this%bsw_col              (:,:) = spval

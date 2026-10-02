@@ -116,16 +116,18 @@ contains
     ! !LOCAL VARIABLES:
     integer :: begp, endp
     integer :: begc, endc
+    integer :: begc_all, endc_all
     integer :: begg, endg
     !------------------------------------------------------------------------
 
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+    begc_all = bounds%begc_all; endc_all = bounds%endc_all
 
 
     allocate(this%frost_table_col   (begc:endc))                 ; this%frost_table_col   (:)     = spval
-    allocate(this%zwt_col           (begc:endc))                 ; this%zwt_col           (:)     = spval
+    allocate(this%zwt_col           (begc_all:endc_all))         ; this%zwt_col           (:)     = spval
     allocate(this%qflx_bot_col      (begc:endc))                 ; this%qflx_bot_col      (:)     = spval
     allocate(this%zwt_perched_col   (begc:endc))                 ; this%zwt_perched_col   (:)     = spval
     allocate(this%zwts_col          (begc:endc))                 ; this%zwts_col          (:)     = spval
@@ -134,8 +136,8 @@ contains
     allocate(this%beg_wa_grc        (begg:endg))                 ; this%beg_wa_grc        (:)     = spval
     allocate(this%end_wa_grc        (begg:endg))                 ; this%end_wa_grc        (:)     = spval
     allocate(this%qcharge_col       (begc:endc))                 ; this%qcharge_col       (:)     = spval
-    allocate(this%fracice_col       (begc:endc,nlevgrnd))        ; this%fracice_col       (:,:)   = spval
-    allocate(this%icefrac_col       (begc:endc,nlevgrnd))        ; this%icefrac_col       (:,:)   = spval
+    allocate(this%fracice_col       (begc_all:endc_all,nlevgrnd)); this%fracice_col       (:,:)   = spval
+    allocate(this%icefrac_col       (begc_all:endc_all,nlevgrnd)); this%icefrac_col       (:,:)   = spval
     allocate(this%fcov_col          (begc:endc))                 ; this%fcov_col          (:)     = spval
     allocate(this%fsat_col          (begc:endc))                 ; this%fsat_col          (:)     = spval
     allocate(this%h2osfc_thresh_col (begc:endc))                 ; this%h2osfc_thresh_col (:)     = spval
