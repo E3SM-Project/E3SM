@@ -119,12 +119,12 @@ machines:
       - "eval $(${project.root_dir}/../../cime/CIME/Tools/get_case_env -c SMS.ne4pg2_ne4pg2.F2010-SCREAMv1.compy_intel)"
     batch: "srun --time 02:00:00 --nodes=1 -p short --exclusive --account e3sm"
 
-  ghci-snl-gnu:
-    baselines_dir: "/projects/e3sm/baselines/scream/ghci-snl-gnu"
+  ghci-gnu:
+    baselines_dir: "/projects/e3sm/baselines/scream/ghci-gnu"
     env_setup: ["export GATOR_INITIAL_MB=4000MB"]
 
-  ghci-snl-cuda:
-    baselines_dir: "/projects/e3sm/baselines/scream/ghci-snl-cuda"
+  ghci-cuda:
+    baselines_dir: "/projects/e3sm/baselines/scream/ghci-cuda"
     gpu_arch: "cuda"
     num_run_res: "$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)"
 

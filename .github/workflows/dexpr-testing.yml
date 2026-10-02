@@ -2,7 +2,7 @@ name: dexpr
 
 # dexpr is plain C++ with no Kokkos, MPI, netCDF or EKAT dependency, so unlike
 # the rest of E3SM it builds and tests on a stock GitHub runner in about a
-# minute. That is why this workflow does not need the self-hosted ghci-snl
+# minute. That is why this workflow does not need the self-hosted e3sm
 # machines the eamxx workflows run on, and checks out no submodules.
 
 on:
