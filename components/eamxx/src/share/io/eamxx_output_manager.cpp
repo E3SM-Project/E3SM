@@ -868,6 +868,10 @@ setup_file (      IOFileSpecs& filespecs,
     // we can immediately check whether we should output it or not.
     // Note: m_grid_name_to_geo_data is reset to empty after this loop, so the loop runs ONCE,
     //       which means geo streams are lazy-inited on the first setup_file call
+
+    // We keep track of what was added, since diff grids may STILL have the same geo data,
+    // and we can't add it twice (e.g., dyn and phys grids have same vertical coord geo data)
+    std::set<std::string> added_fids;
     for (auto& kv : m_grid_name_to_geo_data) {
       auto& geo_data = kv.second;
       auto& fields = geo_data.fields;
@@ -891,6 +895,23 @@ setup_file (      IOFileSpecs& filespecs,
             it = fields.erase(it);
             continue;
           }
+        }
+
+        auto fid = it->get_header().get_identifier().clone();
+        auto fl = fid.get_layout().clone();
+        for (int i=0; i<fl.rank(); ++i) {
+          auto t = fl.tags()[i];
+          auto dimname = fl.names()[i];
+          if (geo_data.grid->has_special_tag_name(t))
+            dimname = geo_data.grid->get_special_tag_name(t);
+
+          dimname += (dimname=="dim" or dimname=="bin") ? std::to_string(fl.dims()[i]) : "";
+          fl.rename_dim(i,dimname);
+        }
+        fid.reset_layout(fl);
+        if (added_fids.count(fid.get_id_string())>0) {
+          it = fields.erase(it);
+          continue;
         }
         ++it;
       }
