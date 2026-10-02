@@ -880,6 +880,18 @@ setup_file (      IOFileSpecs& filespecs,
             continue;
           }
         }
+        if (it->get_header().has_extra_data("io_output_if_any_dim_exists")) {
+          // If NONE of the required dim is in the output file, this field is not needed
+          auto req_dims = it->get_header().get_extra_data<std::vector<std::string>>("io_output_if_any_dim_exists");
+          bool any_there = false;
+          for (auto dim : req_dims)
+            any_there |= scorpio::has_dim(filename, dim);
+
+          if (not any_there) {
+            it = fields.erase(it);
+            continue;
+          }
+        }
         ++it;
       }
 

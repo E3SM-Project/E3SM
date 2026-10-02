@@ -310,6 +310,15 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance)
     ilev_v(num_v_levs) = 0.01*p0_val*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
     lev.sync_to_dev();
     ilev.sync_to_dev();
+
+    auto lev_str  =  lev.get_header().get_identifier().get_layout().names()[0];
+    auto ilev_str = ilev.get_header().get_identifier().get_layout().names()[0];
+    for (auto f : {hyam,hybm,lev})
+      f.get_header().set_extra_data("io_output_if_dim_exists",lev_str);
+    for (auto f : {hyai,hybi,ilev})
+      f.get_header().set_extra_data("io_output_if_dim_exists",ilev_str);
+    using strvec_t = std::vector<std::string>;
+    P0.get_header().set_extra_data("io_output_if_any_dim_exists",strvec_t{lev_str,ilev_str});
   }
 
   if (is_planar_geometry_f90()) {
@@ -391,6 +400,15 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   ilev_v(num_v_levs) = 0.01*p0_val*(hyai_v(num_v_levs)+hybi_v(num_v_levs));
   lev.sync_to_dev();
   ilev.sync_to_dev();
+
+  auto lev_str  =  lev.get_header().get_identifier().get_layout().names()[0];
+  auto ilev_str = ilev.get_header().get_identifier().get_layout().names()[0];
+  for (auto f : {hyam,hybm,lev})
+    f.get_header().set_extra_data("io_output_if_dim_exists",lev_str);
+  for (auto f : {hyai,hybi,ilev})
+    f.get_header().set_extra_data("io_output_if_dim_exists",ilev_str);
+  using strvec_t = std::vector<std::string>;
+  P0.get_header().set_extra_data("io_output_if_any_dim_exists",strvec_t{lev_str,ilev_str});
 }
 
 void HommeGridsManager::
