@@ -89,6 +89,7 @@ module ColumnDataType
     ! heat content variables (diagnostic)
     real(r8), pointer :: hc_soi        (:)   => null() ! soil heat content (MJ/m2)
     real(r8), pointer :: hc_soisno     (:)   => null() ! soil plus snow heat content (MJ/m2)
+    real(r8), pointer :: hc_lake       (:)   => null() ! lake-water heat content (MJ/m2; zero for non-lake columns)
     ! other quantities related to energy state
     real(r8), pointer :: emg           (:)   => null() ! ground emissivity (unitless)
     real(r8), pointer :: fact          (:,:) => null() ! factors used in computing tridiagonal matrix
@@ -1139,6 +1140,7 @@ contains
     allocate(this%thv              (begc:endc))                     ; this%thv                (:)   = spval
     allocate(this%hc_soi           (begc:endc))                     ; this%hc_soi             (:)   = spval
     allocate(this%hc_soisno        (begc:endc))                     ; this%hc_soisno          (:)   = spval
+    allocate(this%hc_lake          (begc:endc))                     ; this%hc_lake            (:)   = spval
     allocate(this%emg              (begc:endc))                     ; this%emg                (:)   = spval
     allocate(this%fact             (begc:endc, -nlevsno+1:nlevgrnd)); this%fact               (:,:) = spval
     allocate(this%c_h2osfc         (begc:endc))                     ; this%c_h2osfc           (:)   = spval
