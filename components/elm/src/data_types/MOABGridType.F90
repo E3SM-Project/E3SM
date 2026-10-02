@@ -14,6 +14,7 @@ module MOABGridType
   use pio          , only : pio_openfile, pio_closefile, pio_inq_varid, pio_inq_vartype
   use pio          , only : pio_inq_dimid, pio_inq_dimlen, pio_initdecomp, pio_freedecomp
   use pio          , only : pio_read_darray
+  use pio          , only : pio_seterrorhandling, PIO_BCAST_ERROR, PIO_INTERNAL_ERROR
 
   use iMOAB        , only : iMOAB_LoadMesh, iMOAB_WriteMesh, iMOAB_RegisterApplication, &
        iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_SynchronizeTags, &
@@ -64,6 +65,10 @@ module MOABGridType
 
      real(r8), pointer :: lat(:)                 ! [num_ghosted] latitude of the cell
      real(r8), pointer :: lon(:)                 ! [num_ghosted] longitude of the cell
+
+     real(r8), pointer :: area(:)                ! [num_ghosted] horizontal area of the cell computed from its vertices [m^2]
+     logical           :: has_elevation = .false.! true if 'elevation' was read from the domain file
+     real(r8), pointer :: elevation(:)           ! [num_ghosted] cell elevation [m] (0 if not in the domain file)
 
      integer           :: nv                     ! length of 'nv' dimension in the mesh
      real(r8), pointer :: latv(:,:)              ! [num_ghosted, nv] latitude of cell vertices
@@ -430,6 +435,7 @@ contains
     integer           :: ierr
     integer           :: ni, nj, dimid, count
     real(r8), pointer :: data2d(:,:)
+    real(r8), pointer :: area_domain(:)
     integer           :: v1, v2
     real(r8)          :: dist
     real(r8), parameter :: dist_threshold = 1.e-10
@@ -520,6 +526,34 @@ contains
 
     ! Read the data using the previously created I/O decomposition
     call pio_read_darray(ncid, varid, iodescNCells, moab_gcell%lat, ierr)
+
+    ! Read the cell elevation, which is optional (needed for lateral flow)
+    allocate(moab_gcell%elevation(moab_gcell%num_ghosted))
+    moab_gcell%elevation(:) = 0._r8
+
+    varname = 'elevation'
+    call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    ierr = pio_inq_varid(ncid, trim(varname), varid)
+    call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+    if (ierr == pio_noerr) then
+       moab_gcell%has_elevation = .true.
+       call pio_read_darray(ncid, varid, iodescNCells, moab_gcell%elevation, ierr)
+    end if
+    if (masterproc) then
+       write(iulog,*) 'read_grid_cell_lat_lon(): elevation found in domain file = ', moab_gcell%has_elevation
+    end if
+
+    ! Read the domain-file area [radian^2], used to sanity-check the vertex-based area
+    allocate(area_domain(moab_gcell%num_ghosted))
+    area_domain(:) = -1._r8
+
+    varname = 'area'
+    call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    ierr = pio_inq_varid(ncid, trim(varname), varid)
+    call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+    if (ierr == pio_noerr) then
+       call pio_read_darray(ncid, varid, iodescNCells, area_domain, ierr)
+    end if
 
     ! Free up memory
     call pio_freedecomp(pio_subsystem, iodescNCells)
@@ -613,7 +647,82 @@ contains
        end do
     end do
 
+    call compute_grid_cell_area(area_domain)
+    deallocate(area_domain)
+
   end subroutine read_grid_cell_lat_lon
+
+  !------------------------------------------------------------------------------
+  subroutine compute_grid_cell_area(area_domain)
+    !
+    ! !DESCRIPTION:
+    ! Computes the horizontal area [m^2] of each cell from its (non-duplicate)
+    ! vertices, using the shoelace formula on a local tangent plane centred at
+    ! the cell centre. The error relative to the spherical area is of order
+    ! (cell size / Earth radius)^2.
+    !
+    ! The vertex-based area is compared with the domain-file area for owned
+    ! cells, and a warning is written if they differ by more than 1e-3.
+    !
+    use shr_const_mod , only : SHR_CONST_PI, SHR_CONST_REARTH
+    !
+    implicit none
+    !
+    real(r8), intent(in) :: area_domain(:)   ! [num_ghosted] domain-file area [radian^2]; < 0 if absent
+    !
+    integer             :: g, v, nvert
+    real(r8)            :: deg2rad, coslat, dlon, sum2
+    real(r8)            :: x(moab_gcell%nv), y(moab_gcell%nv)
+    real(r8)            :: rel_diff, max_rel_diff_loc, max_rel_diff
+    integer             :: ierr
+    real(r8), parameter :: rel_diff_threshold = 1.e-3_r8
+
+    deg2rad = SHR_CONST_PI / 180._r8
+
+    allocate(moab_gcell%area(moab_gcell%num_ghosted))
+
+    max_rel_diff_loc = 0._r8
+
+    do g = 1, moab_gcell%num_ghosted
+       coslat = cos(moab_gcell%lat(g) * deg2rad)
+
+       nvert = 0
+       do v = 1, moab_gcell%nv
+          if (moab_gcell%is_vert_duplicate(g, v)) cycle
+          nvert = nvert + 1
+
+          dlon = moab_gcell%lonv(g, v) - moab_gcell%lon(g)
+          if (dlon >  180._r8) dlon = dlon - 360._r8
+          if (dlon < -180._r8) dlon = dlon + 360._r8
+
+          x(nvert) = SHR_CONST_REARTH * coslat * dlon * deg2rad
+          y(nvert) = SHR_CONST_REARTH * (moab_gcell%latv(g, v) - moab_gcell%lat(g)) * deg2rad
+       end do
+
+       sum2 = 0._r8
+       do v = 1, nvert
+          sum2 = sum2 + x(v) * y(mod(v, nvert) + 1) - x(mod(v, nvert) + 1) * y(v)
+       end do
+       moab_gcell%area(g) = 0.5_r8 * abs(sum2)
+
+       if (moab_gcell%is_owned(g) .and. area_domain(g) > 0._r8) then
+          rel_diff = abs(moab_gcell%area(g) - area_domain(g) * SHR_CONST_REARTH**2) / moab_gcell%area(g)
+          max_rel_diff_loc = max(max_rel_diff_loc, rel_diff)
+       end if
+    end do
+
+    call MPI_Allreduce(max_rel_diff_loc, max_rel_diff, 1, MPI_REAL8, MPI_MAX, mpicom, ierr)
+
+    if (masterproc) then
+       write(iulog,*) 'compute_grid_cell_area(): max relative difference between vertex-based ', &
+            'and domain-file cell area = ', max_rel_diff
+       if (max_rel_diff > rel_diff_threshold) then
+          write(iulog,*) 'compute_grid_cell_area(): WARNING: domain-file area is inconsistent ', &
+               'with the cell vertices; the vertex-based area is used for lateral flow.'
+       end if
+    end if
+
+  end subroutine compute_grid_cell_area
 
   !------------------------------------------------------------------------------
   subroutine set_internal_edge_lat_lon()
