@@ -162,7 +162,7 @@ KOKKOS_FUNCTION
 void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
   // Inputs
   const MemberType& team,
-  const Workspace& workspace,
+  const Workspace&, // unused in serial version
   const GwCommonInit& init,
   const Int& pver,
   const Int& pgwv,
@@ -178,11 +178,6 @@ void Functions<S,D>::gwd_compute_stress_profiles_and_diffusivities_serial(
   // Inputs/Outputs
   const uview_2d<Real>& tau)
 {
-  // This variant keeps nothing in team-shared scratch, so the workspace
-  // argument is unused; it stays in the signature to match the parallel
-  // variant.
-  (void)workspace;
-
   // ---------------------------------------------------------------------------
   // WORKAROUND: this routine is currently called from inside a team-policy
   // parallel_for in run_impl. On the Kokkos/CUDA build used here, a long serial
