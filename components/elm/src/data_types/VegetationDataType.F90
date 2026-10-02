@@ -8161,7 +8161,9 @@ module VegetationDataType
       litfall_patch => this%litfall , &
       litfall_col   => col_cf_input%litfall , &
       hrv_xsmrpool_to_atm_patch => this%hrv_xsmrpool_to_atm , &
-      hrv_xsmrpool_to_atm_col   => col_cf_input%hrv_xsmrpool_to_atm  &
+      hrv_xsmrpool_to_atm_col   => col_cf_input%hrv_xsmrpool_to_atm,   &
+      crop_seedc_to_leaf_patch => this%crop_seedc_to_leaf, &
+      crop_seedc_to_leaf_col => col_cf_input%crop_seedc_to_leaf &
       )
 
     if (use_fates) return
@@ -8505,6 +8507,10 @@ module VegetationDataType
     call p2c(bounds, num_soilc, filter_soilc, &
          hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
          hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
+
+    call p2c(bounds,num_soilc, filter_soilc, &
+         crop_seedc_to_leaf_patch(bounds%begp:bounds%endp), &
+         crop_seedc_to_leaf_col(bounds%begc:bounds%endc))
 
     end associate
 

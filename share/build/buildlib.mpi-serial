@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, logging, argparse
+import os, sys, logging, argparse, re
 
 from standard_script_setup import *
 from CIME import utils
@@ -104,6 +104,34 @@ def buildlib(bldroot, installpath, case):
                 os.path.join(bldroot, _file),
                 os.path.join(installpath, "include", _file),
             )
+
+    # SCORPIO v2 C++ code assumes MPI-3 const-correctness and a few MPI-2/3
+    # declarations that mpi-serial's pre-MPI-3 headers lack (Info_free is
+    # implemented in the library but undeclared). Patch the installed mpi.h;
+    # C callers are unaffected by const on parameters.
+    installed_mpi_h = os.path.join(installpath, "include", "mpi.h")
+    if os.path.isfile(installed_mpi_h):
+        with open(installed_mpi_h) as fd:
+            content = fd.read()
+        patched = content
+        patched = patched.replace(
+            "int *recvcounts, int *displs,",
+            "const int *recvcounts, const int *displs,",
+        )
+        patched = re.sub(
+            r"extern int MPI_(\w+)\(void ?\* ?(sendbuf|buf)",
+            r"extern int MPI_\1(const void *\2",
+            patched,
+        )
+        if "MPI_Info_free" not in patched:
+            patched = patched.replace(
+                "extern int MPI_Info_create(MPI_Info *info);",
+                "extern int MPI_Info_create(MPI_Info *info);\n"
+                "extern int MPI_Info_free(MPI_Info *info);",
+            )
+        if patched != content:
+            with open(installed_mpi_h, "w") as fd:
+                fd.write(patched)
 
 ###############################################################################
 def _main(argv, documentation):
