@@ -31,6 +31,7 @@ SET(SWEQX_SRCS
   ${SRC_SHARE}/coordinate_systems_mod.F90
   ${SRC_SHARE}/geometry_mod.F90
   ${SRC_SHARE}/cube_mod.F90
+  ${SRC_SHARE}/metric_mod.F90
   ${SRC_SHARE}/planar_mod.F90
   ${SRC_SHARE}/derivative_mod.F90
   ${SRC_SHARE}/dimensions_mod.F90
