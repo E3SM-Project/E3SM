@@ -41,6 +41,8 @@ module controlMod
   use elm_varcon              , only: h2osno_max
   use FanMod                  , only: nh4_ads_coef
   use AllocationMod           , only: nu_com_phosphatase,nu_com_nfix
+  use elm_varctl              , only: nu_com, use_var_soil_thick
+  use elm_varctl              , only: use_lake_wat_storage, lake_evap_cap_method
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
   use EcosystemBalanceCheckMod, only: bgc_balance_check_tolerance => balance_check_tolerance
   use elm_varpar              , only: elmfates_carbon_only
@@ -358,7 +360,7 @@ contains
 
     namelist /elm_inparm/ use_dynroot
 
-    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
+    namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage, lake_evap_cap_method
 
     namelist /elm_inparm/ use_hydrstress
 
@@ -706,6 +708,20 @@ contains
             errMsg(__FILE__, __LINE__))
     endif
 
+    ! Lake evaporation cap method
+    if (lake_evap_cap_method /= 'none' .and. &
+        lake_evap_cap_method /= 'rain_snow' .and. &
+        lake_evap_cap_method /= 'rain_snow_h2osno' .and. &
+        lake_evap_cap_method /= 'wslake') then
+       write(iulog,*)'lake_evap_cap_method = ',trim(lake_evap_cap_method), ' is not supported'
+       call endrun(msg=' ERROR:: choices are none, rain_snow, or rain_snow_h2osno' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+    if (lake_evap_cap_method == 'wslake') then
+       call endrun(msg=' ERROR:: lake_evap_cap_method = wslake is not implemented' // &
+            errMsg(__FILE__, __LINE__))
+    endif
+
     if (masterproc) then
        write(iulog,*) 'Successfully initialized run control settings'
        write(iulog,*)
@@ -873,6 +889,8 @@ contains
     call mpi_bcast (use_dynroot, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     call mpi_bcast (use_lake_wat_storage, 1, MPI_LOGICAL, 0, mpicom, ier)
+
+    call mpi_bcast (lake_evap_cap_method, len(lake_evap_cap_method), MPI_CHARACTER, 0, mpicom, ier)
 
     if ((use_cn .or. use_fates) .and. use_vertsoilc) then
        ! vertical soil mixing variables
@@ -1061,6 +1079,7 @@ contains
     write(iulog,*) '    use_vertsoilc = ', use_vertsoilc
     write(iulog,*) '    use_var_soil_thick = ', use_var_soil_thick
     write(iulog,*) '    use_lake_wat_storage = ', use_lake_wat_storage
+    write(iulog,*) '    lake_evap_cap_method = ', lake_evap_cap_method
     write(iulog,*) '    use_extralakelayers = ', use_extralakelayers
     write(iulog,*) '    use_extrasnowlayers = ', use_extrasnowlayers
     write(iulog,*) '    use_firn_percolation_and_compaction = ', use_firn_percolation_and_compaction

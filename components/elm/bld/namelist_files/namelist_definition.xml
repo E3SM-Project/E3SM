@@ -2106,6 +2106,17 @@ Runtime flag to turn on/off variable soil thickness.
 Runtime flag to turn on/off lake water storage.
 </entry>
 
+<entry id="lake_evap_cap_method"
+       type="char*32"
+       category="default_settings"
+       group="elm_inparm"
+       valid_values="none,rain_snow,rain_snow_h2osno"
+       value="none" >
+Method used to cap lake evaporation by available water. 'none' applies no cap. 'rain_snow' caps
+evaporation at this timestep's rain+snow forcing (forc_rain+forc_snow). 'rain_snow_h2osno'
+additionally includes the lake column's persistent snowpack (h2osno).
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Namelist options for downscaling from grid to topounit                                    -->
 <!-- ========================================================================================  -->
