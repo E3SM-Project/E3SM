@@ -282,6 +282,9 @@ contains
     use SoilorderConType                  , only : soilorderconInit
     use LakeCon                           , only : LakeConInit
     use initVerticalMod                   , only : initVertical
+#ifdef MOAB_LATERAL
+    use initVerticalMod                   , only : initGhostColumnsVertical
+#endif
     ! !ARGUMENTS
     implicit none
     type(bounds_type), intent(in) :: bounds_proc
@@ -389,6 +392,9 @@ contains
          snow_depth_col(begc:endc),              &
          urbanparams_vars%thick_wall(begl:endl), &
          urbanparams_vars%thick_roof(begl:endl))
+#ifdef MOAB_LATERAL
+    call initGhostColumnsVertical(bounds_proc)
+#endif
 
     ! Initialize clm->drv and drv->clm data structures
 

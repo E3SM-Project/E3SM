@@ -38,6 +38,9 @@ module initVerticalMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: initVertical
+#ifdef MOAB_LATERAL
+  public :: initGhostColumnsVertical
+#endif
   !------------------------------------------------------------------------
 
 contains
@@ -766,5 +769,66 @@ contains
     call ncd_pio_closefile(ncid)
 
   end subroutine initVertical
+
+#ifdef MOAB_LATERAL
+  !------------------------------------------------------------------------
+  subroutine initGhostColumnsVertical(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Copy the soil-layer structure (z, dz, zi, nlevbed, zibed) of ghost columns
+    ! from the MPI ranks that own them. initVertical only sets owned columns.
+    !
+    ! Component layout: z(1:nlevgrnd), dz(1:nlevgrnd), zi(0:nlevgrnd), nlevbed, zibed.
+    !
+    ! !USES:
+    use domainLateralMod, only : NatVegColumnRealDataHaloExchange
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds   ! processor bounds
+    !
+    ! !LOCAL VARIABLES:
+    real(r8), allocatable :: data(:,:)
+    integer               :: c, j, ncomp, iz, idz, izi, ibed
+    !------------------------------------------------------------------------
+
+    iz    = 0                   ! z (j)  -> iz  + j
+    idz   = nlevgrnd            ! dz(j)  -> idz + j
+    izi   = 2*nlevgrnd + 1      ! zi(j)  -> izi + j, j = 0:nlevgrnd
+    ibed  = 3*nlevgrnd + 2      ! nlevbed; zibed at ibed + 1
+    ncomp = ibed + 1
+
+    allocate(data(bounds%begc_all:bounds%endc_all, ncomp))
+    data(:,:) = 0._r8
+
+    do c = bounds%begc, bounds%endc
+       do j = 1, nlevgrnd
+          data(c, iz  + j) = col_pp%z(c, j)
+          data(c, idz + j) = col_pp%dz(c, j)
+       end do
+       do j = 0, nlevgrnd
+          data(c, izi + j) = col_pp%zi(c, j)
+       end do
+       data(c, ibed)     = real(col_pp%nlevbed(c), r8)
+       data(c, ibed + 1) = col_pp%zibed(c)
+    end do
+
+    call NatVegColumnRealDataHaloExchange(bounds, 'column_vertical_structure', data)
+
+    do c = bounds%endc + 1, bounds%endc_all
+       do j = 1, nlevgrnd
+          col_pp%z(c, j)  = data(c, iz  + j)
+          col_pp%dz(c, j) = data(c, idz + j)
+       end do
+       do j = 0, nlevgrnd
+          col_pp%zi(c, j) = data(c, izi + j)
+       end do
+       col_pp%nlevbed(c) = nint(data(c, ibed))
+       col_pp%zibed(c)   = data(c, ibed + 1)
+    end do
+
+    deallocate(data)
+
+  end subroutine initGhostColumnsVertical
+#endif
 
 end module initVerticalMod
