@@ -19,6 +19,8 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
   use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
   use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
+  use seq_comm_mct,     only: mbgxid   ! iMOAB id for glc migrated mesh to coupler pes
+  use seq_comm_mct,     only: mbintxgl ! iMOAB id for read map between glc and land
 
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -34,6 +36,7 @@ module prep_lnd_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: lnd, atm, rof, glc
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
+  use map_glc2lnd_mod   , only: map_glc2lnd_ec_moab
   use iso_c_binding
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
@@ -153,7 +156,7 @@ contains
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
     character*32             :: appname
-    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2l, wgtIdFa2l, wgtIdSa2l
+    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2l, wgtIdFa2l, wgtIdSa2l, wgtIdFg2l
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
     integer                  :: fNoBubble, monotonicity
     ! will do comm graph over coupler PES, in 2-hop strategy
@@ -199,6 +202,8 @@ contains
       wgtIdFr2l = 'flux_r2l'
       wgtIdFa2l = 'flux_a2l'
       wgtIdSa2l = 'scalar_a2l'
+      wgtIdFg2l = 'flux_g2l' ! must match the identifier used by prep_glc_init
+
       compute_maps_online_r2l = cpl_compute_maps_online ! read from disk or compute online
       compute_maps_online_a2l = cpl_compute_maps_online ! read from disk or compute online
       ! compute_maps_online_a2l = .false. ! Explicitly force read from disk
@@ -666,23 +671,85 @@ contains
        call shr_sys_flush(logunit)
 
        if (glc_c2_lnd) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Sg2l'
-          end if
-          call seq_map_init_rcfile(mapper_Sg2l, glc(1), lnd(1), &
-               'seq_maps.rc','glc2lnd_smapname:','glc2lnd_smaptype:',samegrid_lg, &
-               'mapper_Sg2l initialization',esmf_map_flag)
-
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fg2l'
-          end if
-          call seq_map_init_rcfile(mapper_Fg2l, glc(1), lnd(1), &
-               'seq_maps.rc','glc2lnd_fmapname:','glc2lnd_fmaptype:',samegrid_lg, &
-               'mapper_Fg2l initialization',esmf_map_flag)
+          ! the mct sparse-matrix init (seq_map_init_rcfile) is not usable in
+          ! driver-moab (coupler-side gsmaps are not populated); the mappers get
+          ! their real (moab) context below
+          call seq_map_mapinit(mapper_Sg2l, mpicom_CPLID)
+          call seq_map_mapinit(mapper_Fg2l, mpicom_CPLID)
 
           call prep_lnd_set_glc2lnd_fields()
+
+          ! moab context for the glc->lnd conservative map; read from the map file
+          if ((mbgxid .ge. 0) .and. (mblxid .ge. 0)) then
+
+             if (samegrid_lg) then
+                call shr_sys_abort(subname// &
+                     ' ERROR: moab glc->lnd coupling requires distinct lnd and glc grids with map files')
+             endif
+
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing MOAB mapper_Fg2l'
+             end if
+             appname = "GLC_LND_COU"
+             ! unique external id for the moab app holding the glc->lnd read map
+             idintx = 100*glc(1)%cplcompid + lnd(1)%cplcompid
+             ierr = iMOAB_RegisterApplication(trim(appname)//C_NULL_CHAR, mpicom_CPLID, idintx, mbintxgl)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in registering glc lnd map app'
+                call shr_sys_abort(subname//' ERROR in registering glc lnd map app')
+             endif
+
+             mapper_Fg2l%src_mbid = mbgxid
+             mapper_Fg2l%tgt_mbid = mblxid
+             mapper_Fg2l%intx_mbid = mbintxgl
+             mapper_Fg2l%src_context = glc(1)%cplcompid
+             mapper_Fg2l%intx_context = idintx
+             mapper_Fg2l%weight_identifier = wgtIdFg2l
+             mapper_Fg2l%mbname = 'mapper_Fg2l'
+             type1 = 3 ! FV-FV
+             arearead = 0 ! no need for areas
+             call moab_map_init_rcfile( mapper_Fg2l, type1, &
+                   'seq_maps.rc', 'glc2lnd_fmapname:', 'glc2lnd_fmaptype:', samegrid_lg, &
+                   arearead, wgtIdFg2l, 'mapper_Fg2l MOAB initialization', esmf_map_flag)
+
+             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
+             ierr = iMOAB_MigrateMapMesh (mbgxid, mbintxgl, mpicom_CPLID, mpigrp_CPLID, &
+                  mpigrp_CPLID, type1, glc(1)%cplcompid, idintx)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in migrating glc mesh for map glc 2 lnd'
+                call shr_sys_abort(subname//' ERROR in migrating glc mesh for map glc 2 lnd')
+             endif
+             ierr = iMOAB_ComputeCommGraph( mbgxid, mbintxgl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+                  type1, type1, glc(1)%cplcompid, idintx)
+             if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in computing comm graph for second hop, GLC-LND'
+                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, GLC-LND')
+             endif
+
+             ! The per-EC destination tags exist on the land mesh (part of x2l fields).
+             ! Define the same names on the glc mesh, where they stage the pre-multiplied
+             ! numerators for the elevation-class mapping (map_glc2lnd_ec_moab), and
+             ! define the scratch tag used for the icemask normalization on both meshes.
+             tagtype = 1  ! dense, double
+             numco = 1
+             tagname = trim(seq_flds_x2l_fields_from_glc)//C_NULL_CHAR
+             ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco, tagindex )
+             if (ierr .ne. 0) then
+                call shr_sys_abort(subname//' ERROR defining glc per-EC staging tags on the glc mesh')
+             endif
+             tagname = 'Sg_icemsk_num'//C_NULL_CHAR
+             ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco, tagindex )
+             if (ierr .ne. 0) then
+                call shr_sys_abort(subname//' ERROR defining Sg_icemsk_num on the glc mesh')
+             endif
+             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco, tagindex )
+             if (ierr .ne. 0) then
+                call shr_sys_abort(subname//' ERROR defining Sg_icemsk_num on the land mesh')
+             endif
+
+          endif ! mbgxid and mblxid
+
        endif
        call shr_sys_flush(logunit)
 
@@ -950,15 +1017,14 @@ contains
        call seq_map_map(mapper_Fg2l, g2x_gx, g2x_lx(egi), &
             fldlist = glc2lnd_non_ec_fields, norm=.true.)
 
-       ! Map fields that are separated by elevation class on the land grid
-       call map_glc2lnd_ec( &
-            g2x_g = g2x_gx, &
+       ! Map fields that are separated by elevation class on the land grid; the moab
+       ! version operates on the coupler mesh tags (result lands directly in the
+       ! per-EC x2l tag names on the land mesh) and returns early without moab context
+       call map_glc2lnd_ec_moab(mapper_Fg2l, &
             frac_field = glc_frac_field, &
             topo_field = glc_topo_field, &
             icemask_field = glc_icemask_field, &
-            extra_fields = glc2lnd_ec_extra_fields, &
-            mapper = mapper_Fg2l, &
-            g2x_l = g2x_lx(egi))
+            extra_fields = glc2lnd_ec_extra_fields)
     enddo
     call t_drvstopf  (trim(timer))
 
