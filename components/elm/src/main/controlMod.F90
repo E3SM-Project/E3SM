@@ -69,6 +69,8 @@ module controlMod
                         use_elm_interface, use_elm_bgc, use_pflotran, &
                         use_hydrstress, domain_decomp_type, &
                         use_IM2_hillslope_hydrology, &
+                        use_lateral_subsurface_flow, lateral_unsat_flow, &
+                        lateral_hk_anisotropy, lateral_theta_watertable, &
                         do_budgets, budget_inst, budget_daily, budget_month, &
                         budget_ann, budget_ltann, budget_ltend, &
                         use_lnd_rof_two_way, use_ocn_lnd_one_way, &
@@ -368,6 +370,10 @@ contains
          use_IM2_hillslope_hydrology
 
     namelist /elm_inparm/ &
+         use_lateral_subsurface_flow, lateral_unsat_flow, &
+         lateral_hk_anisotropy, lateral_theta_watertable
+
+    namelist /elm_inparm/ &
          do_budgets, budget_inst, budget_daily, budget_month, &
          budget_ann, budget_ltann, budget_ltend
  
@@ -614,6 +620,25 @@ contains
        if (use_betr .and. use_var_soil_thick ) then
           call endrun(msg=' ERROR: use_var_soil_thick and use_betr cannot both be set to true.'//&
                    errMsg(__FILE__, __LINE__))
+       end if
+
+       if (use_lateral_subsurface_flow) then
+#ifndef MOAB_LATERAL
+          call endrun(msg=' ERROR: use_lateral_subsurface_flow requires ELM to be built with -DMOAB_LATERAL.'//&
+               errMsg(__FILE__, __LINE__))
+#endif
+          if (trim(domain_decomp_type) /= 'moab') then
+             call endrun(msg=" ERROR: use_lateral_subsurface_flow requires domain_decomp_type = 'moab'."//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+          if (use_var_soil_thick) then
+             call endrun(msg=' ERROR: use_lateral_subsurface_flow and use_var_soil_thick cannot both be set to true.'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+          if (lateral_hk_anisotropy <= 0._r8) then
+             call endrun(msg=' ERROR: lateral_hk_anisotropy must be positive.'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
        end if
 
        if (use_lnd_rof_two_way) then
@@ -976,6 +1001,12 @@ contains
     ! hillslope connectivity via topounits
     call mpi_bcast (use_IM2_hillslope_hydrology, 1, MPI_LOGICAL, 0, mpicom, ier)
 
+    ! lateral subsurface flow between grid cells
+    call mpi_bcast (use_lateral_subsurface_flow, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (lateral_unsat_flow, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (lateral_hk_anisotropy, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (lateral_theta_watertable, 1, MPI_LOGICAL, 0, mpicom, ier)
+
     ! bgc & pflotran interface
     call mpi_bcast (use_elm_interface, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_elm_bgc, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1081,6 +1112,12 @@ contains
     write(iulog,*) '    use_noio = ', use_noio
     write(iulog,*) '    use_betr = ', use_betr
     write(iulog,*) '    use_IM2_hillslope_hydrology = ', use_IM2_hillslope_hydrology
+    write(iulog,*) '    use_lateral_subsurface_flow = ', use_lateral_subsurface_flow
+    if (use_lateral_subsurface_flow) then
+       write(iulog,*) '    lateral_unsat_flow = ', lateral_unsat_flow
+       write(iulog,*) '    lateral_hk_anisotropy = ', lateral_hk_anisotropy
+       write(iulog,*) '    lateral_theta_watertable = ', lateral_theta_watertable
+    end if
     write(iulog,*) '    use_atm_downscaling_to_topunit = ', use_atm_downscaling_to_topunit
     write(iulog,*) '    precip_downscaling_method = ', precip_downscaling_method
     write(iulog,*) 'input data files:'

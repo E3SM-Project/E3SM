@@ -2060,6 +2060,36 @@ topounit level. Based on the IM2 implementation from NGEE Arctic project.
 </entry>
 
 <!-- ========================================================================================  -->
+<!-- Namelist options related to lateral subsurface flow between grid cells                    -->
+<!-- ========================================================================================  -->
+<entry id="use_lateral_subsurface_flow" type="logical" category="default_settings"
+       group="elm_inparm" valid_values="" value=".false." >
+If TRUE, simulate lateral unsaturated and saturated subsurface flow between
+neighboring grid cells (Qiu et al., 2024, GMD). Requires ELM to be built with
+-DMOAB_LATERAL and domain_decomp_type = 'moab'. Not compatible with
+use_var_soil_thick.
+</entry>
+
+<entry id="lateral_unsat_flow" type="logical" category="default_settings"
+       group="elm_inparm" valid_values="" value=".true." >
+If TRUE (default), include lateral flow in the unsaturated zone when
+use_lateral_subsurface_flow is TRUE. If FALSE, only saturated lateral flow
+is simulated.
+</entry>
+
+<entry id="lateral_hk_anisotropy" type="real" category="default_settings"
+       group="elm_inparm" value="1.0" >
+Ratio of horizontal to vertical saturated hydraulic conductivity used for
+lateral subsurface flow (default 1.0). Must be positive.
+</entry>
+
+<entry id="lateral_theta_watertable" type="logical" category="default_settings"
+       group="elm_inparm" valid_values="" value=".true." >
+If TRUE (default), diagnose the water table depth from soil moisture when
+use_lateral_subsurface_flow is TRUE.
+</entry>
+
+<!-- ========================================================================================  -->
 <!-- Namelist options related to the bgc & pflotran interface                                  -->
 <!-- ========================================================================================  -->
 

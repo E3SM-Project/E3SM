@@ -466,7 +466,16 @@ module elm_varctl
   ! Subgrid hillslope hydrologic connectivity (through topounits)
   !-----------------------------------------------------------------------
   logical, public            :: use_IM2_hillslope_hydrology  = .false.
- 
+
+  !-----------------------------------------------------------------------
+  ! Lateral subsurface flow between grid cells (requires -DMOAB_LATERAL and
+  ! domain_decomp_type = 'moab')
+  !-----------------------------------------------------------------------
+  logical , public :: use_lateral_subsurface_flow = .false.  ! lateral unsaturated and saturated flow between grid cells
+  logical , public :: lateral_unsat_flow          = .true.   ! include lateral flow in the unsaturated zone
+  real(r8), public :: lateral_hk_anisotropy       = 1._r8    ! ratio of horizontal to vertical hydraulic conductivity [-]
+  logical , public :: lateral_theta_watertable    = .true.   ! diagnose the water table from soil moisture
+
   !-----------------------------------------------------------------------
   ! flux limiter for phenology flux calculation
   logical, public :: use_pheno_flux_limiter = .false.
