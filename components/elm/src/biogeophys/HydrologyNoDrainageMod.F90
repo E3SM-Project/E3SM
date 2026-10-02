@@ -77,6 +77,8 @@ contains
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink
+    use SoilLateralFlowMod   , only : ThetaBasedWaterTable
+    use elm_varctl           , only : use_lateral_subsurface_flow, lateral_theta_watertable
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -282,6 +284,11 @@ contains
 
         call WaterTable(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
            soilhydrology_vars, soilstate_vars, dtime)
+
+        if (use_lateral_subsurface_flow .and. lateral_theta_watertable) then
+           call ThetaBasedWaterTable(bounds, num_hydrologyc, filter_hydrologyc, &
+                soilhydrology_vars, soilstate_vars)
+        end if
 
       !------------------------------------------------------------------------------------
       end if

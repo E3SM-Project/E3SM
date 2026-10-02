@@ -264,6 +264,8 @@ contains
     use SoilHydrologyType    , only : soilhydrology_type
     use VegetationType       , only : veg_pp
     use ColumnType           , only : col_pp
+    use elm_varctl           , only : use_lateral_subsurface_flow, lateral_theta_watertable
+    use SoilLateralFlowMod   , only : ComputeLateralFlux
     !
     ! !ARGUMENTS:
     implicit none
@@ -327,6 +329,8 @@ contains
     real(r8) :: dsmpds                                       !temporary variable
     real(r8) :: dhkds                                        !temporary variable
     real(r8) :: hktmp                                        !temporary variable
+    real(r8) :: qflx_lat(bounds%begc:bounds%endc,1:nlevgrnd)  ! lateral flux into each soil layer from neighboring grid cells [mm h2o/s]
+    logical  :: bottom_noflux                                ! no flux at the bottom of the soil column and no aquifer coupling
     !-----------------------------------------------------------------------
 
     associate(&
@@ -558,6 +562,17 @@ contains
          end if
       end do
 
+      ! Lateral subsurface flow between grid cells. With the theta-based water
+      ! table (Qiu et al., 2024), the bottom of the soil column is a no-flux
+      ! boundary and the aquifer layer is inactive.
+      bottom_noflux = use_var_soil_thick .or. &
+           (use_lateral_subsurface_flow .and. lateral_theta_watertable)
+
+      if (use_lateral_subsurface_flow) then
+         call ComputeLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, &
+              soilhydrology_vars, soilstate_vars, qflx_lat)
+      end if
+
       ! Set up r, a, b, and c vectors for tridiagonal solution
 
       ! Node j=1 (top)
@@ -657,7 +672,7 @@ contains
             den    = (zmm(c,j+1)-zmm(c,j))
             dzq    = (zq(c,j+1)-zq(c,j))
             num    = (smp1-smp(c,j)) - dzq
-            if (use_var_soil_thick) then
+            if (bottom_noflux) then
                qout(c,j) = 0._r8
                dqodw1(c,j) = 0._r8
                dqodw2(c,j) = 0._r8
@@ -678,7 +693,7 @@ contains
             dqidw1(c,j+1) = -( hk(c,j)*dsmpdw1   + num*dhkdw(c,j))/den
             qout(c,j+1)   =  0._r8  ! zero-flow bottom boundary condition
             dqodw1(c,j+1) =  0._r8  ! zero-flow bottom boundary condition
-            if (use_var_soil_thick) then
+            if (bottom_noflux) then
                rmx(c,j+1) = 0._r8
                amx(c,j+1) = 0._r8
                bmx(c,j+1) = dzmm(c,j+1)/dtime
@@ -691,6 +706,17 @@ contains
             end if
          endif
       end do
+
+      ! Add the lateral flux as a source term in each soil layer
+      if (use_lateral_subsurface_flow) then
+         do fc = 1, num_hydrologyc
+            c = filter_hydrologyc(fc)
+            nlevbed = nlev2bed(c)
+            do j = 1, nlevbed
+               rmx(c,j) = rmx(c,j) + qflx_lat(c,j)
+            end do
+         end do
+      end if
 
       ! Solve for dwat
 
@@ -809,6 +835,11 @@ contains
                qcharge(c) = dwat2(c,nlevsoi+1)*dzmm(c,nlevsoi+1)/dtime
             endif
          endif
+
+         ! the water table is diagnosed from soil moisture instead of being moved by qcharge
+         if (use_lateral_subsurface_flow .and. lateral_theta_watertable) then
+            qcharge(c) = 0._r8
+         end if
       end do
 
       ! compute the water deficit and reset negative liquid water content

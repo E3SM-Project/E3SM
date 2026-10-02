@@ -635,6 +635,10 @@ contains
              call endrun(msg=' ERROR: use_lateral_subsurface_flow and use_var_soil_thick cannot both be set to true.'//&
                   errMsg(__FILE__, __LINE__))
           end if
+          if (clump_pproc > 1) then
+             call endrun(msg=' ERROR: use_lateral_subsurface_flow requires one clump per MPI task (clump_pproc = 1).'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
           if (lateral_hk_anisotropy <= 0._r8) then
              call endrun(msg=' ERROR: lateral_hk_anisotropy must be positive.'//&
                   errMsg(__FILE__, __LINE__))

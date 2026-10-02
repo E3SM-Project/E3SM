@@ -30,6 +30,7 @@ module ColumnDataType
   use elm_varctl      , only : pf_hmode, nu_com
   use elm_varctl      , only : use_extrasnowlayers, use_polygonal_tundra
   use elm_varctl      , only : use_fan
+  use elm_varctl      , only : use_lateral_subsurface_flow
   use elm_varctl      , only : use_ocn_lnd_one_way
   use ch4varcon       , only : allowlakeprod
   use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
@@ -521,6 +522,9 @@ module ColumnDataType
     real(r8), pointer :: qflx_h2osfc2topsoi   (:)   => null() ! liquid water coming from surface standing water top soil (mm H2O/s)
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
     real(r8), pointer :: qflx_lateral         (:)   => null() ! lateral subsurface flux (mm H2O /s)
+    real(r8), pointer :: qflx_lat_layer       (:,:) => null() ! lateral subsurface flux into each soil layer, from neighboring grid cells (mm H2O /s)
+    real(r8), pointer :: qflx_lateral_unsat   (:)   => null() ! net lateral inflow in the unsaturated zone from neighboring grid cells (mm H2O /s)
+    real(r8), pointer :: qflx_lateral_sat     (:)   => null() ! net lateral inflow in the saturated zone from neighboring grid cells (mm H2O /s)
     real(r8), pointer :: qflx_lnd2ocn         (:)   => null() ! lateral flux between water table and sea surface height (mm H2O/s)
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
@@ -5846,6 +5850,9 @@ contains
     allocate(this%qflx_h2osfc2topsoi     (begc:endc))             ; this%qflx_h2osfc2topsoi   (:)   = spval
     allocate(this%qflx_snow2topsoi       (begc:endc))             ; this%qflx_snow2topsoi     (:)   = spval
     allocate(this%qflx_lateral           (begc:endc))             ; this%qflx_lateral         (:)   = 0._r8
+    allocate(this%qflx_lat_layer         (begc:endc,1:nlevgrnd))  ; this%qflx_lat_layer       (:,:) = 0._r8
+    allocate(this%qflx_lateral_unsat     (begc:endc))             ; this%qflx_lateral_unsat   (:)   = 0._r8
+    allocate(this%qflx_lateral_sat       (begc:endc))             ; this%qflx_lateral_sat     (:)   = 0._r8
     allocate(this%qflx_lnd2ocn           (begc:endc))             ; this%qflx_lnd2ocn         (:)   = spval
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = spval
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = spval
@@ -5912,6 +5919,20 @@ contains
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
+
+    if (use_lateral_subsurface_flow) then
+       call hist_addfld2d (fname='QLAT',  units='mm/s', type2d='levgrnd', &
+            avgflag='A', long_name='lateral subsurface flow into each soil layer from neighboring grid cells', &
+            ptr_col=this%qflx_lat_layer, l2g_scale_type='veg')
+
+       call hist_addfld1d (fname='QLATUNSAT',  units='mm/s',  &
+            avgflag='A', long_name='net lateral subsurface inflow in the unsaturated zone', &
+            ptr_col=this%qflx_lateral_unsat, l2g_scale_type='veg')
+
+       call hist_addfld1d (fname='QLATSAT',  units='mm/s',  &
+            avgflag='A', long_name='net lateral subsurface inflow in the saturated zone', &
+            ptr_col=this%qflx_lateral_sat, l2g_scale_type='veg')
+    end if
 
     if (use_ocn_lnd_one_way) then
       call hist_addfld1d (fname='QH2OOCN',  units='mm/s',  &
