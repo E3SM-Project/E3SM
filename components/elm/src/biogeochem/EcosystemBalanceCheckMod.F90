@@ -50,6 +50,7 @@ module EcosystemBalanceCheckMod
 
   ! This corersponds to namelist variable bgc_balance_check_tolerance
   real(r8), public  :: balance_check_tolerance = 1e-7_r8
+  real(r8), public  :: balance_check_rel_tolerance = 1e-9_r8
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -282,7 +283,7 @@ contains
 
          ! check for significant errors
          if (abs(col_errcb(c)) > balance_check_tolerance .and. &
-           abs(col_errcb(c))>1.E-9_R8*MAX(col_endcb(c),col_begcb(c))) then
+           abs(col_errcb(c))>balance_check_rel_tolerance*MAX(col_endcb(c),col_begcb(c))) then
             err_found = .true.
             err_index = c
          end if
