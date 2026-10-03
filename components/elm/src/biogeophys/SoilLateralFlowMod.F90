@@ -51,13 +51,16 @@ module SoilLateralFlowMod
   public :: ComputeLateralFlux         ! lateral fluxes into owned columns
   public :: ApplySaturatedLateralFlux  ! apply the saturated lateral flux at the water table
   public :: ThetaBasedWaterTable    ! diagnose the water table from soil moisture
+  !
+  ! !PRIVATE DATA:
+  real(r8), parameter :: sat_lev = 0.96_r8   ! saturation level that defines the theta-based water table
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
   subroutine ComputeLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, &
-       soilhydrology_vars, soilstate_vars, qflx_lat_layer, qflx_sat)
+       soilhydrology_vars, soilstate_vars, qflx_lat_layer, qflx_sat, zwt_lat)
     !
     ! !DESCRIPTION:
     ! Computes, for the columns in filter_hydrologyc, the unsaturated lateral
@@ -66,13 +69,21 @@ contains
     ! parts), qflx_lateral_unsat, qflx_lateral_sat and qflx_lat_layer (the
     ! unsaturated part; ApplySaturatedLateralFlux adds the saturated part).
     !
+    ! The fluxes use a water table diagnosed from the current soil moisture
+    ! (zwt_lat), not zwt itself: after the previous time step's water-table
+    ! diagnosis, Drainage moves zwt (by the specific yield of the drained
+    ! water, and caps it at 80 m), so zwt can show a saturated zone that the
+    ! soil moisture does not have (e.g. zwt = 80 m in an unsaturated 82 m deep
+    ! column).
+    !
     ! Must be called on all MPI ranks (it performs a halo exchange), with one
     ! clump per MPI rank: 'bounds' (clump bounds) must cover all owned columns.
     ! Ghost columns are addressed through the processor bounds.
     !
 #ifdef MOAB_LATERAL
     use decompMod               , only : get_proc_bounds
-    use elm_varctl              , only : lateral_unsat_flow, lateral_hk_anisotropy
+    use elm_varctl              , only : lateral_unsat_flow, lateral_hk_anisotropy, lateral_theta_watertable
+    use elm_varcon              , only : denh2o, denice
     use elm_varcon              , only : e_ice
     use ColumnConnectionSetType , only : c2c_connections
     use domainLateralMod        , only : NatVegColumnRealDataHaloExchange
@@ -86,6 +97,7 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     real(r8)                 , intent(out)   :: qflx_lat_layer(bounds%begc:,1:)  ! unsaturated lateral flux into each soil layer [mm H2O/s]
     real(r8)                 , intent(out)   :: qflx_sat(bounds%begc:)           ! net saturated lateral flux into each column [mm H2O/s]
+    real(r8)                 , intent(out)   :: zwt_lat(bounds%begc:)            ! water table depth used for the lateral fluxes [m]
     !
 #ifdef MOAB_LATERAL
     ! !LOCAL VARIABLES:
@@ -95,6 +107,8 @@ contains
     real(r8)              :: hsat_up, hsat_dn, trans, sgn
     real(r8), allocatable :: data(:,:)
     integer , allocatable :: jwt(:)
+    real(r8), allocatable :: zw(:)           ! water table depth used for the fluxes, owned and ghost columns [m]
+    real(r8)              :: vol(nlevgrnd)   ! volumetric water content [m3/m3]
     real(r8), allocatable :: qv_unsat(:,:)   ! [nconn, nlevgrnd] up-to-down volumetric flux per layer [mm H2O/s * m^2]
     real(r8), allocatable :: qv_sat(:)       ! [nconn] up-to-down volumetric saturated flux [mm H2O/s * m^2]
     real(r8)              :: unsat_in(nlevgrnd), sat_in
@@ -121,8 +135,27 @@ contains
          call endrun(msg='ComputeLateralFlux: lateral flow requires one clump per MPI rank'//errMsg(__FILE__, __LINE__))
       end if
 
+      ! --- Water table of owned columns, diagnosed from the current soil moisture
+      allocate(zw(bp%begc_all:bp%endc_all))
+      zw(:) = 0._r8
+      do c = bp%begc, bp%endc
+         zw(c) = zwt(c)
+      end do
+      do fc = 1, num_hydrologyc
+         c  = filter_hydrologyc(fc)
+         nb = nlevbed(c)
+         if (lateral_theta_watertable) then
+            do j = 1, nb
+               vol(j) = col_ws%h2osoi_liq(c,j)/(dz(c,j)*denh2o) + col_ws%h2osoi_ice(c,j)/(dz(c,j)*denice)
+            end do
+            zw(c) = ThetaWaterTableDepth(nb, vol(1:nb), watsat(c,1:nb), col_pp%z(c,1:nb), zi(c,0:nb))
+         else
+            zw(c) = min(zwt(c), zi(c,nb))
+         end if
+      end do
+
       ! --- Copy the state of ghost columns from the owning ranks (one MPI round)
-      ! Components: h2osoi_vol, smp_l, fracice, icefrac (each 1:nlevgrnd), zwt
+      ! Components: h2osoi_vol, smp_l, fracice, icefrac (each 1:nlevgrnd), water table
       ncomp = 4*nlevgrnd + 1
       allocate(data(bp%begc_all:bp%endc_all, ncomp))
       data(:,:) = 0._r8
@@ -133,7 +166,7 @@ contains
             data(c, 2*nlevgrnd + j) = fracice(c,j)
             data(c, 3*nlevgrnd + j) = icefrac(c,j)
          end do
-         data(c, ncomp) = zwt(c)
+         data(c, ncomp) = zw(c)
       end do
 
       call NatVegColumnRealDataHaloExchange(bp, 'lateral_flow_state', data)
@@ -145,7 +178,7 @@ contains
             fracice(c,j)    = data(c, 2*nlevgrnd + j)
             icefrac(c,j)    = data(c, 3*nlevgrnd + j)
          end do
-         zwt(c) = data(c, ncomp)
+         zw(c) = data(c, ncomp)
       end do
       deallocate(data)
 
@@ -156,7 +189,7 @@ contains
          if (nlevbed(c) <= 0 .or. nlevbed(c) > nlevgrnd) cycle
          jwt(c) = nlevbed(c)
          do j = 1, nlevbed(c)
-            if (zwt(c) <= zi(c,j)) then
+            if (zw(c) <= zi(c,j)) then
                jwt(c) = j - 1
                exit
             end if
@@ -202,20 +235,21 @@ contains
          end if
 
          ! saturated flux (Eq. 17) driven by the difference in water table head
-         hsat_up = max(zi(cu,nbu) - zwt(cu), 0._r8)   ! saturated thickness [m]
-         hsat_dn = max(zi(cd,nbd) - zwt(cd), 0._r8)
+         hsat_up = max(zi(cu,nbu) - zw(cu), 0._r8)   ! saturated thickness [m]
+         hsat_dn = max(zi(cd,nbd) - zw(cd), 0._r8)
 
          trans = lateral_hk_anisotropy * sqrt(hksat(cu,nbu)*hksat(cd,nbd)) &
               * 0.5_r8*(hsat_up + hsat_dn)                                      ! [mm/s * m]
 
          ! head difference [m] = (elev_dn - zwt_dn) - (elev_up - zwt_up)
-         qv_sat(iconn) = -trans * (conn%dzg(iconn) - zwt(cd) + zwt(cu)) / conn%dist(iconn) &
+         qv_sat(iconn) = -trans * (conn%dzg(iconn) - zw(cd) + zw(cu)) / conn%dist(iconn) &
               * conn%face_length(iconn)
       end do
 
       ! --- Sum the fluxes for each owned column, in a decomposition-independent order
       qflx_lat_layer(bounds%begc:bounds%endc, :) = 0._r8
       qflx_sat(bounds%begc:bounds%endc)          = 0._r8
+      zwt_lat(bounds%begc:bounds%endc)           = zw(bounds%begc:bounds%endc)
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
@@ -256,7 +290,7 @@ contains
          col_wf%qflx_lateral(c)     = -(col_wf%qflx_lateral_unsat(c) + sat_in)
       end do
 
-      deallocate(jwt, qv_unsat, qv_sat)
+      deallocate(jwt, zw, qv_unsat, qv_sat)
 
     end associate
 #else
@@ -267,7 +301,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ApplySaturatedLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, dtime, &
-       soilhydrology_vars, soilstate_vars, qflx_sat)
+       soilhydrology_vars, soilstate_vars, qflx_sat, zwt_lat)
     !
     ! !DESCRIPTION:
     ! Applies each column's net saturated lateral flux at the water table,
@@ -284,7 +318,8 @@ contains
     !   is added to the top layer, whose excess goes to surface runoff in
     !   Drainage.
     !
-    ! The applied flux is added to col_wf%qflx_lat_layer.
+    ! The water table starts from zwt_lat, the one the fluxes were computed
+    ! with. The applied flux is added to col_wf%qflx_lat_layer.
     !
     ! !USES:
     use elm_varcon , only : denice, watmin
@@ -297,6 +332,7 @@ contains
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     real(r8)                 , intent(in)    :: qflx_sat(bounds%begc:) ! net saturated lateral flux into each column [mm H2O/s]
+    real(r8)                 , intent(in)    :: zwt_lat(bounds%begc:)  ! water table depth used for the lateral fluxes [m]
     !
     ! !LOCAL VARIABLES:
     integer  :: fc, c, j, jwt, nb
@@ -325,6 +361,7 @@ contains
          nb  = nlevbed(c)
          tot = qflx_sat(c)*dtime
          if (tot == 0._r8) cycle
+         zwt(c) = zwt_lat(c)
 
          ! index of the deepest layer that lies entirely above the water table
          jwt = nb
@@ -409,10 +446,7 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer             :: c, fc, k, k_zwt, nb
-    logical             :: all_saturated
-    real(r8)            :: s1, s2, m, b
-    real(r8), parameter :: sat_lev = 0.96_r8   ! saturation level that defines the water table
+    integer             :: c, fc, k, nb
     !-----------------------------------------------------------------------
 
     associate(                                         &
@@ -431,36 +465,70 @@ contains
          c  = filter_hydrologyc(fc)
          nb = nlevbed(c)
 
-         k_zwt         = nb
-         all_saturated = .true.
+         ! update h2osoi_vol from the bottom up to the first unsaturated layer
          do k = nb, 1, -1
             h2osoi_vol(c,k) = h2osoi_liq(c,k)/(dz(c,k)*denh2o) + h2osoi_ice(c,k)/(dz(c,k)*denice)
-            if (h2osoi_vol(c,k)/watsat(c,k) <= sat_lev) then
-               k_zwt         = k
-               all_saturated = .false.
-               exit
-            end if
+            if (h2osoi_vol(c,k)/watsat(c,k) <= sat_lev) exit
          end do
-         if (all_saturated) k_zwt = 1
 
-         if (k_zwt == 1) then
-            ! all layers below the first are saturated: water table at the bottom of layer 1
-            zwt(c) = zi(c,1)
-         else if (k_zwt < nb) then
-            ! interpolate between k_zwt and k_zwt+1
-            s1 = h2osoi_vol(c,k_zwt  )/watsat(c,k_zwt  )
-            s2 = h2osoi_vol(c,k_zwt+1)/watsat(c,k_zwt+1)
-            m  = (z(c,k_zwt+1) - z(c,k_zwt))/(s2 - s1)
-            b  = z(c,k_zwt+1) - m*s2
-            zwt(c) = max(0._r8, m*sat_lev + b)
-         else
-            ! bottom layer is unsaturated: water table at the bottom of the column
-            zwt(c) = zi(c,nb)
-         end if
+         zwt(c) = ThetaWaterTableDepth(nb, h2osoi_vol(c,1:nb), watsat(c,1:nb), z(c,1:nb), zi(c,0:nb))
       end do
 
     end associate
 
   end subroutine ThetaBasedWaterTable
+
+  !-----------------------------------------------------------------------
+  pure function ThetaWaterTableDepth(nb, vol, watsat, z, zi) result(zwt)
+    !
+    ! !DESCRIPTION:
+    ! Water table depth diagnosed from soil moisture (as in the CLM5
+    ! theta-based method): find the deepest layer, searching up from the
+    ! bottom of the hydrologically active column, whose saturation is at or
+    ! below sat_lev, and interpolate between it and the layer below. If the
+    ! bottom layer is unsaturated, the water table is at the bottom of the
+    ! column (no saturated zone).
+    !
+    ! !ARGUMENTS:
+    integer  , intent(in) :: nb          ! number of hydrologically active layers
+    real(r8) , intent(in) :: vol(:)      ! volumetric water content (1:nb) [m3/m3]
+    real(r8) , intent(in) :: watsat(:)   ! porosity (1:nb)
+    real(r8) , intent(in) :: z(:)        ! layer depth (1:nb) [m]
+    real(r8) , intent(in) :: zi(0:)      ! interface depth (0:nb) [m]
+    real(r8)              :: zwt         ! water table depth [m]
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: k, k_zwt
+    logical  :: all_saturated
+    real(r8) :: s1, s2, m, b
+    !-----------------------------------------------------------------------
+
+    k_zwt         = nb
+    all_saturated = .true.
+    do k = nb, 1, -1
+       if (vol(k)/watsat(k) <= sat_lev) then
+          k_zwt         = k
+          all_saturated = .false.
+          exit
+       end if
+    end do
+    if (all_saturated) k_zwt = 1
+
+    if (k_zwt == 1) then
+       ! all layers below the first are saturated: water table at the bottom of layer 1
+       zwt = zi(1)
+    else if (k_zwt < nb) then
+       ! interpolate between k_zwt and k_zwt+1
+       s1  = vol(k_zwt  )/watsat(k_zwt  )
+       s2  = vol(k_zwt+1)/watsat(k_zwt+1)
+       m   = (z(k_zwt+1) - z(k_zwt))/(s2 - s1)
+       b   = z(k_zwt+1) - m*s2
+       zwt = max(0._r8, m*sat_lev + b)
+    else
+       ! bottom layer is unsaturated: water table at the bottom of the column
+       zwt = zi(nb)
+    end if
+
+  end function ThetaWaterTableDepth
 
 end module SoilLateralFlowMod

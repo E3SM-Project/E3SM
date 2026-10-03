@@ -331,6 +331,7 @@ contains
     real(r8) :: hktmp                                        !temporary variable
     real(r8) :: qflx_lat(bounds%begc:bounds%endc,1:nlevgrnd)  ! unsaturated lateral flux into each soil layer from neighboring grid cells [mm h2o/s]
     real(r8) :: qflx_lat_sat(bounds%begc:bounds%endc)         ! net saturated lateral flux into each column [mm h2o/s]
+    real(r8) :: zwt_lat(bounds%begc:bounds%endc)              ! water table depth used for the lateral fluxes [m]
     logical  :: bottom_noflux                                ! no flux at the bottom of the soil column and no aquifer coupling
     !-----------------------------------------------------------------------
 
@@ -571,7 +572,7 @@ contains
 
       if (use_lateral_subsurface_flow) then
          call ComputeLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, &
-              soilhydrology_vars, soilstate_vars, qflx_lat, qflx_lat_sat)
+              soilhydrology_vars, soilstate_vars, qflx_lat, qflx_lat_sat, zwt_lat)
       end if
 
       ! Set up r, a, b, and c vectors for tridiagonal solution
@@ -846,7 +847,7 @@ contains
 
       if (use_lateral_subsurface_flow) then
          call ApplySaturatedLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, dtime, &
-              soilhydrology_vars, soilstate_vars, qflx_lat_sat)
+              soilhydrology_vars, soilstate_vars, qflx_lat_sat, zwt_lat)
       end if
 
       ! compute the water deficit and reset negative liquid water content
