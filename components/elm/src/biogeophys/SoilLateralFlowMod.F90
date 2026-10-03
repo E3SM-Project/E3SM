@@ -7,17 +7,24 @@ module SoilLateralFlowMod
   ! model in the E3SM Land Model (v2.0)", GMD 17, 143-167.
   !
   ! Lateral fluxes are computed explicitly from the state at the start of the
-  ! soil-water solve and enter the vertical (Zeng and Decker, 2009) Richards
-  ! equation as layer source terms:
+  ! soil-water solve:
   !
   ! - Unsaturated flow (Eq. 15): for each soil layer that lies entirely above
   !   the water table in both columns, a Darcy flux driven by the difference
-  !   in matric potential plus elevation between the two columns.
+  !   in matric potential plus elevation between the two columns. It enters
+  !   the vertical (Zeng and Decker, 2009) Richards equation as a layer
+  !   source term.
   ! - Saturated flow (Eq. 17): a Darcy flux driven by the difference in water
   !   table head (surface elevation minus water table depth), using a
   !   transmissivity based on the mean saturated thickness of the two columns.
-  !   Each column's saturated inflow is spread over its saturated layers in
-  !   proportion to their saturated thickness.
+  !   Each column's net saturated inflow is applied after the Richards solve
+  !   at the water table (ApplySaturatedLateralFlux), as ELM does for
+  !   baseflow: outflow drains the layers at and below the water table in
+  !   turn, limited by the specific yield, and inflow fills the layers at and
+  !   above the water table in turn. The layers below the water table stay
+  !   saturated; the water table moves instead. (Zeng and Decker (2009) has
+  !   no positive pressure below the water table, so a sink applied there
+  !   inside the solve would desaturate the deep layers.)
   !
   ! Fluxes are first computed per connection and then summed for each column
   ! in the order of the neighbors' natural ids, so results do not depend on
@@ -41,7 +48,8 @@ module SoilLateralFlowMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: ComputeLateralFlux      ! lateral flux into each soil layer of owned columns
+  public :: ComputeLateralFlux         ! lateral fluxes into owned columns
+  public :: ApplySaturatedLateralFlux  ! apply the saturated lateral flux at the water table
   public :: ThetaBasedWaterTable    ! diagnose the water table from soil moisture
   !-----------------------------------------------------------------------
 
@@ -49,12 +57,14 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ComputeLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, &
-       soilhydrology_vars, soilstate_vars, qflx_lat_layer)
+       soilhydrology_vars, soilstate_vars, qflx_lat_layer, qflx_sat)
     !
     ! !DESCRIPTION:
-    ! Computes the lateral subsurface flux into each soil layer [mm H2O/s] of
-    ! the columns in filter_hydrologyc, and sets col_wf%qflx_lateral (outflow
-    ! positive), qflx_lat_layer, qflx_lateral_unsat and qflx_lateral_sat.
+    ! Computes, for the columns in filter_hydrologyc, the unsaturated lateral
+    ! flux into each soil layer and the net saturated lateral flux into the
+    ! column [mm H2O/s]. Sets col_wf%qflx_lateral (outflow positive, both
+    ! parts), qflx_lateral_unsat, qflx_lateral_sat and qflx_lat_layer (the
+    ! unsaturated part; ApplySaturatedLateralFlux adds the saturated part).
     !
     ! Must be called on all MPI ranks (it performs a halo exchange), with one
     ! clump per MPI rank: 'bounds' (clump bounds) must cover all owned columns.
@@ -74,14 +84,15 @@ contains
     integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
-    real(r8)                 , intent(out)   :: qflx_lat_layer(bounds%begc:,1:)  ! lateral flux into each soil layer [mm H2O/s]
+    real(r8)                 , intent(out)   :: qflx_lat_layer(bounds%begc:,1:)  ! unsaturated lateral flux into each soil layer [mm H2O/s]
+    real(r8)                 , intent(out)   :: qflx_sat(bounds%begc:)           ! net saturated lateral flux into each column [mm H2O/s]
     !
 #ifdef MOAB_LATERAL
     ! !LOCAL VARIABLES:
     type(bounds_type)     :: bp              ! processor bounds (include ghost columns)
     integer               :: fc, c, j, k, iconn, cu, cd, nbu, nbd, nb, nconn, ncomp
     real(r8)              :: s1, bswl, hkl, impedl, smp_grad, face_area, area
-    real(r8)              :: hsat_up, hsat_dn, trans, sgn, hsat_c, sat_part
+    real(r8)              :: hsat_up, hsat_dn, trans, sgn
     real(r8), allocatable :: data(:,:)
     integer , allocatable :: jwt(:)
     real(r8), allocatable :: qv_unsat(:,:)   ! [nconn, nlevgrnd] up-to-down volumetric flux per layer [mm H2O/s * m^2]
@@ -204,6 +215,7 @@ contains
 
       ! --- Sum the fluxes for each owned column, in a decomposition-independent order
       qflx_lat_layer(bounds%begc:bounds%endc, :) = 0._r8
+      qflx_sat(bounds%begc:bounds%endc)          = 0._r8
 
       do fc = 1, num_hydrologyc
          c = filter_hydrologyc(fc)
@@ -234,27 +246,14 @@ contains
             sat_in = sat_in + sgn*qv_sat(iconn)/area
          end do
 
-         ! spread the saturated inflow over the saturated layers of the column
-         hsat_c = zi(c,nb) - zwt(c)
-         if (hsat_c > 0._r8) then
-            do j = 1, nb
-               sat_part = max(0._r8, zi(c,j) - max(zi(c,j-1), zwt(c)))
-               qflx_lat_layer(c,j) = qflx_lat_layer(c,j) + sat_in * sat_part/hsat_c
-            end do
-         else
-            qflx_lat_layer(c,nb) = qflx_lat_layer(c,nb) + sat_in
-         end if
-
          do j = 1, nb
-            qflx_lat_layer(c,j) = qflx_lat_layer(c,j) + unsat_in(j)
+            qflx_lat_layer(c,j)          = unsat_in(j)
+            col_wf%qflx_lat_layer(c,j)   = unsat_in(j)
             col_wf%qflx_lateral_unsat(c) = col_wf%qflx_lateral_unsat(c) + unsat_in(j)
          end do
+         qflx_sat(c)                = sat_in
          col_wf%qflx_lateral_sat(c) = sat_in
-
-         do j = 1, nb
-            col_wf%qflx_lat_layer(c,j) = qflx_lat_layer(c,j)
-            col_wf%qflx_lateral(c)     = col_wf%qflx_lateral(c) - qflx_lat_layer(c,j)
-         end do
+         col_wf%qflx_lateral(c)     = -(col_wf%qflx_lateral_unsat(c) + sat_in)
       end do
 
       deallocate(jwt, qv_unsat, qv_sat)
@@ -265,6 +264,130 @@ contains
 #endif
 
   end subroutine ComputeLateralFlux
+
+  !-----------------------------------------------------------------------
+  subroutine ApplySaturatedLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, dtime, &
+       soilhydrology_vars, soilstate_vars, qflx_sat)
+    !
+    ! !DESCRIPTION:
+    ! Applies each column's net saturated lateral flux at the water table,
+    ! after the Richards solve, following ELM's baseflow treatment (Drainage):
+    !
+    ! - Outflow is removed from the layer that contains the water table and
+    !   then from the layers below it in turn; each layer gives at most its
+    !   specific yield times its saturated thickness, and the water table
+    !   drops accordingly. If the saturated zone cannot supply the outflow,
+    !   the rest is taken from the unsaturated layers above, bottom up.
+    ! - Inflow fills the layer that contains the water table and then the
+    !   layers above it in turn, each up to its effective porosity, and the
+    !   water table rises accordingly. Any inflow left when the column is full
+    !   is added to the top layer, whose excess goes to surface runoff in
+    !   Drainage.
+    !
+    ! The applied flux is added to col_wf%qflx_lat_layer.
+    !
+    ! !USES:
+    use elm_varcon , only : denice, watmin
+    !
+    ! !ARGUMENTS:
+    type(bounds_type)        , intent(in)    :: bounds
+    integer                  , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
+    integer                  , intent(in)    :: filter_hydrologyc(:) ! column filter for soil points
+    real(r8)                 , intent(in)    :: dtime                ! time step [s]
+    type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
+    type(soilstate_type)     , intent(in)    :: soilstate_vars
+    real(r8)                 , intent(in)    :: qflx_sat(bounds%begc:) ! net saturated lateral flux into each column [mm H2O/s]
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: fc, c, j, jwt, nb
+    real(r8) :: tot        ! flux still to apply [mm H2O] (positive into the column)
+    real(r8) :: dw         ! water added to a layer [mm H2O]
+    real(r8) :: s_y        ! specific yield [-]
+    real(r8) :: avail      ! water a layer can give [mm H2O]
+    real(r8) :: cap        ! water a layer can take [mm H2O]
+    real(r8), parameter :: tol = 1.e-8_r8   ! [mm H2O]
+    !-----------------------------------------------------------------------
+
+    associate(                                         &
+         zi         => col_pp%zi                     , & ! Input:  [real(r8) (:,:) ] interface depth (m)
+         dz         => col_pp%dz                     , & ! Input:  [real(r8) (:,:) ] layer thickness (m)
+         nlevbed    => col_pp%nlevbed                , & ! Input:  [integer  (:)   ] number of hydrologically active layers
+         h2osoi_liq => col_ws%h2osoi_liq             , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)
+         h2osoi_ice => col_ws%h2osoi_ice             , & ! Input:  [real(r8) (:,:) ] ice (kg/m2)
+         watsat     => soilstate_vars%watsat_col     , & ! Input:  [real(r8) (:,:) ] porosity
+         sucsat     => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:) ] minimum soil suction (mm)
+         bsw        => soilstate_vars%bsw_col        , & ! Input:  [real(r8) (:,:) ] Clapp and Hornberger "b"
+         zwt        => soilhydrology_vars%zwt_col      & ! Output: [real(r8) (:)   ] water table depth (m)
+         )
+
+      do fc = 1, num_hydrologyc
+         c   = filter_hydrologyc(fc)
+         nb  = nlevbed(c)
+         tot = qflx_sat(c)*dtime
+         if (tot == 0._r8) cycle
+
+         ! index of the deepest layer that lies entirely above the water table
+         jwt = nb
+         do j = 1, nb
+            if (zwt(c) <= zi(c,j)) then
+               jwt = j - 1
+               exit
+            end if
+         end do
+
+         if (tot < 0._r8) then
+            ! outflow: drain the layers at and below the water table in turn
+            do j = jwt+1, nb
+               s_y = watsat(c,j) * (1._r8 - (1._r8 + 1.e3_r8*zwt(c)/sucsat(c,j))**(-1._r8/bsw(c,j)))
+               s_y = max(s_y, 0.02_r8)
+               avail = min(s_y*(zi(c,j) - zwt(c))*1.e3_r8, max(h2osoi_liq(c,j) - watmin, 0._r8))
+               dw = min(max(tot, -avail), 0._r8)
+               h2osoi_liq(c,j) = h2osoi_liq(c,j) + dw
+               col_wf%qflx_lat_layer(c,j) = col_wf%qflx_lat_layer(c,j) + dw/dtime
+               tot = tot - dw
+               if (tot >= 0._r8) then
+                  zwt(c) = zwt(c) - dw/s_y/1.e3_r8
+                  exit
+               else
+                  zwt(c) = zi(c,j)
+               end if
+            end do
+            ! saturated zone exhausted: take the rest from the layers above
+            do j = min(jwt, nb), 1, -1
+               if (tot >= 0._r8) exit
+               dw = min(max(tot, -max(h2osoi_liq(c,j) - watmin, 0._r8)), 0._r8)
+               h2osoi_liq(c,j) = h2osoi_liq(c,j) + dw
+               col_wf%qflx_lat_layer(c,j) = col_wf%qflx_lat_layer(c,j) + dw/dtime
+               tot = tot - dw
+            end do
+            if (tot < -tol) then
+               call endrun(msg='ApplySaturatedLateralFlux: lateral outflow exceeds the water in the column'// &
+                    errMsg(__FILE__, __LINE__))
+            end if
+         else
+            ! inflow: fill the layers at and above the water table in turn
+            do j = min(jwt+1, nb), 1, -1
+               cap = max(watsat(c,j) - h2osoi_ice(c,j)/(dz(c,j)*denice), 0.01_r8)*dz(c,j)*1.e3_r8
+               cap = max(cap - h2osoi_liq(c,j), 0._r8)
+               dw  = min(tot, cap)
+               h2osoi_liq(c,j) = h2osoi_liq(c,j) + dw
+               col_wf%qflx_lat_layer(c,j) = col_wf%qflx_lat_layer(c,j) + dw/dtime
+               tot = tot - dw
+               s_y = watsat(c,j) * (1._r8 - (1._r8 + 1.e3_r8*zwt(c)/sucsat(c,j))**(-1._r8/bsw(c,j)))
+               s_y = max(s_y, 0.02_r8)
+               zwt(c) = max(zi(c,j-1), zwt(c) - dw/s_y/1.e3_r8)
+               if (tot <= 0._r8) exit
+            end do
+            if (tot > 0._r8) then
+               h2osoi_liq(c,1) = h2osoi_liq(c,1) + tot
+               col_wf%qflx_lat_layer(c,1) = col_wf%qflx_lat_layer(c,1) + tot/dtime
+            end if
+         end if
+      end do
+
+    end associate
+
+  end subroutine ApplySaturatedLateralFlux
 
   !-----------------------------------------------------------------------
   subroutine ThetaBasedWaterTable(bounds, num_hydrologyc, filter_hydrologyc, soilhydrology_vars, soilstate_vars)

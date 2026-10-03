@@ -265,7 +265,7 @@ contains
     use VegetationType       , only : veg_pp
     use ColumnType           , only : col_pp
     use elm_varctl           , only : use_lateral_subsurface_flow, lateral_theta_watertable
-    use SoilLateralFlowMod   , only : ComputeLateralFlux
+    use SoilLateralFlowMod   , only : ComputeLateralFlux, ApplySaturatedLateralFlux
     !
     ! !ARGUMENTS:
     implicit none
@@ -329,7 +329,8 @@ contains
     real(r8) :: dsmpds                                       !temporary variable
     real(r8) :: dhkds                                        !temporary variable
     real(r8) :: hktmp                                        !temporary variable
-    real(r8) :: qflx_lat(bounds%begc:bounds%endc,1:nlevgrnd)  ! lateral flux into each soil layer from neighboring grid cells [mm h2o/s]
+    real(r8) :: qflx_lat(bounds%begc:bounds%endc,1:nlevgrnd)  ! unsaturated lateral flux into each soil layer from neighboring grid cells [mm h2o/s]
+    real(r8) :: qflx_lat_sat(bounds%begc:bounds%endc)         ! net saturated lateral flux into each column [mm h2o/s]
     logical  :: bottom_noflux                                ! no flux at the bottom of the soil column and no aquifer coupling
     !-----------------------------------------------------------------------
 
@@ -570,7 +571,7 @@ contains
 
       if (use_lateral_subsurface_flow) then
          call ComputeLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, &
-              soilhydrology_vars, soilstate_vars, qflx_lat)
+              soilhydrology_vars, soilstate_vars, qflx_lat, qflx_lat_sat)
       end if
 
       ! Set up r, a, b, and c vectors for tridiagonal solution
@@ -707,7 +708,8 @@ contains
          endif
       end do
 
-      ! Add the lateral flux as a source term in each soil layer
+      ! Add the unsaturated lateral flux as a source term in each soil layer
+      ! (the saturated lateral flux is applied at the water table after the solve)
       if (use_lateral_subsurface_flow) then
          do fc = 1, num_hydrologyc
             c = filter_hydrologyc(fc)
@@ -841,6 +843,11 @@ contains
             qcharge(c) = 0._r8
          end if
       end do
+
+      if (use_lateral_subsurface_flow) then
+         call ApplySaturatedLateralFlux(bounds, num_hydrologyc, filter_hydrologyc, dtime, &
+              soilhydrology_vars, soilstate_vars, qflx_lat_sat)
+      end if
 
       ! compute the water deficit and reset negative liquid water content
       !  Jinyun Tang
