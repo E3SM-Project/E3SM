@@ -83,7 +83,6 @@ Land            under components/elm/src
 -----------     ------------------------
 FATES           external_models/fates           LBNL, NCAR, LANL    BSD
 Betr            external_models/sbetr           LBNL, NCAR          BSD
-MPP             external_models/mpp             LBNL                BSD
 
 Atmosphere      under components/eam/src
 -----------     ------------------------
