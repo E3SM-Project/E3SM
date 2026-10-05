@@ -5,7 +5,7 @@
 <case_name>E3SM_GCAM_USA_SSP245</case_name>
 
 <use_gcam_usa>.true.</use_gcam_usa>
-<num_gcam_energy_regions>82</num_gcam_energy_regions>
+<num_gcam_energy_regions>83</num_gcam_energy_regions>
 
 <crop_addtreeonly>0</crop_addtreeonly>
 <crop_setherbfracrem>0.2</crop_setherbfracrem>
