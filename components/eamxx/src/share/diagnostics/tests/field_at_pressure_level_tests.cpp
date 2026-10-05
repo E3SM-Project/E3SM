@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/diagnostics/field_at_pressure_level.hpp"
+#include "share/diagnostics/pressure_level_index.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/core/eamxx_setup_random_test.hpp"
@@ -34,7 +35,8 @@ create_fields(std::shared_ptr<const AbstractGrid> grid);
 std::shared_ptr<FieldAtPressureLevel>
 get_test_diag(const std::map<std::string,Field>& fields,
               std::shared_ptr<const AbstractGrid> grid,
-              const std::string& type, const Real plevel);
+              const std::string& type, const Real plevel,
+              const util::TimeStamp& t0);
 
 Real get_test_pres(const int col, const int lev, const int num_lev, const int num_cols);
 Real get_test_data(const Real pres);
@@ -72,7 +74,7 @@ TEST_CASE("field_at_pressure_level_p2")
     // Test 1: Take a slice at a random value for variable defined at midpoint.
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
       Real plevel = std::round(pdf_pmid(engine));
-      auto diag = get_test_diag(fmap, grid, "mid", plevel);
+      auto diag = get_test_diag(fmap, grid, "mid", plevel, t0);
       diag->initialize();
       diag->compute(t0);
       auto diag_f = diag->get();
@@ -87,7 +89,7 @@ TEST_CASE("field_at_pressure_level_p2")
     // Test 2: Take a slice at a random value for variable defined at interface.
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
       Real plevel = std::round(pdf_pint(engine));
-      auto diag = get_test_diag(fmap, grid, "int", plevel);
+      auto diag = get_test_diag(fmap, grid, "int", plevel, t0);
       diag->initialize();
       diag->compute(t0);
       auto diag_f = diag->get();
@@ -108,7 +110,7 @@ TEST_CASE("field_at_pressure_level_p2")
     // Test 3: Take a slice at a value outside the bounds, which should return the default masked value
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
       Real plevel = pressure_bounds.p_surf*2;
-      auto diag = get_test_diag(fmap, grid, "int", plevel);
+      auto diag = get_test_diag(fmap, grid, "int", plevel, t0);
       diag->initialize();
       diag->compute(t0);
       auto diag_f = diag->get();
@@ -191,7 +193,8 @@ create_fields(std::shared_ptr<const AbstractGrid> grid)
 std::shared_ptr<FieldAtPressureLevel>
 get_test_diag(const std::map<std::string,Field>& fields,
               std::shared_ptr<const AbstractGrid> grid,
-              const std::string& type, const Real plevel)
+              const std::string& type, const Real plevel,
+              const util::TimeStamp& t0)
 {
   std::string fname = "V_"+type;
   ekat::ParameterList params;
@@ -200,8 +203,29 @@ get_test_diag(const std::map<std::string,Field>& fields,
   params.set("pressure_units",std::string("Pa"));
   const auto& comm = grid->get_comm();
   auto diag = std::make_shared<FieldAtPressureLevel>(comm,params,grid);
-  for (const auto& fname : diag->get_input_fields_names()) {
-    auto f = fields.at(fname);
+
+  // FieldAtPressureLevel now depends on the (mid/int) bracket-index fields
+  // computed by PressureLevelIndex. Since this test builds the diag by hand
+  // (rather than through the io-stream machinery, which resolves such
+  // dependencies automatically), compute both variants here and add them
+  // to a local, augmented field map.
+  auto all_fields = fields;
+  for (const std::string layer : {"mid","int"}) {
+    ekat::ParameterList idx_params;
+    idx_params.set("pressure_value",std::to_string(plevel));
+    idx_params.set("pressure_units",std::string("Pa"));
+    idx_params.set("vertical_layer",layer);
+    auto idx_diag = std::make_shared<PressureLevelIndex>(comm,idx_params,grid);
+    for (const auto& fn : idx_diag->get_input_fields_names()) {
+      idx_diag->set_input_field(fields.at(fn));
+    }
+    idx_diag->initialize();
+    idx_diag->compute(t0);
+    all_fields[idx_diag->get().name()] = idx_diag->get();
+  }
+
+  for (const auto& in_name : diag->get_input_fields_names()) {
+    auto f = all_fields.at(in_name);
     diag->set_input_field(f);
   }
   return diag;

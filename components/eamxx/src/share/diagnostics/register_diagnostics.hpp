@@ -4,6 +4,8 @@
 // Include all diagnostics
 #include "field_at_level.hpp"
 #include "field_at_height.hpp"
+#include "height_level_index.hpp"
+#include "pressure_level_index.hpp"
 #include "potential_temperature.hpp"
 #include "atm_density.hpp"
 #include "exner.hpp"
@@ -40,7 +42,9 @@ inline void register_diagnostics () {
   diag_factory.register_product("PotentialTemperature",&create_diagnostic<PotentialTemperature>);
   diag_factory.register_product("FieldAtLevel",&create_diagnostic<FieldAtLevel>);
   diag_factory.register_product("FieldAtHeight",&create_diagnostic<FieldAtHeight>);
+  diag_factory.register_product("HeightLevelIndex",&create_diagnostic<HeightLevelIndex>);
   diag_factory.register_product("FieldAtPressureLevel",&create_diagnostic<FieldAtPressureLevel>);
+  diag_factory.register_product("PressureLevelIndex",&create_diagnostic<PressureLevelIndex>);
   diag_factory.register_product("AtmosphereDensity",&create_diagnostic<AtmDensity>);
   diag_factory.register_product("Exner",&create_diagnostic<Exner>);
   diag_factory.register_product("VirtualTemperature",&create_diagnostic<VirtualTemperature>);

@@ -133,6 +133,8 @@ create_diagnostic (const std::string& diag_field_name,
   std::regex field_at_l (R"()" + generic_field + R"(_at_(lev_(\d+)|model_(top|bot))$)");
   std::regex field_at_p (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(hPa|mb|Pa)$)");
   std::regex field_at_h (R"()" + generic_field + R"(_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)$)");
+  std::regex lev_idx_p (R"(lev_at_(\d+(\.\d+)?)(hPa|mb|Pa)_(mid|int)$)");
+  std::regex lev_idx_h (R"(lev_at_(\d+(\.\d+)?)(m)_above_(sealevel|surface)_(mid|int)$)");
   std::regex surf_mass_flux ("precip_(liq|ice|total)_surf_mass_flux$");
   std::regex water_path ("(Ice|Liq|Rain|Rime|Vap)WaterPath$");
   std::regex number_path ("(Ice|Liq|Rain)NumberPath$");
@@ -172,6 +174,19 @@ create_diagnostic (const std::string& diag_field_name,
     params.set("height_units",matches[4].str());
     params.set("surface_reference", matches[5].str());
     diag_name = "FieldAtHeight";
+  } else if (std::regex_search(diag_field_name,matches,lev_idx_p)) {
+    params.set("grid_name",grid->name());
+    params.set("pressure_value",matches[1].str());
+    params.set("pressure_units", matches[3].str());
+    params.set("vertical_layer", matches[4].str());
+    diag_name = "PressureLevelIndex";
+  } else if (std::regex_search(diag_field_name,matches,lev_idx_h)) {
+    params.set("grid_name",grid->name());
+    params.set("height_value",matches[1].str());
+    params.set("height_units",matches[3].str());
+    params.set("surface_reference", matches[4].str());
+    params.set("vertical_layer", matches[5].str());
+    diag_name = "HeightLevelIndex";
   } else if (std::regex_search(diag_field_name,matches,surf_mass_flux)) {
     diag_name = "precip_surf_mass_flux";
     params.set<std::string>("precip_type",matches[1].str());
