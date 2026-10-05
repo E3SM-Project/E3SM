@@ -5515,7 +5515,7 @@ value per component.</p>
 (which is not possible for individual XML parameters). Entries that do not match
 any field in need of initialization are ignored. A field can be in both arrays, in which case
 the forced constant wins: this allows to force a field for a single run, without having to remove
-it from the fallback list. A field in <code>copy_fields</code> cannot be in either constant array.</p>
+it from the fallback list.</p>
 <p>The order of operations is: fields in <code>force_constant_fields</code> are set first; then
 fields in <code>fallback_constant_fields</code> that are not in the IC file are set; finally,
 all remaining fields are read from the IC file.</p>
@@ -5523,8 +5523,6 @@ all remaining fields are read from the IC file.</p>
 one line (at <code>info</code> level) for each field in <code>force_constant_fields</code> (whose IC file value, if any,
 is ignored), and for each field in <code>fallback_constant_fields</code> that is found in the IC file
 (so its fallback constant is not used).</p>
-<p>Similarly, <code>initial_conditions::copy_fields</code> initializes fields as a copy of other
-fields, with entries of the form <code>tgt_field_name:src_field_name</code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Fields can <em>only</em> be initialized through these arrays: setting a field with an

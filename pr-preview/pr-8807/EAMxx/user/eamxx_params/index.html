@@ -5491,7 +5491,7 @@
 </ul>
 </li>
 <li>zm::cape_threshold:<ul>
-<li>description: ZM CAPE threshold <a href="traditionally zero                                               w/ trig_dcape, or 70 otherwise">J/kg</a></li>
+<li>description: ZM CAPE threshold <a href="traditionally zero w/ trig_dcape, or 70 otherwise">J/kg</a></li>
 <li>type: real</li>
 </ul>
 </li>
@@ -6511,7 +6511,7 @@
 </ul>
 </li>
 <li>nudging::nudging_fields:<ul>
-<li>description: List of fields to be nudged.  Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx</li>
+<li>description: List of fields to be nudged. Note, syntax of 'A:B' represents nudging field A with data from field B in files, syntax of 'A' assumes that nudging file has the same variables name as EAMxx</li>
 <li>type: array(string)</li>
 </ul>
 </li>
@@ -6536,13 +6536,13 @@
 </ul>
 </li>
 <li>nudging::source_pressure_type:<ul>
-<li>description: Flag for how source pressure levels are handled in the nudging dataset.     TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev).     STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).</li>
+<li>description: Flag for how source pressure levels are handled in the nudging dataset. TIME_DEPENDENT_3D_PROFILE: The dataset contains a time-varying pressure profile, variable name 'p_mid' with dimensions (time,ncol,nlev). STATIC_1D_VERTICAL_PROFILE: The dataset uses a fixed in time single pressure profile, variable name 'p_lev' with dimension (nlev).</li>
 <li>type: string</li>
 <li>valid values: TIME_DEPENDENT_3D_PROFILE,STATIC_1D_VERTICAL_PROFILE</li>
 </ul>
 </li>
 <li>nudging::source_pressure_file:<ul>
-<li>description: If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined.     Default is to look for p_levs in the first nudging_filenames_patterns file</li>
+<li>description: If STATIC_1D_VERTICAL_PROFILE, this is an optional arg to point to a file with the source pressure levels defined. Default is to look for p_levs in the first nudging_filenames_patterns file</li>
 <li>type: string</li>
 </ul>
 </li>
@@ -7144,12 +7144,7 @@
 </ul>
 </li>
 <li>initial_conditions::fallback_constant_fields:<ul>
-<li>description: Fields to initialize to a constant if they are not in the IC file, as 'name:value' entries (scalars) or 'name:value1;value2;...;valueN' (vectors)</li>
-<li>type: array(string)</li>
-</ul>
-</li>
-<li>initial_conditions::copy_fields:<ul>
-<li>description: Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries</li>
+<li>description: Fields to initialize to a constant if they are not in the IC file. The syntax is 'name:value' for scalar fields. For vector fields, if different components need different values, use the syntax 'name:value1;value2;...;valueN', otherwise use the same syntax as for scalar fields.</li>
 <li>type: array(string)</li>
 </ul>
 </li>
