@@ -114,6 +114,12 @@ void Functions<S,D>::gwd_compute_tendencies_from_stress_divergence(
     vtgw(k) = ubt * yv;
   });
 
+  // All team threads must be done reading `work` before the slot goes back to
+  // the pool: only (tend_level-ktop) threads take an iteration of the sum loop
+  // above, so the rest fall straight through into the next routine, which takes
+  // this same memory and writes it immediately.
+  team.team_barrier();
+
   // Release temporary variables from the workspace
   workspace.release(work_1d);
 }
