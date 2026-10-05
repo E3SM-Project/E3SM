@@ -7144,7 +7144,12 @@
 </ul>
 </li>
 <li>initial_conditions::fallback_constant_fields:<ul>
-<li>description: Fields to initialize to a constant if they are not in the IC file, as 'name:value' entries</li>
+<li>description: Fields to initialize to a constant if they are not in the IC file, as 'name:value' entries (scalars) or 'name:value1;value2;...;valueN' (vectors)</li>
+<li>type: array(string)</li>
+</ul>
+</li>
+<li>initial_conditions::copy_fields:<ul>
+<li>description: Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries</li>
 <li>type: array(string)</li>
 </ul>
 </li>
