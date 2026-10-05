@@ -204,7 +204,7 @@ module seq_diag_mct
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
        '      hpolar','    hh2otemp','       hgsmb','      hfrazi', &
        '     wfreeze','    wfreezei','       wmelt','       wrain','       wsnow', &
-       '       wpolar','      wgsmb','       wevap','     wrunoff','     wfrzrof', &
+       '      wpolar','       wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
        '   wevap_16O',' wrunoff_16O',' wfrzrof_16O',                               &
