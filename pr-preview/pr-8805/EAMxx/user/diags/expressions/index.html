@@ -5247,7 +5247,7 @@ is an honest analogue.</p>
 <td><code>X_atm_backtend</code></td>
 </tr>
 <tr>
-<td><code>X.broadcast(Y)</code></td>
+<td><code>X.broadcast_like(Y)</code></td>
 <td>(none)</td>
 </tr>
 </tbody>
@@ -5268,8 +5268,8 @@ is an honest analogue.</p>
   of history is kept.</li>
 <li><code>mean('col')</code> is always area weighted, so <code>weights</code> does not apply to it.
   <code>weights</code> for <code>'lev'</code> is <code>'dp'</code> or <code>'dz'</code>.</li>
-<li><code>broadcast</code> repeats <code>X</code> along the dimensions of <code>Y</code> that <code>X</code> lacks, so that
-  <code>X</code> can be combined with <code>Y</code>. E.g., <code>dp.broadcast(horiz_winds)</code> would produce
+<li><code>broadcast_like</code> repeats <code>X</code> along the dimensions of <code>Y</code> that <code>X</code> lacks, so that
+  <code>X</code> can be combined with <code>Y</code>. E.g., <code>dp.broadcast_like(horiz_winds)</code> would produce
   a version of <code>dp</code> (call it <code>dp_bcast</code>) with layout <code>(ncol,2,lev)</code>, where
   <code>dp_bcast(i,:,k)==dp(i,k)</code>. The layout of <code>X</code> must be an ordered subset of
   that of <code>Y</code>. Notice that <code>Y</code> is only used for its layout, its values are
