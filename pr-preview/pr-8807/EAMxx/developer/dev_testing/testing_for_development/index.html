@@ -5441,11 +5441,11 @@ Defining the test behavior and pass/fail criteria requires 3 files:</p>
 <span class="w">  </span><span class="nt">topography_filename</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}</span>
 
 <span class="w">  </span><span class="c1"># other variables to initialize to a constant, regardless of the IC file</span>
-<span class="w">  </span><span class="c1"># (vector fields: "name:v1;v2;..."). Use fallback_constant_fields to only</span>
+<span class="w">  </span><span class="c1"># (vector fields: "name=v1;v2;..."). Use fallback_constant_fields to only</span>
 <span class="w">  </span><span class="c1"># set them if they are not in the IC file.</span>
 <span class="w">  </span><span class="nt">force_constant_fields</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"num_ABC:42.0"</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"num_XYZ:1.618"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"num_ABC=42.0"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"num_XYZ=1.618"</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"&lt;input_variable&gt;:&lt;value&gt;"</span>
 <span class="c1"># The parameters for I/O control</span>
 <span class="nt">scorpio</span><span class="p">:</span>

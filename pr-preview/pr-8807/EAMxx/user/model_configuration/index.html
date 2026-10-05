@@ -5496,7 +5496,7 @@ will be removed from the generated <code>namelist_defaults.xml</code>
 (and <code>eamxx_input.yaml</code>) files, along with all their nested parameters.</p>
 <h3 id="initializing-fields-to-a-constant-value">Initializing fields to a constant value</h3>
 <p>Fields can be initialized to a constant value via two arrays in the <code>initial_conditions</code> list.
-Each entry has the form <code>field_name:value</code>. For vector fields, one can either
+Each entry has the form <code>field_name=value</code>. For vector fields, one can either
 provide a single value (used for all components), or a <code>;</code>-separated list with one
 value per component.</p>
 <ul>
@@ -5507,9 +5507,9 @@ value per component.</p>
   initialize fields that are not stored in the standard IC files, while still allowing a user
   to provide them in a custom IC file.</li>
 </ul>
-<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>initial_conditions::fallback_constant_fields+<span class="o">=</span>my_field:1.5
-./atmchange<span class="w"> </span>initial_conditions::force_constant_fields+<span class="o">=</span><span class="s2">"my_vector_field:1.5;2.5"</span>
-./atmchange<span class="w"> </span>initial_conditions::fallback_constant_fields-<span class="o">=</span>tke:0.0
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>initial_conditions::fallback_constant_fields+<span class="o">=</span><span class="nv">my_field</span><span class="o">=</span><span class="m">1</span>.5
+./atmchange<span class="w"> </span>initial_conditions::force_constant_fields+<span class="o">=</span><span class="s2">"my_vector_field=1.5;2.5"</span>
+./atmchange<span class="w"> </span>initial_conditions::fallback_constant_fields-<span class="o">=</span><span class="nv">tke</span><span class="o">=</span><span class="m">0</span>.0
 </code></pre></div>
 <p>Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
