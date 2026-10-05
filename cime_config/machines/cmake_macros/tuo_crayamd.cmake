@@ -1,12 +1,21 @@
 string(APPEND CONFIG_ARGS " --host=cray")
 string(APPEND CPPDEFS " -DTHRUST_IGNORE_CUB_VERSION_CHECK")
 
+set(MPICC  "cc")
+set(MPICXX "CC")
+set(MPIFC  "ftn")
+
+set(SCC  "${MPICC}")
+set(SCXX "${MPICXX}")
+set(SFC  "${MPIFC}")
+
 if (COMP_NAME STREQUAL gptl)
 	string(APPEND CPPDEFS " -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY")
 endif()
 
-# required to resolve bshr_infnan_mod.F90 compile issue
-string(APPEND CPPDEFS " -DCPRCRAY")
+# Match Cray Fortran/C interoperability naming and retain the existing
+# CPRCRAY define needed by bshr_infnan_mod.F90.
+string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
 
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=OFF -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=OFF -DKokkos_ARCH_AMD_GFX942=OFF -DKokkos_ARCH_AMD_GFX942_APU=OFF")
 
