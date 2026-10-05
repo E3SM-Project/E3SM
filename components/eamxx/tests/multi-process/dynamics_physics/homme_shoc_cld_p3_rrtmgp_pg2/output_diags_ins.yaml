@@ -36,6 +36,7 @@ fields:
       - T_bot     := T_mid.isel(lev=-1)
       - T_500hPa  := T_mid.interp(p_mid=500, units='hPa')
       - T_10m     := T_mid.interp(z_mid=10, reference='surface')
+      - T_1000msl := T_mid.interp(z_mid=1000, reference='sealevel')
       - T_colavg  := T_mid.mean('col')
       - T_vavg    := T_mid.mean('lev')
       - T_vsum    := T_mid.sum('lev')
