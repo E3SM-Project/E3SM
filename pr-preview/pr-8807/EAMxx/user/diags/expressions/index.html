@@ -5203,6 +5203,10 @@ is an honest analogue.</p>
 <td><code>X_at_10m_above_surface</code></td>
 </tr>
 <tr>
+<td><code>X.interp(z_mid=1000, reference='sealevel')</code></td>
+<td><code>X_at_1000m_above_sealevel</code></td>
+</tr>
+<tr>
 <td><code>X.mean('col')</code></td>
 <td><code>X_horiz_avg</code></td>
 </tr>
@@ -5256,6 +5260,18 @@ is an honest analogue.</p>
 <li><code>interp</code> takes exactly one of <code>p_mid</code> or <code>z_mid</code>, named after the coordinate
   as in xarray. <code>units</code> defaults to <code>Pa</code> and <code>m</code> respectively; <code>reference</code>
   (<code>'surface'</code> or <code>'sealevel'</code>, default <code>'sealevel'</code>) applies to <code>z_mid</code> only.</li>
+<li><strong>A target outside a column's data range is filled with the missing-value
+  marker, except near the surface with <code>reference='surface'</code>.</strong> <code>interp(p_mid=..)</code>
+  fills at either end: there is no meaningful way to extrapolate past the model
+  top or below the surface in pressure space. <code>interp(z_mid=.., reference='sealevel')</code>
+  does the same at both ends, since a target elevation can legitimately sit
+  below a mountain's surface, where the quantity is not defined. But
+  <code>interp(z_mid=.., reference='surface')</code> is expected to always be well formed
+  close to the ground -- <code>wind_speed_at_2m_above_surface</code> should mean something
+  even when the lowest model level sits well above 2m -- so it <em>extrapolates</em>
+  using the nearest level instead of filling when the target is below the
+  bottom entry. That exception is for the near-surface end only: above the
+  model top, <code>reference='surface'</code> fills too, exactly like the other two cases.</li>
 <li><strong><code>shift</code> looks BACK in time</strong>, following xarray's sign convention: a positive
   shift moves data forward, so <code>shift(time=1)</code> is the value from the <em>previous</em>
   step. <code>shift(time=-1)</code> would be the value from a step <em>ahead</em>, which a running

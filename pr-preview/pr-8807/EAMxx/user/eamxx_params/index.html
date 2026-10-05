@@ -7148,11 +7148,6 @@
 <li>type: array(string)</li>
 </ul>
 </li>
-<li>initial_conditions::copy_fields:<ul>
-<li>description: Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries</li>
-<li>type: array(string)</li>
-</ul>
-</li>
 <li>initial_conditions::perturbed_fields:<ul>
 <li>description: IC fields (with level dimension) to apply a random perturbation to based on the parameters below.</li>
 <li>type: array(string)</li>
@@ -7337,7 +7332,7 @@
 </ul>
 </li>
 <li>ctl_nl::tom_sponge_start:<ul>
-<li>description: Starting height of the sponge layer, in hPa.</li>
+<li>description: sponge layer bot pressure [hPa]</li>
 <li>type: real</li>
 </ul>
 </li>
