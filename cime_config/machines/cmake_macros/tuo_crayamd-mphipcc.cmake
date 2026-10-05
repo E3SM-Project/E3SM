@@ -49,12 +49,36 @@ set(E3SM_LINK_WITH_FORTRAN "TRUE")
 
 set(PIO_FILESYSTEM_HINTS "lustre")
 
+# Keep the runtime search path attached to the binaries instead of relying on
+# LD_LIBRARY_PATH in the user's shell or batch environment.
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_SKIP_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+
+foreach (_prefix
+	"$ENV{NETCDF_C_PATH}"
+	"$ENV{NETCDF_FORTRAN_PATH}"
+	"$ENV{PNETCDF_PATH}"
+	"$ENV{HDF5_ROOT}"
+	"$ENV{TEMPESTREMAP_ROOT}"
+	"$ENV{MOAB_ROOT}")
+	list(APPEND CMAKE_BUILD_RPATH "${_prefix}/lib" "${_prefix}/lib64")
+	list(APPEND CMAKE_INSTALL_RPATH "${_prefix}/lib" "${_prefix}/lib64")
+endforeach()
+
 # The MOAB coupler pulls in a MOAB build that is UBSan-instrumented in this
 # environment, so the final executable must link the UBSan runtime.
 if (DEFINED COMP_INTERFACE AND COMP_INTERFACE STREQUAL "moab")
 	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -lubsan -Wl,--as-needed")
 
 	# MPICH GPU-aware support requires the GTL library to be retained even under --as-needed.
-	# Also add an rpath so compute nodes can find it.
-	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -Wl,-l:libmpi_gtl_hsa.so -Wl,--as-needed -Wl,-rpath,/opt/cray/pe/mpich/9.0.1/gtl/lib")
+	string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed -Wl,-l:libmpi_gtl_hsa.so -Wl,--as-needed")
+	list(APPEND CMAKE_BUILD_RPATH "/opt/cray/pe/mpich/9.0.1/gtl/lib")
+	list(APPEND CMAKE_INSTALL_RPATH "/opt/cray/pe/mpich/9.0.1/gtl/lib")
 endif()
+
+list(REMOVE_DUPLICATES CMAKE_BUILD_RPATH)
+list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
+
+string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--enable-new-dtags")
+string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--enable-new-dtags")

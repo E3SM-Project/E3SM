@@ -3456,6 +3456,7 @@
       <env name="HDF5_ROOT">$ENV{HDF5_ROOT}</env>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="TEMPESTREMAP_ROOT">/usr/workspace/e3sm/apps/tempestremap/tuo-crayamd-mpich-9.0.1/master</env>
       <env name="MOAB_ROOT">/usr/workspace/e3sm/apps/moab/tuo-crayamd-mpich-9.0.1/master/</env>
     </environment_variables>
     <environment_variables compiler="crayamd-mphipcc">
