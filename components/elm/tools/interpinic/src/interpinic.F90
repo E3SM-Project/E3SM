@@ -814,7 +814,7 @@ contains
           do n = 1, numpfts
              if (wti(n)>0. .and. (ltypei(n) == ltypeo(no)) ) then
                 if ( allPFTSfromSameGC .or. &
-                     (ltypeo(no) > istsoil) .or. &
+                     (ltypeo(no) > istcrop) .or. &
                      (vtypei(n) == vtypeo(no)) )then
                    dy   = abs(lato(no)-lati(n))*re
                    dx   = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
