@@ -131,7 +131,7 @@ contains
   end subroutine get_dyn_grid_data_f90
 
   subroutine get_phys_grid_data_f90 (pg_type, gids_ptr, lat_ptr, lon_ptr, area_ptr) bind(c)
-    use phys_grid_mod, only: get_my_phys_data
+    use phys_grid_mod, only: get_my_phys_data, get_num_local_columns
     !
     ! Input(s)
     !
@@ -147,7 +147,7 @@ contains
     ! Sanity check
     call check_grids_inited(.true.)
 
-    ncols = get_num_local_columns_f90(mod(pg_type,10))
+    ncols = get_num_local_columns(mod(pg_type,10))
 
     call c_f_pointer (gids_ptr, gids, [ncols])
     call c_f_pointer (lat_ptr,  lat,  [ncols])
