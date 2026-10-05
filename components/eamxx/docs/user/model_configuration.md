@@ -383,7 +383,7 @@ Since these are entries of an array, they can be both added and removed
 (which is not possible for individual XML parameters). Entries that do not match
 any field in need of initialization are ignored. A field can be in both arrays, in which case
 the forced constant wins: this allows to force a field for a single run, without having to remove
-it from the fallback list. A field in `copy_fields` cannot be in either constant array.
+it from the fallback list.
 
 The order of operations is: fields in `force_constant_fields` are set first; then
 fields in `fallback_constant_fields` that are not in the IC file are set; finally,
@@ -393,9 +393,6 @@ To help catch a forgotten entry or a custom IC file that is not being used, EAMx
 one line (at `info` level) for each field in `force_constant_fields` (whose IC file value, if any,
 is ignored), and for each field in `fallback_constant_fields` that is found in the IC file
 (so its fallback constant is not used).
-
-Similarly, `initial_conditions::copy_fields` initializes fields as a copy of other
-fields, with entries of the form `tgt_field_name:src_field_name`.
 
 !!! note
     Fields can _only_ be initialized through these arrays: setting a field with an

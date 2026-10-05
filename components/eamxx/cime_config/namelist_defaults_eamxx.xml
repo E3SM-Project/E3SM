@@ -849,8 +849,6 @@ be lost if SCREAM_HACK_XML is not enabled.
         o3_volume_mix_ratio=0
     </fallback_constant_fields>
 
-    <copy_fields type="array(string)" doc="Fields to initialize as a copy of another field, as 'tgt_name:src_name' entries"/>
-
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>
     <perturbed_fields type="array(string)" COMPSET=".*DP-EAMxx">T_mid</perturbed_fields>

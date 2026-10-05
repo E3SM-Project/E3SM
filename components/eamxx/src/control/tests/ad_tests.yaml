@@ -9,8 +9,6 @@ initial_conditions:
     - "A=1"
     - "Z=1"
     - "V=2.0;3.0"
-  copy_fields:
-    - "Z:A"
 
 eamxx:
   atm_procs_list: [dummy1, dummy2, dummy3]

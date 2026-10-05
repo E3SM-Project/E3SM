@@ -74,7 +74,7 @@ namespace control {
  *  6) All the atm inputs (that the AD can deduce by asking the atm proc group for the required fiedls)
  *     are initialized. For restart runs, all fields are read from a netcdf file (to allow BFB
  *     restarts), while for initial runs we offer a few more options (e.g., init a field to
- *     a constant, or as a copy of another field). During this process, we also set the initial
+ *     a constant). During this process, we also set the initial
  *     time stamp on all the atm input fields.
  *     If an atm input is not found in the IC file, we'll error out, saving a DAG of the
  *     atm processes, which the user can inspect (to see what's missing in the IC file).
@@ -1060,11 +1060,11 @@ void AtmosphereDriver::set_initial_conditions ()
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Only these parameters are allowed in the initial_conditions list. In particular, fields
-  // cannot be set via individual entries (e.g., 'qr: 0.0'): use the *_constant_fields/copy_fields arrays.
+  // cannot be set via individual entries (e.g., 'qr: 0.0'): use the *_constant_fields arrays.
   {
     const strvec_t valid_params = {
       "filename", "topography_filename",
-      "force_constant_fields", "fallback_constant_fields", "copy_fields",
+      "force_constant_fields", "fallback_constant_fields",
       "perturbed_fields", "generate_perturbation_random_seed",
       "perturbation_random_seed", "perturbation_limit", "perturbation_minimum_pressure"
     };
@@ -1073,9 +1073,7 @@ void AtmosphereDriver::set_initial_conditions ()
           "Error! Unrecognized parameter in the initial_conditions list: '" + n + "'.\n"
           "       To initialize a field to a constant, use initial_conditions::force_constant_fields\n"
           "       (always used) or initial_conditions::fallback_constant_fields (used only if the field\n"
-          "       is not in the IC file). Entries are 'name=value', or 'name=v1;v2;...' for vector fields.\n"
-          "       To initialize a field as a copy of another field, use initial_conditions::copy_fields\n"
-          "       (entries 'tgt:src').\n");
+          "       is not in the IC file). Entries are 'name=value', or 'name=v1;v2;...' for vector fields.\n");
     }
   }
 
@@ -1086,8 +1084,6 @@ void AtmosphereDriver::set_initial_conditions ()
   //  - fallback_constant_fields: the field is set to the constant ONLY IF it is not in the IC file
   //                              (if it is, the field is read from the file)
   //  If a field is in both, the forced constant wins.
-  // Copy initialization is specified via the copy_fields array, with entries
-  //   tgt_name:src_name
   // NOTE: entries that do not match any field needing initialization are ignored.
   auto trim = [](const std::string& s) {
     const auto b = s.find_first_not_of(" \t");
@@ -1139,20 +1135,13 @@ void AtmosphereDriver::set_initial_conditions ()
 
   const auto force_values    = parse_constants("force_constant_fields");
   const auto fallback_values = parse_constants("fallback_constant_fields");
-  const auto copy_sources    = parse_entries("copy_fields");
 
   // A field CAN be in both force_ and fallback_constant_fields: the forced constant wins. This allows
   // users to force a field for a single run, without having to remove it from the (default) fallback list.
-  // A field in copy_fields, however, cannot be in any of the constant arrays.
-  for (const auto& [name,src] : copy_sources) {
-    EKAT_REQUIRE_MSG (force_values.count(name)==0 and fallback_values.count(name)==0,
-        "Error! Field '" + name + "' appears in both initial_conditions::copy_fields and one of\n"
-        "       force_constant_fields/fallback_constant_fields.\n");
-  }
 
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
   // added to the STARTUP group themselves (see set_initialization_groups): only their
-  // subfields are. Hence, an initial condition (constant value or copy-from-field)
+  // subfields are. Hence, an initial condition (constant value)
   // specified for the parent field name would be silently ignored. Catch this early,
   // and ask the user to set each subfield individually instead.
   for (const auto& gn : m_grids_manager->get_grid_names()) {
@@ -1160,8 +1149,7 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& f = *it.second;
       const auto& children = f.get_header().get_children();
       if (children.size()>0 and
-          (force_values.count(f.name())>0 or fallback_values.count(f.name())>0 or
-           copy_sources.count(f.name())>0)) {
+          (force_values.count(f.name())>0 or fallback_values.count(f.name())>0)) {
         std::string child_names;
         for (auto c : children)
           child_names += c.lock()->get_identifier().name() + " ";
@@ -1178,8 +1166,7 @@ void AtmosphereDriver::set_initial_conditions ()
 
   // Process all fields in the STARTUP group. For each, either init to
   // a constant (forced, or fallback if the field is not in the IC file),
-  // add it to list of fields to read from file, or add it to list of fields
-  // to copy from another field.
+  // or add it to list of fields to read from file.
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
 
   // To decide whether a fallback constant is needed, we need to know if a field is in the IC file.
@@ -1205,7 +1192,6 @@ void AtmosphereDriver::set_initial_conditions ()
   std::set<std::string> forced_fields;
   std::set<std::string> fallback_fields_found_in_file;
   strmap_t<std::set<std::string>> ic_fields_names;
-  std::vector<FieldIdentifier> ic_fields_to_copy;
 
   strmap_t<strvec_t> topography_file_fields_names;
   strmap_t<strvec_t> topography_eamxx_fields_names;
@@ -1236,10 +1222,6 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (use_fallback) {
         // The field is not in the IC file, so we fall back to the constant provided by the user
         initialize_constant_field(fid, fallback_values.at(fname));
-        m_fields_inited[grid_name].insert(fname);
-      } else if (copy_sources.count(fname)>0) {
-        // The user requested this field to be a copy of another field
-        ic_fields_to_copy.push_back(fid);
         m_fields_inited[grid_name].insert(fname);
       } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
         // these fields need to be loaded from the topography file
@@ -1374,28 +1356,6 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     }
   }
-
-  // If there were any fields that needed to be copied per the input yaml file, now we copy them.
-  m_atm_logger->debug("    [EAMxx] Processing fields to copy ...");
-  for (const auto& tgt_fid : ic_fields_to_copy) {
-    const auto& tgt_fname = tgt_fid.name();
-    const auto& gname = tgt_fid.get_grid_name();
-
-    const auto& src_fname = copy_sources.at(tgt_fname);
-
-    // The field must exist in the fm on the input field's grid
-    EKAT_REQUIRE_MSG (m_field_mgr->has_field(src_fname, gname),
-        "Error! Source field for initial condition not found in the field manager.\n"
-        "       Grid name:     " + gname + "\n"
-        "       Field to init: " + tgt_fname + "\n"
-        "       Source field:  " + src_fname + " (NOT FOUND)\n");
-
-    // Get the two fields, and copy src to tgt
-    auto f_tgt = m_field_mgr->get_field(tgt_fname, gname);
-    auto f_src = m_field_mgr->get_field(src_fname, gname);
-    f_tgt.deep_copy(f_src);
-  }
-  m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
