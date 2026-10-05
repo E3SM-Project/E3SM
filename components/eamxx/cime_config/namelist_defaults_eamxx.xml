@@ -304,6 +304,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Water isotopes (subclass of water tracers with fractionation physics) -->
     <water_isotopes inherit="atm_proc_base">
       <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+      <liquid_vapor_formulation type="string" doc="Source for liquid/vapor fractionation parameters">horita_wesolowski_1994</liquid_vapor_formulation>
+      <ice_vapor_formulation type="string" doc="Source for ice/vapor fractionation parameters">merlivat_nief_1967</ice_vapor_formulation>
+      <standard_ratio_formulation type="string" doc="Normalize isotope ratios or use actual abundances">normalized</standard_ratio_formulation>
+      <ocean_enrichment_formulation type="string" doc="Ocean isotopic enrichment/depletion relative to VSMOW">modern</ocean_enrichment_formulation>
     </water_isotopes>
     
     <!-- Gravity Wave Drag -->
