@@ -8,6 +8,7 @@ namespace scream
 
 namespace
 {
+
 void update_checks (const std::string& caller,
                     const Field& y, const Field& x,
                     const ScalarWrapper& alpha,
@@ -548,6 +549,36 @@ void Field::deep_copy (const Field& x, const Field& mask) const
 
   constexpr auto CM = CombineMode::Replace;
   update_cm<CM>("Field::deep_copy (masked)",x,1,0,0,mask);
+}
+
+Field Field::broadcast_to (const FieldLayout& tgt) const
+{
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! Cannot broadcast a field before allocation happens.\n"
+      " - field name: " + name() + "\n");
+
+  const auto& my_layout = m_header->get_identifier().get_layout();
+
+  if (my_layout.congruent(tgt))
+    return get_const();
+
+  Field f;
+  f.m_header = m_header->broadcast(tgt);
+  f.m_data = m_data;
+  f.m_is_read_only = true; // Writing to a broadcast field would make no sense
+  f.get_header().set_extra_data("bcast_src",*this);
+
+  // If this field has a valid mask, the broadcasted field must have the broadcasted mask
+  if (has_valid_mask()) {
+    f.set_valid_mask(get_valid_mask().broadcast_to(tgt));
+  }
+
+  return f;
+}
+
+Field Field::broadcast_like (const Field& tgt) const
+{
+  return broadcast_to(tgt.get_header().get_identifier().get_layout());
 }
 
 void Field::scale (const ScalarWrapper beta) const
