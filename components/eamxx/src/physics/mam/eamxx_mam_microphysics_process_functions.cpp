@@ -417,7 +417,7 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     view_2d imp_sol_outcome_view;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
-      imp_sol_outcome_view = get_field_out("imp_sol_outcome").get_view<Real **>();
+      imp_sol_outcome_view = get_field_out("mam4_imp_sol_outcome").get_view<Real **>();
     }
 
     const bool collect_imp_sol_diags = extra_mam4_aero_microphys_diags_;

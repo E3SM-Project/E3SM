@@ -266,7 +266,7 @@ MAMMicrophysics::create_requests()
     // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
     //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
     // Values 0-1 indicate success; 2-5 indicate failure modes.
-    add_field<Computed>("imp_sol_outcome", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_outcome", scalar3d_mid, none, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -717,7 +717,7 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
       {"mam4_gas_dry_deposition_flux",
       "MAM4xx microphysics deposition flux [units: 1/cm^2/s]"},
 
-      {"imp_sol_outcome",
+      {"mam4_imp_sol_outcome",
       "Implicit solver outcome for gas phase chemistry: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput, 3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted"},
     };
     // Add docstring to the fields with mixed units
