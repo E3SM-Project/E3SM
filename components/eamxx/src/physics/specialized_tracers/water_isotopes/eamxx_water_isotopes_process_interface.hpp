@@ -1,5 +1,5 @@
-#ifndef SCREAM_WATER_ISOTOPES_HPP
-#define SCREAM_WATER_ISOTOPES_HPP
+#ifndef EAMXX_WATER_ISOTOPES_HPP
+#define EAMXX_WATER_ISOTOPES_HPP
 
 #include "physics/specialized_tracers/water_tracers/eamxx_water_tracers_process_interface.hpp"
 #include "eamxx_water_isotopes_parameters.hpp"
@@ -47,4 +47,4 @@ private:
 
 } // namespace scream
 
-#endif // SCREAM_WATER_ISOTOPES_HPP
+#endif // EAMXX_WATER_ISOTOPES_HPP
