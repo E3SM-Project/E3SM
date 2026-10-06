@@ -296,6 +296,32 @@ $ ./atmquery homme::compute_tendencies --full
         valid values: []
 ```
 
+### Adding and removing parameters: open nodes
+
+By default, `atmchange` can only modify parameters that already exist, so that a typo in
+a parameter name results in an error rather than in a new (and silently ignored) parameter.
+Some nodes, however, are "open": they hold a set of parameters that is not known a priori
+(for instance, a list of fields). In an open node, the user can _add_ new parameters (leaves)
+with `--add`, and _remove_ existing ones with `--rm`:
+
+``` {.shell .copy}
+$ ./atmchange --add my_open_node::new_param=1,2,3
+$ ./atmchange --rm my_open_node::old_param
+```
+
+Some notes:
+
+- `--add` requires the name of the open node, and the new leaf must not exist already
+  (use a regular `atmchange` to modify an existing leaf).
+- All leaves of an open node have the same type (and, possibly, the same constraints
+  and valid values), specified by the open node via `leaf_*` attributes (e.g., `leaf_type`)
+  in `namelist_defaults_eamxx.xml`. A value that is not compatible with them is rejected.
+- Open nodes are listed in the [parameters documentation](eamxx_params.md).
+- This is a power feature: there is little protection against adding or removing leaves
+  that EAMxx does not expect, so use it with care.
+- Removing a leaf that is in the defaults is allowed, and, as for all atmchanges,
+  `atmchange --reset` brings it back.
+
 ### Modifying the list of atmosphere processes
 
 The `atmchange` script can be used to change any of the runtime parameters of EAMxx.

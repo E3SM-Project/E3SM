@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
 from eamxx_buildnml import create_raw_xml_file
-from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, reset_node_changes, get_xml_nodes, parse_change
+from atm_manip import atm_config_chg_impl, buffer_changes, reset_buffer, reset_node_changes, get_xml_nodes, parse_change, format_change
 from utils import run_cmd_no_fail, expect, GoodFormatter
 
 # Add path to cime
@@ -38,7 +38,59 @@ def recreate_raw_xml_file():
         create_raw_xml_file(case, caseroot)
 
 ###############################################################################
-def atm_config_chg(changes, reset=False, buffer_only=False):
+def convert_changes_for_add_rm(changes, add, rm):
+###############################################################################
+    """
+    Convert the changes from the command line to the syntax used internally for
+    adding/removing leaves of open nodes (see parse_change in atm_manip).
+
+    >>> convert_changes_for_add_rm(['a::b=1,2','a::c=3'], True, False)
+    ['a::b:=1,2', 'a::c:=3']
+    >>> convert_changes_for_add_rm(['a::b','a::c'], False, True)
+    ['a::b~=', 'a::c~=']
+    >>> convert_changes_for_add_rm(['a::b=1'], False, False)
+    ['a::b=1']
+    >>> convert_changes_for_add_rm(['a::b+=1'], True, False)
+    Traceback (most recent call last):
+    SystemExit: ERROR: With --add, changes must have the format A::B=value. Got 'a::b+=1'
+    >>> convert_changes_for_add_rm(['a::b=1'], False, True)
+    Traceback (most recent call last):
+    SystemExit: ERROR: With --rm, changes must have the format A::B (no value). Got 'a::b=1'
+    >>> convert_changes_for_add_rm(['a::b=1'], True, True)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Options --add and --rm cannot be used together
+    >>> convert_changes_for_add_rm(['a::b:=1'], False, False)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change request 'a::b:=1'. To add (remove) leaves, use the --add (--rm) option
+    >>> convert_changes_for_add_rm(['a::b~='], False, False)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change request 'a::b~='. To add (remove) leaves, use the --add (--rm) option
+    >>> convert_changes_for_add_rm(['a::b:=1'], True, False)
+    Traceback (most recent call last):
+    SystemExit: ERROR: With --add, changes must have the format A::B=value. Got 'a::b:=1'
+    """
+    expect (not (add and rm), "Options --add and --rm cannot be used together")
+
+    result = []
+    for c in changes:
+        if add:
+            name, value, op = parse_change(c)
+            expect (op=="set", f"With --add, changes must have the format A::B=value. Got '{c}'")
+            result.append(format_change(name, value, "add"))
+        elif rm:
+            expect ("=" not in c, f"With --rm, changes must have the format A::B (no value). Got '{c}'")
+            result.append(format_change(c, "", "rm"))
+        else:
+            # The 'add' and 'rm' operations are internal (they are how --add/--rm are
+            # stored in the buffer), and cannot be requested directly
+            expect (parse_change(c).op not in ["add","rm"],
+                    f"Invalid change request '{c}'. To add (remove) leaves, use the --add (--rm) option")
+            result.append(c)
+
+    return result
+
+###############################################################################
+def atm_config_chg(changes, reset=False, buffer_only=False, add=False, rm=False):
 ###############################################################################
     if not buffer_only:
         expect(os.path.exists("namelist_scream.xml"),
@@ -66,6 +118,8 @@ def atm_config_chg(changes, reset=False, buffer_only=False):
         return True
     else:
         expect(changes, "Missing <param>=<val> args")
+
+    changes = convert_changes_for_add_rm(changes, add, rm)
 
     # Before applying/buffering changes, at the very least check the syntax
     for c in changes:
@@ -118,6 +172,10 @@ OR
 
     \033[1;32m# Remove 'item' from array param baz (only works if baz is unambiguous)\033[0m
     > {0} baz-=item
+
+    \033[1;32m# Add leaf 'new' to node bar, and remove leaf 'old' from it (bar must be an 'open' node)\033[0m
+    > {0} --add bar::new=1,2,3
+    > {0} --rm bar::old
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=GoodFormatter
@@ -144,6 +202,23 @@ OR
         default=False,
         action="store_true",
         help="Only buffer the changes, don't actually do them. Useful for testmod scripts where the case is not setup yet",
+    )
+
+    parser.add_argument(
+        "--add",
+        default=False,
+        action="store_true",
+        help="Add new leaves, rather than modifying existing ones. Each change must be NODE::LEAF=value, where NODE "
+             "is an 'open' node (i.e., a node that allows adding leaves). The LEAF must not exist already. "
+             "Power feature: use with care.",
+    )
+
+    parser.add_argument(
+        "--rm",
+        default=False,
+        action="store_true",
+        help="Remove leaves from 'open' nodes. Each change must be NODE::LEAF (no value). "
+             "Power feature: use with care.",
     )
 
     parser.add_argument("changes", nargs="*", help="Values to change")
