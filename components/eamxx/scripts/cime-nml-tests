@@ -376,6 +376,59 @@ class TestBuildnml(unittest.TestCase):
         stat, output, error = run_cmd("./atmquery --grep p3",from_dir=case)
         expect (output=="", "There is still a trace of the removed process")
 
+    ###########################################################################
+    def test_atmchanges_add_rm_leaves(self):
+    ###########################################################################
+        """
+        Test atmchanges that add/remove leaves to/from open nodes
+        """
+        case = self._common_case
+
+        # test_only has some open nodes (see namelist_defaults_eamxx.xml)
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
+
+        # Add a new leaf, and modify it
+        run_cmd_assert_result(self, "./atmchange --add test_only::open_params::p3=5,6", from_dir=case)
+        self._get_values(case, "test_only::open_params::p3", value="5,6", expect_equal=True)
+        self._chg_atmconfig([("test_only::open_params::p3", "7,8")], case)
+
+        # Remove a leaf that is in the defaults file
+        run_cmd_assert_result(self, "./atmchange --rm test_only::open_params::p1", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep p1",from_dir=case)
+        expect (output=="", "There is still a trace of the removed leaf")
+
+        # Changes must survive regeneration of the XML file, but not a reset
+        self._chg_atmconfig([("test_only::number_of_subcycles", "42")], case)
+        self._get_values(case, "test_only::open_params::p3", value="7,8", expect_equal=True)
+        stat, output, error = run_cmd("./atmquery --grep p1",from_dir=case)
+        expect (output=="", "The removal of a leaf was lost")
+
+        run_cmd_assert_result(self, "./atmchange --reset", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep p3",from_dir=case)
+        expect (output=="", "The added leaf survived an atmchange --reset")
+
+    ###########################################################################
+    def test_atmchanges_add_rm_leaves_invalid(self):
+    ###########################################################################
+        """
+        Test that adding/removing leaves is only allowed in open nodes
+        """
+        case = self._common_case
+
+        self._chg_atmconfig([("mac_aero_mic::atm_procs_list", "shoc,cld_fraction,spa,p3,test_only")], case)
+
+        for cmd in ["--add p3::foo=1",                          # not an open node
+                    "--rm p3::number_of_subcycles",             # not an open node
+                    "--add test_only::open_params::p1=1",       # already exists
+                    "--rm test_only::open_params::p100",        # does not exist
+                    "--add test_only::open_params::p3=hi",      # wrong type
+                    "--add --rm test_only::open_params::p3",    # incompatible options
+                    "--add test_only::open_params::p3",         # missing value
+                    "test_only::open_params::p3:=1",            # internal operators are not allowed
+                    "test_only::open_params::p1~="]:
+            stat, out, err = run_cmd (f"./atmchange {cmd}",from_dir=case)
+            expect (stat!=0,f"Command './atmchange {cmd}' should have failed")
+
 ###############################################################################
 def parse_command_line(args, desc):
 ###############################################################################
