@@ -5438,7 +5438,7 @@ any of the other supported types (but not another array):<ul>
 </ul>
 <p>For type "string" and "array(T)", it is also possible to <em>append</em> to the
 currently stored value.</p>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tendencies
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tendencies
 <span class="w">    </span>namelist_defaults::atmosphere_processes::homme::compute_tendencies:
 <span class="w">        </span>value:<span class="w"> </span>a,<span class="w"> </span>b
 <span class="w">        </span>type:<span class="w"> </span>array<span class="o">(</span>string<span class="o">)</span>
@@ -5456,8 +5456,8 @@ a parameter name results in an error rather than in a new (and silently ignored)
 Some nodes, however, are "open": they hold a set of parameters that is not known a priori
 (for instance, a list of fields). In an open node, the user can <em>add</em> new parameters (leaves)
 with <code>--add</code>, and <em>remove</em> existing ones with <code>--rm</code>:</p>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmchange<span class="w"> </span>--add<span class="w"> </span>my_open_node::new_param<span class="o">=</span><span class="m">1</span>,2,3
-$<span class="w"> </span>./atmchange<span class="w"> </span>--rm<span class="w"> </span>my_open_node::old_param
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>--add<span class="w"> </span>my_open_node::new_param<span class="o">=</span><span class="m">1</span>,2,3
+./atmchange<span class="w"> </span>--rm<span class="w"> </span>my_open_node::old_param
 </code></pre></div>
 <p>Some notes:</p>
 <ul>
