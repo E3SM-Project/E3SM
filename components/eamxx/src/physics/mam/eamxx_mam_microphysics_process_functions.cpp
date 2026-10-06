@@ -420,6 +420,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     view_2d imp_sol_accepted_steps_view;
     view_2d imp_sol_requested_interval_view;
     view_2d imp_sol_accepted_interval_view;
+    view_2d imp_sol_non_converged_species_idx_view;
+    view_2d imp_sol_non_converged_species_count_view;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
       imp_sol_outcome_view = get_field_out("mam4_imp_sol_outcome").get_view<Real **>();
@@ -428,6 +430,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
       imp_sol_accepted_steps_view = get_field_out("mam4_imp_sol_accepted_steps").get_view<Real **>();
       imp_sol_requested_interval_view = get_field_out("mam4_imp_sol_requested_interval").get_view<Real **>();
       imp_sol_accepted_interval_view = get_field_out("mam4_imp_sol_accepted_interval").get_view<Real **>();
+      imp_sol_non_converged_species_idx_view = get_field_out("mam4_imp_sol_non_converged_species_idx").get_view<Real **>();
+      imp_sol_non_converged_species_count_view = get_field_out("mam4_imp_sol_non_converged_species_count").get_view<Real **>();
     }
 
     const bool collect_imp_sol_diags = extra_mam4_aero_microphys_diags_;
@@ -471,6 +475,8 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
           imp_sol_accepted_steps_view(icol, kk) = static_cast<Real>(result.accepted_steps);
           imp_sol_requested_interval_view(icol, kk) = static_cast<Real>(result.requested_interval);
           imp_sol_accepted_interval_view(icol, kk) = static_cast<Real>(result.accepted_interval);
+          imp_sol_non_converged_species_idx_view(icol, kk) = static_cast<Real>(result.non_converged_species_idx);
+          imp_sol_non_converged_species_count_view(icol, kk) = static_cast<Real>(result.non_converged_species_count);
         }
 
        // Check for failure and report as warning (not error)
@@ -481,10 +487,11 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
              "WARNING: imp_sol did not complete chemistry interval at "
              "icol=%d, lev=%d, outcome=%d, failed_attempts=%d, "
              "cut_count=%d, accepted_steps=%d, "
-             "requested=%.6e, accepted=%.6e\n",
+             "requested=%.6e, accepted=%.6e, non_converged_spc=%d, non_converged_count=%d\n",
              icol, kk, static_cast<int>(result.outcome),
              result.failed_attempts, result.cut_count, result.accepted_steps,
-             result.requested_interval, result.accepted_interval);
+             result.requested_interval, result.accepted_interval,
+             result.non_converged_species_idx, result.non_converged_species_count);
 #endif
        }
       });

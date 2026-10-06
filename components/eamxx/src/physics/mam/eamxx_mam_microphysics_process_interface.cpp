@@ -272,6 +272,8 @@ MAMMicrophysics::create_requests()
     add_field<Computed>("mam4_imp_sol_accepted_steps", scalar3d_mid, none, grid_name);
     add_field<Computed>("mam4_imp_sol_requested_interval", scalar3d_mid, s, grid_name);
     add_field<Computed>("mam4_imp_sol_accepted_interval", scalar3d_mid, s, grid_name);
+    add_field<Computed>("mam4_imp_sol_non_converged_species_idx", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_non_converged_species_count", scalar3d_mid, none, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -739,6 +741,12 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
       {"mam4_imp_sol_accepted_interval",
       "Implicit solver accepted integration interval for gas phase chemistry [units: s]"},
+
+      {"mam4_imp_sol_non_converged_species_idx",
+      "Species index of non-converging species in implicit gas phase chemistry solver (-1 if converged)"},
+
+      {"mam4_imp_sol_non_converged_species_count",
+      "Number of non-converging species in implicit gas phase chemistry solver"},
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);
