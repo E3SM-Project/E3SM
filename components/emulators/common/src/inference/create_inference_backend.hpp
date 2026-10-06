@@ -18,6 +18,7 @@ namespace inference {
  * @param type Backend type to create
  * @param config Configuration for the backend
  * @return Shared pointer to new backend instance
+ * @throws InferenceError if the type is unknown or was not built
  */
 std::shared_ptr<InferenceBackend>
 create_backend(BackendType type, const InferenceConfig &config);
