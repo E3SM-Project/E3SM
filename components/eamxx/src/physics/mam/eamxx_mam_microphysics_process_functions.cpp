@@ -469,14 +469,14 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
         //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
         if (collect_imp_sol_diags) {
-          imp_sol_outcome_view(icol, kk) = static_cast<Real>(result.outcome);
-          imp_sol_failed_attempts_view(icol, kk) = static_cast<Real>(result.failed_attempts);
-          imp_sol_cut_count_view(icol, kk) = static_cast<Real>(result.cut_count);
-          imp_sol_accepted_steps_view(icol, kk) = static_cast<Real>(result.accepted_steps);
-          imp_sol_requested_interval_view(icol, kk) = static_cast<Real>(result.requested_interval);
-          imp_sol_accepted_interval_view(icol, kk) = static_cast<Real>(result.accepted_interval);
-          imp_sol_non_converged_species_idx_view(icol, kk) = static_cast<Real>(result.non_converged_species_idx);
-          imp_sol_non_converged_species_count_view(icol, kk) = static_cast<Real>(result.non_converged_species_count);
+          imp_sol_outcome_view(icol, kk) = Kokkos::round(int(result.outcome));
+          imp_sol_failed_attempts_view(icol, kk) = Kokkos::round(result.failed_attempts);
+          imp_sol_cut_count_view(icol, kk) = Kokkos::round(result.cut_count);
+          imp_sol_accepted_steps_view(icol, kk) = Kokkos::round(result.accepted_steps);
+          imp_sol_requested_interval_view(icol, kk) = result.requested_interval;
+          imp_sol_accepted_interval_view(icol, kk) = result.accepted_interval;
+          imp_sol_non_converged_species_idx_view(icol, kk) = Kokkos::round(result.non_converged_species_idx);
+          imp_sol_non_converged_species_count_view(icol, kk) = Kokkos::round(result.non_converged_species_count);
         }
 
        // Check for failure and report as warning (not error)
