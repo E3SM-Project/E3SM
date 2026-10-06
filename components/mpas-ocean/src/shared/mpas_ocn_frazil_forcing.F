@@ -760,8 +760,8 @@ contains
            frazilSalinity = config_frazil_sea_ice_reference_salinity
         end if
 
-        !Determine salt expelled in the upper layer to arrive at the assumed frazil salt for coupling
-        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1) then
+        !Determine salt expelled in the upper layer to if using fixed frazil salinity sea ice coupling
+        if (sumNewFrazilIceThickness > 0.0_RKIND .and. usePorosity .ge. 1 .and. config_expel_excess_frazil_salt) then
            newThicknessWeightedSaltContent = sumNewFrazilIceThickness * frazilSalinity
            if (newThicknessWeightedSaltContent > sumNewThicknessWeightedSaltContent) then
             !Warning: salt conservation error. Track with lowSalinityFrazilIce
