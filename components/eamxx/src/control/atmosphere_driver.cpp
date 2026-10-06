@@ -11,6 +11,7 @@
 #include "share/util/eamxx_timing.hpp"
 #include "share/util/eamxx_utils.hpp"
 #include "share/io/eamxx_io_utils.hpp"
+#include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
 #include "share/core/eamxx_config.hpp"
 #include "eamxx_version.h"
@@ -32,6 +33,7 @@
 #include <unistd.h>
 #endif
 
+#include <cmath>
 #include <fstream>
 #include <random>
 #include <ranges>
@@ -1057,6 +1059,16 @@ void AtmosphereDriver::set_initial_conditions ()
 
   auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
+  // The constants used to initialize fields are in the 'constant_fields' sublist,
+  // which has two sublists (if not present, they are created empty):
+  //  - overrides: the field is ALWAYS set to the given constant (even if it is in the IC file)
+  //  - defaults: the field is set to the given constant ONLY IF it is not in the IC file
+  //    (otherwise, it is read from the IC file)
+  // If a field is in both lists, 'overrides' wins.
+  auto& constants_pl = ic_pl.sublist("constant_fields");
+  const auto& overrides_pl = constants_pl.sublist("overrides");
+  const auto& defaults_pl  = constants_pl.sublist("defaults");
+
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
   // added to the STARTUP group themselves (see set_initialization_groups): only their
   // subfields are. Hence, an initial condition (constant value) specified for the
@@ -1066,7 +1078,8 @@ void AtmosphereDriver::set_initial_conditions ()
     for (const auto& it : m_field_mgr->get_repo(gn)) {
       const auto& f = *it.second;
       const auto& children = f.get_header().get_children();
-      if (children.size()>0 and ic_pl.isParameter(f.name())) {
+      if (children.size()>0 and
+          (overrides_pl.isParameter(f.name()) or defaults_pl.isParameter(f.name()))) {
         std::string child_names;
         for (auto c : children)
           child_names += c.lock()->get_identifier().name() + " ";
@@ -1089,6 +1102,14 @@ void AtmosphereDriver::set_initial_conditions ()
   strmap_t<strvec_t> topography_file_fields_names;
   strmap_t<strvec_t> topography_eamxx_fields_names;
 
+  // Check if a field is in the IC file (if any). The file is opened on the fly (and released
+  // right away), and only if we need to check for a field with a default constant.
+  const bool has_ic_file = ic_pl.isParameter("filename");
+  const std::string ic_file = has_ic_file ? ic_pl.get<std::string>("filename") : "";
+  auto in_ic_file = [&](const std::string& fname) {
+    return has_ic_file and scorpio::has_var(ic_file,fname);
+  };
+
   for (const auto& gn : m_grids_manager->get_grid_names()) {
     auto ic_group = m_field_mgr->get_field_group("STARTUP",gn);
     for (auto& f : std::views::values(ic_group.individual_fields())) {
@@ -1096,17 +1117,12 @@ void AtmosphereDriver::set_initial_conditions ()
       const auto& fname = fid.name();
       const auto& grid_name = fid.get_grid_name();
 
-      if (ic_pl.isParameter(fname)) {
-        // This is the case that the user provided an initialization
-        // for this field in the parameter file (as a constant).
-        if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
-            ic_pl.isType<std::vector<double>>(fname)) {
-          initialize_constant_field(fid, ic_pl);
-        } else {
-          EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
-                          "or vector double arguments are allowed");
-        }
+      if (overrides_pl.isParameter(fname)) {
+        // This is the case that the user wants this field to be set to a constant,
+        // regardless of whether the field is in the IC file or not.
+        initialize_constant_field(fid, overrides_pl);
         m_fields_inited[grid_name].insert(fname);
+        m_atm_logger->debug("    [EAMxx] Field " + fname + " (" + grid_name + ") set to constant (overrides)");
       } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
         // these fields need to be loaded from the topography file
         // - phis is the surface geopotential height
@@ -1153,6 +1169,19 @@ void AtmosphereDriver::set_initial_conditions ()
       } else if (not (fvphyshack and grid_name == "physics_pg2")) {
         // These are GLL grid fields. ICs are read on this grid, and dyn
         // takes care of remapping to PG2 during process initialization.
+        // Fields with a default constant are only read from the IC file if they are in it.
+        // NOTE: default constants are not used for the fields read from the topography file
+        if (defaults_pl.isParameter(fname)) {
+          if (in_ic_file(fname)) {
+            m_atm_logger->info("    [EAMxx] Field " + fname + " (" + grid_name + ") found in the IC file. "
+                               "Its default constant will NOT be used");
+          } else {
+            initialize_constant_field(fid, defaults_pl);
+            m_fields_inited[grid_name].insert(fname);
+            m_atm_logger->debug("    [EAMxx] Field " + fname + " (" + grid_name + ") set to constant (defaults)");
+            continue;
+          }
+        }
         ic_fields_names[grid_name].insert(fname);
         m_fields_inited[grid_name].insert(fname);
       }
@@ -1375,6 +1404,19 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
+// Constants are stored as doubles, but integer fields can only be set to integral values
+static void set_constant_value (const Field& f, const double value)
+{
+  if (f.data_type()==DataType::IntType) {
+    EKAT_REQUIRE_MSG (value==std::floor(value),
+        "Error! Cannot initialize the integer field '" + f.name() + "' with a non-integral value.\n"
+        "       Value: " + std::to_string(value) + "\n");
+    f.deep_copy(static_cast<int>(value));
+  } else {
+    f.deep_copy(value);
+  }
+}
+
 void AtmosphereDriver::
 initialize_constant_field(const FieldIdentifier& fid,
                           const ekat::ParameterList& ic_pl)
@@ -1383,21 +1425,32 @@ initialize_constant_field(const FieldIdentifier& fid,
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
 
-  // For vector fields, we allow either single value init or vector value init.
-  // That is, both these are ok
+  // The constant can be specified in one of these forms
   //   fname: val
+  //   fname: [val]
   //   fname: [val1,...,valN]
-  // In the first case, all entries of the field are inited to val, while in the latter,
-  // each component is inited to the corresponding entry of the array.
+  // In the first two cases, all entries of the field are inited to val (for any field).
+  // In the last case, the field must be a vector field with N components, and each
+  // component is inited to the corresponding entry of the array.
   const auto& name = fid.name();
-  if (layout.is_vector_layout() and ic_pl.isType<std::vector<double>>(name)) {
+
+  if (ic_pl.isType<std::vector<double>>(name)) {
+    const auto& values = ic_pl.get<std::vector<double>>(name);
+    const size_t vec_dim = layout.is_vector_layout() ? layout.get_vector_dim() : 1;
+    EKAT_REQUIRE_MSG (values.size()==1 or values.size()==vec_dim,
+        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+        "       Grid name:       " + fid.get_grid_name() + "\n"
+        "       Field layout:    " + layout.to_string() + "\n"
+        "       Array dimension: " + std::to_string(values.size()) + "\n"
+        "       Valid dimensions: 1 (set all entries to the same value)" +
+        (vec_dim>1 ? " or " + std::to_string(vec_dim) + " (one value per vector component)\n" : "\n"));
+  }
+
+  if (ic_pl.isType<std::vector<double>>(name) and
+      ic_pl.get<std::vector<double>>(name).size()>1) {
     const auto idim = layout.get_vector_component_idx();
     const auto vec_dim = layout.get_vector_dim();
     const auto& values = ic_pl.get<std::vector<double>>(name);
-    EKAT_REQUIRE_MSG (values.size()==static_cast<size_t>(vec_dim),
-        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
-        "       Field dimension: " + std::to_string(vec_dim) + "\n"
-        "       Array dimenions: " + std::to_string(values.size()) + "\n");
 
     if (layout.rank()==2 && idim==1) {
       // We cannot use 'get_component' for views of rank 2 with vector dimension
@@ -1424,17 +1477,19 @@ initialize_constant_field(const FieldIdentifier& fid,
       // considering that this code is executed during initialization only.
       for (int comp=0; comp<vec_dim; ++comp) {
         auto f_i = f.get_component(comp);
-        f_i.deep_copy(values[comp]);
+        set_constant_value(f_i,values[comp]);
       }
     }
+  } else if (ic_pl.isType<std::vector<double>>(name)) {
+    // Single value, for any field
+    set_constant_value(f,ic_pl.get<std::vector<double>>(name)[0]);
+  } else if (ic_pl.isType<int>(name)) {
+    f.deep_copy(ic_pl.get<int>(name));
+  } else if (ic_pl.isType<double>(name)) {
+    set_constant_value(f,ic_pl.get<double>(name));
   } else {
-    if (ic_pl.isType<int>(name)) {
-      const auto& value = ic_pl.get<int>(name);
-      f.deep_copy(value);
-    } else {
-      const auto& value = ic_pl.get<double>(name);
-      f.deep_copy(value);
-    }
+    EKAT_ERROR_MSG ("Error! Invalid initial condition for field '" + name + "': only scalar "
+                    "or vector double arguments are allowed.\n");
   }
 }
 
