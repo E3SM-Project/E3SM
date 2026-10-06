@@ -282,7 +282,7 @@ any of the other supported types (but not another array):
 For type "string" and "array(T)", it is also possible to _append_ to the
 currently stored value.
 
-``` {.shell .copy}
+``` {.shell }
 $ ./atmquery homme::compute_tendencies
     namelist_defaults::atmosphere_processes::homme::compute_tendencies:
         value: a, b
@@ -305,8 +305,8 @@ Some nodes, however, are "open": they hold a set of parameters that is not known
 with `--add`, and _remove_ existing ones with `--rm`:
 
 ``` {.shell .copy}
-$ ./atmchange --add my_open_node::new_param=1,2,3
-$ ./atmchange --rm my_open_node::old_param
+./atmchange --add my_open_node::new_param=1,2,3
+./atmchange --rm my_open_node::old_param
 ```
 
 Some notes:
