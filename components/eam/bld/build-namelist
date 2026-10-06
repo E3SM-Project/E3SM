@@ -4254,7 +4254,8 @@ add_default($nl, 'history_budget');
 add_default($nl, 'history_eddy');
 add_default($nl, 'history_waccm');
 add_default($nl, 'history_clubb');
-
+add_default($nl, 'history_chemdyg_summary');
+    
 # The history output for the AMWG variability diagnostics assumes that auxilliary history
 # files h1, h2, and h3 contain daily, 6-hrly, and 3-hrly output respectively.  If this output
 # has been requested, then make sure the user has not already set nhtfrq to something

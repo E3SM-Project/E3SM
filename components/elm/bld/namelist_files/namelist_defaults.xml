@@ -259,6 +259,10 @@ sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata/elmi.v3-SORRM.n
 sim_year="1850" glc_nec="0" use_crop=".false.">lnd/clm2/initdata_map/elmi.CNPRDCTCBCTOP.r025_RRSwISC6to18E3r5.1850.c20250325.nc
 </finidat>
 
+<finidat hgrid="r025" maxpft="17" mask="RRSwISC6to18E3r5" use_cn=".true." ic_ymd="19500101" more_vertlayers=".false."
+sim_year="1950" glc_nec="0" use_crop=".false.">lnd/clm2/initdata_map/elmi.CNPRDCTCBCTOP.r025_RRSwISC6to18E3r5.1950-01-01-00000.c20260412.nc
+</finidat>
+
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_simyr2010_c220621.nc</fsurdat>
@@ -913,6 +917,9 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_popdens use_cn=".true."   sim_year="1850" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  use_cn=".true."   sim_year="1850" >1850</stream_year_last_popdens>
 
+<stream_year_first_popdens use_cn=".true."   sim_year="1950" >1950</stream_year_first_popdens>
+<stream_year_last_popdens  use_cn=".true."   sim_year="1950" >1950</stream_year_last_popdens>
+
 <stream_year_first_popdens use_cn=".true."   sim_year="1000" >2000</stream_year_first_popdens>
 <stream_year_last_popdens  use_cn=".true."   sim_year="1000" >2000</stream_year_last_popdens>
 
@@ -955,6 +962,7 @@ this mask will have smb calculated over the entire global land surface
 <stream_year_first_popdens use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  use_fates=".true."   sim_year="constant" sim_year_range="2000-2100" >2010</stream_year_last_popdens>
 
+<stream_fldfilename_popdens hgrid="0.5x0.5"  use_cn=".true." sim_year="1950" >lnd/clm2/firedata/elmforc.popden_cmip7_gr_0.5x0.5_simyr1950_c260525.nc</stream_fldfilename_popdens>
 <stream_fldfilename_popdens hgrid="0.5x0.5"   use_cn=".true."    >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
 <stream_fldfilename_popdens hgrid="0.5x0.5"   use_fates=".true." >lnd/clm2/firedata/elmforc.Li_20181205_mod_hist_SSP2_CMIP6_hdm_0.5x0.5_AVHRR_simyr1850-2100_c240906.nc</stream_fldfilename_popdens>
 

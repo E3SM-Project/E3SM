@@ -17,4 +17,12 @@
 <stream_year_first_popdens phys="elm" use_cn=".true." ndepsrc="stream" >1950</stream_year_first_popdens>
 <stream_year_last_popdens  phys="elm" use_cn=".true." ndepsrc="stream" >1950</stream_year_last_popdens>
 
+<stream_year_first_popdens phys="elm" use_cn=".true." >1950</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true." >1950</stream_year_last_popdens>
+<model_year_align_popdens  phys="elm" use_cn=".true." >1950</model_year_align_popdens>
+
+<check_finidat_fsurdat_consistency>.false.</check_finidat_fsurdat_consistency>
+<check_finidat_year_consistency>.false.</check_finidat_year_consistency>
+<check_finidat_pct_consistency>.false.</check_finidat_pct_consistency>
+
 </namelist_defaults>

@@ -231,7 +231,9 @@
 <config_use_first_year_ice>false</config_use_first_year_ice>
 <config_use_level_ice>true</config_use_level_ice>
 <config_use_level_meltponds>true</config_use_level_meltponds>
+<config_use_level_meltponds ice_grid="RRSwISC6to18E3r5">false</config_use_level_meltponds>
 <config_use_sealevel_meltponds>false</config_use_sealevel_meltponds>
+<config_use_sealevel_meltponds ice_grid="RRSwISC6to18E3r5">true</config_use_sealevel_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
 <config_use_effective_snow_density>true</config_use_effective_snow_density>
@@ -635,6 +637,7 @@
 
 <!-- AM_timeSeriesStatsDaily -->
 <config_AM_timeSeriesStatsDaily_enable>true</config_AM_timeSeriesStatsDaily_enable>
+<config_AM_timeSeriesStatsDaily_enable ice_grid="RRSwISC6to18E3r5">false</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_enable prognostic_mode="prescribed">false</config_AM_timeSeriesStatsDaily_enable>
 <config_AM_timeSeriesStatsDaily_compute_on_startup>false</config_AM_timeSeriesStatsDaily_compute_on_startup>
 <config_AM_timeSeriesStatsDaily_write_on_startup>false</config_AM_timeSeriesStatsDaily_write_on_startup>
