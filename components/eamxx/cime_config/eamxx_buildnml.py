@@ -14,7 +14,7 @@ import xml.dom.minidom as md
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 # SCREAM imports
-from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
+from eamxx_buildnml_impl import is_array_type, get_valid_selectors, get_child, has_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node, \
         METADATA_ATTRIBS, is_metadata_attrib, is_leaf, apply_leaf_attribs
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
@@ -161,6 +161,18 @@ def perform_consistency_checks(case, xml):
     >>> perform_consistency_checks(MockCase({}), turbulence_xml)
     >>> find_node(find_node(turbulence_xml, "homme"), "do_3d_turbulence_homme").text
     'true'
+    >>> ############## REQUIRED PARAMS WITH NO VALUE #####################
+    >>> case = MockCase({'ATM_GRID':'ne4np4', 'SCREAM_CMAKE_OPTIONS':'SCREAM_NUM_VERTICAL_LEV 72'})
+    >>> perform_consistency_checks(case, ET.fromstring('<params><a type="array(real)"/><b type="array(string)"></b></params>'))
+    >>> perform_consistency_checks(case, ET.fromstring('<params><a type="file" optional="true">UNSET</a><b type="file" grid="ne4np4">UNSET</b></params>'))
+    >>> perform_consistency_checks(case, ET.fromstring('<params><sub><a type="real"/></sub><b type="file">UNSET</b><c type="integer">1</c></params>'))
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The following required parameter(s) have no value for the current configuration (ATM_GRID='ne4np4', nlev=72):
+      sub -> a
+      params -> b
+    This typically means no entry exists in namelist_defaults_eamxx.xml for this grid + vertical-level combination.
+    To fix, add an entry for ATM_GRID='ne4np4' with nlev=72 to namelist_defaults_eamxx.xml, or switch to a supported configuration.
+    See existing entries in namelist_defaults_eamxx.xml for examples.
     """
 
     # RRTMGP can be supercycled. Restarts cannot fall in the middle
@@ -242,15 +254,17 @@ def perform_consistency_checks(case, xml):
             if int(horiz_turb_subcycle_q.text) < 0:
                 horiz_turb_subcycle_q.text = hypervis_subcycle_q.text
 
-    # Check for UNSET required file parameters. After selector evaluation, any
-    # type="file" or type="array(file)" element still holding the sentinel value
-    # "UNSET" and lacking any selector attributes means no entry in
-    # namelist_defaults_eamxx.xml matched the current configuration (e.g. grid+nlev
-    # combination). Catching this here gives a clear, actionable error at buildnml
-    # time instead of an obscure "No such file or directory" from PIO at run time.
+    # Check for required parameters with no value. After selector evaluation:
+    #  - any non-array element that is empty means that the defaults file specifies
+    #    no value for it, and no entry in namelist_defaults_eamxx.xml matched the
+    #    current configuration (e.g. grid+nlev combination).
+    #  - any type="file" or type="array(file)" element still holding the sentinel
+    #    value "UNSET" and lacking any selector attributes means the same.
+    # Catching this here gives a clear, actionable error at buildnml time instead of
+    # an obscure error (e.g., "No such file or directory" from PIO) at run time.
     #
-    # Note: elements where a selector *did* match (e.g. topography_filename set to
-    # UNSET for aquaplanet compsets) retain their selector attributes after
+    # Note: file elements where a selector *did* match (e.g. topography_filename set
+    # to UNSET for aquaplanet compsets) retain their selector attributes after
     # evaluation. We skip those - a deliberate UNSET is not an error.
     #
     enable_iop = find_node(xml, "enable_iop")
@@ -260,9 +274,15 @@ def perform_consistency_checks(case, xml):
 
     parent_map = {child: parent for parent in xml.iter() for child in parent}
     unset_params = []
-    file_type_elems = xml.findall('.//*[@type="file"]') + xml.findall('.//*[@type="array(file)"]')
-    for item in file_type_elems:
-        if item.text is None or not item.text.strip() or item.text.strip() == "UNSET":
+    for item in xml.iter():
+        if not is_leaf(item):
+            continue
+
+        item_type = item.attrib.get("type","")
+        is_empty = item.text is None or not item.text.strip()
+        if item_type in ["file","array(file)"]:
+            if not (is_empty or item.text.strip() == "UNSET"):
+                continue
             # iop_file is required only when IOP is enabled.
             if item is iop_file and not iop_enabled:
                 continue
@@ -274,9 +294,13 @@ def perform_consistency_checks(case, xml):
             selector_attribs = [k for k in item.attrib if not is_metadata_attrib(k)]
             if selector_attribs:
                 continue
-            parent = parent_map.get(item)
-            path = "{} -> {}".format(parent.tag, item.tag) if parent is not None else item.tag
-            unset_params.append(path)
+        elif not (is_empty and item_type!="" and not is_array_type(item_type)):
+            # Only non-array elements need a value (empty arrays are valid)
+            continue
+
+        parent = parent_map.get(item)
+        path = "{} -> {}".format(parent.tag, item.tag) if parent is not None else item.tag
+        unset_params.append(path)
 
     iop_file_unset = (iop_file is None or iop_file.text is None
                       or not iop_file.text.strip()
@@ -291,7 +315,7 @@ def perform_consistency_checks(case, xml):
         atm_grid = case.get_value("ATM_GRID") or "unknown"
         params_str = "\n  ".join(unset_params)
         expect (False,
-                "The following required file parameter(s) are UNSET for the current "
+                "The following required parameter(s) have no value for the current "
                 f"configuration (ATM_GRID='{atm_grid}', nlev={nlev}):\n"
                 f"  {params_str}\n"
                 "This typically means no entry exists in namelist_defaults_eamxx.xml "
@@ -488,6 +512,23 @@ def evaluate_selectors(element, case, ez_selectors):
     True
     >>> get_child(inherit,'ivar').attrib.get('doc')=='an integer'
     True
+    >>> ############## METADATA INHERITANCE FROM FIRST OCCURRENCE #####################
+    >>> xml_inherit2 = '''
+    ... <namelist_defaults>
+    ...   <ivar type="real" constraints="gt 0" grid="ne30ne30">first</ivar>
+    ...   <ivar grid="ne4ne4">selected</ivar>
+    ... </namelist_defaults>
+    ... '''
+    >>> inherit2 = ET.fromstring(xml_inherit2)
+    >>> evaluate_selectors(inherit2,case,selectors_good)
+    >>> get_child(inherit2,'ivar').text=="selected"
+    True
+    >>> get_child(inherit2,'ivar').attrib
+    {'grid': 'ne4ne4', 'type': 'real', 'constraints': 'gt 0'}
+    >>> bad_type = ET.fromstring('<n><a type="real" grid="ne30ne30">1</a><a type="integer" grid="ne4ne4">2</a></n>')
+    >>> evaluate_selectors(bad_type,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'type' attribute of a is not consistent across different selectors
     >>> ############## ARRAY ACTIONS #####################
     >>> xml_act = '''
     ... <namelist_defaults>
@@ -610,6 +651,7 @@ def evaluate_selectors(element, case, ez_selectors):
     selected_child = {} # elem_name -> evaluated XML element
     children_to_remove = []
     child_type  = {} # map elme name to its type (since only first entry may have type specified)
+    first_attribs = {} # map elem name to the metadata attribs of its first occurrence
     for child in element:
         # Note: in our system, an XML element is either a "node" (has children,
         # or is marked as open) or a "leaf" (has a value).
@@ -623,6 +665,8 @@ def evaluate_selectors(element, case, ez_selectors):
 
             if child_name not in child_type:
                 child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
+                first_attribs[child_name] = {k:v for k,v in selectors.items()
+                                             if is_metadata_attrib(k) and k!="action"}
 
             action = selectors.get("action")
             if action is not None:
@@ -640,10 +684,9 @@ def evaluate_selectors(element, case, ez_selectors):
                 for sel_name, sel_value in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
                     if is_metadata_attrib(sel_name):
-                        if sel_name=="type" and child_name in selected_child.keys():
-                            if "type" in selected_child[child_name].attrib:
-                                expect (sel_value==selected_child[child_name].attrib["type"],
-                                        f"The 'type' attribute of {child_name} is not consistent across different selectors")
+                        if sel_name=="type" and "type" in first_attribs[child_name]:
+                            expect (sel_value==first_attribs[child_name]["type"],
+                                    f"The 'type' attribute of {child_name} is not consistent across different selectors")
                         continue
 
                     selectors_matched = evaluate_selector(sel_name, sel_value, ez_selectors, case, child_name)
@@ -691,6 +734,12 @@ def evaluate_selectors(element, case, ez_selectors):
                                 f"The '{action}' action for '{child_name}' requires a previously selected value to modify\n"
                                 f" Selector element attributes: {dict(child.attrib)}")
                         selected_child[child_name] = child
+
+                    # The metadata specified in the first occurrence of an entry applies to all
+                    # the other ones, even if the first occurrence was not selected (e.g., if
+                    # all its selectors failed to match).
+                    for attr,val in first_attribs[child_name].items():
+                        child.attrib.setdefault(attr,val)
 
             else:
                 expect(child_name not in selected_child,
@@ -883,7 +932,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
     ...         <atm_procs_list>P1</atm_procs_list>
     ...       </eamxx>
     ...       <P1>
-    ...         <prop1>hi</prop1>
+    ...         <prop1 type="string">hi</prop1>
     ...         <consts open="true" leaf_type="array(real)">
     ...           <f1>1</f1>
     ...           <f2>2</f2>

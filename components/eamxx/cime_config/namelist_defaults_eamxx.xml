@@ -9,6 +9,12 @@ info from this file. We highly recommend users use atmchange for
 tweaking their $case/namelist_scream.xml file. Direct edits will
 be lost if SCREAM_HACK_XML is not enabled.
 
+Every leaf must have a 'type' attribute (see eamxx_buildnml_impl.py for the
+list of supported metadata attributes). If a leaf appears multiple times
+(with different selectors), only the first occurrence needs to specify it.
+A leaf with no default value must be empty (e.g., <foo type="real"/>), and
+it must be set by some selector, or buildnml will report an error.
+
 -->
 
 <namelist_defaults>
@@ -138,7 +144,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
-      <number_of_subcycles constraints="gt 0" doc="how many times to subcycle this atm process">1</number_of_subcycles>
+      <number_of_subcycles type="integer" constraints="gt 0" doc="how many times to subcycle this atm process">1</number_of_subcycles>
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
       <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
@@ -158,8 +164,8 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Basic options for each atm process group -->
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list type="array(string)" doc="List of atm processes in this atm process group"/>
-      <type>group</type>
-      <schedule_type valid_values="sequential">sequential</schedule_type>
+      <type type="string">group</type>
+      <schedule_type type="string" valid_values="sequential">sequential</schedule_type>
     </atm_proc_group>
 
     <!-- The list of atm processes for the atm as a whole -->
@@ -184,13 +190,13 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
-      <moisture>moist</moisture>
+      <moisture type="string">moist</moisture>
       <!-- This value is synchronized with ctl_nl::do_3d_turbulence by
            eamxx_buildnml.py and forwarded by the driver to SHOC. -->
       <do_3d_turbulence_homme type="logical" locked="true">false</do_3d_turbulence_homme>
       <!-- Frequency in physics steps to output a global hash over the dycore's
            in-fields. <= 0 disables hashing. -->
-      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
       <enable_energy_fixer type="logical" doc="Turn on energy fixer for dycore (fixes dycore, pressure adjustment, PD coupling)">true</enable_energy_fixer>
       <enable_air_sea_surface_water_thermo_fixer type="logical" doc="Turn on energy fixer for inconsistent internal energy due to mismatch with ocean water thermodynamics, works by adding to energy fixer above">true</enable_air_sea_surface_water_thermo_fixer>
       <!-- true means 2 more calls to AllReduce after dycore -->
@@ -200,15 +206,15 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- P3 microphysics -->
     <p3 inherit="atm_proc_base">
-      <do_prescribed_ccn>true</do_prescribed_ccn>
+      <do_prescribed_ccn type="logical">true</do_prescribed_ccn>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols">false</use_hetfrz_classnuc>
       <use_hetfrz_classnuc type="logical" doc="Switch to turn on heterogeneous freezing due to prognostic aerosols" COMPSET=".*SCREAM%MAM4xx.*">true</use_hetfrz_classnuc>
       <do_prescribed_ccn COMPSET=".*SCREAM%MAM4xx.*">false</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
-      <do_predict_nc>true</do_predict_nc>
+      <do_predict_nc type="logical">true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM%MAM4xx.*">true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
-      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
       <max_total_ni type="real" doc="maximum total ice concentration (sum of all categories)" constraints="gt 0">740.0e3</max_total_ni>
       <tables type="array(file)">
         ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
@@ -252,8 +258,8 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- SHOC macrophysics -->
     <shoc inherit="atm_proc_base">
-      <enable_column_conservation_checks>false</enable_column_conservation_checks>
-      <check_flux_state_consistency>false</check_flux_state_consistency>
+      <enable_column_conservation_checks type="logical">false</enable_column_conservation_checks>
+      <check_flux_state_consistency type="logical">false</check_flux_state_consistency>
       <lambda_low type="real" doc="minimum value of stability correction.">0.001</lambda_low>
       <lambda_high type="real" doc="maximum value of stability correction.">0.08</lambda_high>
       <lambda_slope type="real" doc="slope of change from lambda_low to lambda_high.">2.65</lambda_slope>
@@ -592,18 +598,18 @@ be lost if SCREAM_HACK_XML is not enabled.
       <rrtmgp_coefficients_file_lw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc</rrtmgp_coefficients_file_lw>
       <rrtmgp_cloud_optics_file_sw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc</rrtmgp_cloud_optics_file_sw>
       <rrtmgp_cloud_optics_file_lw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc</rrtmgp_cloud_optics_file_lw>
-      <column_chunk_size>1280</column_chunk_size>
+      <column_chunk_size type="integer">1280</column_chunk_size>
       <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
       <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
       <active_gases type="array(string)">h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
-      <ch4vmr      > 1807.851e-9  </ch4vmr>
-      <co2vmr      > 388.717e-6   </co2vmr>
-      <n2ovmr      > 323.141e-9   </n2ovmr>
-      <f11vmr      > 768.7644e-12 </f11vmr>
-      <f12vmr      > 531.2820e-12 </f12vmr>
-      <n2vmr       > 0.7906       </n2vmr>
-      <covmr       > 1.0e-7       </covmr>
+      <ch4vmr type="real"      > 1807.851e-9  </ch4vmr>
+      <co2vmr type="real"      > 388.717e-6   </co2vmr>
+      <n2ovmr type="real"      > 323.141e-9   </n2ovmr>
+      <f11vmr type="real"      > 768.7644e-12 </f11vmr>
+      <f12vmr type="real"      > 531.2820e-12 </f12vmr>
+      <n2vmr type="real"       > 0.7906       </n2vmr>
+      <covmr type="real"       > 1.0e-7       </covmr>
       <ch4vmr COMPSET=".*SCREAM%RCE.*" > 1650.e-9 </ch4vmr>
       <co2vmr COMPSET=".*SCREAM%RCE.*" > 348.0e-6 </co2vmr>
       <n2ovmr COMPSET=".*SCREAM%RCE.*" > 306.0e-9 </n2ovmr>
@@ -615,7 +621,7 @@ be lost if SCREAM_HACK_XML is not enabled.
       <!-- TODO: these should probably be set (or overridden) by CIME or cpl settings.    -->
       <!-- In E3SM/EAM, these appear to be controlled by the orb_iyear namelist variable  -->
       <!-- in drv_in, and we should probably switch to allowing for that in the future.   -->
-      <orbital_year>-9999</orbital_year>
+      <orbital_year type="integer">-9999</orbital_year>
       <orbital_year COMPSET="2010_.*">2010</orbital_year>
       <orbital_eccentricity type="real">-9999.0</orbital_eccentricity>
       <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0.0</orbital_eccentricity>
@@ -625,10 +631,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0.0</orbital_mvelp>
 
       <!-- Option for prescribing an invariant solar constant -->
-      <fixed_total_solar_irradiance>-9999.0</fixed_total_solar_irradiance>
+      <fixed_total_solar_irradiance type="real">-9999.0</fixed_total_solar_irradiance>
       <fixed_total_solar_irradiance COMPSET=".*SCREAM%RCE.*">551.58</fixed_total_solar_irradiance>
 
-      <rad_frequency hgrid="ne4np4">1</rad_frequency>
+      <rad_frequency type="integer" hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne32np4">2</rad_frequency>
       <rad_frequency hgrid="ne64np4">2</rad_frequency>
@@ -682,13 +688,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     </mac_aero_mic>
 
     <cosp inherit="atm_proc_base">
-      <cosp_subcolumns doc="Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling">10</cosp_subcolumns>
+      <cosp_subcolumns type="integer" doc="Number of subcolumns to use for COSP simulators; cosp_subcolumns=1 implies no subcolumn sampling">10</cosp_subcolumns>
       <cosp_subcolumns hgrid="ne1024np4">1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <cosp_subcolumns hgrid="ne512np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <cosp_subcolumns hgrid="ne256np4" >1</cosp_subcolumns>  <!-- No subcolumn sampling at satellite pixel scales -->
       <!-- Frequency at which to call COSP; positive values interpreted as number of steps, negative as number of hours -->
-      <cosp_frequency>1</cosp_frequency>
-      <cosp_frequency_units valid_values="steps,hours">hours</cosp_frequency_units>
+      <cosp_frequency type="integer">1</cosp_frequency>
+      <cosp_frequency_units type="string" valid_values="steps,hours">hours</cosp_frequency_units>
     </cosp>
 
     <!-- Turbulent Mountain Stress -->
@@ -704,11 +710,11 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- Grids manager specs -->
   <grids_manager>
-    <type>homme</type>
-    <physics_grid_type>gll</physics_grid_type>
+    <type type="string">homme</type>
+    <physics_grid_type type="string">gll</physics_grid_type>
     <physics_grid_type hgrid=".*pg2">pg2</physics_grid_type>
-    <physics_grid_rebalance>none</physics_grid_rebalance>
-    <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
+    <physics_grid_rebalance type="string">none</physics_grid_rebalance>
+    <dynamics_namelist_file_name type="string">./data/namelist.nl</dynamics_namelist_file_name>
     <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
     <vertical_coordinate_filename vgrid="L72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
     <vertical_coordinate_filename vgrid="L128v1">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
@@ -773,40 +779,40 @@ be lost if SCREAM_HACK_XML is not enabled.
     <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
     <!-- For aquaplanet run, unset the topography_filename and set phis=0 -->
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
-    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
+    <phis type="real" COMPSET=".*SCREAM%AQUA.*">0.0</phis>
     <!-- CA RRM grid -->
     <topography_filename hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_CA_ne32_x32_v1_pg2_16xdel2.nc</topography_filename>
 
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
-    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
-    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
-    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
-    <cldfrac_liq       >0.0</cldfrac_liq>
-    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
-    <eddy_diff_mom     >0.0</eddy_diff_mom>
-    <eddy_diff_heat    >0.0</eddy_diff_heat>
-    <eddy_diff_mom_horiz>0.0</eddy_diff_mom_horiz>
-    <eddy_diff_heat_horiz>0.0</eddy_diff_heat_horiz>
-    <T_prev_micro_step >0.0</T_prev_micro_step>
-    <qv_prev_micro_step>0.0</qv_prev_micro_step>
+    <surf_evap type="real">0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
+    <precip_liq_surf_mass type="real">0.0</precip_liq_surf_mass>
+    <precip_ice_surf_mass type="real">0.0</precip_ice_surf_mass>
+    <cldfrac_liq type="real"       >0.0</cldfrac_liq>
+    <sgs_buoy_flux type="real"     >0.0</sgs_buoy_flux>
+    <eddy_diff_mom type="real"     >0.0</eddy_diff_mom>
+    <eddy_diff_heat type="real"    >0.0</eddy_diff_heat>
+    <eddy_diff_mom_horiz type="real">0.0</eddy_diff_mom_horiz>
+    <eddy_diff_heat_horiz type="real">0.0</eddy_diff_heat_horiz>
+    <T_prev_micro_step type="real" >0.0</T_prev_micro_step>
+    <qv_prev_micro_step type="real">0.0</qv_prev_micro_step>
     <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
-    <qr                >0.0</qr>
-    <nr                >0.0</nr>
-    <qm                >0.0</qm>
-    <bm                >0.0</bm>
-    <ni_activated      >0.0</ni_activated>
-    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
+    <qr type="real"                >0.0</qr>
+    <nr type="real"                >0.0</nr>
+    <qm type="real"                >0.0</qm>
+    <bm type="real"                >0.0</bm>
+    <ni_activated type="real"      >0.0</ni_activated>
+    <nc_nuceat_tend type="real"    >0.0</nc_nuceat_tend>
     <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
-    <tke               >0.0</tke>
+    <tke type="real"               >0.0</tke>
     <!-- ZM normally runs before SHOC, but produces odd results when pbl_height is not initialized -->
-    <pbl_height        >2000.0</pbl_height>
+    <pbl_height type="real"        >2000.0</pbl_height>
     <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
-    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
-    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
-    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
-    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
-    <surf_sens_flux    >0.0</surf_sens_flux>
-    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
+    <sfc_alb_dir_vis type="real"   >0.0</sfc_alb_dir_vis>
+    <sfc_alb_dir_nir type="real"   >0.0</sfc_alb_dir_nir>
+    <sfc_alb_dif_vis type="real"   >0.0</sfc_alb_dif_vis>
+    <sfc_alb_dif_nir type="real"   >0.0</sfc_alb_dif_nir>
+    <surf_sens_flux type="real"    >0.0</surf_sens_flux>
+    <surf_lw_flux_up type="real"   >0.0</surf_lw_flux_up>
     <!-- Note: MAM4xx-ACI needs dry aerosol diameter (dgnum), currently set to aitken model nominal diameter, remove it once all of MAM4xx is integrated -->
     <dgnum type="array(real)" doc="Dry aerosol particles diameters (one per mode) [m]">1.37146e-07 ,3.45899e-08 ,1.00000e-06 ,9.99601e-08</dgnum>
     <dgnumwet type="array(real)" doc="Wet aerosol particles diameter [m]">1.37452e-07 ,3.46684e-08 ,1.00900e-06 ,9.99601e-08</dgnumwet>
@@ -852,19 +858,19 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- default initial condition files generally do not have nc/ni fieds, so initialize to zero -->
     <!-- TODO: delete this once we can tell the AD that some fields can be initialized by specific processes -->
-    <qc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
-    <qi vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
-    <nc vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
-    <ni vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
+    <qc type="real" vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qc>
+    <qi type="real" vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4">0.0</qi>
+    <nc type="real" vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</nc>
+    <ni type="real" vgrid="L128v1|L72" hgrid="ne256np4|ne512np4|ne1024np4|ne0np4_CAx32v1">0.0</ni>
     <nc vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</nc>
     <ni vgrid="L128v1|L72" hgrid="ne32np4|ne64np4|ne128np4">0.0</ni>
 
     <!-- new default initial conditions for L128v4 do not have nc/ni fieds, so initialize to zero -->
-    <nc vgrid="L128v4" type="real">0.0</nc>
-    <ni vgrid="L128v4" type="real">0.0</ni>
+    <nc vgrid="L128v4">0.0</nc>
+    <ni vgrid="L128v4">0.0</ni>
 
     <!-- only certain grids are missing the ozone field - so initialize to zero -->
-    <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+    <o3_volume_mix_ratio type="real" hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
 
     <!-- Information about perturbed fields-->
     <perturbed_fields type="array(string)" doc="IC fields (with level dimension) to apply a random perturbation to based on the parameters below."/>
@@ -880,10 +886,10 @@ be lost if SCREAM_HACK_XML is not enabled.
     <output_yaml_files type="array(string)"/>
     <enable_fine_grain_timers type="logical" doc="If enabled, more timers in the IO streams will be active">false</enable_fine_grain_timers>
     <model_restart>
-      <iotype>default</iotype>
+      <iotype type="string">default</iotype>
       <output_control locked="true">
-        <frequency>${REST_N}</frequency>
-        <frequency_units>${REST_OPTION}</frequency_units>
+        <frequency type="integer">${REST_N}</frequency>
+        <frequency_units type="string">${REST_OPTION}</frequency_units>
       </output_control>
     </model_restart>
   </scorpio>
@@ -902,7 +908,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- driver_options options for scream -->
   <driver_options>
-    <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
+    <atmosphere_dag_verbosity_level type="integer">0</atmosphere_dag_verbosity_level>
     <save_field_manager_content type="logical"
                                 doc="Saves a dictionary of the FM fields to file">
       false
@@ -918,9 +924,9 @@ be lost if SCREAM_HACK_XML is not enabled.
       warn
     </atm_flush_level>
     <output_to_screen type="logical">false</output_to_screen>
-    <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
-    <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
-    <column_conservation_checks_fail_handling_type>warning</column_conservation_checks_fail_handling_type>
+    <mass_column_conservation_error_tolerance type="real">1e-10</mass_column_conservation_error_tolerance>
+    <energy_column_conservation_error_tolerance type="real">1e-14</energy_column_conservation_error_tolerance>
+    <column_conservation_checks_fail_handling_type type="string">warning</column_conservation_checks_fail_handling_type>
     <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
     <property_check_data_fields type="array(string)" doc="list of additional data fields to output in property checks (only for physics grid)">phis,landfrac</property_check_data_fields>
     <enable_iop type="logical" doc="Enable intensive observation period. Currently the only use case is DP-EAMxx">false</enable_iop>
@@ -929,7 +935,7 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- E3SM Simulation Settings -->
   <e3sm_parameters>
-    <e3sm_casename>${CASE}</e3sm_casename>
+    <e3sm_casename type="string">${CASE}</e3sm_casename>
   </e3sm_parameters>
 
   <!-- Default settings for DP-EAMxx -->
@@ -957,28 +963,28 @@ be lost if SCREAM_HACK_XML is not enabled.
 
   <!-- Homme control namelist -->
   <ctl_nl>
-    <cubed_sphere_map>0</cubed_sphere_map>
+    <cubed_sphere_map type="integer">0</cubed_sphere_map>
     <cubed_sphere_map COMPSET=".*DP-EAMxx">2</cubed_sphere_map>
-    <disable_diagnostics>false</disable_diagnostics>
-    <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
-    <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
-    <hv_ref_profiles>6</hv_ref_profiles>                <!-- Default (rough topography) -->
-    <hypervis_order>2</hypervis_order>
-    <hypervis_scaling>3.0</hypervis_scaling>
-    <laplace_scaling>UNSET</laplace_scaling>
+    <disable_diagnostics type="logical">false</disable_diagnostics>
+    <dt_remap_factor type="integer" constraints="ge 1">2</dt_remap_factor>
+    <dt_tracer_factor type="integer" constraints="ge 1">1</dt_tracer_factor>
+    <hv_ref_profiles type="integer">6</hv_ref_profiles>                <!-- Default (rough topography) -->
+    <hypervis_order type="integer">2</hypervis_order>
+    <hypervis_scaling type="real">3.0</hypervis_scaling>
+    <laplace_scaling type="real"/>
     <laplace_scaling vgrid="L72"   >0.0</laplace_scaling>
     <laplace_scaling vgrid="L128v1">0.0</laplace_scaling>
     <laplace_scaling vgrid="L128v4">1.0</laplace_scaling>
     <!-- DP is less stable when using laplace_scaling=1, so keep the old sponge layer settings -->
     <laplace_scaling vgrid="L128v4" COMPSET=".*DP-EAMxx">0.0</laplace_scaling>
-    <hypervis_subcycle>1</hypervis_subcycle>
-    <horiz_turb_subcycle>1</horiz_turb_subcycle>
-    <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
-    <hypervis_subcycle_q>1</hypervis_subcycle_q>
-    <horiz_turb_subcycle_q>1</horiz_turb_subcycle_q>
-    <nu>3.4e-08</nu>
+    <hypervis_subcycle type="integer">1</hypervis_subcycle>
+    <horiz_turb_subcycle type="integer">1</horiz_turb_subcycle>
+    <hypervis_subcycle_tom type="integer">1</hypervis_subcycle_tom>
+    <hypervis_subcycle_q type="integer">1</hypervis_subcycle_q>
+    <horiz_turb_subcycle_q type="integer">1</horiz_turb_subcycle_q>
+    <nu type="real">3.4e-08</nu>
     <nu COMPSET=".*DP-EAMxx">0.216784</nu>
-    <nu_top>UNSET</nu_top>
+    <nu_top type="real"/>
     <!-- old nu_top defaults w/ laplace_scaling=0  -->
     <nu_top vgrid="L128v1|L72" hgrid="ne4np4"  >250000.0</nu_top>
     <nu_top vgrid="L128v1|L72" hgrid="ne30np4" >250000.0</nu_top>
@@ -995,16 +1001,16 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- updated nu_top for L128v4 when laplace_scaling > 0 (tensor viscosity) -->
     <nu_top vgrid="L128v4" >5e-7</nu_top>
     <nu_top vgrid="L128v4" COMPSET=".*DP-EAMxx">1.0e4</nu_top>
-    <tom_sponge_start type="real" doc="sponge layer bot pressure [hPa]">UNSET</tom_sponge_start>
+    <tom_sponge_start type="real" doc="sponge layer bot pressure [hPa]"/>
     <tom_sponge_start type="real" vgrid="L72"    >0.0</tom_sponge_start>
     <tom_sponge_start type="real" vgrid="L128v1" >0.0</tom_sponge_start>
     <tom_sponge_start type="real" vgrid="L128v4" >15.0</tom_sponge_start>
-    <pgrad_correction>1</pgrad_correction>                <!-- Default (rough topography) -->
-    <se_ftype valid_values="0,2">0</se_ftype>
-    <se_geometry>sphere</se_geometry>
+    <pgrad_correction type="integer">1</pgrad_correction>                <!-- Default (rough topography) -->
+    <se_ftype type="integer" valid_values="0,2">0</se_ftype>
+    <se_geometry type="string">sphere</se_geometry>
     <se_geometry COMPSET=".*DP-EAMxx">plane</se_geometry>
-    <se_limiter_option>9</se_limiter_option>
-    <se_ne>UNSET</se_ne>
+    <se_limiter_option type="integer">9</se_limiter_option>
+    <se_ne type="integer"/>
     <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
     <se_ne hgrid="ne30np4" constraints="ge 2">30</se_ne>
     <se_ne hgrid="ne32np4" constraints="ge 2">32</se_ne>
@@ -1017,19 +1023,19 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_ne hgrid="ne0np4_CAx32v1">0</se_ne>
     <se_ne COMPSET=".*DP-EAMxx">1024</se_ne>
     <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
-    <se_ne_x>0</se_ne_x>
+    <se_ne_x type="integer">0</se_ne_x>
     <se_ne_x COMPSET=".*DP-EAMxx">5</se_ne_x>
-    <se_ne_y>0</se_ne_y>
+    <se_ne_y type="integer">0</se_ne_y>
     <se_ne_y COMPSET=".*DP-EAMxx">5</se_ne_y>
-    <se_lx>0</se_lx>
+    <se_lx type="integer">0</se_lx>
     <se_lx COMPSET=".*DP-EAMxx">50000</se_lx>
-    <se_ly>0</se_ly>
+    <se_ly type="integer">0</se_ly>
     <se_ly COMPSET=".*DP-EAMxx">50000</se_ly>
-    <se_nsplit>-1</se_nsplit>
-    <se_partmethod>4</se_partmethod>
-    <se_topology>cube</se_topology>
+    <se_nsplit type="integer">-1</se_nsplit>
+    <se_partmethod type="integer">4</se_partmethod>
+    <se_topology type="string">cube</se_topology>
     <se_topology COMPSET=".*DP-EAMxx">plane</se_topology>
-    <se_tstep type="real" constraints="gt 0">UNSET</se_tstep>
+    <se_tstep type="real" constraints="gt 0"/>
     <se_tstep hgrid="ne4np4">600</se_tstep>
     <se_tstep hgrid="ne30np4">300</se_tstep>
     <se_tstep hgrid="ne32np4">225.0</se_tstep> <!-- must be < 290.2015 (S=2.65) -->
@@ -1042,13 +1048,13 @@ be lost if SCREAM_HACK_XML is not enabled.
     <se_tstep hgrid="ne0np4_CAx32v1">8.3333333333333</se_tstep>
     <se_tstep COMPSET=".*DP-EAMxx">8.3333333333333</se_tstep>
     <se_tstep hgrid="ne0np4_conus_x4v1_lowcon">75</se_tstep>
-    <statefreq>9999</statefreq>
-    <theta_advect_form>1</theta_advect_form>
-    <theta_hydrostatic_mode>false</theta_hydrostatic_mode>
-    <tstep_type>9</tstep_type>
-    <vert_remap_q_alg>10</vert_remap_q_alg>
-    <transport_alg>0</transport_alg>
-    <vtheta_thresh>100.0</vtheta_thresh>
+    <statefreq type="integer">9999</statefreq>
+    <theta_advect_form type="integer">1</theta_advect_form>
+    <theta_hydrostatic_mode type="logical">false</theta_hydrostatic_mode>
+    <tstep_type type="integer">9</tstep_type>
+    <vert_remap_q_alg type="integer">10</vert_remap_q_alg>
+    <transport_alg type="integer">0</transport_alg>
+    <vtheta_thresh type="real">100.0</vtheta_thresh>
     <!-- Run internal checks on code correctness.
          <= 0: off; >= 1: global hashes over state -->
     <internal_diagnostics_level type="integer">0</internal_diagnostics_level>
@@ -1065,20 +1071,20 @@ be lost if SCREAM_HACK_XML is not enabled.
     <hypervis_subcycle_q hgrid="ne128np4">8</hypervis_subcycle_q>
     <horiz_turb_subcycle_q hgrid=".*pg2">1</horiz_turb_subcycle_q>
     <transport_alg hgrid=".*pg2" doc="0 (Eulerian) or 12 (semi-Lagrangian) tracer transport">12</transport_alg>
-    <semi_lagrange_trajectory_nsubstep doc="Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.">0</semi_lagrange_trajectory_nsubstep>
+    <semi_lagrange_trajectory_nsubstep type="integer" doc="Controls trajectory method. 0: original method. 1: New method. 2 or more: New method with this many trajectory substeps per tracer time step.">0</semi_lagrange_trajectory_nsubstep>
     <semi_lagrange_trajectory_nsubstep hgrid="ne32np4">2</semi_lagrange_trajectory_nsubstep>
     <semi_lagrange_trajectory_nsubstep hgrid="ne64np4">2</semi_lagrange_trajectory_nsubstep>
     <semi_lagrange_trajectory_nsubstep hgrid="ne128np4">2</semi_lagrange_trajectory_nsubstep>
-    <semi_lagrange_trajectory_nvelocity doc="Number of velocity slices to use in new method. 2 or less maps to 2">-1</semi_lagrange_trajectory_nvelocity>
-    <semi_lagrange_halo doc="Max number of element halos available in communication. -1 triggers an automatic estimate.">-1</semi_lagrange_halo>
-    <semi_lagrange_diagnostics>0</semi_lagrange_diagnostics>
+    <semi_lagrange_trajectory_nvelocity type="integer" doc="Number of velocity slices to use in new method. 2 or less maps to 2">-1</semi_lagrange_trajectory_nvelocity>
+    <semi_lagrange_halo type="integer" doc="Max number of element halos available in communication. -1 triggers an automatic estimate.">-1</semi_lagrange_halo>
+    <semi_lagrange_diagnostics type="integer">0</semi_lagrange_diagnostics>
     <!-- Other settings that we'll trigger based on pg2 for convenience -->
     <se_ftype valid_values="0,2" hgrid=".*pg2">2</se_ftype>
     <mesh_file type="file">none</mesh_file>
     <mesh_file hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/inic/homme/conusx4v1.g</mesh_file>
     <mesh_file hgrid="ne0np4_CAx32v1">${DIN_LOC_ROOT}/atm/cam/inic/homme/CA_ne32_x32_v1.g</mesh_file>
     <!-- Settings related to 3D turbulence -->
-    <do_3d_turbulence>false</do_3d_turbulence>
+    <do_3d_turbulence type="logical">false</do_3d_turbulence>
   </ctl_nl>
 
 </namelist_defaults>

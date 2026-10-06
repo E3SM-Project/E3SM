@@ -25,7 +25,12 @@ class MockCase(object):
 ###############################################################################
 # Special attributes used by buildnml and atmchange to perform checks, and to
 # describe how an XML node can be modified. In particular:
-#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer)
+#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer).
+#    It is mandatory for all leaves, but, if an entry appears multiple times (with
+#    different selectors), it must be specified only in the first occurrence.
+#    Entries that have no default value (e.g., they depend on the grid) are empty
+#    (e.g., <foo type="real"/>), and MUST be given a value by a selector, or buildnml
+#    will throw. Only arrays are allowed to be empty after selectors are evaluated.
 #  - valid_values: allows to specify a set of valid values
 #  - locked: if set to true, the parameter cannot be modified (via atmchange)
 #  - constraints: allows to specify constraints on values. Valid constraints
@@ -359,45 +364,6 @@ def refine_type(entry, force_type=None):
         return entry
 
 ###############################################################################
-def derive_type(entry):
-###############################################################################
-    """
-    Try to determine the type that the input string is representing
-    >>> derive_type('1')
-    'integer'
-    >>> derive_type('1.0')
-    'real'
-    >>> derive_type('one')
-    'string'
-    >>> derive_type('one,two')
-    'string'
-    >>> derive_type('truE')
-    'logical'
-    """
-
-    refined_value = refine_type(entry)
-    if isinstance(refined_value, list):
-        elem_value = refined_value[0]
-    else:
-        elem_value = refined_value
-
-    if isinstance(elem_value, bool):
-        elem_type = "logical"
-    elif isinstance(elem_value, int):
-        elem_type = "integer"
-    elif isinstance(elem_value, float):
-        elem_type = "real"
-    elif isinstance(elem_value, str):
-        elem_type = "string"
-    else:
-        expect(False, "Couldn't derive type of '{}'".format(entry))
-
-    if isinstance(refined_value,list):
-        return "array(" + elem_type + ")"
-    else:
-        return elem_type
-
-###############################################################################
 def check_value(elem, value):
 ###############################################################################
     """
@@ -431,28 +397,42 @@ def check_value(elem, value):
     CIME.core.exceptions.CIMEError: ERROR: Cannot evaluate constraint '2.0 mod 2 eq 0' for entry 'a'
     Modulo constraint only makes sense for integer parameters.
     >>> xml = '''
-    ... <a constraints="gt 0; le 5">1</a>
+    ... <a type="integer" constraints="gt 0; le 5">1</a>
     ... '''
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'2')
     >>> check_value(root,'6')
     Traceback (most recent call last):
     CIME.core.exceptions.CIMEError: ERROR: Value '6' for entry 'a' violates constraint '6 <= 5'
+    >>> ############### MISSING TYPE ###############
+    >>> check_value(ET.fromstring('<a>1</a>'),'2')
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Error! Missing 'type' attribute for element 'a'
+    >>> ############### EMPTY VALUES: only allowed for arrays ###############
+    >>> check_value(ET.fromstring('<a type="array(real)"/>'),'')
+    >>> check_value(ET.fromstring('<a type="array(real)"/>'),None)
+    >>> check_value(ET.fromstring('<a type="real"/>'),'')
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Error! Element 'a' (type 'real') has no value
+    >>> check_value(ET.fromstring('<a type="string"/>'),None)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Error! Element 'a' (type 'string') has no value
     """
 
-    v = value
-    if "type" in elem.attrib.keys():
-        vtype = elem.attrib["type"]
-        v = refine_type(v,force_type=vtype)
+    expect ("type" in elem.attrib.keys(),
+            f"Error! Missing 'type' attribute for element '{elem.tag}'")
+    vtype = elem.attrib["type"]
 
-        expect (v is not None,
-                "Error! Value '{}' for element '{}' does not satisfy the constraint type={}"
-                .format(value,elem.tag,vtype) +
-                "  NOTE: this error should have been caught earlier! Please, contact developers.")
-    else:
-        # If no 'type' attribute present, deduce the type and refine
-        vtype = derive_type(v)
-        v = refine_type(v,force_type=vtype)
+    # Arrays can be empty, but all other types require a value. Leaves without a default
+    # value in the defaults file are empty, and must be given a value by a selector.
+    expect (is_array_type(vtype) or (value is not None and value.strip()!=""),
+            f"Error! Element '{elem.tag}' (type '{vtype}') has no value")
+
+    v = refine_type(value,force_type=vtype)
+    expect (v is not None,
+            "Error! Value '{}' for element '{}' does not satisfy the constraint type={}"
+            .format(value,elem.tag,vtype) +
+            "  NOTE: this error should have been caught earlier! Please, contact developers.")
 
     if "valid_values" in elem.attrib.keys():
         valids_str = elem.attrib["valid_values"]
@@ -532,34 +512,32 @@ def check_all_values(root):
     """
     Check that all values in the xml tree do not violate their metadata
 
-    >>> ############### GENERATE TYPE ATTRIB ###############
     >>> xml_str = '''
     ... <root>
-    ...     <prop1>1</prop1>
-    ...     <prop2>1.0</prop2>
-    ...     <prop3>one</prop3>
-    ...     <prop4>true</prop4>
+    ...     <prop1 type="integer">1</prop1>
+    ...     <sub>
+    ...         <prop2 type="real" constraints="ge 0">1.0</prop2>
+    ...         <prop3 type="array(string)"/>
+    ...     </sub>
     ... </root>
     ... '''
     >>> import xml.etree.ElementTree as ET
     >>> xml = ET.fromstring(xml_str)
     >>> check_all_values(xml)
-    >>> print (get_child(xml,"prop1").attrib["type"])
-    integer
-    >>> print (get_child(xml,"prop2").attrib["type"])
-    real
-    >>> print (get_child(xml,"prop3").attrib["type"])
-    string
-    >>> print (get_child(xml,"prop4").attrib["type"])
-    logical
+    >>> ############### MISSING TYPE ###############
+    >>> check_all_values(ET.fromstring('<root><sub><prop1>1</prop1></sub></root>'))
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Error! Missing 'type' attribute for element 'prop1'
+    >>> ############### MISSING VALUE ###############
+    >>> check_all_values(ET.fromstring('<root><prop1 type="real"/></root>'))
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Error! Element 'prop1' (type 'real') has no value
     """
 
     if not is_leaf(root):
         for c in root:
             check_all_values(c)
     else:
-        if "type" not in root.attrib.keys():
-            root.attrib["type"] = derive_type(root.text)
         check_value(root,root.text)
 
 ###############################################################################
