@@ -144,16 +144,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
       for (const auto& fn : grid->get_geometry_data_names()) {
         const auto& f = grid->get_geometry_data(fn);
 
-        if (f.rank()==0) {
-          // Right now, this only happens for `dx_short`, a single scalar
-          // coming from iop. Since that scalar is easily recomputed
-          // upon restart, we can skip this
-          // NOTE: without this, the code crash while attempting to get a
-          //       pio decomp for this var, since there are no dimensions.
-          //       Perhaps you can explore setting the var as a global att
-          continue;
-        } else if (f.get_header().has_extra_data("save_as_geo_data") and
-                   not f.get_header().get_extra_data<bool>("save_as_geo_data")) {
+        if (f.get_header().has_extra_data("save_as_geo_data") and
+            not f.get_header().get_extra_data<bool>("save_as_geo_data")) {
           // This field is NOT to be saved as geo data
           continue;
         }
@@ -876,6 +868,10 @@ setup_file (      IOFileSpecs& filespecs,
     // we can immediately check whether we should output it or not.
     // Note: m_grid_name_to_geo_data is reset to empty after this loop, so the loop runs ONCE,
     //       which means geo streams are lazy-inited on the first setup_file call
+
+    // We keep track of what was added, since diff grids may STILL have the same geo data,
+    // and we can't add it twice (e.g., dyn and phys grids have same vertical coord geo data)
+    std::set<std::string> added_fids;
     for (auto& kv : m_grid_name_to_geo_data) {
       auto& geo_data = kv.second;
       auto& fields = geo_data.fields;
@@ -887,6 +883,35 @@ setup_file (      IOFileSpecs& filespecs,
             it = fields.erase(it);
             continue;
           }
+        }
+        if (it->get_header().has_extra_data("io_output_if_any_dim_exists")) {
+          // If NONE of the required dim is in the output file, this field is not needed
+          auto req_dims = it->get_header().get_extra_data<std::vector<std::string>>("io_output_if_any_dim_exists");
+          bool any_there = false;
+          for (auto dim : req_dims)
+            any_there |= scorpio::has_dim(filename, dim);
+
+          if (not any_there) {
+            it = fields.erase(it);
+            continue;
+          }
+        }
+
+        auto fid = it->get_header().get_identifier().clone();
+        auto fl = fid.get_layout().clone();
+        for (int i=0; i<fl.rank(); ++i) {
+          auto t = fl.tags()[i];
+          auto dimname = fl.names()[i];
+          if (geo_data.grid->has_special_tag_name(t))
+            dimname = geo_data.grid->get_special_tag_name(t);
+
+          dimname += (dimname=="dim" or dimname=="bin") ? std::to_string(fl.dims()[i]) : "";
+          fl.rename_dim(i,dimname);
+        }
+        fid.reset_layout(fl);
+        if (added_fids.count(fid.get_id_string())>0) {
+          it = fields.erase(it);
+          continue;
         }
         ++it;
       }
