@@ -1750,7 +1750,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 call pio_setframe(ncid,vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
 #if ({ITYPE}==TYPELOGICAL)
-             allocate(idata(size(data))) 
+             allocate(idata(size(data)))
+             ! Points that are holes in a compact decomposition are not read;
+             ! start from data so that they are left unchanged
+             idata = merge(1, 0, data)
              call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, idata, status)
              data = (idata == 1)
              if ( any(idata /= 0 .and. idata /= 1) )then
@@ -1998,6 +2001,13 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
              if (present(switchdim)) then
+                ! Points that are holes in a compact decomposition are not
+                ! read; start from data so that they are left unchanged
+                do j = lb2,ub2
+                do i = lb1,ub1
+                   temp(j,i) = data(i,j)
+                end do
+                end do
                 call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, temp, status)
                 do j = lb2,ub2
                 do i = lb1,ub1
