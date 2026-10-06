@@ -471,8 +471,6 @@ contains
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceSalinityOld
-      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyNew
-      real (kind=RKIND), pointer, dimension(:)     :: accumulatedFrazilIceEnergyOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassNew
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilMassOld
       real (kind=RKIND), pointer, dimension(:)     :: accumulatedLandIceFrazilEnergyNew
@@ -525,8 +523,6 @@ contains
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMassOld, 1)
-      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyNew, 2)
-      call mpas_pool_get_array(statePool, 'accumulatedFrazilIceEnergy', accumulatedFrazilIceEnergyOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedFrazilIceSalinity', accumulatedFrazilIceSalinityOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceFrazilMass', accumulatedLandIceFrazilMassNew, 2)
