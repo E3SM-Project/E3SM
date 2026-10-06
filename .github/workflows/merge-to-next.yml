@@ -47,12 +47,17 @@ jobs:
           git fetch origin next master
 
           # The merge commit on master. Its 2nd parent is the PR branch HEAD.
-          # (merge_commit_sha can be missing if the PR was merged from the command line)
-          if ! git cat-file -e "${MERGE_SHA}^2" 2>/dev/null; then
-            MERGE_SHA=$(git log origin/master --merges -n1 --format=%H -F --grep="(PR #${PR_NUM})")
+          # This workflow only supports PRs merged via the GitHub interfaces (UI/API/auto-merge).
+          # PRs merged from the command line are NOT handled: error out (and open an issue).
+          if [ -z "${MERGE_SHA}" ]; then
+            echo "::error::PR #${PR_NUM} has no merge_commit_sha (merged from the command line?)"
+            echo "status=error" >> "$GITHUB_OUTPUT"
+            exit 1
           fi
-          if [ -z "${MERGE_SHA}" ] || ! git cat-file -e "${MERGE_SHA}^2" 2>/dev/null; then
-            echo "::error::Could not find the merge commit of PR #${PR_NUM} on master"
+          # Merge commits created by GitHub are committed by the GitHub web-flow user
+          if ! git cat-file -e "${MERGE_SHA}^2" 2>/dev/null \
+             || [ "$(git log -1 --format=%ce "${MERGE_SHA}")" != "noreply@github.com" ]; then
+            echo "::error::${MERGE_SHA} is not a merge commit created by GitHub (merged from the command line?)"
             echo "status=error" >> "$GITHUB_OUTPUT"
             exit 1
           fi
@@ -123,7 +128,9 @@ jobs:
             TITLE="Automatic merge of PR #${PR_NUM} into next failed (workflow error)"
             {
               echo "PR ${PR_URL} was merged into \`master\`, but the merge-to-next workflow failed"
-              echo "before attempting the merge. See the workflow run: ${RUN_URL}"
+              echo "before attempting the merge. This typically happens when the PR was merged from the"
+              echo "command line (only merges done via the GitHub interfaces are supported). Please merge"
+              echo "the branch into \`next\` by hand. See the workflow run: ${RUN_URL}"
             } > "${RUNNER_TEMP}/issue-body.md"
           fi
 
