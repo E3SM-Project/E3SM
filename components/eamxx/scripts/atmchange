@@ -90,6 +90,23 @@ def convert_changes_for_add_rm(changes, add, rm):
     return result
 
 ###############################################################################
+def check_changes_syntax(changes):
+###############################################################################
+    """
+    Check that all the changes have a valid syntax (this throws if not)
+
+    >>> check_changes_syntax(['a::b=1','a::c+=2','a::d-=3','a::e:=4','a::f~='])
+    >>> check_changes_syntax(['a::b=1','foo'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change request 'foo'. Valid formats are:
+      - A[::B[...]=value
+      - A[::B[...]+=value  (implies append for this change)
+      - A[::B[...]-=value  (implies removal for this change, arrays only)
+    """
+    for c in changes:
+        parse_change(c)
+
+###############################################################################
 def atm_config_chg(changes, reset=False, buffer_only=False, add=False, rm=False):
 ###############################################################################
     if not buffer_only:
@@ -122,9 +139,7 @@ def atm_config_chg(changes, reset=False, buffer_only=False, add=False, rm=False)
     changes = convert_changes_for_add_rm(changes, add, rm)
 
     # Before applying/buffering changes, at the very least check the syntax
-    for c in changes:
-        # This will throw if the syntax is bad
-        _, _, _, _ = parse_change(c)
+    check_changes_syntax(changes)
 
     # If buffer_only=True, we must assume there were changes (we can't check).
     # Otherwise, we'll assume no changes, and if we find one, we'll adjust

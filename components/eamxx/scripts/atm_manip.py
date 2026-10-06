@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET # pylint: disable=unused-import
 
 # Add path to cime_config folder
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
-from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node, derive_type, \
+from eamxx_buildnml_impl import check_value, is_array_type, get_child, find_node, \
         is_open_node, is_leaf, get_leaf_attribs
 from utils import expect, run_cmd_no_fail
 
