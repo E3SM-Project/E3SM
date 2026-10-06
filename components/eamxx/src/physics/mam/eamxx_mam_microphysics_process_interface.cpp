@@ -267,6 +267,11 @@ MAMMicrophysics::create_requests()
     //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
     // Values 0-1 indicate success; 2-5 indicate failure modes.
     add_field<Computed>("mam4_imp_sol_outcome", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_failed_attempts", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_cut_count", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_accepted_steps", scalar3d_mid, none, grid_name);
+    add_field<Computed>("mam4_imp_sol_requested_interval", scalar3d_mid, s, grid_name);
+    add_field<Computed>("mam4_imp_sol_accepted_interval", scalar3d_mid, s, grid_name);
   }
 
   // Creating a Linoz reader and setting Linoz parameters involves reading data
@@ -719,6 +724,21 @@ void MAMMicrophysics::initialize_impl(const RunType run_type) {
 
       {"mam4_imp_sol_outcome",
       "Implicit solver outcome for gas phase chemistry: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput, 3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted"},
+
+      {"mam4_imp_sol_failed_attempts",
+      "Implicit solver failed convergence attempts for gas phase chemistry"},
+
+      {"mam4_imp_sol_cut_count",
+      "Implicit solver timestep cut count for gas phase chemistry"},
+
+      {"mam4_imp_sol_accepted_steps",
+      "Implicit solver accepted sub-steps for gas phase chemistry"},
+
+      {"mam4_imp_sol_requested_interval",
+      "Implicit solver requested integration interval for gas phase chemistry [units: s]"},
+
+      {"mam4_imp_sol_accepted_interval",
+      "Implicit solver accepted integration interval for gas phase chemistry [units: s]"},
     };
     // Add docstring to the fields with mixed units
     add_io_docstring_to_fields_with_mixed_units(mixed_units_fields);

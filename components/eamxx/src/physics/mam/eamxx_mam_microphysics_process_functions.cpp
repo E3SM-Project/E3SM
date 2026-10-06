@@ -415,9 +415,19 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
 
     view_3d gas_phase_chemistry_dvmrdt;
     view_2d imp_sol_outcome_view;
+    view_2d imp_sol_failed_attempts_view;
+    view_2d imp_sol_cut_count_view;
+    view_2d imp_sol_accepted_steps_view;
+    view_2d imp_sol_requested_interval_view;
+    view_2d imp_sol_accepted_interval_view;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
       imp_sol_outcome_view = get_field_out("mam4_imp_sol_outcome").get_view<Real **>();
+      imp_sol_failed_attempts_view = get_field_out("mam4_imp_sol_failed_attempts").get_view<Real **>();
+      imp_sol_cut_count_view = get_field_out("mam4_imp_sol_cut_count").get_view<Real **>();
+      imp_sol_accepted_steps_view = get_field_out("mam4_imp_sol_accepted_steps").get_view<Real **>();
+      imp_sol_requested_interval_view = get_field_out("mam4_imp_sol_requested_interval").get_view<Real **>();
+      imp_sol_accepted_interval_view = get_field_out("mam4_imp_sol_accepted_interval").get_view<Real **>();
     }
 
     const bool collect_imp_sol_diags = extra_mam4_aero_microphys_diags_;
@@ -451,15 +461,20 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
           invariants_k.data(), het_rates_k.data(),
           vmr_kk, result);
 
-        // Store the solver outcome if diagnostics enabled
+        // Store the solver outcome and stats if diagnostics enabled
         // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
         //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
         if (collect_imp_sol_diags) {
           imp_sol_outcome_view(icol, kk) = static_cast<Real>(result.outcome);
+          imp_sol_failed_attempts_view(icol, kk) = static_cast<Real>(result.failed_attempts);
+          imp_sol_cut_count_view(icol, kk) = static_cast<Real>(result.cut_count);
+          imp_sol_accepted_steps_view(icol, kk) = static_cast<Real>(result.accepted_steps);
+          imp_sol_requested_interval_view(icol, kk) = static_cast<Real>(result.requested_interval);
+          imp_sol_accepted_interval_view(icol, kk) = static_cast<Real>(result.accepted_interval);
         }
 
        // Check for failure and report as warning (not error)
-       // Outcome values can be inspected in the imp_sol_outcome field
+       // Outcome values can be inspected in the mam4_imp_sol_outcome field
        if (!result.success()) {
 #ifndef NDEBUG
          Kokkos::printf(
