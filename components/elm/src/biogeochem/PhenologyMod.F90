@@ -742,7 +742,15 @@ contains
                ! if this is the end of the offset_period, reset phenology
                ! flags and indices
                ! Restarted counters can be out of phase with the current timestep.
-               if (offset_counter(p) <= 0.0_r8) then
+
+               ! A restarted counter that is not a multiple of dt steps past 0.
+               ! CNOffsetLitterfall has not run yet, so keep the flag on and make
+               ! this the normal final step. The next step hits 0.
+               if (offset_counter(p) < 0.0_r8) then
+                  offset_counter(p) = dt
+               ! if this is the end of the offset_period, reset phenology
+               ! flags and indices
+               else if (offset_counter(p) == 0.0_r8) then
                   ! this code block was originally handled by call cn_offset_cleanup(p)
                   ! inlined during vectorization
 
@@ -765,7 +773,15 @@ contains
                ! if this is the end of the onset period, reset phenology
                ! flags and indices
                ! Restarted counters can be out of phase with the current timestep.
-               if (onset_counter(p) <= 0.0_r8) then
+
+               ! A restarted counter that is not a multiple of dt steps past 0.
+               ! CNOffsetLitterfall has not run yet, so keep the flag on and make
+               ! this the normal final step. The next step hits 0.
+               if (offset_counter(p) < 0.0_r8) then
+                  offset_counter(p) = dt
+               ! if this is the end of the offset_period, reset phenology
+               ! flags and indices
+               else if (offset_counter(p) == 0.0_r8) then
                   ! this code block was originally handled by call cn_onset_cleanup(p)
                   ! inlined during vectorization
 
@@ -1091,7 +1107,15 @@ contains
                ! if this is the end of the offset_period, reset phenology
                ! flags and indices
                ! Restarted counters can be out of phase with the current timestep.
-               if (offset_counter(p) <= 0._r8) then
+
+               ! A restarted counter that is not a multiple of dt steps past 0.
+               ! CNOffsetLitterfall has not run yet, so keep the flag on and make
+               ! this the normal final step. The next step hits 0.
+               if (offset_counter(p) < 0.0_r8) then
+                  offset_counter(p) = dt
+               ! if this is the end of the offset_period, reset phenology
+               ! flags and indices
+               else if (offset_counter(p) == 0.0_r8) then
                   ! this code block was originally handled by call cn_offset_cleanup(p)
                   ! inlined during vectorization
                   offset_flag(p) = 0._r8
@@ -1113,7 +1137,15 @@ contains
                ! if this is the end of the onset period, reset phenology
                ! flags and indices
                ! Restarted counters can be out of phase with the current timestep.
-               if (onset_counter(p) <= 0.0_r8) then
+
+               ! A restarted counter that is not a multiple of dt steps past 0.
+               ! CNOffsetLitterfall has not run yet, so keep the flag on and make
+               ! this the normal final step. The next step hits 0.
+               if (offset_counter(p) < 0.0_r8) then
+                  offset_counter(p) = dt
+               ! if this is the end of the offset_period, reset phenology
+               ! flags and indices
+               else if (offset_counter(p) == 0.0_r8) then
                   ! this code block was originally handled by call cn_onset_cleanup(p)
                   ! inlined during vectorization
                   onset_flag(p) = 0._r8
