@@ -87,7 +87,7 @@ public:
       // check inputs
       const int vec_len = (ilev==(NUM_LEV-1)) ? ColInfo<NUM_PHYSICAL_LEV>::LastPackLen : VECTOR_SIZE;
       for (int iv=0; iv<vec_len; ++iv) {
-        if (vtheta_dp(ilev)[iv] < 0.0 || exner(ilev)[iv] > 0.0)
+        if (vtheta_dp(ilev)[iv] < sp(0.0) || exner(ilev)[iv] > sp(0.0))
           ++nerr;
       }
       if (nerr) return;
