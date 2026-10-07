@@ -288,6 +288,13 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.Ckh_horiz     = m_params.get<double>("coeff_kh_horiz",0.1);
   runtime_options.Ckm_horiz     = m_params.get<double>("coeff_km_horiz",0.1);
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
+  runtime_options.shoc_enable_condensation = m_params.get<bool>("shoc_enable_condensation");
+  runtime_options.p3_super_sat = m_params.get<bool>("p3_super_sat");
+  EKAT_REQUIRE_MSG(!runtime_options.p3_super_sat || runtime_options.shoc_1p5tke,
+                   "Invalid SHOC configuration: p3_super_sat requires shoc_1p5tke to be enabled.");
+  EKAT_REQUIRE_MSG(runtime_options.shoc_enable_condensation != runtime_options.p3_super_sat,
+                   "Invalid condensation configuration: p3_super_sat and "
+                   "shoc_enable_condensation cannot both be true or both be false.");
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
   // Initialize all of the structures that are passed to shoc_main in run_impl.
@@ -464,8 +471,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis,
                                  surf_mom_flux, tau_est, um_pert, vm_pert,
-                                 um_pert_diff, vm_pert_diff);
-
+                                 um_pert_diff, vm_pert_diff, runtime_options);
   if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
     const auto& water_flux = get_field_out("water_flux").get_view<Real*>();

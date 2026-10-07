@@ -193,6 +193,8 @@ Int Functions<S,D>
     const auto odiag_eff_radius_qc = ekat::subview(diagnostic_outputs.diag_eff_radius_qc, i);
     const auto odiag_eff_radius_qi = ekat::subview(diagnostic_outputs.diag_eff_radius_qi, i);
     const auto odiag_eff_radius_qr = ekat::subview(diagnostic_outputs.diag_eff_radius_qr, i);
+    const auto omega_mp           = ekat::subview(diagnostic_inputs.omega_mp, i);
+    const auto tke_mp             = ekat::subview(diagnostic_inputs.tke_mp, i);
     const auto oqv2qi_depos_tend   = ekat::subview(diagnostic_outputs.qv2qi_depos_tend, i);
     const auto orho_qi             = ekat::subview(diagnostic_outputs.rho_qi, i);
     const auto oprecip_liq_flux    = ekat::subview(diagnostic_outputs.precip_liq_flux, i);
@@ -220,7 +222,8 @@ Int Functions<S,D>
     const auto oqi_sed             = ekat::subview(history_only.qi_sed, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
-
+    const auto oqv2qc_aeroact      = ekat::subview(history_only.qv2qc_aeroact, i);
+    const auto oqv2qc_condevap     = ekat::subview(history_only.qv2qc_condevap, i);
     // Inputs for the heteogeneous freezing
     const auto ohetfrz_immersion_nucleation_tend  = ekat::subview(diagnostic_inputs.hetfrz_immersion_nucleation_tend, i);
     const auto ohetfrz_contact_nucleation_tend    = ekat::subview(diagnostic_inputs.hetfrz_contact_nucleation_tend, i);
@@ -256,7 +259,7 @@ Int Functions<S,D>
       T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
       rhofaci, acn, oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm,
       obm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
+      ni_incld, bm_incld, oqv2qc_aeroact, nucleationPossible, hydrometeorsPresent, runtime_options); //oqv2qc_aeroact
 
     // There might not be any work to do for this team
     if (!(nucleationPossible || hydrometeorsPresent)) {
@@ -271,7 +274,7 @@ Int Functions<S,D>
       ohetfrz_immersion_nucleation_tend, ohetfrz_contact_nucleation_tend, ohetfrz_deposition_nucleation_tend,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
-      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, omega_mp, tke_mp, oqv2qc_condevap, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,

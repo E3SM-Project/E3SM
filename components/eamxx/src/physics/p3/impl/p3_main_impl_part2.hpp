@@ -49,6 +49,9 @@ void Functions<S,D>
   const uview_1d<const Pack>& cld_frac_r,
   const uview_1d<const Pack>& qv_prev,
   const uview_1d<const Pack>& t_prev,
+  const uview_1d<const Pack>& omega_mp,
+  const uview_1d<const Pack>& tke_mp,
+  const uview_1d<Pack>& qv2qc_condevap,
   const uview_1d<Pack>& T_atm,
   const uview_1d<Pack>& rho,
   const uview_1d<Pack>& inv_rho,
@@ -123,7 +126,8 @@ void Functions<S,D>
   const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
   const bool use_separate_ice_liq_frac = runtime_options.use_separate_ice_liq_frac;
   const bool extra_p3_diags = runtime_options.extra_p3_diags;
-
+  const bool p3_super_sat = runtime_options.p3_super_sat;
+  const bool shoc_enable_condensation = runtime_options.shoc_enable_condensation;
   team.team_barrier();
   hydrometeorsPresent = false;
   team.team_barrier();
@@ -221,7 +225,10 @@ void Functions<S,D>
       epsr(0),        // TODO(doc)
       epsc(0),        // TODO(doc)
       epsi_tot (0);   // inverse supersaturation relaxation timescale for combined ice categories
-
+    Pack xx(0),oxx(0),aaa(0),odt(0),ocp(0),dum(0),dumss(0),pcc(0),e0d(0),w0d(0);
+    Pack dum2(0),dumnc(0),dumqc(0),c1(0),k1(0);
+    Pack ssatqv_l(0);
+    Pack esl(0); // saturation vapor pressure w.r.t. liquid [Pa], from Tetens equation
     Mask wetgrowth(false);
 
     // skip micro process calculations except nucleation/acvtivation if there no hydrometeors are present
@@ -379,7 +386,39 @@ void Functions<S,D>
       calc_liq_relaxation_timescale(
         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
         epsr, epsc, not_skip_micro);
-
+      if(!shoc_enable_condensation && p3_super_sat) {
+    auto condmask = (qc_incld(k) >= qsmall) && not_skip_micro;
+    if (condmask.any()) {
+     w0d.set(condmask, -omega_mp(k) / (rho(k) * 9.81)+ekat::sqrt(ekat::max(0.0,2.0*tke_mp(k)/3.0)));
+     xx.set(condmask, epsc);
+     oxx.set(condmask, 1.0 / xx);
+//     ssatqv_l.set(condmask, (shocql_out(k) - qc_incld(k) * cld_frac_l(k)) * ab);
+     ssatqv_l.set(condmask, qv(k)-qv_sat_l(k));
+     // Tetens equation for saturation vapor pressure w.r.t. liquid water:
+     // esl [Pa] = 610.78 * exp(17.2694 * Tc / (Tc + 237.3)), Tc in Celsius, T_atm(k) in Kelvin
+     esl.set(condmask, 610.78 * ekat::exp(17.2694 * (T_atm(k) - T_zerodegc) / ((T_atm(k) - T_zerodegc) + 237.3)));
+     dum.set(condmask, qv_sat_l(k)*rho(k)*9.81*w0d/(pres(k)-esl));
+     aaa.set(condmask, -dum - dqsdt * (-w0d * 9.81 * inv_cp));
+     qv2qc_condevap(k).set(condmask, (aaa * epsc * oxx + (ssatqv_l - aaa * oxx) * inv_dt * epsc * oxx * (1.0 - ekat::exp(-xx * dt))) / ab);
+     qv2qc_condevap(k).set(condmask, ekat::max(-qc_incld(k) / dt, qv2qc_condevap(k)));
+//     qv2qc_condevap(k).set(condmask && ssatqv_l>0, ekat::min(ssatqv_l / dt, qv2qc_condevap(k)));
+//     qc(k).set(condmask, qc_incld(k) + pcc * dt);
+     qc(k).set(condmask, qc(k) + qv2qc_condevap(k) * cld_frac_l(k) * dt);
+     qv(k).set(condmask, qv(k) - cld_frac_l(k) * qv2qc_condevap(k) * dt);
+     th_atm(k).set(condmask, th_atm(k) + exner(k) * latvap * inv_cp * cld_frac_l(k) * qv2qc_condevap(k) * dt);
+    // Recalculate in-cloud values for microphysics
+     calculate_incloud_mixingratios(
+      qc(k), qr(k), qi(k), qm(k), nc(k), nr(k), ni(k), bm(k), inv_cld_frac_l(k), inv_cld_frac_i(k), inv_cld_frac_r(k),
+      qc_incld(k), qr_incld(k), qi_incld(k), qm_incld(k), nc_incld(k), nr_incld(k), ni_incld(k), bm_incld(k), not_skip_all);
+//Adjust other cloud droplet parameters.
+       get_cloud_dsd2(qc_incld(k), nc_incld(k), mu_c(k), rho(k), nu(k), dnu,
+                      lamc(k), cdist(k), cdist1(k), not_skip_micro);
+       nc(k).set(not_skip_micro, nc_incld(k) * cld_frac_l(k));
+       calc_liq_relaxation_timescale(
+         revap_table_vals, rho(k), f1r, f2r, dv, mu, sc, mu_r(k), lamr(k), cdistr(k), cdist(k), qr_incld(k), qc_incld(k),
+         epsr, epsc, not_skip_micro);
+    } // if condmask.any()
+   }
       evaporate_rain(qr_incld(k),qc_incld(k),nr_incld(k),qi_incld(k),
 		     cld_frac_l(k),cld_frac_r(k),qv(k),qv_prev(k),qv_sat_l(k),qv_sat_i(k),
 		     ab,abi,epsr,epsi_tot,T_atm(k),t_prev(k),dqsdt,dt,
@@ -389,8 +428,8 @@ void Functions<S,D>
         ice_deposition_sublimation(
             qi_incld(k), ni_incld(k), T_atm(k), qv_sat_l(k), qv_sat_i(k), epsi,
             abi, qv(k), inv_dt, qv2qi_vapdep_tend, qi2qv_sublim_tend,
-            ni_sublim_tend, qc2qi_berg_tend, not_skip_micro);
-      }
+          ni_sublim_tend, qc2qi_berg_tend, runtime_options, not_skip_micro);
+       }
 
     }
 
@@ -479,9 +518,9 @@ void Functions<S,D>
     ice_supersat_conservation(qv2qi_vapdep_tend,qv2qi_nucleat_tend,qinuc_cnt,cld_frac_i(k),qv(k),qv_sat_i(k),
 			                        th_atm(k)/inv_exner(k),dt,qi2qv_sublim_tend,qr2qv_evap_tend, use_hetfrz_classnuc, not_skip_all);
     // make sure procs don't inappropriately push qv beyond liquid saturation
-    prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt,
-				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
-				not_skip_all);
+//    prevent_liq_supersaturation(pres(k), T_atm(k), qv(k), dt,
+//				qv2qi_vapdep_tend, qv2qi_nucleat_tend, qi2qv_sublim_tend,qr2qv_evap_tend,
+//				not_skip_all);
 
     //---------------------------------------------------------------------------------
     // update prognostic microphysics and thermodynamics variables

@@ -58,6 +58,7 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Pack>& nr_incld,
   const uview_2d<Pack>& ni_incld,
   const uview_2d<Pack>& bm_incld,
+  const uview_2d<Pack>& qv2qc_aeroact,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
   const P3Runtime& runtime_options)
@@ -83,6 +84,7 @@ void Functions<Real,DefaultDevice>
       ekat::subview(qv, i), ekat::subview(th_atm, i), ekat::subview(qc, i), ekat::subview(nc, i), ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(qi, i),
       ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(bm, i), ekat::subview(qc_incld, i), ekat::subview(qr_incld, i), ekat::subview(qi_incld, i),
       ekat::subview(qm_incld, i), ekat::subview(nc_incld, i), ekat::subview(nr_incld, i), ekat::subview(ni_incld, i), ekat::subview(bm_incld, i),
+      ekat::subview(qv2qc_aeroact, i),
       nucleationPossible(i), hydrometeorsPresent(i), runtime_options);
 
   });
