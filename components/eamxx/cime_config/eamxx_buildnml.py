@@ -546,6 +546,17 @@ def evaluate_selectors(element, case, ez_selectors):
     Traceback (most recent call last):
     CIME.core.exceptions.CIMEError: ERROR: The 'append' action for 'a' requires a previously selected value to modify
      Selector element attributes: {'type': 'array(integer)', 'action': 'append'}
+    >>> ############## ARRAY ACTIONS IN OPEN NODES (type from leaf_type) #####################
+    >>> d = ET.fromstring('<n open="true" leaf_type="array(real)"><a>1</a><a grid="ne4ne4" action="append">2</a><b>1,2</b><b nlev="128" action="remove">2</b></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [(c.tag,c.text) for c in d]
+    [('a', '1,2'), ('b', '1')]
+    >>> d = ET.fromstring('<n open="true" leaf_type="real"><a>1</a><a grid="ne4ne4" action="append">2</a></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'action' metadata attribute is only supported for entries of array type
+     param name: a
+     param type: real
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad1 = '''
     ... <selectors_xml>
@@ -621,8 +632,10 @@ def evaluate_selectors(element, case, ez_selectors):
             child_val = child.text
             selectors = child.attrib
 
+            # Leaves of open nodes get their type from the node (if they don't set it)
             if child_name not in child_type:
-                child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
+                child_type[child_name] = selectors["type"] if "type" in selectors.keys() \
+                                         else element.attrib.get("leaf_type","unset")
 
             action = selectors.get("action")
             if action is not None:

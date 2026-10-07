@@ -122,6 +122,15 @@ def get_changes_for_node(xml_root, node_name, changes):
     ['sub::new:=1']
     >>> get_changes_for_node(tree, 'foo', ['sub::new:=1'])
     ['sub::new:=1']
+    >>> ################ Edits of leaves that were added and then removed ####
+    >>> get_changes_for_node(tree, 'sub', ['sub::new:=1', 'sub::new=2', 'sub::new+=3', 'sub::new~=', 'bar=3'])
+    ['bar=3']
+    >>> get_changes_for_node(tree, 'sub', ['sub::new:=1', 'new=2', 'sub::new~=', 'bar=3'])
+    ['bar=3']
+    >>> get_changes_for_node(tree, 'foo', ['sub::new:=1', 'sub::new=2', 'sub::new~='])
+    ['sub::new:=1', 'sub::new=2', 'sub::new~=']
+    >>> get_changes_for_node(tree, 'sub', ['other::new=2'])
+    ['other::new=2']
     """
     reset_targets = get_xml_nodes(xml_root, node_name)
     expect(len(reset_targets) > 0,
@@ -132,35 +141,37 @@ def get_changes_for_node(xml_root, node_name, changes):
 
     parent_map = create_parent_map(xml_root)
 
-    filtered_changes = []
+    # NOTE: is_anchestor_of(A, B, ...) returns True when A == B too, so this
+    #       covers both direct matches and descendant matches.
+    def targets_reset (nodes):
+        return any(is_anchestor_of(t, n, parent_map) for n in nodes for t in reset_targets)
+
+    # Pass 1: find which changes affect the reset. The leaves added/removed by changes
+    # that do, may not exist in the XML (anymore/yet), so we identify them by their parent
+    # node and name. Changes to leaves that match nothing are decided in pass 2.
+    affects_reset = []
+    reset_leaves = set()
     for chg in changes:
         chg_node_name, _, chg_op = parse_change(chg)
         if chg_op in ["add","rm"]:
-            # The leaf may not exist (yet/anymore), so identify the change by its
-            # parent node and leaf name
             parent_name, leaf_name = split_parent_name(chg_node_name)
-            affects_reset = any(
-                is_anchestor_of(reset_target, parent, parent_map) or
-                (reset_target.tag==leaf_name and parent_map[reset_target] is parent)
-                for parent in get_xml_nodes(xml_root, parent_name)
-                for reset_target in reset_targets
-            )
-            if not affects_reset:
-                filtered_changes.append(chg)
-            continue
+            affects = any(
+                targets_reset([parent]) or
+                any(t.tag==leaf_name and parent_map[t] is parent for t in reset_targets)
+                for parent in get_xml_nodes(xml_root, parent_name))
+            if affects:
+                reset_leaves.add(leaf_name)
+            affects_reset.append(affects)
+        else:
+            chg_nodes = get_xml_nodes(xml_root, chg_node_name)
+            affects_reset.append(targets_reset(chg_nodes) if chg_nodes else None)
 
-        chg_nodes = get_xml_nodes(xml_root, chg_node_name)
-        # is_anchestor_of(A, B, ...) returns True when A == B too, so
-        # this covers both direct matches and descendant matches.
-        affects_reset = any(
-            is_anchestor_of(reset_target, chg_node, parent_map)
-            for chg_node in chg_nodes
-            for reset_target in reset_targets
-        )
-        if not affects_reset:
-            filtered_changes.append(chg)
+    # Pass 2: a change to a leaf that no longer exists must go if its add/rm go.
+    for i,chg in enumerate(changes):
+        if affects_reset[i] is None:
+            affects_reset[i] = parse_change(chg).name.split("::")[-1] in reset_leaves
 
-    return filtered_changes
+    return [chg for chg,affects in zip(changes,affects_reset) if not affects]
 
 ###############################################################################
 def reset_node_changes(xml_root, node_name):
@@ -461,6 +472,7 @@ def rm_leaf(xml_root, name):
     """
     Remove leaves from open nodes. Returns True (a leaf was removed).
     """
+    split_parent_name(name) # Make sure the name is NODE::LEAF
     matches = get_xml_nodes(xml_root, name)
     expect (len(matches)>0, f"{name} did not match any items")
 
@@ -469,6 +481,7 @@ def rm_leaf(xml_root, name):
         expect (is_leaf(node), f"Cannot remove '{node.tag}': it is not a leaf")
         parent = parent_map[node]
         check_can_edit_leaves(xml_root, parent, node.tag, "remove")
+        expect (not is_locked(xml_root, node), f"Cannot change {node.tag}, it is locked")
         parent.remove(node)
 
     return True
@@ -736,6 +749,8 @@ def atm_config_chg_impl(xml_root, change):
     ...     <f1 type="array(real)">1.0</f1>
     ...   </open_full>
     ...   <open_locked open="true" locked="true" leaf_type="real"/>
+    ...   <open_dl open="true" leaf_type="real"><x locked="true">1</x><y>2</y></open_dl>
+    ...   <open_ll open="true" leaf_type="real" leaf_locked="true"/>
     ...   <open_dup1 open="true" leaf_type="real"/>
     ...   <open_dup2 open="true" leaf_type="real"/>
     ... </root>
@@ -819,9 +834,24 @@ def atm_config_chg_impl(xml_root, change):
     >>> atm_config_chg_impl(tree,'open_empty::nope~=')
     Traceback (most recent call last):
     SystemExit: ERROR: open_empty::nope did not match any items
-    >>> atm_config_chg_impl(tree,'open_empty~=')
+    >>> atm_config_chg_impl(tree,'ANY::open_empty~=')
     Traceback (most recent call last):
     SystemExit: ERROR: Cannot remove 'open_empty': it is not a leaf
+    >>> ###### The leaf name alone is not enough (the parent is needed, e.g., to reset it)
+    >>> atm_config_chg_impl(tree,'y~=')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot add/remove leaf 'y': the name must include the name of the parent open node (e.g., 'parent::y')
+    >>> ###### Locked leaves cannot be removed (they are locked explicitly, or via leaf_locked)
+    >>> atm_config_chg_impl(tree,'open_dl::x~=')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot change x, it is locked
+    >>> atm_config_chg_impl(tree,'open_ll::z:=1')
+    True
+    >>> atm_config_chg_impl(tree,'open_ll::z~=')
+    Traceback (most recent call last):
+    SystemExit: ERROR: Cannot change z, it is locked
+    >>> atm_config_chg_impl(tree,'open_dl::y~=')
+    True
     """
     node_name, new_value, op = parse_change(change)
 
