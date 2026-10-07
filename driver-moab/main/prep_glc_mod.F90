@@ -51,6 +51,7 @@ module prep_glc_mod
 
   public :: prep_glc_get_l2gacc_lm
   public :: prep_glc_get_l2gacc_lm_cnt
+  public :: prep_glc_get_l2gacc_lm_cnt_avg
   public :: prep_glc_get_sharedFieldsLndGlc
 
   public :: prep_glc_get_l2x_gx
@@ -2324,6 +2325,11 @@ contains
     integer, pointer :: prep_glc_get_l2gacc_lm_cnt
     prep_glc_get_l2gacc_lm_cnt => l2gacc_lm_cnt
   end function prep_glc_get_l2gacc_lm_cnt
+
+  function prep_glc_get_l2gacc_lm_cnt_avg()
+    integer, pointer :: prep_glc_get_l2gacc_lm_cnt_avg
+    prep_glc_get_l2gacc_lm_cnt_avg => l2gacc_lm_cnt_avg
+  end function prep_glc_get_l2gacc_lm_cnt_avg
 
   function prep_glc_get_sharedFieldsLndGlc()
     character(CXX) :: prep_glc_get_sharedFieldsLndGlc

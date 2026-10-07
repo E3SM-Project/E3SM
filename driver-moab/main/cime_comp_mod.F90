@@ -5023,6 +5023,9 @@ contains
        if (ice_present) then
           call seq_diag_ice_moab(ice(ens1), infodata, do_x2i=.true.)
        endif
+       if (glc_present) then
+          call seq_diag_glc_moab(glc(ens1), infodata, do_x2g=.true.)
+       endif
        if (do_bgc_budgets) then
           if (rof_present) then
              call seq_diagBGC_rof_moab(rof(ens1), infodata)
@@ -5063,9 +5066,7 @@ contains
           call seq_diag_ice_moab(ice(ens1), infodata, do_i2x=.true.)
        endif
        if (glc_present) then
-          ! covers the g2x (runoff to ocn/ice) budget terms; the x2g budget terms of
-          ! the mct driver are deferred with the rest of the ocn<->glc port
-          call seq_diag_glc_moab(glc(ens1), infodata)
+          call seq_diag_glc_moab(glc(ens1), infodata, do_g2x=.true.)
        endif
        if (do_bgc_budgets) then
           if (atm_present) then
