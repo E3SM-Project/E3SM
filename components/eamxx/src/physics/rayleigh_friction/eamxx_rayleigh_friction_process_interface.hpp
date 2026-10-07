@@ -15,10 +15,6 @@ namespace scream
  * The class responsible for applying Rayleigh friction near the model top,
  * ported from EAM (rayleigh_friction.F90). The horizontal winds are damped
  * toward zero and the dissipated kinetic energy is added to the temperature.
- *
- * NOTE: HommeDynamics also applies Rayleigh friction (controlled by the
- * homme::rayleigh_friction_decay_time parameter). Set that to 0 when
- * using this process to avoid applying Rayleigh friction twice.
 */
 
 class RayleighFriction : public AtmosphereProcess
