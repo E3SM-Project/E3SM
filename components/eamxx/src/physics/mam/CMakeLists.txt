@@ -19,6 +19,8 @@ set(MAM4XX_NUM_VERTICAL_LEVELS ${SCREAM_NUM_VERTICAL_LEV})
 
 add_subdirectory(${EXTERNALS_SOURCE_DIR}/mam4xx ${CMAKE_BINARY_DIR}/externals/mam4xx)
 
+option(MAM4XX_USE_IMPLICIT_GAS_SOLVER "Use implicit gas solver instead of analytical solution in MAM4xx" OFF)
+
 # EAMxx mam4xx-based atmospheric processes
 add_library(mam
   readfiles/vertical_remapper_mam4.cpp
@@ -35,6 +37,10 @@ add_library(mam
   eamxx_mam_srf_and_online_emissions_process_interface.cpp
   eamxx_mam_constituent_fluxes_interface.cpp)
 target_compile_definitions(mam PUBLIC EAMXX_HAS_MAM)
+if (MAM4XX_USE_IMPLICIT_GAS_SOLVER)
+  target_compile_definitions(mam PUBLIC MAM4XX_USE_IMPLICIT_GAS_SOLVER)
+  target_compile_definitions(mam4xx PUBLIC MAM4XX_USE_IMPLICIT_GAS_SOLVER)
+endif()
 target_link_libraries(mam PUBLIC eamxx_physics_share csm_share scream_share mam4xx)
 
 if (TARGET eamxx_physics)
