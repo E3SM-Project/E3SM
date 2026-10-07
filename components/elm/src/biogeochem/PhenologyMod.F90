@@ -775,7 +775,7 @@ contains
                ! Restarted counters can be out of phase with the current timestep.
 
                ! A restarted counter that is not a multiple of dt steps past 0.
-               ! CNOnsetLitterfall has not run yet, so keep the flag on and make
+               ! CNOnsetGrowth has not run yet, so keep the flag on and make
                ! this the normal final step. The next step hits 0.
                if (onset_counter(p) < 0.0_r8) then
                   onset_counter(p) = dt
@@ -1139,7 +1139,7 @@ contains
                ! Restarted counters can be out of phase with the current timestep.
 
                ! A restarted counter that is not a multiple of dt steps past 0.
-               ! CNOnsetLitterfall has not run yet, so keep the flag on and make
+               ! CNOnsetGrowth has not run yet, so keep the flag on and make
                ! this the normal final step. The next step hits 0.
                if (onset_counter(p) < 0.0_r8) then
                   onset_counter(p) = dt
