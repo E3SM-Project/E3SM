@@ -598,45 +598,6 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
 }
 
 template<typename DeviceT>
-template<typename ScalarT>
-KOKKOS_INLINE_FUNCTION
-void PhysicsFunctions<DeviceT>::apply_rayleigh_friction(const Real dt, const ScalarT& otau,
-                                                        ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid)
-{
-  using C = scream::physics::Constants<Real>;
-  constexpr Real cp = C::CP.value;
-
-  const Real dt_inv = 1.0/dt;
-
-  const ScalarT c2 = 1.0/(1.0 + otau*dt);
-  const ScalarT c1 = -1.0*otau*c2;
-  const ScalarT c3 = 0.5*(1.0 - c2*c2)*dt_inv;
-
-  const ScalarT u2 = u_wind*u_wind;
-  const ScalarT v2 = v_wind*v_wind;
-
-  u_wind += c1*u_wind*dt;
-  v_wind += c1*v_wind*dt;
-  T_mid  += c3*(u2 + v2)*dt/cp;
-}
-
-template<typename DeviceT>
-template<typename ScalarT, typename InputProviderOtau, typename MT>
-KOKKOS_INLINE_FUNCTION
-void PhysicsFunctions<DeviceT>::apply_rayleigh_friction (const MemberType& team,
-                                                         const Real dt,
-                                                         const InputProviderOtau& otau,
-                                                         const view_1d<ScalarT, MT>& u_wind,
-                                                         const view_1d<ScalarT, MT>& v_wind,
-                                                         const view_1d<ScalarT, MT>& T_mid)
-{
-  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, T_mid.extent(0)),
-                       [&] (const int k) {
-    apply_rayleigh_friction(dt, otau(k), u_wind(k), v_wind(k), T_mid(k));
-  });
-}
-
-template<typename DeviceT>
 KOKKOS_INLINE_FUNCTION
 Real PhysicsFunctions<DeviceT>::calculate_gustiness_speed(const Real& tke)
 {
