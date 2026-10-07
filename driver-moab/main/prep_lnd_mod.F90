@@ -36,7 +36,7 @@ module prep_lnd_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: lnd, atm, rof, glc
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
-  use map_glc2lnd_mod   , only: map_glc2lnd_ec_moab
+  use map_glc2lnd_mod   , only: map_glc2lnd_ec_moab, map_glc2lnd_ec_moab_init
   use iso_c_binding
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
@@ -727,26 +727,8 @@ contains
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, GLC-LND')
              endif
 
-             ! The per-EC destination tags exist on the land mesh (part of x2l fields).
-             ! Define the same names on the glc mesh, where they stage the pre-multiplied
-             ! numerators for the elevation-class mapping (map_glc2lnd_ec_moab), and
-             ! define the scratch tag used for the icemask normalization on both meshes.
-             tagtype = 1  ! dense, double
-             numco = 1
-             tagname = trim(seq_flds_x2l_fields_from_glc)//C_NULL_CHAR
-             ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco, tagindex )
-             if (ierr .ne. 0) then
-                call shr_sys_abort(subname//' ERROR defining glc per-EC staging tags on the glc mesh')
-             endif
-             tagname = 'Sg_icemsk_num'//C_NULL_CHAR
-             ierr = iMOAB_DefineTagStorage(mbgxid, tagname, tagtype, numco, tagindex )
-             if (ierr .ne. 0) then
-                call shr_sys_abort(subname//' ERROR defining Sg_icemsk_num on the glc mesh')
-             endif
-             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco, tagindex )
-             if (ierr .ne. 0) then
-                call shr_sys_abort(subname//' ERROR defining Sg_icemsk_num on the land mesh')
-             endif
+             ! define the staging and scratch tags map_glc2lnd_ec_moab writes into
+             call map_glc2lnd_ec_moab_init(mbgxid, mblxid)
 
           endif ! mbgxid and mblxid
 

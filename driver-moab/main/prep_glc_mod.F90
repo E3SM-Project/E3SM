@@ -172,6 +172,7 @@ contains
          iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo
     use iso_c_binding, only : C_NULL_CHAR
     use shr_string_mod, only : shr_string_listGetNum
+    use map_glc2lnd_mod, only : map_glc2lnd_ec_moab_init
     !
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
@@ -413,6 +414,10 @@ contains
                    write(logunit,*) subname,' error in computing comm graph for second hop, GLC-LND'
                    call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, GLC-LND')
                 endif
+                ! prep_lnd_init did not run its glc branch, so the staging and scratch
+                ! tags map_glc2lnd_ec_moab writes into do not exist yet; define them
+                ! here with the same shared routine prep_lnd_init uses
+                call map_glc2lnd_ec_moab_init(mbgxid, mblxid)
              else
                 ! reuse the map app and weights loaded by prep_lnd_init
                 mapper_Fg2l%src_mbid = mbgxid

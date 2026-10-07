@@ -35,6 +35,7 @@ module map_glc2lnd_mod
 
   public :: map_glc2lnd_ec  ! map all fields from GLC -> LND grid that need to be separated by elevation class
   public :: map_glc2lnd_ec_moab ! moab (tag-based) version of map_glc2lnd_ec
+  public :: map_glc2lnd_ec_moab_init ! define the moab tags map_glc2lnd_ec_moab needs
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -46,6 +47,10 @@ module map_glc2lnd_mod
   private :: make_aVect_frac_times_icemask
 
   character(len=*), parameter :: frac_times_icemask_field = 'Sg_frac_times_icemask'
+
+  ! scratch tag holding M(icemask), the denominator of the per-EC fraction
+  ! normalization in map_glc2lnd_ec_moab; needed on both the glc and lnd meshes
+  character(len=*), parameter :: scratch_icemask_num = 'Sg_icemsk_num'
 
 contains
 
@@ -288,7 +293,6 @@ contains
     ! dummy zero-size attribute vectors to satisfy the seq_map_map interface
     type(mct_aVect) :: av_dum_s, av_dum_d
 
-    character(len=*), parameter :: scratch_icemask_num = 'Sg_icemsk_num'
     character(len=*), parameter :: subname = 'map_glc2lnd_ec_moab'
     !-----------------------------------------------------------------------
 
@@ -474,6 +478,59 @@ contains
     end subroutine add_to_list
 
   end subroutine map_glc2lnd_ec_moab
+
+  !-----------------------------------------------------------------------
+  subroutine map_glc2lnd_ec_moab_init(glc_mbid, lnd_mbid)
+    !
+    ! !DESCRIPTION:
+    ! Defines the moab tags that map_glc2lnd_ec_moab needs, beyond the per-EC
+    ! destination tags that already exist on the land mesh as part of the x2l
+    ! field list: the same per-EC names on the glc mesh, where they stage the
+    ! pre-multiplied numerators, and the scratch tag for the icemask
+    ! normalization, which is needed on both meshes.
+    !
+    ! Called from whichever prep module sets up the glc->lnd map: prep_lnd when
+    ! glc feeds back to land, prep_glc otherwise (the smb renormalization goes
+    ! through the same mapping).
+    !
+    ! !USES:
+    use iMOAB, only : iMOAB_DefineTagStorage
+    use iso_c_binding, only : C_NULL_CHAR
+    use seq_flds_mod, only : seq_flds_x2l_fields_from_glc
+    !
+    ! !ARGUMENTS:
+    integer, intent(in) :: glc_mbid  ! iMOAB app id of the glc mesh on the coupler
+    integer, intent(in) :: lnd_mbid  ! iMOAB app id of the lnd mesh on the coupler
+    !
+    ! !LOCAL VARIABLES:
+    integer :: ierr, tagtype, numco, tagindex
+    character(CXX) :: tagname
+
+    character(len=*), parameter :: subname = 'map_glc2lnd_ec_moab_init'
+    !-----------------------------------------------------------------------
+
+    if (glc_mbid < 0 .or. lnd_mbid < 0) return
+
+    tagtype = 1  ! dense, double
+    numco = 1
+
+    tagname = trim(seq_flds_x2l_fields_from_glc)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(glc_mbid, tagname, tagtype, numco, tagindex)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR defining glc per-EC staging tags on the glc mesh')
+    endif
+
+    tagname = scratch_icemask_num//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(glc_mbid, tagname, tagtype, numco, tagindex)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR defining '//scratch_icemask_num//' on the glc mesh')
+    endif
+    ierr = iMOAB_DefineTagStorage(lnd_mbid, tagname, tagtype, numco, tagindex)
+    if (ierr .ne. 0) then
+       call shr_sys_abort(subname//' ERROR defining '//scratch_icemask_num//' on the land mesh')
+    endif
+
+  end subroutine map_glc2lnd_ec_moab_init
 
   !-----------------------------------------------------------------------
   subroutine get_glc_elevation_classes(glc_topo, glc_elevclass)
