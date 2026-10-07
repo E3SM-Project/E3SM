@@ -2,7 +2,7 @@
 Retrieve nodes from EAMxx XML config file.
 """
 
-import sys, os, re, pathlib
+import sys, os, re, pathlib, copy
 from collections import namedtuple
 
 # Used for doctests
@@ -18,6 +18,27 @@ ATMCHANGE_SEP = "-ATMCHANGE_SEP-"
 ATMCHANGE_BUFF_XML_NAME = "SCREAM_ATMCHANGE_BUFFER"
 
 ###############################################################################
+def is_atm_procs_list_change(chg):
+###############################################################################
+    """
+    Whether a buffered change modifies the atm_procs_list of an atm proc group.
+    Add/rm of leaves of open nodes are never atm_procs_list changes.
+
+    >>> is_atm_procs_list_change("atm_procs_list+=a")
+    True
+    >>> is_atm_procs_list_change("physics::atm_procs_list=a,b")
+    True
+    >>> is_atm_procs_list_change("test_only::open_params::my_atm_procs_list=1")
+    False
+    >>> is_atm_procs_list_change("test_only::open_params::atm_procs_list:=1")
+    False
+    >>> is_atm_procs_list_change("atm_procs_list::foo=1")
+    False
+    """
+    name, _, op = parse_change(chg)
+    return op not in ["add","rm"] and name.split("::")[-1]=="atm_procs_list"
+
+###############################################################################
 def apply_atm_procs_list_changes_from_buffer(case, xml):
 ###############################################################################
     atmchg_buffer = case.get_value(ATMCHANGE_BUFF_XML_NAME)
@@ -26,7 +47,7 @@ def apply_atm_procs_list_changes_from_buffer(case, xml):
         atmchgs = unbuffer_changes(case)
 
         for chg in atmchgs:
-            if "atm_procs_list" in chg:
+            if is_atm_procs_list_change(chg):
                 atm_config_chg_impl(xml, chg)
                 any_change = True
     return any_change
@@ -39,7 +60,7 @@ def apply_non_atm_procs_list_changes_from_buffer(case, xml):
         atmchgs = unbuffer_changes(case)
 
         for chg in atmchgs:
-            if "atm_procs_list" not in chg:
+            if not is_atm_procs_list_change(chg):
                 atm_config_chg_impl(xml, chg)
 
 ###############################################################################
@@ -131,6 +152,19 @@ def get_changes_for_node(xml_root, node_name, changes):
     ['sub::new:=1', 'sub::new=2', 'sub::new~=']
     >>> get_changes_for_node(tree, 'sub', ['other::new=2'])
     ['other::new=2']
+    >>> ################ Edits are resolved against the tree at the time they were made ####
+    >>> xml = '''
+    ... <root>
+    ...     <a open="true" leaf_type="integer"/>
+    ...     <b open="true" leaf_type="integer"/>
+    ... </root>
+    ... '''
+    >>> tree2 = ET.fromstring(xml)
+    >>> chgs = ['a::x:=1', 'x=2', 'a::x~=', 'b::x:=3']
+    >>> get_changes_for_node(tree2, 'a', chgs)
+    ['b::x:=3']
+    >>> get_changes_for_node(tree2, 'b', chgs)
+    ['a::x:=1', 'x=2', 'a::x~=']
     """
     reset_targets = get_xml_nodes(xml_root, node_name)
     expect(len(reset_targets) > 0,
@@ -139,39 +173,56 @@ def get_changes_for_node(xml_root, node_name, changes):
     if not changes:
         return []
 
-    parent_map = create_parent_map(xml_root)
+    # Each change must be resolved against the tree as it was when the change was made
+    # (a name like 'x' may match different leaves at different times). So we rewind a copy
+    # of the XML to its pre-changes state, and then replay the changes on it one by one.
+    sim = copy.deepcopy(xml_root)
 
-    # NOTE: is_anchestor_of(A, B, ...) returns True when A == B too, so this
-    #       covers both direct matches and descendant matches.
+    def parents_of(name):
+        return get_xml_nodes(sim, split_parent_name(name)[0])
+
+    for chg in reversed(changes):
+        name, _, op = parse_change(chg)
+        if op in ["add","rm"]:
+            leaf_name = split_parent_name(name)[1]
+            for p in parents_of(name):
+                leaf = p.find(leaf_name)
+                if op=="add" and leaf is not None:
+                    p.remove(leaf)
+                elif op=="rm" and leaf is None:
+                    ET.SubElement(p, leaf_name).attrib.update(get_leaf_attribs(p))
+
     def targets_reset (nodes):
-        return any(is_anchestor_of(t, n, parent_map) for n in nodes for t in reset_targets)
+        # NOTE: is_anchestor_of(A, B, ...) returns True when A == B too, so this
+        #       covers both direct matches and descendant matches.
+        parent_map = create_parent_map(sim)
+        targets = get_xml_nodes(sim, node_name)
+        return any(is_anchestor_of(t, n, parent_map) for n in nodes for t in targets)
 
-    # Pass 1: find which changes affect the reset. The leaves added/removed by changes
-    # that do, may not exist in the XML (anymore/yet), so we identify them by their parent
-    # node and name. Changes to leaves that match nothing are decided in pass 2.
-    affects_reset = []
-    reset_leaves = set()
+    kept = []
     for chg in changes:
-        chg_node_name, _, chg_op = parse_change(chg)
-        if chg_op in ["add","rm"]:
-            parent_name, leaf_name = split_parent_name(chg_node_name)
-            affects = any(
-                targets_reset([parent]) or
-                any(t.tag==leaf_name and parent_map[t] is parent for t in reset_targets)
-                for parent in get_xml_nodes(xml_root, parent_name))
-            if affects:
-                reset_leaves.add(leaf_name)
-            affects_reset.append(affects)
+        name, _, op = parse_change(chg)
+        if op in ["add","rm"]:
+            parents = parents_of(name)
+            leaf_name = split_parent_name(name)[1]
+            if op=="add":
+                for p in parents:
+                    if p.find(leaf_name) is None:
+                        ET.SubElement(p, leaf_name).attrib.update(get_leaf_attribs(p))
+            # The leaf added/removed, or its parent, are the nodes being modified
+            leaves = [p.find(leaf_name) for p in parents if p.find(leaf_name) is not None]
+            affects = targets_reset(parents + leaves)
+            if op=="rm":
+                for p in parents:
+                    if p.find(leaf_name) is not None:
+                        p.remove(p.find(leaf_name))
         else:
-            chg_nodes = get_xml_nodes(xml_root, chg_node_name)
-            affects_reset.append(targets_reset(chg_nodes) if chg_nodes else None)
+            affects = targets_reset(get_xml_nodes(sim, name))
 
-    # Pass 2: a change to a leaf that no longer exists must go if its add/rm go.
-    for i,chg in enumerate(changes):
-        if affects_reset[i] is None:
-            affects_reset[i] = parse_change(chg).name.split("::")[-1] in reset_leaves
+        if not affects:
+            kept.append(chg)
 
-    return [chg for chg,affects in zip(changes,affects_reset) if not affects]
+    return kept
 
 ###############################################################################
 def reset_node_changes(xml_root, node_name):
