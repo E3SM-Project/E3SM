@@ -35,6 +35,7 @@
 
 #include <cmath>
 #include <fstream>
+#include <limits>
 #include <random>
 #include <ranges>
 
@@ -1404,92 +1405,72 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->flush(); // During init, flush often (to help debug crashes)
 }
 
-// Constants are stored as doubles, but integer fields can only be set to integral values
-static void set_constant_value (const Field& f, const double value)
-{
-  if (f.data_type()==DataType::IntType) {
-    EKAT_REQUIRE_MSG (value==std::floor(value),
-        "Error! Cannot initialize the integer field '" + f.name() + "' with a non-integral value.\n"
-        "       Value: " + std::to_string(value) + "\n");
-    f.deep_copy(static_cast<int>(value));
-  } else {
-    f.deep_copy(value);
-  }
-}
-
 void AtmosphereDriver::
 initialize_constant_field(const FieldIdentifier& fid,
-                          const ekat::ParameterList& ic_pl)
+                          const ekat::ParameterList& constants_pl)
 {
   auto f = m_field_mgr->get_field(fid);
   // The user provided a constant value for this field. Simply use that.
   const auto& layout = f.get_header().get_identifier().get_layout();
+  const auto& name = fid.name();
 
   // The constant can be specified in one of these forms
   //   fname: val
   //   fname: [val]
   //   fname: [val1,...,valN]
+  // where the values are reals (write 1.0, not 1, since the ekat yaml parser reads 1 as an int).
+  // The XML defaults enforce that all constants are array(real), so that is what atmchange
+  // and buildnml produce. The scalar form is only accepted to keep the input.yaml files of
+  // standalone tests simple(r).
   // In the first two cases, all entries of the field are inited to val (for any field).
   // In the last case, the field must be a vector field with N components, and each
-  // component is inited to the corresponding entry of the array.
-  const auto& name = fid.name();
-
-  if (ic_pl.isType<std::vector<double>>(name)) {
-    const auto& values = ic_pl.get<std::vector<double>>(name);
-    const size_t vec_dim = layout.is_vector_layout() ? layout.get_vector_dim() : 1;
-    EKAT_REQUIRE_MSG (values.size()==1 or values.size()==vec_dim,
-        "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
-        "       Grid name:       " + fid.get_grid_name() + "\n"
-        "       Field layout:    " + layout.to_string() + "\n"
-        "       Array dimension: " + std::to_string(values.size()) + "\n"
-        "       Valid dimensions: 1 (set all entries to the same value)" +
-        (vec_dim>1 ? " or " + std::to_string(vec_dim) + " (one value per vector component)\n" : "\n"));
-  }
-
-  if (ic_pl.isType<std::vector<double>>(name) and
-      ic_pl.get<std::vector<double>>(name).size()>1) {
-    const auto idim = layout.get_vector_component_idx();
-    const auto vec_dim = layout.get_vector_dim();
-    const auto& values = ic_pl.get<std::vector<double>>(name);
-
-    if (layout.rank()==2 && idim==1) {
-      // We cannot use 'get_component' for views of rank 2 with vector dimension
-      // striding fastest, since we would not get a LayoutRight view. For these views,
-      // simply do a manual loop
-      using kt = Field::kt_dev;
-      typename kt::view_1d<double> data("data",vec_dim);
-      auto data_h = Kokkos::create_mirror_view(data);
-      for (int i=0; i<vec_dim; ++i) {
-        data_h(i) = values[i];
-      }
-      Kokkos::deep_copy(data,data_h);
-
-      const int n = layout.dim(0);
-      auto v = f.get_view<double**>();
-      Kokkos::parallel_for(typename kt::RangePolicy(0,n),
-                           KOKKOS_LAMBDA(const int i) {
-        for (int j=0; j<vec_dim; ++j) {
-          v(i,j) = data(j);
-        }
-      });
-    } else {
-      // Extract a subfield for each component. This is not "too" expensive, expecially
-      // considering that this code is executed during initialization only.
-      for (int comp=0; comp<vec_dim; ++comp) {
-        auto f_i = f.get_component(comp);
-        set_constant_value(f_i,values[comp]);
-      }
-    }
-  } else if (ic_pl.isType<std::vector<double>>(name)) {
-    // Single value, for any field
-    set_constant_value(f,ic_pl.get<std::vector<double>>(name)[0]);
-  } else if (ic_pl.isType<int>(name)) {
-    f.deep_copy(ic_pl.get<int>(name));
-  } else if (ic_pl.isType<double>(name)) {
-    set_constant_value(f,ic_pl.get<double>(name));
+  // component is inited to the corresponding entry.
+  std::vector<double> values;
+  if (constants_pl.isType<std::vector<double>>(name)) {
+    values = constants_pl.get<std::vector<double>>(name);
+  } else if (constants_pl.isType<double>(name)) {
+    values.push_back(constants_pl.get<double>(name));
   } else {
     EKAT_ERROR_MSG ("Error! Invalid initial condition for field '" + name + "': only scalar "
-                    "or vector double arguments are allowed.\n");
+                    "or vector double arguments are allowed.\n"
+                    "Note: If you used int values, convert to double (e.g., write 1.0 instead of 1).\n");
+  }
+
+  // Check all inputs before modifying the field
+  const int vec_dim = layout.is_vector_layout() ? layout.get_vector_dim() : 1;
+  EKAT_REQUIRE_MSG (values.size()==1 or values.size()==static_cast<size_t>(vec_dim),
+      "Error! Initial condition values array for '" + name + "' has the wrong dimension.\n"
+      "       Grid name:       " + fid.get_grid_name() + "\n"
+      "       Field layout:    " + layout.to_string() + "\n"
+      "       Array dimension: " + std::to_string(values.size()) + "\n"
+      "       Valid dimensions: 1 (set all entries to the same value)" +
+      (vec_dim>1 ? " or " + std::to_string(vec_dim) + " (one value per vector component)\n" : "\n"));
+
+  // Integer fields can be set from (real) values, but the conversion must be exact
+  // (e.g., 2.0 is ok, 2.5 throws), since we do not want to silently truncate. The value
+  // must also fit in an int (this also rules out inf, and NaN fails the first check).
+  const bool is_int = f.data_type()==DataType::IntType;
+  if (is_int)
+    for (const auto v : values)
+      EKAT_REQUIRE_MSG (v==std::floor(v) and std::abs(v)<=std::numeric_limits<int>::max(),
+          "Error! Cannot initialize the integer field '" + name + "' with a non-integral value, "
+          "or a value outside the range of int.\n"
+          "       Value: " + std::to_string(v) + "\n");
+
+  auto set_value = [&](const Field& x, const double v) {
+    if (is_int)
+      x.deep_copy(static_cast<int>(v));
+    else
+      x.deep_copy(v);
+  };
+
+  if (values.size()==1) {
+    set_value(f,values[0]);
+  } else {
+    // Extract a subfield for each component. This is not "too" expensive, especially
+    // considering that this code is executed during initialization only.
+    for (int comp=0; comp<vec_dim; ++comp)
+      set_value(f.get_component(comp),values[comp]);
   }
 }
 
