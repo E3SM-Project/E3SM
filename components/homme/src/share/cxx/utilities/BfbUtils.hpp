@@ -132,33 +132,33 @@ bfb_pow_impl (ScalarType val, ExpType e) {
     val = 1/val;
   }
 
-  ScalarType factor = 1.0;
+  ScalarType factor(1.0);
   if (val>=ScalarType(1.5)) {
     int k=0;
-    while (val>=16.0){
+    while (val>=ScalarType(16.0)){
       k += 4;
-      val /= 16.0;
+      val /= ScalarType(16.0);
     }
 
-    while (val>=1.5){
+    while (val>=ScalarType(1.5)){
       ++k;
-      val /= 2.0;
+      val /= ScalarType(2.0);
     }
 
     factor = int_pow(power_of_two(e),k);
-  } else if (val<=0.5) {
+  } else if (val<=ScalarType(0.5)) {
     int k=0;
-    while (val<=(1.0/16)){
+    while (val<=(ScalarType(1.0)/16)){
       k += 4;
-      val *= 16.0;
+      val *= ScalarType(16.0);
     }
 
-    while (val<=0.5){
+    while (val<=ScalarType(0.5)){
       ++k;
-      val *= 2.0;
+      val *= ScalarType(2.0);
     }
 
-    factor = 1.0/int_pow(power_of_two(e),k);
+    factor = ScalarType(1.0)/int_pow(power_of_two(e),k);
   }
 
   ScalarType x = val - ScalarType(1.0);
@@ -170,7 +170,7 @@ bfb_pow_impl (ScalarType val, ExpType e) {
   constexpr int order = 5;
   for (int n=order; n>=1; --n) {
     y *= ((e-(n-1))/n) * x;
-    y += 1.0;
+    y += ScalarType(1.0);
   }
 
   return y*factor;
