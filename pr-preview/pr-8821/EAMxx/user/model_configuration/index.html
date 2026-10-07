@@ -5504,7 +5504,9 @@ node, which has two (open) sub-nodes:</p>
   (if it is, it is read from the file, and the constant is ignored).</li>
 </ul>
 <p>If a field is in both nodes, <code>force</code> wins. Entries for fields that do not need to be initialized
-are ignored. Since these nodes are open, entries can be added and removed with <code>atmchange</code>:</p>
+are ignored. Note that <code>fallback</code> constants are <em>not</em> used for the fields that are read from the
+topography file (<code>phis</code>, <code>sgh30</code>, and <code>sgh</code>), so they would be silently ignored: use <code>force</code> for those.
+Since these nodes are open, entries can be added and removed with <code>atmchange</code>:</p>
 <div class="copy highlight"><pre><span></span><code><span class="c1"># Always set 'my_field' to 1.5</span>
 $<span class="w"> </span>./atmchange<span class="w"> </span>--add<span class="w"> </span>constant_fields::force::my_field<span class="o">=</span><span class="m">1</span>.5
 
