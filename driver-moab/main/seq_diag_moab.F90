@@ -1260,7 +1260,10 @@ contains
     !---------------------------------------------------------------------------
 
     ip = p_inst
-    ic = c_glc_gs
+    ! glc -> coupler (runoff) terms, so the receive-side slot, matching the
+    ! do_g2x branch of seq_diag_glc_mct. The send-side slot c_glc_gs holds the
+    ! x2g SMB terms, which are deferred with the rest of the ocn<->glc port.
+    ic = c_glc_gr
 
     lSize = mbGetnCells(mbgxid)
     allocate(area_data(lSize), fld_rofl(lSize), fld_rofi(lSize), fld_irrofi(lSize))
