@@ -316,9 +316,17 @@ public:
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_packs), [&] (const Int& k) {
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
         tke(i,k) = tke_copy(i,k);
-        qc(i,k)  = qc_copy(i,k);
-
-        qv(i,k) = qw(i,k) - qc(i,k);
+        if ( !runtime_opts.shoc_enable_condensation ) {
+          // If SHOC does not do condensation then we need to include the effects of vertical
+          //  diffusion on qc.  Thus, do not use the qc_copy variable, which was created for the sole
+          //  purpose of NOT including the effects of vertical diffusion.  However, apply a lower bound
+          //  limiter to ensure no values went below zero.
+          qc(i,k) = ekat::max(0, qc(i,k));
+        }
+        else{
+          qc(i,k)  = qc_copy(i,k);
+        }
+	qv(i,k) = qw(i,k) - qc(i,k);
 
         cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
 
@@ -384,7 +392,7 @@ public:
     view_1d heat_flux;
     view_2d_const um_pert, vm_pert;
     view_2d um_pert_diff, vm_pert_diff;
-
+    SHF::SHOCRuntime runtime_opts;
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
                        const view_2d_const& rrho_,
@@ -394,7 +402,7 @@ public:
                        const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_,
                        const sview_2d_const& surf_mom_flux_, const view_1d& tau_est_,
                        const view_2d_const& um_pert_, const view_2d_const& vm_pert_,
-                       const view_2d& um_pert_diff_, const view_2d& vm_pert_diff_)
+                     const view_2d& um_pert_diff_, const view_2d& vm_pert_diff_, const SHF::SHOCRuntime& runtime_options)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -419,6 +427,7 @@ public:
       vm_pert = vm_pert_;
       um_pert_diff = um_pert_diff_;
       vm_pert_diff = vm_pert_diff_;
+      runtime_opts = runtime_options;
     } // set_variables
 
     void set_mass_and_energy_fluxes (const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,
