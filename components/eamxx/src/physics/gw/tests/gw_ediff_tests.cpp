@@ -29,6 +29,9 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
       GwEdiffData(6,   58,   19, 0.2, init_data[1]),
       GwEdiffData(7,   57,   18, 0.3, init_data[2]),
       GwEdiffData(8,   56,   17, 0.4, init_data[3]),
+      // ktop=-1 exercises the physical top interface (EAM's Fortran ktop=0),
+      // which is the production default (GWC::ktop_default).
+      GwEdiffData(5,   59,   -1, 0.5, init_data[0]),
     };
 
     static constexpr Int num_runs = sizeof(baseline_data) / sizeof(GwEdiffData);
@@ -47,6 +50,7 @@ struct UnitWrap::UnitTest<D>::TestGwEdiff : public UnitWrap::UnitTest<D>::Base {
       GwEdiffData(baseline_data[1]),
       GwEdiffData(baseline_data[2]),
       GwEdiffData(baseline_data[3]),
+      GwEdiffData(baseline_data[4]),
     };
 
     // Read baseline data
