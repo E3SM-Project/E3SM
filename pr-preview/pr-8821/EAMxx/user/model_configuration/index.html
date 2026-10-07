@@ -5518,8 +5518,8 @@ $<span class="w"> </span>./atmchange<span class="w"> </span>--rm<span class="w">
 to that value (for any field), while an array of N values is only valid for vector fields with N components,
 and sets each component to the corresponding value.</p>
 <p>Note: constants used to be set directly in the <code>initial_conditions</code> list (e.g.,
-<code>initial_conditions::tke=0</code>). This is no longer supported: the model will throw if it finds
-a field name there.</p>
+<code>initial_conditions::tke=0</code>). This is no longer supported: such entries are ignored, so
+they must be moved to <code>constant_fields::force</code> (or <code>constant_fields::fallback</code>).</p>
 <h3 id="modifying-the-list-of-atmosphere-processes">Modifying the list of atmosphere processes</h3>
 <p>The <code>atmchange</code> script can be used to change any of the runtime parameters of EAMxx.
 In particular, it can
