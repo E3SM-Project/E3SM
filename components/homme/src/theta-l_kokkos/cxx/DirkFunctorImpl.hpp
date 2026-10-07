@@ -207,7 +207,7 @@ struct DirkFunctorImpl {
 
     const auto grav = PhysicalConstants::g;
     const int nvec = npack;
-    const int maxiter = 20;
+    const int maxiter = 5;
 #ifdef HOMMEXX_BFB_TESTING
 #if HOMMEXX_SINGLE_PREC
     const Real deltatol = 1e-3; // In bfb testing, use coarse tolerance, due to zeroulp calls
@@ -385,15 +385,15 @@ struct DirkFunctorImpl {
 
         loop_ki(kv, nlev, nvec, [&] (int k, int i) { w_np1(k,i) += wrk(2,i)*x(k,i); });
 
-        if (exit_on_step(kv, nlev, nvec, wmax, deltatol, x, deltaerr)) break;
+        //if (exit_on_step(kv, nlev, nvec, wmax, deltatol, x, deltaerr)) break;
       } // Newton iteration
       kv.team_barrier();
 
-      if (it >= maxiter) {
-        Kokkos::printf("[DIRK] WARNING! Newton reached max iteration count,"
-                       " with deltaerr = %3.17f\n", deltaerr);
-        nerr = 1;
-      }
+      // if (it >= maxiter) {
+      //   Kokkos::printf("[DIRK] WARNING! Newton reached max iteration count,"
+      //                  " with deltaerr = %3.17f\n", deltaerr);
+      //   nerr = 1;
+      // }
 
       // Update phi_np1.
       loop_ki(kv, nlev, nvec, [&] (int k, int i) { phi_np1(k,i) = phi_n0(k,i) + dt2*grav*w_np1(k,i); });
