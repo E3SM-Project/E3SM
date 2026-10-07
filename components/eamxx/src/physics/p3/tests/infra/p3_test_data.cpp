@@ -1486,15 +1486,15 @@ Int p3_main_host(
    P3F::view_1d<bool> nucleationPossible("nucleationPossible", nj),
      hydrometeorsPresent("hydrometeorsPresent", nj);
 
-   P3F::P3Temporaries temporaries{
+  P3F::P3Temporaries temporaries{
     mu_r, T_atm, lamr, logn0r, nu, cdist, cdist1, cdistr, inv_cld_frac_i,
     inv_cld_frac_l, inv_cld_frac_r, qc_incld, qr_incld, qi_incld, qm_incld,
     nc_incld, nr_incld, ni_incld, bm_incld, inv_dz, inv_rho, ze_ice, ze_rain,
     prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-     tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi,
+    tmparr2, exner, diag_equiv_reflectivity, diag_vm_qi, diag_diam_qi,
     pratot, prctot, qtend_ignore, ntend_ignore, mu_c, lamc, qr_evap_tend,
     v_qc, v_nc, flux_qx, flux_nx, v_qit, v_nit, flux_nit, flux_bir, flux_qir,
-     flux_qit, v_qr, v_nr, nucleationPossible, hydrometeorsPresent
+    flux_qit, v_qr, v_nr, nucleationPossible, hydrometeorsPresent
   };
 #endif
 
