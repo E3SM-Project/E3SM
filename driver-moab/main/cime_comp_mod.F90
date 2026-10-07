@@ -4233,7 +4233,7 @@ contains
     !----------------------------------------------------
     ! "startup" wait
     !----------------------------------------------------
-    if (iamin_CPLALLOCNID) then
+    if (iamin_CPLALLOCNID .and. cpl2ocn_first) then
        ! want to know the time the ocean pes waited for the cpl pes
        ! at the first ocnrun_alarm, min ocean wait is wait time
        ! do not use t_barrierf here since it can be "off", use mpi_barrier
