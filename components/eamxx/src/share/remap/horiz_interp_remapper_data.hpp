@@ -7,6 +7,7 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace scream {
 
@@ -40,9 +41,14 @@ public:
               const std::shared_ptr<const AbstractGrid>& tgt_grid,
               const std::string& map_file);
 
-  // Builds a tgt grid from map_file info, then calls the above one
+  // Builds a tgt grid from map_file info, then calls the above one.
+  // If rect_sizes=[nx,ny] is non-empty, the tgt grid (if generated from the map file)
+  // is a generic 2d rectilinear grid: the nx*ny tgt points are laid out with x
+  // as the fastest-varying index (gid = iy*nx + ix), but (lat,lon) are NOT
+  // assumed to be separable (so nx need not be nlon, and ny need not be nlat).
   void build (const std::shared_ptr<const AbstractGrid>& grid,
-              const std::string& map_file);
+              const std::string& map_file,
+              const std::vector<int>& rect_sizes = {});
 
   // The CRS matrix data for online interpolation
   view_1d<int>    m_row_offsets;
@@ -60,6 +66,9 @@ public:
   // This will be an overlap version of either the src or tgt grid, depending on whether
   // the remap is fine->coarse or coarse->fine
   std::shared_ptr<AbstractGrid> m_overlap_grid;
+
+  // [nx,ny] if the generated tgt grid is rectilinear. Empty otherwise.
+  std::vector<int> m_rect_sizes;
 private:
 
   // Read sparse matrix in triplets form. The triplets are split uniformly across ranks
@@ -71,6 +80,12 @@ private:
 
   void setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
                          const std::string& map_file);
+
+  // Add geo data (x_idx, y_idx) to the grid, so that output can write it
+  // using a (y,x) layout rather than (ncol). The ints rect_sizes=[nx,ny] are stored
+  // as extra data in the geo fields headers.
+  void setup_rectilinear_data(const std::shared_ptr<AbstractGrid>& grid,
+                              const std::vector<int>& rect_sizes);
 
   void create_ov_grid (const std::vector<Triplet>& triplets);
 
@@ -96,7 +111,8 @@ public:
             const std::string& map_file);
   std::shared_ptr<const HorizRemapperData>
   get_data (const std::shared_ptr<const AbstractGrid>& grid,
-            const std::string& map_file);
+            const std::string& map_file,
+            const std::vector<int>& rect_sizes = {});
 
 private:
   HorizRemapperDataRepo () = default;

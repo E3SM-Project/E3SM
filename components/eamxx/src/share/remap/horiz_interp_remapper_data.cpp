@@ -152,7 +152,8 @@ build (const std::shared_ptr<const AbstractGrid>& src_grid,
 }
 void HorizRemapperData::
 build (const std::shared_ptr<const AbstractGrid>& grid,
-       const std::string& map_file)
+       const std::string& map_file,
+       const std::vector<int>& rect_sizes)
 {
   std::filesystem::path p(map_file);
 
@@ -187,6 +188,23 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto built_from_src = grid_ncol==ncol_a;
 
+  if (not rect_sizes.empty()) {
+    EKAT_REQUIRE_MSG (rect_sizes.size()==2 and rect_sizes[0]>0 and rect_sizes[1]>0,
+      "[HorizRemapperData] Error! Invalid rectilinear sizes. Expected two positive integers [nx,ny].\n"
+      " - map file: " + map_file + "\n"
+      " - sizes   : [" + ekat::join(rect_sizes,",") + "]\n");
+    EKAT_REQUIRE_MSG (built_from_src,
+      "[HorizRemapperData] Error! Rectilinear sizes were provided, but the input grid is the TARGET grid of the map file.\n"
+      "  Rectilinear grids can only be generated as target grids.\n"
+      " - map file: " + map_file + "\n"
+      " - grid name: " + grid->name() + "\n");
+    EKAT_REQUIRE_MSG (rect_sizes[0]*rect_sizes[1]==ncol_b,
+      "[HorizRemapperData] Error! Rectilinear sizes are incompatible with the map file tgt grid.\n"
+      " - map file: " + map_file + "\n"
+      " - nx*ny: " + std::to_string(rect_sizes[0]) + "*" + std::to_string(rect_sizes[1]) + "\n"
+      " - n_b  : " + std::to_string(ncol_b) + "\n");
+  }
+
   const int nlev = grid->get_num_vertical_levels();
   const auto& comm = grid->get_comm();
   std::string suffix = built_from_src ? "_b" : "_a";
@@ -206,12 +224,20 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
     read_fields(map_file,{lat,lon,area},gids,comm);
 
     // If this is a remap TO a lat-lon grid, setup some geo data that our output classes
-    // will use to write to file using (lat,lon) layout rather than (ncol)
-    if (built_from_src and
+    // will use to write to file using (lat,lon) layout rather than (ncol).
+    // Note: dst_grid_rank=2 means lat-lon only if the user did NOT say that the grid is
+    //       a generic rectilinear one.
+    if (built_from_src and rect_sizes.empty() and
         scorpio::has_dim(map_file,"dst_grid_rank") and
         scorpio::get_dimlen(map_file,"dst_grid_rank")==2) {
       setup_latlon_data(gen_grid,map_file);
     }
+  }
+
+  // If this is a remap TO a generic rectilinear grid, setup some geo data that our output
+  // classes will use to write to file using (y,x) layout rather than (ncol)
+  if (not rect_sizes.empty()) {
+    setup_rectilinear_data(gen_grid,rect_sizes);
   }
 
   if (built_from_src) {
@@ -219,6 +245,7 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
   } else {
     build(gen_grid,grid,map_file);
   }
+  m_rect_sizes = rect_sizes;
 
   stop_timer ("HRemap1 " + p.filename().string() + " bld");
 }
@@ -497,6 +524,39 @@ setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
   lon_idx.sync_to_dev();
 }
 
+void HorizRemapperData::
+setup_rectilinear_data(const std::shared_ptr<AbstractGrid>& grid,
+                       const std::vector<int>& rect_sizes)
+{
+  using namespace ShortFieldTagsNames;
+  using namespace ekat::units;
+
+  const int nx = rect_sizes[0];
+  const int ny = rect_sizes[1];
+
+  // Note: we assume x to be the fastest varying index, so that the position of a
+  //       column in the (y,x) array is simply gid-min_gid=iy*nx+ix.
+  auto scalar2d = grid->get_2d_scalar_layout();
+  auto x_idx = grid->create_geometry_data("x_idx",scalar2d,none,DataType::IntType);
+  auto y_idx = grid->create_geometry_data("y_idx",scalar2d,none,DataType::IntType);
+  x_idx.get_header().set_extra_data("save_as_geo_data",false);
+  y_idx.get_header().set_extra_data("save_as_geo_data",false);
+  x_idx.get_header().set_extra_data("rectilinear_extent",nx);
+  y_idx.get_header().set_extra_data("rectilinear_extent",ny);
+
+  const auto min_gid = grid->get_global_min_dof_gid();
+  auto gids_h  = grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
+  auto x_idx_h = x_idx.get_view<int*,Host>();
+  auto y_idx_h = y_idx.get_view<int*,Host>();
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
+    const auto pos = gids_h(i) - min_gid;
+    x_idx_h(i) = pos % nx;
+    y_idx_h(i) = pos / nx;
+  }
+  x_idx.sync_to_dev();
+  y_idx.sync_to_dev();
+}
+
 std::shared_ptr<const HorizRemapperData>
 HorizRemapperDataRepo::
 get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
@@ -532,10 +592,16 @@ get_data (const std::shared_ptr<const AbstractGrid>& src_grid,
 std::shared_ptr<const HorizRemapperData>
 HorizRemapperDataRepo::
 get_data (const std::shared_ptr<const AbstractGrid>& grid,
-          const std::string& map_file)
+          const std::string& map_file,
+          const std::vector<int>& rect_sizes)
 {
   auto& data = m_repo[map_file];
   if (auto shared_data = data.lock()) {
+    EKAT_REQUIRE_MSG (shared_data->m_rect_sizes==rect_sizes,
+        "Error! Trying to retrieve remap data with rectilinear sizes that differ from the ones used before.\n"
+        " - map file: " + map_file + "\n"
+        " - old sizes: [" + ekat::join(shared_data->m_rect_sizes,",") + "]\n"
+        " - new sizes: [" + ekat::join(rect_sizes,",") + "]\n");
     // To prevent hard-to-find errors, we must guarantee that the passed grid
     // is compatible with the src or tgt grid of shared_data. Two grids are
     // considered compatible if they store the same GID values on every rank
@@ -553,7 +619,7 @@ get_data (const std::shared_ptr<const AbstractGrid>& grid,
   // destroyed. Either way, we can safely (re-)create the data
 
   auto shared_data = std::make_shared<HorizRemapperData>();
-  shared_data->build(grid,map_file);
+  shared_data->build(grid,map_file,rect_sizes);
   data = shared_data;
 
   return shared_data;

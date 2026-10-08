@@ -179,6 +179,9 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   //   - online remapping which is setup using the create_remapper function
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  EKAT_REQUIRE_MSG (use_horiz_remap_from_file or not params.isParameter("hrrr_map_sizes"),
+      "[AtmosphereOutput] Error! Parameter 'hrrr_map_sizes' requires parameter 'horiz_remap_file'.\n"
+      "  - stream name: " + m_stream_name + "\n");
   if (change_data_layout) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
         "[AtmosphereOutput] Error! Online Dyn->PhysGLL remapping not supported along with vertical and/or horizontal remapping from file");
@@ -266,7 +269,17 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
     if (use_horiz_remap_from_file) {
       // Construct the coarsening remapper
       auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
-      auto hr = std::make_shared<HorizontalRemapper>(grid_after_vr,horiz_remap_file,true);
+      // If the map file tgt grid is a generic rectilinear grid (as opposed to a lat-lon one),
+      // the user must tell us the size of the grid along the x and y directions
+      std::vector<int> rect_sizes;
+      if (params.isParameter("hrrr_map_sizes")) {
+        rect_sizes = params.get<std::vector<int>>("hrrr_map_sizes");
+        EKAT_REQUIRE_MSG (rect_sizes.size()==2,
+            "[AtmosphereOutput] Error! Parameter 'hrrr_map_sizes' must be a list of 2 integers: [nx,ny].\n"
+            "  - stream name: " + m_stream_name + "\n"
+            "  - input value: [" + ekat::join(rect_sizes,",") + "]\n");
+      }
+      auto hr = std::make_shared<HorizontalRemapper>(grid_after_vr,horiz_remap_file,true,rect_sizes);
       if (params.isParameter("horiz_remap_fill_threshold")) {
         hr->set_mask_threshold(params.get<Real>("horiz_remap_fill_threshold"));
       }
@@ -341,6 +354,10 @@ void AtmosphereOutput::init()
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   m_io_grid  = fm_after_hr->get_grid();
   m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
+  m_rectilinear_output = m_io_grid->has_geometry_data("x_idx");
+  EKAT_REQUIRE_MSG (not (m_latlon_output and m_rectilinear_output),
+      "Error! The io grid has geo data for both lat-lon and rectilinear output.\n"
+      "  - io grid name: " + m_io_grid->name() + "\n");
 
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -401,14 +418,11 @@ void AtmosphereOutput::init()
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
     for (int j=0; j<layout.rank(); ++j) {
-      if (tags[j]==FieldTag::Column and m_latlon_output) {
-        // We need to make sure we are registering lat and lon as dimensions
-        auto lat = m_io_grid->get_geometry_data("lat");
-        auto lon = m_io_grid->get_geometry_data("lon");
-
-        m_dims_len.emplace("lat",lat.get_header().get_identifier().get_layout().size());
-        m_dims_len.emplace("lon",lon.get_header().get_identifier().get_layout().size());
-
+      if (tags[j]==FieldTag::Column and (m_latlon_output or m_rectilinear_output)) {
+        // We need to make sure we are registering the dims replacing COL (lat/lon or y/x)
+        for (const auto& [n,l] : get_structured_col_dims()) {
+          m_dims_len.emplace(n,l);
+        }
         continue;
       }
       // check tag against m_dims_len map.  If not in there, then add it.
@@ -967,7 +981,19 @@ register_variables(const std::string& filename,
 
 void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
-  if (m_latlon_output) {
+  if (m_rectilinear_output) {
+    // We need to find out which (y,x) offsets we own
+    auto x_idx_h = m_io_grid->get_geometry_data("x_idx").get_view<const int*,Host>();
+    auto y_idx_h = m_io_grid->get_geometry_data("y_idx").get_view<const int*,Host>();
+    int ncols = m_io_grid->get_num_local_dofs();
+    const auto dims = get_structured_col_dims();
+    const int nx = dims[1].second;
+    std::vector<scorpio::offset_t> offsets(ncols);
+    for (int i=0; i<ncols; ++i) {
+      offsets[i] = y_idx_h(i)*nx + x_idx_h(i);
+    }
+    scorpio::set_dims_decomp(filename,{dims[0].first,dims[1].first},offsets);
+  } else if (m_latlon_output) {
     // We need to find out which (lat,lon) offsets we own
     auto lat_idx_h = m_io_grid->get_geometry_data("lat_idx").get_view<const int*,Host>();
     auto lon_idx_h = m_io_grid->get_geometry_data("lon_idx").get_view<const int*,Host>();
@@ -1338,6 +1364,21 @@ process_requested_fields()
   }
 }
 
+std::vector<std::pair<std::string,int>> AtmosphereOutput::
+get_structured_col_dims () const
+{
+  if (m_rectilinear_output) {
+    const int nx = m_io_grid->get_geometry_data("x_idx").get_header().get_extra_data<int>("rectilinear_extent");
+    const int ny = m_io_grid->get_geometry_data("y_idx").get_header().get_extra_data<int>("rectilinear_extent");
+    return { {"y",ny}, {"x",nx} };
+  } else if (m_latlon_output) {
+    const int nlat = m_io_grid->get_geometry_data("lat").get_header().get_identifier().get_layout().size();
+    const int nlon = m_io_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size();
+    return { {"lat",nlat}, {"lon",nlon} };
+  }
+  EKAT_ERROR_MSG ("[AtmosphereOutput::get_structured_col_dims] Error! Output is neither lat-lon nor rectilinear.\n");
+}
+
 std::vector<std::string> AtmosphereOutput::
 get_var_dimnames (const FieldLayout& layout) const
 {
@@ -1345,11 +1386,12 @@ get_var_dimnames (const FieldLayout& layout) const
   strvec_t dims;
   for (int i=0; i<layout.rank(); ++i) {
     const auto t = layout.tag(i);
-    if (t==COL and m_latlon_output) {
-      // Lat-Lon remapping uses a PointGrid target grid, so we replace the
-      // single column dimension with separate latitude and longitude dimensions.
-      dims.push_back("lat");
-      dims.push_back("lon");
+    if (t==COL and (m_latlon_output or m_rectilinear_output)) {
+      // Lat-Lon/rectilinear remapping uses a PointGrid target grid, so we replace the
+      // single column dimension with 2 separate dimensions (lat/lon or y/x).
+      for (const auto& [n,l] : get_structured_col_dims()) {
+        dims.push_back(n);
+      }
     } else {
       auto tag_name = m_io_grid->has_special_tag_name(t)
                     ? m_io_grid->get_special_tag_name(t)

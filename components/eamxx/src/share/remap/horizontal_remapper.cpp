@@ -44,13 +44,14 @@ HorizontalRemapper (const grid_ptr_type& src_grid,
 HorizontalRemapper::
 HorizontalRemapper (const grid_ptr_type& grid,
                     const std::string& map_file,
-                    const bool track_mask)
+                    const bool track_mask,
+                    const std::vector<int>& rect_sizes)
  : m_track_mask (track_mask)
 {
   std::filesystem::path p(map_file);
   set_name("HRemap " + p.filename().string());
 
-  m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file);
+  m_remap_data = HorizRemapperDataRepo::instance().get_data(grid,map_file,rect_sizes);
 
   // Horiz remappers are built from a map file, which only goes in one direction
   m_bwd_allowed = false;

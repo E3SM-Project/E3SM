@@ -181,4 +181,32 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties(io_latlon_check PROPERTIES FIXTURES_REQUIRED latlon_output)
 
+  ## Test output on a generic 2d rectilinear grid (like HRRR), where nx!=nlon and ny!=nlat.
+  ## The tgt grid is a small, tilted box over North America, so that some ranks
+  ## do not own src columns that contribute to any tgt column.
+  set(HRRR_MAP_FILE map_ne4pg2_to_hrrr_10x20_20261008.nc)
+  set(HRRR_MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${HRRR_MAP_FILE})
+  set(HRRR_NX 10)
+  set(HRRR_NY 20)
+
+  GetInputFile ("scream/maps/${HRRR_MAP_FILE}")
+  CreateUnitTest(io_hrrr_write
+    SOURCES io_hrrr.cpp
+    LIBS eamxx_io LABELS io
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS --args --map-file=${HRRR_MAP_FILE_FULL} --nx=${HRRR_NX} --ny=${HRRR_NY}
+    FIXTURES_SETUP hrrr_output
+  )
+
+  # Note: the output file name depends on the number of ranks of the test,
+  #       so we check the one from the run with the largest number of ranks.
+  add_test (
+    NAME io_hrrr_check
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/check_hrrr_output.py
+      --map-file ${HRRR_MAP_FILE_FULL}
+      --nx ${HRRR_NX} --ny ${HRRR_NY}
+      --out-file ./io_hrrr.INSTANT.nsteps_x1.np${SCREAM_TEST_MAX_RANKS}.2000.nc
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(io_hrrr_check PROPERTIES FIXTURES_REQUIRED hrrr_output)
+
 endif()
