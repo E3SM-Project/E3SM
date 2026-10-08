@@ -11,7 +11,7 @@ module rof_comp_mct
   use shr_file_mod     , only : shr_file_setLogUnit, shr_file_setLogLevel, &
                                 shr_file_getLogUnit, shr_file_getLogLevel, &
                                 shr_file_getUnit, shr_file_setIO
-   use shr_const_mod    , only : SHR_CONST_REARTH
+  use shr_const_mod    , only : SHR_CONST_REARTH
   use shr_taskmap_mod  , only : shr_taskmap_write
   use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
   use seq_comm_mct     , only : info_taskmap_comp
@@ -841,10 +841,10 @@ contains
     real(r8), intent(inout) :: r2x_r(:,:)  ! Runoff to coupler export state
     !
     ! LOCAL VARIABLES
-   integer :: ni, n, nt, nliq, nfrz
+    integer :: ni, n, nt, nliq, nfrz
     logical,save :: first_time = .true.
     character(len=32), parameter :: sub = 'rof_export_mct'
-   real(R8) :: tmp1
+    real(R8) :: tmp1
     !---------------------------------------------------------------------------
     
     nliq = 0
@@ -909,7 +909,6 @@ contains
              end if
 
           endif
-
        end do
     else
        ! liquid and ice runoff added to liquid runoff, ice runoff is zero
