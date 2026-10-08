@@ -27,7 +27,7 @@ defaults:
 
 jobs:
   gnu-openmp:
-    runs-on:  [self-hosted, ghci-snl, gnu]
+    runs-on:  [self-hosted, e3sm, gnu]
     name: gnu-openmp / valg
     steps:
       - name: Check out the repository
@@ -42,12 +42,12 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: valg
-          machine: ghci-snl-gnu
+          machine: ghci-gnu
           generate: false
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
   gnu-cuda:
-    runs-on:  [self-hosted, ghci-snl, cuda]
+    runs-on:  [self-hosted, e3sm, cuda]
     strategy:
       fail-fast: false
       matrix:
@@ -95,7 +95,7 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
-          machine: ghci-snl-cuda
+          machine: ghci-cuda
           generate: false
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=ON
