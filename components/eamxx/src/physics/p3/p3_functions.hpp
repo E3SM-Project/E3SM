@@ -133,7 +133,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_hetfrz_classnuc                    = false;
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
-
+    bool p3_super_sat;
+    bool p3_WBFoff;
+    bool shoc_enable_condensation;
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
     {
@@ -175,6 +177,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       use_separate_ice_liq_frac =
           params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
+      shoc_enable_condensation = params.get<bool>("shoc_enable_condensation",shoc_enable_condensation);
+      p3_super_sat = params.get<bool>("p3_super_sat",p3_super_sat);
+      p3_WBFoff = params.get<bool>("p3_WBFoff",p3_WBFoff);
     }
   };
 
@@ -218,6 +223,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Pack> cld_frac_l;
     // Rain cloud fraction
     view_2d<const Pack> cld_frac_r;
+    view_2d<const Pack> omega_mp;
+    view_2d<const Pack> tke_mp;
     // Pressure [Pa]
     view_2d<const Pack> pres;
     // Vertical grid spacing [m]
@@ -313,6 +320,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> qr_sed;
     view_2d<Pack> qc_sed;
     view_2d<Pack> qi_sed;
+    view_2d<Pack> qv2qc_aeroact;
+    view_2d<Pack> qv2qc_condevap;
   };
 
   // This struct stores kokkos views for the lookup tables needed in p3_main()
@@ -870,7 +879,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                                          const Pack &qv_sat_i, const Pack &epsi, const Pack &abi,
                                          const Pack &qv, const Scalar &inv_dt, Pack &qidep,
                                          Pack &qi2qv_sublim_tend, Pack &ni_sublim_tend,
-                                         Pack &qiberg, const Mask &context = Mask(true));
+                                         Pack &qiberg, const P3Runtime &runtime_options, const Mask &context = Mask(true));
 
   KOKKOS_FUNCTION
   static void ice_relaxation_timescale(const Pack &rho, const Pack &temp, const Pack &rhofaci,
@@ -997,7 +1006,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<Pack> &bm, const uview_1d<Pack> &qc_incld, const uview_1d<Pack> &qr_incld,
       const uview_1d<Pack> &qi_incld, const uview_1d<Pack> &qm_incld,
       const uview_1d<Pack> &nc_incld, const uview_1d<Pack> &nr_incld,
-      const uview_1d<Pack> &ni_incld, const uview_1d<Pack> &bm_incld, bool &is_nucleat_possible,
+      const uview_1d<Pack> &ni_incld, const uview_1d<Pack> &bm_incld,const uview_1d<Pack> &qv2qc_aeroact, bool &is_nucleat_possible,
       bool &is_hydromet_present, const P3Runtime &runtime_options);
 
 #ifdef SCREAM_P3_SMALL_KERNELS
@@ -1019,6 +1028,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<Pack> &qi_incld, const uview_2d<Pack> &qm_incld,
       const uview_2d<Pack> &nc_incld, const uview_2d<Pack> &nr_incld,
       const uview_2d<Pack> &ni_incld, const uview_2d<Pack> &bm_incld,
+      const uview_2d<Pack> &qv2qc_aeroact,
       const uview_1d<bool> &is_nucleat_possible, const uview_1d<bool> &is_hydromet_present,
       const P3Runtime &runtime_options);
 #endif
@@ -1039,7 +1049,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Pack> &ni_activated, const uview_1d<const Pack> &inv_qc_relvar,
       const uview_1d<const Pack> &cld_frac_i, const uview_1d<const Pack> &cld_frac_l,
       const uview_1d<const Pack> &cld_frac_r, const uview_1d<const Pack> &qv_prev,
-      const uview_1d<const Pack> &t_prev, const uview_1d<Pack> &T_atm, const uview_1d<Pack> &rho,
+      const uview_1d<const Pack> &t_prev,
+      const uview_1d<const Pack>& omega_mp,
+      const uview_1d<const Pack>& tke_mp,
+      const uview_1d<Pack>& qv2qc_condevap,
+      const uview_1d<Pack> &T_atm, const uview_1d<Pack> &rho,
       const uview_1d<Pack> &inv_rho, const uview_1d<Pack> &qv_sat_l,
       const uview_1d<Pack> &qv_sat_i, const uview_1d<Pack> &qv_supersat_i,
       const uview_1d<Pack> &rhofacr, const uview_1d<Pack> &rhofaci, const uview_1d<Pack> &acn,
@@ -1082,7 +1096,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<const Pack> &ni_activated, const uview_2d<const Pack> &inv_qc_relvar,
       const uview_2d<const Pack> &cld_frac_i, const uview_2d<const Pack> &cld_frac_l,
       const uview_2d<const Pack> &cld_frac_r, const uview_2d<const Pack> &qv_prev,
-      const uview_2d<const Pack> &t_prev, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
+      const uview_2d<const Pack> &t_prev, const uview_2d<const Pack> &omega_mp, const uview_2d<const Pack> &tke_mp, const uview_2d<Pack>& qv2qc_condevap, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
       const uview_2d<Pack> &inv_rho, const uview_2d<Pack> &qv_sat_l,
       const uview_2d<Pack> &qv_sat_i, const uview_2d<Pack> &qv_supersat_i,
       const uview_2d<Pack> &rhofacr, const uview_2d<Pack> &rhofaci, const uview_2d<Pack> &acn,
