@@ -3639,23 +3639,25 @@ module VegetationDataType
     end do ! filtered veg list
 
     ! a few vegetation-to-column summaries
-    call p2c(bounds, num_soilc, filter_soilc, &
-         totpftc_patch(bounds%begp:bounds%endp) , &
-         totpftc_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         totvegc_patch(bounds%begp:bounds%endp) , &
-         totvegc_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         totvegc_abg_patch(bounds%begp:bounds%endp), &
-         totvegc_abg_col(bounds%begc:bounds%endc))
-
     if (use_crop) then
        call p2c(bounds, num_soilc, filter_soilc, &
+            totpftc_patch(bounds%begp:bounds%endp), &
+            totpftc_col(bounds%begc:bounds%endc), &
+            totvegc_patch(bounds%begp:bounds%endp), &
+            totvegc_col(bounds%begc:bounds%endc), &
+            totvegc_abg_patch(bounds%begp:bounds%endp), &
+            totvegc_abg_col(bounds%begc:bounds%endc), &
             cropseedc_deficit_patch(bounds%begp:bounds%endp), &
             cropseedc_deficit_col(bounds%begc:bounds%endc))
-    endif
+    else
+       call p2c(bounds, num_soilc, filter_soilc, &
+            totpftc_patch(bounds%begp:bounds%endp), &
+            totpftc_col(bounds%begc:bounds%endc), &
+            totvegc_patch(bounds%begp:bounds%endp), &
+            totvegc_col(bounds%begc:bounds%endc), &
+            totvegc_abg_patch(bounds%begp:bounds%endp), &
+            totvegc_abg_col(bounds%begc:bounds%endc))
+    end if
   end associate
 
   end subroutine veg_cs_summary
@@ -4298,23 +4300,25 @@ module VegetationDataType
            this%ntrunc(p)
    end do ! filtered veg loop
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        plant_n_buffer_patch(bounds%begp:bounds%endp)  , &
-        plant_n_buffer_col(bounds%begc:bounds%endc))
-
-   call p2c(bounds, num_soilc, filter_soilc, &
-        totvegn_patch(bounds%begp:bounds%endp) , &
-        totvegn_col(bounds%begc:bounds%endc))
-
-   call p2c(bounds, num_soilc, filter_soilc, &
-        totpftn_patch(bounds%begp:bounds%endp) , &
-        totpftn_col(bounds%begc:bounds%endc))
-
-   if (use_crop) then
-      call p2c(bounds, num_soilc, filter_soilc, &
-           cropseedn_deficit_patch(bounds%begp:bounds%endp) , &
-           cropseedn_deficit_col(bounds%begc:bounds%endc))
-   endif
+    if (use_crop) then
+       call p2c(bounds, num_soilc, filter_soilc, &
+            plant_n_buffer_patch(bounds%begp:bounds%endp), &
+            plant_n_buffer_col(bounds%begc:bounds%endc), &
+            totvegn_patch(bounds%begp:bounds%endp), &
+            totvegn_col(bounds%begc:bounds%endc), &
+            totpftn_patch(bounds%begp:bounds%endp), &
+            totpftn_col(bounds%begc:bounds%endc), &
+            cropseedn_deficit_patch(bounds%begp:bounds%endp), &
+            cropseedn_deficit_col(bounds%begc:bounds%endc))
+    else
+       call p2c(bounds, num_soilc, filter_soilc, &
+            plant_n_buffer_patch(bounds%begp:bounds%endp), &
+            plant_n_buffer_col(bounds%begc:bounds%endc), &
+            totvegn_patch(bounds%begp:bounds%endp), &
+            totvegn_col(bounds%begc:bounds%endc), &
+            totpftn_patch(bounds%begp:bounds%endp), &
+            totpftn_col(bounds%begc:bounds%endc))
+    end if
    end associate
 
   end subroutine veg_ns_summary
@@ -5048,19 +5052,21 @@ module VegetationDataType
 
    end do
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        totvegp_patch(bounds%begp:bounds%endp)  , &
-        totvegp_col(bounds%begc:bounds%endc) )
-
-   call p2c(bounds, num_soilc, filter_soilc, &
-        totpftp_patch(bounds%begp:bounds%endp) , &
-        totpftp_col(bounds%begc:bounds%endc) )
-
-   if (use_crop) then
-      call p2c(bounds, num_soilc, filter_soilc, &
-           cropseedp_deficit_patch(bounds%begp:bounds%endp) , &
-           cropseedp_deficit_col(bounds%begc:bounds%endc) )
-   endif
+    if (use_crop) then
+       call p2c(bounds, num_soilc, filter_soilc, &
+            totvegp_patch(bounds%begp:bounds%endp), &
+            totvegp_col(bounds%begc:bounds%endc), &
+            totpftp_patch(bounds%begp:bounds%endp), &
+            totpftp_col(bounds%begc:bounds%endc), &
+            cropseedp_deficit_patch(bounds%begp:bounds%endp), &
+            cropseedp_deficit_col(bounds%begc:bounds%endc))
+    else
+       call p2c(bounds, num_soilc, filter_soilc, &
+            totvegp_patch(bounds%begp:bounds%endp), &
+            totvegp_col(bounds%begc:bounds%endc), &
+            totpftp_patch(bounds%begp:bounds%endp), &
+            totpftp_col(bounds%begc:bounds%endc))
+    end if
    end associate
 
   end subroutine veg_ps_summary
@@ -8477,34 +8483,22 @@ module VegetationDataType
 
     ! use p2c routine to get selected column-average patch-level fluxes and states
     call p2c(bounds, num_soilc, filter_soilc, &
-            gpp_patch(bounds%begp:bounds%endp), &
-            gpp_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-            ar_patch(bounds%begp:bounds%endp), &
-            ar_col  (bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-            npp_patch(bounds%begp:bounds%endp), &
-            npp_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-            vegfire_patch(bounds%begp:bounds%endp), &
-            vegfire_col(bounds%begc:bounds%endc))
+         gpp_patch(bounds%begp:bounds%endp), &
+         gpp_col(bounds%begc:bounds%endc), &
+         ar_patch(bounds%begp:bounds%endp), &
+         ar_col(bounds%begc:bounds%endc), &
+         npp_patch(bounds%begp:bounds%endp), &
+         npp_col(bounds%begc:bounds%endc), &
+         vegfire_patch(bounds%begp:bounds%endp), &
+         vegfire_col(bounds%begc:bounds%endc))
 
     call p2c(bounds, num_soilc, filter_soilc, &
          wood_harvestc_patch(bounds%begp:bounds%endp), &
-         wood_harvestc_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
+         wood_harvestc_col(bounds%begc:bounds%endc), &
          fire_closs_patch(bounds%begp:bounds%endp), &
-         fire_closs_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
+         fire_closs_col(bounds%begc:bounds%endc), &
          litfall_patch(bounds%begp:bounds%endp), &
-         litfall_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
+         litfall_col(bounds%begc:bounds%endc), &
          hrv_xsmrpool_to_atm_patch(bounds%begp:bounds%endp), &
          hrv_xsmrpool_to_atm_col(bounds%begc:bounds%endc))
 
@@ -9886,11 +9880,9 @@ module VegetationDataType
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         fire_nloss_patch(bounds%begp:bounds%endp)    , &
-         fire_nloss_col(bounds%begc:bounds%endc))
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         wood_harvestn_patch(bounds%begp:bounds%endp) , &
+         fire_nloss_patch(bounds%begp:bounds%endp), &
+         fire_nloss_col(bounds%begc:bounds%endc), &
+         wood_harvestn_patch(bounds%begp:bounds%endp), &
          wood_harvestn_col(bounds%begc:bounds%endc))
 
    end associate
@@ -10964,11 +10956,9 @@ module VegetationDataType
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
-         fire_ploss_patch(bounds%begp:bounds%endp)     , &
-         fire_ploss_col(bounds%begc:bounds%endc) )
-
-    call p2c(bounds, num_soilc, filter_soilc, &
-         wood_harvestp_patch(bounds%begp:bounds%endp) , &
+         fire_ploss_patch(bounds%begp:bounds%endp), &
+         fire_ploss_col(bounds%begc:bounds%endc), &
+         wood_harvestp_patch(bounds%begp:bounds%endp), &
          wood_harvestp_col(bounds%begc:bounds%endc))
 
     end associate

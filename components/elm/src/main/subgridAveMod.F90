@@ -45,6 +45,9 @@ module subgridAveMod
      module procedure p2c_2d
      module procedure p2c_2d_gpu
      module procedure p2c_1d_filter
+     module procedure p2c_1d_filter_2
+     module procedure p2c_1d_filter_3
+     module procedure p2c_1d_filter_4
      module procedure p2c_2d_filter
   end interface
   interface p2l
@@ -336,6 +339,120 @@ contains
   end subroutine p2c_1d_filter
 
   !-----------------------------------------------------------------------
+  subroutine p2c_1d_filter_2(bounds, numfc, filterc, &
+       pft1, col1, pft2, col2)
+    ! Average related fields in one traversal without packing temporary arrays.
+    ! Keep each field's patch order and positive-weight test identical to p2c_1d_filter.
+    type(bounds_type), intent(in) :: bounds
+    integer, intent(in) :: numfc, filterc(numfc)
+    real(r8), intent(in) :: pft1(bounds%begp:)
+    real(r8), intent(out) :: col1(bounds%begc:)
+    real(r8), intent(in) :: pft2(bounds%begp:)
+    real(r8), intent(out) :: col2(bounds%begc:)
+    integer :: fc, c, p
+    real(r8) :: weight, sum1, sum2
+
+    !$acc parallel loop independent gang worker private(c,weight,sum1,sum2) &
+    !$acc default(present)
+    do fc = 1, numfc
+       c = filterc(fc)
+       sum1 = 0._r8
+       sum2 = 0._r8
+       !$acc loop vector private(weight) reduction(+:sum1,sum2)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          weight = veg_pp%wtcol(p)
+          if (weight > 0._r8) then
+             sum1 = sum1 + pft1(p) * weight
+             sum2 = sum2 + pft2(p) * weight
+          end if
+       end do
+       col1(c) = sum1
+       col2(c) = sum2
+    end do
+  end subroutine p2c_1d_filter_2
+
+  !-----------------------------------------------------------------------
+  subroutine p2c_1d_filter_3(bounds, numfc, filterc, &
+       pft1, col1, pft2, col2, pft3, col3)
+    ! Average related fields in one traversal without packing temporary arrays.
+    ! Keep each field's patch order and positive-weight test identical to p2c_1d_filter.
+    type(bounds_type), intent(in) :: bounds
+    integer, intent(in) :: numfc, filterc(numfc)
+    real(r8), intent(in) :: pft1(bounds%begp:)
+    real(r8), intent(out) :: col1(bounds%begc:)
+    real(r8), intent(in) :: pft2(bounds%begp:)
+    real(r8), intent(out) :: col2(bounds%begc:)
+    real(r8), intent(in) :: pft3(bounds%begp:)
+    real(r8), intent(out) :: col3(bounds%begc:)
+    integer :: fc, c, p
+    real(r8) :: weight, sum1, sum2, sum3
+
+    !$acc parallel loop independent gang worker private(c,weight,sum1,sum2,sum3) &
+    !$acc default(present)
+    do fc = 1, numfc
+       c = filterc(fc)
+       sum1 = 0._r8
+       sum2 = 0._r8
+       sum3 = 0._r8
+       !$acc loop vector private(weight) reduction(+:sum1,sum2,sum3)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          weight = veg_pp%wtcol(p)
+          if (weight > 0._r8) then
+             sum1 = sum1 + pft1(p) * weight
+             sum2 = sum2 + pft2(p) * weight
+             sum3 = sum3 + pft3(p) * weight
+          end if
+       end do
+       col1(c) = sum1
+       col2(c) = sum2
+       col3(c) = sum3
+    end do
+  end subroutine p2c_1d_filter_3
+
+  !-----------------------------------------------------------------------
+  subroutine p2c_1d_filter_4(bounds, numfc, filterc, &
+       pft1, col1, pft2, col2, pft3, col3, pft4, col4)
+    ! Average related fields in one traversal without packing temporary arrays.
+    ! Keep each field's patch order and positive-weight test identical to p2c_1d_filter.
+    type(bounds_type), intent(in) :: bounds
+    integer, intent(in) :: numfc, filterc(numfc)
+    real(r8), intent(in) :: pft1(bounds%begp:)
+    real(r8), intent(out) :: col1(bounds%begc:)
+    real(r8), intent(in) :: pft2(bounds%begp:)
+    real(r8), intent(out) :: col2(bounds%begc:)
+    real(r8), intent(in) :: pft3(bounds%begp:)
+    real(r8), intent(out) :: col3(bounds%begc:)
+    real(r8), intent(in) :: pft4(bounds%begp:)
+    real(r8), intent(out) :: col4(bounds%begc:)
+    integer :: fc, c, p
+    real(r8) :: weight, sum1, sum2, sum3, sum4
+
+    !$acc parallel loop independent gang worker private(c,weight,sum1,sum2,sum3,sum4) &
+    !$acc default(present)
+    do fc = 1, numfc
+       c = filterc(fc)
+       sum1 = 0._r8
+       sum2 = 0._r8
+       sum3 = 0._r8
+       sum4 = 0._r8
+       !$acc loop vector private(weight) reduction(+:sum1,sum2,sum3,sum4)
+       do p = col_pp%pfti(c), col_pp%pftf(c)
+          weight = veg_pp%wtcol(p)
+          if (weight > 0._r8) then
+             sum1 = sum1 + pft1(p) * weight
+             sum2 = sum2 + pft2(p) * weight
+             sum3 = sum3 + pft3(p) * weight
+             sum4 = sum4 + pft4(p) * weight
+          end if
+       end do
+       col1(c) = sum1
+       col2(c) = sum2
+       col3(c) = sum3
+       col4(c) = sum4
+    end do
+  end subroutine p2c_1d_filter_4
+
+
   subroutine p2c_2d_filter (lev, numfc, filterc, pftarr, colarr)
     !$acc routine seq
     ! !DESCRIPTION:
