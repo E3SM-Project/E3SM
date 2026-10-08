@@ -84,7 +84,7 @@ jobs:
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl, gnu]
+    runs-on:  [self-hosted, e3sm, gnu]
     strategy:
       fail-fast: false
       matrix:
@@ -103,7 +103,7 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
-          machine: ghci-snl-gnu
+          machine: ghci-gnu
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
@@ -118,7 +118,7 @@ jobs:
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl, intel]
+    runs-on:  [self-hosted, e3sm, intel]
     strategy:
       fail-fast: false
       matrix:
@@ -137,7 +137,7 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.build_type }}
-          machine: ghci-snl-intel
+          machine: ghci-intel
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ENABLE_OPENMP=ON
@@ -152,7 +152,7 @@ jobs:
           github.event.inputs.job_to_run == 'all'
         )
       }}
-    runs-on:  [self-hosted, ghci-snl, cuda]
+    runs-on:  [self-hosted, e3sm, cuda]
     strategy:
       fail-fast: false
       matrix:
@@ -206,7 +206,7 @@ jobs:
         uses: ./.github/actions/test-all-eamxx
         with:
           build_type: ${{ matrix.test.build_type }}
-          machine: ghci-snl-cuda
+          machine: ghci-cuda
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
           cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
