@@ -64,50 +64,43 @@ void Functions<Real,DefaultDevice>
       });
     });
 
-  Kokkos::parallel_for("p3_main_init_temporaries",
-         policy, KOKKOS_LAMBDA(const MemberType& team) {
-
-    const Int i = team.league_rank();
-
-    Kokkos::parallel_for(
-      Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
-        mu_r(i,k)               = 0.;
-        lamr(i,k)               = 0.;
-        logn0r(i,k)             = 0.;
-        nu(i,k)                 = 0.;
-        cdist(i,k)              = 0.;
-        cdist1(i,k)             = 0.;
-        cdistr(i,k)             = 0.;
-        qc_incld(i,k)           = 0.;
-        qr_incld(i,k)           = 0.;
-        qi_incld(i,k)           = 0.;
-        qm_incld(i,k)           = 0.;
-        nc_incld(i,k)           = 0.;
-        nr_incld(i,k)           = 0.;
-        ni_incld(i,k)           = 0.;
-        bm_incld(i,k)           = 0.;
-        inv_rho(i,k)            = 0.;
-        prec(i,k)               = 0.;
-        rho(i,k)                = 0.;
-        rhofacr(i,k)            = 0.;
-        rhofaci(i,k)            = 0.;
-        acn(i,k)                = 0.;
-        qv_sat_l(i,k)           = 0.;
-        qv_sat_i(i,k)           = 0.;
-        sup(i,k)                = 0.;
-        qv_supersat_i(i,k)      = 0.;
-        qtend_ignore(i,k)       = 0.;
-        ntend_ignore(i,k)       = 0.;
-        mu_c(i,k)               = 0.;
-        lamc(i,k)               = 0.;
-        rho_qi(i,k)             = 0.;
-        qv2qi_depos_tend(i,k)   = 0.;
-        precip_total_tend(i,k)  = 0.;
-        nevapr(i,k)             = 0.;
-        precip_liq_flux(i,k)    = 0.;
-        precip_ice_flux(i,k)    = 0.;
-      });
-  });
+  const ExeSpace space;
+  Kokkos::deep_copy(space, mu_r, Pack(0));
+  Kokkos::deep_copy(space, lamr, Pack(0));
+  Kokkos::deep_copy(space, logn0r, Pack(0));
+  Kokkos::deep_copy(space, nu, Pack(0));
+  Kokkos::deep_copy(space, cdist, Pack(0));
+  Kokkos::deep_copy(space, cdist1, Pack(0));
+  Kokkos::deep_copy(space, cdistr, Pack(0));
+  Kokkos::deep_copy(space, qc_incld, Pack(0));
+  Kokkos::deep_copy(space, qr_incld, Pack(0));
+  Kokkos::deep_copy(space, qi_incld, Pack(0));
+  Kokkos::deep_copy(space, qm_incld, Pack(0));
+  Kokkos::deep_copy(space, nc_incld, Pack(0));
+  Kokkos::deep_copy(space, nr_incld, Pack(0));
+  Kokkos::deep_copy(space, ni_incld, Pack(0));
+  Kokkos::deep_copy(space, bm_incld, Pack(0));
+  Kokkos::deep_copy(space, inv_rho, Pack(0));
+  Kokkos::deep_copy(space, prec, Pack(0));
+  Kokkos::deep_copy(space, rho, Pack(0));
+  Kokkos::deep_copy(space, rhofacr, Pack(0));
+  Kokkos::deep_copy(space, rhofaci, Pack(0));
+  Kokkos::deep_copy(space, acn, Pack(0));
+  Kokkos::deep_copy(space, qv_sat_l, Pack(0));
+  Kokkos::deep_copy(space, qv_sat_i, Pack(0));
+  Kokkos::deep_copy(space, sup, Pack(0));
+  Kokkos::deep_copy(space, qv_supersat_i, Pack(0));
+  Kokkos::deep_copy(space, qtend_ignore, Pack(0));
+  Kokkos::deep_copy(space, ntend_ignore, Pack(0));
+  Kokkos::deep_copy(space, mu_c, Pack(0));
+  Kokkos::deep_copy(space, lamc, Pack(0));
+  Kokkos::deep_copy(space, rho_qi, Pack(0));
+  Kokkos::deep_copy(space, qv2qi_depos_tend, Pack(0));
+  Kokkos::deep_copy(space, precip_total_tend, Pack(0));
+  Kokkos::deep_copy(space, nevapr, Pack(0));
+  Kokkos::deep_copy(space, precip_liq_flux, Pack(0));
+  Kokkos::deep_copy(space, precip_ice_flux, Pack(0));
+  Kokkos::fence();
 }
 
 template <>
@@ -262,50 +255,44 @@ Int Functions<Real,DefaultDevice>
   auto start = std::chrono::steady_clock::now();
 
   // initialize
-  {
-    p3_main_init_disp(
-      nj, nk_pack, cld_frac_i, cld_frac_l, cld_frac_r, inv_exner, th, dz, diag_equiv_reflectivity,
-      ze_ice, ze_rain, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
-      inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r, exner, T_atm, qv, inv_dz,
-      diagnostic_outputs.precip_liq_surf, diagnostic_outputs.precip_ice_surf,
-      mu_r, lamr, logn0r, nu, cdist, cdist1, cdistr,
-      qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
-      inv_rho, prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
-      qtend_ignore, ntend_ignore, mu_c, lamc, rho_qi, qv2qi_depos_tend, precip_total_tend,
-      nevapr, precip_liq_flux, precip_ice_flux);
-  }
+  p3_main_init_disp(
+    nj, nk_pack, cld_frac_i, cld_frac_l, cld_frac_r, inv_exner, th, dz, diag_equiv_reflectivity,
+    ze_ice, ze_rain, diag_eff_radius_qc, diag_eff_radius_qi, diag_eff_radius_qr,
+    inv_cld_frac_i, inv_cld_frac_l, inv_cld_frac_r, exner, T_atm, qv, inv_dz,
+    diagnostic_outputs.precip_liq_surf, diagnostic_outputs.precip_ice_surf,
+    mu_r, lamr, logn0r, nu, cdist, cdist1, cdistr,
+    qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld, ni_incld, bm_incld,
+    inv_rho, prec, rho, rhofacr, rhofaci, acn, qv_sat_l, qv_sat_i, sup, qv_supersat_i,
+    qtend_ignore, ntend_ignore, mu_c, lamc, rho_qi, qv2qi_depos_tend, precip_total_tend,
+    nevapr, precip_liq_flux, precip_ice_flux);
 
-  {
-    p3_main_part1_disp(
-      nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
-      pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
-      inv_cld_frac_r,
-      T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
-      rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
-      bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
-      ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
-  }
+  p3_main_part1_disp(
+    nj, nk, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt,
+    pres, dpres, dz, nc_nuceat_tend, nccn_prescribed, inv_exner, exner, inv_cld_frac_l, inv_cld_frac_i,
+    inv_cld_frac_r,
+    T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr,
+    rhofaci, acn, qv, th, qc, nc, qr, nr, qi, ni, qm,
+    bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
+    ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
 
-  {
-    p3_main_part2_disp(
-      nj, nk, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
-      hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
-      lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
-      lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
-      exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
-      cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
-      qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
-      nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
-      mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
-      vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
-      qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
-      qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
-      qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
-      pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
-  }
+  p3_main_part2_disp(
+    nj, nk, runtime_options.max_total_ni, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
+    hetfrz_immersion_nucleation_tend, hetfrz_contact_nucleation_tend, hetfrz_deposition_nucleation_tend,
+    lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
+    lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
+    exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
+    cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+    qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
+    nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
+    mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
+    vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
+    qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+    qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
+    qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
+    pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -319,32 +306,26 @@ Int Functions<Real,DefaultDevice>
   // Sedimentation:
 
   // Cloud sedimentation:  (adaptive substepping)
-  {
-    cloud_sedimentation_disp(
-      qc_incld, rho, inv_rho, cld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, workspace_mgr,
-      nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
-      qc, nc, nc_incld, mu_c, lamc, qc_sed, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
-  }
+  cloud_sedimentation_disp(
+    qc_incld, rho, inv_rho, cld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, workspace_mgr,
+    nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
+    qc, nc, nc_incld, mu_c, lamc, qc_sed, ntend_ignore,
+    diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent);
 
 
   // Rain sedimentation:  (adaptive substepping)
-  {
-    rain_sedimentation_disp(
-      rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
-      lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
-      nr, nr_incld, mu_r, lamr, precip_liq_flux, qr_sed, ntend_ignore,
-      diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
-  }
+  rain_sedimentation_disp(
+    rho, inv_rho, rhofacr, cld_frac_r, inv_dz, qr_incld, workspace_mgr,
+    lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nj, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, qr,
+    nr, nr_incld, mu_r, lamr, precip_liq_flux, qr_sed, ntend_ignore,
+    diagnostic_outputs.precip_liq_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // Ice sedimentation:  (adaptive substepping)
-  {
-    ice_sedimentation_disp(
-      rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
-      kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
-      qm, qm_incld, bm, bm_incld, qi_sed, ntend_ignore,
-      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
-  }
+  ice_sedimentation_disp(
+    rho, inv_rho, rhofaci, cld_frac_i, inv_dz, workspace_mgr, nj, nk, ktop, kbot,
+    kdir, infrastructure.dt, inv_dt, qi, qi_incld, ni, ni_incld,
+    qm, qm_incld, bm, bm_incld, qi_sed, ntend_ignore,
+    lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf, nucleationPossible, hydrometeorsPresent, runtime_options);
 
   // homogeneous freezing f cloud and rain
   if(do_ice_production) {
@@ -357,15 +338,13 @@ Int Functions<Real,DefaultDevice>
   // final checks to ensure consistency of mass/number
   // and compute diagnostic fields for output
   //
-  {
-    p3_main_part3_disp(
-      nj, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, inv_exner, cld_frac_l, cld_frac_r, cld_frac_i,
-      rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
-      qm, bm, mu_c, nu, lamc, mu_r, lamr,
-      vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
-      rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent,
-      runtime_options);
-  }
+  p3_main_part3_disp(
+    nj, nk_pack, runtime_options.max_total_ni, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, inv_exner, cld_frac_l, cld_frac_r, cld_frac_i,
+    rho, inv_rho, rhofaci, qv, th, qc, nc, qr, nr, qi, ni,
+    qm, bm, mu_c, nu, lamc, mu_r, lamr,
+    vap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, diag_eff_radius_qi, diag_diam_qi,
+    rho_qi, diag_equiv_reflectivity, diag_eff_radius_qc, diag_eff_radius_qr, nucleationPossible, hydrometeorsPresent,
+    runtime_options);
 
   //
   // merge ice categories with similar properties
