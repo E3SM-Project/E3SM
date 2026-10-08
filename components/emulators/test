@@ -31,8 +31,14 @@ cd "${BUILD_DIR}"
 # Configure (only if needed)
 if [ ! -f "CMakeCache.txt" ]; then
     print_status "Configuring CMake..."
-    cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Debug -DBUILD_EMULATOR_TESTS=ON \
-    -DSTANDALONE_MODE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DFETCHCONTENT_BASE_DIR="$SCRIPT_DIR/downloads" "${CMAKE_ARGS[@]}"
+    cmake "${SCRIPT_DIR}" -DCMAKE_BUILD_TYPE=Debug  \
+    -DBUILD_EMULATOR_TESTS=ON \
+    -DSTANDALONE_MODE=ON \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DFETCHCONTENT_BASE_DIR="$SCRIPT_DIR/downloads" \
+    -DEMULATOR_ENABLE_LIBTORCH=ON \
+    -DEMULAOTR_ENABLE_PYTHON=ON \
+    "${CMAKE_ARGS[@]}"
 fi
 
 # Build
