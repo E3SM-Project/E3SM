@@ -5646,11 +5646,13 @@ the grid where the fields are defined and a coarser grid.<ul>
 </li>
 </ul>
 </li>
-<li><code>hrrr_map_sizes</code>: a list <code>[nx, ny]</code> of two integers. Use it when the target grid of
+<li><code>horiz_remap_layout</code>: a list <code>[nx, ny]</code> of two integers. Use it when the target grid of
 <code>horiz_remap_file</code> is a generic 2d rectilinear grid (e.g., a HRRR-like grid), rather
 than a lat-lon one.<ul>
 <li>By default, a map file with <code>dst_grid_rank=2</code> is assumed to target a lat-lon grid,
-  whose (lat,lon) values are separable, and the output file will have dimensions <code>(lat,lon)</code>.</li>
+  whose (lat,lon) values are separable. The grid sizes are read from <code>dst_grid_dims=[nlon,nlat]</code>,
+  and the output file will have dimensions <code>(lat,lon)</code>, with <code>lat</code> and <code>lon</code> being 1d coordinates.
+  EAMxx errors out if the lat/lon values of the target points are not separable.</li>
 <li>With this option, EAMxx makes no such assumption: the <code>nx*ny</code> target points can have
   all different lat and lon values, and <code>nx</code> need not be the number of longitudes (nor <code>ny</code>
   the number of latitudes). The output file will have dimensions <code>(y,x)</code>, and the
