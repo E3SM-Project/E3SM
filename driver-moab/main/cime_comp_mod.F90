@@ -3316,7 +3316,7 @@ contains
           if (glcrun_alarm) then
              call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
           else
-             if (iamin_CPLID) call prep_glc_zero_fields_moab()
+             if (iamin_CPLID) call prep_glc_zero_fields()
           endif
        endif
 
@@ -4586,7 +4586,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum_lnd_moab(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd_moab(timer='CPL:lndpost_accl2g' )
+       if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4616,23 +4616,23 @@ contains
        ! NOTE - only create appropriate input to glc if the avg_alarm is on
        if (lnd_c2_glc .or. ocn_c2_glcshelf) then
           if (glcrun_avg_alarm) then
-             call prep_glc_accum_avg_moab(timer='CPL:glcprep_avg', &
+             call prep_glc_accum_avg(timer='CPL:glcprep_avg', &
                   lnd2glc_averaged_now=lnd2glc_averaged_now)
              prep_glc_accum_avg_called = .true.
 
              if (lnd_c2_glc) then
                 ! Note that the mapped fields are obtained from the accumulated lnd
-                ! fields (set back into the land mesh tags by prep_glc_accum_avg_moab)
-                call prep_glc_calc_l2x_gx_moab(fractions_lx, timer='CPL:glcprep_lnd2glc')
+                ! fields (set back into the land mesh tags by prep_glc_accum_avg)
+                call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
-                call prep_glc_mrg_lnd_moab(infodata, timer_mrg='CPL:glcprep_mrgx2g')
+                call prep_glc_mrg_lnd(infodata, timer_mrg='CPL:glcprep_mrgx2g')
              endif
 
              call component_diag(infodata, glc, flow='x2c', comment='send glc', &
                   info_debug=info_debug, timer_diag='CPL:glcprep_diagav')
 
           else
-             call prep_glc_zero_fields_moab()
+             call prep_glc_zero_fields()
           endif ! glcrun_avg_alarm
        end if ! lnd_c2_glc or ocn_c2_glcshelf
 
@@ -4675,7 +4675,7 @@ contains
     call t_drvstartf ('CPL:AVG_L2X1YRG',cplrun=.true.,barrier=mpicom_CPLID)
     if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-    call prep_glc_accum_avg_moab(timer='CPL:glcprep_avg', &
+    call prep_glc_accum_avg(timer='CPL:glcprep_avg', &
          lnd2glc_averaged_now=lnd2glc_averaged_now)
     prep_glc_accum_avg_called = .true.
 

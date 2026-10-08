@@ -35,8 +35,7 @@ module prep_lnd_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: lnd, atm, rof, glc
-  use map_glc2lnd_mod   , only: map_glc2lnd_ec
-  use map_glc2lnd_mod   , only: map_glc2lnd_ec_moab, map_glc2lnd_ec_moab_init
+  use map_glc2lnd_mod   , only: map_glc2lnd_ec, map_glc2lnd_ec_init
   use iso_c_binding
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
@@ -727,8 +726,8 @@ contains
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, GLC-LND')
              endif
 
-             ! define the staging and scratch tags map_glc2lnd_ec_moab writes into
-             call map_glc2lnd_ec_moab_init(mbgxid, mblxid)
+             ! define the staging and scratch tags map_glc2lnd_ec writes into
+             call map_glc2lnd_ec_init(mbgxid, mblxid)
 
           endif ! mbgxid and mblxid
 
@@ -1002,7 +1001,7 @@ contains
        ! Map fields that are separated by elevation class on the land grid; the moab
        ! version operates on the coupler mesh tags (result lands directly in the
        ! per-EC x2l tag names on the land mesh) and returns early without moab context
-       call map_glc2lnd_ec_moab(mapper_Fg2l, &
+       call map_glc2lnd_ec(mapper_Fg2l, &
             frac_field = glc_frac_field, &
             topo_field = glc_topo_field, &
             icemask_field = glc_icemask_field, &
