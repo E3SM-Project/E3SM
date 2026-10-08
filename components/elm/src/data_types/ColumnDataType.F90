@@ -56,6 +56,8 @@ module ColumnDataType
   implicit none
   save
   public
+  ! Number of filtered entries processed together by flux setvalues routines.
+  integer, parameter, private :: flux_setvalues_block_size = 32
   !
   ! NOTE(bandre, 2013-10) according to Charlie Koven, nfix_timeconst
   ! is currently used as a flag and rate constant. Rate constant: time
@@ -7870,33 +7872,38 @@ contains
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
     !
+    ! Process a short block of filtered entries one field at a time. This
+    ! keeps stores to each array together instead of interleaving dozens of
+    ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
     do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-          this%phenology_c_to_litr_met_c(i,j)     = value_column
-          this%phenology_c_to_litr_cel_c(i,j)     = value_column
-          this%phenology_c_to_litr_lig_c(i,j)     = value_column
+          this%phenology_c_to_litr_met_c(idx,j)     = value_column
+          this%phenology_c_to_litr_cel_c(idx,j)     = value_column
+          this%phenology_c_to_litr_lig_c(idx,j)     = value_column
 
-          this%gap_mortality_c_to_litr_met_c(i,j) = value_column
-          this%gap_mortality_c_to_litr_cel_c(i,j) = value_column
-          this%gap_mortality_c_to_litr_lig_c(i,j) = value_column
-          this%gap_mortality_c_to_cwdc(i,j)       = value_column
+          this%gap_mortality_c_to_litr_met_c(idx,j) = value_column
+          this%gap_mortality_c_to_litr_cel_c(idx,j) = value_column
+          this%gap_mortality_c_to_litr_lig_c(idx,j) = value_column
+          this%gap_mortality_c_to_cwdc(idx,j)       = value_column
 
-          this%fire_mortality_c_to_cwdc(i,j)      = value_column
-          this%m_c_to_litr_met_fire(i,j)          = value_column
-          this%m_c_to_litr_cel_fire(i,j)          = value_column
-          this%m_c_to_litr_lig_fire(i,j)          = value_column
+          this%fire_mortality_c_to_cwdc(idx,j)      = value_column
+          this%m_c_to_litr_met_fire(idx,j)          = value_column
+          this%m_c_to_litr_cel_fire(idx,j)          = value_column
+          this%m_c_to_litr_lig_fire(idx,j)          = value_column
 
-          this%harvest_c_to_litr_met_c(i,j)       = value_column
-          this%harvest_c_to_litr_cel_c(i,j)       = value_column
-          this%harvest_c_to_litr_lig_c(i,j)       = value_column
-          this%harvest_c_to_cwdc(i,j)             = value_column
+          this%harvest_c_to_litr_met_c(idx,j)       = value_column
+          this%harvest_c_to_litr_cel_c(idx,j)       = value_column
+          this%harvest_c_to_litr_lig_c(idx,j)       = value_column
+          this%harvest_c_to_cwdc(idx,j)             = value_column
 
-          this%hr_vr(i,j)                         = value_column
+          this%hr_vr(idx,j)                         = value_column
+
+          end associate
        end do
     end do
     do l = 1, ndecomp_cascade_transitions
@@ -7947,58 +7954,60 @@ contains
        end do
     end do 
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    do fi = 1,num_column,flux_setvalues_block_size
+       associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-       this%hrv_deadstemc_to_prod10c(i)  = value_column
-       this%hrv_deadstemc_to_prod100c(i) = value_column
-       this%hrv_cropc_to_prod1c(i)       = value_column
-       this%prod1c_loss(i)               = value_column
-       this%prod10c_loss(i)              = value_column
-       this%prod100c_loss(i)             = value_column
-       this%er(i)                        = value_column
-       this%som_c_leached(i)             = value_column
-       this%somc_yield(i)                = value_column
-       this%somhr(i)                     = value_column 
-       this%lithr(i)                     = value_column 
-       this%hr(i)                        = value_column
-       this%cinputs(i)                   = value_column
-       this%coutputs(i)                  = value_column
-       this%cwdc_hr(i)                   = value_column
-       this%litterc_loss(i)              = value_column
+       this%hrv_deadstemc_to_prod10c(idx)  = value_column
+       this%hrv_deadstemc_to_prod100c(idx) = value_column
+       this%hrv_cropc_to_prod1c(idx)       = value_column
+       this%prod1c_loss(idx)               = value_column
+       this%prod10c_loss(idx)              = value_column
+       this%prod100c_loss(idx)             = value_column
+       this%er(idx)                        = value_column
+       this%som_c_leached(idx)             = value_column
+       this%somc_yield(idx)                = value_column
+       this%somhr(idx)                     = value_column
+       this%lithr(idx)                     = value_column
+       this%hr(idx)                        = value_column
+       this%cinputs(idx)                   = value_column
+       this%coutputs(idx)                  = value_column
+       this%cwdc_hr(idx)                   = value_column
+       this%litterc_loss(idx)              = value_column
        
-       this%nee(i)                       = value_column
-       this%er(i)                        = value_column  
-       this%som_c_leached(i)             = value_column  
+       this%nee(idx)                       = value_column
 
        ! Zero p2c column fluxes
-       this%rr(i)                    = value_column
-       this%ar(i)                    = value_column
-       this%gpp(i)                   = value_column
-       this%npp(i)                   = value_column
-       this%fire_closs(i)            = value_column
-       this%litfall(i)               = value_column
-       this%vegfire(i)               = value_column
-       this%wood_harvestc(i)         = value_column
-       this%hrv_xsmrpool_to_atm(i)   = value_column
+       this%rr(idx)                    = value_column
+       this%ar(idx)                    = value_column
+       this%gpp(idx)                   = value_column
+       this%npp(idx)                   = value_column
+       this%fire_closs(idx)            = value_column
+       this%litfall(idx)               = value_column
+       this%vegfire(idx)               = value_column
+       this%wood_harvestc(idx)         = value_column
+       this%hrv_xsmrpool_to_atm(idx)   = value_column
+
+       end associate
     end do
   
     if(use_crop) then 
-      do fi = 1,num_column
-         i = filter_column(fi)
-         this%somc_fire(i)                 = value_column
-         this%product_closs(i)             = value_column
-         this%sr(i)                        = value_column
-         this%litfire(i)                   = value_column
-         this%somfire(i)                   = value_column
-         this%totfire(i)                   = value_column
-         this%nep(i)                       = value_column
-         this%nbp(i)                       = value_column
-         this%cwdc_loss(i)                 = value_column
-         this%somc_erode(i)                = value_column
-         this%somc_deposit(i)              = value_column
-         this%somc_yield(i)                = value_column
-      enddo 
+      do fi = 1,num_column,flux_setvalues_block_size
+         associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+         this%somc_fire(idx)                 = value_column
+         this%product_closs(idx)             = value_column
+         this%sr(idx)                        = value_column
+         this%litfire(idx)                   = value_column
+         this%somfire(idx)                   = value_column
+         this%totfire(idx)                   = value_column
+         this%nep(idx)                       = value_column
+         this%nbp(idx)                       = value_column
+         this%cwdc_loss(idx)                 = value_column
+         this%somc_erode(idx)                = value_column
+         this%somc_deposit(idx)              = value_column
+         this%somc_yield(idx)                = value_column
+
+         end associate
+      end do
     end if 
     
     do k = 1, ndecomp_pools
@@ -9489,143 +9498,150 @@ contains
     integer , intent(in)         :: filter_column(:)
     real(r8), intent(in)         :: value_column
     !
+    ! Process a short block of filtered entries one field at a time. This
+    ! keeps stores to each array together instead of interleaving dozens of
+    ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
     do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
           ! phenology: litterfall and crop fluxes associated wit
-          this%phenology_n_to_litr_met_n(i,j)        = value_column
-          this%phenology_n_to_litr_cel_n(i,j)        = value_column
-          this%phenology_n_to_litr_lig_n(i,j)        = value_column
+          this%phenology_n_to_litr_met_n(idx,j)        = value_column
+          this%phenology_n_to_litr_cel_n(idx,j)        = value_column
+          this%phenology_n_to_litr_lig_n(idx,j)        = value_column
 
           ! gap mortality
-          this%gap_mortality_n_to_litr_met_n(i,j)    = value_column
-          this%gap_mortality_n_to_litr_cel_n(i,j)    = value_column
-          this%gap_mortality_n_to_litr_lig_n(i,j)    = value_column
-          this%gap_mortality_n_to_cwdn(i,j)          = value_column
+          this%gap_mortality_n_to_litr_met_n(idx,j)    = value_column
+          this%gap_mortality_n_to_litr_cel_n(idx,j)    = value_column
+          this%gap_mortality_n_to_litr_lig_n(idx,j)    = value_column
+          this%gap_mortality_n_to_cwdn(idx,j)          = value_column
 
           ! fire
-          this%fire_mortality_n_to_cwdn(i,j)         = value_column
-          this%m_n_to_litr_met_fire(i,j)             = value_column
-          this%m_n_to_litr_cel_fire(i,j)             = value_column
-          this%m_n_to_litr_lig_fire(i,j)             = value_column
+          this%fire_mortality_n_to_cwdn(idx,j)         = value_column
+          this%m_n_to_litr_met_fire(idx,j)             = value_column
+          this%m_n_to_litr_cel_fire(idx,j)             = value_column
+          this%m_n_to_litr_lig_fire(idx,j)             = value_column
 
           ! harvest
-          this%harvest_n_to_litr_met_n(i,j)          = value_column
-          this%harvest_n_to_litr_cel_n(i,j)          = value_column
-          this%harvest_n_to_litr_lig_n(i,j)          = value_column
-          this%harvest_n_to_cwdn(i,j)                = value_column
+          this%harvest_n_to_litr_met_n(idx,j)          = value_column
+          this%harvest_n_to_litr_cel_n(idx,j)          = value_column
+          this%harvest_n_to_litr_lig_n(idx,j)          = value_column
+          this%harvest_n_to_cwdn(idx,j)                = value_column
 
-          this%net_nmin_vr(i,j)                      = value_column
-          this%sminn_nh4_input_vr(i,j)               = value_column !not used anywhere?
-          this%sminn_no3_input_vr(i,j)               = value_column !not used anywhere?
+          this%net_nmin_vr(idx,j)                      = value_column
+          this%sminn_nh4_input_vr(idx,j)               = value_column !not used anywhere?
+          this%sminn_no3_input_vr(idx,j)               = value_column !not used anywhere?
+
+          end associate
        end do
     end do
 
     if( use_pflotran .and. pf_cmode) then 
 
       do j = 1, nlevdecomp_full
-         do fi = 1,num_column
-            i = filter_column(fi)
+         do fi = 1,num_column,flux_setvalues_block_size
+            associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
             ! pflotran
-            this%plant_ndemand_vr(i,j)              = value_column !use_elm_interface.and.use_pflotran .and. pf_cmode
-            this%f_ngas_decomp_vr(i,j)              = value_column ! ""
-            this%f_ngas_nitri_vr(i,j)               = value_column ! "" 
-            this%f_ngas_denit_vr(i,j)               = value_column
-            this%f_n2o_soil_vr(i,j)                 = value_column
-            this%f_n2_soil_vr(i,j)                  = value_column
-         end do 
+            this%plant_ndemand_vr(idx,j)              = value_column !use_elm_interface.and.use_pflotran .and. pf_cmode
+            this%f_ngas_decomp_vr(idx,j)              = value_column ! ""
+            this%f_ngas_nitri_vr(idx,j)               = value_column ! ""
+            this%f_ngas_denit_vr(idx,j)               = value_column
+            this%f_n2o_soil_vr(idx,j)                 = value_column
+            this%f_n2_soil_vr(idx,j)                  = value_column
+
+            end associate
+         end do
        end do 
      end if 
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    do fi = 1,num_column,flux_setvalues_block_size
+       associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-       this%ndep_to_sminn(i)             = value_column
-       this%nfix_to_sminn(i)             = value_column
-       this%nfix_to_ecosysn(i)           = value_column
-       this%fert_to_sminn(i)             = value_column
-       this%soyfixn_to_sminn(i)          = value_column
-       this%supplement_to_sminn(i)       = value_column
-       this%denit(i)                     = value_column
-       this%smin_nh4_to_plant(i)      = value_column
-       this%smin_no3_to_plant(i)      = value_column
-       this%fire_nloss(i)                = value_column
-       this%som_n_leached(i)             = value_column
+       this%ndep_to_sminn(idx)             = value_column
+       this%nfix_to_sminn(idx)             = value_column
+       this%nfix_to_ecosysn(idx)           = value_column
+       this%fert_to_sminn(idx)             = value_column
+       this%soyfixn_to_sminn(idx)          = value_column
+       this%supplement_to_sminn(idx)       = value_column
+       this%denit(idx)                     = value_column
+       this%smin_nh4_to_plant(idx)      = value_column
+       this%smin_no3_to_plant(idx)      = value_column
+       this%fire_nloss(idx)                = value_column
+       this%som_n_leached(idx)             = value_column
        
-       this%hrv_deadstemn_to_prod10n(i)  = value_column
-       this%hrv_deadstemn_to_prod100n(i) = value_column
-       this%hrv_cropn_to_prod1n(i)       = value_column
-       this%prod10n_loss(i)              = value_column
-       this%prod100n_loss(i)             = value_column
-       this%prod1n_loss(i)               = value_column
-       this%product_nloss(i)             = value_column
-       this%potential_immob(i)           = value_column
-       this%actual_immob(i)              = value_column
-       this%sminn_to_plant(i)            = value_column
-       this%gross_nmin(i)                = value_column
-       this%net_nmin(i)                  = value_column
+       this%hrv_deadstemn_to_prod10n(idx)  = value_column
+       this%hrv_deadstemn_to_prod100n(idx) = value_column
+       this%hrv_cropn_to_prod1n(idx)       = value_column
+       this%prod10n_loss(idx)              = value_column
+       this%prod100n_loss(idx)             = value_column
+       this%prod1n_loss(idx)               = value_column
+       this%product_nloss(idx)             = value_column
+       this%potential_immob(idx)           = value_column
+       this%actual_immob(idx)              = value_column
+       this%sminn_to_plant(idx)            = value_column
+       this%gross_nmin(idx)                = value_column
+       this%net_nmin(idx)                  = value_column
 
-       this%f_nit(i)                  = value_column
-       this%pot_f_nit(i)              = value_column
-       this%f_denit(i)                = value_column
-       this%pot_f_denit(i)            = value_column
-       this%f_n2o_denit(i)            = value_column
-       this%f_n2o_nit(i)              = value_column
-       this%smin_no3_leached(i)       = value_column
-       this%smin_no3_runoff(i)        = value_column
+       this%f_nit(idx)                  = value_column
+       this%pot_f_nit(idx)              = value_column
+       this%f_denit(idx)                = value_column
+       this%pot_f_denit(idx)            = value_column
+       this%f_n2o_denit(idx)            = value_column
+       this%f_n2o_nit(idx)              = value_column
+       this%smin_no3_leached(idx)       = value_column
+       this%smin_no3_runoff(idx)        = value_column
 
-       this%f_ngas_decomp(i)         = value_column
-       this%f_ngas_nitri(i)          = value_column
-       this%f_ngas_denit(i)          = value_column
-       this%f_n2o_soil(i)            = value_column
-       this%f_n2_soil(i)             = value_column
+       this%f_ngas_decomp(idx)         = value_column
+       this%f_ngas_nitri(idx)          = value_column
+       this%f_ngas_denit(idx)          = value_column
+       this%f_n2o_soil(idx)            = value_column
+       this%f_n2_soil(idx)             = value_column
 
 
-       this%ninputs(i)                   = value_column
-       this%noutputs(i)                  = value_column
-       this%sminn_input(i)               = value_column
-       this%sminn_nh4_input(i)           = value_column
-       this%sminn_no3_input(i)           = value_column
+       this%ninputs(idx)                   = value_column
+       this%noutputs(idx)                  = value_column
+       this%sminn_input(idx)               = value_column
+       this%sminn_nh4_input(idx)           = value_column
+       this%sminn_no3_input(idx)           = value_column
        ! Zero p2c column fluxes
-       this%fire_nloss(i) = value_column
-       this%wood_harvestn(i) = value_column
+       this%wood_harvestn(idx) = value_column
 
        ! bgc-interface
-       this%plant_ndemand(i) = value_column
+       this%plant_ndemand(idx) = value_column
 
        ! FAN
-       this%manure_tan_appl(i)    = value_column
-       this%manure_n_appl(i)      = value_column
-       this%manure_n_grz(i)       = value_column
-       this%manure_n_mix(i)       = value_column
-       this%manure_n_barns(i)     = value_column
-       this%fert_n_appl(i)        = value_column
-       this%otherfert_n_appl(i)   = value_column
-       this%manure_n_transf(i)    = value_column
-       this%nh3_barns(i)          = value_column
-       this%nh3_stores(i)         = value_column
-       this%nh3_grz(i)            = value_column
-       this%nh3_manure_app(i)     = value_column
-       this%nh3_fert(i)           = value_column
-       this%nh3_otherfert(i)      = value_column
-       this%nh3_total(i)          = value_column
-       this%manure_no3_to_soil(i) = value_column
-       this%fert_no3_to_soil(i)   = value_column
-       this%manure_nh4_to_soil(i) = value_column
-       this%fert_nh4_to_soil(i)   = value_column
-       this%fert_nh4_to_soil(i)   = value_column
-       this%manure_nh4_runoff(i)  = value_column
-       this%fert_nh4_runoff(i)    = value_column
-       this%manure_n_to_sminn(i)  = value_column
-       this%manure_n_total(i)     = value_column
-       this%synthfert_n_to_sminn(i) = value_column
-       this%fan_totnin(i)         = value_column
-       this%fan_totnout(i)        = value_column
+       this%manure_tan_appl(idx)    = value_column
+       this%manure_n_appl(idx)      = value_column
+       this%manure_n_grz(idx)       = value_column
+       this%manure_n_mix(idx)       = value_column
+       this%manure_n_barns(idx)     = value_column
+       this%fert_n_appl(idx)        = value_column
+       this%otherfert_n_appl(idx)   = value_column
+       this%manure_n_transf(idx)    = value_column
+       this%nh3_barns(idx)          = value_column
+       this%nh3_stores(idx)         = value_column
+       this%nh3_grz(idx)            = value_column
+       this%nh3_manure_app(idx)     = value_column
+       this%nh3_fert(idx)           = value_column
+       this%nh3_otherfert(idx)      = value_column
+       this%nh3_total(idx)          = value_column
+       this%manure_no3_to_soil(idx) = value_column
+       this%fert_no3_to_soil(idx)   = value_column
+       this%manure_nh4_to_soil(idx) = value_column
+       this%fert_nh4_to_soil(idx)   = value_column
+       this%manure_nh4_runoff(idx)  = value_column
+       this%fert_nh4_runoff(idx)    = value_column
+       this%manure_n_to_sminn(idx)  = value_column
+       this%manure_n_total(idx)     = value_column
+       this%synthfert_n_to_sminn(idx) = value_column
+       this%fan_totnin(idx)         = value_column
+       this%fan_totnout(idx)        = value_column
 
+
+       end associate
     end do
     do k = 1, ndecomp_pools
        do fi = 1,num_column
@@ -11044,132 +11060,139 @@ contains
     integer , intent(in) :: filter_column(:)
     real(r8), intent(in) :: value_column
     !
+    ! Process a short block of filtered entries one field at a time. This
+    ! keeps stores to each array together instead of interleaving dozens of
+    ! independent memory streams. Preserve all conditional initialization.
     ! !LOCAL VARIABLES:
     integer :: fi,i,j,k,l     ! loop index
     !------------------------------------------------------------------------
     do j = 1, nlevdecomp_full
-       do fi = 1,num_column
-          i = filter_column(fi)
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
           ! phenology: litterfall and crop fluxes associated wit
-          this%phenology_p_to_litr_met_p(i,j)        = value_column
-          this%phenology_p_to_litr_cel_p(i,j)        = value_column
-          this%phenology_p_to_litr_lig_p(i,j)        = value_column
+          this%phenology_p_to_litr_met_p(idx,j)        = value_column
+          this%phenology_p_to_litr_cel_p(idx,j)        = value_column
+          this%phenology_p_to_litr_lig_p(idx,j)        = value_column
 
           ! gap mortality
-          this%gap_mortality_p_to_litr_met_p(i,j)    = value_column
-          this%gap_mortality_p_to_litr_cel_p(i,j)    = value_column
-          this%gap_mortality_p_to_litr_lig_p(i,j)    = value_column
-          this%gap_mortality_p_to_cwdp(i,j)          = value_column
+          this%gap_mortality_p_to_litr_met_p(idx,j)    = value_column
+          this%gap_mortality_p_to_litr_cel_p(idx,j)    = value_column
+          this%gap_mortality_p_to_litr_lig_p(idx,j)    = value_column
+          this%gap_mortality_p_to_cwdp(idx,j)          = value_column
 
           ! fire
-          this%fire_mortality_p_to_cwdp(i,j)         = value_column
-          this%m_p_to_litr_met_fire(i,j)             = value_column
-          this%m_p_to_litr_cel_fire(i,j)             = value_column
-          this%m_p_to_litr_lig_fire(i,j)             = value_column
+          this%fire_mortality_p_to_cwdp(idx,j)         = value_column
+          this%m_p_to_litr_met_fire(idx,j)             = value_column
+          this%m_p_to_litr_cel_fire(idx,j)             = value_column
+          this%m_p_to_litr_lig_fire(idx,j)             = value_column
 
           ! harvest
-          this%harvest_p_to_litr_met_p(i,j)          = value_column
-          this%harvest_p_to_litr_cel_p(i,j)          = value_column
-          this%harvest_p_to_litr_lig_p(i,j)          = value_column
-          this%harvest_p_to_cwdp(i,j)                = value_column
+          this%harvest_p_to_litr_met_p(idx,j)          = value_column
+          this%harvest_p_to_litr_cel_p(idx,j)          = value_column
+          this%harvest_p_to_litr_lig_p(idx,j)          = value_column
+          this%harvest_p_to_cwdp(idx,j)                = value_column
 
-          this%primp_to_labilep_vr(i,j)              = value_column
-          this%labilep_to_secondp_vr(i,j)            = value_column
-          this%secondp_to_labilep_vr(i,j)            = value_column
-          this%secondp_to_occlp_vr(i,j)              = value_column
+          this%primp_to_labilep_vr(idx,j)              = value_column
+          this%labilep_to_secondp_vr(idx,j)            = value_column
+          this%secondp_to_labilep_vr(idx,j)            = value_column
+          this%secondp_to_occlp_vr(idx,j)              = value_column
 
-          this%sminp_leached_vr(i,j)                 = value_column
+          this%sminp_leached_vr(idx,j)                 = value_column
 
-          this%labilep_yield_vr(i,j)                 = value_column
-          this%secondp_yield_vr(i,j)                 = value_column
-          this%occlp_yield_vr(i,j)                   = value_column
-          this%primp_yield_vr(i,j)                   = value_column
+          this%labilep_yield_vr(idx,j)                 = value_column
+          this%secondp_yield_vr(idx,j)                 = value_column
+          this%occlp_yield_vr(idx,j)                   = value_column
+          this%primp_yield_vr(idx,j)                   = value_column
 
-          this%potential_immob_p_vr(i,j)             = value_column
-          this%actual_immob_p_vr(i,j)                = value_column
-          this%sminp_to_plant_vr(i,j)                = value_column
-          this%supplement_to_sminp_vr(i,j)           = value_column
-          this%gross_pmin_vr(i,j)                    = value_column
-          this%net_pmin_vr(i,j)                      = value_column
-          this%biochem_pmin_vr(i,j)                  = value_column
-          this%biochem_pmin_to_ecosysp_vr(i,j)       = value_column
+          this%potential_immob_p_vr(idx,j)             = value_column
+          this%actual_immob_p_vr(idx,j)                = value_column
+          this%sminp_to_plant_vr(idx,j)                = value_column
+          this%supplement_to_sminp_vr(idx,j)           = value_column
+          this%gross_pmin_vr(idx,j)                    = value_column
+          this%net_pmin_vr(idx,j)                      = value_column
+          this%biochem_pmin_vr(idx,j)                  = value_column
+          this%biochem_pmin_to_ecosysp_vr(idx,j)       = value_column
 
           ! bgc interface & pflotran
-          this%plant_pdemand_vr(i,j)                 = value_column
-          this%adsorb_to_labilep_vr(i,j)             = value_column
-          this%desorb_to_solutionp_vr(i,j)           = value_column
+          this%plant_pdemand_vr(idx,j)                 = value_column
+          this%adsorb_to_labilep_vr(idx,j)             = value_column
+          this%desorb_to_solutionp_vr(idx,j)           = value_column
           
+
+          end associate
        end do
     end do
 
-    do fi = 1,num_column
-       i = filter_column(fi)
+    do fi = 1,num_column,flux_setvalues_block_size
+       associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
 
-       this%pdep_to_sminp(i)             = value_column
-       this%fert_p_to_sminp(i)           = value_column
-       this%hrv_deadstemp_to_prod10p(i)  = value_column
-       this%hrv_deadstemp_to_prod100p(i) = value_column
-       this%hrv_cropp_to_prod1p(i)       = value_column
-       this%prod10p_loss(i)              = value_column
-       this%prod100p_loss(i)             = value_column
-       this%product_ploss(i)             = value_column
-       this%prod1p_loss(i)               = value_column
-       this%potential_immob_p(i)         = value_column
-       this%actual_immob_p(i)            = value_column
-       this%sminp_to_plant(i)            = value_column
-       this%supplement_to_sminp(i)       = value_column
-       this%gross_pmin(i)                = value_column
-       this%net_pmin(i)                  = value_column
-       this%biochem_pmin(i)              = value_column
-       this%biochem_pmin_to_plant(i)     = value_column
-       this%primp_to_labilep(i)          = value_column
-       this%labilep_to_secondp(i)        = value_column
-       this%secondp_to_labilep(i)        = value_column
-       this%secondp_to_occlp(i)          = value_column
-       this%sminp_leached(i)             = value_column
-       this%fire_ploss(i)                = value_column
-       this%pinputs(i)                   = value_column
-       this%poutputs(i)                  = value_column
-       this%som_p_leached(i)             = value_column
-       this%somp_erode(i)                = value_column
-       this%somp_deposit(i)              = value_column
-       this%somp_yield(i)                = value_column
-       this%labilep_erode(i)             = value_column
-       this%labilep_deposit(i)           = value_column
-       this%labilep_yield(i)             = value_column
-       this%secondp_erode(i)             = value_column
-       this%secondp_deposit(i)           = value_column
-       this%secondp_yield(i)             = value_column
-       this%occlp_erode(i)               = value_column
-       this%occlp_deposit(i)             = value_column
-       this%occlp_yield(i)               = value_column
-       this%primp_erode(i)               = value_column
-       this%primp_deposit(i)             = value_column
-       this%primp_yield(i)               = value_column
+       this%pdep_to_sminp(idx)             = value_column
+       this%fert_p_to_sminp(idx)           = value_column
+       this%hrv_deadstemp_to_prod10p(idx)  = value_column
+       this%hrv_deadstemp_to_prod100p(idx) = value_column
+       this%hrv_cropp_to_prod1p(idx)       = value_column
+       this%prod10p_loss(idx)              = value_column
+       this%prod100p_loss(idx)             = value_column
+       this%product_ploss(idx)             = value_column
+       this%prod1p_loss(idx)               = value_column
+       this%potential_immob_p(idx)         = value_column
+       this%actual_immob_p(idx)            = value_column
+       this%sminp_to_plant(idx)            = value_column
+       this%supplement_to_sminp(idx)       = value_column
+       this%gross_pmin(idx)                = value_column
+       this%net_pmin(idx)                  = value_column
+       this%biochem_pmin(idx)              = value_column
+       this%biochem_pmin_to_plant(idx)     = value_column
+       this%primp_to_labilep(idx)          = value_column
+       this%labilep_to_secondp(idx)        = value_column
+       this%secondp_to_labilep(idx)        = value_column
+       this%secondp_to_occlp(idx)          = value_column
+       this%sminp_leached(idx)             = value_column
+       this%fire_ploss(idx)                = value_column
+       this%pinputs(idx)                   = value_column
+       this%poutputs(idx)                  = value_column
+       this%som_p_leached(idx)             = value_column
+       this%somp_erode(idx)                = value_column
+       this%somp_deposit(idx)              = value_column
+       this%somp_yield(idx)                = value_column
+       this%labilep_erode(idx)             = value_column
+       this%labilep_deposit(idx)           = value_column
+       this%labilep_yield(idx)             = value_column
+       this%secondp_erode(idx)             = value_column
+       this%secondp_deposit(idx)           = value_column
+       this%secondp_yield(idx)             = value_column
+       this%occlp_erode(idx)               = value_column
+       this%occlp_deposit(idx)             = value_column
+       this%occlp_yield(idx)               = value_column
+       this%primp_erode(idx)               = value_column
+       this%primp_deposit(idx)             = value_column
+       this%primp_yield(idx)               = value_column
 
        ! Zero p2c column fluxes
-       this%fire_ploss(i)                = value_column
-       this%wood_harvestp(i)             = value_column
+       this%wood_harvestp(idx)             = value_column
 
        ! bgc-interface
-       this%plant_pdemand(i)             = value_column
+       this%plant_pdemand(idx)             = value_column
 
-       this%wood_harvestp(i)             = value_column
 
-       this%adsorb_to_labilep(i)         = value_column
-       this%desorb_to_solutionp(i)       = value_column
+       this%adsorb_to_labilep(idx)         = value_column
+       this%desorb_to_solutionp(idx)       = value_column
 
+
+       end associate
     end do
 
     do k = 1, ndecomp_pools
-       do fi = 1,num_column
-          i = filter_column(fi)
-          this%decomp_ppools_leached(i,k) = value_column
-          this%decomp_ppools_erode(i,k) = value_column
-          this%decomp_ppools_deposit(i,k) = value_column
-          this%decomp_ppools_yield(i,k) = value_column
-          this%m_decomp_ppools_to_fire(i,k) = value_column
+       do fi = 1,num_column,flux_setvalues_block_size
+          associate (idx => filter_column(fi:min(fi+flux_setvalues_block_size-1,num_column)))
+          this%decomp_ppools_leached(idx,k) = value_column
+          this%decomp_ppools_erode(idx,k) = value_column
+          this%decomp_ppools_deposit(idx,k) = value_column
+          this%decomp_ppools_yield(idx,k) = value_column
+          this%m_decomp_ppools_to_fire(idx,k) = value_column
+
+          end associate
        end do
     end do
 
