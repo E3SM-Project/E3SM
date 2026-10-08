@@ -196,7 +196,7 @@ contains
     use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
-    use elm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size, is_first_step, is_first_restart_step
     use elm_varctl, only :  iulog
 
     !
@@ -231,6 +231,8 @@ contains
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
     real(r8)          :: dt
+    logical           :: weights_updated ! some provider may have changed subgrid weights this step
+    logical           :: crop_updated    ! new annual crop data were applied this step
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
 
@@ -238,6 +240,14 @@ contains
 
     nclumps = get_proc_clumps()
     dt = real(get_step_size(), r8)
+
+    ! Subgrid weights can change in this step only if one of these providers is
+    ! active: transient natural PFTs (interpolated every step), FATES, coupled
+    ! glacier or IAC areas, or new annual crop data (checked below). On the first
+    ! step of a run or restart, always do the full update.
+    weights_updated = get_do_transient_pfts() .or. use_fates .or. use_fates_luh .or. &
+         create_glacier_mec_landunit .or. iac_present .or. &
+         is_first_step() .or. is_first_restart_step()
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -271,7 +281,8 @@ contains
     end if
 
     if (get_do_transient_crops()) then
-       call dyncrop_interp(bounds_proc,crop_vars)
+       call dyncrop_interp(bounds_proc,crop_vars, data_updated=crop_updated)
+       weights_updated = weights_updated .or. crop_updated
     end if
 
     if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
@@ -314,21 +325,29 @@ contains
        ! first time step of the run to update filters to reflect state of CISM
        ! (particularly mask that is past through coupler).
 
-       call t_startf('dyn_wrapup_weights')
-       call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
-       call t_stopf('dyn_wrapup_weights')
+       ! When no weights changed, the weight reconciliation, the diagnostic fields,
+       ! the initialization of new columns and the C, N and P conservation updates
+       ! below have nothing to do: every patch and column keeps its weight, so all
+       ! dwt fluxes are zero (and stay as set by ZeroDWT) and no state changes.
+       if (weights_updated) then
+          call t_startf('dyn_wrapup_weights')
+          call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+          call t_stopf('dyn_wrapup_weights')
+       end if
        call set_new_patch_weights (patch_state_updater ,bounds_clump)
        call set_new_column_weights(column_state_updater,bounds_clump, nc)
 
 
-       call t_startf('dyn_diagnostic_fields')
-       call set_subgrid_diagnostic_fields(bounds_clump)
-       call t_stopf('dyn_diagnostic_fields')
+       if (weights_updated) then
+          call t_startf('dyn_diagnostic_fields')
+          call set_subgrid_diagnostic_fields(bounds_clump)
+          call t_stopf('dyn_diagnostic_fields')
 
-       call t_startf('dyn_init_new_columns')
-       call initialize_new_columns(bounds_clump, &
-            prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars )
-       call t_stopf('dyn_init_new_columns')
+          call t_startf('dyn_init_new_columns')
+          call initialize_new_columns(bounds_clump, &
+               prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars )
+          call t_stopf('dyn_init_new_columns')
+       end if
 
 
        call t_startf('dyn_hwcontent_final')
@@ -339,7 +358,7 @@ contains
             energyflux_vars, dt)
        call t_stopf('dyn_hwcontent_final')
 
-       if (use_cn) then
+       if (use_cn .and. weights_updated) then
           call t_startf('dyn_cnbal_patch')
           call dyn_cnbal_patch(bounds_clump, &
                filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp, &
@@ -365,7 +384,7 @@ contains
 
        end if
 
-       if(use_cn .or. use_fates)then
+       if((use_cn .or. use_fates) .and. weights_updated)then
           call t_startf('dyn_cnbal_column')
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
