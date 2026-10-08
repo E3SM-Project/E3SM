@@ -7,6 +7,7 @@
 #include "share/util/eamxx_timing.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
 #include <filesystem>
 
@@ -14,15 +15,6 @@ namespace scream {
 
 // Anonymous namespace to define a couple of utilities we need below
 namespace {
-
-struct RealsClose {
-  // Find the unique lat/lon values
-  bool operator()(Real a, Real b) const {
-    // To avoid issues with rounding when lat/lon were stored in nc file,
-    // only compare up to 4 digits after decimal point
-    return std::round(a * 10000) < std::round(b * 10000);
-  }
-};
 
 // Check whether two grids store the same GID values on every rank.
 // Fast path: if the dofs_gids fields alias each other (same allocation), return true immediately.
@@ -54,30 +46,6 @@ bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
   return std::equal(h1.data(), h1.data()+n, h2.data());
 }
 
-// Helper fcn to gather the union of sets across MPI ranks
-std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
-{
-  // Step 1: Gather sizes of each local set
-  int my_size = my_vals.size();
-  std::vector<int> count(comm.size());
-  comm.all_gather(&my_size,count.data(),1);
-
-  // Step 2: compute offsets
-  std::vector<int> disp(comm.size(),0);
-  for (int i=1; i<comm.size(); ++i) {
-    disp[i] = disp[i-1] + count[i-1];
-  }
-
-  // Step 3: Gather all values from each rank
-  std::vector<Real> all_vals(disp.back()+count.back());
-  MPI_Allgatherv (my_vals.data(),my_size,ekat::get_mpi_type<Real>(),
-                  all_vals.data(),count.data(),disp.data(),
-                  ekat::get_mpi_type<Real>(),comm.mpi_comm());
-
-  // Step 4: remove duplicates
-  std::set<Real,RealsClose> vals_set(all_vals.begin(),all_vals.end());
-  return std::vector<Real>(vals_set.begin(),vals_set.end());
-}
 } // Anonymous namespace
 
 // -------------------------------------------------------------
@@ -188,20 +156,42 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
 
   auto built_from_src = grid_ncol==ncol_a;
 
-  if (not rect_sizes.empty()) {
-    EKAT_REQUIRE_MSG (rect_sizes.size()==2 and rect_sizes[0]>0 and rect_sizes[1]>0,
-      "[HorizRemapperData] Error! Invalid rectilinear sizes. Expected two positive integers [nx,ny].\n"
+  // Figure out if the tgt grid is structured, i.e., if it can be seen as an (nx,ny) array of
+  // points, with x being the fastest varying index (gid = iy*nx + ix). There are two cases:
+  //  - the user told us the layout [nx,ny]: this is a generic rectilinear grid, with (lat,lon)
+  //    stored as regular (col-dependent) fields, since they may not be separable;
+  //  - no layout was provided, but the map file has dst_grid_rank=2: this is a lat-lon grid,
+  //    with layout from dst_grid_dims=[nlon,nlat]. Here, we store lat/lon as 1d coordinate arrays.
+  std::vector<int> layout = rect_sizes;
+  bool latlon = false;
+  if (layout.empty() and built_from_src and scorpio::has_var(map_file,"yc_b") and
+      scorpio::has_dim(map_file,"dst_grid_rank") and
+      scorpio::get_dimlen(map_file,"dst_grid_rank")==2) {
+    latlon = true;
+    layout.resize(2);
+    const bool was_open = scorpio::is_file_open(map_file);
+    if (not was_open) {
+      scorpio::register_file(map_file,scorpio::Read);
+    }
+    scorpio::read_var(map_file,"dst_grid_dims",layout.data());
+    if (not was_open) {
+      scorpio::release_file(map_file);
+    }
+  }
+  if (not layout.empty()) {
+    EKAT_REQUIRE_MSG (layout.size()==2 and layout[0]>0 and layout[1]>0,
+      "[HorizRemapperData] Error! Invalid structured grid layout. Expected two positive integers [nx,ny].\n"
       " - map file: " + map_file + "\n"
-      " - sizes   : [" + ekat::join(rect_sizes,",") + "]\n");
+      " - layout  : [" + ekat::join(layout,",") + "]\n");
     EKAT_REQUIRE_MSG (built_from_src,
-      "[HorizRemapperData] Error! Rectilinear sizes were provided, but the input grid is the TARGET grid of the map file.\n"
-      "  Rectilinear grids can only be generated as target grids.\n"
+      "[HorizRemapperData] Error! A grid layout was provided, but the input grid is the TARGET grid of the map file.\n"
+      "  Structured grids can only be generated as target grids.\n"
       " - map file: " + map_file + "\n"
       " - grid name: " + grid->name() + "\n");
-    EKAT_REQUIRE_MSG (rect_sizes[0]*rect_sizes[1]==ncol_b,
-      "[HorizRemapperData] Error! Rectilinear sizes are incompatible with the map file tgt grid.\n"
+    EKAT_REQUIRE_MSG (layout[0]*layout[1]==ncol_b,
+      "[HorizRemapperData] Error! The structured grid layout is incompatible with the map file tgt grid.\n"
       " - map file: " + map_file + "\n"
-      " - nx*ny: " + std::to_string(rect_sizes[0]) + "*" + std::to_string(rect_sizes[1]) + "\n"
+      " - nx*ny: " + std::to_string(layout[0]) + "*" + std::to_string(layout[1]) + "\n"
       " - n_b  : " + std::to_string(ncol_b) + "\n");
   }
 
@@ -222,22 +212,12 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
     auto area = gen_grid->create_geometry_data("area",layout2d,sr ).alias("area"+suffix,tag_rename);
     auto gids = gen_grid->get_partitioned_dim_gids().alias("gids",tag_rename);
     read_fields(map_file,{lat,lon,area},gids,comm);
-
-    // If this is a remap TO a lat-lon grid, setup some geo data that our output classes
-    // will use to write to file using (lat,lon) layout rather than (ncol).
-    // Note: dst_grid_rank=2 means lat-lon only if the user did NOT say that the grid is
-    //       a generic rectilinear one.
-    if (built_from_src and rect_sizes.empty() and
-        scorpio::has_dim(map_file,"dst_grid_rank") and
-        scorpio::get_dimlen(map_file,"dst_grid_rank")==2) {
-      setup_latlon_data(gen_grid,map_file);
-    }
   }
 
-  // If this is a remap TO a generic rectilinear grid, setup some geo data that our output
-  // classes will use to write to file using (y,x) layout rather than (ncol)
-  if (not rect_sizes.empty()) {
-    setup_rectilinear_data(gen_grid,rect_sizes);
+  // If this is a remap TO a structured grid, setup some geo data that our output classes
+  // will use to write to file using (lat,lon) or (y,x) layout rather than (ncol)
+  if (not layout.empty()) {
+    setup_structured_data(gen_grid,layout,latlon);
   }
 
   if (built_from_src) {
@@ -422,117 +402,15 @@ create_crs_matrix_structures (std::vector<Triplet>& triplets)
 }
 
 void HorizRemapperData::
-setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
-                  const std::string& map_file)
+setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
+                      const std::vector<int>& layout,
+                      const bool latlon)
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
 
-  // Add lat/lon to the temp grid, and read from map file
-  auto degN = none.rename("degrees_north");
-  auto degE = none.rename("degrees_east");
-
-  // Declare lat/lon and read them from the map file.
-  // WARNING: the vars/dims names are different from what eamxx uses
-  auto pt_lat = grid->get_geometry_data("lat");
-  auto pt_lon = grid->get_geometry_data("lon");
-
-  RealsClose cmp;
-  std::set<Real,RealsClose> my_lats(cmp), my_lons(cmp);
-
-  auto pt_lat_h = pt_lat.get_view<const Real*,Host>();
-  auto pt_lon_h = pt_lon.get_view<const Real*,Host>();
-  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
-    my_lats.insert(pt_lat_h(i));
-    my_lons.insert(pt_lon_h(i));
-  }
-
-  const auto& comm = grid->get_comm();
-  auto lats = allgatherv_vec(std::vector<Real>(my_lats.begin(),my_lats.end()),comm);
-  auto lons = allgatherv_vec(std::vector<Real>(my_lons.begin(),my_lons.end()),comm);
-  int nlat = lats.size();
-  int nlon = lons.size();
-  
-  // Re-create lat/lon geometry data with only lat (or lon) dim
-  grid->delete_geometry_data("lat");
-  grid->delete_geometry_data("lon");
-  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{nlat},{"lat"}),degN);
-  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nlon},{"lon"}),degE);
-  
-  auto lat_h = lat.get_view<Real*,Host>();
-  auto lon_h = lon.get_view<Real*,Host>();
-  std::copy_n(lats.begin(),nlat,lat_h.data());
-  std::copy_n(lons.begin(),nlon,lon_h.data());
-  lat.sync_to_dev();
-  lon.sync_to_dev();
-
-  auto scalar2d = grid->get_2d_scalar_layout();
-  auto lat_idx = grid->create_geometry_data("lat_idx",scalar2d,none,DataType::IntType);
-  auto lon_idx = grid->create_geometry_data("lon_idx",scalar2d,none,DataType::IntType);
-  lat_idx.get_header().set_extra_data("save_as_geo_data",false);
-  lon_idx.get_header().set_extra_data("save_as_geo_data",false);
-
-  auto lat_idx_h = lat_idx.get_view<int*,Host>();
-  auto lon_idx_h = lon_idx.get_view<int*,Host>();
-  constexpr Real tol = 1e-3;
-  const auto lat_beg = lat_h.data();
-  const auto lon_beg = lon_h.data();
-  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
-    auto lat_it = std::upper_bound(lat_beg,lat_beg+nlat,pt_lat_h(i));
-    auto lon_it = std::upper_bound(lon_beg,lon_beg+nlon,pt_lon_h(i));
-    if (lat_it == lat_beg) {
-      lat_idx_h(i) = 0;
-    } else if (lat_it == lat_beg+nlat) {
-      lat_idx_h(i) = std::distance(lat_beg,lat_it)-1;
-    } else {
-      auto prev = std::distance(lat_beg,lat_it)-1;
-      auto next = prev+1;
-      if (std::abs(pt_lat_h(i)- lat_h(prev))<std::abs(pt_lat_h(i)- lat_h(next))) {
-        lat_idx_h(i) = prev;
-      } else {
-        lat_idx_h(i) = next;
-      }
-    }
-    EKAT_REQUIRE_MSG (std::abs(pt_lat_h(i)- lat_h(lat_idx_h(i)))<tol,
-      "[LatLonGrid] Error! Something went wrong when computing lat idx fields.\n"
-      " - curr col idx: " + std::to_string(i) + "\n"
-      " - curr col lat: " + std::to_string(pt_lat_h(i)) + "\n"
-      " - lat idx     : " + std::to_string(lat_idx_h(i)) + "\n"
-      " - lat values  : " + ekat::join(lats,",") + "\n");
-
-    if (lon_it == lon_beg) {
-      lon_idx_h(i) = 0;
-    } else if (lon_it == lon_beg+nlon) {
-      lon_idx_h(i) = std::distance(lon_beg,lon_it)-1;
-    } else {
-      auto prev = std::distance(lon_beg,lon_it)-1;
-      auto next = prev+1;
-      if (std::abs(pt_lon_h(i)- lon_h(prev))<std::abs(pt_lon_h(i)- lon_h(next))) {
-        lon_idx_h(i) = prev;
-      } else {
-        lon_idx_h(i) = next;
-      }
-    }
-    EKAT_REQUIRE_MSG (std::abs(pt_lon_h(i)- lon_h(lon_idx_h(i)))<tol,
-      "[LatLonGrid] Error! Something went wrong when computing lon idx fields.\n"
-      " - curr col idx: " + std::to_string(i) + "\n"
-      " - curr col lon: " + std::to_string(pt_lon_h(i)) + "\n"
-      " - lon idx     : " + std::to_string(lon_idx_h(i)) + "\n"
-      " - lon values  : " + ekat::join(lons,",") + "\n");
-  }
-  lat_idx.sync_to_dev();
-  lon_idx.sync_to_dev();
-}
-
-void HorizRemapperData::
-setup_rectilinear_data(const std::shared_ptr<AbstractGrid>& grid,
-                       const std::vector<int>& rect_sizes)
-{
-  using namespace ShortFieldTagsNames;
-  using namespace ekat::units;
-
-  const int nx = rect_sizes[0];
-  const int ny = rect_sizes[1];
+  const int nx = layout[0];
+  const int ny = layout[1];
 
   // Note: we assume x to be the fastest varying index, so that the position of a
   //       column in the (y,x) array is simply gid-min_gid=iy*nx+ix.
@@ -541,20 +419,75 @@ setup_rectilinear_data(const std::shared_ptr<AbstractGrid>& grid,
   auto y_idx = grid->create_geometry_data("y_idx",scalar2d,none,DataType::IntType);
   x_idx.get_header().set_extra_data("save_as_geo_data",false);
   y_idx.get_header().set_extra_data("save_as_geo_data",false);
-  x_idx.get_header().set_extra_data("rectilinear_extent",nx);
-  y_idx.get_header().set_extra_data("rectilinear_extent",ny);
+  x_idx.get_header().set_extra_data("structured_extent",nx);
+  y_idx.get_header().set_extra_data("structured_extent",ny);
+  x_idx.get_header().set_extra_data("structured_latlon",latlon);
 
+  const int ncols = grid->get_num_local_dofs();
   const auto min_gid = grid->get_global_min_dof_gid();
   auto gids_h  = grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
   auto x_idx_h = x_idx.get_view<int*,Host>();
   auto y_idx_h = y_idx.get_view<int*,Host>();
-  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
+  for (int i=0; i<ncols; ++i) {
     const auto pos = gids_h(i) - min_gid;
     x_idx_h(i) = pos % nx;
     y_idx_h(i) = pos / nx;
   }
   x_idx.sync_to_dev();
   y_idx.sync_to_dev();
+
+  if (not latlon) {
+    // lat/lon remain regular fields over the columns
+    return;
+  }
+
+  // For lat-lon grids, replace the lat/lon geo data with 1d coordinate arrays.
+  // Each rank fills the entries it knows about (the others get a sentinel), and an all-reduce
+  // with MAX gets the global arrays. We also check that lat (lon) is the same on all points of
+  // a given row (column), as required for the grid to be a lat-lon one.
+  const auto& comm = grid->get_comm();
+  auto pt_lat_h = grid->get_geometry_data("lat").get_view<const Real*,Host>();
+  auto pt_lon_h = grid->get_geometry_data("lon").get_view<const Real*,Host>();
+
+  constexpr Real sentinel = std::numeric_limits<Real>::lowest();
+  std::vector<Real> my_lats(ny,sentinel), my_lons(nx,sentinel);
+  for (int i=0; i<ncols; ++i) {
+    my_lats[y_idx_h(i)] = pt_lat_h(i);
+    my_lons[x_idx_h(i)] = pt_lon_h(i);
+  }
+  std::vector<Real> lats(ny), lons(nx);
+  comm.all_reduce(my_lats.data(),lats.data(),ny,MPI_MAX);
+  comm.all_reduce(my_lons.data(),lons.data(),nx,MPI_MAX);
+
+  constexpr Real tol = 1e-3;
+  int bad_pt = -1;
+  for (int i=0; i<ncols and bad_pt<0; ++i) {
+    if (std::abs(pt_lat_h(i)-lats[y_idx_h(i)])>tol or
+        std::abs(pt_lon_h(i)-lons[x_idx_h(i)])>tol) {
+      bad_pt = i;
+    }
+  }
+  // Make sure all ranks throw if any rank found an issue
+  int any_bad = bad_pt>=0 ? 1 : 0;
+  comm.all_reduce(&any_bad,1,MPI_MAX);
+  EKAT_REQUIRE_MSG (any_bad==0,
+    "[HorizRemapperData] Error! The tgt grid of a map file with dst_grid_rank=2 is not a lat-lon grid.\n"
+    "  Lat (lon) must be the same for all points with the same y (x) index.\n"
+    "  If the grid is a generic rectilinear grid, provide its layout [nx,ny] in the output yaml file.\n"
+    " - grid layout [nx,ny]: [" + std::to_string(nx) + "," + std::to_string(ny) + "]\n"
+    + (bad_pt>=0 ? (" - (this rank) first bad col lat/lon: " + std::to_string(pt_lat_h(bad_pt)) + ","
+                    + std::to_string(pt_lon_h(bad_pt)) + "\n") : std::string("")));
+
+  auto degN = none.rename("degrees_north");
+  auto degE = none.rename("degrees_east");
+  grid->delete_geometry_data("lat");
+  grid->delete_geometry_data("lon");
+  auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{ny},{"lat"}),degN);
+  auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nx},{"lon"}),degE);
+  std::copy_n(lats.begin(),ny,lat.get_view<Real*,Host>().data());
+  std::copy_n(lons.begin(),nx,lon.get_view<Real*,Host>().data());
+  lat.sync_to_dev();
+  lon.sync_to_dev();
 }
 
 std::shared_ptr<const HorizRemapperData>

@@ -21,6 +21,10 @@ Real smooth_fn (const Real lat, const Real lon) {
   return std::cos(lat*pi/180)*std::cos(lon*pi/180);
 }
 
+bool x_idx_is_latlon (const AbstractGrid& grid) {
+  return grid.get_geometry_data("x_idx").get_header().get_extra_data<bool>("structured_latlon");
+}
+
 } // anonymous namespace
 
 TEST_CASE ("rectilinear_remapper")
@@ -87,6 +91,8 @@ TEST_CASE ("rectilinear_remapper")
     // Invalid sizes
     REQUIRE_THROWS (HorizontalRemapper(src_grid,map_file,false,{nx}));
     REQUIRE_THROWS (HorizontalRemapper(src_grid,map_file,false,{-nx,-ny}));
+    // The map file has dst_grid_rank=2, but the grid is not lat-lon, so layout is mandatory
+    REQUIRE_THROWS (HorizontalRemapper(src_grid,map_file,false));
   }
 
   SECTION ("inconsistent_sizes_across_remappers") {
@@ -104,8 +110,7 @@ TEST_CASE ("rectilinear_remapper")
     REQUIRE (tgt_grid->get_num_global_dofs()==nx*ny);
     REQUIRE (tgt_grid->has_geometry_data("x_idx"));
     REQUIRE (tgt_grid->has_geometry_data("y_idx"));
-    REQUIRE (not tgt_grid->has_geometry_data("lat_idx"));
-    REQUIRE (not tgt_grid->has_geometry_data("lon_idx"));
+    REQUIRE (not x_idx_is_latlon(*tgt_grid));
 
     // lat/lon remain regular col-dependent fields (not 1d coordinate arrays)
     REQUIRE (tgt_grid->has_geometry_data("lat"));
@@ -115,8 +120,8 @@ TEST_CASE ("rectilinear_remapper")
 
     auto x_idx = tgt_grid->get_geometry_data("x_idx");
     auto y_idx = tgt_grid->get_geometry_data("y_idx");
-    REQUIRE (x_idx.get_header().get_extra_data<int>("rectilinear_extent")==nx);
-    REQUIRE (y_idx.get_header().get_extra_data<int>("rectilinear_extent")==ny);
+    REQUIRE (x_idx.get_header().get_extra_data<int>("structured_extent")==nx);
+    REQUIRE (y_idx.get_header().get_extra_data<int>("structured_extent")==ny);
 
     // Check x_idx/y_idx: x is the fastest varying index
     const int nl_tgt = tgt_grid->get_num_local_dofs();
@@ -151,6 +156,46 @@ TEST_CASE ("rectilinear_remapper")
       for (int k=0; k<nlevs; ++k) {
         REQUIRE (std::abs(t3d_h(i,k)-(k+1)*exact)<(k+1)*tol);
       }
+    }
+  }
+
+  SECTION ("latlon") {
+    // A lat-lon map file (dst_grid_rank=2) needs no layout. The layout comes from dst_grid_dims=[nlon,nlat]
+    const std::string ll_map_file = ts.params.at("latlon-map-file");
+    const int nlon = 20;
+    const int nlat = 10;
+    REQUIRE (scorpio::get_dimlen(ll_map_file,"n_a")==ncols_src);
+    REQUIRE (scorpio::get_dimlen(ll_map_file,"n_b")==nlon*nlat);
+
+    HorizontalRemapper remap(src_grid,ll_map_file);
+    auto tgt_grid = remap.get_tgt_grid();
+    REQUIRE (tgt_grid->get_num_global_dofs()==nlon*nlat);
+    REQUIRE (tgt_grid->has_geometry_data("x_idx"));
+    REQUIRE (x_idx_is_latlon(*tgt_grid));
+
+    // lat/lon are 1d coordinate arrays, following the order of the points in the map file
+    auto lat_f = tgt_grid->get_geometry_data("lat");
+    auto lon_f = tgt_grid->get_geometry_data("lon");
+    REQUIRE (lat_f.get_header().get_identifier().get_layout().size()==nlat);
+    REQUIRE (lon_f.get_header().get_identifier().get_layout().size()==nlon);
+    auto lat = lat_f.get_view<const Real*,Host>();
+    auto lon = lon_f.get_view<const Real*,Host>();
+    REQUIRE (std::abs(lat(0)+78.1216682)<1e-4);
+    REQUIRE (std::abs(lon(0)-9)<1e-4);
+    for (int i=1; i<nlat; ++i) {
+      REQUIRE (lat(i)>lat(i-1));
+    }
+    for (int i=1; i<nlon; ++i) {
+      REQUIRE (lon(i)>lon(i-1));
+    }
+
+    // Check x_idx/y_idx: x is the fastest varying index
+    auto gids = tgt_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+    auto xi = tgt_grid->get_geometry_data("x_idx").get_view<const int*,Host>();
+    auto yi = tgt_grid->get_geometry_data("y_idx").get_view<const int*,Host>();
+    const auto min_gid = tgt_grid->get_global_min_dof_gid();
+    for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
+      REQUIRE (yi(i)*nlon+xi(i)==gids(i)-min_gid);
     }
   }
 

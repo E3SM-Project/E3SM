@@ -179,8 +179,8 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   //   - online remapping which is setup using the create_remapper function
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  EKAT_REQUIRE_MSG (use_horiz_remap_from_file or not params.isParameter("hrrr_map_sizes"),
-      "[AtmosphereOutput] Error! Parameter 'hrrr_map_sizes' requires parameter 'horiz_remap_file'.\n"
+  EKAT_REQUIRE_MSG (use_horiz_remap_from_file or not params.isParameter("horiz_remap_layout"),
+      "[AtmosphereOutput] Error! Parameter 'horiz_remap_layout' requires parameter 'horiz_remap_file'.\n"
       "  - stream name: " + m_stream_name + "\n");
   if (change_data_layout) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
@@ -272,10 +272,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       // If the map file tgt grid is a generic rectilinear grid (as opposed to a lat-lon one),
       // the user must tell us the size of the grid along the x and y directions
       std::vector<int> rect_sizes;
-      if (params.isParameter("hrrr_map_sizes")) {
-        rect_sizes = params.get<std::vector<int>>("hrrr_map_sizes");
+      if (params.isParameter("horiz_remap_layout")) {
+        rect_sizes = params.get<std::vector<int>>("horiz_remap_layout");
         EKAT_REQUIRE_MSG (rect_sizes.size()==2,
-            "[AtmosphereOutput] Error! Parameter 'hrrr_map_sizes' must be a list of 2 integers: [nx,ny].\n"
+            "[AtmosphereOutput] Error! Parameter 'horiz_remap_layout' must be a list of 2 integers: [nx,ny].\n"
             "  - stream name: " + m_stream_name + "\n"
             "  - input value: [" + ekat::join(rect_sizes,",") + "]\n");
       }
@@ -353,11 +353,12 @@ void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   m_io_grid  = fm_after_hr->get_grid();
-  m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
-  m_rectilinear_output = m_io_grid->has_geometry_data("x_idx");
-  EKAT_REQUIRE_MSG (not (m_latlon_output and m_rectilinear_output),
-      "Error! The io grid has geo data for both lat-lon and rectilinear output.\n"
-      "  - io grid name: " + m_io_grid->name() + "\n");
+  // Structured grids (lat-lon or generic rectilinear) are marked by x_idx/y_idx geo data,
+  // set by the horizontal remapper.
+  const bool structured_output = m_io_grid->has_geometry_data("x_idx");
+  m_latlon_output = structured_output and
+      m_io_grid->get_geometry_data("x_idx").get_header().get_extra_data<bool>("structured_latlon");
+  m_rectilinear_output = structured_output and not m_latlon_output;
 
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -981,8 +982,8 @@ register_variables(const std::string& filename,
 
 void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
-  if (m_rectilinear_output) {
-    // We need to find out which (y,x) offsets we own
+  if (m_latlon_output or m_rectilinear_output) {
+    // We need to find out which (lat,lon)/(y,x) offsets we own
     auto x_idx_h = m_io_grid->get_geometry_data("x_idx").get_view<const int*,Host>();
     auto y_idx_h = m_io_grid->get_geometry_data("y_idx").get_view<const int*,Host>();
     int ncols = m_io_grid->get_num_local_dofs();
@@ -993,17 +994,6 @@ void AtmosphereOutput::set_decompositions(const std::string& filename)
       offsets[i] = y_idx_h(i)*nx + x_idx_h(i);
     }
     scorpio::set_dims_decomp(filename,{dims[0].first,dims[1].first},offsets);
-  } else if (m_latlon_output) {
-    // We need to find out which (lat,lon) offsets we own
-    auto lat_idx_h = m_io_grid->get_geometry_data("lat_idx").get_view<const int*,Host>();
-    auto lon_idx_h = m_io_grid->get_geometry_data("lon_idx").get_view<const int*,Host>();
-    int ncols = m_io_grid->get_num_local_dofs();
-    int nlon = m_io_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size();
-    std::vector<scorpio::offset_t> offsets(ncols);
-    for (int i=0; i<ncols; ++i) {
-      offsets[i] = lat_idx_h(i)*nlon + lon_idx_h(i);
-    }
-    scorpio::set_dims_decomp(filename,{"lat","lon"},offsets);
   } else {
     if (m_decomp_dimname=="")
       return;
@@ -1367,14 +1357,17 @@ process_requested_fields()
 std::vector<std::pair<std::string,int>> AtmosphereOutput::
 get_structured_col_dims () const
 {
-  if (m_rectilinear_output) {
-    const int nx = m_io_grid->get_geometry_data("x_idx").get_header().get_extra_data<int>("rectilinear_extent");
-    const int ny = m_io_grid->get_geometry_data("y_idx").get_header().get_extra_data<int>("rectilinear_extent");
-    return { {"y",ny}, {"x",nx} };
-  } else if (m_latlon_output) {
-    const int nlat = m_io_grid->get_geometry_data("lat").get_header().get_identifier().get_layout().size();
-    const int nlon = m_io_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size();
-    return { {"lat",nlat}, {"lon",nlon} };
+  if (m_latlon_output or m_rectilinear_output) {
+    // Note: the first dim is the slowest varying one (y or lat)
+    const auto& x_hdr = m_io_grid->get_geometry_data("x_idx").get_header();
+    const auto& y_hdr = m_io_grid->get_geometry_data("y_idx").get_header();
+    const int nx = x_hdr.get_extra_data<int>("structured_extent");
+    const int ny = y_hdr.get_extra_data<int>("structured_extent");
+    if (m_latlon_output) {
+      return { {"lat",ny}, {"lon",nx} };
+    } else {
+      return { {"y",ny}, {"x",nx} };
+    }
   }
   EKAT_ERROR_MSG ("[AtmosphereOutput::get_structured_col_dims] Error! Output is neither lat-lon nor rectilinear.\n");
 }

@@ -109,7 +109,7 @@ TEST_CASE("io_hrrr")
   params.set<std::string>("horiz_remap_file",map_file);
 
   // The tgt grid in the map file is rectilinear, but NOT lat-lon (dst_grid_rank=2 does not mean lat-lon here)
-  params.set<std::vector<int>>("hrrr_map_sizes",{nx,ny});
+  params.set<std::vector<int>>("horiz_remap_layout",{nx,ny});
 
   om.initialize(comm,params,t0,false);
   om.setup(fm,{src_grid->name()});

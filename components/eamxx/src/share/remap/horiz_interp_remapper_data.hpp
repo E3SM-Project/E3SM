@@ -46,6 +46,8 @@ public:
   // is a generic 2d rectilinear grid: the nx*ny tgt points are laid out with x
   // as the fastest-varying index (gid = iy*nx + ix), but (lat,lon) are NOT
   // assumed to be separable (so nx need not be nlon, and ny need not be nlat).
+  // If rect_sizes is empty but the map file has dst_grid_rank=2, the tgt grid is a lat-lon grid,
+  // with nlon,nlat=dst_grid_dims, and lat/lon stored as 1d coordinate arrays.
   void build (const std::shared_ptr<const AbstractGrid>& grid,
               const std::string& map_file,
               const std::vector<int>& rect_sizes = {});
@@ -67,7 +69,7 @@ public:
   // the remap is fine->coarse or coarse->fine
   std::shared_ptr<AbstractGrid> m_overlap_grid;
 
-  // [nx,ny] if the generated tgt grid is rectilinear. Empty otherwise.
+  // [nx,ny] if the user declared the generated tgt grid as a generic rectilinear grid. Empty otherwise.
   std::vector<int> m_rect_sizes;
 private:
 
@@ -78,14 +80,12 @@ private:
   // its local part of the mat-vec product
   std::vector<Triplet>  get_my_triplets (const std::vector<Triplet>& triplets);
 
-  void setup_latlon_data(const std::shared_ptr<AbstractGrid>& grid,
-                         const std::string& map_file);
-
-  // Add geo data (x_idx, y_idx) to the grid, so that output can write it
-  // using a (y,x) layout rather than (ncol). The ints rect_sizes=[nx,ny] are stored
-  // as extra data in the geo fields headers.
-  void setup_rectilinear_data(const std::shared_ptr<AbstractGrid>& grid,
-                              const std::vector<int>& rect_sizes);
+  // Add geo data (x_idx, y_idx) to the grid, so that output can write it with (y,x) or (lat,lon)
+  // layout rather than (ncol). The ints layout=[nx,ny] are stored as extra data in the x_idx/y_idx fields.
+  // If latlon=true, replace lat/lon with 1d arrays (and check that they are separable).
+  void setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
+                             const std::vector<int>& layout,
+                             const bool latlon);
 
   void create_ov_grid (const std::vector<Triplet>& triplets);
 
