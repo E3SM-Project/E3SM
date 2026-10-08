@@ -195,7 +195,7 @@ contains
     use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
-    use elm_time_manager , only : get_step_size
+    use elm_time_manager , only : get_step_size, is_first_step, is_first_restart_step
     use elm_varctl, only :  iulog
 
     !
@@ -230,6 +230,7 @@ contains
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
     real(r8)          :: dt
+    logical           :: weights_updated, crop_updated
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
 
@@ -237,6 +238,11 @@ contains
 
     nclumps = get_proc_clumps()
     dt = real(get_step_size(), r8)
+    ! Natural PFT interpolation and coupled area providers can change weights
+    ! every step. Always rebuild filters on the first initial/restart step.
+    weights_updated = get_do_transient_pfts() .or. use_fates .or. &
+         create_glacier_mec_landunit .or. iac_present .or. &
+         is_first_step() .or. is_first_restart_step()
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -266,7 +272,8 @@ contains
     end if
 
     if (get_do_transient_crops()) then
-       call dyncrop_interp(bounds_proc,crop_vars)
+       call dyncrop_interp(bounds_proc,crop_vars, data_updated=crop_updated)
+       weights_updated = weights_updated .or. crop_updated
     end if
 
     if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_hlmlanduse) then
@@ -309,15 +316,20 @@ contains
        ! first time step of the run to update filters to reflect state of CISM
        ! (particularly mask that is past through coupler).
 
-       call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+       if (weights_updated) then
+          call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
+       end if
+
+       ! Keep conservation bookkeeping and its per-step flux resets active even
+       ! when weights are unchanged; only the topology reconciliation is skipped.
        call set_new_patch_weights (patch_state_updater ,bounds_clump)
        call set_new_column_weights(column_state_updater,bounds_clump, nc)
 
-
-       call set_subgrid_diagnostic_fields(bounds_clump)
-
-       call initialize_new_columns(bounds_clump, &
-            prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars )
+       if (weights_updated) then
+          call set_subgrid_diagnostic_fields(bounds_clump)
+          call initialize_new_columns(bounds_clump, &
+               prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars)
+       end if
 
 
        call dyn_hwcontent_final(bounds_clump, &
