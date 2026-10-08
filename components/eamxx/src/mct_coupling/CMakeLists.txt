@@ -42,6 +42,7 @@ set (SCREAM_LIBS
      iop_forcing
      nudging
      tms
+     rayleigh_friction
 )
 
 # ZM is not always on yet

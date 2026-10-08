@@ -696,12 +696,19 @@ be lost if SCREAM_HACK_XML is not enabled.
     <!-- Turbulent Mountain Stress -->
     <tms inherit="atm_proc_base"/>
 
+    <!-- Rayleigh Friction -->
+    <rayleigh_friction inherit="atm_proc_base">
+      <rayleigh_friction_vertical_level type="integer" doc="Vertical level (1-based, 1=model top) at which the Rayleigh friction profile is centered">2</rayleigh_friction_vertical_level>
+      <rayleigh_friction_range type="real" doc="Width of the Rayleigh friction profile in levels. If 0, set to (rayleigh_friction_vertical_level-1)/2">0.0</rayleigh_friction_range>
+      <rayleigh_friction_decay_time type="real" doc="Approximate Rayleigh friction decay time at model top [days]. If 0, no Rayleigh friction is applied">5.0</rayleigh_friction_decay_time>
+    </rayleigh_friction>
+
     <physics inherit="atm_proc_group">
-      <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%BETA.*">zm,mac_aero_mic,spc,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%ZM.*">zm,mac_aero_mic,rrtmgp</atm_procs_list>
-      <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
-      <atm_procs_list COMPSET=".*DP-EAMxx">iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list>rayleigh_friction,mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%BETA.*">rayleigh_friction,zm,mac_aero_mic,spc,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%ZM.*">rayleigh_friction,zm,mac_aero_mic,rrtmgp</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM%MAM4xx.*">rayleigh_friction,mam4_constituent_fluxes,mac_aero_mic,mam4_wetscav,mam4_optics,rrtmgp,mam4_srf_online_emiss,mam4_aero_microphys,mam4_drydep</atm_procs_list>
+      <atm_procs_list COMPSET=".*DP-EAMxx">rayleigh_friction,iop_forcing,mac_aero_mic,rrtmgp</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
 
