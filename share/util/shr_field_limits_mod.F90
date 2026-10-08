@@ -12,12 +12,13 @@ module shr_field_limits_mod
   private
 
   character(len=*), parameter, public :: shr_field_limits_version = "0.1.0"
-  integer, parameter, public :: shr_field_limits_nflds = 37
+  integer, parameter, public :: shr_field_limits_nflds = 322
 
   type, public :: shr_field_limit_type
-     character(len=32) :: name            ! coupler field name
+     character(len=32) :: name            ! coupler field name; 'base*' matches base followed by digits
      character(len=3)  :: component       ! component that sends it
-     character(len=16) :: units
+     character(len=24) :: units
+     character(len=10) :: status          ! 'limited', 'unbounded' or 'unreviewed'
      logical           :: has_min         ! false: no lower limit
      real(r8)          :: min_value
      logical           :: min_inclusive
@@ -27,43 +28,337 @@ module shr_field_limits_mod
      character(len=32) :: where_positive  ! check only where this field > 0
   end type shr_field_limit_type
 
-  type(shr_field_limit_type), parameter, public :: shr_field_limits(shr_field_limits_nflds) = [ &
-       shr_field_limit_type('Sa_tbot', 'atm', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sa_ptem', 'atm', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sa_pbot', 'atm', 'Pa', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sa_pslv', 'atm', 'Pa', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sa_dens', 'atm', 'kg m-3', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sa_shum', 'atm', 'kg kg-1', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_rainc', 'atm', 'kg m-2 s-1', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_rainl', 'atm', 'kg m-2 s-1', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_snowc', 'atm', 'kg m-2 s-1', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_snowl', 'atm', 'kg m-2 s-1', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_swvdr', 'atm', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_swndr', 'atm', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_swvdf', 'atm', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_swndf', 'atm', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_swnet', 'atm', 'W m-2', .true., -1e-10_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faxa_lwdn', 'atm', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_t', 'lnd', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_tref', 'lnd', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_avsdr', 'lnd', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_anidr', 'lnd', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_avsdf', 'lnd', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_anidf', 'lnd', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
-       shr_field_limit_type('Sl_snowh', 'lnd', 'm', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Fall_swnet', 'lnd', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Fall_lwup', 'lnd', 'W m-2', .false., 0.0_r8, .true., .true., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Si_t', 'ice', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., 'Si_ifrac'), &
-       shr_field_limit_type('Si_tref', 'ice', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., 'Si_ifrac'), &
-       shr_field_limit_type('Si_avsdr', 'ice', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
-       shr_field_limit_type('Si_anidr', 'ice', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
-       shr_field_limit_type('Si_avsdf', 'ice', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
-       shr_field_limit_type('Si_anidf', 'ice', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
-       shr_field_limit_type('Si_ifrac', 'ice', '1', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
-       shr_field_limit_type('Si_snowh', 'ice', 'm', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faii_swnet', 'ice', 'W m-2', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('Faii_lwup', 'ice', 'W m-2', .false., 0.0_r8, .true., .true., 0.0_r8, .true., ''), &
-       shr_field_limit_type('So_t', 'ocn', 'K', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
-       shr_field_limit_type('So_frac_h2oocn', 'ocn', '-', .true., 0.0_r8, .true., .true., 1.0_r8, .true., '') ]
+  type(shr_field_limit_type), parameter :: limits1(100) = [ &
+       shr_field_limit_type('Sa_tbot', 'atm', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_ptem', 'atm', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_pbot', 'atm', 'Pa', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_pslv', 'atm', 'Pa', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_dens', 'atm', 'kg m-3', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_shum', 'atm', 'kg kg-1', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainc', 'atm', 'kg m-2 s-1', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainl', 'atm', 'kg m-2 s-1', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowc', 'atm', 'kg m-2 s-1', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowl', 'atm', 'kg m-2 s-1', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_swvdr', 'atm', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_swndr', 'atm', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_swvdf', 'atm', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_swndf', 'atm', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_swnet', 'atm', 'W m-2', 'limited', .true., -1e-10_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_lwdn', 'atm', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_z', 'atm', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_topo', 'atm', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_u', 'atm', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_v', 'atm', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_wsresp', 'atm', 'm s-1 Pa-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_tau_est', 'atm', 'Pa', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_ugust', 'atm', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_uovern', 'atm', 'Unitless', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_bcphidry', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_bcphodry', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_bcphiwet', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_ocphidry', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_ocphodry', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_ocphiwet', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstwet1', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstwet2', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstwet3', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstwet4', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstdry1', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstdry2', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstdry3', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_dstdry4', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_co2prog', 'atm', '1e-6 mol/mol', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_co2diag', 'atm', '1e-6 mol/mol', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_shum_16O', 'atm', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_shum_HDO', 'atm', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sa_shum_18O', 'atm', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainc_16O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainl_16O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainc_18O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainl_18O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainc_HDO', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_rainl_HDO', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowc_16O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowl_16O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowc_18O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowl_18O', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowc_HDO', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_snowl_HDO', 'atm', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_nhx', 'atm', 'kg(N)/m2/sec', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faxa_noy', 'atm', 'kg(N)/m2/sec', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_t', 'lnd', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_tref', 'lnd', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_avsdr', 'lnd', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_anidr', 'lnd', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_avsdf', 'lnd', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_anidf', 'lnd', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_snowh', 'lnd', 'm', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_swnet', 'lnd', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_lwup', 'lnd', 'W m-2', 'limited', .false., 0.0_r8, .true., .true., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_qref', 'lnd', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_fv', 'lnd', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_ram1', 'lnd', 's/m', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_u10', 'lnd', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_u10withgusts', 'lnd', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_taux', 'lnd', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_tauy', 'lnd', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_lat', 'lnd', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_sen', 'lnd', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_evap', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_wslake', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_flxdst1', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_flxdst2', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_flxdst3', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_flxdst4', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofsur', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofgwl', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofsub', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofdto', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofi', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_demand', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_Tqsur', 'lnd', 'Kelvin', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_Tqsub', 'lnd', 'Kelvin', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('coszen_str', 'lnd', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofmud', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_inundinf', 'lnd', 'mm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_forc_hdm', 'lnd', 'ind/km2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_hdd', 'lnd', 'K-days', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_cdd', 'lnd', 'K-days', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_fco2_lnd', 'lnd', 'moles m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_snowh_16O', 'lnd', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_snowh_18O', 'lnd', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_snowh_HDO', 'lnd', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_qref_16O', 'lnd', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., '') ]
+
+  type(shr_field_limit_type), parameter :: limits2(100) = [ &
+       shr_field_limit_type('Sl_qref_HDO', 'lnd', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_qref_18O', 'lnd', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_evap_16O', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_evap_HDO', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_evap_18O', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofi_16O', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofi_18O', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofi_HDO', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofl_16O', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofl_18O', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrl_rofl_HDO', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_dd*', 'lnd', 'cm/sec', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_voc*', 'lnd', 'molecules/m2/sec', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_fire*', 'lnd', 'kg/m2/sec', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_fztop', 'lnd', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fall_FANNH3', 'lnd', 'gN/m2/sec', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flgl_qice*', 'lnd', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_tsrf*', 'lnd', 'deg C', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_topo*', 'lnd', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_hr_pft*', 'lnd', 'gC/m^2/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_npp_pft*', 'lnd', 'gC/m^2/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sl_pftwgt_pft*', 'lnd', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_t', 'ice', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., 'Si_ifrac'), &
+       shr_field_limit_type('Si_tref', 'ice', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., 'Si_ifrac'), &
+       shr_field_limit_type('Si_avsdr', 'ice', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
+       shr_field_limit_type('Si_anidr', 'ice', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
+       shr_field_limit_type('Si_avsdf', 'ice', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
+       shr_field_limit_type('Si_anidf', 'ice', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., 'Si_ifrac'), &
+       shr_field_limit_type('Si_ifrac', 'ice', '1', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
+       shr_field_limit_type('Si_snowh', 'ice', 'm', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_swnet', 'ice', 'W m-2', 'limited', .true., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_lwup', 'ice', 'W m-2', 'limited', .false., 0.0_r8, .true., .true., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_swpen', 'ice', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_qref', 'ice', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_u10', 'ice', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_u10withgusts', 'ice', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_taux', 'ice', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_taux', 'ice', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_tauy', 'ice', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_tauy', 'ice', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_lat', 'ice', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_sen', 'ice', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_evap', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_bpress', 'ice', 'Pa', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_melth', 'ice', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_meltw', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('PFioi_bergh', 'ice', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('PFioi_bergw', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_salt', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_bcphi', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_bcpho', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_flxdst', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_algae1', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_algae2', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_algae3', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_doc1', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_doc2', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_doc3', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_dic1', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_don1', 'ice', 'mmol N m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_no3', 'ice', 'mmol N m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_sio3', 'ice', 'mmol Si m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_nh4', 'ice', 'mmol N m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_dms', 'ice', 'mmol S m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_dmspp', 'ice', 'mmol S m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_dmspd', 'ice', 'mmol S m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_docr', 'ice', 'mmol C m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_fep1', 'ice', 'umol Fe m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_fep2', 'ice', 'umol Fe m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_fed1', 'ice', 'umol Fe m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_fed2', 'ice', 'umol Fe m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_dust1', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_ithick', 'ice', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_ifloe', 'ice', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_qref_16O', 'ice', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_qref_HDO', 'ice', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_qref_18O', 'ice', 'kg kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_evap_16O', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_evap_HDO', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faii_evap_18O', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_meltw_16O', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_meltw_18O', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioi_meltw_HDO', 'ice', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Si_ifrac_*', 'ice', '1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('PFioi_swpen_ifrac_*', 'ice', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_t', 'ocn', 'K', 'limited', .true., 0.0_r8, .false., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_frac_h2oocn', 'ocn', '-', 'limited', .true., 0.0_r8, .true., .true., 1.0_r8, .true., ''), &
+       shr_field_limit_type('Faoo_h2otemp', 'ocn', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioo_q', 'ocn', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fioo_frazil', 'ocn', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_q_li', 'ocn', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_frazil_li', 'ocn', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_ismw', 'ocn', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_ismh', 'ocn', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_rrofl', 'ocn', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_rrofi', 'ocn', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Foxo_rrofih', 'ocn', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_s', 'ocn', 'g kg-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_u', 'ocn', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_v', 'ocn', 'm s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., '') ]
+
+  type(shr_field_limit_type), parameter :: limits3(100) = [ &
+       shr_field_limit_type('So_dhdx', 'ocn', 'm m-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_ssh', 'ocn', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_dhdy', 'ocn', 'm m-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_bldepth', 'ocn', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_fswpen', 'ocn', '1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_algae1', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_algae2', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_algae3', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_doc1', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_doc2', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_doc3', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_dic1', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_don1', 'ocn', 'mmol N m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_no3', 'ocn', 'mmol N m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_sio3', 'ocn', 'mmol Si m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_nh4', 'ocn', 'mmol N m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_dms', 'ocn', 'mmol S m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_dmsp', 'ocn', 'mmol S m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_docr', 'ocn', 'mmol C m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_fep1', 'ocn', 'umol Fe m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_fep2', 'ocn', 'umol Fe m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_fed1', 'ocn', 'umol Fe m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_fed2', 'ocn', 'umol Fe m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_zaer1', 'ocn', 'kg m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_zaer2', 'ocn', 'kg m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_zaer3', 'ocn', 'kg m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_zaer4', 'ocn', 'kg m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_zaer5', 'ocn', 'kg m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_zaer6', 'ocn', 'kg m-3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_blt', 'ocn', 'C', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_bls', 'ocn', 'psu', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_htv', 'ocn', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_stv', 'ocn', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_rhoeff', 'ocn', 'Pa', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faoo_fco2_ocn', 'ocn', 'moles m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faoo_fdms_ocn', 'ocn', 'moles m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_roce_16O', 'ocn', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_roce_18O', 'ocn', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_roce_HDO', 'ocn', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_tf3d*', 'ocn', 'C', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('So_tf3d_mask*', 'ocn', 'none', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofl', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofi', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Firr_rofi', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_flood', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_volr', 'rof', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_volrmch', 'rof', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_supply', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_deficit', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sr_h2orof', 'rof', 'mm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sr_frac_h2orof', 'rof', '1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDIN', 'rof', 'kg N per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDIP', 'rof', 'kg P per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDON', 'rof', 'kg N per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDOP', 'rof', 'kg P per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDOC', 'rof', 'kg C per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofPP', 'rof', 'kg P per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDSi', 'rof', 'kg Si per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofPOC', 'rof', 'kg C per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofPN', 'rof', 'kg N per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofDIC', 'rof', 'kg C per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofFe', 'rof', 'kg Fe per kg water', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofl_16O', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofl_18O', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofl_HDO', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofi_16O', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofi_18O', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Forr_rofi_HDO', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_flood_16O', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_flood_18O', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_flood_HDO', 'rof', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_volr_16O', 'rof', 'm3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_volr_18O', 'rof', 'm3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flrr_volr_HDO', 'rof', 'm3', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fogg_rofl', 'glc', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fogg_rofi', 'glc', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Figg_rofi', 'glc', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_icemask', 'glc', '1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_icemask_coupled_fluxes', 'glc', '1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_ice_covered', 'glc', '1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_topo', 'glc', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Flgg_hflx', 'glc', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fogx_qicelo', 'glc', 'kg m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fogx_qiceho', 'glc', 'W m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_blit', 'glc', 'C', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_blis', 'glc', 'psu', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_lithop', 'glc', 'Pa', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_icemask_grounded', 'glc', 'unitless', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_icemask_floating', 'glc', 'unitless', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_tbot', 'glc', 'C', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sg_dztbot', 'glc', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_Hs', 'wav', 'm', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_ustokes_wavenumber_1', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_vstokes_wavenumber_1', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_ustokes_wavenumber_2', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_vstokes_wavenumber_2', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_ustokes_wavenumber_3', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_vstokes_wavenumber_3', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_ustokes_wavenumber_4', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_vstokes_wavenumber_4', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., '') ]
+
+  type(shr_field_limit_type), parameter :: limits4(22) = [ &
+       shr_field_limit_type('Sw_ustokes_wavenumber_5', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_vstokes_wavenumber_5', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_ustokes_wavenumber_6', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_vstokes_wavenumber_6', 'wav', 'm/s', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_Fp', 'wav', 's-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_Dp', 'wav', 'deg', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faww_Tawx', 'wav', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faww_Tawy', 'wav', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fwow_Twox', 'wav', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fwow_Twoy', 'wav', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faow_Tocx', 'wav', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Faow_Tocy', 'wav', 'N m-2', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_Charn', 'wav', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_Ustar', 'wav', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_Z0', 'wav', '', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sw_wavespec*', 'wav', 'm2/Hz', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sz_pct_pft*', 'iac', 'percent', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sz_pct_pft_prev*', 'iac', 'percent', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Sz_harvest_frac*', 'iac', 'fraction', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fazz_co2sfc_mon*', 'iac', 'moles m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fazz_co2airlo_mon*', 'iac', 'moles m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., ''), &
+       shr_field_limit_type('Fazz_co2airhi_mon*', 'iac', 'moles m-2 s-1', 'unreviewed', .false., 0.0_r8, .true., .false., 0.0_r8, .true., '') ]
+
+  type(shr_field_limit_type), parameter, public :: shr_field_limits(shr_field_limits_nflds) = &
+       [ limits1, limits2, limits3, limits4 ]
 
 end module shr_field_limits_mod
