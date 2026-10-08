@@ -14,7 +14,6 @@ module lnd2atmMod
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit, use_fan
   use elm_varctl           , only : use_lnd_rof_two_way, use_finetop_rad
-  use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
   use subgridAveMod        , only : p2g, c2g, p2t  
@@ -445,7 +444,7 @@ contains
 
 
     ! ch4 flux
-    if (use_lch4 .and. (.not. is_active_betr_bgc)) then
+    if (use_lch4) then
        call c2g( bounds,     &
             ch4_surf_flux_tot_col(bounds%begc:bounds%endc) , &
             flux_ch4_grc         (bounds%begg:bounds%endg) , &

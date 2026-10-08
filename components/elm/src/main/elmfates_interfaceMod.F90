@@ -2458,7 +2458,7 @@ contains
          bsw         => soilstate_inst%bsw_col              , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
          eff_porosity => soilstate_inst%eff_porosity_col    , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice
          t_soisno     => col_es%t_soisno                    , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
-         h2osoi_liqvol => col_ws%h2osoi_liqvol , & ! Input: [real(r8) (:,:) ]  liquid volumetric moisture, will be used for BeTR
+         h2osoi_liqvol => col_ws%h2osoi_liqvol , & ! Input: [real(r8) (:,:) ]  liquid volumetric moisture
          btran       => energyflux_inst%btran_patch         , & ! Output: [real(r8) (:)   ]  transpiration wetness factor (0 to 1)
          btran2       => energyflux_inst%btran2_patch       , & ! Output: [real(r8) (:)   ]
          rresis      => energyflux_inst%rresis_patch        , & ! Output: [real(r8) (:,:) ]  root resistance by layer (0-1)  (nlevgrnd)

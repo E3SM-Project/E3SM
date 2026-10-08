@@ -82,7 +82,6 @@ SeaLevelModel   src/SeaLevelModel               author              MIT
 Land            under components/elm/src
 -----------     ------------------------
 FATES           external_models/fates           LBNL, NCAR, LANL    BSD
-Betr            external_models/sbetr           LBNL, NCAR          BSD
 
 Atmosphere      under components/eam/src
 -----------     ------------------------

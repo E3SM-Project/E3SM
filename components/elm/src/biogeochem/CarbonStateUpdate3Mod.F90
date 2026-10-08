@@ -37,7 +37,6 @@ contains
     ! variables affected by fire fluxes and also erosion flux
     !
       !$acc routine seq
-    use tracer_varcon       , only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -55,37 +54,35 @@ contains
     integer :: fp,fc     ! lake filter indices
     !-----------------------------------------------------------------------
 
-      if ( .not.is_active_betr_bgc )then
-         ! column level carbon fluxes from fire
-         if (.not.(use_pflotran .and. pf_cmode)) then
-             do j = 1, nlevdecomp
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   ! pft-level wood to column-level CWD (uncombusted wood)
-                   col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) &
-                        + col_cf%fire_mortality_c_to_cwdc(c,j) * dt
+      ! column level carbon fluxes from fire
+      if (.not.(use_pflotran .and. pf_cmode)) then
+          do j = 1, nlevdecomp
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                ! pft-level wood to column-level CWD (uncombusted wood)
+                col_cs%decomp_cpools_vr(c,j,i_cwd) = col_cs%decomp_cpools_vr(c,j,i_cwd) &
+                     + col_cf%fire_mortality_c_to_cwdc(c,j) * dt
 
-                   ! pft-level wood to column-level litter (uncombusted wood)
-                   col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) &
-                        + col_cf%m_c_to_litr_met_fire(c,j)* dt
-                   col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) &
-                        + col_cf%m_c_to_litr_cel_fire(c,j)* dt
-                   col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) &
-                        + col_cf%m_c_to_litr_lig_fire(c,j)* dt
-                end do
+                ! pft-level wood to column-level litter (uncombusted wood)
+                col_cs%decomp_cpools_vr(c,j,i_met_lit) = col_cs%decomp_cpools_vr(c,j,i_met_lit) &
+                     + col_cf%m_c_to_litr_met_fire(c,j)* dt
+                col_cs%decomp_cpools_vr(c,j,i_cel_lit) = col_cs%decomp_cpools_vr(c,j,i_cel_lit) &
+                     + col_cf%m_c_to_litr_cel_fire(c,j)* dt
+                col_cs%decomp_cpools_vr(c,j,i_lig_lit) = col_cs%decomp_cpools_vr(c,j,i_lig_lit) &
+                     + col_cf%m_c_to_litr_lig_fire(c,j)* dt
              end do
-         end if !(.not.(use_pflotran .and. pf_cmode))
+          end do
+      end if !(.not.(use_pflotran .and. pf_cmode))
 
-         ! litter and CWD losses to fire
-         do l = 1, ndecomp_pools
-            do j = 1, nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
-               end do
+      ! litter and CWD losses to fire
+      do l = 1, ndecomp_pools
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               col_cs%decomp_cpools_vr(c,j,l) = col_cs%decomp_cpools_vr(c,j,l) - col_cf%m_decomp_cpools_to_fire_vr(c,j,l) * dt
             end do
          end do
-      endif !
+      end do
 
       ! SOM C losses due to erosion
       if ( ero_ccycle ) then
