@@ -34,6 +34,7 @@ module dyncropFileMod
   type(dyn_var_time_uninterp_type) :: wtcft        ! weight of each CFT relative to the crop landunit
   type(dyn_var_time_uninterp_type) :: nfertcft     ! nitrogen fertilizer of each CFT
   type(dyn_var_time_uninterp_type) :: pfertcft     ! phosphorus fertilizer of each PFT
+  integer :: last_applied_time_index = -1          ! last annual crop data applied to the model
 
   ! Names of variables on file
   character(len=*), parameter :: crop_varname = 'PCT_CROP'
@@ -70,6 +71,8 @@ contains
     character(len=*), parameter :: subname = 'dyncrop_init'
     !-----------------------------------------------------------------------
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    last_applied_time_index = -1
 
     if (masterproc) then
        write(iulog,*) 'Attempting to read crop dynamic landuse data .....'
@@ -116,7 +119,7 @@ contains
   end subroutine dyncrop_init
 
   !-----------------------------------------------------------------------
-  subroutine dyncrop_interp(bounds,crop_vars)
+  subroutine dyncrop_interp(bounds,crop_vars, data_updated)
     
     ! !DESCRIPTION:
     ! Get crop cover for model time, when needed.
@@ -136,13 +139,17 @@ contains
     use subgridWeightsMod , only : set_landunit_weight
     use subgridWeightsMod , only : get_landunit_weight
     use GridcellType      , only : grc_pp
+    use elm_time_manager  , only : is_first_step, is_first_restart_step
+    use elm_varctl        , only : create_glacier_mec_landunit, iac_present, use_fates
     
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
     type(crop_type), intent(in) :: crop_vars  ! crop instance for updating annual fertilizer
+    logical, optional, intent(out) :: data_updated ! annual data were applied this call
     
     ! !LOCAL VARIABLES:
-    integer               :: m,p,c,l,g,t,t2,ti,topi      ! indices  
+    integer               :: m,p,c,l,g,t,t2,ti,topi      ! indices
+    integer               :: current_time_index
     real(r8), allocatable :: wtcrop_cur(:,:)  ! current weight of the crop landunit 
     real(r8), allocatable :: wtcft_cur(:,:,:) ! current cft weights  
     real(r8), allocatable :: nfertcft_cur(:,:,:) ! current cft fertilizer 
@@ -154,6 +161,18 @@ contains
     SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     call dyncrop_file%time_info%set_current_year()
+
+    ! Crop weights and fertilizer data are piecewise constant within a model
+    ! year. Avoid allocating, copying and reapplying the same annual data on
+    ! every timestep.
+    current_time_index = dyncrop_file%time_info%get_time_index_lower()
+    if (present(data_updated)) data_updated = .false.
+    ! Initialization/restart may overwrite weights or fertilizer after the first
+    ! application. Coupled area changes can also reduce the prescribed crop area,
+    ! so retain the per-step application in those configurations.
+    if (current_time_index == last_applied_time_index .and. &
+         .not. is_first_step() .and. .not. is_first_restart_step() .and. &
+         .not. create_glacier_mec_landunit .and. .not. iac_present .and. .not. use_fates) return
 
     ! Set new landunit area
     allocate(wtcrop_cur(bounds%begg:bounds%endg,max_topounits))    
@@ -217,6 +236,9 @@ contains
     deallocate(nfertcft_cur)
     deallocate(pfertcft_cur)
     deallocate(col_set)
+
+    last_applied_time_index = current_time_index
+    if (present(data_updated)) data_updated = .true.
 
   end subroutine dyncrop_interp
 
