@@ -32,6 +32,13 @@ module GridcellDataType
     real(r8), pointer :: heat2                (:)   ! post land cover change total heat content
     real(r8), pointer :: liquid_water_temp1   (:)   ! initial weighted average liquid water temperature (K)
     real(r8), pointer :: liquid_water_temp2   (:)   ! post land cover change weighted average liquid water temperature (K)
+    real(r8), pointer :: beg_hc               (:)   ! grid-level column heat content (snow+soil+lake) at beginning of time step (MJ/m2)
+    real(r8), pointer :: end_hc               (:)   ! grid-level column heat content (snow+soil+lake) at end of time step (MJ/m2)
+    real(r8), pointer :: beg_hc_soi           (:)   ! grid-level column soil-only heat content at beginning of time step (MJ/m2)
+    real(r8), pointer :: end_hc_soi           (:)   ! grid-level column soil-only heat content at end of time step (MJ/m2)
+    real(r8), pointer :: beg_hc_lake          (:)   ! grid-level lake-water heat content at beginning of time step (MJ/m2)
+    real(r8), pointer :: end_hc_lake          (:)   ! grid-level lake-water heat content at end of time step (MJ/m2)
+    real(r8), pointer :: errsoi               (:)   ! grid-level column-level soil/lake energy conservation error (W/m2)
 
   contains
     procedure, public :: Init    => grc_es_init
@@ -43,6 +50,9 @@ module GridcellDataType
   !-----------------------------------------------------------------------
   type, public :: gridcell_energy_flux
     real(r8), pointer :: eflx_dynbal           (:)   ! dynamic land cover change conversion energy flux (W/m**2)
+    real(r8), pointer :: heat_into_grnd        (:)   ! grid-level ground heat flux, p2g of eflx_soil_grnd (W/m**2) [+ = into ground]
+    real(r8), pointer :: heat_phase_corr       (:)   ! grid-level phase-change/h2osfc/building-heat correction (W/m**2)
+    real(r8), pointer :: heat_state_adj        (:)   ! grid-level adjustment from solver flux terms to diagnostic heat-state change (W/m**2)
 
   contains
     procedure, public :: Init    => grc_ef_init
@@ -265,6 +275,13 @@ contains
     allocate(this%heat2                (begg:endg))                      ; this%heat2                (:)   = spval
     allocate(this%liquid_water_temp1   (begg:endg))                      ; this%liquid_water_temp1   (:)   = spval
     allocate(this%liquid_water_temp2   (begg:endg))                      ; this%liquid_water_temp2   (:)   = spval
+    allocate(this%beg_hc               (begg:endg))                      ; this%beg_hc               (:)   = spval
+    allocate(this%end_hc               (begg:endg))                      ; this%end_hc               (:)   = spval
+    allocate(this%beg_hc_soi           (begg:endg))                      ; this%beg_hc_soi           (:)   = spval
+    allocate(this%end_hc_soi           (begg:endg))                      ; this%end_hc_soi           (:)   = spval
+    allocate(this%beg_hc_lake          (begg:endg))                      ; this%beg_hc_lake          (:)   = spval
+    allocate(this%end_hc_lake          (begg:endg))                      ; this%end_hc_lake          (:)   = spval
+    allocate(this%errsoi               (begg:endg))                      ; this%errsoi               (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_es
@@ -296,6 +313,13 @@ contains
     deallocate(this%heat2)
     deallocate(this%liquid_water_temp1)
     deallocate(this%liquid_water_temp2)
+    deallocate(this%beg_hc)
+    deallocate(this%end_hc)
+    deallocate(this%beg_hc_soi)
+    deallocate(this%end_hc_soi)
+    deallocate(this%beg_hc_lake)
+    deallocate(this%end_hc_lake)
+    deallocate(this%errsoi)
   end subroutine grc_es_clean
   
   !------------------------------------------------------------------------
@@ -312,6 +336,9 @@ contains
     ! allocate for each member of grc_ef
     !-----------------------------------------------------------------------
     allocate(this%eflx_dynbal              (begg:endg))                  ; this%eflx_dynbal             (:)   = spval
+    allocate(this%heat_into_grnd           (begg:endg))                  ; this%heat_into_grnd          (:)   = spval
+    allocate(this%heat_phase_corr          (begg:endg))                  ; this%heat_phase_corr         (:)   = spval
+    allocate(this%heat_state_adj           (begg:endg))                  ; this%heat_state_adj          (:)   = spval
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of grc_ef
@@ -349,6 +376,9 @@ contains
     class(gridcell_energy_flux) :: this
     !------------------------------------------------------------------------
     deallocate(this%eflx_dynbal)
+    deallocate(this%heat_into_grnd)
+    deallocate(this%heat_phase_corr)
+    deallocate(this%heat_state_adj)
   end subroutine grc_ef_clean
   
   !------------------------------------------------------------------------
