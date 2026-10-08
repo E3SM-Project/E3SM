@@ -1,5 +1,5 @@
 paramfile = '$DIN_LOC_ROOT//lnd/clm2/paramdata/clm_params_c251006.nc'
-fsurdat = '$DIN_LOC_ROOT/input_data/surfdata_0.5x0.5_50pfts_20250528.nc'
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata/surfdata_0.5x0.5_50pfts_20250528.nc'
 firrig_data = .true.
 use_crop=.true.
 flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_50pfts_simyr1850-2015_c260205.nc'
