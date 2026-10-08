@@ -986,8 +986,9 @@ contains
                activeTracers(indexSalinity,iLevel,iCell)
             marbl_instances(1)%interior_tendency_forcings(pressure_indexInMARBL)%field_1d(1,iLevel) = &
                pressure(iLevel,iCell)*PascalsToAtmospheres
+            !NJ
             marbl_instances(1)%interior_tendency_forcings(fesedFlux_indexInMARBL)%field_1d(1,iLevel) = &
-               FESEDFLUX(iLevel,iCell)
+               FESEDFLUX(iLevel,iCell) * 100.0_RKIND
 
             marbl_instances(1)%domain%zt(iLevel) = -1.0_RKIND*zMid(iLevel,iCell)*convertLengthMKStoCGS
 

@@ -427,8 +427,7 @@ contains
                   PH_PREV_ALT_CO2_3D(k, iCell) = 8.0_RKIND
 
                   if(maxLevelCell(iCell) == k) then
-                     FESEDFLUX(k, iCell) = pocToSed(iCell)*6.8e-2_RKIND
-                     !FESEDFLUX(k, iCell) = pocToSed(iCell)*6.8e-4_RKIND
+                     FESEDFLUX(k, iCell) = pocToSed(iCell)*6.8e-4_RKIND
                   else
                      FESEDFLUX(k, iCell) = 0.0_RKIND
                   end if
