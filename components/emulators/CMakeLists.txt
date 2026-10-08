@@ -34,6 +34,69 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(ekat)
 
+# ------------------------------------------------------------------------------
+# LibTorch
+# ------------------------------------------------------------------------------
+
+option(EMULATOR_ENABLE_LIBTORCH "Build the LibTorch inference backend" OFF)
+set(EMULATOR_LIBTORCH_VERSION "2.5.1" CACHE STRING "LibTorch version to download")
+set(EMULATOR_LIBTORCH_VARIANT "auto" CACHE STRING
+    "LibTorch build to download: auto, cpu, cu118, cu121, cu124, rocm6.2")
+set(EMULATOR_LIBTORCH_URL "" CACHE STRING
+    "LibTorch archive to download if no install is found (overrides the variant)")
+
+if(EMULATOR_ENABLE_LIBTORCH)
+  # Use an existing install (CMAKE_PREFIX_PATH / Torch_DIR) if there is one,
+  # otherwise fetch the prebuilt CPU distribution into the download cache.
+  # Prefer the torch the Python interpreter uses: two LibTorch versions in one
+  # process (e.g. with the embedded Python backend) fail with symbol errors.
+  set(EMULATOR_TORCH_PYTHON "python3" CACHE STRING
+    "Python interpreter with torch, used to locate LibTorch and write the test fixtures")
+  if(NOT Torch_DIR AND NOT CMAKE_PREFIX_PATH)
+    execute_process(COMMAND ${EMULATOR_TORCH_PYTHON} -c
+        "import torch.utils; print(torch.utils.cmake_prefix_path)"
+      RESULT_VARIABLE _torch_py_failed
+      OUTPUT_VARIABLE _torch_py_prefix OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    if(NOT _torch_py_failed)
+      message(STATUS "Using LibTorch from ${EMULATOR_TORCH_PYTHON}: ${_torch_py_prefix}")
+      list(APPEND CMAKE_PREFIX_PATH "${_torch_py_prefix}")
+    endif()
+  endif()
+  find_package(Torch QUIET)
+  if(NOT Torch_FOUND)
+    set(_torch_url "${EMULATOR_LIBTORCH_URL}")
+    if(NOT _torch_url)
+      set(_torch_variant "${EMULATOR_LIBTORCH_VARIANT}")
+      if(_torch_variant STREQUAL "auto")
+        find_program(_torch_nvcc nvcc)
+        if(_torch_nvcc OR DEFINED ENV{CUDA_HOME} OR DEFINED ENV{CUDA_PATH})
+          set(_torch_variant cu124)
+        else()
+          set(_torch_variant cpu)
+        endif()
+      endif()
+      if(_torch_variant STREQUAL "cpu")
+        set(_torch_tag "cpu")
+      else()
+        set(_torch_tag "${_torch_variant}")
+      endif()
+      set(_torch_url "https://download.pytorch.org/libtorch/${_torch_variant}/libtorch-cxx11-abi-shared-with-deps-${EMULATOR_LIBTORCH_VERSION}%2B${_torch_tag}.zip")
+    endif()
+    message(STATUS "LibTorch not found; fetching ${_torch_url}")
+    FetchContent_Declare(
+        libtorch
+        URL ${_torch_url}
+        DOWNLOAD_EXTRACT_TIMESTAMP OFF
+    )
+    FetchContent_GetProperties(libtorch)
+    if(NOT libtorch_POPULATED)
+      FetchContent_Populate(libtorch)
+    endif()
+    list(APPEND CMAKE_PREFIX_PATH "${libtorch_SOURCE_DIR}")
+    find_package(Torch REQUIRED)
+  endif()
+endif()
+
 if(BUILD_EMULATOR_TESTS)
   # Enable testing at the top level
   enable_testing()
