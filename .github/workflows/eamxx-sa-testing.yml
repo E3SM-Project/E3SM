@@ -1,9 +1,8 @@
 name: eamxx-sa
 
 on:
-  # Runs on PRs against master
+  # Runs on all PRs (the filter [master] would prevent testing stacked PRs)
   pull_request:
-    branches: [ master ]
     types: [opened, synchronize, ready_for_review, reopened]
     paths:
       # first, yes to these
