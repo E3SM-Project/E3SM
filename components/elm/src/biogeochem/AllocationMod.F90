@@ -365,6 +365,11 @@ contains
        nu_com_nfix = .true.
     end select
 
+    ! Use the legacy phosphatase code with FATES
+    if(use_fates)then
+       nu_com_phosphatase = .false.
+    end if
+
 
     ! phosphorus conditions of plants are needed, in order to use new fixation and phosphatase
     ! activity subroutines, under carbon only or carbon nitrogen only mode, fixation and phosphatase
