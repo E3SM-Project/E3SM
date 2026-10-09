@@ -179,8 +179,12 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   //   - online remapping which is setup using the create_remapper function
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  EKAT_REQUIRE_MSG (use_horiz_remap_from_file or not params.isParameter("horiz_remap_layout"),
-      "[AtmosphereOutput] Error! Parameter 'horiz_remap_layout' requires parameter 'horiz_remap_file'.\n"
+  // Options for horizontal remap live in the sublist remapping->horiz
+  const bool has_rect_layout = params.isSublist("remapping") and
+                               params.sublist("remapping").isSublist("horiz") and
+                               params.sublist("remapping").sublist("horiz").isParameter("rectilinear_layout");
+  EKAT_REQUIRE_MSG (use_horiz_remap_from_file or not has_rect_layout,
+      "[AtmosphereOutput] Error! Parameter 'remapping->horiz->rectilinear_layout' requires parameter 'horiz_remap_file'.\n"
       "  - stream name: " + m_stream_name + "\n");
   if (change_data_layout) {
     EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,
@@ -272,10 +276,10 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
       // If the map file tgt grid is a generic rectilinear grid (as opposed to a lat-lon one),
       // the user must tell us the size of the grid along the x and y directions
       std::vector<int> rect_sizes;
-      if (params.isParameter("horiz_remap_layout")) {
-        rect_sizes = params.get<std::vector<int>>("horiz_remap_layout");
+      if (has_rect_layout) {
+        rect_sizes = params.sublist("remapping").sublist("horiz").get<std::vector<int>>("rectilinear_layout");
         EKAT_REQUIRE_MSG (rect_sizes.size()==2,
-            "[AtmosphereOutput] Error! Parameter 'horiz_remap_layout' must be a list of 2 integers: [nx,ny].\n"
+            "[AtmosphereOutput] Error! Parameter 'remapping->horiz->rectilinear_layout' must be a list of 2 integers: [nx,ny].\n"
             "  - stream name: " + m_stream_name + "\n"
             "  - input value: [" + ekat::join(rect_sizes,",") + "]\n");
       }

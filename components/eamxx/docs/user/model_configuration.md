@@ -510,7 +510,14 @@ the grid where the fields are defined and a coarser grid.
       the size of the output file.
           - **Note:** with this feature, the user can only specify fields
           from a single grid.
-- `horiz_remap_layout`: a list `[nx, ny]` of two integers. Use it when the target grid of
+- `remapping->horiz->rectilinear_layout`: a list `[nx, ny]` of two integers, inside the
+sublist `remapping` (sublist `horiz`). E.g.,
+      ```yaml
+      remapping:
+        horiz:
+          rectilinear_layout: [nx, ny]
+      ```
+      Use it when the target grid of
 `horiz_remap_file` is a generic 2d rectilinear grid (e.g., a HRRR-like grid), rather
 than a lat-lon one.
       - By default, a map file with `dst_grid_rank=2` is assumed to target a lat-lon grid,
