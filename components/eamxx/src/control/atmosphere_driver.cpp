@@ -72,7 +72,7 @@ namespace control {
  *  6) All the atm inputs (that the AD can deduce by asking the atm proc group for the required fiedls)
  *     are initialized. For restart runs, all fields are read from a netcdf file (to allow BFB
  *     restarts), while for initial runs we offer a few more options (e.g., init a field to
- *     a constant, or as a copy of another field). During this process, we also set the initial
+ *     a constant). During this process, we also set the initial
  *     time stamp on all the atm input fields.
  *     If an atm input is not found in the IC file, we'll error out, saving a DAG of the
  *     atm processes, which the user can inspect (to see what's missing in the IC file).
@@ -1059,8 +1059,8 @@ void AtmosphereDriver::set_initial_conditions ()
 
   // Fields with subfields (e.g., horiz_winds, which has U/V as children) are never
   // added to the STARTUP group themselves (see set_initialization_groups): only their
-  // subfields are. Hence, an initial condition (constant value or copy-from-field)
-  // specified for the parent field name would be silently ignored. Catch this early,
+  // subfields are. Hence, an initial condition (constant value) specified for the
+  // parent field name would be silently ignored. Catch this early,
   // and ask the user to set each subfield individually instead.
   for (const auto& gn : m_grids_manager->get_grid_names()) {
     for (const auto& it : m_field_mgr->get_repo(gn)) {
@@ -1082,11 +1082,9 @@ void AtmosphereDriver::set_initial_conditions ()
   }
 
   // Process all fields in the STARTUP group. For each, either init to
-  // a constant (if provided), add it to list of fields to read from file,
-  // or add it to list of fields to copy from another field.
+  // a constant (if provided), or add it to list of fields to read from file.
   m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   strmap_t<std::set<std::string>> ic_fields_names;
-  std::vector<FieldIdentifier> ic_fields_to_copy;
 
   strmap_t<strvec_t> topography_file_fields_names;
   strmap_t<strvec_t> topography_eamxx_fields_names;
@@ -1100,15 +1098,13 @@ void AtmosphereDriver::set_initial_conditions ()
 
       if (ic_pl.isParameter(fname)) {
         // This is the case that the user provided an initialization
-        // for this field in the parameter file (either to a constant or to another field).
+        // for this field in the parameter file (as a constant).
         if (ic_pl.isType<int>(fname) or ic_pl.isType<double>(fname) or
             ic_pl.isType<std::vector<double>>(fname)) {
           initialize_constant_field(fid, ic_pl);
-        } else if (ic_pl.isType<std::string>(fname)) {
-          ic_fields_to_copy.push_back(fid);
         } else {
           EKAT_ERROR_MSG ("ERROR: invalid assignment for variable " + fname + ", only scalar "
-                          "double or string, or vector double arguments are allowed");
+                          "or vector double arguments are allowed");
         }
         m_fields_inited[grid_name].insert(fname);
       } else if (fname == "phis" or fname == "sgh30" or fname == "sgh") {
@@ -1169,7 +1165,7 @@ void AtmosphereDriver::set_initial_conditions ()
   // In that case, we only need to init one: either the monolithic field, or all the individual subfields.
   // So loop over the fields that appear to require loading from file, and remove
   // them from the list if they are the subfield of another field already inited
-  // (perhaps via initialize_constant_field, or copied from another field).
+  // (perhaps via initialize_constant_field).
   for (auto& it : ic_fields_names) {
     const auto& grid_name = it.first;
     auto& names = it.second;
@@ -1230,28 +1226,6 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     }
   }
-
-  // If there were any fields that needed to be copied per the input yaml file, now we copy them.
-  m_atm_logger->debug("    [EAMxx] Processing fields to copy ...");
-  for (const auto& tgt_fid : ic_fields_to_copy) {
-    const auto& tgt_fname = tgt_fid.name();
-    const auto& gname = tgt_fid.get_grid_name();
-
-    const auto& src_fname = ic_pl.get<std::string>(tgt_fname);
-
-    // The field must exist in the fm on the input field's grid
-    EKAT_REQUIRE_MSG (m_field_mgr->has_field(src_fname, gname),
-        "Error! Source field for initial condition not found in the field manager.\n"
-        "       Grid name:     " + gname + "\n"
-        "       Field to init: " + tgt_fname + "\n"
-        "       Source field:  " + src_fname + " (NOT FOUND)\n");
-
-    // Get the two fields, and copy src to tgt
-    auto f_tgt = m_field_mgr->get_field(tgt_fname, gname);
-    auto f_src = m_field_mgr->get_field(src_fname, gname);
-    f_tgt.deep_copy(f_src);
-  }
-  m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
