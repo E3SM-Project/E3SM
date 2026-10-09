@@ -3,6 +3,7 @@ add_library (eamxx_diagnostics
   aerocom_cld.cpp
   aodvis.cpp
   field_prev.cpp
+  field_broadcast.cpp
   field_over_dt.cpp
   atm_density.cpp
   binary_op.cpp
