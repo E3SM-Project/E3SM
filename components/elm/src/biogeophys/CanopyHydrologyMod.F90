@@ -30,7 +30,6 @@ module CanopyHydrologyMod
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
   use timeinfoMod, only : dtime_mod
-  use domainMod ,only : ldomain_gpu
   !
   ! !PUBLIC TYPES:
   implicit none

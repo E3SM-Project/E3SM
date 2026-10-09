@@ -1,4 +1,6 @@
 module lapack_acc_seq
+  use shr_kind_mod, only: r8 => shr_kind_r8
+  implicit none
   !! This module contains the needed LAPACK/BLAS routines that need
   !! to be called on the GPU.  As of CUDA 10.1, cuBLAS being called in
   !! device code is no longer supported
@@ -14,20 +16,19 @@ INTEGER FUNCTION idamax(N,DX,INCX)
   !*     November 2017
   !*
   !*     .. Scalar Arguments ..
-  INTEGER incx,n
+  integer :: incx,n
   !*     ..
   !*     .. Array Arguments ..
-  DOUBLE PRECISION dx(*)
+  real(r8) :: dx(*)
   !*     ..
   !*
   !*  =====================================================================
   !*
   !*     .. Local Scalars ..
-  DOUBLE PRECISION dmax
-  INTEGER i,ix
+  real(r8) :: dmax
+  integer :: i,ix
   !*     ..
   !*     .. Intrinsic Functions ..
-  INTRINSIC dabs
   !*     ..
   idamax = 0
   IF (n.LT.1 .OR. incx.LE.0) RETURN
@@ -71,20 +72,19 @@ END FUNCTION idamax
   !*     November 2017
   !*
   !*     .. Scalar Arguments ..
-  INTEGER INCX,INCY,N
+  integer :: INCX,INCY,N
   !*     ..
   !*     .. Array Arguments ..
-  DOUBLE PRECISION DX(*),DY(*)
+  real(r8) :: DX(*),DY(*)
   !*     ..
   !*
   !*  =====================================================================
   !*
   !*     .. Local Scalars ..
-  DOUBLE PRECISION DTEMP
-  INTEGER I,IX,IY,M,MP1
+  real(r8) :: DTEMP
+  integer :: I,IX,IY,M,MP1
   !*     ..
   !*     .. Intrinsic Functions ..
-  INTRINSIC mod
   !*     ..
   IF (n.LE.0) RETURN
   IF (incx.EQ.1 .AND. incy.EQ.1) THEN
@@ -144,20 +144,19 @@ END FUNCTION idamax
   !*     November 2017
   !*
   !*     .. Scalar Arguments ..
- DOUBLE PRECISION DA
- INTEGER INCX,N
+ real(r8) :: DA
+ integer :: INCX,N
  !*     ..
  !*     .. Array Arguments ..
- DOUBLE PRECISION DX(*)
+ real(r8) :: DX(*)
  !*     ..
  !*
  !*  =====================================================================
  !*
  !*     .. Local Scalars ..
- INTEGER I,M,MP1,NINCX
+ integer :: I,M,MP1,NINCX
  !*     ..
  !*     .. Intrinsic Functions ..
- INTRINSIC mod
  !*     ..
  IF (n.LE.0 .OR. incx.LE.0) RETURN
  IF (incx.EQ.1) THEN
@@ -203,25 +202,23 @@ END FUNCTION idamax
   !*     December 2016
   !*
   !*     .. Scalar Arguments ..
- DOUBLE PRECISION ALPHA
- INTEGER INCX,INCY,LDA,M,N
+ real(r8) :: ALPHA
+ integer :: INCX,INCY,LDA,M,N
  !*     ..
  !*     .. Array Arguments ..
- DOUBLE PRECISION A(LDA,*),X(*),Y(*)
+ real(r8) :: A(LDA,*),X(*),Y(*)
  !*     ..
  !*
  !*  =====================================================================
  !*
  !*     .. Parameters ..
- DOUBLE PRECISION ZERO
- parameter(zero=0.0d+0)
+ real(r8), parameter :: zero = 0.0_r8
  !*     ..
  !*     .. Local Scalars ..
- DOUBLE PRECISION TEMP
- INTEGER I,INFO,IX,J,JY,KX
+ real(r8) :: TEMP
+ integer :: I,INFO,IX,J,JY,KX
  !*     ..
  !*     .. Intrinsic Functions ..
- INTRINSIC max
  !*     ..
  !*
  !*     Test the input parameters.
@@ -256,32 +253,32 @@ END FUNCTION idamax
      jy = 1 - (n-1)*incy
  END IF
  IF (incx.EQ.1) THEN
-     DO 20 j = 1,n
+     DO j = 1,n
          IF (y(jy).NE.zero) THEN
              temp = alpha*y(jy)
-             DO 10 i = 1,m
+             DO i = 1,m
                  a(i,j) = a(i,j) + x(i)*temp
-10             CONTINUE
+             END DO
          END IF
          jy = jy + incy
-20     CONTINUE
+     END DO
  ELSE
      IF (incx.GT.0) THEN
          kx = 1
      ELSE
          kx = 1 - (m-1)*incx
      END IF
-     DO 40 j = 1,n
+     DO j = 1,n
          IF (y(jy).NE.zero) THEN
              temp = alpha*y(jy)
              ix = kx
-             DO 30 i = 1,m
+             DO i = 1,m
                  a(i,j) = a(i,j) + x(ix)*temp
                  ix = ix + incx
-30             CONTINUE
+             END DO
          END IF
          jy = jy + incy
-40     CONTINUE
+     END DO
   END IF
   !*
   RETURN
@@ -298,21 +295,20 @@ SUBROUTINE dgbtf2_oacc( M, N, KL, KU, AB, LDAB, IPIV, INFO )
   !     December 2016
   !
   !     .. Scalar Arguments ..
- INTEGER            INFO, KL, KU, LDAB, M, N
+ integer :: INFO, KL, KU, LDAB, M, N
  !     ..
  !     .. Array Arguments ..
- INTEGER            IPIV( * )
- DOUBLE PRECISION   AB( LDAB, * )
+ integer :: IPIV( * )
+ real(r8) :: AB( LDAB, * )
  !     ..
  !
  !  =====================================================================
  !
  !     .. Parameters ..
- DOUBLE PRECISION   ONE, ZERO
- parameter( one = 1.0d+0, zero = 0.0d+0 )
+ real(r8), parameter :: one = 1.0_r8, zero = 0.0_r8
  !     ..
  !     .. Local Scalars ..
- INTEGER            I, J, JP, JU, KM, KV
+ integer :: I, J, JP, JU, KM, KV
  !     ..
  !     .. External Functions ..
  !INTEGER            IDAMAX
@@ -322,7 +318,6 @@ SUBROUTINE dgbtf2_oacc( M, N, KL, KU, AB, LDAB, IPIV, INFO )
  !EXTERNAL           dger, dscal, dswap
  !     ..
  !     .. Intrinsic Functions ..
- INTRINSIC          max, min
  !     ..
  !     .. Executable Statements ..
  !
@@ -358,25 +353,25 @@ SUBROUTINE dgbtf2_oacc( M, N, KL, KU, AB, LDAB, IPIV, INFO )
  !
  !     Set fill-in elements in columns KU+2 to KV to zero.
  !
- DO 20 j = ku + 2, min( kv, n )
-    DO 10 i = kv - j + 2, kl
+ DO j = ku + 2, min( kv, n )
+    DO i = kv - j + 2, kl
        ab( i, j ) = zero
-10    CONTINUE
-20 CONTINUE
+    END DO
+ END DO
   !
   ! JU is the index of the last column affected by the current stage
   ! of the factorization.
   !
  ju = 1
  !
- DO 40 j = 1, min( m, n )
+ DO j = 1, min( m, n )
    !
    !  Set fill-in elements in column J+KV to zero.
    !
     IF( j+kv.LE.n ) THEN
-       DO 30 i = 1, kl
+       DO i = 1, kl
           ab( i, j+kv ) = zero
-30       CONTINUE
+       END DO
     END IF
     !
     ! Find pivot and test for singularity. KM is the number of
@@ -415,7 +410,7 @@ SUBROUTINE dgbtf2_oacc( M, N, KL, KU, AB, LDAB, IPIV, INFO )
        IF( info.EQ.0 )  info = j
 
     END IF
-40 CONTINUE
+ END DO
  RETURN
 !
 !     End of DGBTF2
@@ -430,28 +425,26 @@ SUBROUTINE dgbtrf_oacc( M, N, KL, KU, AB, LDAB, IPIV, INFO )
 !     December 2016
 !
 !     .. Scalar Arguments ..
-INTEGER            INFO, KL, KU, LDAB, M, N
+integer :: INFO, KL, KU, LDAB, M, N
 !     ..
 !     .. Array Arguments ..
-INTEGER            IPIV( * )
-DOUBLE PRECISION   AB( LDAB, * )
+integer :: IPIV( * )
+real(r8) :: AB( LDAB, * )
 !     ..
 !
 !  =====================================================================
 !
 !     .. Parameters ..
-DOUBLE PRECISION   ONE, ZERO
-parameter( one = 1.0d+0, zero = 0.0d+0 )
-INTEGER            NBMAX, LDWORK
-parameter( nbmax = 64, ldwork = nbmax+1 )
+real(r8), parameter :: one = 1.0_r8, zero = 0.0_r8
+integer, parameter :: nbmax = 64, ldwork = nbmax+1
 !     ..
 !     .. Local Scalars ..
-INTEGER            I, I2, I3, II, IP, J, J2, J3, JB, JJ, JM, JP, &
+integer :: I, I2, I3, II, IP, J, J2, J3, JB, JJ, JM, JP, &
                    JU, K2, KM, KV, NB, NW
-DOUBLE PRECISION   TEMP
+real(r8) :: TEMP
 !     ..
 !     .. Local Arrays ..
-DOUBLE PRECISION   WORK13( LDWORK, NBMAX ), &
+real(r8) :: WORK13( LDWORK, NBMAX ), &
                    WORK31( LDWORK, NBMAX )
 !     ..
 !     .. External Functions ..
@@ -462,7 +455,6 @@ DOUBLE PRECISION   WORK13( LDWORK, NBMAX ), &
 !EXTERNAL           dgbtf2, dger, dscal, dswap
 !     ..
 !     .. Intrinsic Functions ..
-INTRINSIC          max, min
 !     ..
 !     .. Executable Statements ..
 !
@@ -524,28 +516,26 @@ SUBROUTINE dtbsv_oacc(UPLO,TRANS,DIAG,N,K,A,LDA,X,INCX)
   !*     December 2016
   !*
   !*     .. Scalar Arguments ..
- INTEGER INCX,K,LDA,N
- INTEGER DIAG,TRANS,UPLO
+ integer :: INCX,K,LDA,N
+ integer :: DIAG,TRANS,UPLO
  !*     ..
  !*     .. Array Arguments ..
- DOUBLE PRECISION A(LDA,*),X(*)
+ real(r8) :: A(LDA,*),X(*)
  !*     ..
  !*
  !*  =====================================================================
  !*
  !*     .. Parameters ..
- DOUBLE PRECISION ZERO
- parameter(zero=0.0d+0)
+ real(r8), parameter :: zero = 0.0_r8
  !*     ..
  !*     .. Local Scalars ..
- DOUBLE PRECISION TEMP
- INTEGER I,INFO,IX,J,JX,KPLUS1,KX,L
- LOGICAL NOUNIT
+ real(r8) :: TEMP
+ integer :: I,INFO,IX,J,JX,KPLUS1,KX,L
+ logical :: NOUNIT
  !*     ..
  !*     .. External Subroutines ..
  !*     ..
  !*     .. Intrinsic Functions ..
- INTRINSIC max,min
  !*     ..
  !*
  !*     Test the input parameters.
@@ -594,33 +584,33 @@ SUBROUTINE dtbsv_oacc(UPLO,TRANS,DIAG,N,K,A,LDA,X,INCX)
    !*
          kplus1 = k + 1
          IF (incx.EQ.1) THEN
-             DO 20 j = n,1,-1
+             DO j = n,1,-1
                  IF (x(j).NE.zero) THEN
                      l = kplus1 - j
                      IF (nounit) x(j) = x(j)/a(kplus1,j)
                      temp = x(j)
-                     DO 10 i = j - 1,max(1,j-k),-1
+                     DO i = j - 1,max(1,j-k),-1
                          x(i) = x(i) - temp*a(l+i,j)
-10                     CONTINUE
+                     END DO
                  END IF
-20             CONTINUE
+             END DO
          ELSE
              kx = kx + (n-1)*incx
              jx = kx
-             DO 40 j = n,1,-1
+             DO j = n,1,-1
                  kx = kx - incx
                  IF (x(jx).NE.zero) THEN
                      ix = kx
                      l = kplus1 - j
                      IF (nounit) x(jx) = x(jx)/a(kplus1,j)
                      temp = x(jx)
-                     DO 30 i = j - 1,max(1,j-k),-1
+                     DO i = j - 1,max(1,j-k),-1
                          x(ix) = x(ix) - temp*a(l+i,j)
                          ix = ix - incx
-30                     CONTINUE
+                     END DO
                  END IF
                  jx = jx - incx
-40             CONTINUE
+             END DO
          END IF
          !*
  RETURN
@@ -637,23 +627,22 @@ SUBROUTINE dgbtrs_oacc( TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
   !     December 2016
   !
   !     .. Scalar Arguments ..
-   INTEGER          TRANS
-   INTEGER            INFO, KL, KU, LDAB, LDB, N, NRHS
+   integer :: TRANS
+   integer :: INFO, KL, KU, LDAB, LDB, N, NRHS
    !     ..
    !     .. Array Arguments ..
-   INTEGER            IPIV( * )
-   DOUBLE PRECISION   AB( LDAB, * ), B( LDB, * )
+   integer :: IPIV( * )
+   real(r8) :: AB( LDAB, * ), B( LDB, * )
    !     ..
    !
    !  =====================================================================
    !
    !     .. Parameters ..
-   DOUBLE PRECISION   ONE
-   parameter( one = 1.0d+0 )
+   real(r8), parameter :: one = 1.0_r8
    !     ..
    !     .. Local Scalars ..
-   LOGICAL            LNOTI, NOTRAN
-   INTEGER            I, J, KD, L, LM
+   logical :: LNOTI, NOTRAN
+   integer :: I, J, KD, L, LM
    !*     ..
    !*     .. External Functions ..
    !LOGICAL            LSAME
@@ -663,7 +652,6 @@ SUBROUTINE dgbtrs_oacc( TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
    !EXTERNAL           dgemv, dger, dswap, dtbsv
    !*     ..
    !*     .. Intrinsic Functions ..
-   INTRINSIC          max, min
    !*     ..
    !*     .. Executable Statements ..
    !*
@@ -710,23 +698,23 @@ SUBROUTINE dgbtrs_oacc( TRANS, N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
      !*        the identity matrix.
      !*
       IF( lnoti ) THEN
-         DO 10 j = 1, n - 1
+         DO j = 1, n - 1
             lm = min( kl, n-j )
             l = ipiv( j )
             IF( l.NE.j )  CALL dswap_oacc( nrhs, b( l, 1 ), ldb, b( j, 1 ), ldb )
 
             CALL dger_oacc( lm, nrhs, -one, ab( kd+1, j ), 1, b( j, 1 ), &
                       ldb, b( j+1, 1 ), ldb )
-10       CONTINUE
+       END DO
       END IF
       !
-      DO 20 i = 1, nrhs
+      DO i = 1, nrhs
         !*
         !*           Solve U*X = B, overwriting B with X.
         !*
          CALL dtbsv_oacc( 1, 0, 0, n, kl+ku, &
                     ab, ldab, b( 1, i ), 1 )
-20    CONTINUE
+    END DO
   !!
    END IF
    RETURN
@@ -745,10 +733,10 @@ subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, B, LDB, INFO )
 !     December 2016
 !
 !     .. Scalar Arguments ..
-  INTEGER            INFO, KL, KU, LDAB, LDB, N, NRHS
+  integer :: INFO, KL, KU, LDAB, LDB, N, NRHS
 !*     ..
 !*     .. Array Arguments ..
-  DOUBLE PRECISION   AB( LDAB, * ), B( LDB, * )
+  real(r8) :: AB( LDAB, * ), B( LDB, * )
 !     ..
 !
 !  =====================================================================
@@ -757,7 +745,6 @@ subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, B, LDB, INFO )
 !  EXTERNAL           dgbtrf, dgbtrs
 !     ..
 !     .. Intrinsic Functions ..
-  INTRINSIC          max
   INTEGER   :: IPIV(1:n)
 !     ..
 !     .. Executable Statements ..
@@ -801,6 +788,151 @@ subroutine dgbsv_oacc( N, KL, KU, NRHS, AB, LDAB, B, LDB, INFO )
 !     End of DGBSV
 !
 END subroutine dgbsv_oacc
+
+subroutine dgbsv_batch(nbatch, nmax, kl, ku, nrhs, n, ab, b, ipiv, info)
+  ! Batched DGBSV: solves A_s * X_s = B_s for s = 1..nbatch, where each A_s is
+  ! an n(s) x n(s) band matrix with kl sub- and ku super-diagonals.
+  !
+  ! Same algorithm and operation order as reference LAPACK DGBSV (unblocked
+  ! DGBTF2 + DGBTRS), but the batch index is the leading (fastest) dimension so
+  ! that one thread per system gives coalesced memory access on the GPU:
+  !   ab(s, kl+ku+1+i-j, j) = A_s(i,j)  for max(1,j-ku) <= i <= min(n(s),j+kl)
+  ! Rows 1:kl of ab are workspace for fill-in.  On exit ab holds the LU factors,
+  ! ipiv the pivots, and b the solution (only entries 1:n(s) are referenced).
+  ! info(s) = 0 success, -i illegal i-th argument, > 0 U(info,info) is exactly zero.
+  ! ab, b, ipiv, info must be present on the device when compiled with OpenACC.
+  integer , intent(in)    :: nbatch, nmax, kl, ku, nrhs
+  integer , intent(in)    :: n(nbatch)
+  real(r8), intent(inout) :: ab(nbatch, 2*kl+ku+1, nmax)
+  real(r8), intent(inout) :: b(nbatch, nmax, nrhs)
+  integer , intent(out)   :: ipiv(nbatch, nmax)
+  integer , intent(out)   :: info(nbatch)
+
+  real(r8), parameter :: zero = 0.0_r8, one = 1.0_r8
+  integer  :: s, ns, i, j, jj, k, kv, kd, km, jp, ju, l, lm
+  real(r8) :: dmax, temp, recip
+
+  kv = ku + kl
+  kd = kv + 1
+
+  !$acc parallel loop gang vector default(present) &
+  !$acc private(ns, i, j, jj, k, km, jp, ju, l, lm, dmax, temp, recip)
+  do s = 1, nbatch
+     ns = n(s)
+     info(s) = 0
+     if (ns < 0 .or. ns > nmax) then
+        info(s) = -1
+     else if (kl < 0) then
+        info(s) = -2
+     else if (ku < 0) then
+        info(s) = -3
+     else if (nrhs < 0) then
+        info(s) = -4
+     end if
+     if (info(s) /= 0 .or. ns == 0) cycle
+
+     ! ---- LU factorization (DGBTF2) ----
+     ! Zero fill-in elements in columns ku+2 to kv
+     do j = ku + 2, min(kv, ns)
+        do i = kv - j + 2, kl
+           ab(s,i,j) = zero
+        end do
+     end do
+
+     ju = 1
+     do j = 1, ns
+        if (j + kv <= ns) then
+           do i = 1, kl
+              ab(s,i,j+kv) = zero
+           end do
+        end if
+
+        ! Pivot search (IDAMAX: first index of max |.|)
+        km = min(kl, ns - j)
+        jp = 1
+        dmax = abs(ab(s,kv+1,j))
+        do i = 2, km + 1
+           if (abs(ab(s,kv+i,j)) > dmax) then
+              jp = i
+              dmax = abs(ab(s,kv+i,j))
+           end if
+        end do
+        ipiv(s,j) = jp + j - 1
+
+        if (ab(s,kv+jp,j) /= zero) then
+           ju = max(ju, min(j + ku + jp - 1, ns))
+
+           ! Interchange rows j and j+jp-1 in columns j:ju
+           if (jp /= 1) then
+              do jj = 0, ju - j
+                 temp                 = ab(s,kv+jp-jj,j+jj)
+                 ab(s,kv+jp-jj,j+jj)  = ab(s,kv+1-jj,j+jj)
+                 ab(s,kv+1-jj,j+jj)   = temp
+              end do
+           end if
+
+           if (km > 0) then
+              ! Multipliers
+              recip = one / ab(s,kv+1,j)
+              do i = 1, km
+                 ab(s,kv+1+i,j) = recip * ab(s,kv+1+i,j)
+              end do
+              ! Rank-1 update of the trailing band
+              do jj = 1, ju - j
+                 if (ab(s,kv+1-jj,j+jj) /= zero) then
+                    temp = -one * ab(s,kv+1-jj,j+jj)
+                    do i = 1, km
+                       ab(s,kv+1+i-jj,j+jj) = ab(s,kv+1+i-jj,j+jj) + ab(s,kv+1+i,j)*temp
+                    end do
+                 end if
+              end do
+           end if
+        else if (info(s) == 0) then
+           info(s) = j
+        end if
+     end do
+
+     if (info(s) /= 0) cycle
+
+     ! ---- Solve (DGBTRS, no transpose) ----
+     ! L*X = B
+     if (kl > 0) then
+        do j = 1, ns - 1
+           lm = min(kl, ns - j)
+           l  = ipiv(s,j)
+           if (l /= j) then
+              do k = 1, nrhs
+                 temp     = b(s,l,k)
+                 b(s,l,k) = b(s,j,k)
+                 b(s,j,k) = temp
+              end do
+           end if
+           do k = 1, nrhs
+              if (b(s,j,k) /= zero) then
+                 temp = -one * b(s,j,k)
+                 do i = 1, lm
+                    b(s,j+i,k) = b(s,j+i,k) + ab(s,kd+i,j)*temp
+                 end do
+              end if
+           end do
+        end do
+     end if
+
+     ! U*X = B (DTBSV upper, non-unit, bandwidth kl+ku)
+     do k = 1, nrhs
+        do j = ns, 1, -1
+           if (b(s,j,k) /= zero) then
+              b(s,j,k) = b(s,j,k) / ab(s,kd,j)
+              temp = b(s,j,k)
+              do i = j - 1, max(1, j - kv), -1
+                 b(s,i,k) = b(s,i,k) - temp*ab(s,kd-j+i,j)
+              end do
+           end if
+        end do
+     end do
+  end do
+
+end subroutine dgbsv_batch
 
 
 end module lapack_acc_seq

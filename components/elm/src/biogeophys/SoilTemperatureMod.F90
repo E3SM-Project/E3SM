@@ -42,11 +42,11 @@ module SoilTemperatureMod
   use WaterfluxType     , only : waterflux_type
   use elm_instMod , only : waterflux_vars, waterstate_vars, temperature_vars
   
-   #ifdef _OPENACC 
-     #define gpuflag 1 
-   #else 
-     #define gpuflag 0
-   #endif 
+#ifdef _OPENACC
+#define gpuflag 1
+#else
+#define gpuflag 0
+#endif
   !
   ! !PUBLIC TYPES:
   implicit none

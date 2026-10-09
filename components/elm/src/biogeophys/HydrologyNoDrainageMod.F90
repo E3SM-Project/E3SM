@@ -604,7 +604,7 @@ contains
 
       do fc = 1, num_fc
          c = filter(fc)
-         h2osoi_tend_tsl(c) = (h2osoi_liq(c,1) - h2osoi_liq_saved(c)) / dtime
+         h2osoi_tend_tsl(c) = (h2osoi_liq(c,1) - h2osoi_liq_saved(c)) / dtime_mod
       end do
 
       end associate

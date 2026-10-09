@@ -314,6 +314,7 @@ contains
      use ocn2lndType      , only : ocn2lnd_type
      use lnd2atmType      , only : lnd2atm_type
      use subgridAveMod    , only : c2g
+     use elm_instMod      , only : atm2lnd_vars     ! land river two way coupling
      !
      ! !ARGUMENTS:
      type(bounds_type)        , intent(in)    :: bounds
@@ -1148,7 +1149,7 @@ contains
      !
      ! !LOCAL VARIABLES:
      character(len=32) :: subname = 'Drainage'     ! subroutine name
-     integer  :: c,j,fc,i                          ! indices
+     integer  :: c,g,l,j,fc,i                       ! indices
      integer  :: nlevbed                           ! # layers to bedrock
      real(r8) :: xs(1:num_hydrologyc)              ! water needed to bring soil moisture to watmin (mm)
      real(r8) :: dzmm(1:num_hydrologyc,1:nlevgrnd) ! layer thickness (mm)
@@ -1285,7 +1286,6 @@ contains
           c = filter_hydrologyc(fc)
           qflx_drain(c)    = 0._r8
           qflx_lnd2ocn(c)  = 0._r8
-          rsub_bot(c)      = 0._r8
           qflx_rsub_sat(c) = 0._r8
           rsub_top(fc)      = 0._r8
           fracice_rsub(fc)  = 0._r8
@@ -2374,9 +2374,9 @@ contains
              ! add ice impedance factor to baseflow
              if(origflag == 1) then
                 if (use_vichydro) then
-                  #ifndef _OPENACC
+#ifndef _OPENACC
                   call endrun(msg="VICHYDRO is not available for origflag=1"//errmsg(__FILE__, __LINE__))
-                  #endif
+#endif
                 else
                    fracice_rsub(c) = max(0._r8,exp(-3._r8*(1._r8-(icefracsum/dzsum))) &
                         - exp(-3._r8))/(1.0_r8-exp(-3._r8))

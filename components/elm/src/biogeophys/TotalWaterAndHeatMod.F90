@@ -5,7 +5,7 @@ module TotalWaterAndHeatMod
   ! Routines for computing total column water and heat contents
   !
   ! !USES:
-  #include "shr_assert.h"
+#include "shr_assert.h"
   use shr_kind_mod       , only : r8 => shr_kind_r8
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type

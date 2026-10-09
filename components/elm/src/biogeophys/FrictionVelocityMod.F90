@@ -25,12 +25,7 @@ module FrictionVelocityMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: MoninObukIni           ! Initialization of the Monin-Obukhov length
 
-  interface FrictionVelocity ! Calculate friction velocity
-     module procedure :: FrictionVelocity_noloop ! called inside parallel region 
-     module procedure :: FrictionVelocity_loops ! internal parallelism
-  end interface FrictionVelocity
-
-  public :: FrictionVelocity
+  public :: FrictionVelocity       ! Calculate friction velocity (internal parallelism over filter)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: StabilityFunc1        ! Stability function for rib < 0.
@@ -39,255 +34,7 @@ module FrictionVelocityMod
 contains
 
   !------------------------------------------------------------------------------
-  subroutine FrictionVelocity_noloop( &
-       displa, z0m, z0h, z0q, &
-       obu, iter, ur, um, ugust, ustar, &
-       temp1, temp2, temp12m, temp22m, fm, &
-       forc_hgt_u_patch , forc_hgt_t_patch, forc_hgt_q_patch, &
-       vds, u10, u10_elm, u10_with_gusts_elm, va, fv)
-    !$acc routine seq
-    ! !DESCRIPTION:
-    ! Calculation of the friction velocity, relation for potential
-    ! temperature and humidity profiles of surface boundary layer.
-    ! The scheme is based on the work of Zeng et al. (1998):
-    ! Intercomparison of bulk aerodynamic algorithms for the computation
-    ! of sea surface fluxes using TOGA CORE and TAO data. J. Climate,
-    ! Vol. 11, 2628-2644.
-    !
-    ! !USES:
-    use elm_varcon, only : vkc
-    implicit none
-    !
-    ! !ARGUMENTS:
-    real(r8) , intent(in)    :: displa      ! displacement height (m) [lbn:ubn]
-    real(r8) , intent(in)    :: z0m         ! roughness length over vegetation, momentum [m] [lbn:ubn]
-    real(r8) , intent(in)    :: z0h         ! roughness length over vegetation, sensible heat [m] [lbn:ubn]
-    real(r8) , intent(in)    :: z0q         ! roughness length over vegetation, latent heat [m] [lbn:ubn]
-    real(r8) , intent(in)    :: obu         ! monin-obukhov length (m) [lbn:ubn]
-    integer  , intent(in)    :: iter        ! iteration number
-    real(r8) , intent(in)    :: ur          ! wind speed at reference height [m/s] [lbn:ubn]
-    real(r8) , intent(in)    :: um          ! wind speed including the stablity effect [m/s] [lbn:ubn]
-    real(r8) , intent(in)    :: ugust
-    real(r8) , intent(out)   :: ustar       ! friction velocity [m/s] [lbn:ubn]
-    real(r8) , intent(out)   :: temp1       ! relation for potential temperature profile [lbn:ubn]
-    real(r8) , intent(out)   :: temp12m     ! relation for potential temperature profile applied at 2-m [lbn:ubn]
-    real(r8) , intent(out)   :: temp2       ! relation for specific humidity profile [lbn:ubn]
-    real(r8) , intent(out)   :: temp22m     ! relation for specific humidity profile applied at 2-m [lbn:ubn]
-    real(r8) , intent(inout) :: fm          ! diagnose 10m wind (DUST only) [lbn:ubn]
-    real(r8) , intent(in)    :: forc_hgt_u_patch ! observational height of wind at pft level [m]
-    real(r8) , intent(in)    :: forc_hgt_t_patch ! observational height of temperature at pft level [m]
-    real(r8) , intent(in)    :: forc_hgt_q_patch ! observational height of specific humidity at pft level [m]
-    real(r8) , intent(inout) :: vds              ! dry deposition velocity term (m/s) (for SO4 NH4NO3)
-    real(r8) , intent(inout) :: u10              ! 10-m wind (m/s) (for dust model)
-    real(r8) , intent(inout) :: u10_elm          ! 10-m wind (m/s)
-    real(r8) , intent(inout) :: u10_with_gusts_elm
-    real(r8) , intent(inout) :: va               ! atmospheric wind speed plus convective velocity (m/s)
-    real(r8) , intent(inout) :: fv               ! friction velocity (m/s) (for dust model)
-
-    !
-    ! !LOCAL VARIABLES:
-    real(r8), parameter :: zetam = 1.574_r8 ! transition point of flux-gradient relation (wind profile)
-    real(r8), parameter :: zetat = 0.465_r8 ! transition point of flux-gradient relation (temp. profile)
-    real(r8) :: zldis              ! reference height "minus" zero displacement heght [m]
-    real(r8) :: zeta               ! dimensionless height used in Monin-Obukhov theory
-    real(r8) :: tmp1,tmp2,tmp3,tmp4         ! Used to diagnose the 10 meter wind
-    real(r8) :: fmnew                       ! Used to diagnose the 10 meter wind
-    real(r8) :: fm10                        ! Used to diagnose the 10 meter wind
-    real(r8) :: zeta10                      ! Used to diagnose the 10 meter wind
-    real(r8) :: vds_tmp                     ! Temporary for dry deposition velocity
-    !------------------------------------------------------------------------------
-    ! Adjustment factors for unstable (moz < 0) or stable (moz > 0) conditions.
-
-    ! Wind profile
-    zldis = forc_hgt_u_patch-displa
-
-    zeta = zldis/obu
-    if (zeta < -zetam) then
-       ustar = vkc*um/(log(-zetam*obu/z0m)&
-            - StabilityFunc1(-zetam) &
-            + StabilityFunc1(z0m/obu) &
-            + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8))
-    else if (zeta < 0._r8) then
-       ustar = vkc*um/(log(zldis/z0m)&
-            - StabilityFunc1(zeta)&
-            + StabilityFunc1(z0m/obu))
-    else if (zeta <=  1._r8) then
-       ustar = vkc*um/(log(zldis/z0m) + 5._r8*zeta -5._r8*z0m/obu)
-    else
-       ustar = vkc*um/(log(obu/z0m)+5._r8-5._r8*z0m/obu &
-            +(5._r8*log(zeta)+zeta-1._r8))
-    end if
-
-    if (zeta < 0._r8) then
-       vds_tmp = 2.e-3_r8*ustar * ( 1._r8 + (300._r8/(-obu))**0.666_r8)
-    else
-       vds_tmp = 2.e-3_r8*ustar
-    endif
-
-    vds = vds_tmp
-
-    ! Calculate a 10-m wind (10m + z0m + d)
-    ! For now, this will not be the same as the 10-m wind calculated for the dust
-    ! model because the ELM stability functions are used here, not the LSM stability
-    ! functions used in the dust model. We will eventually change the dust model to be
-    ! consistent with the following formulation.
-    ! Note that the 10-m wind calculated this way could actually be larger than the
-    ! atmospheric forcing wind because 1) this includes the convective velocity, 2)
-    ! this includes the 1 m/s minimum wind threshold
-
-    ! If forcing height is less than or equal to 10m, then set 10-m wind to um
-    if (zldis-z0m <= 10._r8) then
-       u10_with_gusts_elm = um
-    else
-       if (zeta < -zetam) then
-          u10_with_gusts_elm = um - ( ustar/vkc*(log(-zetam*obu/(10._r8+z0m))         &
-               - StabilityFunc1(-zetam)                                 &
-               + StabilityFunc1((10._r8+z0m)/obu)                 &
-               + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8)) )
-       else if (zeta < 0._r8) then
-          u10_with_gusts_elm = um - ( ustar/vkc*(log(zldis/(10._r8+z0m))              &
-               - StabilityFunc1(zeta)                                &
-               + StabilityFunc1((10._r8+z0m)/obu)) )
-       else if (zeta <=  1._r8) then
-          u10_with_gusts_elm = um - ( ustar/vkc*(log(zldis/(10._r8+z0m))              &
-               + 5._r8*zeta - 5._r8*(10._r8+z0m)/obu) )
-       else
-          u10_with_gusts_elm = um - ( ustar/vkc*(log(obu/(10._r8+z0m))    &
-               + 5._r8 - 5._r8*(10._r8+z0m)/obu                   &
-               + (5._r8*log(zeta)+zeta-1._r8)) )
-       end if
-    end if
-    va = um
-    ! Estimate u10 with effects of gustiness removed.
-    u10_elm = u10_with_gusts_elm * sqrt(max(0., um**2 - ugust**2)) / um
-
-    !===================!
-    !Temperature Profile!
-    !===================!
-    zldis = forc_hgt_t_patch - displa
-    zeta = zldis/obu
-    if (zeta < -zetat) then
-       temp1 = vkc/(log(-zetat*obu/z0h)&
-            - StabilityFunc2(-zetat) &
-            + StabilityFunc2(z0h/obu) &
-            + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
-    else if (zeta < 0._r8) then
-       temp1 = vkc/(log(zldis/z0h) &
-            - StabilityFunc2(zeta) &
-            + StabilityFunc2(z0h/obu))
-    else if (zeta <=  1._r8) then
-       temp1 = vkc/(log(zldis/z0h) + 5._r8*zeta - 5._r8*z0h/obu)
-    else
-       temp1 = vkc/(log(obu/z0h) + 5._r8 - 5._r8*z0h/obu &
-            + (5._r8*log(zeta)+zeta-1._r8))
-    end if
-    !=================!
-    !Humidity Profile !
-    !=================!
-    if (forc_hgt_q_patch == forc_hgt_t_patch .and. z0q == z0h) then
-       temp2 = temp1
-    else
-       zldis = forc_hgt_q_patch-displa
-       zeta = zldis/obu
-       if (zeta < -zetat) then
-          temp2 = vkc/(log(-zetat*obu/z0q) &
-               - StabilityFunc2(-zetat) &
-               + StabilityFunc2(z0q/obu) &
-               + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
-       else if (zeta < 0._r8) then
-          temp2 = vkc/(log(zldis/z0q) &
-               - StabilityFunc2(zeta) &
-               + StabilityFunc2(z0q/obu))
-       else if (zeta <=  1._r8) then
-          temp2 = vkc/(log(zldis/z0q) + 5._r8*zeta-5._r8*z0q/obu)
-       else
-          temp2 = vkc/(log(obu/z0q) + 5._r8 - 5._r8*z0q/obu &
-               + (5._r8*log(zeta)+zeta-1._r8))
-       end if
-    endif
-
-    ! Temperature profile applied at 2-m
-
-    zldis = 2.0_r8 + z0h
-    zeta = zldis/obu
-    if (zeta < -zetat) then
-       temp12m = vkc/(log(-zetat*obu/z0h)&
-            - StabilityFunc2(-zetat) &
-            + StabilityFunc2(z0h/obu) &
-            + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
-    else if (zeta < 0._r8) then
-       temp12m = vkc/(log(zldis/z0h) &
-            - StabilityFunc2(zeta)  &
-            + StabilityFunc2(z0h/obu))
-    else if (zeta <=  1._r8) then
-       temp12m = vkc/(log(zldis/z0h) + 5._r8*zeta - 5._r8*z0h/obu)
-    else
-       temp12m = vkc/(log(obu/z0h) + 5._r8 - 5._r8*z0h/obu &
-            + (5._r8*log(zeta)+zeta-1._r8))
-    end if
-
-    ! Humidity profile applied at 2-m
-
-    if (z0q == z0h) then
-       temp22m = temp12m
-    else
-       zldis = 2.0_r8 + z0q
-       zeta = zldis/obu
-       if (zeta < -zetat) then
-          temp22m = vkc/(log(-zetat*obu/z0q) - &
-               StabilityFunc2(-zetat) + StabilityFunc2(z0q/obu) &
-               + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
-       else if (zeta < 0._r8) then
-          temp22m = vkc/(log(zldis/z0q) - &
-               StabilityFunc2(zeta)+StabilityFunc2(z0q/obu))
-       else if (zeta <=  1._r8) then
-          temp22m = vkc/(log(zldis/z0q) + 5._r8*zeta-5._r8*z0q/obu)
-       else
-          temp22m = vkc/(log(obu/z0q) + 5._r8 - 5._r8*z0q/obu &
-               + (5._r8*log(zeta)+zeta-1._r8))
-       end if
-    end if
-
-    ! diagnose 10-m wind for dust model (dstmbl.F)
-    ! Notes from C. Zender's dst.F:
-    ! According to Bon96 p. 62, the displacement height d (here displa) is
-    ! 0.0 <= d <= 0.34 m in dust source regions (i.e., regions w/o trees).
-    ! Therefore d <= 0.034*z1 and may safely be neglected.
-    ! Code from LSM routine SurfaceTemperature was used to obtain u10
-    
-    zldis = forc_hgt_u_patch - displa
-    zeta = zldis/obu
-    if (min(zeta, 1._r8) < 0._r8) then
-       tmp1 = (1._r8 - 16._r8*min(zeta,1._r8))**0.25_r8
-       tmp2 = log((1._r8+tmp1*tmp1)/2._r8)
-       tmp3 = log((1._r8+tmp1)/2._r8)
-       fmnew = 2._r8*tmp3 + tmp2 - 2._r8*atan(tmp1) + 1.5707963_r8
-    else
-       fmnew = -5._r8*min(zeta,1._r8)
-    endif
-    if (iter == 1) then
-        fm = fmnew
-    else
-        fm = 0.5_r8 * (fm+fmnew)
-    end if
-    zeta10 = min(10._r8/obu, 1._r8)
-    if (zeta == 0._r8) zeta10 = 0._r8
-    if (zeta10 < 0._r8) then
-       tmp1 = (1.0_r8 - 16.0_r8 * zeta10)**0.25_r8
-       tmp2 = log((1.0_r8 + tmp1*tmp1)/2.0_r8)
-       tmp3 = log((1.0_r8 + tmp1)/2.0_r8)
-       fm10 = 2.0_r8*tmp3 + tmp2 - 2.0_r8*atan(tmp1) + 1.5707963_r8
-    else                ! not stable
-       fm10 = -5.0_r8 * zeta10
-    end if
-
-    tmp4 = log( max( 1.0_8, forc_hgt_u_patch / 10._r8) )
-    u10 = ur - ustar/vkc * (tmp4 - fm + fm10)
-    fv  = ustar
-  end subroutine FrictionVelocity_noloop
-
-  !------------------------------------------------------------------------------
-  subroutine FrictionVelocity_loops(lbn, ubn, fn, filtern, filter_map, norig, &
+  subroutine FrictionVelocity(lbn, ubn, fn, filtern, filter_map, norig, &
    displa, z0m, z0h, z0q, &
    obu, iter, ur, um, ugust, ustar, &
    temp1, temp2, temp12m, temp22m, fm,frictionvel_vars, landunit_index)
@@ -308,8 +55,8 @@ implicit none
 integer  , intent(in)    :: lbn, ubn            ! pft/landunit array bounds
 integer  , intent(in)    :: fn                  ! number of filtered pft/landunit elements
 integer  , intent(in)    :: filtern(fn)         ! pft/landunit filter
-integer  , intent(in)    :: filter_map(:)
-integer  , intent(in) :: norig
+integer  , intent(in)    :: filter_map(:)       ! filter_map(i) = index into the (1:norig) work arrays for filtern(i)
+integer  , intent(in)    :: norig               ! size of the (1:norig) work arrays (original filter length)
 real(r8) , intent(in)    :: displa  ( lbn: )    ! displacement height (m) [lbn:ubn]
 real(r8) , intent(in)    :: z0m     ( lbn: )    ! roughness length over vegetation, momentum [m] [lbn:ubn]
 real(r8) , intent(in)    :: z0h     ( lbn: )    ! roughness length over vegetation, sensible heat [m] [lbn:ubn]
@@ -382,27 +129,27 @@ associate(                                                   &
         zldis = forc_hgt_u_patch(n)-displa(n)
       end if
 
-      zeta = zldis/obu(index)
+      zeta = zldis/obu(active_index)
       if (zeta < -zetam) then
-        ustar(index) = vkc*um(index)/(log(-zetam*obu(index)/z0m(n))&
+        ustar(active_index) = vkc*um(active_index)/(log(-zetam*obu(active_index)/z0m(n))&
               - StabilityFunc1(-zetam) &
-              + StabilityFunc1(z0m(n)/obu(index)) &
+              + StabilityFunc1(z0m(n)/obu(active_index)) &
               + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8))
       else if (zeta < 0._r8) then
-        ustar(index) = vkc*um(index)/(log(zldis/z0m(n))&
+        ustar(active_index) = vkc*um(active_index)/(log(zldis/z0m(n))&
               - StabilityFunc1(zeta)&
-              + StabilityFunc1(z0m(n)/obu(index)))
+              + StabilityFunc1(z0m(n)/obu(active_index)))
       else if (zeta <=  1._r8) then
-        ustar(index) = vkc*um(index)/(log(zldis/z0m(n)) + 5._r8*zeta -5._r8*z0m(n)/obu(index))
+        ustar(active_index) = vkc*um(active_index)/(log(zldis/z0m(n)) + 5._r8*zeta -5._r8*z0m(n)/obu(active_index))
       else
-        ustar(index) = vkc*um(index)/(log(obu(index)/z0m(n))+5._r8-5._r8*z0m(n)/obu(index) &
+        ustar(active_index) = vkc*um(active_index)/(log(obu(active_index)/z0m(n))+5._r8-5._r8*z0m(n)/obu(active_index) &
               +(5._r8*log(zeta)+zeta-1._r8))
       end if
 
       if (zeta < 0._r8) then
-        vds_tmp = 2.e-3_r8*ustar(index) * ( 1._r8 + (300._r8/(-obu(index)))**0.666_r8)
+        vds_tmp = 2.e-3_r8*ustar(active_index) * ( 1._r8 + (300._r8/(-obu(active_index)))**0.666_r8)
       else
-        vds_tmp = 2.e-3_r8*ustar(index)
+        vds_tmp = 2.e-3_r8*ustar(active_index)
       endif
 
       if (is_landunit_index) then
@@ -428,56 +175,56 @@ associate(                                                   &
         !$acc loop seq 
         do pp = pfti,pftf
             if (zldis-z0m(n) <= 10._r8) then
-               u10_with_gusts_elm(pp) = um(index)
+               u10_with_gusts_elm(pp) = um(active_index)
             else
                if (zeta < -zetam) then
-                  u10_with_gusts_elm(pp) = um(index) - ( ustar(index)/vkc*(log(-zetam*obu(index)/(10._r8+z0m(n)))      &
+                  u10_with_gusts_elm(pp) = um(active_index) - ( ustar(active_index)/vkc*(log(-zetam*obu(active_index)/(10._r8+z0m(n)))      &
                        - StabilityFunc1(-zetam)                              &
-                       + StabilityFunc1((10._r8+z0m(n))/obu(index))              &
+                       + StabilityFunc1((10._r8+z0m(n))/obu(active_index))              &
                        + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8)) )
                else if (zeta < 0._r8) then
-                  u10_with_gusts_elm(pp) = um(index) - ( ustar(index)/vkc*(log(zldis/(10._r8+z0m(n)))           &
+                  u10_with_gusts_elm(pp) = um(active_index) - ( ustar(active_index)/vkc*(log(zldis/(10._r8+z0m(n)))           &
                        - StabilityFunc1(zeta)                             &
-                       + StabilityFunc1((10._r8+z0m(n))/obu(index))) )
+                       + StabilityFunc1((10._r8+z0m(n))/obu(active_index))) )
                else if (zeta <=  1._r8) then
-                  u10_with_gusts_elm(pp) = um(index) - ( ustar(index)/vkc*(log(zldis/(10._r8+z0m(n)))           &
-                       + 5._r8*zeta - 5._r8*(10._r8+z0m(n))/obu(index)) )
+                  u10_with_gusts_elm(pp) = um(active_index) - ( ustar(active_index)/vkc*(log(zldis/(10._r8+z0m(n)))           &
+                       + 5._r8*zeta - 5._r8*(10._r8+z0m(n))/obu(active_index)) )
                else
-                  u10_with_gusts_elm(pp) = um(index) - ( ustar(index)/vkc*(log(obu(index)/(10._r8+z0m(n))) &
-                       + 5._r8 - 5._r8*(10._r8+z0m(n))/obu(index) &
+                  u10_with_gusts_elm(pp) = um(active_index) - ( ustar(active_index)/vkc*(log(obu(active_index)/(10._r8+z0m(n))) &
+                       + 5._r8 - 5._r8*(10._r8+z0m(n))/obu(active_index) &
                        + (5._r8*log(zeta)+zeta-1._r8)) )
 
                end if
             end if
-            va(pp) = um(index)
+            va(pp) = um(active_index)
             ! Estimate u10 with effects of gustiness removed.
-            u10_elm(pp) = u10_with_gusts_elm(pp) * sqrt(max(0., um(index)**2 - ugust(index)**2)) / um(index)
+            u10_elm(pp) = u10_with_gusts_elm(pp) * sqrt(max(0., um(active_index)**2 - ugust(active_index)**2)) / um(active_index)
         end do
       else
         if (zldis-z0m(n) <= 10._r8) then
-            u10_with_gusts_elm(n) = um(index)
+            u10_with_gusts_elm(n) = um(active_index)
         else
             if (zeta < -zetam) then
-               u10_with_gusts_elm(n) = um(index) - ( ustar(index)/vkc*(log(-zetam*obu(index)/(10._r8+z0m(n)))         &
+               u10_with_gusts_elm(n) = um(active_index) - ( ustar(active_index)/vkc*(log(-zetam*obu(active_index)/(10._r8+z0m(n)))         &
                     - StabilityFunc1(-zetam)                                 &
-                    + StabilityFunc1((10._r8+z0m(n))/obu(index))                 &
+                    + StabilityFunc1((10._r8+z0m(n))/obu(active_index))                 &
                     + 1.14_r8*((-zeta)**0.333_r8-(zetam)**0.333_r8)) )
             else if (zeta < 0._r8) then
-               u10_with_gusts_elm(n) = um(index) - ( ustar(index)/vkc*(log(zldis/(10._r8+z0m(n)))              &
+               u10_with_gusts_elm(n) = um(active_index) - ( ustar(active_index)/vkc*(log(zldis/(10._r8+z0m(n)))              &
                     - StabilityFunc1(zeta)                                &
-                    + StabilityFunc1((10._r8+z0m(n))/obu(index))) )
+                    + StabilityFunc1((10._r8+z0m(n))/obu(active_index))) )
             else if (zeta <=  1._r8) then
-               u10_with_gusts_elm(n) = um(index) - ( ustar(index)/vkc*(log(zldis/(10._r8+z0m(n)))              &
-                    + 5._r8*zeta - 5._r8*(10._r8+z0m(n))/obu(index)) )
+               u10_with_gusts_elm(n) = um(active_index) - ( ustar(active_index)/vkc*(log(zldis/(10._r8+z0m(n)))              &
+                    + 5._r8*zeta - 5._r8*(10._r8+z0m(n))/obu(active_index)) )
             else
-               u10_with_gusts_elm(n) = um(index) - ( ustar(index)/vkc*(log(obu(index)/(10._r8+z0m(n)))    &
-                    + 5._r8 - 5._r8*(10._r8+z0m(n))/obu(index)                   &
+               u10_with_gusts_elm(n) = um(active_index) - ( ustar(active_index)/vkc*(log(obu(active_index)/(10._r8+z0m(n)))    &
+                    + 5._r8 - 5._r8*(10._r8+z0m(n))/obu(active_index)                   &
                     + (5._r8*log(zeta)+zeta-1._r8)) )
             end if
         end if
-        va(n) = um(index)
+        va(n) = um(active_index)
         ! Estimate u10 with effects of gustiness removed.
-        u10_elm(n) = u10_with_gusts_elm(n) * sqrt(max(0., um(index)**2 - ugust(index)**2)) / um(index)
+        u10_elm(n) = u10_with_gusts_elm(n) * sqrt(max(0., um(active_index)**2 - ugust(active_index)**2)) / um(active_index)
       end if
 
       !===================!
@@ -488,20 +235,20 @@ associate(                                                   &
       else
         zldis = forc_hgt_t_patch(n)-displa(n)
       end if
-      zeta = zldis/obu(index)
+      zeta = zldis/obu(active_index)
       if (zeta < -zetat) then
-        temp1(index) = vkc/(log(-zetat*obu(index)/z0h(n))&
+        temp1(active_index) = vkc/(log(-zetat*obu(active_index)/z0h(n))&
               - StabilityFunc2(-zetat) &
-              + StabilityFunc2(z0h(n)/obu(index)) &
+              + StabilityFunc2(z0h(n)/obu(active_index)) &
               + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
       else if (zeta < 0._r8) then
-        temp1(index) = vkc/(log(zldis/z0h(n)) &
+        temp1(active_index) = vkc/(log(zldis/z0h(n)) &
               - StabilityFunc2(zeta) &
-              + StabilityFunc2(z0h(n)/obu(index)))
+              + StabilityFunc2(z0h(n)/obu(active_index)))
       else if (zeta <=  1._r8) then
-        temp1(index) = vkc/(log(zldis/z0h(n)) + 5._r8*zeta - 5._r8*z0h(n)/obu(index))
+        temp1(active_index) = vkc/(log(zldis/z0h(n)) + 5._r8*zeta - 5._r8*z0h(n)/obu(active_index))
       else
-        temp1(index) = vkc/(log(obu(index)/z0h(n)) + 5._r8 - 5._r8*z0h(n)/obu(index) &
+        temp1(active_index) = vkc/(log(obu(active_index)/z0h(n)) + 5._r8 - 5._r8*z0h(n)/obu(active_index) &
               + (5._r8*log(zeta)+zeta-1._r8))
       end if
       !=================!
@@ -509,45 +256,45 @@ associate(                                                   &
       !=================!
       if (is_landunit_index) then
         if (forc_hgt_q_patch(pfti) == forc_hgt_t_patch(pfti) .and. z0q(n) == z0h(n)) then
-            temp2(index) = temp1(index)
+            temp2(active_index) = temp1(active_index)
         else
             zldis = forc_hgt_q_patch(pfti)-displa(n)
-            zeta = zldis/obu(index)
+            zeta = zldis/obu(active_index)
             if (zeta < -zetat) then
-               temp2(index) = vkc/(log(-zetat*obu(index)/z0q(n)) &
+               temp2(active_index) = vkc/(log(-zetat*obu(active_index)/z0q(n)) &
                     - StabilityFunc2(-zetat) &
-                    + StabilityFunc2(z0q(n)/obu(index)) &
+                    + StabilityFunc2(z0q(n)/obu(active_index)) &
                     + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
             else if (zeta < 0._r8) then
-               temp2(index) = vkc/(log(zldis/z0q(n)) &
+               temp2(active_index) = vkc/(log(zldis/z0q(n)) &
                     - StabilityFunc2(zeta) &
-                    + StabilityFunc2(z0q(n)/obu(index)))
+                    + StabilityFunc2(z0q(n)/obu(active_index)))
             else if (zeta <=  1._r8) then
-               temp2(index) = vkc/(log(zldis/z0q(n)) + 5._r8*zeta-5._r8*z0q(n)/obu(index))
+               temp2(active_index) = vkc/(log(zldis/z0q(n)) + 5._r8*zeta-5._r8*z0q(n)/obu(active_index))
             else
-               temp2(index) = vkc/(log(obu(index)/z0q(n)) + 5._r8 - 5._r8*z0q(n)/obu(index) &
+               temp2(active_index) = vkc/(log(obu(active_index)/z0q(n)) + 5._r8 - 5._r8*z0q(n)/obu(active_index) &
                     + (5._r8*log(zeta)+zeta-1._r8))
             end if
         end if
       else
         if (forc_hgt_q_patch(n) == forc_hgt_t_patch(n) .and. z0q(n) == z0h(n)) then
-            temp2(index) = temp1(index)
+            temp2(active_index) = temp1(active_index)
         else
             zldis = forc_hgt_q_patch(n)-displa(n)
-            zeta = zldis/obu(index)
+            zeta = zldis/obu(active_index)
             if (zeta < -zetat) then
-               temp2(index) = vkc/(log(-zetat*obu(index)/z0q(n)) &
+               temp2(active_index) = vkc/(log(-zetat*obu(active_index)/z0q(n)) &
                     - StabilityFunc2(-zetat) &
-                    + StabilityFunc2(z0q(n)/obu(index)) &
+                    + StabilityFunc2(z0q(n)/obu(active_index)) &
                     + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
             else if (zeta < 0._r8) then
-               temp2(index) = vkc/(log(zldis/z0q(n)) &
+               temp2(active_index) = vkc/(log(zldis/z0q(n)) &
                     - StabilityFunc2(zeta) &
-                    + StabilityFunc2(z0q(n)/obu(index)))
+                    + StabilityFunc2(z0q(n)/obu(active_index)))
             else if (zeta <=  1._r8) then
-               temp2(index) = vkc/(log(zldis/z0q(n)) + 5._r8*zeta-5._r8*z0q(n)/obu(index))
+               temp2(active_index) = vkc/(log(zldis/z0q(n)) + 5._r8*zeta-5._r8*z0q(n)/obu(active_index))
             else
-               temp2(index) = vkc/(log(obu(index)/z0q(n)) + 5._r8 - 5._r8*z0q(n)/obu(index) &
+               temp2(active_index) = vkc/(log(obu(active_index)/z0q(n)) + 5._r8 - 5._r8*z0q(n)/obu(active_index) &
                     + (5._r8*log(zeta)+zeta-1._r8))
             end if
         endif
@@ -556,41 +303,41 @@ associate(                                                   &
       ! Temperature profile applied at 2-m
 
       zldis = 2.0_r8 + z0h(n)
-      zeta = zldis/obu(index)
+      zeta = zldis/obu(active_index)
       if (zeta < -zetat) then
-        temp12m(index) = vkc/(log(-zetat*obu(index)/z0h(n))&
+        temp12m(active_index) = vkc/(log(-zetat*obu(active_index)/z0h(n))&
               - StabilityFunc2(-zetat) &
-              + StabilityFunc2(z0h(n)/obu(index)) &
+              + StabilityFunc2(z0h(n)/obu(active_index)) &
               + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
       else if (zeta < 0._r8) then
-        temp12m(index) = vkc/(log(zldis/z0h(n)) &
+        temp12m(active_index) = vkc/(log(zldis/z0h(n)) &
               - StabilityFunc2(zeta)  &
-              + StabilityFunc2(z0h(n)/obu(index)))
+              + StabilityFunc2(z0h(n)/obu(active_index)))
       else if (zeta <=  1._r8) then
-        temp12m(index) = vkc/(log(zldis/z0h(n)) + 5._r8*zeta - 5._r8*z0h(n)/obu(index))
+        temp12m(active_index) = vkc/(log(zldis/z0h(n)) + 5._r8*zeta - 5._r8*z0h(n)/obu(active_index))
       else
-        temp12m(index) = vkc/(log(obu(index)/z0h(n)) + 5._r8 - 5._r8*z0h(n)/obu(index) &
+        temp12m(active_index) = vkc/(log(obu(active_index)/z0h(n)) + 5._r8 - 5._r8*z0h(n)/obu(active_index) &
               + (5._r8*log(zeta)+zeta-1._r8))
       end if
 
       ! Humidity profile applied at 2-m
 
       if (z0q(n) == z0h(n)) then
-        temp22m(index) = temp12m(index)
+        temp22m(active_index) = temp12m(active_index)
       else
         zldis = 2.0_r8 + z0q(n)
-        zeta = zldis/obu(index)
+        zeta = zldis/obu(active_index)
         if (zeta < -zetat) then
-            temp22m(index) = vkc/(log(-zetat*obu(index)/z0q(n)) - &
-                 StabilityFunc2(-zetat) + StabilityFunc2(z0q(n)/obu(index)) &
+            temp22m(active_index) = vkc/(log(-zetat*obu(active_index)/z0q(n)) - &
+                 StabilityFunc2(-zetat) + StabilityFunc2(z0q(n)/obu(active_index)) &
                  + 0.8_r8*((zetat)**(-0.333_r8)-(-zeta)**(-0.333_r8)))
         else if (zeta < 0._r8) then
-            temp22m(index) = vkc/(log(zldis/z0q(n)) - &
-                 StabilityFunc2(zeta)+StabilityFunc2(z0q(n)/obu(index)))
+            temp22m(active_index) = vkc/(log(zldis/z0q(n)) - &
+                 StabilityFunc2(zeta)+StabilityFunc2(z0q(n)/obu(active_index)))
         else if (zeta <=  1._r8) then
-            temp22m(index) = vkc/(log(zldis/z0q(n)) + 5._r8*zeta-5._r8*z0q(n)/obu(index))
+            temp22m(active_index) = vkc/(log(zldis/z0q(n)) + 5._r8*zeta-5._r8*z0q(n)/obu(active_index))
         else
-            temp22m(index)= vkc/(log(obu(index)/z0q(n)) + 5._r8 - 5._r8*z0q(n)/obu(index) &
+            temp22m(active_index)= vkc/(log(obu(active_index)/z0q(n)) + 5._r8 - 5._r8*z0q(n)/obu(active_index) &
                  + (5._r8*log(zeta)+zeta-1._r8))
         end if
       end if
@@ -607,7 +354,7 @@ associate(                                                   &
         zldis = forc_hgt_u_patch(n)-displa(n)
       end if
 
-      zeta = zldis/obu(index)
+      zeta = zldis/obu(active_index)
       if (min(zeta, 1._r8) < 0._r8) then
         tmp1 = (1._r8 - 16._r8*min(zeta,1._r8))**0.25_r8
         tmp2 = log((1._r8+tmp1*tmp1)/2._r8)
@@ -617,11 +364,11 @@ associate(                                                   &
         fmnew = -5._r8*min(zeta,1._r8)
       endif
       if (iter == 1) then
-          fm(index) = fmnew
+          fm(active_index) = fmnew
       else
-          fm(index) = 0.5_r8 * (fm(index)+fmnew)
+          fm(active_index) = 0.5_r8 * (fm(active_index)+fmnew)
       end if
-      zeta10 = min(10._r8/obu(index), 1._r8)
+      zeta10 = min(10._r8/obu(active_index), 1._r8)
       if (zeta == 0._r8) zeta10 = 0._r8
       if (zeta10 < 0._r8) then
         tmp1 = (1.0_r8 - 16.0_r8 * zeta10)**0.25_r8
@@ -640,19 +387,19 @@ associate(                                                   &
       if (is_landunit_index) then
         !$acc loop seq 
         do pp = pfti,pftf
-            u10(pp) = ur(index) - ustar(index)/vkc * (tmp4 - fm(index) + fm10)
-            fv(pp)  = ustar(index)
+            u10(pp) = ur(active_index) - ustar(active_index)/vkc * (tmp4 - fm(active_index) + fm10)
+            fv(pp)  = ustar(active_index)
         end do
       else
-        u10(n) = ur(index) - ustar(index)/vkc * (tmp4 - fm(index) + fm10)
-        fv(n)  = ustar(index)
+        u10(n) = ur(active_index) - ustar(active_index)/vkc * (tmp4 - fm(active_index) + fm10)
+        fv(n)  = ustar(active_index)
       end if
    end do !! do loop of fn
 
    !$acc exit data delete(is_landunit_index)
  end associate
 
-end subroutine FrictionVelocity
+  end subroutine FrictionVelocity
 
 
   !------------------------------------------------------------------------------

@@ -42,10 +42,6 @@ module UrbanFluxesMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: UrbanFluxes       ! Urban physics - turbulent fluxes
   !-----------------------------------------------------------------------
-  integer, parameter :: urban_hac_off_int = 0
-  integer, parameter :: urban_hac_on_int = 1
-  integer, parameter :: urban_wasteheat_on_int = 2 
-  integer, public :: urban_hac_int = urban_hac_off_int
 contains
 
   !-----------------------------------------------------------------------
@@ -65,7 +61,7 @@ contains
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
     use column_varcon       , only : icol_roof, icol_sunwall
     use filterMod           , only : filter
-    use FrictionVelocityMod , only : FrictionVelocity_loops, MoninObukIni, &
+    use FrictionVelocityMod , only : FrictionVelocity, MoninObukIni, &
          implicit_stress, atm_gustiness, force_land_gustiness
     use QSatMod             , only : QSat
     use elm_varpar          , only : maxpatch_urb, nlevurb, nlevgrnd
@@ -85,11 +81,15 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
 
-    integer  :: num_copyl                                ! iteration num_urbanl
-    integer  :: num_copyl_old                            ! previous iteration num_copyl
-    integer  :: num_copyc                                ! iteration num_urbanc
-    integer  :: num_copyc_old                            ! previous iteration num_copyc
-    integer  :: num_unconverged  
+    integer  :: fa                                       ! index into active (unconverged) filters
+    integer  :: fnl, fnl_old                             ! number of active landunits
+    integer  :: fnc, fnc_old                             ! number of active columns
+    ! iter_filterl(1:fnl)/iter_filterc(1:fnc) hold the landunits/columns still iterating;
+    ! iter_mapl/iter_mapc hold their position in filter_urbanl/filter_urbanc, which is
+    ! how the num_urbanl/num_urbanc-sized work arrays are addressed.
+    integer  :: iter_filterl(num_urbanl), iter_mapl(num_urbanl)
+    integer  :: iter_filterc(num_urbanc), iter_mapc(num_urbanc)
+    real(r8) :: ugust_total(1:num_urbanl)                 ! gustiness including convective velocity [m/s]
 
     real(r8) :: canyontop_wind(1:num_urbanl)              ! wind at canyon top (m/s)
     real(r8) :: canyon_u_wind(1:num_urbanl)               ! u-component of wind speed inside canyon (m/s)
@@ -191,12 +191,11 @@ contains
     real(r8) :: tau(1:num_urbanl)      ! Stress used in iteration
     real(r8) :: tau_diff(1:num_urbanl) ! Difference from previous iteration tau
     real(r8) :: prev_tau(1:num_urbanl) ! Previous iteration tau
-    real(r8) :: prev_tau_diff(bounds%begl:bounds%endl) ! Previous difference in iteration tau
+    real(r8) :: prev_tau_diff(1:num_urbanl) ! Previous difference in iteration tau
     real(r8), parameter :: beta = 1._r8           ! coefficient of convective velocity
     real(r8), parameter :: zii  = 1000._r8        ! convective boundary layer height (m)
     integer :: lnd_to_urban_filter(bounds%begl:bounds%endl) !
     integer :: col_to_urban_filter(bounds%begc:bounds%endc)
-    logical :: converged_landunits(bounds%begl:bounds%endl)
     integer :: begl, endl, begc, endc, begp, endp
     integer :: erridx1, erridx2
     real(r8) :: sum_denom, sum_numer
@@ -359,7 +358,8 @@ contains
     !$acc prev_tau(:), &
     !$acc prev_tau_diff(:), &
     !$acc lnd_to_urban_filter(:), &
-    !$acc converged_landunits(:), col_to_urban_filter(:) )
+    !$acc iter_filterl(:), iter_mapl(:), iter_filterc(:), iter_mapc(:), ugust_total(:), &
+    !$acc col_to_urban_filter(:) )
 
 
        begl = bounds%begl
@@ -399,14 +399,16 @@ contains
          if (implicit_stress) then
             wind_speed0(fl) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
             wind_speed_adj(fl) = wind_speed0(fl)
-            ur(fl) = max(1.0_r8, wind_speed_adj(fl) + ugust(t))
+            ur(fl) = max(1.0_r8, sqrt(wind_speed_adj(fl)**2 + ugust(t)**2))
 
             prev_tau(fl) = tau_est(t)
          else
-            ur(fl) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)) + ugust(t))
+            ur(fl) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
          end if
          tau_diff(fl) = 1.e100_r8
-         ugust_total(l) = ugust(t)
+         ugust_total(fl) = ugust(t)
+         iter_filterl(fl) = l
+         iter_mapl(fl)    = fl
 
       end do
 
@@ -477,36 +479,41 @@ contains
       end do 
 
       ! Start stability iteration
-      num_copyl = num_urbanl
-      num_copyc = num_urbanc
 
       if (implicit_stress) then
          loopmax = itmax
       else
          loopmax = itmin
       end if
-      ! converged_cols(begc:endc) = .false.
-      converged_landunits(begl:endl) = .false.
-      !$acc update device(converged_landunits(:))
+      fnl = num_urbanl
+      fnc = num_urbanc
+      !$acc parallel loop independent gang vector default(present)
+      do fc = 1, num_urbanc
+         iter_filterc(fc) = filter_urbanc(fc)
+         iter_mapc(fc)    = fc
+         col_to_urban_filter(filter_urbanc(fc)) = fc
+      end do
+
       ITERATION: do iter = 1, loopmax
          ! Get friction velocity, relation for potential
          ! temperature and humidity profiles of surface boundary layer.
-         call FrictionVelocity_loops(begl, endl, &
-                 num_urbanl, filter_urbanl, &
+         call FrictionVelocity(begl, endl, &
+                 fnl, iter_filterl, iter_mapl, num_urbanl, &
                  z_d_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), z_0_town(begl:endl), &
-                 obu(1:num_urbanl), iter, ur(1:num_urbanl), um(1:num_urbanl), ustar(1:num_urbanl), &
+                 obu(1:num_urbanl), iter, ur(1:num_urbanl), um(1:num_urbanl), &
+                 ugust_total(1:num_urbanl), ustar(1:num_urbanl), &
                  temp1(1:num_urbanl), temp2(1:num_urbanl), temp12m(1:num_urbanl), &
                  temp22m(1:num_urbanl), fm(1:num_urbanl), &
-                 frictionvel_vars, converged_landunits(begl:endl),landunit_index=.true.)
+                 frictionvel_vars, landunit_index=.true.)
 
          !$acc parallel loop independent gang vector default(present) &
          !$acc  present(ht_roof(:),wind_hgt_canyon(:),z_0_town(:),&
-         !$acc  z_d_town(:),canyon_hwr(:),converged_landunits(:))
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         !$acc  z_d_town(:),canyon_hwr(:))
+         do fa = 1, fnl
+            l  = iter_filterl(fa)
+            fl = iter_mapl(fa)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
-            if(converged_landunits(l)) cycle
 
             ! Determine aerodynamic resistance to fluxes from urban canopy air to
             ! atmosphere
@@ -515,15 +522,15 @@ contains
             rawu(fl) = 1._r8/(temp2(fl)*ustar(fl))
 
             ! Calculate magnitude of stress and update wind speed.
-            #ifndef _OPENACC
+#ifndef _OPENACC
             if (implicit_stress) then
                tau(fl) = forc_rho(t)*wind_speed_adj(fl)/ramu(fl)
-               call shr_flux_update_stress(wind_speed0(l), wsresp(t), tau_est(t), &
-                    tau(l), prev_tau(l), tau_diff(l), prev_tau_diff(l), &
-                    wind_speed_adj(l))
-               ur(fl) = max(1.0_r8, wind_speed_adj(fl) + ugust(t))
+               call shr_flux_update_stress(wind_speed0(fl), wsresp(t), tau_est(t), &
+                    tau(fl), prev_tau(fl), tau_diff(fl), prev_tau_diff(fl), &
+                    wind_speed_adj(fl))
+               ur(fl) = max(1.0_r8, sqrt(wind_speed_adj(fl)**2 + ugust(t)**2))
             end if
-            #endif
+#endif
 
             ! Canyon top wind
             ! If the wind does not change in this loop (explicit stress), then
@@ -563,12 +570,12 @@ contains
 
          ! This is the first term in the equation solutions for urban canopy air temperature
          ! and specific humidity (numerator) and is a landunit quantity
-         !$acc parallel loop independent gang vector default(present) present(converged_landunits(:))
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         !$acc parallel loop independent gang vector default(present)
+         do fa = 1, fnl
+            l  = iter_filterl(fa)
+            fl = iter_mapl(fa)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
-            if(converged_landunits(l)) cycle
 
             taf_numer(fl) = thm_g(fl)/rahu(fl)
             taf_denom(fl) = 1._r8/rahu(fl)
@@ -585,14 +592,13 @@ contains
          ! Gather other terms for other urban columns for numerator and denominator of
          ! equations for urban canopy air temperature and specific humidity
          !$acc parallel loop independent gang vector default(present) present(&
-         !$acc wtroad_perv(:),qaf(:),lnd_to_urban_filter(:),converged_landunits(:),&
+         !$acc wtroad_perv(:),qaf(:),lnd_to_urban_filter(:),&
          !$acc canyon_hwr(:),wtlunit_roof(:))
-          do fc = 1, num_urbanc
-            c = filter_urbanc(fc)
+          do fa = 1, fnc
+            c  = iter_filterc(fa)
+            fc = iter_mapc(fa)
             l = col_pp%landunit(c)
-            if(converged_landunits(l)) cycle
             fl = lnd_to_urban_filter(l)
-            col_to_urban_filter(c) = fc
 
             if (ctype(c) == icol_roof) then
 
@@ -739,13 +745,12 @@ contains
            ! qaf_denom(fl) = qaf_denom(fl) + wtuq(fc)
 
          end do
-      !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)&
-      !$acc present(converged_landunits(:))
-      do fl = 1, num_urbanl
+      !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)
+      do fa = 1, fnl
+         l  = iter_filterl(fa)
+         fl = iter_mapl(fa)
          sum_denom = taf_denom(fl)
-         sum_numer = taf_numer(fl) 
-         l = filter_urbanl(fl)
-         if(converged_landunits(l)) cycle
+         sum_numer = taf_numer(fl)
          !$acc loop vector reduction(+:sum_denom,sum_numer)
          do c = lun_pp%coli(l), lun_pp%colf(l)
             if(col_pp%active(c)) then
@@ -759,10 +764,11 @@ contains
       end do
       !$acc parallel loop independent gang worker default(present) private(sum_denom,sum_numer)&
       !$acc present(qg(:),col_pp%active(:),lun_pp%coli(:),lun_pp%colf(:),col_to_urban_filter(:))
-      do fl = 1, num_urbanl
+      do fa = 1, fnl
+         l  = iter_filterl(fa)
+         fl = iter_mapl(fa)
          sum_denom = qaf_denom(fl)
          sum_numer = qaf_numer(fl)
-         l = filter_urbanl(fl)
          !$acc loop vector reduction(+:sum_denom,sum_numer)
          do c = lun_pp%coli(l), lun_pp%colf(l)
             if(col_pp%active(c)) then
@@ -778,13 +784,13 @@ contains
          ! Calculate new urban canopy air temperature and specific humidity
 
          !$acc parallel loop independent gang vector default(present)&
-         !$acc present(wtroad_perv(:),taf(:),converged_landunits(:),eflx_heat_from_ac(:),&
+         !$acc present(wtroad_perv(:),taf(:),eflx_heat_from_ac(:),&
          !$acc eflx_traffic_factor(:),eflx_wasteheat(:),eflx_traffic(:),qaf(:), &
          !$acc wtlunit_roof(:),canyon_hwr(:) )
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         do fa = 1, fnl
+            l  = iter_filterl(fa)
+            fl = iter_mapl(fa)
             g = lun_pp%gridcell(l)
-            if(converged_landunits(l)) cycle
             ! Total waste heat and heat from AC is sum of heat for walls and roofs
             ! accounting for different surface areas
             eflx_wasteheat(l) = wtlunit_roof(l)*eflx_wasteheat_roof(fl) + &
@@ -820,12 +826,12 @@ contains
          ! TODO: Some of these constants replicate what is in FrictionVelocity 
          !       and BareGround fluxes should consildate. EBK
          !$acc parallel loop independent gang vector default(present) &
-         !$acc present(taf(:), qaf(:), converged_landunits(:) ) 
-         do fl = 1, num_urbanl
-            l = filter_urbanl(fl)
+         !$acc present(taf(:), qaf(:))
+         do fa = 1, fnl
+            l  = iter_filterl(fa)
+            fl = iter_mapl(fa)
             t = lun_pp%topounit(l)
             g = lun_pp%gridcell(l)
-            if(converged_landunits(l)) cycle
 
             dth(fl) = thm_g(fl)-taf(l)
             dqh(fl) = forc_q(t)-qaf(l)
@@ -840,8 +846,13 @@ contains
                um(fl) = max(ur(fl),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
-               wc = beta*(-grav*ustar(fl)*thvstar*zii/thv_g(fl))**0.333_r8
-               um(fl) = sqrt(ur(fl)*ur(fl) + wc*wc)
+               if ((.not. atm_gustiness) .or. force_land_gustiness) then
+                  wc = beta*(-grav*ustar(fl)*thvstar*zii/thv_g(fl))**0.333_r8
+                  ugust_total(fl) = sqrt(ugust(t)**2 + wc**2)
+                  um(fl) = sqrt(ur(fl)*ur(fl) + wc*wc)
+               else
+                  um(fl) = max(ur(fl),0.1_r8)
+               end if
             end if
             obu(fl) = zldis(fl)/zeta
          end do
@@ -849,21 +860,38 @@ contains
          ! Test for convergence
          iter_final = iter
          if (iter >= itmin) then
-            num_unconverged = 0
-            !$acc parallel loop independent gang vector default(present) & 
-            !$acc  present(converged_landunits(:)) copy(num_unconverged) reduction(+:num_unconverged)
-            do fl = 1, num_urbanl
-               l = filter_urbanl(fl)
+            ! Compact the active landunit filter/map in place, keeping only landunits
+            ! that have NOT converged. Sequential write-index dependency on fnl.
+            fnl_old = fnl
+            fnl = 0
+            !$acc parallel loop seq default(present) private(l,fl) copy(fnl)
+            do fa = 1, fnl_old
+               l  = iter_filterl(fa)
+               fl = iter_mapl(fa)
                if (.not. (abs(tau_diff(fl)) < dtaumin)) then
-                  num_unconverged = num_unconverged + 1
-               else
-                  converged_landunits(l) = .true.
+                  fnl = fnl + 1
+                  iter_filterl(fnl) = l
+                  iter_mapl(fnl)    = fl
                end if
             end do
-            if (num_unconverged == 0) then
-               print *, "UrbanFluxes::Converged after ",iter,"iterations"
-               exit ITERATION
-            end if
+            if (fnl == 0) exit ITERATION
+
+            ! After weeding out landunits that have converged, also filter out
+            ! the associated columns.
+            fnc_old = fnc
+            fnc = 0
+            !$acc parallel loop seq default(present) private(c,fc,l,fl) copy(fnc)
+            do fa = 1, fnc_old
+               c  = iter_filterc(fa)
+               fc = iter_mapc(fa)
+               l  = col_pp%landunit(c)
+               fl = lnd_to_urban_filter(l)
+               if (.not. (abs(tau_diff(fl)) < dtaumin)) then
+                  fnc = fnc + 1
+                  iter_filterc(fnc) = c
+                  iter_mapc(fnc)    = fc
+               end if
+            end do
          end if
 
       end do ITERATION ! end iteration
@@ -1009,48 +1037,43 @@ contains
 
       ! Check to see that total sensible and latent heat equal the sum of
       ! the scaled heat fluxes above
-      !$acc parallel loop independent gang vector default(present) present(qaf(:), taf(:))
+      !$acc parallel loop independent gang worker default(present) present(qaf(:), taf(:)) &
+      !$acc private(sum_denom,sum_numer)
       do fl = 1, num_urbanl
          l = filter_urbanl(fl)
          t = lun_pp%topounit(l)
          g = lun_pp%gridcell(l)
-         !
-         eflx_scale = 0.0_r8 
-         qflx_scale = 0.0_r8
-         eflx       = -(forc_rho(t)*cpair/rahu(fl))*(thm_g(fl) - taf(l))
-         qflx       = -(forc_rho(t)/rawu(fl))*(forc_q(t) - qaf(l))
-         !$acc loop vector reduction(+:eflx_scale,qflx_scale) 
-         do p = lun_pp%pfti(l), lun_pp%pftf(l) 
+         ! sum_denom/sum_numer are reused here as the eflx/qflx scale accumulators
+         sum_denom = 0.0_r8
+         sum_numer = 0.0_r8
+         !$acc loop vector reduction(+:sum_denom,sum_numer)
+         do p = lun_pp%pfti(l), lun_pp%pftf(l)
             if(veg_pp%active(p) .and. lun_pp%urbpoi(l)) then
-               eflx_scale = eflx_scale + eflx_sh_grnd_scale(p) 
-               qflx_scale = qflx_scale + qflx_evap_soi_scale(p)
-            end if 
-         end do 
-         eflx_err   = eflx_scale - eflx
-         qflx_err   = qflx_scale - qflx
-         if(abs(eflx_err) > 0.01_r8) then 
-            found=.true. 
-            indexl = l 
-            print *, "EFLX_ERR indexl",l 
-            stop 
-         end if 
-         if (abs(qflx_err) > 4.e-9_r8) then
-            found = .true.
-            indexl = l
-            exit
-         end if
+               sum_denom = sum_denom + eflx_sh_grnd_scale(p)
+               sum_numer = sum_numer + qflx_evap_soi_scale(p)
+            end if
+         end do
+         eflx_scale(fl) = sum_denom
+         qflx_scale(fl) = sum_numer
+         eflx(fl)       = -(forc_rho(t)*cpair/rahu(fl))*(thm_g(fl) - taf(l))
+         qflx(fl)       = -(forc_rho(t)/rawu(fl))*(forc_q(t) - qaf(l))
+         eflx_err(fl)   = eflx_scale(fl) - eflx(fl)
+         qflx_err(fl)   = qflx_scale(fl) - qflx(fl)
       end do
 
       found = .false.
-      !$acc parallel loop independent gang vector default(present)
+      erridx1 = -9999
+      !$acc parallel loop independent gang vector default(present) copy(erridx1)
       do fl = 1, num_urbanl
-         l = filter_urbanl(fl)
          if (abs(eflx_err(fl)) > 0.01_r8) then
-            found = .true.
-            indexl = fl
-            exit
+            erridx1 = fl
          end if
       end do
+      if (erridx1 > 0) then
+         found = .true.
+         indexl = erridx1
+         !$acc update self(eflx_err(:), eflx_scale(:), eflx(:), eflx_sh_grnd_scale(:))
+      end if
 
       if ( found ) then
          write(iulog,*)'WARNING:  Total sensible heat does not equal sum of scaled heat fluxes for urban columns ',&
@@ -1062,7 +1085,7 @@ contains
             write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l))
             write(iulog,*)'eflx          = ',eflx(indexl)
             write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(l))
-            call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=filter_urbanl(indexl), elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 
@@ -1072,21 +1095,20 @@ contains
          l = filter_urbanl(fl)
          ! 4.e-9 kg/m**2/s = 0.01 W/m**2
          if (abs(qflx_err(fl)) > 4.e-9_r8) then
-            ! found = .true.
-            erridx1 = l
-            ! exit
+            erridx1 = fl
          end if
       end do
 
       if ( erridx1 > 0 ) then
          indexl = erridx1
+         !$acc update self(qflx_err(:), qflx_scale(:), qflx(:))
          write(iulog,*)'WARNING:  Total water vapor flux does not equal sum of scaled water vapor fluxes for urban columns ',&
               ' nstep = ',nstep_mod,' indexl= ',indexl,' qflx_err= ',qflx_err(indexl)
          if (abs(qflx_err(indexl)) > 4.e-9_r8) then
             write(iulog,*)'elm model is stopping - error is greater than 4.e-9 kg/m**2/s'
             write(iulog,*)'qflx_scale    = ',qflx_scale(indexl)
             write(iulog,*)'qflx          = ',qflx(indexl)
-            call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
+            call endrun(decomp_index=filter_urbanl(indexl), elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if
       end if
 
@@ -1097,7 +1119,7 @@ contains
             if (abs(tau_diff(fl)) > dtaumin) then
                if (nstep_mod > 0) then ! Suppress common warnings on the first time step.
                   write(iulog,*)'WARNING: Stress did not converge for urban columns ',&
-                       ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(l),&
+                       ' nstep = ',nstep,' indexl= ',l,' prev_tau_diff= ',prev_tau_diff(fl),&
                        ' tau_diff= ',tau_diff(fl),' tau= ',tau(fl),&
                        ' wind_speed_adj= ',wind_speed_adj(fl),' iter_final= ',iter_final
                end if
@@ -1253,7 +1275,8 @@ contains
     !$acc prev_tau(:), &
     !$acc prev_tau_diff(:), &
     !$acc lnd_to_urban_filter(:), &
-    !$acc converged_landunits(:),col_to_urban_filter(:) )
+    !$acc iter_filterl(:), iter_mapl(:), iter_filterc(:), iter_mapc(:), ugust_total(:), &
+    !$acc col_to_urban_filter(:) )
 
     end associate
 

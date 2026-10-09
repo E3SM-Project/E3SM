@@ -30,7 +30,7 @@ module BareGroundFluxesMod
 contains
 
   !------------------------------------------------------------------------------
-  subroutine BareGroundFluxes( num_nolu_barep, filter_nolu_barep, &
+  subroutine BareGroundFluxes(bounds, num_nolu_barep, filter_nolu_barep, &
        canopystate_vars, soilstate_vars, &
        frictionvel_vars, ch4_vars)
     !
@@ -40,6 +40,7 @@ contains
     ! !USES:
     use shr_const_mod        , only : SHR_CONST_RGAS
     use shr_flux_mod         , only : shr_flux_update_stress
+    use decompMod            , only : bounds_type
     use elm_varpar           , only : nlevgrnd
     use elm_varcon           , only : cpair, vkc, grav, denice, denh2o
     use elm_varctl           , only : iulog, use_lch4
@@ -51,6 +52,7 @@ contains
     use elm_time_manager     , only : get_nstep
     !
     ! !ARGUMENTS:
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_nolu_barep        ! number of pft non-lake, non-urban points in pft filter
     integer                , intent(in)    :: filter_nolu_barep(:)   ! patch filter for non-lake, non-urban bare pfts
     type(canopystate_type) , intent(in)    :: canopystate_vars
@@ -65,50 +67,56 @@ contains
     real(r8),PARAMETER :: beta = 1.0_r8   ! coefficient of convective velocity [-]
     integer  :: p,c,t,g,j,l                      ! indices
     integer  :: f                                ! filter pft index
+    integer  :: fa                               ! active (unconverged) filter index
+    integer  :: fn                               ! number of active (unconverged) patches
+    integer  :: fnold                            ! previous number of active patches
+    integer  :: begp, endp                       ! patch bounds
     integer  :: iter                             ! iteration index
     integer  :: iter_final                       ! number of iterations used
     integer  :: loopmax                          ! maximum number of iterations for this configuration
-    real(r8) :: zldis  ! reference height "minus" zero displacement height [m]
-    real(r8) :: displa ! displacement height [m]
+    real(r8) :: displa(bounds%begp:bounds%endp)     ! displacement height [m]
+    real(r8) :: z0mg_patch(bounds%begp:bounds%endp) ! roughness length, momentum [m]
+    real(r8) :: z0hg_patch(bounds%begp:bounds%endp) ! roughness length, sensible heat [m]
+    real(r8) :: z0qg_patch(bounds%begp:bounds%endp) ! roughness length, latent heat [m]
+    real(r8) :: zldis(num_nolu_barep)   ! reference height "minus" zero displacement height [m]
+    real(r8) :: dth(num_nolu_barep)     ! diff of virtual temp. between ref. height and surface
+    real(r8) :: dqh(num_nolu_barep)     ! diff of humidity between ref. height and surface
+    real(r8) :: obu(num_nolu_barep)     ! Monin-Obukhov length (m)
+    real(r8) :: ur(num_nolu_barep)      ! wind speed at reference height [m/s]
+    real(r8) :: um(num_nolu_barep)      ! wind speed including the stablity effect [m/s]
+    real(r8) :: temp1(num_nolu_barep)   ! relation for potential temperature profile
+    real(r8) :: temp12m(num_nolu_barep) ! relation for potential temperature profile applied at 2-m
+    real(r8) :: temp2(num_nolu_barep)   ! relation for specific humidity profile
+    real(r8) :: temp22m(num_nolu_barep) ! relation for specific humidity profile applied at 2-m
+    real(r8) :: ustar(num_nolu_barep)   ! friction velocity [m/s]
+    real(r8) :: fm(num_nolu_barep)      ! needed for BGC only to diagnose 10m wind speed
+    real(r8) :: ugust_total(num_nolu_barep)    ! gustiness including convective velocity [m/s]
+    real(r8) :: wind_speed0(num_nolu_barep)    ! Wind speed from atmosphere at start of iteration
+    real(r8) :: wind_speed_adj(num_nolu_barep) ! Adjusted wind speed for iteration
+    real(r8) :: tau(num_nolu_barep)            ! Stress used in iteration
+    real(r8) :: tau_diff(num_nolu_barep)       ! Difference from previous iteration tau
+    real(r8) :: prev_tau(num_nolu_barep)       ! Previous iteration tau
+    real(r8) :: prev_tau_diff(num_nolu_barep)  ! Previous difference in iteration tau
+    ! iter_filterp(1:fn) holds the patch index of patches still iterating;
+    ! iter_filter_map(1:fn) holds their position in filter_nolu_barep, which is
+    ! how the num_nolu_barep-sized work arrays above are addressed.
+    integer  :: iter_filterp(num_nolu_barep), iter_filter_map(num_nolu_barep)
     real(r8) :: zeta   ! dimensionless height used in Monin-Obukhov theory
     real(r8) :: wc     ! convective velocity [m/s]
-    real(r8) :: dth    ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv   ! diff of vir. poten. temp. between ref. height and surface
-    real(r8) :: dqh    ! diff of humidity between ref. height and surface
-    real(r8) :: obu     ! Monin-Obukhov length (m)
-    real(r8) :: ur      ! wind speed at reference height [m/s]
-    real(r8) :: um      ! wind speed including the stablity effect [m/s]
-    real(r8) :: temp1   ! relation for potential temperature profile
-    real(r8) :: temp12m ! relation for potential temperature profile applied at 2-m
-    real(r8) :: temp2   ! relation for specific humidity profile
-    real(r8) :: temp22m ! relation for specific humidity profile applied at 2-m
-    real(r8) :: ustar   ! friction velocity [m/s]
     real(r8) :: tstar   ! temperature scaling parameter
     real(r8) :: qstar   ! moisture scaling parameter
     real(r8) :: thvstar ! virtual potential temperature scaling parameter
-    real(r8) :: cf      ! heat transfer coefficient from leaves [-]
     real(r8) :: ram     ! aerodynamical resistance [s/m]
     real(r8) :: rah     ! thermal resistance [s/m]
     real(r8) :: raw     ! moisture resistance [s/m]
     real(r8) :: raih    ! temporary variable [kg/m2/s]
     real(r8) :: raiw    ! temporary variable [kg/m2/s]
-    real(r8) :: fm      ! needed for BGC only to diagnose 10m wind speed
-    real(r8) :: z0mg_patch
-    real(r8) :: z0hg_patch
-    real(r8) :: z0qg_patch
     real(r8) :: e_ref2m                ! 2 m height surface saturated vapor pressure [Pa]
     real(r8) :: de2mdT                 ! derivative of 2 m height surface saturated vapor pressure on t_ref2m
     real(r8) :: qsat_ref2m             ! 2 m height surface saturated specific humidity [kg/kg]
     real(r8) :: dqsat2mdT              ! derivative of 2 m height surface saturated specific humidity on t_ref2m
     real(r8) :: www                    ! surface soil wetness [-]
-    real(r8) :: ugust_total ! gustiness including convective velocity [m/s]
-    real(r8) :: wind_speed0 ! Wind speed from atmosphere at start of iteration
-    real(r8) :: wind_speed_adj ! Adjusted wind speed for iteration
-    real(r8) :: tau      ! Stress used in iteration
-    real(r8) :: tau_diff ! Difference from previous iteration tau
-    real(r8) :: prev_tau ! Previous iteration tau
-    real(r8) :: prev_tau_diff ! Previous difference in iteration tau
-    logical :: unconverged
     !------------------------------------------------------------------------------
 
     associate(                                                          &
@@ -196,52 +204,10 @@ contains
       ! Filter patches where frac_veg_nosno IS ZERO
       !---------------------------------------------------
 
-      ! Compute sensible and latent fluxes and their derivatives with respect
-      ! to ground temperature using ground temperatures from previous time step
-      !$acc parallel loop independent gang vector default(present) 
-      do f = 1, num_nolu_barep
-         p = filter_nolu_barep(f)
-         c = veg_pp%column(p)
-         t = veg_pp%topounit(p)
-         l = veg_pp%landunit(p)
+      if (num_nolu_barep == 0) return
 
-         iter = 0
-
-         ! Initialization variables
-
-         displa = 0._r8
-         dlrad(p)  = 0._r8
-         ulrad(p)  = 0._r8
-
-         ! Initialize winds for iteration.
-         if (implicit_stress) then
-            wind_speed0 = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
-            wind_speed_adj = wind_speed0
-            ur = max(1.0_r8, sqrt(wind_speed_adj**2 + ugust(t)**2))
-
-            prev_tau = tau_est(t)
-         else
-            ur    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
-         end if
-         tau_diff = 1.e100_r8
-         ugust_total = ugust(t)
-
-         ur    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
-         dth   = thm(p)-t_grnd(c)
-         dqh   = forc_q(t) - qg(c)
-         dthv  = dth*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh
-         zldis = forc_hgt_u_patch(p)
-
-         ! Copy column roughness to local pft-level arrays
-
-         z0mg_patch = z0mg_col(c)
-         z0hg_patch = z0hg_col(c)
-         z0qg_patch = z0qg_col(c)
-
-         ! Initialize Obukhov length scale and wind speed
-
-         call MoninObukIni(ur, thv(c), dthv, zldis, z0mg_patch, um, obu)
-         num_iter(p) = 0._8
+      begp = bounds%begp
+      endp = bounds%endp
 
       if (implicit_stress) then
          loopmax = itmax
@@ -249,64 +215,152 @@ contains
          loopmax = itmin
       end if
 
-      unconverged = .true.
-      iter = 1 
-      do while( iter <= loopmax .and. unconverged)
+      !$acc enter data create(displa(:), z0mg_patch(:), z0hg_patch(:), z0qg_patch(:), &
+      !$acc    zldis(:), dth(:), dqh(:), obu(:), ur(:), um(:), temp1(:), temp12m(:), &
+      !$acc    temp2(:), temp22m(:), ustar(:), fm(:), ugust_total(:), wind_speed0(:), &
+      !$acc    wind_speed_adj(:), tau(:), tau_diff(:), prev_tau(:), prev_tau_diff(:), &
+      !$acc    iter_filterp(:), iter_filter_map(:))
 
-           call FrictionVelocity_noloop( &
-                displa, z0mg_patch, z0hg_patch, z0qg_patch, &
-                obu, iter, ur, um, ugust_total ,ustar, &
-                temp1, temp2, temp12m, temp22m, fm, &
-                forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
-                vds(p), u10(p), u10_elm(p), u10_with_gusts_elm(p) ,va(p), fv(p))
+      ! Compute sensible and latent fluxes and their derivatives with respect
+      ! to ground temperature using ground temperatures from previous time step
+      !$acc parallel loop independent gang vector default(present) private(p,c,t,dthv)
+      do f = 1, num_nolu_barep
+         p = filter_nolu_barep(f)
+         c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
+
+         iter_filterp(f)    = p
+         iter_filter_map(f) = f
+
+         ! Initialization variables
+
+         displa(p) = 0._r8
+         dlrad(p)  = 0._r8
+         ulrad(p)  = 0._r8
+
+         ! Initialize winds for iteration.
+         if (implicit_stress) then
+            wind_speed0(f) = max(0.01_r8, hypot(forc_u(t), forc_v(t)))
+            wind_speed_adj(f) = wind_speed0(f)
+            ur(f) = max(1.0_r8, sqrt(wind_speed_adj(f)**2 + ugust(t)**2))
+
+            prev_tau(f) = tau_est(t)
+         else
+            ur(f) = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)+ugust(t)*ugust(t)))
+         end if
+         tau_diff(f) = 1.e100_r8
+         ugust_total(f) = ugust(t)
+
+         dth(f)   = thm(p)-t_grnd(c)
+         dqh(f)   = forc_q(t) - qg(c)
+         dthv     = dth(f)*(1._r8+0.61_r8*forc_q(t))+0.61_r8*forc_th(t)*dqh(f)
+         zldis(f) = forc_hgt_u_patch(p)
+
+         ! Copy column roughness to local pft-level arrays
+
+         z0mg_patch(p) = z0mg_col(c)
+         z0hg_patch(p) = z0hg_col(c)
+         z0qg_patch(p) = z0qg_col(c)
+
+         ! Initialize Obukhov length scale and wind speed
+
+         call MoninObukIni(ur(f), thv(c), dthv, zldis(f), z0mg_patch(p), um(f), obu(f))
+         num_iter(p) = 0._r8
+      end do
+
+      ! Perform stability iteration
+      ! Determine friction velocity, and potential temperature and humidity
+      ! profiles of the surface boundary layer
+
+      fn = num_nolu_barep
+      iter_final = 0
+
+      ITERATION: do iter = 1, loopmax
+
+         call FrictionVelocity(begp, endp, fn, iter_filterp, iter_filter_map, num_nolu_barep, &
+              displa(begp:endp), z0mg_patch(begp:endp), z0hg_patch(begp:endp), z0qg_patch(begp:endp), &
+              obu(1:num_nolu_barep), iter, ur(1:num_nolu_barep), um(1:num_nolu_barep), &
+              ugust_total(1:num_nolu_barep), ustar(1:num_nolu_barep), &
+              temp1(1:num_nolu_barep), temp2(1:num_nolu_barep), temp12m(1:num_nolu_barep), &
+              temp22m(1:num_nolu_barep), fm(1:num_nolu_barep), &
+              frictionvel_vars)
+
+         !$acc parallel loop independent gang vector default(present) &
+         !$acc    private(p,f,c,t,ram,tstar,qstar,thvstar,zeta,wc)
+         do fa = 1, fn
+            p = iter_filterp(fa)
+            f = iter_filter_map(fa)
+            c = veg_pp%column(p)
+            t = veg_pp%topounit(p)
 
             ! Calculate magnitude of stress and update wind speed.
             if (implicit_stress) then
-               ram = 1._r8/(ustar*ustar/um)
-               tau = forc_rho(t)*wind_speed_adj/ram
-               call shr_flux_update_stress(wind_speed0, wsresp(t), tau_est(t), &
-                    tau, prev_tau, tau_diff, prev_tau_diff, &
-                    wind_speed_adj)
-               ur = max(1.0_r8, sqrt(wind_speed_adj**2 + ugust(t)**2))
+               ram = 1._r8/(ustar(f)*ustar(f)/um(f))
+               tau(f) = forc_rho(t)*wind_speed_adj(f)/ram
+               call shr_flux_update_stress(wind_speed0(f), wsresp(t), tau_est(t), &
+                    tau(f), prev_tau(f), tau_diff(f), prev_tau_diff(f), &
+                    wind_speed_adj(f))
+               ur(f) = max(1.0_r8, sqrt(wind_speed_adj(f)**2 + ugust(t)**2))
             end if
 
-            tstar = temp1*dth
-            qstar = temp2*dqh
-            z0hg_patch = z0mg_patch/exp(0.13_r8 * (ustar*z0mg_patch/1.5e-5_r8)**0.45_r8)
-            z0qg_patch = z0hg_patch
+            tstar = temp1(f)*dth(f)
+            qstar = temp2(f)*dqh(f)
+            z0hg_patch(p) = z0mg_patch(p)/exp(0.13_r8 * (ustar(f)*z0mg_patch(p)/1.5e-5_r8)**0.45_r8)
+            z0qg_patch(p) = z0hg_patch(p)
             thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
-            zeta = zldis*vkc*grav*thvstar/(ustar**2*thv(c))
+            zeta = zldis(f)*vkc*grav*thvstar/(ustar(f)**2*thv(c))
 
             if (zeta >= 0._r8) then                   !stable
                zeta = min(2._r8,max(zeta,0.01_r8))
-               um = max(ur,0.1_r8)
+               um(f) = max(ur(f),0.1_r8)
             else                                      !unstable
                zeta = max(-100._r8,min(zeta,-0.01_r8))
                if ((.not. atm_gustiness) .or. force_land_gustiness) then
-                  wc = beta*(-grav*ustar*thvstar*zii(c)/thv(c))**0.333_r8
-                  ugust_total = sqrt(ugust(t)**2 + wc**2)
-                  um = sqrt(ur*ur + wc*wc)
+                  wc = beta*(-grav*ustar(f)*thvstar*zii(c)/thv(c))**0.333_r8
+                  ugust_total(f) = sqrt(ugust(t)**2 + wc**2)
+                  um(f) = sqrt(ur(f)*ur(f) + wc*wc)
                else
-                  um = max(ur,0.1_r8)
+                  um(f) = max(ur(f),0.1_r8)
                end if
             end if
-            obu = zldis/zeta
+            obu(f) = zldis(f)/zeta
+         end do
 
-         ! Test for convergence
+         ! Test for convergence.
+         ! Compact iter_filterp/iter_filter_map in place, keeping only the patches that
+         ! have NOT yet converged. Sequential write-index dependency on fn.
+         iter_final = iter
          if (iter >= itmin) then
-            num_iter(p) = real(iter,r8)
-            if ( (abs(tau_diff) < dtaumin)) then
-               unconverged = .false.
-            end if
+            fnold = fn
+            fn = 0
+            !$acc parallel loop seq default(present) private(p,f) copy(fn)
+            do fa = 1, fnold
+               p = iter_filterp(fa)
+               f = iter_filter_map(fa)
+               num_iter(p) = real(iter,r8)
+               if (.not. (abs(tau_diff(f)) < dtaumin)) then
+                  fn = fn + 1
+                  iter_filterp(fn)    = p
+                  iter_filter_map(fn) = f
+               end if
+            end do
+            if (fn == 0) exit ITERATION
          end if
-         iter = iter + 1
+
       end do ITERATION ! end stability iteration
+
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc    private(p,c,t,ram,rah,raw,raih,raiw,www,e_ref2m,de2mdT,qsat_ref2m,dqsat2mdT)
+      do f = 1, num_nolu_barep
+         p = filter_nolu_barep(f)
+         c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
 
          ! Determine aerodynamic resistances
 
-         ram  = 1._r8/(ustar*ustar/um)
-         rah  = 1._r8/(temp1*ustar)
-         raw  = 1._r8/(temp2*ustar)
+         ram  = 1._r8/(ustar(f)*ustar(f)/um(f))
+         rah  = 1._r8/(temp1(f)*ustar(f))
+         raw  = 1._r8/(temp2(f)*ustar(f))
          raih = forc_rho(t)*cpair/rah
          if (use_lch4) then
             grnd_ch4_cond(p) = 1._r8/raw
@@ -317,7 +371,7 @@ contains
          www = min(max(www,0.0_r8),1._r8)
 
          !changed by K.Sakaguchi. Soilbeta is used for evaporation
-         if (dqh > 0._r8) then  !dew  (beta is not applied, just like rsoil used to be)
+         if (dqh(f) > 0._r8) then  !dew  (beta is not applied, just like rsoil used to be)
             raiw = forc_rho(t)/(raw)
          else
             if(do_soilevap_beta())then
@@ -339,10 +393,10 @@ contains
          taux(p)          = -forc_rho(t)*forc_u(t)/ram
          tauy(p)          = -forc_rho(t)*forc_v(t)/ram
          if (implicit_stress) then
-            taux(p)          = taux(p) * (wind_speed_adj / wind_speed0)
-            tauy(p)          = tauy(p) * (wind_speed_adj / wind_speed0)
+            taux(p)          = taux(p) * (wind_speed_adj(f) / wind_speed0(f))
+            tauy(p)          = tauy(p) * (wind_speed_adj(f) / wind_speed0(f))
          end if
-         eflx_sh_grnd(p)  = -raih*dth
+         eflx_sh_grnd(p)  = -raih*dth(f)
          eflx_sh_tot(p)   = eflx_sh_grnd(p)
 
          ! compute sensible heat fluxes individually
@@ -351,7 +405,7 @@ contains
          eflx_sh_h2osfc(p) = -raih*(thm(p)-t_h2osfc(c))
 
          ! water fluxes from soil
-         qflx_evap_soi(p)  = -raiw*dqh
+         qflx_evap_soi(p)  = -raiw*dqh(f)
          qflx_evap_tot(p)  = qflx_evap_soi(p)
 
          ! compute latent heat fluxes individually
@@ -360,10 +414,10 @@ contains
          qflx_ev_h2osfc(p) = -raiw*(forc_q(t) - qg_h2osfc(c))
 
          ! 2 m height air temperature
-         t_ref2m(p) = thm(p) + temp1*dth*(1._r8/temp12m - 1._r8/temp1)
+         t_ref2m(p) = thm(p) + temp1(f)*dth(f)*(1._r8/temp12m(f) - 1._r8/temp1(f))
 
          ! 2 m height specific humidity
-         q_ref2m(p) = forc_q(t) + temp2*dqh*(1._r8/temp22m - 1._r8/temp2)
+         q_ref2m(p) = forc_q(t) + temp2(f)*dqh(f)*(1._r8/temp22m(f) - 1._r8/temp2(f))
 
          ! 2 m height relative humidity
          call QSat(t_ref2m(p), forc_pbot(t), e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
@@ -374,18 +428,28 @@ contains
             rh_ref2m_r(p) = rh_ref2m(p)
             t_ref2m_r(p) = t_ref2m(p)
          end if
-
-         ! Check for convergence of stress.
-         if (implicit_stress .and. abs(tau_diff) > dtaumin) then
-            if (get_nstep() > 0) then ! Suppress common warnings on the first time step.
-               write(iulog,*)'WARNING: Stress did not converge for bare ground ',&
-                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff,&
-                    ' tau_diff= ',tau_diff,' tau= ',tau,&
-                    ' wind_speed_adj= ',wind_speed_adj,' iter_final= ',iter_final
-            end if
-         end if
-
       end do
+
+#ifndef _OPENACC
+      ! Check for convergence of stress.
+      if (implicit_stress .and. get_nstep() > 0) then ! Suppress common warnings on the first time step.
+         do f = 1, num_nolu_barep
+            p = filter_nolu_barep(f)
+            if (abs(tau_diff(f)) > dtaumin) then
+               write(iulog,*)'WARNING: Stress did not converge for bare ground ',&
+                    ' nstep = ',get_nstep(),' p= ',p,' prev_tau_diff= ',prev_tau_diff(f),&
+                    ' tau_diff= ',tau_diff(f),' tau= ',tau(f),&
+                    ' wind_speed_adj= ',wind_speed_adj(f),' iter_final= ',iter_final
+            end if
+         end do
+      end if
+#endif
+
+      !$acc exit data delete(displa(:), z0mg_patch(:), z0hg_patch(:), z0qg_patch(:), &
+      !$acc    zldis(:), dth(:), dqh(:), obu(:), ur(:), um(:), temp1(:), temp12m(:), &
+      !$acc    temp2(:), temp22m(:), ustar(:), fm(:), ugust_total(:), wind_speed0(:), &
+      !$acc    wind_speed_adj(:), tau(:), tau_diff(:), prev_tau(:), prev_tau_diff(:), &
+      !$acc    iter_filterp(:), iter_filter_map(:))
 
     end associate
 

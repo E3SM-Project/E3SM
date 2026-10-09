@@ -334,7 +334,7 @@ contains
 
        call t_startf("decomp_vert")
        call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, &
-            temperature_vars, canopystate_vars)
+            canopystate_vars)
 
        !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
        !  (it is called very early in each timestep, before weights are adjusted and
@@ -734,7 +734,7 @@ contains
           call alm_fates%wrap_sunfrac(bounds_clump, top_af, canopystate_vars)
        else
           call CanopySunShadeFractions(filter(nc)%num_nourbanp, filter(nc)%nourbanp,    &
-                                       atm2lnd_vars, surfalb_vars, canopystate_vars,    &
+                                       surfalb_vars, canopystate_vars,                  &
                                        solarabs_vars)
        end if
 
@@ -742,18 +742,15 @@ contains
             filter(nc)%num_nourbanp, filter(nc)%nourbanp,                  &
             filter(nc)%num_urbanp, filter(nc)%urbanp    ,                  &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                      &
-            atm2lnd_vars, canopystate_vars, surfalb_vars, &
+            canopystate_vars, surfalb_vars, &
             solarabs_vars, surfrad_vars)
 
        ! Surface Radiation for only urban columns
 
-       call UrbanRadiation(bounds_clump,                                       &
+       call UrbanRadiation(                                                    &
             filter(nc)%num_nourbanl, filter(nc)%nourbanl,                      &
             filter(nc)%num_urbanl, filter(nc)%urbanl,                          &
-            filter(nc)%num_urbanc, filter(nc)%urbanc,                          &
-            filter(nc)%num_urbanp, filter(nc)%urbanp,                          &
-            atm2lnd_vars, urbanparams_vars, &
-            solarabs_vars, surfalb_vars, energyflux_vars)
+            urbanparams_vars, solarabs_vars, surfalb_vars)
 
        call t_stopf('surfrad')
 
@@ -787,7 +784,7 @@ contains
 
        ! Bareground fluxes for all patches except lakes and urban landunits
 
-       call BareGroundFluxes(                                                     &
+       call BareGroundFluxes(bounds_clump,                                       &
             filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep,       &
             canopystate_vars, soilstate_vars,                                     &
             frictionvel_vars, ch4_vars  )
@@ -810,12 +807,11 @@ contains
 
        call t_startf('uflux')
        call UrbanFluxes(bounds_clump,                        &
-            filter(nc)%num_nourbanl, filter(nc)%nourbanl,    &
             filter(nc)%num_urbanl, filter(nc)%urbanl,        &
             filter(nc)%num_urbanc, filter(nc)%urbanc,        &
             filter(nc)%num_urbanp, filter(nc)%urbanp,        &
-            atm2lnd_vars, urbanparams_vars, soilstate_vars,  &
-            frictionvel_vars, energyflux_vars)
+            urbanparams_vars, soilstate_vars,                &
+            frictionvel_vars)
        call t_stopf('uflux')
 
        ! Fluxes for all lake landunits
@@ -862,7 +858,7 @@ contains
             filter(nc)%num_lakec, filter(nc)%lakec,   &
             filter(nc)%num_lakep, filter(nc)%lakep,   &
             solarabs_vars, soilstate_vars,  ch4_vars, &
-            energyflux_vars, lakestate_vars)
+            lakestate_vars)
        call t_stopf('bgplake')
 
        ! Set soil/snow temperatures including ground temperature
@@ -871,8 +867,8 @@ contains
        call SoilTemperature(bounds_clump,                     &
             filter(nc)%num_urbanl  , filter(nc)%urbanl,       &
             filter(nc)%num_nolakec , filter(nc)%nolakec,      &
-            atm2lnd_vars, urbanparams_vars, canopystate_vars, &
-            solarabs_vars, soilstate_vars, energyflux_vars )
+            urbanparams_vars, canopystate_vars, &
+            solarabs_vars, soilstate_vars )
        call t_stopf('soiltemperature')
 
 
@@ -913,8 +909,8 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
-            atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, soilstate_vars,        &
-            energyflux_vars, soilhydrology_vars, aerosol_vars )
+            atm2lnd_vars, ocn2lnd_vars, soilstate_vars,                      &
+            soilhydrology_vars, aerosol_vars )
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -943,7 +939,7 @@ contains
             filter(nc)%num_lakesnowc, filter(nc)%lakesnowc,                                  &
             filter(nc)%num_lakenosnowc, filter(nc)%lakenosnowc,                              &
             atm2lnd_vars, soilstate_vars,  &
-            energyflux_vars, aerosol_vars, lakestate_vars)
+            aerosol_vars, lakestate_vars)
 
        !  Calculate column-integrated aerosol masses, and
        !  mass concentrations for radiative calculations and output
@@ -1254,10 +1250,8 @@ contains
 
        call t_startf('gridbalchk')
        call GridBalanceCheck(bounds_clump                  , &
-            filter(nc)%num_do_smb_c, filter(nc)%do_smb_c   , &
-            atm2lnd_vars, glc2lnd_vars, solarabs_vars,       &
-            energyflux_vars, canopystate_vars              , &
-            soilhydrology_vars)
+            atm2lnd_vars, glc2lnd_vars,                      &
+            energyflux_vars, soilhydrology_vars)
        call t_stopf('gridbalchk')
 
        if (do_budgets) then

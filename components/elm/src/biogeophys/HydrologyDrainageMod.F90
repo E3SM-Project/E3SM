@@ -22,7 +22,6 @@ module HydrologyDrainageMod
 
 
   use timeinfoMod
-  use elm_instMod , only : ep_betr 
   !
   ! !PUBLIC TYPES:
   implicit none

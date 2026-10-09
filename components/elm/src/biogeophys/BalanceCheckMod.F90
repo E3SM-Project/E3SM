@@ -811,7 +811,7 @@ contains
     ! Initialize column-level water balance at beginning of time step
     !
     ! !USES:
-    use subgridAveMod , only : p2c_1d_filter, c2g_1d_parallel, urbanf, unity
+    use subgridAveMod , only : p2c_1d_filter, c2g, urbanf, unity
     use elm_varpar    , only : nlevgrnd, nlevsoi, nlevurb
     use column_varcon , only : icol_roof, icol_sunwall, icol_shadewall
     use column_varcon , only : icol_road_perv, icol_road_imperv
@@ -933,33 +933,33 @@ contains
 
       end do
 
-      call c2g_1d_parallel(bounds, begwb_col(bounds%begc:bounds%endc), &
+      call c2g(bounds, begwb_col(bounds%begc:bounds%endc), &
            begwb_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true.)
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-      call c2g_1d_parallel(bounds, wa_local_col(bounds%begc:bounds%endc), &
+      call c2g(bounds, wa_local_col(bounds%begc:bounds%endc), &
            beg_wa_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-      call c2g_1d_parallel(bounds, h2ocan_col(bounds%begc:bounds%endc), &
+      call c2g(bounds, h2ocan_col(bounds%begc:bounds%endc), &
            beg_h2ocan_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-      call c2g_1d_parallel(bounds, h2osno(bounds%begc:bounds%endc), &
+      call c2g(bounds, h2osno(bounds%begc:bounds%endc), &
            beg_h2osno_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-      call c2g_1d_parallel(bounds, h2osfc(bounds%begc:bounds%endc), &
+      call c2g(bounds, h2osfc(bounds%begc:bounds%endc), &
            beg_h2osfc_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-      call c2g_1d_parallel(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
+      call c2g(bounds, h2osoi_liq_depth_intg(bounds%begc:bounds%endc), &
            beg_h2osoi_liq_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
-      call c2g_1d_parallel(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
+      call c2g(bounds, h2osoi_ice_depth_intg(bounds%begc:bounds%endc), &
            beg_h2osoi_ice_grc(bounds%begg:bounds%endg), &
-           c2l_scale_type= urbanf, l2g_scale_type=unity,para=.true. )
+           c2l_scale_type= urbanf, l2g_scale_type=unity)
 
       !$acc exit data delete( &
       !$acc begwb_col (:), & 

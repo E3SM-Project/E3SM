@@ -43,7 +43,7 @@ module CanopyFluxesMod
   use VegetationType        , only : veg_pp
   use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf
   ! using elm_instMod messes with the compilation order
-  use elm_instMod           , only : alm_fates, soil_water_retention_curve
+  use elm_instMod           , only : alm_fates, soil_water_retention_curve, atm2lnd_vars
   use perf_mod, only: t_startf, t_stopf
   use timeinfoMod
   use spmdmod          , only: masterproc
@@ -169,6 +169,7 @@ contains
 
     real(r8) :: zldis(num_nolu_vegp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: ugust_total(num_nolu_vegp) ! gustiness including convective velocity [m/s]
+    integer  :: filterc_tmp(num_nolu_vegp) ! column of each filter_nolu_vegp patch (FATES btran)
     real(r8) :: wc                     ! convective velocity [m/s]
     real(r8) :: dth(num_nolu_vegp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv(num_nolu_vegp)    ! diff of vir. poten. temp. between ref. height and surface
@@ -599,6 +600,9 @@ contains
       ! values require knowledge of the belowground root structure.
       ! --------------------------------------------------------------------------
       if(use_fates)then
+         do fp = 1, fn
+            filterc_tmp(fp) = veg_pp%column(filter_nolu_vegp(fp))
+         end do
          call alm_fates%wrap_btran(bounds, fn, filterc_tmp(1:fn), soilstate_vars, &
                energyflux_vars, soil_water_retention_curve)
       else
