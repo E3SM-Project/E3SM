@@ -105,10 +105,10 @@ class RCS(SystemTestsCommon):
             update_yaml_file(yaml_file, i, "pert")
             update_yaml_file(out_file, i, "out")
 
-    def _generate_baseline(self):
+    def generate_baseline_phase(self):
         """generate a new baseline case based on the current test"""
         # might as well call the parent method first
-        super()._generate_baseline()
+        psuccess, pshort, plong = super().generate_baseline_phase()
 
         with CIME.utils.SharedArea():
             # get the baseline and run directories
@@ -130,68 +130,47 @@ class RCS(SystemTestsCommon):
                     tgt.unlink()
 
                 # log and copy
-                logger.info(
-                    "Copying ... \n \t %s \n ... to ... \n \t %s \n\n",
-                    src, tgt
-                )
+                plong += f"Copying ... \n \t {src} \n ... to ... \n \t {tgt} \n\n"
                 CIME.utils.safe_copy(str(src), str(tgt), preserve_meta=False)
 
-    def _compare_baseline(self):
+        return psuccess, pshort, plong
+
+    def compare_baseline_phase(self):
         """compare phase implementation"""
-        with self._test_status as ts:
-            # if we are resubmitting, then we don't do the comparison
-            if int(self._case.get_value("RESUBMIT")) > 0:
-                ts.set_status(
-                    CIME.test_status.BASELINE_PHASE,
-                    CIME.test_status.TEST_PASS_STATUS
-                )
-                return
+        # if we are resubmitting, then we don't do the comparison
+        if int(self._case.get_value("RESUBMIT")) > 0:
+            return True, "", "Skipping due to resubmit"
 
-            # set to FAIL to start with, will update later
-            ts.set_status(
-                CIME.test_status.BASELINE_PHASE,
-                CIME.test_status.TEST_FAIL_STATUS
-            )
+        # get the run and baseline directories
+        run_dir = self._case.get_value("RUNDIR")
+        baseline_root = Path(self._case.get_value("BASELINE_ROOT"))
+        basecmp_case = self._case.get_value("BASECMP_CASE")
+        base_dir = baseline_root / basecmp_case
 
-            # get the run and baseline directories
-            run_dir = self._case.get_value("RUNDIR")
-            baseline_root = Path(self._case.get_value("BASELINE_ROOT"))
-            basecmp_case = self._case.get_value("BASECMP_CASE")
-            base_dir = baseline_root / basecmp_case
+        # launch the statistics tests
+        # first, import rcs_stats funcs from the other file
+        rcs_stats_path = Path(__file__).parent / 'rcs_stats.py'
+        expect(
+            rcs_stats_path.exists(),
+            f"Cannot find rcs_stats.py at {rcs_stats_path}"
+        )
+        # Add the directory to sys.path if not already there
+        script_dir = str(Path(__file__).parent)
+        if script_dir not in sys.path:
+            sys.path.insert(0, script_dir)
+        # note be extra safe and import whole file
+        # because we want to avoid import errors of needed pkgs
+        # pylint: disable=import-outside-toplevel
+        import rcs_stats as rcss
+        # now, launch
+        comments, new_ts = rcss.run_stats_comparison(
+            run_dir,
+            str(base_dir),
+            analysis_type="spatiotemporal",
+            test_type="ks",
+            alpha=0.01,
+            run_file_pattern=self.ENSEMBLE_FILE_PATTERN,
+            base_file_pattern=self.ENSEMBLE_FILE_PATTERN,
+        )
 
-            # launch the statistics tests
-            # first, import rcs_stats funcs from the other file
-            rcs_stats_path = Path(__file__).parent / 'rcs_stats.py'
-            expect(
-                rcs_stats_path.exists(),
-                f"Cannot find rcs_stats.py at {rcs_stats_path}"
-            )
-            # Add the directory to sys.path if not already there
-            script_dir = str(Path(__file__).parent)
-            if script_dir not in sys.path:
-                sys.path.insert(0, script_dir)
-            # note be extra safe and import whole file
-            # because we want to avoid import errors of needed pkgs
-            # pylint: disable=import-outside-toplevel
-            import rcs_stats as rcss
-            # now, launch
-            comments, new_ts = rcss.run_stats_comparison(
-                run_dir,
-                str(base_dir),
-                analysis_type="spatiotemporal",
-                test_type="ks",
-                alpha=0.01,
-                run_file_pattern=self.ENSEMBLE_FILE_PATTERN,
-                base_file_pattern=self.ENSEMBLE_FILE_PATTERN,
-            )
-
-            if new_ts == "PASS":
-                out_ts = CIME.test_status.TEST_PASS_STATUS
-            else:
-                out_ts = CIME.test_status.TEST_FAIL_STATUS
-
-            # log the results and set the test status
-            append_testlog(comments, self._orig_caseroot)
-            ts.set_status(
-                CIME.test_status.BASELINE_PHASE, out_ts
-            )
+        return new_ts == "PASS", "", comments
