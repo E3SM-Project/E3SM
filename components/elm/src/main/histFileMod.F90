@@ -1746,7 +1746,7 @@ contains
     !
     ! !USES:
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, nmonth
-    use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nlevtrc_full, nvegwcs
+    use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nvegwcs
     use elm_varpar      , only : nlevsoi
     use landunit_varcon , only : max_lunit, max_non_poly_lunit
     use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile, use_polygonal_tundra
@@ -1934,7 +1934,6 @@ contains
     call ncd_defdim(lnfid, 'string_length', hist_dim_name_length, strlen_dimid)
     call ncd_defdim(lnfid, 'string_date_len', hist_date_str_len, strlen_dt_dimid)
     call ncd_defdim( lnfid, 'levdcmp', nlevdecomp_full, dimid)
-    call ncd_defdim( lnfid, 'levtrc', nlevtrc_full, dimid)    
     
     if(use_fates)then
        call ncd_defdim(lnfid, 'fates_levscag', nlevsclass_fates * nlevage_fates, dimid)
@@ -4710,7 +4709,7 @@ contains
     ! initial or branch run to initialize the actual history tapes.
     !
     ! !USES:
-    use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil, nmonth, nvegwcs
+    use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nmonth, nvegwcs
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
     use elm_varpar      , only : nlevsoi
     use landunit_varcon , only : max_lunit, max_non_poly_lunit
@@ -4800,8 +4799,6 @@ contains
        num2d = nmonth
     case ('levdcmp')
        num2d = nlevdecomp_full
-    case ('levtrc')
-       num2d = nlevtrc_soil       
     case('ltype')
        if (use_polygonal_tundra) then
          num2d = max_lunit
@@ -4897,7 +4894,7 @@ contains
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &
-          '[levgrnd,levlak,numrad,nmonthlevdcmp,levtrc,ltype,natpft,cft,glc_nec,elevclas,levsno,levsoi]'
+          '[levgrnd,levlak,numrad,nmonthlevdcmp,ltype,natpft,cft,glc_nec,elevclas,levsno,levsoi]'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 

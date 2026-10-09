@@ -338,7 +338,6 @@ contains
     ! On the radiation time step, perform nitrogen mass conservation check
     ! for column and pft
     !
-    use tracer_varcon,  only : is_active_betr_bgc
     ! !ARGUMENTS:
     type(bounds_type)         , intent(in)    :: bounds
     integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -460,23 +459,17 @@ contains
             end if
          end if
 
-         if (is_active_betr_bgc)then
-            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
 
-            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+         col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
+            
+         if(use_pflotran .and. pf_cmode) then
+            ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
          else
-
-            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-            
-            if(use_pflotran .and. pf_cmode) then
-               ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
-               col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-            else
-               col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
-            endif
-            
-
+            col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
          endif
+            
+
 
          col_noutputs(c) = col_noutputs(c) + &
                col_prod1n_loss(c) + col_prod10n_loss(c) + col_prod100n_loss(c)

@@ -38,7 +38,6 @@ contains
     ! no science equations. This increases readability and maintainability.
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -51,50 +50,48 @@ contains
     integer :: c,p,j,l,k        ! indices
     integer :: fp,fc      ! lake filter indices
     !-----------------------------------------------------------------------
-      if (.not. is_active_betr_bgc) then
+      do j = 1, nlevdecomp
+         ! column loop
+         do fc = 1,num_soilc
+            c = filter_soilc(fc)
+               
+            ! mineral N loss due to leaching and runoff
+            col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
+                 ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
+               
+            col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
+            if (use_pflotran .and. pf_cmode) then 
+               col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
+            end if
+
+            if (.not.(use_pflotran .and. pf_cmode)) then
+                ! column level nitrogen fluxes from fire
+                ! pft-level wood to column-level CWD (uncombusted wood)
+                col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) &
+                     + col_nf%fire_mortality_n_to_cwdn(c,j) * dt
+
+                ! pft-level wood to column-level litter (uncombusted wood)
+                col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) &
+                     + col_nf%m_n_to_litr_met_fire(c,j)* dt
+                col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) &
+                     + col_nf%m_n_to_litr_cel_fire(c,j)* dt
+                col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) &
+                     + col_nf%m_n_to_litr_lig_fire(c,j)* dt
+            end if !(.not.(use_pflotran .and. pf_cmode))
+         end do ! end of column loop
+      end do
+
+      ! litter and CWD losses to fire
+      do l = 1, ndecomp_pools
          do j = 1, nlevdecomp
             ! column loop
             do fc = 1,num_soilc
                c = filter_soilc(fc)
-               
-               ! mineral N loss due to leaching and runoff
-               col_ns%smin_no3_vr(c,j) = max( col_ns%smin_no3_vr(c,j) - &
-                    ( col_nf%smin_no3_leached_vr(c,j) + col_nf%smin_no3_runoff_vr(c,j) ) * dt, 0._r8)
-               
-               col_ns%sminn_vr(c,j) = col_ns%smin_no3_vr(c,j) + col_ns%smin_nh4_vr(c,j)
-               if (use_pflotran .and. pf_cmode) then 
-                  col_ns%sminn_vr(c,j) = col_ns%sminn_vr(c,j) + col_ns%smin_nh4sorb_vr(c,j)
-               end if
-
-               if (.not.(use_pflotran .and. pf_cmode)) then
-                   ! column level nitrogen fluxes from fire
-                   ! pft-level wood to column-level CWD (uncombusted wood)
-                   col_ns%decomp_npools_vr(c,j,i_cwd) = col_ns%decomp_npools_vr(c,j,i_cwd) &
-                        + col_nf%fire_mortality_n_to_cwdn(c,j) * dt
-
-                   ! pft-level wood to column-level litter (uncombusted wood)
-                   col_ns%decomp_npools_vr(c,j,i_met_lit) = col_ns%decomp_npools_vr(c,j,i_met_lit) &
-                        + col_nf%m_n_to_litr_met_fire(c,j)* dt
-                   col_ns%decomp_npools_vr(c,j,i_cel_lit) = col_ns%decomp_npools_vr(c,j,i_cel_lit) &
-                        + col_nf%m_n_to_litr_cel_fire(c,j)* dt
-                   col_ns%decomp_npools_vr(c,j,i_lig_lit) = col_ns%decomp_npools_vr(c,j,i_lig_lit) &
-                        + col_nf%m_n_to_litr_lig_fire(c,j)* dt
-               end if !(.not.(use_pflotran .and. pf_cmode))
-            end do ! end of column loop
-         end do
-
-         ! litter and CWD losses to fire
-         do l = 1, ndecomp_pools
-            do j = 1, nlevdecomp
-               ! column loop
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%m_decomp_npools_to_fire_vr(c,j,l) * dt
-               end do
+               col_ns%decomp_npools_vr(c,j,l) = col_ns%decomp_npools_vr(c,j,l) - col_nf%m_decomp_npools_to_fire_vr(c,j,l) * dt
             end do
          end do
+      end do
 
-      endif
 
       ! SOM N losses due to erosion
       if ( ero_ccycle ) then

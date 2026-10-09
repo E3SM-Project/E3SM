@@ -48,7 +48,6 @@ contains
     ! On the radiation time step, calculate the radioactive decay of C14
     !
       !$acc routine seq
-    use tracer_varcon, only : is_active_betr_bgc
     ! !ARGUMENTS:
     integer                , intent(in)    :: num_soilc       ! number of soil columns filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
@@ -111,27 +110,25 @@ contains
          seedc(c) = seedc(c) *  (1._r8 - decay_const * dt)
       end do ! end of columns loop
 
-      if (.not. is_active_betr_bgc) then
-         do l = 1, ndecomp_pools
-            if ( spinup_state .eq. 1) then
-               ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
-               spinup_term = spinup_factor(l)
-            else
-               spinup_term = 1.
-            endif
-            do j = 1, nlevdecomp
-               do fc = 1,num_soilc
-                  c = filter_soilc(fc)
-                  if (spinup_term > 1._r8 .and. yr .ge. 40) then
-                      decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * &
-                          (spinup_term / cnstate_vars%scalaravg_col(c,j)) * dt)
-                  else
-                      decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
-                  end if
-               end do
+      do l = 1, ndecomp_pools
+         if ( spinup_state .eq. 1) then
+            ! speed up radioactive decay by the same factor as decomposition so tat SOM ages prematurely in all respects
+            spinup_term = spinup_factor(l)
+         else
+            spinup_term = 1.
+         endif
+         do j = 1, nlevdecomp
+            do fc = 1,num_soilc
+               c = filter_soilc(fc)
+               if (spinup_term > 1._r8 .and. yr .ge. 40) then
+                   decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * &
+                       (spinup_term / cnstate_vars%scalaravg_col(c,j)) * dt)
+               else
+                   decomp_cpools_vr(c,j,l) = decomp_cpools_vr(c,j,l) * (1._r8 - decay_const * spinup_term * dt)
+               end if
             end do
-         end do ! end of columns loop
-      endif
+         end do
+      end do ! end of columns loop
 
       ! patch loop
       do fp = 1,num_soilp

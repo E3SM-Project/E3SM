@@ -20,7 +20,7 @@ module VegetationDataType
   use pftvarcon       , only : iscft, noveg, nstor
   use elm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates
   use elm_varctl      , only : nu_com, use_crop, use_c13
-  use elm_varctl      , only : use_lch4, use_betr
+  use elm_varctl      , only : use_lch4
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
   use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
   use decompMod       , only : bounds_type, get_proc_global
@@ -8053,7 +8053,7 @@ module VegetationDataType
             interpinic_flag='interp', readvar=readvar, data=this%grainc_storage_to_xfer)
     end if
 
-    if (use_lch4 .or. use_betr) then
+    if (use_lch4) then
        call restartvar(ncid=ncid, flag=flag, varname='tempavg_agnpp', xtype=ncd_double,  &
             dim1name='pft',&
             long_name='Temp. Average AGNPP',units='gC/m^2/s', &
