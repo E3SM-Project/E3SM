@@ -5376,8 +5376,8 @@
 </tr>
 <tr>
 <td><code>mam_amicphys_optaa</code></td>
-<td>Recommended option of the new time-splitting treatment of H2SO4 production and loss</td>
-<td><code>1</code> <!-- markdownlint-disable MD033 --><br> (0 to turn it off)</td>
+<td>flag to use new time-splitting treatment of H2SO4 production and loss</td>
+<td><code>1</code></td>
 </tr>
 <tr>
 <td><code>n_so4_monolayers_pcage</code></td>
@@ -5408,17 +5408,17 @@
 </tr>
 <tr>
 <td><code>mam_mom_datapath</code></td>
-<td>Full pathname of the directory that contains the files specified in mam_mom_filelist</td>
+<td>Path that contains the files specified in mam_mom_filelist</td>
 <td><code>'atm/cam/chem/trop_mam/marine_BGC/'</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_filename</code></td>
-<td>Filename of file that contains a sequence of filenames for prescribed marine organic matter ocean concentrations.  The filenames in this file are relative to the directory specified by mam_mom_datapath.</td>
+<td>File name that contains a sequence of files for prescribed mom concentrations.<sup id="fnref:mom1"><a class="footnote-ref" href="#fn:mom1">9</a></sup></td>
 <td><code>'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_rmfile</code></td>
-<td>Remove the file containing prescribed aerosol deposition fluxes from local disk when no longer needed.</td>
+<td>Flag to remove the file containing prescribed aerosol deposition fluxes from local disk.</td>
 <td><code>FALSE</code></td>
 </tr>
 <tr>
@@ -5428,37 +5428,37 @@
 </tr>
 <tr>
 <td><code>mam_mom_datatype</code></td>
-<td>Type of time interpolation for data in mam_mom files. Can be set to <code>'CYCLICAL'</code>, <code>'SERIAL'</code>, <code>'INTERP_MISSING_MONTHS'</code>, or <code>'FIXED'</code>.</td>
+<td>Type of time interpolation for data in mam_mom files.<sup id="fnref:mom2"><a class="footnote-ref" href="#fn:mom2">10</a></sup></td>
 <td><code>'CYCLICAL'</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_cycle_yr</code></td>
-<td>The  cycle year of the prescribed aerosol flux data if mam_mom_type is <code>'CYCLICAL'</code>. Format: YYYY</td>
+<td>Cycle year for prescribed aerosol flux data if mam_mom_type=<code>'CYCLICAL'</code>.<sup id="fnref:mom3"><a class="footnote-ref" href="#fn:mom3">11</a></sup></td>
 <td><code>1</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_fixed_ymd</code></td>
-<td>The date at which the prescribed aerosol flux data is fixed if mam_mom_type is <code>'FIXED'</code>. Format: YYYYMMDD</td>
+<td>Date at which prescribed aerosol flux data is fixed if mam_mom_type=<code>'FIXED'</code>.<sup id="fnref:mom4"><a class="footnote-ref" href="#fn:mom4">12</a></sup></td>
 <td><code>0</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_fixed_tod</code></td>
-<td>The time of day (seconds) corresponding to mam_mom_fixed_ymd at which the prescribed aerosol flux data is fixed if mam_mom_type is 'FIXED'.</td>
+<td>The time of day (seconds) corresponding to mam_mom_fixed_ymd</td>
 <td><code>0</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_bubble_thickness</code></td>
-<td>Bubble film thickness (in m) for marine organic aerosol emission mechanism.  The physically reasonable range is approximately (0.1 - 1) x 10^ -6.</td>
+<td>Bubble film thickness (in m) for marine organic aerosol emission mechanism.<sup id="fnref:mom5"><a class="footnote-ref" href="#fn:mom5">13</a></sup></td>
 <td><code>0.1e-6</code></td>
 </tr>
 <tr>
 <td><code>mam_mom_mixing_state</code></td>
-<td>Switch to select mixing state assumption in marine organic aerosol code. Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.</td>
+<td>Switch to select mixing state assumption in marine organic aerosol code.<sup id="fnref:mom6"><a class="footnote-ref" href="#fn:mom6">14</a></sup></td>
 <td><code>0</code> [Note: set to 3 in the atm_in namelist]</td>
 </tr>
 <tr>
 <td><code>mam_mom_parameterization</code></td>
-<td>Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">9</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">10</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">11</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">12</a></sup></td>
+<td>Selection of alternate parameterizations for marine organic matter emissions.<sup id="fnref:mom7"><a class="footnote-ref" href="#fn:mom7">15</a></sup></td>
 <td><code>1</code></td>
 </tr>
 </tbody>
@@ -5860,17 +5860,38 @@
 <li id="fn:dy6">
 <p>0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies&#160;<a class="footnote-backref" href="#fnref:dy6" title="Jump back to footnote 8 in the text">&#8617;</a></p>
 </li>
+<li id="fn:mom1">
+<p>The filenames in this file are relative to the directory specified by mam_mom_datapath.&#160;<a class="footnote-backref" href="#fnref:mom1" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom2">
+<p>Can be set to <code>'CYCLICAL'</code>, <code>'SERIAL'</code>, <code>'INTERP_MISSING_MONTHS'</code>, or <code>'FIXED'</code>.&#160;<a class="footnote-backref" href="#fnref:mom2" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom3">
+<p>Only if , Format: YYYY&#160;<a class="footnote-backref" href="#fnref:mom3" title="Jump back to footnote 11 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom4">
+<p>Format: YYYYMMDD&#160;<a class="footnote-backref" href="#fnref:mom4" title="Jump back to footnote 12 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom5">
+<p>The physically reasonable range is approximately (0.1 - 1) x 10^ -6.&#160;<a class="footnote-backref" href="#fnref:mom5" title="Jump back to footnote 13 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom6">
+<p>Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.&#160;<a class="footnote-backref" href="#fnref:mom6" title="Jump back to footnote 14 in the text">&#8617;</a></p>
+</li>
+<li id="fn:mom7">
+<p>Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">16</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">17</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">18</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">19</a></sup>&#160;<a class="footnote-backref" href="#fnref:mom7" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+</li>
 <li id="fn:1">
-<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 9 in the text">&#8617;</a></p>
+<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 16 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 10 in the text">&#8617;</a></p>
+<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 17 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 11 in the text">&#8617;</a></p>
+<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 18 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 12 in the text">&#8617;</a></p>
+<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 19 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
