@@ -132,6 +132,18 @@ be lost if SCREAM_HACK_XML is not enabled.
              - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
              - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
              - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
+
+       13) The attribute 'action' modifies the value selected so far for a parameter, rather than
+           replacing it. Parameter elements are processed in order, so the action applies to what
+           was selected by the previous matched elements (and it is an error if there is nothing).
+           Valid values are:
+             - action="append": (arrays only) append the entries in the element text to the array.
+             - action="remove": (arrays only) remove the entries in the element text from the array.
+             - action="delete": (only for leaves of 'open' nodes, i.e., nodes with open="true") remove
+               the whole parameter. The element must have selectors and no text. A later matched
+               element for the same parameter selects a new value, as if it were the first.
+           Example: <my_param grid="ne4np4" COMPSET=".*AQUA.*" action="delete"/> removes my_param only
+           if both selectors match.
   -->
 
   <atmosphere_processes_defaults>

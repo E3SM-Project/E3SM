@@ -16,7 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node, \
-        METADATA_ATTRIBS, is_metadata_attrib, is_leaf, apply_leaf_attribs
+        METADATA_ATTRIBS, is_metadata_attrib, is_leaf, is_open_node, apply_leaf_attribs
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
@@ -533,7 +533,7 @@ def evaluate_selectors(element, case, ez_selectors):
     CIME.core.exceptions.CIMEError: ERROR: Unrecognized value for 'action' attribute
       param name  : a
       action value: prepend
-      valid values: append, remove
+      valid values: append, remove, delete
     <BLANKLINE>
     >>> bad_act = ET.fromstring('<n><a type="integer">1</a><a grid="ne4ne4" action="append">3</a></n>')
     >>> evaluate_selectors(bad_act,case,selectors_good)
@@ -557,6 +557,58 @@ def evaluate_selectors(element, case, ez_selectors):
     CIME.core.exceptions.CIMEError: ERROR: The 'action' metadata attribute is only supported for entries of array type
      param name: a
      param type: real
+    >>> ############## DELETE ACTION (leaves of open nodes) #####################
+    >>> hdr = '<n open="true" leaf_type="array(real)">'
+    >>> d = ET.fromstring(hdr + '<a>1</a><b>2</b><a grid="ne4ne4" action="delete"/></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [c.tag for c in d]
+    ['b']
+    >>> ###### Selectors are all required to match (here, nlev=128 does not)
+    >>> d = ET.fromstring(hdr + '<a>1</a><b>2</b><a grid="ne4ne4" nlev="64" action="delete"/></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [(c.tag,c.text) for c in d]
+    [('a', '1'), ('b', '2')]
+    >>> d = ET.fromstring(hdr + '<a>1</a><b>2</b><a grid="ne4ne4" nlev="128" action="delete"/></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [(c.tag,c.text) for c in d]
+    [('b', '2')]
+    >>> ###### Elements are applied in order: a later match selects a new value
+    >>> d = ET.fromstring(hdr + '<a>1</a><a grid="ne4ne4" action="delete"/><a nlev="128">3</a><a nlev="64">4</a></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [(c.tag,c.text) for c in d]
+    [('a', '3')]
+    >>> ###### Leaf with only selector-specific elements
+    >>> d = ET.fromstring(hdr + '<a grid="ne4ne4">1</a><a nlev="128" action="delete"/></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> len(d)
+    0
+    >>> ###### Negated selectors can be used too
+    >>> d = ET.fromstring(hdr + '<a>1</a><a grid="!ne30ne30" action="delete"/></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> len(d)
+    0
+    >>> ###### Errors
+    >>> evaluate_selectors(ET.fromstring('<n><a>1</a><a grid="ne4ne4" action="delete"/></n>'),case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'delete' action for 'a' is only supported for leaves of open nodes
+     parent node: n
+    >>> evaluate_selectors(ET.fromstring(hdr + '<a>1</a><a action="delete"/></n>'),case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'delete' action for 'a' requires at least one selector
+     (otherwise, it would delete the leaf unconditionally)
+    >>> evaluate_selectors(ET.fromstring(hdr + '<a>1</a><a grid="ne4ne4" action="delete">2</a></n>'),case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'delete' action for 'a' does not accept a value
+     value found: 2
+    >>> evaluate_selectors(ET.fromstring(hdr + '<a grid="ne4ne4" action="delete"/></n>'),case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'delete' action for 'a' requires a previously selected value to delete
+     Selector element attributes: {'grid': 'ne4ne4', 'action': 'delete'}
+    >>> ###### Deleting a leaf that is only present in other grids is ok (nothing to delete, and no match)
+    >>> d = ET.fromstring(hdr + '<a>1</a><a grid="ne30ne30" action="delete"/></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [(c.tag,c.text) for c in d]
+    [('a', '1')]
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad1 = '''
     ... <selectors_xml>
@@ -638,7 +690,19 @@ def evaluate_selectors(element, case, ez_selectors):
                                          else element.attrib.get("leaf_type","unset")
 
             action = selectors.get("action")
-            if action is not None:
+            if action=="delete":
+                # Delete the whole leaf (not just some of its values), which makes sense only
+                # for leaves of open nodes, where the set of leaves is not fixed.
+                expect (is_open_node(element),
+                        f"The 'delete' action for '{child_name}' is only supported for leaves of open nodes\n"
+                        f" parent node: {element.tag}")
+                expect (any(not is_metadata_attrib(k) for k in selectors),
+                        f"The 'delete' action for '{child_name}' requires at least one selector\n"
+                        " (otherwise, it would delete the leaf unconditionally)")
+                expect (not child_val,
+                        f"The 'delete' action for '{child_name}' does not accept a value\n"
+                        f" value found: {child_val}")
+            elif action is not None:
                 expect (child_type[child_name].startswith("array"),
                         "The 'action' metadata attribute is only supported for entries of array type\n"
                         f" param name: {child_name}\n"
@@ -647,7 +711,7 @@ def evaluate_selectors(element, case, ez_selectors):
                         "Unrecognized value for 'action' attribute\n"
                         f"  param name  : {child_name}\n"
                         f"  action value: {action}\n"
-                        "  valid values: append, remove\n")
+                        "  valid values: append, remove, delete\n")
             if selectors:
                 all_match = True
                 for sel_name, sel_value in selectors.items():
@@ -666,7 +730,16 @@ def evaluate_selectors(element, case, ez_selectors):
                         break
 
                 if all_match:
-                    if child_name in selected_child.keys():
+                    if action=="delete":
+                        expect (child_name in selected_child.keys(),
+                                f"The 'delete' action for '{child_name}' requires a previously selected value to delete\n"
+                                f" Selector element attributes: {dict(child.attrib)}")
+                        # Remove both the previously selected leaf and this one. Later elements
+                        # with the same name that match are still selected (as if this was the first).
+                        children_to_remove.append(selected_child.pop(child_name))
+                        children_to_remove.append(child)
+
+                    elif child_name in selected_child.keys():
                         orig_child = selected_child[child_name]
                         # Compute new_text before modifying child's attributes below.
                         # We replace orig_child with child (rather than updating orig_child
