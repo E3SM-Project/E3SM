@@ -86,6 +86,9 @@ foreach (P3_LIB IN LISTS P3_LIBS)
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam
   )
+  target_compile_definitions(${P3_LIB} PUBLIC
+    SCREAM_P3_SDM_WARM_EMULATOR_DIR="${CMAKE_CURRENT_SOURCE_DIR}/sdm_warm_emulator"
+  )
   target_link_libraries(${P3_LIB} eamxx_physics_share scream_share)
 endforeach()
 

@@ -3,17 +3,52 @@
 #include "p3_functions.hpp"
 #include "eamxx_p3_process_interface.hpp"
 
+#ifdef EAMXX_HAS_PYTHON
+#include "share/atm_process/atmosphere_process_pyhelpers.hpp"
+#endif
+
 #include <ekat_assert.hpp>
 #include <ekat_units.hpp>
 
 #include <array>
+#include <string>
 
 namespace scream
 {
+namespace
+{
+
+ekat::ParameterList add_sdm_warm_emulator_py_params(const ekat::ParameterList& params)
+{
+  auto p = params;
+  if (p.get<bool>("use_sdm_warm_emulator", false)) {
+#ifdef EAMXX_HAS_PYTHON
+    if (p.isParameter("py_module_name")) {
+      EKAT_REQUIRE_MSG(
+          p.get<std::string>("py_module_name") == "sdm_warm_emulator",
+          "[P3Microphysics] Error! use_sdm_warm_emulator requires py_module_name "
+          "to be 'sdm_warm_emulator'.\n");
+    } else {
+      p.set<std::string>("py_module_name", "sdm_warm_emulator");
+    }
+
+    if (not p.isParameter("py_module_path")) {
+      p.set<std::string>("py_module_path", SCREAM_P3_SDM_WARM_EMULATOR_DIR);
+    }
+#else
+    EKAT_ERROR_MSG(
+        "[P3Microphysics] Error! use_sdm_warm_emulator=true requires "
+        "EAMXX_ENABLE_PYTHON=ON.\n");
+#endif
+  }
+  return p;
+}
+
+} // namespace
 
 // =========================================================================================
 P3Microphysics::P3Microphysics(const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereProcess(comm, params)
+  : AtmosphereProcess(comm, add_sdm_warm_emulator_py_params(params))
 {
   // Nothing to do here
 }
@@ -285,6 +320,15 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"),m_grid,0.0,1.0e2,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qr"),m_grid,0.0,5.0e3,false);
+
+#ifdef EAMXX_HAS_PYTHON
+  if (runtime_options.use_sdm_warm_emulator) {
+    EKAT_REQUIRE_MSG(
+        has_py_module(),
+        "[P3Microphysics] Error! SDM warm emulator requested, but no Python module was loaded.\n");
+    py_module_call("init", std::string(runtime_options.sdm_warm_emulator_file));
+  }
+#endif
 
   // Initialize p3. Pass our comm so that only the root rank reads the
   // lookup table files from disk, broadcasting the data to the other
