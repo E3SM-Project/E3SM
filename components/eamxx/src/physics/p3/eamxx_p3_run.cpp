@@ -6,6 +6,8 @@
 
 #include <ekat_team_policy_utils.hpp>
 
+#include <initializer_list>
+
 namespace scream {
 
 void P3Microphysics::run_impl (const double dt)
@@ -50,6 +52,11 @@ void P3Microphysics::run_impl (const double dt)
     get_field_out("qi2qv_sublim").deep_copy(0.0);
     get_field_out("qc2qr_accret").deep_copy(0.0);
     get_field_out("qc2qr_autoconv").deep_copy(0.0);
+    get_field_out("ncautr").deep_copy(0.0);
+    get_field_out("nc2nr_autoconv").deep_copy(0.0);
+    get_field_out("nc_accret").deep_copy(0.0);
+    get_field_out("nc_selfcollect").deep_copy(0.0);
+    get_field_out("nr_selfcollect").deep_copy(0.0);
     get_field_out("qv2qi_vapdep").deep_copy(0.0);
     get_field_out("qc2qi_berg").deep_copy(0.0);
     get_field_out("qc2qr_ice_shed").deep_copy(0.0);
@@ -183,6 +190,25 @@ void P3Microphysics::run_sdm_warm_emulator ()
   get_internal_field("sdm_warm_emulator_nr_selfcollect_tend").sync_to_dev();
   get_internal_field("sdm_warm_emulator_use_cloud").sync_to_dev();
   get_internal_field("sdm_warm_emulator_use_rain").sync_to_dev();
+
+  const auto ts = end_of_step_ts();
+  for (const auto name : {
+      "sdm_warm_emulator_qc",
+      "sdm_warm_emulator_nc",
+      "sdm_warm_emulator_qr",
+      "sdm_warm_emulator_nr",
+      "sdm_warm_emulator_rho",
+      "sdm_warm_emulator_qc2qr_autoconv_tend",
+      "sdm_warm_emulator_qc2qr_accret_tend",
+      "sdm_warm_emulator_ncautr",
+      "sdm_warm_emulator_nc2nr_autoconv_tend",
+      "sdm_warm_emulator_nc_accret_tend",
+      "sdm_warm_emulator_nc_selfcollect_tend",
+      "sdm_warm_emulator_nr_selfcollect_tend",
+      "sdm_warm_emulator_use_cloud",
+      "sdm_warm_emulator_use_rain"}) {
+    get_internal_field(name).get_header().get_tracking().update_time_stamp(ts);
+  }
 #else
   EKAT_ERROR_MSG(
       "[P3Microphysics] Error! use_sdm_warm_emulator=true requires "

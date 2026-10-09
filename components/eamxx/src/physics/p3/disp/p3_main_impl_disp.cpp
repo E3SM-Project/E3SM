@@ -190,6 +190,11 @@ Int Functions<Real,DefaultDevice>
   auto qi2qv_sublim            = history_only.qi2qv_sublim;
   auto qc2qr_accret            = history_only.qc2qr_accret;
   auto qc2qr_autoconv          = history_only.qc2qr_autoconv;
+  auto ncautr                  = history_only.ncautr;
+  auto nc2nr_autoconv          = history_only.nc2nr_autoconv;
+  auto nc_accret               = history_only.nc_accret;
+  auto nc_selfcollect          = history_only.nc_selfcollect;
+  auto nr_selfcollect          = history_only.nr_selfcollect;
   auto qv2qi_vapdep            = history_only.qv2qi_vapdep;
   auto qc2qi_berg              = history_only.qc2qi_berg;
   auto qc2qr_ice_shed          = history_only.qc2qr_ice_shed;
@@ -302,7 +307,8 @@ Int Functions<Real,DefaultDevice>
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,
       vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
       qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
-      qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
+      qv2qi_vapdep, ncautr, nc2nr_autoconv, nc_accret, nc_selfcollect,
+      nr_selfcollect, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
       qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
       pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
 

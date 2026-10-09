@@ -339,6 +339,11 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> qi2qv_sublim;
     view_2d<Pack> qc2qr_accret;
     view_2d<Pack> qc2qr_autoconv;
+    view_2d<Pack> ncautr;
+    view_2d<Pack> nc2nr_autoconv;
+    view_2d<Pack> nc_accret;
+    view_2d<Pack> nc_selfcollect;
+    view_2d<Pack> nr_selfcollect;
     view_2d<Pack> qv2qi_vapdep;
     view_2d<Pack> qc2qi_berg;
     view_2d<Pack> qc2qr_ice_shed;
@@ -1106,6 +1111,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<Pack> &liq_ice_exchange, const uview_1d<Pack> &qr2qv_evap,
       const uview_1d<Pack> &qi2qv_sublim, const uview_1d<Pack> &qc2qr_accret,
       const uview_1d<Pack> &qc2qr_autoconv, const uview_1d<Pack> &qv2qi_vapdep,
+      const uview_1d<Pack> &ncautr_out, const uview_1d<Pack> &nc2nr_autoconv,
+      const uview_1d<Pack> &nc_accret, const uview_1d<Pack> &nc_selfcollect,
+      const uview_1d<Pack> &nr_selfcollect,
       const uview_1d<Pack> &qc2qi_berg, const uview_1d<Pack> &qc2qr_ice_shed,
       const uview_1d<Pack> &qc2qi_collect, const uview_1d<Pack> &qr2qi_collect,
       const uview_1d<Pack> &qc2qi_hetero_freeze, const uview_1d<Pack> &qr2qi_immers_freeze,
@@ -1159,6 +1167,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<Pack> &liq_ice_exchange, const uview_2d<Pack> &qr2qv_evap,
       const uview_2d<Pack> &qi2qv_sublim, const uview_2d<Pack> &qc2qr_accret,
       const uview_2d<Pack> &qc2qr_autoconv, const uview_2d<Pack> &qv2qi_vapdep,
+      const uview_2d<Pack> &ncautr_out, const uview_2d<Pack> &nc2nr_autoconv,
+      const uview_2d<Pack> &nc_accret, const uview_2d<Pack> &nc_selfcollect,
+      const uview_2d<Pack> &nr_selfcollect,
       const uview_2d<Pack> &qc2qi_berg, const uview_2d<Pack> &qc2qr_ice_shed,
       const uview_2d<Pack> &qc2qi_collect, const uview_2d<Pack> &qr2qi_collect,
       const uview_2d<Pack> &qc2qi_hetero_freeze, const uview_2d<Pack> &qr2qi_immers_freeze,

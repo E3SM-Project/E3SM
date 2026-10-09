@@ -997,13 +997,19 @@ void p3_main_part2_host(
   hetfrz_immersion_nucleation_tend = hetfrz_0.data();
   hetfrz_contact_nucleation_tend = hetfrz_1.data();
   hetfrz_deposition_nucleation_tend = hetfrz_2.data();
-  std::vector<Real> qr2qv_evap_v(nk,0), qi2qv_sublim_v(nk,0), qc2qr_accret_v(nk,0), qc2qr_autoconv_v(nk,0), qv2qi_vapdep_v(nk,0),
+  std::vector<Real> qr2qv_evap_v(nk,0), qi2qv_sublim_v(nk,0), qc2qr_accret_v(nk,0), qc2qr_autoconv_v(nk,0),
+    ncautr_v(nk,0), nc2nr_autoconv_v(nk,0), nc_accret_v(nk,0), nc_selfcollect_v(nk,0), nr_selfcollect_v(nk,0), qv2qi_vapdep_v(nk,0),
     qc2qi_berg_v(nk,0), qc2qr_ice_shed_v(nk,0), qc2qi_collect_v(nk,0), qr2qi_collect_v(nk,0), qc2qi_hetero_freeze_v(nk,0),
     qr2qi_immers_freeze_v(nk,0), qi2qr_melt_v(nk,0);
   qr2qv_evap = qr2qv_evap_v.data();
   qi2qv_sublim = qi2qv_sublim_v.data();
   qc2qr_accret = qc2qr_accret_v.data();
   qc2qr_autoconv = qc2qr_autoconv_v.data();
+  Real* ncautr = ncautr_v.data();
+  Real* nc2nr_autoconv = nc2nr_autoconv_v.data();
+  Real* nc_accret = nc_accret_v.data();
+  Real* nc_selfcollect = nc_selfcollect_v.data();
+  Real* nr_selfcollect = nr_selfcollect_v.data();
   qv2qi_vapdep = qv2qi_vapdep_v.data();
   qc2qi_berg = qc2qi_berg_v.data();
   qc2qr_ice_shed = qc2qr_ice_shed_v.data();
@@ -1021,6 +1027,7 @@ void p3_main_part2_host(
         cdistr, mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend, vap_liq_exchange,
         vap_ice_exchange, liq_ice_exchange, pratot, prctot, qv_prev, t_prev,
         qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+        ncautr, nc2nr_autoconv, nc_accret, nc_selfcollect, nr_selfcollect,
         qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect, qr2qi_collect,
         qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt
         },
@@ -1096,6 +1103,11 @@ void p3_main_part2_host(
     qi2qv_sublim_d      (temp_d[current_index++]),
     qc2qr_accret_d      (temp_d[current_index++]),
     qc2qr_autoconv_d    (temp_d[current_index++]),
+    ncautr_d            (temp_d[current_index++]),
+    nc2nr_autoconv_d    (temp_d[current_index++]),
+    nc_accret_d         (temp_d[current_index++]),
+    nc_selfcollect_d    (temp_d[current_index++]),
+    nr_selfcollect_d    (temp_d[current_index++]),
     qv2qi_vapdep_d      (temp_d[current_index++]),
     qc2qi_berg_d        (temp_d[current_index++]),
     qc2qr_ice_shed_d    (temp_d[current_index++]),
@@ -1133,7 +1145,9 @@ void p3_main_part2_host(
       mu_c_d, nu_d, lamc_d, cdist_d, cdist1_d, cdistr_d, mu_r_d, lamr_d,
       logn0r_d, qv2qi_depos_tend_d, precip_total_tend_d, nevapr_d, qr_evap_tend_d, vap_liq_exchange_d,
       vap_ice_exchange_d, liq_ice_exchange_d, qr2qv_evap_d, qi2qv_sublim_d,
-      qc2qr_accret_d, qc2qr_autoconv_d, qv2qi_vapdep_d, qc2qi_berg_d,
+      qc2qr_accret_d, qc2qr_autoconv_d, qv2qi_vapdep_d,
+      ncautr_d, nc2nr_autoconv_d, nc_accret_d, nc_selfcollect_d, nr_selfcollect_d,
+      qc2qi_berg_d,
       qc2qr_ice_shed_d, qc2qi_collect_d, qr2qi_collect_d,
       qc2qi_hetero_freeze_d, qr2qi_immers_freeze_d, qi2qr_melt_d,
       pratot_d, prctot_d, bools_d(0),nk, P3F::P3Runtime());
@@ -1149,6 +1163,7 @@ void p3_main_part2_host(
     nevapr_d, qr_evap_tend_d, vap_liq_exchange_d, vap_ice_exchange_d,
     liq_ice_exchange_d, pratot_d, prctot_d,
     qr2qv_evap_d, qi2qv_sublim_d, qc2qr_accret_d, qc2qr_autoconv_d,
+    ncautr_d, nc2nr_autoconv_d, nc_accret_d, nc_selfcollect_d, nr_selfcollect_d,
     qv2qi_vapdep_d, qc2qi_berg_d, qc2qr_ice_shed_d, qc2qi_collect_d,
     qr2qi_collect_d, qc2qi_hetero_freeze_d, qr2qi_immers_freeze_d,
     qi2qr_melt_d
@@ -1162,6 +1177,7 @@ void p3_main_part2_host(
       nevapr, qr_evap_tend, vap_liq_exchange, vap_ice_exchange, liq_ice_exchange,
       pratot, prctot,
       qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
+      ncautr, nc2nr_autoconv, nc_accret, nc_selfcollect, nr_selfcollect,
       qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect, qr2qi_collect,
       qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt
     },
@@ -1441,6 +1457,11 @@ Int p3_main_host(
   view_2d nevapr_d("nevapr_d",nj,nk);
   view_2d diag_equiv_reflectivity_d("diag_equiv_reflectivity_d",nj,nk);
   view_2d qr_evap_tend_d("qr_evap_tend_d",nj,nk);
+  view_2d ncautr_d("ncautr_d",nj,nk);
+  view_2d nc2nr_autoconv_d("nc2nr_autoconv_d",nj,nk);
+  view_2d nc_accret_d("nc_accret_d",nj,nk);
+  view_2d nc_selfcollect_d("nc_selfcollect_d",nj,nk);
+  view_2d nr_selfcollect_d("nr_selfcollect_d",nj,nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_d(i) = precip_liq_surf_temp_d(0, i / Pack::n)[i % Pack::n];
@@ -1464,7 +1485,9 @@ Int p3_main_host(
                                        do_predict_nc, do_prescribed_CCN, col_location_d};
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d, vap_ice_exchange_d,
       qr2qv_evap_d, qi2qv_sublim_d,
-      qc2qr_accret_d, qc2qr_autoconv_d, qv2qi_vapdep_d, qc2qi_berg_d,
+      qc2qr_accret_d, qc2qr_autoconv_d,
+      ncautr_d, nc2nr_autoconv_d, nc_accret_d, nc_selfcollect_d, nr_selfcollect_d,
+      qv2qi_vapdep_d, qc2qi_berg_d,
       qc2qr_ice_shed_d, qc2qi_collect_d, qr2qi_collect_d,
       qc2qi_hetero_freeze_d, qr2qi_immers_freeze_d, qi2qr_melt_d,
       qc_sedim_d, qr_sedim_d, qi_sedim_d,

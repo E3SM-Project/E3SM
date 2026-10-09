@@ -106,6 +106,11 @@ void Functions<S,D>
   const uview_1d<Pack>& qc2qr_accret,
   const uview_1d<Pack>& qc2qr_autoconv,
   const uview_1d<Pack>& qv2qi_vapdep,
+  const uview_1d<Pack>& ncautr_out,
+  const uview_1d<Pack>& nc2nr_autoconv,
+  const uview_1d<Pack>& nc_accret,
+  const uview_1d<Pack>& nc_selfcollect,
+  const uview_1d<Pack>& nr_selfcollect,
   const uview_1d<Pack>& qc2qi_berg,
   const uview_1d<Pack>& qc2qr_ice_shed,
   const uview_1d<Pack>& qc2qi_collect,
@@ -594,6 +599,11 @@ void Functions<S,D>
       qi2qv_sublim(k).set(not_skip_all, qi2qv_sublim_tend);
       qc2qr_accret(k).set(not_skip_all, qc2qr_accret_tend);
       qc2qr_autoconv(k).set(not_skip_all, qc2qr_autoconv_tend);
+      ncautr_out(k).set(not_skip_all, ncautr);
+      nc2nr_autoconv(k).set(not_skip_all, nc2nr_autoconv_tend);
+      nc_accret(k).set(not_skip_all, nc_accret_tend);
+      nc_selfcollect(k).set(not_skip_all, nc_selfcollect_tend);
+      nr_selfcollect(k).set(not_skip_all, nr_selfcollect_tend);
       qv2qi_vapdep(k).set(not_skip_all, qv2qi_vapdep_tend);
       qc2qi_berg(k).set(not_skip_all, qc2qi_berg_tend);
       qc2qr_ice_shed(k).set(not_skip_all, qc2qr_ice_shed_tend);

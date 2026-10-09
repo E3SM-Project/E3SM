@@ -687,7 +687,7 @@ struct P3MainPart1Data : public PhysicsTestData
 
 struct P3MainPart2Data : public PhysicsTestData
 {
-  static constexpr size_t NUM_ARRAYS = 76;
+  static constexpr size_t NUM_ARRAYS = 81;
 
   // Inputs
   Int kts, kte, kbot, ktop, kdir;

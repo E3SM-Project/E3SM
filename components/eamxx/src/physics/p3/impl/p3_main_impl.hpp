@@ -207,6 +207,11 @@ Int Functions<S,D>
     const auto oqi2qv_sublim       = ekat::subview(history_only.qi2qv_sublim, i);
     const auto oqc2qr_accret       = ekat::subview(history_only.qc2qr_accret,i);
     const auto oqc2qr_autoconv     = ekat::subview(history_only.qc2qr_autoconv,i);
+    const auto oncautr             = ekat::subview(history_only.ncautr,i);
+    const auto onc2nr_autoconv     = ekat::subview(history_only.nc2nr_autoconv,i);
+    const auto onc_accret          = ekat::subview(history_only.nc_accret,i);
+    const auto onc_selfcollect     = ekat::subview(history_only.nc_selfcollect,i);
+    const auto onr_selfcollect     = ekat::subview(history_only.nr_selfcollect,i);
     const auto oqv2qi_vapdep       = ekat::subview(history_only.qv2qi_vapdep,i);
     const auto oqc2qi_berg         = ekat::subview(history_only.qc2qi_berg,i);
     const auto oqc2qr_ice_shed     = ekat::subview(history_only.qc2qr_ice_shed,i);
@@ -304,6 +309,7 @@ Int Functions<S,D>
       mu_r, lamr, logn0r, oqv2qi_depos_tend, oprecip_total_tend, onevapr, qr_evap_tend,
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       oqr2qv_evap, oqi2qv_sublim, oqc2qr_accret, oqc2qr_autoconv, oqv2qi_vapdep,
+      oncautr, onc2nr_autoconv, onc_accret, onc_selfcollect, onr_selfcollect,
       oqc2qi_berg, oqc2qr_ice_shed, oqc2qi_collect, oqr2qi_collect, oqc2qi_hetero_freeze, oqr2qi_immers_freeze, oqi2qr_melt,
       pratot, prctot, hydrometeorsPresent, nk, runtime_options);
 

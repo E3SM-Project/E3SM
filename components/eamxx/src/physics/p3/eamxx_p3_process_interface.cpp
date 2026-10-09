@@ -166,6 +166,11 @@ void P3Microphysics::create_requests()
     add_field<Computed>("qi2qv_sublim",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc2qr_accret",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc2qr_autoconv",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+    add_field<Computed>("ncautr",              scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
+    add_field<Computed>("nc2nr_autoconv",      scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
+    add_field<Computed>("nc_accret",           scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
+    add_field<Computed>("nc_selfcollect",      scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
+    add_field<Computed>("nr_selfcollect",      scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
     add_field<Computed>("qv2qi_vapdep",        scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc2qi_berg",          scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc2qr_ice_shed",      scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
@@ -504,6 +509,11 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.qi2qv_sublim = get_field_out("qi2qv_sublim").get_view<Pack**>();
     history_only.qc2qr_accret = get_field_out("qc2qr_accret").get_view<Pack**>();
     history_only.qc2qr_autoconv = get_field_out("qc2qr_autoconv").get_view<Pack**>();
+    history_only.ncautr = get_field_out("ncautr").get_view<Pack**>();
+    history_only.nc2nr_autoconv = get_field_out("nc2nr_autoconv").get_view<Pack**>();
+    history_only.nc_accret = get_field_out("nc_accret").get_view<Pack**>();
+    history_only.nc_selfcollect = get_field_out("nc_selfcollect").get_view<Pack**>();
+    history_only.nr_selfcollect = get_field_out("nr_selfcollect").get_view<Pack**>();
     history_only.qv2qi_vapdep = get_field_out("qv2qi_vapdep").get_view<Pack**>();
     history_only.qc2qi_berg = get_field_out("qc2qi_berg").get_view<Pack**>();
     history_only.qc2qr_ice_shed = get_field_out("qc2qr_ice_shed").get_view<Pack**>();
@@ -521,6 +531,11 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     history_only.qi2qv_sublim = m_buffer.unused;
     history_only.qc2qr_accret = m_buffer.unused;
     history_only.qc2qr_autoconv = m_buffer.unused;
+    history_only.ncautr = m_buffer.unused;
+    history_only.nc2nr_autoconv = m_buffer.unused;
+    history_only.nc_accret = m_buffer.unused;
+    history_only.nc_selfcollect = m_buffer.unused;
+    history_only.nr_selfcollect = m_buffer.unused;
     history_only.qv2qi_vapdep = m_buffer.unused;
     history_only.qc2qi_berg = m_buffer.unused;
     history_only.qc2qr_ice_shed = m_buffer.unused;
