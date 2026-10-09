@@ -53,9 +53,13 @@ public:
                       const std::string& map_file,
                       const bool track_mask = false);
 
+  // Note: if rect_sizes=[nx,ny] is non-empty, the generated grid is a generic 2d rectilinear
+  //       grid, with nx*ny columns, and x being the fastest varying index. This is different
+  //       from a lat-lon grid, since (lat,lon) are not assumed to be separable.
   HorizontalRemapper (const grid_ptr_type& grid,
                       const std::string& map_file,
-                      const bool track_mask = false);
+                      const bool track_mask = false,
+                      const std::vector<int>& rect_sizes = {});
 
   ~HorizontalRemapper ();
 

@@ -29,4 +29,19 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_remap
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
+
+  # Test remap to a generic 2d rectilinear (HRRR-like) grid
+  set(HRRR_MAP_FILE map_ne4pg2_to_hrrr_10x20_20261008.nc)
+  set(HRRR_MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${HRRR_MAP_FILE})
+  GetInputFile ("scream/maps/${HRRR_MAP_FILE}")
+  # Also test a lat-lon map file, since lat-lon and rectilinear grids share the setup code
+  set(LATLON_MAP_FILE map_ne4pg2_to_10x20_20260112.nc)
+  set(LATLON_MAP_FILE_FULL ${SCREAM_INPUT_ROOT}/atm/scream/maps/${LATLON_MAP_FILE})
+  GetInputFile ("scream/maps/${LATLON_MAP_FILE}")
+  CreateUnitTest(rectilinear_remapper
+    SOURCES rectilinear_remapper_tests.cpp
+    LIBS eamxx_remap
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    EXE_ARGS --args --map-file=${HRRR_MAP_FILE_FULL} --latlon-map-file=${LATLON_MAP_FILE_FULL} --nx=10 --ny=20
+  )
 endif()

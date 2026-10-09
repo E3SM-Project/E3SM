@@ -249,7 +249,18 @@ protected:
 
   bool m_add_time_dim;
   bool m_track_avg_cnt         = false;
+  // If either of these is true, the COL dim of the io grid is replaced by 2 dims in the file:
+  //  - latlon: (lat,lon), with lat/lon being 1d coordinate arrays (lat,lon are separable)
+  //  - rectilinear: (y,x), with lat/lon being generic (2d) fields. Here x is not necessarily lon
+  //                 (nor y lat), and lat/lon values at the nx*ny points are not assumed to be separable.
+  // The two are mutually exclusive. Both are set up by the horizontal remapper, which
+  // adds x_idx/y_idx geo data to its tgt grid (with x being the fastest varying index).
   bool m_latlon_output = false;
+  bool m_rectilinear_output = false;
+
+  // Names/lengths of the dims replacing COL when m_latlon_output or m_rectilinear_output are true.
+  // The 1st dim is the slowest varying one. Throws if both flags are false.
+  std::vector<std::pair<std::string,int>> get_structured_col_dims () const;
   std::string m_decomp_dimname = "";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =

@@ -510,6 +510,27 @@ the grid where the fields are defined and a coarser grid.
       the size of the output file.
           - **Note:** with this feature, the user can only specify fields
           from a single grid.
+- `remapping->horiz->rectilinear_layout`: a list `[nx, ny]` of two integers, inside the
+sublist `remapping` (sublist `horiz`). E.g.,
+      ```yaml
+      remapping:
+        horiz:
+          rectilinear_layout: [nx, ny]
+      ```
+      Use it when the target grid of
+`horiz_remap_file` is a generic 2d rectilinear grid (e.g., a HRRR-like grid), rather
+than a lat-lon one.
+      - By default, a map file with `dst_grid_rank=2` is assumed to target a lat-lon grid,
+      whose (lat,lon) values are separable. The grid sizes are read from `dst_grid_dims=[nlon,nlat]`,
+      and the output file will have dimensions `(lat,lon)`, with `lat` and `lon` being 1d coordinates.
+      EAMxx errors out if the lat/lon values of the target points are not separable.
+      - With this option, EAMxx makes no such assumption: the `nx*ny` target points can have
+      all different lat and lon values, and `nx` need not be the number of longitudes (nor `ny`
+      the number of latitudes). The output file will have dimensions `(y,x)`, and the
+      variables `lat` and `lon` will be written as 2d fields over `(y,x)`.
+      - The target points in the map file must be ordered with `x` as the fastest varying
+      index (i.e., the point `(ix,iy)` is the column number `iy*nx+ix`), and `nx*ny` must
+      match the number of columns of the target grid in the map file.
 - `horiz_remap_fill_threshold`: fraction (in `[0,1)`) of a target column that must
 come from valid (i.e., not fill-valued) source columns for the remapped value to be
 written out.
