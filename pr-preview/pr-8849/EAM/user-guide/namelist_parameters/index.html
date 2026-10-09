@@ -5568,23 +5568,23 @@
 <tbody>
 <tr>
 <td><code>iradsw</code></td>
-<td>Frequency for updating shortwave fluxes and heating rate; iradsw &gt; 0 interpreted as number of timesteps, iradsw &lt; 0 interpreted as hours; iradsw = 0 disables shortwave radiation entirely</td>
+<td>Frequency for updating shortwave fluxes and heating rate.<sup id="fnref:rad1"><a class="footnote-ref" href="#fn:rad1">16</a></sup></td>
 <td><code>-1</code></td>
 </tr>
 <tr>
 <td><code>iradlw</code></td>
-<td>Frequency for updating longwave fluxes and heating rate; iradlw &gt; 0 interpreted as number of timesteps, iradlw &lt; 0 interpreted as hours; iradlw = 0 disables longwave radiation entirely</td>
+<td>Frequency for updating longwave fluxes and heating rate.<sup id="fnref:rad2"><a class="footnote-ref" href="#fn:rad2">17</a></sup></td>
 <td><code>-1</code></td>
 </tr>
 <tr>
 <td><code>irad_always</code></td>
-<td>Length of time in timesteps (irad_always &gt; 0) or in hours (irad_always &lt; 0) SW/LW radiation will be run continuously from the start of an initial or restart run</td>
+<td>Length of time in timesteps (irad_always&gt;0) or hours (irad_always&lt;0).<sup id="fnref:rad3"><a class="footnote-ref" href="#fn:rad3">18</a></sup></td>
 <td><code>0</code></td>
 </tr>
 <tr>
 <td><code>use_rad_dt_cosz</code></td>
-<td>If true, use the radiation dt for all cosz calculations; calculates solar zenith angle averaged over a time step. In default model solar zenith angle is held constant over time</td>
-<td><code>.true.</code>  <!-- markdownlint-disable MD033 --><br> (set by namelist_defaults_eam.xml for default physics)</td>
+<td>Flag to use radiation dt for all cosz calculations.<sup id="fnref:rad4"><a class="footnote-ref" href="#fn:rad4">19</a></sup></td>
+<td><code>.true.</code></td>
 </tr>
 <tr>
 <td><code>spectralflux</code></td>
@@ -5593,12 +5593,12 @@
 </tr>
 <tr>
 <td><code>liqcldoptics</code></td>
-<td>Choice of cloud optical property parameterization for liquid clouds. Valid options are ‘slingo’ or ‘gammadist’</td>
+<td>Choice of cloud optical property parameterization for liquid clouds.<sup id="fnref:rad5"><a class="footnote-ref" href="#fn:rad5">20</a></sup></td>
 <td><code>gammadist</code></td>
 </tr>
 <tr>
 <td><code>icecldoptics</code></td>
-<td>Choice of cloud optical property parameterization for ice clouds. Valid options are ‘ebertcurry’ or ‘mitchell’</td>
+<td>Choice of cloud optical property parameterization for ice clouds.<sup id="fnref:rad6"><a class="footnote-ref" href="#fn:rad6">21</a></sup></td>
 <td><code>mitchell</code></td>
 </tr>
 </tbody>
@@ -5879,19 +5879,37 @@
 <p>Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.&#160;<a class="footnote-backref" href="#fnref:mom6" title="Jump back to footnote 14 in the text">&#8617;</a></p>
 </li>
 <li id="fn:mom7">
-<p>Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">16</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">17</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">18</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">19</a></sup>&#160;<a class="footnote-backref" href="#fnref:mom7" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+<p>Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">22</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">23</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">24</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">25</a></sup>&#160;<a class="footnote-backref" href="#fnref:mom7" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad1">
+<p>iradsw &gt; 0 interpreted as number of timesteps, iradsw &lt; 0 interpreted as hours; iradsw = 0 disables shortwave radiation entirely&#160;<a class="footnote-backref" href="#fnref:rad1" title="Jump back to footnote 16 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad2">
+<p>iradlw &gt; 0 interpreted as number of timesteps, iradlw &lt; 0 interpreted as hours; iradlw = 0 disables longwave radiation entirely&#160;<a class="footnote-backref" href="#fnref:rad2" title="Jump back to footnote 17 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad3">
+<p>SW/LW radiation will be run continuously from the start of an initial or restart run&#160;<a class="footnote-backref" href="#fnref:rad3" title="Jump back to footnote 18 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad4">
+<p>Calculates solar zenith angle averaged over a time step. In default model solar zenith angle is held constant over time. set by namelist_defaults_eam.xml for default physics.&#160;<a class="footnote-backref" href="#fnref:rad4" title="Jump back to footnote 19 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad5">
+<p>Valid options are ‘slingo’ or ‘gammadist’&#160;<a class="footnote-backref" href="#fnref:rad5" title="Jump back to footnote 20 in the text">&#8617;</a></p>
+</li>
+<li id="fn:rad6">
+<p>Valid options are ‘ebertcurry’ or ‘mitchell’&#160;<a class="footnote-backref" href="#fnref:rad6" title="Jump back to footnote 21 in the text">&#8617;</a></p>
 </li>
 <li id="fn:1">
-<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 16 in the text">&#8617;</a></p>
+<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 22 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 17 in the text">&#8617;</a></p>
+<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 23 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 18 in the text">&#8617;</a></p>
+<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 24 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 19 in the text">&#8617;</a></p>
+<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 25 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
