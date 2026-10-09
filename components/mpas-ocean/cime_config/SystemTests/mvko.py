@@ -417,4 +417,4 @@ class MVKO(SystemTestsCommon):
                 f"        {viewing}"
             )
 
-    return success, "", log_comments
+        return success, "", log_comments
