@@ -30,6 +30,7 @@ module interpinic
   private :: findMinDistPFTs
   private :: findMinDistCols
   private :: findMinDistLDUs
+  private :: sqdist
 
   ! Private data
  
@@ -728,7 +729,7 @@ contains
 
     integer  :: counts(npes)       ! per-rank block sizes
     integer  :: displs(npes)       ! per-rank block offsets, 0-based
-    real(r8) :: dx,dy,distmin,dist
+    real(r8) :: distmin,dist
     integer  :: n,no,nmin,ier
     integer  :: ng                 ! length of the rank-0 output arrays
     integer  :: nloc               ! output points on this rank
@@ -846,9 +847,7 @@ contains
                 if ( allPFTSfromSameGC .or. &
                      (ltypeo(no) > istcrop) .or. &
                      (vtypei(n) == vtypeo(no)) )then
-                   dy   = abs(lato(no)-lati(n))*re
-                   dx   = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
-                   dist = dx*dx + dy*dy
+                   dist = sqdist(lato(no), lono(no), cos_lato(no), lati(n), loni(n), cos_lati(n))
                    if ( dist < distmin ) then
                       distmin = dist
                       nmin    = n
@@ -862,9 +861,7 @@ contains
              if (distmin == spval) then
                 do n = 1, numpfts
                    if (wti(n) > 0._r8 .and. ltypei(n) == istsoil .and. vtypei(n)==baresoil) then
-                      dy   = abs(lato(no)-lati(n))*re
-                      dx   = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
-                      dist = dx*dx + dy*dy
+                      dist = sqdist(lato(no), lono(no), cos_lato(no), lati(n), loni(n), cos_lati(n))
                       if ( dist < distmin )then
                          distmin = dist
                          nmin    = n
@@ -950,7 +947,7 @@ contains
 
     integer  :: counts(npes)       ! per-rank block sizes
     integer  :: displs(npes)       ! per-rank block offsets, 0-based
-    real(r8) :: dx,dy,distmin,dist
+    real(r8) :: distmin,dist
     integer  :: n,no,nmin,ier
     integer  :: ng                 ! length of the rank-0 output arrays
     integer  :: nloc               ! output points on this rank
@@ -1075,9 +1072,7 @@ contains
                 end if
              end if
              if (calcmin) then
-                dy = abs(lato(no)-lati(n))*re
-                dx = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
-                dist = dx*dx + dy*dy
+                dist = sqdist(lato(no), lono(no), cos_lato(no), lati(n), loni(n), cos_lati(n))
                 if ( dist < distmin )then
                    distmin = dist
                    nmin = n
@@ -1090,9 +1085,7 @@ contains
              if ( distmin == spval )then
                 do n = 1, numcols
                    if (wti(n) > 0._r8 .and. typei(n)==istsoil) then
-                      dy = abs(lato(no)-lati(n))*re
-                      dx = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
-                      dist = dx*dx + dy*dy
+                      dist = sqdist(lato(no), lono(no), cos_lato(no), lati(n), loni(n), cos_lati(n))
                       if ( dist < distmin )then
                          distmin = dist
                          nmin = n
@@ -1176,7 +1169,7 @@ contains
 
     integer  :: counts(npes)       ! per-rank block sizes
     integer  :: displs(npes)       ! per-rank block offsets, 0-based
-    real(r8) :: dx,dy,distmin,dist
+    real(r8) :: distmin,dist
     integer  :: n,no,nmin,ier
     integer  :: ng                 ! length of the rank-0 output arrays
     integer  :: nloc               ! output points on this rank
@@ -1280,9 +1273,7 @@ contains
           
           do n = 1, numldus
              if ( (wti(n) > 0.0_r8) .and. (typei(n) == typeo(no)) ) then
-                dy = abs(lato(no)-lati(n))*re
-                dx = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
-                dist = dx*dx + dy*dy
+                dist = sqdist(lato(no), lono(no), cos_lato(no), lati(n), loni(n), cos_lati(n))
                 if ( dist < distmin ) then
                    distmin = dist
                    nmin    = n
@@ -1295,9 +1286,7 @@ contains
              if ( distmin == spval )then
                 do n = 1, numldus
                    if (wti(n) > 0._r8 .and. typei(n) == istsoil) then
-                      dy = abs(lato(no)-lati(n))*re
-                      dx = abs(lono(no)-loni(n))*re * 0.5_r8*(cos_lato(no)+cos_lati(n))
-                      dist = dx*dx + dy*dy
+                      dist = sqdist(lato(no), lono(no), cos_lato(no), lati(n), loni(n), cos_lati(n))
                       if ( dist < distmin )then
                          distmin = dist
                          nmin    = n
@@ -1332,6 +1321,41 @@ contains
     deallocate (indx)
 
   end subroutine findMinDistLDUs
+
+  !=======================================================================
+
+  pure function sqdist( lat1, lon1, coslat1, lat2, lon2, coslat2 ) result(dist)
+
+    ! Squared equirectangular distance (m^2) between two points given in
+    ! radians.  The longitude difference is wrapped to [0, pi], so the two
+    ! points may use different longitude conventions (e.g. -180/+180 vs.
+    ! 0/360) and points either side of the 0/360 or +/-180 seam are found
+    ! to be close.
+
+    implicit none
+
+    ! ------------------------ arguments ---------------------------------
+    real(r8), intent(in) :: lat1, lon1, coslat1   ! first point
+    real(r8), intent(in) :: lat2, lon2, coslat2   ! second point
+    real(r8)             :: dist
+    ! --------------------------------------------------------------------
+
+    ! ------------------------ local variables ---------------------------
+    real(r8), parameter :: twopi = 2._r8*SHR_CONST_PI
+    real(r8) :: dlon, dx, dy
+    ! --------------------------------------------------------------------
+
+    ! Points less than pi apart in longitude (no seam crossed) take neither
+    ! branch, so their distance is bit-for-bit what it was before wrapping.
+    dlon = abs(lon1-lon2)
+    if (dlon >= twopi)        dlon = modulo(dlon, twopi)
+    if (dlon >  SHR_CONST_PI) dlon = twopi - dlon
+
+    dy   = abs(lat1-lat2)*re
+    dx   = dlon*re * 0.5_r8*(coslat1+coslat2)
+    dist = dx*dx + dy*dy
+
+  end function sqdist
 
   !=======================================================================
 
