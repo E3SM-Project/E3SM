@@ -375,9 +375,7 @@ module UrbanParamsType
 
     ! Deallocate memory for urbinp datatype
 
-    ! Note that we don't deallocate memory for urbinp datatype (call UrbanInput with
-    ! mode='finalize') because the arrays are needed for dynamic urban landunits.
-    !call UrbanInput(bounds%begg, bounds%endg, mode='finalize')
+    call UrbanInput(bounds%begg, bounds%endg, mode='finalize')
 
 
   end subroutine Init

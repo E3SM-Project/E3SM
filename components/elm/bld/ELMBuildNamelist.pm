@@ -2859,7 +2859,7 @@ sub setup_logic_do_transient_urban {
    # conditions: (1) set default value to '.false.'; (2) make sure that the
    # value is indeed false (e.g., that the user didn't try to set it to true).
 
-   my $default_val = ".true.";
+   my $default_val = ".false.";
 
    # cannot_be_true will be set to a non-empty string in any case where
    # do_transient_urban should not be true; if it turns out that
