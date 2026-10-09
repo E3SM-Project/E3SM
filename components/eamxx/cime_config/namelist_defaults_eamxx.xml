@@ -539,6 +539,12 @@ be lost if SCREAM_HACK_XML is not enabled.
       <my_param vgrid="L128" action="append">3,4</my_param>
       <my_param vgrid="L72"  action="append">3,4</my_param>
       <my_param vgrid="L72"  action="remove">3</my_param>
+      <!-- Open nodes: atmchange can add/remove leaves to/from them. All leaves must be arrays of reals -->
+      <open_params open="true" leaf_type="array(real)" leaf_doc="Test leaf of an open node">
+        <p1>1.0</p1>
+        <p2>2.0,3.0</p2>
+      </open_params>
+      <empty_open_params open="true" leaf_type="array(real)"/>
     </test_only>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
