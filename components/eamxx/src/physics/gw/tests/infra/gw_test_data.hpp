@@ -41,7 +41,9 @@ struct GwCommonInit : public PhysicsTestData {
   {
     // Assert valid init data?
     assert(kbotbg <= pver);
-    assert(ktop >= 0);
+    // ktop may be -1: in the shifted C++ interface-index convention that is
+    // the physical top interface (equivalent to EAM's Fortran ktop=0).
+    assert(ktop >= -1);
     assert(kbotbg >= ktop);
     assert(pgwv > 0);
     assert(nbot_molec >= 0);
