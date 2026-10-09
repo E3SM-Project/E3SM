@@ -37,23 +37,31 @@
 
 ## Dust aerosol
 
-| Parameter                 | Description                                    | Default value                                     |
-| ------------------------- | ---------------------------------------------- | ------------------------------------------------- |
-| `dust_emis_scheme`*        | The v3 dust emission scheme (Kok et al., 2014) | `2` <!-- markdownlint-disable MD033 --><br> (set to 1 to switch to the v1/v2 scheme) |
+| Parameter                 | Description                                                                      | Default value  |
+| ------------------------- | -------------------------------------------------------------------------------- | -------------- |
+| `dust_emis_scheme`[^ds1]  | The v3 dust emission scheme (Kok et al., 2014)                                   | `2`[^ds2]        |
 
-*This parameter is set in `user_nl_drv`
+[^ds1]: This parameter is set in `user_nl_drv`
+[^ds2]: Use `1` to revert to the v1/v2 scheme
 
 ## HOMME
 
-| Parameter        | Description                                                                                 | Default value  |
-| ---------------- | ------------------------------------------------------------------------------------------- | -------------- |
-| `se_tstep`       | Main dycore timestep. Additional parameters control the hyper viscsosity, trancer and vertical remap timesteps, which are derived from se_tstep. <!-- markdownlint-disable MD033 --><br> units = seconds | Scales linearly with horizontal resolution. <br> NE30 default: `300` |
-| `nu`             | Tensor hyperviscosity coefficient, independent of spatial resolution. <br> units = 1/s      | `3.4e-8` |
-| `nu_top`         | Scalar viscosity at model top. <br> units = m^2/s                                           | Horizontal resolution dependent <br> NE30 default: `2.5e5` |
-| `transport_alg`  | Select between semi-lagrangian and Eulerian based transport schemes                         | `12` = semi-lagranian method with monotinicity and mass preservation |
-| `statefreq`      | print a varieity of dycore metrics to the atm.log file every “statefreq” timesteps          | `480`          |
-| `vert_remap_alg` | Algorithm used to remap the vertically lagrangian levels back to the reference levels       | `10` = strict monotonicity applied on top of a 2nd order accurate PPM method  |
-| `se_ftype`       | Controls how physics tendencies are applied.  0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies | `2`          |
+| Parameter        | Description                                                                               | Default value             |
+| ---------------- | ----------------------------------------------------------------------------------------- | ------------------------- |
+| `se_tstep`       | Main dycore timestep.[^dy1] [seconds]                                                     | resolution dependent[^dy2]|
+| `nu`             | Tensor hyperviscosity coefficient, independent of spatial resolution. [1/s]               | `3.4e-8`                  |
+| `nu_top`         | Scalar viscosity at model top.  [m^2/s]                                                   | resolution dependent[^dy3]|
+| `transport_alg`  | Select between semi-lagrangian and Eulerian based transport schemes                       | `12`[^dy4]                |
+| `statefreq`      | print a varieity of dycore metrics to the atm.log file every “statefreq” timesteps        | `480`                     |
+| `vert_remap_alg` | Algorithm used to remap the vertically lagrangian levels back to the reference levels     | `10`[^dy5]                |
+| `se_ftype`       | Controls how physics tendencies are applied.[^dy6]                                        | `2`                       |
+
+[^dy1]: Additional parameters control the hyper viscsosity, trancer and vertical remap timesteps, which are derived from se_tstep.
+[^dy2]: Scales linearly with horizontal resolution.
+[^dy3]: Value is either resolution dependent, or static when `laplace_scaling=1`
+[^dy4]: semi-lagranian method with monotinicity and mass preservation
+[^dy5]: strict monotonicity applied on top of a 2nd order accurate PPM method
+[^dy6]: 0=”dribbled” in during dynamics timesteps.  1=”hard adjustment” after each physics timestep.  2=hybrid approach: hard adjustment for tracers, dribbled for remaining tendencies
 
 ## Modal Aerosol Module
 
