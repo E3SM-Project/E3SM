@@ -466,7 +466,8 @@ module elm_varctl
   ! Restart file layout
   !-----------------------------------------------------------------------
   ! 'default' => write column/pft data for all columns/pfts
-  ! 'compact' => write column/pft data only for active columns/pfts
+  ! 'compact' => write column/pft data only for columns/pfts that have been
+  !              active since the base file was read (see restCompactMod)
   character(len=16), public :: restart_file_type = 'default'
 
   !-----------------------------------------------------------------------

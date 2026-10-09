@@ -48,9 +48,10 @@ module restFileMod
   use tracercoefftype      , only : tracercoeff_type
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
-  use ncdio_pio            , only : check_att, ncd_getatt
+  use ncdio_pio            , only : check_att, ncd_getatt, ncd_compact_suspend
   use restCompactMod       , only : restCompact_build_map, restCompact_dimset, restCompact_ids
-  use restCompactMod       , only : restCompact_read_map, restart_file_type_attname
+  use restCompactMod       , only : restCompact_read_map, restCompact_read_done, restart_file_type_attname
+  use restCompactMod       , only : restCompact_update_ever_active
   use BeTRSimulationELM    , only : betr_simulation_elm_type
   use CropType             , only : crop_type
   use GridcellDataType     , only : grc_wf
@@ -244,9 +245,13 @@ contains
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
          h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:))
 
+    ! SurfaceAlbedo also updates inactive points, so in compact files the
+    ! surface albedo variables stay on the full dimensions
+    call ncd_compact_suspend(.true.)
     call surfalb_vars%restart (bounds, ncid, flag='define', &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
          tsai_patch=canopystate_vars%tsai_patch(bounds%begp:bounds%endp))
+    call ncd_compact_suspend(.false.)
 
     if (use_lch4) then
        call ch4_vars%restart(bounds, ncid, flag='define')
@@ -384,9 +389,13 @@ contains
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
          h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) )
 
+    ! SurfaceAlbedo also updates inactive points, so in compact files the
+    ! surface albedo variables stay on the full dimensions
+    call ncd_compact_suspend(.true.)
     call surfalb_vars%restart (bounds, ncid, flag='write',  &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
          tsai_patch=canopystate_vars%tsai_patch(bounds%begp:bounds%endp))
+    call ncd_compact_suspend(.false.)
 
     if (use_lch4) then
        call ch4_vars%restart(  bounds, ncid, flag='write' )
@@ -540,7 +549,7 @@ contains
 
     ! For a compact file, build the map used to read its column/pft variables
 
-    call restCompact_read_map(bounds, ncid, compact)
+    call restCompact_read_map(bounds, ncid, file, compact)
     if (compact .and. (single_column .or. scm_multcols)) then
        call endrun(msg=' ERROR: compact restart files are not supported in single column mode'//&
             errMsg(__FILE__, __LINE__))
@@ -562,6 +571,8 @@ contains
        call reweight_wrapup(bounds_clump, glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
     end do
     !$OMP END PARALLEL DO
+
+    call restCompact_update_ever_active(bounds)
 
     call accumulRest( ncid, flag='read' )
 
@@ -696,6 +707,7 @@ contains
     ! Close file 
 
     call subgridRest_read_cleanup
+    call restCompact_read_done()
     call restFile_close( ncid )
 
     ! Write out diagnostic info

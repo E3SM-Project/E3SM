@@ -3,18 +3,31 @@ module restCompactMod
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Support for compact restart files (restart_file_type = 'compact'), in which
-  ! column- and pft-level data are written only for active columns and pfts.
+  ! column- and pft-level data are written only for the columns and pfts that
+  ! have been active at some time since the base file was read.
+  !
+  ! The state of a column (pft) is only updated while it is active (except for
+  ! the surface albedo variables, see below). A point that has not been active
+  ! since the model state was read from a default-layout file (the base file:
+  ! finidat, or a default restart file) therefore still has its values from that
+  ! file, or its cold start values if there was no such file. Compact files
+  ! record the base file, and on read the column/pft variables are first read
+  ! from the base file and then from the compact file, so that all points get
+  ! the values they would have after reading a default restart file.
   !
   ! Compact files have the dimensions namec_compact and namep_compact next to the
   ! full column and pft dimensions. Column (pft) variables are defined on the
   ! compact dimension, except the subgrid weights and metadata written by
-  ! subgridRestMod, which stay on the full dimensions. The points of the compact
-  ! dimension are the active columns (pfts) in the same order as on the full
-  ! dimension, so the layout does not depend on the domain decomposition.
+  ! subgridRestMod and the surface albedo variables (computed for inactive points
+  ! too), which stay on the full dimensions. The points of the compact
+  ! dimension are in the same order as on the full dimension, so the layout
+  ! does not depend on the domain decomposition; they are flagged in
+  ! cols1d_compact and pfts1d_compact on the full dimensions.
   !
-  ! This module builds the map from local columns (pfts) to the compact
-  ! dimensions that ncdio_pio uses for variables on those dimensions, and
-  ! handles the file metadata that describes the compact layout.
+  ! This module tracks which points have been active, builds the map from local
+  ! columns (pfts) to the compact dimensions that ncdio_pio uses for variables
+  ! on those dimensions, and handles the file metadata that describes the
+  ! compact layout and its base file.
   !
   ! !USES:
   use shr_log_mod        , only : errMsg => shr_log_errMsg
@@ -28,7 +41,10 @@ module restCompactMod
   use mct_mod            , only : mct_gsMap_gsize
   use spmdGathScatMod    , only : gather_data_to_master, scatter_data_from_master
   use ncdio_pio          , only : file_desc_t, ncd_int, ncd_global, ncd_defdim, ncd_inqdid, ncd_inqdlen
-  use ncdio_pio          , only : ncd_io, ncd_putatt, ncd_set_compact
+  use ncdio_pio          , only : ncd_io, ncd_putatt, ncd_set_compact, ncd_compact_suspend
+  use ncdio_pio          , only : check_att, ncd_getatt, ncd_pio_openfile, ncd_pio_closefile, ncd_nowrite
+  use ncdio_pio          , only : ncd_compact_base_file, ncd_compact_base_set, ncd_compact_base_clear
+  use pio                , only : pio_inq_att, PIO_OFFSET_KIND
   use GetGlobalValuesMod , only : GetGlobalIndexArray
   use ColumnType         , only : col_pp
   use VegetationType     , only : veg_pp
@@ -39,27 +55,75 @@ module restCompactMod
   private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: restCompact_build_map  ! build the compact map from the current active flags
+  public :: restCompact_update_ever_active ! add the currently active points to those ever active
+  public :: restCompact_build_map  ! build the compact map from the points ever active
   public :: restCompact_dimset     ! define the compact dimensions on a file being created
   public :: restCompact_ids        ! define/write/check the ids of the points on the compact dimensions
-  public :: restCompact_read_map   ! build the compact map from the active flags on a compact file
+  public :: restCompact_read_map   ! determine the layout of a file being read, and set up reading it
+  public :: restCompact_read_done  ! close the base file once a compact file has been read
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: build_level_map
   private :: set_map
   private :: ordinal_in_gridcell
+  private :: get_global_att
 
   character(len=*), parameter, public :: restart_file_type_attname = 'restart_file_type'
+
+  ! Global attributes of compact files that identify their base file
+  character(len=*), parameter :: base_file_attname    = 'compact_base_file'
+  character(len=*), parameter :: base_case_id_attname = 'compact_base_case_id'
+  character(len=*), parameter :: base_history_attname = 'compact_base_history'
+  character(len=*), parameter :: no_base = 'none'  ! base file attribute for cold start
+
+  ! Points that have been active since the base file was read
+  logical, allocatable :: col_ever_active(:)
+  logical, allocatable :: pft_ever_active(:)
+
+  ! Base file of compact files written by this run: the last default-layout
+  ! restart or initial file read, or no_base for cold start. The case_id and
+  ! history (creation time) attributes of the base file are recorded to check
+  ! that the same file is read back.
+  character(len=512) :: base_file    = no_base
+  character(len=256) :: base_case_id = ' '
+  character(len=256) :: base_history = ' '
+  logical            :: base_open    = .false.  ! true => ncd_compact_base_file is open
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
+  subroutine restCompact_update_ever_active(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Add the currently active columns and pfts to those that have been active
+    ! since the base file was read. Must be called whenever the active flags
+    ! change: after reading a restart file and after the dynamic subgrid update
+    ! of each time step.
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
+    !-----------------------------------------------------------------------
+
+    if (.not. allocated(col_ever_active)) then
+       allocate(col_ever_active(bounds%begc:bounds%endc), pft_ever_active(bounds%begp:bounds%endp))
+       col_ever_active(:) = .false.
+       pft_ever_active(:) = .false.
+    end if
+
+    col_ever_active(bounds%begc:bounds%endc) = col_ever_active(bounds%begc:bounds%endc) .or. &
+         col_pp%active(bounds%begc:bounds%endc)
+    pft_ever_active(bounds%begp:bounds%endp) = pft_ever_active(bounds%begp:bounds%endp) .or. &
+         veg_pp%active(bounds%begp:bounds%endp)
+
+  end subroutine restCompact_update_ever_active
+
+  !-----------------------------------------------------------------------
   subroutine restCompact_build_map(bounds)
     !
     ! !DESCRIPTION:
-    ! Build the compact map from the current column and pft active flags. Called
-    ! before writing a compact restart file.
+    ! Build the compact map from the columns and pfts that have been active since
+    ! the base file was read. Called before writing a compact restart file.
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
@@ -69,38 +133,60 @@ contains
     integer, allocatable :: pft_mask(:)
     !-----------------------------------------------------------------------
 
+    call restCompact_update_ever_active(bounds)
+
     allocate(col_mask(bounds%begc:bounds%endc), pft_mask(bounds%begp:bounds%endp))
     col_mask(:) = 0
     pft_mask(:) = 0
-    where (col_pp%active(bounds%begc:bounds%endc)) col_mask = 1
-    where (veg_pp%active(bounds%begp:bounds%endp)) pft_mask = 1
+    where (col_ever_active(bounds%begc:bounds%endc)) col_mask = 1
+    where (pft_ever_active(bounds%begp:bounds%endp)) pft_mask = 1
 
     call set_map(bounds, col_mask, pft_mask)
 
     deallocate(col_mask, pft_mask)
 
+    if (masterproc) then
+       write(iulog,*) 'Compact restart file: ', numc_compact, ' columns and ', &
+            nump_compact, ' pfts; base file: ', trim(base_file)
+    end if
+
   end subroutine restCompact_build_map
 
   !-----------------------------------------------------------------------
-  subroutine restCompact_read_map(bounds, ncid, compact)
+  subroutine restCompact_read_map(bounds, ncid, file, compact)
     !
     ! !DESCRIPTION:
-    ! Determine whether a restart file is compact. If it is, build the compact
-    ! map from the column and pft active flags on the file (which are on the
-    ! full dimensions), and check it against the ids on the file.
+    ! Determine whether a restart file is compact, and set up reading it.
+    !
+    ! A default-layout file becomes the base file of the compact files written
+    ! later in the run.
+    !
+    ! For a compact file, build the compact map from the flags on the file (which
+    ! are on the full dimensions), check it against the ids on the file, and
+    ! open the base file of the compact file, which is read first for the
+    ! column/pft variables on the compact dimensions. Points not on the compact
+    ! file are left unchanged if it has no base file (cold start, or a file
+    ! written before base files were recorded).
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in)    :: bounds   ! proc-level bounds
     type(file_desc_t), intent(inout) :: ncid     ! netcdf id
+    character(len=*) , intent(in)    :: file     ! name of the file being read
     logical          , intent(out)   :: compact  ! true => file is compact
     !
     ! !LOCAL VARIABLES:
-    integer          :: dimid
-    integer          :: dimlen
-    logical          :: pft_dim_exists
-    logical          :: readvar
-    integer, pointer :: col_mask(:)
-    integer, pointer :: pft_mask(:)
+    integer            :: dimid
+    integer            :: dimlen
+    logical            :: pft_dim_exists
+    logical            :: readvar
+    logical            :: exists
+    integer, pointer   :: col_mask(:)
+    integer, pointer   :: pft_mask(:)
+    character(len=512) :: file_base          ! base file recorded on the compact file
+    character(len=256) :: file_base_case_id  ! case_id of the base file recorded on the compact file
+    character(len=256) :: file_base_history  ! history of the base file recorded on the compact file
+    character(len=256) :: case_id            ! case_id attribute of the base file
+    character(len=256) :: history            ! history attribute of the base file
 
     character(len=*), parameter :: subname = 'restCompact_read_map'
     !-----------------------------------------------------------------------
@@ -111,24 +197,50 @@ contains
        call endrun(msg=subname//' ERROR: restart file has only one of the dimensions '// &
             trim(namec_compact)//' and '//trim(namep_compact)//errMsg(__FILE__, __LINE__))
     end if
-    if (.not. compact) return
+
+    if (allocated(col_ever_active)) deallocate(col_ever_active, pft_ever_active)
+
+    if (.not. compact) then
+       ! All points are on this file, so it is the base file of the compact files
+       ! written from now on; restFile_read then flags the active points
+       base_file = file
+       call get_global_att(ncid, 'case_id', base_case_id)
+       call get_global_att(ncid, 'history', base_history)
+       return
+    end if
 
     allocate(col_mask(bounds%begc:bounds%endc), pft_mask(bounds%begp:bounds%endp))
 
-    call ncd_io(ncid=ncid, varname='cols1d_active', flag='read', data=col_mask, &
+    ! The points on the file; files written before the base file was recorded
+    ! only have the active points
+    call ncd_io(ncid=ncid, varname='cols1d_compact', flag='read', data=col_mask, &
          dim1name=namec, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=subname//' ERROR: cols1d_active not found on compact restart file'// &
+       call ncd_io(ncid=ncid, varname='cols1d_active', flag='read', data=col_mask, &
+            dim1name=namec, readvar=readvar)
+    end if
+    if (.not. readvar) then
+       call endrun(msg=subname//' ERROR: neither cols1d_compact nor cols1d_active found on compact restart file'// &
             errMsg(__FILE__, __LINE__))
     end if
-    call ncd_io(ncid=ncid, varname='pfts1d_active', flag='read', data=pft_mask, &
+    call ncd_io(ncid=ncid, varname='pfts1d_compact', flag='read', data=pft_mask, &
          dim1name=namep, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=subname//' ERROR: pfts1d_active not found on compact restart file'// &
+       call ncd_io(ncid=ncid, varname='pfts1d_active', flag='read', data=pft_mask, &
+            dim1name=namep, readvar=readvar)
+    end if
+    if (.not. readvar) then
+       call endrun(msg=subname//' ERROR: neither pfts1d_compact nor pfts1d_active found on compact restart file'// &
             errMsg(__FILE__, __LINE__))
     end if
 
     call set_map(bounds, col_mask, pft_mask)
+
+    ! The points on the file are those that had been active since its base file
+    ! was read
+    allocate(col_ever_active(bounds%begc:bounds%endc), pft_ever_active(bounds%begp:bounds%endp))
+    col_ever_active(:) = (col_mask(:) == 1)
+    pft_ever_active(:) = (pft_mask(:) == 1)
 
     deallocate(col_mask, pft_mask)
 
@@ -154,7 +266,108 @@ contains
             nump_compact, ' pfts'
     end if
 
+    ! Base file
+
+    call get_global_att(ncid, base_file_attname, file_base)
+    if (file_base == ' ') then
+       if (masterproc) then
+          write(iulog,*) subname//' WARNING: compact restart file has no base file; columns and pfts'
+          write(iulog,*) '   not on the file keep their cold start values'
+       end if
+       file_base = no_base
+    end if
+    call get_global_att(ncid, base_case_id_attname, file_base_case_id)
+    call get_global_att(ncid, base_history_attname, file_base_history)
+
+    if (trim(file_base) /= no_base) then
+       inquire(file=trim(file_base), exist=exists)
+       if (.not. exists) then
+          write(iulog,*) subname//' ERROR: base file of compact restart file not found: ', trim(file_base)
+          write(iulog,*) '   The base file holds the state of the columns and pfts not on the'
+          write(iulog,*) '   compact file, and must be kept as long as compact files that use it'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
+       call ncd_pio_openfile(ncd_compact_base_file, trim(file_base), ncd_nowrite)
+       base_open = .true.
+       call get_global_att(ncd_compact_base_file, 'case_id', case_id)
+       call get_global_att(ncd_compact_base_file, 'history', history)
+       if (case_id /= file_base_case_id .or. history /= file_base_history) then
+          write(iulog,*) subname//' ERROR: base file ', trim(file_base), &
+               ' is not the file used for the compact restart file'
+          write(iulog,*) '   case_id: expected ', trim(file_base_case_id), ', found ', trim(case_id)
+          write(iulog,*) '   history: expected ', trim(file_base_history), ', found ', trim(history)
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
+       call ncd_inqdid(ncd_compact_base_file, namec_compact, dimid, dimexist=exists)
+       if (exists) then
+          call endrun(msg=subname//' ERROR: base file '//trim(file_base)// &
+               ' is itself a compact restart file'//errMsg(__FILE__, __LINE__))
+       end if
+       call ncd_compact_base_set(ncid)
+       if (masterproc) then
+          write(iulog,*) 'Reading columns and pfts not on the compact file from base file ', trim(file_base)
+       end if
+    end if
+
+    ! Compact files written from now on have the same base file
+    base_file    = file_base
+    base_case_id = file_base_case_id
+    base_history = file_base_history
+
   end subroutine restCompact_read_map
+
+  !-----------------------------------------------------------------------
+  subroutine restCompact_read_done()
+    !
+    ! !DESCRIPTION:
+    ! Close the base file once a compact restart file has been read.
+    !-----------------------------------------------------------------------
+
+    if (base_open) then
+       call ncd_compact_base_clear()
+       call ncd_pio_closefile(ncd_compact_base_file)
+       base_open = .false.
+    end if
+
+  end subroutine restCompact_read_done
+
+  !-----------------------------------------------------------------------
+  subroutine get_global_att(ncid, attname, value)
+    !
+    ! !DESCRIPTION:
+    ! Get a character global attribute; blank if it is not on the file.
+    !
+    ! !ARGUMENTS:
+    type(file_desc_t), intent(inout) :: ncid     ! netcdf id
+    character(len=*) , intent(in)    :: attname  ! attribute name
+    character(len=*) , intent(out)   :: value    ! attribute value
+    !
+    ! !LOCAL VARIABLES:
+    logical :: found
+    integer :: i
+    integer :: status
+    integer :: att_type
+    integer(PIO_OFFSET_KIND) :: att_len
+
+    character(len=*), parameter :: subname = 'get_global_att'
+    !-----------------------------------------------------------------------
+
+    value = ' '
+    call check_att(ncid, ncd_global, attname, found)
+    if (found) then
+       ! PIO does not check the length of the value
+       status = pio_inq_att(ncid, ncd_global, trim(attname), att_type, att_len)
+       if (att_len > len(value)) then
+          write(iulog,*) subname//' ERROR: global attribute ',trim(attname),' is longer than ',len(value)
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       end if
+       call ncd_getatt(ncid, ncd_global, attname, value)
+       ! The value is not blank padded beyond the attribute length
+       i = index(value, achar(0))
+       if (i > 0) value(i:) = ' '
+    end if
+
+  end subroutine get_global_att
 
   !-----------------------------------------------------------------------
   subroutine restCompact_dimset(ncid)
@@ -180,6 +393,11 @@ contains
     call ncd_defdim(ncid, namec_compact, numc_compact, dimid)
     call ncd_defdim(ncid, namep_compact, nump_compact, dimid)
     call ncd_putatt(ncid, ncd_global, restart_file_type_attname, 'compact')
+    call ncd_putatt(ncid, ncd_global, base_file_attname, trim(base_file))
+    if (trim(base_file) /= no_base) then
+       call ncd_putatt(ncid, ncd_global, base_case_id_attname, trim(base_case_id))
+       call ncd_putatt(ncid, ncd_global, base_history_attname, trim(base_history))
+    end if
     call ncd_set_compact(ncid, .true.)
 
   end subroutine restCompact_dimset
@@ -223,6 +441,24 @@ contains
     pft_grc = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, &
          elmlevel=nameg)
     call ordinal_in_gridcell(bounds, veg_pp%gridcell(bounds%begp:bounds%endp), pft_ord)
+
+    ! Flags of the points on the compact dimensions, on the full dimensions. On
+    ! read they are read by restCompact_read_map to build the map.
+
+    if (flag /= 'read') then
+       call ncd_compact_suspend(.true.)
+       icarr(:) = merge(1, 0, col_compact_gindex(:) > 0)
+       call restartvar(ncid=ncid, flag=flag, varname='cols1d_compact', xtype=ncd_int, &
+            dim1name=namec,                                                          &
+            long_name='column is on the compact dimension (1=yes, 0=no)',           &
+            interpinic_flag='skip', readvar=readvar, data=icarr)
+       iparr(:) = merge(1, 0, pft_compact_gindex(:) > 0)
+       call restartvar(ncid=ncid, flag=flag, varname='pfts1d_compact', xtype=ncd_int, &
+            dim1name=namep,                                                          &
+            long_name='pft is on the compact dimension (1=yes, 0=no)',              &
+            interpinic_flag='skip', readvar=readvar, data=iparr)
+       call ncd_compact_suspend(.false.)
+    end if
 
     if (flag == 'read') then
        icarr(:) = unset

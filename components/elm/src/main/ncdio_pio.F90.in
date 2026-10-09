@@ -71,6 +71,9 @@ module ncdio_pio
   public :: ncd_set_compact     ! define column/pft variables of a file on the compact dimensions
   public :: ncd_compact_suspend ! temporarily define column/pft variables on the full dimensions
   public :: ncd_is_compact_file ! true if file is being defined in compact mode
+  public :: ncd_compact_base_set   ! read column/pft variables of a compact file over those of a base file
+  public :: ncd_compact_base_clear ! stop reading from the base file
+  public :: ncd_compact_overlay    ! true if a variable is to be read from the base file first
 
   integer,parameter,public :: ncd_int       = pio_int
   integer,parameter,public :: ncd_log       =-pio_int
@@ -161,7 +164,9 @@ module ncdio_pio
      integer           :: dimids(5) 
      integer           :: epoch = 0   ! compact map epoch this iodesc was built for; 0 => full map
   end type iodesc_plus_type
-  integer,parameter      ,private :: max_iodesc = 100
+  ! Reading a compact restart file over its base file needs io descriptors
+  ! for both the full and the compact dimensions
+  integer,parameter      ,private :: max_iodesc = 200
   integer                ,private :: num_iodesc = 0
   type(iodesc_plus_type) ,private, target :: iodesc_list(max_iodesc)
 
@@ -170,6 +175,13 @@ module ncdio_pio
   integer,parameter      ,private :: max_compact_files = 16
   integer                ,private :: compact_fh(max_compact_files) = -1
   logical                ,private :: compact_suspended = .false.
+
+  ! Base file of the compact restart file being read: column/pft variables on
+  ! the compact dimensions are first read from the base file (on the full
+  ! dimensions), so that points not on the compact file get their base values.
+  ! The file is opened and closed by restCompactMod.
+  type(file_desc_t)      ,public, target :: ncd_compact_base_file
+  integer                ,private :: compact_base_for = -1  ! file handle of the compact file being read; -1 => none
   !-----------------------------------------------------------------------
 
 contains
@@ -996,6 +1008,76 @@ contains
     ncd_is_compact_file = any(compact_fh(:) == ncid%fh)
 
   end function ncd_is_compact_file
+
+  !-----------------------------------------------------------------------
+  subroutine ncd_compact_base_set(ncid)
+    !
+    ! !DESCRIPTION:
+    ! Make ncd_compact_base_file (already open) the base file of the compact
+    ! restart file ncid, which is being read.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(in) :: ncid     ! compact restart file
+    !-----------------------------------------------------------------------
+
+    compact_base_for = ncid%fh
+
+  end subroutine ncd_compact_base_set
+
+  !-----------------------------------------------------------------------
+  subroutine ncd_compact_base_clear()
+    !
+    ! !DESCRIPTION:
+    ! Stop reading from the base file. Does not close it.
+    !-----------------------------------------------------------------------
+
+    compact_base_for = -1
+
+  end subroutine ncd_compact_base_clear
+
+  !-----------------------------------------------------------------------
+  logical function ncd_compact_overlay(ncid, varname)
+    !
+    ! !DESCRIPTION:
+    ! True if variable varname of the file ncid is to be read from the base
+    ! file first: ncid is a compact restart file with a base file, varname is
+    ! on a compact dimension of ncid, and varname is on the base file.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(inout) :: ncid     ! file being read
+    character(len=*)  , intent(in)    :: varname  ! variable name
+    !
+    ! !LOCAL VARIABLES:
+    type(var_desc_t)  :: vardesc
+    integer           :: ndims, n
+    integer           :: dimids(5)
+    integer           :: status
+    character(len=64) :: dimname
+    !-----------------------------------------------------------------------
+
+    ncd_compact_overlay = .false.
+    if (compact_base_for == -1 .or. ncid%fh /= compact_base_for) return
+
+    call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    status = PIO_inq_varid(ncid, trim(varname), vardesc)
+    call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+    if (status /= PIO_noerr) return
+
+    status = PIO_inq_varndims(ncid, vardesc, ndims)
+    if (ndims < 1 .or. ndims > size(dimids)) return
+    status = PIO_inq_vardimid(ncid, vardesc, dimids(1:ndims))
+    do n = 1, ndims
+       status = PIO_inq_dimname(ncid, dimids(n), dimname)
+       if (trim(dimname) == trim(namec_compact) .or. trim(dimname) == trim(namep_compact)) then
+          call pio_seterrorhandling(ncd_compact_base_file, PIO_BCAST_ERROR)
+          status = PIO_inq_varid(ncd_compact_base_file, trim(varname), vardesc)
+          call pio_seterrorhandling(ncd_compact_base_file, PIO_INTERNAL_ERROR)
+          ncd_compact_overlay = (status == PIO_noerr)
+          return
+       end if
+    end do
+
+  end function ncd_compact_overlay
 
   !-----------------------------------------------------------------------
   function compact_dimname(ncid, dimname) result(name)
