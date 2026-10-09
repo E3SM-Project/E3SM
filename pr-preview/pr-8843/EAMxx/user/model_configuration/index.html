@@ -5646,7 +5646,13 @@ the grid where the fields are defined and a coarser grid.<ul>
 </li>
 </ul>
 </li>
-<li><code>horiz_remap_layout</code>: a list <code>[nx, ny]</code> of two integers. Use it when the target grid of
+<li><code>remapping-&gt;horiz-&gt;rectilinear_layout</code>: a list <code>[nx, ny]</code> of two integers, inside the
+sublist <code>remapping</code> (sublist <code>horiz</code>). E.g.,
+      <div class="highlight"><pre><span></span><code><span class="nt">remapping</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">horiz</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rectilinear_layout</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">nx</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">ny</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+      Use it when the target grid of
 <code>horiz_remap_file</code> is a generic 2d rectilinear grid (e.g., a HRRR-like grid), rather
 than a lat-lon one.<ul>
 <li>By default, a map file with <code>dst_grid_rank=2</code> is assumed to target a lat-lon grid,
