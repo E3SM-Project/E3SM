@@ -215,7 +215,7 @@ contains
     !
     ! !USES
       !$acc routine seq
-    use shr_const_mod, only : SHR_CONST_RHOFW
+    use elm_varcon, only : denh2o
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -409,7 +409,7 @@ contains
             ! water content
 
             bd = (1._r8-watsat(c,1))*2.7e3_r8      ![kg m-3] Bulk density of dry surface soil
-            gwc_sfc = h2osoi_vol(c,1)*SHR_CONST_RHOFW/bd    ![kg kg-1] Gravimetric H2O cont
+            gwc_sfc = h2osoi_vol(c,1)*denh2o/bd    ![kg kg-1] Gravimetric H2O cont
             if (gwc_sfc > gwc_thr(c)) then
                frc_thr_wet_fct = sqrt(1.0_r8 + 1.21_r8 * (100.0_r8*(gwc_sfc - gwc_thr(c)))**0.68_r8)
             else
@@ -556,7 +556,7 @@ contains
     !
     ! !USES
       !$acc routine seq
-    use shr_const_mod, only : SHR_CONST_PI, SHR_CONST_RDAIR, SHR_CONST_BOLTZ
+    use elm_varcon, only : rpi, rair, boltz
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -612,7 +612,7 @@ contains
             vsc_dyn_atm(p) = 1.72e-5_r8 * ((forc_t(t)/273.0_r8)**1.5_r8) * 393.0_r8 / &
                  (forc_t(t)+120.0_r8)      ![kg m-1 s-1] RoY94 p. 102
             mfp_atm = 2.0_r8 * vsc_dyn_atm(p) / &   ![m] SeP97 p. 455
-                 (forc_pbot(t)*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*forc_t(t))))
+                 (forc_pbot(t)*sqrt(8.0_r8/(rpi*rair*forc_t(t))))
             vsc_knm_atm(p) = vsc_dyn_atm(p) / forc_rho(t) ![m2 s-1] Kinematic viscosity of air
 
             do m = 1, ndst
@@ -634,8 +634,8 @@ contains
                c = veg_pp%column(p)
 
                stk_nbr = vlc_grv(p,m) * fv(p) * fv(p) / (grav * vsc_knm_atm(p))  ![frc] SeP97 p.965
-               dff_aer = SHR_CONST_BOLTZ * forc_t(t) * slp_crc(p,m) / &          ![m2 s-1]
-                    (3.0_r8*SHR_CONST_PI * vsc_dyn_atm(p) * dmt_vwr(m))          !SeP97 p.474
+               dff_aer = boltz * forc_t(t) * slp_crc(p,m) / &          ![m2 s-1]
+                    (3.0_r8*rpi * vsc_dyn_atm(p) * dmt_vwr(m))          !SeP97 p.474
                shm_nbr = vsc_knm_atm(p) / dff_aer                                ![frc] SeP97 p.972
                shm_nbr_xpn = shm_nbr_xpn_lnd                                     ![frc]
 
@@ -691,7 +691,7 @@ contains
      ! Rest of subroutine from C. Zender's dust model
      !
      ! !USES
-     use shr_const_mod , only: SHR_CONST_PI, SHR_CONST_RDAIR
+     use elm_varcon    , only: rpi, rair
      use shr_spfn_mod  , only: erf => shr_spfn_erf
      use decompMod     , only : get_proc_bounds
      !
@@ -876,7 +876,7 @@ contains
             sz_dlt(m) = sz_max(m)-sz_min(m)
          end do
 
-         lngsdsqrttwopi_rcp = 1.0_r8 / (ln_gsd*sqrt(2.0_r8*SHR_CONST_PI))
+         lngsdsqrttwopi_rcp = 1.0_r8 / (ln_gsd*sqrt(2.0_r8*rpi))
          dmt_vwr(n) = 0.0_r8 ! [m] Mass wgted diameter resolved
          vlm_rsl(n) = 0.0_r8 ! [m3 m-3] Volume concentration resolved
 
@@ -888,10 +888,10 @@ contains
 
             ! Integrate moments of size distribution
             dmt_vwr(n) = dmt_vwr(n) + sz_ctr(m) *                    &
-                 SHR_CONST_PI / 6.0_r8 * (sz_ctr(m)**3.0_r8) * & ![m3] Volume
+                 rpi / 6.0_r8 * (sz_ctr(m)**3.0_r8) * & ![m3] Volume
                  lgn_dst * sz_dlt(m)                ![# m-3] Number concentrn
             vlm_rsl(n) = vlm_rsl(n) +                                &
-                 SHR_CONST_PI / 6.0_r8 * (sz_ctr(m)**3.0_r8) * & ![m3] Volume
+                 rpi / 6.0_r8 * (sz_ctr(m)**3.0_r8) * & ![m3] Volume
                  lgn_dst * sz_dlt(m)                ![# m-3] Number concentrn
 
          end do
@@ -903,14 +903,14 @@ contains
       ! calculate correction to Stokes' settling velocity (subroutine stk_crc_get)
 
       eps_max = 1.0e-4_r8
-      dns_mdp = 100000._r8 / (295.0_r8*SHR_CONST_RDAIR) ![kg m-3] const prs_mdp & tpt_vrt
+      dns_mdp = 100000._r8 / (295.0_r8*rair) ![kg m-3] const prs_mdp & tpt_vrt
 
       ! Size-independent thermokinetic properties
 
       vsc_dyn_atm = 1.72e-5_r8 * ((295.0_r8/273.0_r8)**1.5_r8) * 393.0_r8 / &
            (295.0_r8+120.0_r8)      ![kg m-1 s-1] RoY94 p.102 tpt_mdp=295.0
       mfp_atm = 2.0_r8 * vsc_dyn_atm / &  !SeP97 p. 455 constant prs_mdp, tpt_mdp
-           (100000._r8*sqrt(8.0_r8/(SHR_CONST_PI*SHR_CONST_RDAIR*295.0_r8)))
+           (100000._r8*sqrt(8.0_r8/(rpi*rair*295.0_r8)))
       vsc_knm_atm = vsc_dyn_atm / dns_mdp ![m2 s-1] Kinematic viscosity of air
 
       do m = 1, ndst

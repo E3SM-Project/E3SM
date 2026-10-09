@@ -762,7 +762,7 @@ contains
        budg_print_ann,  budg_print_ltann,  budg_print_ltend)
     !
     use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
-    use shr_const_mod   , only : shr_const_pi
+    use elm_varcon      , only : rpi
     !
     implicit none
     !
@@ -814,7 +814,7 @@ contains
        endif
 
        if (plev > 0) then
-          unit_conversion = 1._r8/(4.0_r8*shr_const_pi)*1.0e9_r8
+          unit_conversion = 1._r8/(4.0_r8*rpi)*1.0e9_r8
           if (.not.sumdone) then
              sumdone = .true.
              call Sum0(f_size, s_size, budg_fluxL, budg_fluxG, budg_stateL, budg_stateG)
@@ -850,7 +850,7 @@ contains
   subroutine CarbonBudget_Message(ip, cdate, sec, f_size, s_size, budg_stateG, budg_fluxG, budg_fluxGpr, unit_conversion)
     !
     use elm_time_manager, only : get_curr_date, get_prev_date, get_nstep, get_step_size
-    use shr_const_mod   , only : shr_const_pi
+    use elm_varcon      , only : rpi
     !
     implicit none
     !

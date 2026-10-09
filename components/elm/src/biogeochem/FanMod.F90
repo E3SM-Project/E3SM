@@ -28,7 +28,7 @@ module FanMod
   ! This cpp flag is inteded for compiling FAN into a python module with f2py. 
   use qsatmod
 #else
-  use shr_const_mod
+  use elm_varcon                      , only : tfrz, mwdair, denh2o, oneatm, rair
   use shr_kind_mod                    , only : r8 => shr_kind_r8
   use QSatMod                         , only : QSat
   use shr_infnan_mod                  , only : isnan => shr_infnan_isnan
@@ -37,16 +37,17 @@ module FanMod
   
 #ifdef _PYMOD_
   public
-  ! Define physical constants here to avoid dependency on CESM.
+  ! Define physical constants here to avoid dependency on CESM. Names and values
+  ! match those in elm_varcon (which gets them from shr_const_mod).
   integer, parameter :: r8 = 8
-  real(r8), parameter :: SHR_CONST_BOLTZ   = 1.38065e-23
-  real(r8), parameter :: SHR_CONST_AVOGAD  = 6.02214e26 ! molecules per kmole
-  real(r8), parameter :: SHR_CONST_RGAS    = SHR_CONST_AVOGAD*SHR_CONST_BOLTZ ! universal gas constant in J kmole-1 K-1
-  real(r8), parameter :: SHR_CONST_RDAIR   = SHR_CONST_RGAS/SHR_CONST_MWDAIR
-  real(r8), parameter :: SHR_CONST_RHOFW   = 1.000e3_R8
-  real(r8), parameter :: SHR_CONST_PSTD    = 101325.0_R8     ! standard pressure ~ pascals
-  real(r8), parameter :: SHR_CONST_TKFRZ   = 273.15_R8       ! freezing T of fresh water          ~ K
-  real(r8), parameter :: SHR_CONST_MWDAIR  = 28.966_R8       ! molecular weight dry air ~ kg/kmole
+  real(r8), parameter :: boltz  = 1.38065e-23_r8   ! Boltzmann's constant ~ J/K/molecule
+  real(r8), parameter :: avogad = 6.02214e26_r8    ! molecules per kmole
+  real(r8), parameter :: rgas   = avogad*boltz     ! universal gas constant in J kmole-1 K-1
+  real(r8), parameter :: mwdair = 28.966_r8        ! molecular weight dry air ~ kg/kmole
+  real(r8), parameter :: rair   = rgas/mwdair      ! dry air gas constant ~ J/K/kg
+  real(r8), parameter :: denh2o = 1.000e3_r8       ! density of fresh water ~ kg/m^3
+  real(r8), parameter :: oneatm = 101325.0_r8      ! standard pressure ~ pascals
+  real(r8), parameter :: tfrz   = 273.15_r8        ! freezing T of fresh water ~ K
 #else
   private
   public update_org_n ! evaluate decomposition/mineralization N fluxes; update organic N pools and flux into soil
@@ -147,7 +148,7 @@ contains
     real(r8), parameter :: pw = 7.0_r8 / 3.0_r8
 
     ! Van Der Molen 1990 fit of the base rate.
-    kaq_base = 9.8e-10_r8 * 1.03_r8 ** (Tg-SHR_CONST_TKFRZ)
+    kaq_base = 9.8e-10_r8 * 1.03_r8 ** (Tg-tfrz)
 
     diff = kaq_base * (theta**pw) / (thetasat**2)
 
@@ -164,7 +165,7 @@ contains
     real(r8) :: soilair ! volume fraction of air filled pore space
     real(r8) :: dair    ! molec. diffusivity in air
     real(r8), parameter :: pw = 7.0_r8 / 3.0_r8
-    real(r8), parameter :: mNH3 = 17.0_r8, mair = SHR_CONST_MWDAIR, vNH3 = 14.9_r8, vair = 20.1_r8, press = 1.0_r8
+    real(r8), parameter :: mNH3 = 17.0_r8, mair = mwdair, vNH3 = 14.9_r8, vair = 20.1_r8, press = 1.0_r8
     real(r8), parameter :: pow = 1.0_r8 / 3.0_r8    
     soilair = thetasat - theta
 
@@ -217,7 +218,7 @@ contains
     real(r8), parameter :: soil_part_dens = 2650.0_r8 ! soil particle density, kg/m3
     real(r8) :: soil_dens ! bulk density of soil, kg/m3
 
-    real(r8), parameter :: water_dens = SHR_CONST_RHOFW
+    real(r8), parameter :: water_dens = denh2o
     real(r8), parameter :: rmax = 1.16e-6_r8   ! Maximum rate of nitrification, s-1
     real(r8), parameter :: tmax = 313.0_r8     ! Maximm temperature of microbial activity, K
     real(r8), parameter :: topt = 301.0_r8     ! Optimal temperature of microbial acticity, K
@@ -878,7 +879,7 @@ contains
     real(r8) :: evap ! m/s
 
     real(r8) :: es, esdt, qs, qsdt, dens, flux
-    real(r8), parameter :: press = SHR_CONST_PSTD
+    real(r8), parameter :: press = oneatm
     
     call qsat(tg, press, es, esdt, qs, qsdt)
     if (qbot > qs) then
@@ -886,7 +887,7 @@ contains
        return
     end if
 
-    dens = press / (SHR_CONST_RDAIR * tg)
+    dens = press / (rair * tg)
     flux = dens * (qs - qbot) / ratm ! kg/s/m2 == mm/s
     evap = flux*1e-3_r8
     
@@ -986,7 +987,7 @@ contains
 
     fluxes_nitr = 0.0_r8
     fluxes_tan = 0.0_r8
-    tempr_C = tempr_outside - SHR_CONST_TKFRZ
+    tempr_C = tempr_outside - tfrz
 
     ! Determine the temperature and ventilation rates of animal housings according to the
     ! parameterization, depeding on the type of housing. 
@@ -1118,7 +1119,7 @@ contains
     real(r8), parameter :: minpsi = -2.5_r8, maxpsi=-0.002_r8 ! MPa
     real(r8) :: soilfluxes(3) ! N flux to soil pools from each organic N fraction, gN/m2/sec
 
-    TR = tr1 * exp(tr2 * (tg-SHR_CONST_TKFRZ))
+    TR = tr1 * exp(tr2 * (tg-tfrz))
 
     ! The moisture scaling is taken from CLM5 litter decomposition scheme:
     psi = min(soilpsi, maxpsi)

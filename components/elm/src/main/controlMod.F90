@@ -12,7 +12,7 @@ module controlMod
   ! !USES:
   use shr_kind_mod            , only: r8 => shr_kind_r8, SHR_KIND_CL
   use shr_nl_mod              , only: shr_nl_find_group_name
-  use shr_const_mod           , only: SHR_CONST_CDAY
+  use elm_varcon              , only: secspday
   use shr_log_mod             , only: errMsg => shr_log_errMsg
   use abortutils              , only: endrun
   use spmdMod                 , only: masterproc
@@ -469,7 +469,7 @@ contains
 
        do i = 1, max_tapes
           if (hist_nhtfrq(i) < 0) then
-             hist_nhtfrq(i) = nint(-hist_nhtfrq(i)*SHR_CONST_CDAY/(24._r8*dtime))
+             hist_nhtfrq(i) = nint(-hist_nhtfrq(i)*secspday/(24._r8*dtime))
           endif
        end do
 

@@ -675,7 +675,7 @@ contains
   !------------------------------------------------------------------------------
   subroutine haversine_dist(lat1, lon1, lat2, lon2, dist)
     !
-    use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_REARTH
+    use elm_varcon      , only : rpi, rearth
     !
     implicit none
     !
@@ -684,15 +684,15 @@ contains
     real(r8) :: a, c, dlat, dlon
 
     ! Convert degrees to radians
-    dlat = (lat2 - lat1) * SHR_CONST_PI / 180._r8
-    dlon = (lon2 - lon1) * SHR_CONST_PI / 180._r8
+    dlat = (lat2 - lat1) * rpi / 180._r8
+    dlon = (lon2 - lon1) * rpi / 180._r8
 
     dist = 0.0_r8
-    a = sin(dlat / 2.0_r8)**2._r8 + cos(lat1 * SHR_CONST_PI / 180.0_r8) * cos(lat2 * SHR_CONST_PI / 180._r8) * &
+    a = sin(dlat / 2.0_r8)**2._r8 + cos(lat1 * rpi / 180.0_r8) * cos(lat2 * rpi / 180._r8) * &
          sin(dlon / 2.0_r8)**2._r8
     c = 2._r8 * atan2(sqrt(a), sqrt(1._r8 - a))
 
-    dist = SHR_CONST_REARTH * c
+    dist = rearth * c
 
   end subroutine haversine_dist
 

@@ -782,7 +782,7 @@ contains
      ! based on surface microtopography and surface water storage.
      !
      ! !USES:
-     use shr_const_mod   , only : shr_const_pi
+     use elm_varcon      , only : rpi
      use shr_spfn_mod    , only : erf => shr_spfn_erf
      use landunit_varcon , only : istsoil, istcrop
      !
@@ -868,7 +868,7 @@ contains
                     sigma=1.0e3_r8 * micro_sigma(c) ! convert to mm
                     do k=1,10
                        fd = 0.5*d*(1.0_r8+erf(d/(sigma*sqrt(2.0)))) &
-                            +sigma/sqrt(2.0*shr_const_pi)*exp(-d**2/(2.0*sigma**2)) &
+                            +sigma/sqrt(2.0*rpi)*exp(-d**2/(2.0*sigma**2)) &
                             -h2osfc(c)
                        dfdd = 0.5*(1.0_r8+erf(d/(sigma*sqrt(2.0))))
 

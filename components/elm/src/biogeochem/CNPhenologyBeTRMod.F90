@@ -337,7 +337,7 @@ contains
 
     ! set the global parameter for livewood turnover rate
     ! define as an annual fraction (0.7), and convert to fraction per second
-    lwtop=CNPhenolParamsInst%lwtop/31536000.0_r8 !annual fraction converted to per second
+    lwtop=CNPhenolParamsInst%lwtop/(365._r8*secspday) !annual fraction converted to per second
 
     ! -----------------------------------------
     ! Call any subroutine specific initialization routines
