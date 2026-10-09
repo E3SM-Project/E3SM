@@ -436,6 +436,7 @@ protected:
   void initialize_impl (const RunType run_type);
   void run_impl        (const double dt);
   void finalize_impl   ();
+  void run_sdm_warm_emulator ();
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;

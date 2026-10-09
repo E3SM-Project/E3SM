@@ -63,6 +63,7 @@ void P3Microphysics::create_requests()
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto micron = micro*m;
   auto m2 = pow(m,2);
+  auto m3 = pow(m,3);
 
   m_grid = m_grids_manager->get_grid("physics");
   const auto& grid_name = m_grid->name();
@@ -176,6 +177,33 @@ void P3Microphysics::create_requests()
     add_field<Computed>("qr_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qc_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
     add_field<Computed>("qi_sed",              scalar3d_layout_mid, kg/kg/s,  grid_name, ps);
+  }
+
+  if (runtime_options.use_sdm_warm_emulator) {
+    auto add_sdm_warm_emulator_field = [&](const std::string& name, const auto& units) {
+      FieldIdentifier id(name, scalar3d_layout_mid, units, grid_name);
+      Field f(id);
+      f.get_header().get_alloc_properties().request_allocation(1);
+      f.allocate_view();
+      f.deep_copy(0.0);
+      add_internal_field(f);
+    };
+
+    add_sdm_warm_emulator_field("sdm_warm_emulator_qc", kg/kg);
+    add_sdm_warm_emulator_field("sdm_warm_emulator_nc", 1/kg);
+    add_sdm_warm_emulator_field("sdm_warm_emulator_qr", kg/kg);
+    add_sdm_warm_emulator_field("sdm_warm_emulator_nr", 1/kg);
+    add_sdm_warm_emulator_field("sdm_warm_emulator_rho", kg/m3);
+
+    add_sdm_warm_emulator_field("sdm_warm_emulator_qc2qr_autoconv_tend", kg/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_qc2qr_accret_tend", kg/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_ncautr", 1/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_nc2nr_autoconv_tend", 1/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_nc_accret_tend", 1/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_nc_selfcollect_tend", 1/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_nr_selfcollect_tend", 1/(kg*s));
+    add_sdm_warm_emulator_field("sdm_warm_emulator_use_cloud", none);
+    add_sdm_warm_emulator_field("sdm_warm_emulator_use_rain", none);
   }
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
