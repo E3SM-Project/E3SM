@@ -5643,17 +5643,11 @@
 <td>Number of negative buoyancy regions that are allowed</td>
 <td><code>1</code></td>
 </tr>
-</tbody>
-</table>
-<table>
-<thead>
 <tr>
-<th>dCAPE-ULL Parameters</th>
-<th>Description</th>
-<th>Default value</th>
+<td><code>zmconv_clos_dyn_adj</code></td>
+<td>Flag to apply mass flux adjustment to ZM convection scheme</td>
+<td><code>true</code></td>
 </tr>
-</thead>
-<tbody>
 <tr>
 <td><code>zmconv_trig_dcape</code></td>
 <td>Enable dynamic CAPE (DCAPE) trigger for ZM deep convection</td>
@@ -5682,34 +5676,18 @@
 </tr>
 <tr>
 <td><code>zmconv_auto_fac</code></td>
-<td>Cloud droplet-rain autoconversion enhancement factor in the convective microphysics scheme</td>
+<td>Cloud droplet-rain autoconversion enhancement factor</td>
 <td><code>7.0</code></td>
 </tr>
 <tr>
 <td><code>zmconv_accr_fac</code></td>
-<td>Cloud droplet-rain accretion enhancement factor in the convective microphysics scheme</td>
+<td>Cloud droplet-rain accretion enhancement factor</td>
 <td><code>1.5</code></td>
 </tr>
 <tr>
 <td><code>zmconv_micro_dcs</code></td>
 <td>Autoconversion size threshold for cloud ice to snow (m)</td>
 <td><code>150.E-6</code></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>Mass flux adj. Parameters</th>
-<th>Description</th>
-<th>Default value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>zmconv_clos_dyn_adj</code></td>
-<td>Apply mass flux adjustment to ZM convection scheme</td>
-<td><code>true</code></td>
 </tr>
 </tbody>
 </table>
@@ -5756,7 +5734,7 @@
 <tbody>
 <tr>
 <td><code>cosp_lite</code></td>
-<td>This namelist sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).</td>
+<td>Flag to enable several options for lightweight COSP.<sup id="fnref:cosp6"><a class="footnote-ref" href="#fn:cosp6">22</a></sup></td>
 <td><code>false</code></td>
 </tr>
 </tbody>
@@ -5773,62 +5751,62 @@
 <tbody>
 <tr>
 <td><code>use_gw_oro</code></td>
-<td>This namelist controls the default linear orographic gravity wave drag (oGWD) for E3SM, if used, the default oGWD is turned on.</td>
+<td>Flag to enable linear orographic gravity wave drag.</td>
 <td><code>true</code></td>
 </tr>
 <tr>
 <td><code>do_tms</code></td>
-<td>This namelist controls the default Turbulent Mountain Stress (TMS) for E3SM, if used, the default TMS is turned on.</td>
+<td>Flag to enable Turbulent Mountain Stress (TMS).</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>effgw_oro</code></td>
-<td>Efficiency associated with orographic gravity waves.</td>
+<td>Efficiency of orographic gravity waves.</td>
 <td><code>0.375</code></td>
 </tr>
 <tr>
 <td><code>tms_orocnst</code></td>
-<td>Turbulent mountain stress parameter used when TMS calculation is turned on</td>
+<td>Turbulent mountain stress parameter.</td>
 <td><code>1.0</code></td>
 </tr>
 <tr>
 <td><code>tms_z0fac</code></td>
-<td>Factor determining z_0 from orographic standard deviation [ no unit ] for TMS.</td>
+<td>TMS factor for determining z_0 from orographic std deviation.</td>
 <td><code>0.75</code></td>
 </tr>
 <tr>
 <td><code>use_od_ls</code></td>
-<td>This namelist controls the new nonlinear oGWD, if used, the nonlinear oGWD is turned on. use_od_ls should not be used at the same time with use_gw_oro.</td>
+<td>Flag for new nonlinear oGWD.<sup id="fnref:gw1"><a class="footnote-ref" href="#fn:gw1">23</a></sup></td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>use_od_bl</code></td>
-<td>This namelist controls the Flow-blocking drag (FBD) scheme, if used, the FBD scheme is turned on.</td>
+<td>Flag for Flow-blocking drag (FBD) scheme.</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>use_od_ss</code></td>
-<td>This namelist controls the small-scale GWD (sGWD) scheme, if used, the sGWD scheme is turned on.</td>
+<td>Flag for small-scale GWD (sGWD) scheme.</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>use_od_fd</code></td>
-<td>This namelist controls the Turbulent orographic form drag (TOFD) scheme, if used, the TOFD scheme is turned on.</td>
+<td>Flag for Turbulent orographic form drag (TOFD) scheme.</td>
 <td><code>false</code></td>
 </tr>
 <tr>
 <td><code>od_ls_ncleff</code></td>
-<td>Tuning parameter of nonlinear oGWD. Stands for effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.</td>
+<td>Tuning parameter for nonlinear oGWD.<sup id="fnref:gw2"><a class="footnote-ref" href="#fn:gw2">24</a></sup></td>
 <td><code>3</code></td>
 </tr>
 <tr>
 <td><code>od_bl_ncd</code></td>
-<td>Tuning parameter of FBD. Stands for bulk drag coefficient. Scales the magnitude of FBD.</td>
+<td>Tuning parameter for FBD.<sup id="fnref:gw3"><a class="footnote-ref" href="#fn:gw3">25</a></sup></td>
 <td><code>3</code></td>
 </tr>
 <tr>
 <td><code>od_ss_sncleff</code></td>
-<td>Tuning parameter of sGWD. Stands for effective resolution of the grid for sGWD.Scales the magnitude of sGWD.</td>
+<td>Tuning parameter for sGWD.<sup id="fnref:gw4"><a class="footnote-ref" href="#fn:gw4">26</a></sup></td>
 <td><code>1</code></td>
 </tr>
 </tbody>
@@ -5879,7 +5857,7 @@
 <p>Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.&#160;<a class="footnote-backref" href="#fnref:mom6" title="Jump back to footnote 14 in the text">&#8617;</a></p>
 </li>
 <li id="fn:mom7">
-<p>Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">22</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">23</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">24</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">25</a></sup>&#160;<a class="footnote-backref" href="#fnref:mom7" title="Jump back to footnote 15 in the text">&#8617;</a></p>
+<p>Set fmoa=1 for Burrows et al. (2014) <sup id="fnref:1"><a class="footnote-ref" href="#fn:1">27</a></sup> parameterization; fmoa=2 for Gantt et al. (2011) <sup id="fnref:2"><a class="footnote-ref" href="#fn:2">28</a></sup> parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; <sup id="fnref:3"><a class="footnote-ref" href="#fn:3">29</a></sup> fmoa=4 for Rinaldi et al. (JGR, 2013).* <sup id="fnref:4"><a class="footnote-ref" href="#fn:4">30</a></sup>&#160;<a class="footnote-backref" href="#fnref:mom7" title="Jump back to footnote 15 in the text">&#8617;</a></p>
 </li>
 <li id="fn:rad1">
 <p>iradsw &gt; 0 interpreted as number of timesteps, iradsw &lt; 0 interpreted as hours; iradsw = 0 disables shortwave radiation entirely&#160;<a class="footnote-backref" href="#fnref:rad1" title="Jump back to footnote 16 in the text">&#8617;</a></p>
@@ -5899,17 +5877,32 @@
 <li id="fn:rad6">
 <p>Valid options are ‘ebertcurry’ or ‘mitchell’&#160;<a class="footnote-backref" href="#fnref:rad6" title="Jump back to footnote 21 in the text">&#8617;</a></p>
 </li>
+<li id="fn:cosp6">
+<p>This sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).&#160;<a class="footnote-backref" href="#fnref:cosp6" title="Jump back to footnote 22 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw1">
+<p><code>use_od_ls</code> should not be used at the same time with <code>use_gw_oro</code>.&#160;<a class="footnote-backref" href="#fnref:gw1" title="Jump back to footnote 23 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw2">
+<p>Effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.&#160;<a class="footnote-backref" href="#fnref:gw2" title="Jump back to footnote 24 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw3">
+<p>Bulk drag coefficient. Scales the magnitude of FBD.&#160;<a class="footnote-backref" href="#fnref:gw3" title="Jump back to footnote 25 in the text">&#8617;</a></p>
+</li>
+<li id="fn:gw4">
+<p>Effective resolution of the grid for sGWD.Scales the magnitude of sGWD.&#160;<a class="footnote-backref" href="#fnref:gw4" title="Jump back to footnote 26 in the text">&#8617;</a></p>
+</li>
 <li id="fn:1">
-<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 22 in the text">&#8617;</a></p>
+<p>S. M. Burrows, O. Ogunro, A. A. Frossard, L. M. Russell, P. J. Rasch, and S. M. Elliott. A physically based framework for modeling the organic fractionation of sea spray aerosol from bubble film Langmuir equilibria. <em>Atmospheric Chemistry and Physics</em>, 14(24):13601–13629, December 2014. URL: <a href="https://acp.copernicus.org/articles/14/13601/2014/">https://acp.copernicus.org/articles/14/13601/2014/</a> (visited on 2024-03-29), <a href="https://doi.org/10.5194/acp-14-13601-2014">doi:10.5194/acp-14-13601-2014</a>.&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 27 in the text">&#8617;</a></p>
 </li>
 <li id="fn:2">
-<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 23 in the text">&#8617;</a></p>
+<p>B. Gantt, N. Meskhidze, M. C. Facchini, M. Rinaldi, D. Ceburnis, and C. D. O'Dowd. Wind speed dependent size-resolved parameterization for the organic mass fraction of sea spray aerosol. <em>Atmospheric Chemistry and Physics</em>, 11(16):8777–8790, August 2011. URL: <a href="https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html">https://acp.copernicus.org/articles/11/8777/2011/acp-11-8777-2011.html</a> (visited on 2024-04-25), <a href="https://doi.org/10.5194/acp-11-8777-2011">doi:10.5194/acp-11-8777-2011</a>.&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 28 in the text">&#8617;</a></p>
 </li>
 <li id="fn:3">
-<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 24 in the text">&#8617;</a></p>
+<p>Patricia K. Quinn, Timothy S. Bates, Kristen S. Schulz, D. J. Coffman, A. A. Frossard, L. M. Russell, W. C. Keene, and D. J. Kieber. Contribution of sea surface carbon pool to organic matter enrichment in sea spray aerosol. <em>Nature Geoscience</em>, 7(3):228–232, March 2014. URL: <a href="https://www.nature.com/articles/ngeo2092">https://www.nature.com/articles/ngeo2092</a> (visited on 2024-04-25), <a href="https://doi.org/10.1038/ngeo2092">doi:10.1038/ngeo2092</a>.&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 29 in the text">&#8617;</a></p>
 </li>
 <li id="fn:4">
-<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 25 in the text">&#8617;</a></p>
+<p>Matteo Rinaldi, Sandro Fuzzi, Stefano Decesari, Salvatore Marullo, Rosalia Santoleri, Antonello Provenzale, Jost Von Hardenberg, Darius Ceburnis, Aditya Vaishya, Colin D. O'Dowd, and Maria Cristina Facchini. Is chlorophyll‐ \textit a the best surrogate for organic matter enrichment in submicron primary marine aerosol? <em>Journal of Geophysical Research: Atmospheres</em>, 118(10):4964–4973, May 2013. URL: <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417">https://agupubs.onlinelibrary.wiley.com/doi/10.1002/jgrd.50417</a> (visited on 2024-04-25), <a href="https://doi.org/10.1002/jgrd.50417">doi:10.1002/jgrd.50417</a>.&#160;<a class="footnote-backref" href="#fnref:4" title="Jump back to footnote 30 in the text">&#8617;</a></p>
 </li>
 </ol>
 </div>
