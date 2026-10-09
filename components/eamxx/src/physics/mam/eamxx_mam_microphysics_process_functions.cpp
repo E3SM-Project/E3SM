@@ -414,9 +414,27 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
     if (config_.compute_gas_phase_chemistry) {
 
     view_3d gas_phase_chemistry_dvmrdt;
+    view_2d imp_sol_outcome_view;
+    view_2d imp_sol_failed_attempts_view;
+    view_2d imp_sol_cut_count_view;
+    view_2d imp_sol_accepted_steps_view;
+    view_2d imp_sol_requested_interval_view;
+    view_2d imp_sol_accepted_interval_view;
+    view_2d imp_sol_non_converged_species_idx_view;
+    view_2d imp_sol_non_converged_species_count_view;
     if (extra_mam4_aero_microphys_diags_) {
       gas_phase_chemistry_dvmrdt = get_field_out("mam4_microphysics_tendency_gas_phase_chemistry").get_view<Real ***>();
+      imp_sol_outcome_view = get_field_out("mam4_imp_sol_outcome").get_view<Real **>();
+      imp_sol_failed_attempts_view = get_field_out("mam4_imp_sol_failed_attempts").get_view<Real **>();
+      imp_sol_cut_count_view = get_field_out("mam4_imp_sol_cut_count").get_view<Real **>();
+      imp_sol_accepted_steps_view = get_field_out("mam4_imp_sol_accepted_steps").get_view<Real **>();
+      imp_sol_requested_interval_view = get_field_out("mam4_imp_sol_requested_interval").get_view<Real **>();
+      imp_sol_accepted_interval_view = get_field_out("mam4_imp_sol_accepted_interval").get_view<Real **>();
+      imp_sol_non_converged_species_idx_view = get_field_out("mam4_imp_sol_non_converged_species_idx").get_view<Real **>();
+      imp_sol_non_converged_species_count_view = get_field_out("mam4_imp_sol_non_converged_species_count").get_view<Real **>();
     }
+
+    const bool collect_imp_sol_diags = extra_mam4_aero_microphys_diags_;
 
     Kokkos::parallel_for(
     "MAMMicrophysics::run_impl::gas_phase_chemistry", policy,
@@ -439,12 +457,43 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         // extract atm state variables (input)
         const Real temperature = atm.temperature(kk);
         const auto &vmr_kk = ekat::subview(vmr_icol, kk);
+
+        // Call gas_phase_chemistry with ImpSolResult
+        mam4::gas_chemistry::ImpSolResult result;
         mam4::microphysics::gas_phase_chemistry(
-        // in
-        temperature, dt, photo_rates_k.data(), extfrc_k.data(), invariants_k.data(),
-        het_rates_k.data(),
-        // out
-        vmr_kk);
+          temperature, dt, photo_rates_k.data(), extfrc_k.data(),
+          invariants_k.data(), het_rates_k.data(),
+          vmr_kk, result);
+
+        // Store the solver outcome and stats if diagnostics enabled
+        // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
+        //         3=NonfiniteIterate, 4=CutLimitExhausted, 5=MaximumStepsExhausted
+        if (collect_imp_sol_diags) {
+          imp_sol_outcome_view(icol, kk) = Kokkos::round(int(result.outcome));
+          imp_sol_failed_attempts_view(icol, kk) = Kokkos::round(result.failed_attempts);
+          imp_sol_cut_count_view(icol, kk) = Kokkos::round(result.cut_count);
+          imp_sol_accepted_steps_view(icol, kk) = Kokkos::round(result.accepted_steps);
+          imp_sol_requested_interval_view(icol, kk) = result.requested_interval;
+          imp_sol_accepted_interval_view(icol, kk) = result.accepted_interval;
+          imp_sol_non_converged_species_idx_view(icol, kk) = Kokkos::round(result.non_converged_species_idx);
+          imp_sol_non_converged_species_count_view(icol, kk) = Kokkos::round(result.non_converged_species_count);
+        }
+
+       // Check for failure and report as warning (not error)
+       // Outcome values can be inspected in the mam4_imp_sol_outcome field
+       if (!result.success()) {
+#ifndef NDEBUG
+         Kokkos::printf(
+             "WARNING: imp_sol did not complete chemistry interval at "
+             "icol=%d, lev=%d, outcome=%d, failed_attempts=%d, "
+             "cut_count=%d, accepted_steps=%d, "
+             "requested=%.6e, accepted=%.6e, non_converged_spc=%d, non_converged_count=%d\n",
+             icol, kk, static_cast<int>(result.outcome),
+             result.failed_attempts, result.cut_count, result.accepted_steps,
+             result.requested_interval, result.accepted_interval,
+             result.non_converged_species_idx, result.non_converged_species_count);
+#endif
+       }
       });
 
     });
