@@ -39,7 +39,7 @@
 
 | Parameter                 | Description                                                                      | Default value  |
 | ------------------------- | -------------------------------------------------------------------------------- | -------------- |
-| `dust_emis_scheme`[^ds1]  | The v3 dust emission scheme (Kok et al., 2014)                                   | `2`[^ds2]        |
+| `dust_emis_scheme`[^ds1]  | The v3 dust emission scheme (Kok et al., 2014)                                   | `2`[^ds2]      |
 
 [^ds1]: This parameter is set in `user_nl_drv`
 [^ds2]: Use `1` to revert to the v1/v2 scheme
@@ -65,29 +65,37 @@
 
 ## Modal Aerosol Module
 
-| Parameter                | Description                                                                         | Default value               |
-| ------------------------ | ----------------------------------------------------------------------------------- | --------------------------- |
-| `is_output_interactive_volc`    | Switch for diagnostic output of the stratospheric aerosol optics | `.false.`  |
-| `mam_amicphys_optaa`     | Recommended option of the new time-splitting treatment of H2SO4 production and loss | `1` <!-- markdownlint-disable MD033 --><br> (0 to turn it off) |
-| `n_so4_monolayers_pcage` | Number of monolayers required to age primary-carbon mode particles                  | `3`                         |
-| `seasalt_emis_scale`     | Tuning parameter for sea salt emission                                              | `0.55`                      |
+| Parameter                     | Description                                                                         | Default value  |
+| ----------------------------- | ----------------------------------------------------------------------------------- | -------------- |
+| `is_output_interactive_volc`  | Switch for diagnostic output of the stratospheric aerosol optics                    | `.false.`      |
+| `mam_amicphys_optaa`          | flag to use new time-splitting treatment of H2SO4 production and loss               | `1`            |
+| `n_so4_monolayers_pcage`      | Number of monolayers required to age primary-carbon mode particles                  | `3`            |
+| `seasalt_emis_scale`          | Tuning parameter for sea salt emission                                              | `0.55`         |
 
 ## OCEANFILMS
 
-| Parameter                 | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `mam_mom_cycle_yr`       |                                                                    | `1`                    |
-| `mam_mom_datapath` | Full pathname of the directory that contains the files specified in mam_mom_filelist  | `'atm/cam/chem/trop_mam/marine_BGC/'`                 |
-| `mam_mom_filename`     | Filename of file that contains a sequence of filenames for prescribed marine organic matter ocean concentrations.  The filenames in this file are relative to the directory specified by mam_mom_datapath.| `'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'` |
-| `mam_mom_rmfile`   | Remove the file containing prescribed aerosol deposition fluxes from local disk when no longer needed. | `FALSE`                |
-| `mam_mom_specifier`     | Names of variables containing aerosol data in the prescribed aerosol datasets. | `'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'`                 |
-| `mam_mom_datatype`       | Type of time interpolation for data in mam_mom files. Can be set to `'CYCLICAL'`, `'SERIAL'`, `'INTERP_MISSING_MONTHS'`, or `'FIXED'`. | `'CYCLICAL'`                |
-| `mam_mom_cycle_yr`         | The  cycle year of the prescribed aerosol flux data if mam_mom_type is `'CYCLICAL'`. Format: YYYY   | `1`               |
-| `mam_mom_fixed_ymd`        | The date at which the prescribed aerosol flux data is fixed if mam_mom_type is `'FIXED'`. Format: YYYYMMDD | `0`                |
-| `mam_mom_fixed_tod`  | The time of day (seconds) corresponding to mam_mom_fixed_ymd at which the prescribed aerosol flux data is fixed if mam_mom_type is 'FIXED'. | `0`           |
-| `mam_mom_bubble_thickness`   | Bubble film thickness (in m) for marine organic aerosol emission mechanism.  The physically reasonable range is approximately (0.1 - 1) x 10^ -6. | `0.1e-6`            |
-| `mam_mom_mixing_state`              | Switch to select mixing state assumption in marine organic aerosol code. Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass. | `0` [Note: set to 3 in the atm_in namelist]        |
-| `mam_mom_parameterization`     | Selection of alternate parameterizations for marine organic matter emissions.  Set fmoa=1 for Burrows et al. (2014) [@burrows_physically_2014] parameterization; fmoa=2 for Gantt et al. (2011) [@gantt_wind_2011] parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; [@quinn_contribution_2014] fmoa=4 for Rinaldi et al. (JGR, 2013).* [@rinaldi_is_2013] | `1`                 |
+| Parameter                   | Description                                                                             | Default value                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `mam_mom_cycle_yr`          |                                                                                         | `1`                                                                    |
+| `mam_mom_datapath`          | Path that contains the files specified in mam_mom_filelist                              | `'atm/cam/chem/trop_mam/marine_BGC/'`                                  |
+| `mam_mom_filename`          | File name that contains a sequence of files for prescribed mom concentrations.[^mom1]   | `'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'` |
+| `mam_mom_rmfile`            | Flag to remove the file containing prescribed aerosol deposition fluxes from local disk.| `FALSE`                                                                |
+| `mam_mom_specifier`         | Names of variables containing aerosol data in the prescribed aerosol datasets.          | `'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'`      |
+| `mam_mom_datatype`          | Type of time interpolation for data in mam_mom files.[^mom2]                            | `'CYCLICAL'`                                                           |
+| `mam_mom_cycle_yr`          | Cycle year for prescribed aerosol flux data if mam_mom_type=`'CYCLICAL'`.[^mom3]        | `1`                                                                    |
+| `mam_mom_fixed_ymd`         | Date at which prescribed aerosol flux data is fixed if mam_mom_type=`'FIXED'`.[^mom4]   | `0`                                                                    |
+| `mam_mom_fixed_tod`         | The time of day (seconds) corresponding to mam_mom_fixed_ymd                            | `0`                                                                    |
+| `mam_mom_bubble_thickness`  | Bubble film thickness (in m) for marine organic aerosol emission mechanism.[^mom5]      | `0.1e-6`                                                               |
+| `mam_mom_mixing_state`      | Switch to select mixing state assumption in marine organic aerosol code.[^mom6]         | `0` [Note: set to 3 in the atm_in namelist]                            |
+| `mam_mom_parameterization`  | Selection of alternate parameterizations for marine organic matter emissions.[^mom7]    | `1`                                                                    |
+
+[^mom1]: The filenames in this file are relative to the directory specified by mam_mom_datapath.
+[^mom2]: Can be set to `'CYCLICAL'`, `'SERIAL'`, `'INTERP_MISSING_MONTHS'`, or `'FIXED'`.
+[^mom3]: Only if , Format: YYYY
+[^mom4]: Format: YYYYMMDD
+[^mom5]: The physically reasonable range is approximately (0.1 - 1) x 10^ -6.
+[^mom6]: Currently implemented options: 0 : total external mixture, add to mass; 1 : total external mixture, replace mass; 2 : total internal mixture, add to mass; 3 : total internal mixture, replace mass.
+[^mom7]: Set fmoa=1 for Burrows et al. (2014) [@burrows_physically_2014] parameterization; fmoa=2 for Gantt et al. (2011) [@gantt_wind_2011] parameterization; fmoa=3 for simple parameterization based on Quinn et al., 2014; [@quinn_contribution_2014] fmoa=4 for Rinaldi et al. (JGR, 2013).* [@rinaldi_is_2013]
 
 *Note: non-default values have not been carefully tested and may not work as expected.
 
