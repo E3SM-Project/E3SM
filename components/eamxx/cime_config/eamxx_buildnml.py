@@ -265,19 +265,11 @@ def perform_consistency_checks(case, xml):
     # UNSET for aquaplanet compsets) retain their selector attributes after
     # evaluation. We skip those - a deliberate UNSET is not an error.
     #
-    enable_iop = find_node(xml, "enable_iop")
-    iop_file = find_node(xml, "iop_file")
-    iop_enabled = (enable_iop is not None and enable_iop.text is not None
-                   and enable_iop.text.strip().lower() == "true")
-
     parent_map = {child: parent for parent in xml.iter() for child in parent}
     unset_params = []
     file_type_elems = xml.findall('.//*[@type="file"]') + xml.findall('.//*[@type="array(file)"]')
     for item in file_type_elems:
         if item.text is None or not item.text.strip() or item.text.strip() == "UNSET":
-            # iop_file is required only when IOP is enabled.
-            if item is iop_file and not iop_enabled:
-                continue
             # Skip params explicitly marked optional: UNSET is valid for them.
             if item.attrib.get("optional") == "true":
                 continue
@@ -289,12 +281,6 @@ def perform_consistency_checks(case, xml):
             parent = parent_map.get(item)
             path = "{} -> {}".format(parent.tag, item.tag) if parent is not None else item.tag
             unset_params.append(path)
-
-    iop_file_unset = (iop_file is None or iop_file.text is None
-                      or not iop_file.text.strip()
-                      or iop_file.text.strip() == "UNSET")
-    expect(not iop_enabled or not iop_file_unset,
-           "The iop_file parameter must be set when enable_iop is true.")
 
     if unset_params:
         scream_cmake_opts = case.get_value("SCREAM_CMAKE_OPTIONS") or ""
