@@ -190,7 +190,8 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
     // Figure out the name of the netcdf file containing the restart data
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    auto filename = find_filename_in_rpointer (casename+".scream"+m_inst_suffix,true,m_atm_comm,m_run_t0,
+                                               false,OutputAvgType::Instant,{},m_rpointer_filename);
 
     // Restart the num steps counter in the atm time stamp
     int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
@@ -284,7 +285,8 @@ void AtmosphereDriver::create_grids()
     // Restarted run -> read geo data from restart file
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    auto filename = find_filename_in_rpointer (casename+".scream"+m_inst_suffix,true,m_atm_comm,m_run_t0,
+                                               false,OutputAvgType::Instant,{},m_rpointer_filename);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("filename")) {
@@ -756,7 +758,8 @@ void AtmosphereDriver::create_output_managers () {
   if (io_params.isSublist("model_restart")) {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
-    params.set<std::string>("filename_prefix",m_casename+".scream");
+    params.set<std::string>("filename_prefix",m_casename+".scream"+m_inst_suffix);
+    params.set<std::string>("rpointer_filename",m_rpointer_filename);
     params.set<std::string>("averaging_type","instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
@@ -784,8 +787,16 @@ void AtmosphereDriver::create_output_managers () {
 
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
     if (not params.isParameter("filename_prefix")) {
-      params.set<std::string>("filename_prefix",m_casename+".scream.h");
+      params.set<std::string>("filename_prefix",m_casename+".scream"+m_inst_suffix+".h");
+    } else if (m_inst_suffix!="") {
+      // With multiple atm instances, make sure each instance writes to its own files,
+      // unless the prefix has already been made unique (e.g., by the RCS test)
+      auto prefix = params.get<std::string>("filename_prefix");
+      if (prefix.find(m_inst_suffix)==std::string::npos) {
+        params.set<std::string>("filename_prefix",prefix+m_inst_suffix);
+      }
     }
+    params.set<std::string>("rpointer_filename",m_rpointer_filename);
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);
 
@@ -935,7 +946,8 @@ void AtmosphereDriver::restart_model ()
   // First, figure out the name of the netcdf file containing the restart data
   const auto& provenance = m_atm_params.sublist("provenance");
   const auto& casename = provenance.get<std::string>("rest_caseid");
-  auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+  auto filename = find_filename_in_rpointer (casename+".scream"+m_inst_suffix,true,m_atm_comm,m_run_t0,
+                                             false,OutputAvgType::Instant,{},m_rpointer_filename);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
@@ -1045,9 +1057,12 @@ void AtmosphereDriver::create_logger () {
   if (m_atm_params.isSublist("e3sm_parameters")) {
     auto e3sm_params = m_atm_params.sublist("e3sm_parameters");
     m_casename = e3sm_params.get<std::string>("e3sm_casename","EAMxx");
+    // Multi-instance runs: e.g. "_0001", set by buildnml in data/scream_input.yaml_0001
+    m_inst_suffix = e3sm_params.get<std::string>("e3sm_inst_suffix","");
   } else {
     m_casename = "EAMxx";
   }
+  m_rpointer_filename = "rpointer.atm" + m_inst_suffix;
 }
 
 void AtmosphereDriver::set_initial_conditions ()

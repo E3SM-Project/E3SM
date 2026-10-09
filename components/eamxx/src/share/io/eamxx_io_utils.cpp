@@ -20,7 +20,8 @@ std::string find_filename_in_rpointer (
     const util::TimeStamp& run_t0,
     const bool allow_not_found,
     const OutputAvgType avg_type,
-    const IOControl& control)
+    const IOControl& control,
+    const std::string& rpointer_filename)
 {
   std::string filename;
   bool found = false;
@@ -51,7 +52,7 @@ std::string find_filename_in_rpointer (
     std::ifstream rpointer_file;
 
     std::string line;
-    rpointer_file.open("rpointer.atm");
+    rpointer_file.open(rpointer_filename);
 
     while (std::getline(rpointer_file,line)) {
       content += line + "\n";
@@ -76,14 +77,14 @@ std::string find_filename_in_rpointer (
 
     if (model_restart) {
       EKAT_ERROR_MSG (
-          "Error! Restart requested, but no model restart file found in 'rpointer.atm'.\n"
+          "Error! Restart requested, but no model restart file found in '" + rpointer_filename + "'.\n"
           "   model restart filename prefix: " + filename_prefix + "\n"
           "   model restart filename pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"
           "   rpointer content:\n" + content + "\n\n");
     } else {
       EKAT_ERROR_MSG (
-          "Error! Restart requested, but no history restart file found in 'rpointer.atm'.\n"
+          "Error! Restart requested, but no history restart file found in '" + rpointer_filename + "'.\n"
           "   hist restart filename prefix: " + filename_prefix + "\n"
           "   hist restart filename pattern: " + pattern_str + "\n"
           "   run t0           : " + run_t0.to_string() + "\n"

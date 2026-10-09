@@ -162,6 +162,7 @@ protected:
 
   // The output filename root
   std::string       m_filename_prefix;
+  std::string       m_rpointer_filename;
 
   std::vector<double> m_time_bnds;
 

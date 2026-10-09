@@ -75,7 +75,8 @@ std::string find_filename_in_rpointer (
     const util::TimeStamp& run_t0,
     const bool allow_not_found = false,
     const OutputAvgType avg_type = OutputAvgType::Instant,
-    const IOControl& control = {});
+    const IOControl& control = {},
+    const std::string& rpointer_filename = "rpointer.atm");
 
 // Create a diagnostic from a string representation of it.
 // E.g., create the diag to compute fieldX_at_500hPa.

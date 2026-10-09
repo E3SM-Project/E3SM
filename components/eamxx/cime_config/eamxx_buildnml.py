@@ -17,7 +17,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
         resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node, \
         METADATA_ATTRIBS, is_metadata_attrib, is_leaf, apply_leaf_attribs
-from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
+from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer, \
+    atm_config_chg_impl, get_xml_nodes
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
 ensure_yaml()
@@ -1142,15 +1143,19 @@ def dump_to_nml(dict_contents, fd):
     fd.write(_dump_to_nml_impl(dict_contents))
 
 ###############################################################################
-def create_input_files(caseroot, screamroot, rundir):
+def create_input_files(caseroot, screamroot, rundir, raw_xml=None, inst_suffix="", yaml_overrides=None):
 ###############################################################################
     """
     Based on $case/namelist_scream.xml, create the actual input files.
+    For multi-instance runs, raw_xml can be a modified copy of namelist_scream.xml,
+    and the generated file names get the instance suffix appended (e.g. "_0001").
+    yaml_overrides is a dict of {section: {name: value}} entries set in the yaml files.
     """
-    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
-    with open(raw_xml_file, "r") as fd:
-        tree = ET.parse(fd)
-        raw_xml = tree.getroot()
+    if raw_xml is None:
+        raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+        with open(raw_xml_file, "r") as fd:
+            tree = ET.parse(fd)
+            raw_xml = tree.getroot()
 
     def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_eamxx.xml")
     with open(def_xml_file, "r") as fd:
@@ -1161,7 +1166,7 @@ def create_input_files(caseroot, screamroot, rundir):
     for file_ in generated_files:
         expect("name" in file_.attrib, "file element missing required 'name' attribute")
         expect("format" in file_.attrib, "file element missing required 'format' attribute")
-        filename    = os.path.join(rundir, file_.attrib["name"])
+        filename    = os.path.join(rundir, file_.attrib["name"]) + inst_suffix
         file_format = file_.attrib["format"]
 
         xml_sections = get_child(file_,"sections").text.split(",")
@@ -1172,6 +1177,9 @@ def create_input_files(caseroot, screamroot, rundir):
             dict_contents[section_name.replace("__"," ")] = convert_to_dict(section)
 
         if file_format == "yaml":
+            for section,entries in (yaml_overrides or {}).items():
+                if section in dict_contents:
+                    dict_contents[section].update(entries)
             with open(filename, "w") as fd:
                 fd.write(
 """################################################################
@@ -1192,6 +1200,57 @@ def create_input_files(caseroot, screamroot, rundir):
         result[file_.attrib["name"]] = dict_contents
 
     return result
+
+###############################################################################
+def create_instance_input_files(case, caseroot, screamroot, rundir):
+###############################################################################
+    """
+    For multi-instance runs (NINST_ATM>1), create data/scream_input.yaml_NNNN and
+    data/namelist.nl_NNNN for each instance NNNN that has a $caseroot/user_nl_eamxx_NNNN file.
+
+    Each non-comment line of user_nl_eamxx_NNNN is an atmchange-style change
+    (e.g. "zm::tau=7200") applied on top of $caseroot/namelist_scream.xml.
+    Changes to atm_procs_list are not supported here.
+
+    Instances without a user_nl_eamxx_NNNN file are left untouched, so that
+    workflows that create these files on their own (e.g. the RCS test) still work.
+    This must be called after do_cime_vars_on_yaml_output_files, so that the
+    output yaml files have already been processed and copied to $rundir/data.
+    """
+    ninst = int(case.get_value("NINST_ATM"))
+    if ninst <= 1:
+        return
+
+    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    scream_input_file = os.path.join(rundir, "data", "scream_input.yaml")
+    with open(scream_input_file, "r") as fd:
+        scream_input = yaml.load(fd, Loader=yaml.SafeLoader)
+
+    for inst in range(1, ninst+1):
+        inst_suffix = f"_{inst:04d}"
+        user_nl_file = os.path.join(caseroot, f"user_nl_eamxx{inst_suffix}")
+        if not os.path.isfile(user_nl_file):
+            continue
+
+        with open(raw_xml_file, "r") as fd:
+            raw_xml = ET.parse(fd).getroot()
+
+        with open(user_nl_file, "r") as fd:
+            for line in fd:
+                change = line.split("#")[0].split("!")[0].strip()
+                if change != "":
+                    atm_config_chg_impl(raw_xml, change)
+
+        # Each instance needs its own copy of the dycore namelist
+        if len(get_xml_nodes(raw_xml, "dynamics_namelist_file_name")) > 0:
+            atm_config_chg_impl(raw_xml, f"dynamics_namelist_file_name=./data/namelist.nl{inst_suffix}")
+
+        yaml_overrides = {
+            "scorpio"         : {"output_yaml_files" : scream_input["scorpio"]["output_yaml_files"]},
+            "e3sm_parameters" : {"e3sm_inst_suffix"  : inst_suffix},
+        }
+        create_input_files(caseroot, screamroot, rundir, raw_xml=raw_xml,
+                           inst_suffix=inst_suffix, yaml_overrides=yaml_overrides)
 
 ###############################################################################
 def get_file_parameters(caseroot):

@@ -40,6 +40,8 @@ OutputManager::initialize(const ekat::Comm &io_comm, const ekat::ParameterList &
   m_case_t0 = case_t0;
   m_run_type = run_type;
   m_is_model_restart_output = is_model_restart_output;
+  // With multiple atm instances, each instance needs its own rpointer file
+  m_rpointer_filename = m_params.get<std::string>("rpointer_filename","rpointer.atm");
 
   // This works if we are not restarting the stream.
   // If we are, it will get adjusted later
@@ -171,7 +173,8 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
     auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,
-                                                skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
+                                                skip_restart_if_rhist_not_found,m_avg_type,m_output_control,
+                                                m_rpointer_filename);
 
     if (rhist_file=="") {
       m_atm_logger->warn("[OutputManager::setup] The rhist file not found in rpointer.atm.\n"
@@ -416,12 +419,12 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     if (m_io_comm.am_i_root() and filespecs.is_restart_file()) {
       std::ofstream rpointer;
       if (m_is_model_restart_output) {
-        rpointer.open("rpointer.atm");  // Open rpointer and nuke its content
+        rpointer.open(m_rpointer_filename);  // Open rpointer and nuke its content
       } else if (is_checkpoint_step) {
         // Output restart unit tests do not have a model-output stream that generates rpointer.atm,
         // so allow to skip the next check for them.
         auto is_unit_testing = m_params.sublist("checkpoint_control").get("is_unit_testing",false);
-        EKAT_REQUIRE_MSG (is_unit_testing || std::ifstream("rpointer.atm").good(),
+        EKAT_REQUIRE_MSG (is_unit_testing || std::ifstream(m_rpointer_filename).good(),
             "Error! Cannot find rpointer.atm file to append history restart file in.\n"
             " Model restart output is supposed to be in charge of creating rpointer.atm.\n"
             " There are two possible causes:\n"
@@ -430,7 +433,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
             "   2. The current implementation assumes that the model restart OutputManager runs\n"
             "      *before* any other output stream (so it can nuke rpointer.atm if already existing).\n"
             "      If this has changed, we need to revisit this piece of the code.\n");
-        rpointer.open("rpointer.atm",std::ofstream::app);  // Open rpointer file and append to it
+        rpointer.open(m_rpointer_filename,std::ofstream::app);  // Open rpointer file and append to it
       }
       rpointer << filespecs.filename << std::endl;
     }

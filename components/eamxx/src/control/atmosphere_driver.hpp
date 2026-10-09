@@ -254,6 +254,10 @@ protected:
 
   // Current simulation casename
   std::string m_casename;
+
+  // Instance suffix (e.g. "_0001") for multi-instance runs, and the corresponding rpointer file
+  std::string m_inst_suffix;
+  std::string m_rpointer_filename = "rpointer.atm";
   // maps grid name to a vector of its initialized fields
   strmap_t<std::set<std::string>> m_fields_inited;
 };
