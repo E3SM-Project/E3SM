@@ -118,16 +118,6 @@ void Functions<S,D>
   bool& hydrometeorsPresent, const Int& nk,
   const P3Runtime& runtime_options)
 {
-  (void)sdm_warm_emulator_qc2qr_autoconv_tend;
-  (void)sdm_warm_emulator_qc2qr_accret_tend;
-  (void)sdm_warm_emulator_ncautr;
-  (void)sdm_warm_emulator_nc2nr_autoconv_tend;
-  (void)sdm_warm_emulator_nc_accret_tend;
-  (void)sdm_warm_emulator_nc_selfcollect_tend;
-  (void)sdm_warm_emulator_nr_selfcollect_tend;
-  (void)sdm_warm_emulator_use_cloud;
-  (void)sdm_warm_emulator_use_rain;
-
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
   constexpr Scalar T_zerodegc   = C::T_zerodegc.value;
@@ -452,6 +442,70 @@ void Functions<S,D>
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
       qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
       ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, not_skip_all, runtime_options);
+
+    if (runtime_options.use_sdm_warm_emulator) {
+      Pack emu_qc2qr_autoconv_tend(0);
+      Pack emu_qc2qr_accret_tend(0);
+      Pack emu_ncautr(0);
+      Pack emu_nc2nr_autoconv_tend(0);
+      Pack emu_nc_accret_tend(0);
+      Pack emu_nc_selfcollect_tend(0);
+      Pack emu_nr_selfcollect_tend(0);
+      Pack emu_use_cloud(0);
+      Pack emu_use_rain(0);
+
+      for (Int lane = 0; lane < Pack::n; ++lane) {
+        const Int ilev = range_pack[lane];
+        if (ilev < nk) {
+          emu_qc2qr_autoconv_tend[lane] =
+              sdm_warm_emulator_qc2qr_autoconv_tend(ilev);
+          emu_qc2qr_accret_tend[lane] =
+              sdm_warm_emulator_qc2qr_accret_tend(ilev);
+          emu_ncautr[lane] = sdm_warm_emulator_ncautr(ilev);
+          emu_nc2nr_autoconv_tend[lane] =
+              sdm_warm_emulator_nc2nr_autoconv_tend(ilev);
+          emu_nc_accret_tend[lane] =
+              sdm_warm_emulator_nc_accret_tend(ilev);
+          emu_nc_selfcollect_tend[lane] =
+              sdm_warm_emulator_nc_selfcollect_tend(ilev);
+          emu_nr_selfcollect_tend[lane] =
+              sdm_warm_emulator_nr_selfcollect_tend(ilev);
+          emu_use_cloud[lane] = sdm_warm_emulator_use_cloud(ilev);
+          emu_use_rain[lane] = sdm_warm_emulator_use_rain(ilev);
+        }
+      }
+
+      const auto use_cloud = (emu_use_cloud > 0.5) && not_skip_all;
+      const auto use_rain = (emu_use_rain > 0.5) && not_skip_all;
+      const auto fallback_cloud = !use_cloud && not_skip_all;
+
+      qc2qr_autoconv_tend.set(use_cloud, emu_qc2qr_autoconv_tend);
+      qc2qr_accret_tend.set(use_cloud, emu_qc2qr_accret_tend);
+      ncautr.set(use_cloud, emu_ncautr);
+      nc2nr_autoconv_tend.set(use_cloud, emu_nc2nr_autoconv_tend);
+      nc_accret_tend.set(use_cloud, emu_nc_accret_tend);
+      nc_selfcollect_tend.set(use_cloud, emu_nc_selfcollect_tend);
+      if (!runtime_options.sdm_warm_emulator_self_collection) {
+        nc_selfcollect_tend.set(use_cloud, 0);
+      }
+
+      qc2qr_autoconv_tend.set(
+          fallback_cloud,
+          qc2qr_autoconv_tend * runtime_options.sdm_warm_emulator_kk_factor);
+      ncautr.set(
+          fallback_cloud,
+          ncautr * runtime_options.sdm_warm_emulator_kk_factor);
+      nc2nr_autoconv_tend.set(
+          fallback_cloud,
+          nc2nr_autoconv_tend * runtime_options.sdm_warm_emulator_kk_factor);
+
+      nr_selfcollect_tend.set(use_rain, emu_nr_selfcollect_tend);
+
+      nc_selfcollect_tend.set(
+          not_skip_all, max(nc_selfcollect_tend, -nc(k) * inv_dt));
+      nr_selfcollect_tend.set(
+          not_skip_all, min(nr_selfcollect_tend, nr(k) * inv_dt + ncautr));
+    }
 
     //
     // conservation of water
