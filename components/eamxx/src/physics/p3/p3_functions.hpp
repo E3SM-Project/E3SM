@@ -9,6 +9,10 @@
 #include <ekat_parameter_list.hpp>
 #include <ekat_workspace.hpp>
 #include <ekat_comm.hpp>
+#include <ekat_assert.hpp>
+
+#include <cstdio>
+#include <string>
 
 namespace scream
 {
@@ -105,6 +109,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
 
   // Structure to store p3 runtime options
   struct P3Runtime {
+    static constexpr int warm_rain_emulator_file_len = 4096;
 
     Scalar max_total_ni                         = 740.0e3;
     Scalar autoconversion_prefactor             = 1350.0;
@@ -126,6 +131,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     Scalar immersion_freezing_exponent          = 0.65;
     Scalar deposition_nucleation_exponent       = 0.304;
     Scalar ice_sedimentation_factor             = 1.0;
+    Scalar warm_rain_emulator_kk_factor         = 0.36;
     bool do_ice_production                      = true;
     bool set_cld_frac_l_to_one                  = false;
     bool set_cld_frac_i_to_one                  = false;
@@ -133,6 +139,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_hetfrz_classnuc                    = false;
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
+    bool use_warm_rain_emulator                 = false;
+    bool warm_rain_emulator_self_collection     = true;
+    char warm_rain_emulator_file[warm_rain_emulator_file_len] = "";
 
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
@@ -167,6 +176,8 @@ template <typename ScalarT, typename DeviceT> struct Functions {
           params.get<double>("deposition_nucleation_exponent", deposition_nucleation_exponent);
       ice_sedimentation_factor =
           params.get<double>("ice_sedimentation_factor", ice_sedimentation_factor);
+      warm_rain_emulator_kk_factor =
+          params.get<double>("warm_rain_emulator_kk_factor", warm_rain_emulator_kk_factor);
       do_ice_production     = params.get<bool>("do_ice_production", do_ice_production);
       set_cld_frac_l_to_one = params.get<bool>("set_cld_frac_l_to_one", set_cld_frac_l_to_one);
       set_cld_frac_i_to_one = params.get<bool>("set_cld_frac_i_to_one", set_cld_frac_i_to_one);
@@ -175,6 +186,21 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       use_separate_ice_liq_frac =
           params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
+      use_warm_rain_emulator =
+          params.get<bool>("use_warm_rain_emulator", use_warm_rain_emulator);
+      warm_rain_emulator_self_collection =
+          params.get<bool>("warm_rain_emulator_self_collection", warm_rain_emulator_self_collection);
+      const auto warm_rain_emulator_file_param =
+          params.get<std::string>("warm_rain_emulator_file", "");
+      const auto warm_rain_emulator_file_path =
+          warm_rain_emulator_file_param == "none" ? std::string("") : warm_rain_emulator_file_param;
+      EKAT_REQUIRE_MSG(
+          warm_rain_emulator_file_path.size() < warm_rain_emulator_file_len,
+          "Error! Parameter 'warm_rain_emulator_file' is too long.\n"
+          " - max length: " + std::to_string(warm_rain_emulator_file_len - 1) + "\n"
+          " - actual length: " + std::to_string(warm_rain_emulator_file_path.size()) + "\n");
+      std::snprintf(warm_rain_emulator_file, warm_rain_emulator_file_len, "%s",
+                    warm_rain_emulator_file_path.c_str());
     }
   };
 

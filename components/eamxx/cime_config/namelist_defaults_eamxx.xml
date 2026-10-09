@@ -217,6 +217,10 @@ be lost if SCREAM_HACK_XML is not enabled.
         ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals_v2.dat8,
         ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals_v2.dat8
       </tables>
+      <use_warm_rain_emulator type="logical" doc="Enable warm-rain emulator coupling in P3">false</use_warm_rain_emulator>
+      <warm_rain_emulator_file type="string" doc="Path to warm-rain emulator model file">none</warm_rain_emulator_file>
+      <warm_rain_emulator_kk_factor type="real" doc="Fallback autoconversion scaling factor when the warm-rain emulator is outside its training envelope">0.36</warm_rain_emulator_kk_factor>
+      <warm_rain_emulator_self_collection type="logical" doc="Use emulator cloud self-collection tendency where warm-rain emulator cloud-process outputs are active">true</warm_rain_emulator_self_collection>
       <autoconversion_prefactor type="real" doc="Autoconversion linear prefactor">1350.0</autoconversion_prefactor>
       <autoconversion_prefactor hgrid="ne256np4.pg2">2700.0</autoconversion_prefactor>
       <autoconversion_qc_exponent type="real" doc="Autoconversion qc exponent">2.47</autoconversion_qc_exponent>
