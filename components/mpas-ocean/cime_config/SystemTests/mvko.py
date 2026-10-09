@@ -278,11 +278,11 @@ class MVKO(SystemTestsCommon):
         """Run the model."""
         self.run_indv()
 
-    def _generate_baseline(self):
+    def generate_baseline_phase(self):
         """
         generate a new baseline case based on the current test
         """
-        super()._generate_baseline()
+        psuccess, pshort, plong = super().generate_baseline_phase()
 
         with CIME.utils.SharedArea():
             basegen_dir = os.path.join(
@@ -308,119 +308,113 @@ class MVKO(SystemTestsCommon):
                 if os.path.exists(baseline):
                     os.remove(baseline)
 
+                plong += f"Copying ... \n \t {hist} \n ... to ... \n \t {baseline} \n\n"
                 CIME.utils.safe_copy(hist, baseline, preserve_meta=False)
 
-    def _compare_baseline(self):
-        with self._test_status:
-            if int(self._case.get_value("RESUBMIT")) > 0:
-                # This is here because the comparison is run for each submission
-                # and we only want to compare once the whole run is finished. We
-                # need to return a pass here to continue the submission process.
-                self._test_status.set_status(
-                    CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_PEND_STATUS
-                )
-                return
+        return psuccess, pshort, plong
 
-            self._test_status.set_status(
-                CIME.test_status.BASELINE_PHASE, CIME.test_status.TEST_FAIL_STATUS
-            )
+    def compare_baseline_phase(self):
+        if int(self._case.get_value("RESUBMIT")) > 0:
+            # This is here because the comparison is run for each submission
+            # and we only want to compare once the whole run is finished. We
+            # need to return a pass here to continue the submission process.
+            return True, "", "Skipping due to resubmit"
 
-            run_dir = self._case.get_value("RUNDIR")
-            case_name = self._case.get_value("CASE")
-            base_dir = os.path.join(
-                self._case.get_value("BASELINE_ROOT"),
-                self._case.get_value("BASECMP_CASE"),
-            )
+        run_dir = self._case.get_value("RUNDIR")
+        case_name = self._case.get_value("CASE")
+        base_dir = os.path.join(
+            self._case.get_value("BASELINE_ROOT"),
+            self._case.get_value("BASECMP_CASE"),
+        )
 
-            test_name = str(case_name.split(".")[-1])
-            evv_pass = {
-                component: False
-                for component in [self.ocn_component, self.ice_component]
-            }
-            evv_out_dirs = {}
+        test_name = str(case_name.split(".")[-1])
+        evv_pass = {
+            component: False
+            for component in [self.ocn_component, self.ice_component]
+        }
+        evv_out_dirs = {}
 
-            comments = {}
-            for component in [self.ocn_component, self.ice_component]:
-                if component == self.ice_component:
-                    _varset = "seaice"
-                else:
-                    _varset = "default"
+        comments = {}
+        for component in [self.ocn_component, self.ice_component]:
+            if component == self.ice_component:
+                _varset = "seaice"
+            else:
+                _varset = "default"
 
-                evv_config = {
-                    test_name: {
-                        "module": os.path.join(evv_lib_dir, "extensions", "kso.py"),
-                        "test-case": "Test",
-                        "test-dir": run_dir,
-                        "ref-case": "Baseline",
-                        "ref-dir": base_dir,
-                        "var-set": _varset,
-                        "ninst": NINST,
-                        "critical": 0,
-                        "component": component,
-                        "alpha": 0.05,
-                        "hist-name": "hist.am.timeSeriesStatsClimatology",
-                    }
+            evv_config = {
+                test_name: {
+                    "module": os.path.join(evv_lib_dir, "extensions", "kso.py"),
+                    "test-case": "Test",
+                    "test-dir": run_dir,
+                    "ref-case": "Baseline",
+                    "ref-dir": base_dir,
+                    "var-set": _varset,
+                    "ninst": NINST,
+                    "critical": 0,
+                    "component": component,
+                    "alpha": 0.05,
+                    "hist-name": "hist.am.timeSeriesStatsClimatology",
                 }
-                out_name = f"{case_name}_{component}"
-                json_file = os.path.join(run_dir, ".".join([out_name, "json"]))
-                with open(json_file, "w", encoding="utf-8") as config_file:
-                    json.dump(evv_config, config_file, indent=4)
+            }
+            out_name = f"{case_name}_{component}"
+            json_file = os.path.join(run_dir, ".".join([out_name, "json"]))
+            with open(json_file, "w", encoding="utf-8") as config_file:
+                json.dump(evv_config, config_file, indent=4)
 
-                evv_out_dir = os.path.join(run_dir, ".".join([out_name, "evv"]))
-                evv(["-e", json_file, "-o", evv_out_dir])
-                evv_out_dirs[component] = evv_out_dir
+            evv_out_dir = os.path.join(run_dir, ".".join([out_name, "evv"]))
+            evv(["-e", json_file, "-o", evv_out_dir])
+            evv_out_dirs[component] = evv_out_dir
 
-                with open(
-                    os.path.join(evv_out_dir, "index.json"), encoding="utf-8"
-                ) as evv_f:
-                    evv_status = json.load(evv_f)
+            with open(
+                os.path.join(evv_out_dir, "index.json"), encoding="utf-8"
+            ) as evv_f:
+                evv_status = json.load(evv_f)
 
-                for evv_ele in evv_status["Page"]["elements"]:
-                    if "Table" in evv_ele:
-                        comments[component] = "; ".join(
-                            f"{key}: {val[0]}"
-                            for key, val in evv_ele["Table"]["data"].items()
-                        )
-                        if evv_ele["Table"]["data"]["Test status"][0].lower() == "pass":
-                            evv_pass[component] = True
-                        break
-
-            if evv_pass[self.ice_component] and evv_pass[self.ocn_component]:
-                self._test_status.set_status(
-                    CIME.test_status.BASELINE_PHASE,
-                    CIME.test_status.TEST_PASS_STATUS,
-                )
-
-            status = self._test_status.get_status(CIME.test_status.BASELINE_PHASE)
-            mach_name = self._case.get_value("MACH")
-            mach_obj = Machines(machine=mach_name)
-            htmlroot = CIME.utils.get_htmlroot(mach_obj)
-            urlroot = CIME.utils.get_urlroot(mach_obj)
-
-            for component, evv_out_dir in evv_out_dirs.items():
-                if htmlroot is not None:
-                    with CIME.utils.SharedArea():
-                        shutil.copytree(
-                            evv_out_dir,
-                            os.path.join(htmlroot, "evv", f"{case_name}_{component}"),
-                            copy_function=shutil.copy,
-                            dirs_exist_ok=True,
-                        )
-                    if urlroot is None:
-                        urlroot = f"[{mach_name.capitalize()}_URL]"
-                    viewing = f"{urlroot}/evv/{case_name}_{component}/index.html\n"
-                else:
-                    viewing = (
-                        f"{evv_out_dir}\n"
-                        "    EVV viewing instructions can be found at: "
-                        "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/"
-                        "climate_reproducibility/README.md#test-passfail-and-extended-output\n"
+            for evv_ele in evv_status["Page"]["elements"]:
+                if "Table" in evv_ele:
+                    comments[component] = "; ".join(
+                        f"{key}: {val[0]}"
+                        for key, val in evv_ele["Table"]["data"].items()
                     )
-                log_comments = (
-                    f"{CIME.test_status.BASELINE_PHASE} {status} for test '{test_name}': {component}.\n"
-                    f"    {comments[component]}\n"
-                    "    EVV results can be viewed at:\n"
-                    f"        {viewing}"
-                )
+                    if evv_ele["Table"]["data"]["Test status"][0].lower() == "pass":
+                        evv_pass[component] = True
+                    break
 
-                append_testlog(log_comments, self._orig_caseroot)
+        success = False
+        if evv_pass[self.ice_component] and evv_pass[self.ocn_component]:
+            success = True
+
+        status = "PASS" if success else "FAIL"
+        mach_name = self._case.get_value("MACH")
+        mach_obj = Machines(machine=mach_name)
+        htmlroot = CIME.utils.get_htmlroot(mach_obj)
+        urlroot = CIME.utils.get_urlroot(mach_obj)
+
+        log_comments = ""
+        for component, evv_out_dir in evv_out_dirs.items():
+            if htmlroot is not None:
+                with CIME.utils.SharedArea():
+                    shutil.copytree(
+                        evv_out_dir,
+                        os.path.join(htmlroot, "evv", f"{case_name}_{component}"),
+                        copy_function=shutil.copy,
+                        dirs_exist_ok=True,
+                    )
+                if urlroot is None:
+                    urlroot = f"[{mach_name.capitalize()}_URL]"
+                viewing = f"{urlroot}/evv/{case_name}_{component}/index.html\n"
+            else:
+                viewing = (
+                    f"{evv_out_dir}\n"
+                    "    EVV viewing instructions can be found at: "
+                    "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/"
+                    "climate_reproducibility/README.md#test-passfail-and-extended-output\n"
+                )
+            log_comments += (
+                f"{CIME.test_status.BASELINE_PHASE} {status} for test '{test_name}': {component}.\n"
+                f"    {comments[component]}\n"
+                "    EVV results can be viewed at:\n"
+                f"        {viewing}"
+            )
+
+    return success, "", log_comments
