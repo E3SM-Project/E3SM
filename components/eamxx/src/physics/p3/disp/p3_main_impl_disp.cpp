@@ -146,6 +146,15 @@ Int Functions<Real,DefaultDevice>
   auto cld_frac_i              = diagnostic_inputs.cld_frac_i;
   auto cld_frac_l              = diagnostic_inputs.cld_frac_l;
   auto cld_frac_r              = diagnostic_inputs.cld_frac_r;
+  auto sdm_warm_emulator_qc2qr_autoconv_tend = diagnostic_inputs.sdm_warm_emulator_qc2qr_autoconv_tend;
+  auto sdm_warm_emulator_qc2qr_accret_tend = diagnostic_inputs.sdm_warm_emulator_qc2qr_accret_tend;
+  auto sdm_warm_emulator_ncautr = diagnostic_inputs.sdm_warm_emulator_ncautr;
+  auto sdm_warm_emulator_nc2nr_autoconv_tend = diagnostic_inputs.sdm_warm_emulator_nc2nr_autoconv_tend;
+  auto sdm_warm_emulator_nc_accret_tend = diagnostic_inputs.sdm_warm_emulator_nc_accret_tend;
+  auto sdm_warm_emulator_nc_selfcollect_tend = diagnostic_inputs.sdm_warm_emulator_nc_selfcollect_tend;
+  auto sdm_warm_emulator_nr_selfcollect_tend = diagnostic_inputs.sdm_warm_emulator_nr_selfcollect_tend;
+  auto sdm_warm_emulator_use_cloud = diagnostic_inputs.sdm_warm_emulator_use_cloud;
+  auto sdm_warm_emulator_use_rain = diagnostic_inputs.sdm_warm_emulator_use_rain;
   auto col_location            = infrastructure.col_location;
   auto qc                      = prognostic_state.qc;
   auto nc                      = prognostic_state.nc;
@@ -281,7 +290,13 @@ Int Functions<Real,DefaultDevice>
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals,
       lookup_tables.revap_table_vals, pres, dpres, dz, nc_nuceat_tend, inv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i,
-      cld_frac_l, cld_frac_r, qv_prev, t_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      cld_frac_l, cld_frac_r, qv_prev, t_prev,
+      sdm_warm_emulator_qc2qr_autoconv_tend, sdm_warm_emulator_qc2qr_accret_tend,
+      sdm_warm_emulator_ncautr, sdm_warm_emulator_nc2nr_autoconv_tend,
+      sdm_warm_emulator_nc_accret_tend, sdm_warm_emulator_nc_selfcollect_tend,
+      sdm_warm_emulator_nr_selfcollect_tend, sdm_warm_emulator_use_cloud,
+      sdm_warm_emulator_use_rain,
+      T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
       qv, th, qc, nc, qr, nr, qi, ni, qm, bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,
       mu_r, lamr, logn0r, qv2qi_depos_tend, precip_total_tend, nevapr, qr_evap_tend,

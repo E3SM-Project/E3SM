@@ -457,6 +457,27 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
     diag_inputs.hetfrz_deposition_nucleation_tend = m_buffer.unused;
   }
 
+  if (runtime_options.use_sdm_warm_emulator) {
+    diag_inputs.sdm_warm_emulator_qc2qr_autoconv_tend =
+        get_internal_field("sdm_warm_emulator_qc2qr_autoconv_tend").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_qc2qr_accret_tend =
+        get_internal_field("sdm_warm_emulator_qc2qr_accret_tend").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_ncautr =
+        get_internal_field("sdm_warm_emulator_ncautr").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_nc2nr_autoconv_tend =
+        get_internal_field("sdm_warm_emulator_nc2nr_autoconv_tend").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_nc_accret_tend =
+        get_internal_field("sdm_warm_emulator_nc_accret_tend").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_nc_selfcollect_tend =
+        get_internal_field("sdm_warm_emulator_nc_selfcollect_tend").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_nr_selfcollect_tend =
+        get_internal_field("sdm_warm_emulator_nr_selfcollect_tend").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_use_cloud =
+        get_internal_field("sdm_warm_emulator_use_cloud").get_view<const Real**>();
+    diag_inputs.sdm_warm_emulator_use_rain =
+        get_internal_field("sdm_warm_emulator_use_rain").get_view<const Real**>();
+  }
+
   // --Diagnostic Outputs
   diag_outputs.diag_eff_radius_qc      = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi      = get_field_out("eff_radius_qi").get_view<Pack**>();

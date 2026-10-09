@@ -262,6 +262,17 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<const Pack> hetfrz_contact_nucleation_tend;
     // Heterogeneous freezing by deposition nucleation [cm^-3 s^-1]
     view_2d<const Pack> hetfrz_deposition_nucleation_tend;
+    // SDM warm emulator process tendencies and masks. These are scalar
+    // (col,lev) views because they are produced by Python NumPy arrays.
+    view_2d<const Scalar> sdm_warm_emulator_qc2qr_autoconv_tend;
+    view_2d<const Scalar> sdm_warm_emulator_qc2qr_accret_tend;
+    view_2d<const Scalar> sdm_warm_emulator_ncautr;
+    view_2d<const Scalar> sdm_warm_emulator_nc2nr_autoconv_tend;
+    view_2d<const Scalar> sdm_warm_emulator_nc_accret_tend;
+    view_2d<const Scalar> sdm_warm_emulator_nc_selfcollect_tend;
+    view_2d<const Scalar> sdm_warm_emulator_nr_selfcollect_tend;
+    view_2d<const Scalar> sdm_warm_emulator_use_cloud;
+    view_2d<const Scalar> sdm_warm_emulator_use_rain;
   };
 
   // This struct stores diagnostic outputs computed by P3.
@@ -1065,7 +1076,17 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<const Pack> &ni_activated, const uview_1d<const Pack> &inv_qc_relvar,
       const uview_1d<const Pack> &cld_frac_i, const uview_1d<const Pack> &cld_frac_l,
       const uview_1d<const Pack> &cld_frac_r, const uview_1d<const Pack> &qv_prev,
-      const uview_1d<const Pack> &t_prev, const uview_1d<Pack> &T_atm, const uview_1d<Pack> &rho,
+      const uview_1d<const Pack> &t_prev,
+      const uview_1d<const Scalar> &sdm_warm_emulator_qc2qr_autoconv_tend,
+      const uview_1d<const Scalar> &sdm_warm_emulator_qc2qr_accret_tend,
+      const uview_1d<const Scalar> &sdm_warm_emulator_ncautr,
+      const uview_1d<const Scalar> &sdm_warm_emulator_nc2nr_autoconv_tend,
+      const uview_1d<const Scalar> &sdm_warm_emulator_nc_accret_tend,
+      const uview_1d<const Scalar> &sdm_warm_emulator_nc_selfcollect_tend,
+      const uview_1d<const Scalar> &sdm_warm_emulator_nr_selfcollect_tend,
+      const uview_1d<const Scalar> &sdm_warm_emulator_use_cloud,
+      const uview_1d<const Scalar> &sdm_warm_emulator_use_rain,
+      const uview_1d<Pack> &T_atm, const uview_1d<Pack> &rho,
       const uview_1d<Pack> &inv_rho, const uview_1d<Pack> &qv_sat_l,
       const uview_1d<Pack> &qv_sat_i, const uview_1d<Pack> &qv_supersat_i,
       const uview_1d<Pack> &rhofacr, const uview_1d<Pack> &rhofaci, const uview_1d<Pack> &acn,
@@ -1108,7 +1129,17 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<const Pack> &ni_activated, const uview_2d<const Pack> &inv_qc_relvar,
       const uview_2d<const Pack> &cld_frac_i, const uview_2d<const Pack> &cld_frac_l,
       const uview_2d<const Pack> &cld_frac_r, const uview_2d<const Pack> &qv_prev,
-      const uview_2d<const Pack> &t_prev, const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
+      const uview_2d<const Pack> &t_prev,
+      const uview_2d<const Scalar> &sdm_warm_emulator_qc2qr_autoconv_tend,
+      const uview_2d<const Scalar> &sdm_warm_emulator_qc2qr_accret_tend,
+      const uview_2d<const Scalar> &sdm_warm_emulator_ncautr,
+      const uview_2d<const Scalar> &sdm_warm_emulator_nc2nr_autoconv_tend,
+      const uview_2d<const Scalar> &sdm_warm_emulator_nc_accret_tend,
+      const uview_2d<const Scalar> &sdm_warm_emulator_nc_selfcollect_tend,
+      const uview_2d<const Scalar> &sdm_warm_emulator_nr_selfcollect_tend,
+      const uview_2d<const Scalar> &sdm_warm_emulator_use_cloud,
+      const uview_2d<const Scalar> &sdm_warm_emulator_use_rain,
+      const uview_2d<Pack> &T_atm, const uview_2d<Pack> &rho,
       const uview_2d<Pack> &inv_rho, const uview_2d<Pack> &qv_sat_l,
       const uview_2d<Pack> &qv_sat_i, const uview_2d<Pack> &qv_supersat_i,
       const uview_2d<Pack> &rhofacr, const uview_2d<Pack> &rhofaci, const uview_2d<Pack> &acn,

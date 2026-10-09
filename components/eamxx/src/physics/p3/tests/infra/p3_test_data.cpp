@@ -1112,6 +1112,7 @@ void p3_main_part2_host(
   const auto collect_table_vals     = tables.collect_table_vals;
   const auto revap_table_vals = tables.revap_table_vals;
   bview_1d bools_d("bools", 1);
+  typename P3F::template uview_1d<const Real> unused_sdm_warm_emulator;
   auto policy = TPF::get_default_team_policy(1, nk_pack);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
 
@@ -1121,7 +1122,11 @@ void p3_main_part2_host(
       dnu, ice_table_vals, collect_table_vals, revap_table_vals,
       pres_d, dpres_d, dz_d, nc_nuceat_tend_d, inv_exner_d, exner_d, inv_cld_frac_l_d,
       inv_cld_frac_i_d, inv_cld_frac_r_d, ni_activated_d, inv_qc_relvar_d, cld_frac_i_d, cld_frac_l_d, cld_frac_r_d,
-      qv_prev_d, t_prev_d, t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
+      qv_prev_d, t_prev_d,
+      unused_sdm_warm_emulator, unused_sdm_warm_emulator, unused_sdm_warm_emulator,
+      unused_sdm_warm_emulator, unused_sdm_warm_emulator, unused_sdm_warm_emulator,
+      unused_sdm_warm_emulator, unused_sdm_warm_emulator, unused_sdm_warm_emulator,
+      t_d, rho_d, inv_rho_d, qv_sat_l_d, qv_sat_i_d, qv_supersat_i_d, rhofacr_d, rhofaci_d, acn_d,
       qv_d, th_atm_d, qc_d, nc_d, qr_d, nr_d, qi_d, ni_d, qm_d, bm_d,
       qc_incld_d, qr_incld_d, qi_incld_d,
       qm_incld_d, nc_incld_d, nr_incld_d, ni_incld_d, bm_incld_d,

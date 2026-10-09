@@ -49,6 +49,15 @@ void Functions<S,D>
   const uview_1d<const Pack>& cld_frac_r,
   const uview_1d<const Pack>& qv_prev,
   const uview_1d<const Pack>& t_prev,
+  const uview_1d<const Scalar>& sdm_warm_emulator_qc2qr_autoconv_tend,
+  const uview_1d<const Scalar>& sdm_warm_emulator_qc2qr_accret_tend,
+  const uview_1d<const Scalar>& sdm_warm_emulator_ncautr,
+  const uview_1d<const Scalar>& sdm_warm_emulator_nc2nr_autoconv_tend,
+  const uview_1d<const Scalar>& sdm_warm_emulator_nc_accret_tend,
+  const uview_1d<const Scalar>& sdm_warm_emulator_nc_selfcollect_tend,
+  const uview_1d<const Scalar>& sdm_warm_emulator_nr_selfcollect_tend,
+  const uview_1d<const Scalar>& sdm_warm_emulator_use_cloud,
+  const uview_1d<const Scalar>& sdm_warm_emulator_use_rain,
   const uview_1d<Pack>& T_atm,
   const uview_1d<Pack>& rho,
   const uview_1d<Pack>& inv_rho,
@@ -109,6 +118,16 @@ void Functions<S,D>
   bool& hydrometeorsPresent, const Int& nk,
   const P3Runtime& runtime_options)
 {
+  (void)sdm_warm_emulator_qc2qr_autoconv_tend;
+  (void)sdm_warm_emulator_qc2qr_accret_tend;
+  (void)sdm_warm_emulator_ncautr;
+  (void)sdm_warm_emulator_nc2nr_autoconv_tend;
+  (void)sdm_warm_emulator_nc_accret_tend;
+  (void)sdm_warm_emulator_nc_selfcollect_tend;
+  (void)sdm_warm_emulator_nr_selfcollect_tend;
+  (void)sdm_warm_emulator_use_cloud;
+  (void)sdm_warm_emulator_use_rain;
+
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
   constexpr Scalar T_zerodegc   = C::T_zerodegc.value;

@@ -220,6 +220,26 @@ Int Functions<S,D>
     const auto oqi_sed             = ekat::subview(history_only.qi_sed, i);
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
+    uview_1d<const Scalar> osdm_warm_emulator_qc2qr_autoconv_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_qc2qr_accret_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_ncautr;
+    uview_1d<const Scalar> osdm_warm_emulator_nc2nr_autoconv_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_nc_accret_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_nc_selfcollect_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_nr_selfcollect_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_use_cloud;
+    uview_1d<const Scalar> osdm_warm_emulator_use_rain;
+    if (runtime_options.use_sdm_warm_emulator) {
+      osdm_warm_emulator_qc2qr_autoconv_tend = ekat::subview(diagnostic_inputs.sdm_warm_emulator_qc2qr_autoconv_tend, i);
+      osdm_warm_emulator_qc2qr_accret_tend = ekat::subview(diagnostic_inputs.sdm_warm_emulator_qc2qr_accret_tend, i);
+      osdm_warm_emulator_ncautr = ekat::subview(diagnostic_inputs.sdm_warm_emulator_ncautr, i);
+      osdm_warm_emulator_nc2nr_autoconv_tend = ekat::subview(diagnostic_inputs.sdm_warm_emulator_nc2nr_autoconv_tend, i);
+      osdm_warm_emulator_nc_accret_tend = ekat::subview(diagnostic_inputs.sdm_warm_emulator_nc_accret_tend, i);
+      osdm_warm_emulator_nc_selfcollect_tend = ekat::subview(diagnostic_inputs.sdm_warm_emulator_nc_selfcollect_tend, i);
+      osdm_warm_emulator_nr_selfcollect_tend = ekat::subview(diagnostic_inputs.sdm_warm_emulator_nr_selfcollect_tend, i);
+      osdm_warm_emulator_use_cloud = ekat::subview(diagnostic_inputs.sdm_warm_emulator_use_cloud, i);
+      osdm_warm_emulator_use_rain = ekat::subview(diagnostic_inputs.sdm_warm_emulator_use_rain, i);
+    }
 
     // Inputs for the heteogeneous freezing
     const auto ohetfrz_immersion_nucleation_tend  = ekat::subview(diagnostic_inputs.hetfrz_immersion_nucleation_tend, i);
@@ -271,7 +291,13 @@ Int Functions<S,D>
       ohetfrz_immersion_nucleation_tend, ohetfrz_contact_nucleation_tend, ohetfrz_deposition_nucleation_tend,
       lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
-      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
+      ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev,
+      osdm_warm_emulator_qc2qr_autoconv_tend, osdm_warm_emulator_qc2qr_accret_tend,
+      osdm_warm_emulator_ncautr, osdm_warm_emulator_nc2nr_autoconv_tend,
+      osdm_warm_emulator_nc_accret_tend, osdm_warm_emulator_nc_selfcollect_tend,
+      osdm_warm_emulator_nr_selfcollect_tend, osdm_warm_emulator_use_cloud,
+      osdm_warm_emulator_use_rain,
+      T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm,
       qc_incld, qr_incld, qi_incld, qm_incld, nc_incld,
       nr_incld, ni_incld, bm_incld, mu_c, nu, lamc, cdist, cdist1, cdistr,

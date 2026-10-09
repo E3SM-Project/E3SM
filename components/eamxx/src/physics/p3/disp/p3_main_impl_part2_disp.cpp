@@ -47,6 +47,15 @@ void Functions<Real,DefaultDevice>
   const uview_2d<const Pack>& cld_frac_r,
   const uview_2d<const Pack>& qv_prev,
   const uview_2d<const Pack>& t_prev,
+  const uview_2d<const Scalar>& sdm_warm_emulator_qc2qr_autoconv_tend,
+  const uview_2d<const Scalar>& sdm_warm_emulator_qc2qr_accret_tend,
+  const uview_2d<const Scalar>& sdm_warm_emulator_ncautr,
+  const uview_2d<const Scalar>& sdm_warm_emulator_nc2nr_autoconv_tend,
+  const uview_2d<const Scalar>& sdm_warm_emulator_nc_accret_tend,
+  const uview_2d<const Scalar>& sdm_warm_emulator_nc_selfcollect_tend,
+  const uview_2d<const Scalar>& sdm_warm_emulator_nr_selfcollect_tend,
+  const uview_2d<const Scalar>& sdm_warm_emulator_use_cloud,
+  const uview_2d<const Scalar>& sdm_warm_emulator_use_rain,
   const uview_2d<Pack>& T_atm,
   const uview_2d<Pack>& rho,
   const uview_2d<Pack>& inv_rho,
@@ -127,6 +136,27 @@ void Functions<Real,DefaultDevice>
 
     // ------------------------------------------------------------------------------------------
     // main k-loop (for processes):
+    uview_1d<const Scalar> osdm_warm_emulator_qc2qr_autoconv_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_qc2qr_accret_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_ncautr;
+    uview_1d<const Scalar> osdm_warm_emulator_nc2nr_autoconv_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_nc_accret_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_nc_selfcollect_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_nr_selfcollect_tend;
+    uview_1d<const Scalar> osdm_warm_emulator_use_cloud;
+    uview_1d<const Scalar> osdm_warm_emulator_use_rain;
+    if (runtime_options.use_sdm_warm_emulator) {
+      osdm_warm_emulator_qc2qr_autoconv_tend = ekat::subview(sdm_warm_emulator_qc2qr_autoconv_tend, i);
+      osdm_warm_emulator_qc2qr_accret_tend = ekat::subview(sdm_warm_emulator_qc2qr_accret_tend, i);
+      osdm_warm_emulator_ncautr = ekat::subview(sdm_warm_emulator_ncautr, i);
+      osdm_warm_emulator_nc2nr_autoconv_tend = ekat::subview(sdm_warm_emulator_nc2nr_autoconv_tend, i);
+      osdm_warm_emulator_nc_accret_tend = ekat::subview(sdm_warm_emulator_nc_accret_tend, i);
+      osdm_warm_emulator_nc_selfcollect_tend = ekat::subview(sdm_warm_emulator_nc_selfcollect_tend, i);
+      osdm_warm_emulator_nr_selfcollect_tend = ekat::subview(sdm_warm_emulator_nr_selfcollect_tend, i);
+      osdm_warm_emulator_use_cloud = ekat::subview(sdm_warm_emulator_use_cloud, i);
+      osdm_warm_emulator_use_rain = ekat::subview(sdm_warm_emulator_use_rain, i);
+    }
+
     p3_main_part2(
       team, nk_pack, max_total_ni, predictNc, do_prescribed_CCN, dt, inv_dt,
       ekat::subview(hetfrz_immersion_nucleation_tend, i),
@@ -135,7 +165,13 @@ void Functions<Real,DefaultDevice>
       ekat::subview(pres, i), ekat::subview(dpres, i), ekat::subview(dz, i), ekat::subview(nc_nuceat_tend, i), ekat::subview(inv_exner, i),
       ekat::subview(exner, i), ekat::subview(inv_cld_frac_l, i), ekat::subview(inv_cld_frac_i, i), ekat::subview(inv_cld_frac_r, i),
       ekat::subview(ni_activated, i), ekat::subview(inv_qc_relvar, i), ekat::subview(cld_frac_i, i), ekat::subview(cld_frac_l, i),
-      ekat::subview(cld_frac_r, i), ekat::subview(qv_prev, i), ekat::subview(t_prev, i), ekat::subview(T_atm, i), ekat::subview(rho, i),
+      ekat::subview(cld_frac_r, i), ekat::subview(qv_prev, i), ekat::subview(t_prev, i),
+      osdm_warm_emulator_qc2qr_autoconv_tend, osdm_warm_emulator_qc2qr_accret_tend,
+      osdm_warm_emulator_ncautr, osdm_warm_emulator_nc2nr_autoconv_tend,
+      osdm_warm_emulator_nc_accret_tend, osdm_warm_emulator_nc_selfcollect_tend,
+      osdm_warm_emulator_nr_selfcollect_tend, osdm_warm_emulator_use_cloud,
+      osdm_warm_emulator_use_rain,
+      ekat::subview(T_atm, i), ekat::subview(rho, i),
       ekat::subview(inv_rho, i), ekat::subview(qv_sat_l, i), ekat::subview(qv_sat_i, i), ekat::subview(qv_supersat_i, i), ekat::subview(rhofacr, i),
       ekat::subview(rhofaci, i), ekat::subview(acn, i), ekat::subview(qv, i), ekat::subview(th_atm, i), ekat::subview(qc, i), ekat::subview(nc, i),
       ekat::subview(qr, i), ekat::subview(nr, i), ekat::subview(qi, i), ekat::subview(ni, i), ekat::subview(qm, i), ekat::subview(bm, i),
@@ -159,4 +195,3 @@ void Functions<Real,DefaultDevice>
 #endif
 } // namespace p3
 } // namespace scream
-

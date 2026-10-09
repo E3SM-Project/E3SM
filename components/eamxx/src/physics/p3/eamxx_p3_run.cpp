@@ -127,13 +127,13 @@ void P3Microphysics::run_sdm_warm_emulator ()
         const auto dpres_pack = dpres(icol,ipack);
         const auto dz_pack = dz(icol,ipack);
         const auto cld_frac_l_pack = cld_frac_l(icol,ipack);
-        const auto nccn_pack = nccn(icol,ipack);
 
         for (Int lane = 0; lane < Pack::n; ++lane) {
           const Int ilev = ipack*Pack::n + lane;
           if (ilev < nlev) {
             Real nc_in = nc_pack[lane];
             if (prescribed_ccn) {
+              const auto nccn_pack = nccn(icol,ipack);
               const Real nccn_scaled = nccn_pack[lane] * cld_frac_l_pack[lane];
               nc_in = Kokkos::max(nc_in,
                                    spa_ccn_to_nc_factor *
