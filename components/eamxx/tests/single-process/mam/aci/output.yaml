@@ -57,6 +57,7 @@ fields:
       - num_c4
       - eddy_diff_heat
       - nc_nuceat_tend
+@MAM4XX_NDROP_DIAGNOSTIC_FIELDS@
       - ni_activated
       
 output_control:
