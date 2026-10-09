@@ -682,6 +682,7 @@ module ColumnDataType
     real(r8), pointer :: f_co2_soil_vr                         (:,:)   => null() ! total vertically-resolved soil-atm. CO2 exchange (gC/m3/s)
     real(r8), pointer :: f_co2_soil                            (:)     => null() ! total soil-atm. CO2 exchange (gC/m2/s)
 
+    real(r8), pointer :: crop_seedc_to_leaf                    (:) => null()   !(gC/m2/s) seed source to leaf, for crops
   contains
     procedure, public :: Init       => col_cf_init
     procedure, public :: Restart    => col_cf_restart
@@ -6238,6 +6239,7 @@ contains
     allocate(this%landuseflux                       (begc:endc))                  ; this%landuseflux                  (:)   = spval
     allocate(this%landuptake                        (begc:endc))                  ; this%landuptake                   (:)   = spval
     allocate(this%prod1c_loss                       (begc:endc))                  ; this%prod1c_loss                  (:)   = spval
+    allocate(this%crop_seedc_to_leaf                (begc:endc))                  ; this%crop_seedc_to_leaf           (:)   = spval
     allocate(this%prod10c_loss                      (begc:endc))                  ; this%prod10c_loss                 (:)   = spval
     allocate(this%prod100c_loss                     (begc:endc))                  ; this%prod100c_loss                (:)   = spval
     allocate(this%product_closs                     (begc:endc))                  ; this%product_closs                (:)   = spval
@@ -6733,6 +6735,11 @@ contains
         call hist_addfld1d (fname='PROD1C_LOSS', units='gC/m^2/s', &
              avgflag='A', long_name='loss from 1-yr crop product pool', &
               ptr_col=this%prod1c_loss, default='inactive')
+
+       this%crop_seedc_to_leaf(begc:endc) = spval
+       call hist_addfld1d (fname='CROP_SEEDC_TO_LEAF_col', units='gC/m^2/s', &
+             avgflag='A', long_name='crop seed source to leaf', &
+              ptr_col=this%crop_seedc_to_leaf, default='inactive')
 
        this%dwt_frootc_to_litr_met_c(begc:endc,:) = spval
         call hist_addfld_decomp (fname='DWT_FROOTC_TO_LITR_MET_C', units='gC/m^2/s',  type2d='levdcmp', &
@@ -7746,23 +7753,35 @@ contains
         this%plant_to_cwd_cflux(c) = 0._r8
         do j = 1, nlev
             this%plant_to_litter_cflux(c) = &
-                this%plant_to_litter_cflux(c)  + &
-                this%phenology_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%phenology_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_met_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_cel_c(c,j)* dzsoi_decomp(j) + &
-                this%gap_mortality_c_to_litr_lig_c(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-                this%m_c_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-            this%plant_to_cwd_cflux(c) = &
-                this%plant_to_cwd_cflux(c) + &
-                this%gap_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j) + &
-                this%fire_mortality_c_to_cwdc(c,j)* dzsoi_decomp(j)
-        end do
-    end do
+                this%plant_to_litter_cflux(c)           +( &
+                this%phenology_c_to_litr_met_c(c,j)     +  &
+                this%phenology_c_to_litr_cel_c(c,j)     +  &
+                this%phenology_c_to_litr_lig_c(c,j)     +  &
+                this%gap_mortality_c_to_litr_met_c(c,j) +  &
+                this%gap_mortality_c_to_litr_cel_c(c,j) +  &
+                this%gap_mortality_c_to_litr_lig_c(c,j) +  &
+                this%m_c_to_litr_met_fire(c,j)          +  &
+                this%m_c_to_litr_cel_fire(c,j)          +  &
+                this%m_c_to_litr_lig_fire(c,j)          +  &
+                this%dwt_frootc_to_litr_met_c(c,j)      +  &
+                this%dwt_frootc_to_litr_cel_c(c,j)      +  &
+                this%dwt_frootc_to_litr_lig_c(c,j)      +  &
+                this%harvest_c_to_litr_met_c(c,j)       +  & 
+                this%harvest_c_to_litr_cel_c(c,j)       +  & 
+                this%harvest_c_to_litr_lig_c(c,j)          )*dzsoi_decomp(j)
 
+
+            this%plant_to_cwd_cflux(c) =               &
+                this%plant_to_cwd_cflux(c)          + (&
+                this%gap_mortality_c_to_cwdc(c,j)   +  &
+                this%fire_mortality_c_to_cwdc(c,j)  +  &
+                this%dwt_livecrootc_to_cwdc(c,j)    +  &     
+                this%dwt_deadcrootc_to_cwdc(c,j)    +  &
+                this%harvest_c_to_cwdc(c,j))* dzsoi_decomp(j)                  
+        
+        end do
+
+    end do
     end associate
 
   end subroutine col_cf_summary
@@ -8000,6 +8019,7 @@ contains
          this%somc_erode(i)                = value_column
          this%somc_deposit(i)              = value_column
          this%somc_yield(i)                = value_column
+         this%crop_seedc_to_leaf(i)        = value_column
       enddo 
     end if 
     

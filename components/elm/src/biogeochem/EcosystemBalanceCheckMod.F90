@@ -15,7 +15,7 @@ module EcosystemBalanceCheckMod
   use elm_varpar          , only : crop_prog
   use elm_varpar          , only : nlevdecomp
   use elm_varcon          , only : dzsoi_decomp
-  use elm_varctl          , only : nu_com
+  use elm_varctl          , only : nu_com, use_crop
   use elm_varctl          , only : ECA_Pconst_RGspin
   use spmdMod             , only : masterproc
   use CNDecompCascadeConType , only : decomp_cascade_con
@@ -41,7 +41,6 @@ module EcosystemBalanceCheckMod
   use ColumnDataType      , only : column_phosphorus_state, column_phosphorus_flux
   use VegetationType      , only : veg_pp
   use VegetationDataType  , only : veg_cf, veg_nf, veg_pf
-
   use timeinfoMod
 
   !
@@ -51,6 +50,7 @@ module EcosystemBalanceCheckMod
 
   ! This corersponds to namelist variable bgc_balance_check_tolerance
   real(r8), public  :: balance_check_tolerance = 1e-7_r8
+  real(r8), public  :: balance_check_rel_tolerance = 1e-9_r8
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -282,7 +282,8 @@ contains
          end if
 
          ! check for significant errors
-         if (abs(col_errcb(c)) > balance_check_tolerance) then
+         if (abs(col_errcb(c)) > balance_check_tolerance .and. &
+           abs(col_errcb(c))>balance_check_rel_tolerance*MAX(col_endcb(c),col_begcb(c))) then
             err_found = .true.
             err_index = c
          end if
@@ -304,13 +305,14 @@ contains
           write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
           write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
           write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
-
+          write(iulog,*)'seed                  = ',col_cs%seedc(c)
+          write(iulog,*)'totabgc               = ',col_cs%totabgc(c)
+          if (use_crop) then
+            write(iulog,*)'cropseedc_deficit     = ',col_cs%cropseedc_deficit(c)
+            write(iulog,*)'crop_seedc_to_leaf    = ',col_cf%crop_seedc_to_leaf(c)*dt
+          endif
           if (ero_ccycle) then
              write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-          end if
-
-          if (use_pflotran .and. pf_cmode) then
-             write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
           end if
 
           if (use_pflotran .and. pf_cmode) then

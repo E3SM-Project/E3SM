@@ -1647,13 +1647,15 @@ contains
                   harvdate(p)    = NOT_Harvested
                   harvday(p)     = NOT_Harvested
                   gddmaturity(p) = hybgdd(ivt(p))
+                  ! charge the seed deficit only for the seed actually added, in case
+                  ! the leaf transfer pools are not empty at planting
+                  crop_seedc_to_leaf(p) = (1._r8 - leafc_xfer(p))/dt
+                  crop_seedn_to_leaf(p) = (1._r8/leafcn(ivt(p)) - leafn_xfer(p))/dt
+                  crop_seedp_to_leaf(p) = (1._r8/leafcp(ivt(p)) - leafp_xfer(p))/dt
+
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p)  = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
-                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
-
                   leafp_xfer(p)  = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
 
                   ! latest possible date to plant winter cereal and after all other
                   ! crops were harvested for that year
@@ -1681,13 +1683,15 @@ contains
                   harvday(p)     = NOT_Harvested
                   harvdate(p)    = NOT_Harvested
                   gddmaturity(p) = hybgdd(ivt(p))
+                  ! charge the seed deficit only for the seed actually added, in case
+                  ! the leaf transfer pools are not empty at planting
+                  crop_seedc_to_leaf(p) = (1._r8 - leafc_xfer(p))/dt
+                  crop_seedn_to_leaf(p) = (1._r8/leafcn(ivt(p)) - leafn_xfer(p))/dt
+                  crop_seedp_to_leaf(p) = (1._r8/leafcp(ivt(p)) - leafp_xfer(p))/dt
+
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p)  = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
-                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
-
                   leafp_xfer(p)  = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
                else
                   gddmaturity(p) = 0._r8
                end if
@@ -1751,13 +1755,15 @@ contains
                      end if
                      if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
 
+                     ! charge the seed deficit only for the seed actually added, in case
+                     ! the leaf transfer pools are not empty at planting
+                     crop_seedc_to_leaf(p) = (1._r8 - leafc_xfer(p))/dt
+                     crop_seedn_to_leaf(p) = (1._r8/leafcn(ivt(p)) - leafn_xfer(p))/dt
+                     crop_seedp_to_leaf(p) = (1._r8/leafcp(ivt(p)) - leafp_xfer(p))/dt
+
                      leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                      leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                     crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
-                     crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
-
                      leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                     crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
                   end if
                      ! If hit the next month (outside planting month) -- go ahead and plant
                else if (kmo .eq. (plantmonth(p) + 1) .and. gdd820(p) > 0._r8 .and. &
@@ -1775,13 +1781,15 @@ contains
                   end if
                   if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
 
+                  ! charge the seed deficit only for the seed actually added, in case
+                  ! the leaf transfer pools are not empty at planting
+                  crop_seedc_to_leaf(p) = (1._r8 - leafc_xfer(p))/dt
+                  crop_seedn_to_leaf(p) = (1._r8/leafcn(ivt(p)) - leafn_xfer(p))/dt
+                  crop_seedp_to_leaf(p) = (1._r8/leafcp(ivt(p)) - leafp_xfer(p))/dt
+
                   leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                   leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
-                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
-
                   leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
                else
                   gddmaturity(p) = 0._r8
                end if
@@ -2115,13 +2123,15 @@ contains
                harvdate(p) = NOT_Harvested
                harvday(p) = NOT_Harvested
 
+               ! charge the seed deficit only for the seed actually added, in case
+               ! the leaf transfer pools are not empty at planting
+               crop_seedc_to_leaf(p) = (1._r8 - leafc_xfer(p))/dt
+               crop_seedn_to_leaf(p) = (1._r8/leafcn(ivt(p)) - leafn_xfer(p))/dt
+               crop_seedp_to_leaf(p) = (1._r8/leafcp(ivt(p)) - leafp_xfer(p))/dt
+
                leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
                leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p))
                leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p))
-
-               crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
-               crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
-               crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
             end if
          end if     ! crop not live
 
