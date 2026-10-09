@@ -1,8 +1,8 @@
-#ifndef SCREAM_WATER_TRACERS_HPP
-#define SCREAM_WATER_TRACERS_HPP
+#ifndef EAMXX_WATER_TRACERS_HPP
+#define EAMXX_WATER_TRACERS_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
-#include "ekat/ekat_parameter_list.hpp"
+#include <ekat_parameter_list.hpp>
 
 #include <string>
 
@@ -57,4 +57,4 @@ protected:
 
 } // namespace scream
 
-#endif // SCREAM_WATER_TRACERS_HPP
+#endif // EAMXX_WATER_TRACERS_HPP
