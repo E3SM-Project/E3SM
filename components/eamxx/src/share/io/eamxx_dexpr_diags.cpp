@@ -275,6 +275,11 @@ const dexpr::FunctionRegistry& eamxx_registry ()
            .min_positional = 1, .max_positional = 1,
            .keywords = {{"weights",false}},
            .example = "T_mid.sum('lev',weights='dz')"});
+    r.add({.name = "broadcast_like",
+           .desc = "value repeated along the dims of another field that it lacks",
+           .min_positional = 1, .max_positional = 1,
+           .keywords = {},
+           .example = "dp.broadcast_like(T_mid)"});
     r.add({.name = "where",
            .desc = "keep values where a condition holds",
            .min_positional = 1, .max_positional = 1,
@@ -401,6 +406,13 @@ void translate_call (const Call& call, const ast::Expression& self,
     if (weights!=nullptr) {
       params.set<std::string>("weighting_method",string_arg(*weights,"'weights'"));
     }
+    return;
+  }
+
+  if (call.name=="broadcast_like") {
+    // The target is only used for its layout. Like the receiver, it goes down by name.
+    diag_name = "FieldBroadcast";
+    params.set<std::string>("target_name",name_of(*call.positional[0]));
     return;
   }
 

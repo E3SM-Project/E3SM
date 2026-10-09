@@ -168,35 +168,7 @@ void ConditionalSampling::initialize_impl()
   // broadcasting m_lev_mask
   if (m_lhs_is_lev and not m_diag_is_mask) {
     auto mask = m_diagnostic_output.get_valid_mask();
-    const auto& dims = mask.get_header().get_identifier().get_layout().dims();
-    auto lev_mask_v = m_lev_mask.get_view<const int*>();
-    switch (mask.rank()) {
-      case 1:
-        mask.deep_copy(m_lev_mask);
-        break;
-      case 2:
-        {
-          auto mask_v = mask.get_view<int**>();
-          auto set_idx = KOKKOS_LAMBDA(int i, int k) {
-            mask_v(i,k) = lev_mask_v(k);
-          };
-          MDRange<2> p({0,0},{dims[0],dims[1]});
-          Kokkos::parallel_for(p,set_idx);
-        } break;
-      case 3:
-        {
-          auto mask_v = mask.get_view<int***>();
-          auto set_idx = KOKKOS_LAMBDA(int i, int j, int k) {
-            mask_v(i,j,k) = lev_mask_v(k);
-          };
-          MDRange<3> p({0,0,0},{dims[0],dims[1],dims[2]});
-          Kokkos::parallel_for(p,set_idx);
-        } break;
-      default:
-        EKAT_ERROR_MSG ("Error! Unsupported rank  in ConditionalSampling initialization.\n"
-            " - diag name: " + m_diag_name + "\n"
-            " - diag rank: " + std::to_string(mask.rank()) + "\n");
-    }
+    mask.deep_copy(m_lev_mask.broadcast_like(mask));
   }
 }
 
