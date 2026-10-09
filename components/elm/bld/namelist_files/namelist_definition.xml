@@ -2050,6 +2050,21 @@ and pct_nat_pft read from the surface dataset.
 Specifies the method for decomposing CLM grids across processors.
 </entry>
 
+<entry id="restart_file_type" type="char*16" category="elm_restart"
+       group="elm_inparm" valid_values="default,compact" >
+Layout of column- and pft-level data in the restart (*.elm.r.*) and history
+restart (*.elm.rh*) files.
+default: write data for all columns and pfts.
+compact: write data only for the columns and pfts that have been active
+since the model state was last read from a default-layout file (finidat, or
+a default restart file), which is recorded in the compact file as its base
+file. When a compact file is read, the other columns and pfts are read from
+the base file, so the base file must be kept as long as the compact files
+that use it. Subgrid weights, active flags and surface albedo variables are
+still written for all columns and pfts. The layout is recorded in each file,
+so either kind of file can be read regardless of this setting.
+</entry>
+
 <!-- ========================================================================================  -->
 <!-- Namelist options related to within-gridcell hillslope hydrologic connectivity                                     -->
 <!-- ========================================================================================  -->

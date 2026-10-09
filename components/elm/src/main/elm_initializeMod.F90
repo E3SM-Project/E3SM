@@ -513,6 +513,7 @@ contains
     use histFileMod           , only : hist_addfld1d, hist_addfld2d, no_snow_normal
     use restFileMod           , only : restFile_getfile, restFile_open, restFile_close
     use restFileMod           , only : restFile_read, restFile_write
+    use restCompactMod        , only : restCompact_update_ever_active
     use accumulMod            , only : print_accum_fields
     use ndepStreamMod         , only : ndep_init, ndep_interp
     use EcosystemDynMod     , only : EcosystemDynInit
@@ -928,6 +929,11 @@ contains
     if(use_betr)then
       call ep_betr%set_active(bounds_proc, col_pp)
     endif
+
+    ! Track the points that have been active, which compact restart files hold
+    ! (here for cold start; restFile_read also does this)
+    call restCompact_update_ever_active(bounds_proc)
+
     ! ------------------------------------------------------------------------
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------

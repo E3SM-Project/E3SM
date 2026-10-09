@@ -16,13 +16,14 @@ module VegetationDataType
   use elm_varpar      , only : nlevdecomp, nlevdecomp_full
   use elm_varcon      , only : spval, ispval, sb
   use elm_varcon      , only : c13ratio, c14ratio
+  use elm_varcon      , only : namep_compact
   use landunit_varcon , only : istsoil, istcrop
   use pftvarcon       , only : iscft, noveg, nstor
   use elm_varctl      , only : iulog, use_cn, spinup_state, spinup_mortality_factor, use_fates
   use elm_varctl      , only : nu_com, use_crop, use_c13
   use elm_varctl      , only : use_lch4, use_betr
   use histFileMod     , only : hist_addfld1d, hist_addfld2d, no_snow_normal
-  use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen
+  use ncdio_pio       , only : file_desc_t, ncd_io, ncd_double, ncd_int, ncd_inqvdlen, ncd_inqvdname
   use decompMod       , only : bounds_type, get_proc_global
   use subgridAveMod   , only : p2c, p2c_1d_filter
   use restUtilMod
@@ -5612,6 +5613,7 @@ module VegetationDataType
     ! !LOCAL VARIABLES:
     logical :: readvar      ! determine if variable is on initial file
     integer :: dimlen       ! dimension length
+    character(len=32) :: dimname ! dimension name
     integer :: nump_global  ! total number of pfts, globally
     integer :: err_code     ! error code
     logical :: do_io
@@ -5627,7 +5629,9 @@ module VegetationDataType
        ! it (instead give it a default value). This is needed to support older initial
        ! conditions for which this variable had a different size.
        call ncd_inqvdlen(ncid, 'n_irrig_steps_left', 1, dimlen, err_code)
-       if (dimlen /= nump_global) then
+       call ncd_inqvdname(ncid, 'n_irrig_steps_left', 1, dimname, err_code)
+       ! In compact restart files the size is checked when the compact map is built
+       if (dimlen /= nump_global .and. trim(dimname) /= trim(namep_compact)) then
           do_io = .false.
        end if
     end if
@@ -5648,7 +5652,9 @@ module VegetationDataType
        ! it (instead give it a default value). This is needed to support older initial
        ! conditions for which this variable had a different size.
        call ncd_inqvdlen(ncid, 'irrig_rate', 1, dimlen, err_code)
-       if (dimlen /= nump_global) then
+       call ncd_inqvdname(ncid, 'irrig_rate', 1, dimname, err_code)
+       ! In compact restart files the size is checked when the compact map is built
+       if (dimlen /= nump_global .and. trim(dimname) /= trim(namep_compact)) then
           do_io = .false.
        end if
     end if

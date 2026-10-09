@@ -13,7 +13,7 @@ module subgridRestMod
   use elm_varcon         , only : nameg, namet, namel, namec, namep
   use elm_varpar         , only : nlevsno
   use pio                , only : file_desc_t
-  use ncdio_pio          , only : ncd_int, ncd_double
+  use ncdio_pio          , only : ncd_int, ncd_double, ncd_compact_suspend
   use GetGlobalValuesMod , only : GetGlobalIndexArray
   use GridcellType       , only : grc_pp                
   use TopounitType       , only : top_pp
@@ -60,9 +60,16 @@ contains
     character(len=32) :: subname='SubgridRest' ! subroutine name
     !------------------------------------------------------------------------
 
+    ! In compact restart files, the subgrid metadata and weights are still
+    ! written for all columns and pfts: the weights of inactive points are
+    ! needed when they become active, and the active flags define the compact
+    ! layout
+
     if (flag /= 'read') then
        call t_startf('subgridRest_write')
+       call ncd_compact_suspend(.true.)
        call subgridRest_write_only(bounds, ncid, flag)
+       call ncd_compact_suspend(.false.)
        call t_stopf('subgridRest_write')
     end if
 
@@ -474,6 +481,8 @@ contains
        call save_old_weights(bounds)
     end if
 
+    call ncd_compact_suspend(.true.)
+
     call restartvar(ncid=ncid, flag=flag, varname='land1d_wtxy', xtype=ncd_double, &
          dim1name='landunit',                                                      &
          long_name='landunit weight relative to corresponding gridcell',           &
@@ -533,6 +542,9 @@ contains
          dim1name='pft',                                                            &
          long_name='pft weight relative to corresponding topounit',              &
          interpinic_flag='skip', readvar=readvar, data=veg_pp%wttopounit)
+
+    call ncd_compact_suspend(.false.)
+
     ! Snow column variables
 
     call restartvar(ncid=ncid, flag=flag, varname='SNLSNO', xtype=ncd_int,  & 

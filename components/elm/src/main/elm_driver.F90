@@ -31,6 +31,7 @@ module elm_driver
   use abortutils             , only : endrun
   !
   use dynSubgridDriverMod    , only : dynSubgrid_driver
+  use restCompactMod         , only : restCompact_update_ever_active
   use BalanceCheckMod        , only : BeginColWaterBalance, ColWaterBalanceCheck
   use BalanceCheckMod        , only : BeginGridWaterBalance, GridBalanceCheck
   !
@@ -476,6 +477,9 @@ contains
        col_cs, c13_col_cs, c14_col_cs, col_cf,  &
        grc_cs, grc_cf , glc2lnd_vars,  crop_vars, iac2lnd_vars)
     call t_stopf('dyn_subgrid')
+
+    ! Track the points that have been active, which compact restart files hold
+    call restCompact_update_ever_active(bounds_proc)
 
     if (use_cn  .or. use_fates) then
        nstep = get_nstep()

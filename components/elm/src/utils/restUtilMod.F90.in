@@ -232,11 +232,19 @@ contains
 
     else if (flag == 'read' .or. flag == 'write') then
 
-#if ({ITYPE}!=TYPETEXT) 
+#if ({ITYPE}!=TYPETEXT)
        if (.not. present(dim1name)) then
           call ncd_io(varname=trim(varname), data=data, &
                ncid=ncid, flag=flag, readvar=readvar)
-       else 
+       else
+          if (flag == 'read') then
+             ! For a compact restart file, first read the base file, which
+             ! provides the values of the points not on the compact file
+             if (ncd_compact_overlay(ncid, varname)) then
+                call ncd_io(varname=trim(varname), data=data, &
+                     dim1name=trim(dim1name), ncid=ncd_compact_base_file, flag=flag, readvar=readvar)
+             end if
+          end if
           call ncd_io(varname=trim(varname), data=data, &
             dim1name=trim(dim1name), ncid=ncid, flag=flag, readvar=readvar)
        end if
@@ -354,7 +362,24 @@ contains
           end if
        end if
 
-    else 
+    else
+
+       if (flag == 'read') then
+          ! For a compact restart file, first read the base file, which
+          ! provides the values of the points not on the compact file
+          if (ncd_compact_overlay(ncid, varname)) then
+             if (present(lowerb2) .and. present(upperb2)) then
+                call ncd_io(varname=trim(varname), data=data, &
+                     dim1name=trim(dim1name), switchdim=switchdim, &
+                     lowerb2=lowerb2, upperb2=upperb2, &
+                     ncid=ncd_compact_base_file, flag=flag, readvar=readvar)
+             else
+                call ncd_io(varname=trim(varname), data=data, &
+                     dim1name=trim(dim1name), switchdim=switchdim, &
+                     ncid=ncd_compact_base_file, flag=flag, readvar=readvar)
+             end if
+          end if
+       end if
 
        if (present(lowerb2) .and. present(upperb2)) then
           call ncd_io(varname=trim(varname), data=data, &

@@ -18,15 +18,19 @@ module ncdio_pio
   use spmdMod        , only : masterproc, mpicom, iam, npes
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
   use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
+  use elm_varcon     , only : namec_compact, namep_compact
   use elm_varcon     , only : spval,ispval
   use elm_varctl     , only : single_column, scm_multcols, scm_nx, scm_ny, iulog
   use shr_sys_mod    , only : shr_sys_flush
   use decompMod      , only : get_elmlevel_gsize,get_elmlevel_gsmap
+  use decompMod      , only : col_compact_gindex, pft_compact_gindex
+  use decompMod      , only : numc_compact, nump_compact, compact_map_epoch
   use perf_mod       , only : t_startf, t_stopf
   use fileutils      , only : getavu, relavu
   use mct_mod        , only : mct_gsMap, mct_gsMap_lsize, mct_gsMap_gsize, mct_gsMap_orderedPoints
   use pio            , only : file_desc_t, io_desc_t, iosystem_desc_t, pio_64bit_offset
   use pio            , only : pio_bcast_error, pio_char, pio_clobber, pio_closefile, pio_createfile, pio_def_dim
+  use pio            , only : pio_freedecomp
   use pio            , only : pio_def_var, pio_double, pio_enddef, pio_get_att, pio_get_var, pio_global, pio_initdecomp
   use pio            , only : pio_inq_att, pio_inq_dimid, pio_inq_dimlen, pio_inq_dimname, pio_inq_vardimid, pio_inq_varid
   use pio            , only : pio_inq_varname, pio_inq_varndims, pio_inquire, pio_int, pio_internal_error
@@ -64,6 +68,12 @@ module ncdio_pio
   public :: ncd_inqvdlen       ! inquire variable dimension size
   public :: ncd_inqvdname      ! inquire variable dimension name
   public :: ncd_io             ! write local data
+  public :: ncd_set_compact     ! define column/pft variables of a file on the compact dimensions
+  public :: ncd_compact_suspend ! temporarily define column/pft variables on the full dimensions
+  public :: ncd_is_compact_file ! true if file is being defined in compact mode
+  public :: ncd_compact_base_set   ! read column/pft variables of a compact file over those of a base file
+  public :: ncd_compact_base_clear ! stop reading from the base file
+  public :: ncd_compact_overlay    ! true if a variable is to be read from the base file first
 
   integer,parameter,public :: ncd_int       = pio_int
   integer,parameter,public :: ncd_log       =-pio_int
@@ -152,10 +162,26 @@ module ncdio_pio
      integer           :: ndims
      integer           :: dims(5)
      integer           :: dimids(5) 
+     integer           :: epoch = 0   ! compact map epoch this iodesc was built for; 0 => full map
   end type iodesc_plus_type
-  integer,parameter      ,private :: max_iodesc = 100
+  ! Reading a compact restart file over its base file needs io descriptors
+  ! for both the full and the compact dimensions
+  integer,parameter      ,private :: max_iodesc = 200
   integer                ,private :: num_iodesc = 0
   type(iodesc_plus_type) ,private, target :: iodesc_list(max_iodesc)
+
+  ! Files whose column/pft variables are defined on the compact dimensions
+  ! (namec_compact, namep_compact) instead of the full ones.
+  integer,parameter      ,private :: max_compact_files = 16
+  integer                ,private :: compact_fh(max_compact_files) = -1
+  logical                ,private :: compact_suspended = .false.
+
+  ! Base file of the compact restart file being read: column/pft variables on
+  ! the compact dimensions are first read from the base file (on the full
+  ! dimensions), so that points not on the compact file get their base values.
+  ! The file is opened and closed by restCompactMod.
+  type(file_desc_t)      ,public, target :: ncd_compact_base_file
+  integer                ,private :: compact_base_for = -1  ! file handle of the compact file being read; -1 => none
   !-----------------------------------------------------------------------
 
 contains
@@ -211,6 +237,7 @@ contains
     class(file_desc_t), intent(inout) :: file   ! PIO file handle to close
     !-----------------------------------------------------------------------
 
+    call ncd_set_compact(file, .false.)
     call pio_closefile(file)
 
   end subroutine ncd_pio_closefile
@@ -920,6 +947,164 @@ contains
   end subroutine ncd_defdim
 
   !-----------------------------------------------------------------------
+  subroutine ncd_set_compact(ncid, compact)
+    !
+    ! !DESCRIPTION:
+    ! Register (compact=.true.) or unregister a file whose column and pft
+    ! variables are to be defined on the compact dimensions. The compact
+    ! dimensions must already be defined on the file.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(in) :: ncid     ! PIO file handle
+    logical           , intent(in) :: compact  ! register or unregister
+    !
+    ! !LOCAL VARIABLES:
+    integer :: n
+    character(len=*),parameter :: subname='ncd_set_compact' ! subroutine name
+    !-----------------------------------------------------------------------
+
+    do n = 1, max_compact_files
+       if (compact_fh(n) == ncid%fh) compact_fh(n) = -1
+    end do
+    if (compact) then
+       do n = 1, max_compact_files
+          if (compact_fh(n) == -1) then
+             compact_fh(n) = ncid%fh
+             return
+          end if
+       end do
+       write(iulog,*) subname//' ERROR: too many compact files open ', max_compact_files
+       call shr_sys_abort(errMsg(__FILE__, __LINE__))
+    end if
+
+  end subroutine ncd_set_compact
+
+  !-----------------------------------------------------------------------
+  subroutine ncd_compact_suspend(suspend)
+    !
+    ! !DESCRIPTION:
+    ! While suspended, column and pft variables are defined on the full
+    ! dimensions even in compact files. Used for subgrid weights and
+    ! metadata, which are needed for all columns and pfts.
+    !
+    ! !ARGUMENTS:
+    logical, intent(in) :: suspend
+    !-----------------------------------------------------------------------
+
+    compact_suspended = suspend
+
+  end subroutine ncd_compact_suspend
+
+  !-----------------------------------------------------------------------
+  logical function ncd_is_compact_file(ncid)
+    !
+    ! !DESCRIPTION:
+    ! True if the file was registered with ncd_set_compact.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(in) :: ncid     ! PIO file handle
+    !-----------------------------------------------------------------------
+
+    ncd_is_compact_file = any(compact_fh(:) == ncid%fh)
+
+  end function ncd_is_compact_file
+
+  !-----------------------------------------------------------------------
+  subroutine ncd_compact_base_set(ncid)
+    !
+    ! !DESCRIPTION:
+    ! Make ncd_compact_base_file (already open) the base file of the compact
+    ! restart file ncid, which is being read.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(in) :: ncid     ! compact restart file
+    !-----------------------------------------------------------------------
+
+    compact_base_for = ncid%fh
+
+  end subroutine ncd_compact_base_set
+
+  !-----------------------------------------------------------------------
+  subroutine ncd_compact_base_clear()
+    !
+    ! !DESCRIPTION:
+    ! Stop reading from the base file. Does not close it.
+    !-----------------------------------------------------------------------
+
+    compact_base_for = -1
+
+  end subroutine ncd_compact_base_clear
+
+  !-----------------------------------------------------------------------
+  logical function ncd_compact_overlay(ncid, varname)
+    !
+    ! !DESCRIPTION:
+    ! True if variable varname of the file ncid is to be read from the base
+    ! file first: ncid is a compact restart file with a base file, varname is
+    ! on a compact dimension of ncid, and varname is on the base file.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(inout) :: ncid     ! file being read
+    character(len=*)  , intent(in)    :: varname  ! variable name
+    !
+    ! !LOCAL VARIABLES:
+    type(var_desc_t)  :: vardesc
+    integer           :: ndims, n
+    integer           :: dimids(5)
+    integer           :: status
+    character(len=64) :: dimname
+    !-----------------------------------------------------------------------
+
+    ncd_compact_overlay = .false.
+    if (compact_base_for == -1 .or. ncid%fh /= compact_base_for) return
+
+    call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+    status = PIO_inq_varid(ncid, trim(varname), vardesc)
+    call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+    if (status /= PIO_noerr) return
+
+    status = PIO_inq_varndims(ncid, vardesc, ndims)
+    if (ndims < 1 .or. ndims > size(dimids)) return
+    status = PIO_inq_vardimid(ncid, vardesc, dimids(1:ndims))
+    do n = 1, ndims
+       status = PIO_inq_dimname(ncid, dimids(n), dimname)
+       if (trim(dimname) == trim(namec_compact) .or. trim(dimname) == trim(namep_compact)) then
+          call pio_seterrorhandling(ncd_compact_base_file, PIO_BCAST_ERROR)
+          status = PIO_inq_varid(ncd_compact_base_file, trim(varname), vardesc)
+          call pio_seterrorhandling(ncd_compact_base_file, PIO_INTERNAL_ERROR)
+          ncd_compact_overlay = (status == PIO_noerr)
+          return
+       end if
+    end do
+
+  end function ncd_compact_overlay
+
+  !-----------------------------------------------------------------------
+  function compact_dimname(ncid, dimname) result(name)
+    !
+    ! !DESCRIPTION:
+    ! Name of the file dimension to use when defining a variable with
+    ! dimension dimname: the compact dimension for column and pft variables
+    ! in compact files, otherwise dimname itself.
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(in) :: ncid     ! PIO file handle
+    character(len=*)  , intent(in) :: dimname  ! requested dimension name
+    character(len=max_string_len)  :: name     ! function result
+    !-----------------------------------------------------------------------
+
+    name = dimname
+    if (compact_suspended) return
+    if (.not. ncd_is_compact_file(ncid)) return
+    if (trim(dimname) == trim(namec)) then
+       name = namec_compact
+    else if (trim(dimname) == trim(namep)) then
+       name = namep_compact
+    end if
+
+  end function compact_dimname
+
+  !-----------------------------------------------------------------------
   subroutine ncd_defvar_bynf(ncid, varname, xtype, ndims, dimid, varid, &
        long_name, standard_name, units, cell_method, missing_value, fill_value, &
        imissing_value, ifill_value, comment, flag_meanings, &
@@ -1117,11 +1302,11 @@ contains
 
     ! Determine dimension ids for variable
 
-    if (present(dim1name)) call ncd_inqdid(ncid, dim1name, dimid(1))
-    if (present(dim2name)) call ncd_inqdid(ncid, dim2name, dimid(2))
-    if (present(dim3name)) call ncd_inqdid(ncid, dim3name, dimid(3))
-    if (present(dim4name)) call ncd_inqdid(ncid, dim4name, dimid(4))
-    if (present(dim5name)) call ncd_inqdid(ncid, dim5name, dimid(5))
+    if (present(dim1name)) call ncd_inqdid(ncid, compact_dimname(ncid, dim1name), dimid(1))
+    if (present(dim2name)) call ncd_inqdid(ncid, compact_dimname(ncid, dim2name), dimid(2))
+    if (present(dim3name)) call ncd_inqdid(ncid, compact_dimname(ncid, dim3name), dimid(3))
+    if (present(dim4name)) call ncd_inqdid(ncid, compact_dimname(ncid, dim4name), dimid(4))
+    if (present(dim5name)) call ncd_inqdid(ncid, compact_dimname(ncid, dim5name), dimid(5))
 
     ! Permute dim1 and dim2 if necessary
 
@@ -1647,7 +1832,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 call pio_setframe(ncid,vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
 #if ({ITYPE}==TYPELOGICAL)
-             allocate(idata(size(data))) 
+             allocate(idata(size(data)))
+             ! Points that are holes in a compact decomposition are not read;
+             ! start from data so that they are left unchanged
+             idata = merge(1, 0, data)
              call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, idata, status)
              data = (idata == 1)
              if ( any(idata /= 0 .and. idata /= 1) )then
@@ -1895,6 +2083,13 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
              end if
              if (present(switchdim)) then
+                ! Points that are holes in a compact decomposition are not
+                ! read; start from data so that they are left unchanged
+                do j = lb2,ub2
+                do i = lb1,ub1
+                   temp(j,i) = data(i,j)
+                end do
+                end do
                 call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, temp, status)
                 do j = lb2,ub2
                 do i = lb1,ub1
@@ -2695,6 +2890,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer   :: vsize1, vsize2                ! other dimensions
     integer   :: status                        ! error status
     logical   :: found                         ! true => found created iodescriptor
+    logical   :: compact                       ! true => variable is on a compact dimension
+    logical   :: reuse                         ! true => rebuild a stale compact iodesc in place
+    integer   :: epoch                         ! compact map epoch (0 for full map)
+    integer   :: base                          ! file index of a local point; 0 => hole
     integer   :: ndims_file                    ! temporary
     character(len=64) dimname_file           ! dimension name on file
     character(len=64) dimname_iodesc         ! dimension name from io descriptor
@@ -2704,10 +2903,38 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     character(len=32) :: subname = 'ncd_getiodesc'
     !------------------------------------------------------------------------
 
+    ! Variables on a compact dimension are mapped only for columns/pfts
+    ! written to compact files; the other local points are holes
+
+    compact = .false.
+    do m = 1,ndims
+       status = PIO_inq_dimname(ncid,dimids(m),dimname_file)
+       if (trim(dimname_file) == trim(namec_compact) .or. &
+           trim(dimname_file) == trim(namep_compact)) then
+          compact = .true.
+          if ((trim(dimname_file) == trim(namec_compact) .and. trim(elmlevel) /= trim(namec)) .or. &
+              (trim(dimname_file) == trim(namep_compact) .and. trim(elmlevel) /= trim(namep))) then
+             write(iulog,*) trim(subname),' ERROR: file dimension ',trim(dimname_file), &
+                  ' does not match elmlevel ',trim(elmlevel)
+             call shr_sys_abort(errMsg(__FILE__, __LINE__))
+          end if
+       end if
+    end do
+    if (compact) then
+       if (compact_map_epoch == 0) then
+          write(iulog,*) trim(subname),' ERROR: compact restart map has not been built'
+          call shr_sys_abort(errMsg(__FILE__, __LINE__))
+       end if
+       epoch = compact_map_epoch
+    else
+       epoch = 0
+    end if
+
     ! Determining if need to create a new io descriptor
 
     n = 1
     found = .false.
+    reuse = .false.
     do while (n <= num_iodesc .and. .not.found)
        if (ndims == iodesc_list(n)%ndims .and. xtype == iodesc_list(n)%type) then
           found = .true.
@@ -2742,7 +2969,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                 write(iulog,*) trim(subname),' ERROR: iodnum out of range ',iodnum,num_iodesc
                 call shr_sys_abort(errMsg(__FILE__, __LINE__))
              endif
-             RETURN
+             if (iodesc_list(n)%epoch == epoch) RETURN
+             ! Built for an older compact map: rebuild it in the same slot
+             call pio_freedecomp(pio_subsystem, iodesc_list(n)%iodesc)
+             reuse = .true.
           endif
        endif
        n = n + 1
@@ -2750,7 +2980,12 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     ! Creating a new io descriptor
 
-    if (ndims > 0) then 
+    if (reuse) then
+       if (masterproc .and. debug > 1) then
+          write(iulog,*) trim(subname),' rebuilding compact iodesc at iodnum,ndims,dims(1:ndims),xtype',&
+               iodnum,ndims,dims(1:ndims),xtype
+       endif
+    else if (ndims > 0) then 
        num_iodesc = num_iodesc + 1
        if (num_iodesc > max_iodesc) then
           write(iulog,*) trim(subname),' ERROR num_iodesc gt max_iodesc ',max_iodesc
@@ -2776,7 +3011,30 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     gsmap_lsize = mct_gsmap_lsize(gsmap,mpicom)
     gsmap_gsize = mct_gsmap_gsize(gsmap)
 
-    call mct_gsMap_orderedPoints(gsmap,iam,gsmOP)
+    if (compact) then
+       ! gsmOP(m) is the file index of local point m, as for the full map
+       allocate(gsmOP(gsmap_lsize))
+       if (trim(elmlevel) == trim(namec)) then
+          if (size(col_compact_gindex) /= gsmap_lsize) then
+             write(iulog,*) trim(subname),' ERROR: compact column map size ', &
+                  size(col_compact_gindex),' /= ',gsmap_lsize
+             call shr_sys_abort(errMsg(__FILE__, __LINE__))
+          end if
+          gsmOP(:) = col_compact_gindex(:)
+          gsize = numc_compact
+       else
+          if (size(pft_compact_gindex) /= gsmap_lsize) then
+             write(iulog,*) trim(subname),' ERROR: compact pft map size ', &
+                  size(pft_compact_gindex),' /= ',gsmap_lsize
+             call shr_sys_abort(errMsg(__FILE__, __LINE__))
+          end if
+          gsmOP(:) = pft_compact_gindex(:)
+          gsize = nump_compact
+       end if
+       gsmap_gsize = gsize
+    else
+       call mct_gsMap_orderedPoints(gsmap,iam,gsmOP)
+    end if
 
     fullsize = 1
     do n = 1,ndims
@@ -2795,9 +3053,14 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if (switchdim) then
           cnt = 0
           do m = 1,gsmap_lsize
+             base = gsmOP(m)
              do n = 1,vsize
                 cnt = cnt + 1
-                compDOF(cnt) = (gsmOP(m)-1)*vsize + n
+                if (base > 0) then
+                   compDOF(cnt) = (base-1)*vsize + n
+                else
+                   compDOF(cnt) = 0
+                end if
              enddo
           enddo
        else
@@ -2817,7 +3080,11 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              do n = 1,vsize1
                 do m = 1,gsmap_lsize
                    cnt = cnt + 1
-                   compDOF(cnt) = (k-1)*vsize1*gsmap_gsize + (n-1)*gsmap_gsize +  gsmOP(m) 
+                   if (gsmOP(m) > 0) then
+                      compDOF(cnt) = (k-1)*vsize1*gsmap_gsize + (n-1)*gsmap_gsize +  gsmOP(m) 
+                   else
+                      compDOF(cnt) = 0
+                   end if
                 enddo
              enddo
           end do
@@ -2826,7 +3093,11 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           do n = 1,vsize
              do m = 1,gsmap_lsize
                 cnt = cnt + 1
-                compDOF(cnt) = (n-1)*gsmap_gsize + gsmOP(m)
+                if (gsmOP(m) > 0) then
+                   compDOF(cnt) = (n-1)*gsmap_gsize + gsmOP(m)
+                else
+                   compDOF(cnt) = 0
+                end if
              enddo
           enddo
        end if
@@ -2852,6 +3123,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     iodesc_list(iodnum)%type  = xtype
     iodesc_list(iodnum)%ndims = ndims
+    iodesc_list(iodnum)%epoch = epoch
     iodesc_list(iodnum)%dims  = 0
     iodesc_list(iodnum)%dims(1:ndims)   = dims(1:ndims)
     iodesc_list(iodnum)%dimids(1:ndims) = dimids(1:ndims)

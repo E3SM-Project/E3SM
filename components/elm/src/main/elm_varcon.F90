@@ -165,6 +165,8 @@ module elm_varcon
   character(len=16), parameter :: namec  = 'column'       ! name of columns
   character(len=16), parameter :: namep  = 'pft'          ! name of patches
   character(len=16), parameter :: nameCohort = 'cohort'   ! name of cohorts (ED specific)
+  character(len=16), parameter :: namec_compact = 'column_active' ! name of columns in compact restart files
+  character(len=16), parameter :: namep_compact = 'pft_active'    ! name of patches in compact restart files
 
   !------------------------------------------------------------------
   ! Initialize miscellaneous radiation constants
