@@ -1,0 +1,146 @@
+name: merge-to-next
+
+# After a PR is merged into master, make sure its branch is also merged into next.
+# If the merge into next conflicts, open an issue and assign the integrator who merged the PR.
+
+on:
+  # pull_request_target (rather than pull_request) so that the token has write access
+  # even for PRs from forks. We never execute code from the PR: we only run git commands.
+  pull_request_target:
+    branches: [ master ]
+    types: [closed]
+
+# Serialize runs, so that two PRs merged back-to-back do not race to push to next
+concurrency:
+  group: merge-to-next
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  merge-to-next:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      PR_NUM: ${{ github.event.pull_request.number }}
+      # Untrusted strings are passed through env vars, never interpolated in scripts
+      BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+      INTEGRATOR: ${{ github.event.pull_request.merged_by.login }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Pushing to next may require a token that is allowed to bypass branch
+          # protection rules. Set the NEXT_PUSH_TOKEN secret if the default token is not enough.
+          token: ${{ secrets.NEXT_PUSH_TOKEN || github.token }}
+
+      - name: Merge PR branch into next
+        id: merge
+        run: |
+          set -u
+
+          git fetch origin next master
+
+          # The merge commit on master. Its 2nd parent is the PR branch HEAD.
+          # This workflow only supports PRs merged via the GitHub interfaces (UI/API/auto-merge).
+          # PRs merged from the command line are NOT handled: error out (and open an issue).
+          if [ -z "${MERGE_SHA}" ]; then
+            echo "::error::PR #${PR_NUM} has no merge_commit_sha (merged from the command line?)"
+            echo "status=error" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          # Merge commits created by GitHub are committed by the GitHub web-flow user
+          if ! git cat-file -e "${MERGE_SHA}^2" 2>/dev/null \
+             || [ "$(git log -1 --format=%ce "${MERGE_SHA}")" != "noreply@github.com" ]; then
+            echo "::error::${MERGE_SHA} is not a merge commit created by GitHub (merged from the command line?)"
+            echo "status=error" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          HEAD_SHA=$(git rev-parse "${MERGE_SHA}^2")
+          echo "PR branch HEAD: ${HEAD_SHA}"
+
+          # 1. Nothing to do if the branch HEAD is already in next
+          if git merge-base --is-ancestor "${HEAD_SHA}" origin/next; then
+            echo "PR #${PR_NUM} is already in next. Nothing to do."
+            echo "status=already-in-next" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # 2. Build the commit message: new subject, same body as the master merge commit
+          {
+            echo "Merge branch '${BRANCH_NAME}' into next (PR #${PR_NUM})"
+            git log -1 --format=%b "${MERGE_SHA}"
+          } > "${RUNNER_TEMP}/next-merge-msg.txt"
+
+          # Keep authorship of the master merge (the integrator), committer is the bot
+          export GIT_AUTHOR_NAME="$(git log -1 --format=%an "${MERGE_SHA}")"
+          export GIT_AUTHOR_EMAIL="$(git log -1 --format=%ae "${MERGE_SHA}")"
+          export GIT_AUTHOR_DATE="$(git log -1 --format=%aI "${MERGE_SHA}")"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B next origin/next
+
+          if git merge --no-ff -F "${RUNNER_TEMP}/next-merge-msg.txt" "${HEAD_SHA}"; then
+            git push origin HEAD:next
+            echo "status=merged" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only --diff-filter=U > "${RUNNER_TEMP}/conflicts.txt"
+            git merge --abort
+            echo "status=conflict" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open issue on conflict
+        if: always() && (steps.merge.outputs.status == 'conflict' || steps.merge.outputs.status == 'error')
+        env:
+          STATUS: ${{ steps.merge.outputs.status }}
+        run: |
+          PR_URL="${{ github.server_url }}/${{ github.repository }}/pull/${PR_NUM}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "${STATUS}" = "conflict" ]; then
+            TITLE="Automatic merge of PR #${PR_NUM} into next failed (conflicts)"
+            {
+              echo "PR ${PR_URL} (branch \`${BRANCH_NAME}\`) was merged into \`master\`,"
+              echo "but merging it into \`next\` failed due to conflicts in:"
+              echo
+              echo '```'
+              cat "${RUNNER_TEMP}/conflicts.txt"
+              echo '```'
+              echo
+              echo "Likely a competing PR was merged into \`next\` first. Please merge the branch"
+              echo "into \`next\` by hand, resolving the conflicts, e.g.:"
+              echo
+              echo '```'
+              echo "git checkout next && git pull"
+              echo "git merge --no-ff <PR branch HEAD>   # use the same message as the master merge,"
+              echo "                                     # with 'into next' in the first line"
+              echo '```'
+              echo
+              echo "Workflow run: ${RUN_URL}"
+            } > "${RUNNER_TEMP}/issue-body.md"
+          else
+            TITLE="Automatic merge of PR #${PR_NUM} into next failed (workflow error)"
+            {
+              echo "PR ${PR_URL} was merged into \`master\`, but the merge-to-next workflow failed"
+              echo "before attempting the merge. This typically happens when the PR was merged from the"
+              echo "command line (only merges done via the GitHub interfaces are supported). Please merge"
+              echo "the branch into \`next\` by hand. See the workflow run: ${RUN_URL}"
+            } > "${RUNNER_TEMP}/issue-body.md"
+          fi
+
+          # Try assigning the integrator; if that is not possible, create the issue unassigned
+          gh issue create --repo "${{ github.repository }}" \
+            --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue-body.md" \
+            --assignee "${INTEGRATOR}" \
+          || gh issue create --repo "${{ github.repository }}" \
+            --title "${TITLE}" --body-file "${RUNNER_TEMP}/issue-body.md"
+
+      - name: Fail the job if the merge could not be done
+        if: always() && (steps.merge.outputs.status == 'conflict' || steps.merge.outputs.status == 'error')
+        run: exit 1
