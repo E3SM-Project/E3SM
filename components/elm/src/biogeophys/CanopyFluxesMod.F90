@@ -103,7 +103,7 @@ contains
     use elm_varsur         , only : firrig
     use TopounitType       , only : top_pp
     use QSatMod            , only : QSat
-    use FrictionVelocityMod, only : FrictionVelocity_noloop, MoninObukIni, &
+    use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, &
          implicit_stress, atm_gustiness, force_land_gustiness
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use SurfaceResistanceMod, only : getlblcef
@@ -131,11 +131,12 @@ contains
     real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
     real(r8), parameter :: btran0 = 0.0_r8  ! initial value
     real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
-    real(r8), parameter :: beta = 1.0_r8    ! coefficient of conective velocity [-]
+    real(r8), parameter :: beta = 1.0_r8    ! coefficient of convective velocity [-]
     real(r8), parameter :: delmax = 1.0_r8  ! maxchange in  leaf temperature [K]
     real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
-    integer , parameter :: itmax = 40       ! maximum number of iteration [-]
+    real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
+    integer , parameter :: itmax = 41       ! maximum number of iteration [-]
     integer , parameter :: itmin = 2        ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
@@ -167,7 +168,7 @@ contains
     real(r8), parameter :: ria  = 0.5_r8             ! free parameter for stable formulation (currently = 0.5, "gamma" in Sakaguchi&Zeng,2008)
 
     real(r8) :: zldis(num_nolu_vegp)   ! reference height "minus" zero displacement height [m]
-    ! real(r8) :: zeta                   ! dimensionless height used in Monin-Obukhov theory
+    real(r8) :: ugust_total(num_nolu_vegp) ! gustiness including convective velocity [m/s]
     real(r8) :: wc                     ! convective velocity [m/s]
     real(r8) :: dth(num_nolu_vegp)     ! diff of virtual temp. between ref. height and surface
     real(r8) :: dthv(num_nolu_vegp)    ! diff of vir. poten. temp. between ref. height and surface
@@ -259,6 +260,7 @@ contains
     integer  :: l                      ! landunit index
     integer  :: t                      ! topounit index
     integer  :: g                      ! gridcell index
+    integer  :: tpu_ind                ! index of topounit to grid
     integer  :: fp                     ! lake filter pft index
     integer  :: fn                     ! number of values in vegetated pft filter
     integer  :: fnorig                 ! number of values in pft filter copy
@@ -604,7 +606,7 @@ contains
          call calc_root_moist_stress(bounds,     &
               nlevgrnd = nlevgrnd,               &
               fn = fn,                           &
-              iter_filterp = filter_nolu_vegp,                 &
+              filterp = filter_nolu_vegp,                 &
               canopystate_vars=canopystate_vars, &
               energyflux_vars=energyflux_vars,   &
               soilstate_vars=soilstate_vars      &
@@ -654,6 +656,7 @@ contains
          p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
          if (check_for_irrig(filter_index)) then
             !$acc loop vector reduction(+:sum1) private(vol_liq_so,h2osoi_liq_so,h2osoi_liq_sat,deficit)
             do j = 1,nlevgrnd
@@ -738,6 +741,8 @@ contains
          taf(filter_index) = (t_grnd(c) + thm(p))/2._r8
          qaf(filter_index) = (forc_q(t)+qg(c))/2._r8
 
+         ugust_total(filter_index) = ugust(t)
+
          ur(filter_index)    = max(1.0_r8,sqrt(forc_u(t)*forc_u(t)+forc_v(t)*forc_v(t)))
          dth(filter_index)   = thm(p)-taf(filter_index)
          dqh(filter_index)   = forc_q(t)-qaf(filter_index)
@@ -773,20 +778,14 @@ contains
       
       ! Begin stability iteration
       call t_startf('can_iter')
-      event = 'can_iter'
       ITERATION : do while (itlef <= itmax .and. fn > 0)
         !$acc update device(itlef)  
-        !$acc parallel loop independent gang vector  default(present) private(p,filter_index)
-        do active_index = 1, fn
-            p = iter_filterp(active_index)
-            filter_index = iter_filter_map(active_index)
-            call FrictionVelocity_noloop ( &
-                        displa(p), z0mv(p), z0hv(p), z0qv(p), &
-                        obu(filter_index), itlef+1, ur(filter_index), um(filter_index), ustar(filter_index), &
-                        temp1(filter_index), temp2(filter_index), temp12m(filter_index), temp22m(filter_index), fm(filter_index), &
-                        forc_hgt_u_patch(p), forc_hgt_t_patch(p), forc_hgt_q_patch(p), &
-                        vds(p), u10(p), u10_elm(p), va(p), fv(p))
-        end do
+         call FrictionVelocity (begp, endp, fn, iter_filterp, iter_filter_map, num_nolu_vegp, &
+              displa(begp:endp), z0mv(begp:endp), z0hv(begp:endp), z0qv(begp:endp), &
+              obu(1:num_nolu_vegp), itlef, ur(1:num_nolu_vegp), um(1:num_nolu_vegp), ugust_total(1:num_nolu_vegp), ustar(1:num_nolu_vegp), &
+              temp1(1:num_nolu_vegp), temp2(1:num_nolu_vegp), temp12m(1:num_nolu_vegp), temp22m(1:num_nolu_vegp), fm(1:num_nolu_vegp), &
+              frictionvel_vars)
+
         !$acc parallel loop independent gang vector default(present) private(p,filter_index,c,t,g,&
         !$acc  cf, w,csoilb,ri, ricsoilc, csoilcn) present(ram1(:), rb1(:), rhaf(:),grnd_ch4_cond(:),t_veg(:),elai(:),btran(:),&
         !$acc  esai(:), temp2(:), htop(:), dleaf_patch(:), rah(:,:))
@@ -1152,21 +1151,21 @@ contains
 
             thvstar = tstar*(1._r8+0.61_r8*forc_q(t)) + 0.61_r8*forc_th(t)*qstar
 
-            zeta = zldis(filter_index)*vkc*grav*thvstar/(ustar(filter_index)**2*thv(c))
-            if (zeta >= 0._r8) then     !stable
-               zeta = min(2._r8,max(zeta,0.01_r8))
+            zeta(p) = zldis(filter_index)*vkc*grav*thvstar/(ustar(filter_index)**2*thv(c))
+            if (zeta(p) >= 0._r8) then     !stable
+               zeta(p) = min(2._r8,max(zeta(p),0.01_r8))
                um(filter_index) = max(ur(filter_index),0.1_r8)
             else                     !unstable
-               zeta = max(-100._r8,min(zeta,-0.01_r8))
+               zeta(p) = max(-100._r8,min(zeta(p),-0.01_r8))
                if ((.not. atm_gustiness) .or. force_land_gustiness) then
                   wc = beta*(-grav*ustar(filter_index)*thvstar*zii/thv(c))**0.333_r8
-                  ugust_total(p) = sqrt(ugust(t)**2 + wc**2)
+                  ugust_total(filter_index) = sqrt(ugust(t)**2 + wc**2)
                   um(filter_index) = sqrt(ur(filter_index)*ur(filter_index)+wc*wc)
                else
                   um(filter_index) = max(ur(filter_index),0.1_r8)
                end if
             end if
-            obu(filter_index) = zldis(filter_index)/zeta
+            obu(filter_index) = zldis(filter_index)/zeta(p)
 
             if (obuold(filter_index)*obu(filter_index) < 0._r8) nmozsgn(filter_index) = nmozsgn(filter_index)+1
             if (nmozsgn(filter_index) >= 4) obu(filter_index) = zldis(filter_index)/(-0.01_r8)
@@ -1307,7 +1306,7 @@ contains
                write(iulog,*)'WARNING: Stress did not converge for canopy ',&
                     ' nstep = ',nstep_mod,' p= ',p,' prev_tau_diff= ',prev_tau_diff(p),&
                     ' tau_diff= ',tau_diff(p),' tau= ',tau(p),&
-                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',iter_final
+                    ' wind_speed_adj= ',wind_speed_adj(p),' iter_final= ',itlef
             end if
          end if
 

@@ -83,7 +83,7 @@ module elm_driver
   use VOCEmissionMod         , only : VOCEmission
 
   !
-  use filterMod              , only : setFilters
+  use filterMod              , only : setFilters, setExposedvegpFilters
   !
   use atm2lndMod             , only : downscale_forcings, topographic_effects_on_radiation
   use lnd2atmMod             , only : lnd2atm
@@ -778,11 +778,18 @@ contains
 
        call col_wf%Reset(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec)
 
+       ! Split the non-lake, non-urban patch filter into bare-ground and
+       ! vegetated sub-filters. This depends on the snow-dependent
+       ! frac_veg_nosno flag, so it must be redone every time step.
+
+       call setExposedvegpFilters(bounds_clump, filter, &
+            canopystate_vars%frac_veg_nosno_patch(bounds_clump%begp:bounds_clump%endp))
+
        ! Bareground fluxes for all patches except lakes and urban landunits
 
-       call BareGroundFluxes(bounds_clump,                                 &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,          &
-            atm2lnd_vars, canopystate_vars, soilstate_vars,                &
+       call BareGroundFluxes(                                                     &
+            filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep,       &
+            canopystate_vars, soilstate_vars,                                     &
             frictionvel_vars, ch4_vars  )
        call t_stopf('bgflux')
 
@@ -792,8 +799,9 @@ contains
 
        call t_startf('canflux')
        call CanopyFluxes(bounds_clump,                                                   &
-            filter(nc)%num_nolakeurbanp, filter(nc)%nolakeurbanp,                        &
-            atm2lnd_vars, canopystate_vars, cnstate_vars, energyflux_vars,               &
+            filter(nc)%num_nolakeurban_barep, filter(nc)%nolakeurban_barep,              &
+            filter(nc)%num_nolakeurban_vegp,  filter(nc)%nolakeurban_vegp,               &
+            canopystate_vars, cnstate_vars, energyflux_vars,               &
             frictionvel_vars, soilstate_vars, solarabs_vars, surfalb_vars,               &
             ch4_vars, photosyns_vars )
        call t_stopf('canflux')

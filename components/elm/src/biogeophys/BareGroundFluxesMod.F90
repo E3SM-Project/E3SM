@@ -7,9 +7,7 @@ module BareGroundFluxesMod
   !
   ! !USES:
   use shr_kind_mod         , only : r8 => shr_kind_r8
-  use decompMod            , only : bounds_type
   use CH4Mod               , only : ch4_type
-  use atm2lndType          , only : atm2lnd_type
   use CanopyStateType      , only : canopystate_type
   use EnergyFluxType       , only : energyflux_type
   use FrictionVelocityType , only : frictionvel_type
@@ -191,9 +189,7 @@ contains
          qflx_ev_h2osfc   =>    veg_wf%qflx_ev_h2osfc   , & ! Output: [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]
          qflx_evap_soi    =>    veg_wf%qflx_evap_soi    , & ! Output: [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
          qflx_evap_tot    =>    veg_wf%qflx_evap_tot    , & ! Output: [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
-         num_iter         => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
-         begp             =>    bounds%begp                           , &
-         endp             =>    bounds%endp                             &
+         num_iter         => frictionvel_vars%num_iter_patch             & ! Output: number of iterations required
          )
 
       !---------------------------------------------------

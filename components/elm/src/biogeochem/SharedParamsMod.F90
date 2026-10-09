@@ -25,7 +25,7 @@ module SharedParamsMod
 
   end type ParamsShareType
 
-  type(ParamsShareType), public :: ParamsShareInst
+  type(ParamsShareType),public :: ParamsShareInst
 
   !$acc declare create(ParamsShareInst)
   logical, public :: anoxia_wtsat = .false.

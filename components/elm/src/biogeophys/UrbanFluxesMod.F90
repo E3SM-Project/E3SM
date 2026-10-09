@@ -1061,7 +1061,6 @@ contains
             write(iulog,*)'eflx_scale    = ',eflx_scale(indexl)
             write(iulog,*)'eflx_sh_grnd_scale: ',eflx_sh_grnd_scale(lun_pp%pfti(l):lun_pp%pftf(l))
             write(iulog,*)'eflx          = ',eflx(indexl)
-            ! test code, PET
             write(iulog,*)'tbot          = ',forc_t(lun_pp%topounit(l))
             call endrun(decomp_index=indexl, elmlevel=namel, msg=errmsg(__FILE__, __LINE__))
          end if

@@ -223,7 +223,7 @@ contains
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: fn                   ! size of pft filter (number of still-active patches)
     integer                , intent(in)    :: filterp(1:fn)          ! patch filter (active, unconverged patches)
-    integer                , intent(in)    :: filter_map(1:fn)       ! maps active-filter position -> original compressed index into the norig-sized arrays below
+    integer                , intent(in)    :: filter_map(1:norig)       ! maps active-filter position -> original compressed index into the norig-sized arrays below
     integer                , intent(in)    :: norig                  ! size of the original (uncompacted) per-patch arrays below
     real(r8)               , intent(in)    :: esat_tv( 1:norig )   ! saturation vapor pressure at t_veg (Pa) [pft]
     real(r8)               , intent(in)    :: eair(1:norig)        ! vapor pressure of canopy air (Pa) [pft]
