@@ -11,14 +11,16 @@ time_stepping:
 initial_conditions:
   filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   topography_filename: ${TOPO_DATA_DIR}/${EAMxx_tests_TOPO_FILE}
-  eddy_diff_heat: 0.0
-  surf_evap: 0.0
-  surf_sens_flux: 0.0
-  precip_liq_surf_mass: 0.0
-  precip_ice_surf_mass: 0.0
-  hetfrz_immersion_nucleation_tend: 0.1
-  hetfrz_contact_nucleation_tend: 0.1
-  hetfrz_deposition_nucleation_tend: 0.1
+  constant_fields:
+    overrides:
+      eddy_diff_heat: 0.0
+      surf_evap: 0.0
+      surf_sens_flux: 0.0
+      precip_liq_surf_mass: 0.0
+      precip_ice_surf_mass: 0.0
+      hetfrz_immersion_nucleation_tend: 0.1
+      hetfrz_contact_nucleation_tend: 0.1
+      hetfrz_deposition_nucleation_tend: 0.1
 
 eamxx:
   atm_procs_list: [homme,physics]

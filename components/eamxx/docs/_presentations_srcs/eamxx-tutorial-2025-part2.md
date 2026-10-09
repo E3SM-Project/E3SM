@@ -614,8 +614,11 @@ In `components/eamxx/cime_config/namelist_defaults_scream.xml`, add:
     <!-- later... -->
     <initial_conditions>
     <!-- ... -->
-    <!-- Ash initial condition to 0.0 -->
-    <ash               >0.0</ash>
+      <constant_fields>
+        <overrides>
+          <!-- ... -->
+          <!-- Ash initial condition to 0.0 -->
+          <ash               >0.0</ash>
 ```
 
 ---

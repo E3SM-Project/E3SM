@@ -429,6 +429,50 @@ class TestBuildnml(unittest.TestCase):
             stat, out, err = run_cmd (f"./atmchange {cmd}",from_dir=case)
             expect (stat!=0,f"Command './atmchange {cmd}' should have failed")
 
+    ###########################################################################
+    def test_atmchanges_ic_constant_fields(self):
+    ###########################################################################
+        """
+        Test atmchanges that add/remove IC constants (open nodes in the IC section)
+        """
+        case = self._common_case
+
+        # Add constants to the overrides/defaults nodes (scalar and vector), and modify them
+        run_cmd_assert_result(self, "./atmchange --add constant_fields::overrides::my_field=1.5", from_dir=case)
+        run_cmd_assert_result(self, "./atmchange --add constant_fields::defaults::my_vec_field=1,2,3", from_dir=case)
+        self._get_values(case, "constant_fields::overrides::my_field", value="1.5", expect_equal=True)
+        self._get_values(case, "constant_fields::defaults::my_vec_field", value="1,2,3", expect_equal=True)
+        self._chg_atmconfig([("constant_fields::overrides::my_field", "2.5")], case)
+
+        # Remove a constant that is in the defaults file
+        run_cmd_assert_result(self, "./atmchange --rm constant_fields::overrides::tke", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep '^tke$'",from_dir=case)
+        expect (output=="", "There is still a trace of the removed constant")
+
+        # Changes must survive regeneration of the XML file, but not a reset
+        self._chg_atmconfig([("p3::enable_precondition_checks", "false")], case)
+        self._get_values(case, "constant_fields::overrides::my_field", value="2.5", expect_equal=True)
+
+        run_cmd_assert_result(self, "./atmchange --reset", from_dir=case)
+        stat, output, error = run_cmd("./atmquery --grep my_field",from_dir=case)
+        expect (output=="", "The added constant survived an atmchange --reset")
+        self._get_values(case, "constant_fields::overrides::tke")
+
+    ###########################################################################
+    def test_atmchanges_ic_constant_fields_invalid(self):
+    ###########################################################################
+        """
+        Test that IC constants can only be added to the overrides/defaults nodes, and be real arrays
+        """
+        case = self._common_case
+
+        for cmd in ["--add constant_fields::my_field=1.5",           # not an open node
+                    "--add initial_conditions::my_field=1.5",        # not an open node
+                    "--add constant_fields::overrides::my_field=hi",     # wrong type
+                    "--add constant_fields::overrides::qr=1.5"]:         # qr is already in the overrides
+            stat, out, err = run_cmd (f"./atmchange {cmd}",from_dir=case)
+            expect (stat!=0,f"Command './atmchange {cmd}' should have failed")
+
 ###############################################################################
 def parse_command_line(args, desc):
 ###############################################################################
