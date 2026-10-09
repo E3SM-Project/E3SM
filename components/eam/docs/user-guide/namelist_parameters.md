@@ -141,30 +141,24 @@
 
 ## Zhang and McFarlane deep convection scheme
 
-| ZM Parameters             | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_ke`               | Tunable evaporation efficiency in ZM deep convection scheme       | `2.5E-6`               |
-| `zmconv_tau`              | Relaxation time in ZM deep convection scheme                      | `3600`                 |
-| `zmconv_dmpdz`            | Parcel fractional mass entrainment rate                           | `-0.7E-3`              |
-| `zmconv_alfa`             | Initial downdraft mass flux fraction                              | `0.14D0`               |
-| `zmconv_tiedke_add`       | Temperature perturbation of an air parcel                         | `0.8D0`                |
-| `zmconv_cape_cin`         | Number of negative buoyancy regions that are allowed              | `1`                    |
+| ZM Parameters                | Description                                                       | Default value          |
+| ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
+| `zmconv_ke`                  | Tunable evaporation efficiency in ZM deep convection scheme       | `2.5E-6`               |
+| `zmconv_tau`                 | Relaxation time in ZM deep convection scheme                      | `3600`                 |
+| `zmconv_dmpdz`               | Parcel fractional mass entrainment rate                           | `-0.7E-3`              |
+| `zmconv_alfa`                | Initial downdraft mass flux fraction                              | `0.14D0`               |
+| `zmconv_tiedke_add`          | Temperature perturbation of an air parcel                         | `0.8D0`                |
+| `zmconv_cape_cin`            | Number of negative buoyancy regions that are allowed              | `1`                    |
+| `zmconv_clos_dyn_adj`        | Flag to apply mass flux adjustment to ZM convection scheme        | `true`                 |
+| `zmconv_trig_dcape`          | Enable dynamic CAPE (DCAPE) trigger for ZM deep convection        | `.false.`              |
+| `zmconv_trig_ull`            | Enable unrestricted launch level (ULL) mode for ZM deep convection| `.false.`              |
 
-| dCAPE-ULL Parameters      | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_trig_dcape`       | Enable dynamic CAPE (DCAPE) trigger for ZM deep convection        | `.false.`              |
-| `zmconv_trig_ull`         | Enable unrestricted launch level (ULL) mode for ZM deep convection| `.false.`              |
-
-| Conv. micro. Parameters   | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_microp`           | Convective microphysics option in ZM convection scheme            | `true`                 |
-| `zmconv_auto_fac`         | Cloud droplet-rain autoconversion enhancement factor in the convective microphysics scheme | `7.0`     |
-| `zmconv_accr_fac`         | Cloud droplet-rain accretion enhancement factor in the convective microphysics scheme      | `1.5`     |
-| `zmconv_micro_dcs`        | Autoconversion size threshold for cloud ice to snow (m)           | `150.E-6`                 |
-
-| Mass flux adj. Parameters | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `zmconv_clos_dyn_adj`     | Apply mass flux adjustment to ZM convection scheme               | `true`                 |
+| Conv. micro. Parameters      | Description                                                       | Default value          |
+| ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
+| `zmconv_microp`              | Convective microphysics option in ZM convection scheme            | `true`                 |
+| `zmconv_auto_fac`            | Cloud droplet-rain autoconversion enhancement factor              | `7.0`                  |
+| `zmconv_accr_fac`            | Cloud droplet-rain accretion enhancement factor                   | `1.5`                  |
+| `zmconv_micro_dcs`           | Autoconversion size threshold for cloud ice to snow (m)           | `150.E-6`              |
 
 | MCSP Parameters              | Description                                                       | Default value          |
 | ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
@@ -175,23 +169,30 @@
 
 ## Cloud Feedback Model Intercomparison Project (CFMIP) Observation Simulator Package
 
-| Parameter                 | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `cosp_lite`       | This namelist sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).  | `false`                |
+| Parameter                    | Description                                                       | Default value          |
+| ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
+| `cosp_lite`                  | Flag to enable several options for lightweight COSP.[^cosp6]      | `false`                |
+
+[^cosp6]: This sets cosp_ncolumns=10 and cosp_nradsteps=3 (appropriate for COSP statistics derived from seasonal averages), and runs MISR, ISCCP, MODIS, and CALIPSO lidar simulators (cosp_lmisr_sim=.true.,cosp_lisccp_sim=.true., cosp_lmodis_sim=.true.,cosp_llidar_sim=.true.).
 
 ## Orographic drag schemes
 
-| Parameter                 | Description                                                       | Default value          |
-| ------------------------- | ----------------------------------------------------------------- | ---------------------- |
-| `use_gw_oro`       | This namelist controls the default linear orographic gravity wave drag (oGWD) for E3SM, if used, the default oGWD is turned on.                                | `true`                |
-| `do_tms`           | This namelist controls the default Turbulent Mountain Stress (TMS) for E3SM, if used, the default TMS is turned on.                                 | `false`                |
-| `effgw_oro`        | Efficiency associated with orographic gravity waves.                                                                     | `0.375`                |
-| `tms_orocnst`      | Turbulent mountain stress parameter used when TMS calculation is turned on             | `1.0`                |
-| `tms_z0fac`        | Factor determining z_0 from orographic standard deviation [ no unit ] for TMS.                                                   | `0.75`                |
-| `use_od_ls`        | This namelist controls the new nonlinear oGWD, if used, the nonlinear oGWD is turned on. use_od_ls should not be used at the same time with use_gw_oro.                  | `false`                |
-| `use_od_bl`       | This namelist controls the Flow-blocking drag (FBD) scheme, if used, the FBD scheme is turned on.        | `false`                |
-| `use_od_ss`       | This namelist controls the small-scale GWD (sGWD) scheme, if used, the sGWD scheme is turned on.        | `false`                |
-| `use_od_fd`       | This namelist controls the Turbulent orographic form drag (TOFD) scheme, if used, the TOFD scheme is turned on.        | `false`                |
-| `od_ls_ncleff`    | Tuning parameter of nonlinear oGWD. Stands for effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.         | `3`                |
-| `od_bl_ncd`       | Tuning parameter of FBD. Stands for bulk drag coefficient. Scales the magnitude of FBD.       | `3`                |
-| `od_ss_sncleff`   | Tuning parameter of sGWD. Stands for effective resolution of the grid for sGWD.Scales the magnitude of sGWD.        | `1`                |
+| Parameter                    | Description                                                       | Default value          |
+| ---------------------------- | ----------------------------------------------------------------- | ---------------------- |
+| `use_gw_oro`                 | Flag to enable linear orographic gravity wave drag.               | `true`                 |
+| `do_tms`                     | Flag to enable Turbulent Mountain Stress (TMS).                   | `false`                |
+| `effgw_oro`                  | Efficiency of orographic gravity waves.                           | `0.375`                |
+| `tms_orocnst`                | Turbulent mountain stress parameter.                              | `1.0`                  |
+| `tms_z0fac`                  | TMS factor for determining z_0 from orographic std deviation.     | `0.75`                 |
+| `use_od_ls`                  | Flag for new nonlinear oGWD.[^gw1]                                | `false`                |
+| `use_od_bl`                  | Flag for Flow-blocking drag (FBD) scheme.                         | `false`                |
+| `use_od_ss`                  | Flag for small-scale GWD (sGWD) scheme.                           | `false`                |
+| `use_od_fd`                  | Flag for Turbulent orographic form drag (TOFD) scheme.            | `false`                |
+| `od_ls_ncleff`               | Tuning parameter for nonlinear oGWD.[^gw2]                        | `3`                    |
+| `od_bl_ncd`                  | Tuning parameter for FBD.[^gw3]                                   | `3`                    |
+| `od_ss_sncleff`              | Tuning parameter for sGWD.[^gw4]                                  | `1`                    |
+
+[^gw1]: `use_od_ls` should not be used at the same time with `use_gw_oro`.
+[^gw2]: Effective resolution of the grid for oGWD. Scales the magnitude of nonlinear oGWD.
+[^gw3]: Bulk drag coefficient. Scales the magnitude of FBD.
+[^gw4]: Effective resolution of the grid for sGWD.Scales the magnitude of sGWD.
