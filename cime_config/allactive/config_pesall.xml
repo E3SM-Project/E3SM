@@ -1437,10 +1437,46 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne4np4.pg2_l%r05_oi%oQU480">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+        <!-- 64 tasks rather than the 32 the generic a%ne4np4.* entry below would give.
+             This is the only ne4 configuration with land on r05 (93485 land gridcells).
+             PEM reruns at half the task count, and at 16 tasks ELM ends up with 2925
+             gridcells per clump, whose automatic arrays in SoilTemperatureMod::SetMatrix
+             overflow the 128M OMP_STACKSIZE worker-thread stack and segfault. Starting
+             from 64 leaves the halved leg at 32 (1465 gridcells/clump), which runs clean.
+             Scores 12 (grid 3 + mach 7 + compset 2) so it beats the generic entry's 10. -->
+        <comment>allactive+chrysalis: ne4pg2 atm with r05 land, 2 nodes x 32 mpi x 2 omp @ root 0</comment>
+        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>64</ntasks_atm>
+          <ntasks_lnd>64</ntasks_lnd>
+          <ntasks_rof>64</ntasks_rof>
+          <ntasks_ice>64</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+          <ntasks_glc>64</ntasks_glc>
+          <ntasks_wav>64</ntasks_wav>
+          <ntasks_cpl>64</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>2</nthrds_glc>
+          <nthrds_wav>2</nthrds_wav>
+          <nthrds_cpl>2</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne4np4.*">
     <mach name="chrysalis">
       <pes compset="any" pesize="any">
-        <comment>allactive+chrysalis: default, 4 nodes x 32 mpi x 2 omp @ root 0</comment>
+        <comment>allactive+chrysalis: default, 1 node x 32 mpi x 2 omp @ root 0</comment>
         <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
         <ntasks>
