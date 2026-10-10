@@ -217,6 +217,35 @@ contains
        enddo
     endif
 
+    !----------------------------------------------------------------------------
+    ! Every task must end up with at least one cell. A task that owns nothing is
+    ! harmless for MCT, but dead_init_moab has to resolve shared entities, which is
+    ! collective, and MOAB deadlocks when only some tasks carry mesh. Below one cell
+    ! per task there is no decomposition that can help, so say so plainly instead of
+    ! hanging for the length of the job.
+    !----------------------------------------------------------------------------
+    if (totpe > nxg*nyg) then
+       if (mype == 0) then
+          write(logunit,F01) 'ERROR: more tasks than grid cells; reduce NTASKS. totpe,nxg,nyg = ', &
+               totpe, nxg, nyg
+       end if
+       call shr_sys_abort(subName//'more tasks than grid cells')
+    endif
+
+    ! A block layout needs at least one column per task in i and one row in j;
+    ! otherwise nxg/npesx or nyg/npesy truncates to zero and the trailing tasks are
+    ! handed lsize=0. That happens for 1d-by-lat whenever totpe > nyg (and for any
+    ! unstructured grid, where nyg is 1), and for the 2d types when the chosen
+    ! factorization is too fine in one direction. Fall through to the general segment
+    ! decomposition below, which spreads segments round-robin over every task.
+    if (found .and. (npesx > nxg .or. npesy > nyg)) then
+       if (mype == 0) then
+          write(logunit,F01) 'block decomp would leave tasks empty, using segment decomp; totpe,nxg,nyg = ', &
+               totpe, nxg, nyg
+       end if
+       found = .false.
+    endif
+
     if (found) then
        nx = nxg/npesx
        mypex = mod(mype,npesx)
@@ -256,6 +285,17 @@ contains
        ! nx override with seg_len
        if (present(seg_len)) then
           if (seg_len > 0) nx = seg_len
+       endif
+
+       ! The round-robin below hands segment i to task mod(i,totpe), so a segment
+       ! length that yields fewer than totpe segments leaves the tail of the task
+       ! list empty. Only shorten the segments when that would actually happen, so a
+       ! seg_len that already works is left exactly as the user asked for it.
+       if ((nxg*nyg + nx - 1)/nx < totpe) then
+          nx = max(1, (nxg*nyg)/totpe)
+          if (mype == 0) then
+             write(logunit,F01) 'segment length shortened so every task gets work; nx,totpe = ', nx, totpe
+          end if
        endif
 
        n = 0
