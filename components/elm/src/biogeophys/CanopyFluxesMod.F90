@@ -1375,7 +1375,7 @@ contains
       end if
       !$acc exit data delete(del(:), efeb(:), wtlq0(:),wtalq(:), &
       !$acc  wtgq(:), wtaq0(:), obuold(:),dayl_factor(:) , &
-      !$acc  check_for_irrig(:), filterp(:),zldis(:), &
+      !$acc  check_for_irrig(:), iter_filterp(:), iter_filter_map(:), zldis(:), &
       !$acc  air(:),bir(:), cir(:), co2(:),o2(:),&
       !$acc  nmozsgn(:), taf(:),qaf(:), ur(:),dth(:),dqh(:),delq(:), &
       !$acc  dthv(:), obu(:),el(:),qsatl(:),qsatldT(:), &
