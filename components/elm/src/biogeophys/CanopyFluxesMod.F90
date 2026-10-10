@@ -137,7 +137,7 @@ contains
     real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
     real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
     integer , parameter :: itmax = 41       ! maximum number of iteration [-]
-    integer , parameter :: itmin = 2        ! minimum number of iteration [-]
+    integer , parameter :: itmin = 3        ! minimum number of iteration [-]
     real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
     real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
     integer , parameter :: irrig_start_time = isecspday/4   ! (6AM) Time of day to check whether we need irrigation, seconds (0 = midnight).
@@ -260,6 +260,7 @@ contains
     integer  :: c                      ! column index
     integer  :: l                      ! landunit index
     integer  :: t                      ! topounit index
+    integer  :: jfrz                   ! shallowest frozen soil level (irrigation)
     integer  :: g                      ! gridcell index
     integer  :: tpu_ind                ! index of topounit to grid
     integer  :: fp                     ! lake filter pft index
@@ -462,12 +463,12 @@ contains
          rah_below            => frictionvel_vars%rah_above_patch , & ! Output: [real(r8) (:)   ]  below-canopy sensible heat flux resistance [s/m]
          raw_above            => frictionvel_vars%raw_below_patch , & ! Output: [real(r8) (:)   ]  above-canopy water vapour flux resistance [s/m]
          raw_below            => frictionvel_vars%raw_below_patch , & ! Output: [real(r8) (:)   ]  below-canopy water vapour flux resistance [s/m]
-         ustar                => frictionvel_vars%ustar_patch     , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
-         um                   => frictionvel_vars%um_patch        , & ! Output: [real(r8) (:)   ]  wind speed including the stablity effect [m/s]
-         uaf                  => frictionvel_vars%uaf_patch       , & ! Output: [real(r8) (:)   ]  canopy air wind speed [m/s]
-         taf                  => frictionvel_vars%taf_patch       , & ! Output: [real(r8) (:)   ]  canopy air temperature [K]
-         qaf                  => frictionvel_vars%qaf_patch       , & ! Output: [real(r8) (:)   ]  canopy air specific humidity [kg/kg]
-         obu                  => frictionvel_vars%obu_patch       , & ! Output: [real(r8) (:)   ]  Obukhov length scale [m]
+         ustar_patch          => frictionvel_vars%ustar_patch     , & ! Output: [real(r8) (:)   ]  friction velocity [m/s]
+         um_patch             => frictionvel_vars%um_patch        , & ! Output: [real(r8) (:)   ]  wind speed including the stablity effect [m/s]
+         uaf_patch            => frictionvel_vars%uaf_patch       , & ! Output: [real(r8) (:)   ]  canopy air wind speed [m/s]
+         taf_patch            => frictionvel_vars%taf_patch       , & ! Output: [real(r8) (:)   ]  canopy air temperature [K]
+         qaf_patch            => frictionvel_vars%qaf_patch       , & ! Output: [real(r8) (:)   ]  canopy air specific humidity [kg/kg]
+         obu_patch            => frictionvel_vars%obu_patch       , & ! Output: [real(r8) (:)   ]  Obukhov length scale [m]
          zeta                 => frictionvel_vars%zeta_patch      , & ! Output: [real(r8) (:)   ]  dimensionless stability parameter 
          vpd                  => frictionvel_vars%vpd_patch       , & ! Output: [real(r8) (:)   ]  vapour pressure deficit [kPa]
          begp                 => bounds%begp                               , &
@@ -655,17 +656,24 @@ contains
       ! This should not be operating on FATES patches (see is_fates filter above, pushes
       ! check_for_irrig = false
       ! frozen_soil(1:fn) = .false.
-      !$acc parallel loop independent gang worker default(present) private(p,c,g)
+      !$acc parallel loop independent gang worker default(present) private(p,c,g,t,tpu_ind,jfrz,sum1)
       do filter_index = 1, fn
          p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
          tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
          if (check_for_irrig(filter_index)) then
-            !$acc loop vector reduction(+:sum1) private(vol_liq_so,h2osoi_liq_so,h2osoi_liq_sat,deficit)
+            ! if level L was frozen, then we don't look at any levels below L
+            jfrz = nlevgrnd + 1
+            !$acc loop vector reduction(min:jfrz)
             do j = 1,nlevgrnd
-               ! if level L was frozen, then we don't look at any levels below L
-               if (t_soisno(c,j) > SHR_CONST_TKFRZ .and. rootfr(p,j) > 0._r8) then
+               if (t_soisno(c,j) <= SHR_CONST_TKFRZ) jfrz = min(jfrz, j)
+            end do
+            sum1 = 0._r8
+            !$acc loop vector reduction(+:sum1) private(vol_liq_so,h2osoi_liq_so,h2osoi_liq_sat,deficit)
+            do j = 1,jfrz-1
+               if (rootfr(p,j) > 0._r8) then
                   ! determine soil water deficit in this layer:
                   ! Calculate vol_liq_so - i.e., vol_liq at which smp_node = smpso - by inverting the above equations
                   ! for the root resistance factors
@@ -774,7 +782,7 @@ contains
       end do
 
       ! Set counter for leaf temperature iteration (itlef)
-      itlef = 0
+      itlef = 1
       !$acc enter data copyin(itlef) create(temp1(:), temp2(:),temp12m(:),&
       !$acc    temp22m(:),ustar(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
       !$acc     tlbef(:), del(:),del2(:),svpts(:),eah(:), dt_veg(:),wtg(:), &
@@ -817,7 +825,7 @@ contains
                call shr_flux_update_stress(wind_speed0(p), wsresp(t), tau_est(t), &
                     tau(p), prev_tau(p), tau_diff(p), prev_tau_diff(p), &
                     wind_speed_adj(p))
-               ur(p) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
+               ur(filter_index) = max(1.0_r8, sqrt(wind_speed_adj(p)**2 + ugust(t)**2))
             end if
 
             ! Bulk boundary layer resistance of leaves
@@ -1202,7 +1210,8 @@ contains
                dele(filter_index) = abs(efe(filter_index) - efeb(filter_index))
                efeb(filter_index) = efe(filter_index)
                det(filter_index)  = max(del(filter_index),del2(filter_index))
-               if (.not. (det(filter_index) < dtmin .and. dele(filter_index) < dlemin)) then
+               if (.not. (det(filter_index) < dtmin .and. dele(filter_index) < dlemin) .or. &
+                    (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
                   ! still unconverged: keep it in the compacted filter for the next iteration
                   fn = fn + 1
                   iter_filterp(fn)     = p
@@ -1279,7 +1288,7 @@ contains
 
             ! Downward longwave radiation below the canopy
             dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
-                  emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(filter_index) + 4._r8*dt_veg(filter_index))/cos(slope_rad)
+                  emv(p)*emg(c)*sb*tlbef(filter_index)**3*(tlbef(filter_index) + 4._r8*dt_veg(filter_index))/cos(slope_rad)
 
             ! Upward longwave radiation above the canopy
             ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
@@ -1287,7 +1296,7 @@ contains
                 4._r8*dt_veg(filter_index))/cos(slope_rad) + emg(c)*(1._r8-emv(p))*sb*lw_grnd/cos(slope_rad))
          else
             dlrad(p) = (1._r8-emv(p))*emg(c)*forc_lwrad(t) + &
-                  emv(p)*emg(c)*sb*tlbef(p)**3*(tlbef(p) + 4._r8*dt_veg(p))
+                  emv(p)*emg(c)*sb*tlbef(filter_index)**3*(tlbef(filter_index) + 4._r8*dt_veg(filter_index))
 
             ulrad(p) = ((1._r8-emg(c))*(1._r8-emv(p))*(1._r8-emv(p))*forc_lwrad(t) &
                 + emv(p)*(1._r8+(1._r8-emg(c))*(1._r8-emv(p)))*sb*tlbef(filter_index)**3*(tlbef(filter_index) + &
@@ -1314,13 +1323,22 @@ contains
             end if
          end if
 
+         ! variables for history fields
+         rah_above(p)  = rah(filter_index,above_canopy)
+         raw_above(p)  = raw(filter_index,above_canopy)
+         rah_below(p)  = rah(filter_index,below_canopy)
+         raw_below(p)  = raw(filter_index,below_canopy)
+         vpd(p)        = max((svpts(filter_index) - eah(filter_index)), vpd_min) * pa_to_kpa ! kPa
+
+         ! copy filter-indexed work arrays to the patch-level outputs
+         ustar_patch(p) = ustar(filter_index)
+         um_patch(p)    = um(filter_index)
+         uaf_patch(p)   = uaf(filter_index)
+         taf_patch(p)   = taf(filter_index)
+         qaf_patch(p)   = qaf(filter_index)
+         obu_patch(p)   = obu(filter_index)
+
       end do
-            ! variables for history fields
-            rah_above(p)  = rah(p,above_canopy)
-            raw_above(p)  = raw(p,above_canopy)
-            rah_below(p)  = rah(p,below_canopy)
-            raw_below(p)  = raw(p,below_canopy)
-            vpd(p)        = max((svpts(p) - eah(p)), vpd_min) * pa_to_kpa ! kPa
 
       if ( use_fates ) then
 
@@ -1344,11 +1362,11 @@ contains
                iter_filterp(fn) = p
                write(iulog,*) 'energy balance in canopy ',p,', err=',err(filter_index)
                write(iulog,*) "sabv  :", sabv(p) 
-               write(iulog,*) "air   :",air(p)
-               write(iulog,*) "bir   :" ,bir(p)
-               write(iulog,*) "cir   :" ,cir(p)
-               write(iulog,*) "tlbef :",tlbef(p)
-               write(iulog,*) "dt_veg:",dt_veg(p) 
+               write(iulog,*) "air   :",air(filter_index)
+               write(iulog,*) "bir   :" ,bir(filter_index)
+               write(iulog,*) "cir   :" ,cir(filter_index)
+               write(iulog,*) "tlbef :",tlbef(filter_index)
+               write(iulog,*) "dt_veg:",dt_veg(filter_index) 
                write(iulog,*) "eflx_sh_veg:",eflx_sh_veg(p) 
                write(iulog,*) "qflx_evap_veg:",qflx_evap_veg(p)
             end if
