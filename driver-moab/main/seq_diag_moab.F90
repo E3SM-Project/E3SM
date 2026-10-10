@@ -40,6 +40,7 @@ module seq_diag_moab
        mct_string_tochar, mct_gsmap, mct_aVect_indexRA, MCT_AVECT_NRATTR, &
        mct_string_clean, mct_avect_getrlist
   use esmf, only : esmf_clock
+  use glc_elevclass_mod, only: glc_get_num_elevation_classes, glc_elevclass_as_string
   use shr_log_mod, only: s_logunit=>shr_log_unit
   use seq_comm_mct, only: logunit, cplid, seq_comm_setptrs, seq_comm_clean, &
        mbaxid, mblxid, mboxid, mbixid, mbrxid, mbofxid
@@ -143,47 +144,49 @@ module seq_diag_moab
   integer(in),parameter :: f_hsen      =10     ! heat : sensible
   integer(in),parameter :: f_hpolar    =11     ! heat : AIS imbalance
   integer(in),parameter :: f_hh2ot     =12     ! heat : water temperature
+  integer(in),parameter :: f_hgsmb     =13     ! heat : Greenland ice sheet surface mass balance
 
-  integer(in),parameter :: f_wfrz      =13     ! water: freezing
-  integer(in),parameter :: f_wmelt     =14     ! water: melting
-  integer(in),parameter :: f_wrain     =15     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow     =16     ! water: precip, frozen
-  integer(in),parameter :: f_wpolar    =17     ! water: AIS imbalance
-  integer(in),parameter :: f_wevap     =18     ! water: evaporation
-  integer(in),parameter :: f_wroff     =19     ! water: runoff/flood
-  integer(in),parameter :: f_wioff     =20     ! water: frozen runoff
-  integer(in),parameter :: f_wirrig    =21     ! water: irrigation
+  integer(in),parameter :: f_wfrz      =14     ! water: freezing
+  integer(in),parameter :: f_wmelt     =15     ! water: melting
+  integer(in),parameter :: f_wrain     =16     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow     =17     ! water: precip, frozen
+  integer(in),parameter :: f_wpolar    =18     ! water: AIS imbalance
+  integer(in),parameter :: f_wgsmb     =19     ! water: Greenland ice sheet surface mass balance
+  integer(in),parameter :: f_wevap     =20     ! water: evaporation
+  integer(in),parameter :: f_wroff     =21     ! water: runoff/flood
+  integer(in),parameter :: f_wioff     =22     ! water: frozen runoff
+  integer(in),parameter :: f_wirrig    =23     ! water: irrigation
 
-  integer(in),parameter :: f_wfrz_16O  =22     ! water: freezing
-  integer(in),parameter :: f_wmelt_16O =23     ! water: melting
-  integer(in),parameter :: f_wrain_16O =24     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_16O =25     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_16O =26     ! water: evaporation
-  integer(in),parameter :: f_wroff_16O =27     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_16O =28     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_16O  =24     ! water: freezing
+  integer(in),parameter :: f_wmelt_16O =25     ! water: melting
+  integer(in),parameter :: f_wrain_16O =26     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_16O =27     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_16O =28     ! water: evaporation
+  integer(in),parameter :: f_wroff_16O =29     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_16O =30     ! water: frozen runoff
 
-  integer(in),parameter :: f_wfrz_18O  =29     ! water: freezing
-  integer(in),parameter :: f_wmelt_18O =30     ! water: melting
-  integer(in),parameter :: f_wrain_18O =31     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_18O =32     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_18O =33     ! water: evaporation
-  integer(in),parameter :: f_wroff_18O =34     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_18O =35     ! water: frozen runoff
+  integer(in),parameter :: f_wfrz_18O  =31     ! water: freezing
+  integer(in),parameter :: f_wmelt_18O =32     ! water: melting
+  integer(in),parameter :: f_wrain_18O =33     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_18O =34     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_18O =35     ! water: evaporation
+  integer(in),parameter :: f_wroff_18O =36     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_18O =37     ! water: frozen runoff
 
-  integer(in),parameter :: f_wfrz_HDO  =36     ! water: freezing
-  integer(in),parameter :: f_wmelt_HDO =37     ! water: melting
-  integer(in),parameter :: f_wrain_HDO =38     ! water: precip, liquid
-  integer(in),parameter :: f_wsnow_HDO =39     ! water: precip, frozen
-  integer(in),parameter :: f_wevap_HDO =40     ! water: evaporation
-  integer(in),parameter :: f_wroff_HDO =41     ! water: runoff/flood
-  integer(in),parameter :: f_wioff_HDO =42     ! water: frozen runoff
-  integer(in),parameter :: f_salt      =43     ! salt: salinity flux
+  integer(in),parameter :: f_wfrz_HDO  =38     ! water: freezing
+  integer(in),parameter :: f_wmelt_HDO =39     ! water: melting
+  integer(in),parameter :: f_wrain_HDO =40     ! water: precip, liquid
+  integer(in),parameter :: f_wsnow_HDO =41     ! water: precip, frozen
+  integer(in),parameter :: f_wevap_HDO =42     ! water: evaporation
+  integer(in),parameter :: f_wroff_HDO =43     ! water: runoff/flood
+  integer(in),parameter :: f_wioff_HDO =44     ! water: frozen runoff
+  integer(in),parameter :: f_salt      =45     ! salt: salinity flux
 
   integer(in),parameter :: f_size     = f_salt        ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_h        = f_hfrz        ! 1st index for heat
-  integer(in),parameter :: f_h_end    = f_hh2ot       ! Last index for heat
+  integer(in),parameter :: f_h_end    = f_hgsmb       ! Last index for heat
   integer(in),parameter :: f_w        = f_wfrz        ! 1st index for water
   integer(in),parameter :: f_w_end    = f_wirrig      ! Last index for water
   integer(in),parameter :: f_16O      = f_wfrz_16O    ! 1st index for 16O water isotope
@@ -199,8 +202,8 @@ module seq_diag_moab
 
        (/'        area','     hfreeze','       hmelt','      hnetsw','       hlwdn', &
        '       hlwup','     hlatvap','     hlatfus','      hiroff','        hsen', &
-       '      hpolar','    hh2otemp','     wfreeze','       wmelt','       wrain', &
-       '       wsnow','      wpolar','       wevap','     wrunoff','     wfrzrof', &
+       '      hpolar','    hh2otemp','       hgsmb','     wfreeze','       wmelt','       wrain', &
+       '       wsnow','      wpolar','       wgsmb','       wevap','     wrunoff','     wfrzrof', &
        '      wirrig',                                                             &
        ' wfreeze_16O','   wmelt_16O','   wrain_16O','   wsnow_16O',                &
        '   wevap_16O',' wrunoff_16O',' wfrzrof_16O',                               &
@@ -794,6 +797,13 @@ contains
     real(r8), allocatable    :: fld_flood_16O(:)
     real(r8), allocatable    :: fld_flood_18O(:)
     real(r8), allocatable    :: fld_flood_HDO(:)
+    real(r8), allocatable    :: fld_qice(:,:)       ! per-EC Flgl_qice on the land mesh
+    real(r8), allocatable    :: fld_frac(:,:)       ! per-EC Sg_ice_covered on the land mesh
+    real(r8), allocatable    :: fld_icemask(:)      ! Sg_icemask on the land mesh
+    real(r8)                 :: effective_area      ! area weighted by min(lfrin, icemask)
+    real(r8)                 :: qice_col_sum        ! SMB summed over elevation classes
+    integer(in)              :: num                 ! elevation class index
+    integer(in),save         :: glc_nec = 0         ! number of elevation classes
     logical,save             :: lnd_prognostic
     logical,save             :: rof_prognostic
     logical,save             :: first_time    = .true.
@@ -827,6 +837,7 @@ contains
           flds_wiso     = .true.
        end if
        index_l2x_Flrl_irrig = mct_aVect_indexRA(av_tmp,'Flrl_irrig',perrWith='quiet')
+       glc_nec = glc_get_num_elevation_classes()
     end if
 
     ip = p_inst
@@ -877,6 +888,19 @@ contains
           call mbGetCellTagVals(mblxid, 'Flrl_rofi_HDO', fld_rofi_HDO, lSize)
        end if
 
+       ! per-elevation-class SMB sent to the ice sheet, and the glc fields it is
+       ! weighted by; mirrors the f_wgsmb term of seq_diag_lnd_mct
+       if (glc_nec >= 1) then
+          allocate(fld_qice(lSize,0:glc_nec), fld_frac(lSize,0:glc_nec), fld_icemask(lSize))
+          call mbGetCellTagVals(mblxid, 'Sg_icemask', fld_icemask, lSize)
+          do num = 0,glc_nec
+             call mbGetCellTagVals(mblxid, 'Flgl_qice'//glc_elevclass_as_string(num), &
+                  fld_qice(:,num), lSize)
+             call mbGetCellTagVals(mblxid, 'Sg_ice_covered'//glc_elevclass_as_string(num), &
+                  fld_frac(:,num), lSize)
+          end do
+       end if
+
        ic = c_lnd_lr
        do n=1,lSize
           ca_l = area_data(n) * lfrin_data(n)
@@ -895,6 +919,16 @@ contains
              nf = f_wroff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*fld_irrig(n)
           end if
           nf = f_wioff ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_l*fld_rofi(n)
+
+          qice_col_sum = 0.0_r8
+          if (glc_nec >= 1) then
+             effective_area = min(lfrin_data(n),fld_icemask(n)) * area_data(n)
+             do num = 0,glc_nec
+                ! flux times the area fraction in this elevation class times cell area
+                qice_col_sum = qice_col_sum + fld_qice(n,num)*fld_frac(n,num)*effective_area
+             end do
+          end if
+          nf = f_wgsmb ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - qice_col_sum
 
           if (flds_wiso_lnd) then
              nf = f_wevap_16O;
@@ -920,10 +954,12 @@ contains
           end if
        end do
        budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice
 
        deallocate(fld_swnet, fld_lwup, fld_lat, fld_sen, fld_evap)
        deallocate(fld_rofsur, fld_rofgwl, fld_rofsub, fld_rofdto, fld_wslake)
        deallocate(fld_rofi)
+       if (glc_nec >= 1) deallocate(fld_qice, fld_frac, fld_icemask)
        if (index_l2x_Flrl_irrig /= 0) deallocate(fld_irrig)
        if (flds_wiso_lnd) then
           deallocate(fld_evap_16O, fld_evap_18O, fld_evap_HDO)
@@ -1232,21 +1268,26 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_diag_glc_moab( glc, infodata)
+  subroutine seq_diag_glc_moab( glc, infodata, do_x2g, do_g2x)
 
-    type(component_type)    , intent(in) :: glc    ! component type for instance1
-    type(seq_infodata_type) , intent(in) :: infodata
+    use seq_comm_mct, only : mbgxid
+    use prep_glc_mod, only : prep_glc_get_l2gacc_lm_cnt_avg
+
+    type(component_type)    , intent(in)           :: glc    ! component type for instance1
+    type(seq_infodata_type) , intent(in)           :: infodata
+    logical                 , intent(in), optional :: do_x2g
+    logical                 , intent(in), optional :: do_g2x
 
     !EOP
 
     !----- local -----
-    !TODO  change this to seq_comm_mct when GLC is ported
-    integer(in)             :: mbgxid
     integer(in)              :: n,ic,nf,ip    ! generic index
     integer(in)              :: lSize         ! size of mesh
     real(r8)                 :: ca_g          ! area of a grid cell
     real(r8), allocatable    :: area_data(:)
     real(r8), allocatable    :: fld_rofl(:), fld_rofi(:), fld_irrofi(:)
+    real(r8), allocatable    :: fld_qice(:), fld_icemask(:)
+    integer, pointer         :: l2gacc_lm_cnt_avg ! lnd samples in the last average
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_glc_moab) '
@@ -1255,27 +1296,58 @@ contains
     !
     !-------------------------------------------------------------------------------
 
+    if (.not. present(do_x2g) .and. .not. present(do_g2x)) then
+       call shr_sys_abort(subName//"ERROR: must input a bundle")
+    end if
+
     !---------------------------------------------------------------------------
     ! add values found in this bundle to the budget table
     !---------------------------------------------------------------------------
 
     ip = p_inst
-    ic = c_glc_gs
-
     lSize = mbGetnCells(mbgxid)
-    allocate(area_data(lSize), fld_rofl(lSize), fld_rofi(lSize), fld_irrofi(lSize))
-    call mbGetCellTagVals(mbgxid, afldname,    area_data, lSize)
-    call mbGetCellTagVals(mbgxid, 'Fogg_rofl', fld_rofl,  lSize)
-    call mbGetCellTagVals(mbgxid, 'Fogg_rofi', fld_rofi,  lSize)
-    call mbGetCellTagVals(mbgxid, 'Figg_rofi', fld_irrofi,lSize)
-    do n=1,lSize
-       ca_g = area_data(n)
-       nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofl(n)
-       nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofi(n) &
-            - ca_g*fld_irrofi(n)
-    end do
-    budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
-    deallocate(area_data, fld_rofl, fld_rofi, fld_irrofi)
+    allocate(area_data(lSize))
+    call mbGetCellTagVals(mbgxid, afldname, area_data, lSize)
+
+    if (present(do_g2x)) then  ! fields from glc to coupler (g2x_)
+
+       ic = c_glc_gr
+       allocate(fld_rofl(lSize), fld_rofi(lSize), fld_irrofi(lSize))
+       call mbGetCellTagVals(mbgxid, 'Fogg_rofl', fld_rofl,  lSize)
+       call mbGetCellTagVals(mbgxid, 'Fogg_rofi', fld_rofi,  lSize)
+       call mbGetCellTagVals(mbgxid, 'Figg_rofi', fld_irrofi,lSize)
+       do n=1,lSize
+          ca_g = area_data(n)
+          nf = f_wroff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofl(n)
+          nf = f_wioff; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_g*fld_rofi(n) &
+               - ca_g*fld_irrofi(n)
+       end do
+       budg_dataL(f_hioff,ic,ip) = -budg_dataL(f_wioff,ic,ip)*shr_const_latice
+       deallocate(fld_rofl, fld_rofi, fld_irrofi)
+
+    end if ! end do fields from glc to coupler (g2x_)
+
+    if (present(do_x2g)) then  ! fields from coupler to glc (x2g_)
+
+       ! Flgl_qice on the glc mesh is the average over the land accumulation
+       ! interval, so scale by the number of samples in it, as the mct driver does
+       l2gacc_lm_cnt_avg => prep_glc_get_l2gacc_lm_cnt_avg()
+       ic = c_glc_gs
+       allocate(fld_qice(lSize), fld_icemask(lSize))
+       call mbGetCellTagVals(mbgxid, 'Flgl_qice',  fld_qice,    lSize)
+       call mbGetCellTagVals(mbgxid, 'Sg_icemask', fld_icemask, lSize)
+       nf = f_wgsmb
+       do n=1,lSize
+          ca_g = area_data(n) * fld_icemask(n)
+          budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_g*fld_qice(n)
+       end do
+       budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) * l2gacc_lm_cnt_avg
+       budg_dataL(f_hgsmb,ic,ip) = budg_dataL(f_wgsmb,ic,ip)*shr_const_latice
+       deallocate(fld_qice, fld_icemask)
+
+    end if ! end do fields from coupler to glc (x2g_)
+
+    deallocate(area_data)
 
   end subroutine seq_diag_glc_moab
 
