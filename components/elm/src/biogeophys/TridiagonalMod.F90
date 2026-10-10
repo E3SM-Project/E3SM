@@ -10,6 +10,7 @@ module TridiagonalMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: Tridiagonal
+  public :: Tridiagonal_filter
   public :: trisim
   interface Tridiagonal
     module procedure Tridiagonal_sr
@@ -100,6 +101,69 @@ contains
 
   end subroutine Tridiagonal_sr
 
+  subroutine Tridiagonal_filter (lbj, ubj, jtop, numf, filter, a, b, c, r, u)
+    ! !DESCRIPTION:
+    ! Tridiagonal matrix solution
+    ! A x = r
+    ! where x and r are vectors
+    ! !USES:
+    use shr_kind_mod   , only: r8 => shr_kind_r8
+    !
+    ! !ARGUMENTS:
+    implicit none
+    integer           , intent(in)    :: lbj, ubj              ! lbinning and ubing level indices
+    integer           , intent(in)    :: jtop                  ! top level for each column [col]
+    integer           , intent(in)    :: numf                  ! filter dimension
+    integer           , intent(in)    :: filter(:)             ! filter
+    real(r8)          , intent(in)    :: a( 1:numf , lbj:ubj)  ! "a" left off diagonal of tridiagonal matrix [col , j]
+    real(r8)          , intent(in)    :: b( 1:numf , lbj:ubj)  ! "b" diagonal column for  tridiagonal matrix [col , j]
+    real(r8)          , intent(in)    :: c( 1:numf , lbj:ubj)  ! "c" right off diagonal   tridiagonal matrix [col , j]
+    real(r8)          , intent(in)    :: r( 1:numf , lbj:ubj)  ! "r" forcing term of      tridiagonal matrix [col , j]
+    real(r8)          , intent(inout) :: u( 1:numf , lbj:ubj)  ! solution      [col , j]
+    !==========================================================!
+    integer                           :: j,ci            ! indices
+    real(r8)                          :: gam(lbj:ubj)    ! temporary
+    real(r8)                          :: bet             ! temporary
+    !-----------------------------------------------------------------------
+    ! Solve the matrix
+    !-----------------------------------------------------------------------
+    
+
+    !$acc enter data create(&
+    !$acc gam(:))
+
+   !$acc parallel loop independent gang vector default(present) &
+   !$acc present(a(:,:),b(:,:),c(:,:),r(:,:),u(:,:)) private(bet,gam(:)) 
+   do ci = 1,numf
+      bet = b(ci,jtop)
+
+      !$acc loop seq 
+      do j = lbj, ubj
+         if (j >= jtop) then
+            if (j == jtop) then
+               u(ci,j) = r(ci,j) / bet
+            else
+               gam(j) = c(ci,j-1) / bet
+               bet = b(ci,j) - a(ci,j) * gam(j)
+               u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet
+            end if
+         end if
+      end do
+   
+      !$acc loop seq 
+      do j = ubj-1,lbj,-1
+        if (j >= jtop) then
+          u(ci,j) = u(ci,j) - gam(j+1) * u(ci,j+1)
+        end if
+      end do
+
+   end do 
+
+    !$acc exit data delete(&
+    !$acc gam(:))
+
+   end subroutine Tridiagonal_filter
+
   !-----------------------------------------------------------------------
   subroutine Tridiagonal_mr (bounds, lbj, ubj, jtop, numf, filter, ntrcs, a, b, c, r, u, is_col_active)
     !$acc routine seq
@@ -189,7 +253,6 @@ contains
 
 !----------------
   subroutine Trisim(bounds, lbj, ubj, numf, filter, a1,b1,c1,d1,e1,a2,b2,c2,d2,e2,w1, w2)
-     !$acc routine seq
      !DESCRIPTIONS
      ! This subroutine solves two coupled tridiagonal equations
      ! A1*W1(J-1)+B1*W1(j)+C1*W1(J+1) = D1*W2(j) + E1 AND
@@ -343,11 +406,11 @@ contains
     integer           , intent(in)    :: jbot( bounds%begc: bounds%endc)          ! top level for each column [col]
     integer           , intent(in)    :: numf                                     ! filter dimension
     integer           , intent(in)    :: filter(:)                                ! filter
-    real(r8)          , intent(in)    :: a( bounds%begc:bounds%endc , lbj:ubj)    ! "a" left off diagonal of tridiagonal matrix [col , j]
-    real(r8)          , intent(in)    :: b( bounds%begc:bounds%endc , lbj:ubj)    ! "b" diagonal column for tridiagonal matrix [col  , j]
-    real(r8)          , intent(in)    :: c( bounds%begc:bounds%endc , lbj:ubj)    ! "c" right off diagonal tridiagonal matrix [col   , j]
-    real(r8)          , intent(in)    :: r( bounds%begc:bounds%endc , lbj:ubj)    ! "r" forcing term of tridiagonal matrix [col      , j]
-    real(r8)          , intent(inout) :: u( bounds%begc:bounds%endc , lbj:ubj)    ! solution [col                                    , j]
+    real(r8)          , intent(in)    :: a( 1:numf , lbj:ubj)    ! "a" left off diagonal of tridiagonal matrix [col , j]
+    real(r8)          , intent(in)    :: b( 1:numf , lbj:ubj)    ! "b" diagonal column for tridiagonal matrix [col  , j]
+    real(r8)          , intent(in)    :: c( 1:numf , lbj:ubj)    ! "c" right off diagonal tridiagonal matrix [col   , j]
+    real(r8)          , intent(in)    :: r( 1:numf , lbj:ubj)    ! "r" forcing term of tridiagonal matrix [col      , j]
+    real(r8)          , intent(inout) :: u( 1:numf , lbj:ubj)    ! solution [col                                    , j]
                                                                                   !
     integer                           :: j,ci,fc                                  ! indices
     logical, optional, intent(in)     :: is_col_active(bounds%begc:bounds%endc)   !
@@ -369,7 +432,7 @@ contains
     do fc = 1,numf
         ci = filter(fc)
         if(l_is_col_active(ci))then
-            bet(ci) = b(ci,jtop(ci))
+            bet(ci) = b(fc,jtop(ci))
         endif
     end do
 
@@ -379,11 +442,11 @@ contains
            if(l_is_col_active(ci))then
              if (j >= jtop(ci) .and. j <= jbot(ci)) then
                if (j == jtop(ci)) then
-                 u(ci,j) = r(ci,j) / bet(ci)
+                 u(fc,j) = r(fc,j) / bet(ci)
                else
-                 gam(ci,j) = c(ci,j-1) / bet(ci)
-                 bet(ci) = b(ci,j) - a(ci,j) * gam(ci,j)
-                 u(ci,j) = (r(ci,j) - a(ci,j)*u(ci,j-1)) / bet(ci)
+                 gam(ci,j) = c(fc,j-1) / bet(ci)
+                 bet(ci) = b(fc,j) - a(fc,j) * gam(ci,j)
+                 u(fc,j) = (r(fc,j) - a(fc,j)*u(fc,j-1)) / bet(ci)
                end if
              end if
            endif
@@ -395,7 +458,7 @@ contains
            ci = filter(fc)
            if(l_is_col_active(ci))then
              if (j >= jtop(ci) .and. j <= jbot(ci)-1) then
-               u(ci,j) = u(ci,j) - gam(ci,j+1) * u(ci,j+1)
+               u(fc,j) = u(fc,j) - gam(ci,j+1) * u(fc,j+1)
              end if
            endif
         end do

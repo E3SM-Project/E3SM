@@ -498,7 +498,7 @@ module elm_varctl
   !$acc declare copyin(pf_tmode     )
   !$acc declare copyin(pf_frzmode   )
   !$acc declare copyin(initth_pf2clm)
-  !$acc declare copyin(pf_clmnstep0 )
+  !$acc declare copyin(pf_elmnstep0 )
 
   ! cpl_bypass
    character(len=fname_len), public :: metdata_type   = ' '    ! metdata type for CPL_BYPASS mode
@@ -514,7 +514,6 @@ module elm_varctl
   !$acc declare copyin(glcmec_downscale_longwave, subgridflag)
   !$acc declare copyin(use_nofire         )
   !$acc declare copyin(use_lch4           )
-  !$acc declare copyin(use_nitrif_denitrif)
   !$acc declare copyin(use_vertsoilc      )
   !$acc declare copyin(use_extralakelayers)
   !$acc declare copyin(use_vichydro       )
