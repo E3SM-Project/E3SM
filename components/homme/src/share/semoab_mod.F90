@@ -27,6 +27,7 @@ module semoab_mod
   use gllfvremap_mod,         only:  gfr_f_get_corner_latlon
 
   use control_mod, only :  west, east, south, north  ! 1, 2, 3, 4
+  use control_mod, only :  cubed_sphere_map         ! 0 = equiangular, 2 = element-local
   implicit none
 
   save
@@ -113,6 +114,8 @@ contains
 
     integer nedges_c, nverts_pg, nelem_pg, edge_index, j1
     integer, dimension(:), allocatable :: local_cell_gids, indx_cell
+    integer                            :: ivc1, ivc2   ! coarse corners of a shared pg edge
+    real(kind=real_kind)               :: xmid, ymid, zmid, rnorm
     integer, dimension(:,:), allocatable :: elem_edge, edge
     integer, dimension(:), allocatable :: vdone_pg, moabconn_pg
 
@@ -687,10 +690,42 @@ contains
                          endif
                      endif
                      ! create the 3d vertex !
-                     cart = spherical_to_cart (current_2d_vertex )
-                     moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
-                     moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
-                     moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+                     if (cubed_sphere_map .eq. 2) then
+                        ! This vertex sits on a coarse element edge, so it belongs to two coarse
+                        ! elements -- and only one of them creates it. Which one depends on the
+                        ! local edge enumeration, and when the two elements are on different
+                        ! tasks both create their own copy. gfr_f_get_corner_latlon answers from
+                        ! the asking element (ref2sphere uses that element's corners, and for
+                        ! cubed_sphere_map=0 its cube face as well) and semoab then round-trips
+                        ! through lat/lon, so the two copies differ in the last bits. The cell on
+                        ! each side then gets a slightly different corner depending on whether
+                        ! its neighbour happened to be local, which moved the atm cell areas --
+                        ! and every map weight built on them -- between task counts.
+                        !
+                        ! For the element-local map (cubed_sphere_map=2) ref2sphere restricted to
+                        ! an edge is a blend of that edge's two corners alone, so the midpoint is
+                        ! exactly normalize(c1+c2) of the two coarse corners. That is symmetric in
+                        ! the two corners -- and IEEE addition is commutative -- so both elements,
+                        ! on any task, get bit-identical coordinates. Not an approximation: it is
+                        ! the same point ref2sphere defines, just evaluated symmetrically.
+                        !
+                        ! cubed_sphere_map=0 is the equiangular map, whose edge midpoint is NOT
+                        ! the arc midpoint, so that case keeps the original path.
+                        ivc1 = edge(1, idx)
+                        ivc2 = edge(2, idx)
+                        xmid = moab_vert_coords( 3*(ivc1-1)+1 ) + moab_vert_coords( 3*(ivc2-1)+1 )
+                        ymid = moab_vert_coords( 3*(ivc1-1)+2 ) + moab_vert_coords( 3*(ivc2-1)+2 )
+                        zmid = moab_vert_coords( 3*(ivc1-1)+3 ) + moab_vert_coords( 3*(ivc2-1)+3 )
+                        rnorm = 1.0_real_kind / sqrt( xmid*xmid + ymid*ymid + zmid*zmid )
+                        moab_vert_coords ( 3*(iv-1)+1 ) = xmid * rnorm
+                        moab_vert_coords ( 3*(iv-1)+2 ) = ymid * rnorm
+                        moab_vert_coords ( 3*(iv-1)+3 ) = zmid * rnorm
+                     else
+                        cart = spherical_to_cart (current_2d_vertex )
+                        moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
+                        moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
+                        moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+                     endif
                      ! print *, 'ie, j, iv, vdone_pg(iv): ', ie, j, iv, vdone_pg(iv)
                  else ! the vertex was already created, but we need the index for connectivity of local fv cells
                      edge_verts(j) = nverts_c + ( -idx ) ! idx is index of edge (negative for already created)
