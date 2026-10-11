@@ -35,6 +35,8 @@ module prep_lnd_mod
   use component_type_mod, only: lnd, atm, rof, glc
   use map_glc2lnd_mod   , only: map_glc2lnd_ec
   use iso_c_binding
+  use iMOAB, only : iMOAB_SetCoverageMethod
+  use seq_comm_mct, only : mb_coverage_gnomonic
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, &
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
@@ -152,6 +154,7 @@ contains
     type(mct_avect), pointer :: x2l_lx
    ! MOAB stuff
     integer                  :: ierr, idintx, rank
+    integer                  :: mb_cover_gnom ! 1 = gnomonic coverage boxes, 0 = single 3D box
     character*32             :: appname
     character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2l, wgtIdFa2l, wgtIdSa2l
     integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
@@ -297,6 +300,12 @@ contains
                mapper_Fr2l%intx_context = lnd(1)%cplcompid
             else  ! samegrid_lr is false. Bi-grid case
               if (compute_maps_online_r2l) then
+                  ! Coverage membership test: gnomonic 2D boxes per panel, or one 3D box per task.
+                  ! Ghost layers (bilinear maps) force the 3D path inside iMOAB regardless.
+                  mb_cover_gnom = 0
+                  if (mb_coverage_gnomonic) mb_cover_gnom = 1
+                  ierr = iMOAB_SetCoverageMethod( mbintxrl, mb_cover_gnom )
+                  if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR in setting MOAB coverage method ')
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbrxid, mblxid, mbintxrl )
                   if (ierr .ne. 0) then
                     write(logunit,*) subname,' error in computing   rof lnd intx'
@@ -506,6 +515,12 @@ contains
                   write(logunit,*) subname,' error in setting the number of ghost layers'
                   call shr_sys_abort(subname//' error in setting the number of ghost layers')
                 endif
+                ! Coverage membership test: gnomonic 2D boxes per panel, or one 3D box per task.
+                ! Ghost layers (bilinear maps) force the 3D path inside iMOAB regardless.
+                mb_cover_gnom = 0
+                if (mb_coverage_gnomonic) mb_cover_gnom = 1
+                ierr = iMOAB_SetCoverageMethod( mbintxal, mb_cover_gnom )
+                if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR in setting MOAB coverage method ')
                 ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mblxid, mbintxal )
                 if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing atm lnd intx'

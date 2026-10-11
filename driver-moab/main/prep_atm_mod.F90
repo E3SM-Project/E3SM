@@ -120,6 +120,8 @@ contains
 
   subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
+   use iMOAB, only : iMOAB_SetCoverageMethod
+   use seq_comm_mct, only : mb_coverage_gnomonic
    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
    iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
    iMOAB_DefineTagStorage, iMOAB_MigrateMapMesh
@@ -154,6 +156,7 @@ contains
 
    ! MOAB stuff
    integer                  :: ierr, idintx, rank
+   integer                  :: mb_cover_gnom ! 1 = gnomonic coverage boxes, 0 = single 3D box
    character*32             :: appname, outfile, wopts, lnum
    character*32             :: dm1, dm2, dofnameS, dofnameT
    character*32             :: wgtIdSo2a, wgtIdFo2a, wgtIdSi2a, wgtIdFi2a, wgtIdSl2a, wgtIdFl2a
@@ -299,6 +302,12 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) '....Computing weights'
                   endif
+                  ! Coverage membership test: gnomonic 2D boxes per panel, or one 3D box per task.
+                  ! Ghost layers (bilinear maps) force the 3D path inside iMOAB regardless.
+                  mb_cover_gnom = 0
+                  if (mb_coverage_gnomonic) mb_cover_gnom = 1
+                  ierr = iMOAB_SetCoverageMethod( mbintxoa, mb_cover_gnom )
+                  if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR in setting MOAB coverage method ')
                   ierr = iMOAB_ComputeMeshIntersectionOnSphere( mboxid, mbaxid, mbintxoa )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing OCN-ATM mesh intersection'
@@ -574,6 +583,12 @@ contains
                   write(logunit,*) ' '
                   write(logunit,F00) 'Initializing mapper_Si2a'
                endif
+               ! Coverage membership test: gnomonic 2D boxes per panel, or one 3D box per task.
+               ! Ghost layers (bilinear maps) force the 3D path inside iMOAB regardless.
+               mb_cover_gnom = 0
+               if (mb_coverage_gnomonic) mb_cover_gnom = 1
+               ierr = iMOAB_SetCoverageMethod( mbintxia, mb_cover_gnom )
+               if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR in setting MOAB coverage method ')
                ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mbixid, mbaxid, mbintxia )
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing ICE-ATM intersection'
@@ -820,6 +835,12 @@ contains
                   if (iamroot_CPLID) then
                      write(logunit,*) 'iMOAB intersection between LND and ATM with id:', idintx
                   endif
+                  ! Coverage membership test: gnomonic 2D boxes per panel, or one 3D box per task.
+                  ! Ghost layers (bilinear maps) force the 3D path inside iMOAB regardless.
+                  mb_cover_gnom = 0
+                  if (mb_coverage_gnomonic) mb_cover_gnom = 1
+                  ierr = iMOAB_SetCoverageMethod( mbintxla, mb_cover_gnom )
+                  if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR in setting MOAB coverage method ')
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere ( mblxid, mbaxid, mbintxla )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing intersection between LND and ATM'

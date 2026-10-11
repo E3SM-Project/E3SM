@@ -229,6 +229,18 @@ module seq_comm_mct
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
   logical, public :: mb_scm_land = .false. ! land will be migrated if this is true, for scm case; usually one point only
   logical, public :: mb_dead_comps = .false. ! whether all components are dead (X compset); controls ent_type in I/O
+  ! MOAB covering-set membership test for online intersections, mirroring mbtempest's
+  ! --gnomonic option (which defaults the other way):
+  !   .true.  -> one gnomonic 2D bounding box per cube panel. Fits a curved patch tightly,
+  !              so fewer source cells are migrated. This is the historical iMOAB default.
+  !   .false. -> a single 3D axis-aligned box per task. Simpler, but a poor fit on a sphere,
+  !              so it over-selects and migrates more -- noticeable at high task counts.
+  ! Build-time property rather than a namelist entry: it selects a coverage algorithm, not a
+  ! science option, and is not expected to change between runs. Flip it here and rebuild to
+  ! compare the two paths. (Drop the `parameter` attribute if runtime control is ever needed.)
+  ! Maps that request source ghost layers (bilinear) always use the 3D path inside iMOAB,
+  ! whatever this says.
+  logical, parameter, public :: mb_coverage_gnomonic = .true.
   integer, public :: mbintxla ! iMOAB id for intersection mesh between land and atmosphere
   integer, public :: mbintxal ! iMOAB id for intersection mesh between atmosphere and land
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model

@@ -198,6 +198,8 @@ contains
   subroutine prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
+    use iMOAB, only : iMOAB_SetCoverageMethod
+    use seq_comm_mct, only : mb_coverage_gnomonic
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
       iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, &
@@ -244,6 +246,7 @@ contains
 
     ! MOAB stuff
    integer                  :: ierr, idintx, rank
+   integer                  :: mb_cover_gnom ! 1 = gnomonic coverage boxes, 0 = single 3D box
    character*32             :: appname, outfile, wopts, lnum
    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdFr2ol, wgtIdFr2oi, wgtIdFr2o, wgtIdFa2o, wgtIdSa2o, wgtIdVa2o
    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
@@ -467,6 +470,12 @@ contains
                   endif
 
                   ! first compute the overlap mesh between mbaxid (ATM) and mboxid (OCN) on coupler PEs
+                  ! Coverage membership test: gnomonic 2D boxes per panel, or one 3D box per task.
+                  ! Ghost layers (bilinear maps) force the 3D path inside iMOAB regardless.
+                  mb_cover_gnom = 0
+                  if (mb_coverage_gnomonic) mb_cover_gnom = 1
+                  ierr = iMOAB_SetCoverageMethod( mbintxao, mb_cover_gnom )
+                  if (ierr .ne. 0) call shr_sys_abort(subname//' ERROR in setting MOAB coverage method ')
                   ierr =  iMOAB_ComputeMeshIntersectionOnSphere( mbaxid, mboxid, mbintxao )
                   if (ierr .ne. 0) then
                      write(logunit,*) subname,' error in computing ATM-OCN mesh intersection'
