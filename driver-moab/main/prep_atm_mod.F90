@@ -343,7 +343,10 @@ contains
                   dm1 = "fv"//C_NULL_CHAR
                   dofnameS="GLOBAL_ID"//C_NULL_CHAR
                   orderS = 1  !  not much arguing
-                  fNoBubble = 1
+                  ! Keep the GLL bubble (MOAB expects fNoBubble=0): without it the nodal areas
+                  ! miss the face areas by the quadrature error, and an FV-SE map cannot be
+                  ! consistent and conservative at the same time.
+                  fNoBubble = 0
                   monotonicity = 0 !
                   noConserve = 0
                   validate = 0 ! less verbose
@@ -646,7 +649,10 @@ contains
                dm1 = "fv"//C_NULL_CHAR
                dofnameS="GLOBAL_ID"//C_NULL_CHAR
                orderS = 1  !  not much arguing
-               fNoBubble = 1
+               ! Keep the GLL bubble (MOAB expects fNoBubble=0): without it the nodal areas
+               ! miss the face areas by the quadrature error, and an FV-SE map cannot be
+               ! consistent and conservative at the same time.
+               fNoBubble = 0
                monotonicity = 0 !
                noConserve = 0
                validate = 0 ! less verbose
@@ -884,7 +890,10 @@ contains
                   dm1 = "fv"//C_NULL_CHAR
                   dofnameS="GLOBAL_ID"//C_NULL_CHAR
                   orderS = 1  !  not much arguing
-                  fNoBubble = 1
+                  ! Keep the GLL bubble (MOAB expects fNoBubble=0): without it the nodal areas
+                  ! miss the face areas by the quadrature error, and an FV-SE map cannot be
+                  ! consistent and conservative at the same time.
+                  fNoBubble = 0
                   monotonicity = 0 !
                   noConserve = 0
                   validate = 0 ! less verbose
