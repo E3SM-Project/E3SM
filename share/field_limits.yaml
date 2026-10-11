@@ -1,0 +1,401 @@
+# Field Limits Dictionary
+#
+# Physical limits on fields that components send to the coupler (c2x). A
+# component checks the fields it sends against these limits, and the fields it
+# receives against the limits set by their sender (share/util/shr_bounds_mod.F90,
+# called from the component's coupler interface). Each
+# entry is keyed by the coupler field name defined in
+# driver-mct/shr/seq_flds_mod.F90 (and driver-moab) and records:
+#
+#   component      : the component that sends the field (atm, lnd, ice, ocn, ...)
+#   units          : units, in the coupler's convention (as in seq_flds_mod)
+#   owner          : who owns the limit (the component that knows the physics)
+#
+# and exactly one of:
+#
+#   min, max       : limits; omit either for no limit on that side. Optional:
+#     min_inclusive,
+#     max_inclusive  : whether the limit value itself is allowed (default: true)
+#     where_positive : coupler field of the same component; the check only
+#                      applies where that field is > 0 (e.g. ice fraction)
+#     reason         : why the limit holds, where it isn't obvious
+#   unbounded      : "<reason>"; the field was reviewed and no limit applies
+#   status         : unreviewed; a field that existed before this dictionary and
+#                    has not been reviewed yet. New fields may not use it.
+#
+# Every field a component sends to the coupler must have an entry: the model
+# stops at startup if one does not (shr_bounds_require, called from seq_flds_set).
+# A name ending in '*' is a pattern for names that seq_flds_set builds at
+# startup from namelist settings: 'Sl_dd*' matches Sl_dd followed by digits
+# (Sl_dd001, Sl_dd002, ...); a comment next to it says how the names are built.
+# Fields defined by users (cplflds_custom, carma_fields) need no entry.
+#
+# Signs follow the coupler convention: fluxes are positive downward (into the
+# surface), so upward longwave (lwup) is negative.
+#
+# Do not edit share/util/shr_field_limits_mod.F90 by hand. After editing this
+# file, regenerate it with:
+#
+#   python share/gen_field_limits.py
+#
+# The generator checks each entry's keys and limits. With --base, it also fails
+# if a field is unreviewed here but not in the base file.
+
+field_limits:
+  version_number: 0.1.0
+  institution: E3SM Project
+  description: Physical limits on fields sent from components to the coupler
+
+  fields:
+
+    # atm
+    Sa_tbot:    {component: atm, units: K, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_ptem:    {component: atm, units: K, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_pbot:    {component: atm, units: Pa, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_pslv:    {component: atm, units: Pa, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_dens:    {component: atm, units: kg m-3, min: 0.0, min_inclusive: false, owner: atm}
+    Sa_shum:    {component: atm, units: kg kg-1, min: 0.0, owner: atm}
+    Faxa_rainc: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_rainl: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_snowc: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_snowl: {component: atm, units: kg m-2 s-1, min: 0.0, owner: atm}
+    Faxa_swvdr: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swndr: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swvdf: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swndf: {component: atm, units: W m-2, min: 0.0, owner: atm}
+    Faxa_swnet:
+      {component: atm, units: W m-2, min: -1.0e-10, owner: atm,
+       reason: "EAM computes net shortwave as down minus up; round-off gives values near -1e-14."}
+    Faxa_lwdn:  {component: atm, units: W m-2, min: 0.0, owner: atm}
+
+    # atm: not yet reviewed
+    Sa_z: {component: atm, units: m, owner: atm, status: unreviewed}
+    Sa_topo: {component: atm, units: m, owner: atm, status: unreviewed}
+    Sa_u: {component: atm, units: m s-1, owner: atm, status: unreviewed}
+    Sa_v: {component: atm, units: m s-1, owner: atm, status: unreviewed}
+    Sa_wsresp: {component: atm, units: m s-1 Pa-1, owner: atm, status: unreviewed}
+    Sa_tau_est: {component: atm, units: Pa, owner: atm, status: unreviewed}
+    Sa_ugust: {component: atm, units: m s-1, owner: atm, status: unreviewed}
+    Sa_uovern: {component: atm, units: Unitless, owner: atm, status: unreviewed}
+    Faxa_bcphidry: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_bcphodry: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_bcphiwet: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_ocphidry: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_ocphodry: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_ocphiwet: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstwet1: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstwet2: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstwet3: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstwet4: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstdry1: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstdry2: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstdry3: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_dstdry4: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Sa_co2prog: {component: atm, units: '1e-6 mol/mol', owner: atm, status: unreviewed}
+    Sa_co2diag: {component: atm, units: '1e-6 mol/mol', owner: atm, status: unreviewed}
+    Sa_shum_16O: {component: atm, units: kg kg-1, owner: atm, status: unreviewed}
+    Sa_shum_HDO: {component: atm, units: kg kg-1, owner: atm, status: unreviewed}
+    Sa_shum_18O: {component: atm, units: kg kg-1, owner: atm, status: unreviewed}
+    Faxa_rainc_16O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_rainl_16O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_rainc_18O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_rainl_18O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_rainc_HDO: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_rainl_HDO: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_snowc_16O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_snowl_16O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_snowc_18O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_snowl_18O: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_snowc_HDO: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    Faxa_snowl_HDO: {component: atm, units: kg m-2 s-1, owner: atm, status: unreviewed}
+    'Faxa_nhx': {component: atm, units: kg(N)/m2/sec, owner: atm, status: unreviewed}  # nitrogen deposition species from ndep_list (drv_flds_in)
+    'Faxa_noy': {component: atm, units: kg(N)/m2/sec, owner: atm, status: unreviewed}  # nitrogen deposition species from ndep_list (drv_flds_in)
+
+    # lnd
+    Sl_t:       {component: lnd, units: K, min: 0.0, min_inclusive: false, owner: lnd}
+    Sl_tref:    {component: lnd, units: K, min: 0.0, min_inclusive: false, owner: lnd}
+    Sl_avsdr:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_anidr:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_avsdf:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_anidf:   {component: lnd, units: '1', min: 0.0, max: 1.0, owner: lnd}
+    Sl_snowh:   {component: lnd, units: m, min: 0.0, owner: lnd}
+    Fall_swnet: {component: lnd, units: W m-2, min: 0.0, owner: lnd}
+    Fall_lwup:
+      {component: lnd, units: W m-2, max: 0.0, owner: lnd,
+       reason: "Emitted longwave is upward, so non-positive in the coupler's downward-positive convention (E3SM issue #8436)."}
+
+    # lnd: not yet reviewed
+    Sl_qref: {component: lnd, units: kg kg-1, owner: lnd, status: unreviewed}
+    Sl_fv: {component: lnd, units: m s-1, owner: lnd, status: unreviewed}
+    Sl_ram1: {component: lnd, units: s/m, owner: lnd, status: unreviewed}
+    Sl_u10: {component: lnd, units: m s-1, owner: lnd, status: unreviewed}
+    Sl_u10withgusts: {component: lnd, units: m s-1, owner: lnd, status: unreviewed}
+    Fall_taux: {component: lnd, units: N m-2, owner: lnd, status: unreviewed}
+    Fall_tauy: {component: lnd, units: N m-2, owner: lnd, status: unreviewed}
+    Fall_lat: {component: lnd, units: W m-2, owner: lnd, status: unreviewed}
+    Fall_sen: {component: lnd, units: W m-2, owner: lnd, status: unreviewed}
+    Fall_evap: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_wslake: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Fall_flxdst1: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Fall_flxdst2: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Fall_flxdst3: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Fall_flxdst4: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofsur: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofgwl: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofsub: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofdto: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofi: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_demand: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_Tqsur: {component: lnd, units: Kelvin, owner: lnd, status: unreviewed}
+    Flrl_Tqsub: {component: lnd, units: Kelvin, owner: lnd, status: unreviewed}
+    coszen_str: {component: lnd, units: '', owner: lnd, status: unreviewed}
+    Flrl_rofmud: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_inundinf: {component: lnd, units: mm/s, owner: lnd, status: unreviewed}
+    Sl_forc_hdm: {component: lnd, units: ind/km2, owner: lnd, status: unreviewed}
+    Sl_hdd: {component: lnd, units: K-days, owner: lnd, status: unreviewed}
+    Sl_cdd: {component: lnd, units: K-days, owner: lnd, status: unreviewed}
+    Fall_fco2_lnd: {component: lnd, units: moles m-2 s-1, owner: lnd, status: unreviewed}
+    Sl_snowh_16O: {component: lnd, units: m, owner: lnd, status: unreviewed}
+    Sl_snowh_18O: {component: lnd, units: m, owner: lnd, status: unreviewed}
+    Sl_snowh_HDO: {component: lnd, units: m, owner: lnd, status: unreviewed}
+    Sl_qref_16O: {component: lnd, units: kg kg-1, owner: lnd, status: unreviewed}
+    Sl_qref_HDO: {component: lnd, units: kg kg-1, owner: lnd, status: unreviewed}
+    Sl_qref_18O: {component: lnd, units: kg kg-1, owner: lnd, status: unreviewed}
+    Fall_evap_16O: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Fall_evap_HDO: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Fall_evap_18O: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofi_16O: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofi_18O: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofi_HDO: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofl_16O: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofl_18O: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    Flrl_rofl_HDO: {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}
+    'Sl_dd*': {component: lnd, units: cm/sec, owner: lnd, status: unreviewed}  # dry deposition velocities, Sl_dd001...
+    'Fall_voc*': {component: lnd, units: molecules/m2/sec, owner: lnd, status: unreviewed}  # MEGAN VOC emissions, Fall_voc001...
+    'Fall_fire*': {component: lnd, units: kg/m2/sec, owner: lnd, status: unreviewed}  # fire emissions, Fall_fire001...
+    'Sl_fztop': {component: lnd, units: m, owner: lnd, status: unreviewed}  # fire emission top height (shr_fire_emis_ztop_token), with fire emissions
+    'Fall_FANNH3': {component: lnd, units: gN/m2/sec, owner: lnd, status: unreviewed}  # FAN NH3 emission to atm (shr_fan_mod), when fan_nh3_to_atm
+    'Flgl_qice*': {component: lnd, units: kg m-2 s-1, owner: lnd, status: unreviewed}  # glacier ice flux per elevation class
+    'Sl_tsrf*': {component: lnd, units: deg C, owner: lnd, status: unreviewed}  # glacier surface temperature per elevation class
+    'Sl_topo*': {component: lnd, units: m, owner: lnd, status: unreviewed}  # surface height per elevation class
+    'Sl_hr_pft*': {component: lnd, units: gC/m^2/s, owner: lnd, status: unreviewed}  # heterotrophic respiration per pft (iac)
+    'Sl_npp_pft*': {component: lnd, units: gC/m^2/s, owner: lnd, status: unreviewed}  # npp per pft (iac)
+    'Sl_pftwgt_pft*': {component: lnd, units: '', owner: lnd, status: unreviewed}  # pft weight (iac)
+
+    # ice; surface state is only meaningful where there is ice
+    Si_t:       {component: ice, units: K, min: 0.0, min_inclusive: false, where_positive: Si_ifrac, owner: ice}
+    Si_tref:    {component: ice, units: K, min: 0.0, min_inclusive: false, where_positive: Si_ifrac, owner: ice}
+    Si_avsdr:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_anidr:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_avsdf:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_anidf:   {component: ice, units: '1', min: 0.0, max: 1.0, where_positive: Si_ifrac, owner: ice}
+    Si_ifrac:   {component: ice, units: '1', min: 0.0, max: 1.0, owner: ice}
+    Si_snowh:   {component: ice, units: m, min: 0.0, owner: ice}
+    Faii_swnet: {component: ice, units: W m-2, min: 0.0, owner: ice}
+    Faii_lwup:
+      {component: ice, units: W m-2, max: 0.0, owner: ice,
+       reason: "Emitted longwave is upward, so non-positive in the coupler's downward-positive convention."}
+
+    # ice: not yet reviewed
+    Fioi_swpen: {component: ice, units: W m-2, owner: ice, status: unreviewed}
+    Si_qref: {component: ice, units: kg kg-1, owner: ice, status: unreviewed}
+    Si_u10: {component: ice, units: m s-1, owner: ice, status: unreviewed}
+    Si_u10withgusts: {component: ice, units: m s-1, owner: ice, status: unreviewed}
+    Faii_taux: {component: ice, units: N m-2, owner: ice, status: unreviewed}
+    Fioi_taux: {component: ice, units: N m-2, owner: ice, status: unreviewed}
+    Faii_tauy: {component: ice, units: N m-2, owner: ice, status: unreviewed}
+    Fioi_tauy: {component: ice, units: N m-2, owner: ice, status: unreviewed}
+    Faii_lat: {component: ice, units: W m-2, owner: ice, status: unreviewed}
+    Faii_sen: {component: ice, units: W m-2, owner: ice, status: unreviewed}
+    Faii_evap: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Si_bpress: {component: ice, units: Pa, owner: ice, status: unreviewed}
+    Fioi_melth: {component: ice, units: W m-2, owner: ice, status: unreviewed}
+    Fioi_meltw: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    PFioi_bergh: {component: ice, units: W m-2, owner: ice, status: unreviewed}
+    PFioi_bergw: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_salt: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_bcphi: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_bcpho: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_flxdst: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_algae1: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_algae2: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_algae3: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_doc1: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_doc2: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_doc3: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_dic1: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_don1: {component: ice, units: mmol N m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_no3: {component: ice, units: mmol N m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_sio3: {component: ice, units: mmol Si m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_nh4: {component: ice, units: mmol N m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_dms: {component: ice, units: mmol S m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_dmspp: {component: ice, units: mmol S m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_dmspd: {component: ice, units: mmol S m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_docr: {component: ice, units: mmol C m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_fep1: {component: ice, units: umol Fe m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_fep2: {component: ice, units: umol Fe m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_fed1: {component: ice, units: umol Fe m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_fed2: {component: ice, units: umol Fe m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_dust1: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Si_ithick: {component: ice, units: m, owner: ice, status: unreviewed}
+    Si_ifloe: {component: ice, units: m, owner: ice, status: unreviewed}
+    Si_qref_16O: {component: ice, units: kg kg-1, owner: ice, status: unreviewed}
+    Si_qref_HDO: {component: ice, units: kg kg-1, owner: ice, status: unreviewed}
+    Si_qref_18O: {component: ice, units: kg kg-1, owner: ice, status: unreviewed}
+    Faii_evap_16O: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Faii_evap_HDO: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Faii_evap_18O: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_meltw_16O: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_meltw_18O: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    Fioi_meltw_HDO: {component: ice, units: kg m-2 s-1, owner: ice, status: unreviewed}
+    'Si_ifrac_*': {component: ice, units: '1', owner: ice, status: unreviewed}  # ice fraction per thickness category
+    'PFioi_swpen_ifrac_*': {component: ice, units: W m-2, owner: ice, status: unreviewed}  # penetrating shortwave times ice fraction per thickness category
+
+    # ocn
+    So_t:           {component: ocn, units: K, min: 0.0, min_inclusive: false, owner: ocn}
+    So_frac_h2oocn: {component: ocn, units: '-', min: 0.0, max: 1.0, owner: ocn}
+
+    # ocn: not yet reviewed
+    Faoo_h2otemp: {component: ocn, units: W m-2, owner: ocn, status: unreviewed}
+    Fioo_q: {component: ocn, units: W m-2, owner: ocn, status: unreviewed}
+    Fioo_frazil: {component: ocn, units: kg m-2 s-1, owner: ocn, status: unreviewed}
+    Foxo_q_li: {component: ocn, units: W m-2, owner: ocn, status: unreviewed}
+    Foxo_frazil_li: {component: ocn, units: kg m-2 s-1, owner: ocn, status: unreviewed}
+    Foxo_ismw: {component: ocn, units: kg m-2 s-1, owner: ocn, status: unreviewed}
+    Foxo_ismh: {component: ocn, units: W m-2, owner: ocn, status: unreviewed}
+    Foxo_rrofl: {component: ocn, units: kg m-2 s-1, owner: ocn, status: unreviewed}
+    Foxo_rrofi: {component: ocn, units: kg m-2 s-1, owner: ocn, status: unreviewed}
+    Foxo_rrofih: {component: ocn, units: W m-2, owner: ocn, status: unreviewed}
+    So_s: {component: ocn, units: g kg-1, owner: ocn, status: unreviewed}
+    So_u: {component: ocn, units: m s-1, owner: ocn, status: unreviewed}
+    So_v: {component: ocn, units: m s-1, owner: ocn, status: unreviewed}
+    So_dhdx: {component: ocn, units: m m-1, owner: ocn, status: unreviewed}
+    So_ssh: {component: ocn, units: m, owner: ocn, status: unreviewed}
+    So_dhdy: {component: ocn, units: m m-1, owner: ocn, status: unreviewed}
+    So_bldepth: {component: ocn, units: m, owner: ocn, status: unreviewed}
+    So_fswpen: {component: ocn, units: '1', owner: ocn, status: unreviewed}
+    So_algae1: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_algae2: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_algae3: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_doc1: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_doc2: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_doc3: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_dic1: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_don1: {component: ocn, units: mmol N m-3, owner: ocn, status: unreviewed}
+    So_no3: {component: ocn, units: mmol N m-3, owner: ocn, status: unreviewed}
+    So_sio3: {component: ocn, units: mmol Si m-3, owner: ocn, status: unreviewed}
+    So_nh4: {component: ocn, units: mmol N m-3, owner: ocn, status: unreviewed}
+    So_dms: {component: ocn, units: mmol S m-3, owner: ocn, status: unreviewed}
+    So_dmsp: {component: ocn, units: mmol S m-3, owner: ocn, status: unreviewed}
+    So_docr: {component: ocn, units: mmol C m-3, owner: ocn, status: unreviewed}
+    So_fep1: {component: ocn, units: umol Fe m-3, owner: ocn, status: unreviewed}
+    So_fep2: {component: ocn, units: umol Fe m-3, owner: ocn, status: unreviewed}
+    So_fed1: {component: ocn, units: umol Fe m-3, owner: ocn, status: unreviewed}
+    So_fed2: {component: ocn, units: umol Fe m-3, owner: ocn, status: unreviewed}
+    So_zaer1: {component: ocn, units: kg m-3, owner: ocn, status: unreviewed}
+    So_zaer2: {component: ocn, units: kg m-3, owner: ocn, status: unreviewed}
+    So_zaer3: {component: ocn, units: kg m-3, owner: ocn, status: unreviewed}
+    So_zaer4: {component: ocn, units: kg m-3, owner: ocn, status: unreviewed}
+    So_zaer5: {component: ocn, units: kg m-3, owner: ocn, status: unreviewed}
+    So_zaer6: {component: ocn, units: kg m-3, owner: ocn, status: unreviewed}
+    So_blt: {component: ocn, units: C, owner: ocn, status: unreviewed}
+    So_bls: {component: ocn, units: psu, owner: ocn, status: unreviewed}
+    So_htv: {component: ocn, units: m/s, owner: ocn, status: unreviewed}
+    So_stv: {component: ocn, units: m/s, owner: ocn, status: unreviewed}
+    So_rhoeff: {component: ocn, units: Pa, owner: ocn, status: unreviewed}
+    Faoo_fco2_ocn: {component: ocn, units: moles m-2 s-1, owner: ocn, status: unreviewed}
+    Faoo_fdms_ocn: {component: ocn, units: moles m-2 s-1, owner: ocn, status: unreviewed}
+    So_roce_16O: {component: ocn, units: '', owner: ocn, status: unreviewed}
+    So_roce_18O: {component: ocn, units: '', owner: ocn, status: unreviewed}
+    So_roce_HDO: {component: ocn, units: '', owner: ocn, status: unreviewed}
+    'So_tf3d*': {component: ocn, units: C, owner: ocn, status: unreviewed}  # ocean thermal forcing per z level
+    'So_tf3d_mask*': {component: ocn, units: none, owner: ocn, status: unreviewed}  # thermal forcing mask per z level
+
+    # rof: not yet reviewed
+    Forr_rofl: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Forr_rofi: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Firr_rofi: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_flood: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_volr: {component: rof, units: m, owner: rof, status: unreviewed}
+    Flrr_volrmch: {component: rof, units: m, owner: rof, status: unreviewed}
+    Flrr_supply: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_deficit: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Sr_h2orof: {component: rof, units: mm, owner: rof, status: unreviewed}
+    Sr_frac_h2orof: {component: rof, units: '1', owner: rof, status: unreviewed}
+    Forr_rofDIN: {component: rof, units: kg N per kg water, owner: rof, status: unreviewed}
+    Forr_rofDIP: {component: rof, units: kg P per kg water, owner: rof, status: unreviewed}
+    Forr_rofDON: {component: rof, units: kg N per kg water, owner: rof, status: unreviewed}
+    Forr_rofDOP: {component: rof, units: kg P per kg water, owner: rof, status: unreviewed}
+    Forr_rofDOC: {component: rof, units: kg C per kg water, owner: rof, status: unreviewed}
+    Forr_rofPP: {component: rof, units: kg P per kg water, owner: rof, status: unreviewed}
+    Forr_rofDSi: {component: rof, units: kg Si per kg water, owner: rof, status: unreviewed}
+    Forr_rofPOC: {component: rof, units: kg C per kg water, owner: rof, status: unreviewed}
+    Forr_rofPN: {component: rof, units: kg N per kg water, owner: rof, status: unreviewed}
+    Forr_rofDIC: {component: rof, units: kg C per kg water, owner: rof, status: unreviewed}
+    Forr_rofFe: {component: rof, units: kg Fe per kg water, owner: rof, status: unreviewed}
+    Forr_rofl_16O: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Forr_rofl_18O: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Forr_rofl_HDO: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Forr_rofi_16O: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Forr_rofi_18O: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Forr_rofi_HDO: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_flood_16O: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_flood_18O: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_flood_HDO: {component: rof, units: kg m-2 s-1, owner: rof, status: unreviewed}
+    Flrr_volr_16O: {component: rof, units: m3, owner: rof, status: unreviewed}
+    Flrr_volr_18O: {component: rof, units: m3, owner: rof, status: unreviewed}
+    Flrr_volr_HDO: {component: rof, units: m3, owner: rof, status: unreviewed}
+
+    # glc: not yet reviewed
+    Fogg_rofl: {component: glc, units: kg m-2 s-1, owner: glc, status: unreviewed}
+    Fogg_rofi: {component: glc, units: kg m-2 s-1, owner: glc, status: unreviewed}
+    Figg_rofi: {component: glc, units: kg m-2 s-1, owner: glc, status: unreviewed}
+    Sg_icemask: {component: glc, units: '1', owner: glc, status: unreviewed}
+    Sg_icemask_coupled_fluxes: {component: glc, units: '1', owner: glc, status: unreviewed}
+    Sg_ice_covered: {component: glc, units: '1', owner: glc, status: unreviewed}
+    Sg_topo: {component: glc, units: m, owner: glc, status: unreviewed}
+    Flgg_hflx: {component: glc, units: W m-2, owner: glc, status: unreviewed}
+    Fogx_qicelo: {component: glc, units: kg m-2 s-1, owner: glc, status: unreviewed}
+    Fogx_qiceho: {component: glc, units: W m-2, owner: glc, status: unreviewed}
+    Sg_blit: {component: glc, units: C, owner: glc, status: unreviewed}
+    Sg_blis: {component: glc, units: psu, owner: glc, status: unreviewed}
+    Sg_lithop: {component: glc, units: Pa, owner: glc, status: unreviewed}
+    Sg_icemask_grounded: {component: glc, units: unitless, owner: glc, status: unreviewed}
+    Sg_icemask_floating: {component: glc, units: unitless, owner: glc, status: unreviewed}
+    Sg_tbot: {component: glc, units: C, owner: glc, status: unreviewed}
+    Sg_dztbot: {component: glc, units: m, owner: glc, status: unreviewed}
+
+    # wav: not yet reviewed
+    Sw_Hs: {component: wav, units: m, owner: wav, status: unreviewed}
+    Sw_ustokes_wavenumber_1: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_vstokes_wavenumber_1: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_ustokes_wavenumber_2: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_vstokes_wavenumber_2: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_ustokes_wavenumber_3: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_vstokes_wavenumber_3: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_ustokes_wavenumber_4: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_vstokes_wavenumber_4: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_ustokes_wavenumber_5: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_vstokes_wavenumber_5: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_ustokes_wavenumber_6: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_vstokes_wavenumber_6: {component: wav, units: m/s, owner: wav, status: unreviewed}
+    Sw_Fp: {component: wav, units: s-1, owner: wav, status: unreviewed}
+    Sw_Dp: {component: wav, units: deg, owner: wav, status: unreviewed}
+    Faww_Tawx: {component: wav, units: N m-2, owner: wav, status: unreviewed}
+    Faww_Tawy: {component: wav, units: N m-2, owner: wav, status: unreviewed}
+    Fwow_Twox: {component: wav, units: N m-2, owner: wav, status: unreviewed}
+    Fwow_Twoy: {component: wav, units: N m-2, owner: wav, status: unreviewed}
+    Faow_Tocx: {component: wav, units: N m-2, owner: wav, status: unreviewed}
+    Faow_Tocy: {component: wav, units: N m-2, owner: wav, status: unreviewed}
+    Sw_Charn: {component: wav, units: '', owner: wav, status: unreviewed}
+    Sw_Ustar: {component: wav, units: '', owner: wav, status: unreviewed}
+    Sw_Z0: {component: wav, units: '', owner: wav, status: unreviewed}
+    'Sw_wavespec*': {component: wav, units: m2/Hz, owner: wav, status: unreviewed}  # wave spectra per frequency
+
+    # iac: not yet reviewed
+    'Sz_pct_pft*': {component: iac, units: percent, owner: iac, status: unreviewed}  # pft percent
+    'Sz_pct_pft_prev*': {component: iac, units: percent, owner: iac, status: unreviewed}  # previous pft percent
+    'Sz_harvest_frac*': {component: iac, units: fraction, owner: iac, status: unreviewed}  # harvest fraction
+    'Fazz_co2sfc_mon*': {component: iac, units: moles m-2 s-1, owner: iac, status: unreviewed}  # monthly surface co2
+    'Fazz_co2airlo_mon*': {component: iac, units: moles m-2 s-1, owner: iac, status: unreviewed}  # monthly co2 low aircraft
+    'Fazz_co2airhi_mon*': {component: iac, units: moles m-2 s-1, owner: iac, status: unreviewed}  # monthly co2 high aircraft
