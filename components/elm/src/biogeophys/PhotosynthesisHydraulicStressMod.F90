@@ -86,7 +86,6 @@ module PhotosynthesisHydraulicStressMod
   end type plant_hydraulics_params_type
   !
   type(plant_hydraulics_params_type), public :: params_inst  ! params_inst is populated in readParamsMod
-  !$acc declare create(params_inst)
 
 contains
 
@@ -176,13 +175,6 @@ contains
     temp1dto2d(:,:) = reshape(temp2dto1d(1:true_size),(/true_rows,nvegwcs/))
     params_inst%ck=temp1dto2d
 
-    !$acc update device(            &
-    !$acc params_inst%krmax       , &
-    !$acc params_inst%kmax        , &
-    !$acc params_inst%psi50       , &
-    !$acc params_inst%ck          , &
-    !$acc params_inst%psi_soil_ref, &
-    !$acc params_inst%lmr_intercept_atkin )
 
  end subroutine readParams
 
@@ -205,7 +197,6 @@ contains
     ! method
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon        , only : rgas, tfrz, rpi
     use elm_varctl        , only : carbon_only
     !use elm_varctl        , only : lnc_opt, reduce_dayl_factor, vcmax_opt
@@ -1284,7 +1275,6 @@ contains
     !!USES:
     !
     !! ARGUMENTS:
-      !$acc routine seq
     implicit none
     real(r8), intent(inout) :: x0sun,x0sha              ! initial guess and final value of the solution for cisun/cisha
     integer , intent(in)    :: p                        ! pft index
@@ -1504,7 +1494,6 @@ contains
        rh_can, gs_mol_sun, gs_mol_sha, bsun, bsha, qsatl, qaf, photosyns_inst, &
        canopystate_inst,  soilstate_inst )
     !------------------------------------------------------------------------------
-      !$acc routine seq
     implicit none
     !
     !!DESCRIPTION:
@@ -1637,7 +1626,9 @@ contains
 
        if( (fb(sun) == 0._r8) .and. (fb(sha) == 0._r8) ) exit
     enddo
+#ifndef _OPENACC
     if( iter == itmax) write(iulog,*) 'brent exceeding maximum iterations', b, fb
+#endif
     xsun=b(sun)
     xsha=b(sha)
 
@@ -1660,7 +1651,6 @@ contains
     !
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     implicit none
     !
@@ -1857,7 +1847,6 @@ contains
     ! calls spacF, spacA, and getvegwp
     !
     ! USES
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     use SimpleMathMod     , only : matvec_acc
@@ -2057,7 +2046,6 @@ contains
     ! example a LINPACK linear algebra solver.
     !
     ! USES
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     !
@@ -2208,7 +2196,6 @@ contains
     !  calculated for vegwp(p,:) as passed in via x
     !
     ! USES
-      !$acc routine seq
     use elm_varpar        , only : nlevsoi
     use elm_varcon        , only : rgas
     use ColumnType        , only : col_pp
@@ -2288,7 +2275,6 @@ contains
     !
     ! !USES:
     ! calls getqflx
-      !$acc routine seq
     use elm_varpar  , only : nlevsoi
     use ColumnType  , only : col_pp
     implicit none
@@ -2387,7 +2373,6 @@ contains
     !  calculate sunlit and shaded transpiration using gb_MOL and gs_MOL
     ! !USES:
     !
-      !$acc routine seq
     use elm_varcon        , only : rgas
     implicit none
     !
@@ -2470,7 +2455,6 @@ contains
   function plc(x,p,c,level,plc_method)
     ! !DESCRIPTION
     ! Return value of vulnerability curve at x
-    !$acc routine seq
     ! !ARGUMENTS
     real(r8) , intent(in)  :: x             ! water potential input
     integer  , intent(in)  :: p             ! index for pft
@@ -2508,7 +2492,6 @@ contains
   function d1plc(x,p,c,level,plc_method)
     ! !DESCRIPTION
     ! Return 1st derivative of vulnerability curve at x
-    !$acc routine seq
     ! !ARGUMENTS
     real(r8) , intent(in) :: x                ! water potential input
     integer  , intent(in) :: p                ! index for pft
