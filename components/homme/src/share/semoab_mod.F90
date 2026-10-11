@@ -28,6 +28,7 @@ module semoab_mod
 
   use control_mod, only :  west, east, south, north  ! 1, 2, 3, 4
   use control_mod, only :  cubed_sphere_map         ! 0 = equiangular, 2 = element-local
+  use control_mod, only :  geometry                 ! "sphere" or "plane"
   implicit none
 
   save
@@ -36,6 +37,87 @@ module semoab_mod
   integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
   
 contains
+
+  ! Tangent of the gnomonic coordinate of cube-face gridline k (0 <= k <= ne).
+  !
+  ! The angle is built from the integer index in the centred form xstart*(ne-2k)/ne, never
+  ! accumulated from a neighbour, and the result is forced odd in the index. Those two
+  ! properties make gridline k and gridline ne-k exact negations of each other, which is what
+  ! a panel seam needs: the two faces sharing an edge traverse it in opposite directions.
+  ! tan is taken exactly at the panel boundary, where tan(pi/4) would otherwise round to 1-eps
+  ! and leave the two panels' shared edge a hair apart.
+  real(kind=real_kind) function canon_tan_gnomonic(k)
+     use cube_mod, only : cube_xstart
+     integer, intent(in) :: k
+
+     real(kind=real_kind) :: angle
+
+     if (k .eq. 0) then
+        canon_tan_gnomonic = -1.0_real_kind     ! tan(-pi/4), exactly
+     else if (k .eq. ne) then
+        canon_tan_gnomonic =  1.0_real_kind     ! tan(pi/4), exactly
+     else
+        angle = cube_xstart * real(ne - 2*k, real_kind) / real(ne, real_kind)
+        canon_tan_gnomonic = tan(abs(angle))
+        if (angle < 0.0_real_kind) canon_tan_gnomonic = -canon_tan_gnomonic
+     endif
+
+  end function canon_tan_gnomonic
+
+  ! Cartesian coordinate of corner jcorner (1..4) of the coarse element whose global number is
+  ! elem_number, computed so that it does not depend on which cube face asks for it.
+  !
+  ! elem(ie)%corners3D comes from cubedsphere2cart, which round-trips the gnomonic corner through
+  ! (lat,lon). That round-trip is not symmetric between faces: r = sqrt(one + x**2 + y**2) sums
+  ! its terms in a different order depending on which axis carries the face normal, so two
+  ! elements on different panels compute the same geometric corner with different last bits.
+  ! semoab_mod keeps whichever copy it reaches first (the vdone_c .eq. 0 guard below), and which
+  ! element that is depends on the partition -- so the atm mesh, and every online weight built on
+  ! it, stops being reproducible under repartitioning.
+  !
+  ! Assemble the point in cube coordinates instead, where the slots are geometric rather than
+  ! face-relative: every face sharing a corner builds the identical triple, and normalising it in
+  ! a fixed x,y,z order then gives identical bits. The signs below are the unit vectors implied by
+  ! cart2spherical, so this is the same map, only without the lossy detour through (lat,lon).
+  subroutine canonical_corner3d(elem_number, jcorner, cart)
+     use coordinate_systems_mod, only : cartesian3D_t
+     use cube_mod, only : convert_gbl_index
+
+     integer, intent(in)              :: elem_number, jcorner
+     type (cartesian3D_t), intent(out) :: cart
+
+     integer, parameter :: di(4) = (/ 0, 1, 1, 0 /)
+     integer, parameter :: dj(4) = (/ 0, 0, 1, 1 /)
+
+     integer              :: i_e, j_e, face_no
+     real(kind=real_kind) :: ta, tb, cx, cy, cz, rinv
+
+     call convert_gbl_index(elem_number, i_e, j_e, face_no)
+
+     ta = canon_tan_gnomonic(i_e + di(jcorner))
+     tb = canon_tan_gnomonic(j_e + dj(jcorner))
+
+     select case (face_no)
+       case (1)
+          cx =  1.0_real_kind; cy =  ta;              cz =  tb
+       case (2)
+          cx = -ta;            cy =  1.0_real_kind;   cz =  tb
+       case (3)
+          cx = -1.0_real_kind; cy = -ta;              cz =  tb
+       case (4)
+          cx =  ta;            cy = -1.0_real_kind;   cz =  tb
+       case (5)
+          cx =  tb;            cy =  ta;              cz = -1.0_real_kind
+       case default ! 6
+          cx = -tb;            cy =  ta;              cz =  1.0_real_kind
+     end select
+
+     rinv = 1.0_real_kind / sqrt(cx*cx + cy*cy + cz*cz)
+     cart%x = cx * rinv
+     cart%y = cy * rinv
+     cart%z = cz * rinv
+
+  end subroutine canonical_corner3d
 
   integer function search_in(intarr, leng, value)
      integer, intent(in) :: leng
@@ -116,6 +198,7 @@ contains
     integer, dimension(:), allocatable :: local_cell_gids, indx_cell
     integer                            :: ivc1, ivc2   ! coarse corners of a shared pg edge
     real(kind=real_kind)               :: xmid, ymid, zmid, rnorm
+    logical                            :: canon_corners ! uniform cubed sphere: corners3d is face-dependent
     integer, dimension(:,:), allocatable :: elem_edge, edge
     integer, dimension(:), allocatable :: vdone_pg, moabconn_pg
 
@@ -408,6 +491,9 @@ contains
        allocate(vdone_c(1)) ! will be passed to iMOAB_ResolveSharedEnts, and compilers are complaining about non-allocated arrays
      endif
      vdone_c = 0
+     ! convert_gbl_index only means anything on a uniform cubed sphere; a refined (ne = 0) or
+     ! planar grid has to keep taking the corner the element already carries.
+     canon_corners = ( ne > 0 .and. trim(geometry) == "sphere" )
      if ( nelemd > 0 ) currentval = gdofv( indx(1)) ! start over to identify coordinates of the vertices
 
      do ix=1,moab_dim_cquads
@@ -416,9 +502,16 @@ contains
         j = i - ( i-1)/4*4 ! local index of vertex in element i
         iv = moabvh_c(ix)
         if (vdone_c(iv) .eq. 0) then
-            moab_vert_coords ( 3*(iv-1)+1 ) = elem(ie)%corners3d(j)%x
-            moab_vert_coords ( 3*(iv-1)+2 ) = elem(ie)%corners3d(j)%y
-            moab_vert_coords ( 3*(iv-1)+3 ) = elem(ie)%corners3d(j)%z
+            if (canon_corners) then
+               call canonical_corner3d(elem(ie)%vertex%number, j, cart)
+               moab_vert_coords ( 3*(iv-1)+1 ) = cart%x
+               moab_vert_coords ( 3*(iv-1)+2 ) = cart%y
+               moab_vert_coords ( 3*(iv-1)+3 ) = cart%z
+            else
+               moab_vert_coords ( 3*(iv-1)+1 ) = elem(ie)%corners3d(j)%x
+               moab_vert_coords ( 3*(iv-1)+2 ) = elem(ie)%corners3d(j)%y
+               moab_vert_coords ( 3*(iv-1)+3 ) = elem(ie)%corners3d(j)%z
+            endif
             vdone_c(iv) = gdofv(indx(ix)) ! this will be now our tag used for resolving shared entities
         endif
 
