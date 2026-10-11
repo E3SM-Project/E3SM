@@ -406,39 +406,6 @@ contains
       ! Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
       !==============================================================================!
 
-      !$acc enter data create(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc) 
-      ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
-      ! vcmax25 parameters, from CN
-      !$acc serial default(present)  
-      p = filterp(1)
-      i_type = veg_pp%itype(p)
-      fnr   = veg_vp%fnr(i_type)   !7.16_r8
-      act25 = veg_vp%act25(i_type) !3.6_r8   !umol/mgRubisco/min
-      
-      ! Convert rubisco activity units from umol/mgRubisco/min ->
-      ! umol/gRubisco/s
-      act25 = act25 * 1000.0_r8 / 60.0_r8
-      
-      ! Activation energy, from:
-      ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
-      ! Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
-      ! except TPU from: Harley et al (1992) Plant, Cell and Environment
-      ! 15:271-282
-      vcmaxha = veg_vp%vcmaxha(i_type) !72000._r8
-      jmaxha  = veg_vp%jmaxha(i_type) !50000._r8
-      tpuha   = veg_vp%tpuha(i_type)  !72000._r8
-      lmrha   = veg_vp%lmrha(i_type)  !46390._r8
-      
-      ! High temperature deactivation, from:
-      ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
-      ! The factor "c" scales the deactivation to a value of 1.0 at 25C
-      vcmaxhd = veg_vp%vcmaxhd(i_type) !200000._r8
-      jmaxhd  = veg_vp%jmaxhd(i_type)  !200000._r8
-      tpuhd   = veg_vp%tpuhd(i_type)   !200000._r8
-      lmrhd   = veg_vp%lmrhd(i_type)   !150650._r8
-      lmrse   = veg_vp%lmrse(i_type)   !490._r8
-      lmrc    = fth25 (lmrhd, lmrse)
-      !$acc end serial 
       !$acc enter data create(jmax_z(:,:), lnc(:),kn(:),psn_wc_z(:,:),psn_wj_z(:,:), psn_wp_z(:,:) )
 
       !$acc parallel loop independent gang vector default(present) private(p,og,c,t,i_type,kc25,ko25,sco,cp25)
@@ -483,13 +450,43 @@ contains
       ! Loop through each canopy layer to calculate nitrogen profile using
       ! cumulative lai at the midpoint of the layer
       
-      !$acc parallel loop independent gang vector default(present) present(&
+      !$acc parallel loop independent gang vector default(present) &
+      !$acc private(p,og,i_type,iv,vcmax25top,jmax25top,sum_nscaler,laican,total_lai,nscaler,lpc,&
+      !$acc tpu25top,kp25top,lmr25top,rad_layers_patch,lmr25,vcmax25,jmax25,tpu25,kp25,&
+      !$acc vcmaxse,jmaxse,tpuse,vcmaxc,jmaxc,tpuc,fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,&
+      !$acc vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc) present(&
       !$acc btran(:),leafn(:),kp_z(:,:),lmr_z(:,:), par_z(:,:),nrad(:),vcmaxcint(:),&
       !$acc vcmax_z(:,:),t10(:),leafp(:),tpu_z(:,:),tlai_z(:,:),alphapsn(:),c3flag(:))
       do f = 1, fn
          p = filterp(f)
          og = filter_map(f)
          i_type = veg_pp%itype(p)
+
+         ! vcmax25 parameters, from CN
+         fnr   = veg_vp%fnr(i_type)   !7.16_r8
+         ! Convert rubisco activity units from umol/mgRubisco/min -> umol/gRubisco/s
+         act25 = veg_vp%act25(i_type) * 1000.0_r8 / 60.0_r8
+
+         ! Activation energy, from:
+         ! Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
+         ! Bernacchi et al (2003) Plant, Cell and Environment 26:1419-1430
+         ! except TPU from: Harley et al (1992) Plant, Cell and Environment
+         ! 15:271-282
+         vcmaxha = veg_vp%vcmaxha(i_type) !72000._r8
+         jmaxha  = veg_vp%jmaxha(i_type)  !50000._r8
+         tpuha   = veg_vp%tpuha(i_type)   !72000._r8
+         lmrha   = veg_vp%lmrha(i_type)   !46390._r8
+
+         ! High temperature deactivation, from:
+         ! Leuning (2002) Plant, Cell and Environment 25:1205-1210
+         ! The factor "c" scales the deactivation to a value of 1.0 at 25C
+         vcmaxhd = veg_vp%vcmaxhd(i_type) !200000._r8
+         jmaxhd  = veg_vp%jmaxhd(i_type)  !200000._r8
+         tpuhd   = veg_vp%tpuhd(i_type)   !200000._r8
+         lmrhd   = veg_vp%lmrhd(i_type)   !150650._r8
+         lmrse   = veg_vp%lmrse(i_type)   !490._r8
+         lmrc    = fth25 (lmrhd, lmrse)
+
          if ( .not. nu_com_leaf_physiology) then
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(f) = 1._r8 / (slatop(i_type) * leafcn(i_type))
@@ -734,9 +731,11 @@ contains
       ! Leaf-level photosynthesis and stomatal conductance
       !==============================================================================!
       
-      !$acc parallel loop independent gang vector  default(present) present(&
+      !$acc parallel loop independent gang vector  default(present) &
+      !$acc private(p,og,iv,c,t,cf,gb,ceair,rh_can,qabs,aquad,bquad,cquad,r1,r2,je,niter,&
+      !$acc ciold,cs,gs,hs,gs_mol_err) present(&
       !$acc c3flag(:),nrad(:),bbb(:),rh_leaf(:),ap(:,:),ac(:,:),ag(:,:),psn_z(:,:),&
-      !$acc rs_z(:,:),an(:,:),aj(:,:),ci_z(p,:))
+      !$acc rs_z(:,:),an(:,:),aj(:,:),ci_z(:,:))
       do f = 1, fn
          p = filterp(f)
          og = filter_map(f)
@@ -863,7 +862,8 @@ contains
       ! Sum canopy layer fluxes and then derive effective leaf-level fluxes (per
       ! unit leaf area), which are used in other parts of the model. Here, laican
       ! sums to either laisun or laisha.
-      !$acc parallel loop gang worker independent default(present) present(&
+      !$acc parallel loop gang worker independent default(present) &
+      !$acc private(p,og,iv,psncan,psncan_wc,psncan_wj,psncan_wp,lmrcan,gscan,laican) present(&
       !$acc lai_z(:,:),nrad(:),rs_z(:,:),rs(:),psn_z(:,:),psn_wp(:),psn_wc(:),&
       !$acc psn_wj(:),lmr(:),lmr_z(:,:),psn(:)) 
       do f = 1, fn
@@ -903,8 +903,7 @@ contains
          end if
       end do
 
-      !$acc exit data delete(fnr,act25,vcmaxha,jmaxha,tpuha,lmrha,vcmaxhd,jmaxhd,tpuhd,lmrhd,lmrse,lmrc &
-      !$acc ,jmax_z(:,:), lnc(:), kn(:),psn_wc_z(:,:nlevcan),psn_wj_z(:,:nlevcan), psn_wp_z(:,:nlevcan) )
+      !$acc exit data delete(jmax_z(:,:), lnc(:), kn(:),psn_wc_z(:,:nlevcan),psn_wj_z(:,:nlevcan), psn_wp_z(:,:nlevcan) )
 
     end associate
 

@@ -967,7 +967,7 @@ contains
 
          end if ! end of if use_fates
 
-         !$acc parallel loop independent gang vector default(present) private(p,filter_index) present(laisun(:),&
+         !$acc parallel loop independent gang vector default(present) private(p,filter_index,deldT) present(laisun(:),&
          !$acc  thm(:), canopy_cond(:),temp2(:), frac_veg_nosno(:), esai(:), fdry(:), wta0(:), h2ocan(:), &
          !$acc  laisha(:),rssha(:),btran(:), fwet(:), qflx_evap_veg(:), qflx_tran_veg(:),sabv(:), eflx_sh_veg(:) )
          do active_index = 1, fn
@@ -1202,7 +1202,7 @@ contains
          if (itlef > itmin) then
             fnold = fn
             fn = 0
-            !$acc parallel loop seq default(present) private(p,filter_index) present(det(1:fnold), dele(1:fnold))
+            !$acc parallel loop seq default(present) private(p,filter_index) copy(fn) present(det(1:fnold), dele(1:fnold))
             do active_index = 1, fnold
                p = iter_filterp(active_index)
                filter_index = iter_filter_map(active_index)
@@ -1223,7 +1223,7 @@ contains
 
       call t_stopf('can_iter')
       
-      !$acc parallel loop independent gang vector default(present)
+      !$acc parallel loop independent gang vector default(present) private(e_ref2m, de2mdT, qsat_ref2m, dqsat2mdT)
       do filter_index = 1, num_nolu_vegp
          p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
