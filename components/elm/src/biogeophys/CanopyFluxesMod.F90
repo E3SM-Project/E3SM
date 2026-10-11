@@ -18,10 +18,12 @@ module CanopyFluxesMod
   use elm_varpar            , only : nlevgrnd, nlevsno
   use elm_varcon            , only : namep
   use elm_varcon            , only : mm_epsilon
-  use elm_varcon            , only : pa_to_kpa
+  use elm_varcon            , only : pa_to_kpa, isecspday
   use pftvarcon             , only : crop, nfixer
   use decompMod             , only : bounds_type
-  use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
+  use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation
+  use PhotosynthesisMod     , only : sunlit_phase, shaded_phase
+  use PhotosynthesisHydraulicStressMod, only : PhotosynthesisHydraulicStress
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
   use SoilMoistStressMod    , only : calc_root_moist_stress, set_perchroot_opt
   use SurfaceResistanceMod  , only : do_soilevap_beta
@@ -51,9 +53,41 @@ module CanopyFluxesMod
   ! !PUBLIC TYPES:
   implicit none
   save
+  private
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: CanopyFluxes
+
+  ! Leaf temperature iteration
+  real(r8), parameter :: btran0  = 0.0_r8   ! initial value of btran
+  real(r8), parameter :: zii     = 1000.0_r8! convective boundary layer height [m]
+  real(r8), parameter :: beta    = 1.0_r8   ! coefficient of convective velocity [-]
+  real(r8), parameter :: delmax  = 1.0_r8   ! max change in leaf temperature [K]
+  real(r8), parameter :: dlemin  = 0.1_r8   ! max limit for energy flux convergence [W/m2]
+  real(r8), parameter :: dtmin   = 0.01_r8  ! max limit for temperature convergence [K]
+  real(r8), parameter :: dtaumin = 0.01_r8  ! max limit for stress convergence [Pa]
+  integer , parameter :: itmax   = 41       ! maximum number of iterations [-]
+  integer , parameter :: itmin   = 3        ! minimum number of iterations [-]
+  real(r8), parameter :: vpd_min = 50._r8   ! lower bound for VPD [Pa] (based on CLM)
+
+  ! Litter resistance (K. Sakaguchi)
+  real(r8), parameter :: lai_dl = 0.5_r8    ! placeholder for (dry) plant litter area index [m2/m2]
+  real(r8), parameter :: z_dl   = 0.05_r8   ! placeholder for (dry) litter layer thickness [m]
+
+  ! Stability formulation (K. Sakaguchi): "gamma" in Sakaguchi & Zeng, 2008
+  real(r8), parameter :: ria = 0.5_r8
+
+  ! Second index of rah/raw
+  integer, parameter :: above_canopy = 1
+  integer, parameter :: below_canopy = 2
+
+  ! Irrigation. Irrigation starts in the time step FOLLOWING irrig_start_time,
+  ! since it isn't applied until the next call to CanopyHydrology. Actual
+  ! irrigation time may differ from irrig_length if it isn't a multiple of dtime.
+  real(r8), parameter :: irrig_min_lai      = 0.0_r8        ! minimum LAI for irrigation
+  real(r8), parameter :: irrig_btran_thresh = 0.999999_r8   ! irrigate when btran < this (round-off margin below 1)
+  integer , parameter :: irrig_start_time   = isecspday/4   ! 6AM local time [s after midnight]
+  integer , parameter :: irrig_length       = isecspday/6   ! 4 hours of irrigation per day [s]
 
 contains
 
@@ -96,12 +130,7 @@ contains
     use shr_flux_mod       , only : shr_flux_update_stress
     use elm_varcon         , only : sb, cpair, hvap, vkc, grav, denice
     use elm_varcon         , only : denh2o, tfrz, csoilc, tlsai_crit, alpha_aero
-    use elm_varcon         , only : isecspday, degpsec
-    use pftvarcon          , only : irrigated
-    use elm_varcon         , only : c14ratio
     use shr_const_mod      , only : SHR_CONST_PI
-    use elm_varsur         , only : firrig
-    use TopounitType       , only : top_pp
     use QSatMod            , only : QSat
     use FrictionVelocityMod, only : FrictionVelocity, MoninObukIni, &
          implicit_stress, atm_gustiness, force_land_gustiness
@@ -124,49 +153,10 @@ contains
     type(soilstate_type)      , intent(inout) :: soilstate_vars
     type(ch4_type)            , intent(inout) :: ch4_vars
     type(photosyns_type)      , intent(inout) :: photosyns_vars
-    integer  ::  time
     !
     ! !LOCAL VARIABLES:
     real(r8), pointer   :: bsun(:)          ! sunlit canopy transpiration wetness factor (0 to 1)
     real(r8), pointer   :: bsha(:)          ! shaded canopy transpiration wetness factor (0 to 1)
-    real(r8), parameter :: btran0 = 0.0_r8  ! initial value
-    real(r8), parameter :: zii = 1000.0_r8  ! convective boundary layer height [m]
-    real(r8), parameter :: beta = 1.0_r8    ! coefficient of convective velocity [-]
-    real(r8), parameter :: delmax = 1.0_r8  ! maxchange in  leaf temperature [K]
-    real(r8), parameter :: dlemin = 0.1_r8  ! max limit for energy flux convergence [w/m2]
-    real(r8), parameter :: dtmin = 0.01_r8  ! max limit for temperature convergence [K]
-    real(r8), parameter :: dtaumin = 0.01_r8! max limit for stress convergence [Pa]
-    integer , parameter :: itmax = 41       ! maximum number of iteration [-]
-    integer , parameter :: itmin = 3        ! minimum number of iteration [-]
-    real(r8), parameter :: irrig_min_lai = 0.0_r8           ! Minimum LAI for irrigation
-    real(r8), parameter :: irrig_btran_thresh = 0.999999_r8 ! Irrigate when btran falls below 0.999999 rather than 1 to allow for round-off error
-    integer , parameter :: irrig_start_time = isecspday/4   ! (6AM) Time of day to check whether we need irrigation, seconds (0 = midnight).
-
-    ! We start applying the irrigation in the time step FOLLOWING this time,
-    ! since we won't begin irrigating until the next call to CanopyHydrology
-    ! Desired amount of time to irrigate per day (sec). Actual time may
-    ! differ if this is not a multiple of dtime. Irrigation won't work properly
-    ! if dtime > secsperday
-
-    integer , parameter :: irrig_length = isecspday/6     ! 4 hours irrigation
-
-    ! Determines target soil moisture level for irrigation. If h2osoi_liq_so
-    ! is the soil moisture level at which stomata are fully open and
-    ! h2osoi_liq_sat is the soil moisture level at saturation (eff_porosity),
-    ! then the target soil moisture level is
-    !     (h2osoi_liq_so + irrig_factor*(h2osoi_liq_sat - h2osoi_liq_so)).
-    ! A value of 0 means that the target soil moisture level is h2osoi_liq_so.
-
-    ! A value of 1 means that the target soil moisture level is h2osoi_liq_sat
-    real(r8), parameter :: irrig_factor = 0.7_r8
-
-    !added by K.Sakaguchi for litter resistance
-    real(r8), parameter :: lai_dl = 0.5_r8           ! placeholder for (dry) plant litter area index (m2/m2)
-    real(r8), parameter :: z_dl = 0.05_r8            ! placeholder for (dry) litter layer thickness (m)
-
-    !added by K.Sakaguchi for stability formulation
-    real(r8), parameter :: ria  = 0.5_r8             ! free parameter for stable formulation (currently = 0.5, "gamma" in Sakaguchi&Zeng,2008)
-
     real(r8) :: zldis(num_nolu_vegp)   ! reference height "minus" zero displacement height [m]
     real(r8) :: ugust_total(num_nolu_vegp) ! gustiness including convective velocity [m/s]
     integer  :: filterc_tmp(num_nolu_vegp) ! column of each filter_nolu_vegp patch (FATES btran)
@@ -244,10 +234,6 @@ contains
     real(r8) :: o2(num_nolu_vegp)      ! atmospheric o2 partial pressure (pa)
     real(r8) :: svpts(num_nolu_vegp)   ! saturation vapor pressure at t_veg (pa)
     real(r8) :: eah(num_nolu_vegp)     ! canopy air vapor pressure (pa)
-    real(r8) :: s_node                 ! vol_liq/eff_porosity
-    real(r8) :: smp_node               ! matrix potential
-    real(r8) :: smp_node_lf            ! F. Li and S. Levis
-    real(r8) :: vol_liq                ! partial volume of liquid water in layer
     integer  :: itlef                  ! counter for leaf temperature iteration [-]
     integer  :: nmozsgn(num_nolu_vegp) ! number of times stability changes sign
     real(r8) :: w                      ! exp(-LSAI)
@@ -258,15 +244,10 @@ contains
     integer  :: j                      ! soil/snow level index
     integer  :: p                      ! patch index
     integer  :: c                      ! column index
-    integer  :: l                      ! landunit index
     integer  :: t                      ! topounit index
-    integer  :: jfrz                   ! shallowest frozen soil level (irrigation)
     integer  :: g                      ! gridcell index
-    integer  :: tpu_ind                ! index of topounit to grid
     integer  :: fp                     ! lake filter pft index
     integer  :: fn                     ! number of values in vegetated pft filter
-    integer  :: fnorig                 ! number of values in pft filter copy
-    integer  :: fporig(num_nolu_vegp)  ! temporary filter
     integer  :: fnold                       ! temporary copy of pft count
     integer  :: filter_index                ! filter index
     logical  :: found                       ! error flag for canopy above forcing hgt
@@ -290,20 +271,7 @@ contains
     real(r8) :: delq_snow
     real(r8) :: delq_soil
     real(r8) :: delq_h2osfc
-    integer  :: local_time                     ! local time at start of time step (seconds after solar midnight)
-    integer  :: seconds_since_irrig_start_time
-    integer  :: irrig_nsteps_per_day           ! number of time steps per day in which we irrigate
-    logical  :: check_for_irrig(num_nolu_vegp) ! where do we need to check soil moisture to see if we need to irrigate?
-    logical  :: frozen_soil(num_nolu_vegp)     ! set to true if we have encountered a frozen soil layer
-    real(r8) :: vol_liq_so                     ! partial volume of liquid water in layer for which smp_node = smpso
-    real(r8) :: h2osoi_liq_so                  ! liquid water corresponding to vol_liq_so for this layer [kg/m2]
-    real(r8) :: h2osoi_liq_sat                 ! liquid water corresponding to eff_porosity for this layer [kg/m2]
-    real(r8) :: deficit                        ! difference between desired soil moisture level for this layer and
-                                               ! current soil moisture level [kg/m2]
     real(r8) :: dt_veg(num_nolu_vegp)          ! change in t_veg, last iteration (Kelvin)
-    integer  :: ft                             ! plant functional type index
-    real(r8) :: temprootr,sum1
-    integer  :: iv
     real(r8) :: wind_speed0(bounds%begp:bounds%endp) ! Wind speed from atmosphere at start of iteration
     real(r8) :: wind_speed_adj(bounds%begp:bounds%endp) ! Adjusted wind speed for iteration
     real(r8) :: tau(bounds%begp:bounds%endp)      ! Stress used in iteration
@@ -319,13 +287,6 @@ contains
     ! moved, so iter_filter_map must be used to address them.
     integer :: iter_filterp(num_nolu_vegp), iter_filter_map(num_nolu_vegp)  ! filter for iteration loop
     integer :: active_index                                                ! position within the compacted iteration filter
-
-    ! Indices for raw and rah
-    integer, parameter :: above_canopy = 1         ! Above canopy
-    integer, parameter :: below_canopy = 2         ! Below canopy
-
-    ! Lower bound for VPD (based on CLM)
-    real(r8), parameter :: vpd_min = 50._r8
     !------------------------------------------------------------------------------
 
     associate(                                                               &
@@ -346,7 +307,6 @@ contains
          tau_est              => top_as%tau_est                            , & ! Input:  [real(r8) (:)   ]  approximate atmosphere change to zonal wind (m/s)
          ugust                => top_as%ugust                              , & ! Input:  [real(r8) (:)   ]  gustiness from atmosphere (m/s)
          forc_pco2            => top_as%pco2bot                            , & ! Input:  [real(r8) (:)   ]  partial pressure co2 (Pa)
-         forc_pc13o2          => top_as%pc13o2bot                          , & ! Input:  [real(r8) (:)   ]  partial pressure c13o2 (Pa)
          forc_po2             => top_as%po2bot                             , & ! Input:  [real(r8) (:)   ]  partial pressure o2 (Pa)
 
          dleaf                => veg_vp%dleaf                          , & ! Input:  [real(r8) (:)   ]  characteristic leaf dimension (m)
@@ -365,13 +325,9 @@ contains
          laisha               => canopystate_vars%laisha_patch             , & ! Input:  [real(r8) (:)   ]  shaded leaf area
          displa               => canopystate_vars%displa_patch             , & ! Input:  [real(r8) (:)   ]  displacement height (m)
          htop                 => canopystate_vars%htop_patch               , & ! Input:  [real(r8) (:)   ]  canopy top(m)
-         altmax_lastyear_indx => canopystate_vars%altmax_lastyear_indx_col , & ! Input:  [integer  (:)   ]  prior year maximum annual depth of thaw
-         altmax_indx          => canopystate_vars%altmax_indx_col          , & ! Input:  [integer  (:)   ]  maximum annual depth of thaw
 
          dleaf_patch          => canopystate_vars%dleaf_patch                 , & ! Output: [real(r8) (:)   ]  mean leaf diameter for this patch/pft
          watsat               => soilstate_vars%watsat_col                 , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)   (constant)
-         watdry               => soilstate_vars%watdry_col                 , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran=0                      (constant)
-         watopt               => soilstate_vars%watopt_col                 , & ! Input:  [real(r8) (:,:) ]  btran parameter for btran=1                      (constant)
          eff_porosity         => soilstate_vars%eff_porosity_col           , & ! Output: [real(r8) (:,:) ]  effective soil porosity
 
          sucsat               => soilstate_vars%sucsat_col                 , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                        (constant)
@@ -390,11 +346,6 @@ contains
          num_iter             => frictionvel_vars%num_iter_patch           , & ! Output: number of iterations required
          forc_hgt_t_patch => frictionvel_vars%forc_hgt_t_patch , & ! Input:  [real(r8) (:) ] observational height of temperature at pft level [m]
          forc_hgt_q_patch => frictionvel_vars%forc_hgt_q_patch , & ! Input:  [real(r8) (:) ] observational height of specific humidity at pft level [m]
-         vds              => frictionvel_vars%vds_patch        , & ! Output: [real(r8) (:) ] dry deposition velocity term (m/s) (for SO4 NH4NO3)
-         u10              => frictionvel_vars%u10_patch        , & ! Output: [real(r8) (:) ] 10-m wind (m/s) (for dust model)
-         u10_elm          => frictionvel_vars%u10_elm_patch    , & ! Output: [real(r8) (:) ] 10-m wind (m/s)
-         va               => frictionvel_vars%va_patch         , & ! Output: [real(r8) (:) ] atmospheric wind speed plus convective velocity (m/s)
-         fv               => frictionvel_vars%fv_patch         ,  & ! Output: [real(r8) (:) ] friction velocity (m/s) (for dust model)
 
          t_h2osfc             => col_es%t_h2osfc             , & ! Input:  [real(r8) (:)   ]  surface water temperature
          t_soisno             => col_es%t_soisno             , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
@@ -512,13 +463,8 @@ contains
 
       deg2rad = SHR_CONST_PI/180._r8
       if(num_nolu_vegp == 0) return
-      time = secs_curr;
-      irrig_nsteps_per_day = ((irrig_length + (dtime_mod - 1))/dtime_mod)  ! round up
-
-      !$acc enter data copyin(time,irrig_nsteps_per_day) 
-
       !$acc enter data create(del(:), efeb(:), wtlq0(:),wtalq(:), &
-      !$acc    wtgq(:), wtaq0(:), obuold(:),dayl_factor(:),check_for_irrig(:),zldis(:) ) 
+      !$acc    wtgq(:), wtaq0(:), obuold(:),dayl_factor(:),zldis(:) ) 
       !$acc enter data create(iter_filterp(:), iter_filter_map(:))
 
       ! Initialize
@@ -550,7 +496,7 @@ contains
       ! -----------------------------------------------------------------
       ! Time step initialization of photosynthesis variables
       ! -----------------------------------------------------------------
-      !NOTE: This likely shouldn't init based on bounds but on a filter !!
+      !NOTE: This likely shouldn't init based on bounds but on a filter 
       call photosyns_vars_TimeStepInit(photosyns_vars,bounds)
 
       if (use_fates) then
@@ -564,7 +510,7 @@ contains
       !      redundantly (eg. computing the same column variable 4 times)
       !      It would be best to make nolu_vegc filter.
       !assign the temporary filter
-      
+
       ! compute effective soil porosity
       call calc_effective_soilporosity(bounds,                          &
            ubj = nlevgrnd,                                              &
@@ -618,80 +564,7 @@ contains
               )
       end if !use_fates
 
-      ! Determine if irrigation is needed (over irrigated soil columns)
-      ! First, determine in what grid cells we need to bother 'measuring' soil water, to see if we need irrigation
-      ! Also set n_irrig_steps_left for these grid cells
-      ! n_irrig_steps_left(p) > 0 is ok even if irrig_rate(p) ends up = 0
-      ! in this case, we'll irrigate by 0 for the given number of time steps
-
-      !$acc parallel loop independent gang vector default(present) present(btran(:),elai(:),n_irrig_steps_left(:), irrig_rate(:)) private(p,g,local_time,seconds_since_irrig_start_time)
-      do filter_index = 1, fn
-         p = filter_nolu_vegp(filter_index)
-         g = veg_pp%gridcell(p)
-         if ( .not.veg_pp%is_fates(p)             .and. &
-              irrigated(veg_pp%itype(p)) == 1._r8 .and. &
-              elai(p) > irrig_min_lai  .and. btran(p) < irrig_btran_thresh ) then
-
-            ! see if it's the right time of day to start irrigating:
-            local_time = modulo(secs_curr + nint(grc_pp%londeg(g)/degpsec), isecspday)
-            seconds_since_irrig_start_time = modulo(local_time - irrig_start_time, isecspday)
-            if (seconds_since_irrig_start_time < dtime_mod) then
-               ! it's time to start irrigating
-               check_for_irrig(filter_index)    = .true.
-               n_irrig_steps_left(p) = irrig_nsteps_per_day
-               irrig_rate(p)         = 0._r8  ! reset; we'll add to this later
-            else
-               check_for_irrig(filter_index)    = .false.
-            end if
-         else  ! non-irrig pft or elai<=irrig_min_lai or btran>irrig_btran_thresh
-            check_for_irrig(filter_index)       = .false.
-         end if
-
-      end do
-
-      ! Now 'measure' soil water for the grid cells identified above and see if the
-      ! soil is dry enough to warrant irrigation
-      ! (Note: frozen_soil could probably be a column-level variable, but that would be
-      ! slightly less robust to potential future modifications)
-      ! This should not be operating on FATES patches (see is_fates filter above, pushes
-      ! check_for_irrig = false
-      ! frozen_soil(1:fn) = .false.
-      !$acc parallel loop independent gang worker default(present) private(p,c,g,t,tpu_ind,jfrz,sum1)
-      do filter_index = 1, fn
-         p = filter_nolu_vegp(filter_index)
-         c = veg_pp%column(p)
-         g = veg_pp%gridcell(p)
-         t = veg_pp%topounit(p)
-         tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
-         if (check_for_irrig(filter_index)) then
-            ! if level L was frozen, then we don't look at any levels below L
-            jfrz = nlevgrnd + 1
-            !$acc loop vector reduction(min:jfrz)
-            do j = 1,nlevgrnd
-               if (t_soisno(c,j) <= SHR_CONST_TKFRZ) jfrz = min(jfrz, j)
-            end do
-            sum1 = 0._r8
-            !$acc loop vector reduction(+:sum1) private(vol_liq_so,h2osoi_liq_so,h2osoi_liq_sat,deficit)
-            do j = 1,jfrz-1
-               if (rootfr(p,j) > 0._r8) then
-                  ! determine soil water deficit in this layer:
-                  ! Calculate vol_liq_so - i.e., vol_liq at which smp_node = smpso - by inverting the above equations
-                  ! for the root resistance factors
-                  vol_liq_so   = eff_porosity(c,j) * (-smpso(veg_pp%itype(p))/sucsat(c,j))**(-1/bsw(c,j))
-
-                  ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
-                  h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
-                  h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col_pp%dz(c,j)
-                  deficit        = max((h2osoi_liq_so + firrig(g,tpu_ind)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
-
-                  ! Add deficit to irrig_rate, converting units from mm to mm/sec
-                  sum1  = sum1 + deficit/(dtime_mod*irrig_nsteps_per_day)
-
-               end if  ! else if (rootfr(p,j) > 0)
-            end do     ! do j
-            irrig_rate(p) = sum1
-         end if        ! if (check_for_irrig(f) .and. .not. frozen_soil(f))
-      end do           ! do f
+      call CanopyIrrigation(fn, filter_nolu_vegp, canopystate_vars, energyflux_vars, soilstate_vars)
 
       found = .false.
 
@@ -711,7 +584,6 @@ contains
 
          !!Moved this here to allow async compute/data create w/ loop below
          zldis(filter_index) = forc_hgt_u_patch(p) - displa(p)
-
       end do
 
       !$acc enter data create(air(:),bir(:), cir(:), co2(:),o2(:),&
@@ -719,7 +591,7 @@ contains
       !$acc  dthv(:), obu(:),el(:),qsatl(:),qsatldT(:), um(:), &
       !$acc  wta0(:), err(:), det(:))
 
-      !$acc parallel loop independent gang vector default(present) private(p,c,t,g,deldT) present(thm(:),emv(:))
+      !$acc parallel loop independent gang vector default(present) private(p,c,t,g,deldT,slope_rad) present(thm(:),emv(:))
       do filter_index = 1, fn
          p = filter_nolu_vegp(filter_index)
          c = veg_pp%column(p)
@@ -734,8 +606,8 @@ contains
 
          if (use_finetop_rad) then
             slope_rad = slope_deg(g) * deg2rad
-            bir(p) = bir(p) / cos(slope_rad)
-            cir(p) = cir(p) / cos(slope_rad)
+            bir(filter_index) = bir(filter_index) / cos(slope_rad)
+            cir(filter_index) = cir(filter_index) / cos(slope_rad)
          endif
          ! Saturated vapor pressure, specific humidity, and their derivatives
          ! at the leaf surface
@@ -787,7 +659,7 @@ contains
       !$acc    temp22m(:),ustar(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
       !$acc     tlbef(:), del(:),del2(:),svpts(:),eah(:), dt_veg(:),wtg(:), &
       !$acc     wtl0(:), wtal(:), efe(:), dele(:),fm(:))
-      
+
       ! Begin stability iteration
       call t_startf('can_iter')
       ITERATION : do while (itlef <= itmax .and. fn > 0)
@@ -916,23 +788,16 @@ contains
                      soilstate_vars, surfalb_vars, solarabs_vars,    &
                     canopystate_vars, photosyns_vars)
             else
-              call Photosynthesis(bounds,fn,iter_filterp,iter_filter_map,num_nolu_vegp,&
-                        svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
-                        co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
-                        surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sun', &
-                        solarabs_vars%parsun_z_patch(begp:endp,:),  canopystate_vars%laisun_z_patch(begp:endp,:), &
-                        surfalb_vars%vcmaxcintsun_patch(begp:endp),  photosyns_vars%alphapsnsun_patch(begp:endp), &
-                        photosyns_vars%cisun_z_patch(begp:endp,:), photosyns_vars%rssun_patch(begp:endp), &
-                        photosyns_vars%rssun_z_patch(begp:endp,:), photosyns_vars%lmrsun_patch(begp:endp), &
-                        photosyns_vars%lmrsun_z_patch(begp:endp,:), photosyns_vars%psnsun_patch(begp:endp), &
-                        photosyns_vars%psnsun_z_patch(begp:endp,:),photosyns_vars%psnsun_wc_patch(begp:endp), &
-                        photosyns_vars%psnsun_wj_patch(begp:endp),photosyns_vars%psnsun_wp_patch(begp:endp)   )
+              call Photosynthesis(bounds, fn, iter_filterp, iter_filter_map, num_nolu_vegp, &
+                   svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp), o2(1:num_nolu_vegp), &
+                   co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp), &
+                   surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, sunlit_phase)
 
             end if
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, iter_filterp, &
-                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 1)
+                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, sunlit_phase)
             endif
 
             !$acc parallel loop independent gang vector default(present) private(p,c)
@@ -946,23 +811,16 @@ contains
             end do
 
             if ( .not. use_hydrstress ) then
-               call Photosynthesis(bounds,fn,iter_filterp,iter_filter_map,num_nolu_vegp, &
-                        svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp),o2(1:num_nolu_vegp),&
-                        co2(1:num_nolu_vegp),rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp),&
-                        surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, 'sha', &
-                        solarabs_vars%parsha_z_patch(begp:endp,:), canopystate_vars%laisha_z_patch(begp:endp,:), &
-                        surfalb_vars%vcmaxcintsha_patch(begp:endp), photosyns_vars%alphapsnsha_patch(begp:endp), &
-                        photosyns_vars%cisha_z_patch(begp:endp,:),photosyns_vars%rssha_patch(begp:endp), &
-                        photosyns_vars%rssha_z_patch(begp:endp,:),photosyns_vars%lmrsha_patch(begp:endp), &
-                        photosyns_vars%lmrsha_z_patch(begp:endp,:),photosyns_vars%psnsha_patch(begp:endp),&
-                        photosyns_vars%psnsha_z_patch(begp:endp,:),photosyns_vars%psnsha_wc_patch(begp:endp),&
-                        photosyns_vars%psnsha_wj_patch(begp:endp),photosyns_vars%psnsha_wp_patch(begp:endp)   )
+               call Photosynthesis(bounds, fn, iter_filterp, iter_filter_map, num_nolu_vegp, &
+                    svpts(1:num_nolu_vegp), eah(1:num_nolu_vegp), o2(1:num_nolu_vegp), &
+                    co2(1:num_nolu_vegp), rb(1:num_nolu_vegp), btran(begp:endp), dayl_factor(1:num_nolu_vegp), &
+                    surfalb_vars, solarabs_vars, canopystate_vars, photosyns_vars, shaded_phase)
 
             end if
 
             if ( use_c13 ) then
                call Fractionation (bounds, fn, iter_filterp,  &
-                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, 0)
+                     cnstate_vars, solarabs_vars, surfalb_vars, photosyns_vars, shaded_phase)
             end if
 
          end if ! end of if use_fates
@@ -1375,7 +1233,7 @@ contains
       end if
       !$acc exit data delete(del(:), efeb(:), wtlq0(:),wtalq(:), &
       !$acc  wtgq(:), wtaq0(:), obuold(:),dayl_factor(:) , &
-      !$acc  check_for_irrig(:), iter_filterp(:), iter_filter_map(:), zldis(:), &
+      !$acc  iter_filterp(:), iter_filter_map(:), zldis(:), &
       !$acc  air(:),bir(:), cir(:), co2(:),o2(:),&
       !$acc  nmozsgn(:), taf(:),qaf(:), ur(:),dth(:),dqh(:),delq(:), &
       !$acc  dthv(:), obu(:),el(:),qsatl(:),qsatldT(:), &
@@ -1383,9 +1241,140 @@ contains
       !$acc  temp22m(:),ustar(:), um(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
       !$acc  tlbef(:), del(:),del2(:),svpts(:),eah(:),wta0(:), err(:), dt_veg(:) ,wtg(:), &
       !$acc  wtal(:), wtl0(:), efe(:), det(:), dele(:), fm(:)  )
-      !$acc exit data delete(time,irrig_nsteps_per_day, itlef) 
+      !$acc exit data delete(itlef) 
     end associate
 
   end subroutine CanopyFluxes
+
+  !------------------------------------------------------------------------------
+  subroutine CanopyIrrigation(fn, filterp, canopystate_vars, energyflux_vars, soilstate_vars)
+    !
+    ! !DESCRIPTION:
+    ! At the start of the irrigation window, compute irrigation rate for
+    ! irrigated patches from the soil water deficit of unfrozen root layers.
+    !
+    ! !USES:
+    use shr_const_mod , only : SHR_CONST_TKFRZ
+    use elm_varcon    , only : denh2o, degpsec
+    use pftvarcon     , only : irrigated
+    use elm_varsur    , only : firrig
+    use TopounitType  , only : top_pp
+    !
+    ! !ARGUMENTS:
+    integer                , intent(in)    :: fn
+    integer                , intent(in)    :: filterp(:)
+    type(canopystate_type) , intent(in)    :: canopystate_vars
+    type(energyflux_type)  , intent(in)    :: energyflux_vars
+    type(soilstate_type)   , intent(in)    :: soilstate_vars
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: filter_index, p, c, g, t, j
+    integer  :: tpu_ind                        ! index of topounit on the grid
+    integer  :: jfrz                           ! shallowest frozen soil level
+    integer  :: local_time                     ! local time at start of time step (seconds after solar midnight)
+    integer  :: seconds_since_irrig_start_time
+    integer  :: irrig_nsteps_per_day           ! number of time steps per day in which we irrigate
+    logical  :: check_for_irrig(fn)            ! where to check soil moisture to see if we need to irrigate
+    real(r8) :: vol_liq_so                     ! partial volume of liquid water in layer for which smp_node = smpso
+    real(r8) :: h2osoi_liq_so                  ! liquid water corresponding to vol_liq_so for this layer [kg/m2]
+    real(r8) :: h2osoi_liq_sat                 ! liquid water corresponding to eff_porosity for this layer [kg/m2]
+    real(r8) :: deficit                        ! desired minus current soil moisture for this layer [kg/m2]
+    real(r8) :: sum1
+    !------------------------------------------------------------------------------
+
+    associate(                                                    &
+         elai               => canopystate_vars%elai_patch      , & ! Input:  [real(r8) (:)   ]  one-sided leaf area index with burying by snow
+         btran              => energyflux_vars%btran_patch      , & ! Input:  [real(r8) (:)   ]  transpiration wetness factor (0 to 1)
+         eff_porosity       => soilstate_vars%eff_porosity_col  , & ! Input:  [real(r8) (:,:) ]  effective soil porosity
+         sucsat             => soilstate_vars%sucsat_col        , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
+         bsw                => soilstate_vars%bsw_col           , & ! Input:  [real(r8) (:,:) ]  Clapp and Hornberger "b"
+         rootfr             => soilstate_vars%rootfr_patch      , & ! Input:  [real(r8) (:,:) ]  fraction of roots in each soil layer
+         smpso              => veg_vp%smpso                     , & ! Input:  [real(r8) (:)   ]  soil water potential at full stomatal opening (mm)
+         t_soisno           => col_es%t_soisno                  , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
+         h2osoi_liq         => col_ws%h2osoi_liq                , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         n_irrig_steps_left => veg_wf%n_irrig_steps_left        , & ! Output: [integer  (:)   ]  number of time steps for which we still need to irrigate today
+         irrig_rate         => veg_wf%irrig_rate                  & ! Output: [real(r8) (:)   ]  current irrigation rate [mm/s]
+         )
+
+      irrig_nsteps_per_day = ((irrig_length + (dtime_mod - 1))/dtime_mod)  ! round up
+
+      !$acc enter data create(check_for_irrig(:))
+
+         ! Determine if irrigation is needed (over irrigated soil columns)
+         ! First, determine in what grid cells we need to bother 'measuring' soil water, to see if we need irrigation
+         ! Also set n_irrig_steps_left for these grid cells
+         ! n_irrig_steps_left(p) > 0 is ok even if irrig_rate(p) ends up = 0
+         ! in this case, we'll irrigate by 0 for the given number of time steps
+
+         !$acc parallel loop independent gang vector default(present) present(btran(:),elai(:),n_irrig_steps_left(:), irrig_rate(:)) private(p,g,local_time,seconds_since_irrig_start_time)
+         do filter_index = 1, fn
+            p = filterp(filter_index)
+            g = veg_pp%gridcell(p)
+            if ( .not.veg_pp%is_fates(p)             .and. &
+                 irrigated(veg_pp%itype(p)) == 1._r8 .and. &
+                 elai(p) > irrig_min_lai  .and. btran(p) < irrig_btran_thresh ) then
+
+               ! see if it's the right time of day to start irrigating:
+               local_time = modulo(secs_curr + nint(grc_pp%londeg(g)/degpsec), isecspday)
+               seconds_since_irrig_start_time = modulo(local_time - irrig_start_time, isecspday)
+               if (seconds_since_irrig_start_time < dtime_mod) then
+                  ! it's time to start irrigating
+                  check_for_irrig(filter_index)    = .true.
+                  n_irrig_steps_left(p) = irrig_nsteps_per_day
+                  irrig_rate(p)         = 0._r8  ! reset; we'll add to this later
+               else
+                  check_for_irrig(filter_index)    = .false.
+               end if
+            else  ! non-irrig pft or elai<=irrig_min_lai or btran>irrig_btran_thresh
+               check_for_irrig(filter_index)       = .false.
+            end if
+
+         end do
+
+         ! Now 'measure' soil water for the grid cells identified above and see if the
+         ! soil is dry enough to warrant irrigation
+         ! This should not be operating on FATES patches (see is_fates filter above, pushes
+         ! check_for_irrig = false
+         !$acc parallel loop independent gang worker default(present) private(p,c,g,t,tpu_ind,jfrz,sum1)
+         do filter_index = 1, fn
+            p = filterp(filter_index)
+            c = veg_pp%column(p)
+            g = veg_pp%gridcell(p)
+            t = veg_pp%topounit(p)
+            tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
+            if (check_for_irrig(filter_index)) then
+               ! if level L was frozen, then we don't look at any levels below L
+               jfrz = nlevgrnd + 1
+               !$acc loop vector reduction(min:jfrz)
+               do j = 1,nlevgrnd
+                  if (t_soisno(c,j) <= SHR_CONST_TKFRZ) jfrz = min(jfrz, j)
+               end do
+               sum1 = 0._r8
+               !$acc loop vector reduction(+:sum1) private(vol_liq_so,h2osoi_liq_so,h2osoi_liq_sat,deficit)
+               do j = 1,jfrz-1
+                  if (rootfr(p,j) > 0._r8) then
+                     ! determine soil water deficit in this layer:
+                     ! Calculate vol_liq_so - i.e., vol_liq at which smp_node = smpso - by inverting the above equations
+                     ! for the root resistance factors
+                     vol_liq_so   = eff_porosity(c,j) * (-smpso(veg_pp%itype(p))/sucsat(c,j))**(-1/bsw(c,j))
+
+                     ! Translate vol_liq_so and eff_porosity into h2osoi_liq_so and h2osoi_liq_sat and calculate deficit
+                     h2osoi_liq_so  = vol_liq_so * denh2o * col_pp%dz(c,j)
+                     h2osoi_liq_sat = eff_porosity(c,j) * denh2o * col_pp%dz(c,j)
+                     deficit        = max((h2osoi_liq_so + firrig(g,tpu_ind)*(h2osoi_liq_sat - h2osoi_liq_so)) - h2osoi_liq(c,j), 0._r8)
+
+                     ! Add deficit to irrig_rate, converting units from mm to mm/sec
+                     sum1  = sum1 + deficit/(dtime_mod*irrig_nsteps_per_day)
+
+                  end if  ! else if (rootfr(p,j) > 0)
+               end do     ! do j
+               irrig_rate(p) = sum1
+            end if        ! if (check_for_irrig(f))
+         end do           ! do f
+
+      !$acc exit data delete(check_for_irrig(:))
+    end associate
+
+  end subroutine CanopyIrrigation
 
 end module CanopyFluxesMod

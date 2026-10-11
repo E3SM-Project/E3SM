@@ -1321,7 +1321,7 @@ contains
         use VegetationType   , only : veg_pp
         use ColumnType       , only : col_pp
         use elm_varctl       , only : iulog
-        use PhotosynthesisMod, only : plc, params_inst
+        use PhotosynthesisHydraulicStressMod, only : plc, params_inst
         use column_varcon    , only : icol_road_perv
         use shr_kind_mod     , only : r8 => shr_kind_r8
         !
