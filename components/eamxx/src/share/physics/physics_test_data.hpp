@@ -163,9 +163,10 @@ void shift_int_scalar(int& scalar)
   const int shift = (D == ekat::TransposeDirection::c2f ? 1 : -1);
   scalar += shift;
 
-  // Since f90 allows for negative index ranges (-foo:foo), we may
-  // have to remove this check.
-  EKAT_ASSERT_MSG(scalar >= 0, "Bad index: " << scalar);
+  // Since f90 allows for negative index ranges (-foo:foo), indices may be
+  // negative. The GW schemes use -1 to denote the physical top interface
+  // (EAM's Fortran ktop=0) under a shifted index convention, so allow -1.
+  EKAT_ASSERT_MSG(scalar >= -1, "Bad index: " << scalar);
 }
 
 // Fully Generic Data struct for multi-dimensions reals and ints
