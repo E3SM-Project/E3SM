@@ -1,0 +1,45 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+time_stepping:
+  time_step: ${ATM_TIME_STEP}
+  run_t0: ${RUN_T0}  # YYYY-MM-DD-XXXXX
+  number_of_steps: ${NUM_STEPS}
+
+eamxx:
+  atm_procs_list: [p3]
+  p3:
+    max_total_ni: 740.0e3
+    do_prescribed_ccn: false
+    use_hetfrz_classnuc: false
+    extra_p3_diags: true
+    use_warm_rain_emulator: ${USE_EMULATOR}
+    warm_rain_emulator_python_module: ${MODULE}
+    warm_rain_emulator_python_path: ${PYTHON_PATH}
+    warm_rain_emulator_model_path: ${MODEL}
+    warm_rain_emulator_autoconv_fallback_scale: ${FALLBACK_SCALE}
+    warm_rain_emulator_replaces_p3: ${REPLACES_P3}
+
+grids_manager:
+  type: mesh_free
+  grids_names: [physics]
+  physics:
+    type: point_grid
+    number_of_global_columns:   218
+    number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  precip_liq_surf_mass: 0.0
+  precip_ice_surf_mass: 0.0
+  hetfrz_immersion_nucleation_tend: 0.1
+  hetfrz_contact_nucleation_tend: 0.1
+  hetfrz_deposition_nucleation_tend: 0.1
+
+# The parameters for I/O control
+scorpio:
+  output_yaml_files: ["output_${CASE}.yaml"]
+...

@@ -516,6 +516,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   temporaries.hydrometeorsPresent     = m_buffer.hydrometeorsPresent;
 #endif
 
+  init_warm_rain_emulator();
+
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,
                             prog_state.th,pmid,pmid_dry,T_atm,t_prev,

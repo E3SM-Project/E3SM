@@ -248,6 +248,13 @@ be lost if SCREAM_HACK_XML is not enabled.
       <set_cld_frac_i_to_one type="logical" doc="set P3 input ice cloud fraction to 1 everywhere">false</set_cld_frac_i_to_one>
       <use_separate_ice_liq_frac type="logical" doc="use separate ice and liquid cloud fractions from shoc">false</use_separate_ice_liq_frac>
       <extra_p3_diags type="logical" doc="Extra P3 diagnostics">false</extra_p3_diags>
+      <use_warm_rain_emulator type="logical" doc="Compute P3's warm-rain collision rates (autoconversion, accretion, droplet and rain self-collection) with an emulator (a python module), where the emulator says it applies. Requires EAMXX_ENABLE_INFERENCE. See src/physics/p3/warm_rain_emulator/README.md">false</use_warm_rain_emulator>
+      <warm_rain_emulator_model_path type="string" doc="Model file of the warm-rain emulator, given to its python module"></warm_rain_emulator_model_path>
+      <warm_rain_emulator_python_module type="string" doc="Python module of the warm-rain emulator"></warm_rain_emulator_python_module>
+      <warm_rain_emulator_python_path type="string" doc="Colon-separated directories with the python module of the warm-rain emulator"></warm_rain_emulator_python_path>
+      <warm_rain_emulator_autoconv_fallback_scale type="real" doc="Factor applied to P3's autoconversion where the warm-rain emulator does not apply">1.0</warm_rain_emulator_autoconv_fallback_scale>
+      <warm_rain_emulator_replaces_p3 type="logical" doc="P3 does not compute its own warm-rain collision rates and uses the emulator's in every cell, whatever the emulator's masks say (the fallback scale is then unused). Only for emulators meant to apply everywhere">false</warm_rain_emulator_replaces_p3>
+      <warm_rain_emulator_cloud_self_collection type="logical" doc="Use the droplet self-collection of the warm-rain emulator (it is zero in P3)">true</warm_rain_emulator_cloud_self_collection>
     </p3>
 
     <!-- SHOC macrophysics -->

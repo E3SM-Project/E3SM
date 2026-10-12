@@ -99,6 +99,7 @@ struct UnitWrap {
     struct TestIceCollection;
     struct TestEvapSublPrecip;
     struct TestRainSelfCollection;
+    struct TestWarmRainEmulatorMerge;
     struct TestP3IceMelting;
     struct TestP3SubgridVarianceScaling;
     struct TestP3UpdatePrognosticLiq;

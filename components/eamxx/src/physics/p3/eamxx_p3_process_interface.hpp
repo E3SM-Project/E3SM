@@ -7,6 +7,7 @@
 
 #include <ekat_parameter_list.hpp>
 
+#include <memory>
 #include <string>
 
 namespace scream
@@ -433,12 +434,19 @@ public:
     Pack* wsm_data;
   };
 
+  // Computes the warm-rain rates of the emulator, before p3_main (public: Cuda
+  // requires methods enclosing __device__ lambdas to be public)
+  void run_warm_rain_emulator ();
+
 protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void run_impl        (const double dt);
   void finalize_impl   ();
+
+  // Sets up the warm-rain emulator, if requested (see eamxx_p3_warm_rain_emulator.cpp)
+  void init_warm_rain_emulator ();
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;
@@ -464,6 +472,12 @@ protected:
 #ifdef SCREAM_P3_SMALL_KERNELS
   P3F::P3Temporaries       temporaries;
 #endif
+  // Warm-rain emulator (see eamxx_p3_warm_rain_emulator.cpp): its rates, and its
+  // backend and buffers. Unused unless use_warm_rain_emulator is set. Declared
+  // whatever the build options, so that the class is the same in every file.
+  P3F::P3WarmRainRates<view_2d> m_emulated_warm_rain;
+  struct WarmRainEmulator;
+  std::shared_ptr<WarmRainEmulator> m_warm_rain_emulator;
   P3F::P3Infrastructure    infrastructure;
   P3F::P3Runtime           runtime_options;
   p3_preamble              p3_preproc;

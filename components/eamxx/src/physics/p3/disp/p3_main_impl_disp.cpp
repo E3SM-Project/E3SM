@@ -116,7 +116,8 @@ Int Functions<Real,DefaultDevice>
   const P3Temporaries& temporaries,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  const P3WarmRainRates<view_2d<Pack>>& emulated_warm_rain)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -275,6 +276,16 @@ Int Functions<Real,DefaultDevice>
     bm, qc_incld, qr_incld, qi_incld, qm_incld, nc_incld, nr_incld,
     ni_incld, bm_incld, nucleationPossible, hydrometeorsPresent, runtime_options);
 
+  if (runtime_options.use_warm_rain_emulator) {
+    const auto& emu = emulated_warm_rain;
+    for (const auto& v : {emu.qc2qr_autoconv_tend, emu.nc2nr_autoconv_tend, emu.ncautr, emu.nc_selfcollect_tend,
+                          emu.qc2qr_accret_tend, emu.nc_accret_tend, emu.nr_selfcollect_tend,
+                          emu.use_cloud, emu.use_rain}) {
+      EKAT_REQUIRE_MSG (v.extent_int(0)==nj && v.extent_int(1)==nk_pack,
+          "Error! use_warm_rain_emulator needs emulated warm-rain rates with extents (ncol, nlev_packs).\n");
+    }
+  }
+
   // ------------------------------------------------------------------------------------------
   // main k-loop (for processes):
 
@@ -292,7 +303,8 @@ Int Functions<Real,DefaultDevice>
     qr2qv_evap, qi2qv_sublim, qc2qr_accret, qc2qr_autoconv,
     qv2qi_vapdep, qc2qi_berg, qc2qr_ice_shed, qc2qi_collect,
     qr2qi_collect, qc2qi_hetero_freeze, qr2qi_immers_freeze, qi2qr_melt,
-    pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options);
+    pratot, prctot, nucleationPossible, hydrometeorsPresent, runtime_options,
+    emulated_warm_rain);
 
   //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
   //      a problem; those values get clipped to zero in the sedimentation section (if necessary).

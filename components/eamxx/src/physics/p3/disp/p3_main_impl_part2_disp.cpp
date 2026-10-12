@@ -106,7 +106,8 @@ void Functions<Real,DefaultDevice>
   const uview_2d<Pack>& prctot,
   const uview_1d<bool>& nucleationPossible,
   const uview_1d<bool>& hydrometeorsPresent,
-  const P3Runtime& runtime_options)
+  const P3Runtime& runtime_options,
+  const P3WarmRainRates<view_2d<Pack>>& emulated_warm_rain)
 {
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
@@ -123,6 +124,21 @@ void Functions<Real,DefaultDevice>
     const Int i = team.league_rank();
     if (!(nucleationPossible(i) || hydrometeorsPresent(i))) {
       return;
+    }
+
+    // Warm-rain rates of an emulator, if any
+    P3WarmRainRates<uview_1d<const Pack>> oemulated_warm_rain;
+    if (runtime_options.use_warm_rain_emulator) {
+      const auto& emu = emulated_warm_rain;
+      oemulated_warm_rain.qc2qr_autoconv_tend = ekat::subview(emu.qc2qr_autoconv_tend, i);
+      oemulated_warm_rain.nc2nr_autoconv_tend = ekat::subview(emu.nc2nr_autoconv_tend, i);
+      oemulated_warm_rain.ncautr              = ekat::subview(emu.ncautr, i);
+      oemulated_warm_rain.nc_selfcollect_tend = ekat::subview(emu.nc_selfcollect_tend, i);
+      oemulated_warm_rain.qc2qr_accret_tend   = ekat::subview(emu.qc2qr_accret_tend, i);
+      oemulated_warm_rain.nc_accret_tend      = ekat::subview(emu.nc_accret_tend, i);
+      oemulated_warm_rain.nr_selfcollect_tend = ekat::subview(emu.nr_selfcollect_tend, i);
+      oemulated_warm_rain.use_cloud           = ekat::subview(emu.use_cloud, i);
+      oemulated_warm_rain.use_rain            = ekat::subview(emu.use_rain, i);
     }
 
     // ------------------------------------------------------------------------------------------
@@ -149,7 +165,8 @@ void Functions<Real,DefaultDevice>
       ekat::subview(qv2qi_vapdep, i), ekat::subview(qc2qi_berg, i), ekat::subview(qc2qr_ice_shed, i), ekat::subview(qc2qi_collect, i),
       ekat::subview(qr2qi_collect, i), ekat::subview(qc2qi_hetero_freeze, i), ekat::subview(qr2qi_immers_freeze, i),
       ekat::subview(qi2qr_melt, i),
-      ekat::subview(pratot, i), ekat::subview(prctot, i), hydrometeorsPresent(i), nk, runtime_options);
+      ekat::subview(pratot, i), ekat::subview(prctot, i), hydrometeorsPresent(i), nk, runtime_options,
+      oemulated_warm_rain);
 
     if (!hydrometeorsPresent(i)) return;
   });

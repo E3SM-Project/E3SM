@@ -133,6 +133,15 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool use_hetfrz_classnuc                    = false;
     bool use_separate_ice_liq_frac              = false;
     bool extra_p3_diags                         = false;
+    // Warm-rain emulator (see P3WarmRainRates). Where the emulator does not
+    // apply, P3's autoconversion is multiplied by this factor
+    bool use_warm_rain_emulator                 = false;
+    Scalar warm_rain_emulator_autoconv_fallback_scale = 1.0;
+    // Whether to use the emulated droplet self-collection (it is zero in P3)
+    bool warm_rain_emulator_cloud_self_collection = true;
+    // Whether the emulator replaces P3's warm-rain rates: P3 does not compute
+    // them, and uses the emulated ones in every cell, whatever the masks say
+    bool warm_rain_emulator_replaces_p3         = false;
 
     void
     load_runtime_options_from_file(ekat::ParameterList &params)
@@ -175,6 +184,16 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       use_separate_ice_liq_frac =
           params.get<bool>("use_separate_ice_liq_frac", use_separate_ice_liq_frac);
       extra_p3_diags = params.get<bool>("extra_p3_diags", extra_p3_diags);
+      use_warm_rain_emulator =
+          params.get<bool>("use_warm_rain_emulator", use_warm_rain_emulator);
+      warm_rain_emulator_autoconv_fallback_scale =
+          params.get<double>("warm_rain_emulator_autoconv_fallback_scale",
+                             warm_rain_emulator_autoconv_fallback_scale);
+      warm_rain_emulator_cloud_self_collection =
+          params.get<bool>("warm_rain_emulator_cloud_self_collection",
+                           warm_rain_emulator_cloud_self_collection);
+      warm_rain_emulator_replaces_p3 =
+          params.get<bool>("warm_rain_emulator_replaces_p3", warm_rain_emulator_replaces_p3);
     }
   };
 
@@ -327,6 +346,24 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_collect_table collect_table_vals;
     // droplet spectral shape parameter for mass spectra
     view_dnu_table dnu_table_vals;
+  };
+
+  // CELL-AVERAGE rates of the warm-rain collision processes (autoconversion,
+  // accretion, droplet and rain self-collection) computed outside of P3, by
+  // an emulator, before p3_main, with P3's units and signs. They are inputs
+  // of p3_main, used if P3Runtime::use_warm_rain_emulator is set. use_cloud and use_rain (0 or 1)
+  // say where to use them: use_cloud for the cloud processes (all but
+  // nr_selfcollect_tend), use_rain for nr_selfcollect_tend. Elsewhere P3's
+  // own rates are kept. See warm_rain_emulator_merge. With
+  // P3Runtime::warm_rain_emulator_replaces_p3, P3 computes no warm-rain rates
+  // of its own and uses these in every cell.
+  template <typename View>
+  struct P3WarmRainRates {
+    View qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr;
+    View nc_selfcollect_tend;
+    View qc2qr_accret_tend, nc_accret_tend;
+    View nr_selfcollect_tend;
+    View use_cloud, use_rain;
   };
 
 #ifdef SCREAM_P3_SMALL_KERNELS
@@ -739,6 +776,25 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                                    Pack &nr_selfcollect_tend, const P3Runtime &runtime_options,
                                    const Mask &context = Mask(true));
 
+  // Merge the CELL-AVERAGE warm-rain rates of an emulator into P3's, after
+  // back_to_cell_average. Where use_cloud (use_rain) is on, the emulated cloud
+  // rates (rain self-collection) replace P3's; where use_cloud is off, P3's
+  // autoconversion is multiplied by autoconv_fallback_scale. Emulated rates
+  // are limited so that the conservation checks that follow hold: mass and
+  // number sources are non-negative, and self-collection cannot remove more
+  // number than there is in one step.
+  KOKKOS_FUNCTION
+  static void warm_rain_emulator_merge(
+      const Pack &nc, const Pack &nr, const Scalar &inv_dt,
+      const Scalar &autoconv_fallback_scale, const bool &cloud_self_collection,
+      const Pack &emu_qc2qr_autoconv_tend, const Pack &emu_nc2nr_autoconv_tend,
+      const Pack &emu_ncautr, const Pack &emu_nc_selfcollect_tend,
+      const Pack &emu_qc2qr_accret_tend, const Pack &emu_nc_accret_tend,
+      const Pack &emu_nr_selfcollect_tend, const Pack &emu_use_cloud,
+      const Pack &emu_use_rain, Pack &qc2qr_autoconv_tend, Pack &nc2nr_autoconv_tend,
+      Pack &ncautr, Pack &nc_selfcollect_tend, Pack &qc2qr_accret_tend,
+      Pack &nc_accret_tend, Pack &nr_selfcollect_tend, const Mask &context = Mask(true));
+
   // Impose maximum ice number
   KOKKOS_FUNCTION
   static void impose_max_total_ni(Pack &ni_local, const Scalar &max_total_ni,
@@ -1065,7 +1121,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<Pack> &qc2qi_hetero_freeze, const uview_1d<Pack> &qr2qi_immers_freeze,
       const uview_1d<Pack> &qi2qr_melt, const uview_1d<Pack> &pratot,
       const uview_1d<Pack> &prctot, bool &is_hydromet_present, const Int &nk,
-      const P3Runtime &runtime_options);
+      const P3Runtime &runtime_options,
+      const P3WarmRainRates<uview_1d<const Pack>> &emulated_warm_rain =
+          P3WarmRainRates<uview_1d<const Pack>>());
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static void p3_main_part2_disp(
@@ -1108,7 +1166,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_2d<Pack> &qc2qi_hetero_freeze, const uview_2d<Pack> &qr2qi_immers_freeze,
       const uview_2d<Pack> &qi2qr_melt, const uview_2d<Pack> &pratot,
       const uview_2d<Pack> &prctot, const uview_1d<bool> &is_nucleat_possible,
-      const uview_1d<bool> &is_hydromet_present, const P3Runtime &runtime_options);
+      const uview_1d<bool> &is_hydromet_present, const P3Runtime &runtime_options,
+      const P3WarmRainRates<view_2d<Pack>> &emulated_warm_rain =
+          P3WarmRainRates<view_2d<Pack>>());
 #endif
 
   KOKKOS_FUNCTION
@@ -1162,8 +1222,10 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                      const P3Temporaries &temporaries,
 #endif
                      const WorkspaceManager &workspace_mgr,
-                     Int nj,  // number of columns
-                     Int nk); // number of vertical cells per column
+                     Int nj, // number of columns
+                     Int nk, // number of vertical cells per column
+                     const P3WarmRainRates<view_2d<Pack>> &emulated_warm_rain =
+                         P3WarmRainRates<view_2d<Pack>>());
 
   static Int
   p3_main_internal(const P3Runtime &runtime_options, const P3PrognosticState &prognostic_state,
@@ -1172,7 +1234,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                    const P3Infrastructure &infrastructure, const P3HistoryOnly &history_only,
                    const P3LookupTables &lookup_tables, const WorkspaceManager &workspace_mgr,
                    Int nj,  // number of columns
-                   Int nk); // number of vertical cells per column
+                   Int nk,  // number of vertical cells per column
+                   const P3WarmRainRates<view_2d<Pack>> &emulated_warm_rain =
+                       P3WarmRainRates<view_2d<Pack>>());
 
 #ifdef SCREAM_P3_SMALL_KERNELS
   static Int
@@ -1183,7 +1247,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
                         const P3LookupTables &lookup_tables, const P3Temporaries &temporaries,
                         const WorkspaceManager &workspace_mgr,
                         Int nj,  // number of columns
-                        Int nk); // number of vertical cells per column
+                        Int nk,  // number of vertical cells per column
+                        const P3WarmRainRates<view_2d<Pack>> &emulated_warm_rain =
+                            P3WarmRainRates<view_2d<Pack>>());
 #endif
 
   KOKKOS_FUNCTION
@@ -1278,5 +1344,6 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 #include "p3_table_ice_impl.hpp"
 #include "p3_update_prognostics_impl.hpp"
 #include "p3_upwind_impl.hpp"
+#include "p3_warm_rain_emulator_impl.hpp"
 #endif // GPU && !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

@@ -28,6 +28,25 @@ add_subdirectory(remap)
 # Data managers structures
 add_subdirectory(data_managers)
 
+# The python inference backend of components/emulators, for processes that run ML
+# models. It embeds the python of Python3_EXECUTABLE (or Python3_ROOT_DIR).
+if (EAMXX_ENABLE_INFERENCE AND NOT TARGET emulator_inference)
+  set (EMULATOR_ENABLE_PYTHON ON CACHE BOOL "Build the Python inference backend" FORCE)
+  add_subdirectory(${SCREAM_BASE_DIR}/../emulators/common/src/inference
+                   ${CMAKE_BINARY_DIR}/emulator_inference)
+  # Where that python has its standard library and its packages: when embedded, a
+  # relocatable python does not see the former by itself, nor a virtual environment
+  # the latter. Processes give them to the backend.
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sys; print(sys.base_prefix)"
+    OUTPUT_VARIABLE PYTHON_HOME OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+    OUTPUT_VARIABLE PYTHON_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set (EAMXX_INFERENCE_PYTHON ${Python3_EXECUTABLE} CACHE INTERNAL "Python the inference backend embeds")
+  set (EAMXX_INFERENCE_PYTHON_HOME ${PYTHON_HOME} CACHE INTERNAL "Its home")
+  set (EAMXX_INFERENCE_PYTHON_PACKAGES ${PYTHON_PACKAGES} CACHE INTERNAL "Its packages")
+endif()
+
 # Atm process
 add_subdirectory(atm_process)
 

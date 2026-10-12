@@ -84,8 +84,20 @@ Int Functions<S,D>
   const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  const P3WarmRainRates<view_2d<Pack>>& emulated_warm_rain)
 {
+  if (runtime_options.use_warm_rain_emulator) {
+    const auto& emu = emulated_warm_rain;
+    const Int emu_nk_pack = ekat::npack<Pack>(nk);
+    const auto ok = [&] (const view_2d<Pack>& v) { return v.extent_int(0)==nj && v.extent_int(1)==emu_nk_pack; };
+    const bool all_ok = ok(emu.qc2qr_autoconv_tend) && ok(emu.nc2nr_autoconv_tend) && ok(emu.ncautr) &&
+                        ok(emu.nc_selfcollect_tend) && ok(emu.qc2qr_accret_tend) && ok(emu.nc_accret_tend) &&
+                        ok(emu.nr_selfcollect_tend) && ok(emu.use_cloud) && ok(emu.use_rain);
+    EKAT_REQUIRE_MSG (all_ok,
+        "Error! use_warm_rain_emulator needs emulated warm-rain rates with extents (ncol, nlev_packs).\n");
+  }
+
   using ExeSpace = typename KT::ExeSpace;
   using TPF      = ekat::TeamPolicyFactory<ExeSpace>;
   using ScratchViewType = Kokkos::View<bool*, typename ExeSpace::scratch_memory_space>;
@@ -221,6 +233,21 @@ Int Functions<S,D>
     const auto oqv_prev            = ekat::subview(diagnostic_inputs.qv_prev, i);
     const auto ot_prev             = ekat::subview(diagnostic_inputs.t_prev, i);
 
+    // Warm-rain rates of an emulator, if any
+    P3WarmRainRates<uview_1d<const Pack>> oemulated_warm_rain;
+    if (runtime_options.use_warm_rain_emulator) {
+      const auto& emu = emulated_warm_rain;
+      oemulated_warm_rain.qc2qr_autoconv_tend = ekat::subview(emu.qc2qr_autoconv_tend, i);
+      oemulated_warm_rain.nc2nr_autoconv_tend = ekat::subview(emu.nc2nr_autoconv_tend, i);
+      oemulated_warm_rain.ncautr              = ekat::subview(emu.ncautr, i);
+      oemulated_warm_rain.nc_selfcollect_tend = ekat::subview(emu.nc_selfcollect_tend, i);
+      oemulated_warm_rain.qc2qr_accret_tend   = ekat::subview(emu.qc2qr_accret_tend, i);
+      oemulated_warm_rain.nc_accret_tend      = ekat::subview(emu.nc_accret_tend, i);
+      oemulated_warm_rain.nr_selfcollect_tend = ekat::subview(emu.nr_selfcollect_tend, i);
+      oemulated_warm_rain.use_cloud           = ekat::subview(emu.use_cloud, i);
+      oemulated_warm_rain.use_rain            = ekat::subview(emu.use_rain, i);
+    }
+
     // Inputs for the heteogeneous freezing
     const auto ohetfrz_immersion_nucleation_tend  = ekat::subview(diagnostic_inputs.hetfrz_immersion_nucleation_tend, i);
     const auto ohetfrz_contact_nucleation_tend    = ekat::subview(diagnostic_inputs.hetfrz_contact_nucleation_tend, i);
@@ -279,7 +306,7 @@ Int Functions<S,D>
       ovap_liq_exchange, ovap_ice_exchange, oliq_ice_exchange,
       oqr2qv_evap, oqi2qv_sublim, oqc2qr_accret, oqc2qr_autoconv, oqv2qi_vapdep,
       oqc2qi_berg, oqc2qr_ice_shed, oqc2qi_collect, oqr2qi_collect, oqc2qi_hetero_freeze, oqr2qi_immers_freeze, oqi2qr_melt,
-      pratot, prctot, hydrometeorsPresent, nk, runtime_options);
+      pratot, prctot, hydrometeorsPresent, nk, runtime_options, oemulated_warm_rain);
 
     //NOTE: At this point, it is possible to have negative (but small) nc, nr, ni.  This is not
     //      a problem; those values get clipped to zero in the sedimentation section (if necessary).
@@ -373,7 +400,8 @@ Int Functions<S,D>
 #endif
   const WorkspaceManager& workspace_mgr,
   Int nj,
-  Int nk)
+  Int nk,
+  const P3WarmRainRates<view_2d<Pack>>& emulated_warm_rain)
 {
 #ifdef SCREAM_P3_SMALL_KERNELS
   return p3_main_internal_disp(runtime_options,
@@ -385,7 +413,8 @@ Int Functions<S,D>
                                lookup_tables,
                                temporaries,
                                workspace_mgr,
-                               nj, nk);
+                               nj, nk,
+                               emulated_warm_rain);
 #else
   return p3_main_internal(runtime_options,
                           prognostic_state,
@@ -395,7 +424,8 @@ Int Functions<S,D>
                           history_only,
                           lookup_tables,
                           workspace_mgr,
-                          nj, nk);
+                          nj, nk,
+                          emulated_warm_rain);
 #endif
 }
 } // namespace p3

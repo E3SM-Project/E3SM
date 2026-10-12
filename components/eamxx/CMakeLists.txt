@@ -262,6 +262,7 @@ set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 option (EAMXX_ENABLE_PYTHON "Whether to enable interfaces to python via pybind11" OFF)
+option (EAMXX_ENABLE_INFERENCE "Whether atm processes can run ML models (python modules) through the inference backend of components/emulators" OFF)
 
 ####################################################################
 #                    Packs-related settings                        #

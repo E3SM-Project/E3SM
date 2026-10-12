@@ -107,7 +107,8 @@ void Functions<S,D>
   const uview_1d<Pack>& pratot,
   const uview_1d<Pack>& prctot,
   bool& hydrometeorsPresent, const Int& nk,
-  const P3Runtime& runtime_options)
+  const P3Runtime& runtime_options,
+  const P3WarmRainRates<uview_1d<const Pack>>& emulated_warm_rain)
 {
   constexpr Scalar qsmall       = C::QSMALL;
   constexpr Scalar nsmall       = C::NSMALL;
@@ -123,6 +124,9 @@ void Functions<S,D>
   const bool use_hetfrz_classnuc = runtime_options.use_hetfrz_classnuc;
   const bool use_separate_ice_liq_frac = runtime_options.use_separate_ice_liq_frac;
   const bool extra_p3_diags = runtime_options.extra_p3_diags;
+  const bool use_warm_rain_emulator = runtime_options.use_warm_rain_emulator;
+  // With an emulator that replaces them, P3's own warm-rain rates are not computed
+  const bool compute_warm_rain = !runtime_options.warm_rain_emulator_replaces_p3;
 
   team.team_barrier();
   hydrometeorsPresent = false;
@@ -402,27 +406,29 @@ void Functions<S,D>
                      not_skip_all);
     }
 
-    // cloud water autoconversion
-    // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
-    cloud_water_autoconversion(
-      rho(k), qc_incld(k), nc_incld(k), inv_qc_relvar(k),
-      qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, runtime_options, not_skip_all);
+    if (compute_warm_rain) {
+      // cloud water autoconversion
+      // NOTE: cloud_water_autoconversion must be called before droplet_self_collection
+      cloud_water_autoconversion(
+        rho(k), qc_incld(k), nc_incld(k), inv_qc_relvar(k),
+        qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, runtime_options, not_skip_all);
 
-    // self-collection of droplets
-    droplet_self_collection(
-      rho(k), inv_rho(k), qc_incld(k),
-      mu_c(k), nu(k), nc2nr_autoconv_tend, nc_selfcollect_tend, not_skip_all);
+      // self-collection of droplets
+      droplet_self_collection(
+        rho(k), inv_rho(k), qc_incld(k),
+        mu_c(k), nu(k), nc2nr_autoconv_tend, nc_selfcollect_tend, not_skip_all);
 
-    // accretion of cloud by rain
-    cloud_rain_accretion(
-      rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k), inv_qc_relvar(k),
-      qc2qr_accret_tend, nc_accret_tend, runtime_options, not_skip_all);
+      // accretion of cloud by rain
+      cloud_rain_accretion(
+        rho(k), inv_rho(k), qc_incld(k), nc_incld(k), qr_incld(k), inv_qc_relvar(k),
+        qc2qr_accret_tend, nc_accret_tend, runtime_options, not_skip_all);
 
-    // self-collection and breakup of rain
-    // (breakup following modified Verlinde and Cotton scheme)
-    rain_self_collection(
-      rho(k), qr_incld(k), nr_incld(k),
-      nr_selfcollect_tend, runtime_options, not_skip_all);
+      // self-collection and breakup of rain
+      // (breakup following modified Verlinde and Cotton scheme)
+      rain_self_collection(
+        rho(k), qr_incld(k), nr_incld(k),
+        nr_selfcollect_tend, runtime_options, not_skip_all);
+    }
 
     // Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
     // cell-average quantities.
@@ -433,6 +439,23 @@ void Functions<S,D>
       ncshdc, nc2ni_immers_freeze_tend, nr_collect_tend, ni_selfcollect_tend,
       qv2qi_vapdep_tend, nr2ni_immers_freeze_tend, ni_sublim_tend, qv2qi_nucleat_tend, ni_nucleat_tend, qc2qi_berg_tend, 
       ncheti_cnt, qcheti_cnt, nicnt, qicnt, ninuc_cnt, qinuc_cnt, not_skip_all, runtime_options);
+
+    // With a warm-rain emulator, its (cell-average) rates replace the ones above where it applies.
+    // They go through the same conservation checks as P3's.
+    if (use_warm_rain_emulator) {
+      const auto& emu = emulated_warm_rain;
+      // (an emulator that replaces P3's rates is used everywhere)
+      const Pack use_cloud = compute_warm_rain ? emu.use_cloud(k) : Pack(1);
+      const Pack use_rain  = compute_warm_rain ? emu.use_rain(k)  : Pack(1);
+      warm_rain_emulator_merge(
+        nc(k), nr(k), inv_dt, runtime_options.warm_rain_emulator_autoconv_fallback_scale,
+        runtime_options.warm_rain_emulator_cloud_self_collection,
+        emu.qc2qr_autoconv_tend(k), emu.nc2nr_autoconv_tend(k), emu.ncautr(k),
+        emu.nc_selfcollect_tend(k), emu.qc2qr_accret_tend(k), emu.nc_accret_tend(k),
+        emu.nr_selfcollect_tend(k), use_cloud, use_rain,
+        qc2qr_autoconv_tend, nc2nr_autoconv_tend, ncautr, nc_selfcollect_tend,
+        qc2qr_accret_tend, nc_accret_tend, nr_selfcollect_tend, not_skip_all);
+    }
 
     //
     // conservation of water

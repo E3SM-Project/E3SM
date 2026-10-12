@@ -1,0 +1,17 @@
+# P3 with its warm-rain emulator (the SDM-trained one, a python module).
+# Until a python with numpy and torch is part of the machine environments, it comes
+# from the environment:
+#   EAMXX_INFERENCE_PYTHON  python interpreter, with numpy and torch
+if [ -z "$EAMXX_INFERENCE_PYTHON" ]; then
+  echo "ERROR: testmod p3_warm_rain_emulator needs EAMXX_INFERENCE_PYTHON in the environment" >&2
+  exit 1
+fi
+./xmlchange --append SCREAM_CMAKE_OPTIONS="EAMXX_ENABLE_INFERENCE On Python3_EXECUTABLE $EAMXX_INFERENCE_PYTHON"
+EAMXX=$CIMEROOT/../components/eamxx
+EMULATOR=$(cd $EAMXX/src/physics/p3/warm_rain_emulator && pwd)
+ATMCHANGE=$EAMXX/scripts/atmchange
+$ATMCHANGE p3::use_warm_rain_emulator=true -b
+$ATMCHANGE p3::warm_rain_emulator_python_module=sdm_warm_rain -b
+$ATMCHANGE p3::warm_rain_emulator_python_path=$EMULATOR -b
+$ATMCHANGE p3::warm_rain_emulator_model_path=$EMULATOR/sdm_warm_rain.pt -b
+$ATMCHANGE p3::warm_rain_emulator_autoconv_fallback_scale=0.36 -b

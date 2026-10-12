@@ -1,0 +1,28 @@
+%YAML 1.1
+---
+filename_prefix: p3_warm_rain_emulator_${CASE}
+averaging_type: instant
+# Full precision, so that comparisons see round-off differences
+floating_point_precision: real
+field_names:
+  - T_mid
+  - qv
+  - qc
+  - qr
+  - qi
+  - qm
+  - nc
+  - nr
+  - ni
+  - bm
+  - eff_radius_qc
+  - eff_radius_qr
+  - precip_liq_surf_mass
+  - precip_ice_surf_mass
+  - micro_vap_liq_exchange
+  - qc2qr_autoconv
+  - qc2qr_accret
+output_control:
+  frequency: 1
+  frequency_units: nsteps
+...

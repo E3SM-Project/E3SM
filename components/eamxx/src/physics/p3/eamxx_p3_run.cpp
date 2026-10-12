@@ -58,13 +58,18 @@ void P3Microphysics::run_impl (const double dt)
     get_field_out("qi_sed").deep_copy(0.0);
   }
 
+  // With a warm-rain emulator, its rates are inputs of p3_main
+  if (runtime_options.use_warm_rain_emulator) {
+    run_warm_rain_emulator();
+  }
+
   start_timer("EAMxx::P3::p3_main");
   P3F::p3_main(runtime_options, prog_state, diag_inputs, diag_outputs, infrastructure,
                history_only, lookup_tables,
 #ifdef SCREAM_P3_SMALL_KERNELS
                temporaries,
 #endif
-               workspace_mgr, m_num_cols, m_num_levs);
+               workspace_mgr, m_num_cols, m_num_levs, m_emulated_warm_rain);
   stop_timer("EAMxx::P3::p3_main");
 
   // Conduct the post-processing of the p3_main output.

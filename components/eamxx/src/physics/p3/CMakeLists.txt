@@ -1,6 +1,7 @@
 set(P3_SRCS
   eamxx_p3_process_interface.cpp
   eamxx_p3_run.cpp
+  eamxx_p3_warm_rain_emulator.cpp
 )
 
 # Add ETI source files if not on CUDA/HIP
@@ -23,6 +24,7 @@ if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos
     eti/p3_ice_deposition_sublimation.cpp
     eti/p3_conservation.cpp
     eti/p3_rain_self_collection.cpp
+    eti/p3_warm_rain_emulator.cpp
     eti/p3_back_to_cell_average.cpp
     eti/p3_cloud_rain_acc.cpp
     eti/p3_calc_rime_density.cpp
@@ -87,6 +89,14 @@ foreach (P3_LIB IN LISTS P3_LIBS)
     ${SCREAM_BASE_DIR}/../eam/src/physics/cam
   )
   target_link_libraries(${P3_LIB} eamxx_physics_share scream_share)
+  if (EAMXX_ENABLE_INFERENCE)
+    # For the warm-rain emulator
+    target_link_libraries(${P3_LIB} emulator_inference)
+    target_compile_definitions(${P3_LIB} PUBLIC EAMXX_HAS_INFERENCE)
+    target_compile_definitions(${P3_LIB} PRIVATE
+      EAMXX_INFERENCE_PYTHON_HOME="${EAMXX_INFERENCE_PYTHON_HOME}"
+      EAMXX_INFERENCE_PYTHON_PACKAGES="${EAMXX_INFERENCE_PYTHON_PACKAGES}")
+  endif()
 endforeach()
 
 # Ensure tables are present in the data dir
