@@ -15,7 +15,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, has_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values, find_node, \
+        METADATA_ATTRIBS, is_metadata_attrib, is_leaf, apply_leaf_attribs
 from atm_manip import apply_atm_procs_list_changes_from_buffer, apply_non_atm_procs_list_changes_from_buffer
 
 from utils import ensure_yaml # pylint: disable=no-name-in-module
@@ -33,19 +34,6 @@ from CIME.test_status import TestStatus, RUN_PHASE
 logger = logging.getLogger(__name__) # pylint: disable=undefined-variable
 
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
-
-# These are special attributes used by buildnml and other scripts to
-# perform some checks. In particular:
-#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer)
-#  - valid_values: allows to specify a set of valid values
-#  - locked: if set to true, the parameter cannot be modified (via atmchange)
-#  - constraints: allows to specify constraints on values. Valid constraints
-#    are lt, le, ne, gt, ge, and mod. Multiple constrained are separated by ';'.
-#    Examples:
-#      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
-#      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-#  - optional: if set to true, marks a "file" param where UNSET is a valid/intentional value
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit", "doc", "action", "optional")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False, extra=None):
@@ -283,7 +271,7 @@ def perform_consistency_checks(case, xml):
                 continue
             # If any non-metadata attribute is present, a selector matched and
             # intentionally set this value to UNSET, so skip it.
-            selector_attribs = [k for k in item.attrib if k not in METADATA_ATTRIBS]
+            selector_attribs = [k for k in item.attrib if not is_metadata_attrib(k)]
             if selector_attribs:
                 continue
             parent = parent_map.get(item)
@@ -558,6 +546,17 @@ def evaluate_selectors(element, case, ez_selectors):
     Traceback (most recent call last):
     CIME.core.exceptions.CIMEError: ERROR: The 'append' action for 'a' requires a previously selected value to modify
      Selector element attributes: {'type': 'array(integer)', 'action': 'append'}
+    >>> ############## ARRAY ACTIONS IN OPEN NODES (type from leaf_type) #####################
+    >>> d = ET.fromstring('<n open="true" leaf_type="array(real)"><a>1</a><a grid="ne4ne4" action="append">2</a><b>1,2</b><b nlev="128" action="remove">2</b></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    >>> [(c.tag,c.text) for c in d]
+    [('a', '1,2'), ('b', '1')]
+    >>> d = ET.fromstring('<n open="true" leaf_type="real"><a>1</a><a grid="ne4ne4" action="append">2</a></n>')
+    >>> evaluate_selectors(d,case,selectors_good)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: The 'action' metadata attribute is only supported for entries of array type
+     param name: a
+     param type: real
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad1 = '''
     ... <selectors_xml>
@@ -623,10 +622,9 @@ def evaluate_selectors(element, case, ez_selectors):
     children_to_remove = []
     child_type  = {} # map elme name to its type (since only first entry may have type specified)
     for child in element:
-        # Note: in our system, an XML element is either a "node" (has children)
-        # or a "leaf" (has a value).
-        has_children = len(child) > 0
-        if has_children:
+        # Note: in our system, an XML element is either a "node" (has children,
+        # or is marked as open) or a "leaf" (has a value).
+        if not is_leaf(child):
             evaluate_selectors(child, case, ez_selectors)
         else:
             child_name = child.tag
@@ -634,8 +632,10 @@ def evaluate_selectors(element, case, ez_selectors):
             child_val = child.text
             selectors = child.attrib
 
+            # Leaves of open nodes get their type from the node (if they don't set it)
             if child_name not in child_type:
-                child_type[child_name] = selectors["type"] if "type" in selectors.keys() else "unset"
+                child_type[child_name] = selectors["type"] if "type" in selectors.keys() \
+                                         else element.attrib.get("leaf_type","unset")
 
             action = selectors.get("action")
             if action is not None:
@@ -652,7 +652,7 @@ def evaluate_selectors(element, case, ez_selectors):
                 all_match = True
                 for sel_name, sel_value in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
-                    if sel_name in METADATA_ATTRIBS:
+                    if is_metadata_attrib(sel_name):
                         if sel_name=="type" and child_name in selected_child.keys():
                             if "type" in selected_child[child_name].attrib:
                                 expect (sel_value==selected_child[child_name].attrib["type"],
@@ -722,10 +722,9 @@ def expand_cime_vars(element, case):
     """
 
     for child in element:
-        # Note: in our system, an XML element is either a "node" (has children)
-        # or a "leaf" (has a value).
-        has_children = len(child) > 0
-        if has_children:
+        # Note: in our system, an XML element is either a "node" (has children,
+        # or is marked as open) or a "leaf" (has a value).
+        if not is_leaf(child):
             expand_cime_vars(child, case)
         else:
             child.text = do_cime_vars(child.text, case)
@@ -881,6 +880,49 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
         'enable_precondition_checks': True,
         'number_of_subcycles': 1,
         'prop2': 'one'}
+    >>> ############## OPEN NODES #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...         <selector name='grid' case_env='ATM_GRID'/>
+    ...     </selectors>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...       <atm_proc_group>
+    ...         <atm_procs_list type="array(string)"/>
+    ...       </atm_proc_group>
+    ...       <eamxx inherit="atm_proc_group">
+    ...         <atm_procs_list>P1</atm_procs_list>
+    ...       </eamxx>
+    ...       <P1>
+    ...         <prop1>hi</prop1>
+    ...         <consts open="true" leaf_type="array(real)">
+    ...           <f1>1</f1>
+    ...           <f2>2</f2>
+    ...           <f2 grid="ne4ne4">3,4</f2>
+    ...           <f3 grid="ne30ne30">5</f3>
+    ...         </consts>
+    ...         <empty_consts open="true" leaf_type="array(real)"/>
+    ...       </P1>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> generated = _create_raw_xml_file_impl(case,ET.fromstring(xml))
+    >>> check_all_values(generated)
+    >>> consts = find_node(generated,'consts')
+    >>> [(c.tag,c.text,c.attrib['type']) for c in consts]
+    [('f1', '1', 'array(real)'), ('f2', '3,4', 'array(real)')]
+    >>> pp.pprint(convert_to_dict(get_child(generated,'eamxx')))
+    {   'P1': {   'consts': {'f1': [1.0], 'f2': [3.0, 4.0]},
+                  'empty_consts': {},
+                  'prop1': 'hi'},
+        'atm_procs_list': ['P1']}
+    >>> ############## OPEN NODES: bad definitions #####################
+    >>> bad = ET.fromstring('<n><selectors/><generated_files/><atmosphere_processes_defaults><eamxx><atm_procs_list>P1</atm_procs_list></eamxx><P1><c open="true"/></P1></atmosphere_processes_defaults></n>')
+    >>> _create_raw_xml_file_impl(case,bad)
+    Traceback (most recent call last):
+    CIME.core.exceptions.CIMEError: ERROR: Open node 'c' must specify the 'leaf_type' attribute
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -894,6 +936,7 @@ def _create_raw_xml_file_impl(case, xml, filepath=None):
         evaluate_selectors(xml, case, selectors)
         resolve_all_inheritances(xml)
         expand_cime_vars(xml,case)
+        apply_leaf_attribs(xml)
 
         # Generate default atm process list for this COMPSET (i.e., NO atmchanges considered yet)
         atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
@@ -995,8 +1038,7 @@ def convert_to_dict(element):
     for child in element:
         child_name = child.tag.replace("__", " ")
 
-        has_children = len(child) > 0
-        if has_children:
+        if not is_leaf(child):
             result[child_name] = convert_to_dict(child)
         else:
             child_val = child.text
