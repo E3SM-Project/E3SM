@@ -369,7 +369,6 @@ contains
     integer                                       :: nSendCycles,nRecvCycles
     character*(80) errorstring
 
-    logical(kind=log_kind),parameter              :: Debug=.FALSE.
     logical :: singlethread_copy
     integer        :: i,j
 
@@ -438,7 +437,6 @@ contains
     integer                                       :: errorcode,errorlen
     character*(80) errorstring
 
-    logical(kind=log_kind),parameter              :: Debug=.FALSE.
 
     integer        :: i
 
@@ -728,7 +726,6 @@ contains
     character*(80) errorstring
 
     integer        :: i
-    logical(kind=log_kind),parameter      :: Debug = .FALSE.
 
 
 #if (defined HORIZ_OPENMP)
@@ -820,7 +817,7 @@ contains
   use element_mod, only : element_t
   use edge_mod, only : ghostvpackfull, ghostvunpackfull, &
        initghostbuffer3D,freeghostbuffer3D
-  use control_mod, only : north,south,east,west,neast, nwest, seast, swest
+  use control_mod, only : neast, nwest, seast, swest
 
   implicit none
 
@@ -960,11 +957,10 @@ contains
 #endif
 
   use kinds, only : real_kind, iulog
-  use dimensions_mod, only: np, max_neigh_edges
+  use dimensions_mod, only: max_neigh_edges
   use element_mod, only : element_t
   use edge_mod, only : ghostvpack_unoriented, ghostvunpack_unoriented, &
        initghostbuffer3D,freeghostbuffer3D
-  use control_mod, only : north,south,east,west,neast, nwest, seast, swest
   use coordinate_systems_mod, only: cartesian3D_t
   implicit none
 

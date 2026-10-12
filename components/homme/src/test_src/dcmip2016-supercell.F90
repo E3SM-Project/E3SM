@@ -159,10 +159,9 @@ CONTAINS
     REAL(8), DIMENSION(nz) :: exnereq, H
 
     ! Variables for calculation of equatorial profile
-    REAL(8) :: exnereqs, p, T, qvs, qv
+    REAL(8) :: exnereqs, p, T, qvs
 
     ! Error metric
-    REAL(8) :: err
 
     ! Loop indices
     INTEGER(4) :: i, k, iter

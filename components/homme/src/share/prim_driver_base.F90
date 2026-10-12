@@ -275,7 +275,6 @@ contains
     ! --------------------------------
     use domain_mod, only : domain1d_t, decompose
     ! --------------------------------
-    use physical_constants, only : dd_pi
     ! --------------------------------
 
     implicit none
@@ -1511,7 +1510,7 @@ contains
   use control_mod,        only : use_moisture, dt_remap_factor
   use hybvcoord_mod,      only : hvcoord_t
 #ifdef MODEL_THETA_L
-  use physical_constants, only : cp, g, kappa, Rgas, p0
+  use physical_constants, only : cp, Rgas, p0
   use element_ops,        only : get_temperature, get_r_star, get_hydro_pressure
   use eos,                only : pnh_and_exner_from_eos
 #ifdef HOMMEXX_BFB_TESTING

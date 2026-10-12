@@ -87,7 +87,7 @@ subroutine general_gravity_wave_init(elem,hybrid,hvcoord,nets,nete,d,f)
 
   integer :: i,j,k,ie                                                   ! loop indices
   real(rl):: x,y,hyam,hybm,hyai,hybi                                ! pointwise coordiantes
-  real(rl):: p,z,phis,u,v,w,T,T_mean,phis_ps,ps,rho,rho_mean,q(1),dp    ! pointwise field values
+  real(rl):: p,z,phis,u,v,w,T,T_mean,ps,rho,rho_mean,q(1),dp    ! pointwise field values
 
   if (hybrid%masterthread) write(iulog,*) 'initializing planar gravity wave'
 

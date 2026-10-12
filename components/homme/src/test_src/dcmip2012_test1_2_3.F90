@@ -133,7 +133,7 @@ IMPLICIT NONE
   real(8) :: height                                                     ! The height of the model levels
   real(8) :: ptop                                                       ! model top in p
   real(8) :: sin_tmp, cos_tmp, sin_tmp2, cos_tmp2                       ! Calculate great circle distances
-  real(8) :: d1, d2, r, r2, d3, d4                                      ! For tracer calculations
+  real(8) :: d1, d2, r, r2! For tracer calculations
   real(8) :: s, bs                                                      ! Shape function, and parameter
   real(8) :: lonp                                                       ! Translational longitude, depends on time
   real(8) :: ud                                                         ! Divergent part of u

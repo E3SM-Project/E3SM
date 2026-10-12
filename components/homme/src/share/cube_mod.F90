@@ -1867,7 +1867,7 @@ contains
 
   subroutine CubeSetupEdgeIndex(Edge)
     use gridgraph_mod, only : gridedge_t
-    use control_mod, only : north, south, east, west, neast, seast, swest, nwest
+    use control_mod, only : north, south, east, west
     type (GridEdge_t),target           :: Edge
 
     integer                            :: sFace,dFace
