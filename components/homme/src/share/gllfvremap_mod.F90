@@ -1776,7 +1776,7 @@ contains
 
     do ie = nets,nete
        wr(:,:,1) = elem(ie)%state%phis
-       call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,:1))
+       call gfr_pg1_g_reconstruct_scalar(gfr, elem(ie)%metdet, wr(:,:,:1))
        elem(ie)%state%phis = wr(:,:,1)
        call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(1,1,ie), &
             gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
@@ -1863,11 +1863,10 @@ contains
     call gfr_f2g_dss(hybrid, elem, nets, nete)
   end subroutine gfr_pg1_reconstruct_hybrid
 
-  subroutine gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+  subroutine gfr_pg1_g_reconstruct_scalar(gfr, gll_metdet, g)
     ! Wrapper to core solve routine. g is a density.
 
     type (GllFvRemap_t), intent(in) :: gfr
-    integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
@@ -1891,7 +1890,7 @@ contains
 
 
     g = dp*g
-    call gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+    call gfr_pg1_g_reconstruct_scalar(gfr, gll_metdet, g)
     g = g/dp
   end subroutine gfr_pg1_g_reconstruct_scalar_dp
 
@@ -1913,7 +1912,7 @@ contains
           wr(:,:,d) = elem(ie)%Dinv(:,:,d,1)*v(:,:,1,k) + elem(ie)%Dinv(:,:,d,2)*v(:,:,2,k)
        end do
        do d = 1,2
-          call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,d:d))
+          call gfr_pg1_g_reconstruct_scalar(gfr, elem(ie)%metdet, wr(:,:,d:d))
        end do
        ! ref -> sphere
        do d = 1,2
