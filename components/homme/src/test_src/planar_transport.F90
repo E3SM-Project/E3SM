@@ -59,7 +59,7 @@ contains
                 x = elem(ie)%spherep(i,j)%lon
                 y = elem(ie)%spherep(i,j)%lat
                 if (k < nlevp) then
-                   call get_values(time, x, y, hvcoord%hyam(k), hvcoord%hybm(k), &
+                   call get_values(time, x, hvcoord%hyam(k), hvcoord%hybm(k), &
                         &          ps, phis, p, z, T, u, v, q)
                    dp = pressure_thickness(ps,k,hvcoord)
                    if (time <= 0.d0) then
@@ -70,7 +70,7 @@ contains
                    end if
                    call set_state(u, v, w, T, ps, phis, p, dp, z, g, i, j, k, elem(ie), n0, n1)
                 end if
-                call get_values(time, x, y, hvcoord%hyai(k), hvcoord%hybi(k), &
+                call get_values(time, x, hvcoord%hyai(k), hvcoord%hybi(k), &
                      &          ps, phis, p, z, T, u, v, q)
                 call set_state_i(u, v, w, T, ps, phis, p, z, g, i, j, k, elem(ie), n0, n1)
                 p_i(i,j) = p
@@ -89,9 +89,9 @@ contains
     end do
   end subroutine test_conv_planar_advection
 
-  subroutine get_values(time, x, y, hya, hyb, &
+  subroutine get_values(time, x, hya, hyb, &
        &                ps, phis, p, z, T, u, v, q)
-    real(rl), intent(in) :: time, x, y, hya, hyb
+    real(rl), intent(in) :: time, x, hya, hyb
     real(rl), intent(out) :: ps, phis, p, z, T, u, v, q(qsize)
 
     real(rl), parameter :: &
@@ -181,7 +181,7 @@ contains
              do i = 1,np
                 x = elem(ie)%spherep(i,j)%lon
                 y = elem(ie)%spherep(i,j)%lat
-                call get_values(time, x, y, hvcoord%hyam(k), hvcoord%hybm(k), &
+                call get_values(time, x, hvcoord%hyam(k), hvcoord%hybm(k), &
                      &          ps, phis, p, z, T, u, v, q(i,j,:))
              end do
           end do
