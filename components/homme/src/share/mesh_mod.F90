@@ -1316,7 +1316,7 @@ contains
 
    subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use parallel_mod,           only : abortmp
-    use dimensions_mod,         only : np,  max_elements_attached_to_node
+    use dimensions_mod,         only : np
     use coordinate_systems_mod, only : cartesian2D_t, cartesian3D_t, cube_face_number_from_cart, &
                                        cube_face_number_from_sphere, cart2cubedsphere
     use gridgraph_mod,          only : GridVertex_t
@@ -1595,7 +1595,7 @@ contains
 !======================================================================
    subroutine MeshCubeTopology(GridEdge, GridVertex)
     use parallel_mod,           only : abortmp
-    use dimensions_mod,         only : np,  max_elements_attached_to_node
+    use dimensions_mod,         only : np
     use coordinate_systems_mod, only : cartesian3D_t, cube_face_number_from_cart, cube_face_number_from_sphere
     use gridgraph_mod,          only : GridVertex_t
     use gridgraph_mod,          only : GridEdge_t
