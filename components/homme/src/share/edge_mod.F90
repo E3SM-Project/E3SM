@@ -499,7 +499,7 @@ endif
   ! =========================================
   subroutine edgeVpack_nlyr(edge,desc,v,vlyr,kptr,nlyr_tot)
     use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
 
     type (EdgeBuffer_t)                :: edge
     integer,              intent(in)   :: vlyr
@@ -631,8 +631,8 @@ endif
 
 
   subroutine edgeSpack(edge,v,vlyr,kptr,nlyr_tot,ielem)
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use dimensions_mod, only : max_corner_elem
+    use control_mod, only : north, south, east, west, swest
 
     type (EdgeBuffer_t)                :: edge
     integer,              intent(in)   :: vlyr,nlyr_tot
@@ -724,7 +724,7 @@ endif
   ! Pack edges of v into buf...
   ! =========================================
   subroutine LongEdgeVpack(edge,v,vlyr,kptr,desc)
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
     use dimensions_mod, only : np, max_corner_elem
 
     type (LongEdgeBuffer_t)            :: edge
@@ -846,7 +846,6 @@ endif
 
   subroutine edgeVunpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
     type (EdgeBuffer_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr
@@ -861,7 +860,7 @@ endif
 
   subroutine edgeVunpack_nlyr(edge,desc,v,vlyr,kptr,nlyr_tot)
     use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
     type (EdgeBuffer_t),         intent(in)  :: edge
 
     integer,               intent(in)  :: vlyr,nlyr_tot
@@ -945,7 +944,7 @@ endif
 
 
   subroutine edgeVunpackVert(edge,v,ielem)
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
     use dimensions_mod, only : np, max_corner_elem, ne
     use coordinate_systems_mod, only: cartesian3D_t
 
@@ -954,7 +953,6 @@ endif
     integer, intent(in) :: ielem
 
     ! Local
-    logical, parameter :: UseUnroll = .TRUE.
     integer :: i,l, nce
     integer :: is,ie,in,iw,ine,inw,isw,ise,nlyr_tot
     type (EdgeDescriptor_t), pointer   :: desc
@@ -1194,7 +1192,7 @@ endif
 
   subroutine edgeDGVunpack(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
@@ -1237,7 +1235,7 @@ endif
   ! ========================================
   subroutine edgeVunpackMAX(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
@@ -1318,8 +1316,8 @@ endif
   end subroutine edgeVunpackMAX
 
   subroutine edgeSunpackMAX(edge,v,vlyr,kptr,nlyr_tot,ielem)
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use dimensions_mod, only : max_corner_elem
+    use control_mod, only : north, south, east, west, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr,nlyr_tot
@@ -1406,8 +1404,8 @@ endif
   end subroutine edgeSunpackMAX
 
   subroutine edgeSunpackMIN(edge,v,vlyr,kptr,nlyr_tot,ielem)
-    use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use dimensions_mod, only : max_corner_elem
+    use control_mod, only : north, south, east, west, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr,nlyr_tot
@@ -1494,7 +1492,7 @@ endif
 
   subroutine edgeVunpackMIN(edge,v,vlyr,kptr,ielem)
     use dimensions_mod, only : np, max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
 
     type (EdgeBuffer_t),         intent(in)  :: edge
     integer,               intent(in)  :: vlyr
@@ -1581,7 +1579,7 @@ endif
   ! ========================================
 
   subroutine LongEdgeVunpackMIN(edge,v,vlyr,kptr,desc)
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
     use dimensions_mod, only : np, max_corner_elem
 
     type (LongEdgeBuffer_t),         intent(in)  :: edge
@@ -1678,7 +1676,7 @@ endif
   subroutine GhostVpackfull(edge,v,nc1,nc2,nc,vlyr,kptr,desc)
 
     use dimensions_mod, only : max_corner_elem
-    use control_mod, only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod, only : north, south, east, west, swest
     use edgetype_mod, only : ghostbuffer3d_t
 
     implicit none 
@@ -1861,7 +1859,6 @@ endif
     type (EdgeDescriptor_t)            :: desc
 
     ! Local
-    logical, parameter :: UseUnroll = .TRUE.
     integer :: i,k,l,e
     integer :: is,ie,in,iw,ic
     logical :: reverse
@@ -2155,7 +2152,7 @@ endif
   ! =================================================================================
   subroutine ghostVpack3d(ghost, v, vlyr, kptr, desc)
     use dimensions_mod, only : max_corner_elem
-    use control_mod,    only : north, south, east, west, neast, nwest, seast, swest
+    use control_mod,    only : north, south, east, west, swest
     use edgetype_mod, only : edgedescriptor_t, ghostbuffer3d_t
     implicit none
 
@@ -2337,7 +2334,6 @@ endif
     integer                               :: nhc, np
 
     ! Local
-    logical, parameter :: UseUnroll = .TRUE.
     integer :: i,j,k,l
     integer :: is,ie,in,iw,ic
     logical :: reverse
