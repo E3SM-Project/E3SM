@@ -46,7 +46,6 @@
 !  get_hydro_pressure_i()
 !  get_nonhydro_pressure()
 !  get_phi()
-!  get_cp_star()
 !  get_R_star()
 !  set_theta_ref()
 !
@@ -384,25 +383,6 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
        phi(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/2
     end do
 
-  end subroutine
-
-
-  !_____________________________________________________________________
-  subroutine get_cp_star(cp_star,Q)
-  !
-  !
-  implicit none
-  real (kind=real_kind), intent(out):: cp_star(np,np,nlev)
-  real (kind=real_kind), intent(in) :: Q(np,np,nlev)
-
-  integer :: k
-  if (use_moisture) then
-     do k=1,nlev
-        cp_star(:,:,k) = (Cp + (Cpwater_vapor-Cp)*Q(:,:,k) )
-     enddo
-  else
-     cp_star(:,:,:)=Cp
-  endif
   end subroutine
 
 
