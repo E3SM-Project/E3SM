@@ -116,29 +116,30 @@ CONTAINS
   SUBROUTINE baroclinic_wave_test(deep,moist,pertt,X,lon,lat,p,z,zcoords,u,v,t,thetav,phis,ps,rho,q) &
     BIND(c, name = "baroclinic_wave_test")
  
+    USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_double, c_int
     IMPLICIT NONE
 
 !-----------------------------------------------------------------------
 !     input/output params parameters at given location
 !-----------------------------------------------------------------------
-    INTEGER, INTENT(IN)  :: &
+    INTEGER(c_int), INTENT(IN)  :: &
                 deep,       & ! Deep (1) or Shallow (0) test case
                 moist,      & ! Moist (1) or Dry (0) test case
                 pertt         ! Perturbation type
 
-    REAL(8), INTENT(IN)  :: &
+    REAL(c_double), INTENT(IN)  :: &
                 lon,        & ! Longitude (radians)
                 lat,        & ! Latitude (radians)
                 X             ! Earth scaling parameter
 
-    REAL(8), INTENT(INOUT) :: &
+    REAL(c_double), INTENT(INOUT) :: &
                 p,            & ! Pressure (Pa)
                 z               ! Altitude (m)
 
-    INTEGER, INTENT(IN) :: zcoords     ! 1 if z coordinates are specified
+    INTEGER(c_int), INTENT(IN) :: zcoords     ! 1 if z coordinates are specified
                                        ! 0 if p coordinates are specified
 
-    REAL(8), INTENT(OUT) :: &
+    REAL(c_double), INTENT(OUT) :: &
                 u,          & ! Zonal wind (m s^-1)
                 v,          & ! Meridional wind (m s^-1)
                 t,          & ! Temperature (K)
