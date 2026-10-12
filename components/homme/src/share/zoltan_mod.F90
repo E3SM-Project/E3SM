@@ -331,7 +331,6 @@ contains
 
   subroutine genzoltanpart(GridEdge,GridVertex, comm, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use gridgraph_mod, only : GridVertex_t, GridEdge_t, freegraph, createsubgridgraph, printgridvertex
-    use kinds, only : int_kind
     use dimensions_mod , only : npart, nelem
     !use control_mod, only:  partmethod
     !use params_mod, only : wrecursive
@@ -359,7 +358,6 @@ contains
 
     integer                       :: nelem_edge
     integer                       :: in,if
-    logical , parameter           :: Debug = .true.
     nelem_edge = SIZE(GridEdge) 
 
     !print *, "nelem = ", nelem

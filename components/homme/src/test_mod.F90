@@ -223,7 +223,6 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 
   use dcmip12_wrapper, only:  dcmip2012_test2_x_forcing
   use held_suarez_mod, only: hs_forcing
-  use control_mod,     only: ftype
   implicit none
   type(element_t),  intent(inout) :: elem(:)                            ! element array
   type(hybrid_t),   intent(in)    :: hybrid                             ! hybrid parallel structure
@@ -232,8 +231,7 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
   integer,          intent(in)    :: nets,nete,nt,ntQ
   type(TimeLevel_t),intent(in)    :: tl
 
-  integer :: ie,q,k
-  real (kind=real_kind) :: dp(np,np)
+  integer :: ie
 
   ! zero out forcing terms
   do ie=nets,nete
@@ -294,7 +292,6 @@ end subroutine compute_test_forcing
 
     real (kind=real_kind), parameter :: half = 0.5d0
 
-    real (kind=real_kind) :: dp(np,np)! pressure thickness, vflux
     real(kind=real_kind)  :: eta_dot_dpdn(np,np,nlevp)
 
     integer :: ie,k,n0,np1
