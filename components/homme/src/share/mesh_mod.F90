@@ -1768,6 +1768,7 @@ contains
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nedge
+    nedge = 0
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeEdgeCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then
@@ -1784,6 +1785,7 @@ contains
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nelem
+    nelem = 0
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeElemCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then

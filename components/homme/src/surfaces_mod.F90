@@ -2093,7 +2093,6 @@ end subroutine  construct_cv_gll
     endif
 
 
-100 format (A13,1(E24.15))
 
   end subroutine VerifVolumes
 
