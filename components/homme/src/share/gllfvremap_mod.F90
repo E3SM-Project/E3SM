@@ -825,7 +825,7 @@ contains
 
     do j = 1,np
        do i = 1,np
-          w_gg(i,j) = gll%weights(i)*gll%weights(j)
+          w_gg(i,j) = real(gll%weights(i)*gll%weights(j), real_kind)
        end do
     end do
     
@@ -869,7 +869,7 @@ contains
        f = one
        do j = 1,np
           if (j /= i) then
-             f = f*((x - gll%points(j))/(gll%points(i) - gll%points(j)))
+             f = real(f*((x - gll%points(j))/(gll%points(i) - gll%points(j))), real_kind)
           end if
        end do
        y(i) = f
@@ -905,17 +905,17 @@ contains
           do qj = 1,np
              ! (xref,yref) are w.r.t. the [-1,1]^2 reference domain mapped to
              ! the subcell.
-             ref = xs + half*(xe - xs)*(one + gll%points(qj))
+             ref = real(xs + half*(xe - xs)*(one + gll%points(qj)), real_kind)
              call eval_lagrange_bases(gll, np, ref, bj)
              do qi = 1,np
-                ref = ys + half*(ye - ys)*(one + gll%points(qi))
+                ref = real(ys + half*(ye - ys)*(one + gll%points(qi)), real_kind)
                 call eval_lagrange_bases(gll, np, ref, bi)
                 do gj = 1,np
                    do gi = 1,np
                       ! Accumulate each GLL basis's contribution to this
                       ! subcell.
-                      M_gf(gi,gj,fi,fj) = M_gf(gi,gj,fi,fj) + &
-                           gll%weights(qi)*gll%weights(qj)*bi(gi)*bj(gj)
+                      M_gf(gi,gj,fi,fj) = real(M_gf(gi,gj,fi,fj) + &
+                           gll%weights(qi)*gll%weights(qj)*bi(gi)*bj(gj), real_kind)
                    end do
                 end do
              end do
@@ -930,9 +930,9 @@ contains
        ! precision.
        do gj = 1,np
           do gi = 1,np
-             M_gf(gi,gj,:nphys,:nphys) = M_gf(gi,gj,:nphys,:nphys)* &
+             M_gf(gi,gj,:nphys,:nphys) = real(M_gf(gi,gj,:nphys,:nphys)* &
                   ((gll%weights(gi)*gll%weights(gj))/ &
-                  sum(M_gf(gi,gj,:nphys,:nphys)))
+                  sum(M_gf(gi,gj,:nphys,:nphys))), real_kind)
           end do
        end do
     end if
@@ -1724,11 +1724,11 @@ contains
     M(:np1sq,:np2sq) = zero
 
     do jq = 1,npq
-       jr = quad%points(jq)
+       jr = real(quad%points(jq), real_kind)
        call eval_lagrange_bases(gll1, np1, jr, jv1)
        call eval_lagrange_bases(gll2, np2, jr, jv2)
        do iq = 1,npq
-          ir = quad%points(iq)
+          ir = real(quad%points(iq), real_kind)
           call eval_lagrange_bases(gll1, np1, ir, iv1)
           call eval_lagrange_bases(gll2, np2, ir, iv2)
           do j2 = 1,np2
@@ -1737,9 +1737,9 @@ contains
                 do j1 = 1,np1
                    do i1 = 1,np1
                       k1 = (j1-1)*np1 + i1
-                      M(k1,k2) = M(k1,k2) + &
+                      M(k1,k2) = real(M(k1,k2) + &
                            quad%weights(iq)*quad%weights(jq)* &
-                           iv1(i1)*iv2(i2)*jv1(j1)*jv2(j2)
+                           iv1(i1)*iv2(i2)*jv1(j1)*jv2(j2), real_kind)
                    end do
                 end do
              end do

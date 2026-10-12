@@ -111,12 +111,12 @@ SUBROUTINE KESSLER(theta, qv, qc, qr, rho, pk, dt, z, nz, precl)
   rhoqr  = 1000.d0  !  density of liquid water (kg/m^3)
 
   do k=1,nz
-    r(k)     = 0.001d0*rho(k)
-    rhalf(k) = sqrt(rho(1)/rho(k))
-    pc(k)    = 3.8d0/(pk(k)**(1./xk)*psl)
+    r(k)     = real(0.001d0*rho(k), 4)
+    rhalf(k) = real(sqrt(rho(1)/rho(k)), 4)
+    pc(k)    = real(3.8d0/(pk(k)**(1./xk)*psl), 4)
 
     ! Liquid water terminal velocity (m/s) following KW eq. 2.15
-    velqr(k)  = 36.34d0*(qr(k)*r(k))**0.1364*rhalf(k)
+    velqr(k)  = real(36.34d0*(qr(k)*r(k))**0.1364*rhalf(k), 4)
 
   end do
 
@@ -147,9 +147,9 @@ SUBROUTINE KESSLER(theta, qv, qc, qr, rho, pk, dt, z, nz, precl)
 
     ! Sedimentation term using upstream differencing
     do k=1,nz-1
-      sed(k) = dt0*(r(k+1)*qr(k+1)*velqr(k+1)-r(k)*qr(k)*velqr(k))/(r(k)*(z(k+1)-z(k)))
+      sed(k) = real(dt0*(r(k+1)*qr(k+1)*velqr(k+1)-r(k)*qr(k)*velqr(k))/(r(k)*(z(k+1)-z(k))), 4)
     end do
-    sed(nz)  = -dt0*qr(nz)*velqr(nz)/(.5*(z(nz)-z(nz-1)))
+    sed(nz)  = real(-dt0*qr(nz)*velqr(nz)/(.5*(z(nz)-z(nz-1))), 4)
 
     ! Adjustment terms
     do k=1,nz
@@ -180,7 +180,7 @@ SUBROUTINE KESSLER(theta, qv, qc, qr, rho, pk, dt, z, nz, precl)
     ! Recalculate liquid water terminal velocity
     if (nt .ne. rainsplit) then
       do k=1,nz
-        velqr(k)  = 36.34d0*(qr(k)*r(k))**0.1364*rhalf(k)
+        velqr(k)  = real(36.34d0*(qr(k)*r(k))**0.1364*rhalf(k), 4)
       end do
     end if
   end do

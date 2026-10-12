@@ -1849,7 +1849,7 @@ contains
     type (quadrature_t)    :: gp
 
     gp=gausslobatto(np)
-    xgll = gp%points(1:np)
+    xgll = real(gp%points(1:np), real_kind)
     deallocate(gp%points)
     deallocate(gp%weights)
 

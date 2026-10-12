@@ -87,8 +87,8 @@ contains
     !   if(iam .eq. 1)  write(iulog,*)'genEdgeSched: Part # ',i,' has ',nelemd0, ' elements '
     !if(VerbosePrint) then
     !endif
-    MaxNelemd = AMAX0(MaxNelemd,nelemd0)
-    MinNelemd = AMIN0(MinNelemd,nelemd0)
+    MaxNelemd = max(MaxNelemd,nelemd0)
+    MinNelemd = min(MinNelemd,nelemd0)
     if(Debug) write(iulog,*)'genEdgeSched: point #2'
 
     if(Debug) write(iulog,*)'genEdgeSched: point #3'

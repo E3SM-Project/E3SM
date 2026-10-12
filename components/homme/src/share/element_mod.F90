@@ -152,7 +152,7 @@ contains
     type(element_t), intent(in) :: elem
     integer, intent(in) :: i,j
     integer :: col_id
-    col_id = elem%gdofP(i,j)
+    col_id = int(elem%gdofP(i,j))
   end function GetColumnIdP
 
   !___________________________________________________________________
@@ -177,8 +177,8 @@ contains
     do j=1,SIZE(points)
        y = centroid%y + length%y*points(j)
        do i=1,SIZE(points)
-          cart(i,j)%x = centroid%x + length%x*points(i)
-          cart(i,j)%y = y
+          cart(i,j)%x = real(centroid%x + length%x*points(i), real_kind)
+          cart(i,j)%y = real(y, real_kind)
        end do
     end do
   end function element_coordinates
@@ -200,14 +200,14 @@ contains
 
     do j=1,SIZE(points)
        do i=1,SIZE(points)
-          cart(i,j)%x = p(i)*p(j)*c(1)%x &
+          cart(i,j)%x = real(p(i)*p(j)*c(1)%x &
                       + q(i)*p(j)*c(2)%x &
                       + q(i)*q(j)*c(3)%x &
-                      + p(i)*q(j)*c(4)%x
-          cart(i,j)%y = p(i)*p(j)*c(1)%y &
+                      + p(i)*q(j)*c(4)%x, real_kind)
+          cart(i,j)%y = real(p(i)*p(j)*c(1)%y &
                       + q(i)*p(j)*c(2)%y &
                       + q(i)*q(j)*c(3)%y &
-                      + p(i)*q(j)*c(4)%y
+                      + p(i)*q(j)*c(4)%y, real_kind)
        end do
     end do
   end function element_var_coordinates
@@ -229,24 +229,24 @@ contains
 
     do j=1,SIZE(points)
        do i=1,SIZE(points)
-          cart(i,j)%x = p(i)*p(j)*c(1)%x &
+          cart(i,j)%x = real(p(i)*p(j)*c(1)%x &
                       + q(i)*p(j)*c(2)%x &
                       + q(i)*q(j)*c(3)%x &
-                      + p(i)*q(j)*c(4)%x
-          cart(i,j)%y = p(i)*p(j)*c(1)%y &
+                      + p(i)*q(j)*c(4)%x, real_kind)
+          cart(i,j)%y = real(p(i)*p(j)*c(1)%y &
                       + q(i)*p(j)*c(2)%y &
                       + q(i)*q(j)*c(3)%y &
-                      + p(i)*q(j)*c(4)%y
-          cart(i,j)%z = p(i)*p(j)*c(1)%z &
+                      + p(i)*q(j)*c(4)%y, real_kind)
+          cart(i,j)%z = real(p(i)*p(j)*c(1)%z &
                       + q(i)*p(j)*c(2)%z &
                       + q(i)*q(j)*c(3)%z &
-                      + p(i)*q(j)*c(4)%z
+                      + p(i)*q(j)*c(4)%z, real_kind)
 
           ! project back to sphere:
           r = distance(cart(i,j))
-          cart(i,j)%x = cart(i,j)%x/r
-          cart(i,j)%y = cart(i,j)%y/r
-          cart(i,j)%z = cart(i,j)%z/r
+          cart(i,j)%x = real(cart(i,j)%x/r, real_kind)
+          cart(i,j)%y = real(cart(i,j)%y/r, real_kind)
+          cart(i,j)%z = real(cart(i,j)%z/r, real_kind)
        end do
     end do
   end function element_var_coordinates3d

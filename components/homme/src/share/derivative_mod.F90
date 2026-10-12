@@ -115,12 +115,12 @@ contains
     gp=gausslobatto(np)
 
     call dvvinit(dvv,gp)
-    deriv%Dvv(:,:)   = dvv(:,:)
+    deriv%Dvv(:,:)   = real(dvv(:,:), real_kind)
 
     do i=1,np
        do j=1,np
           if (i.eq.j) then
-             deriv%dvv_diag(i,j)   = dvv(i,j)
+             deriv%dvv_diag(i,j)   = real(dvv(i,j), real_kind)
           else
              deriv%dvv_diag(i,j) = 0.0D0
           endif 
@@ -139,8 +139,8 @@ contains
        end do
     end do
 
-    deriv%Dvv_twt = TRANSPOSE(dvv)
-    deriv%Mvv_twt = v2v
+    deriv%Dvv_twt = real(TRANSPOSE(dvv), real_kind)
+    deriv%Mvv_twt = real(v2v, real_kind)
 
     ! notice we deallocate this memory here even though it was allocated 
     ! by the call to gausslobatto.
@@ -1590,7 +1590,7 @@ contains
     do i=1,intervals
       a = -one + (i-one)*two/intervals   
       b = -one +  i     *two/intervals  
-      sub_gll(i,:) = (a+b)/two + gll%points(:)/intervals
+      sub_gll(i,:) = real((a+b)/two + gll%points(:)/intervals, real_kind)
     end do
 
     ! Now to interpolate from the values at the input GLL
@@ -1605,11 +1605,11 @@ contains
     ! this is OK since all the points are of order 1 so should
     ! be well behaved.
     do n = 1,np
-      x_j = gll%points(n)
+      x_j = real(gll%points(n), real_kind)
       x   = one 
       do m = 1,np 
         if (m.ne.n) then
-          x_i = gll%points(m)
+          x_i = real(gll%points(m), real_kind)
           x = x * (x_j-x_i)
         endif
       end do
@@ -1622,7 +1622,7 @@ contains
           y = one
           do m = 1,np
             if (m.ne.j) then
-              x_i = gll%points(m)
+              x_i = real(gll%points(m), real_kind)
               y = y * (x-x_i)
             end if
           end do
@@ -1642,7 +1642,7 @@ contains
     !                       J = w^t I
     ! J is integration_matrix
     do i=1,intervals
-      integration_matrix(i,:) = MATMUL(gll%weights(:),Lagrange_interp(i,:,:))
+      integration_matrix(i,:) = real(MATMUL(gll%weights(:),Lagrange_interp(i,:,:)), real_kind)
     end do
 
     ! There is still the Jacobian to consider.  We are 

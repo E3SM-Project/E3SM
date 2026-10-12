@@ -244,17 +244,17 @@ contains
     allocate(gamma(npts))
     allocate(leg(npts))
 
-    gamma = quad_norm(gquad,npts)
+    gamma = real(quad_norm(gquad,npts), real_kind)
 
     do k=1,npts
        interp%rk(k) = 1.0D0/k
-       interp%glp(k) = gquad%points(k)    !nair
+       interp%glp(k) = real(gquad%points(k), real_kind)    !nair
     end do
 
     do j=1,npts
-       leg=legendre(gquad%points(j),npts-1)
+       leg=real(legendre(gquad%points(j),npts-1), real_kind)
        do k=1,npts
-          interp%Imat(j,k)=leg(k)*gquad%weights(j)/gamma(k)
+          interp%Imat(j,k)=real(leg(k)*gquad%weights(j)/gamma(k), real_kind)
        end do
     end do
 
@@ -280,7 +280,7 @@ contains
       do i=1,np
         do j=1,np
           if (i /= j) then
-            dp(i) = dp(i) * (gll%points(i) - gll%points(j))
+            dp(i) = real(dp(i) * (gll%points(i) - gll%points(j)), real_kind)
           end if
         end do
       end do 
@@ -289,7 +289,7 @@ contains
           interp_c(i,j) = 1/(dp(i)*dp(j))
         end do
       end do 
-      interp_gll(:) = gll%points(:)
+      interp_gll(:) = real(gll%points(:), real_kind)
       interp_tracers_init = .true.
 
       deallocate(gll%points)
@@ -369,19 +369,19 @@ contains
     if (np==i) i = i-1
     if (np==j) j = j-1
 
-    dx = x(i+1)     - x(i)
+    dx = real(x(i+1)     - x(i), real_kind)
     dy = y(i+1,j,:) - y(i,j,:)
     dydx = dy/dx
-    y0 = y(i,j,:) + (r%x-x(i))*dydx 
+    y0 = real(y(i,j,:) + (r%x-x(i))*dydx, real_kind) 
     
     dy = y(i+1,j+1,:) - y(i,j+1,:)
     dydx = dy/dx
-    y1 = y(i,j+1,:) + (r%x-x(i))*dydx 
+    y1 = real(y(i,j+1,:) + (r%x-x(i))*dydx, real_kind) 
 
-    dx = x(j+1)     - x(j)
+    dx = real(x(j+1)     - x(j), real_kind)
     dy = y1         - y0          
     dydx = dy/dx
-    v  = y0         + (r%y-x(j))*dydx 
+    v  = real(y0         + (r%y-x(j))*dydx, real_kind) 
 
   end function linear_interpolate_2d
 
@@ -1083,8 +1083,8 @@ contains
     if (gridtype==2) then
        gp=gauss(nlat)
        do j=1,nlat
-          lat(j) = asin(gp%points(j))
-          gweight(j) = gp%weights(j)
+          lat(j) = real(asin(gp%points(j)), real_kind)
+          gweight(j) = real(gp%weights(j), real_kind)
        end do
     endif
     if (gridtype==3) then

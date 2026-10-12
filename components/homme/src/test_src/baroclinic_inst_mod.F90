@@ -396,8 +396,8 @@ endif
 
                 ! Gauss points and weights
 
-                lat(:) = (latp+DD_PI*0.5D0)*0.5D0*gs%points(:) + (-DD_PI*0.5D0+latp)*0.5D0
-                wts(:) = (latp+DD_PI*0.5D0)*0.5D0*gs%weights(:)
+                lat(:) = real((latp+DD_PI*0.5D0)*0.5D0*gs%points(:) + (-DD_PI*0.5D0+latp)*0.5D0, real_kind)
+                wts(:) = real((latp+DD_PI*0.5D0)*0.5D0*gs%weights(:), real_kind)
 
                 do l=1,nlat
                    mu(l)   = sin(lat(l))

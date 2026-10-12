@@ -533,8 +533,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           call abortmp('tstep must be > 0')
        end if
        if (ndays>0) then
-          nmax = ndays * (secpday/tstep)
-          if (restartfreq>0) restartfreq=restartfreq*(secpday/tstep)
+          nmax = int(ndays * (secpday/tstep))
+          if (restartfreq>0) restartfreq=int(restartfreq*(secpday/tstep))
        end if
        nEndStep = nmax
 #endif

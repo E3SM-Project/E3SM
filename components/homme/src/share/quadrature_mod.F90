@@ -259,7 +259,7 @@ contains
        print *,i,gs%points(i),gs%weights(i)
     end do
     print *,"============================================"
-    gssum=SUM(gs%weights(:))
+    gssum=real(SUM(gs%weights(:)), real_kind)
     print *,"sum of Gaussian weights=",gssum
     print *,"============================================"
 
@@ -489,7 +489,7 @@ contains
        print *,i,gll%points(i),gll%weights(i)
     end do
     print *,"============================================"
-    gllsum=SUM(gll%weights(:))
+    gllsum=real(SUM(gll%weights(:)), real_kind)
     print *,"sum of Gauss-Lobatto weights=",gllsum
     print *,"============================================"
 
@@ -955,8 +955,8 @@ contains
 
     s = 0.0D0
     do i=1,SIZE(gs%points)
-       x = 0.50D0*((b-a)*gs%points(i) + (b+a))
-       s = s + gs%weights(i)*f(x)
+       x = real(0.50D0*((b-a)*gs%points(i) + (b+a)), real_kind)
+       s = real(s + gs%weights(i)*f(x), real_kind)
     end do
     Integral = s*(0.5D0*(b-a))
 

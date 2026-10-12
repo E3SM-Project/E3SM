@@ -443,19 +443,19 @@ contains
       v = 0 
       if (ie <= np*np) then
         do i = 1,np
-          v(i,:,2) = gll%points(:)
+          v(i,:,2) = real(gll%points(:), real_kind)
         end do
       else if (ie <= 2*np*np) then
         do j = 1,np
-          v(:,j,1) = gll%points(:)
+          v(:,j,1) = real(gll%points(:), real_kind)
         end do
       else if (ie <= 3*np*np) then
         do i = 1,np
-          v(i,:,2) = 1+gll%points(:)
+          v(i,:,2) = real(1+gll%points(:), real_kind)
         end do
       else if (ie <= 4*np*np) then
         do j = 1,np
-          v(:,j,1) = 1+gll%points(:)
+          v(:,j,1) = real(1+gll%points(:), real_kind)
         end do
       end if
 

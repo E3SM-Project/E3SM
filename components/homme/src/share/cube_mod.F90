@@ -250,8 +250,8 @@ contains
     min_svd = 1d99
     do j=1,np
        do i=1,np
-          x1=gll_points(i)
-          x2=gll_points(j)
+          x1=real(gll_points(i), real_kind)
+          x2=real(gll_points(j), real_kind)
           call Dmap(elem%D(i,j,:,:),x1,x2,elem%corners3D,cubed_sphere_map,elem%cartp,elem%facenum)
 
 
@@ -2005,10 +2005,10 @@ contains
     ! map (a,b) to the [-pi/2,pi/2] equi angular cube face:  x1,x2
     ! a = gp%points(i)
     ! b = gp%points(j)
-    pi = (1-a)/2
-    pj = (1-b)/2
-    qi = (1+a)/2
-    qj = (1+b)/2
+    pi = real((1-a)/2, real_kind)
+    pj = real((1-b)/2, real_kind)
+    qi = real((1+a)/2, real_kind)
+    qj = real((1+b)/2, real_kind)
     cart%x = pi*pj*corners(1)%x &
          + qi*pj*corners(2)%x &
          + qi*qj*corners(3)%x &
@@ -2062,7 +2062,8 @@ contains
     type (cartesian3D_t), optional  :: cart
     real(kind=real_kind)               ::  q(4) ! local
 
-    q(1)=(1-a)*(1-b); q(2)=(1+a)*(1-b); q(3)=(1+a)*(1+b); q(4)=(1-a)*(1+b);
+    q(1)=real((1-a)*(1-b), real_kind); q(2)=real((1+a)*(1-b), real_kind)
+    q(3)=real((1+a)*(1+b), real_kind); q(4)=real((1-a)*(1+b), real_kind)
     q=q/4.0d0;
     sphere=ref2sphere_elementlocal_q(q,corners3D,cart)
   end function 

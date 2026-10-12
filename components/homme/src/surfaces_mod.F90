@@ -1595,8 +1595,8 @@ subroutine construct_cv_duel(elem,hybrid,nets,nete)
      global_shared_buf(ie,2) = npentie(ie)
     enddo
     call wrap_repro_sum(nvars=2, comm=hybrid%par%comm)
-    nskip = global_shared_sum(1)
-    npent = global_shared_sum(2)
+    nskip = int(global_shared_sum(1))
+    npent = int(global_shared_sum(2))
     if (hybrid%masterthread) then
        write(*,'(a,i7,a,i7)') "no. elements where pentagons were added: ",npent,"/",npent+nskip
     endif

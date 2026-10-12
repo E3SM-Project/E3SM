@@ -182,7 +182,7 @@ if (COLLECTIVE_IO_WRITE) then
 
      disp = array_disp(1)
      do ie=1,nelemd
-       array_disp(ie) = array_disp(ie) - disp
+       array_disp(ie) = int(array_disp(ie) - disp)
      enddo
 
      call mpi_type_create_indexed_block( nelemd, 1, array_disp, type_ablock, type_fview, ierr )
@@ -301,7 +301,7 @@ if ( COLLECTIVE_IO_READ ) then
 
      disp = array_disp(1)
      do ie=1,nelemd
-       array_disp(ie) = array_disp(ie) - disp
+       array_disp(ie) = int(array_disp(ie) - disp)
      enddo
 
 !    call mpi_type_indexed( nelemd, array_blen, array_disp, type_ablock, type_fview, ierr )

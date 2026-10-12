@@ -1075,7 +1075,7 @@ contains
               elem(ie)%desc%neigh_corners(k,l)%z = cout(i,j,3,l) 
            enddo
         enddo
-        elem(ie)%desc%globalID_neigh_corners(l) = cout(1,1,nlev,l)
+        elem(ie)%desc%globalID_neigh_corners(l) = int(cout(1,1,nlev,l))
      enddo
   enddo
 
