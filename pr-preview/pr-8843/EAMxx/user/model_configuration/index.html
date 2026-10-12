@@ -1830,6 +1830,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#adding-and-removing-parameters-open-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding and removing parameters: open nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modifying-the-list-of-atmosphere-processes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4974,6 +4985,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#adding-and-removing-parameters-open-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding and removing parameters: open nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modifying-the-list-of-atmosphere-processes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5416,7 +5438,7 @@ any of the other supported types (but not another array):<ul>
 </ul>
 <p>For type "string" and "array(T)", it is also possible to <em>append</em> to the
 currently stored value.</p>
-<div class="copy highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tendencies
+<div class="highlight"><pre><span></span><code>$<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tendencies
 <span class="w">    </span>namelist_defaults::atmosphere_processes::homme::compute_tendencies:
 <span class="w">        </span>value:<span class="w"> </span>a,<span class="w"> </span>b
 <span class="w">        </span>type:<span class="w"> </span>array<span class="o">(</span>string<span class="o">)</span>
@@ -5428,6 +5450,28 @@ $<span class="w"> </span>./atmquery<span class="w"> </span>homme::compute_tenden
 <span class="w">        </span>type:<span class="w"> </span>array<span class="o">(</span>string<span class="o">)</span>
 <span class="w">        </span>valid<span class="w"> </span>values:<span class="w"> </span><span class="o">[]</span>
 </code></pre></div>
+<h3 id="adding-and-removing-parameters-open-nodes">Adding and removing parameters: open nodes</h3>
+<p>By default, <code>atmchange</code> can only modify parameters that already exist, so that a typo in
+a parameter name results in an error rather than in a new (and silently ignored) parameter.
+Some nodes, however, are "open": they hold a set of parameters that is not known a priori
+(for instance, a list of fields). In an open node, the user can <em>add</em> new parameters (leaves)
+with <code>--add</code>, and <em>remove</em> existing ones with <code>--rm</code>:</p>
+<div class="copy highlight"><pre><span></span><code>./atmchange<span class="w"> </span>--add<span class="w"> </span>my_open_node::new_param<span class="o">=</span><span class="m">1</span>,2,3
+./atmchange<span class="w"> </span>--rm<span class="w"> </span>my_open_node::old_param
+</code></pre></div>
+<p>Some notes:</p>
+<ul>
+<li><code>--add</code> requires the name of the open node, and the new leaf must not exist already
+  (use a regular <code>atmchange</code> to modify an existing leaf).</li>
+<li>All leaves of an open node have the same type (and, possibly, the same constraints
+  and valid values), specified by the open node via <code>leaf_*</code> attributes (e.g., <code>leaf_type</code>)
+  in <code>namelist_defaults_eamxx.xml</code>. A value that is not compatible with them is rejected.</li>
+<li>Open nodes are listed in the <a href="../eamxx_params/">parameters documentation</a>.</li>
+<li>This is a power feature: there is little protection against adding or removing leaves
+  that EAMxx does not expect, so use it with care.</li>
+<li>Removing a leaf that is in the defaults is allowed, and, as for all atmchanges,
+  <code>atmchange --reset</code> brings it back.</li>
+</ul>
 <h3 id="modifying-the-list-of-atmosphere-processes">Modifying the list of atmosphere processes</h3>
 <p>The <code>atmchange</code> script can be used to change any of the runtime parameters of EAMxx.
 In particular, it can
