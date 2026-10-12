@@ -105,7 +105,7 @@ contains
     real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
     real (kind=real_kind), pointer, dimension(:,:,:)   :: w_np1
     real (kind=real_kind) :: JacD(np,np,nlev)  , JacL(np,np,nlev-1)
-    real (kind=real_kind) :: JacU(np,np,nlev-1), JacU2(nlev-2,np,np)
+    real (kind=real_kind) :: JacU(np,np,nlev-1)
     real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
     real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
     real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
@@ -115,16 +115,13 @@ contains
     real (kind=real_kind) :: phi_n0(np,np,nlevp)    
     real (kind=real_kind) :: Fn(np,np,nlev),x(np,np,nlev)
     real (kind=real_kind) :: gwh_i(np,np,nlevp)  ! w hydrostatic
-    real (kind=real_kind) :: v_i(np,np,2,nlevp)  ! w hydrostatic
 
-    real (kind=real_kind) :: Jac2D(np,np,nlev)  , Jac2L(np,np,nlev-1)
-    real (kind=real_kind) :: Jac2U(np,np,nlev-1)
 
     real (kind=real_kind) :: wmax
     integer :: maxiter
-    real (kind=real_kind) :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
+    real (kind=real_kind) :: deltatol,deltaerr,reserr,rcond,min_rcond,dt3,alpha
     real (kind=real_kind) :: dw,dx,alpha_k,alphas(np,np)
-    integer :: i,j,k,l,ie,nt
+    integer :: i,j,k,ie,nt
     integer :: nsafe,verbosity
 
 #undef NEWTONCOND
@@ -400,13 +397,12 @@ contains
     integer, intent(in) :: exact
 
     ! local
-    real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
     real (kind=real_kind) :: e(np,np,nlev),dphi_temp(np,np,nlev),exner(np,np,nlev)
-    real (kind=real_kind) :: dpnh2(np,np,nlev),dpnh_dp_i_epsie(np,np,nlevp)
-    real (kind=real_kind) :: ds(np,np,nlev),delta_mu(np,np,nlevp)
+    real (kind=real_kind) :: dpnh_dp_i_epsie(np,np,nlevp)
+    real (kind=real_kind) :: delta_mu(np,np,nlevp)
     real (kind=real_kind) :: a,b(np,np),ck(np,np),ckm1(np,np)
     !
-    integer :: k,l,k2
+    integer :: k
     if (exact.eq.1) then ! use exact Jacobian
        ! this code will need to change when the equation of state is changed.
        ! add special cases for k==1 and k==nlev+1

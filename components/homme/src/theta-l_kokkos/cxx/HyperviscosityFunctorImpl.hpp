@@ -47,12 +47,12 @@ public:
                       : hypervis_subcycle(hypervis_subcycle_in) 
                       , horiz_turb_subcycle(horiz_turb_subcycle_in)
                       , hypervis_subcycle_tom(hypervis_subcycle_tom_in)
+                      , do_3d_turbulence(do_3d_turbulence_in)
                       , nu_ratio1(nu_ratio1_in), nu_ratio2(nu_ratio2_in)
                       , nu_top(nu_top_in), nu(nu_in), nu_p(nu_p_in), nu_s(nu_s_in)
                       , dt_hvs(-1.0), dt_hvs_sgs(-1.0), dt_hvs_tom(-1.0)
                       , consthv(hypervis_scaling_in == 0)
                       , constsponge(laplace_scaling_in == 0)
-                      , do_3d_turbulence(do_3d_turbulence_in)
                       , tom_sponge_start(tom_sponge_start_in) {}
 
     const int   hypervis_subcycle;

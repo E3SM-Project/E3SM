@@ -1327,7 +1327,7 @@ contains
                                        z2_map_method, coord_transform_method
     use params_mod,             only : SFCURVE, SPHERE_COORDS, CUBE_COORDS, FACE_2D_LB_COORDS
 
-    use kinds, only : iulog, real_kind
+    use kinds, only : real_kind
     use zoltan_mod, only : is_zoltan_partition, is_zoltan_task_mapping
 
     implicit none

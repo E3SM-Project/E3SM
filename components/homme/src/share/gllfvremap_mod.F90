@@ -539,7 +539,6 @@ contains
     real(kind=real_kind), intent(out) :: p(psz)
     logical, intent(in), optional :: square, augment
 
-    type (hybrid_t) :: hybrid
     integer :: ie, nf2
     logical :: augment_in
 
@@ -566,8 +565,8 @@ contains
     real(kind=real_kind), intent(in) :: g(:)
     real(kind=real_kind), intent(out) :: p(:)
 
-    real(kind=real_kind) :: wg(np,np,1), wf(np*np,2), ones(np,np), qmin, qmax, phispg(npsq)
-    integer :: nf, nf2, i, j, k
+    real(kind=real_kind) :: wg(np,np,1), wf(np*np,2), ones(np,np), phispg(npsq)
+    integer :: nf, nf2, k
 
     ones = one
     nf = gfr%nphys
@@ -606,7 +605,7 @@ contains
     ! extrema. Conserve the integral of height.
 
     use kinds, only: iulog
-    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr, edge_g
+    use edge_mod, only: edgeVpack_nlyr, edgeVunpack_nlyr
     use bndry_mod, only: bndry_exchangeV
 
     type (hybrid_t), intent(in) :: hybrid
@@ -1890,7 +1889,6 @@ contains
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp(:,:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
-    real(kind=real_kind) wr(np*np)
 
     g = dp*g
     call gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
@@ -1929,8 +1927,8 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use thread_mod, only: hthreads
     use hybvcoord_mod, only: hvcoord_t
+    use thread_mod, only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)

@@ -90,9 +90,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   integer,                intent(in) :: nt
   integer,                intent(in) :: ntQ
 
-  integer :: k
-  real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar
-  real(kind=real_kind), dimension(np,np,nlevp) :: phi_i,pi_i
+  real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, Rstar
+  real(kind=real_kind), dimension(np,np,nlevp) :: phi_i
 
 
   select case(name)
@@ -185,9 +184,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   integer, intent(in) :: ntQ
 
   !   local
-  real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: Rstar(np,np,nlev)
-  integer :: k
 
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
 
@@ -271,7 +268,6 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
-  integer :: k
 
   dp=elem%state%dp3d(:,:,:,nt)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
@@ -374,10 +370,6 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     integer,                intent(in)  :: nt
 
     real (kind=real_kind), dimension(np,np,nlev) :: dp
-    real (kind=real_kind) :: pnh(np,np,nlev)
-    real (kind=real_kind) :: exner(np,np,nlev)
-    real (kind=real_kind) :: temp(np,np,nlev)
-    real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
     integer :: k
 
 
@@ -693,7 +685,6 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   integer,         intent(in)   :: n              ! timestep
 
   real(real_kind):: f_d(np,np,nlev)
-  integer :: k
 
   ! Compute damping as a function of layer-midpoint height
   f_d=0.0d0
@@ -727,7 +718,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real(real_kind), dimension(np,np,nlev) :: pi
 
   real(real_kind), dimension(np,np,nlev) :: pnh,exner
-  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i,phi_i
+  real(real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
 
   tl=1
 
