@@ -108,7 +108,6 @@ implicit none
   !   local
   real (kind=real_kind) :: p_over_exner(np,np,nlev)
   real (kind=real_kind) :: pi(np,np,nlev)
-  real (kind=real_kind) :: exner_i(np,np,nlevp) 
   real (kind=real_kind) :: pnh_i(np,np,nlevp)  
   real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: pi_i(np,np,nlevp) 

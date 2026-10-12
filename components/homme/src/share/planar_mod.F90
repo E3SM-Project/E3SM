@@ -75,7 +75,7 @@ contains
 
     type (GridVertex_t),allocatable        :: GridElem(:,:)
     integer,allocatable       :: Mesh(:,:)
-    integer                   :: i,j,k,number,EdgeWgtP,CornerWgt,ierr,ielem,ll,loc
+    integer                   :: i,j,number,EdgeWgtP,CornerWgt,ierr,ielem,ll,loc
 
     if (ne_x==0 .or. ne_y ==0) call abortmp('Error in PlaneTopology: ne_x or ne_y is zero')
 
@@ -372,18 +372,14 @@ call initgridedge(GridEdge,GridVertex)
     real(kind=real_kind) :: alpha
     real (kind=longdouble_kind)      :: gll_points(np)
     ! Local variables
-    integer ii
-    integer i,j,nn
-    integer iptr
+    integer i,j
 
-    real (kind=real_kind) :: r         ! distance from origin for point on cube tangent to unit sphere
 
-    real (kind=real_kind) :: const, norm
+    real (kind=real_kind) :: norm
     real (kind=real_kind) :: detD      ! determinant of vector field mapping matrix.
-    real (kind=real_kind) :: tmpD(2,2)
-    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), nu1, nu2, lamStar1, lamStar2
+    real (kind=real_kind) :: M(2,2),E(2,2),eig(2),DE(2,2),DEL(2,2),V(2,2), lamStar1, lamStar2
     integer :: imaxM(2)
-    real (kind=real_kind) :: l1, l2, sc,min_svd,max_svd,max_normDinv
+    real (kind=real_kind) :: l1, l2,min_svd,max_svd,max_normDinv
 
     ! ==============================================
     ! Initialize differential mapping operator
@@ -603,7 +599,7 @@ call initgridedge(GridEdge,GridVertex)
 
     type (element_t) :: elem
     ! Local variables
-    integer  i,ie,je,nn
+    integer  ie,je
     real (kind=real_kind)  :: startx, starty
 
     if (ne_x ==0 .or. ne_y == 0) call abortmp('Error in set_corner_coordinates: ne_x or ne_y is zero')

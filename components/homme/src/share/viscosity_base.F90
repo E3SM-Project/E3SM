@@ -84,7 +84,7 @@ type (EdgeBuffer_t)  , intent(inout) :: edgeq
 type (derivative_t)  , intent(in) :: deriv
 
 ! local
-integer :: k,kptr,i,j,ie,ic,q
+integer :: k,ie,q
 real (kind=real_kind), dimension(np,np) :: lap_p
 
 
@@ -184,7 +184,7 @@ integer :: nets,nete,klev
 real (kind=real_kind), dimension(np,np,klev,nets:nete) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic
+integer :: k,ie
 
 do ie=nets,nete
    do k=1,klev
@@ -342,8 +342,6 @@ integer :: nt
 
 ! local
 type (hybrid_t)              :: hybrid
-integer :: k,i,j,ie,ic
-type (derivative_t)          :: deriv
 
 ! single thread
 hybrid = hybrid_create(par,0,1)
@@ -370,8 +368,6 @@ integer :: nt
 
 ! local
 type (hybrid_t)              :: hybrid
-integer :: k,i,j,ie,ic
-type (derivative_t)          :: deriv
 
 ! single thread
 hybrid = hybrid_create(par,0,1)
@@ -398,7 +394,7 @@ integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic
+integer :: k,ie
 type (derivative_t)          :: deriv
 
 call derivinit(deriv)
@@ -434,7 +430,7 @@ integer :: nt,nets,nete
 real (kind=real_kind), dimension(np,np,nlev,nets:nete) :: zeta
 
 ! local
-integer :: k,i,j,ie,ic
+integer :: k,ie
 type (derivative_t)          :: deriv
 
 call derivinit(deriv)
@@ -508,7 +504,7 @@ subroutine neighbor_minmax_start(hybrid,edgeMinMax,nets,nete,min_neigh,max_neigh
    real (kind=real_kind) :: max_neigh(nlev,qsize,nets:nete)
 
    ! local 
-   integer :: ie,q, k,kptr
+   integer :: ie,kptr
 
 
    do ie=nets,nete
@@ -571,7 +567,7 @@ subroutine smooth_phis(phis,elem,hybrid,deriv,nets,nete,minf,numcycle,p2filt,xgl
   real (kind=real_kind), dimension(np,np,nets:nete) :: pstens
   real (kind=real_kind), dimension(nets:nete) :: pmin,pmax
   real (kind=real_kind) :: phis4(np)
-  integer :: nt,ie,ic,i,j
+  integer :: ie,ic,i,j
   integer :: minmax_halo =-1   ! -1 = disabled.  
                                ! 0  = recompute each time
 
