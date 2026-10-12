@@ -191,7 +191,6 @@ contains
     real (kind=real_kind),intent(in)     :: Tin,pin
 
     real (kind=real_kind)                :: estar,e_vapor
-    real*8                               :: st,et
 
     ! returns pressure in mb or Pa?  
     estar   = Saturation_Vapor_Pressure(Tin)     

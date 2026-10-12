@@ -457,7 +457,6 @@ end subroutine preq_hydrostatic
 
     !---------------------------Local workspace-----------------------------
     integer i,j,k                         ! longitude, level indices
-    real(kind=real_kind) Hkk,Hkl          ! diagonal term of energy conversion matrix
     real(kind=real_kind), dimension(np,np,nlev) :: phii       ! Geopotential at interfaces
     !-----------------------------------------------------------------------
 

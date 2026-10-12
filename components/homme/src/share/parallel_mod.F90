@@ -158,7 +158,6 @@ contains
 #ifdef _MPI
     character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
     character(len=MPI_MAX_PROCESSOR_NAME), allocatable  :: the_names(:)
-    integer(kind=int_kind),allocatable                  :: tarray(:)
     integer(kind=int_kind)                              :: namelen,i
     integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
     integer :: node_color
