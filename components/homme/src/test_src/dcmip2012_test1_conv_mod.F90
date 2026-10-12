@@ -48,8 +48,8 @@ contains
     v = k0*sin(2.d0*lonp)*cos(lat)*cos(pi*time/tau)
   end subroutine get_nondiv2d_uv
 
-  subroutine get_nondiv3d_uv(bs, pbot, ptop, zbot, ztop, ztaper, time, lon, lat, p, z, u, v, w)
-    real(rt), intent(in ) :: bs, pbot, ptop, zbot, ztop, ztaper, time, lon, lat, p, z
+  subroutine get_nondiv3d_uv( pbot, ptop, ztaper, time, lon, lat, p, u, v, w)
+    real(rt), intent(in ) :: pbot, ptop, ztaper, time, lon, lat, p
     real(rt), intent(out) :: u, v, w
 
     real(rt), parameter :: omega0  = (2*23000.d0*pi)/tau
@@ -369,8 +369,8 @@ contains
        ! 3D nondiv flow.
        ptop_t = p0*exp(-ztop_t/H)
        ptop = p0*exp(-ztop/H)
-       call get_nondiv3d_uv(bs_a, ptop_t, ptop, ztop_t, ztop, ztaper, &
-            &               time, lon + lon_offset, lat, p, z, u, v, w)
+       call get_nondiv3d_uv( ptop_t, ptop, ztaper, &
+            &               time, lon + lon_offset, lat, p, u, v, w)
     case('e')
        ! Similar to Hadley-like flow but with more smoothness in derivatives.
        u = u0_h*cos(lat)*cos(pi*time/tau_h)*ztaper
