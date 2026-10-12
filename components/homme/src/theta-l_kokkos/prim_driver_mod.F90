@@ -80,7 +80,7 @@ contains
     call initialize_dp3d_from_ps_c ()
 
     if (prescribed_wind == 1) then
-       call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
+       call init_standalone_test(elem,deriv1,hybrid,hvcoord,nets,nete)
     end if
   end subroutine prim_init2
 
@@ -726,7 +726,7 @@ contains
 
   end function is_push_to_f_required
 
-  subroutine init_standalone_test(elem,deriv,hybrid,hvcoord,tl,nets,nete)
+  subroutine init_standalone_test(elem,deriv,hybrid,hvcoord,nets,nete)
     ! set_prescribed_wind takes hvcoord as intent(inout) because it modifies it
     ! in the first call. In the C++ dycore init, we need hvcoord already
     ! established. This routine and set_prescribed_wind_f takes care of this
@@ -744,7 +744,6 @@ contains
     type (derivative_t),   intent(in)             :: deriv
     type (hybrid_t),       intent(in)             :: hybrid
     type (hvcoord_t),      intent(inout)          :: hvcoord
-    type (TimeLevel_t)   , intent(in)             :: tl
     integer              , intent(in)             :: nets
     integer              , intent(in)             :: nete
 
