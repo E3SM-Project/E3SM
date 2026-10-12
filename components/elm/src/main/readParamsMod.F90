@@ -92,7 +92,7 @@ contains
     use fileutils                , only : getfil
     use ncdio_pio                , only : ncd_pio_closefile, ncd_pio_openfile, &
                                           file_desc_t, ncd_inqdid, ncd_inqdlen
-    use PhotosynthesisMod        , only : params_inst
+    use PhotosynthesisHydraulicStressMod, only : params_inst
     
     !
     ! !ARGUMENTS:

@@ -1055,7 +1055,6 @@ contains
       soilstate_vars, dt , elm_fates)
    ! PHASE-2 of Allocation:  resolving N/P limitation
    ! !USES:
-   !$acc routine seq
    use elm_varctl      , only : carbon_only          !
    use elm_varctl      , only : carbonnitrogen_only  !
    use elm_varctl      , only : carbonphosphorus_only!
@@ -1326,7 +1325,7 @@ contains
 
         if (nu_com .eq. 'RD') then 
             !$acc parallel loop independent gang vector collapse(2) &
-            !$acc& present(filter_soilc(:),col_plant_ndemand(:,:),col_plant_pdemand(:,:), &
+            !$acc& present(filter_soilc(:),col_plant_ndemand_vr(:,:),col_plant_pdemand_vr(:,:), &
             !$acc& plant_pdemand_col(:),plant_ndemand_col(:), nuptake_prof(:,:),puptake_prof(:,:))
             do j = 1, nlevdecomp
                do fc=1,num_soilc
@@ -1706,10 +1705,10 @@ contains
            .not.carbonphosphorus_only .and. &
            .not.carbonnitrogen_only ) then
 
-         !$acc enter data create(sum,sum2,sum_immob_no3,sum_immob_nh4,sum_immob_p,sum_pot_immob_p)
+         !$acc enter data create(sum1,sum2,sum_immob_no3,sum_immob_nh4,sum_immob_p,sum_pot_immob_p)
            if (nu_com .eq. 'RD') then
 
-             !$acc parallel loop independent collapse(2) gang worker private(c,sum,sum2) default(present)
+             !$acc parallel loop independent collapse(2) gang worker private(c,sum1,sum2) default(present)
               do j = 1, nlevdecomp
                  do fc=1, num_soilc
 

@@ -36,7 +36,8 @@ module controlMod
   use CanopyStateType         , only: perchroot, perchroot_alt
   use CanopyHydrologyMod      , only: CanopyHydrology_readnl
   use SurfaceAlbedoType       , only: albice, lake_melt_icealb
-  use UrbanParamsType         , only: urban_hac, urban_traffic
+  use UrbanParamsType         , only: urban_hac, urban_traffic, urban_hac_int, urban_hac_on, urban_wasteheat_on
+  use UrbanParamsType         , only: urban_hac_off_int, urban_hac_on_int, urban_wasteheat_int
   use FrictionVelocityMod     , only: implicit_stress, atm_gustiness, force_land_gustiness
   use elm_varcon              , only: h2osno_max
   use FanMod                  , only: nh4_ads_coef
@@ -897,6 +898,15 @@ contains
     ! physics variables
     call mpi_bcast (urban_hac, len(urban_hac), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (urban_traffic , 1, MPI_LOGICAL, 0, mpicom, ier)
+    select case (trim(urban_hac))
+    case (urban_hac_on)
+       urban_hac_int = urban_hac_on_int
+    case (urban_wasteheat_on)
+       urban_hac_int = urban_wasteheat_int
+    case default
+       urban_hac_int = urban_hac_off_int
+    end select
+    !$acc update device(urban_hac_int, urban_traffic)
     call mpi_bcast (implicit_stress, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (atm_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (force_land_gustiness, 1, MPI_LOGICAL, 0, mpicom, ier)

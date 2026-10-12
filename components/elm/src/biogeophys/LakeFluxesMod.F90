@@ -47,7 +47,6 @@ contains
     ! WARNING: This subroutine assumes lake columns have one and only one pft.
     !
     ! !USES:
-      !$acc routine seq
     use shr_flux_mod        , only : shr_flux_update_stress
     use elm_varpar          , only : nlevlak
     use elm_varcon          , only : hvap, hsub, hfus, cpair, cpliq, tkwat, tkice, tkair
@@ -86,6 +85,7 @@ contains
     integer  :: fncopy                             ! number of values in pft filter copy
     integer  :: fnold                              ! previous number of pft filter values
     integer  :: fpcopy(num_lakep)                  ! patch filter copy for iteration loop
+    integer  :: fpmap(num_lakep)                   ! index of fpcopy entries into the begp:endp arrays passed to FrictionVelocity
     integer  :: iter                               ! iteration index
     integer  :: iter_final                         ! number of iterations used
     integer  :: itmax                              ! maximum number of iterations
@@ -378,6 +378,7 @@ contains
       iter = 1
       fncopy = num_lakep
       fpcopy(1:num_lakep) = filter_lakep(1:num_lakep)
+      fpmap(1:num_lakep) = filter_lakep(1:num_lakep) - begp + 1
 
       ! Begin stability iteration
       if (implicit_stress) then
@@ -391,7 +392,7 @@ contains
          ! Determine friction velocity, and potential temperature and humidity
          ! profiles of the surface boundary layer
 
-         call FrictionVelocity(begp, endp, fncopy, fpcopy, &
+         call FrictionVelocity(begp, endp, fncopy, fpcopy, fpmap, endp-begp+1, &
               displa(begp:endp), z0mg(begp:endp), z0hg(begp:endp), z0qg(begp:endp), &
               obu(begp:endp), iter, ur(begp:endp), um(begp:endp), ugust_total(begp:endp), &
               ustar(begp:endp), &
@@ -562,6 +563,7 @@ contains
                if (nmozsgn(p) < 3 .or. (implicit_stress .and. abs(tau_diff(p)) >= dtaumin)) then
                   fncopy = fncopy + 1
                   fpcopy(fncopy) = p
+                  fpmap(fncopy) = p - begp + 1
                end if
             end do   ! end of filtered pft loop
          end if

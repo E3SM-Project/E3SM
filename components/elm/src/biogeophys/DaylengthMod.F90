@@ -18,7 +18,10 @@ module DaylengthMod
   public :: UpdateDaylength   ! update daylength for all grid cells
   !
   ! !PRIVATE DATA MEMBERS:
-  logical :: first_step       ! is this the first step since initialization?
+  logical, public :: first_step = .true.        ! is this the first step since initialization?
+
+  !$acc declare create(first_step)
+
   !
   !-----------------------------------------------------------------------
 

@@ -237,7 +237,7 @@ subroutine array_normalization_2d_filter(lbj1, ubj1, lbj2, ubj2, numf, filter, a
       !As of Cuda 10.1 calling cuBlas functions from device code
       !is not supported.  So must create any blas routines with
       !acc routine seq manually.  This is for square matrices Matrix Vector Multiplication
-      !used only in PhotosynthesisMod::calcstressroot so far
+      !used only in PhotosynthesisHydraulicStressMod::calcstress so far
 
       use shr_kind_mod , only : r8 => shr_kind_r8
       INTEGER, INTENT(IN) :: START, END_ !section of matrices/vector to multiply
