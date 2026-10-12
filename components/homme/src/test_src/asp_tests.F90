@@ -992,10 +992,10 @@ implicit none
 
 !!!! replace a with earth rad
 
-	real(kind=real_kind), parameter ::	a	= 6371220.0d0,	&	! Earth's Radius (m)
-				Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
-				pi	= 4.d0*atan(1.d0)       ! pi
+        real(kind=real_kind), parameter :: a  = 6371220.0d0,    & ! Earth's Radius (m)
+                                           Rd = 287.0d0,        & ! Ideal gas const dry air (J kg^-1 K^1)
+                                           cp = 1004.5d0,       & ! Specific heat capacity (J kg^-1 K^1)
+                                           pi = 4.d0*atan(1.d0)   ! pi
 
 private
 
@@ -1148,7 +1148,7 @@ if (qsize>=5) then
    perturb_lon = perturbation_longitude*deg2rad
    perturb_lat = perturbation_latitude*deg2rad
 
-   ! now compute PHI, needed to init tracers:	
+   ! now compute PHI, needed to init tracers:
    do ie=nets,nete
       ! compute height
       do k=1,nlev+1
@@ -1176,7 +1176,7 @@ if (qsize>=5) then
          lat = elem(ie)%spherep(i,j)%lat
          do k=1,nlev
 
-	    height=phi(i,j,k)/g
+            height=phi(i,j,k)/g
             sin_tmp = sin(lat) * sin(perturb_lat)
             cos_tmp = cos(lat) * cos(perturb_lat)
             r  = ACOS (sin_tmp + cos_tmp*cos(lon-perturb_lon))       ! great circle distance without 'a'
@@ -1215,11 +1215,11 @@ subroutine asp_advection_vertical(time,hvcoord,ps_v,eta_dot_dpdn)
     type (hvcoord_t)                  :: hvcoord
 
 
-    ! local	
+    ! local
     real (kind=real_kind)  :: eta_dot
     integer k
 
-    ! compute dp/dn at interfaces	
+    ! compute dp/dn at interfaces
     ! note that for this problem: ps = ps0 = 1000 mb.  
     ! thus  p = A p0 + B ps = (A + B) p0 = eta p0
     ! dp/dn = p0
@@ -1281,7 +1281,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
        call set_thermostate(elem(ie),ps,temperature,hvcoord)
     enddo
 
-    ! now compute PHI, needed to init tracers:	
+    ! now compute PHI, needed to init tracers:
     do ie=nets,nete
        ! compute height
        do k=1,nlev+1
@@ -1351,7 +1351,7 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
     if (hybrid%masterthread) write(iulog,*) 'initializing ASP Rossby Haurwitz test'
 
     ! initialize surface pressure
-    p=0	
+    p=0
     do ie=nets,nete
     do j=1,np
        do i=1,np
@@ -1418,7 +1418,7 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
     if (hybrid%masterthread) write(iulog,*) 'initializing ASP mountain Rossby test'
 
     ! initialize surface pressure
-    p=0	 ! not used by initial condition
+    p=0  ! not used by initial condition
     do ie=nets,nete
        do j=1,np
        do i=1,np
