@@ -154,7 +154,7 @@ CONTAINS
     REAL(8) :: aref, omegaref
     REAL(8) :: T0, constH, constC, scaledZ, inttau2, rratio
     REAL(8) :: inttermU, bigU, rcoslat, omegarcoslat
-    REAL(8) :: eta, qratio, qnum, qden
+    REAL(8) :: eta
 
     !------------------------------------------------
     !   Pressure and temperature

@@ -279,7 +279,6 @@ contains
     
      integer(kind=int_kind) :: ie,ig,nprocs,ierr
 
-     logical,parameter :: Debug = .FALSE.
 
      nprocs = par%nprocs
      gOffset=0

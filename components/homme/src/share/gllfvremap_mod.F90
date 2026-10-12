@@ -2357,7 +2357,7 @@ contains
     use parallel_mod, only: global_shared_buf, global_shared_sum, nrepro_vars
     use global_norms_mod, only: wrap_repro_sum
     use kinds, only: iulog
-    use dimensions_mod, only: nlev, qsize_d, qsize
+    use dimensions_mod, only: nlev, qsize
     use hybvcoord_mod, only: hvcoord_t
 
     type (GllFvRemap_t), intent(in) :: gfr

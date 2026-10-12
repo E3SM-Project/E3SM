@@ -226,7 +226,7 @@ contains
 
     ! Local variables
     
-    integer ie,i,j,k,q,tl
+    integer ie,i,j,k,q
     integer :: nm1 
     integer :: n0 
     integer :: np1
