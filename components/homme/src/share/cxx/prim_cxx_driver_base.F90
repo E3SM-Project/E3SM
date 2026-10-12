@@ -24,10 +24,10 @@ module prim_cxx_driver_base
   subroutine prim_init1(elem, par, dom_mt, tl)
     use iso_c_binding,    only : c_int, c_loc
     use derivative_mod,   only : derivinit
-    use dimensions_mod,   only : nelemd, np
+    use dimensions_mod,   only : nelemd
     use domain_mod,       only : domain1d_t
     use element_mod,      only : element_t
-    use kinds,            only : iulog, real_kind
+    use kinds,            only : iulog
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
     use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &

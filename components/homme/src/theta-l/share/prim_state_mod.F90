@@ -79,7 +79,6 @@ contains
 
   subroutine prim_printstate(elem, tl,hybrid,hvcoord,nets,nete)
 
-    use physical_constants,     only: dd_pi
 
     type(element_t),            intent(inout), target :: elem(:)
     type(TimeLevel_t),target,   intent(in) :: tl
@@ -850,7 +849,7 @@ subroutine prim_energy_halftimes(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use dimensions_mod, only : np, np, nlev,nlevp
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
-    use physical_constants, only : Cp, cpwater_vapor
+    use physical_constants, only : Cp
     use physics_mod, only : Virtual_Specific_Heat
     use prim_si_mod, only : preq_hydrostatic
 
@@ -1005,7 +1004,7 @@ end subroutine prim_diag_scalars
 !helper routine to compute min/max for derived quantities
 subroutine extremumLevelHelper(res,field,operation,first,klev)
    use kinds, only : real_kind
-   use dimensions_mod, only : np, np, nlev
+   use dimensions_mod, only : np, np
    implicit none
    real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
    character(len=*),      intent(in)    :: operation

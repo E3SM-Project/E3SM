@@ -163,7 +163,6 @@ contains
      integer                    :: array_disp(nelemd)
      integer                    :: array_blen(nelemd)
      integer                    :: isiz
-     integer*4			:: acount
      integer(kind=MPI_OFFSET_KIND) :: disp, iext,lb
 #endif
      call t_startf('WriteState')
@@ -282,7 +281,7 @@ endif
      integer (kind=int_kind)    :: type_ablock, type_fview
      integer                    :: array_disp(nelemd)
      integer                    :: array_blen(nelemd)
-     integer*4                  :: acount, isiz
+     integer*4                  :: isiz
      integer (kind=mpi_offset_kind) :: disp, iext,lb
 #endif
 
@@ -604,7 +603,6 @@ endif
     character(len=9)                       :: charnum
     type (RestartHeader_t)                 :: RestartHeader
  
-    logical, parameter                     :: Debug = .FALSE.
 
 
     do ie=nets,nete

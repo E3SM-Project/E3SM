@@ -464,7 +464,6 @@ contains
   ! of a one dimensional reduction vector
   ! =======================================
   subroutine pmin_mt_r_1d(red,redp,len,hybrid)
-    use kinds, only : int_kind
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
     use parallel_mod, only: mpi_min, mpireal_t
@@ -563,7 +562,7 @@ contains
   subroutine ElementSum_1d(res,variable,type,hybrid)
     use hybrid_mod, only : hybrid_t
 #ifdef _MPI
-  use parallel_mod, only : ORDERED, mpireal_t, mpi_min, mpi_max, mpi_sum, mpi_success
+  use parallel_mod, only : ORDERED, mpireal_t, mpi_sum, mpi_success
   use mpi, only: MPI_Barrier, MPI_Error_String
 #else
   use dimensions_mod, only : nelem

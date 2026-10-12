@@ -795,7 +795,7 @@ contains
                               elem_derived_eta_dot_dpdn, elem_derived_vn0
 
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
-    type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
+    type (c_ptr) :: elem_state_dp3d_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr
 
     call t_startf('push_to_cxx')
