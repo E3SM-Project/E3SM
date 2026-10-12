@@ -64,9 +64,6 @@ class MAMOptics final : public MAMGenericInterface {
   // FIXME: move these values to mam_coupling
   mam_coupling::const_view_2d p_int_, p_del_;
 
-  // MAM4 aerosol particle size description
-  mam4::AeroConfig aero_config_;
-
   mam_coupling::view_3d ssa_cmip6_sw_, af_cmip6_sw_, ext_cmip6_sw_;
   // long wave extinction in the units of [1/km]
   mam_coupling::view_3d ext_cmip6_lw_;
