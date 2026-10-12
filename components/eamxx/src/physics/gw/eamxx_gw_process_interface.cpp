@@ -519,8 +519,11 @@ void GWDrag::run_impl (const double dt) {
       const auto gw_oro_tend_v_i = ekat::subview(loc_gw_oro_tend_v, i);
       const auto gw_oro_tend_t_i = ekat::subview(loc_gw_oro_tend_t, i);
 
+      // Orographic waves have no spectrum (only c=0), so use pgwv=0 as in EAM
+      constexpr Int oro_pgwv = 0;
+
       // Determine the orographic wave source
-      GWF::gw_oro_src(team, common_init, nlev_mid, common_init.pgwv,
+      GWF::gw_oro_src(team, common_init, nlev_mid, oro_pgwv,
                       uwind_i, vwind_i, T_mid_i, sgh(i),
                       p_mid_i, p_int_i, p_del_i, z_mid_i, N_mid_i,
                       src_lev, tnd_lev,
@@ -528,7 +531,7 @@ void GWDrag::run_impl (const double dt) {
 
       // Solve for the drag profile with orographic sources
       GWF::gw_drag_prof(team, wsm.get_workspace(team), common_init,
-                        nlev_mid, common_init.pgwv, src_lev, tnd_lev, tnd_lev,
+                        nlev_mid, oro_pgwv, src_lev, tnd_lev, tnd_lev,
                         common_init.do_taper, dt, lat_i,
                         T_mid_i, T_int_i, p_mid_i, p_int_i,
                         p_del_i, p_del_rcp_i, p_int_log_i, rho_int_i,
