@@ -9,7 +9,7 @@ module dof_mod
   use element_mod, only : element_t,index_t
   use parallel_mod, only : parallel_t, mpiinteger_t
   use edge_mod, only : initlongedgebuffer,freelongedgebuffer, &
-		       longedgevpack, longedgevunpackmin
+                       longedgevpack, longedgevunpackmin
   use edgetype_mod, only : longedgebuffer_t
   use bndry_mod, only : bndry_exchangev
 implicit none

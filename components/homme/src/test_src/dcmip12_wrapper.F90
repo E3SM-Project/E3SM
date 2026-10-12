@@ -425,7 +425,7 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
   real(rl), parameter ::   &
       Teq     = 300.d0,    &                                            ! temperature at equator
-      ztop    = 30000.d0,	 &                                            ! model top (m)
+      ztop    = 30000.d0,  &                                            ! model top (m)
       H       = Rd*Teq/g                                                ! characteristic height scale
 
   integer :: i,j,k,ie                                                   ! loop indices
@@ -598,7 +598,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
   logical,  parameter :: use_eta = .true.                               ! we are using hybrid eta coords
 
   real(rl), parameter ::    &                                           ! parameters needed to get eta from z
-    T0      = 300.d0,       &	! temperature (k)
+    T0      = 300.d0,       & ! temperature (k)
     ztop    = 10000.d0,     & ! model top (m)
     N       = 0.01d0,       & ! Brunt-Vaisala frequency
     bigG    = (g*g)/(N*N*Cp)  ! temperature, isothermal

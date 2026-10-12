@@ -490,8 +490,8 @@ call initgridedge(GridEdge,GridVertex)
           E(2,2)= E(1,1)
 
 !normalize columns
-	  E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1)));
-	  E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2)));
+          E(:,1)=E(:,1)/sqrt(sum(E(:,1)*E(:,1)));
+          E(:,2)=E(:,2)/sqrt(sum(E(:,2)*E(:,2)));
 
 
 ! OBTAINING TENSOR FOR HV: follows same approach as in cube_mod, with spherical-specific scaling removed
@@ -502,8 +502,8 @@ call initgridedge(GridEdge,GridVertex)
           DE(2,1)=sum(elem%D(i,j,2,:)*E(:,1))
           DE(2,2)=sum(elem%D(i,j,2,:)*E(:,2))
 
-	  lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0))
-	  lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0))
+          lamStar1=1/(eig(1)**(hypervis_scaling/4.0d0))
+          lamStar2=1/(eig(2)**(hypervis_scaling/4.0d0))
 
 !matrix (DE) * Lam^* * Lam , tensor HV when V is applied at each Laplace calculation
 !          DEL(1:2,1) = lamStar1*eig(1)*DE(1:2,1)
@@ -520,7 +520,7 @@ call initgridedge(GridEdge,GridVertex)
           V(2,1)=sum(DEL(2,:)*DE(1,:))
           V(2,2)=sum(DEL(2,:)*DE(2,:))
 
-	  elem%tensorVisc(i,j,:,:)=V(:,:)
+          elem%tensorVisc(i,j,:,:)=V(:,:)
 
        end do
     end do
