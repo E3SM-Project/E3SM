@@ -602,15 +602,15 @@ void ZMDeepConvection::run_impl (const double dt)
   const auto& zm_cape       = get_field_out("zm_cape")    .get_view<Real*>();
   const auto& zm_dcape      = get_field_out("zm_dcape")   .get_view<Real*>();
   const auto& zm_activity   = get_field_out("zm_activity").get_view<Real*>();
-  const auto& zm_jt         = get_field_out("zm_jt")      .get_view<Real*>();
-  const auto& zm_jcbot      = get_field_out("zm_jcbot")   .get_view<Real*>();
+  const auto& zm_jctop      = get_field_out("zm_cld_top")      .get_view<Real*>();
+  const auto& zm_jcbot      = get_field_out("zm_cld_bot")   .get_view<Real*>();
   Kokkos::parallel_for("zm_diag_outputs_2D",m_ncol, KOKKOS_LAMBDA (const int i) {
     zm_prec    (i) = loc_zm_output_prec    (i);
     zm_snow    (i) = loc_zm_output_snow    (i);
     zm_cape    (i) = loc_zm_output_cape    (i);
     zm_dcape   (i) = loc_zm_output_dcape   (i);
     zm_activity(i) = loc_zm_output_activity(i);
-    zm_jt      (i) = loc_zm_output_jt      (i);
+    zm_jctop   (i) = loc_zm_output_jctop   (i);
     zm_jcbot   (i) = loc_zm_output_jcbot   (i);
  });
 
