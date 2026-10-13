@@ -122,7 +122,7 @@ TEST_CASE("io_with_aliases") {
   auto fm = create_test_field_manager(grid, t0);
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix", "io_alias_mixed");
+  params.set<std::string>("stream_id", "io_alias_mixed");
   params.set<std::string>("averaging_type", "INSTANT");
 
   std::vector<std::string> mixed_specs = {
