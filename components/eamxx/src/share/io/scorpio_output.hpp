@@ -249,7 +249,9 @@ protected:
 
   bool m_add_time_dim;
   bool m_track_avg_cnt         = false;
-  bool m_latlon_output = false;
+  // If true, the io grid is structured (see share/grid/structured_grid_utils.hpp), and the COL dim is
+  // replaced by 2 dims in the file: (lat,lon) for lat-lon grids, and (ny,nx) for curvilinear grids.
+  bool m_structured_output = false;
   std::string m_decomp_dimname = "";
 
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger =

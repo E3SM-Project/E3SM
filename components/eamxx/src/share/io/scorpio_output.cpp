@@ -4,6 +4,7 @@
 #include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/remap/horizontal_remapper.hpp"
+#include "share/grid/structured_grid_utils.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -340,7 +341,8 @@ void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   m_io_grid  = fm_after_hr->get_grid();
-  m_latlon_output = m_io_grid->has_geometry_data("lat_idx");
+  // Structured grids (lat-lon or curvilinear) have their COL dim replaced by 2 dims in the file
+  m_structured_output = is_structured_grid(*m_io_grid);
 
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -401,14 +403,11 @@ void AtmosphereOutput::init()
     const auto& tags = layout.tags();
     const auto& dims = layout.dims();
     for (int j=0; j<layout.rank(); ++j) {
-      if (tags[j]==FieldTag::Column and m_latlon_output) {
-        // We need to make sure we are registering lat and lon as dimensions
-        auto lat = m_io_grid->get_geometry_data("lat");
-        auto lon = m_io_grid->get_geometry_data("lon");
-
-        m_dims_len.emplace("lat",lat.get_header().get_identifier().get_layout().size());
-        m_dims_len.emplace("lon",lon.get_header().get_identifier().get_layout().size());
-
+      if (tags[j]==FieldTag::Column and m_structured_output) {
+        // We need to make sure we are registering the dims replacing COL (lat/lon or ny/nx)
+        const auto sd = get_structured_grid_dims(*m_io_grid);
+        m_dims_len.emplace(sd.y_name,sd.ny);
+        m_dims_len.emplace(sd.x_name,sd.nx);
         continue;
       }
       // check tag against m_dims_len map.  If not in there, then add it.
@@ -967,30 +966,24 @@ register_variables(const std::string& filename,
 
 void AtmosphereOutput::set_decompositions(const std::string& filename)
 {
-  if (m_latlon_output) {
-    // We need to find out which (lat,lon) offsets we own
-    auto lat_idx_h = m_io_grid->get_geometry_data("lat_idx").get_view<const int*,Host>();
-    auto lon_idx_h = m_io_grid->get_geometry_data("lon_idx").get_view<const int*,Host>();
-    int ncols = m_io_grid->get_num_local_dofs();
-    int nlon = m_io_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size();
-    std::vector<scorpio::offset_t> offsets(ncols);
-    for (int i=0; i<ncols; ++i) {
-      offsets[i] = lat_idx_h(i)*nlon + lon_idx_h(i);
-    }
-    scorpio::set_dims_decomp(filename,{"lat","lon"},offsets);
-  } else {
-    if (m_decomp_dimname=="")
-      return;
+  if (m_decomp_dimname=="" and not m_structured_output)
+    return;
 
-    // Set the decomposition for the partitioned dimension
-    const int local_dim = m_io_grid->get_partitioned_dim_local_size();
-    auto gids_f = m_io_grid->get_partitioned_dim_gids();
-    auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
-    auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
-    std::vector<scorpio::offset_t> offsets(local_dim);
-    for (int idof=0; idof<local_dim; ++idof) {
-      offsets[idof] = gids_h[idof] - min_gid;
-    }
+  // Set the decomposition for the partitioned dimension
+  const int local_dim = m_io_grid->get_partitioned_dim_local_size();
+  auto gids_f = m_io_grid->get_partitioned_dim_gids();
+  auto gids_h = gids_f.get_view<const AbstractGrid::gid_type*,Host>();
+  auto min_gid = m_io_grid->get_global_min_partitioned_dim_gid();
+  std::vector<scorpio::offset_t> offsets(local_dim);
+  for (int idof=0; idof<local_dim; ++idof) {
+    offsets[idof] = gids_h[idof] - min_gid;
+  }
+  if (m_structured_output) {
+    // The COL dim is replaced by (y,x), with x the fastest varying. The offset in the flattened
+    // (y,x) array is gid-min_gid=iy*nx+ix, so we can use the same offsets we would use for COL
+    const auto sd = get_structured_grid_dims(*m_io_grid);
+    scorpio::set_dims_decomp(filename,{sd.y_name,sd.x_name},offsets);
+  } else {
     scorpio::set_dim_decomp(filename,m_decomp_dimname,offsets);
   }
 }
@@ -1345,11 +1338,12 @@ get_var_dimnames (const FieldLayout& layout) const
   strvec_t dims;
   for (int i=0; i<layout.rank(); ++i) {
     const auto t = layout.tag(i);
-    if (t==COL and m_latlon_output) {
-      // Lat-Lon remapping uses a PointGrid target grid, so we replace the
-      // single column dimension with separate latitude and longitude dimensions.
-      dims.push_back("lat");
-      dims.push_back("lon");
+    if (t==COL and m_structured_output) {
+      // Structured grids (e.g., from remap to lat-lon/curvilinear grids) are PointGrids, so we replace
+      // the single column dimension with 2 separate dimensions (lat/lon or ny/nx).
+      const auto sd = get_structured_grid_dims(*m_io_grid);
+      dims.push_back(sd.y_name);
+      dims.push_back(sd.x_name);
     } else {
       auto tag_name = m_io_grid->has_special_tag_name(t)
                     ? m_io_grid->get_special_tag_name(t)
