@@ -51,6 +51,14 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
 
+  ## The average of AODVis is over its valid (daylight) steps only
+  CreateUnitTest(io_aodvis_avg
+    SOURCES io_aodvis_avg.cpp
+    LIBS eamxx_io eamxx_diagnostics
+    LABELS io diagnostics
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+  )
+
   ## Test conditional geo data output (io_output_if_dim_exists feature)
   CreateUnitTest(io_cond_geo
     SOURCES io_cond_geo.cpp
