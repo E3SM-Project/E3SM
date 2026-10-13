@@ -924,6 +924,18 @@
 					description="If and how MPAS-Ocean sends thermal forcing to GLC (MALI) in E3SM.  This is used for ocean coupling with a melt parameterization for grounded marine ice-cliffs in MALI.  This is primarily relevant to the Greenland Ice Sheet, but also relevant to the Antarctic Ice Sheet. 'none' means no coupling of thermal forcing. '3d' means thermal forcing is passed at multiple z-levels."
 					possible_values="'off', '3d'"
 		/>
+		<nml_option name="config_glc_ice_shelf_coupling" type="logical" default_value=".false."
+					description="If .true., MPAS-Ocean exchanges ice-shelf melt fluxes and land-ice geometry with GLC (MALI) through the E3SM coupler.  MPAS-Ocean receives land-ice pressure, land-ice fractions and the conductive heat flux into the ocean, and sends the net ice-shelf melt flux and the ice-ocean interface temperature.  Requires config_land_ice_flux_mode = 'active' and config_use_land_ice_pressure = .true."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_glc_ice_shelf_coupling_import_geometry" type="logical" default_value=".true."
+					description="If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Set to .false. when the ocean's ice-shelf cavities are not consistent with GLC's ice geometry, in which case MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_glc_ice_shelf_coupling_min_floating_fraction" type="real" default_value="1.0e-3"
+					description="The minimum fraction of a cell covered by floating ice according to GLC for ice-shelf fluxes in that cell to be sent to GLC or for GLC's conductive heat flux to be applied.  Fluxes in cells below this fraction are not sent to GLC and are saved in landIceFreshwaterFluxNotSentToGlc."
+					possible_values="Any real number between 0 and 1"
+		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
 		<nml_option name="config_sw_absorption_type" type="character" default_value="none"
@@ -1955,6 +1967,7 @@
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="dataSubglacialRunoffFluxPKG" description="This package includes variables required for prescribed subglacial runoff flux at the grounding line into the ocean."/>
 		<package name="landIceThermalForcing3DPKG" description="This package includes varibles required for passing a 3D thermal forcing field interpolated to z-levels to glc."/>
+		<package name="landIceGlcCouplingPKG" description="This package includes variables required for coupling ice-shelf fluxes and land-ice geometry with glc."/>
 		<package name="dataLandIceFluxesPKG" description="This package includes varibles related to prescribed freshwater and heat fluxes from land ice."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
@@ -4405,23 +4418,19 @@
 			description="Flux of heat out of ice at land ice-ocean interface. Positive into ocean."
 			packages="landIceFluxesPKG"
 		/>
-		<!-- Output fields for land-ice coupling -->
-		<var_array name="avgLandIceBoundaryLayerTracers" type="real" dimensions="nCells Time" packages="landIceFluxesPKG">
-			<var name="avgLandIceBoundaryLayerTemperature" array_group="landIceBoundaryLayerValues" units="C"
-				description="The time-averaged temperature averaged over the sub-ice-shelf boundary layer"
-			/>
-			<var name="avgLandIceBoundaryLayerSalinity" array_group="landIceBoundaryLayerValues" units="1.e-3"
-				description="The time-averaged salinity averaged over the sub-ice-shelf boundary layer"
-			/>
-		</var_array>
-		<var_array name="avgLandIceTracerTransferVelocities" type="real" dimensions="nCells Time" packages="landIceFluxesPKG">
-			<var name="avgLandIceHeatTransferVelocity" array_group="landIceTransferVelocityValues" units="m s^-1"
-				description="time-averaged friction velocity times nondimensional heat transfer coefficient"
-			/>
-			<var name="avgLandIceSaltTransferVelocity" array_group="landIceTransferVelocityValues" units="m s^-1"
-				description="time-averaged friction velocity times nondimensional salt transfer coefficient"
-			/>
-		</var_array>
+		<!-- Fields for ice-shelf coupling with glc -->
+		<var name="avgLandIceInterfaceTemperature" type="real" dimensions="nCells Time" units="C"
+			description="Time-averaged temperature at the land ice-ocean interface, sent to glc."
+			packages="landIceGlcCouplingPKG"
+		/>
+		<var name="landIceGlcFloatingFraction" type="real" dimensions="nCells Time" units="1"
+			description="The fraction of each cell covered by floating ice according to glc, without renormalizing by the fraction of the cell where glc's bed is below sea level.  Used to normalize ice-shelf mass fluxes sent to glc so they are conserved."
+			packages="landIceGlcCouplingPKG"
+		/>
+		<var name="landIceFreshwaterFluxNotSentToGlc" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+			description="Net ice-shelf melt flux (melt minus frazil accretion), averaged over the last coupling interval, in cells where landIceGlcFloatingFraction is too small for the flux to be sent to glc.  Positive into the ocean."
+			packages="landIceGlcCouplingPKG"
+		/>
 		<var name="avgThermalForcingAtZLevels" type="real" dimensions="nGlcZLevels nCells Time" units="C" packages="landIceThermalForcing3DPKG"
 			description="The time-averaged thermal forcing at predefined z-levels used for indirect OCN-GLC coupling in E3SM"
 		/>

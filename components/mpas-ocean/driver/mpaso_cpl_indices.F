@@ -34,6 +34,9 @@ module mpaso_cpl_indices
   integer :: index_o2x_Foxo_rrofih
 
   ! ocn -> drv for calculation of ocean-ice sheet interactions
+  integer :: index_o2x_Foxo_ismf    !net ice-shelf melt flux per unit floating area
+  integer :: index_o2x_So_tfrz_isf  !ice shelf-ocean interface temperature times So_liflfrac
+  integer :: index_o2x_So_liflfrac  !floating fraction weighting the interface temperature
 
   integer :: index_o2x_So_tf3d(glc_nzoc_max) !ocean thermal forcing at predefined z-levels
   integer :: index_o2x_So_tf3d_mask(glc_nzoc_max) !mask ofocean thermal forcing at predefined z-levels
@@ -149,6 +152,8 @@ module mpaso_cpl_indices
   integer :: index_x2o_Sg_icemask
   integer :: index_x2o_Sg_icemask_grounded
   integer :: index_x2o_Sg_icemask_floating
+  integer :: index_x2o_Sg_below_sea_level_mask
+  integer :: index_x2o_Fogg_hcond
 
 
   ! drv -> ocn (BGC)
@@ -221,6 +226,9 @@ contains
 
     index_o2x_Foxo_ismh     = mct_avect_indexra(o2x,'Foxo_ismh',perrWith='quiet')
     index_o2x_Foxo_rrofih   = mct_avect_indexra(o2x,'Foxo_rrofih',perrWith='quiet')
+    index_o2x_Foxo_ismf     = mct_avect_indexra(o2x,'Foxo_ismf',perrWith='quiet')
+    index_o2x_So_tfrz_isf   = mct_avect_indexra(o2x,'So_tfrz_isf',perrWith='quiet')
+    index_o2x_So_liflfrac   = mct_avect_indexra(o2x,'So_liflfrac',perrWith='quiet')
 
     if (glc_nzoc > 0) then
        do iLev = 1, glc_nzoc
@@ -335,6 +343,8 @@ contains
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask')
     index_x2o_Sg_icemask_grounded = mct_avect_indexra(x2o,'Sg_icemask_grounded')
     index_x2o_Sg_icemask_floating = mct_avect_indexra(x2o,'Sg_icemask_floating')
+    index_x2o_Sg_below_sea_level_mask = mct_avect_indexra(x2o,'Sg_below_sea_level_mask')
+    index_x2o_Fogg_hcond = mct_avect_indexra(x2o,'Fogg_hcond')
 
     if (wav_ocn_coup == 'twoway') then
        index_x2o_Sw_ustokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_1')

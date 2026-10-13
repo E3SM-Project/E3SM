@@ -795,6 +795,13 @@ if ($GLC_NZOC gt 0) {
 } else {
     add_default($nl, 'config_glc_thermal_forcing_coupling_mode');
 }
+if ($OCN_GLC_ISMF_COUPLING eq 'coupler') {
+    add_default($nl, 'config_glc_ice_shelf_coupling', 'val'=>".true.");
+} else {
+    add_default($nl, 'config_glc_ice_shelf_coupling');
+}
+add_default($nl, 'config_glc_ice_shelf_coupling_import_geometry');
+add_default($nl, 'config_glc_ice_shelf_coupling_min_floating_fraction');
 
 ######################################
 # Namelist group: shortwaveRadiation #

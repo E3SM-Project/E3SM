@@ -1488,6 +1488,30 @@ Valid values: 'off', '3d'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_glc_ice_shelf_coupling" type="logical"
+	category="coupling" group="coupling">
+If .true., MPAS-Ocean exchanges ice-shelf melt fluxes and land-ice geometry with GLC (MALI) through the E3SM coupler.  MPAS-Ocean receives land-ice pressure, land-ice fractions and the conductive heat flux into the ocean, and sends the net ice-shelf melt flux and the ice-ocean interface temperature.  Requires config_land_ice_flux_mode = 'active' and config_use_land_ice_pressure = .true.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_glc_ice_shelf_coupling_import_geometry" type="logical"
+	category="coupling" group="coupling">
+If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Set to .false. when the ocean's ice-shelf cavities are not consistent with GLC's ice geometry, in which case MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_glc_ice_shelf_coupling_min_floating_fraction" type="real"
+	category="coupling" group="coupling">
+The minimum fraction of a cell covered by floating ice according to GLC for ice-shelf fluxes in that cell to be sent to GLC or for GLC's conductive heat flux to be applied.  Fluxes in cells below this fraction are not sent to GLC and are saved in landIceFreshwaterFluxNotSentToGlc.
+
+Valid values: Any real number between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- shortwaveRadiation -->
 

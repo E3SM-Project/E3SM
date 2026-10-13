@@ -233,6 +233,8 @@ contains
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     logical, pointer :: config_scale_dismf_by_removed_ice_runoff
+    logical, pointer :: config_glc_ice_shelf_coupling
+    logical, pointer :: config_use_land_ice_pressure
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
     ! ssh coupling interval initialization
@@ -932,7 +934,18 @@ contains
 
     call t_stopf ('mpaso_mct_init')
 
-    ocn_c2_glcshelf = .false.
+    ! ice-shelf fluxes and land-ice geometry are exchanged with glc only if requested
+    call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling', config_glc_ice_shelf_coupling)
+    ocn_c2_glcshelf = config_glc_ice_shelf_coupling
+    if (ocn_c2_glcshelf) then
+       call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+       call mpas_pool_get_config(domain % configs, 'config_use_land_ice_pressure', config_use_land_ice_pressure)
+       if (trim(config_land_ice_flux_mode) /= 'active' .or. .not. config_use_land_ice_pressure) then
+          call mpas_log_write("config_glc_ice_shelf_coupling = .true. requires " // &
+                              "config_land_ice_flux_mode = 'active' and config_use_land_ice_pressure = .true.", &
+                              MPAS_LOG_CRIT)
+       end if
+    end if
     call seq_infodata_PutData(infodata, ocn_prognostic=.true., ocnrof_prognostic=.true., &
                               ocn_c2_glcshelf=ocn_c2_glcshelf)
 
@@ -2195,6 +2208,8 @@ contains
    ! freshwater balance adjustment 
    logical, pointer :: config_use_precip_scaling
 
+   logical, pointer :: config_glc_ice_shelf_coupling
+
 !-----------------------------------------------------------------------
 !
 !  zero out padded cells
@@ -3083,10 +3098,143 @@ contains
       end if
    endif
 
+   ! ice-shelf fields from glc
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling', config_glc_ice_shelf_coupling)
+   if (config_glc_ice_shelf_coupling) then
+      call ocn_import_glc_shelf_mct(x2o_o)
+   end if
+
 !-----------------------------------------------------------------------
 !EOC
 
  end subroutine ocn_import_mct!}}}
+
+!***********************************************************************
+!BOP
+! !IROUTINE: ocn_import_glc_shelf_mct
+! !INTERFACE:
+
+ subroutine ocn_import_glc_shelf_mct(x2o_o)!{{{
+
+! !DESCRIPTION:
+!  Set the conductive heat flux under ice shelves and, if
+!  config_glc_ice_shelf_coupling_import_geometry is .true., land-ice
+!  pressure and land-ice fractions from the fields glc (MALI) sends through
+!  the coupler.  glc masks its fields by where its bed is below sea level,
+!  so pressure and fractions are renormalized here by the remapped mask.
+!  The conductive heat flux is converted to a flux per unit area of
+!  floating ice.
+!
+! !INPUT PARAMETERS:
+
+   real (kind=RKIND), intent(in) :: x2o_o(:,:)
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   integer :: i, n
+   integer, pointer :: nCellsSolve
+
+   type (block_type), pointer :: block_ptr
+
+   type (mpas_pool_type), pointer :: meshPool, &
+                                     forcingPool
+
+   type (field1DReal), pointer :: landIcePressureField, &
+                                  landIceFractionField, &
+                                  landIceFloatingFractionField, &
+                                  landIceGlcFloatingFractionField, &
+                                  landIceConductiveHeatFluxField
+
+   real (kind=RKIND), dimension(:), pointer :: landIcePressure, &
+                                               landIceFraction, &
+                                               landIceFloatingFraction, &
+                                               landIceGlcFloatingFraction, &
+                                               landIceConductiveHeatFlux
+
+   real (kind=RKIND), pointer :: config_glc_ice_shelf_coupling_min_floating_fraction
+
+   logical, pointer :: config_glc_ice_shelf_coupling_import_geometry
+
+   real (kind=RKIND) :: belowSeaLevelFraction, glcFloatingFraction
+
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_min_floating_fraction', &
+                             config_glc_ice_shelf_coupling_min_floating_fraction)
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_import_geometry', &
+                             config_glc_ice_shelf_coupling_import_geometry)
+
+   n = 0
+   block_ptr => domain % blocklist
+   do while(associated(block_ptr))
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+      call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceGlcFloatingFraction', landIceGlcFloatingFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceConductiveHeatFlux', landIceConductiveHeatFlux)
+
+      do i = 1, nCellsSolve
+         n = n + 1
+
+         belowSeaLevelFraction = x2o_o(index_x2o_Sg_below_sea_level_mask, n)
+         glcFloatingFraction = x2o_o(index_x2o_Sg_icemask_floating, n)
+
+         ! used to normalize the ice-shelf mass fluxes sent back to glc
+         landIceGlcFloatingFraction(i) = glcFloatingFraction
+
+         if (config_glc_ice_shelf_coupling_import_geometry) then
+            if (belowSeaLevelFraction > 0.0_RKIND) then
+               landIcePressure(i) = x2o_o(index_x2o_Sg_lithop, n) / belowSeaLevelFraction
+               landIceFloatingFraction(i) = min(glcFloatingFraction / belowSeaLevelFraction, 1.0_RKIND)
+               landIceFraction(i) = min((glcFloatingFraction + x2o_o(index_x2o_Sg_icemask_grounded, n)) &
+                                        / belowSeaLevelFraction, 1.0_RKIND)
+            else
+               landIcePressure(i) = 0.0_RKIND
+               landIceFloatingFraction(i) = 0.0_RKIND
+               landIceFraction(i) = 0.0_RKIND
+            end if
+         end if
+
+         if (glcFloatingFraction > config_glc_ice_shelf_coupling_min_floating_fraction) then
+            landIceConductiveHeatFlux(i) = x2o_o(index_x2o_Fogg_hcond, n) / glcFloatingFraction
+         else
+            landIceConductiveHeatFlux(i) = 0.0_RKIND
+         end if
+      end do
+
+      block_ptr => block_ptr % next
+   end do
+
+   block_ptr => domain % blocklist
+   call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+   call mpas_pool_get_field(forcingPool, 'landIceGlcFloatingFraction', landIceGlcFloatingFractionField)
+   call mpas_pool_get_field(forcingPool, 'landIceConductiveHeatFlux', landIceConductiveHeatFluxField)
+   call mpas_dmpar_exch_halo_field(landIceGlcFloatingFractionField)
+   call mpas_dmpar_exch_halo_field(landIceConductiveHeatFluxField)
+
+   if (config_glc_ice_shelf_coupling_import_geometry) then
+      call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
+      call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+      call mpas_pool_get_field(forcingPool, 'landIceFloatingFraction', landIceFloatingFractionField)
+      call mpas_dmpar_exch_halo_field(landIcePressureField)
+      call mpas_dmpar_exch_halo_field(landIceFractionField)
+      call mpas_dmpar_exch_halo_field(landIceFloatingFractionField)
+   end if
+
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ocn_import_glc_shelf_mct!}}}
 !***********************************************************************
 !BOP
 ! !IROUTINE: ocn_export_mct
@@ -3181,6 +3329,8 @@ contains
 
    logical :: keepFrazil
 
+   logical, pointer :: config_glc_ice_shelf_coupling
+
    logical :: ocn_c2_glctf           ! .true.  => ocn to glc thermal forcing coupling on
 
    integer :: total_cells_needed
@@ -3204,6 +3354,12 @@ contains
 
    ! Determine if ocn to glc thermal forcing coupling is on
    call seq_infodata_GetData(infodata, ocn_c2_glctf=ocn_c2_glctf)
+
+   ! ice-shelf fields for glc, computed before accumulatedFrazilIceMass is reset below
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling', config_glc_ice_shelf_coupling)
+   if (config_glc_ice_shelf_coupling) then
+      call ocn_export_glc_shelf_mct(o2x_o)
+   end if
 
    ! This code needed to support MOAB coupler and its export call.
    ! will be removed when couplers are separated.
@@ -3458,6 +3614,126 @@ contains
 !EOC
 
  end subroutine ocn_export_mct!}}}
+
+!***********************************************************************
+!BOP
+! !IROUTINE: ocn_export_glc_shelf_mct
+! !INTERFACE:
+
+ subroutine ocn_export_glc_shelf_mct(o2x_o)   !{{{
+
+! !DESCRIPTION:
+!  Set the ice-shelf fields sent to glc (MALI) through the coupler.
+!
+!  The net ice-shelf melt flux (melt minus frazil accreted onto the ice
+!  shelf) is divided by the fraction of each cell that glc covers with
+!  floating ice, so that glc conserves it after applying it only to its
+!  floating ice.  The flux in cells where that fraction is too small is
+!  not sent and is saved in landIceFreshwaterFluxNotSentToGlc instead.
+!
+!  The ice-ocean interface temperature (in Kelvin) is weighted by the
+!  floating fraction where it is computed, and the weight is sent as well,
+!  so glc can divide the remapped temperature by the remapped weight.
+!
+! !INPUT/OUTPUT PARAMETERS:
+
+   real (kind=RKIND), intent(inout) :: o2x_o(:,:)
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   integer :: i, n
+   integer, pointer :: nCellsSolve
+
+   type (block_type), pointer :: block_ptr
+
+   type (mpas_pool_type), pointer :: meshPool, &
+                                     forcingPool, &
+                                     statePool
+
+   integer, dimension(:), pointer :: landIceMask, &
+                                     landIceFloatingMask
+
+   real (kind=RKIND), dimension(:), pointer :: landIceFloatingFraction, &
+                                               landIceGlcFloatingFraction, &
+                                               avgLandIceFreshwaterFlux, &
+                                               avgLandIceInterfaceTemperature, &
+                                               landIceFreshwaterFluxNotSentToGlc, &
+                                               accumulatedFrazilIceMass
+
+   real (kind=RKIND), pointer :: config_glc_ice_shelf_coupling_min_floating_fraction
+
+   logical, pointer :: frazilIceActive
+
+   real (kind=RKIND) :: netFlux, weight
+
+   call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
+   call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_min_floating_fraction', &
+                             config_glc_ice_shelf_coupling_min_floating_fraction)
+
+   n = 0
+   block_ptr => domain % blocklist
+   do while(associated(block_ptr))
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceGlcFloatingFraction', landIceGlcFloatingFraction)
+      call mpas_pool_get_array(forcingPool, 'avgLandIceFreshwaterFlux', avgLandIceFreshwaterFlux)
+      call mpas_pool_get_array(forcingPool, 'avgLandIceInterfaceTemperature', avgLandIceInterfaceTemperature)
+      call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFluxNotSentToGlc', &
+                               landIceFreshwaterFluxNotSentToGlc)
+      if ( frazilIceActive ) then
+         call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMass, 1)
+      end if
+
+      do i = 1, nCellsSolve
+         n = n + 1
+
+         ! net mass flux out of the ice shelf per unit cell area: melt minus the
+         ! frazil that MPAS-Ocean passes to glc under land ice
+         netFlux = avgLandIceFreshwaterFlux(i)
+         if ( frazilIceActive ) then
+            if ( landIceMask(i) == 1 ) then
+               netFlux = netFlux - accumulatedFrazilIceMass(i) / ocn_cpl_dt
+            end if
+         end if
+
+         if (landIceGlcFloatingFraction(i) > config_glc_ice_shelf_coupling_min_floating_fraction) then
+            o2x_o(index_o2x_Foxo_ismf, n) = netFlux / landIceGlcFloatingFraction(i)
+            landIceFreshwaterFluxNotSentToGlc(i) = 0.0_RKIND
+         else
+            o2x_o(index_o2x_Foxo_ismf, n) = 0.0_RKIND
+            landIceFreshwaterFluxNotSentToGlc(i) = netFlux
+         end if
+
+         ! the interface temperature is computed where landIceFloatingMask is 1
+         if (landIceFloatingMask(i) == 1) then
+            weight = landIceFloatingFraction(i)
+         else
+            weight = 0.0_RKIND
+         end if
+         o2x_o(index_o2x_So_liflfrac, n) = weight
+         o2x_o(index_o2x_So_tfrz_isf, n) = weight * (avgLandIceInterfaceTemperature(i) + T0_Kelvin)
+      end do
+
+      block_ptr => block_ptr % next
+   end do
+
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ocn_export_glc_shelf_mct!}}}
 
  subroutine check_clocks_sync(MPASclock, Eclock, err)
     type (MPAS_Clock_type), intent(in) :: MPASclock

@@ -1,2 +1,3 @@
  config_land_ice_flux_mode = 'active'
  config_check_ssh_consistency = .false.
+ config_glc_ice_shelf_coupling_import_geometry = .false.
