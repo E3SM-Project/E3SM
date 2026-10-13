@@ -1,8 +1,7 @@
-This testdef is used to test a stealth feature in mpaso introduced by
-PR #2726. It changes one mpaso namelist variable,
-    config_land_ice_flux_mode
-from its default value to 'coupled'.
-This tests the ocn/glcshelf coupling.
+This testdef is used in tests that couple MPAS-Ocean with MALI. It sets
+    config_land_ice_flux_mode = 'active'
+so that MPAS-Ocean computes ice-shelf melt fluxes itself, and it turns off
+the SSH consistency check with
+    config_check_ssh_consistency = .false.
 
-It also specified that DATM forcing should be restricted to 1958.
-This allows JRA1p5 forcing to be used without a large input data requirement.
+It also aligns the DATM and DROF forcing years with a 2000-01-01 start date.
