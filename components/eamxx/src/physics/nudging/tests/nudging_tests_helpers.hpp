@@ -135,7 +135,7 @@ void compute_fields (const std::shared_ptr<FieldManager>& fm,
 }
 
 std::shared_ptr<OutputManager>
-create_om (const std::string& filename_prefix,
+create_om (const std::string& stream_id,
            const std::shared_ptr<FieldManager>& fm,
            const std::shared_ptr<GridsManager>& gm,
            const util::TimeStamp& t0,
@@ -147,7 +147,7 @@ create_om (const std::string& filename_prefix,
   //       we can retrieve exactly the nudging data (if no remapping happens)
   ekat::ParameterList params;
   params.set<std::string>("averaging_type","instant");
-  params.set<std::string>("filename_prefix",filename_prefix);
+  params.set<std::string>("stream_id",stream_id);
   params.set<std::string>("floating_point_precision","real");
   params.set("field_names",strvec_t{"p_mid","U","V"});
 

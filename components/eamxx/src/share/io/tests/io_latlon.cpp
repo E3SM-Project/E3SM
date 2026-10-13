@@ -95,7 +95,7 @@ TEST_CASE("io_latlon")
   OutputManager om;
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix","io_latlon");
+  params.set<std::string>("stream_id","io_latlon");
   params.set<std::string>("averaging_type","instant");
   params.set<std::string>("file_max_storage_type","one_year");
   auto& oc = params.sublist("output_control");
