@@ -184,9 +184,9 @@ TEST_CASE ("horiz_structured_remap")
     REQUIRE (tgt_grid->get_num_global_dofs()==nx*ny);
     REQUIRE (is_structured_grid(*tgt_grid));
     const auto dims = get_structured_grid_dims(*tgt_grid);
-    REQUIRE (dims.y_name=="ny");
+    REQUIRE (dims.y_name=="lat");
     REQUIRE (dims.ny==ny);
-    REQUIRE (dims.x_name=="nx");
+    REQUIRE (dims.x_name=="lon");
     REQUIRE (dims.nx==nx);
     check_ordering(*tgt_grid,nx,ny);
 
@@ -281,17 +281,17 @@ TEST_CASE ("horiz_structured_remap")
 
       REQUIRE (is_structured_grid(*tgt_grid));
       const auto dims = get_structured_grid_dims(*tgt_grid);
+      // The dims have the same names (and sizes) for lat-lon and curvilinear grids
+      REQUIRE (dims.y_name=="lat");
+      REQUIRE (dims.x_name=="lon");
       REQUIRE (dims.ny==nlat);
       REQUIRE (dims.nx==nlon);
       check_ordering(*tgt_grid,nlon,nlat);
+      // What differs is the layout of lat/lon: 1d coordinate arrays vs col-dependent fields
       if (lat_major) {
-        REQUIRE (dims.y_name=="lat");
-        REQUIRE (dims.x_name=="lon");
         REQUIRE (tgt_grid->get_geometry_data("lat").get_header().get_identifier().get_layout().size()==nlat);
         REQUIRE (tgt_grid->get_geometry_data("lon").get_header().get_identifier().get_layout().size()==nlon);
       } else {
-        REQUIRE (dims.y_name=="ny");
-        REQUIRE (dims.x_name=="nx");
         REQUIRE (tgt_grid->get_geometry_data("lat").get_header().get_identifier().get_layout()==tgt_grid->get_2d_scalar_layout());
         REQUIRE (tgt_grid->get_geometry_data("lon").get_header().get_identifier().get_layout()==tgt_grid->get_2d_scalar_layout());
       }

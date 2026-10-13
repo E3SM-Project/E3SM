@@ -203,7 +203,7 @@ build (const std::shared_ptr<const AbstractGrid>& grid,
   }
 
   // If this is a remap TO a structured grid, setup some geo data that our output classes
-  // will use to write to file using (lat,lon) or (ny,nx) layout rather than (ncol)
+  // will use to write to file using (lat,lon) layout rather than (ncol)
   if (structured) {
     setup_structured_data(gen_grid,layout[0],layout[1]);
   }
@@ -472,8 +472,8 @@ setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
     x.get_header().set_extra_data("save_as_geo_data",false);
   } else {
     // lat/lon (if present) are regular fields over the columns
-    auto y = make_1d(structured_y_name,"ny",ny,iy_vals,none);
-    auto x = make_1d(structured_x_name,"nx",nx,ix_vals,none);
+    auto y = make_1d(structured_y_name,"lat",ny,iy_vals,none);
+    auto x = make_1d(structured_x_name,"lon",nx,ix_vals,none);
     y.get_header().set_extra_data("save_as_geo_data",false);
     x.get_header().set_extra_data("save_as_geo_data",false);
   }

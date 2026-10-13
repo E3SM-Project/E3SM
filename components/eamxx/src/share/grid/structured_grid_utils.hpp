@@ -17,7 +17,9 @@ namespace scream {
  *  - lat-lon: the lat (lon) of each dof only depends on iy (ix). Here, lat/lon geo data
  *    are 1d coordinate arrays of length ny/nx, and the dims are named "lat"/"lon".
  *  - curvilinear: lat and lon of a dof depend on both iy and ix (e.g., a HRRR grid).
- *    Here, lat/lon geo data are regular fields over the dofs, and the dims are named "ny"/"nx".
+ *    Here, lat/lon geo data are regular fields over the dofs, and the dims are still named
+ *    "lat"/"lon" (like ncremap does), but they have length ny/nx (so "lat"/"lon" are not the number
+ *    of lats/lons), and lat/lon are 2d variables over (lat,lon).
  *
  * A grid advertises being structured by storing the geo data "structured_y" and "structured_x".
  * These are 1d fields (tag CMP) of length ny and nx. The names in their layouts are the names
@@ -36,7 +38,7 @@ inline bool is_structured_grid (const AbstractGrid& grid)
 }
 
 // The dims that replace COL in the output file. Dim y is the slowest varying one, while x
-// is the fastest. The names are the names of the dims in the file (e.g., "lat"/"lon" or "ny"/"nx").
+// is the fastest. The names are the names of the dims in the file (always "lat"/"lon" for now).
 struct StructuredGridDims {
   std::string y_name;
   std::string x_name;

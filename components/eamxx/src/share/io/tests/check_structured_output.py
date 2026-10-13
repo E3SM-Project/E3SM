@@ -7,7 +7,8 @@ The tgt grid in the map file is an (ny,nx) array, with nx the fastest varying in
 (dst_grid_dims=[nx,ny]). The remapped fields are compared against a mat-vec computed
 independently, directly from the map file. The output file is expected to have
   - lat-lon grids: dims (lat,lon), with 1d lat(lat) and lon(lon) coordinate variables
-  - curvilinear grids: dims (ny,nx), with 2d lat(ny,nx) and lon(ny,nx) variables
+  - curvilinear grids: dims (lat,lon) too (like ncremap does), but of length ny and nx, and 2d
+    lat(lat,lon) and lon(lat,lon) variables
 """
 
 import argparse, sys, pathlib
@@ -72,10 +73,10 @@ def check_structured_output(map_file,out_file,grid_kind):
         # nx should not be the number of lons, and ny should not be the number of lats
         assert len(np.unique(np.round(xc_b,4)))>nx and len(np.unique(np.round(yc_b,4)))>ny
 
-    # Names of the dims in the file. Slow dim first
-    ydim, xdim = ("lat","lon") if grid_kind=="latlon" else ("ny","nx")
+    # Names of the dims in the file (slow dim first), which are the same for both kinds of grids
+    ydim, xdim = "lat", "lon"
     # Dims that must NOT be in the file
-    bad_dims = ["ncol"] + (["ny","nx"] if grid_kind=="latlon" else ["lat","lon","x","y"])
+    bad_dims = ["ncol","ny","nx","x","y"]
 
     ok = True
     with Dataset(out_file, 'r') as out_ds:
@@ -106,7 +107,7 @@ def check_structured_output(map_file,out_file,grid_kind):
         if grid_kind=="latlon":
             geo = [('lat',('lat',),lat2d[:,0]),('lon',('lon',),lon2d[0,:])]
         else:
-            geo = [('lat',('ny','nx'),lat2d),('lon',('ny','nx'),lon2d)]
+            geo = [('lat',('lat','lon'),lat2d),('lon',('lat','lon'),lon2d)]
         for name,dims,expected in geo:
             if name not in out_ds.variables:
                 print(f"Geo variable '{name}' not found in the output file")
