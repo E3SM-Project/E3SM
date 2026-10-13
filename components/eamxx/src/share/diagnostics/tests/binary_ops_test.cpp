@@ -120,6 +120,13 @@ TEST_CASE("binary_ops") {
 
   // constant*constant diag
   REQUIRE (rgas_diag_f.get_view<Real,Host>()()==physics::Constants<Real>::dictionary().at("Rgas").value);
+
+  // Two fields on different grids are an error
+  Field qv_other(FieldIdentifier("qv", scalar2d_layout, kg / kg, "other_grid"), true);
+  auto plus_other = diag_factory.create("BinaryOp", comm, params_plus, grid);
+  plus_other->set_input_field(qc);
+  plus_other->set_input_field(qv_other);
+  REQUIRE_THROWS(plus_other->initialize());
 }
 
 }  // namespace scream
