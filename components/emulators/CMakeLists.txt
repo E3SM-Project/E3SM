@@ -10,6 +10,15 @@ set(
 )
 option(BUILD_EMULATOR_TESTS "Build emulator unit tests" OFF)
 
+if (DEFINED E3SM_SOURCE_DIR)
+  set(STANDALONE_MODE OFF)
+else()
+  set(STANDALONE_MODE ON)
+  make_directory(${PROJECT_BINARY_DIR}/bin)
+  make_directory(${PROJECT_BINARY_DIR}/lib)
+  make_directory(${PROJECT_BINARY_DIR}/include)
+endif()
+
 # ------------------------------------------------------------------------------
 # EKAT
 # ------------------------------------------------------------------------------
@@ -133,6 +142,7 @@ if (STANDALONE_MODE)
     LOG_INSTALL TRUE
     BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/lib/libMOAB.a
   )
+  target_include_directories(MOAB INTERFACE ${PROJECT_BINARY_DIR}/include)
   add_dependencies(MOAB MOAB_proj)
 
   include_directories(${PROJECT_BINARY_DIR}/include)
