@@ -5609,6 +5609,26 @@
 <li>constraints: ge 0</li>
 </ul>
 </li>
+<li>water_isotopes::liquid_vapor_formulation:<ul>
+<li>description: Source for liquid/vapor fractionation parameters</li>
+<li>type: string</li>
+</ul>
+</li>
+<li>water_isotopes::ice_vapor_formulation:<ul>
+<li>description: Source for ice/vapor fractionation parameters</li>
+<li>type: string</li>
+</ul>
+</li>
+<li>water_isotopes::standard_ratio_formulation:<ul>
+<li>description: Normalize isotope ratios or use actual abundances</li>
+<li>type: string</li>
+</ul>
+</li>
+<li>water_isotopes::ocean_enrichment_formulation:<ul>
+<li>description: Ocean isotopic enrichment/depletion relative to VSMOW</li>
+<li>type: string</li>
+</ul>
+</li>
 <li>water_isotopes::number_of_subcycles:<ul>
 <li>description: how many times to subcycle this atm process</li>
 <li>type: <strong>MISSING</strong></li>
@@ -6643,7 +6663,38 @@
 <li>type: array(integer)</li>
 </ul>
 </li>
-<li>test_only::number_of_subcycles:<ul>
+<li>test_only::open_params (open node):<ul>
+<li>leaves can be added/removed with <code>atmchange --add/--rm</code>. All leaves have:<ul>
+<li>type: array(real)</li>
+<li>doc: Test leaf of an open node</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>test_only::open_params::p1:<ul>
+<li>description: Test leaf of an open node</li>
+<li>type: array(real)</li>
+</ul>
+</li>
+<li>
+<p>test_only::open_params::p2:</p>
+<ul>
+<li>description: Test leaf of an open node</li>
+<li>type: array(real)</li>
+</ul>
+</li>
+<li>
+<p>test_only::empty_open_params (open node):</p>
+<ul>
+<li>leaves can be added/removed with <code>atmchange --add/--rm</code>. All leaves have:<ul>
+<li>type: array(real)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>test_only::number_of_subcycles:</p>
+<ul>
 <li>description: how many times to subcycle this atm process</li>
 <li>type: <strong>MISSING</strong></li>
 <li>constraints: gt 0</li>
@@ -7682,7 +7733,7 @@
 </ul>
 </li>
 <li>ctl_nl::tom_sponge_start:<ul>
-<li>description: Starting height of the sponge layer, in hPa.</li>
+<li>description: sponge layer bot pressure [hPa]</li>
 <li>type: real</li>
 </ul>
 </li>
