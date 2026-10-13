@@ -4,7 +4,6 @@
 #include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/remap/horizontal_remapper.hpp"
-#include "share/grid/structured_grid_utils.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
 
@@ -341,8 +340,17 @@ void AtmosphereOutput::init()
 {
   auto fm_after_hr = m_field_mgrs[AfterHorizRemap];
   m_io_grid  = fm_after_hr->get_grid();
-  // Structured grids (lat-lon or curvilinear) have their COL dim replaced by 2 dims in the file
-  m_structured_output = is_structured_grid(*m_io_grid);
+  // Structured grids (lat-lon or curvilinear) have their COL dim replaced by 2 dims in the file, (lat,lon),
+  // of length ny and nx. The remapper stores [ny,nx] in the geo data structured_dims.
+  m_structured_output = m_io_grid->has_geometry_data("structured_dims");
+
+  int ny = 0;
+  int nx = 0;
+  if (m_structured_output) {
+    auto dims_h = m_io_grid->get_geometry_data("structured_dims").get_view<const int*,Host>();
+    ny = dims_h(0);
+    nx = dims_h(1);
+  }
 
   EKAT_REQUIRE_MSG (m_io_grid->is_unique(),
       "Error! I/O only supports grids which are 'unique', meaning that the\n"
@@ -405,9 +413,8 @@ void AtmosphereOutput::init()
     for (int j=0; j<layout.rank(); ++j) {
       if (tags[j]==FieldTag::Column and m_structured_output) {
         // We need to make sure we are registering the dims replacing COL (lat/lon)
-        const auto sd = get_structured_grid_dims(*m_io_grid);
-        m_dims_len.emplace(sd.y_name,sd.ny);
-        m_dims_len.emplace(sd.x_name,sd.nx);
+        m_dims_len.emplace("lat",ny);
+        m_dims_len.emplace("lon",nx);
         continue;
       }
       // check tag against m_dims_len map.  If not in there, then add it.
@@ -981,8 +988,7 @@ void AtmosphereOutput::set_decompositions(const std::string& filename)
   if (m_structured_output) {
     // The COL dim is replaced by (y,x), with x the fastest varying. The offset in the flattened
     // (y,x) array is gid-min_gid=iy*nx+ix, so we can use the same offsets we would use for COL
-    const auto sd = get_structured_grid_dims(*m_io_grid);
-    scorpio::set_dims_decomp(filename,{sd.y_name,sd.x_name},offsets);
+    scorpio::set_dims_decomp(filename,{"lat","lon"},offsets);
   } else {
     scorpio::set_dim_decomp(filename,m_decomp_dimname,offsets);
   }
@@ -1341,9 +1347,8 @@ get_var_dimnames (const FieldLayout& layout) const
     if (t==COL and m_structured_output) {
       // Structured grids (e.g., from remap to lat-lon/curvilinear grids) are PointGrids, so we replace
       // the single column dimension with 2 separate dimensions (lat/lon).
-      const auto sd = get_structured_grid_dims(*m_io_grid);
-      dims.push_back(sd.y_name);
-      dims.push_back(sd.x_name);
+      dims.push_back("lat");
+      dims.push_back("lon");
     } else {
       auto tag_name = m_io_grid->has_special_tag_name(t)
                     ? m_io_grid->get_special_tag_name(t)

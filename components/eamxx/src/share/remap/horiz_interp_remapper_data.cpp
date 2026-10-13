@@ -2,7 +2,6 @@
 
 #include "share/field/field_reader.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/grid/structured_grid_utils.hpp"
 #include "share/grid/grid_import_export.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -435,11 +434,14 @@ setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
     }
     grid->get_comm().all_reduce(my_vals.data(),all_vals.data(),2*nslots,MPI_MAX);
 
-    for (int k=0; k<nslots and latlon; ++k) {
+    for (int k=0; k<nslots; ++k) {
       const Real vmax =  all_vals[k];
       const Real vmin = -all_vals[nslots+k];
       // A slot that nobody filled (not expected) cannot be part of a lat-lon grid
-      latlon = vmax!=sentinel and (vmax-vmin)<=tol;
+      if (vmax==sentinel or (vmax-vmin)>tol) {
+        latlon = false;
+        break;
+      }
     }
     if (latlon) {
       std::copy_n(all_vals.data(),ny,lats.data());
@@ -447,35 +449,27 @@ setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
     }
   }
 
-  // The geo data "structured_{y,x}" mark the grid as structured. Their layout names are the
-  // names of the dims, in the output files, that replace COL. See share/grid/structured_grid_utils.hpp
-  auto make_1d = [&](const std::string& name, const std::string& dim, const int n,
-                     const std::vector<Real>& vals, const ekat::units::Units& u) {
-    auto f = grid->create_geometry_data(name,FieldLayout({CMP},{n},{dim}),u);
-    std::copy_n(vals.data(),n,f.get_view<Real*,Host>().data());
-    f.sync_to_dev();
-    return f;
-  };
-  std::vector<Real> iy_vals(ny), ix_vals(nx);
-  std::iota(iy_vals.begin(),iy_vals.end(),1);
-  std::iota(ix_vals.begin(),ix_vals.end(),1);
+  // The geo data "structured_dims"=[ny,nx] marks the grid as structured: IO replaces the COL dim
+  // with the dims (lat,lon), of length ny and nx. This is the case for both lat-lon and curvilinear
+  // grids. The difference between them is the layout of lat/lon: 1d coordinate arrays for lat-lon grids,
+  // and regular fields over the columns for curvilinear grids.
+  auto dims = grid->create_geometry_data("structured_dims",FieldLayout({CMP},{2},{"structured_dims"}),none,DataType::IntType);
+  dims.get_header().set_extra_data("save_as_geo_data",false);
+  auto dims_h = dims.get_view<int*,Host>();
+  dims_h(0) = ny;
+  dims_h(1) = nx;
+  dims.sync_to_dev();
 
   if (latlon) {
     // Replace lat/lon with 1d coordinate arrays
     grid->delete_geometry_data("lat");
     grid->delete_geometry_data("lon");
-    make_1d("lat","lat",ny,lats,degN);
-    make_1d("lon","lon",nx,lons,degE);
-    auto y = make_1d(structured_y_name,"lat",ny,lats,degN);
-    auto x = make_1d(structured_x_name,"lon",nx,lons,degE);
-    y.get_header().set_extra_data("save_as_geo_data",false);
-    x.get_header().set_extra_data("save_as_geo_data",false);
-  } else {
-    // lat/lon (if present) are regular fields over the columns
-    auto y = make_1d(structured_y_name,"lat",ny,iy_vals,none);
-    auto x = make_1d(structured_x_name,"lon",nx,ix_vals,none);
-    y.get_header().set_extra_data("save_as_geo_data",false);
-    x.get_header().set_extra_data("save_as_geo_data",false);
+    auto lat = grid->create_geometry_data("lat",FieldLayout({CMP},{ny},{"lat"}),degN);
+    auto lon = grid->create_geometry_data("lon",FieldLayout({CMP},{nx},{"lon"}),degE);
+    std::copy_n(lats.data(),ny,lat.get_view<Real*,Host>().data());
+    std::copy_n(lons.data(),nx,lon.get_view<Real*,Host>().data());
+    lat.sync_to_dev();
+    lon.sync_to_dev();
   }
 }
 
