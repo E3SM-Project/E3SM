@@ -70,6 +70,10 @@ public:
   void extrapolate (const Field& f_src, const Field& f_tgt,
                     const Field& p_src, const Field& p_tgt) const;
 
+  // Set to fill_value any tgt level interpolated with nonzero weight from an invalid src level
+  void mask_fill_contaminated (const Field& f_src, const Field& f_tgt,
+                               const Field& p_src, const Field& p_tgt) const;
+
   template<int N>
   void setup_lin_interp (const ekat::LinInterp<Real,N>& lin_interp,
                          const Field& p_src, const Field& p_tgt) const;
@@ -112,6 +116,7 @@ protected:
   //         li_vtag defaults to LEVP.
   struct FType {
     bool packs_supported = false;
+    bool fill_aware      = false; // The src field has a mask, or may be filled
     FieldTag li_vtag  = FieldTag::Invalid;
     FieldTag src_vtag = FieldTag::Invalid;
     FieldTag tgt_vtag = FieldTag::Invalid;
