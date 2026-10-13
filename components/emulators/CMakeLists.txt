@@ -112,6 +112,9 @@ if(BUILD_EMULATOR_TESTS)
 endif()
 
 if (STANDALONE_MODE)
+  # We need to disable the useless, harmful C++ MPI bindings, and no one method seems to work.
+  set(MPI_CXX_SKIP_MPICXX ON)
+  add_definitions(-DOMPI_SKIP_MPICXX)
   find_package(MPI COMPONENTS C)
   if (NOT MPI_FOUND)
     message(FATAL_ERROR "MPI is required for Standalone Mode, but it couldn't be found!")
