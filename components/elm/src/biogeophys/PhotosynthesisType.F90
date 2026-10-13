@@ -470,7 +470,6 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine photosyns_vars_TimeStepInit (photosyns_vars, bounds)
-    !$acc routine seq
     ! Time step initialization
     !
     ! !USES:
@@ -484,6 +483,7 @@ contains
     integer :: p,c,l ! indices
     !-----------------------------------------------------------------------
 
+    !$acc parallel loop independent gang vector default(present) private(p,l)
     do p = bounds%begp, bounds%endp
        l = veg_pp%landunit(p)
        if (.not. lun_pp%lakpoi(l)) then

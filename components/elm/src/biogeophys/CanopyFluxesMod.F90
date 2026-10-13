@@ -503,7 +503,10 @@ contains
          call alm_fates%prep_canopyfluxes( bounds )
       end if
       
-      rb1(begp:endp) = 0._r8
+      !$acc parallel loop independent gang vector default(present) present(rb1(:))
+      do p = begp, endp
+         rb1(p) = 0._r8
+      end do
 
 
       !NOTE: this filter set up means doing the same calculations for a column
@@ -589,7 +592,9 @@ contains
       !$acc enter data create(air(:),bir(:), cir(:), co2(:),o2(:),&
       !$acc nmozsgn(:), taf(:),qaf(:), ur(:),dth(:),dqh(:),delq(:), &
       !$acc  dthv(:), obu(:),el(:),qsatl(:),qsatldT(:), um(:), &
-      !$acc  wta0(:), err(:), det(:))
+      !$acc  wta0(:), err(:), det(:), ugust_total(:), &
+      !$acc  wind_speed0(:), wind_speed_adj(:), tau(:), tau_diff(:), &
+      !$acc  prev_tau(:), prev_tau_diff(:))
 
       !$acc parallel loop independent gang vector default(present) private(p,c,t,g,deldT,slope_rad) present(thm(:),emv(:))
       do filter_index = 1, fn
@@ -1240,7 +1245,9 @@ contains
       !$acc  temp1(:), temp2(:),temp12m(:),&
       !$acc  temp22m(:),ustar(:), um(:),rah(:,:),raw(:,:), uaf(:),rb(:), &
       !$acc  tlbef(:), del(:),del2(:),svpts(:),eah(:),wta0(:), err(:), dt_veg(:) ,wtg(:), &
-      !$acc  wtal(:), wtl0(:), efe(:), det(:), dele(:), fm(:)  )
+      !$acc  wtal(:), wtl0(:), efe(:), det(:), dele(:), fm(:), ugust_total(:), &
+      !$acc  wind_speed0(:), wind_speed_adj(:), tau(:), tau_diff(:), &
+      !$acc  prev_tau(:), prev_tau_diff(:) )
       !$acc exit data delete(itlef) 
     end associate
 
