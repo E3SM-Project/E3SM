@@ -2011,7 +2011,7 @@ contains
     if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
        ! Current logic will not allow this to be true, but future changes could make it so, which may be nonsensical
        call shr_sys_abort(subname//' ERROR: if glcshelf_c2_ocn must also have ocn_c2_glcshelf and vice versa. '//&
-            'Boundary layer fluxes calculated in coupler require input from both components.')
+            'Ice-shelf coupling exchanges fields in both directions.')
     endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
@@ -4307,13 +4307,11 @@ contains
           call prep_glc_calc_o2x_gx(ocn_c2_glctf, ocn_c2_glcshelf, timer='CPL:glcprep_ocn2glc') !remap ocean fields to o2x_g at ocean couping interval
        endif
 
-       ! if ice-shelf coupling is on, map shelf fields between OCN and GLC
+       ! if ice-shelf coupling is on, accumulate the ocean's ice-shelf fields
+       ! over the glc coupling interval
        if (ocn_c2_glcshelf .and. glcshelf_c2_ocn) then
-          call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
-                                        !Map g2x_gx shelf fields to g2x_ox.
-                                        !Do this at intrinsic coupling
-                                        !frequency
-          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g fields here into x2g_gacc
+          call prep_glc_mrg_ocn_shelf(timer_mrg='CPL:glcprep_mrgocnshelf') !copy o2x_gx shelf fields into x2g_gx
+          call prep_glc_accum_ocn(timer='CPL:glcprep_accum_ocn') !accum x2g_g shelf fields here into x2g_gacc
        endif
 
        if (glcshelf_c2_ice) then
@@ -4537,6 +4535,7 @@ contains
 
        if (glc_c2_lnd) call prep_lnd_calc_g2x_lx(timer='CPL:glcpost_glc2lnd')
        if (glc_c2_ocn) call prep_ocn_calc_g2x_ox(timer='CPL:glcpost_glc2ocn')
+       if (glcshelf_c2_ocn) call prep_ocn_shelf_calc_g2x_ox(timer='CPL:glcpost_glcshelf2ocn')
        if (glc_c2_ice) call prep_ice_calc_g2x_ix(timer='CPL:glcpost_glc2ice')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)

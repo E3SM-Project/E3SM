@@ -2059,7 +2059,11 @@ contains
     if ((ocn_c2_glcshelf .and. .not. glcshelf_c2_ocn) .or. (glcshelf_c2_ocn .and. .not. ocn_c2_glcshelf)) then
        ! Current logic will not allow this to be true, but future changes could make it so, which may be nonsensical
        call shr_sys_abort(subname//' ERROR: if glc_c2_ocn must also have ocn_c2_glc and vice versa. '//&
-            'Boundary layer fluxes calculated in coupler require input from both components.')
+            'Ice-shelf coupling exchanges fields in both directions.')
+    endif
+    if (ocn_c2_glcshelf) then
+       call shr_sys_abort(subname//' ERROR: ice-shelf coupling between ocn and glc '//&
+            'is only supported with driver-mct.')
     endif
     if (rofice_present .and. .not.rof_present) then
        call shr_sys_abort(subname//' ERROR: if rofice present must also have rof present')
