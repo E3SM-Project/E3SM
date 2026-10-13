@@ -234,13 +234,13 @@ module seq_comm_mct
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
   integer, public :: mbintxia ! iMOAB id for intersection mesh between ice and atmosphere
-   integer, public :: mbwxid   ! iMOAB id for wave mesh on coupler pes (aliased to existing migrated mesh)
-   integer, public :: mbintxaw ! iMOAB id for intersection mesh between atm and wave
-   integer, public :: mbintxwa ! iMOAB id for intersection mesh between wave and atm
-   integer, public :: mbintxow ! iMOAB id for intersection mesh between ocean and wave
-   integer, public :: mbintxwo ! iMOAB id for intersection mesh between wave and ocean
-   integer, public :: mbintxiw ! iMOAB id for intersection mesh between ice and wave
-   integer, public :: mbintxwi ! iMOAB id for intersection mesh between wave and ice
+  integer, public :: mbwxid   ! iMOAB id for wave mesh on coupler pes (aliased to existing migrated mesh)
+  integer, public :: mbintxaw ! iMOAB id for intersection mesh between atm and wave
+  integer, public :: mbintxwa ! iMOAB id for intersection mesh between wave and atm
+  integer, public :: mbintxow ! iMOAB id for intersection mesh between ocean and wave
+  integer, public :: mbintxwo ! iMOAB id for intersection mesh between wave and ocean
+  integer, public :: mbintxiw ! iMOAB id for intersection mesh between ice and wave
+  integer, public :: mbintxwi ! iMOAB id for intersection mesh between wave and ice
   integer, public :: mrofid   ! iMOAB id of moab rof app
   integer, public :: mbrxid   ! iMOAB id of moab rof read from file on coupler pes
   integer, public :: mbintxro ! iMOAB id for read map between river and ocean

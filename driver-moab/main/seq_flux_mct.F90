@@ -102,9 +102,9 @@ module seq_flux_mct
   real(r8), allocatable ::  qref (:)  ! diagnostic:  2m ref Q
   real(r8), allocatable :: duu10n(:)  ! diagnostic: 10m wind speed squared
   real(r8), allocatable :: u10res(:)  ! diagnostic: 10m "resolved" (no gustiness) wind speed (m/s)
-   real(r8), allocatable ::  charnsea(:) ! Charnock coeff accounting for the wave stress
-   real(r8), allocatable ::  ustarwav(:) ! Friction velocity from WW3
-   real(r8), allocatable ::  z0wav(:)    ! Surface roughness length from WW3
+  real(r8), allocatable ::  charnsea(:) ! Charnock coeff accounting for the wave stress
+  real(r8), allocatable ::  ustarwav(:) ! Friction velocity from WW3
+  real(r8), allocatable ::  z0wav(:)    ! Surface roughness length from WW3
 
   real(r8), allocatable :: fswpen (:) ! fraction of sw penetrating ocn surface layer
   real(r8), allocatable :: ocnsal (:) ! ocean salinity
@@ -185,9 +185,9 @@ module seq_flux_mct
   integer :: index_o2x_So_t
   integer :: index_o2x_So_u
   integer :: index_o2x_So_v
-   integer :: index_w2x_Sw_Charn
-   integer :: index_w2x_Sw_Z0
-   integer :: index_w2x_Sw_Ustar
+  integer :: index_w2x_Sw_Charn
+  integer :: index_w2x_Sw_Z0
+  integer :: index_w2x_Sw_Ustar
   integer :: index_o2x_So_fswpen
   integer :: index_o2x_So_s
   integer :: index_o2x_So_roce_16O
@@ -1534,7 +1534,7 @@ contains
 
   !===============================================================================
 
-   subroutine seq_flux_atmocn_moab(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid, w2x)
+  subroutine seq_flux_atmocn_moab(infodata, tod, dt, a2x, o2x, xao, mbid, mbfid, w2x)
     use shr_moab_mod,     only: mbGetnCells,mbGetCellTagVals,mbSetCellTagVals
 
     !-----------------------------------------------------------------------
@@ -1548,14 +1548,14 @@ contains
     type(mct_aVect)         , intent(inout)      :: xao
     integer(in)             , intent(in)         :: mbid ! input atm moab app
     integer(in)             , intent(in)         :: mbfid ! flux moab app
-   type(mct_aVect), optional, intent(in)        :: w2x  ! w2x_ax or w2x_ox
+    type(mct_aVect), optional, intent(in)        :: w2x  ! w2x_ax or w2x_ox
     !
     ! Local variables
     !
     logical     :: flux_albav   ! flux avg option
     logical     :: dead_comps   ! .true.  => dead components are used
     integer     :: n            ! indices
-   integer     :: nloc, nloca, nloco, nlocw    ! number of gridcells
+    integer     :: nloc, nloca, nloco, nlocw    ! number of gridcells
     logical,save:: first_call = .true.
     logical     :: cold_start      ! .true. to initialize internal fields in shr_flux diurnal
     logical     :: read_restart    ! .true. => continue run

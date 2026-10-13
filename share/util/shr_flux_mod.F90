@@ -1185,6 +1185,7 @@ function cdn_wave(kappa,zr,z0) result(cdn_wav)
           b = log(a)
           cdn_wav = (kappa**2) / (b**2)  
        else
+          write(s_logunit,*) 'CDN_Wave debug: zr=', zr, ' z0=', z0
           call shr_sys_abort(" CDN_Wave Error: Roughness length is greater than reference height (10m). Solution Not Realistic.")
        endif
 end function cdn_wave

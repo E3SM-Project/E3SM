@@ -2128,7 +2128,7 @@ contains
 
        ! init maps for So2a, Sl2a, Si2a, Fo2a, Fl2a, Fi2a
        ! MOAB: calculate o2a intx, l2a intx for tri-grid
-      call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd, wav_c2_atm)
+       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd, wav_c2_atm)
 
        ! init maps for Sa2l, Fa2l, Fr2l, Sg2l, Fg2l
        ! MOABTODO:  a2l intx for tri-grid  r2l intx for bi-grid intx
@@ -4087,7 +4087,7 @@ contains
           if (wav_present) w2x_ax => prep_atm_get_w2x_ax()
           ! For AO fluxes on atm grid, keep mbid and mbfid on the same atm mesh.
           if (wav_present) then
-             call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi), mbaxid, mbaxid, w2x=w2x_ax(ewi))
+             call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi), mbaxid, mbaxid, w2x_ax(ewi))
           else
              call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ax, o2x_ax(eoi), xao_ax(exi), mbaxid, mbaxid)
           endif
@@ -4112,7 +4112,7 @@ contains
           xao_ox => prep_aoflux_get_xao_ox()
           if (wav_present) w2x_ox => prep_ocn_get_w2x_ox()
           if (wav_present) then
-             call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi), mboxid, mbofxid, w2x=w2x_ox(ewi))
+             call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi), mboxid, mbofxid, w2x_ox(ewi))
           else
              call seq_flux_atmocn_moab(infodata, tod, dtime, a2x_ox(eai), o2x_ox, xao_ox(exi), mboxid, mbofxid)
           endif
@@ -4440,6 +4440,12 @@ contains
           endif
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
        end if
+
+       ! For AO fluxes on the atm grid, make sure wave fields are mapped to atm
+       ! before cime_run_atmocn_fluxes consumes w2x_ax.
+       if (trim(aoflux_grid) == 'atm' .and. wav_c2_atm) then
+          call prep_atm_calc_w2x_ax(timer='CPL:atmocnp_wav2atm')
+       endif
 
        ! atm/ocn flux on either atm or ocean grid (MOAB: only ocean)
        call cime_run_atmocn_fluxes(hashint)
@@ -4908,7 +4914,7 @@ contains
        if (ocn_c2_wav) call prep_wav_calc_o2x_wx(timer='CPL:wavprep_ocn2wav')
        if (ice_c2_wav) call prep_wav_calc_i2x_wx(timer='CPL:wavprep_ice2wav')
 
-        call prep_wav_mrg_moab(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
+       call prep_wav_mrg_moab(infodata, fractions_wx, timer_mrg='CPL:wavprep_mrgx2w')
 
        call component_diag(infodata, wav, flow='x2c', comment= 'send wav', &
             info_debug=info_debug, timer_diag='CPL:wavprep_diagav')
