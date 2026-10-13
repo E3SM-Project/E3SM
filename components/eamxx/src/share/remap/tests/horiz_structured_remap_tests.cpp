@@ -2,7 +2,6 @@
 
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/grid/point_grid.hpp"
-#include "share/grid/structured_grid_utils.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 
@@ -22,6 +21,14 @@ namespace {
 Real smooth_fn (const Real lat, const Real lon) {
   constexpr Real pi = 3.14159265358979323846;
   return std::cos(lat*pi/180)*std::cos(lon*pi/180);
+}
+
+// Get [ny,nx] of a structured grid, as stored by the remapper in the geo data structured_dims
+struct StructuredDims { int ny, nx; };
+StructuredDims get_structured_dims (const AbstractGrid& grid)
+{
+  auto h = grid.get_geometry_data("structured_dims").get_view<const int*,Host>();
+  return {h(0),h(1)};
 }
 
 // Read the whole var from the file (on all ranks). The var must not be decomposed.
@@ -182,11 +189,9 @@ TEST_CASE ("horiz_structured_remap")
     auto tgt_grid = remap.get_tgt_grid();
 
     REQUIRE (tgt_grid->get_num_global_dofs()==nx*ny);
-    REQUIRE (is_structured_grid(*tgt_grid));
-    const auto dims = get_structured_grid_dims(*tgt_grid);
-    REQUIRE (dims.y_name=="lat");
+    REQUIRE (tgt_grid->has_geometry_data("structured_dims"));
+    const auto dims = get_structured_dims(*tgt_grid);
     REQUIRE (dims.ny==ny);
-    REQUIRE (dims.x_name=="lon");
     REQUIRE (dims.nx==nx);
     check_ordering(*tgt_grid,nx,ny);
 
@@ -217,7 +222,11 @@ TEST_CASE ("horiz_structured_remap")
     auto lon = tgt_grid->get_geometry_data("lon").get_view<const Real*,Host>();
     auto t2d_h = t2d.get_view<const Real*,Host>();
     auto t3d_h = t3d.get_view<const Real**,Host>();
+#ifdef SCREAM_DOUBLE_PRECISION
     constexpr Real tol = 1e-12;
+#else
+    constexpr Real tol = 2e-5;
+#endif
     for (int i=0; i<tgt_grid->get_num_local_dofs(); ++i) {
       const int idx = gids(i) - min_gid;
       // The geo data must follow the same ordering as the map file
@@ -241,11 +250,9 @@ TEST_CASE ("horiz_structured_remap")
     HorizontalRemapper remap(src_grid,ll_map_file);
     auto tgt_grid = remap.get_tgt_grid();
     REQUIRE (tgt_grid->get_num_global_dofs()==nlon*nlat);
-    REQUIRE (is_structured_grid(*tgt_grid));
-    const auto dims = get_structured_grid_dims(*tgt_grid);
-    REQUIRE (dims.y_name=="lat");
+    REQUIRE (tgt_grid->has_geometry_data("structured_dims"));
+    const auto dims = get_structured_dims(*tgt_grid);
     REQUIRE (dims.ny==nlat);
-    REQUIRE (dims.x_name=="lon");
     REQUIRE (dims.nx==nlon);
     check_ordering(*tgt_grid,nlon,nlat);
 
@@ -279,11 +286,9 @@ TEST_CASE ("horiz_structured_remap")
       HorizontalRemapper remap(grid,fname);
       auto tgt_grid = remap.get_tgt_grid();
 
-      REQUIRE (is_structured_grid(*tgt_grid));
-      const auto dims = get_structured_grid_dims(*tgt_grid);
-      // The dims have the same names (and sizes) for lat-lon and curvilinear grids
-      REQUIRE (dims.y_name=="lat");
-      REQUIRE (dims.x_name=="lon");
+      REQUIRE (tgt_grid->has_geometry_data("structured_dims"));
+      const auto dims = get_structured_dims(*tgt_grid);
+      // The dims have the same sizes for lat-lon and curvilinear grids
       REQUIRE (dims.ny==nlat);
       REQUIRE (dims.nx==nlon);
       check_ordering(*tgt_grid,nlon,nlat);

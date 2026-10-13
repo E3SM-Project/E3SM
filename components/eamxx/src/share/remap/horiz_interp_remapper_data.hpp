@@ -44,7 +44,7 @@ public:
   // If the map file has dst_grid_rank=2, the generated grid is a structured grid, with
   // layout (nx,ny)=dst_grid_dims (x being the fastest varying index). The grid is
   // detected to be lat-lon if lat (lon) only depends on y (x), and curvilinear otherwise.
-  // See share/grid/structured_grid_utils.hpp for details.
+  // The generated grid gets the geo data structured_dims=[ny,nx], which IO uses to write (lat,lon) dims.
   void build (const std::shared_ptr<const AbstractGrid>& grid,
               const std::string& map_file);
 
@@ -76,7 +76,7 @@ private:
 
   // Turn the grid into a structured grid with layout (nx,ny), by adding the proper geo data.
   // If the grid has lat/lon geo data, detect whether the grid is lat-lon or curvilinear
-  // (see share/grid/structured_grid_utils.hpp). For lat-lon grids, replace lat/lon
+  // (see the comments in the implementation). For lat-lon grids, replace lat/lon
   // with 1d coordinate arrays.
   void setup_structured_data(const std::shared_ptr<AbstractGrid>& grid,
                              const int nx, const int ny);
