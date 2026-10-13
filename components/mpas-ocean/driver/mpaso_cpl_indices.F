@@ -333,8 +333,8 @@ contains
 
     index_x2o_Sg_lithop  = mct_avect_indexra(x2o,'Sg_lithop')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask')
-    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded')
-    index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_floating')
+    index_x2o_Sg_icemask_grounded = mct_avect_indexra(x2o,'Sg_icemask_grounded')
+    index_x2o_Sg_icemask_floating = mct_avect_indexra(x2o,'Sg_icemask_floating')
 
     if (wav_ocn_coup == 'twoway') then
        index_x2o_Sw_ustokes_wavenumber_1 = mct_avect_indexra(x2o,'Sw_ustokes_wavenumber_1')
