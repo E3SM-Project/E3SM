@@ -404,7 +404,7 @@ void AtmosphereOutput::init()
     const auto& dims = layout.dims();
     for (int j=0; j<layout.rank(); ++j) {
       if (tags[j]==FieldTag::Column and m_structured_output) {
-        // We need to make sure we are registering the dims replacing COL (lat/lon or ny/nx)
+        // We need to make sure we are registering the dims replacing COL (lat/lon)
         const auto sd = get_structured_grid_dims(*m_io_grid);
         m_dims_len.emplace(sd.y_name,sd.ny);
         m_dims_len.emplace(sd.x_name,sd.nx);
@@ -1340,7 +1340,7 @@ get_var_dimnames (const FieldLayout& layout) const
     const auto t = layout.tag(i);
     if (t==COL and m_structured_output) {
       // Structured grids (e.g., from remap to lat-lon/curvilinear grids) are PointGrids, so we replace
-      // the single column dimension with 2 separate dimensions (lat/lon or ny/nx).
+      // the single column dimension with 2 separate dimensions (lat/lon).
       const auto sd = get_structured_grid_dims(*m_io_grid);
       dims.push_back(sd.y_name);
       dims.push_back(sd.x_name);

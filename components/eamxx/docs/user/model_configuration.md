@@ -583,8 +583,9 @@ EAMxx figures out on its own how to write the output. No option is needed.
       (up to a small tolerance), the grid is a lat-lon grid. The output file will have
       dimensions `(lat,lon)`, with `lat` and `lon` being 1d coordinate variables.
       - Otherwise (e.g., a HRRR grid), the grid is a curvilinear grid: `nx` need not be the number
-      of longitudes, nor `ny` the number of latitudes. The output file will have dimensions `(ny,nx)`,
-      with `lat` and `lon` being 2d variables over `(ny,nx)`, which the output variables
+      of longitudes, nor `ny` the number of latitudes. The output file will have dimensions `(lat,lon)`
+      (as for lat-lon grids, so the names are misleading: they have length `ny` and `nx`),
+      with `lat` and `lon` being 2d variables over `(lat,lon)`, which the output variables
       reference through the `coordinates` attribute.
 - `horiz_remap_fill_threshold`: fraction (in `[0,1)`) of a target column that must
 come from valid (i.e., not fill-valued) source columns for the remapped value to be
