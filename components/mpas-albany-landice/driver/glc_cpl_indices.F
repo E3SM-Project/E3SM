@@ -30,6 +30,8 @@ module glc_cpl_indices
   integer, public :: index_g2x_Sg_ice_covered = 0 !ice covered ice mask
   integer, public :: index_g2x_Sg_icemask_grounded = 0 !grounded mask
   integer, public :: index_g2x_Sg_icemask_floating = 0 !floating mask
+  integer, public :: index_g2x_Sg_below_sea_level_mask = 0 !mask of where the bed is below sea level
+  integer, public :: index_g2x_Fogg_hcond = 0 !conductive heat flux into the ocean under floating ice
   integer, public :: index_g2x_Sg_icemask_coupled_fluxes = 0 !ice mask for coupled fluxes
 
 contains
@@ -113,6 +115,8 @@ contains
 
     index_g2x_Sg_icemask_grounded =       mct_avect_indexra(g2x,'Sg_icemask_grounded',perrwith='quiet')
     index_g2x_Sg_icemask_floating =       mct_avect_indexra(g2x,'Sg_icemask_floating',perrwith='quiet')
+    index_g2x_Sg_below_sea_level_mask =   mct_avect_indexra(g2x,'Sg_below_sea_level_mask',perrwith='quiet')
+    index_g2x_Fogg_hcond =                mct_avect_indexra(g2x,'Fogg_hcond',perrwith='quiet')
     index_g2x_Sg_icemask_coupled_fluxes = mct_avect_indexra(g2x,'Sg_icemask_coupled_fluxes',perrwith='quiet')
     ! mask of ice sheet grid coverage where we are potentially sending non-zero
     ! fluxes (state: current snapshot)
