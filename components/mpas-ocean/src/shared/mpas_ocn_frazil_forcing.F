@@ -735,10 +735,7 @@ contains
         !frazilIceEnergy > 0
         accumulatedFrazilIceEnergyNew(iCell) = accumulatedFrazilIceEnergyOld(iCell) + sumNewFrazilEnergy
 
-        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) + &
-           (1-usePorosity) * sumNewThicknessWeightedSaltContent
-
-        accumulatedFrazilIceEnergyNew(iCell) = accumulatedFrazilIceEnergyOld(iCell) + sumNewFrazilEnergy
+        accumulatedFrazilIceSalinityNew(iCell) = accumulatedFrazilIceSalinityOld(iCell) +  sumNewThicknessWeightedSaltContent
 
         !NJ: Assume frazil salinity is the coupling salinity
         if ( underLandIce ) then

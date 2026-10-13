@@ -2547,7 +2547,7 @@ subroutine init_column_waves(domain)
        call MPAS_pool_get_array(ocean_coupling, "frazilHeatFlux", frazilHeatFlux)
        call MPAS_pool_get_array(ocean_coupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
-     call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
+       call MPAS_pool_get_array(ocean_coupling, "oceanFrazilSalinityReduction", oceanFrazilSalinityReduction)
 
        call MPAS_pool_get_array(wave_coupling, "significantWaveHeight", significantWaveHeight)
        call MPAS_pool_get_array(wave_coupling, "waveSpectra", waveSpectra)
