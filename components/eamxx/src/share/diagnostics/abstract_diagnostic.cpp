@@ -1,5 +1,7 @@
 #include "share/diagnostics/abstract_diagnostic.hpp"
 
+#include "share/util/eamxx_timing.hpp"
+
 #include <ekat_std_utils.hpp>
 
 namespace scream
@@ -71,7 +73,11 @@ void AbstractDiagnostic::compute (const util::TimeStamp& ts)
     return;
   }
 
+  // One timer per diagnostic class (not per instance)
+  const std::string timer_name = "EAMxx::diag::" + name();
+  start_timer(timer_name);
   compute_impl ();
+  stop_timer(timer_name);
 
   // Update timestamp info
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
