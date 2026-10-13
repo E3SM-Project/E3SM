@@ -3778,8 +3778,6 @@ contains
 
       !-----------------------------------------------------------------
 
-      if ( trim(config_land_ice_flux_mode) == "off" ) return
-
       if ( trim(config_land_ice_draft_mode) == "data" ) then
 
          landIceDraftForSsh = landIceDraft
@@ -3803,7 +3801,7 @@ contains
 #endif
       endif
 
-      if ( trim(config_land_ice_flux_mode) == "pressure_only") return
+      if ( trim(config_land_ice_flux_mode) == "off") return
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
