@@ -685,7 +685,8 @@ module li_thermal
 
       real(kind=RKIND), pointer :: &
            config_thermal_thickness, & ! minimum thickness (m) for temperature calculations
-           config_sea_level            ! sea level (m) relative to z = 0
+           config_sea_level,         & ! sea level (m) relative to z = 0
+           config_invalid_value_ocn_intr_temp ! marks where the ocean provides no interface temperature
 
       real (kind=RKIND), pointer ::  &
            config_surface_air_temperature_value, & ! constant value of surface air temperature
@@ -725,7 +726,8 @@ module li_thermal
            floatingBasalMassBal,     & ! basal mass balance for floating ice
            basalWaterThickness,      & ! basal water thickness (m)
            thickness,                & ! ice thickness (m)
-           upperSurface                ! ice upper surface (m)
+           upperSurface,             & ! ice upper surface (m)
+           iceOceanInterfaceTemperature ! ice-ocean interface temperature from the ocean (K)
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,              & ! interior ice temperature (K)
@@ -841,6 +843,7 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'drainedInternalMeltRate', drainedInternalMeltRate)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
+         call mpas_pool_get_array(thermalPool, 'iceOceanInterfaceTemperature', iceOceanInterfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceConductiveFlux', surfaceConductiveFlux)
          call mpas_pool_get_array(thermalPool, 'basalConductiveFlux', basalConductiveFlux)
@@ -858,6 +861,7 @@ module li_thermal
          call mpas_pool_get_config(liConfigs, 'config_thermal_solver', config_thermal_solver)
          call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+         call mpas_pool_get_config(liConfigs, 'config_invalid_value_ocn_intr_temp', config_invalid_value_ocn_intr_temp)
          call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
 
          if (config_print_thermal_info) then
@@ -951,11 +955,16 @@ module li_thermal
 
                   surfaceTemperature(iCell) = min(0.0_RKIND, surfaceAirTemperature(iCell))
 
-                  ! For floating ice, set the basal temperature to the freezing temperature of seawater.
-                  ! Values based on Ocean Water Freezing Point Calculator with S = 35 PSU
+                  ! For floating ice, set the basal temperature to the ice-ocean interface temperature
+                  ! from the ocean where it is available.  Otherwise, use the freezing temperature of
+                  ! seawater, with values based on Ocean Water Freezing Point Calculator with S = 35 PSU
                   if (li_mask_is_floating_ice(cellMask(iCell))) then
-                     depth = thickness(iCell) * rhoi/rhoo
-                     basalTemperature(iCell) = oceanFreezingTempSurface + oceanFreezingTempDepthDependence * depth  ! Celsius
+                     if (iceOceanInterfaceTemperature(iCell) /= config_invalid_value_ocn_intr_temp) then
+                        basalTemperature(iCell) = iceOceanInterfaceTemperature(iCell) - kelvin_to_celsius  ! Celsius
+                     else
+                        depth = thickness(iCell) * rhoi/rhoo
+                        basalTemperature(iCell) = oceanFreezingTempSurface + oceanFreezingTempDepthDependence * depth  ! Celsius
+                     endif
                   endif
 
                   if (trim(config_thermal_solver) == 'enthalpy') then
