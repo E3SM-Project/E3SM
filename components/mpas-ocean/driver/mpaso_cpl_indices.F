@@ -35,11 +35,6 @@ module mpaso_cpl_indices
 
   ! ocn -> drv for calculation of ocean-ice sheet interactions
 
-  integer :: index_o2x_So_blt !boundary layer temperature
-  integer :: index_o2x_So_bls !boundary layer salinity
-  integer :: index_o2x_So_htv !ocean heat-transfer velocity
-  integer :: index_o2x_So_stv !ocean salt-transfer velocity
-  integer :: index_o2x_So_rhoeff !ocean effective density
   integer :: index_o2x_So_tf3d(glc_nzoc_max) !ocean thermal forcing at predefined z-levels
   integer :: index_o2x_So_tf3d_mask(glc_nzoc_max) !mask ofocean thermal forcing at predefined z-levels
 
@@ -150,10 +145,6 @@ module mpaso_cpl_indices
 
   ! drv -> glc and internal drv fields
 
-  integer :: index_x2o_Fogx_qicelo
-  integer :: index_x2o_Fogx_qiceho
-  integer :: index_x2o_Sg_blit
-  integer :: index_x2o_Sg_blis
   integer :: index_x2o_Sg_lithop
   integer :: index_x2o_Sg_icemask
   integer :: index_x2o_Sg_icemask_grounded
@@ -231,11 +222,6 @@ contains
     index_o2x_Foxo_ismh     = mct_avect_indexra(o2x,'Foxo_ismh',perrWith='quiet')
     index_o2x_Foxo_rrofih   = mct_avect_indexra(o2x,'Foxo_rrofih',perrWith='quiet')
 
-    index_o2x_So_blt        = mct_avect_indexra(o2x,'So_blt')
-    index_o2x_So_bls        = mct_avect_indexra(o2x,'So_bls')
-    index_o2x_So_htv        = mct_avect_indexra(o2x,'So_htv')
-    index_o2x_So_stv        = mct_avect_indexra(o2x,'So_stv')
-    index_o2x_So_rhoeff     = mct_avect_indexra(o2x,'So_rhoeff')
     if (glc_nzoc > 0) then
        do iLev = 1, glc_nzoc
           cnum = glc_zocnclass_as_string(iLev)
@@ -345,10 +331,6 @@ contains
     index_x2o_Fioi_fed2     = mct_avect_indexra(x2o,'Fioi_fed2',perrWith='quiet')
     index_x2o_Fioi_dust1    = mct_avect_indexra(x2o,'Fioi_dust1',perrWith='quiet')
 
-    index_x2o_Fogx_qicelo = mct_avect_indexra(x2o,'Fogx_qicelo')
-    index_x2o_Fogx_qiceho = mct_avect_indexra(x2o,'Fogx_qiceho')
-    index_x2o_Sg_blit    = mct_avect_indexra(x2o,'Sg_blit')
-    index_x2o_Sg_blis    = mct_avect_indexra(x2o,'Sg_blis')
     index_x2o_Sg_lithop  = mct_avect_indexra(x2o,'Sg_lithop')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask')
     index_x2o_Sg_icemask = mct_avect_indexra(x2o,'Sg_icemask_grounded')
