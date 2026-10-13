@@ -20,7 +20,10 @@ target_include_directories(water_isotopes PUBLIC
 )
 
 target_link_libraries(water_isotopes PUBLIC scream_share)
-target_link_libraries(water_isotopes PRIVATE water_tracers)
+# PUBLIC: the process header derives from WaterTracers and calls the
+# water_tracers flux functions, so consumers (the unit tests, eamxx_physics)
+# need water_tracers' usage requirements too.
+target_link_libraries(water_isotopes PUBLIC water_tracers)
 
 # Link into the eamxx_physics INTERFACE target.
 if (TARGET eamxx_physics)
