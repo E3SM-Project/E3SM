@@ -26,9 +26,12 @@ struct RealsClose {
   }
 };
 
+} // anonymous namespace
+
 // Check whether two grids store the same GID values on every rank.
 // Fast path: if the dofs_gids fields alias each other (same allocation), return true immediately.
 // Fallback: compare global dof counts, then compare local GID arrays element-by-element.
+// NOTE: not in the anonymous namespace, since HorizontalRemapper uses it too.
 bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
                            const std::shared_ptr<const AbstractGrid>& g2)
 {
@@ -55,6 +58,8 @@ bool grids_have_same_gids (const std::shared_ptr<const AbstractGrid>& g1,
   const int n = g1->get_num_local_dofs();
   return std::equal(h1.data(), h1.data()+n, h2.data());
 }
+
+namespace {
 
 // Helper fcn to gather the union of sets across MPI ranks
 std::vector<Real> allgatherv_vec (const std::vector<Real>& my_vals, const ekat::Comm& comm)
