@@ -23,6 +23,14 @@ the saved value is written to output. This means `X_prev` always reflects the
 state of `X` at the beginning of the current timestep (i.e., before any
 processes have modified it in the current step).
 
+### Instant streams and derived diagnostics
+
+An instant stream evaluates diagnostics on output steps only. When `X` is
+itself a computed diagnostic, `X_prev` in an instant stream is therefore only
+available if the stream writes every step (`frequency_units: nsteps` with
+`frequency: 1`); otherwise the request is rejected when the stream is set up. An averaged stream evaluates its diagnostics every
+step, and a model field `X` is always available, so neither is restricted.
+
 ### First-step initialisation for derived diagnostics
 
 When `X` is itself a computed diagnostic (rather than a raw model field) it

@@ -8,12 +8,14 @@
 #include "share/io/eamxx_output_manager.hpp"
 #include "share/scorpio_interface/eamxx_scorpio_interface.hpp"
 #include "share/util/eamxx_time_stamp.hpp"
+#include "share/util/eamxx_universal_constants.hpp"
 
 #include <ekat_comm.hpp>
 #include <ekat_parameter_list.hpp>
 #include <ekat_units.hpp>
 
 #include <fstream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -82,7 +84,8 @@ create_test_fm (const std::shared_ptr<const GridsManager>& gm,
 ekat::ParameterList output_params (const std::string& prefix,
                                    const std::string& grid_name,
                                    const std::vector<std::string>& field_names,
-                                   const std::vector<std::string>& aliases = {})
+                                   const std::vector<std::string>& aliases = {},
+                                   const int freq = 1)
 {
   ekat::ParameterList params;
   params.set<std::string>("filename_prefix",prefix);
@@ -97,13 +100,24 @@ ekat::ParameterList output_params (const std::string& prefix,
 
   auto& ctrl_pl = params.sublist("output_control");
   ctrl_pl.set<std::string>("frequency_units","nsteps");
-  ctrl_pl.set<int>("frequency",1);
+  ctrl_pl.set<int>("frequency",freq);
   ctrl_pl.set<bool>("save_grid_data",false);
   // No snapshot at t0: a tendency has no meaning before the first step
   ctrl_pl.set<bool>("skip_t0_output",true);
 
   return params;
 }
+
+// The names of the diags in the repo that all output streams share
+struct DiagRepo : public AtmosphereOutput {
+  static std::set<std::string> names () {
+    std::set<std::string> n;
+    for (const auto& it : m_diag_repo) {
+      n.insert(it.first);
+    }
+    return n;
+  }
+};
 
 } // anonymous namespace
 
@@ -147,6 +161,11 @@ TEST_CASE ("io_with_expressions")
         // names its field after the expansion. Without an explicit output
         // name the stream throws during setup.
         "T_mid_atm_backtend",
+        // A negative literal is a number, on either side of the operator
+        "neg_l := -2*T_mid",
+        "neg_r := T_mid*(-2)",
+        // ...and a legal threshold
+        "T_pos := T_mid.where(T_mid>-1)",
       },
       {
         // An intermediate: resolved and usable by name, but not written
@@ -192,6 +211,9 @@ TEST_CASE ("io_with_expressions")
   REQUIRE (scorpio::has_var(filename,"col_qv_3d"));
   // The one that used to throw during setup
   REQUIRE (scorpio::has_var(filename,"T_mid_atm_backtend"));
+  REQUIRE (scorpio::has_var(filename,"neg_l"));
+  REQUIRE (scorpio::has_var(filename,"neg_r"));
+  REQUIRE (scorpio::has_var(filename,"T_pos"));
   // An 'aliases' entry is an intermediate: resolved, used, but not written
   REQUIRE_FALSE (scorpio::has_var(filename,"qvT"));
   // The file records where the numbers came from
@@ -210,7 +232,10 @@ TEST_CASE ("io_with_expressions")
   Field col_qv  (FieldIdentifier("col_qv", layout2d, kg/kg,   gname));
   Field col_qv_3d (FieldIdentifier("col_qv_3d", layout3d, kg/kg, gname));
   Field backtend(FieldIdentifier("T_mid_atm_backtend",layout3d, K/s, gname));
-  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend}) {
+  Field neg_l   (FieldIdentifier("neg_l",  layout3d, K, gname));
+  Field neg_r   (FieldIdentifier("neg_r",  layout3d, K, gname));
+  Field T_pos   (FieldIdentifier("T_pos",  layout3d, K, gname));
+  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos}) {
     f->allocate_view();
     f->get_header().get_tracking().update_time_stamp(t0);
   }
@@ -218,7 +243,7 @@ TEST_CASE ("io_with_expressions")
   FieldReader reader;
   reader.set_file_specs(filename);
   reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend});
+  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos});
 
   const int nlocal = grid->get_num_local_dofs();
   for (int n=1; n<=nsteps; ++n) {
@@ -229,6 +254,12 @@ TEST_CASE ("io_with_expressions")
     col_qv.sync_to_host();
     col_qv_3d.sync_to_host();
     backtend.sync_to_host();
+    neg_l.sync_to_host();
+    neg_r.sync_to_host();
+    T_pos.sync_to_host();
+    auto neg_l_h    = neg_l.get_view<const Real**,Host>();
+    auto neg_r_h    = neg_r.get_view<const Real**,Host>();
+    auto T_pos_h    = T_pos.get_view<const Real**,Host>();
     auto prod_h     = prod.get_view<const Real**,Host>();
     auto shifted_h  = shifted.get_view<const Real**,Host>();
     auto half_h     = half.get_view<const Real**,Host>();
@@ -249,6 +280,14 @@ TEST_CASE ("io_with_expressions")
         REQUIRE (half_h(i,k)==qv_v*T_v/2);
         // T_mid gains exactly -i*(k+1)+... i.e. 1 per step, over dt=1
         REQUIRE (backtend_h(i,k)==1);
+        REQUIRE (neg_l_h(i,k)==-2*T_v);
+        REQUIRE (neg_r_h(i,k)==-2*T_v);
+        // Kept where T_mid>-1, missing elsewhere; T_v takes both signs
+        if (T_v>-1) {
+          REQUIRE (T_pos_h(i,k)==T_v);
+        } else {
+          REQUIRE (T_pos_h(i,k)==constants::fill_value<Real>);
+        }
       }
       REQUIRE (col_qv_h(i)==qv_col_sum/nlevs);
       for (int k=0; k<nlevs; ++k) {
@@ -276,6 +315,116 @@ TEST_CASE ("io_with_expressions")
     om_legacy.initialize(comm,legacy,t0,false);
     REQUIRE_NOTHROW (om_legacy.setup(fm,gm->get_grid_names()));
     om_legacy.finalize();
+  }
+
+  // A stream whose setup throws must say why, and must not leave its diags
+  // in the repo shared by all streams
+  auto require_setup_throws = [&](const ekat::ParameterList& params, const std::string& msg) {
+    const auto repo = DiagRepo::names();
+    OutputManager om_fail;
+    om_fail.initialize(comm,params,t0,false);
+    REQUIRE_THROWS_WITH (om_fail.setup(fm,gm->get_grid_names()), Catch::Contains(msg));
+    REQUIRE (DiagRepo::names()==repo);
+  };
+
+  // shift(time=1) of a diag is not allowed in an instant stream, unless it writes every step
+  {
+    const std::string lag_msg = "shift(time=1) of a diagnostic is not available";
+    const std::vector<std::string> lagged = {"d := (T_mid*1.0)-(T_mid*1.0).shift(time=1)"};
+    require_setup_throws(output_params("io_dexpr_lag_sparse",gname,lagged,{},3),lag_msg);
+    // ...also for the shift of an alias of a diag, for tend(), and for the underscore names
+    for (const auto& names : std::vector<std::vector<std::string>>{
+            {"a := T_mid*1.0", "d := a.shift(time=1)"},
+            {"bt := (T_mid*1.0).tend()"},
+            {"VirtualTemperature_prev"},
+            {"VirtualTemperature_atm_backtend"}}) {
+      require_setup_throws(output_params("io_dexpr_lag_sparse",gname,names,{},3),lag_msg);
+    }
+
+    // Writing every step is fine
+    auto dense = output_params("io_dexpr_lag_dense",gname,lagged,{},1);
+    OutputManager om_dense;
+    om_dense.initialize(comm,dense,t0,false);
+    REQUIRE_NOTHROW (om_dense.setup(fm,gm->get_grid_names()));
+    om_dense.finalize();
+
+    // ...however the frequency units are spelled
+    auto dense2 = output_params("io_dexpr_lag_dense2",gname,lagged,{},1);
+    dense2.sublist("output_control").set<std::string>("frequency_units","nstep");
+    OutputManager om_dense2;
+    om_dense2.initialize(comm,dense2,t0,false);
+    REQUIRE_NOTHROW (om_dense2.setup(fm,gm->get_grid_names()));
+    om_dense2.finalize();
+
+    // ...and so is an averaged stream, whatever its frequency
+    auto avg = output_params("io_dexpr_lag_avg",gname,lagged,{},3);
+    avg.set<std::string>("averaging_type","AVERAGE");
+    OutputManager om_avg;
+    om_avg.initialize(comm,avg,t0,false);
+    REQUIRE_NOTHROW (om_avg.setup(fm,gm->get_grid_names()));
+    om_avg.finalize();
+
+    // The shift of a model field, or of an alias of one, is always fine
+    for (const auto& names : std::vector<std::vector<std::string>>{
+            {"d := T_mid-T_mid.shift(time=1)"},
+            {"a := T_mid", "d := a.shift(time=1)"}}) {
+      auto plain = output_params("io_dexpr_lag_field",gname,names,{},3);
+      OutputManager om_plain;
+      om_plain.initialize(comm,plain,t0,false);
+      REQUIRE_NOTHROW (om_plain.setup(fm,gm->get_grid_names()));
+      om_plain.finalize();
+    }
+  }
+
+  // An int field (e.g., a mask) cannot be written, in either stream type...
+  {
+    const std::string int_msg = "Output fields must be real-valued";
+    require_setup_throws(output_params("io_dexpr_intmask",gname,{"m := mask.where(qv>1)"}),int_msg);
+
+    auto imask_avg = output_params("io_dexpr_intmask_avg",gname,{"m := mask.where(qv>1)"});
+    imask_avg.set<std::string>("averaging_type","AVERAGE");
+    require_setup_throws(imask_avg,int_msg);
+
+    // ...unless converted to real
+    auto rmask = output_params("io_dexpr_realmask",gname,{"m := mask.where(qv>1)*1.0"});
+    OutputManager om_r;
+    om_r.initialize(comm,rmask,t0,false);
+    REQUIRE_NOTHROW (om_r.setup(fm,gm->get_grid_names()));
+    om_r.finalize();
+  }
+
+  // At t0, a diag whose input is not valid yet is set to fill_value.
+  // That must work also for an int diag (the mask)
+  {
+    Field late (FieldIdentifier("late",grid->get_3d_scalar_layout(LEV),K,gname));
+    late.allocate_view();
+    fm->add_field(late);
+
+    auto mask_t0 = output_params("io_dexpr_mask_t0",gname,{"m := mask.where(late>0)*1.0"});
+    mask_t0.sublist("output_control").set<bool>("skip_t0_output",false);
+    OutputManager om_t0;
+    om_t0.initialize(comm,mask_t0,t0,false);
+    // NOTE: the t0 output is written by setup
+    REQUIRE_NOTHROW (om_t0.setup(fm,gm->get_grid_names()));
+    om_t0.finalize();
+  }
+
+  // An operand that is both a constant and a field is an error, whether the
+  // field is there when the operation is created (alias of a field) or not (of a diag)
+  const std::string both_msg = "An operand names both a physical constant and a field";
+  for (const std::string target : {"T_mid", "T_mid*1.0"}) {
+    require_setup_throws(output_params("io_dexpr_collision",gname,{"gravit := " + target,"x := T_mid*gravit"}),both_msg);
+  }
+  // ...or the name is introduced in the 'aliases' section
+  require_setup_throws(output_params("io_dexpr_collision",gname,{"out := (Rair*qv)"},{"Rair := T_mid"}),both_msg);
+
+  {
+    // The constant alone is fine
+    auto cst = output_params("io_dexpr_constant",gname,{"x := T_mid*gravit"});
+    OutputManager om_cst;
+    om_cst.initialize(comm,cst,t0,false);
+    REQUIRE_NOTHROW (om_cst.setup(fm,gm->get_grid_names()));
+    om_cst.finalize();
   }
 
   scorpio::finalize_subsystem();
