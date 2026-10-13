@@ -736,6 +736,14 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
         "  - supported values: float, single, double, real\n");
   }
 
+  // Get the case name from provenance
+  EKAT_REQUIRE_MSG(m_params.isSublist("provenance"),
+      "Error! The output YAML file for " + m_stream_id + " is missing the 'provenance' sublist");
+  auto& prov_pl = m_params.sublist("provenance");
+  m_casename = prov_pl.get<std::string>("caseid","UNSET");
+  EKAT_REQUIRE_MSG(m_casename!="UNSET",
+      "Error! The provenance sublist is missing 'caseid' parameter");
+
   // Output control
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
       "Error! The output control YAML file for " + m_stream_id + " is missing the sublist 'output_control'");

@@ -160,6 +160,9 @@ protected:
   ekat::Comm                     m_io_comm;
   ekat::ParameterList            m_params;
 
+  // The case name from the simulation
+  std::string       m_casename;
+
   // The user-provided stream identifier for output files
   std::string       m_stream_id;
 
