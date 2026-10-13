@@ -123,6 +123,7 @@ module ocn_core_interface
       logical, pointer :: dataLandIceFluxesPKGActive
       logical, pointer :: landIceFluxesPKGActive
       logical, pointer :: landIceThermalForcing3DPKGActive
+      logical, pointer :: landIceGlcCouplingPKGActive
       logical, pointer :: dataSubglacialRunoffFluxPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
@@ -194,6 +195,7 @@ module ocn_core_interface
       logical, pointer :: config_use_bulk_thickness_flux
       logical, pointer :: config_compute_active_tracer_budgets
       logical, pointer :: config_use_land_ice_pressure
+      logical, pointer :: config_glc_ice_shelf_coupling
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
       character (len=StrKIND), pointer :: config_glc_thermal_forcing_coupling_mode
       character (len=StrKIND), pointer :: config_subglacial_runoff_mode
@@ -333,6 +335,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_glc_thermal_forcing_coupling_mode', config_glc_thermal_forcing_coupling_mode)
       if ( trim(config_glc_thermal_forcing_coupling_mode) == '3d' ) then
          landIceThermalForcing3DPKGActive = .true.
+      end if
+
+      !
+      ! test for ice-shelf coupling with glc, landIceGlcCouplingPKG
+      !
+      call mpas_pool_get_package(packagePool, 'landIceGlcCouplingPKGActive', landIceGlcCouplingPKGActive)
+      call mpas_pool_get_config(configPool, 'config_glc_ice_shelf_coupling', config_glc_ice_shelf_coupling)
+      if ( config_glc_ice_shelf_coupling ) then
+         landIceGlcCouplingPKGActive = .true.
       end if
 
       !
