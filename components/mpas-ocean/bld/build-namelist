@@ -69,6 +69,7 @@ OPTIONS
      -ocn_tidal_mixing     variable for defining if to run with parameterized tidal mixing
                            Options are: false, true. Default is false
      -glc_nzoc             number of z-ocean classes for indirect glc-ocn coupling [0 | 4 | 30]
+     -glc_grid             GLC_GRID variable
      -ocn_glc_ismf_coupling  methods for ocn/glc ice-shelf melt flux coupling
                              ['none' | 'data_mpaso' | 'data_mali' | 'internal_mpaso' |
                               'tf' | 'coupler']
@@ -125,6 +126,7 @@ my %opts = ( help          => 0,
              ninst_ocn     => 0,
              ocn_tidal_mixing => undef,
              glc_nzoc      => 0,
+             glc_grid      => undef,
              ocn_glc_ismf_coupling => undef,
            );
 
@@ -153,6 +155,7 @@ GetOptions(
     "preview"         => \$opts{'preview'},
     "ocn_tidal_mixing=s"   => \$opts{'ocn_tidal_mixing'},
     "glc_nzoc=i"      => \$opts{'glc_nzoc'},
+    "glc_grid=s"      => \$opts{'glc_grid'},
     "ocn_glc_ismf_coupling=s" => \$opts{'ocn_glc_ismf_coupling'},
 )  or usage();
 
@@ -195,6 +198,7 @@ my $NINST_OCN     = $opts{'ninst_ocn'};
 my $NTASKS_OCN    = $opts{'ntasks_ocn'};
 my $OCN_TIDAL_MIXING   = $opts{'ocn_tidal_mixing'};
 my $GLC_NZOC      = $opts{'glc_nzoc'};
+my $GLC_GRID      = $opts{'glc_grid'};
 my $OCN_GLC_ISMF_COUPLING = $opts{'ocn_glc_ismf_coupling'};
 $cfgdir           = $opts{'cfg_dir'};
 
@@ -217,6 +221,7 @@ print $fh  <<"EOF";
 <entry id="ocn_grid" value="$OCN_GRID">
 <entry id="ocn_forcing" value="$OCN_FORCING">
 <entry id="ocn_tidal_mixing" value="$OCN_TIDAL_MIXING">
+<entry id="glc_grid" value="$GLC_GRID">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
@@ -466,6 +471,7 @@ print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 print "MPASO build-namelist: ocn_tidal_mixing is $OCN_TIDAL_MIXING \n";
 print "MPASO build-namelist: GLC_NZOC is $GLC_NZOC  \n";
+print "MPASO build-namelist: glc_grid is $GLC_GRID \n";
 print "MPASO build-namelist: OCN_GLC_ISMF_COUPLING is $OCN_GLC_ISMF_COUPLING  \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;

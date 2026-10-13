@@ -928,8 +928,8 @@
 					description="If .true., MPAS-Ocean exchanges ice-shelf melt fluxes and land-ice geometry with GLC (MALI) through the E3SM coupler.  MPAS-Ocean receives land-ice pressure, land-ice fractions and the conductive heat flux into the ocean, and sends the net ice-shelf melt flux and the ice-ocean interface temperature.  Requires config_land_ice_flux_mode = 'active' and config_use_land_ice_pressure = .true."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_glc_ice_shelf_coupling_import_geometry" type="logical" default_value=".true."
-					description="If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Set to .false. when the ocean's ice-shelf cavities are not consistent with GLC's ice geometry, in which case MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC."
+		<nml_option name="config_glc_ice_shelf_coupling_import_geometry" type="logical" default_value=".false."
+					description="If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Only set this to .true. when the ocean's ice-shelf cavities were built to match GLC's ice geometry (in E3SM, SOwISC12to30E3r4 with MALI ais4to20).  If .false., MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_glc_ice_shelf_coupling_min_floating_fraction" type="real" default_value="1.0e-3"

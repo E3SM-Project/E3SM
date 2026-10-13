@@ -1498,7 +1498,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_glc_ice_shelf_coupling_import_geometry" type="logical"
 	category="coupling" group="coupling">
-If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Set to .false. when the ocean's ice-shelf cavities are not consistent with GLC's ice geometry, in which case MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC.
+If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Only set this to .true. when the ocean's ice-shelf cavities were built to match GLC's ice geometry (in E3SM, SOwISC12to30E3r4 with MALI ais4to20).  If .false., MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
