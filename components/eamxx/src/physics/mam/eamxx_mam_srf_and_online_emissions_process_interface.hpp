@@ -150,6 +150,9 @@ class MAMSrfOnlineEmiss final : public MAMGenericInterface {
   std::shared_ptr<DataInterpolation> morg_data_interp_;
   std::vector<Field> morg_fields_;
 
+  // Temporary field for accumulating sector emissions during run_impl
+  Field sector_field_sum_;
+
   // offset for converting pcnst index to gas_pcnst index
   static constexpr int offset_ =
 
