@@ -5700,8 +5700,9 @@ EAMxx figures out on its own how to write the output. No option is needed.<ul>
   (up to a small tolerance), the grid is a lat-lon grid. The output file will have
   dimensions <code>(lat,lon)</code>, with <code>lat</code> and <code>lon</code> being 1d coordinate variables.</li>
 <li>Otherwise (e.g., a HRRR grid), the grid is a curvilinear grid: <code>nx</code> need not be the number
-  of longitudes, nor <code>ny</code> the number of latitudes. The output file will have dimensions <code>(ny,nx)</code>,
-  with <code>lat</code> and <code>lon</code> being 2d variables over <code>(ny,nx)</code>, which the output variables
+  of longitudes, nor <code>ny</code> the number of latitudes. The output file will have dimensions <code>(lat,lon)</code>
+  (as for lat-lon grids, so the names are misleading: they have length <code>ny</code> and <code>nx</code>),
+  with <code>lat</code> and <code>lon</code> being 2d variables over <code>(lat,lon)</code>, which the output variables
   reference through the <code>coordinates</code> attribute.</li>
 </ul>
 </li>
