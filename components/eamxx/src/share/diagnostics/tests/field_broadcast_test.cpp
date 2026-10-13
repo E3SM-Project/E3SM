@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 
+#include "share/util/eamxx_universal_constants.hpp"
 #include "share/diagnostics/register_diagnostics.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/grid/point_grid.hpp"
@@ -84,7 +85,10 @@ TEST_CASE("field_broadcast") {
     auto d = diag->get();
     REQUIRE (d.has_valid_mask());
 
-    diag->compute(util::TimeStamp());
+    // Use valid time stamps, or the second compute call is skipped
+    util::TimeStamp t0 ({2024,1,1},{0,0,0});
+    x.get_header().get_tracking().update_time_stamp(t0);
+    diag->compute(t0);
     d.sync_to_host();
     d.get_valid_mask().sync_to_host();
     x.sync_to_host();
@@ -95,10 +99,55 @@ TEST_CASE("field_broadcast") {
       for (int k=0; k<nlevs; ++k) {
         if (k==0) {
           REQUIRE (m_v(i,k)==0);
+          REQUIRE (d_v(i,k)==constants::fill_value<Real>);
         } else {
           REQUIRE (m_v(i,k)==1);
           REQUIRE (d_v(i,k)==x_v(k));
         }
+      }
+    }
+
+    // Move the invalid level: the old one must be valid again, the new one filled
+    x.get_valid_mask().deep_copy(1);
+    x.get_valid_mask().subfield(0,1).deep_copy(0);
+    x.get_header().get_tracking().update_time_stamp(t0+1);
+    diag->compute(t0+1);
+    d.sync_to_host();
+    d.get_valid_mask().sync_to_host();
+    for (int i=0; i<nlocal; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        if (k==1) {
+          REQUIRE (m_v(i,k)==0);
+          REQUIRE (d_v(i,k)==constants::fill_value<Real>);
+        } else {
+          REQUIRE (m_v(i,k)==1);
+          REQUIRE (d_v(i,k)==x_v(k));
+        }
+      }
+    }
+  }
+
+  // Same for an int input, which is filled with the int fill value
+  {
+    Field x(FieldIdentifier("x",layout_l,none,grid->name(),DataType::IntType),true);
+    x.deep_copy(3);
+    x.create_valid_mask(Field::MaskInit::Valid);
+    x.get_valid_mask().subfield(0,0).deep_copy(0);
+
+    auto diag = diag_factory.create("FieldBroadcast",comm,params,grid);
+    diag->set_input_field(x);
+    diag->set_input_field(tgt);
+    diag->initialize();
+
+    util::TimeStamp t0 ({2024,1,1},{0,0,0});
+    x.get_header().get_tracking().update_time_stamp(t0);
+    diag->compute(t0);
+    auto d = diag->get();
+    d.sync_to_host();
+    auto d_v = d.get_view<const int**,Host>();
+    for (int i=0; i<nlocal; ++i) {
+      for (int k=0; k<nlevs; ++k) {
+        REQUIRE (d_v(i,k)==(k==0 ? constants::fill_value<int> : 3));
       }
     }
   }
