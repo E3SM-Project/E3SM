@@ -13,3 +13,10 @@ CreateUnitTest(water_isotopes_runtime_options
   LIBS water_isotopes
   LABELS water_isotopes physics
 )
+
+# Isotope ocean evaporation flux: equilibrium invariants and H216O identity.
+CreateUnitTest(water_isotopes_ocean_flux
+  SOURCES water_isotopes_ocean_flux_tests.cpp
+  LIBS water_isotopes
+  LABELS water_isotopes physics
+)
