@@ -10,6 +10,7 @@
 #include "share/util/eamxx_time_stamp.hpp"
 #include "share/util/eamxx_timing.hpp"
 #include "share/util/eamxx_utils.hpp"
+#include "share/util/eamxx_model_name.hpp"
 #include "share/io/eamxx_io_utils.hpp"
 #include "share/property_checks/mass_and_energy_conservation_check.hpp"
 #include "share/core/eamxx_config.hpp"
@@ -190,7 +191,7 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
     // Figure out the name of the netcdf file containing the restart data
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    auto filename = find_filename_in_rpointer (casename+"."+get_eamxx_model_name()+".r",true,m_atm_comm,m_run_t0);
 
     // Restart the num steps counter in the atm time stamp
     int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
@@ -284,7 +285,7 @@ void AtmosphereDriver::create_grids()
     // Restarted run -> read geo data from restart file
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+    auto filename = find_filename_in_rpointer (casename+"."+get_eamxx_model_name()+".r",true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("filename")) {
@@ -756,7 +757,7 @@ void AtmosphereDriver::create_output_managers () {
   if (io_params.isSublist("model_restart")) {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
-    params.set<std::string>("filename_prefix",m_casename+".scream");
+    params.set<std::string>("filename_prefix",m_casename+"."+get_eamxx_model_name());
     params.set<std::string>("averaging_type","instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
@@ -782,9 +783,15 @@ void AtmosphereDriver::create_output_managers () {
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
-    // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
-    if (not params.isParameter("filename_prefix")) {
-      params.set<std::string>("filename_prefix",m_casename+".scream.h");
+    // Check if the stream_id for this file has already been set.  If not, use a default.
+    if (not params.isParameter("stream_id") and not params.isParameter("filename_prefix")) {
+      params.set<std::string>("stream_id","output");
+    }
+    // Support legacy filename_prefix parameter temporarily by renaming to stream_id
+    if (params.isParameter("filename_prefix")) {
+      auto prefix = params.get<std::string>("filename_prefix");
+      params.set<std::string>("stream_id",prefix);
+      params.remove("filename_prefix");
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);
