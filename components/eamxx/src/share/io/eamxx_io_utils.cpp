@@ -25,7 +25,7 @@ std::string find_filename_in_rpointer (
   std::string filename;
   bool found = false;
   std::string content;
-  std::string suffix = model_restart ? ".r." : ".rhist.";
+  std::string suffix = model_restart ? ".r." : ".rh.";
   std::string pattern_str = filename_prefix + suffix;
 
   // The AD will pass a default constructed control, since it doesn't know the values
@@ -39,6 +39,8 @@ std::string find_filename_in_rpointer (
     EKAT_REQUIRE_MSG (control.output_enabled(),
         "Error! When restarting an output stream, we need a valid IOControl structure.\n"
         " - filename prefix: " + filename_prefix + "\n");
+    // For history restart, need wildcard for stream_id
+    pattern_str += R"([^.]+\.)";  // Match stream_id
     pattern_str += e2str(avg_type) + "." + control.frequency_units + "_x" + std::to_string(control.frequency);
   }
   if (is_scream_standalone()) {
