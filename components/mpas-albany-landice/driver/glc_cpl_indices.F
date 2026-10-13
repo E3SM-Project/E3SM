@@ -19,6 +19,9 @@ module glc_cpl_indices
 
   integer, public :: index_x2g_So_tf3d(glc_nzoc_max)   = 0 !Ocean thermal forcing at specified z-levels
   integer, public :: index_x2g_So_tf3d_mask(glc_nzoc_max)   = 0 !mask of ocean thermal forcing at specified z-levels
+  integer, public :: index_x2g_Foxo_ismf   = 0 !net ice-shelf melt flux from the ocean, normalized by the floating fraction
+  integer, public :: index_x2g_So_tfrz_isf = 0 !ice-ocean interface temperature weighted by the ocean floating fraction
+  integer, public :: index_x2g_So_liflfrac = 0 !ocean floating fraction used as the weight for So_tfrz_isf
 
   integer, public :: index_g2x_Fogg_rofi = 0 ! frozen runoff -> ocn
   integer, public :: index_g2x_Figg_rofi = 0 ! frozen runoff -> ice
@@ -74,6 +77,15 @@ contains
           index_x2g_So_tf3d_mask(iLev) = mct_avect_indexra(x2g, trim(varname))
        enddo
     endif
+
+    index_x2g_Foxo_ismf =                 mct_avect_indexra(x2g,'Foxo_ismf',perrwith='quiet')
+    ! net ice-shelf melt flux from the ocean (kg/m^2/s, positive for melt),
+    ! normalized by the floating fraction
+
+    index_x2g_So_tfrz_isf =               mct_avect_indexra(x2g,'So_tfrz_isf',perrwith='quiet')
+    index_x2g_So_liflfrac =               mct_avect_indexra(x2g,'So_liflfrac',perrwith='quiet')
+    ! ice-ocean interface temperature (K) weighted by the ocean floating
+    ! fraction, and that weight
 
     ! ice sheet lithostatic pressure (Pa) for the ocean under ice shelves
     index_g2x_Sg_lithop =                 mct_avect_indexra(g2x,'Sg_lithop',perrwith='quiet')
