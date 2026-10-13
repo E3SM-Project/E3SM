@@ -18,7 +18,19 @@ Written as an expression, it means what it looks like.
 
 Both syntaxes work, and they are resolved independently: a name is matched
 against the underscore patterns first, and only names that match none of them
-are read as an expression. Nothing you write today changes meaning.
+are read as an expression. An underscore pattern must match the *whole* name,
+and the field names inside it are made of letters, digits, `_` and `.`, with a
+`+` or `-` only as the sign of a number: right after `_` (`X_where_qv_gt_-1`)
+or in an exponent (`1e-6`). So a name that contains any other operator, or a
+parenthesis, is read as an expression, and an underscore name inside it is an
+operand: `T_mid-T_mid_prev` is `T_mid` minus `T_mid_prev`.
+
+The expression parser reads such an operand as an identifier, so it can only
+contain letters, digits and `_`. Give a name like `T_mid_where_qv_gt_0.5` an
+alias with `:=`, and use the alias. The pattern applies to that operand only:
+`qv*T_mid_horiz_avg` is `qv` times `T_mid_horiz_avg`, which is an error since
+the two have different layouts. The horizontal average of the product is
+`(qv*T_mid).mean('col')`.
 
 ## Expressions must be given a name
 
