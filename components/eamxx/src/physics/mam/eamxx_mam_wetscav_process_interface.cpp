@@ -329,7 +329,7 @@ MAMWetscav::create_requests()
     // Rain production rate from deep convection [kg/kg/s]
     add_field<Required>("zm_rain_prod", scalar3d_mid, kg / kg / s, grid_name);
     // In-cloud liquid water mixing ratio from deep convection [kg/kg]
-    add_field<Required>("zm_ql", scalar3d_mid, kg / kg, grid_name);
+    add_field<Required>("zm_icw_liq", scalar3d_mid, kg / kg, grid_name);
     // Convective mass flux at interfaces — used to derive deep conv cloud fraction
     add_field<Required>("zm_mass_flux_int", scalar3d_int, kg / m2 / s, grid_name);
     // Evaporation tendency from deep convective precipitation [kg/kg/s]
@@ -662,7 +662,7 @@ void MAMWetscav::run_impl(const double dt) {
     // Rain production rate and in-cloud liquid water from ZM: use FM views
     // directly to avoid copying data into scratch views.
     rprddp  = get_field_in("zm_rain_prod").get_view<const Real **>();
-    icwmrdp = get_field_in("zm_ql").get_view<const Real **>();
+    icwmrdp = get_field_in("zm_icw_liq").get_view<const Real **>();
     evapcdp = get_field_in("evap_dq_out").get_view<const Real **>();
 
     // Deep convection cloud water detrainment [kg/kg/s]
