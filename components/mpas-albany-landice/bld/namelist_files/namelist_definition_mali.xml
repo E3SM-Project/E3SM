@@ -923,6 +923,22 @@ Valid values: any real value between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_invalid_value_ocn_intr_temp" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+value assigned to iceOceanInterfaceTemperature where the ocean does not provide a valid ice-ocean interface temperature
+
+Valid values: Any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_min_floating_frac" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+minimum floating-ice fraction from the ocean, remapped to MALI cells, for the ice-ocean interface temperature from the ocean to be used.  At or below this value, iceOceanInterfaceTemperature is set to config_invalid_value_ocn_intr_temp and floating ice uses a depth-based freezing temperature at its base.
+
+Valid values: Any real value between 0 and 1
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- physical_parameters -->
 

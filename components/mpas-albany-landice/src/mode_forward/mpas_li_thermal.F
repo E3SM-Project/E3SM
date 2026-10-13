@@ -133,7 +133,8 @@ module li_thermal
       real (kind=RKIND), pointer ::  &
            config_surface_air_temperature_value, & ! constant value of surface air temperature
            config_surface_air_temperature_lapse_rate, & ! optional lapse rate to apply to constant value of surface air temperature
-           config_basal_heat_flux_value            ! constant value of basal heat flux
+           config_basal_heat_flux_value,         & ! constant value of basal heat flux
+           config_invalid_value_ocn_intr_temp      ! marks where the ocean provides no interface temperature
 
       integer, pointer :: &
            config_stats_cell_ID             ! cell ID for diagnostic output
@@ -162,7 +163,8 @@ module li_thermal
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceAirTemperature,    & ! surface air temperature (K)
            surfaceTemperature,       & ! surface ice temperature (K)
-           basalTemperature            ! basal ice temperature (K)
+           basalTemperature,         & ! basal ice temperature (K)
+           iceOceanInterfaceTemperature ! ice-ocean interface temperature from the ocean (K)
 
       real (kind=RKIND), dimension(:), pointer :: &
            basalHeatFlux               ! basal heat flux into the ice (W m^{-2}, positive upward)
@@ -207,6 +209,7 @@ module li_thermal
       call mpas_pool_get_config(liConfigs, 'config_surface_air_temperature_lapse_rate', config_surface_air_temperature_lapse_rate)
       call mpas_pool_get_config(liConfigs, 'config_basal_heat_flux_source', config_basal_heat_flux_source)
       call mpas_pool_get_config(liConfigs, 'config_basal_heat_flux_value', config_basal_heat_flux_value)
+      call mpas_pool_get_config(liConfigs, 'config_invalid_value_ocn_intr_temp', config_invalid_value_ocn_intr_temp)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(liConfigs, 'config_stats_cell_ID', config_stats_cell_ID)
@@ -249,6 +252,10 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'basalHeatFlux', basalHeatFlux)
+         call mpas_pool_get_array(thermalPool, 'iceOceanInterfaceTemperature', iceOceanInterfaceTemperature)
+
+         ! the ocean has not provided an ice-ocean interface temperature yet
+         iceOceanInterfaceTemperature(:) = config_invalid_value_ocn_intr_temp
 
          if (config_print_thermal_info) then
             call mpas_log_write('Initialize thermal solver, config_temperature_init = ' // trim(config_temperature_init))
