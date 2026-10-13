@@ -28,7 +28,7 @@ ekat::ParameterList output_params(const std::string& map_file)
   using strvec_t = std::vector<std::string>;
 
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix","horiz_sampling");
+  params.set<std::string>("stream_id","horiz_sampling");
   params.set<std::string>("averaging_type","instant");
   params.set<std::string>("floating_point_precision","real");
   auto& oc = params.sublist("output_control");

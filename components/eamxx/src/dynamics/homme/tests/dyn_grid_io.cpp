@@ -135,7 +135,7 @@ TEST_CASE("dyn_grid_io")
   // Note: add MPI ranks to filename, to allow MPI tests to run in parallel
   ekat::ParameterList out_params;
   out_params.set<std::string>("averaging_type","instant");
-  out_params.set<std::string>("filename_prefix","dyn_grid_io");
+  out_params.set<std::string>("stream_id","dyn_grid_io");
   out_params.sublist("fields").sublist("dynamics").set<std::vector<std::string>>("field_names",fnames);
 
   out_params.sublist("output_control").set<int>("frequency",1);

@@ -134,7 +134,7 @@ void write (const std::string& avg_type, const std::string& freq_units,
   // Create output params
   ekat::ParameterList om_pl;
   std::string prefix = transpose ? "io_transpose_T" : "io_transpose_N";
-  om_pl.set("filename_prefix", prefix);
+  om_pl.set("stream_id", prefix);
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   if (transpose) {

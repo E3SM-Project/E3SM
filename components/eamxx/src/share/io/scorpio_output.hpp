@@ -28,7 +28,7 @@
  *
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
- *  filename_prefix:                    STRING
+ *  stream_id:                    STRING
  *  averaging_type:                     STRING
  *  transpose:                          BOOL                  (default: false)
  *  max_snapshots_per_file:             INT                   (default: 1)
@@ -45,11 +45,11 @@
  *    frequency:                        INT
  *    frequency_units:                  STRING                (default: nsteps)
  *  restart:
- *    filename_prefix:                  STRING                (default: ${filename_prefix})
+ *    stream_id:                  STRING                (default: ${stream_id})
  *    skip_restart_if_rhist_not_found:  BOOL                  (default: false)
  *  -----
  *  The meaning of these parameters is the following:
- *  - filename_prefix: the output filename root.
+ *  - stream_id: the output filename root.
  *  - averaging_type: a string that describes which type of output, current options are:
  *      instant - no averaging, output each snap as is.
  *      average - average of the field over some interval.
@@ -87,7 +87,7 @@
  *      if averaging_type is *not* instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
  *  - restart: parameters for history restart
- *    - filename_prefix: the history restart filename root.
+ *    - stream_id: the history restart filename root.
  *    - skip_restart_if_rhist_not_found: if this is a restarted run and this is true, skip the
  *      hist restart if the proper filename is not found in rpointer. Allows to add a new stream
  *      upon restart.

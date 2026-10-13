@@ -104,7 +104,7 @@ make_om_params (const std::string& prefix,
                 const bool save_grid_data)
 {
   ekat::ParameterList pl;
-  pl.set("filename_prefix", prefix);
+  pl.set("stream_id", prefix);
   pl.set("field_names", field_names);
   pl.set("averaging_type", std::string("INSTANT"));
   auto& ctrl = pl.sublist("output_control");

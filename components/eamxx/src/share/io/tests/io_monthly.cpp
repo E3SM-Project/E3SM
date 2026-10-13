@@ -109,7 +109,7 @@ void write (const int seed, const ekat::Comm& comm)
 
   // Create output params
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_monthly"));
+  om_pl.set("stream_id",std::string("io_monthly"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("instant"));
   om_pl.set("file_max_storage_type",std::string("one_month"));
@@ -214,7 +214,7 @@ void write_avg_type (const std::string& avg_type, const int seed, const ekat::Co
   }
 
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("io_monthly_avg"));
+  om_pl.set("stream_id",std::string("io_monthly_avg"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", avg_type);
   om_pl.set("file_max_storage_type",std::string("one_month"));

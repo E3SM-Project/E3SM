@@ -686,7 +686,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   using vos_type = std::vector<std::string>;
   ekat::ParameterList params;
 
-  params.set<std::string>("filename_prefix",name);
+  params.set<std::string>("stream_id",name);
   params.set<std::string>("averaging_type","instant");
   params.set<std::string>("floating_point_precision","real");
   auto& oc = params.sublist("output_control");

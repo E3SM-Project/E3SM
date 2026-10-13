@@ -59,7 +59,7 @@ TEST_CASE("se_grid_io")
 
   auto fm0 = get_test_fm(grid,t0,true);
   ekat::ParameterList params;
-  params.set<std::string>("filename_prefix","io_se_grid");
+  params.set<std::string>("stream_id","io_se_grid");
   params.set<std::string>("averaging_type","instant");
   params.set<int>("max_snapshots_per_file",1);
   params.set<strvec_t>("field_names",{"field_1","field_2","field_3","field_packed"});
