@@ -757,7 +757,9 @@ void AtmosphereDriver::create_output_managers () {
   if (io_params.isSublist("model_restart")) {
     // Create model restart manager
     auto params = io_params.sublist("model_restart");
-    params.set<std::string>("filename_prefix",m_casename+"."+get_eamxx_model_name());
+    // Model restart files don't use stream_id; filename is just {case}.eamxx.r.*
+    // The {case}.eamxx part is added automatically in compute_filename()
+    params.set<std::string>("stream_id","");  // Empty for model restart
     params.set<std::string>("averaging_type","instant");
     params.sublist("provenance") = m_atm_params.sublist("provenance");
 
