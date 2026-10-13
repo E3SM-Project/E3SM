@@ -1,0 +1,17 @@
+%YAML 1.1
+---
+# No geometry-sourced (lat/lon/x/y/z) property tracers: the mesh-free grid
+# has no usable lat/lon.
+tracers:
+  wtrc_bp: {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
+  wtrc_bf: {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}
+  p_sst:   {type: property, carrier: wtrc_bf, source: sst, scale: 1.0, offset: 0.0}
+  p_fld:
+    type: property
+    carrier: wtrc_bp
+    source: field
+    field_name: T_2m
+    field_units: K
+    scale: 1.0
+    offset: 0.0
+...

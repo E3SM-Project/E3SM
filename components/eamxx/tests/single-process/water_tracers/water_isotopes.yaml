@@ -1,0 +1,19 @@
+%YAML 1.1
+---
+# As water_tracers.yaml, plus isotopes and a property carried by an isotope
+tracers:
+  wtrc_bp: {type: generic, ocean_flux: bulk_proportional, r_ocn: 1.0}
+  wtrc_bf: {type: generic, ocean_flux: bulk_formula, r_ocn: 1.0, init: ratio}
+  p_sst:   {type: property, carrier: wtrc_bf, source: sst, scale: 1.0, offset: 0.0}
+  p_fld:
+    type: property
+    carrier: wtrc_bp
+    source: field
+    field_name: T_2m
+    field_units: K
+    scale: 1.0
+    offset: 0.0
+  hdo:       {type: isotope, species: HDO}
+  h218o:     {type: isotope, species: H218O}
+  p_hdo_sst: {type: property, carrier: hdo, source: sst, scale: 1.0, offset: 0.0}
+...

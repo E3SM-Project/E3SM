@@ -1,0 +1,17 @@
+%YAML 1.1
+---
+filename_prefix: water_tracers_standalone_output_${POSTFIX}
+averaging_type: instant
+field_names:
+  - wtrc_bp_surf_flux
+  - wtrc_bf_surf_flux
+  - p_sst_surf_flux
+  - p_fld_surf_flux
+  - wtrc_bp
+  - wtrc_bf
+  - qv
+output_control:
+  frequency: 1
+  frequency_units: nsteps
+  skip_t0_output: true
+...
