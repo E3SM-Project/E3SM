@@ -45,9 +45,19 @@ module ocn_submesoscale_eddies
 
    ! Ice-aware MLE
    logical :: iceAwareActive, landIceMaskExist
-   real(kind=RKIND) :: iceMLE_s, iceMLE_k, iceMLE_u, iceMLE_c, &
-                       iceMLE_crit, iceFracEdge, iceMLE_eps,   &
-                       iceMLE_eff, erfv, expc
+   real(kind=RKIND) :: iceMLE_crit   ! critical sea-ice concentration
+
+   ! Ice-aware MLE coefficients (Section 8 in Shrestha and Manucharyan, 2022)
+   real(kind=RKIND), parameter :: &
+      iceMLE_s        = 2.25_RKIND,  &! slope of the linear relation between the
+                                      ! nondimensional streamfunction and EKE dissipation
+      iceMLE_k        = 430.0_RKIND, &! coefficient of the nondimensional EKE dissipation
+                                      ! for concentrations at or below iceMLE_crit
+      iceMLE_u        = 0.33_RKIND,  &! nondimensional EKE dissipation for
+                                      ! concentrations above iceMLE_crit
+      iceMLE_c        = 20.0_RKIND,  &! sea-ice strength (compactness) parameter
+      iceMLE_erfAmp   = 0.8_RKIND,   &! amplitude of the error function transition
+      iceMLE_erfWidth = 0.05_RKIND    ! width of the error function transition
 
   !***********************************************************************
 
@@ -106,10 +116,17 @@ module ocn_submesoscale_eddies
      real(kind=RKIND) :: mu, zMLD, bvfML, hML, gradBuoyML, ds, Lf, bvfAv, &
         hAv, bldEdge, ustarEdge
 
+     real(kind=RKIND) :: iceFracEdge, iceMLE_eps, iceMLE_eff, erfv, expc
+
      nEdges = nEdgesHalo(2)
 
      allocate(streamFunction(nVertLevels+1))
      allocate(zEdge(nVertLevels+1))
+
+     if ( iceAwareActive ) then
+        call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
+        call mpas_pool_get_array(forcingPool, 'landIceMask',landIceMask)
+     end if
 
      !compute the mixed layer average buoyancy gradient and bvf
      !This is thickness weighted to allow for non uniform grid spacing,
@@ -121,7 +138,8 @@ module ocn_submesoscale_eddies
      !$omp parallel
      !$omp do schedule(runtime) &
      !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv, &
-     !$omp         zMLD,Lf,ds,mu,k,indMLDedge,hAv)
+     !$omp         zMLD,Lf,ds,mu,k,indMLDedge,hAv,iceFracEdge,expc,erfv, &
+     !$omp         iceMLE_eps,iceMLE_eff,landIceMaskEdge)
      do iEdge=1,nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
@@ -172,14 +190,11 @@ module ocn_submesoscale_eddies
         !  - Section 8 in Shrestha and Manucharyan, 2022
         !    (https://journals.ametsoc.org/view/journals/phoc/52/3/JPO-D-21-0024.1.xml)
         if ( iceAwareActive ) then
-           call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
-           call mpas_pool_get_array(forcingPool, 'landIceMask',landIceMask)
-
            iceFracEdge = 0.5_RKIND * (iceFraction(cell1) + iceFraction(cell2))
 
            if ( iceFracEdge <= iceMLE_crit ) then
               expc = iceFracEdge**2.0_RKIND * exp(-iceMLE_c * (1.0_RKIND - iceFracEdge))
-              erfv = 0.8_RKIND * erf((iceFracEdge - iceMLE_crit)/0.05_RKIND)
+              erfv = iceMLE_erfAmp * erf((iceFracEdge - iceMLE_crit)/iceMLE_erfWidth)
               iceMLE_eps = iceMLE_k * (1.0_RKIND - erfv) * expc
            else
               iceMLE_eps = iceMLE_u
@@ -318,11 +333,7 @@ module ocn_submesoscale_eddies
         landIceMaskExist = .false.
      end if
 
-     iceMLE_crit    = config_submesoscale_ice_aware_crit
-     iceMLE_s       = 2.25_RKIND
-     iceMLE_k       = 430.0_RKIND
-     iceMLE_u       = 0.33_RKIND
-     iceMLE_c       = 20.0_RKIND
+     iceMLE_crit    = config_submesoscale_ice_aware_crit_conc
 
    end subroutine ocn_submesoscale_init
 
