@@ -3,6 +3,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/field/field_reader.hpp"
 #include "share/io/eamxx_io_utils.hpp"
+#include "share/physics/physics_constants.hpp"
 #include "share/remap/horizontal_remapper.hpp"
 #include "share/remap/vertical_remapper.hpp"
 #include "share/util/eamxx_timing.hpp"
@@ -120,6 +121,16 @@ AtmosphereOutput::AtmosphereOutput(const ekat::Comm &comm, const ekat::Parameter
   EKAT_REQUIRE_MSG (m_avg_type!=OutputAvgType::Invalid,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: instant, Max, Min, Average. Case insensitive.\n");
+
+  // Needed to validate FieldPrev diags (see process_requested_fields)
+  if (params.isSublist("output_control")) {
+    const auto& oc = params.sublist("output_control");
+    if (oc.isParameter("frequency_units") and oc.isParameter("frequency")) {
+      IOControl ctrl;
+      ctrl.set_frequency_units(oc.get<std::string>("frequency_units"));
+      m_output_every_step = ctrl.frequency_units=="nsteps" and oc.get<int>("frequency")==1;
+    }
+  }
 
   // By default, IO is done directly on the field mgr grid
   auto fm_grid = field_mgr->get_grids_manager()->get_grid(grid_name);
@@ -1083,7 +1094,12 @@ computes(const util::TimeStamp& ts, const bool allow_invalid_fields)
       // The diag was either not computable or it may have failed to compute
       // (e.g., t=0 output with a flux-like diag).
       // If we're allowing invalid fields, then we should simply set diag=fill_value
-      d.deep_copy(constants::fill_value<float>);
+      // (of the right type, since the diag may be an int mask)
+      if (d.data_type()==DataType::IntType) {
+        d.deep_copy(constants::fill_value<int>);
+      } else {
+        d.deep_copy(constants::fill_value<float>);
+      }
     }
   }
 }
@@ -1263,6 +1279,16 @@ process_requested_fields()
   // order, meaning that if diag A depends on diag B, then B appears *before* A.
   // This ensures we can evaluate diags in order at runtime
   bool done = false;
+
+  // If a check below throws, remove the diags this stream added to the (static) repo,
+  // so that they are not left there for other streams
+  struct RepoGuard {
+    strmap_t<diag_ptr_type>& repo;
+    std::vector<std::string> added;
+    bool armed = true;
+    ~RepoGuard () { if (armed) for (const auto& n : added) repo.erase(n); }
+  } repo_guard{m_diag_repo,{}};
+
   std::set<std::string> remaining(m_fields_names.begin(),m_fields_names.end());
   // m_fields_names now holds exactly the variables that reach the nc file:
   // alias targets live in m_alias_to_orig, 'aliases' entries are intermediates.
@@ -1308,8 +1334,7 @@ process_requested_fields()
         }
       } else {
         // Reuse the diag if another stream built it, else create it.
-        // NOTE: cache it only after the check below, or a stream that fails to
-        //       build leaves it in the shared static repo for everyone else.
+        // NOTE: cache it only after the checks below
         auto it = m_diag_repo.find(name);
         auto diag = it==m_diag_repo.end()
                   ? create_diagnostic(name,fm_model->get_grid())
@@ -1330,6 +1355,29 @@ process_requested_fields()
             "   write\n"
             "     - <name> := " + name + "\n");
 
+        // An instant stream evaluates its diags on output steps only, so the previous
+        // value of a diag would be one output interval old, rather than one step old.
+        // Hence, only allow FieldPrev of a diag if we write every step.
+        if (m_avg_type==OutputAvgType::Instant and not m_output_every_step and
+            diag->name()=="FieldPrev") {
+          auto src = diag->get_params().get<std::string>("field_name");
+          while (m_alias_to_orig.count(src)==1) {
+            src = m_alias_to_orig.at(src);
+          }
+          EKAT_REQUIRE_MSG (fm_model->has_field(src) and m_diag_repo.count(src)==0,
+              "Error! shift(time=1) of a diagnostic is not available in an instant stream\n"
+              "       that does not write every step.\n"
+              " - stream name: " + m_stream_name + "\n"
+              " - request: " + name + "\n"
+              " - shifted operand: " + src + "\n"
+              "An instant stream evaluates diagnostics on output steps only, so the\n"
+              "shifted value would lag by one output interval, not one model step.\n"
+              "Use an averaged stream, which evaluates every step, or write every step.\n");
+        }
+
+        if (m_diag_repo.count(name)==0) {
+          repo_guard.added.push_back(name);
+        }
         m_diag_repo[name] = diag;
         // Add its deps to the list of fields to process (if not already in fm_model)
         bool deps_met = true;
@@ -1369,6 +1417,41 @@ process_requested_fields()
 
     done = remaining.size()==0;
   }
+
+  // BinaryOp resolves a name as a constant before looking for a field: error out
+  // if an operand is both, since the constant would silently win.
+  // NOTE: check now that all fields (and aliases) are in the FM
+  const auto& constants = physics::Constants<Real>::dictionary();
+  for (const auto& diag : m_diagnostics) {
+    if (diag->name()!="BinaryOp") {
+      continue;
+    }
+    for (const auto& arg : {"arg1","arg2"}) {
+      const auto& c = diag->get_params().get<std::string>(arg);
+      EKAT_REQUIRE_MSG (constants.find(c)==constants.end() or not fm_model->has_field(c),
+          "Error! An operand names both a physical constant and a field.\n"
+          " - stream name: " + m_stream_name + "\n"
+          " - request: " + diag->get().name() + "\n"
+          " - ambiguous operand: " + c + "\n"
+          "The constant would be used, silently, and the field ignored.\n"
+          "To use the field, give it another name (<name> := " + c + ").\n"
+          "To use the constant, write its value as a literal.\n");
+    }
+  }
+
+  // IO only writes real-valued fields: catch int fields (e.g., mask.where(..)) here
+  for (const auto& name : written_names) {
+    const auto& f = fm_model->get_field(name);
+    EKAT_REQUIRE_MSG (f.data_type()==DataType::RealType,
+        "Error! Output fields must be real-valued.\n"
+        " - stream name: " + m_stream_name + "\n"
+        " - field name: " + name + "\n"
+        " - data type: " + e2str(f.data_type()) + "\n"
+        "To write an integer mask, convert it in the request: <name> := (" +
+        (m_alias_to_orig.count(name)==1 ? m_alias_to_orig.at(name) : name) + ")*1.0\n");
+  }
+
+  repo_guard.armed = false;
 }
 
 std::vector<std::string> AtmosphereOutput::
