@@ -1679,14 +1679,19 @@ contains
                                                OceanDensity
    real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
    integer, dimension(:,:), pointer :: orig3dOceanMask
+   real (kind=RKIND), dimension(:), pointer :: iceOceanInterfaceTemperature
    real(kind=RKIND), pointer :: config_invalid_value_TF
+   real(kind=RKIND), pointer :: config_min_floating_frac, config_invalid_value_ocn_intr_temp
    character(len=StrKIND), pointer :: config_smb_source
-   real(kind=RKIND) :: fractionalMaskVal
+   real(kind=RKIND) :: fractionalMaskVal, floatingFraction
 
     errorCode = 0
 
     call mpas_pool_get_config(domain % configs, 'config_invalid_value_TF', config_invalid_value_TF)
     call mpas_pool_get_config(domain % configs, 'config_smb_source', config_smb_source)
+    call mpas_pool_get_config(domain % configs, 'config_min_floating_frac', config_min_floating_frac)
+    call mpas_pool_get_config(domain % configs, 'config_invalid_value_ocn_intr_temp', &
+                              config_invalid_value_ocn_intr_temp)
 
     n = 0
     block => domain % blocklist
@@ -1705,6 +1710,7 @@ contains
          call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal',floatingBasalMassBal)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature',surfaceTemperature)
+         call mpas_pool_get_array(thermalPool, 'iceOceanInterfaceTemperature', iceOceanInterfaceTemperature)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
          call mpas_pool_get_array(extrapOceanDataPool, 'orig3dOceanMask', orig3dOceanMask)
 !         call mpas_pool_get_array(thermalPool, 'basalOceanHeatflx',basalOceanHeatflx)
@@ -1724,8 +1730,25 @@ contains
                call mpas_log_write("Unknown value for 'config_smb_source'", MPAS_LOG_ERR)
                errorCode = ior(errorCode, 1)
             endif
-            ! no ocean-supplied floating basal mass balance is available yet
-            floatingBasalMassBal(i) = 0.0_RKIND
+            ! net ice-shelf melt from the ocean, already normalized by the floating
+            ! fraction; floatingBasalMassBal is positive for accretion
+            if (index_x2g_Foxo_ismf > 0) then
+               floatingBasalMassBal(i) = -x2g_g(index_x2g_Foxo_ismf, n)
+            else
+               floatingBasalMassBal(i) = 0.0_RKIND
+            endif
+
+            ! ice-ocean interface temperature from the ocean, weighted by the ocean
+            ! floating fraction; invalid where too little floating ice contributes
+            floatingFraction = 0.0_RKIND
+            if ((index_x2g_So_liflfrac > 0) .and. (index_x2g_So_tfrz_isf > 0)) then
+               floatingFraction = x2g_g(index_x2g_So_liflfrac, n)
+            endif
+            if (floatingFraction > config_min_floating_frac) then
+               iceOceanInterfaceTemperature(i) = x2g_g(index_x2g_So_tfrz_isf, n) / floatingFraction
+            else
+               iceOceanInterfaceTemperature(i) = config_invalid_value_ocn_intr_temp
+            endif
             if (nISMIP6OceanLayers > 0) then
                do iLev = 1, nISMIP6OceanLayers
                   fractionalMaskVal = x2g_g(index_x2g_So_tf3d_mask(iLev), n)
