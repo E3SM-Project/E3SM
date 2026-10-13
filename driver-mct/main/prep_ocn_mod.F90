@@ -1413,7 +1413,12 @@ contains
   subroutine prep_ocn_shelf_calc_g2x_ox(timer)
     !---------------------------------------------------------------
     ! Description
-    ! Create g2x_ox (note that g2x_ox is a local module variable)
+    ! Map glc ice-shelf fields to g2x_ox (note that g2x_ox is a local module
+    ! variable).  The ice-shelf states are areal fractions and area-weighted
+    ! averages, so all of these fields use the conservative mapper.  They are
+    ! not normalized so the remapped floating-ice mask is the fraction of each
+    ! ocean cell covered by floating ice, which the ocean uses to conserve the
+    ! ice-shelf fluxes it sends to glc.
     !
     ! Arguments
     character(len=*), intent(in) :: timer
@@ -1421,18 +1426,15 @@ contains
     ! Local Variables
     integer :: egi
     type(mct_avect), pointer :: g2x_gx
-    character(*),  parameter :: subname = '(prep_ocn_calc_g2x_ox)'
+    character(*),  parameter :: subname = '(prep_ocn_shelf_calc_g2x_ox)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do egi = 1,num_inst_glc
        g2x_gx => component_get_c2x_cx(glc(egi))
 
-       call seq_map_map(mapper_Sg2o, g2x_gx, g2x_ox(egi), norm=.true.)
-
-       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi),norm=.true.)
-
-
+       call seq_map_map(mapper_Fg2o, g2x_gx, g2x_ox(egi), &
+            fldlist=seq_flds_g2o_shelf_fields, norm=.false.)
     enddo
     call t_drvstopf  (trim(timer))
   end subroutine prep_ocn_shelf_calc_g2x_ox

@@ -32,6 +32,7 @@ module prep_glc_mod
   public :: prep_glc_init
   public :: prep_glc_mrg_lnd
   public :: prep_glc_mrg_ocn
+  public :: prep_glc_mrg_ocn_shelf
 
   public :: prep_glc_accum_lnd
   public :: prep_glc_accum_ocn
@@ -431,7 +432,7 @@ contains
 
     !---------------------------------------------------------------
     ! Description
-    ! Accumulate glc inputs from ocn
+    ! Accumulate glc ice-shelf inputs from ocn
     !
     ! Arguments
     character(len=*), intent(in) :: timer
@@ -447,9 +448,9 @@ contains
     do egi = 1,num_inst_glc
        x2g_gx => component_get_x2c_cx(glc(egi))
        if (x2gacc_gx_cnt == 0) then
-          call mct_avect_copy(x2g_gx, x2gacc_gx(egi))
+          call mct_avect_copy(x2g_gx, x2gacc_gx(egi), rList=seq_flds_x2g_shelf_fields_from_ocn)
        else
-          call mct_avect_accum(x2g_gx, x2gacc_gx(egi))
+          call mct_avect_accum(x2g_gx, x2gacc_gx(egi), rList=seq_flds_x2g_shelf_fields_from_ocn)
        endif
     end do
     x2gacc_gx_cnt = x2gacc_gx_cnt + 1
@@ -494,15 +495,17 @@ contains
     l2gacc_lx_cnt_avg = l2gacc_lx_cnt
     l2gacc_lx_cnt = 0
 
-    ! Accumulation for OCN
-    if (x2gacc_gx_cnt > 1) then
+    ! Accumulation for OCN (ice-shelf fields only)
+    if (x2gacc_gx_cnt > 0) then
        do egi = 1,num_inst_glc
           ! temporary formation of average
-          call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
+          if (x2gacc_gx_cnt > 1) then
+             call mct_avect_avg(x2gacc_gx(egi), x2gacc_gx_cnt)
+          end if
 
           ! ***NOTE***THE FOLLOWING ACTUALLY MODIFIES x2g_gx
           x2g_gx => component_get_x2c_cx(glc(egi))
-          call mct_avect_copy(x2gacc_gx(egi), x2g_gx)
+          call mct_avect_copy(x2gacc_gx(egi), x2g_gx, rList=seq_flds_x2g_shelf_fields_from_ocn)
        enddo
     end if
     x2gacc_gx_cnt = 0
@@ -829,13 +832,47 @@ contains
                        fldlist=seq_flds_x2g_tf_states_from_ocn,norm=.true.)
       end if
       if (ocn_c2_glcshelf) then
+         ! not normalized: glc divides the remapped interface temperature by the
+         ! remapped weight, and the area integral of the flux is conserved
          call seq_map_map(mapper_So2g_shelf, o2x_ox, o2x_gx(eoi), &
-                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.true.)
+                       fldlist=seq_flds_x2g_shelf_states_from_ocn,norm=.false.)
+         call seq_map_map(mapper_Fo2g_shelf, o2x_ox, o2x_gx(eoi), &
+                       fldlist=seq_flds_x2g_shelf_fluxes_from_ocn,norm=.false.)
       end if
     enddo
 
     call t_drvstopf  (trim(timer))
   end subroutine prep_glc_calc_o2x_gx
+
+  !================================================================================================
+
+  subroutine prep_glc_mrg_ocn_shelf(timer_mrg)
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Copy the ice-shelf fields mapped from ocn into the glc input so they
+    ! can be accumulated over the glc coupling interval
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer_mrg
+    !
+    ! Local Variables
+    integer :: egi, eoi
+    type(mct_avect), pointer :: x2g_gx
+    character(*), parameter  :: subname = '(prep_glc_mrg_ocn_shelf)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer_mrg),barrier=mpicom_CPLID)
+    do egi = 1,num_inst_glc
+       ! Use fortran mod to address ensembles in merge
+       eoi = mod((egi-1),num_inst_ocn) + 1
+
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       call mct_avect_copy(o2x_gx(eoi), x2g_gx, rList=seq_flds_x2g_shelf_fields_from_ocn)
+    enddo
+    call t_drvstopf  (trim(timer_mrg))
+
+  end subroutine prep_glc_mrg_ocn_shelf
 
   !================================================================================================
 
