@@ -8,6 +8,8 @@
 
 #include <ekat_string_utils.hpp>
 
+#include <list>
+
 namespace scream {
 
 TEST_CASE("create_diag")
@@ -478,6 +480,76 @@ TEST_CASE("create_diag")
     // A negated field is still an operand by name
     auto d5 = create_diagnostic("T_mid*(-qv)",grid);
     REQUIRE (d5->get_params().get<std::string>("arg2")=="(-qv)");
+  }
+
+  SECTION ("dexpr_not_hijacked_by_underscore_patterns") {
+    // The underscore patterns must not match the tail of an expression
+    auto d1 = create_diagnostic("T_mid-T_mid_prev",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d1)!=nullptr);
+    REQUIRE (d1->get_params().get<std::string>("arg1")=="T_mid");
+    REQUIRE (d1->get_params().get<std::string>("arg2")=="T_mid_prev");
+    REQUIRE (d1->get_params().get<std::string>("binary_op")=="minus");
+
+    auto d2 = create_diagnostic("qv/T_mid_at_500hPa",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d2)!=nullptr);
+    REQUIRE (d2->get_params().get<std::string>("arg1")=="qv");
+    REQUIRE (d2->get_params().get<std::string>("arg2")=="T_mid_at_500hPa");
+
+    auto d3 = create_diagnostic("273.15 + T_mid_at_500hPa",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d3)!=nullptr);
+    REQUIRE (d3->get_params().get<std::string>("binary_op")=="plus");
+    REQUIRE (d3->get_params().get<std::string>("arg2")=="T_mid_at_500hPa");
+
+    auto d4 = create_diagnostic("(qc+qv)*z_mid",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d4)!=nullptr);
+    REQUIRE (d4->get_params().get<std::string>("arg1")=="(qc+qv)");
+    REQUIRE (d4->get_params().get<std::string>("arg2")=="z_mid");
+
+    // Underscore names are unchanged, including the sign of a number
+    auto l1 = create_diagnostic("T_mid_where_qv_gt_1e-6",grid);
+    REQUIRE (std::dynamic_pointer_cast<ConditionalSampling>(l1)!=nullptr);
+    REQUIRE (l1->get_params().get<std::string>("condition_rhs")=="1e-6");
+    REQUIRE_FALSE (l1->get_params().isParameter("from_expression"));
+    // A signed threshold is a number, not a field
+    for (const std::string rhs : {"-1", "+1", "-.5", "+.5", "1e+5"}) {
+      auto l2 = create_diagnostic("T_mid_where_qv_gt_" + rhs,grid);
+      REQUIRE (std::dynamic_pointer_cast<ConditionalSampling>(l2)!=nullptr);
+      REQUIRE (l2->get_params().get<std::string>("condition_rhs")==rhs);
+      REQUIRE (l2->get_input_fields_names()==std::list<std::string>{"T_mid","qv"});
+    }
+    auto l3 = create_diagnostic("T_mid_minus_T_mid_prev",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(l3)!=nullptr);
+    REQUIRE (l3->get_params().get<std::string>("arg2")=="T_mid_prev");
+    auto l4 = create_diagnostic("T_mid_where_qv_gt_1e-6_at_500hPa",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(l4)!=nullptr);
+    REQUIRE (l4->get_params().get<std::string>("field_name")=="T_mid_where_qv_gt_1e-6");
+    auto l5 = create_diagnostic("T_mid_where_qv_gt_-1_at_500hPa",grid);
+    REQUIRE (std::dynamic_pointer_cast<FieldAtPressureLevel>(l5)!=nullptr);
+    REQUIRE (l5->get_params().get<std::string>("field_name")=="T_mid_where_qv_gt_-1");
+
+    // No operator is part of a field name
+    auto d5 = create_diagnostic("qv*T_mid_horiz_avg",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d5)!=nullptr);
+    REQUIRE (d5->get_params().get<std::string>("arg1")=="qv");
+    REQUIRE (d5->get_params().get<std::string>("arg2")=="T_mid_horiz_avg");
+    auto d6 = create_diagnostic("qc+qv_at_500hPa",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d6)!=nullptr);
+    REQUIRE (d6->get_params().get<std::string>("arg1")=="qc");
+    REQUIRE (d6->get_params().get<std::string>("arg2")=="qv_at_500hPa");
+    // ...not even after a name ending in 'e', which is not an exponent
+    auto d7 = create_diagnostic("qv_times_tke-1",grid);
+    REQUIRE (std::dynamic_pointer_cast<BinaryOp>(d7)!=nullptr);
+    REQUIRE (d7->get_params().get<std::string>("arg1")=="qv_times_tke");
+    REQUIRE (d7->get_params().get<std::string>("binary_op")=="minus");
+
+    // Patterns with no field in front also match only the whole name
+    for (const std::string n : {"precip_liq_surf_mass_flux", "LiqWaterPath", "LiqNumberPath",
+                                "AeroComCldTop", "ZonalVapFlux", "PotentialTemperature",
+                                "z_mid", "lev_at_500hPa_mid"}) {
+      auto b = create_diagnostic("qv_times_" + n,grid);
+      REQUIRE (std::dynamic_pointer_cast<BinaryOp>(b)!=nullptr);
+      REQUIRE (b->get_params().get<std::string>("arg2")==n);
+    }
   }
 
   SECTION ("dexpr_histogram_edges") {

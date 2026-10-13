@@ -166,6 +166,8 @@ TEST_CASE ("io_with_expressions")
         "neg_r := T_mid*(-2)",
         // ...and a legal threshold
         "T_pos := T_mid.where(T_mid>-1)",
+        // An expression, not FieldPrev of 'T_mid-T_mid'
+        "dT := T_mid-T_mid_prev",
       },
       {
         // An intermediate: resolved and usable by name, but not written
@@ -214,6 +216,7 @@ TEST_CASE ("io_with_expressions")
   REQUIRE (scorpio::has_var(filename,"neg_l"));
   REQUIRE (scorpio::has_var(filename,"neg_r"));
   REQUIRE (scorpio::has_var(filename,"T_pos"));
+  REQUIRE (scorpio::has_var(filename,"dT"));
   // An 'aliases' entry is an intermediate: resolved, used, but not written
   REQUIRE_FALSE (scorpio::has_var(filename,"qvT"));
   // The file records where the numbers came from
@@ -235,7 +238,8 @@ TEST_CASE ("io_with_expressions")
   Field neg_l   (FieldIdentifier("neg_l",  layout3d, K, gname));
   Field neg_r   (FieldIdentifier("neg_r",  layout3d, K, gname));
   Field T_pos   (FieldIdentifier("T_pos",  layout3d, K, gname));
-  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos}) {
+  Field dT      (FieldIdentifier("dT",     layout3d, K, gname));
+  for (auto* f : {&prod,&shifted,&half,&col_qv,&col_qv_3d,&backtend,&neg_l,&neg_r,&T_pos,&dT}) {
     f->allocate_view();
     f->get_header().get_tracking().update_time_stamp(t0);
   }
@@ -243,7 +247,7 @@ TEST_CASE ("io_with_expressions")
   FieldReader reader;
   reader.set_file_specs(filename);
   reader.set_dim_decomp(grid->get_partitioned_dim_gids(),comm);
-  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos});
+  reader.set_fields({prod,shifted,half,col_qv,col_qv_3d,backtend,neg_l,neg_r,T_pos,dT});
 
   const int nlocal = grid->get_num_local_dofs();
   for (int n=1; n<=nsteps; ++n) {
@@ -257,9 +261,11 @@ TEST_CASE ("io_with_expressions")
     neg_l.sync_to_host();
     neg_r.sync_to_host();
     T_pos.sync_to_host();
+    dT.sync_to_host();
     auto neg_l_h    = neg_l.get_view<const Real**,Host>();
     auto neg_r_h    = neg_r.get_view<const Real**,Host>();
     auto T_pos_h    = T_pos.get_view<const Real**,Host>();
+    auto dT_h       = dT.get_view<const Real**,Host>();
     auto prod_h     = prod.get_view<const Real**,Host>();
     auto shifted_h  = shifted.get_view<const Real**,Host>();
     auto half_h     = half.get_view<const Real**,Host>();
@@ -288,6 +294,8 @@ TEST_CASE ("io_with_expressions")
         } else {
           REQUIRE (T_pos_h(i,k)==constants::fill_value<Real>);
         }
+        // One step of T_mid, which gains 1 per step
+        REQUIRE (dT_h(i,k)==1);
       }
       REQUIRE (col_qv_h(i)==qv_col_sum/nlevs);
       for (int k=0; k<nlevs; ++k) {
