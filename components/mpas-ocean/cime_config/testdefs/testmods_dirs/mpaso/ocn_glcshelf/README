@@ -4,11 +4,4 @@ so that MPAS-Ocean computes ice-shelf melt fluxes itself, and it turns off
 the SSH consistency check with
     config_check_ssh_consistency = .false.
 
-It also sets
-    config_glc_ice_shelf_coupling_import_geometry = .false.
-because the oQU240wLI ice-shelf cavities are not consistent with MALI's
-ais8to30 ice geometry, so MPAS-Ocean keeps its own land-ice pressure and
-fractions and only exchanges ice-shelf fluxes and the interface
-temperature with MALI.
-
 It also aligns the DATM and DROF forcing years with a 2000-01-01 start date.
