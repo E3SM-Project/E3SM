@@ -633,7 +633,7 @@ void ZMDeepConvection::run_impl (const double dt)
 
   // 3D mid-level output for MAM wetscav coupling
   const auto& zm_rain_prod_out = get_field_out("zm_rain_prod").get_view<Real**>();
-  const auto& zm_ql_out        = get_field_out("zm_ql").get_view<Real**>();
+  const auto& zm_icw_liq        = get_field_out("zm_icw_liq").get_view<Real**>();
   Kokkos::parallel_for("zm_aerosol_coupling_outputs",
     KT::RangePolicy(0, m_ncol*nlev_mid), KOKKOS_LAMBDA (const int idx) {
     const int i = idx/nlev_mid;
@@ -641,7 +641,7 @@ void ZMDeepConvection::run_impl (const double dt)
     // rain production rate (rprddp in EAM Fortran)
     zm_rain_prod_out(i,k) = loc_zm_output_rain_prod(i,k);
     // in-cloud liquid water mixing ratio (icwmrdp in EAM Fortran)
-    zm_ql_out(i,k)        = loc_zm_output_ql(i,k);
+    zm_icw_liq(i,k)        = loc_zm_output_ql(i,k);
   });
 
   // 3D interface output
