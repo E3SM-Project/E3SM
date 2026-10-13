@@ -95,6 +95,23 @@ std::string name_of (const ast::Expression& e) {
   return ast::to_string(e);
 }
 
+// A numeric literal, possibly negated (dexpr parses -2 as a unary minus applied to 2)
+bool is_number (const ast::Expression& e) {
+  const auto* u = as<ast::UnaryExpression>(e);
+  const auto& n = (u!=nullptr and u->op==TokenTypes::Minus) ? *u->right : e;
+  return as<ast::IntegerLiteral>(n)!=nullptr or as<ast::FloatLiteral>(n)!=nullptr;
+}
+
+// The name of an operand. Same as name_of(), except that a negated numeric literal,
+// which dexpr renders as "(-2)", is returned as "-2", so that diags read it as a number
+std::string operand_name (const ast::Expression& e) {
+  const auto* u = as<ast::UnaryExpression>(e);
+  if (u!=nullptr and is_number(e)) {
+    return "-" + ast::to_string(*u->right);
+  }
+  return name_of(e);
+}
+
 // dexpr renders literals: a FloatLiteral keeps a double, not its lexeme, and
 // dexpr prints the shortest form that reads back.
 std::string literal_str (const ast::Expression& e)
@@ -112,8 +129,7 @@ int int_arg (const ast::Expression& e, const std::string& ctx)
 {
   const auto* i = as<ast::IntegerLiteral>(e);
   if (i==nullptr) {
-    // A negative index parses as unary minus; the only place we accept one,
-    // since no diagnostic negates a field.
+    // A negative index parses as unary minus
     const auto* u = as<ast::UnaryExpression>(e);
     if (u!=nullptr and u->op==TokenTypes::Minus) {
       const auto* inner = as<ast::IntegerLiteral>(*u->right);
@@ -185,7 +201,7 @@ void translate_unary (const ast::UnaryExpression& e, const ast::Expression& self
 
   diag_name = "BinaryOp";
   params.set<std::string>("arg1","-1");
-  params.set<std::string>("arg2",name_of(*e.right));
+  params.set<std::string>("arg2",operand_name(*e.right));
   params.set<std::string>("binary_op","times");
 }
 
@@ -221,8 +237,8 @@ void translate_binary (const ast::BinaryExpression& e, const ast::Expression& se
   }
 
   diag_name = "BinaryOp";
-  params.set<std::string>("arg1",name_of(*e.left));
-  params.set<std::string>("arg2",name_of(*e.right));
+  params.set<std::string>("arg1",operand_name(*e.left));
+  params.set<std::string>("arg2",operand_name(*e.right));
   params.set<std::string>("binary_op",op);
 }
 
@@ -426,10 +442,16 @@ void translate_call (const Call& call, const ast::Expression& self,
         " - valid comparisons: >, >=, <, <=, ==, !=\n"
         " - note: 'and'/'or' are not supported; chain where(..) calls instead.\n");
 
+    // ConditionalSampling compares a field (lhs) with a field or a number (rhs)
+    EKAT_REQUIRE_MSG (not is_number(*cmp->left),
+        "Error! In where(), the lhs of the comparison must be a field.\n"
+        " - expression: " + ast::to_string(self) + "\n"
+        " - condition: " + ast::to_string(cond) + "\n");
+
     diag_name = "ConditionalSampling";
     params.set<std::string>("condition_lhs",name_of(*cmp->left));
     params.set<std::string>("condition_cmp",comparison_to_cmp(cmp->op));
-    params.set<std::string>("condition_rhs",name_of(*cmp->right));
+    params.set<std::string>("condition_rhs",operand_name(*cmp->right));
     return;
   }
 
@@ -450,15 +472,16 @@ void translate_call (const Call& call, const ast::Expression& self,
     EKAT_REQUIRE_MSG (bins!=nullptr and bins->elements.size()>=2,
         "Error! histogram() takes 'bins', an array of at least two edges.\n"
         " - expression: " + ast::to_string(self) + "\n");
-    // The diag re-splits on '_', so edges must survive: no exponents or signs.
+    // The diag splits the edges on '_' and reads each one as a number, so
+    // signs and exponents are fine as dexpr renders them (e.g., -2, 1e-05)
     std::string config;
     for (size_t i=0; i<bins->elements.size(); ++i) {
-      const auto edge = literal_str(*bins->elements[i]);
-      EKAT_REQUIRE_MSG (edge.find_first_not_of("0123456789.")==std::string::npos,
-          "Error! Histogram bin edges must be non-negative decimals.\n"
+      const auto& edge = *bins->elements[i];
+      EKAT_REQUIRE_MSG (is_number(edge),
+          "Error! Histogram bin edges must be numbers.\n"
           " - expression: " + ast::to_string(self) + "\n"
-          " - edge: " + edge + "\n");
-      config += (i==0 ? "" : "_") + edge;
+          " - edge: " + ast::to_string(edge) + "\n");
+      config += (i==0 ? "" : "_") + operand_name(edge);
     }
     diag_name = "Histogram";
     params.set<std::string>("bin_configuration",config);
