@@ -303,12 +303,11 @@ be lost if SCREAM_HACK_XML is not enabled.
 
     <!-- Water tracers -->
     <water_tracers inherit="atm_proc_base">
-      <tracer_count type="integer" doc="Number of water tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+      <tracers_file type="file" doc="YAML file defining the water tracers (shared by water_tracers and water_isotopes)"></tracers_file>
     </water_tracers>
 
     <!-- Water isotopes (subclass of water tracers with fractionation physics) -->
-    <water_isotopes inherit="atm_proc_base">
-      <tracer_count type="integer" doc="Number of isotope tracers to track (0 = disabled)" constraints="ge 0">0</tracer_count>
+    <water_isotopes inherit="water_tracers">
       <liquid_vapor_formulation type="string" doc="Source for liquid/vapor fractionation parameters">horita_wesolowski_1994</liquid_vapor_formulation>
       <ice_vapor_formulation type="string" doc="Source for ice/vapor fractionation parameters">merlivat_nief_1967</ice_vapor_formulation>
       <standard_ratio_formulation type="string" doc="Normalize isotope ratios or use actual abundances">normalized</standard_ratio_formulation>
