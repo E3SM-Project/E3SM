@@ -1506,7 +1506,9 @@ contains
    type (block_type), pointer :: block
 
    real (kind=RKIND), pointer :: config_sea_level
+   real (kind=RKIND), pointer :: config_ice_density
    character(len=StrKIND), pointer :: config_basal_mass_bal_float
+   character(len=StrKIND), pointer :: config_thermal_solver
 
    type (mpas_pool_type), pointer :: meshPool
    type (mpas_pool_type), pointer :: geometryPool
@@ -1521,7 +1523,10 @@ contains
    real (kind=RKIND), dimension(:), pointer :: avgCalvingFlux
    real (kind=RKIND), dimension(:), pointer :: avgFaceMeltFlux
    real (kind=RKIND), dimension(:), pointer :: avgFloatingBMBFlux
+   real (kind=RKIND), dimension(:), pointer :: bedTopography
+   real (kind=RKIND), dimension(:), pointer :: basalConductiveFlux
    integer, dimension(:), pointer :: cellMask
+   real (kind=RKIND) :: belowSeaLevelMask
    !-------------------------------------------------------------------
 
     errorCode = 0
@@ -1531,6 +1536,8 @@ contains
 
     call mpas_pool_get_config(domain % configs, 'config_sea_level', config_sea_level)
     call mpas_pool_get_config(domain % configs, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
+    call mpas_pool_get_config(domain % configs, 'config_ice_density', config_ice_density)
+    call mpas_pool_get_config(domain % configs, 'config_thermal_solver', config_thermal_solver)
 
     do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -1551,6 +1558,8 @@ contains
          call mpas_pool_get_array(timeAveragingPool, 'avgFloatingBMBFlux', avgFloatingBMBFlux)
 
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(thermalPool, 'basalConductiveFlux', basalConductiveFlux)
 
          do i = 1, nCellsSolve
             n = n + 1
@@ -1570,7 +1579,6 @@ contains
             endif
 
             g2x_g % rAttr(index_g2x_Sg_topo, n) = max(0.0, upperSurface(i)) !updated to avoid warning for values below sea level
-            g2x_g % rAttr(index_g2x_Sg_lithop, n) = Thickness(i)*SHR_CONST_RHOICE*SHR_CONST_G
 
             !!!Mask configurations
             g2x_g % rAttr(index_g2x_Sg_ice_covered, n) = li_mask_is_ice_int(cellMask(i))
@@ -1589,9 +1597,26 @@ contains
             ! (i.e., to ignore these fluxes) then this should be set to 0 everywhere.
             g2x_g % rAttr(index_g2x_Sg_icemask_coupled_fluxes, n) = g2x_g % rAttr(index_g2x_Sg_icemask, n)
 
-            ! Add masks used for ice shelf basal melt calculation
-            g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = li_mask_is_floating_ice_int(cellMask(i))
-            g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = li_mask_is_grounded_ice_int(cellMask(i))
+            ! Fields for ice-shelf coupling with the ocean.  They are masked by
+            ! where the bed is below sea level (where ocean can be present) so the
+            ! ocean can renormalize them by the remapped mask.
+            if (bedTopography(i) <= config_sea_level) then
+               belowSeaLevelMask = 1.0_RKIND
+            else
+               belowSeaLevelMask = 0.0_RKIND
+            endif
+            g2x_g % rAttr(index_g2x_Sg_below_sea_level_mask, n) = belowSeaLevelMask
+            g2x_g % rAttr(index_g2x_Sg_lithop, n) = belowSeaLevelMask * thickness(i) * config_ice_density * SHR_CONST_G
+            g2x_g % rAttr(index_g2x_Sg_icemask_floating, n) = belowSeaLevelMask * li_mask_is_floating_ice_int(cellMask(i))
+            g2x_g % rAttr(index_g2x_Sg_icemask_grounded, n) = belowSeaLevelMask * li_mask_is_grounded_ice_int(cellMask(i))
+
+            ! conductive heat flux at the base of floating ice (positive down, into
+            ! the ocean); zero if the thermal solver is not computing it
+            if ((trim(config_thermal_solver) /= 'none') .and. li_mask_is_floating_ice(cellMask(i))) then
+               g2x_g % rAttr(index_g2x_Fogg_hcond, n) = basalConductiveFlux(i)
+            else
+               g2x_g % rAttr(index_g2x_Fogg_hcond, n) = 0.0_RKIND
+            endif
 
          end do
 
