@@ -314,8 +314,8 @@ MAMWetscav::create_requests()
     add_field<Required>("zm_detr_qi", scalar3d_mid, kg / kg / s, grid_name);
 
     // Cloud top and base indices from ZM deep convection
-    add_field<Required>("zm_jt", scalar2d, none, grid_name);      // Cloud top level index
-    add_field<Required>("zm_jcbot", scalar2d, none, grid_name);   // Cloud base level index
+    add_field<Required>("zm_cld_top", scalar2d, none, grid_name);      // Cloud top level index
+    add_field<Required>("zm_cld_bit", scalar2d, none, grid_name);   // Cloud base level index
 
     //----------- Variables from ZM convection scheme -------------
     // Convective mass fluxes and entrainment/detrainment rates
@@ -768,15 +768,15 @@ void MAMWetscav::run_impl(const double dt) {
   
   // Convection processing variables - only retrieve if enabled
   // These are passed to aero_model_wetdep but only used when do_convproc is true
-  const_view_1d zm_jt_in, zm_jcbot_in;
+  const_view_1d zm_jctop_in, zm_jcbot_in;
   const_view_2d zm_mflx_up, zm_mflx_dn, zm_entr_up, zm_detr_up, zm_entr_dn;
   const int* species_class = nullptr;
   const int* mmtoo_prevap_resusp = nullptr;
   
   if(do_convproc) {
     // Get cloud top and base indices from ZM convection scheme
-    zm_jt_in    = get_field_in("zm_jt").get_view<const Real *>();
-    zm_jcbot_in = get_field_in("zm_jcbot").get_view<const Real *>();
+    zm_jctop_in = get_field_in("zm_cld_top").get_view<const Real *>();
+    zm_jcbot_in = get_field_in("zm_cld_bot").get_view<const Real *>();
     
     // Convection mass fluxes and rates from ZM scheme
     zm_mflx_up = get_field_in("zm_mflx_up").get_view<const Real **>();
@@ -873,7 +873,7 @@ void MAMWetscav::run_impl(const double dt) {
         if(do_convproc) {
           dp_icol = dp_tmp_icol;
           p_del_dry_icol = ekat::subview(pseudo_density_dry, icol);
-          ktop = Kokkos::round(zm_jt_in(icol));
+          ktop = Kokkos::round(zm_jctop_in(icol));
           kbot = Kokkos::round(zm_jcbot_in(icol));
         } 
 
