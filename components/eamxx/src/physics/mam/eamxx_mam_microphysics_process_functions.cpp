@@ -454,12 +454,11 @@ void MAMMicrophysics::run_microphysics_kernels(const double dt, const double ecc
         const Real temperature = atm.temperature(kk);
         const auto &vmr_kk = ekat::subview(vmr_icol, kk);
 
-        // Call gas_phase_chemistry with ImpSolResult
-        mam4::gas_chemistry::ImpSolResult result;
-        mam4::microphysics::gas_phase_chemistry(
+        // Call gas_phase_chemistry and capture ImpSolResult return value
+        const auto result = mam4::microphysics::gas_phase_chemistry(
           temperature, dt, photo_rates_k.data(), extfrc_k.data(),
           invariants_k.data(), het_rates_k.data(),
-          vmr_kk, result);
+          vmr_kk);
 
         // Store the solver outcome and stats if diagnostics enabled
         // Values: 0=Converged, 1=ConvergedAfterRetry, 2=InvalidInput,
