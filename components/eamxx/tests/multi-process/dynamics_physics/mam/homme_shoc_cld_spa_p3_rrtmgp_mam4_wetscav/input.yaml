@@ -49,7 +49,7 @@ eamxx:
       schedule_type: sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       spa:
-        spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne2np4L72_20231222.nc
+        spa_data_file: ${SCREAM_DATA_DIR}/init/spa_from_v3LRamip_CMIP6_2010_clim_ne2_c20260930.nc
       p3:
         max_total_ni: 740.0e3
       shoc:
