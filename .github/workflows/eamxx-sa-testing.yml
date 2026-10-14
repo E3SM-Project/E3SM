@@ -81,7 +81,7 @@ jobs:
       dispatch-input: job_to_run
   gnu-openmp:
     needs: eamxx-sa-job-filter
-    if: contains(fromJSON(needs.eamxx-sa-job-filter.outputs.jobs), 'gnu-openmp')
+    if: fromJSON(needs.eamxx-sa-job-filter.outputs.run)['gnu-openmp']
     runs-on:  [self-hosted, e3sm, gnu]
     strategy:
       fail-fast: false
@@ -109,7 +109,7 @@ jobs:
           kokkos_develop: ${{ env.kokkos_dev_test }}
   intel-openmp:
     needs: eamxx-sa-job-filter
-    if: contains(fromJSON(needs.eamxx-sa-job-filter.outputs.jobs), 'intel-openmp')
+    if: fromJSON(needs.eamxx-sa-job-filter.outputs.run)['intel-openmp']
     runs-on:  [self-hosted, e3sm, intel]
     strategy:
       fail-fast: false
@@ -137,7 +137,7 @@ jobs:
           kokkos_develop: ${{ env.kokkos_dev_test }}
   gnu-cuda:
     needs: eamxx-sa-job-filter
-    if: contains(fromJSON(needs.eamxx-sa-job-filter.outputs.jobs), 'gnu-cuda')
+    if: fromJSON(needs.eamxx-sa-job-filter.outputs.run)['gnu-cuda']
     runs-on:  [self-hosted, e3sm, cuda]
     strategy:
       fail-fast: false

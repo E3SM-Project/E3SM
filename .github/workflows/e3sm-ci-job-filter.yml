@@ -13,7 +13,7 @@ name: e3sm-ci-job-filter
 #
 #     job-a:
 #       needs: job-filter
-#       if: contains(fromJSON(needs.job-filter.outputs.jobs), 'job-a')
+#       if: fromJSON(needs.job-filter.outputs.run)['job-a']
 #       ...
 #
 # Selection rules, by event:
@@ -41,59 +41,49 @@ on:
         type: boolean
         default: true
     outputs:
-      jobs:
-        description: 'JSON array with the names of the jobs to run'
-        value: ${{ jobs.filter.outputs.jobs }}
-      any:
-        description: '"true" if at least one job must run'
-        value: ${{ jobs.filter.outputs.any }}
+      run:
+        description: 'JSON object mapping each job name to true/false (whether the job must run)'
+        value: ${{ jobs.filter.outputs.run }}
 
 jobs:
   filter:
     runs-on: ubuntu-latest
     outputs:
-      jobs: ${{ steps.select.outputs.jobs }}
-      any: ${{ steps.select.outputs.any }}
+      run: ${{ steps.select.outputs.run }}
     steps:
       - name: Select jobs
         id: select
-        shell: bash
+        shell: python3 {0}
         env:
           ALL_JOBS: ${{ inputs.jobs }}
-          DISPATCH_INPUT: ${{ inputs.dispatch-input }}
           SKIP_DRAFTS: ${{ inputs.skip-drafts }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
+          # Empty unless the caller is a workflow_dispatch with an input named dispatch-input
+          DISPATCH_NAME: ${{ inputs.dispatch-input }}
+          DISPATCH_VALUE: ${{ github.event.inputs[inputs.dispatch-input] }}
         run: |
-          # Comma separated list -> JSON array (trim spaces, drop empty entries)
-          all=$(jq -cn --arg s "$ALL_JOBS" '$s | split(",") | map(gsub("^\\s+|\\s+$"; "") | select(length > 0))')
-          selected=$all
-          reason="$GITHUB_EVENT_NAME event"
+          import json, os, sys
 
-          if [[ "$GITHUB_EVENT_NAME" == pull_request && "$SKIP_DRAFTS" == true && "$IS_DRAFT" == true ]]; then
-            selected='[]'
-            reason="draft pull request"
-          elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$DISPATCH_INPUT" ]]; then
-            choice=$(jq -r --arg n "$DISPATCH_INPUT" '.inputs[$n] // "all"' "$GITHUB_EVENT_PATH")
-            reason="dispatch input '$DISPATCH_INPUT' is '$choice'"
-            if [[ "$choice" != all ]]; then
-              # Exact match, so that e.g. 'gnu' does not select 'gnugpu'
-              selected=$(jq -cn --argjson a "$all" --arg c "$choice" '[$a[] | select(. == $c)]')
-              if [[ "$selected" == '[]' ]]; then
-                echo "::error::Dispatch input '$DISPATCH_INPUT'='$choice' is not one of: $all, or 'all'"
-                exit 1
-              fi
-            fi
-          fi
+          env = os.environ
+          event = env["GITHUB_EVENT_NAME"]
+          all_jobs = [j.strip() for j in env["ALL_JOBS"].split(",") if j.strip()]
 
-          echo "Selected jobs ($reason): $selected"
-          echo "jobs=$selected" >> "$GITHUB_OUTPUT"
-          echo "any=$(jq -r 'length > 0' <<< "$selected")" >> "$GITHUB_OUTPUT"
-          {
-            echo "### Job selection"
-            echo
-            echo "Reason: $reason"
-            echo
-            echo "| Job | Run |"
-            echo "|---|---|"
-            jq -r --argjson s "$selected" '.[] as $j | "| \($j) | \(if $s | index($j) then "yes" else "no" end) |"' <<< "$all"
-          } >> "$GITHUB_STEP_SUMMARY"
+          selected, reason = all_jobs, f"{event} event"
+          if event == "pull_request" and env["SKIP_DRAFTS"] == "true" and env["IS_DRAFT"] == "true":
+              selected, reason = [], "draft pull request"
+          elif event == "workflow_dispatch" and env["DISPATCH_NAME"]:
+              choice = env["DISPATCH_VALUE"] or "all"
+              reason = f"dispatch input '{env['DISPATCH_NAME']}' is '{choice}'"
+              if choice != "all":
+                  if choice not in all_jobs:
+                      print(f"::error::'{choice}' is not one of: {', '.join(all_jobs)}, all")
+                      sys.exit(1)
+                  selected = [choice]
+
+          run = {j: j in selected for j in all_jobs}
+          print(f"Selected jobs ({reason}): {selected}")
+          with open(env["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"run={json.dumps(run)}\n")
+          with open(env["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"### Job selection\n\nReason: {reason}\n\n| Job | Run |\n|---|---|\n")
+              f.writelines(f"| {j} | {'yes' if r else 'no'} |\n" for j, r in run.items())

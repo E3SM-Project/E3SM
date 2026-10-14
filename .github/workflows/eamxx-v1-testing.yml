@@ -70,7 +70,7 @@ jobs:
       dispatch-input: job_to_run
   gnu:
     needs: eamxx-v1-job-filter
-    if: contains(fromJSON(needs.eamxx-v1-job-filter.outputs.jobs), 'gnu')
+    if: fromJSON(needs.eamxx-v1-job-filter.outputs.run)['gnu']
     runs-on:  [self-hosted, gnu, e3sm]
     strategy:
       matrix:
@@ -122,7 +122,7 @@ jobs:
           retention-days: 14
   intel:
     needs: eamxx-v1-job-filter
-    if: contains(fromJSON(needs.eamxx-v1-job-filter.outputs.jobs), 'intel')
+    if: fromJSON(needs.eamxx-v1-job-filter.outputs.run)['intel']
     runs-on:  [self-hosted, intel, e3sm]
     strategy:
       matrix:
@@ -166,7 +166,7 @@ jobs:
           retention-days: 14
   gnugpu:
     needs: eamxx-v1-job-filter
-    if: contains(fromJSON(needs.eamxx-v1-job-filter.outputs.jobs), 'gnugpu')
+    if: fromJSON(needs.eamxx-v1-job-filter.outputs.run)['gnugpu']
     runs-on:  [self-hosted, cuda, e3sm]
     strategy:
       matrix:
