@@ -9,6 +9,7 @@ name: e3sm-ci-job-filter
 #       uses: ./.github/workflows/e3sm-ci-job-filter.yml
 #       with:
 #         jobs: job-a, job-b, job-c
+#         skip-drafts: true              # optional (default true); false also runs jobs on drafts
 #         dispatch-input: job_to_run     # optional
 #
 #     job-a:
@@ -17,11 +18,13 @@ name: e3sm-ci-job-filter
 #       ...
 #
 # Selection rules, by event:
-#   - pull_request:       no jobs if the PR is a draft (and skip-drafts is true), else all jobs
-#   - workflow_dispatch:  if 'dispatch-input' names an input of the caller, run the job it
-#                         selects ('all' or empty means all jobs; unknown job names fail)
-#                         else all jobs
-#   - any other event:    all jobs
+#   - pull_request:       all jobs are selected, unless skip-drafts is true (the default)
+#                         and the PR is a draft, in which case no job is selected
+#   - workflow_dispatch:  all jobs are selected, unless 'dispatch-input' names an input of
+#                         the caller whose value is the name of a job, in which case only
+#                         that job is selected (a value of 'all' or empty selects all jobs;
+#                         an unknown job name fails)
+#   - any other event:    all jobs are selected (e.g., schedule)
 
 on:
   workflow_call:
