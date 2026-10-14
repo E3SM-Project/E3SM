@@ -914,8 +914,12 @@ void HorizontalRemapper::pack_and_send ()
 void HorizontalRemapper::recv_and_unpack ()
 {
   if (not m_recv_req.empty()) {
+    if (m_timers_enabled)
+      start_timer(name()+" recv waitall");
     check_mpi_call(MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE),
                    "[RefiningRemapperP2P] waiting on persistent recv requests.\n");
+    if (m_timers_enabled)
+      stop_timer(name()+" recv waitall");
   }
 
   if (m_timers_enabled)
@@ -931,6 +935,9 @@ void HorizontalRemapper::recv_and_unpack ()
   } else {
     recv_and_unpack_refine();
   }
+
+  if (m_timers_enabled)
+    stop_timer(name()+" unpack");
 }
 
 void HorizontalRemapper::recv_and_unpack_coarsen ()
@@ -1218,15 +1225,10 @@ void HorizontalRemapper::recv_and_unpack_refine ()
             "  - field rank: " + std::to_string(fl.rank()) + "\n");
     }
   }
-  if (m_timers_enabled)
-    stop_timer(name()+" unpack");
 }
 
 void HorizontalRemapper::setup_mpi_data_structures ()
 {
-  if (m_timers_enabled)
-    start_timer(name()+" setup MPI");
-
   using namespace ShortFieldTagsNames;
 
   const int nranks = m_src_grid->get_comm().size();
@@ -1248,6 +1250,9 @@ void HorizontalRemapper::setup_mpi_data_structures ()
     // None of the registered fields actually needs remapping
     return;
   }
+
+  if (m_timers_enabled)
+    start_timer(name()+" setup MPI");
 
   auto ov_grid = m_remap_data->m_overlap_grid;
   const int ncols_ov = ov_grid->get_num_local_dofs();

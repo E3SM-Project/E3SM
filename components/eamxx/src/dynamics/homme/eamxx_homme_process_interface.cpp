@@ -31,6 +31,11 @@
 #include "share/physics/physics_constants.hpp"
 #include "share/physics/eamxx_common_physics_functions.hpp"
 #include "share/util/eamxx_column_ops.hpp"
+// HOMMEXX's profiling.hpp (included transitively above) defines start_timer
+// and stop_timer macros that collide with scream::start_timer / stop_timer.
+#undef start_timer
+#undef stop_timer
+#include "share/util/eamxx_timing.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 
 // Ekat includes
@@ -566,7 +571,9 @@ void HommeDynamics::run_impl (const double dt)
     params.nsplit = nsplit;
 
     Kokkos::fence();
+    start_timer("EAMxx::homme::pre_process");
     homme_pre_process (dt);
+    stop_timer("EAMxx::homme::pre_process");
 
     for (int subiter=0; subiter<nsplit; ++subiter) {
       Kokkos::fence();
@@ -585,7 +592,9 @@ void HommeDynamics::run_impl (const double dt)
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
+    start_timer("EAMxx::homme::post_process");
     homme_post_process (dt);
+    stop_timer("EAMxx::homme::post_process");
   } catch (std::exception& e) {
     EKAT_ERROR_MSG(e.what());
   } catch (...) {

@@ -147,6 +147,7 @@ void AtmosphereProcess::run (const double dt) {
 
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
+  const auto physics_timer = m_timer_prefix + this->name() + "::physics";
 
   // Init single step tendencies (if any) with current value of output field
   init_step_tendencies ();
@@ -177,7 +178,9 @@ void AtmosphereProcess::run (const double dt) {
                               m_start_of_step_ts, true);
 
     // Run derived class implementation
+    start_timer(physics_timer);
     run_impl(dt_sub);
+    stop_timer(physics_timer);
 
     if (m_internal_diagnostics_level > 0)
       // Print hash of OUTPUTS/INTERNALS after run
@@ -395,7 +398,10 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
     // Do nothing
   } else if (res_and_msg.result==CheckResult::Repairable) {
     // Ok, we can fix this
+    const auto repair_timer = m_timer_prefix + this->name() + "::check::repair";
+    start_timer(repair_timer);
     property_check->repair();
+    stop_timer(repair_timer);
     log (m_repair_log_level,
       "WARNING: Failed and repaired " + pre_post_str + " property check.\n"
       "  - Atmosphere process name: " + name() + "\n"
@@ -1169,12 +1175,16 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const double dt
                    "or has_energy_fixer=true, "
                    "but no conservation check class exists.\n");
 
+  start_timer(m_timer_prefix + this->name() + "::compute_column_conservation_checks_data");
+
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
       std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(m_conservation.second);
   conservation_check->set_dt(dt);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
+
+  stop_timer(m_timer_prefix + this->name() + "::compute_column_conservation_checks_data");
 }
 
 void AtmosphereProcess::fix_energy (const double dt, const bool water_thermo_fixer, const bool print_debug_info)
@@ -1182,6 +1192,8 @@ void AtmosphereProcess::fix_energy (const double dt, const bool water_thermo_fix
   EKAT_REQUIRE_MSG(m_conservation.second != nullptr,
                    "Error! User set has_energy_fixer=true, "
                    "but no conservation check class exists.\n");
+
+  start_timer(m_timer_prefix + this->name() + "::fix_energy");
 
   // Set dt and compute current mass and energy.
   const auto& conservation_check =
@@ -1199,6 +1211,8 @@ void AtmosphereProcess::fix_energy (const double dt, const bool water_thermo_fix
     ss << "EAMxx:: energy fixer: rel energy error after fix " << std::setprecision(15) << conservation_check->get_echeck() << "\n";
     m_atm_logger->info(ss.str());
   }
+
+  stop_timer(m_timer_prefix + this->name() + "::fix_energy");
 }
 
 void AtmosphereProcess::add_py_fields (const Field& f)
