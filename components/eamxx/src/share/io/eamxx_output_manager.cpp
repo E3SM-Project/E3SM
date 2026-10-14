@@ -127,6 +127,14 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     }
   }
 
+  // Get the case name early, as we need it for history restart file search
+  EKAT_REQUIRE_MSG(m_params.isSublist("provenance"),
+      "Error! The output parameters are missing the 'provenance' sublist");
+  auto& prov_pl = m_params.sublist("provenance");
+  m_casename = prov_pl.get<std::string>("caseid","UNSET");
+  EKAT_REQUIRE_MSG(m_casename!="UNSET",
+      "Error! The provenance sublist is missing 'caseid' parameter");
+
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
   if (m_save_grid_data) {
@@ -170,8 +178,11 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
     auto& restart_pl = m_params.sublist("restart");
     auto hist_restart_stream_id = restart_pl.get("stream_id",m_stream_id);
 
+    // Build the full prefix: {case}.eamxx for history restart search
+    auto hist_restart_prefix = m_casename + "." + get_eamxx_model_name();
+
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
-    auto rhist_file = find_filename_in_rpointer(hist_restart_stream_id,false,m_io_comm,m_run_t0,
+    auto rhist_file = find_filename_in_rpointer(hist_restart_prefix,false,m_io_comm,m_run_t0,
                                                 skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
 
     if (rhist_file=="") {
@@ -736,13 +747,7 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
         "  - supported values: float, single, double, real\n");
   }
 
-  // Get the case name from provenance
-  EKAT_REQUIRE_MSG(m_params.isSublist("provenance"),
-      "Error! The output YAML file for " + m_stream_id + " is missing the 'provenance' sublist");
-  auto& prov_pl = m_params.sublist("provenance");
-  m_casename = prov_pl.get<std::string>("caseid","UNSET");
-  EKAT_REQUIRE_MSG(m_casename!="UNSET",
-      "Error! The provenance sublist is missing 'caseid' parameter");
+  // Note: m_casename is already set in setup() before this is called
 
   // Output control
   EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
