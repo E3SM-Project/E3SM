@@ -349,13 +349,26 @@ contains
                'seq_maps.rc', 'glc2ocn_liq_rmapname:', 'glc2ocn_liq_rmaptype:',samegrid_og, &
                'mapper_Rg2o_liq initialization',esmf_map_flag)
 
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Rg2o_ice'
+          if (glcshelf_c2_ocn) then
+             ! With ice-shelf coupling, glc's solid runoff is only calving and
+             ! face melt, which belong at the ice front, not in ice-shelf
+             ! cavities, so map it the same way as liquid runoff
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing mapper_Rg2o_ice from the liquid runoff map'
+             end if
+             call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
+                  'seq_maps.rc', 'glc2ocn_liq_rmapname:', 'glc2ocn_liq_rmaptype:',samegrid_og, &
+                  'mapper_Rg2o_ice initialization',esmf_map_flag)
+          else
+             if (iamroot_CPLID) then
+                write(logunit,*) ' '
+                write(logunit,F00) 'Initializing mapper_Rg2o_ice'
+             end if
+             call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
+                  'seq_maps.rc', 'glc2ocn_ice_rmapname:', 'glc2ocn_ice_rmaptype:',samegrid_og, &
+                  'mapper_Rg2o_ice initialization',esmf_map_flag)
           end if
-          call seq_map_init_rcfile(mapper_Rg2o_ice, glc(1), ocn(1), &
-               'seq_maps.rc', 'glc2ocn_ice_rmapname:', 'glc2ocn_ice_rmaptype:',samegrid_og, &
-               'mapper_Rg2o_ice initialization',esmf_map_flag)
        endif
        call shr_sys_flush(logunit)
 
