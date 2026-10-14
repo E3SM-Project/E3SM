@@ -315,7 +315,7 @@ MAMWetscav::create_requests()
 
     // Cloud top and base indices from ZM deep convection
     add_field<Required>("zm_cld_top", scalar2d, none, grid_name);      // Cloud top level index
-    add_field<Required>("zm_cld_bit", scalar2d, none, grid_name);   // Cloud base level index
+    add_field<Required>("zm_cld_bot", scalar2d, none, grid_name);   // Cloud base level index
 
     //----------- Variables from ZM convection scheme -------------
     // Convective mass fluxes and entrainment/detrainment rates
