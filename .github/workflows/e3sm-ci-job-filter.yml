@@ -11,6 +11,9 @@ name: e3sm-ci-job-filter
 #         jobs: job-a, job-b, job-c
 #         skip-drafts: true              # optional (default true); false also runs jobs on drafts
 #         dispatch-input: job_to_run     # optional
+#         paths: |                       # optional (see below)
+#           components/foo/**
+#           !components/foo/docs/**
 #
 #     job-a:
 #       needs: job-filter
@@ -18,13 +21,21 @@ name: e3sm-ci-job-filter
 #       ...
 #
 # Selection rules, by event:
-#   - pull_request:       all jobs are selected, unless skip-drafts is true (the default)
-#                         and the PR is a draft, in which case no job is selected
+#   - pull_request:       all jobs are selected, unless
+#                          - skip-drafts is true (the default) and the PR is a draft, or
+#                          - 'paths' is given and no file changed by the PR matches it
+#                         in which case no job is selected
 #   - workflow_dispatch:  all jobs are selected, unless 'dispatch-input' names an input of
 #                         the caller whose value is the name of a job, in which case only
 #                         that job is selected (a value of 'all' or empty selects all jobs;
 #                         an unknown job name fails)
 #   - any other event:    all jobs are selected (e.g., schedule)
+#
+# The 'paths' patterns (one per line) follow GitHub's syntax: '**' crosses directories,
+# '*' and '?' do not, and a leading '!' excludes files matched by earlier patterns (the
+# last matching pattern wins). The calling workflow file and this workflow are always
+# considered relevant. The changed files are read from the GitHub API; if they cannot be
+# listed (API error, or more than 3000 files), all jobs are selected.
 
 on:
   workflow_call:
@@ -35,6 +46,11 @@ on:
         type: string
       dispatch-input:
         description: 'Name of the workflow_dispatch input used to select a job ("all" or empty = all jobs)'
+        required: false
+        type: string
+        default: ''
+      paths:
+        description: 'Newline separated path patterns; on pull requests, no job runs if no changed file matches'
         required: false
         type: string
         default: ''
@@ -64,16 +80,81 @@ jobs:
           # Empty unless the caller is a workflow_dispatch with an input named dispatch-input
           DISPATCH_NAME: ${{ inputs.dispatch-input }}
           DISPATCH_VALUE: ${{ github.event.inputs[inputs.dispatch-input] }}
+          PATHS: ${{ inputs.paths }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Path of the calling workflow: owner/repo/.github/workflows/foo.yml@ref
+          CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          import json, os, sys
+          import json, os, re, sys, urllib.request
+
+          def to_regex(pattern):
+              # GitHub path glob: '**' crosses '/', '*' and '?' do not
+              out, i = [], 0
+              while i < len(pattern):
+                  if pattern.startswith("**/", i):
+                      out.append("(?:.*/)?")
+                      i += 3
+                  elif pattern.startswith("**", i):
+                      out.append(".*")
+                      i += 2
+                  elif pattern[i] == "*":
+                      out.append("[^/]*")
+                      i += 1
+                  elif pattern[i] == "?":
+                      out.append("[^/]")
+                      i += 1
+                  else:
+                      out.append(re.escape(pattern[i]))
+                      i += 1
+              return re.compile("".join(out) + r"\Z")
+
+          def matches(path, patterns):
+              # Patterns are scanned in order: '!' excludes, and the last match wins
+              ok = False
+              for pat in patterns:
+                  neg = pat.startswith("!")
+                  if to_regex(pat[1:] if neg else pat).match(path):
+                      ok = not neg
+              return ok
+
+          def changed_files():
+              # None if the list cannot be obtained (the caller then runs everything)
+              url = f"{env.get('GITHUB_API_URL', 'https://api.github.com')}/repos/{env['GITHUB_REPOSITORY']}/pulls/{env['PR_NUMBER']}/files"
+              files = []
+              try:
+                  for page in range(1, 31):  # The API lists at most 3000 files
+                      req = urllib.request.Request(f"{url}?per_page=100&page={page}", headers={
+                          "Authorization": f"Bearer {env['GH_TOKEN']}", "Accept": "application/vnd.github+json"})
+                      with urllib.request.urlopen(req) as resp:
+                          batch = json.load(resp)
+                      for f in batch:  # A renamed file is relevant through both names
+                          files += [f["filename"]] + ([f["previous_filename"]] if f.get("previous_filename") else [])
+                      if len(batch) < 100:
+                          return files
+              except Exception as e:
+                  print(f"::warning::Could not list the changed files: {e}")
+              return None
 
           env = os.environ
           event = env["GITHUB_EVENT_NAME"]
           all_jobs = [j.strip() for j in env["ALL_JOBS"].split(",") if j.strip()]
 
+          patterns = [p.strip() for p in env["PATHS"].splitlines() if p.strip()]
+          caller_path = env["CALLER_WORKFLOW_REF"].split("@")[0].split("/", 2)[-1]
+
           selected, reason = all_jobs, f"{event} event"
           if event == "pull_request" and env["SKIP_DRAFTS"] == "true" and env["IS_DRAFT"] == "true":
               selected, reason = [], "draft pull request"
+          elif event == "pull_request" and patterns:
+              files = changed_files()
+              always = [caller_path, ".github/workflows/e3sm-ci-job-filter.yml"]
+              if files is None:
+                  reason = "changed files unknown, all jobs selected"
+              elif any(matches(f, always) or matches(f, patterns) for f in files):
+                  reason = "a changed file matches the paths filter"
+              else:
+                  selected, reason = [], "no changed file matches the paths filter"
           elif event == "workflow_dispatch" and env["DISPATCH_NAME"]:
               choice = env["DISPATCH_VALUE"] or "all"
               reason = f"dispatch input '{env['DISPATCH_NAME']}' is '{choice}'"
