@@ -83,6 +83,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     bool shoc_1p5tke;
     bool extra_diags;
     bool do_3d_turb;
+    bool use_emulated_moments;
   };
 
   // This struct stores input views for shoc_main.
@@ -196,6 +197,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
     view_2d<Pack> vw_sec;
     // third moment vertical velocity [m3/s3]
     view_2d<Pack> w3;
+    // Host-side emulator replacements for w'2 and w'3 [m2/s2, m3/s3]
+    view_2d<Pack> emulated_w_sec;
+    view_2d<Pack> emulated_w3;
     // liquid water flux [kg/kg m/s]
     view_2d<Pack> wqls_sec;
     // brunt vaisala frequency [s-1]
@@ -736,7 +740,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &do_3d_turb, const bool &extra_diags,
+      const bool &do_3d_turb, const bool &extra_diags, const bool &use_emulated_moments,
       // Input Variables
       const Scalar &host_dx, const Scalar &host_dy, const uview_1d<const Pack> &zt_grid,
       const uview_1d<const Pack> &zi_grid, const uview_1d<const Pack> &pres,
@@ -764,7 +768,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const uview_1d<Pack> &qw_sec, const uview_1d<Pack> &qwthl_sec,
       const uview_1d<Pack> &wthl_sec, const uview_1d<Pack> &wqw_sec,
       const uview_1d<Pack> &wtke_sec, const uview_1d<Pack> &uw_sec, const uview_1d<Pack> &vw_sec,
-      const uview_1d<Pack> &w3, const uview_1d<Pack> &wqls_sec, const uview_1d<Pack> &brunt,
+      const uview_1d<Pack> &w3, const uview_1d<Pack> &emulated_w_sec,
+      const uview_1d<Pack> &emulated_w3, const uview_1d<Pack> &wqls_sec,
+      const uview_1d<Pack> &brunt,
       const uview_1d<Pack> &isotropy,
       const Scalar& uw_sfc_pert, const Scalar& vw_sfc_pert, const uview_1d<Pack>& um_pert,
       const uview_1d<Pack>& vm_pert);
@@ -782,7 +788,7 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const Scalar &lambda_thresh, const Scalar &thl2tune, const Scalar &qw2tune,
       const Scalar &qwthl2tune, const Scalar &w2tune, const Scalar &length_fac,
       const Scalar &c_diag_3rd_mom, const Scalar &Ckh, const Scalar &Ckm, const bool &shoc_1p5tke,
-      const bool &do_3d_turb, const bool &extra_diags,
+      const bool &do_3d_turb, const bool &extra_diags, const bool &use_emulated_moments,
       // Input Variables
       const view_1d<const Scalar> &host_dx, const view_1d<const Scalar> &host_dy,
       const view_2d<const Pack> &zt_grid, const view_2d<const Pack> &zi_grid,
@@ -809,7 +815,9 @@ template <typename ScalarT, typename DeviceT> struct Functions {
       const view_2d<Pack> &shoc_mix, const view_2d<Pack> &w_sec, const view_2d<Pack> &thl_sec,
       const view_2d<Pack> &qw_sec, const view_2d<Pack> &qwthl_sec, const view_2d<Pack> &wthl_sec,
       const view_2d<Pack> &wqw_sec, const view_2d<Pack> &wtke_sec, const view_2d<Pack> &uw_sec,
-      const view_2d<Pack> &vw_sec, const view_2d<Pack> &w3, const view_2d<Pack> &wqls_sec,
+      const view_2d<Pack> &vw_sec, const view_2d<Pack> &w3,
+      const view_2d<Pack> &emulated_w_sec, const view_2d<Pack> &emulated_w3,
+      const view_2d<Pack> &wqls_sec,
       const view_2d<Pack> &brunt, const view_2d<Pack> &isotropy,
       const view_1d<const Scalar>& uw_sfc_pert, const view_1d<const Scalar>& vw_sfc_pert,
       const view_2d<Pack>& um_pert, const view_2d<Pack>& vm_pert,

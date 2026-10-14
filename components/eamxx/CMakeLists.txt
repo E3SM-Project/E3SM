@@ -262,6 +262,18 @@ set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 option (EAMXX_ENABLE_PYTHON "Whether to enable interfaces to python via pybind11" OFF)
+option (EAMXX_ENABLE_INFERENCE "Whether atmosphere processes can run Python ML models through the emulator inference backend" OFF)
+
+# Python's imported library target can add its environment's lib directory as
+# a legacy DT_RPATH on the final executable.  That directory may also contain
+# an incompatible libstdc++, which then overrides the compiler runtime used by
+# EAMxx.  Use DT_RUNPATH instead so the active compiler/system runtime remains
+# selectable through the normal loader search order.
+if (EAMXX_ENABLE_INFERENCE AND NOT CMAKE_EXE_LINKER_FLAGS MATCHES "--enable-new-dtags")
+  set (CMAKE_EXE_LINKER_FLAGS
+       "${CMAKE_EXE_LINKER_FLAGS} -Wl,--enable-new-dtags"
+       CACHE STRING "Executable linker flags" FORCE)
+endif()
 
 ####################################################################
 #                    Packs-related settings                        #

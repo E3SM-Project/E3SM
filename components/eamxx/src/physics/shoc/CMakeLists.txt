@@ -116,6 +116,14 @@ foreach (SHOC_LIB IN LISTS SHOC_LIBS)
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
   )
   target_link_libraries(${SHOC_LIB} eamxx_physics_share scream_share)
+  if (EAMXX_ENABLE_INFERENCE)
+    target_link_libraries(${SHOC_LIB} emulator_inference)
+    target_compile_definitions(${SHOC_LIB} PUBLIC EAMXX_HAS_INFERENCE)
+    target_compile_definitions(${SHOC_LIB} PRIVATE
+      EAMXX_INFERENCE_PYTHON_HOME="${EAMXX_INFERENCE_PYTHON_HOME}"
+      EAMXX_INFERENCE_PYTHON_PACKAGES="${EAMXX_INFERENCE_PYTHON_PACKAGES}"
+      EAMXX_SHOC_MOMENTS_EMULATOR_PATH="${CMAKE_CURRENT_SOURCE_DIR}/moments_emulator")
+  endif()
 endforeach()
 
 if (NOT SCREAM_LIB_ONLY)

@@ -3,12 +3,40 @@
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
+#ifdef EAMXX_HAS_INFERENCE
+#include "create_inference_backend.hpp"
+#include "inference_backend.hpp"
+#include "tensor.hpp"
+#endif
+
 #include <ekat_assert.hpp>
 #include <ekat_team_policy_utils.hpp>
 #include <ekat_reduction_utils.hpp>
 
+#include <array>
+#include <cstdlib>
+
 namespace scream
 {
+
+#ifdef EAMXX_HAS_INFERENCE
+namespace {
+constexpr int num_moment_inputs = 15;
+constexpr int num_moment_outputs = 2;
+const std::array<const char*, num_moment_inputs> moment_input_names = {
+  "theta_liq", "qt", "rho", "pressure", "u_wind", "v_wind", "shf", "lhf",
+  "height_m", "height_norm", "dtheta_liq_dz", "dqt_dz", "du_wind_dz", "dv_wind_dz", "cf_binary"};
+const std::array<const char*, num_moment_outputs> moment_output_names = {"w_prime_2", "w_prime_3"};
+}
+
+struct SHOCMacrophysics::MomentsEmulator {
+  using buffer_t = Kokkos::View<double***, Kokkos::LayoutRight, DefaultDevice>;
+  std::shared_ptr<emulator::inference::InferenceBackend> backend;
+  buffer_t in, out;
+  buffer_t::host_mirror_type in_h, out_h;
+  emulator::inference::TensorMap inputs, outputs;
+};
+#endif
 
 // =========================================================================================
 SHOCMacrophysics::SHOCMacrophysics (const ekat::Comm& comm,const ekat::ParameterList& params)
@@ -234,7 +262,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
     &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
     &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
-    &m_buffer.vw_sec, &m_buffer.w3
+    &m_buffer.vw_sec, &m_buffer.w3, &m_buffer.emulated_w_sec, &m_buffer.emulated_w3
 #ifdef SCREAM_SHOC_SMALL_KERNELS
     , &m_buffer.dz_zi
 #endif
@@ -290,6 +318,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   runtime_options.shoc_1p5tke   = m_params.get<bool>("shoc_1p5tke");
   runtime_options.do_3d_turb    = m_params.get<bool>("do_3d_turbulence_shoc", false);
   runtime_options.extra_diags   = m_params.get<bool>("extra_shoc_diags");
+  runtime_options.use_emulated_moments = m_params.get<bool>("use_shoc_moments_emulator", false);
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
@@ -436,6 +465,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   history_output.uw_sec    = m_buffer.uw_sec;
   history_output.vw_sec    = m_buffer.vw_sec;
   history_output.w3        = m_buffer.w3;
+  history_output.emulated_w_sec = m_buffer.emulated_w_sec;
+  history_output.emulated_w3     = m_buffer.emulated_w3;
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
@@ -534,6 +565,15 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   }
   input.dx = cell_length;
   input.dy = cell_length;
+
+#ifdef EAMXX_HAS_INFERENCE
+  if (runtime_options.use_emulated_moments) {
+    init_moments_emulator();
+  }
+#else
+  EKAT_REQUIRE_MSG(!runtime_options.use_emulated_moments,
+                   "SHOC moments emulator requires EAMXX_ENABLE_INFERENCE=ON.");
+#endif
 }
 
 // =========================================================================================
@@ -555,6 +595,12 @@ void SHOCMacrophysics::run_impl (const double dt)
                        scan_policy,
                        shoc_preprocess);
   Kokkos::fence();
+
+#ifdef EAMXX_HAS_INFERENCE
+  if (runtime_options.use_emulated_moments) {
+    run_moments_emulator();
+  }
+#endif
 
   auto wtracer_sfc = shoc_preprocess.wtracer_sfc;
   Kokkos::deep_copy(wtracer_sfc, 0);
@@ -648,9 +694,146 @@ void SHOCMacrophysics::run_impl (const double dt)
   } // Extra SHOC output diagnostics
 }
 // =========================================================================================
+#ifdef EAMXX_HAS_INFERENCE
+void SHOCMacrophysics::init_moments_emulator()
+{
+  using namespace emulator::inference;
+  const std::string prefix = "[SHOC] SHOC moments emulator: ";
+  const auto module = m_params.get<std::string>("shoc_moments_emulator_python_module", "standalone_emulator");
+  const auto python_path_param = m_params.get<std::string>("shoc_moments_emulator_python_path", "");
+  const auto model_path_param = m_params.get<std::string>("shoc_moments_emulator_model_path", "");
+  const auto python_path = python_path_param.empty() ?
+    std::string(EAMXX_SHOC_MOMENTS_EMULATOR_PATH) : python_path_param;
+  const auto model_path = model_path_param.empty() ?
+    std::string(EAMXX_SHOC_MOMENTS_EMULATOR_PATH) + "/standalone_emulator.pt" : model_path_param;
+  EKAT_REQUIRE_MSG(!module.empty(), prefix + "python module is empty.");
+
+  InferenceConfig config;
+  config.model_path = model_path;
+  config.input_channels = num_moment_inputs;
+  config.output_channels = num_moment_outputs;
+  config.set("python_module", module);
+  setenv("PYTHONHOME", EAMXX_INFERENCE_PYTHON_HOME, 0);
+  config.set("python_path", python_path + ":" EAMXX_INFERENCE_PYTHON_PACKAGES);
+  config.set("num_threads", std::to_string(Kokkos::DefaultHostExecutionSpace().concurrency()));
+
+  auto emu = std::make_shared<MomentsEmulator>();
+  try {
+    emu->backend = create_backend(BackendType::PYTHON, config);
+  } catch (const std::exception& e) {
+    EKAT_ERROR_MSG(prefix + "could not load Python module '" + module + "':\n" + e.what());
+  }
+
+  const std::vector<std::int64_t> dims = {m_num_cols, m_num_levs + 1};
+  const size_t array_size = static_cast<size_t>(m_num_cols) * (m_num_levs + 1);
+  emu->in = MomentsEmulator::buffer_t("shoc_moments_emulator_in", num_moment_inputs,
+                                      m_num_cols, m_num_levs + 1);
+  emu->out = MomentsEmulator::buffer_t("shoc_moments_emulator_out", num_moment_outputs,
+                                       m_num_cols, m_num_levs + 1);
+  emu->in_h = Kokkos::create_mirror_view(emu->in);
+  emu->out_h = Kokkos::create_mirror_view(emu->out);
+  for (int n = 0; n < num_moment_inputs; ++n) {
+    emu->inputs.wrap(moment_input_names[n], emu->in_h.data() + n * array_size, dims);
+  }
+  for (int n = 0; n < num_moment_outputs; ++n) {
+    emu->outputs.wrap(moment_output_names[n], emu->out_h.data() + n * array_size, dims);
+  }
+  m_moments_emulator = emu;
+}
+
+void SHOCMacrophysics::run_moments_emulator()
+{
+  using policy_t = Kokkos::RangePolicy<KT::ExeSpace>;
+  constexpr int N = Pack::n;
+  auto& emu = *m_moments_emulator;
+  const int ncol = m_num_cols;
+  const int nlevi = m_num_levs + 1;
+  const int nlev = m_num_levs;
+
+  const auto thlm = m_buffer.thlm;
+  const auto qw = m_buffer.qw;
+  const auto rho_i = m_buffer.rrho_i;
+  const auto zi = m_buffer.zi_grid;
+  const auto p_int = get_field_in("p_int").get_view<const Pack**>();
+  const auto winds = get_field_out("horiz_winds").get_view<const Pack***>();
+  const auto cldfrac = get_field_out("cldfrac_liq").get_view<const Pack**>();
+  const auto wthl_sfc = m_buffer.wpthlp_sfc;
+  const auto wqw_sfc = m_buffer.wprtp_sfc;
+  const auto in = emu.in;
+
+  Kokkos::parallel_for("shoc_moments_emulator_inputs", policy_t(0, ncol * nlevi),
+                       KOKKOS_LAMBDA(const int idx) {
+    const int i = idx / nlevi;
+    const int k = idx % nlevi;
+    const int km = k < nlev ? k : nlev - 1;
+    const int p = km / N;
+    const int s = km % N;
+    const int pi = k / N;
+    const int si = k % N;
+    in(0,i,k) = thlm(i,p)[s];
+    in(1,i,k) = qw(i,p)[s];
+    in(2,i,k) = rho_i(i,pi)[si];
+    in(3,i,k) = p_int(i,pi)[si];
+    in(4,i,k) = winds(i,0,p)[s];
+    in(5,i,k) = winds(i,1,p)[s];
+    in(6,i,k) = wthl_sfc(i);
+    in(7,i,k) = wqw_sfc(i);
+    in(8,i,k) = zi(i,pi)[si];
+    in(9,i,k) = zi(i,pi)[si] / 8000.0;
+    in(14,i,k) = cldfrac(i,p)[s] > 0;
+  });
+  Kokkos::fence();
+
+  // The exported model uses height-aware vertical derivatives.  Compute them
+  // on the SHOC interface grid, in its top-to-surface ordering.
+  Kokkos::parallel_for("shoc_moments_emulator_gradients", policy_t(0, ncol * nlevi),
+                       KOKKOS_LAMBDA(const int idx) {
+    const int i = idx / nlevi;
+    const int k = idx % nlevi;
+    const int km = k > 0 ? k - 1 : k;
+    const int kp = k + 1 < nlevi ? k + 1 : k;
+    const double dz = in(8,i,km) - in(8,i,kp);
+    const double inv_dz = dz != 0 ? 1.0 / dz : 0.0;
+    in(10,i,k) = (in(0,i,km) - in(0,i,kp)) * inv_dz;
+    in(11,i,k) = (in(1,i,km) - in(1,i,kp)) * inv_dz;
+    in(12,i,k) = (in(4,i,km) - in(4,i,kp)) * inv_dz;
+    in(13,i,k) = (in(5,i,km) - in(5,i,kp)) * inv_dz;
+  });
+  Kokkos::fence();
+
+  Kokkos::deep_copy(emu.in_h, emu.in);
+  try {
+    emu.backend->infer(emu.inputs, emu.outputs);
+  } catch (const std::exception& e) {
+    EKAT_ERROR_MSG("[SHOC] SHOC moments emulator inference failed:\n" + std::string(e.what()));
+  }
+  Kokkos::deep_copy(emu.out, emu.out_h);
+
+  // Stage w'2 in wqls_sec and w'3 in w3. shoc_main preserves these values
+  // across the native moment diagnostics and applies them below 8 km.
+  const auto staged_w2 = m_buffer.emulated_w_sec;
+  const auto staged_w3 = m_buffer.emulated_w3;
+  const auto out = emu.out;
+  Kokkos::parallel_for("shoc_moments_emulator_outputs", policy_t(0, ncol * nlevi),
+                       KOKKOS_LAMBDA(const int idx) {
+    const int i = idx / nlevi;
+    const int k = idx % nlevi;
+    const int p = k / N;
+    const int s = k % N;
+    staged_w2(i,p)[s] = out(0,i,k);
+    staged_w3(i,p)[s] = out(1,i,k);
+  });
+  Kokkos::fence();
+}
+#endif
+
 void SHOCMacrophysics::finalize_impl()
 {
-  // Do nothing
+#ifdef EAMXX_HAS_INFERENCE
+  if (m_moments_emulator && m_moments_emulator->backend) {
+    m_moments_emulator->backend->finalize();
+  }
+#endif
 }
 // =========================================================================================
 void SHOCMacrophysics::apply_turbulent_mountain_stress()

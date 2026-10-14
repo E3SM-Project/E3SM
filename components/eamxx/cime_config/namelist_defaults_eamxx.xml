@@ -270,6 +270,10 @@ be lost if SCREAM_HACK_XML is not enabled.
       <coeff_km_horiz type="real" doc="Horizontal eddy diffusivity coefficient for momentum">0.1</coeff_km_horiz>
       <extra_shoc_diags type="logical" doc="Extra SHOC diagnostics">false</extra_shoc_diags>
       <shoc_1p5tke type="logical" doc="turn off SGS variability in SHOC, effectively reducing it to a 1.5 TKE closure">false</shoc_1p5tke>
+      <use_shoc_moments_emulator type="logical" doc="Replace SHOC vertical velocity moments with the Python emulator">false</use_shoc_moments_emulator>
+      <shoc_moments_emulator_python_module type="string" doc="Python module containing create_emulator">standalone_emulator</shoc_moments_emulator_python_module>
+      <shoc_moments_emulator_python_path type="string" doc="Directory containing the SHOC emulator Python module"></shoc_moments_emulator_python_path>
+      <shoc_moments_emulator_model_path type="string" doc="Path to the SHOC emulator checkpoint; empty uses standalone_emulator.pt beside the module"></shoc_moments_emulator_model_path>
     </shoc>
 
     <!-- ZM deep convection -->
@@ -942,7 +946,7 @@ be lost if SCREAM_HACK_XML is not enabled.
   <!-- Default settings for DP-EAMxx -->
   <iop_options>
     <doubly_periodic_mode type="logical" doc="Type of intensive observation period. Currently only DP is supported.">true</doubly_periodic_mode>
-    <iop_file type="file" doc="File containing DP level data">UNSET</iop_file>
+    <iop_file type="file" doc="File containing DP level data">generic.nc</iop_file>
     <target_latitude type="real" doc="Latitude to initialize IC columns.">-999</target_latitude>
     <target_longitude type="real" doc="Longitude to initialize IC columns.">-999</target_longitude>
     <iop_dosubsidence type="logical" doc="Whether or not to compute Eulerian LS vertical advection.">false</iop_dosubsidence>

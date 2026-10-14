@@ -28,6 +28,20 @@ add_subdirectory(remap)
 # Data managers structures
 add_subdirectory(data_managers)
 
+# Embedded Python inference backend used by processes that run Python ML models.
+if (EAMXX_ENABLE_INFERENCE AND NOT TARGET emulator_inference)
+  set (EMULATOR_ENABLE_PYTHON ON CACHE BOOL "Build the Python inference backend" FORCE)
+  add_subdirectory(${SCREAM_BASE_DIR}/../emulators/common/src/inference
+                   ${CMAKE_BINARY_DIR}/emulator_inference)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sys; print(sys.base_prefix)"
+    OUTPUT_VARIABLE PYTHON_HOME OUTPUT_STRIP_TRAILING_WHITESPACE)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+    OUTPUT_VARIABLE PYTHON_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set (EAMXX_INFERENCE_PYTHON_HOME ${PYTHON_HOME} CACHE INTERNAL "Python home for embedded inference")
+  set (EAMXX_INFERENCE_PYTHON_PACKAGES ${PYTHON_PACKAGES} CACHE INTERNAL "Python packages for embedded inference")
+endif()
+
 # Atm process
 add_subdirectory(atm_process)
 

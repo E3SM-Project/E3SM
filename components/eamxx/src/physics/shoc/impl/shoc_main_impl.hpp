@@ -91,6 +91,7 @@ void Functions<S,D>::shoc_main_internal(
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const bool&                  extra_diags,
+  const bool&                  use_emulated_moments,
   // Input Variables
   const Scalar&                dx,
   const Scalar&                dy,
@@ -144,6 +145,8 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Pack>&       uw_sec,
   const uview_1d<Pack>&       vw_sec,
   const uview_1d<Pack>&       w3,
+  const uview_1d<Pack>&       emulated_w_sec,
+  const uview_1d<Pack>&       emulated_w3,
   const uview_1d<Pack>&       wqls_sec,
   const uview_1d<Pack>&       brunt,
   const uview_1d<Pack>&       isotropy,
@@ -273,6 +276,16 @@ void Functions<S,D>::shoc_main_internal(
                             workspace,                              // Workspace
                             w3);                                    // Output
 
+    if (use_emulated_moments) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlevi)),
+                           [&] (const Int& k) {
+        const auto active = zi_grid(k) < 8000;
+        w_sec(k).set(active, emulated_w_sec(k));
+        w3(k).set(active, emulated_w3(k));
+      });
+      team.team_barrier();
+    }
+
     // Call the PDF to close on SGS cloud and turbulence
     team.team_barrier();
     shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
@@ -363,6 +376,7 @@ void Functions<S,D>::shoc_main_internal(
   const bool&                  shoc_1p5tke,
   const bool&                  do_3d_turb,
   const bool&                  extra_diags,
+  const bool&                  use_emulated_moments,
   // Input Variables
   const view_1d<const Scalar>& dx,
   const view_1d<const Scalar>& dy,
@@ -416,6 +430,8 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Pack>&       uw_sec,
   const view_2d<Pack>&       vw_sec,
   const view_2d<Pack>&       w3,
+  const view_2d<Pack>&       emulated_w_sec,
+  const view_2d<Pack>&       emulated_w3,
   const view_2d<Pack>&       wqls_sec,
   const view_2d<Pack>&       brunt,
   const view_2d<Pack>&       isotropy,
@@ -547,6 +563,19 @@ void Functions<S,D>::shoc_main_internal(
                                  zt_grid,zi_grid,                        // Input
                                  workspace_mgr,                          // Workspace mgr
                                  w3);                                    // Output
+
+    if (use_emulated_moments) {
+      Kokkos::parallel_for(shcol*nlevi, KOKKOS_LAMBDA(const int idx) {
+        const int i = idx/nlevi;
+        const int k = idx%nlevi;
+        const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
+        if (active) {
+          w_sec(i,k/Pack::n)[k%Pack::n] = emulated_w_sec(i,k/Pack::n)[k%Pack::n];
+          w3(i,k/Pack::n)[k%Pack::n] = emulated_w3(i,k/Pack::n)[k%Pack::n];
+        }
+      });
+      Kokkos::fence();
+    }
 
     // Call the PDF to close on SGS cloud and turbulence
     shoc_assumed_pdf_disp(shcol,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
@@ -712,6 +741,8 @@ Int Functions<S,D>::shoc_main(
     const auto uw_sec_s       = ekat::subview(shoc_history_output.uw_sec, i);
     const auto vw_sec_s       = ekat::subview(shoc_history_output.vw_sec, i);
     const auto w3_s           = ekat::subview(shoc_history_output.w3, i);
+    const auto emulated_w_sec_s = ekat::subview(shoc_history_output.emulated_w_sec, i);
+    const auto emulated_w3_s    = ekat::subview(shoc_history_output.emulated_w3, i);
     const auto wqls_sec_s     = ekat::subview(shoc_history_output.wqls_sec, i);
     const auto brunt_s        = ekat::subview(shoc_history_output.brunt, i);
     const auto isotropy_s     = ekat::subview(shoc_history_output.isotropy, i);
@@ -724,7 +755,7 @@ Int Functions<S,D>::shoc_main(
 	               lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
                        thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
                        c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke,                 // Runtime options
-                       do_3d_turb, extra_diags,                               // Runtime options
+                       do_3d_turb, extra_diags, shoc_runtime.use_emulated_moments, // Runtime options
                        dx_s, dy_s, zt_grid_s, zi_grid_s,                      // Input
                        pres_s, presi_s, pdel_s, thv_s, w_field_s,             // Input
                        wthl_sfc_s, wqw_sfc_s, uw_sfc_s, vw_sfc_s,             // Input
@@ -738,7 +769,7 @@ Int Functions<S,D>::shoc_main(
                        shoc_cond_s, shoc_evap_s,                              // Diagnostic Output Variables
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables
                        wthl_sec_s, wqw_sec_s, wtke_sec_s, uw_sec_s, vw_sec_s, // Diagnostic Output Variables
-                       w3_s, wqls_sec_s, brunt_s, isotropy_s,                 // Diagnostic Output Variables
+                       w3_s, emulated_w_sec_s, emulated_w3_s, wqls_sec_s, brunt_s, isotropy_s, // Diagnostic Output Variables
                        uw_sfc_pert_s, vw_sfc_pert_s, um_pert_s, vm_pert_s);
 
     shoc_output.pblh(i) = pblh_s;
@@ -753,7 +784,8 @@ Int Functions<S,D>::shoc_main(
   shoc_main_internal(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
     lambda_low, lambda_high, lambda_slope, lambda_thresh,  // Runtime options
     thl2tune, qw2tune, qwthl2tune, w2tune, length_fac,     // Runtime options
-    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, extra_diags,    // Runtime options
+    c_diag_3rd_mom, Ckh, Ckm, shoc_1p5tke, do_3d_turb, extra_diags,
+    shoc_runtime.use_emulated_moments,                                  // Runtime options
     shoc_input.dx, shoc_input.dy, shoc_input.zt_grid, shoc_input.zi_grid, // Input
     shoc_input.pres, shoc_input.presi, shoc_input.pdel, shoc_input.thv, shoc_input.w_field, // Input
     shoc_input.wthl_sfc, shoc_input.wqw_sfc, shoc_input.uw_sfc, shoc_input.vw_sfc, // Input
@@ -767,7 +799,8 @@ Int Functions<S,D>::shoc_main(
     shoc_history_output.shoc_cond, shoc_history_output.shoc_evap,
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
-    shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
+    shoc_history_output.w3, shoc_history_output.emulated_w_sec, shoc_history_output.emulated_w3,
+    shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
     shoc_input.uw_sfc_pert, shoc_input.vw_sfc_pert, shoc_input_output.um_pert, shoc_input_output.vm_pert,
     // Temporaries
     shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,

@@ -8,6 +8,7 @@
 
 #include <ekat_parameter_list.hpp>
 
+#include <memory>
 #include <string>
 
 namespace scream
@@ -446,10 +447,10 @@ public:
     static constexpr int num_1d_scalar_nlev = 1;
 #ifndef SCREAM_SHOC_SMALL_KERNELS
     static constexpr int num_2d_vector_mid  = 21;
-    static constexpr int num_2d_vector_int  = 12;
+    static constexpr int num_2d_vector_int  = 14;
 #else
     static constexpr int num_2d_vector_mid  = 25;
-    static constexpr int num_2d_vector_int  = 13;
+    static constexpr int num_2d_vector_int  = 15;
 #endif
     static constexpr int num_2d_vector_tr   = 1;
 
@@ -505,6 +506,8 @@ public:
     uview_2d<Pack> uw_sec;
     uview_2d<Pack> vw_sec;
     uview_2d<Pack> w3;
+    uview_2d<Pack> emulated_w_sec;
+    uview_2d<Pack> emulated_w3;
     uview_2d<Pack> wqls_sec;
     uview_2d<Pack> brunt;
     uview_2d<Pack> um_pert;
@@ -538,6 +541,13 @@ protected:
 protected:
 
   void finalize_impl   ();
+
+#ifdef EAMXX_HAS_INFERENCE
+  struct MomentsEmulator;
+  void init_moments_emulator();
+  void run_moments_emulator();
+  std::shared_ptr<MomentsEmulator> m_moments_emulator;
+#endif
 
   // SHOC updates the 'tracers' group.
   void set_computed_group_impl (const FieldGroup& group);
