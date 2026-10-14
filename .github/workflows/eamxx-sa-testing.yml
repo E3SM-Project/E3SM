@@ -8,6 +8,7 @@ on:
       # first, yes to these
       - '.github/workflows/eamxx-sa-testing.yml'
       - '.github/actions/test-all-eamxx/**'
+      - '.github/actions/get-cuda-arch/**'
       - 'cime_config/machine/config_machines.xml'
       - 'components/eamxx/**'
       - 'components/homme/**'
@@ -173,34 +174,7 @@ jobs:
       - name: Show action trigger
         uses: ./.github/actions/show-workflow-trigger
       - name: Get CUDA Arch
-        run: |
-          # Ensure nvidia-smi is available
-          if ! command -v nvidia-smi &> /dev/null; then
-              echo "nvidia-smi could not be found. Please ensure you have Nvidia drivers installed."
-              exit 1
-          fi
-
-          # Get the GPU model from nvidia-smi, and set env for next step
-          gpu_model=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n 1)
-          case "$gpu_model" in
-              *"H100"*)
-                  echo "Hopper=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=90" >> $GITHUB_ENV
-                  ARCH=90
-                  ;;
-              *"A100"*)
-                  echo "Ampere=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=80" >> $GITHUB_ENV
-                  ;;
-              *"V100"*)
-                  echo "Volta=ON" >> $GITHUB_ENV
-                  echo "CUDA_ARCH=70" >> $GITHUB_ENV
-                  ;;
-              *)
-                  echo "Unsupported GPU model: $gpu_model"
-                  exit 1
-                  ;;
-          esac
+        uses: ./.github/actions/get-cuda-arch
       - name: Run tests
         uses: ./.github/actions/test-all-eamxx
         with:
@@ -208,6 +182,6 @@ jobs:
           machine: ghci-cuda
           generate: ${{ env.generate }}
           submit: ${{ env.submit }}
-          cmake-configs: Kokkos_ARCH_HOPPER90=${{ env.Hopper }};Kokkos_ARCH_AMPERE80=${{ env.Ampere }};Kokkos_ARCH_VOLTA70=${{ env.Volta }};CMAKE_CUDA_ARCHITECTURES=${{ env.CUDA_ARCH }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
+          cmake-configs: ${{ env.CUDA_CMAKE_CONFIGS }};SCREAM_SMALL_KERNELS=${{ matrix.test.SK }}
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
