@@ -929,7 +929,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_glc_ice_shelf_coupling_import_geometry" type="logical" default_value=".false."
-					description="If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Only set this to .true. when the ocean's ice-shelf cavities were built to match GLC's ice geometry (in E3SM, SOwISC12to30E3r4 with MALI ais4to20).  If .false., MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC."
+					description="If .true. and config_glc_ice_shelf_coupling is .true., land-ice pressure and land-ice fractions from GLC replace those from the initial condition.  Only set this to .true. when the ocean's ice-shelf cavities were built to match GLC's ice geometry; otherwise, abrupt changes in pressure and draft make the ocean unstable.  If .false., MPAS-Ocean keeps its own land-ice pressure and fractions and only exchanges fluxes and the interface temperature with GLC."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_glc_ice_shelf_coupling_min_floating_fraction" type="real" default_value="1.0e-3"

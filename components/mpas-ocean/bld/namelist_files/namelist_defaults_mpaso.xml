@@ -441,7 +441,6 @@
 <config_glc_thermal_forcing_coupling_mode>'off'</config_glc_thermal_forcing_coupling_mode>
 <config_glc_ice_shelf_coupling>.false.</config_glc_ice_shelf_coupling>
 <config_glc_ice_shelf_coupling_import_geometry>.false.</config_glc_ice_shelf_coupling_import_geometry>
-<config_glc_ice_shelf_coupling_import_geometry ocn_grid="SOwISC12to30E3r4" glc_grid="mpas.ais4to20km">.true.</config_glc_ice_shelf_coupling_import_geometry>
 <config_glc_ice_shelf_coupling_min_floating_fraction>1.0e-3</config_glc_ice_shelf_coupling_min_floating_fraction>
 
 <!-- shortwaveRadiation -->
