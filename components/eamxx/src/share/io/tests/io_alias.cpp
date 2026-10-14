@@ -175,7 +175,8 @@ TEST_CASE("io_with_aliases") {
   om.finalize();
 
   // Verify the NetCDF file was created with the expected filename
-  std::string expected_filename = "io_alias_mixed.INSTANT.nsteps_x1.np" +
+  // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+  std::string expected_filename = "eamxx.h.io_alias_mixed.INSTANT.nsteps_x1.np" +
                                   std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
 
   // First check if the file actually exists

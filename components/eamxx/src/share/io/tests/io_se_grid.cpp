@@ -86,7 +86,8 @@ TEST_CASE("se_grid_io")
 
   // Check fields were written correctly
   auto in_params = get_in_params(io_comm,t0);
-  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
+  // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+  std::string filename = "eamxx.h.io_se_grid.INSTANT.nsteps_x1.np"
                        + std::to_string(io_comm.size())
                        + "." + t0.to_string() + ".nc";
 
@@ -174,7 +175,8 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
 
-  std::string filename = "io_se_grid.INSTANT.nsteps_x1.np"
+  // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc
+  std::string filename = "eamxx.h.io_se_grid.INSTANT.nsteps_x1.np"
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 
