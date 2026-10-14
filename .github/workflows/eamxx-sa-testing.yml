@@ -74,15 +74,14 @@ defaults:
     shell: bash -leo pipefail {0}
 
 jobs:
+  eamxx-sa-job-filter:
+    uses: ./.github/workflows/e3sm-ci-job-filter.yml
+    with:
+      jobs: gnu-openmp, intel-openmp, gnu-cuda
+      dispatch-input: job_to_run
   gnu-openmp:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnu-openmp' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
+    needs: eamxx-sa-job-filter
+    if: fromJSON(needs.eamxx-sa-job-filter.outputs.run)['gnu-openmp']
     runs-on:  [self-hosted, e3sm, gnu]
     strategy:
       fail-fast: false
@@ -109,14 +108,8 @@ jobs:
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
   intel-openmp:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'intel-openmp' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
+    needs: eamxx-sa-job-filter
+    if: fromJSON(needs.eamxx-sa-job-filter.outputs.run)['intel-openmp']
     runs-on:  [self-hosted, e3sm, intel]
     strategy:
       fail-fast: false
@@ -143,14 +136,8 @@ jobs:
           ekat: ${{ env.ekat }}
           kokkos_develop: ${{ env.kokkos_dev_test }}
   gnu-cuda:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnu-cuda' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
+    needs: eamxx-sa-job-filter
+    if: fromJSON(needs.eamxx-sa-job-filter.outputs.run)['gnu-cuda']
     runs-on:  [self-hosted, e3sm, cuda]
     strategy:
       fail-fast: false

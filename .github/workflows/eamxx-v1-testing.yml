@@ -63,15 +63,14 @@ env:
   flags: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
 
 jobs:
+  eamxx-v1-job-filter:
+    uses: ./.github/workflows/e3sm-ci-job-filter.yml
+    with:
+      jobs: gnu, intel, gnugpu
+      dispatch-input: job_to_run
   gnu:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnu' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
+    needs: eamxx-v1-job-filter
+    if: fromJSON(needs.eamxx-v1-job-filter.outputs.run)['gnu']
     runs-on:  [self-hosted, gnu, e3sm]
     strategy:
       matrix:
@@ -122,14 +121,8 @@ jobs:
             /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
   intel:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'intel' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
+    needs: eamxx-v1-job-filter
+    if: fromJSON(needs.eamxx-v1-job-filter.outputs.run)['intel']
     runs-on:  [self-hosted, intel, e3sm]
     strategy:
       matrix:
@@ -172,14 +165,8 @@ jobs:
             /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
           retention-days: 14
   gnugpu:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnugpu' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
+    needs: eamxx-v1-job-filter
+    if: fromJSON(needs.eamxx-v1-job-filter.outputs.run)['gnugpu']
     runs-on:  [self-hosted, cuda, e3sm]
     strategy:
       matrix:
