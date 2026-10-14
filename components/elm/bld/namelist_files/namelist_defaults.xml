@@ -253,6 +253,12 @@ lnd/clm2/surfdata_map/surfdata_u01-oi6to18-lr6to10_simyr1950_c260829.nc</fsurdat
 <fsurdat hgrid="u01-lr6to10"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_u01-oi6to18-lr6to10_simyr2010_c260829.nc</fsurdat>
 
+<fsurdat hgrid="u01-lr6to10"   sim_year="1850" use_crop=".true." >
+lnd/clm2/surfdata_map/surfdata_u01.oi6to18.lr6to10_50pfts_simyr1850_c260921.nc</fsurdat>
+
+<flanduse_timeseries hgrid="u01-lr6to10"    sim_year_range="1850-2015"
+ use_crop=".true." >lnd/clm2/surfdata_map/landuse.timeseries_u01.oi6to18.lr6to10_HIST_simyr1850-2015_c260901_50pfts.nc</flanduse_timeseries>
+
  <!-- u02-lr10 -->
  <fsurdat hgrid="u02-lr10"   sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_u02-oi30-lr10_simyr1850_c260829.nc</fsurdat>
@@ -276,6 +282,12 @@ lnd/clm2/surfdata_map/surfdata_t-oi6to18-lr12p5_simyr1850_c261012.nc</fsurdat>
 <!-- t-lr25 -->
 <fsurdat hgrid="t-lr25"   sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_t-oi6to18-lr25_simyr1850_c261012.nc</fsurdat>
+
+<fsurdat hgrid="t-lr25"   sim_year="1850" use_crop=".true." >
+lnd/clm2/surfdata_map/surfdata_t-oi6to18-lr25_50pfts_simyr1850_c261013.nc</fsurdat>
+
+<flanduse_timeseries hgrid="t-lr25"    sim_year_range="1850-2015"
+ use_crop=".true." >lnd/clm2/surfdata_map/landuse.timeseries_t-oi6to18-lr25_hist_simyr1850-2015_c261013_50pfts.nc</flanduse_timeseries>
 
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
