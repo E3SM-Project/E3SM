@@ -4,6 +4,8 @@
 #include "share/field/field.hpp"
 
 #include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace scream
 {
@@ -14,7 +16,6 @@ namespace details {
 // Visiting the views of one or more fields
 // ===========================================================================
 //
-// THE PROBLEM
 // To access a field's data in a kernel, we need a Kokkos view whose *type* depends
 // on things we only know at runtime:
 //   - the rank N of the field,
@@ -26,63 +27,25 @@ namespace details {
 // as compile-time types. So we "visit": we branch on the runtime properties, and
 // in each branch we call the user's callable with views of the right concrete types.
 //
-// WHAT THE USER GETS
 //   visit_field_views(rank, func, view_as<T_1>(f_1), ..., view_as<T_K>(f_K))
+//
 // calls func(v_1,...,v_K), where v_i is a rank-'rank' view of f_i with scalar type T_i,
-// in the same order as the view_as tags. Each vi can independently be LayoutRight or
+// in the same order as the view_as tags. Each v_i can independently be LayoutRight or
 // LayoutStride, so func is instantiated for ALL 2^K layout combinations (the one
 // matching the actual fields is the only one that runs). This is also true for the
 // ranks: the runtime-rank overload instantiates func for each rank in [0,MaxRank].
 // Since this multiplies compile time and code size, func should be small: have it
 // forward to a templated helper (like cvh/cvmh) rather than hold a big body.
 //
-// THE FOUR PIECES
-//   dispatch_on_rank(rank, func)
-//       Runtime int -> compile-time constant. Calls func(std::integral_constant<int,N>).
-//       It knows nothing about fields or views.
-//   visit_field_view<N,T>(field, func)                               [overload 1]
-//       ONE field. It is the only place with the strided/non-strided if: it checks
-//       allows_layout_right() and calls func(view) with the matching view type.
-//   visit_field_views<N>(func, first, rest...)                       [overload 3]
-//       Peels the first field: delegates it to visit_field_view, and recurses on rest.
-//   visit_field_views<N>(func)                                       [overload 2]
-//       No fields left: the end of the recursion. Just calls func().
-//   (plus the runtime-rank entry point, which calls dispatch_on_rank and then
-//    overload 3 with the compile-time N.)
-//
-// HOW THE RECURSION WORKS
-// visit_field_view is not called "at the end"; it is called by overload 3, once per
-// field, at every level. Each level picks the layout for its field, and then, from
-// inside the callback that visit_field_view invokes, recurses on the remaining fields.
-// To make sure the final call sees ALL the views, each level wraps 'func' in a new
-// lambda that prepends its own view:
-//
-//     [&](const auto&... vs) { func(v, vs...); }
-//
-// ('v' is captured by reference). So 'func' at depth d is not the user's callable but
-// the lambda from depth d-1, and the real callable is reached only when the chain
-// unwinds. For two fields (y,x), with Ty/Tx their requested types:
-//
-//   visit_field_views<N>(func, y, x)                                    [overload 3]
-//   |- visit_field_view<N,Ty>(y, A)       picks y's view type, calls A(yv), where
-//   |    A(yv) = visit_field_views<N>(B, x)                             [overload 3]
-//   |            with B(vs...) = func(yv, vs...)
-//   |- visit_field_view<N,Tx>(x, C)       picks x's view type, calls C(xv), where
-//   |    C(xv) = visit_field_views<N>(D)                                [overload 2]
-//   |            with D(vs...) = B(xv, vs...)
-//   '- D()  ->  B(xv)  ->  func(yv, xv)   <- base case reached: user's callable
-//                                            finally runs, with views in order.
-//
-// NOTES
-//  - Lambdas capture by reference, which is safe: every call is synchronous, and
-//    each view lives in the stack frame of visit_field_view until func returns.
-//  - No heap allocation, no std::function: these are plain lambda objects that the
-//    compiler can inline. The cost is paid once per call, not per element.
-//  - The lambdas are host code only. Device kernels are launched inside the
-//    helper that func calls, which takes the views by value; nothing captured by
-//    reference ever reaches the device.
-//  - The overload-2 base case could be merged into overload 3 via
-//    'if constexpr (sizeof...(rest)==0)'. We keep them separate for readability.
+// How it works: a function can't return a LayoutRight view for some fields and a
+// LayoutStride view for others, depending on a runtime check. But it can return a
+// std::variant of the two view types (see get_view_variant). Once each field is
+// turned into such a variant, std::visit(func, var_1, ..., var_K) does the rest: it
+// calls func with the active alternative of each variant, instantiating func for the
+// cross product of all alternatives. The runtime cost is one jump through std::visit's
+// dispatch table per call (not per element); the views are copied into the variants
+// (cheap: Kokkos views are reference counted handles), and only the host sees them:
+// device kernels are launched inside the helper that func calls.
 // ===========================================================================
 
 // Tag associating a field with the scalar type its view should have (e.g., 'const double').
@@ -114,33 +77,29 @@ void dispatch_on_rank (const int rank, Func&& func)
   }
 }
 
-// Call func(view), with view being the rank-N view of type T of the field.
-// The view is a strided one if the field does not allow layout right
-// (e.g., it is a subfield of another field), and a LayoutRight one otherwise.
-template<int N, typename T, typename Func>
-void visit_field_view (const Field& field, Func&& func)
+// Return the rank-N view of type T of the field, wrapped in a variant that holds
+// a LayoutRight view if the field allows it, and a LayoutStride view otherwise
+// (e.g., if the field is a subfield of another field).
+template<int N, typename T>
+auto get_view_variant (const Field& field)
 {
   using DT = Field::data_nd_t<T,N>;
+  using lr_view_t = std::decay_t<decltype(field.get_view<DT>())>;
+  using st_view_t = std::decay_t<decltype(field.get_strided_view<DT>())>;
+  using variant_t = std::variant<lr_view_t,st_view_t>;
+
+  // Construct by index, so that we do not rely on the two view types being different
   if (field.get_header().get_alloc_properties().allows_layout_right())
-    func(field.get_view<DT>());
+    return variant_t(std::in_place_index<0>,field.get_view<DT>());
   else
-    func(field.get_strided_view<DT>());
+    return variant_t(std::in_place_index<1>,field.get_strided_view<DT>());
 }
 
-template<int N, typename Func, typename T, typename... Rest>
-void visit_field_views (Func&& func, const ViewAs<T>& first, const Rest&... rest)
+// Call func(v_1,...,v_K), with v_i the rank-N view of the i-th field. See above for details.
+template<int N, typename Func, typename... Ts>
+void visit_field_views (Func&& func, const ViewAs<Ts>&... fields)
 {
-  visit_field_view<N,T>(first.field, [&](const auto& v) {
-    visit_field_views<N>([&](const auto&... vs) { func(v,vs...); }, rest...);
-  });
-}
-
-template<int N, typename Func>
-void visit_field_views (Func&& func)
-{
-  // When we reach this instantation, `func` is a lambda that already captured all
-  // the fields' views, and does not need to take any additional arg. Just run it.
-  func();
+  std::visit(std::forward<Func>(func),get_view_variant<N,Ts>(fields.field)...);
 }
 
 // Runtime-rank version of visit_field_views
