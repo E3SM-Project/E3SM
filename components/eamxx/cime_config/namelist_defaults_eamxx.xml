@@ -704,7 +704,9 @@ be lost if SCREAM_HACK_XML is not enabled.
     </cosp>
 
     <!-- Turbulent Mountain Stress -->
-    <tms inherit="atm_proc_base"/>
+    <tms inherit="atm_proc_base">
+      <scaling_factor type="real" doc="Scaling factor for TMS drag coefficient and stress">1.0</scaling_factor>
+    </tms>
 
     <physics inherit="atm_proc_group">
       <atm_procs_list>mac_aero_mic,rrtmgp</atm_procs_list>

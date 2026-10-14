@@ -129,6 +129,20 @@ void TurbulentMountainStress::run_impl (const double /* dt */)
                             ekat::scalarize(z_mid),
                             sgh30, landfrac,
                             surf_drag_coeff_tms, wind_stress_tms);
+
+  // Scale TMS strength by a tunable factor (1.0 = default/full strength).
+  // This is applied here rather than inside compute_tms so the shared physics
+  // kernel stays unchanged, and both the drag coefficient consumed by SHOC and
+  // the wind_stress_tms diagnostic are scaled consistently.
+  const Real scaling_factor = m_params.get<double>("scaling_factor", 1.0);
+  if (scaling_factor != 1.0) {
+    Kokkos::parallel_for("scale_tms", TMSFunctions::KT::RangePolicy(0, ncols),
+                         KOKKOS_LAMBDA (const int i) {
+      surf_drag_coeff_tms(i) *= scaling_factor;
+      wind_stress_tms(i,0)   *= scaling_factor;
+      wind_stress_tms(i,1)   *= scaling_factor;
+    });
+  }
 }
 
 // =========================================================================================
