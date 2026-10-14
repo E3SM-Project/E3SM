@@ -65,8 +65,7 @@ void compute_tms_f(int ncols, int nlevs,
     });
   });
 
-  // Scaling factor to scale back the strength of TMS. Use the default value of
-  // 1.0 (full strength) here so existing baselines are unaffected.
+  // Scaling factor to scale back the strength of TMS. Use the default value of 1.0 (full strength) 
   const Scalar scaling_factor = 1.0;
 
   // C++ compute_tms function implementation
