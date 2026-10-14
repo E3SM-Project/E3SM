@@ -6,3 +6,4 @@ use_crop=.true.
 flanduse_timeseries = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_50pfts_simyr1850-2015_c260205.nc'
 check_finidat_fsurdat_consistency = .false.
 check_finidat_year_consistency = .false.
+check_dynpft_consistency = .false.
