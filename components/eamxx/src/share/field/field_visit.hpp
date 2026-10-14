@@ -27,8 +27,8 @@ namespace details {
 // in each branch we call the user's callable with views of the right concrete types.
 //
 // WHAT THE USER GETS
-//   visit_field_views(rank, func, view_as<T1>(f1), ..., view_as<TK>(fK))
-// calls func(v1,...,vK), where vi is a rank-'rank' view of f_i with scalar type Ti,
+//   visit_field_views(rank, func, view_as<T_1>(f_1), ..., view_as<T_K>(f_K))
+// calls func(v_1,...,v_K), where v_i is a rank-'rank' view of f_i with scalar type T_i,
 // in the same order as the view_as tags. Each vi can independently be LayoutRight or
 // LayoutStride, so func is instantiated for ALL 2^K layout combinations (the one
 // matching the actual fields is the only one that runs). This is also true for the
@@ -149,6 +149,8 @@ void visit_field_views (const int rank, Func&& func, const ViewAs<Ts>&... fields
 {
   static_assert (sizeof...(Ts)>0,
       "[visit_field_views] Error! At least one field must be provided.\n");
+  static_assert (sizeof...(Ts)<=3,
+      "[visit_field_views] Error! We only support up to 3 fields.\n");
 
   dispatch_on_rank(rank,[&](auto rank_c) {
     visit_field_views<decltype(rank_c)::value>(func,fields...);
