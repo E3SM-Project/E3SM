@@ -872,11 +872,11 @@ This option also controls snow-capping and related snow-water flux handling path
 <entry id="convert_ice_to_river_runoff_latband" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 If TRUE, extract snowcapping latent heat locally in ELM only within the
-latitude band specified by convert_ice_to_river_runoff_latband_width_degrees.
+latitude band specified by convert_ice_to_river_runoff_latband_halfwidth_degrees.
 Outside that band, latent heat remains in the default downstream treatment.
 </entry>
 
-<entry id="convert_ice_to_river_runoff_latband_width_degrees" type="real" category="physics"
+<entry id="convert_ice_to_river_runoff_latband_halfwidth_degrees" type="real" category="physics"
        group="elm_inparm" valid_values="" value="20.0">
 Half-width of latitude band in degrees for local ELM latent-heat extraction
 when convert_ice_to_river_runoff_latband is TRUE.

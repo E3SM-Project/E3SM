@@ -11,10 +11,10 @@ module lnd2atmMod
   use shr_megan_mod        , only : shr_megan_mechcomps_n
   use shr_fan_mod          , only : shr_fan_to_atm
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
-  use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
+  use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval, rpi
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit, use_fan
   use elm_varctl           , only : use_lnd_rof_two_way, use_finetop_rad
-  use elm_varctl           , only : convert_ice_to_river_runoff_latband, convert_ice_to_river_runoff_latband_width_degrees
+  use elm_varctl           , only : convert_ice_to_river_runoff_latband, convert_ice_to_river_runoff_latband_halfwidth_degrees
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -34,6 +34,7 @@ module lnd2atmMod
   use GridcellDataType     , only : grc_ef, grc_ws, grc_wf
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es, col_nf
   use ColumnType           , only : col_pp
+  use LandunitType         , only : lun_pp
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
   use SedFluxType          , only : sedflux_type
@@ -256,6 +257,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: g, lvl             ! index
     integer :: c                   ! column index
+    integer :: l                   ! landunit index
     real(r8) :: lat_abs_deg        ! absolute gridcell latitude (deg)
     real(r8), parameter :: amC   = 12.0_r8 ! Atomic mass number for Carbon
     real(r8), parameter :: amO   = 16.0_r8 ! Atomic mass number for Oxygen
@@ -297,6 +299,8 @@ contains
       ch4_surf_flux_tot_col => ch4_vars%ch4_surf_flux_tot_col , &
       flux_ch4_grc  => lnd2atm_vars%flux_ch4_grc      , &
       qflx_runoff   => col_wf%qflx_runoff , &
+      qflx_runoff_r => col_wf%qflx_runoff_r , &
+      qflx_runoff_u => col_wf%qflx_runoff_u , &
       qflx_rofliq_grc => lnd2atm_vars%qflx_rofliq_grc   , &
       qflx_surf      => col_wf%qflx_surf , &
       qflx_rofliq_qsur_grc  => lnd2atm_vars%qflx_rofliq_qsur_grc   , &
@@ -468,6 +472,28 @@ contains
     ! lnd -> rof
     !----------------------------------------------------
 
+    ! Within the configured latitude band, route snowcapped ice into surface runoff
+    ! (as liquid) instead of sending it to the ocean as ice runoff. Done before mapping
+    ! any runoff field so the total, surface component, rural/urban totals, and coupler
+    ! flux all remain consistent.
+    if (convert_ice_to_river_runoff_latband) then
+       do c = bounds%begc, bounds%endc
+          g = col_pp%gridcell(c)
+          l = col_pp%landunit(c)
+          lat_abs_deg = abs(grc_pp%lat(g)) * 180._r8 / rpi
+          if (lat_abs_deg <= max(0._r8, convert_ice_to_river_runoff_latband_halfwidth_degrees)) then
+             qflx_surf(c)   = qflx_surf(c)   + qflx_snwcp_ice(c)
+             qflx_runoff(c) = qflx_runoff(c) + qflx_snwcp_ice(c)
+             if (lun_pp%urbpoi(l)) then
+                qflx_runoff_u(c) = qflx_runoff_u(c) + qflx_snwcp_ice(c)
+             else if (col_pp%is_soil(c) .or. col_pp%is_crop(c)) then
+                qflx_runoff_r(c) = qflx_runoff_r(c) + qflx_snwcp_ice(c)
+             end if
+             qflx_snwcp_ice(c) = 0._r8
+          end if
+       end do
+    end if
+
     call c2g( bounds, &
          qflx_runoff    (bounds%begc:bounds%endc) , &
          qflx_rofliq_grc(bounds%begg:bounds%endg)  , &
@@ -476,19 +502,6 @@ contains
     do g = bounds%begg, bounds%endg
        qflx_rofliq_grc(g) = qflx_rofliq_grc(g) - grc_wf%qflx_liq_dynbal(g)
     enddo
-
-    ! Within the configured latitude band, route snowcapped ice into surface runoff
-    ! (as liquid) upstream of MOSART instead of sending it to the ocean as ice runoff.
-    if (convert_ice_to_river_runoff_latband) then
-       do c = bounds%begc, bounds%endc
-          g = col_pp%gridcell(c)
-          lat_abs_deg = abs(grc_pp%lat(g)) * 180._r8 / (4._r8 * atan(1._r8))
-          if (lat_abs_deg <= max(0._r8, convert_ice_to_river_runoff_latband_width_degrees)) then
-             qflx_surf(c) = qflx_surf(c) + qflx_snwcp_ice(c)
-             qflx_snwcp_ice(c) = 0._r8
-          end if
-       end do
-    end if
 
     call c2g( bounds, &
          qflx_surf           (bounds%begc:bounds%endc)   , &

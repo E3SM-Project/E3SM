@@ -1094,6 +1094,7 @@ contains
      use elm_varcon       , only : pondmx, tfrz, watmin,rpi, secspday, nlvic
      use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv
      use elm_varctl       , only : use_vsfm, use_var_soil_thick, use_firn_percolation_and_compaction
+     use elm_varctl       , only : convert_ice_to_river_runoff_latband
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      use pftvarcon        , only : rsub_top_globalmax
      use LandunitType     , only : lun_pp
@@ -1248,6 +1249,8 @@ contains
           rsub_top(c)      = 0._r8
           fracice_rsub(c)  = 0._r8
           qflx_qrgwl(c)    = 0._r8
+          ! reset here too since SnowCapping (which also zeros it) is only called when firn is active
+          qflx_ice_runoff_xs(c) = 0._r8
        end do
 
        ! The layer index of the first unsaturated layer, i.e., the layer right above
@@ -1682,7 +1685,10 @@ contains
           ! add in ice check
           xs1(c)          = max(max(h2osoi_ice(c,1),0._r8)-max(0._r8,(pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1))),0._r8)
           h2osoi_ice(c,1) = min(max(0._r8,pondmx+watsat(c,1)*dzmm(c,1)-h2osoi_liq(c,1)), h2osoi_ice(c,1))
-          if ( (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) .or. (.not. use_firn_percolation_and_compaction)) then
+          if (convert_ice_to_river_runoff_latband) then
+                ! route soil excess ice to the ice-runoff stream so only snowpack-derived ice enters the lat-band liquid conversion
+                qflx_ice_runoff_xs(c) = qflx_ice_runoff_xs(c) + xs1(c) / dtime
+          else if ( (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec) .or. (.not. use_firn_percolation_and_compaction)) then
                 qflx_snwcp_ice(c) = qflx_snwcp_ice(c) + xs1(c) / dtime
           else
                 qflx_ice_runoff_xs(c) = qflx_ice_runoff_xs(c) + xs1(c) / dtime
