@@ -158,6 +158,16 @@
   </compset>
 
   <compset>
+    <alias>GGMPAS-JRA1p5-DIB-PISMF-SIA</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCED_DROF%JRA-1p5_MALI%SIA_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>GGMPAS-JRA1p5-DIB-PISMF-FO</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI%DIB_MPASO%IBPISMFDATMFORCED_DROF%JRA-1p5_MALI_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-IAF-PISMF</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%PISMFDATMFORCED_DROF%IAF_SGLC_SWAV</lname>
   </compset>
