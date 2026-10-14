@@ -8,7 +8,7 @@ name: e3sm-ci-job-filter
 #     job-filter:
 #       uses: ./.github/workflows/e3sm-ci-job-filter.yml
 #       with:
-#         jobs: job-a job-b job-c
+#         jobs: job-a, job-b, job-c
 #         dispatch-input: job_to_run     # optional
 #
 #     job-a:
@@ -27,7 +27,7 @@ on:
   workflow_call:
     inputs:
       jobs:
-        description: 'Names of the jobs that this filter can select (whitespace or comma separated)'
+        description: 'Comma separated names of the jobs that this filter can select'
         required: true
         type: string
       dispatch-input:
@@ -64,7 +64,8 @@ jobs:
           SKIP_DRAFTS: ${{ inputs.skip-drafts }}
           IS_DRAFT: ${{ github.event.pull_request.draft }}
         run: |
-          all=$(jq -cn --arg s "$ALL_JOBS" '$s | [splits("[\\s,]+") | select(length>0)]')
+          # Comma separated list -> JSON array (trim spaces, drop empty entries)
+          all=$(jq -cn --arg s "$ALL_JOBS" '$s | split(",") | map(gsub("^\\s+|\\s+$"; "") | select(length > 0))')
           selected=$all
           reason="$GITHUB_EVENT_NAME event"
 

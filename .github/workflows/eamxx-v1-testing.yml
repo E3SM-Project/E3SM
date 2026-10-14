@@ -66,7 +66,7 @@ jobs:
   eamxx-v1-job-filter:
     uses: ./.github/workflows/e3sm-ci-job-filter.yml
     with:
-      jobs: gnu intel gnugpu
+      jobs: gnu, intel, gnugpu
       dispatch-input: job_to_run
   gnu:
     needs: eamxx-v1-job-filter

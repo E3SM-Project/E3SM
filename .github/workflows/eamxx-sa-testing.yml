@@ -77,7 +77,7 @@ jobs:
   eamxx-sa-job-filter:
     uses: ./.github/workflows/e3sm-ci-job-filter.yml
     with:
-      jobs: gnu-openmp intel-openmp gnu-cuda
+      jobs: gnu-openmp, intel-openmp, gnu-cuda
       dispatch-input: job_to_run
   gnu-openmp:
     needs: eamxx-sa-job-filter
