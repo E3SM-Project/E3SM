@@ -191,7 +191,9 @@ init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0,
     // Figure out the name of the netcdf file containing the restart data
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    auto filename = find_filename_in_rpointer (casename+"."+get_eamxx_model_name(),true,m_atm_comm,m_run_t0);
+    // Build prefix, skipping case name if it's "UNSET" (unit tests)
+    std::string prefix = (casename != "UNSET") ? casename + "." + get_eamxx_model_name() : get_eamxx_model_name();
+    auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
 
     // Restart the num steps counter in the atm time stamp
     int nsteps = scorpio::get_attribute<int>(filename,"GLOBAL","nsteps");
@@ -285,7 +287,9 @@ void AtmosphereDriver::create_grids()
     // Restarted run -> read geo data from restart file
     const auto& provenance = m_atm_params.sublist("provenance");
     const auto& casename = provenance.get<std::string>("rest_caseid");
-    auto filename = find_filename_in_rpointer (casename+"."+get_eamxx_model_name(),true,m_atm_comm,m_run_t0);
+    // Build prefix, skipping case name if it's "UNSET" (unit tests)
+    std::string prefix = (casename != "UNSET") ? casename + "." + get_eamxx_model_name() : get_eamxx_model_name();
+    auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
     gm_params.set("ic_filename", filename);
     m_atm_params.sublist("provenance").set("initial_conditions_file",filename);
   } else if (ic_pl.isParameter("filename")) {
@@ -946,7 +950,9 @@ void AtmosphereDriver::restart_model ()
   // First, figure out the name of the netcdf file containing the restart data
   const auto& provenance = m_atm_params.sublist("provenance");
   const auto& casename = provenance.get<std::string>("rest_caseid");
-  auto filename = find_filename_in_rpointer (casename+"."+get_eamxx_model_name(),true,m_atm_comm,m_run_t0);
+  // Build prefix, skipping case name if it's "UNSET" (unit tests)
+  std::string prefix = (casename != "UNSET") ? casename + "." + get_eamxx_model_name() : get_eamxx_model_name();
+  auto filename = find_filename_in_rpointer (prefix,true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
