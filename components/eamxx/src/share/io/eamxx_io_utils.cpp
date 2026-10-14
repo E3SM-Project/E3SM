@@ -25,7 +25,7 @@ std::string find_filename_in_rpointer (
   std::string filename;
   bool found = false;
   std::string content;
-  std::string suffix = model_restart ? ".r." : ".rhist.";
+  std::string suffix = model_restart ? ".r." : ".rh.";
   std::string pattern_str = filename_prefix + suffix;
 
   // The AD will pass a default constructed control, since it doesn't know the values
