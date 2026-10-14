@@ -36,6 +36,7 @@ module lnd2atmMod
   use SedFluxType          , only : sedflux_type
   use spmdmod          , only: masterproc
   use elm_varctl     , only : iulog
+  use perf_mod       , only : t_startf, t_stopf
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -327,9 +328,12 @@ contains
     !----------------------------------------------------
 
     ! First, compute the "minimal" set of fields.
+    call t_startf('lnd2atm_minimal')
     call lnd2atm_minimal(bounds, &
          surfalb_vars, solarabs_vars, energyflux_vars, atm2lnd_vars, lnd2atm_vars)
+    call t_stopf('lnd2atm_minimal')
 
+    call t_startf('lnd2atm_energy')
     call p2g(bounds, &
          t_ref2m    (bounds%begp:bounds%endp), &
          t_ref2m_grc(bounds%begg:bounds%endg), &
@@ -393,7 +397,9 @@ contains
          eflx_lh_tot    (bounds%begp:bounds%endp), &
          eflx_lh_tot_grc(bounds%begg:bounds%endg)      , &
          p2c_scale_type=unity, c2l_scale_type= urbanf, l2g_scale_type=unity)
+    call t_stopf('lnd2atm_energy')
 
+    call t_startf('lnd2atm_bgc')
     if (use_cn .or. use_fates) then
        call c2g(bounds, &
             nee    (bounds%begc:bounds%endc)   , &
@@ -458,11 +464,13 @@ contains
             lnd2atm_vars%flux_nh3_grc  (bounds%begg:bounds%endg), &
             c2l_scale_type= unity, l2g_scale_type=unity)
     end if
+    call t_stopf('lnd2atm_bgc')
 
     !----------------------------------------------------
     ! lnd -> rof
     !----------------------------------------------------
 
+    call t_startf('lnd2atm_rof_hydrology')
     call c2g( bounds, &
          qflx_runoff    (bounds%begc:bounds%endc) , &
          qflx_rofliq_grc(bounds%begg:bounds%endg)  , &
@@ -577,6 +585,7 @@ contains
          sedflux_vars%sed_yld_col(bounds%begc:bounds%endc), &
          lnd2atm_vars%qflx_rofmud_grc(bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
+    call t_stopf('lnd2atm_rof_hydrology')
     
     end associate
   end subroutine lnd2atm

@@ -20,8 +20,8 @@
 # include "utilities/InternalDiagnostics.hpp"
 #endif
 
-#define tstart(x)
-#define tstop(x)
+#define tstart(x) GPTLstart(x)
+#define tstop(x)  GPTLstop(x)
 
 namespace Homme
 {
@@ -463,7 +463,6 @@ pack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> uco
 
 void BoundaryExchange::pack_and_send ()
 {
-  tstart("be pack_and_send");
   // The registration MUST be completed by now
   // Note: this also implies connectivity and buffers manager are valid
   assert (m_registration_completed);
@@ -475,6 +474,8 @@ void BoundaryExchange::pack_and_send ()
   if (m_num_2d_fields+m_num_3d_fields+m_num_3d_int_fields==0) {
     return;
   }
+
+  tstart("be pack_and_send");
 
   // Check that buffers are not locked by someone else, then lock them
   assert (!m_buffers_manager->are_buffers_busy());
@@ -490,6 +491,7 @@ void BoundaryExchange::pack_and_send ()
   }
 
   // ---- Pack ---- //
+  tstart("be pack_fields");
   const auto& ucon = m_connectivity->get_d_ucon();
   const auto& ucon_ptr = m_connectivity->get_d_ucon_ptr();
   // First, pack 2d fields (if any)...
@@ -510,15 +512,17 @@ void BoundaryExchange::pack_and_send ()
     pack<NUM_LEV_P>(ucon, ucon_ptr, m_3d_int_fields, m_send_3d_int_buffers,
                     m_num_elems, m_num_3d_int_fields);
   Kokkos::fence();
+  tstop("be pack_fields");
 
   // ---- Send ---- //
   tstart("be sync_send_buffer");
   m_buffers_manager->sync_send_buffer(this); // Deep copy send_buffer into mpi_send_buffer (no op if MPI is on device)
   tstop("be sync_send_buffer");
-  tstart("be send");
+  tstart("be startall_send");
   if ( ! m_send_requests.empty())
     HOMMEXX_MPI_CHECK_ERROR(MPI_Startall(m_send_requests.size(), m_send_requests.data()),
                             m_connectivity->get_comm().mpi_comm());
+  tstop("be startall_send");
 
   // Notify a send is ongoing
   m_send_pending = true;
@@ -678,8 +682,6 @@ unpack (const ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> u
 
 void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP][NP]>* rspheremp)
 {
-  tstart("be recv_and_unpack");
-  tstart("be recv_and_unpack book");
   // The registration MUST be completed by now
   // Note: this also implies connectivity and buffers manager are valid
   assert (m_registration_completed);
@@ -692,6 +694,9 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
   if (m_num_2d_fields+m_num_3d_fields==0) {
     return;
   }
+
+  tstart("be recv_and_unpack");
+  tstart("be recv_and_unpack book");
 
   // If I am doing pack_and_send and recv_and_unpack manually (rather than
   // through 'exchange'), then I need to start receiving now (otherwise it is
@@ -722,6 +727,7 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
   tstop("be recv_and_unpack book");
 
   // --- Unpack --- //
+  tstart("be unpack_fields");
   const auto& ucon = m_connectivity->get_d_ucon();
   const auto& ucon_ptr = m_connectivity->get_d_ucon_ptr();
   // First, unpack 2d fields (if any)...
@@ -742,6 +748,7 @@ void BoundaryExchange::recv_and_unpack (const ExecViewUnmanaged<const Real * [NP
     unpack<NUM_LEV_P>(ucon, ucon_ptr, m_3d_int_fields, m_recv_3d_int_buffers, rspheremp,
                       m_num_elems, m_num_3d_int_fields);
   Kokkos::fence();
+  tstop("be unpack_fields");
 
   // If another BE structure starts an exchange, it has no way to check that
   // this object has finished its send requests, and may erroneously reuse the

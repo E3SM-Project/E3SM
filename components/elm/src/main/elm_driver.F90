@@ -673,7 +673,8 @@ contains
     ! snow accumulation exceeds 10 mm.
     ! ============================================================================
 
-    !$OMP PARALLEL DO PRIVATE (nc,l,c, bounds_clump)
+    !$OMP PARALLEL PRIVATE (nc,l,c, bounds_clump)
+    !$OMP DO NOWAIT
     do nc = 1,nclumps
        call get_clump_bounds(nc, bounds_clump)
 
@@ -1329,8 +1330,16 @@ contains
        end if
 
     end do
-    !$OMP END PARALLEL DO
+    !$OMP MASTER
+    call t_startf('elm_clump_loop_barrier')
+    !$OMP END MASTER
+    !$OMP BARRIER
+    !$OMP MASTER
+    call t_stopf('elm_clump_loop_barrier')
+    !$OMP END MASTER
+    !$OMP END PARALLEL
 
+    call t_startf('elm_pre_lnd2atm')
     ! Pass fates seed dispersal information to all nodes
     if (use_fates) then
        if (fates_seeddisp_cadence /= fates_dispersal_cadence_none) call alm_fates%WrapGlobalSeedDispersal()
@@ -1340,6 +1349,7 @@ contains
     ! Determine gridcell averaged properties to send to atm
     ! ============================================================================
 
+    call t_stopf('elm_pre_lnd2atm')
 
     call t_startf('lnd2atm')
     call lnd2atm(bounds_proc,                                   &

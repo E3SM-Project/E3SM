@@ -177,7 +177,9 @@ void AtmosphereProcess::run (const double dt) {
                               m_start_of_step_ts, true);
 
     // Run derived class implementation
+    start_timer(m_timer_prefix + this->name() + "::physics");
     run_impl(dt_sub);
+    stop_timer(m_timer_prefix + this->name() + "::physics");
 
     if (m_internal_diagnostics_level > 0)
       // Print hash of OUTPUTS/INTERNALS after run
@@ -384,7 +386,10 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
                                             const CheckFailHandling     check_fail_handling,
                                             const PropertyCheckCategory property_check_category) const {
   m_atm_logger->trace("[" + this->name() + "] run_property_check '" + property_check->name() + "'...");
+  const auto timer_name = m_timer_prefix + this->name() + "::check::" + property_check->name();
+  start_timer(timer_name);
   auto res_and_msg = property_check->check();
+  stop_timer(timer_name);
 
   // string for output
   std::string pre_post_str;
@@ -395,7 +400,10 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
     // Do nothing
   } else if (res_and_msg.result==CheckResult::Repairable) {
     // Ok, we can fix this
+    const auto repair_timer = timer_name + "::repair";
+    start_timer(repair_timer);
     property_check->repair();
+    stop_timer(repair_timer);
     log (m_repair_log_level,
       "WARNING: Failed and repaired " + pre_post_str + " property check.\n"
       "  - Atmosphere process name: " + name() + "\n"

@@ -12,6 +12,7 @@ module bndry_mod
   use parallel_mod, only : syncmp,parallel_t,abortmp,iam
   use edgetype_mod, only : Ghostbuffer3D_t,Edgebuffer_t,LongEdgebuffer_t
   use thread_mod, only : omp_in_parallel, omp_get_thread_num, omp_get_num_threads
+  use perf_mod, only : t_startf, t_stopf
 
   implicit none
   private
@@ -140,8 +141,10 @@ contains
        endif
     endif
 
+    call t_startf('bndryV_waitall')
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+    call t_stopf('bndryV_waitall')
 
     !$OMP END MASTER
 
@@ -250,8 +253,10 @@ contains
        endif
     endif
 
+    call t_startf('bndryS_waitall')
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+    call t_stopf('bndryS_waitall')
     !$OMP END MASTER
 
     ! Copy data that doesn't get messaged from the send buffer to the receive
@@ -393,8 +398,10 @@ contains
        endif			   
     endif
 
+    call t_startf('bndryS_finish_waitall')
     call MPI_Waitall(nSendCycles,buffer%Srequest,buffer%status,ierr)
     call MPI_Waitall(nRecvCycles,buffer%Rrequest,buffer%status,ierr)
+    call t_stopf('bndryS_finish_waitall')
 
     !$OMP END MASTER
 
