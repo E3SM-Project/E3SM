@@ -5562,8 +5562,11 @@ cp<span class="w"> </span>/global/cfs/cdirs/e3sm/eamxx-tutorial-2025/source/pomp
 </ul>
 <hr />
 <h2 id="the-runtime-parameters-in-the-run-script">The runtime parameters in the run script</h2>
-<div class="highlight"><pre><span></span><code><span class="c1"># increase SCREAM_NUM_TRACERS from 10 to 11 (note that scream supports both 128 and 72 levels for low-res)</span>
-./xmlchange<span class="w"> </span><span class="nv">SCREAM_CMAKE_OPTIONS</span><span class="o">=</span><span class="s2">"SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 128 SCREAM_NUM_TRACERS 11"</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># increase SCREAM_NUM_TRACERS from 10 to 11</span>
+./xmlchange<span class="w"> </span><span class="nv">SCREAM_CMAKE_OPTIONS</span><span class="o">=</span><span class="s2">"SCREAM_NP 4 SCREAM_NUM_TRACERS 11"</span>
+
+<span class="c1"># the vertical grid is chosen separately, and sets the number of levels (72 or 128)</span>
+./xmlchange<span class="w"> </span><span class="nv">EAMXX_VGRID</span><span class="o">=</span>L128v4
 
 <span class="c1"># add pompei to the list of aerosol processes</span>
 ./atmchange<span class="w"> </span>mac_aero_mic::atm_procs_list+<span class="o">=</span>pompei
