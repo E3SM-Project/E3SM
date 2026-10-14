@@ -1,0 +1,92 @@
+name: e3sm-ci-job-filter
+
+# Reusable workflow that decides which jobs of the calling workflow should run.
+#
+# Usage (in the calling workflow):
+#
+#   jobs:
+#     job-filter:
+#       uses: ./.github/workflows/e3sm-ci-job-filter.yml
+#       permissions: {contents: read, pull-requests: read}
+#       with:
+#         jobs: job-a job-b job-c
+#         dispatch-input: job_to_run     # optional
+#         paths: |                       # optional
+#           components/foo/**
+#           !components/foo/docs/**
+#
+#     job-a:
+#       needs: job-filter
+#       if: contains(fromJSON(needs.job-filter.outputs.jobs), 'job-a')
+#       ...
+#
+# Selection rules, by event:
+#   - pull_request:       no jobs if the PR is a draft (and skip-drafts is true), or if
+#                         'paths' is given and no changed file matches it; else all jobs
+#   - workflow_dispatch:  if 'dispatch-input' names an input of the caller, run the job it
+#                         selects ('all' or empty means all jobs; unknown job names fail)
+#                         else all jobs
+#   - any other event:    all jobs
+#
+# The 'paths' patterns follow GitHub's syntax: '**' crosses directories, '*' does not, and
+# a leading '!' excludes files matched by earlier patterns (the last matching pattern wins).
+# The calling workflow file and the files of this filter are always considered relevant.
+
+on:
+  workflow_call:
+    inputs:
+      jobs:
+        description: 'Names of the jobs that this filter can select (whitespace or comma separated)'
+        required: true
+        type: string
+      dispatch-input:
+        description: 'Name of the workflow_dispatch input used to select a job ("all" or empty = all jobs)'
+        required: false
+        type: string
+        default: ''
+      skip-drafts:
+        description: 'Run no jobs on draft pull requests'
+        required: false
+        type: boolean
+        default: true
+      paths:
+        description: 'Newline separated path patterns; for pull requests, run jobs only if a changed file matches'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      jobs:
+        description: 'JSON array with the names of the jobs to run'
+        value: ${{ jobs.filter.outputs.jobs }}
+      any:
+        description: '"true" if at least one job must run'
+        value: ${{ jobs.filter.outputs.any }}
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      jobs: ${{ steps.select.outputs.jobs }}
+      any: ${{ steps.select.outputs.any }}
+    steps:
+      - name: Check out the filter script
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          show-progress: false
+          sparse-checkout: .github/scripts/e3sm-ci-job-filter
+          sparse-checkout-cone-mode: false
+      - name: Select jobs
+        id: select
+        run: python3 .github/scripts/e3sm-ci-job-filter/select_jobs.py
+        env:
+          INPUT_JOBS: ${{ inputs.jobs }}
+          INPUT_DISPATCH_INPUT: ${{ inputs.dispatch-input }}
+          INPUT_SKIP_DRAFTS: ${{ inputs.skip-drafts }}
+          INPUT_PATHS: ${{ inputs.paths }}
+          # Path of the calling workflow, e.g. owner/repo/.github/workflows/foo.yml@refs/pull/1/merge
+          CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+          GH_TOKEN: ${{ github.token }}
