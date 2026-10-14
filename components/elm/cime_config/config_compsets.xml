@@ -801,6 +801,10 @@
     <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
   <compset>
+    <alias>I1850GSWCNPCROPTOP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCCROPTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <compset>
     <alias>I1850GSWCNPPHSCROP</alias>
     <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCPHSCROP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
