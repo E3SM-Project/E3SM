@@ -946,7 +946,7 @@ void AtmosphereDriver::restart_model ()
   // First, figure out the name of the netcdf file containing the restart data
   const auto& provenance = m_atm_params.sublist("provenance");
   const auto& casename = provenance.get<std::string>("rest_caseid");
-  auto filename = find_filename_in_rpointer (casename+".scream",true,m_atm_comm,m_run_t0);
+  auto filename = find_filename_in_rpointer (casename+"."+get_eamxx_model_name(),true,m_atm_comm,m_run_t0);
 
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
