@@ -636,8 +636,13 @@ compute_filename (const IOFileSpecs& file_specs,
 {
   std::string filename;
 
-  // Always start with: {casename}.eamxx
-  filename = m_casename + "." + get_eamxx_model_name();
+  // Start with model name, optionally prefixed with case name
+  // Skip case name if it's "UNSET" (common in unit tests)
+  if (m_casename != "UNSET") {
+    filename = m_casename + "." + get_eamxx_model_name();
+  } else {
+    filename = get_eamxx_model_name();
+  }
 
   // Add file type suffix (.r, .h, or .rh)
   filename += file_specs.suffix();
