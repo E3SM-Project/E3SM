@@ -781,6 +781,10 @@
     <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBC_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
   <compset>
+    <alias>I1850GSWCNPTOP</alias>
+    <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCTOP_SICE_SOCN_MOSART_SGLC_SWAV</lname>
+  </compset>
+  <compset>
     <alias>I1850GSWCNPPHSTGUWFM</alias>
     <lname>1850_DATM%GSWP3v1_ELM%CNPRDCTCBCPHSTGUWFM_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
