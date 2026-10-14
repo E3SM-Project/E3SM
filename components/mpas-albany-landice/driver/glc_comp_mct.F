@@ -1902,8 +1902,11 @@ contains
             g2x_g(index_g2x_Sg_icemask_grounded, n) = belowSeaLevelMask * li_mask_is_grounded_ice_int(cellMask(i))
 
             ! conductive heat flux at the base of floating ice (positive down, into
-            ! the ocean); zero if the thermal solver is not computing it
-            if ((trim(config_thermal_solver) /= 'none') .and. li_mask_is_floating_ice(cellMask(i))) then
+            ! the ocean); zero if the thermal solver is not computing it and for ice
+            ! too thin to be dynamically active, where the temperature gradient over
+            ! the bottom half-layer is too poorly resolved to be meaningful
+            if ((trim(config_thermal_solver) /= 'none') .and. li_mask_is_floating_ice(cellMask(i)) &
+                .and. li_mask_is_dynamic_ice(cellMask(i))) then
                g2x_g(index_g2x_Fogg_hcond, n) = basalConductiveFlux(i)
             else
                g2x_g(index_g2x_Fogg_hcond, n) = 0.0_RKIND
