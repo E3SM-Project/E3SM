@@ -7,13 +7,9 @@ name: e3sm-ci-job-filter
 #   jobs:
 #     job-filter:
 #       uses: ./.github/workflows/e3sm-ci-job-filter.yml
-#       permissions: {contents: read, pull-requests: read}
 #       with:
 #         jobs: job-a job-b job-c
 #         dispatch-input: job_to_run     # optional
-#         paths: |                       # optional
-#           components/foo/**
-#           !components/foo/docs/**
 #
 #     job-a:
 #       needs: job-filter
@@ -21,16 +17,11 @@ name: e3sm-ci-job-filter
 #       ...
 #
 # Selection rules, by event:
-#   - pull_request:       no jobs if the PR is a draft (and skip-drafts is true), or if
-#                         'paths' is given and no changed file matches it; else all jobs
+#   - pull_request:       no jobs if the PR is a draft (and skip-drafts is true), else all jobs
 #   - workflow_dispatch:  if 'dispatch-input' names an input of the caller, run the job it
 #                         selects ('all' or empty means all jobs; unknown job names fail)
 #                         else all jobs
 #   - any other event:    all jobs
-#
-# The 'paths' patterns follow GitHub's syntax: '**' crosses directories, '*' does not, and
-# a leading '!' excludes files matched by earlier patterns (the last matching pattern wins).
-# The calling workflow file and the files of this filter are always considered relevant.
 
 on:
   workflow_call:
@@ -49,11 +40,6 @@ on:
         required: false
         type: boolean
         default: true
-      paths:
-        description: 'Newline separated path patterns; for pull requests, run jobs only if a changed file matches'
-        required: false
-        type: string
-        default: ''
     outputs:
       jobs:
         description: 'JSON array with the names of the jobs to run'
@@ -65,28 +51,48 @@ on:
 jobs:
   filter:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
     outputs:
       jobs: ${{ steps.select.outputs.jobs }}
       any: ${{ steps.select.outputs.any }}
     steps:
-      - name: Check out the filter script
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          show-progress: false
-          sparse-checkout: .github/scripts/e3sm-ci-job-filter
-          sparse-checkout-cone-mode: false
       - name: Select jobs
         id: select
-        run: python3 .github/scripts/e3sm-ci-job-filter/select_jobs.py
+        shell: bash
         env:
-          INPUT_JOBS: ${{ inputs.jobs }}
-          INPUT_DISPATCH_INPUT: ${{ inputs.dispatch-input }}
-          INPUT_SKIP_DRAFTS: ${{ inputs.skip-drafts }}
-          INPUT_PATHS: ${{ inputs.paths }}
-          # Path of the calling workflow, e.g. owner/repo/.github/workflows/foo.yml@refs/pull/1/merge
-          CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
-          GH_TOKEN: ${{ github.token }}
+          ALL_JOBS: ${{ inputs.jobs }}
+          DISPATCH_INPUT: ${{ inputs.dispatch-input }}
+          SKIP_DRAFTS: ${{ inputs.skip-drafts }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          all=$(jq -cn --arg s "$ALL_JOBS" '$s | [splits("[\\s,]+") | select(length>0)]')
+          selected=$all
+          reason="$GITHUB_EVENT_NAME event"
+
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && "$SKIP_DRAFTS" == true && "$IS_DRAFT" == true ]]; then
+            selected='[]'
+            reason="draft pull request"
+          elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$DISPATCH_INPUT" ]]; then
+            choice=$(jq -r --arg n "$DISPATCH_INPUT" '.inputs[$n] // "all"' "$GITHUB_EVENT_PATH")
+            reason="dispatch input '$DISPATCH_INPUT' is '$choice'"
+            if [[ "$choice" != all ]]; then
+              # Exact match, so that e.g. 'gnu' does not select 'gnugpu'
+              selected=$(jq -cn --argjson a "$all" --arg c "$choice" '[$a[] | select(. == $c)]')
+              if [[ "$selected" == '[]' ]]; then
+                echo "::error::Dispatch input '$DISPATCH_INPUT'='$choice' is not one of: $all, or 'all'"
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "Selected jobs ($reason): $selected"
+          echo "jobs=$selected" >> "$GITHUB_OUTPUT"
+          echo "any=$(jq -r 'length > 0' <<< "$selected")" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Job selection"
+            echo
+            echo "Reason: $reason"
+            echo
+            echo "| Job | Run |"
+            echo "|---|---|"
+            jq -r --argjson s "$selected" '.[] as $j | "| \($j) | \(if $s | index($j) then "yes" else "no" end) |"' <<< "$all"
+          } >> "$GITHUB_STEP_SUMMARY"

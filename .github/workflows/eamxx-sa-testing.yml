@@ -76,9 +76,6 @@ defaults:
 jobs:
   eamxx-sa-job-filter:
     uses: ./.github/workflows/e3sm-ci-job-filter.yml
-    permissions:
-      contents: read
-      pull-requests: read
     with:
       jobs: gnu-openmp intel-openmp gnu-cuda
       dispatch-input: job_to_run
