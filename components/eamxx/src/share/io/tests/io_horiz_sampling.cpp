@@ -134,7 +134,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   print (" -> Check output ... \n",comm);
 
   // Read output file
-  std::string filename = "horiz_sampling.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
+  // File naming: eamxx.h.{stream_id}.{output_spec}.{date_spec}.nc (no case name for unit tests)
+  std::string filename = "eamxx.h.horiz_sampling.INSTANT.nsteps_x1.np" + std::to_string(comm.size()) + "." + t0.to_string() + ".nc";
   auto tgt_grid = create_point_grid(gname + "_tgt",ngcols_tgt,nlevs,comm);
 
   auto s2d_tgt = create_f("s2d",tgt_grid->get_2d_scalar_layout(),gname+"_tgt");
