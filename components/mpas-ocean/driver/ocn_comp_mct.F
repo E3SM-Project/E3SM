@@ -3161,7 +3161,7 @@ contains
 
    logical, pointer :: config_glc_ice_shelf_coupling_import_geometry
 
-   real (kind=RKIND) :: belowSeaLevelFraction, glcFloatingFraction
+   real (kind=RKIND) :: belowSeaLevelFraction, glcFloatingFraction, floatingFraction
 
    call mpas_pool_get_config(domain % configs, 'config_glc_ice_shelf_coupling_min_floating_fraction', &
                              config_glc_ice_shelf_coupling_min_floating_fraction)
@@ -3204,8 +3204,13 @@ contains
             end if
          end if
 
-         if (glcFloatingFraction > config_glc_ice_shelf_coupling_min_floating_fraction) then
-            landIceConductiveHeatFlux(i) = x2o_o(index_x2o_Fogg_hcond, n) / glcFloatingFraction
+         ! spread glc's conductive heat over the larger of the two floating areas.  This
+         ! conserves heat whenever the ocean's floating area is at least glc's (always
+         ! the case when the geometry is imported) and otherwise never exceeds glc's
+         ! own flux per unit floating area.
+         floatingFraction = max(landIceFloatingFraction(i), glcFloatingFraction)
+         if (floatingFraction > config_glc_ice_shelf_coupling_min_floating_fraction) then
+            landIceConductiveHeatFlux(i) = x2o_o(index_x2o_Fogg_hcond, n) / floatingFraction
          else
             landIceConductiveHeatFlux(i) = 0.0_RKIND
          end if
