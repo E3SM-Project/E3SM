@@ -2448,6 +2448,11 @@ contains
 
      do c = bounds%begc, bounds%endc
 
+        ! Skip inactive columns/topounits before reading qflx_snwcp_ice, whose
+        ! value on inactive columns is the positive spval sentinel.
+        if (.not. col_pp%active(c)) cycle
+        if (.not. top_pp%active(col_pp%topounit(c))) cycle
+
         ! Skip columns with no snowcapped ice flux
         if (qflx_snwcp_ice(c) <= 0._r8) cycle
 
@@ -2593,6 +2598,18 @@ contains
 
        if (.not. snowcap_latband_diag_write) return
 
+       ! Fold this timestep's local totals into the running cumulative totals
+       ! every step; only the reductions and log write are gated on the frequency.
+       snowcap_diag_cum_latent_energy_j = snowcap_diag_cum_latent_energy_j + snowcap_diag_step_latent_energy_j
+       snowcap_diag_cum_ice_mass_kg = snowcap_diag_cum_ice_mass_kg + snowcap_diag_step_ice_mass_kg
+       snowcap_diag_cum_temp_area_sum = snowcap_diag_cum_temp_area_sum + snowcap_diag_step_temp_area_sum
+       snowcap_diag_cum_area_m2 = snowcap_diag_cum_area_m2 + snowcap_diag_step_area_m2
+       snowcap_diag_cum_cols = snowcap_diag_cum_cols + snowcap_diag_step_cols
+       snowcap_diag_cum_required_energy_j = snowcap_diag_cum_required_energy_j + snowcap_diag_step_required_energy_j
+       snowcap_diag_cum_uncooled_energy_j = snowcap_diag_cum_uncooled_energy_j + snowcap_diag_step_uncooled_energy_j
+       snowcap_diag_cum_uncooled_cols = snowcap_diag_cum_uncooled_cols + snowcap_diag_step_uncooled_cols
+       snowcap_diag_cum_max_cooling_k = max(snowcap_diag_cum_max_cooling_k, snowcap_diag_step_max_cooling_k)
+
        nfreq = max(1, snowcap_latband_diag_nstep)
        if (mod(nstep, nfreq) /= 0) return
 
@@ -2605,16 +2622,6 @@ contains
        call mpi_allreduce(snowcap_diag_step_required_energy_j, g_step_required_energy_j, 1, MPI_REAL8, MPI_SUM, mpicom, ier)
        call mpi_allreduce(snowcap_diag_step_uncooled_energy_j, g_step_uncooled_energy_j, 1, MPI_REAL8, MPI_SUM, mpicom, ier)
        call mpi_allreduce(snowcap_diag_step_uncooled_cols,     g_step_uncooled_cols,     1, MPI_INTEGER, MPI_SUM, mpicom, ier)
-
-      snowcap_diag_cum_latent_energy_j = snowcap_diag_cum_latent_energy_j + snowcap_diag_step_latent_energy_j
-      snowcap_diag_cum_ice_mass_kg = snowcap_diag_cum_ice_mass_kg + snowcap_diag_step_ice_mass_kg
-      snowcap_diag_cum_temp_area_sum = snowcap_diag_cum_temp_area_sum + snowcap_diag_step_temp_area_sum
-      snowcap_diag_cum_area_m2 = snowcap_diag_cum_area_m2 + snowcap_diag_step_area_m2
-       snowcap_diag_cum_max_cooling_k = max(snowcap_diag_cum_max_cooling_k, g_step_max_cooling_k)
-      snowcap_diag_cum_cols = snowcap_diag_cum_cols + snowcap_diag_step_cols
-      snowcap_diag_cum_required_energy_j = snowcap_diag_cum_required_energy_j + snowcap_diag_step_required_energy_j
-      snowcap_diag_cum_uncooled_energy_j = snowcap_diag_cum_uncooled_energy_j + snowcap_diag_step_uncooled_energy_j
-      snowcap_diag_cum_uncooled_cols = snowcap_diag_cum_uncooled_cols + snowcap_diag_step_uncooled_cols
 
        call mpi_allreduce(snowcap_diag_cum_latent_energy_j, g_cum_latent_energy_j, 1, MPI_REAL8, MPI_SUM, mpicom, ier)
        call mpi_allreduce(snowcap_diag_cum_ice_mass_kg,      g_cum_ice_mass_kg,      1, MPI_REAL8, MPI_SUM, mpicom, ier)
