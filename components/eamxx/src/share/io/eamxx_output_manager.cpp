@@ -171,16 +171,25 @@ setup (const std::shared_ptr<fm_type>& field_mgr,
   // for average output we also need to restore the accumulation state of the output fields
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
-  //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
+  //       stream_id, so allow to specify a different stream_id for the restart file.
   bool branch_run = m_params.sublist("restart").get("branch_run",false);
   if (m_run_type==RunType::Restart and not m_is_model_restart_output and not branch_run) {
-    // Allow to skip history restart, or to specify a filename_prefix for the restart file
-    // that is different from the filename_prefix of the current output.
+    // Allow to skip history restart, or to specify a stream_id for the restart file
+    // that is different from the stream_id of the current output.
     auto& restart_pl = m_params.sublist("restart");
-    auto hist_restart_filename_prefix = restart_pl.get("filename_prefix",m_stream_id);
+    auto hist_restart_stream_id = restart_pl.get("stream_id",m_stream_id);
+
+    // Build the full prefix for history restart search
+    // Skip case name if it's "UNSET" (unit tests)
+    std::string hist_restart_prefix;
+    if (m_casename != "UNSET") {
+      hist_restart_prefix = m_casename + "." + get_eamxx_model_name();
+    } else {
+      hist_restart_prefix = get_eamxx_model_name();
+    }
 
     bool skip_restart_if_rhist_not_found = restart_pl.get("skip_restart_if_rhist_not_found",false);
-    auto rhist_file = find_filename_in_rpointer(hist_restart_filename_prefix,false,m_io_comm,m_run_t0,
+    auto rhist_file = find_filename_in_rpointer(hist_restart_prefix,false,m_io_comm,m_run_t0,
                                                 skip_restart_if_rhist_not_found,m_avg_type,m_output_control);
 
     if (rhist_file=="") {
