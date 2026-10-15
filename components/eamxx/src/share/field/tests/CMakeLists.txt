@@ -20,6 +20,12 @@ if (NOT SCREAM_ONLY_GENERATE_BASELINES)
     LIBS eamxx_field
   )
 
+  # Test field view visitors
+  CreateUnitTest(field_visit
+    SOURCES field_visit_tests.cpp
+    LIBS eamxx_field
+  )
+
   # Test masked field operations
   CreateUnitTest(field_masked_ops
     SOURCES field_masked_ops_tests.cpp
