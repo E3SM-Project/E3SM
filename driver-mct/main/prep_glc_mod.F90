@@ -52,6 +52,7 @@ module prep_glc_mod
   public :: prep_glc_get_o2x_gx
   public :: prep_glc_get_x2gacc_gx
   public :: prep_glc_get_x2gacc_gx_cnt
+  public :: prep_glc_get_x2gacc_gx_cnt_avg
 
   public :: prep_glc_get_mapper_Sl2g
   public :: prep_glc_get_mapper_Fl2g
@@ -91,6 +92,7 @@ module prep_glc_mod
   
   type(mct_aVect), pointer :: x2gacc_gx(:) ! Glc export, glc grid, cpl pes - allocated in driver
   integer        , target :: x2gacc_gx_cnt ! x2gacc_gx: number of time samples accumulated 
+  integer        , target :: x2gacc_gx_cnt_avg ! x2gacc_gx: number of time samples averaged
 
   type(mct_aVect), pointer :: l2gacc_lx(:) ! Lnd export, lnd grid, cpl pes - allocated in driver
   integer        , target :: l2gacc_lx_cnt ! l2gacc_lx: number of time samples accumulated
@@ -266,6 +268,7 @@ contains
        end do
 
        x2gacc_gx_cnt = 0
+       x2gacc_gx_cnt_avg = 0
        samegrid_go = .true.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_go = .false.
     end if
@@ -508,6 +511,7 @@ contains
           call mct_avect_copy(x2gacc_gx(egi), x2g_gx, rList=seq_flds_x2g_shelf_fields_from_ocn)
        enddo
     end if
+    x2gacc_gx_cnt_avg = x2gacc_gx_cnt
     x2gacc_gx_cnt = 0
 
     call t_drvstopf  (trim(timer))
@@ -1505,6 +1509,11 @@ contains
     integer, pointer :: prep_glc_get_x2gacc_gx_cnt
     prep_glc_get_x2gacc_gx_cnt => x2gacc_gx_cnt
   end function prep_glc_get_x2gacc_gx_cnt
+
+  function prep_glc_get_x2gacc_gx_cnt_avg()
+    integer, pointer :: prep_glc_get_x2gacc_gx_cnt_avg
+    prep_glc_get_x2gacc_gx_cnt_avg => x2gacc_gx_cnt_avg
+  end function prep_glc_get_x2gacc_gx_cnt_avg
 
   function prep_glc_get_mapper_Sl2g()
     type(seq_map), pointer :: prep_glc_get_mapper_Sl2g
