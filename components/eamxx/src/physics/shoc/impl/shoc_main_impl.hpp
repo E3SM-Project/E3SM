@@ -277,10 +277,11 @@ void Functions<S,D>::shoc_main_internal(
                             w3);                                    // Output
 
     if (use_emulated_moments) {
+      const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
       Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlevi)),
                            [&] (const Int& k) {
         const auto active = zi_grid(k) < 8000;
-        w_sec(k).set(active, emulated_w_sec(k));
+        w_sec(k).set(active, ekat::max(min_emulated_w_sec, emulated_w_sec(k)));
         w3(k).set(active, emulated_w3(k));
       });
       team.team_barrier();
@@ -565,12 +566,14 @@ void Functions<S,D>::shoc_main_internal(
                                  w3);                                    // Output
 
     if (use_emulated_moments) {
+      const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
       Kokkos::parallel_for(shcol*nlevi, KOKKOS_LAMBDA(const int idx) {
         const int i = idx/nlevi;
         const int k = idx%nlevi;
         const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
         if (active) {
-          w_sec(i,k/Pack::n)[k%Pack::n] = emulated_w_sec(i,k/Pack::n)[k%Pack::n];
+          w_sec(i,k/Pack::n)[k%Pack::n] = ekat::max(
+            min_emulated_w_sec, emulated_w_sec(i,k/Pack::n)[k%Pack::n]);
           w3(i,k/Pack::n)[k%Pack::n] = emulated_w3(i,k/Pack::n)[k%Pack::n];
         }
       });

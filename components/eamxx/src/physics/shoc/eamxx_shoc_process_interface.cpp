@@ -700,8 +700,16 @@ void SHOCMacrophysics::init_moments_emulator()
   using namespace emulator::inference;
   const std::string prefix = "[SHOC] SHOC moments emulator: ";
   const auto module = m_params.get<std::string>("shoc_moments_emulator_python_module", "standalone_emulator");
-  const auto python_path_param = m_params.get<std::string>("shoc_moments_emulator_python_path", "");
-  const auto model_path_param = m_params.get<std::string>("shoc_moments_emulator_model_path", "");
+  auto python_path_param = m_params.get<std::string>("shoc_moments_emulator_python_path", "");
+  auto model_path_param = m_params.get<std::string>("shoc_moments_emulator_model_path", "");
+  // Empty XML string values may arrive through the YAML input as the literal
+  // string "None". Treat both forms as unset so compiled-in defaults apply.
+  if (python_path_param == "None" || python_path_param == "none") {
+    python_path_param.clear();
+  }
+  if (model_path_param == "None" || model_path_param == "none") {
+    model_path_param.clear();
+  }
   const auto python_path = python_path_param.empty() ?
     std::string(EAMXX_SHOC_MOMENTS_EMULATOR_PATH) : python_path_param;
   const auto model_path = model_path_param.empty() ?
