@@ -160,8 +160,9 @@ protected:
   ekat::Comm                     m_io_comm;
   ekat::ParameterList            m_params;
 
-  // The output filename root
-  std::string       m_filename_prefix;
+  // Case name and stream identifier for filename construction
+  std::string       m_casename;
+  std::string       m_stream_id;
 
   std::vector<double> m_time_bnds;
 
