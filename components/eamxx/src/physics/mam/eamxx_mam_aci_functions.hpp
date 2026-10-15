@@ -13,26 +13,15 @@ namespace detail {
 static constexpr Real max_exact_ndrop_nsubmix_aggregate = 16777216;
 
 KOKKOS_INLINE_FUNCTION
-bool can_accumulate_ndrop_nsubmix(const int nsubmix, const bool reset,
-                                  const Real sum) {
-  if(nsubmix <= 0) {
-    return false;
-  }
-  if(nsubmix > 16777216) {
-    return false;
-  }
-  const Real count = static_cast<Real>(nsubmix);
-  return reset ||
-         (sum >= 0 && sum <= max_exact_ndrop_nsubmix_aggregate - count);
-}
-
-KOKKOS_INLINE_FUNCTION
 void accumulate_ndrop_nsubmix(const int nsubmix, const bool reset,
                               Real &latest, Real &sum, Real &maximum) {
-  EKAT_KERNEL_REQUIRE_MSG(
-      can_accumulate_ndrop_nsubmix(nsubmix, reset, sum),
-      "ndrop nsubmix is invalid or exceeds the exact integer output range");
   const Real count = static_cast<Real>(nsubmix);
+  EKAT_KERNEL_REQUIRE_MSG(
+      nsubmix > 0 &&
+          nsubmix <= static_cast<int>(max_exact_ndrop_nsubmix_aggregate) &&
+          (reset || (sum >= 0 &&
+                     sum <= max_exact_ndrop_nsubmix_aggregate - count)),
+      "ndrop nsubmix is invalid or exceeds the exact integer output range");
   latest = count;
   if(reset) {
     sum     = count;
