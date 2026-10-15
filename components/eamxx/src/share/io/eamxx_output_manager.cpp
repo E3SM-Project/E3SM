@@ -709,7 +709,8 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
       fields_pl.sublist(gname).set("field_names",fnames);
       fields_pl.sublist(gname).set<std::string>("output_data_layout","native");
     }
-    m_stream_id = m_params.get<std::string>("stream_id");
+    // For model restart, stream_id should be empty (not used in filename)
+    m_stream_id = m_params.get<std::string>("stream_id","");
 
     // Hard code some parameters in case we access them later
     m_params.set<std::string>("floating_point_precision","real");
@@ -738,7 +739,8 @@ setup_internals (const std::shared_ptr<fm_type>& field_mgr,
     } else {
       EKAT_ERROR_MSG ("Error! Unrecognized/unsupported file storage type.\n");
     }
-    m_stream_id = m_params.get<std::string>("stream_id");
+    // Get stream_id with default fallback for tests that don't provide it
+    m_stream_id = m_params.get<std::string>("stream_id","output");
     m_output_file_specs.flush_frequency = m_params.get("flush_frequency",1);
 
     // Allow user to ask for higher precision for normal model output,
