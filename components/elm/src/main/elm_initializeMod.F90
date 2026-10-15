@@ -95,7 +95,6 @@ contains
 #ifdef MOAB_LATERAL
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
 #endif
-    use SoilTemperatureMod        , only: init_soil_temperature
     use ExternalModelInterfaceMod , only: EMI_Determine_Active_EMs
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
@@ -148,8 +147,6 @@ contains
        call ELMFatesGlobals1()
        call update_pft_array_bounds()
     end if
-
-    call init_soil_temperature()
 
     if (masterproc) call control_print()
 
