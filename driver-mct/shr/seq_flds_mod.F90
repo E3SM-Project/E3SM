@@ -1332,15 +1332,6 @@ contains
     attname  = 'So_re'
     call metadata_set(attname, longname, stdname, units)
 
-    ! Ocean surface roughness length from wave model
-    call seq_flds_add(xao_states,"So_z0wav")
-    call seq_flds_add(x2a_states,"So_z0wav")
-    longname = 'Ocean surface roughness length from waves'
-    stdname  = ''
-    units    = 'm'
-    attname  = 'So_z0wav'
-    call metadata_set(attname, longname, stdname, units)
-
     ! 10 meter wind
     call seq_flds_add(i2x_states,"Si_u10")
     call seq_flds_add(xao_states,"So_u10")

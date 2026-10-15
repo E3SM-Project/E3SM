@@ -48,7 +48,6 @@ module seq_flux_mct
   real(r8), allocatable ::  wsresp(:) ! atm response to surface stress
   real(r8), allocatable ::  charnsea(:) ! Charnock coeff accounting for the wave stress
   real(r8), allocatable ::  ustarwav(:) ! Friction velocity from WW3
-  real(r8), allocatable ::  z0wav(:)    ! Surface roughness length from WW3
   real(r8), allocatable ::  tau_est(:)! estimation of tau in equilibrium with wind
   real(r8), allocatable ::  ugust_atm(:)  ! atm gustiness
   real(r8), allocatable ::  thbot(:)  ! atm potential T
@@ -176,7 +175,6 @@ module seq_flux_mct
   integer :: index_xao_So_ustar
   integer :: index_xao_So_re
   integer :: index_xao_So_ssq
-   integer :: index_xao_So_z0wav
   integer :: index_xao_So_duu10n
   integer :: index_xao_So_u10
   integer :: index_xao_So_u10withgusts
@@ -308,10 +306,7 @@ contains
     charnsea = 0.0_r8
     allocate( ustarwav(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate ustarwav',ier)
-    ustarwav = 0.0_r8 
-    allocate( z0wav(nloc),stat=ier)
-    if(ier/=0) call mct_die(subName,'allocate z0wav',ier)
-    z0wav = 0.0_r8
+    ustarwav = 0.0_r8
 
     allocate( tocn(nloc),stat=ier)
     if(ier/=0) call mct_die(subName,'allocate tocn',ier)
@@ -1403,7 +1398,6 @@ contains
        index_xao_So_ustar  = mct_aVect_indexRA(xao,'So_ustar')
        index_xao_So_re     = mct_aVect_indexRA(xao,'So_re')
        index_xao_So_ssq    = mct_aVect_indexRA(xao,'So_ssq')
-      index_xao_So_z0wav  = mct_aVect_indexRA(xao,'So_z0wav', perrWith='quiet')
        index_xao_So_u10    = mct_aVect_indexRA(xao,'So_u10')
        index_xao_So_u10withgusts = mct_aVect_indexRA(xao,'So_u10withgusts')
        index_xao_So_duu10n = mct_aVect_indexRA(xao,'So_duu10n')
@@ -1586,7 +1580,6 @@ contains
              if (wav_atm_coup == 'twoway') then
                      charnsea(n) = w2x%rAttr(index_w2x_Sw_Charn   ,n)
                      ustarwav(n) = w2x%rAttr(index_w2x_Sw_Ustar   ,n)
-                     z0wav(n) = w2x%rAttr(index_w2x_Sw_Z0   ,n)
              endif
              if ( index_o2x_So_roce_16O /= 0 ) roce_16O(n) = o2x%rAttr(index_o2x_So_roce_16O, n)
              if ( index_o2x_So_roce_HDO /= 0 ) roce_HDO(n) = o2x%rAttr(index_o2x_So_roce_HDO, n)
@@ -1676,7 +1669,7 @@ contains
             ocn_surface_flux_scheme, &
             duu10n, u10res, ustar, re  , ssq, &
             wsresp=wsresp, tau_est=tau_est, ugust=ugust_atm, &
-            z0wav=z0wav, ustarwav=ustarwav, charnockSeaState=charnsea)
+            ustarwav=ustarwav, charnockSeaState=charnsea)
        else     
           call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
@@ -1708,7 +1701,6 @@ contains
           xao%rAttr(index_xao_So_ustar ,n) = ustar(n)  ! friction velocity
           xao%rAttr(index_xao_So_re    ,n) = re(n)     ! reynolds number
           xao%rAttr(index_xao_So_ssq   ,n) = ssq(n)    ! s.hum. saturation at Ts
-          if (index_xao_So_z0wav > 0) xao%rAttr(index_xao_So_z0wav,n) = z0wav(n)
           xao%rAttr(index_xao_Faox_lwup,n) = lwup(n)
           xao%rAttr(index_xao_So_duu10n,n) = duu10n(n)
           xao%rAttr(index_xao_So_u10   ,n) = u10res(n)
