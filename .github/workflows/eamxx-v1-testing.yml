@@ -25,15 +25,6 @@ on:
   # Manual run is used to bless
   workflow_dispatch:
     inputs:
-      job_to_run:
-        description: 'Job to run'
-        required: true
-        type: choice
-        options:
-          - gnu
-          - intel
-          - gnugpu
-          - all
       bless:
         description: 'Generate baselines'
         required: true
@@ -63,31 +54,20 @@ env:
   flags: ${{ github.event_name == 'workflow_dispatch' && inputs.bless && '-o -g -b master' || '-c -b master' }}
 
 jobs:
-  gnu:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnu' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, gnu, e3sm]
+  tests:
+    runs-on: [self-hosted, e3sm, '${{ matrix.runner }}']
     strategy:
-      matrix:
-        test:
-          - full_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci_gnu.eamxx-output-preset-2--eamxx-L72
-            short_name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.eamxx-output-preset-2
-          - full_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97
-            short_name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.eamxx-dpxx-arm97
-          - full_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-small_kernels--eamxx-output-preset-5
-            short_name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-small_kernels--eamxx-output-preset-5
-          - full_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72
-            short_name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.eamxx-L72
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-prod
-            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
       fail-fast: false
-    name: gnu / ${{ matrix.test.short_name }}
+      matrix:
+        include:
+          - {runner: gnu, name: ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1.ghci_gnu.eamxx-output-preset-2--eamxx-L72}
+          - {runner: gnu, name: ERS_P16_Ln22.ne30pg2_ne30pg2.FIOP-SCREAMv1-DP.ghci_gnu.eamxx-dpxx-arm97}
+          - {runner: gnu, name: ERS_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-small_kernels--eamxx-output-preset-5}
+          - {runner: gnu, name: REP_D_Ln5.ne4pg2_oQU480.F2010-EAMxx-MAM4xx.ghci_gnu.eamxx-L72}
+          - {runner: gnu, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnu.eamxx-prod}
+          - {runner: intel, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-prod}
+          - {runner: cuda, name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnugpu.eamxx-prod}
+    name: ${{ matrix.name }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -100,124 +80,24 @@ jobs:
       - name: Run test
         id: run-tests
         run: |
-          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
+          ./cime/scripts/create_test ${{ matrix.name }} ${{ env.flags }} --wait
       - name: Upload log files
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: logs.${{ matrix.test.short_name }}
+          name: logs.${{ matrix.name }}
           path: |
-            /tmp/${{ matrix.test.full_name }}*/TestStatus
-            /tmp/${{ matrix.test.full_name }}*/TestStatus.log
-            /tmp/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
+            /tmp/${{ matrix.name }}*/TestStatus
+            /tmp/${{ matrix.name }}*/TestStatus.log
+            /tmp/${{ matrix.name }}*/bld/**/*.bldlog.*
+            /tmp/${{ matrix.name }}*/run/**/*.log.*
+            /tmp/${{ matrix.name }}*/run/**/*.cprnc.out
           retention-days: 14
       - name: Upload nc files
         if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
         uses: actions/upload-artifact@v7
         with:
-          name: outputs.${{ matrix.test.short_name }}
+          name: outputs.${{ matrix.name }}
           path: |
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
-          retention-days: 14
-  intel:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'intel' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, intel, e3sm]
-    strategy:
-      matrix:
-        test:
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_intel.eamxx-prod
-            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
-      fail-fast: false
-    name: intel / ${{ matrix.test.short_name }}
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Run test
-        id: run-tests
-        run: |
-          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
-      - name: Upload log files
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: logs.${{ matrix.test.short_name }}
-          path: |
-            /tmp/${{ matrix.test.full_name }}*/TestStatus
-            /tmp/${{ matrix.test.full_name }}*/TestStatus.log
-            /tmp/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
-          retention-days: 14
-      - name: Upload nc files
-        if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: outputs.${{ matrix.test.short_name }}
-          path: |
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
-          retention-days: 14
-  gnugpu:
-    if: |
-      ${{
-        github.event_name != 'workflow_dispatch' ||
-        (
-          github.event.inputs.job_to_run == 'gnugpu' ||
-          github.event.inputs.job_to_run == 'all'
-        )
-      }}
-    runs-on:  [self-hosted, cuda, e3sm]
-    strategy:
-      matrix:
-        test:
-          - full_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.ghci_gnugpu.eamxx-prod
-            short_name: ERS.ne4pg2_ne4pg2.F2010-SCREAMv1.eamxx-prod
-      fail-fast: false
-    name: gnugpu / ${{ matrix.test.short_name }}
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          show-progress: false
-          submodules: recursive
-      - name: Show action trigger
-        uses: ./.github/actions/show-workflow-trigger
-      - name: Run test
-        id: run-tests
-        run: |
-          ./cime/scripts/create_test ${{ matrix.test.full_name }} ${{ env.flags }} --wait
-      - name: Upload log files
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: logs.${{ matrix.test.short_name }}
-          path: |
-            /tmp/${{ matrix.test.full_name }}*/TestStatus
-            /tmp/${{ matrix.test.full_name }}*/TestStatus.log
-            /tmp/${{ matrix.test.full_name }}*/bld/**/*.bldlog.*
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.log.*
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.cprnc.out
-          retention-days: 14
-      - name: Upload nc files
-        if: ${{ failure() && steps.run-tests.outcome == 'failure' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: outputs.${{ matrix.test.short_name }}
-          path: |
-            /tmp/${{ matrix.test.full_name }}*/run/**/*.nc*
+            /tmp/${{ matrix.name }}*/run/**/*.nc*
           retention-days: 14
