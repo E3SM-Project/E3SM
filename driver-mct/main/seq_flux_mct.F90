@@ -48,7 +48,7 @@ module seq_flux_mct
   real(r8), allocatable ::  wsresp(:) ! atm response to surface stress
   real(r8), allocatable ::  charnsea(:) ! Charnock coeff accounting for the wave stress
   real(r8), allocatable ::  ustarwav(:) ! Friction velocity from WW3
-  real(r8), allocatable :: z0wav(:) ! Surface roughness length from WW3
+  real(r8), allocatable ::  z0wav(:)    ! Surface roughness length from WW3
   real(r8), allocatable ::  tau_est(:)! estimation of tau in equilibrium with wind
   real(r8), allocatable ::  ugust_atm(:)  ! atm gustiness
   real(r8), allocatable ::  thbot(:)  ! atm potential T
