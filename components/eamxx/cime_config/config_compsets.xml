@@ -91,6 +91,18 @@
   </compset>
 
   <!-- ========================================================================================= -->
+  <!-- v4 candidate configuration -->
+  <compset>
+    <alias>F20TRxx-BETA</alias>
+    <lname>20TR_SCREAM%BETA_ELM%CNPRDCTCBCTOP_MPASSI_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F20TRxx-BETA-CICE</alias>
+    <lname>20TR_SCREAM%BETA_ELM%CNPRDCTCBCTOP_CICE%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- ========================================================================================= -->
   <!-- development compsets -->
 
   <compset>
