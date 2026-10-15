@@ -2107,8 +2107,8 @@ contains
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-            samegrid_ro, samegrid_lg, samegrid_az)
+       call component_init_aream(infodata, rof_c2_ocn, glc_c2_ocn, samegrid_ao, samegrid_al, &
+            samegrid_ro, samegrid_lg, samegrid_og, samegrid_az)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
