@@ -21,5 +21,3 @@ string(APPEND KOKKOS_OPTIONS " -DKokkos_ARCH_ZEN2=On")
 if (compile_threaded)
   string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_AGGRESSIVE_VECTORIZATION=On")
 endif()
-
-string(APPEND CMAKE_EXE_LINKER_FLAGS " -lhdf5")
