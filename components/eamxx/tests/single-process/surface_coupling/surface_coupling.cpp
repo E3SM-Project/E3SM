@@ -88,7 +88,7 @@ std::vector<std::string> create_from_file_test_data(const ekat::Comm& comm, cons
   // Create output manager to handle the data
   scorpio::init_subsystem(comm);
   ekat::ParameterList om_pl;
-  om_pl.set("filename_prefix",std::string("surface_coupling_forcing"));
+  om_pl.set("stream_id",std::string("surface_coupling_forcing"));
   om_pl.set("field_names",fnames);
   om_pl.set("averaging_type", std::string("INSTANT"));
   auto& ctrl_pl = om_pl.sublist("output_control");
