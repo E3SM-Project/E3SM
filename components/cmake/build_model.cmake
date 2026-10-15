@@ -288,9 +288,10 @@ macro(build_model COMP_CLASS COMP_NAME)
     # before piof/pioc need them. Only requesting the include dirs avoids
     # adding that extra, mis-ordering link edge, while the link libraries
     # still reach this target correctly ordered via csm_share -> spio.
-    find_package(NETCDF REQUIRED)
-    get_target_property(NETCDF_INTERFACE_INCLUDE_DIRS netcdf INTERFACE_INCLUDE_DIRECTORIES)
-    target_include_directories(${TARGET_NAME} PRIVATE ${NETCDF_INTERFACE_INCLUDE_DIRS})
+
+    #find_package(NETCDF REQUIRED)
+    #get_target_property(NETCDF_INTERFACE_INCLUDE_DIRS netcdf INTERFACE_INCLUDE_DIRECTORIES)
+    #target_include_directories(${TARGET_NAME} PRIVATE ${NETCDF_INTERFACE_INCLUDE_DIRS})
 
     if (USE_MOAB)
       target_link_libraries(${TARGET_NAME} ${MOAB_LIBRARIES})
@@ -324,8 +325,8 @@ macro(build_model COMP_CLASS COMP_NAME)
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
     if (COMP_NAME STREQUAL "csm_share")
-      find_package(NETCDF REQUIRED)
-      target_link_libraries(${TARGET_NAME} PRIVATE netcdf)
+      #find_package(NETCDF REQUIRED)
+      #target_link_libraries(${TARGET_NAME} PRIVATE netcdf)
       if (USE_MOAB)
         target_link_libraries(${TARGET_NAME} PRIVATE ${MOAB_LIBRARIES})
         target_include_directories(${TARGET_NAME} PRIVATE ${MOAB_INCLUDE_DIRS})
