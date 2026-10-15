@@ -567,9 +567,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input.dy = cell_length;
 
 #ifdef EAMXX_HAS_INFERENCE
-  if (runtime_options.use_emulated_moments) {
-    init_moments_emulator();
-  }
+  // Initialize the embedded Python/Torch model lazily in run_impl, after the
+  // atmosphere process has completed its first-step tendency bookkeeping.
 #else
   EKAT_REQUIRE_MSG(!runtime_options.use_emulated_moments,
                    "SHOC moments emulator requires EAMXX_ENABLE_INFERENCE=ON.");
@@ -598,6 +597,9 @@ void SHOCMacrophysics::run_impl (const double dt)
 
 #ifdef EAMXX_HAS_INFERENCE
   if (runtime_options.use_emulated_moments) {
+    if (!m_moments_emulator) {
+      init_moments_emulator();
+    }
     run_moments_emulator();
   }
 #endif
@@ -822,10 +824,13 @@ void SHOCMacrophysics::run_moments_emulator()
   const auto staged_w2 = m_buffer.emulated_w_sec;
   const auto staged_w3 = m_buffer.emulated_w3;
   const auto out = emu.out;
-  Kokkos::parallel_for("shoc_moments_emulator_outputs", policy_t(0, ncol * nlevi),
+  // The emulator operates on the interface-inclusive grid, but the staged
+  // SHOC moment fields are mid-level fields.  Do not write the extra top
+  // interface sample into those buffers.
+  Kokkos::parallel_for("shoc_moments_emulator_outputs", policy_t(0, ncol * nlev),
                        KOKKOS_LAMBDA(const int idx) {
-    const int i = idx / nlevi;
-    const int k = idx % nlevi;
+    const int i = idx / nlev;
+    const int k = idx % nlev;
     const int p = k / N;
     const int s = k % N;
     staged_w2(i,p)[s] = out(0,i,k);

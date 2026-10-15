@@ -278,7 +278,9 @@ void Functions<S,D>::shoc_main_internal(
 
     if (use_emulated_moments) {
       const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
-      Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlevi)),
+        // w_sec and w3 are mid-level fields; do not write the extra
+        // interface pack from the emulator-inclusive input grid.
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, ekat::npack<Pack>(nlev)),
                            [&] (const Int& k) {
         const auto active = zi_grid(k) < 8000;
         w_sec(k).set(active, ekat::max(min_emulated_w_sec, emulated_w_sec(k)));
@@ -567,9 +569,11 @@ void Functions<S,D>::shoc_main_internal(
 
     if (use_emulated_moments) {
       const Scalar min_emulated_w_sec = w2tune * (Scalar(2) / Scalar(3)) * SC::mintke;
-      Kokkos::parallel_for(shcol*nlevi, KOKKOS_LAMBDA(const int idx) {
-        const int i = idx/nlevi;
-        const int k = idx%nlevi;
+      // w_sec and w3 are mid-level fields.  The emulator inputs include an
+      // extra interface level, but that level must not be written here.
+      Kokkos::parallel_for(shcol*nlev, KOKKOS_LAMBDA(const int idx) {
+        const int i = idx/nlev;
+        const int k = idx%nlev;
         const auto active = zi_grid(i,k/Pack::n)[k%Pack::n] < 8000;
         if (active) {
           w_sec(i,k/Pack::n)[k%Pack::n] = ekat::max(
