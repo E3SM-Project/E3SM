@@ -783,15 +783,16 @@ void AtmosphereDriver::create_output_managers () {
     checkpoint_pl.set("frequency_units",checkpoint_params.get<std::string>("frequency_units"));
     checkpoint_pl.set("frequency",checkpoint_params.get<int>("frequency"));
 
-    // Check if the stream_id for this file has already been set.  If not, use a default.
-    if (not params.isParameter("stream_id") and not params.isParameter("filename_prefix")) {
-      params.set<std::string>("stream_id","output");
-    }
-    // Support legacy filename_prefix parameter temporarily by renaming to stream_id
-    if (params.isParameter("filename_prefix")) {
-      auto prefix = params.get<std::string>("filename_prefix");
-      params.set<std::string>("stream_id",prefix);
-      params.remove("filename_prefix");
+    // Check if the stream_id for this file has already been set.  If not, use a default or legacy value.
+    if (not params.isParameter("stream_id")) {
+      if (params.isParameter("filename_prefix")) {
+        // Support legacy filename_prefix parameter by using it as stream_id
+        auto prefix = params.get<std::string>("filename_prefix");
+        params.set<std::string>("stream_id",prefix);
+      } else {
+        // No stream_id or filename_prefix provided, use default
+        params.set<std::string>("stream_id","output");
+      }
     }
     params.sublist("provenance") = m_atm_params.sublist("provenance");
     params.sublist("restart").set("branch_run",m_branch_run);
